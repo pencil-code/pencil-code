@@ -52,14 +52,14 @@ module InitialCondition
      real :: dsize_min=0., dsize_max=0., r0=0. 
      real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
-     logical :: linit_temperature=.false.!, linit_density=.false.
+     logical :: linit_temperature=.false., lcurved=.false.!, linit_density=.false.
      
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, dYw12, X_wind, spot_number, spot_size, lwet_spots, &
-     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, BB0
+     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, BB0, lcurved
 !
   contains
 !***********************************************************************
@@ -243,6 +243,7 @@ module InitialCondition
       real, dimension (mx,my,mz) :: sum_Y, psat, air_mass_ar
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
       real, dimension (mx,my,mz,ndustspec) :: psf
+      real , dimension (my) :: init_x1_ar, init_x2_ar
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -390,21 +391,33 @@ module InitialCondition
 !  Reinitialization of T, water => rho
 !
       if (linit_temperature) then
+        if (lcurved) then
+          do j=1,my         
+            init_x1_ar(j)=init_x1*(1-0.1*sin(6.*PI*y(j)/Lxyz(2)))
+            init_x2_ar(j)=init_x2*(1+0.1*sin(6.*PI*y(j)/Lxyz(2)))
+          enddo
+        else
+          init_x1_ar=init_x1
+          init_x2_ar=init_x2
+        endif
         do i=1,mx
-        if (x(i)<=init_x1) then
-          f(i,:,:,ilnTT)=alog(init_TT1)
+        do j=1,my
+        if (x(i)<=init_x1_ar(j)) then
+          f(i,j,:,ilnTT)=alog(init_TT1)
         endif
-        if (x(i)>=init_x2) then
-          f(i,:,:,ilnTT)=alog(init_TT2)
+        if (x(i)>=init_x2_ar(j)) then
+          f(i,j,:,ilnTT)=alog(init_TT2)
         endif
-        if (x(i)>init_x1 .and. x(i)<init_x2) then
-          if (init_x1 /= init_x2) then
-            f(i,:,:,ilnTT)=&
-               alog((x(i)-init_x1)/(init_x2-init_x1) &
+        if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
+          if (init_x1_ar(j) /= init_x2_ar(j)) then
+            f(i,j,:,ilnTT)=&
+               alog((x(i)-init_x1_ar(j))/(init_x2_ar(j)-init_x1_ar(j)) &
                *(init_TT2-init_TT1)+init_TT1)
           endif
         endif
         enddo
+        enddo
+!        
         if (ldensity_nolog) then
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
