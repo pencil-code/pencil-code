@@ -63,6 +63,8 @@ module Magnetic_meanfield
   real :: alpha_rmax=0.0, alpha_width=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
+  real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0 !kk
+  real, dimension(nx) :: rhs_termz, rhs_termy !kk
   real, dimension(nx) :: rhs_term
   real, dimension(mz) :: etat_z
   real, dimension(mz,3) :: getat_z
@@ -70,7 +72,7 @@ module Magnetic_meanfield
   logical :: lEMF_profile=.false.
   logical :: lalpha_profile_total=.false.
   logical :: ldelta_profile=.false.
-  logical :: lrhs_term=.false.
+  logical :: lrhs_term=.false., lrhs_term2=.false. !kk
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
@@ -87,6 +89,7 @@ module Magnetic_meanfield
       alpha_cutoff_up, alpha_cutoff_down, &
       lOmega_effect, Omega_profile, Omega_ampl, &
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
+      lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
       Omega_rmax,Omega_rwidth
 !
 !
@@ -160,6 +163,11 @@ module Magnetic_meanfield
         !rhs_term=rhs_term_ampl*(.25*x(l1:l2)**2-.0625*x(l1:l2)**4)
         rhs_term=rhs_term_ampl*(1.-x(l1:l2)**2)
         !rhs_term=rhs_term_ampl
+      endif
+!
+      if (lrhs_term2) then
+        rhs_termz=rhs_term_amplz*(-x(l1:l2)**2)/4.      !kk
+        rhs_termy=rhs_term_amplphi*x(l1:l2)/2.          !kk
       endif
 !
 !  if meanfield theory is invoked, we want to send meanfield_etat to
@@ -642,6 +650,13 @@ module Magnetic_meanfield
 !  Impose a By(x)=B0*sinkx field by adding a dAz/dt= ... + (B/tau*k)*coskx term.
 !
       if (lrhs_term) df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+rhs_term
+!
+!  2-component external emf
+!
+      if (lrhs_term2) then
+        df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)+rhs_termy
+        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+rhs_termz
+      endif
 !
 !  Calculate diagnostic quantities.
 !  Diagnostic output for mean field dynamos.
