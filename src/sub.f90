@@ -5653,8 +5653,6 @@ nameloop: do
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      implicit none
-!
       integer,           intent(inout) :: index
       integer, optional, intent(inout) :: ind_aux1,ind_aux2,ind_aux3
       character (LEN=*), intent(in)    :: name
