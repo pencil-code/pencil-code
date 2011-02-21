@@ -393,8 +393,8 @@ module InitialCondition
       if (linit_temperature) then
         if (lcurved) then
           do j=1,my         
-            init_x1_ar(j)=init_x1*(1-0.1*sin(6.*PI*y(j)/Lxyz(2)))
-            init_x2_ar(j)=init_x2*(1+0.1*sin(6.*PI*y(j)/Lxyz(2)))
+            init_x1_ar(j)=init_x1*(1-0.2*sin(6.*PI*y(j)/Lxyz(2)))
+            init_x2_ar(j)=init_x2*(1+0.2*sin(6.*PI*y(j)/Lxyz(2)))
           enddo
         else
           init_x1_ar=init_x1
