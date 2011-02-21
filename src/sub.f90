@@ -5662,6 +5662,7 @@ nameloop: do
       integer   :: vec
       character :: ch
       character (LEN=len(name)-2) :: tail
+      character (LEN=32) :: equalto
 !
       vec=-1
 !
@@ -5692,7 +5693,7 @@ nameloop: do
 !
       if (index/=0.and.lroot) then
 !
-        print*, 'initialize_magnetic: i'//trim(name)//' = ', index
+        print*, 'register_report_aux: i'//trim(name)//' = ', index
         open(3,file=trim(datadir)//'/index.pro', POSITION='append')
         write(3,*) 'i'//trim(name)//'=',index
 !
@@ -5703,10 +5704,11 @@ nameloop: do
             if ( len_trim(name)>2 ) tail = trim(name(3:))//'='
           endif
 !
-          write(3,*) 'i'//ch//'x'//tail,ind_aux1
+          equalto='='
+          write(3,*) 'i'//ch//'x'//trim(equalto),ind_aux1
           if ( vec>=2 ) then
-            write(3,*) 'i'//ch//'y'//tail,ind_aux2
-            if ( vec==3 ) write(3,*) 'i'//ch//'z'//tail,ind_aux3
+            write(3,*) 'i'//ch//'y'//trim(equalto),ind_aux2
+            if ( vec==3 ) write(3,*) 'i'//ch//'z'//trim(equalto),ind_aux3
           endif
         endif
 !
