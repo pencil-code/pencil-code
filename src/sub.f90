@@ -2331,7 +2331,7 @@ module Sub
       logical, optional :: upwind
 !
       if (k<1 .or. k>mfarray) then
-        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
+        call fatal_error('u_dot_grad_mat','variable index is out of bounds')
         return
       endif
 !

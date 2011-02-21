@@ -154,8 +154,15 @@ module Polymer
     subroutine pencil_criteria_polymer()
 !
 !   All pencils that the Polymer module depends on are specified here.
+! PENCILS PROVIDED poly(3,3); fr; trp; frC(3,3); divC(3)
+! PENCILS PROVIDED grad_fr(3); div_frC(3)
+! PENCILS PROVIDED Cijk(3,3,3); u_dot_gradC(3,3)
+! PENCILS PROVIDED del2poly(3,3)
+
+
 !
       lpenc_requested(i_poly)=.true.
+      lpenc_requested(i_fr)=.true.
       lpenc_requested(i_trp)=.true.
       lpenc_requested(i_frC)=.true.
 !
@@ -174,7 +181,10 @@ module Polymer
 !
 !  If advection by the velocity is turned on.
 !
-      if (lpolyadvect) lpenc_requested(i_u_dot_gradC)=.true.
+      if (lpolyadvect) then
+        lpenc_requested(i_u_dot_gradC)=.true.
+        lpenc_requested(i_Cijk)=.true.
+      endif
 !
 !  If a diffusive term in the polymer equation is not included: (not default)
 !
