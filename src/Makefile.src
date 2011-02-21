@@ -921,7 +921,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##  Axel's laptop (nl6, 2.0 GHz)
 ##  the -CB options checks for out of bounds arrays
 ##
-#FC=ifort #(nl6)
+#FC=ifort -std95 #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -CB #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include #(nl6)
 #FFLAGS=-O3 -I/usr/lib/openmpi/include -L/usr/lib#(nl6)

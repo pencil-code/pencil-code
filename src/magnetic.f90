@@ -1174,6 +1174,9 @@ module Magnetic
             f(l1:l2,m,n,iaz)=.25*pi_1*amplaa(j)*(x(l1:l2)/Lxyz(1))**2
           enddo; enddo
         case ('Az=x4')
+!
+!  Initial  Az=(r/2)^2 [1-(r/2)^2]  corresponds to Bphi=r/2 and Jz=1.
+!
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iaz)=.25*amplaa(j)*x(l1:l2)**2*(1.-.25*x(l1:l2)**2)
           enddo; enddo
@@ -1331,7 +1334,7 @@ module Magnetic
 !  jj pencil always needed when in Weyl gauge
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
-          lweyl_gauge.or.lspherical_coords) &
+          lweyl_gauge.or.lspherical_coords.or.lJ_ext) &
 !  WL: but doesn't seem to be needed for the cylindrical case
           lpenc_requested(i_jj)=.true.
       if (.not.lweyl_gauge) &
