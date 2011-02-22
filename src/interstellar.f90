@@ -1198,6 +1198,7 @@ module Interstellar
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_rho1)=.true.
 !
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
 !
@@ -1459,7 +1460,7 @@ module Interstellar
       type (pencil_case) :: p
 !
       real, dimension (nx), intent(inout) :: Hmax
-      real, dimension (nx) :: heat,cool,heatcool
+      real, dimension (nx) :: heat,cool,heatcool,netheat
       real, dimension (nx) :: damp_profile,gsh2
       real :: minqty
       integer :: i, iSNR
@@ -1569,12 +1570,14 @@ module Interstellar
 !  monitor the actual applied values for diagnostics so TT1 included.
 !
       if (ldiagnos) then
-        if (idiag_Hmax/=0) &
-          call max_mn_name(p%TT1*heat,idiag_Hmax)
+        if (idiag_Hmax/=0) then
+          where (heatcool<0.0) netheat=0.0 
+          call max_mn_name(netheat/p%ee,idiag_Hmax)
+        endif
         if (idiag_taucmin/=0) &
-          call max_mn_name(p%TT1*cool/p%ee,idiag_taucmin,lreciprocal=.true.)
+          call max_mn_name(-heatcool/p%ee,idiag_taucmin,lreciprocal=.true.)
         if (idiag_Lamm/=0) &
-          call sum_mn_name(cool,idiag_Lamm)
+          call sum_mn_name(p%rho1*cool*p%TT1,idiag_Lamm)
         if (idiag_nrhom/=0) &
           call sum_mn_name(cool/p%ee,idiag_nrhom)
 !  --       call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)
