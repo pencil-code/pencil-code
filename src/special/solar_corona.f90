@@ -387,15 +387,15 @@ module Special
       ! read the profiles
       call read_profiles()
 !
-      if (linit_lnrho .or. (tdownr > 0.0)) then
+      if (linit_lnrho .or. lnewton_cooling) then
         ! some kind of density profile is actually in use,
         ! set lnrho0 and rho0 accordingly to the lower boundary value
         if (lroot) then
-          if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(n1))) then
-            write (*,*) 'lnrho0 inconsistent: ', lnrho0, lnrho_init_z(n1)
+          if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(irefz))) then
+            write (*,*) 'lnrho0 inconsistent: ', lnrho0, lnrho_init_z(irefz)
             call fatal_error ("setup_profiles", "conflicting manual lnrho0 setting", .true.)
           endif
-          lnrho0 = lnrho_init_z(n1)
+          lnrho0 = lnrho_init_z(irefz)
           if ((rho0 /= 1.0) .and. (abs (rho0 / exp (lnrho0) - 1.0) > 1.e-6)) then
             write (*,*) 'rho0 inconsistent: ', rho0, exp (lnrho0)
             call fatal_error ("setup_profiles", "conflicting manual rho0 setting", .true.)
@@ -419,8 +419,8 @@ module Special
 !
       integer :: i, ierr
       integer, parameter :: unit=12, lnrho_tag=368, lnTT_tag=369
-      real :: var0, var1, var2
-      real, dimension (:), allocatable :: prof_lnrho, prof_lnTT
+      real :: var_lnrho, var_lnTT, var_z
+      real, dimension (:), allocatable :: prof_lnrho, prof_lnTT, prof_z
       logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT
 !
       ! file location settings
@@ -437,7 +437,7 @@ module Special
       lread_prof_lnTT  = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnTT') > 0)
 !
       if (prof_type=='lnrho_lnTT') then
-        allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), stat=ierr)
+        allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), prof_z(nzgrid), stat=ierr)
         if (ierr > 0) call fatal_error ('setup_profiles', &
             'Could not allocate memory for stratification variables', .true.)
 !
@@ -446,23 +446,26 @@ module Special
           if (.not. file_exists (stratification_dat)) call fatal_error ( &
               'setup_profiles', 'Stratification file not found', .true.)
           open (unit,file=stratification_dat)
-          do i=1,nzgrid
-            read (unit,*,iostat=ierr) var0,var1,var2
+          do i=1, nzgrid
+            read (unit,*,iostat=ierr) var_z, var_lnrho, var_lnTT
             if (ierr /= 0) call fatal_error ('setup_profiles', &
                 'Error reading stratification file: "'//trim(stratification_dat)//'"', .true.)
-            prof_lnrho(i)=var1
-            prof_lnTT(i) =var2
+            prof_z(i) = var_z
+            prof_lnTT(i) = var_lnTT
+            prof_lnrho(i) = var_lnrho
           enddo
           close(unit)
         endif
 !
-        call mpibcast_real (prof_lnTT,nzgrid)
-        call mpibcast_real (prof_lnrho,nzgrid)
+        call mpibcast_real (prof_z, nzgrid)
+        call mpibcast_real (prof_lnTT, nzgrid)
+        call mpibcast_real (prof_lnrho, nzgrid)
 !
-        lnTT_init_z(n1:n2) = prof_lnTT(ipz*nz+1:(ipz+1)*nz)
-        lnrho_init_z(n1:n2) = prof_lnrho(ipz*nz+1:(ipz+1)*nz)
+        ! interpolate logarthmic data to Pencil grid profile
+        call interpolate_profile (prof_lnTT, prof_z, nzgrid, lnTT_init_z)
+        call interpolate_profile (prof_lnrho, prof_z, nzgrid, lnrho_init_z)
 !
-        deallocate (prof_lnTT, prof_lnrho)
+        deallocate (prof_lnTT, prof_lnrho, prof_z)
 !
       elseif (lread_prof_uu .or. lread_prof_lnrho .or. lread_prof_lnTT) then
 !
@@ -565,9 +568,9 @@ module Special
 !
 !  15-sept-2010/Bourdin.KIS: coded
 !
-      real, dimension (:) :: data, data_z
       integer :: n_data
-      real, dimension (mz) :: profile
+      real, dimension (n_data), intent(in) :: data, data_z
+      real, dimension (mz), intent(out) :: profile
 !
       integer :: i, j, num_over, num_below
       character (len=12) :: num
@@ -1014,18 +1017,13 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: lnrho0
+      use Mpicomm, only: mpibcast_real, mpibcast_int
       use Sub, only: sine_step
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: newton,newtonr,tmp_tau
-      real, save :: lnrho_ref = -1.0
-      integer :: pos, ref_pos
-!
-      if (headtt) &
-          print *, 'special_calc_entropy: newton cooling active', tdown, tdownr
-!
+      real, dimension (nx) :: newton, newtonr, tmp_tau, lnTT_ref
 !
       tmp_tau = 0.0
 !
@@ -1039,34 +1037,161 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
       endif
 !
-      ! Newton cooling of temperature profile
-      if (tdown > 0.0) then
-        if (lnrho_ref == -1.0) then
-          ! Get reference density
-          ref_pos = 1
-          do pos = 1, mz
-            if (z(pos) <= 0.0) ref_pos = pos
-          enddo
-          lnrho_ref = lnrho_init_z(ref_pos)
-          print *, 'calc_heat_cool_newton: reference density ', lnrho_ref
-        endif
-        ! Get reference temperature
-        newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
-!       tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
-        tmp_tau = tdown * sine_step (p%lnrho, lnrho_ref-allp, allp/2.0)
+      ! Density dependant Newton cooling of temperature profile
+      if ((tdown /= 0.0) .and. (allp /= 0.0)) then
+        ! Find reference temperature to actual density profile
+        call find_ref_temp (p%lnrho, lnTT_ref)
+        ! Calculate newton cooling factor to reference temperature
+        newton = exp (lnTT_ref - p%lnTT) - 1.0
+        ! Calculate density-dependant inverse time scale and let cooling decay exponentially
+        tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
+! Old code using a fixed z-dependant temperature profile:
+!        newton = exp (lnTT_init_z(n) - p%lnTT) - 1.0
+!        tmp_tau = tdown * exp (-allp * (lnrho0 - p%lnrho))
       endif
 !
-      if (lfirst.and.ldt) then
-        if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(tmp_tau/cdts,idiag_dtnewt,l_dt=.true.)
+      if (lfirst .and. ldt) then
+        if (ldiagnos .and. (idiag_dtnewt /= 0)) then
+          itype_name(idiag_dtnewt) = ilabel_max_dt
+          call max_mn_name (tmp_tau/cdts, idiag_dtnewt, l_dt=.true.)
         endif
-        dt1_max=max(dt1_max,tmp_tau/cdts)
+        dt1_max = max (dt1_max, tmp_tau/cdts)
       endif
 !
     endsubroutine calc_heat_cool_newton
+!***********************************************************************
+    function interpol_tabulated (needle, haystack)
+!
+! Find the interpolated position of a given value in a tabulated values array.
+! Bisection search algorithm with preset range guessing by previous value.
+! Returns the interpolated position of the needle in the haystack.
+! If needle is not inside the haystack, an extrapolated position is returned.
+!
+! 09-feb-2011/Bourdin.KIS: coded
+!
+      real :: interpol_tabulated
+      real, intent(in) :: needle
+      real, dimension (:), intent(in) :: haystack
+!
+      integer, save :: lower=1, upper=1
+      integer :: mid, num, inc
+!
+      num = size (haystack, 1)
+      if (num < 2) call fatal_error ('interpol_tabulated', "Too few tabulated values!", .true.)
+      if (lower >= num) lower = num - 1
+      if (upper <= lower) upper = num
+!
+      if (haystack (lower) > haystack (upper)) then
+!
+!  Descending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle > haystack(lower)))
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position
+        inc = 2
+        do while ((upper < num) .and. (needle < haystack(upper)))
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle < haystack (upper)) then
+          ! Extrapolate needle value below range
+          lower = num - 1
+        elseif (needle > haystack (lower)) then
+          ! Extrapolate needle value above range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle >= haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (haystack(lower) - needle) / (haystack(lower) - haystack(upper))
+!
+      elseif (haystack (lower) < haystack (upper)) then
+!
+!  Ascending array:
+!
+        ! Search for lower limit, starting from last known position
+        inc = 2
+        do while ((lower > 1) .and. (needle < haystack(lower)))
+          lower = lower - inc
+          if (lower < 1) lower = 1
+          inc = inc * 2
+        enddo
+!
+        ! Search for upper limit, starting from last known position
+        inc = 2
+        do while ((upper < num) .and. (needle > haystack(upper)))
+          upper = upper + inc
+          if (upper > num) upper = num
+          inc = inc * 2
+        enddo
+!
+        if (needle > haystack (upper)) then
+          ! Extrapolate needle value above range
+          lower = num - 1
+        elseif (needle < haystack (lower)) then
+          ! Extrapolate needle value below range
+          lower = 1
+        else
+          ! Interpolate needle value
+          do while (lower+1 < upper)
+            mid = lower + (upper - lower) / 2
+            if (needle < haystack(mid)) then
+              upper = mid
+            else
+              lower = mid
+            endif
+          enddo
+        endif
+        upper = lower + 1
+        interpol_tabulated = lower + (needle - haystack(lower)) / (haystack(upper) - haystack(lower))
+      else
+        interpol_tabulated = -1.0
+        call fatal_error ('interpol_tabulated', "Tabulated values are invalid!", .true.)
+      endif
+!
+    endfunction interpol_tabulated
+!***********************************************************************
+    subroutine find_ref_temp (lnrho, lnTT_ref)
+!
+! Find reference temperature for a given density.
+!
+! 08-feb-2011/Bourdin.KIS: coded
+!
+      real, dimension (nx), intent(in) :: lnrho
+      real, dimension (nx), intent(out) :: lnTT_ref
+!
+      integer :: px, z_ref
+      integer, parameter :: max_z = nzgrid + 2*nghost
+      real :: pos, frac
+!
+      do px = 1, nx
+        pos = interpol_tabulated (lnrho(px), lnrho_init_z)
+        z_ref = floor (pos)
+        if (z_ref < 1) z_ref = 1
+        if (z_ref >= max_z) z_ref = max_z - 1
+        frac = pos - z_ref
+        lnTT_ref(px) = lnTT_init_z(z_ref) * (1.0-frac) + lnTT_init_z(z_ref+1) * frac
+      enddo
+!
+    endsubroutine find_ref_temp
 !***********************************************************************
     subroutine calc_heatcond_tensor(df,p,Kpara,expo)
 !
