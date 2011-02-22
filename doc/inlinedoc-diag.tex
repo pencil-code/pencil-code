@@ -121,7 +121,9 @@
   \var{uxmy}      & $\left< u_x \right>_{y}$ \\
   \var{uymy}      & $\left< u_y \right>_{y}$ \\
   \var{uzmy}      & $\left< u_z \right>_{y}$ \\
-  \var{u2mz}      & $\left< \uv^2 \right>_{xy}$ \\
+  \var{u2mz}      & $\left< \Uv^2 \right>_{xy}$ \\
+  \var{o2mz}      & $\left< \Wv^2 \right>_{xy}$ \\
+  \var{divu2mz}   & $\left<(\nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{omumz}     & $\left<\left<\Wv\right>_{xy}
                     \cdot\left<\Uv\right>_{xy}
                     \right>$ \quad($xy$-averaged
@@ -894,27 +896,16 @@
   \multicolumn{2}{c}{Module \file{thermal_energy.f90}} \\
 \midrule
   \var{TTmax}     & $\max (T)$ \\
-  \var{gTmax}     & $\max (|\nabla T|)$ \\
   \var{TTmin}     & $\min (T)$ \\
-  \var{TTm}       & $\left< T \right>$ \\
-  \var{fradtop}   & $<-K{dT\over dz}>_{\text{top}}$
-                    \quad(radiative flux at the top) \\
-  \var{ethm}      & $\left< e_{\text{th}}\right> =
-                    \left< c_v \rho T \right> $
-                    \quad(mean thermal energy) \\
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
-  \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
-                    /\max c_{\rm s}]$
-                    \quad(time step relative to
-                    acoustic time step;
-                    see \S~\ref{time-step}) \\
-  \var{dtchi}     & $\delta t / [c_{\delta t,{\rm v}}\,
-                    \delta x^2/\chi_{\rm max}]$
-                    \quad(time step relative to time
-                    step based on heat conductivity;
-                    see \S~\ref{time-step}) \\
+  \var{ppm}       & $\left< p \right>$ \\
+  \var{TTm}       & $\left<T\right>$ \\
+  \var{gTmax}     & $\max (|\nabla T|)$ \\
+  \var{ethm}      & $\left< e_{\text{th}}\right> =
+                    \left< c_v \rho T \right> $
+                    \quad(mean thermal energy) \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
@@ -1103,6 +1094,44 @@
   \var{dY17m}     & $\left<dY_17\right>$ \\
   \var{dY18m}     & $\left<dY_18\right>$ \\
   \var{dY19m}     & $\left<dY_19\right>$ \\
+  \var{Y1max}     & $\left<Y_1\right>$ \\
+  \var{Y2max}     & $\left<Y_2\right>$ \\
+  \var{Y3max}     & $\left<Y_3\right>$ \\
+  \var{Y4max}     & $\left<Y_4\right>$ \\
+  \var{Y5max}     & $\left<Y_5\right>$ \\
+  \var{Y6max}     & $\left<Y_6\right>$ \\
+  \var{Y7max}     & $\left<Y_7\right>$ \\
+  \var{Y8max}     & $\left<Y_8\right>$ \\
+  \var{Y9max}     & $\left<Y_9\right>$ \\
+  \var{Y10max}    & $\left<Y_10\right>$ \\
+  \var{Y11max}    & $\left<Y_11\right>$ \\
+  \var{Y12max}    & $\left<Y_12\right>$ \\
+  \var{Y13max}    & $\left<Y_12\right>$ \\
+  \var{Y14max}    & $\left<Y_12\right>$ \\
+  \var{Y15max}    & $\left<Y_12\right>$ \\
+  \var{Y16max}    & $\left<Y_12\right>$ \\
+  \var{Y17max}    & $\left<Y_12\right>$ \\
+  \var{Y18max}    & $\left<Y_12\right>$ \\
+  \var{Y19max}    & $\left<Y_12\right>$ \\
+  \var{dY1max}    & $\left<dY_1\right>$ \\
+  \var{dY2max}    & $\left<dY_2\right>$ \\
+  \var{dY3max}    & $\left<dY_3\right>$ \\
+  \var{dY4max}    & $\left<dY_4\right>$ \\
+  \var{dY5max}    & $\left<dY_5\right>$ \\
+  \var{dY6max}    & $\left<dY_6\right>$ \\
+  \var{dY7max}    & $\left<dY_7\right>$ \\
+  \var{dY8max}    & $\left<dY_8\right>$ \\
+  \var{dY9max}    & $\left<dY_9\right>$ \\
+  \var{dY10max}   & $\left<dY_10\right>$ \\
+  \var{dY11max}   & $\left<dY_11\right>$ \\
+  \var{dY12max}   & $\left<dY_12\right>$ \\
+  \var{dY13max}   & $\left<dY_13\right>$ \\
+  \var{dY14max}   & $\left<dY_14\right>$ \\
+  \var{dY15max}   & $\left<dY_15\right>$ \\
+  \var{dY16max}   & $\left<dY_16\right>$ \\
+  \var{dY17max}   & $\left<dY_17\right>$ \\
+  \var{dY18max}   & $\left<dY_18\right>$ \\
+  \var{dY19max}   & $\left<dY_19\right>$ \\
   \var{Y1mz}      & $\left<Y_1\right>_{xy}(z)$ \\
   \var{Y2mz}      & $\left<Y_2\right>_{xy}(z)$ \\
   \var{Y3mz}      & $\left<Y_3\right>_{xy}(z)$ \\
