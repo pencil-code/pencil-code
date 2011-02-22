@@ -26,6 +26,7 @@
 &hydro_init_pars
 /
 &density_init_pars
+  rho_const=3e4
   initlnrho='stratification'
   strati_type='lnrho_lnTT'
 /
