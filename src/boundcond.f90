@@ -662,6 +662,19 @@ module Boundcond
                 ! BCZ_DOC: symmetric temp.
                 ! BCZ_DOC:
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
+              case ('ism')
+                ! BCZ_DOC: special for interstellar runs
+                if (j==iuz) then
+                  call bc_steady_z(f,topbot,j)
+                elseif (j==irho.or.j==ilnrho) then
+                  if (ldensity_nolog) then
+                    call bc_sym_z(f,-1,topbot,irho,REL=.true.)
+                  else
+                    call bc_sym_z(f,-1,topbot,ilnrho,REL=.true.)
+                  endif
+                elseif (j==iss) then
+                  call bc_onesided_ctz(f,topbot,iss)
+                endif  
               case ('asT')
                 ! BCZ_DOC: select entropy for uniform ghost temperature
                 ! BCZ_DOC: matching fluctuating boundary value,
@@ -4639,7 +4652,7 @@ module Boundcond
 !  Both, bottom and top boundary conditions are corrected for linear density
 !
           if (ldensity_nolog) then
-            cs2_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,ilnrho))-lnrho0)+gamma*f(l1,:,:,iss))
+            cs2_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
           else
             cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
@@ -4651,7 +4664,7 @@ module Boundcond
 !           f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+(cp-cv)* &
             if (ldensity_nolog) then
               f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
-                  (log(f(l1+i,:,:,ilnrho))-log(f(l1-i,:,:,ilnrho))+2*i*dx*tmp_yz)
+                  (log(f(l1+i,:,:,irho))-log(f(l1-i,:,:,irho))+2*i*dx*tmp_yz)
             else
               f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
                   (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
@@ -4682,7 +4695,7 @@ module Boundcond
 !  calculate Ftop/(K*cs2)
 !
           if (ldensity_nolog) then
-            cs2_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,ilnrho))-lnrho0)+gamma*f(l2,:,:,iss))
+            cs2_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
           else
             cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
@@ -4693,7 +4706,7 @@ module Boundcond
           do i=1,nghost
             if (ldensity_nolog) then
               f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-                  (log(f(l2-i,:,:,ilnrho))-log(f(l2+i,:,:,ilnrho))-2*i*dx*tmp_yz)
+                  (log(f(l2-i,:,:,irho))-log(f(l2+i,:,:,irho))-2*i*dx*tmp_yz)
             else
               f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
                   (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
@@ -6471,5 +6484,53 @@ module Boundcond
       enddo
 !
     endsubroutine bc_aa_pot_1D
+!***********************************************************************
+    subroutine bc_onesided_ctz(f,topbot,j)
+!
+!  Set entropy to match temperature in the ghost zones to boundary value
+!  value. Density ghost zones need to be calculated again here and corners
+!  must be included to avoid NAN's. 
+!
+!  13-feb-11/fred: check that 'ism' or 'a2' also set for bcz density.
+!
+      use EquationOfState, only: get_cv1,get_cp1
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,k
+      real :: cv1,cp1,cv,cp
+!
+      call get_cv1(cv1);cv=1./cv1
+      call get_cp1(cp1);cp=1./cp1
+!
+      call bc_sym_z(f,-1,topbot,j-1,REL=.true.)
+      where (f(:,:,:,j-1)<=0.0) f(:,:,:,j-1)=tini*15.0
+!
+      if (.not.ldensity_nolog) &
+          f(:,:,:,j-1)=exp(f(:,:,:,j-1))
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+          do k=1,3 
+             f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*(log(f(:,:,n1-k+1,j-1))&
+                  -log(f(:,:,n1-k,j-1)))
+          enddo
+!                                                                                 
+      case ('top')               ! top boundary                     dary
+          do k=1,3 
+             f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*(log(f(:,:,n2+k-1,j-1))&
+                  -log(f(:,:,n2+k,j-1)))
+          enddo
+!
+      case default
+        print*, "bc_onesided_ctz ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+      if (.not.ldensity_nolog) &
+          f(:,:,:,j-1)=log(f(:,:,:,j-1))
+!
+    endsubroutine bc_onesided_ctz
 !***********************************************************************
 endmodule Boundcond
