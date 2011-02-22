@@ -51,11 +51,11 @@ module Entropy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
-  integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right>
+  integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right>$
   integer :: idiag_ppmx=0
   integer :: idiag_ppmy=0
   integer :: idiag_ppmz=0
-  integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>
+  integer :: idiag_TTm=0      ! DIAG_DOC: $\left<T\right>$
   integer :: idiag_TTmx=0
   integer :: idiag_TTmy=0
   integer :: idiag_TTmz=0
