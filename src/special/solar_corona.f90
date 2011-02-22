@@ -391,12 +391,12 @@ module Special
         ! some kind of density profile is actually in use,
         ! set lnrho0 and rho0 accordingly to the lower boundary value
         if (lroot) then
-          if ((lnrho0 /= 0.0) .and. (lnrho0 /= lnrho_init_z(irefz))) then
+          if ((lnrho0 /= 0.0) .and. (abs(lnrho0 / lnrho_init_z(irefz) -1 ) > 1e-6)) then
             write (*,*) 'lnrho0 inconsistent: ', lnrho0, lnrho_init_z(irefz)
             call fatal_error ("setup_profiles", "conflicting manual lnrho0 setting", .true.)
           endif
           lnrho0 = lnrho_init_z(irefz)
-          if ((rho0 /= 1.0) .and. (abs (rho0 / exp (lnrho0) - 1.0) > 1.e-6)) then
+          if ((rho0 /= 1.0) .and. (abs (rho0 / exp (lnrho0) - 1.0) > 1e-6)) then
             write (*,*) 'rho0 inconsistent: ', rho0, exp (lnrho0)
             call fatal_error ("setup_profiles", "conflicting manual rho0 setting", .true.)
           endif
