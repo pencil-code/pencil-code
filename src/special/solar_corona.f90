@@ -605,13 +605,15 @@ module Special
         endif
       enddo
 !
-      if (num_below > 0) then
+      if (lfirst_proc_xy .and. (num_below > 0)) then
         write (num, *) num_below
-        call warning ("interpolate_profile", "extrapolated "//trim (adjustl (num))//" grid points below bottom")
+        call warning ("interpolate_profile", &
+            "extrapolated "//trim (adjustl (num))//" grid points below bottom")
       endif
-      if (num_over > 0) then
+      if (lfirst_proc_xy .and. (num_over > 0)) then
         write (num, *) num_over
-        call warning ("interpolate_profile", "extrapolated "//trim (adjustl (num))//" grid points over top")
+        call warning ("interpolate_profile", &
+            "extrapolated "//trim (adjustl (num))//" grid points over top")
       endif
 !
     endsubroutine interpolate_profile
