@@ -118,7 +118,7 @@ module Polymer
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_polymer_after_boundary(f)
+    endsubroutine calc_polymer_after_boundary
 !***********************************************************************
     subroutine read_polymer_init_pars(unit,iostat)
 !
