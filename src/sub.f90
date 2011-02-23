@@ -38,13 +38,14 @@ module Sub
   public :: curl_horizontal
   public :: div_other
   public :: gij, g2ij, gij_etc
-  public :: gijk_symmetric
+  public :: gijl_symmetric
   public :: der_step
   public :: der6_step
   public :: u_dot_grad, h_dot_grad
   public :: nou_dot_grad_scl
   public :: u_dot_grad_mat
   public :: del2, del2v, del2v_etc
+  public :: del2m3x3_sym
   public :: del4v, del4, del2vi_etc
   public :: del6_nodx, del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st
@@ -517,7 +518,7 @@ module Sub
 !
     endsubroutine transpose_mn
 !***********************************************************************
-    subroutine vec_dot_3tensor(a,b,c,ladd)
+    subroutine vec_dot_3tensor(a,b,c)
 !
 !  Dot product of a vector with 3 tensor,
 !   c_ij = a_k b_ijk
@@ -527,27 +528,17 @@ module Sub
       real, dimension (nx,3) :: a
       real, dimension (nx,3,3) :: c
       real, dimension (nx,3,3,3) :: b
-      integer :: i,j
+      integer :: i,j,k
 !
-      logical, optional :: ladd
-      logical :: ladd1
-!
-      intent(in) :: a,b,ladd
+      intent(in) :: a,b
       intent(out) :: c
-!
-      if (present(ladd)) then
-        ladd1=ladd
-      else
-        ladd1=.false.
-      endif
 !
       do i=1,3
         do j=1,3
-          if (ladd1) then
-            c(:,i,j)=c(:,i,j)+a(:,1)*b(:,i,j,1)+a(:,2)*b(:,i,j,2)+a(:,3)*b(:,i,j,3)
-          else
-            c(:,i,j)=a(:,1)*b(:,i,j,1)+a(:,2)*b(:,i,j,2)+a(:,3)*b(:,i,j,3)
-          endif
+          c(:,i,j) = 0.
+          do k=1,3
+            c(:,i,j) = c(:,i,j) + a(:,k)*b(:,i,j,k)
+          enddo
         enddo
       enddo
 !
@@ -1086,55 +1077,40 @@ module Sub
 !
     endsubroutine gij
 !***********************************************************************
-    subroutine gijk_symmetric(f,k,g,nder)
+    subroutine gijl_symmetric(f,k,gijl)
 !
 !  Calculate gradient of a (symmetric) second rank matrix, return 3rd rank
 !  matrix
 !
 !  18-aug-08/dhruba: coded
 !
-      use Deriv, only: der,der2,der3,der4,der5,der6
+      use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3,3,3) :: g
-      real, dimension (nx,2,3,3) :: tmpg
+      real, dimension (nx,3,3,3) :: gijl
+      real, dimension (nx,3,3,3) :: tmpg
       real, dimension (nx) :: tmp
-      integer :: i,j,l,l1,k,k1,nder
+      integer :: i,j,l,l1,k,k1
 !
       intent(in) :: f,k
-      intent(out) :: g
+      intent(out) :: gijl
 !
       k1=k-1
-      do i=1,2; do l=1,3
-        l1=l-1
-        do j=1,3
-          if (nder == 1) then
-            call der(f,k1+i+l1,tmp,j)
-          elseif (nder == 2) then
-            call der2(f,k1+i+l1,tmp,j)
-          elseif (nder == 3) then
-            call der3(f,k1+i+l1,tmp,j)
-          elseif (nder == 4) then
-            call der4(f,k1+i+l1,tmp,j)
-          elseif (nder == 5) then
-            call der5(f,k1+i+l1,tmp,j)
-          elseif (nder == 6) then
-            call der6(f,k1+i+l1,tmp,j)
-          endif
-          tmpg(:,i,l,j)=tmp
+      do i=1,3
+        do j=i,3
+          k1=k1+1
+          do l=1,3
+            call der(f,k1,tmp,l)
+            tmpg(:,i,j,l) = tmp
+          enddo
         enddo
-      enddo; enddo
-      g(:,1,1,:) = tmpg(:,1,1,:)
-      g(:,2,2,:) = tmpg(:,1,2,:)
-      g(:,3,3,:) = tmpg(:,1,3,:)
-      g(:,1,2,:) = tmpg(:,2,1,:)
-      g(:,2,1,:) = g(:,1,2,:)
-      g(:,1,3,:) = tmpg(:,2,2,:)
-      g(:,3,1,:) = g(:,1,3,:)
-      g(:,2,3,:) = tmpg(:,2,3,:)
-      g(:,3,2,:) = g(:,2,3,:)
+      enddo
+      do l=1,3
+        call symmetrise3x3_ut2lt(tmpg(:,:,:,l))
+      enddo
+      gijl=tmpg
 !
-    endsubroutine gijk_symmetric
+    endsubroutine gijl_symmetric
 !***********************************************************************
     subroutine grad_main(f,k,g)
 !
@@ -1663,6 +1639,70 @@ module Sub
       endif
 !
     endsubroutine del2v
+!***********************************************************************
+    subroutine del2m3x3_sym(f,k,del2f,fij,pff)
+!
+!  Calculate del2 of a 3x3 symmetric matrix, get matrix
+!  23-feb-11/dhruba: coded in a new manner
+!  
+      use Deriv, only: der
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, optional, dimension(nx,3,3) :: fij
+      real, optional, dimension(nx,3) :: pff
+      real, dimension (nx,3,3) :: del2f
+      real, dimension (nx) :: tmp
+      integer :: i,j,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del2f
+!
+!  simple del2 diffusion operator for each component
+!
+      k1=k-1
+      do i=1,3
+        do j=i,3
+          k1=k1+1
+          call del2(f,k1,tmp)
+          del2f(:,i,j) = tmp
+        enddo
+      enddo
+      call symmetrise3x3_ut2lt(del2f)
+
+!
+      if (lcylindrical_coords) then
+        call fatal_error('del2m', &
+            'del2m is not implemented in cylindrical coordiates')
+      endif
+!
+      if (lspherical_coords) then
+        call fatal_error('del2m', &
+            'del2m is not implemented in spherical coordiates')
+      endif
+!
+    endsubroutine del2m3x3_sym
+!***********************************************************************
+    subroutine symmetrise3x3_ut2lt (matrix_ut3x3)
+!
+! sets the lower triangular values of a matrix to its upper
+! triangular values. Does not touch the diagonal. Applies
+! to 3x3 matrices (pencil) only. 
+!
+!  23-dhruba-11/dhruba: coded
+!
+      real, dimension(nx,3,3) :: matrix_ut3x3
+      integer :: i,j
+!
+      do i=1,3
+        do j=1,i
+          if(i.eq.j) then 
+          else 
+            matrix_ut3x3(:,i,j) = matrix_ut3x3(:,j,i)
+          endif
+        enddo
+      enddo
+!
+    endsubroutine symmetrise3x3_ut2lt
 !***********************************************************************
     subroutine del2v_etc(f,k,del2,graddiv,curlcurl,gradcurl)
 !
@@ -2340,7 +2380,7 @@ module Sub
       if (present(upwind)) then
         if (upwind) call fatal_error('u_dot_grad_mat','upwinding not implemented')
       else
-        call vec_dot_3tensor(uu,gradM,ugradM,ladd=.false.)
+        call vec_dot_3tensor(uu,gradM,ugradM)
       endif
 !
 !  Spherical and cylindrical coordinates are not

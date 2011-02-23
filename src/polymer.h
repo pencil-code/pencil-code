@@ -11,3 +11,4 @@
   public :: calc_pencils_polymer
   public :: pencil_criteria_polymer
   public :: pencil_interdep_polymer
+  public :: calc_polymer_after_boundary

@@ -299,6 +299,7 @@ module Equ
       if (lmagnetic)              call calc_lmagnetic_pars(f)
       if (lentropy)               call calc_lentropy_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
+      if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)
       if (ltestfield)             call testfield_after_boundary(f,p)
       if (ldensity)               call calc_ldensity_pars(f)

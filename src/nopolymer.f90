@@ -112,6 +112,14 @@ module Polymer
 !
     endsubroutine dpoly_dt
 !***********************************************************************
+    subroutine calc_polymer_after_boundary(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_polymer_after_boundary(f)
+!***********************************************************************
     subroutine read_polymer_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
