@@ -178,8 +178,12 @@ module Diagnostics
         open(1,file=trim(datadir)//'/time_series.dat',position='append')
         if (first) write(1,"('"//comment_char//"',a)") trim(legend)
         write(1,'(a)') trim(line)
-        write(6,'(a)') trim(line)
         close(1)
+!
+!  Write to stdout.
+!
+        write(*,'(a)') trim(line)
+        call flush()
 !
       endif                     ! (lroot)
 !
