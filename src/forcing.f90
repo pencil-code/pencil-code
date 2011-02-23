@@ -88,6 +88,7 @@ module Forcing
   real :: ampl_ff=1.,width_fcont=1.,x1_fcont=0.,x2_fcont=0.
   real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
   real :: tgentle=0.
+  real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -120,7 +121,8 @@ module Forcing
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty, &
-       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d
+       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,& 
+       z_bb,width_bb,eta_bb
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -3747,7 +3749,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       real, dimension (nx,3), intent(out) :: force
 !
-      real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu
+      real            :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
       real, pointer   :: gravx
       integer         :: ierr
       integer :: i2d1=1,i2d2=2,i2d3=3
@@ -3853,6 +3855,17 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
           force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
           force(:,3)=0.
+
+!
+! Continuous emf required in Induction equation for the Mag Buoy Inst
+!
+        case('mbi_emf')
+          fact=2.*ampl_bb*eta_bb/width_bb**2
+          arg=(z(n)-z_bb)/width_bb
+          force(:,1)=fact*tanh(arg)/(cosh(arg))**2
+          force(:,2)=0.0
+          force(:,3)=0.0
+!
         case default
           call stop_it('forcing: no continuous iforcing_cont specified')
         endselect
