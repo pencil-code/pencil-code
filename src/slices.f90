@@ -138,8 +138,6 @@ module Slices
         if (lanelastic)    call get_slices_pressure    (f,slices)
         if (ldustdensity)  call get_slices_dustdensity (f,slices)
         if (ldustvelocity) call get_slices_dustvelocity(f,slices)
-        if (lentropy)      call get_slices_entropy     (f,slices)
-        if (ltemperature)  call get_slices_entropy     (f,slices)
         if (lenergy)       call get_slices_entropy     (f,slices)
         if (leos)          call get_slices_eos         (f,slices)
         if (lhydro)        call get_slices_hydro       (f,slices)
@@ -283,8 +281,11 @@ module Slices
         if (mod(nprocy,2)==0) then; iy_loc=m1; else; iy_loc=(m1+m2)/2; endif
         if (mod(nprocz,2)==0) then; iz_loc=n1; else; iz_loc=(n1+n2)/2; endif
         iz2_loc=n2
-        lwrite_slice_xy2=(ipz==nprocz/2) !for top layer on upper centre cpu
-!        lwrite_slice_xy2=llast_proc_z    !for top slice of top cpu
+!
+! xy2 is top layer as default.
+! Please set iz2 in run.in to select a different layer
+! where 4 <= iz2 <= mzgrid-3
+        lwrite_slice_xy2=llast_proc_z                                         
         lwrite_slice_xy=(ipz==nprocz/2)
         lwrite_slice_xz=(ipy==nprocy/2)
         lwrite_slice_yz=(ipx==nprocx/2)
