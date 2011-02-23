@@ -216,12 +216,13 @@ module Messages
       character (len=*) :: message,location
       integer, optional :: ip
 !
-      if (.not.llife_support) then
+      if (.not. llife_support) then
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING:"
           call terminal_defaultcolor()
           write (*,*) trim(location) // ": " // trim(message)
+          call flush()
         endif
 !
         if (ldie_onwarning) call die_gracefully
