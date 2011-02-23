@@ -222,7 +222,7 @@ module Messages
           write (*,'(A9)',ADVANCE='NO') "WARNING:"
           call terminal_defaultcolor()
           write (*,*) trim(location) // ": " // trim(message)
-          call flush()
+!          call flush() ! has to wait until F2003
         endif
 !
         if (ldie_onwarning) call die_gracefully
