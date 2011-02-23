@@ -1090,7 +1090,7 @@ module Sub
       real, dimension (nx,3,3,3) :: gijl
       real, dimension (nx,3,3,3) :: tmpg
       real, dimension (nx) :: tmp
-      integer :: i,j,l,l1,k,k1
+      integer :: i,j,l,k,k1
 !
       intent(in) :: f,k
       intent(out) :: gijl
@@ -1644,7 +1644,7 @@ module Sub
 !
 !  Calculate del2 of a 3x3 symmetric matrix, get matrix
 !  23-feb-11/dhruba: coded in a new manner
-!  
+!
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1686,7 +1686,7 @@ module Sub
 !
 ! sets the lower triangular values of a matrix to its upper
 ! triangular values. Does not touch the diagonal. Applies
-! to 3x3 matrices (pencil) only. 
+! to 3x3 matrices (pencil) only.
 !
 !  23-dhruba-11/dhruba: coded
 !
@@ -1695,8 +1695,7 @@ module Sub
 !
       do i=1,3
         do j=1,i
-          if(i.eq.j) then 
-          else 
+          if (i /= j) then
             matrix_ut3x3(:,i,j) = matrix_ut3x3(:,j,i)
           endif
         enddo
