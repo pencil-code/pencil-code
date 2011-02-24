@@ -1571,6 +1571,7 @@ module Interstellar
 !
       if (ldiagnos) then
         if (idiag_Hmax/=0) then
+          netheat=heatcool
           where (heatcool<0.0) netheat=0.0 
           call max_mn_name(netheat/p%ee,idiag_Hmax)
         endif
@@ -1594,7 +1595,7 @@ module Interstellar
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
         where (heatcool>0.0) Hmax=Hmax+heatcool
-        dt1_max=max(dt1_max,Hmax/p%ee/cdt_tauc)
+        dt1_max=max(dt1_max,Hmax/(p%ee*cdt_tauc))
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
