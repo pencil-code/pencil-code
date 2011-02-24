@@ -1347,7 +1347,7 @@ module EquationOfState
           if (ieosvars==ilnrho_ss) then
             lnrho_=f(l1:l2,m,n,ieosvar1)
           else
-            lnrho_=alog(f(l1:l2,m,n,ieosvar1))
+            lnrho_=log(f(l1:l2,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
             ss_=0
@@ -1360,7 +1360,7 @@ module EquationOfState
           if (ieosvars==ilnrho_ss) then
             lnrho_=f(:,m,n,ieosvar1)
           else
-            lnrho_=alog(f(:,m,n,ieosvar1))
+            lnrho_=log(f(:,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
             ss_=0
@@ -1386,7 +1386,11 @@ module EquationOfState
       case (ilnrho_lnTT,irho_lnTT)
         select case (psize)
         case (nx)
-          lnrho_=f(l1:l2,m,n,ieosvar1)
+          if (ieosvars==ilnrho_lnTT) then
+            lnrho_=f(l1:l2,m,n,ieosvar1)
+          else
+            lnrho_=log(f(l1:l2,m,n,ieosvar1))
+          endif
           if (leos_isentropic) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
           elseif (leos_isothermal) then
@@ -1395,7 +1399,11 @@ module EquationOfState
             lnTT_=f(l1:l2,m,n,ieosvar2)
           endif
         case (mx)
-          lnrho_=f(:,m,n,ieosvar1)
+          if (ieosvars==ilnrho_lnTT) then
+            lnrho_=f(l1:l2,m,n,ieosvar1)
+          else
+            lnrho_=log(f(l1:l2,m,n,ieosvar1))
+          endif
           if (leos_isentropic) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
           elseif (leos_isothermal) then
@@ -1410,11 +1418,7 @@ module EquationOfState
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
-        if (ieosvars==ilnrho_lnTT) then
-          if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
-        else
-          if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
-        endif
+        if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
 !
 ! Log rho or rho and T
 !
@@ -1429,7 +1433,7 @@ module EquationOfState
           if (ieosvars==ilnrho_cs2) then
             lnrho_=f(l1:l2,m,n,ieosvar1)
           else
-            lnrho_=alog(f(l1:l2,m,n,ieosvar1))
+            lnrho_=log(f(l1:l2,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
             cs2_=exp(gamma_m1*(lnrho_-lnrho0)+log(cs20))
@@ -1441,7 +1445,11 @@ module EquationOfState
             call fatal_error('eoscalc_farray','full eos for cs2 not implemented')
           endif
         case (mx)
-          lnrho_=f(:,m,n,ieosvar1)
+          if (ieosvars==ilnrho_cs2) then
+            lnrho_=f(l1:l2,m,n,ieosvar1)
+          else
+            lnrho_=log(f(l1:l2,m,n,ieosvar1))
+          endif
           if (leos_isentropic) then
             cs2_=exp(gamma_m1*(lnrho_-lnrho0)+log(cs20))
           elseif (leos_isothermal) then
@@ -1504,7 +1512,7 @@ module EquationOfState
         if (ivars==ilnrho_ss) then
           lnrho_=var1
         else
-          lnrho_=alog(var1)
+          lnrho_=log(var1)
         endif
         ss_=var2
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
@@ -1621,7 +1629,7 @@ module EquationOfState
         if (ivars==ilnrho_ss) then
           lnrho_=var1
         else
-          lnrho_=alog(var1)
+          lnrho_=log(var1)
         endif
         ss_=var2
         lnTT_=lnTT0+cv1*ss_+gamma_m1*(lnrho_-lnrho0)
