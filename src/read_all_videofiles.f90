@@ -1,7 +1,7 @@
 ! $Id$
 !
 !***********************************************************************
-      program rvid_box
+program rvid_box
 !
 !  read and combine slices from individual processor directories data
 !  /procN, write them to data/, where the can be used by used by
@@ -35,7 +35,7 @@
 !
       character (len=120) :: file='',fullname='',wfile='',directory=''
       character (len=120) :: datadir='data',path='',cfield=''
-      character (len=5) :: chproc='',nindex=''
+      character (len=5) :: chproc=''
       character (len=20) :: field='lnrho',field2=''
 !
       logical :: exists,lfirst_slice=.true.
@@ -95,40 +95,57 @@
       if (ipy1/=-1) lread_slice_xz=.true.
       if (ipx1/=-1) lread_slice_yz=.true.
 !
-!  read name of the field (must coincide with file extension)
+!  Loop over each field.
 !
-      videostat=0
-      sindex=1
+  sindex=0
 !
-      do while (videostat==0)
-        if (sindex==1) then
-          read(lun_video,*,iostat=videostat) cfield
+  loop: do
+    fieldname: if (sindex==0) then
 !
-!  read stride from internal reader!
+!  Read the name of the next field (must coincide with file extension)
 !
-          isep1=index(cfield,' ')
-          field2=cfield(1:isep1)
-          field=''
-        endif
-        if (videostat==0) then
+      read(lun_video,*,iostat=videostat) cfield
+      if (videostat==0) then
+        isep1=index(cfield,' ')
+        field2=cfield(1:isep1-1)
+        field=''
+      else
+        exit loop
+      endif
 !
-!  In case of a vector slice loop over the indices.
-          if (field2=='uu'.or.field2=='oo'.or.field2=='uud'.or. &
-              field2=='jj'.or.field2=='bb'.or.field2=='poynting'.or. &
-              field2=='aa'.or.field2=='Frad'.or.field2=='bb1'.or. &
-              field2=='bb11'.or.field2=='uu11') then
-            call chn(sindex,nindex)
-            call safe_character_assign(field,trim(field2)//trim(nindex))
+!  Determine if it is a scalar field by checking the file existence
+!  (assuming the xy-slice exists)
+!  TODO: relax this assumption
 !
-            if (sindex<3) then
-              sindex=sindex+1
-            else
-              sindex=1
-            endif
-          else
-            field=field2
-          endif
-          write(*,*) "Reading next: ",field
+      call get_fullname(nprocx*nprocy*ipz1, field2, 'xy', fullname)
+      inquire(file=fullname, exist=exists)
+      if (exists) then
+        field = field2
+        sindex = 0
+      else
+        sindex = 1
+        cycle loop
+      endif
+!
+    else fieldname
+!
+!  Determine if it has multiple components by checking the file existence
+!  (assuming the xy-slice exists)
+!  TODO: relax this assumption
+!
+      call append_number(field2, field, sindex)
+      call get_fullname(nprocx*nprocy*ipz1, field, 'xy', fullname)
+      inquire(file=fullname, exist=exists)
+      if (exists) then
+        sindex = sindex + 1
+      else
+        if (sindex==1) print*, 'The field ', trim(field2), ' does not exist.'
+        sindex = 0
+        cycle loop
+      endif
+!
+    endif fieldname
+    write(*,*) "Reading next: ", field
 !
 !  Try to find number of timesteps, therefore asume xy-slice is written
 !
@@ -406,11 +423,53 @@
         endif
         if (allocated(yz_t)) deallocate(yz_t)
       endif
-    endif
-    enddo
+!
+  enddo loop
 !
     if (allocated(t_array)) deallocate(t_array)
     write(*,*) 'Wrote number of timesteps: ', it
 !
-    endprogram rvid_box
+contains
+!***********************************************************************
+  subroutine get_fullname(iproc,field,slice,fullname)
+!
+! Finds the full name of the slice file including path.
+!
+! 24-feb-11/ccyang: coded
+!
+    integer, intent(in) :: iproc                 ! processor index
+    character(len=*), intent(in) :: field        ! field name
+    character(len=*), intent(in) :: slice        ! slice plane
+    character(len=*), intent(out) :: fullname    ! the file name
+!
+    character(len=120) :: path, filename
+    character(len=5) :: chproc
+!
+    call chn(iproc, chproc)
+    call safe_character_assign(path, trim(datadir) // '/proc' // chproc)
+    call safe_character_assign(filename, '/slice_' // trim(field) // '.' // trim(slice))
+    call safe_character_assign(fullname, trim(path) // trim(filename))
+!
+  endsubroutine get_fullname
+!***********************************************************************
+  subroutine append_number(string1,string2,k)
+!
+! Appends the number k to string1 and assigns it to string2.
+!
+! 24-feb-11/ccyang: coded
+!
+    character(len=*), intent(in) :: string1
+    character(len=*), intent(out) :: string2
+    integer, intent(in) :: k
+!
+! Restricted to 5 digits due to the limitation of subroutine chn
+!
+    character(len=5) :: num
+!
+    call chn(k, num)
+    call safe_character_assign(string2, trim(string1) // trim(num))
+!
+  endsubroutine append_number
+!***********************************************************************
+endprogram rvid_box
 !***********************************************************************
