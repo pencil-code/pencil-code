@@ -2238,7 +2238,7 @@ module Magnetic
 !    dA/dt = u x B - eta j + grad(Phi).
 !
 !  If lweyl_gauge=T, we choose Phi = const. and solve
-!    dA/dt = u x B - eta j.
+!    dA/dt = u x B - eta mu0 j.
 !
 !  Else, if lweyl_gauge=F, we make the gauge choice Phi = eta div(A)
 !  and thus solve
@@ -2253,7 +2253,7 @@ module Magnetic
 !
       if (lresi_eta_const) then
         if (lweyl_gauge) then
-          fres=fres-eta*p%jj
+          fres=fres-eta*mu0*p%jj
         else
           fres=fres+eta*p%del2a
         endif
@@ -2262,13 +2262,13 @@ module Magnetic
       endif
       if (lresi_sqrtrhoeta_const) then
         if (lweyl_gauge) then
-        do j=1,3
-          fres(:,j)=fres(:,j)-eta*sqrt(p%rho1)*p%jj(:,j)
-        enddo
+          do j=1,3
+            fres(:,j)=fres(:,j)-eta*sqrt(p%rho1)*mu0*p%jj(:,j)
+          enddo
         else
-        do j=1,3
-          fres(:,j)=fres(:,j)+eta*sqrt(p%rho1)*p%del2a(:,j)
-        enddo
+          do j=1,3
+            fres(:,j)=fres(:,j)+eta*sqrt(p%rho1)*p%del2a(:,j)
+          enddo
         endif
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta*sqrt(p%rho1)
         etatotal=etatotal+eta*sqrt(p%rho1)
@@ -2294,16 +2294,13 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta_xy(l1:l2,m)*p%del2a(:,j)+geta_xy(l1:l2,m,j)*p%diva
         enddo
-!
-!  Time step check for eta_xy part.
-!
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy_max
         etatotal=etatotal+eta_xy(l1,m)
       endif
 !
       if (lresi_zdep) then
         if (lweyl_gauge) then
-          fres=fres-eta_z(n)*p%jj
+          fres=fres-eta_z(n)*mu0*p%jj
         else
           do j=1,3
             fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
@@ -2374,7 +2371,7 @@ module Magnetic
       if (lresi_eta_shock) then
         if (lweyl_gauge) then
           do i=1,3
-            fres(:,i)=fres(:,i)-eta_shock*p%shock*p%jj(:,i)
+            fres(:,i)=fres(:,i)-eta_shock*p%shock*mu0*p%jj(:,i)
           enddo
         else
           do i=1,3
@@ -2389,7 +2386,7 @@ module Magnetic
       if (lresi_eta_shock_perp) then
         if (lweyl_gauge) then
           do i=1,3
-            fres(:,i)=fres(:,i)-eta_shock*p%shock_perp*p%jj(:,i)
+            fres(:,i)=fres(:,i)-eta_shock*p%shock_perp*mu0*p%jj(:,i)
           enddo
         else
           do i=1,3
@@ -2451,7 +2448,7 @@ module Magnetic
         if (lweyl_gauge) then
           do i=1,3
             where (vdrift>vcrit_anom) &
-                fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*p%jj(:,i)
+                fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
           enddo
         else
           if (lroot) print*, 'daa_dt: must have Weyl gauge for '// &
@@ -2471,12 +2468,12 @@ module Magnetic
         etatotal = etatotal + eta_spitzer*exp(-1.5*p%lnTT)
         if (lweyl_gauge) then
           do i=1,3
-            fres(:,i)=fres(:,i)-eta_spitzer*exp(-1.5*p%lnTT)*p%jj(:,i)
+            fres(:,i)=fres(:,i)-eta_spitzer*exp(-1.5*p%lnTT)*mu0*p%jj(:,i)
           enddo
         else
           do i=1,3
-            fres(:,i)=fres(:,i)+eta_spitzer*(exp(-1.5*p%lnTT)*p%del2a(:,i)-&
-                1.5*p%diva*p%glnTT(:,i))
+            fres(:,i)=fres(:,i)+eta_spitzer*exp(-1.5*p%lnTT)* &
+                (p%del2a(:,i)-1.5*p%diva*p%glnTT(:,i))
           enddo
         endif
         if (lfirst.and.ldt) then
@@ -2550,7 +2547,7 @@ module Magnetic
                  p%cv1*etatotal*mu0*p%j2*p%rho1*p%TT1
           endif
         else if (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + etatotal*mu0*p%j2          
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + etatotal*mu0*p%j2
         endif
       endif
 !
