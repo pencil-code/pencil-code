@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 1
 !
-! PENCILS PROVIDED poly(3,3);trp;
+! PENCILS PROVIDED poly(3,3);trp;fr;frC(3,3)
 ! PENCILS PROVIDED u_dot_gradC(3,3);Cijk(3,3,3); del2poly(3,3);
 !
 !***************************************************************
@@ -27,6 +27,8 @@ module Polymer
   include 'record_types.h'
   include 'polymer.h'
 !
+  real, dimension(nx,3,3) :: CdotGradu,CdotGraduT
+!
 !  Start parameters.
 !
   character (len=labellen), dimension(ninit) :: initpoly='nothing'
@@ -41,12 +43,14 @@ module Polymer
   logical :: lpolyadvect=.true.
   logical :: lpoly_diffusion=.false.
   logical :: lupw_poly=.false.
-  real :: mu_poly=0.,tau_poly=1.,tau_poly1=1.,eta_poly=0.,fenep_L=0.
+  real :: mu_poly=0.,tau_poly=0.,tau_poly1=1.,eta_poly=0.,fenep_L=0.
   character (len=labellen) :: poly_algo='simple',poly_model='oldroyd-B'
 !
    namelist /polymer_run_pars/ &
        lpolyback,lpolyadvect,lpoly_diffusion, &
        mu_poly,tau_poly,tau_poly1,eta_poly,fenep_L,lupw_poly,poly_model
+!
+! Diagnostic variables
 !
   integer :: idiag_polytrm=0     ! DIAG_DOC: $\left\langle Tr[C_{ij}]\right\rangle$
 !
@@ -154,17 +158,14 @@ module Polymer
 !   All pencils that the Polymer module depends on are specified here.
 !
       lpenc_requested(i_poly)=.true.
-!      lpenc_requested(i_fr)=.true.
-!      lpenc_requested(i_frC)=.true.
-!
-!  Also the pencils for hydro that are required.
-!
-!      lpenc_requested(i_uu)=.true.
-!      lpenc_requested(i_uij)=.true.
+      if(tau_poly/=0) then
+        lpenc_requested(i_frC)=.true.
+        lpenc_requested(i_fr)=.true.
+      endif
 !
 !  If we consider backreaction from the polymer to the fluid.
 !
-!      if (lpolyback) then
+!      if (lhydro.and.lpolyback) then
 !        lpenc_requested(i_div_frC)=.true.
 !        lpenc_requested(i_divC)=.true.
 !        lpenc_requested(i_grad_fr)=.true.
@@ -172,8 +173,11 @@ module Polymer
 !
 !  If advection by the velocity is turned on.
 !
-      if ((lhydro.or.lhydro_kinematic).and.(lpolyadvect)) &
-          lpenc_requested(i_u_dot_gradC)=.true.
+      if ((lhydro.or.lhydro_kinematic).and.(lpolyadvect)) then
+        lpenc_requested(i_u_dot_gradC)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_uij)=.true.
+      endif
 !
 !  If a diffusive term in the polymer equation is not included: (not default)
 !
@@ -216,10 +220,10 @@ module Polymer
 !        lpencil_in(i_grad_fr)=.true.
 !      endif
 !      if (lpencil_in(i_divC)) lpencil_in(i_Cijk) = .true.
-!      if (lpencil_in(i_frC)) then
-!        lpencil_in(i_fr)=.true.
-!        lpencil_in(i_poly)=.true.
-!      endif
+      if (lpencil_in(i_frC)) then
+        lpencil_in(i_fr)=.true.
+        lpencil_in(i_poly)=.true.
+      endif
       if (lpencil_in(i_trp)) lpencil_in(i_poly)=.true.
 !
     endsubroutine pencil_interdep_polymer
@@ -260,36 +264,40 @@ module Polymer
           call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC, &
             UPWIND=lupw_poly) 
 !
-!      select case (poly_model)
-!        case ('oldroyd-B')
-!          call calc_pencils_oldroyd_b(f,p)
-!        case ('FENE-P')
-!          call fatal_error('init_poly','no such polymer model')
-!          call calc_pencils_fene_p(f,p)
-!        case default
-!          call fatal_error('init_poly','no such polymer model')
-!      endselect
+      select case (poly_model)
+        case ('oldroyd-B')
+          call calc_pencils_oldroyd_b(f,p)
+        case ('FENE-P')
+!         call fatal_error('init_poly','no such polymer model')
+          call calc_pencils_fene_p(f,p)
+        case default
+          call fatal_error('calc_pencils_polymer','no such polymer model')
+      endselect
+!
       if (ldiagnos) call polymer_diagnostic(f,p)
 !
     endsubroutine calc_pencils_polymer
 !***********************************************************************
-!    subroutine calc_pencils_fene_p(f,p)
+    subroutine calc_pencils_fene_p(f,p)
 !
 !  Calculate polymer pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!      real, dimension (mx,my,mz,mfarray) :: f
-!      type (pencil_case) :: p
-!      real, dimension (nx,3) :: grad_fr_dotC
-!      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: grad_fr_dotC
+      integer :: i,j
+!
 ! f(r_p)
-!      if (lpencil(i_fr)) p%fr=f(l1:l2,m,n,ipoly_fr)
+      if (lpencil(i_fr)) p%fr=f(l1:l2,m,n,ipoly_fr)
+!
 ! frC
-!      if (lpencil(i_frC)) then
-!        do i=1,3; do j=1,3
-!          p%frC(:,i,j) = p%fr(:)*p%poly(:,i,j)
-!        enddo; enddo
-!      endif
+!
+      if (lpencil(i_frC)) then
+        do i=1,3; do j=1,3
+          p%frC(:,i,j) = p%fr(:)*p%poly(:,i,j)
+        enddo; enddo
+      endif
 ! div C
 !      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
@@ -304,7 +312,7 @@ module Polymer
 !        enddo
 !      endif
 !
-!    endsubroutine calc_pencils_fene_p
+    endsubroutine calc_pencils_fene_p
 !***********************************************************************
     subroutine calc_pencils_oldroyd_b(f,p)
 !
@@ -313,10 +321,14 @@ module Polymer
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+!
 ! f(r_p)
-!      if (lpencil(i_fr)) p%fr(:) = f(l1:l2,m,n,ipoly_fr)
+!
+      if (lpencil(i_fr)) p%fr(:) = 1.
+!
 ! frC
-!      if (lpencil(i_frC)) p%frC = p%poly
+!
+      if (lpencil(i_frC)) p%frC = p%poly
 ! div C
 !      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
@@ -347,7 +359,7 @@ module Polymer
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx,3,3) :: uijT,CdotGradu,CdotGraduT
+      real, dimension(nx,3,3) :: uijT
       integer :: ipi,ipj,ipk
 !
 !  Identify module and boundary conditions.
@@ -373,61 +385,36 @@ module Polymer
 !
 !  If we are advecting the polymer.
 !
-!      if (lpolyadvect)  then
+      if (lpolyadvect)  then
         ipk=0
         do ipi=1,3
           do ipj=ipi,3
-            df(l1:l2,m,n,ipoly+ipk)= df(l1:l2,m,n,ipoly+ipk) - p%u_dot_gradC(:,ipi,ipj)
+            df(l1:l2,m,n,ipoly+ipk)= df(l1:l2,m,n,ipoly+ipk) - &
+                p%u_dot_gradC(:,ipi,ipj)
             ipk=ipk+1
           enddo
         enddo
-!!      endif
+      endif
 !
 !  CdotGradu and CdotGraduT.
 !
-!      call mult_matrix(p%poly,p%uij,CdotGradu)
-!      call transpose_mn(p%uij,uijT)
-!      call mult_matrix(p%poly,uijT,CdotGraduT)
+      call mult_matrix(p%poly,p%uij,CdotGradu)
+      call transpose_mn(p%uij,uijT)
+      call mult_matrix(p%poly,uijT,CdotGraduT)
 !
 !  Select which algorithm we are using.
 !
-!      select case(poly_algo)
-!        case('simple')
-!          df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)+ &
-!            CdotGradu(:,1,1)+CdotGraduT(:,1,1)
-!          df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)+ &
-!            CdotGradu(:,1,2)+CdotGraduT(:,1,2)
-!          df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)+ &
-!            CdotGradu(:,1,3)+CdotGraduT(:,1,3)
-!          df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)+ &
-!            CdotGradu(:,2,2)+CdotGraduT(:,2,2)
-!          df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)+ &
-!            CdotGradu(:,2,3)+CdotGraduT(:,2,3)
-!          df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)+ &
-!            CdotGradu(:,3,3)+CdotGraduT(:,3,3)
-!          if (tau_poly/=0.0) then
-!            df(l1:l2,m,n,ip11)=df(l1:l2,m,n,ip11)- &
-!                         tau_poly1*(p%frC(:,1,1)-1.)
-!            df(l1:l2,m,n,ip22)=df(l1:l2,m,n,ip22)- &
-!                         tau_poly1*(p%frC(:,2,2)-1.)
-!            df(l1:l2,m,n,ip33)=df(l1:l2,m,n,ip33)- &
-!                         tau_poly1*(p%frC(:,3,3)-1.)
-!            df(l1:l2,m,n,ip12)=df(l1:l2,m,n,ip12)- &
-!                         tau_poly1*(p%frC(:,1,2))
-!            df(l1:l2,m,n,ip13)=df(l1:l2,m,n,ip13)- &
-!                         tau_poly1*(p%frC(:,1,3))
-!            df(l1:l2,m,n,ip23)=df(l1:l2,m,n,ip23)- &
-!                         tau_poly1*(p%frC(:,2,3))
-!
-!          endif
-!        case('cholesky')
-!          call fatal_error('pencil_criteria_polymer', &
-!              'poly_algo: cholesky decomposition is not implemented yet')
-!        case('nothing')
-!          call fatal_error('pencil_criteria_polymer', &
-!              'poly_algo: please chosse an algorithm to solve '// &
-!              'the polymer equations')
-!      endselect
+      select case(poly_algo)
+      case('simple')
+        call simple_dpoly_dt (f,df,p)
+      case('cholesky')
+        call fatal_error('pencil_criteria_polymer', &
+            'poly_algo: cholesky decomposition is not implemented yet')
+      case('nothing')
+        call fatal_error('pencil_criteria_polymer', &
+            'poly_algo: please chosse an algorithm to solve '// &
+            'the polymer equations')
+      endselect
 !
 !  polymer diffusion (sometime only for numerical stability)
 !      
@@ -440,9 +427,32 @@ module Polymer
         enddo
       enddo
 !
-
-!
     endsubroutine dpoly_dt
+!***********************************************************************
+    subroutine simple_dpoly_dt(f,df,p)
+!
+! the simplest algorithm. 
+!
+!  24-feb-11/dhruba: moved to a subroutine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      integer :: ipi,ipj,ipk
+!
+      ipk=0
+      do ipi=1,3
+        do ipj=ipi,3
+          df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)+ &
+              CdotGradu(:,ipi,ipj)+CdotGraduT(:,ipi,ipj)
+          if (tau_poly/=0.) &
+            df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)- &
+                tau_poly1*(p%frC(:,ipi,ipj)-1.)
+          ipk=ipk+1
+        enddo
+      enddo
+!
+    endsubroutine simple_dpoly_dt
 !***********************************************************************
     subroutine calc_polymer_after_boundary(f)
 !
@@ -462,7 +472,6 @@ module Polymer
         case default
           call fatal_error('init_poly','no such polymer model')
         endselect
-
 !
     endsubroutine calc_polymer_after_boundary
 !***********************************************************************

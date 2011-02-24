@@ -821,12 +821,13 @@ module Sub
 !
       real, dimension (nx,3,3) :: a,b
       real, dimension (nx,3,3) :: c
-      integer :: i,j,k
+      integer :: ix
 !
-      c=0
-      do i=1,3; do j=1,3; do k=1,3
-        c(:,i,j)=c(:,i,j)+a(:,i,k)*b(:,k,j)
-      enddo; enddo; enddo
+!  24-feb-11/dhruba: using the f90 command matmul
+!
+      do ix=1,nx
+        c(ix,:,:)=matmul(a(ix,:,:),b(ix,:,:))
+      enddo
 !
     endsubroutine mult_matrix
 !***********************************************************************
