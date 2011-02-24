@@ -45,7 +45,7 @@ module InitialCondition
      integer :: imass=1, spot_number=0
      integer :: index_H2O=3
      integer :: index_N2=4
-     real :: dYw=1.,dYw1=1.,dYw12=1.,dYw2=1., init_water1=0., init_water2=0.
+     real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real :: X_wind=impossible, spot_size=1.
      real :: AA=0.66e-4, BB0=1.5*1e-16
@@ -53,13 +53,14 @@ module InitialCondition
      real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false., lcurved=.false.!, linit_density=.false.
-     
+     logical :: ltanh_prof=.false.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
-     lreinit_water, dYw,dYw1, dYw2, dYw12, X_wind, spot_number, spot_size, lwet_spots, &
-     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, BB0, lcurved
+     lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
+     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, BB0, lcurved, &
+     ltanh_prof
 !
   contains
 !***********************************************************************
@@ -243,7 +244,7 @@ module InitialCondition
       real, dimension (mx,my,mz) :: sum_Y, psat, air_mass_ar
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
       real, dimension (mx,my,mz,ndustspec) :: psf
-      real , dimension (my) :: init_x1_ar, init_x2_ar
+      real , dimension (my) :: init_x1_ar, init_x2_ar, del_ar, del_ar1, del_ar2
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -257,7 +258,7 @@ module InitialCondition
       integer, dimension(nchemspec) :: stor1
       logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
       real, dimension (ndustspec) ::  lnds
-      real :: ddsize,ddsize0
+      real :: ddsize,ddsize0,del
       integer :: ii_max
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
@@ -396,25 +397,43 @@ module InitialCondition
             init_x1_ar(j)=init_x1*(1-0.2*sin(6.*PI*y(j)/Lxyz(2)))
             init_x2_ar(j)=init_x2*(1+0.2*sin(6.*PI*y(j)/Lxyz(2)))
           enddo
+          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.2*sin(6.*PI*y(:)/Lxyz(2)))
+          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.2*sin(6.*PI*y(:)/Lxyz(2)))
         else
           init_x1_ar=init_x1
           init_x2_ar=init_x2
+          del_ar1(:)=(init_x2-init_x1)*0.2
+          del_ar2(:)=(init_x2-init_x1)*0.2
         endif
+          del=(init_x2-init_x1)*0.2
         do i=1,mx
+          if (x(i)<0) then
+            del_ar=del_ar1
+          else
+            del_ar=del_ar2 
+          endif
         do j=1,my
-        if (x(i)<=init_x1_ar(j)) then
-          f(i,j,:,ilnTT)=alog(init_TT1)
-        endif
-        if (x(i)>=init_x2_ar(j)) then
-          f(i,j,:,ilnTT)=alog(init_TT2)
-        endif
-        if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
-          if (init_x1_ar(j) /= init_x2_ar(j)) then
-            f(i,j,:,ilnTT)=&
+          if (ltanh_prof) then
+            
+            f(i,j,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+                             +((init_TT2-init_TT1)*0.5)  &
+              *(exp(x(i)/del_ar(j))-exp(-x(i)/del_ar(j))) &
+              /(exp(x(i)/del_ar(j))+exp(-x(i)/del_ar(j))))
+          else
+          if (x(i)<=init_x1_ar(j)) then
+            f(i,j,:,ilnTT)=alog(init_TT1)
+          endif
+          if (x(i)>=init_x2_ar(j)) then
+            f(i,j,:,ilnTT)=alog(init_TT2)
+          endif
+          if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
+            if (init_x1_ar(j) /= init_x2_ar(j)) then
+              f(i,j,:,ilnTT)=&
                alog((x(i)-init_x1_ar(j))/(init_x2_ar(j)-init_x1_ar(j)) &
                *(init_TT2-init_TT1)+init_TT1)
+            endif
           endif
-        endif
+          endif
         enddo
         enddo
 !        
@@ -481,7 +500,7 @@ module InitialCondition
 !             call line_profile(f,PP,psat,air_mass_ar, &
 !                            init_water1,init_water2,init_x1,init_x2)
               call line_profile(f,PP,psf(:,:,:,ii_max),air_mass_ar, &
-                            init_water1,init_water2,init_x1,init_x2)
+                            init_water1,init_water2,init_x1,init_x2,del)
            elseif (lwet_spots) then
 !             call spot_init(f,PP,air_mass_ar,psat, lmake_spot)
               call spot_init(f,PP,air_mass_ar,psf(:,:,:,ii_max),lmake_spot)
@@ -516,14 +535,14 @@ module InitialCondition
     endsubroutine air_field_local
 !***********************************************************************
     subroutine line_profile(f,PP_,psat_,air_mass_ar_, &
-                     init_water1__,init_water2__,init_x1__,init_x2__)
+                     init_water1__,init_water2__,init_x1__,init_x2__,del)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
-      real :: PP_, init_water1__,init_water2__,init_x1__,init_x2__
+      real :: PP_, init_water1__,init_water2__,init_x1__,init_x2__,del
       real, dimension (mx,my,mz) :: air_mass_ar_, psat_
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
-
+!
          if ((init_water1__/=0.) .or. (init_water2__/=0.)) then
            do i=1,mx
              if (x(i)<=init_x1__) then
@@ -551,19 +570,26 @@ module InitialCondition
                f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
              endif
              if (x(i)>init_x1__ .and. x(i)<init_x2__) then
-!               init_water1_(i,:,:)= &
-!                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw1
-!               init_water2_(i,:,:)= &
-!                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw2
-!               f(i,:,:,ichemspec(index_H2O))=&
-!                 (x(i)-init_x1__)/(init_x2__-init_x1__) &
-!                 *(init_water2_(i,:,:)-init_water1_(i,:,:))+init_water1_(i,:,:)
+!
                f(i,:,:,ichemspec(index_H2O))=&
-                psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw12
+                 (x(i)-init_x1__)/(init_x2__-init_x1__) &
+                 *(init_water2_(mx,:,:)-init_water1_(1,:,:)) &
+                 +init_water1_(1,:,:)
+!
+             endif
+!
+           enddo
+           do i=1,mx
+             if (ltanh_prof) then
+                f(i,:,:,ichemspec(index_H2O))= &
+                   (init_water2_(mx,:,:)+init_water1_(1,:,:))*0.5  &
+                  +((init_water2_(mx,:,:)-init_water1_(1,:,:))*0.5)  &
+                  *(exp(x(i)/del)-exp(-x(i)/del)) &
+                  /(exp(x(i)/del)+exp(-x(i)/del))
              endif
            enddo
          endif
-
+!
     endsubroutine line_profile
 !***********************************************************************
     subroutine spot_init(f,PP_,air_mass_ar_,psat_, lmake_spot_)
