@@ -1642,16 +1642,14 @@ module Sub
 !
     endsubroutine del2v
 !***********************************************************************
-    subroutine del2m3x3_sym(f,k,del2f,fij,pff)
+    subroutine del2m3x3_sym(f,k,del2f)
 !
 !  Calculate del2 of a 3x3 symmetric matrix, get matrix
 !  23-feb-11/dhruba: coded in a new manner
-!  
+!
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, optional, dimension(nx,3,3) :: fij
-      real, optional, dimension(nx,3) :: pff
       real, dimension (nx,3,3) :: del2f
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1
@@ -1687,7 +1685,7 @@ module Sub
 !
 ! sets the lower triangular values of a matrix to its upper
 ! triangular values. Does not touch the diagonal. Applies
-! to 3x3 matrices (pencil) only. 
+! to 3x3 matrices (pencil) only.
 !
 !  23-dhruba-11/dhruba: coded
 !
@@ -5446,7 +5444,7 @@ nameloop: do
 !
       lpos=1 ; mpos=1 ; npos=1
       linx=.true. ; liny=.true. ; linz=.true.
-
+!
       if (dimensionality>0) then
         call xlocation(xpos,lpos,linx)
 !
@@ -5457,7 +5455,7 @@ nameloop: do
             call zlocation(zpos,npos,linz)
         endif
       endif
-
+!
       location_in_proc = linx.and.liny.and.linz
 !
     endfunction location_in_proc
