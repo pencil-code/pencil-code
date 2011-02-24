@@ -664,17 +664,9 @@ module Boundcond
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
               case ('ism')
                 ! BCZ_DOC: special for interstellar runs
-                if (j==iuz) then
-                  call bc_steady_z(f,topbot,j)
-                elseif (j==irho.or.j==ilnrho) then
-                  if (ldensity_nolog) then
-                    call bc_sym_z(f,-1,topbot,irho,REL=.true.)
-                  else
-                    call bc_sym_z(f,-1,topbot,ilnrho,REL=.true.)
-                  endif
-                elseif (j==iss) then
-                  call bc_onesided_ctz(f,topbot,iss)
-                endif  
+                if (j==iuz) call bc_steady_z(f,topbot,iuz)
+                if (j==irho.or.j==ilnrho) call bc_onesided_z(f,topbot,j)
+                if (j==iss) call bc_ctz(f,topbot,iss)
               case ('asT')
                 ! BCZ_DOC: select entropy for uniform ghost temperature
                 ! BCZ_DOC: matching fluctuating boundary value,
@@ -5172,11 +5164,10 @@ module Boundcond
 !
       case ('bot')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n1,j)<0.0) then  ! 's'
-            do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
-          else                         ! 'u(n1)'
-            do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1,j); enddo
-            f(ix,iy,n1,j)=0.0
+          if (f(ix,iy,n1,j)<0.0) then  !'s'
+            do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1+i,j); enddo
+          else                         !'u(n1)'
+            do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1,j); enddo
           endif
         enddo; enddo
 !
@@ -5184,11 +5175,10 @@ module Boundcond
 !
       case ('top')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n2,j)>0.0) then  ! 's'
-            do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2-i,j); enddo
-          else                         ! 'u(n2)'
-            do i=1,nghost; f(ix,iy,n2+i,j)=+f(ix,iy,n2,j); enddo
-            f(ix,iy,n2,j)=0.0
+          if (f(ix,iy,n2,j)>0.0) then  !'s'
+            do i=1,nghost; f(ix,iy,n2+i,j)=f(ix,iy,n2-i,j); enddo
+          else                         !'u(n2)'
+            do i=1,nghost; f(ix,iy,n2+i,j)=f(ix,iy,n2,j); enddo
           endif
         enddo; enddo
 !
@@ -6485,7 +6475,7 @@ module Boundcond
 !
     endsubroutine bc_aa_pot_1D
 !***********************************************************************
-    subroutine bc_onesided_ctz(f,topbot,j)
+    subroutine bc_ctz(f,topbot,j)
 !
 !  Set entropy to match temperature in the ghost zones to boundary value
 !  value. Density ghost zones need to be calculated again here and corners
@@ -6503,8 +6493,11 @@ module Boundcond
       call get_cv1(cv1);cv=1./cv1
       call get_cp1(cp1);cp=1./cp1
 !
-      call bc_sym_z(f,-1,topbot,j-1,REL=.true.)
-      where (f(:,:,:,j-1)<=0.0) f(:,:,:,j-1)=tini*15.0
+      call bc_onesided_z(f,topbot,j-1)
+!
+      if (ldensity_nolog) then
+        where (f(:,:,:,j-1)<=0.0) f(:,:,:,j-1)=tini*15.0
+      endif
 !
       if (.not.ldensity_nolog) &
           f(:,:,:,j-1)=exp(f(:,:,:,j-1))
@@ -6512,25 +6505,25 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-          do k=1,3 
-             f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*(log(f(:,:,n1-k+1,j-1))&
-                  -log(f(:,:,n1-k,j-1)))
-          enddo
+        do k=1,3 
+          f(:,:,n1-k,j)=f(:,:,n1,j) &
+              +(cp-cv)*(log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1)))
+        enddo
 !                                                                                 
-      case ('top')               ! top boundary                     dary
-          do k=1,3 
-             f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*(log(f(:,:,n2+k-1,j-1))&
-                  -log(f(:,:,n2+k,j-1)))
-          enddo
+      case ('top')               ! top boundary
+        do k=1,3 
+          f(:,:,n2+k,j)=f(:,:,n2,j) &
+              +(cp-cv)*(log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))
+        enddo
 !
       case default
-        print*, "bc_onesided_ctz ", topbot, " should be 'top' or 'bot'"
+        print*, "bc_ctz ", topbot, " should be 'top' or 'bot'"
 !
       endselect
 !
       if (.not.ldensity_nolog) &
           f(:,:,:,j-1)=log(f(:,:,:,j-1))
 !
-    endsubroutine bc_onesided_ctz
+    endsubroutine bc_ctz
 !***********************************************************************
 endmodule Boundcond
