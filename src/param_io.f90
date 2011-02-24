@@ -32,6 +32,7 @@ module Param_IO
   use NSCBC
   use Particles_main
   use Poisson
+  use Polymer
   use Power_spectrum
   use Pscalar
   use Radiation
@@ -352,6 +353,10 @@ module Param_IO
       if (ierr/=0) call sample_startpars('NSCBC_init_pars',ierr)
       rewind(unit)
 !
+      call read_polymer_init_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('polymer_init_pars',ierr)
+      rewind(unit)
+!
       call particles_read_startpars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('particles_init_pars_wrap',ierr)
       rewind(unit)
@@ -440,6 +445,7 @@ module Param_IO
         if (lspecial          ) print*,'&special_init_pars         /'
         if (lsolid_cells      ) print*,'&solid_cells_init_pars     /'
         if (lnscbc            ) print*,'&NSCBC_init_pars           /'
+        if (lpolymer          ) print*,'&polymer_init_pars  /'
         if (lparticles        ) print*,'&particles_init_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
@@ -510,6 +516,7 @@ module Param_IO
         call write_shock_init_pars(unit)
         call write_solid_cells_init_pars(unit)
         call write_NSCBC_init_pars(unit)
+        call write_polymer_init_pars(unit)
         call particles_wparam(unit)
 !
         if (present(file)) then
@@ -673,6 +680,10 @@ module Param_IO
       if (ierr/=0) call sample_runpars('NSCBC_run_pars',ierr)
       rewind(unit)
 !
+      call read_polymer_run_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('polymer_run_pars',ierr)
+      rewind(unit)
+!
       call particles_read_runpars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('particles_run_pars_wrap',ierr)
       rewind(unit)
@@ -776,6 +787,7 @@ module Param_IO
         if (lshock          ) print*,'&shock_run_pars           /'
         if (lsolid_cells    ) print*,'&solid_cells_run_pars     /'
         if (lnscbc          ) print*,'&NSCBC_run_pars           /'
+        if (lpolymer        ) print*,'&polymer_run_pars         /'
         if (lparticles      ) print*,'&particles_run_pars_wrap  /'
         print*,'------END sample namelist -------'
         print*
@@ -855,6 +867,7 @@ module Param_IO
         call write_solid_cells_run_pars(unit)
         call write_NSCBC_run_pars(unit)
         call write_power_spectrum_runpars(unit)
+        call write_polymer_run_pars(unit)
         call particles_wparam2(unit)
 !
         if (present(file)) close(unit)
@@ -983,6 +996,7 @@ module Param_IO
       logical :: lradiation       = lradiation_var
       logical :: lneutralvelocity = lneutralvelocity_var
       logical :: lneutraldensity  = lneutraldensity_var
+      logical :: lpolymer         = lpolymer_var
       integer :: unit=1
 !
       namelist /lphysics/ &
@@ -992,7 +1006,7 @@ module Param_IO
           ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, &
           lshock, lradiation_fld, leos_ionization, leos_fixed_ionization, &
           lvisc_hyper, lchiral, leos, leos_temperature_ionization, &
-          lneutralvelocity, lneutraldensity, ltemperature
+          lneutralvelocity, lneutraldensity, ltemperature,lpolymer
 !
 !  Write the param.nml file only from root processor.
 !  However, for pacx-MPI (grid-style computations across different platforms)
@@ -1042,6 +1056,7 @@ module Param_IO
         call write_shock_init_pars(unit)
         call write_solid_cells_init_pars(unit)
         call write_NSCBC_init_pars(unit)
+        call write_polymer_init_pars(unit)
         call write_initial_condition_pars(unit)
         call particles_wparam(unit)
         ! The following parameters need to be communicated to IDL
@@ -1065,6 +1080,7 @@ module Param_IO
       call keep_compiler_quiet(lchiral)
       call keep_compiler_quiet(lneutralvelocity)
       call keep_compiler_quiet(lneutraldensity)
+      call keep_compiler_quiet(lpolymer)
 !
     endsubroutine wparam
 !***********************************************************************
@@ -1144,6 +1160,8 @@ module Param_IO
       rewind(unit)
       call read_NSCBC_init_pars(unit)
       rewind(unit)
+      call read_polymer_init_pars(unit)
+      rewind(unit)
       call read_initial_condition_pars(unit)
       rewind(unit)
       call particles_rparam(unit)
@@ -1194,6 +1212,7 @@ module Param_IO
         call write_shock_run_pars(unit)
         call write_solid_cells_run_pars(unit)
         call write_NSCBC_run_pars(unit)
+        call write_polymer_run_pars(unit)
         call particles_wparam2(unit)
         close(unit)
       endif

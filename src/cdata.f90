@@ -442,6 +442,7 @@ module Cdata
   logical, parameter :: lchiral_var=lchiral
   logical, parameter :: lneutralvelocity_var=lneutralvelocity
   logical, parameter :: lneutraldensity_var=lneutraldensity
+  logical, parameter :: lpolymer_var=lpolymer
 !
 !  Variables related to Fourier spectra and structure functions.
 !

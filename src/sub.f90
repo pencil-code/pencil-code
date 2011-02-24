@@ -39,6 +39,7 @@ module Sub
   public :: div_other
   public :: gij, g2ij, gij_etc
   public :: gijl_symmetric
+  public :: symmetrise3x3_ut2lt
   public :: der_step
   public :: der6_step
   public :: u_dot_grad, h_dot_grad
@@ -1644,7 +1645,7 @@ module Sub
 !
 !  Calculate del2 of a 3x3 symmetric matrix, get matrix
 !  23-feb-11/dhruba: coded in a new manner
-!
+!  
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1668,7 +1669,6 @@ module Sub
         enddo
       enddo
       call symmetrise3x3_ut2lt(del2f)
-
 !
       if (lcylindrical_coords) then
         call fatal_error('del2m', &
@@ -1686,7 +1686,7 @@ module Sub
 !
 ! sets the lower triangular values of a matrix to its upper
 ! triangular values. Does not touch the diagonal. Applies
-! to 3x3 matrices (pencil) only.
+! to 3x3 matrices (pencil) only. 
 !
 !  23-dhruba-11/dhruba: coded
 !
@@ -1695,9 +1695,8 @@ module Sub
 !
       do i=1,3
         do j=1,i
-          if (i /= j) then
+          if(i/=j) &
             matrix_ut3x3(:,i,j) = matrix_ut3x3(:,j,i)
-          endif
         enddo
       enddo
 !
@@ -2367,6 +2366,7 @@ module Sub
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: ugradM
       integer :: k
+      logical :: lupwind1=.false.
       logical, optional :: upwind
 !
       if (k<1 .or. k>mfarray) then
@@ -2376,8 +2376,9 @@ module Sub
 !
 !  Test if Upwind is used.
 !
-      if (present(upwind)) then
-        if (upwind) call fatal_error('u_dot_grad_mat','upwinding not implemented')
+      if (present(upwind)) lupwind1=upwind
+      if (lupwind1) then
+        call inevitably_fatal_error('u_dot_grad_mat','upwinding not implemented')
       else
         call vec_dot_3tensor(uu,gradM,ugradM)
       endif
@@ -5691,6 +5692,8 @@ nameloop: do
 !  13-jan-11/MR: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+!
+      implicit none
 !
       integer,           intent(inout) :: index
       integer, optional, intent(inout) :: ind_aux1,ind_aux2,ind_aux3
