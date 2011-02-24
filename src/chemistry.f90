@@ -4665,7 +4665,7 @@ print*,'NATA'
       real, dimension (nx) :: rho1
       real, dimension (nx,nchemspec)  :: molm
       type (pencil_case) :: p
-      integer :: k,j,i,is
+      integer :: k,j
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10
       integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
 !
