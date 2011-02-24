@@ -31,6 +31,7 @@ module Special
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=0.
   real :: limiter_tensordiff=3
+  real :: u_amplifier
   real, dimension(3) :: B_ext_special
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -41,7 +42,7 @@ module Special
   real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
-      heat_par_exp3,&
+      heat_par_exp3,u_amplifier, &
       Kpara,Kperp,init_time2, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
@@ -1345,9 +1346,9 @@ module Special
 !     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
       if (unit_system == 'SI') then
-        granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
+        granr=max(0.8*1.e6/unit_length,3.*dx,3.*dy)
       elseif  (unit_system == 'cgs') then
-        granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
+        granr=max(0.8*1.e8/unit_length,3.*dx,3.*dy)
       else
         granr=0.
         call fatal_error('set_driver_params','No valid unit system')
@@ -1387,8 +1388,8 @@ module Special
 ! fraction of current amplitude to maximum amplitude to the beginning
 ! and when the granule disapears
       thresh=0.78
-      xrange=min(nint(1.5*granr*(1+ig)*dx_1(1)),nint(nxgrid/2.0)-1)
-      yrange=min(nint(1.5*granr*(1+ig)*dy_1(1)),nint(nygrid/2.0)-1)
+      xrange=min(nint(1.5*granr*(1.+ig)*dx_1(1)),nint(nxgrid/2.0)-1)
+      yrange=min(nint(1.5*granr*(1.+ig)*dy_1(1)),nint(nygrid/2.0)-1)
 !
       if (lroot) then
         print*,'| solar_corona: settings for granules'
@@ -1491,9 +1492,9 @@ module Special
       if (increase_vorticity /= 0.) call enhance_vorticity()
       if (quench /= 0.) call footpoint_quenching(f)
 !
-      f(l1:l2,m1:m2,n1,iux) = Ux
-      f(l1:l2,m1:m2,n1,iuy) = Uy
-      f(l1:l2,m1:m2,n1,iuz) = 0.      
+      f(l1:l2,m1:m2,n1,iux) = Ux*u_amplifier
+      f(l1:l2,m1:m2,n1,iuy) = Uy*u_amplifier
+      f(l1:l2,m1:m2,n1,iuz) = 0.
 !
 ! restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
