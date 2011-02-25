@@ -32,7 +32,7 @@ module Entropy
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0, chi=0.0
   logical :: lviscosity_heat=.true.
-  character (len=labellen), dimension(ninit) :: initeth='nothing'
+  character (len=labellen), dimension(ninit) :: initeth='const_eth'
 !
 !  Input parameters.
 !
