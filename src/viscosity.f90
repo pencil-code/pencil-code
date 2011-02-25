@@ -445,6 +445,14 @@ module Viscosity
         der_LV1_rprof=offamp_lambda*der_stepdown(x,rmax_lambda,wlambda)
         if (lroot) print*,'LV1_rprof',LV1_rprof
         if (lroot) print*,'LH1_rprof',LH1_rprof
+      case ('roff')
+        LV0_rprof=1.+stepdown(x,rmax_lambda,wlambda)
+        der_LV0_rprof=1.+der_stepdown(x,rmax_lambda,wlambda)
+        LV1_rprof=1.+stepdown(x,rmax_lambda,wlambda)
+        LH1_rprof=1.+stepdown(x,rmax_lambda,wlambda)
+        der_LV1_rprof=der_stepdown(x,rmax_lambda,wlambda)
+        if (lroot) print*,'LV1_rprof',LV1_rprof
+        if (lroot) print*,'LH1_rprof',LH1_rprof
       case ('uniform')
         if (lroot) print*,'lambda profile :',lambda_profile
         LV0_rprof=1.;LV1_rprof=1;LH1_rprof=1.
