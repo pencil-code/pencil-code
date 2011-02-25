@@ -16,7 +16,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); transpeth
+! PENCILS PROVIDED Ma2; fpres(3); transpeth; del2eth
 !
 !***************************************************************
 module Entropy
@@ -30,19 +30,19 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: eth_left, eth_right, widtheth, eth_const=1.0
+  real :: eth_left, eth_right, widtheth, eth_const=1.0, chi=0.0
   logical :: lviscosity_heat=.true.
   character (len=labellen), dimension(ninit) :: initeth='nothing'
 !
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initeth, eth_left, eth_right, widtheth, eth_const
+      initeth, eth_left, eth_right, widtheth, eth_const, chi
 !
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lviscosity_heat
+      lviscosity_heat, chi
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -61,7 +61,6 @@ module Entropy
   integer :: idiag_TTmz=0
   integer :: idiag_TTmxy=0
   integer :: idiag_TTmxz=0
-  integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_pdivum=0
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
@@ -164,21 +163,22 @@ module Entropy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
+      lpenc_requested(i_pp)=.true.
+      lpenc_requested(i_divu)=.true.
       if (lweno_transport) then
         lpenc_requested(i_transpeth)=.true.
+      else
+        lpenc_requested(i_geth)=.true.
+        lpenc_requested(i_eth)=.true.
       endif
-!  In case of advection we need divu and geth
-      lpenc_requested(i_divu)=.true.
-      lpenc_requested(i_geth)=.true.
-      lpenc_requested(i_pp)=.true.
-!
-      lpenc_requested(i_eth)=.true.
-      lpenc_requested(i_fpres)=.true.
+      if (lhydro) lpenc_requested(i_fpres)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lviscosity.and.lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
+      if (chi/=0.0) lpenc_requested(i_del2eth)=.true.
 !
 !  Diagnostic pencils.
 !
+      if (idiag_ethm/=0) lpenc_diagnos(i_eth)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_pdivum/=0) then
         lpenc_diagnos(i_pp)=.true.
@@ -186,10 +186,6 @@ module Entropy
       endif
       if (idiag_TTm/=0 .or. idiag_TTmin/=0 .or. idiag_TTmax/=0) &
           lpenc_diagnos(i_TT)=.true.
-      if (idiag_gTmax/=0) then
-         lpenc_diagnos(i_glnTT) =.true.
-         lpenc_diagnos(i_TT) =.true.
-      endif
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -218,6 +214,7 @@ module Entropy
 !  14-feb-11/bing: moved eth dependend pecnils to eos_idealgas
 !
       use EquationOfState, only: gamma_m1
+      use Sub, only: del2
       use WENO_transport, only: weno_transp
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -233,6 +230,8 @@ module Entropy
 ! transpeth
       if (lpencil(i_transpeth)) &
           call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
+! del2eth
+      if (lpencil(i_del2eth)) call del2(f,ieth,p%del2eth)
 !
     endsubroutine calc_pencils_entropy
 !***********************************************************************
@@ -299,6 +298,10 @@ module Entropy
 !
       if (lviscosity.and.lviscosity_heat) call calc_viscous_heat(f,df,p,Hmax)
 !
+!  Thermal energy diffusion.
+!
+      if (chi/=0.0) df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth)+chi*p%del2eth
+!
 !  Diagnostics.
 !
       if (ldiagnos) then
@@ -307,10 +310,6 @@ module Entropy
         if (idiag_TTmin/=0)  call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_ethm/=0)   call sum_mn_name(p%eth,idiag_ethm)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
-        if (idiag_gTmax/=0) then
-          call dot2(p%glnTT,tmp)
-          call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
-        endif
       endif
 !
       if (l1davgfirst) then
@@ -428,7 +427,7 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_gTmax=0
+        idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
         idiag_ethm=0; idiag_pdivum=0; idiag_eem=0; idiag_ppm=0
       endif
 !
@@ -438,7 +437,6 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
-        call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
