@@ -31,7 +31,7 @@ module Special
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=0.
   real :: limiter_tensordiff=3
-  real :: u_amplifier
+  real :: u_amplifier=1.
   real, dimension(3) :: B_ext_special
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
