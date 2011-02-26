@@ -103,6 +103,8 @@ module Entropy
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
+  real, dimension (mz), save :: hcond_zprof,chit_zprof
+  real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
 !
 !  xy-averaged field
 !
@@ -743,6 +745,9 @@ module Entropy
       call put_shared_variable('hcond1',hcond1,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting hcond1')
+      call put_shared_variable('Kbot',Kbot,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+           'there was a problem when putting Kbot')
       call put_shared_variable('hcondxbot',hcondxbot,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting hcondxbot')
@@ -923,7 +928,7 @@ module Entropy
                  call blob(ampl_ss,f,iss,radius_ss, &
                  center1_x,center1_y,center1_z)
              hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
-             print*,'init_ss: Fbot, hcond0=', Fbot, hcond0
+             print*,'init_ss : Fbot, hcond0=', Fbot, hcond0
           case ('sedov')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
             call blob(thermal_peak,f,iss,radius_ss, &
@@ -3572,7 +3577,7 @@ module Entropy
       real, dimension (nx,3,3) :: tmp
       real, save :: z_prev=-1.23e20
       real :: s2,c2,sc
-      integer :: j
+      integer :: j,ix
 !
       save :: hcond, glhc, chit_prof, glchit_prof
 !
@@ -3600,23 +3605,35 @@ module Entropy
 !
         if (lgravz) then
 !
-!  For vertical geometry, we only need to calculate this
-!  for each new value of z -> speedup by about 8% at 32x32x64.
+! DM+GG added routines to compute hcond and gradloghcond_zprof.
+! When called for the first time calculate z dependent profile of 
+! heat conductivity. For all other times use this stored arrays.
 !
-          if (z(n)/=z_prev) then
-            if (lhcond_global) then
-              hcond=f(l1:l2,m,n,iglobal_hcond)
-              glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
-            else
-              call heatcond(hcond,p)
-              call gradloghcond(glhc,p)
+          if(lfirst.and.lfirstpoint) then
+            if(.not.lhcond_global) then
+              call get_gravz_heatcond()
+              hcond=hcond_zprof(n)
+              call write_zprof('hcond',hcond)
             endif
-            if (chi_t/=0.0) then
-              call chit_profile(chit_prof)
-              call gradlogchit_profile(glchit_prof)
-            endif
-            z_prev = z(n)
+            if(chi_t/=0.0) call get_gravz_chit()
           endif
+! 
+          if(lhcond_global) then
+            hcond=f(l1:l2,m,n,iglobal_hcond)
+            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+          else
+            hcond=hcond_zprof(n)
+              do ix=1,nx
+                glhc(ix,:)=gradloghcond_zprof(n,:)
+              enddo
+          endif
+          if (chi_t/= 0.0) then   
+            chit_prof=chit_zprof(n)
+              do ix=1,nx
+                glchit_prof(ix,:)=gradlogchit_zprof(n,:)
+              enddo
+          endif
+! if not gravz 
         else
           if (lhcond_global) then
             hcond=f(l1:l2,m,n,iglobal_hcond)
@@ -3631,6 +3648,40 @@ module Entropy
           endif
         endif
 !
+!  DM+GG: commented out the following. If the present set up work
+!  we shall remove this in a week.
+! 
+!  For vertical geometry, we only need to calculate this
+!  for each new value of z -> speedup by about 8% at 32x32x64.
+!
+!          if (z(n)/=z_prev) then
+!            if (lhcond_global) then
+!              hcond=f(l1:l2,m,n,iglobal_hcond)
+!              glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+!            else
+!              call heatcond(hcond,p)
+!              call gradloghcond(glhc,p)
+!            endif
+!            if (chi_t/=0.0) then
+!              call chit_profile(chit_prof)
+!              call gradlogchit_profile(glchit_prof)
+!            endif
+!            z_prev = z(n)
+!          endif
+!        else
+!          if (lhcond_global) then
+!            hcond=f(l1:l2,m,n,iglobal_hcond)
+!            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+!          else
+!            call heatcond(hcond,p)
+!            call gradloghcond(glhc,p)
+!          endif
+!          if (chi_t/=0.0) then
+!            call chit_profile(chit_prof)
+!            call gradlogchit_profile(glchit_prof)
+!          endif
+!        endif
+!
 !  Diffusion of the form
 !
 !  rho*T*Ds/Dt = ... + nab.(K*gradT)
@@ -3641,16 +3692,17 @@ module Entropy
         chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
-        if (pretend_lnTT) then
-          thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
-        else
-          thdiff = p%rho1*hcond * (p%del2lnTT + g2)
-        endif
+          if (pretend_lnTT) then
+            thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
+          else
+            thdiff = p%rho1*hcond * (p%del2lnTT + g2)
+          endif
       endif  ! hcond0/=0
 !
 !  Write out hcond z-profile (during first time step only).
 !
-      if (lgravz) call write_zprof('hcond',hcond)
+!DM+GG this is done earlier now. 
+!      if (lgravz) call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array.
 !
@@ -4720,6 +4772,31 @@ module Entropy
 !
     endsubroutine calc_heatcond_zprof
 !***********************************************************************
+    subroutine get_gravz_heatcond()
+!
+!  Calculate z dependent heat conductivity and its gradient 
+! and stores them in the arrays which are saved at the first time
+! step and used in all the next. 
+!
+!  25-feb-2011/gustavo+dhruba: stolen from heatcond below
+!
+      use Gravity, only: z1, z2
+      use Sub, only: step,der_step
+      
+!
+      if(.not.lmultilayer) call fatal_error('get_gravz_heatcond:',&
+           'dont call if you have only one layer')
+!
+      hcond_zprof = 1. + (hcond1-1.)*step(z,z1,-widthss) &
+                     + (hcond2-1.)*step(z,z2,widthss)
+      hcond_zprof = hcond0*hcond_zprof
+      gradloghcond_zprof(:,1:2) = 0.0
+      gradloghcond_zprof(:,3) = (hcond1-1.)*der_step(z,z1,-widthss) &
+                      + (hcond2-1.)*der_step(z,z2,widthss)
+      gradloghcond_zprof(:,3) = hcond0*gradloghcond_zprof(:,3)
+!
+    endsubroutine get_gravz_heatcond
+!***********************************************************************
     subroutine heatcond(hcond,p)
 !
 !  Calculate the heat conductivity hcond along a pencil.
@@ -4799,6 +4876,28 @@ module Entropy
       endif
 !
     endsubroutine gradloghcond
+!***********************************************************************
+    subroutine get_gravz_chit()
+!
+! Calculate z dependent chi_t and its gradient 
+! and stores them in the arrays which are saved at the first time
+! step and used in all the next. 
+!
+!  25-feb-2011/gustavo+dhruba: stolen from chit_profile below
+!
+      use Gravity, only: z1, z2
+      use Sub, only: step,der_step
+!
+      if(.not.lmultilayer) call fatal_error('get_gravz_chit:',&
+           'dont call if you have only one layer')
+!
+      chit_zprof = 1 + (chit_prof1-1)*step(z,z1,-widthss) &
+                        + (chit_prof2-1)*step(z,z2,widthss)
+      gradlogchit_zprof(:,1:2) = 0.
+      gradlogchit_zprof(:,3) = (chit_prof1-1)*der_step(z,z1,-widthss) &
+           + (chit_prof2-1)*der_step(z,z2,widthss)
+!
+endsubroutine get_gravz_chit
 !***********************************************************************
     subroutine chit_profile(chit_prof)
 !
