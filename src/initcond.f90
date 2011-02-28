@@ -2828,7 +2828,7 @@ module Initcond
             if (lroot) print*,'htube_erf: bad value of i2=',i2
           endif
 !
-        enddo; enddo;enddo
+        enddo; enddo
       endif
 !
     endsubroutine htube_erf
