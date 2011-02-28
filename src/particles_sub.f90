@@ -129,12 +129,12 @@ module Particles_sub
 !
       intent (inout) :: fp, ipar, dfp
 !
-!  Reversing direction of looping is needed for removal
+!  Reversing direction of looping is needed for removal.
 !
       if ((bcpx=='rmv').or.(bcpy=='rmv').or.(bcpz=='rmv')) then 
-        k1=npar_loc;k2=1;ik=-1
+        k1=npar_loc; k2=1; ik=-1
       else
-        k1=1;k2=npar_loc;ik=1
+        k1=1; k2=npar_loc; ik=1
       endif
 !
       do k=k1,k2,ik
@@ -143,9 +143,9 @@ module Particles_sub
 !
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (.not.lnbody) then
-          boundx=bcpx ;boundy=bcpy ;boundz=bcpz
+          boundx=bcpx ; boundy=bcpy ; boundz=bcpz
         else
-          boundx=bcspx;boundy=bcspy;boundz=bcspz
+          boundx=bcspx; boundy=bcspy; boundz=bcspz
         endif
 !
 !  Calculate rad for cylinder-in-a-box calculations
