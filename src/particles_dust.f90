@@ -2283,8 +2283,15 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_vpyfull2m/=0) &
             call sum_par_name((fp(1:npar_loc,ivpy)- &
             qshear*Omega*fp(1:npar_loc,ixp))**2,idiag_vpyfull2m)
-        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+        if (idiag_ekinp/=0) then
+          if (lparticles_mass) then
+            call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
+                sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+          else
+            call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
+                sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+          endif
+        endif
         if (idiag_epotpm/=0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
