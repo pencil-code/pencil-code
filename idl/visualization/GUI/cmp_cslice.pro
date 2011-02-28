@@ -14,7 +14,7 @@ pro cmp_cslice, sets, limits, units=units, scaling=scaling
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
 
-	resolve_routine, "pc_GUI_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
+	resolve_routine, "pc_gui_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 	set_names = tag_names (sets)
 	num_names = n_elements (set_names)

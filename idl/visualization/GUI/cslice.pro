@@ -14,7 +14,7 @@ pro cslice, cube, limits, units=units, coords=coords, scaling=scaling
 
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax, dimensionality
 
-	resolve_routine, "pc_GUI_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
+	resolve_routine, "pc_gui_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 	; some error checking
 	if (n_elements (cube) le 0) then begin
