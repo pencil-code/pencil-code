@@ -97,6 +97,7 @@ module Entropy
   logical :: lfpres_from_pressure=.false.
   logical :: lconvection_gravx=.false.
   logical :: ltau_cool_variable=.false.
+  logical, save :: lfirstcall_hcond=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -3605,17 +3606,18 @@ module Entropy
 !
         if (lgravz) then
 !
-! DM+GG added routines to compute hcond and gradloghcond_zprof.
+! DM+GG Added routines to compute hcond and gradloghcond_zprof.
 ! When called for the first time calculate z dependent profile of 
 ! heat conductivity. For all other times use this stored arrays.
 !
-          if(lfirst.and.lfirstpoint) then
+          if(lfirstcall_hcond.and.lfirstpoint) then
             if(.not.lhcond_global) then
               call get_gravz_heatcond()
               hcond=hcond_zprof(n)
-              call write_zprof('hcond',hcond)
+              call write_zprof('hcond',hcond_zprof)
             endif
             if(chi_t/=0.0) call get_gravz_chit()
+            lfirstcall_hcond=.false. 
           endif
 ! 
           if(lhcond_global) then
@@ -3648,7 +3650,7 @@ module Entropy
           endif
         endif
 !
-!  DM+GG: commented out the following. If the present set up work
+!  DM+GG: Commented out the following. If the present set up work
 !  we shall remove this in a week.
 ! 
 !  For vertical geometry, we only need to calculate this
@@ -3701,7 +3703,7 @@ module Entropy
 !
 !  Write out hcond z-profile (during first time step only).
 !
-!DM+GG this is done earlier now. 
+!DM+GG This is done earlier now. 
 !      if (lgravz) call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array.
@@ -4774,7 +4776,7 @@ module Entropy
 !***********************************************************************
     subroutine get_gravz_heatcond()
 !
-!  Calculate z dependent heat conductivity and its gradient 
+! Calculate z dependent heat conductivity and its gradient 
 ! and stores them in the arrays which are saved at the first time
 ! step and used in all the next. 
 !
