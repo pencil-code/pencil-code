@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   pc_GUI.pro      ;;;
+;;;   pc_gui.pro      ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;  $Id$
 ;;;
@@ -10,7 +10,7 @@
 ;;;  To do:
 ;;;   Add more comments
 
-@pc_GUI_companion
+@pc_gui_companion
 resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 
@@ -26,7 +26,7 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ; 'rho_mag'                 ; magnetic energy density
 ; 'j'                       ; absolute value of the current density
 ; 'rho_u_z'                 ; vertical component of the impulse density
-; (more quantities can be defined in 'precalc_data', see pc_GUI_companion.pro)
+; (more quantities can be defined in 'precalc_data', see pc_gui_companion.pro)
 quantities = { temperature:'Temp', currentdensity:'j',            $
                magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
                velocity:'u_abs', velocity_z:'u_z',                $
@@ -61,9 +61,9 @@ default, datadir, pc_get_datadir()
 
 ;;; MAIN PROGRAM:
 
-default, pc_GUI_loaded, 0
+default, pc_gui_loaded, 0
 
-if (not pc_GUI_loaded) then BEGIN
+if (not pc_gui_loaded) then BEGIN
 
 	if (n_elements (nghost) gt 0) then begin
 		nghost_x = nghost
@@ -240,7 +240,7 @@ if (not pc_GUI_loaded) then BEGIN
 	end
 
 	; Mark completition of preparational work
-	pc_GUI_loaded = 1
+	pc_gui_loaded = 1
 
 END
 

@@ -5,7 +5,7 @@
 ;;;
 ;;;  Description:
 ;;;   Framework for precalculation and comparision of output in pencil units.
-;;;   Companion procedures needed by 'pc_GUI.pro'.
+;;;   Companion procedures needed by 'pc_gui.pro'.
 ;;;
 ;;;  To do:
 ;;;   Add more comments
@@ -302,6 +302,6 @@ end
 ; Dummy routine
 pro pc_gui_companion
 
-	pc_GUI_companion_loaded = 1
+	pc_gui_companion_loaded = 1
 end
 
