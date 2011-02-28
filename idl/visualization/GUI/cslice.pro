@@ -12,7 +12,7 @@
 ; Compatibility mode => calls simple interface
 pro cslice, cube, limits, units=units, coords=coords, scaling=scaling
 
-	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, csmin, csmax, dimensionality
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	resolve_routine, "pc_gui_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
