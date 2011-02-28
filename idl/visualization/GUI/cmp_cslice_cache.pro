@@ -882,13 +882,13 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	play	= WIDGET_BUTTON (bcol, value='PLAY', uvalue='PLAY', xsize=100, sensitive=snap_active)
 	tmp	= WIDGET_BUTTON (bcol, value='QUIT', uvalue='QUIT', xsize=100)
 	drow    = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, /button_events, /motion_events)
+	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_yz = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, /button_events, /motion_events)
+	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_xz = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, /button_events, /motion_events)
+	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_xy = !d.window
 	MID     = WIDGET_BASE (BASE, /col)
@@ -905,13 +905,13 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 	cut_height = min([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
 	LOW     = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT1', xsize=num_y*bin_y, ysize=cut_height)
+	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT1', xsize=num_y*bin_y, ysize=cut_height, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_x  = !d.window
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT2', xsize=num_x*bin_x, ysize=cut_height)
+	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT2', xsize=num_x*bin_x, ysize=cut_height, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_y  = !d.window
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT3', xsize=num_z*bin_z>128, ysize=cut_height)
+	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT3', xsize=num_z*bin_z>128, ysize=cut_height, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_z  = !d.window
 
