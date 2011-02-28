@@ -38,7 +38,7 @@ module Particles_selfgravity
   namelist /particles_selfgrav_run_pars/ &
       lselfgravity_particles,lselfgravity_nbodyparticles
 !
-  integer :: idiag_gpotenp=0
+  integer :: idiag_gpotenp=0, idiag_potselfpm=0
 !
   contains
 !***********************************************************************
@@ -237,6 +237,7 @@ module Particles_selfgravity
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: gpotself
+      real, dimension (1) :: potself
       integer :: k
       logical :: lheader, lnbody, lfirstcall=.true.
 !
@@ -317,6 +318,26 @@ module Particles_selfgravity
                   sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid(k,3)))/cdtpg)
             endif
 !
+            if (ldiagnos) then
+              if (idiag_potselfpm/=0) then
+                if (lparticlemesh_cic) then
+                  call interpolate_linear(f,ipotself,ipotself, &
+                      fp(k,ixp:izp),potself,ineargrid(k,:),0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  call interpolate_quadratic_spline(f,ipotself,ipotself, &
+                      fp(k,ixp:izp),potself,ineargrid(k,:),0,ipar(k))
+                else
+                  potself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3), &
+                      ipotself)
+                endif
+                if (lparticles_mass) then
+                  call sum_par_name(potself*fp(k,irhopswarm),idiag_potselfpm)
+                else
+                  call sum_par_name(potself*rhop_swarm,idiag_potselfpm)
+                endif
+              endif
+            endif
+!
           enddo
         endif
 !
@@ -390,11 +411,13 @@ module Particles_selfgravity
       if (present(lwrite)) lwr=lwrite
 !
       if (lreset) then
-        idiag_gpotenp = 0
+        idiag_gpotenp=0; idiag_potselfpm=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'gpotenp',idiag_gpotenp)
+        call parse_name(iname,cname(iname),cform(iname),'potselfpm', &
+            idiag_potselfpm)
       enddo
 !
 !  Write information to index.pro
