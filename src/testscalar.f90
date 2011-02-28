@@ -106,6 +106,24 @@ module Testscalar
   integer :: idiag_kap13=0      ! DIAG_DOC: $\kappa_{13}$
   integer :: idiag_kap23=0      ! DIAG_DOC: $\kappa_{23}$
   integer :: idiag_kap33=0      ! DIAG_DOC: $\kappa_{33}$
+  integer :: idiag_gam11z=0     ! DIAG_DOC: $\gamma_{1}^{(1)}(z,t)$
+  integer :: idiag_gam12z=0     ! DIAG_DOC: $\gamma_{2}^{(1)}(z,t)$
+  integer :: idiag_gam13z=0     ! DIAG_DOC: $\gamma_{3}^{(1)}(z,t)$
+  integer :: idiag_gam21z=0     ! DIAG_DOC: $\gamma_{1}^{(2)}(z,t)$
+  integer :: idiag_gam22z=0     ! DIAG_DOC: $\gamma_{2}^{(2)}(z,t)$
+  integer :: idiag_gam23z=0     ! DIAG_DOC: $\gamma_{3}^{(2)}(z,t)$
+  integer :: idiag_gam31z=0     ! DIAG_DOC: $\gamma_{1}^{(3)}(z,t)$
+  integer :: idiag_gam32z=0     ! DIAG_DOC: $\gamma_{2}^{(3)}(z,t)$
+  integer :: idiag_gam33z=0     ! DIAG_DOC: $\gamma_{3}^{(3)}(z,t)$
+  integer :: idiag_kap11z=0     ! DIAG_DOC: $\kappa_{11}(z,t)$
+  integer :: idiag_kap21z=0     ! DIAG_DOC: $\kappa_{21}(z,t)$
+  integer :: idiag_kap31z=0     ! DIAG_DOC: $\kappa_{31}(z,t)$
+  integer :: idiag_kap12z=0     ! DIAG_DOC: $\kappa_{12}(z,t)$
+  integer :: idiag_kap22z=0     ! DIAG_DOC: $\kappa_{22}(z,t)$
+  integer :: idiag_kap32z=0     ! DIAG_DOC: $\kappa_{32}(z,t)$
+  integer :: idiag_kap13z=0     ! DIAG_DOC: $\kappa_{13}(z,t)$
+  integer :: idiag_kap23z=0     ! DIAG_DOC: $\kappa_{23}(z,t)$
+  integer :: idiag_kap33z=0     ! DIAG_DOC: $\kappa_{33}(z,t)$
   integer :: idiag_mgam33=0     ! DIAG_DOC: $\tilde\gamma_{33}$
   integer :: idiag_mkap33=0     ! DIAG_DOC: $\tilde\kappa_{33}$
   integer :: idiag_ngam33=0     ! DIAG_DOC: $\hat\gamma_{33}$
@@ -122,8 +140,6 @@ module Testscalar
   integer :: idiag_c4pt=0       ! DIAG_DOC: $c^{4}$
   integer :: idiag_c5pt=0       ! DIAG_DOC: $c^{5}$
   integer :: idiag_c6pt=0       ! DIAG_DOC: $c^{6}$
-  integer :: idiag_gam3z=0      ! DIAG_DOC: $\gamma_{3}(z,t)$
-  integer :: idiag_kap33z=0     ! DIAG_DOC: $\kappa_{33}(z,t)$
   integer :: idiag_F11z=0       ! DIAG_DOC: ${\cal F}_1^{1}$
   integer :: idiag_F21z=0       ! DIAG_DOC: ${\cal F}_2^{1}$
   integer :: idiag_F31z=0       ! DIAG_DOC: ${\cal F}_3^{1}$
@@ -662,25 +678,24 @@ module Testscalar
         if (idiag_F12z/=0) call xysum_mn_name_z(Fipq(:,1,i2),idiag_F12z)
         if (idiag_F22z/=0) call xysum_mn_name_z(Fipq(:,2,i2),idiag_F22z)
         if (idiag_F32z/=0) call xysum_mn_name_z(Fipq(:,3,i2),idiag_F32z)
-        if (idiag_gam3z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam3z)
-        if (idiag_kap33z/=0) call xysum_mn_name_z(-(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_kap33z)
 !
 !  Check whether njtestscalar is large enough.
 !
-        if (idiag_kap11/=0.or.idiag_kap21/=0.or.idiag_kap31/=0) then
+        if (idiag_kap11/=0.or.idiag_kap21/=0.or.idiag_kap31/=0.or.&
+            idiag_kap11z/=0.or.idiag_kap21z/=0.or.idiag_kap31z/=0) then
           if (njtestscalar<4) call stop_it('dcctest_dt: njtestscalar < 2 is insufficient')
         endif
-        if (idiag_kap12/=0.or.idiag_kap22/=0.or.idiag_kap32/=0) then
+        if (idiag_kap12/=0.or.idiag_kap22/=0.or.idiag_kap32/=0.or.&
+            idiag_kap12z/=0.or.idiag_kap22z/=0.or.idiag_kap32z/=0) then
           if (njtestscalar<6) call stop_it('dcctest_dt: njtestscalar < 6 is insufficient')
         endif
-        if (idiag_kap13/=0.or.idiag_kap23/=0.or.idiag_kap33/=0) then
+        if (idiag_kap13/=0.or.idiag_kap23/=0.or.idiag_kap33/=0.or.&
+            idiag_kap13z/=0.or.idiag_kap23z/=0.or.idiag_kap33z/=0) then
           if (njtestscalar<2) call stop_it('dcctest_dt: njtestscalar < 4 is insufficient')
         endif
 !
 !  First consider results from  z-dependent test fields.
 !
-        if (idiag_kap33/=0) call sum_mn_name (-(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_kap33)
-        if (idiag_gam33/=0) call sum_mn_name (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
         if (idiag_mgam33/=0) call sum_mn_name(  +cz(n)*Gipq(:,3,i1)+sz(n)*Gipq(:,3,i2) ,idiag_mgam33)
         if (idiag_mkap33/=0) call sum_mn_name(-(-sz(n)*Gipq(:,3,i1)+cz(n)*Gipq(:,3,i2))*ktestscalar1,idiag_mkap33)
         if (idiag_ngam33/=0) call sum_mn_name(  +cz(n)*Hipq(:,3,i1)+sz(n)*Hipq(:,3,i2) ,idiag_ngam33)
@@ -688,25 +703,45 @@ module Testscalar
 !
 !  Now do remaining kappa terms.
 !
-        if (idiag_kap11/=0) call sum_mn_name(-(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4)),idiag_kap11)
-        if (idiag_kap21/=0) call sum_mn_name(-(+cx(:)*Fipq(:,2,i3)+sx(:)*Fipq(:,2,i4)),idiag_kap21)
-        if (idiag_kap31/=0) call sum_mn_name(-(+cx(:)*Fipq(:,3,i3)+sx(:)*Fipq(:,3,i4)),idiag_kap31)
-        if (idiag_kap12/=0) call sum_mn_name(-(+cy(m)*Fipq(:,1,i5)+sy(m)*Fipq(:,1,i6)),idiag_kap12)
-        if (idiag_kap22/=0) call sum_mn_name(-(+cy(m)*Fipq(:,2,i5)+sy(m)*Fipq(:,2,i6)),idiag_kap22)
-        if (idiag_kap32/=0) call sum_mn_name(-(+cy(m)*Fipq(:,3,i5)+sy(m)*Fipq(:,3,i6)),idiag_kap32)
-        if (idiag_kap13/=0) call sum_mn_name(-(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kap13)
-        if (idiag_kap23/=0) call sum_mn_name(-(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kap23)
+        if (idiag_kap11 /=0) call   sum_mn_name  (-(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4)),idiag_kap11)
+        if (idiag_kap11z/=0) call xysum_mn_name_z(-(+cx(:)*Fipq(:,1,i3)+sx(:)*Fipq(:,1,i4)),idiag_kap11z)
+        if (idiag_kap21 /=0) call   sum_mn_name  (-(+cx(:)*Fipq(:,2,i3)+sx(:)*Fipq(:,2,i4)),idiag_kap21)
+        if (idiag_kap21z/=0) call xysum_mn_name_z(-(+cx(:)*Fipq(:,2,i3)+sx(:)*Fipq(:,2,i4)),idiag_kap21z)
+        if (idiag_kap31 /=0) call   sum_mn_name  (-(+cx(:)*Fipq(:,3,i3)+sx(:)*Fipq(:,3,i4)),idiag_kap31)
+        if (idiag_kap31z/=0) call xysum_mn_name_z(-(+cx(:)*Fipq(:,3,i3)+sx(:)*Fipq(:,3,i4)),idiag_kap31z)
+        if (idiag_kap12 /=0) call   sum_mn_name  (-(+cy(m)*Fipq(:,1,i5)+sy(m)*Fipq(:,1,i6)),idiag_kap12)
+        if (idiag_kap12z/=0) call xysum_mn_name_z(-(+cy(m)*Fipq(:,1,i5)+sy(m)*Fipq(:,1,i6)),idiag_kap12z)
+        if (idiag_kap22 /=0) call   sum_mn_name  (-(+cy(m)*Fipq(:,2,i5)+sy(m)*Fipq(:,2,i6)),idiag_kap22)
+        if (idiag_kap22z/=0) call xysum_mn_name_z(-(+cy(m)*Fipq(:,2,i5)+sy(m)*Fipq(:,2,i6)),idiag_kap22z)
+        if (idiag_kap32 /=0) call   sum_mn_name  (-(+cy(m)*Fipq(:,3,i5)+sy(m)*Fipq(:,3,i6)),idiag_kap32)
+        if (idiag_kap32z/=0) call xysum_mn_name_z(-(+cy(m)*Fipq(:,3,i5)+sy(m)*Fipq(:,3,i6)),idiag_kap32z)
+        if (idiag_kap13 /=0) call   sum_mn_name  (-(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kap13)
+        if (idiag_kap13z/=0) call xysum_mn_name_z(-(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kap13z)
+        if (idiag_kap23 /=0) call   sum_mn_name  (-(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kap23)
+        if (idiag_kap23z/=0) call xysum_mn_name_z(-(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kap23z)
+        if (idiag_kap33 /=0) call   sum_mn_name  (-(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_kap33)
+        if (idiag_kap33z/=0) call xysum_mn_name_z(-(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_kap33z)
 !
 !  Finally do remaining gamma terms (pumping effect).
 !
-        if (idiag_gam11/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestscalar1,idiag_gam11)
-        if (idiag_gam21/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestscalar1,idiag_gam21)
-        if (idiag_gam31/=0) call sum_mn_name(-(-sz(n)*Fipq(:,3,i3)+cz(n)*Fipq(:,3,i4))*ktestscalar1,idiag_gam31)
-        if (idiag_gam12/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i5)+cz(n)*Fipq(:,1,i6))*ktestscalar1,idiag_gam12)
-        if (idiag_gam22/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i5)+cz(n)*Fipq(:,2,i6))*ktestscalar1,idiag_gam22)
-        if (idiag_gam32/=0) call sum_mn_name(-(-sz(n)*Fipq(:,3,i5)+cz(n)*Fipq(:,3,i6))*ktestscalar1,idiag_gam32)
-        if (idiag_gam13/=0) call sum_mn_name(-(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2))*ktestscalar1,idiag_gam13)
-        if (idiag_gam23/=0) call sum_mn_name(-(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2))*ktestscalar1,idiag_gam23)
+        if (idiag_gam11 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestscalar1,idiag_gam11)
+        if (idiag_gam11z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,1,i3)+cz(n)*Fipq(:,1,i4))*ktestscalar1,idiag_gam11z)
+        if (idiag_gam21 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestscalar1,idiag_gam21)
+        if (idiag_gam21z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,2,i3)+cz(n)*Fipq(:,2,i4))*ktestscalar1,idiag_gam21z)
+        if (idiag_gam31 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,3,i3)+cz(n)*Fipq(:,3,i4))*ktestscalar1,idiag_gam31)
+        if (idiag_gam31z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i3)+cz(n)*Fipq(:,3,i4))*ktestscalar1,idiag_gam31z)
+        if (idiag_gam12 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,1,i5)+cz(n)*Fipq(:,1,i6))*ktestscalar1,idiag_gam12)
+        if (idiag_gam12z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,1,i5)+cz(n)*Fipq(:,1,i6))*ktestscalar1,idiag_gam12z)
+        if (idiag_gam22 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,2,i5)+cz(n)*Fipq(:,2,i6))*ktestscalar1,idiag_gam22)
+        if (idiag_gam22z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,2,i5)+cz(n)*Fipq(:,2,i6))*ktestscalar1,idiag_gam22z)
+        if (idiag_gam32 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,3,i5)+cz(n)*Fipq(:,3,i6))*ktestscalar1,idiag_gam32)
+        if (idiag_gam32z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i5)+cz(n)*Fipq(:,3,i6))*ktestscalar1,idiag_gam32z)
+        if (idiag_gam13 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2))*ktestscalar1,idiag_gam13)
+        if (idiag_gam13z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,1,i1)+cz(n)*Fipq(:,1,i2))*ktestscalar1,idiag_gam13z)
+        if (idiag_gam23 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2))*ktestscalar1,idiag_gam23)
+        if (idiag_gam23z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,2,i1)+cz(n)*Fipq(:,2,i2))*ktestscalar1,idiag_gam23z)
+        if (idiag_gam33 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
+        if (idiag_gam33z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33z)
 !
 !  Extract values at one point.
 !
@@ -1084,13 +1119,19 @@ module Testscalar
       if (lreset) then
         idiag_F11z=0; idiag_F21z=0; idiag_F31z=0
         idiag_F12z=0; idiag_F22z=0; idiag_F32z=0
-        idiag_gam3z=0; idiag_kap33z=0
         idiag_kap11=0; idiag_kap21=0; idiag_kap31=0
         idiag_kap12=0; idiag_kap22=0; idiag_kap32=0
-        idiag_kap13=0; idiag_kap23=0; idiag_kap33=0; idiag_mkap33=0; idiag_nkap33=0
+        idiag_kap13=0; idiag_kap23=0; idiag_kap33=0
+        idiag_kap11z=0; idiag_kap21z=0; idiag_kap31z=0
+        idiag_kap12z=0; idiag_kap22z=0; idiag_kap32z=0
+        idiag_kap13z=0; idiag_kap23z=0; idiag_kap33z=0
+        idiag_mkap33=0; idiag_nkap33=0
         idiag_gam11=0; idiag_gam21=0; idiag_gam31=0
         idiag_gam12=0; idiag_gam22=0; idiag_gam32=0
-        idiag_gam13=0; idiag_gam23=0; idiag_gam33=0; idiag_mgam33=0; idiag_ngam33=0
+        idiag_gam13=0; idiag_gam23=0; idiag_gam33=0
+        idiag_gam11z=0; idiag_gam21z=0; idiag_gam31z=0
+        idiag_gam12z=0; idiag_gam22z=0; idiag_gam32z=0
+        idiag_gam13z=0; idiag_gam23z=0; idiag_gam33z=0
         idiag_c1rms=0; idiag_c2rms=0
         idiag_c1pt=0; idiag_c2pt=0
       endif
@@ -1143,8 +1184,24 @@ module Testscalar
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'F12z',idiag_F12z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'F22z',idiag_F22z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'F32z',idiag_F32z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam3z',idiag_gam3z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap11z',idiag_kap11z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap21z',idiag_kap21z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap31z',idiag_kap31z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap12z',idiag_kap12z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap22z',idiag_kap22z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap32z',idiag_kap32z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap13z',idiag_kap13z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap23z',idiag_kap23z)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'kap33z',idiag_kap33z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam11z',idiag_gam11z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam21z',idiag_gam21z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam31z',idiag_gam31z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam12z',idiag_gam12z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam22z',idiag_gam22z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam32z',idiag_gam32z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam13z',idiag_gam13z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam23z',idiag_gam23z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gam33z',idiag_gam33z)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
