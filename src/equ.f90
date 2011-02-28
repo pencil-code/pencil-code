@@ -405,6 +405,9 @@ module Equ
           if (lneutralvelocity) then
             advec_uun=0.0; advec_csn2=0.0; diffus_nun=0.0; diffus_nun3=0.0
           endif
+          if (lpolymer) then
+            advec_poly=0.0; diffus_poly=0.0
+          endif
         endif
 !
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
@@ -649,6 +652,7 @@ module Equ
             if (lmagnetic) advec2=advec2+advec_va2
             if (lradiation) advec2=advec2+advec_crad2
             if (lneutralvelocity) advec2=advec2+advec_csn2
+            if (lpolymer) advec2=advec2+advec_poly
             maxadvec=maxadvec+sqrt(advec2)
           endif
           if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) then
@@ -733,6 +737,13 @@ module Equ
           if (lchemistry .and. .not.llsode) then
             dt1_reac = reac_chem/cdtc
             dt1_max = max(dt1_max,dt1_reac)
+          endif
+!
+!  time step constraint from relaxation time of polymer
+!
+          if (lpolymer) then
+            dt1_poly_relax = trelax_poly/cdt_poly
+            dt1_max = max(dt1_max,dt1_poly_relax)
           endif
 !
 !  Diagnostics showing how close to advective and diffusive time steps we are
@@ -1034,6 +1045,7 @@ module Equ
         if (lmagnetic)        print*, 'advec_va2  =',advec_va2
         if (lradiation)       print*, 'advec_crad2=',advec_crad2
         if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
+        if (lpolymer)         print*, 'advec_poly =',advec_poly
         call fatal_error_local('pde','')
       endif
 !

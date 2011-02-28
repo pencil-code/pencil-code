@@ -96,7 +96,7 @@ module Cdata
   real :: max_walltime=0.0  ! in seconds
   double precision :: t
   real :: dt=0.0
-  real :: cdt=0.4, cdts=1.0, cdtr=1.0, cdtc=1.0
+  real :: cdt=0.4, cdts=1.0, cdtr=1.0, cdtc=1.0,cdt_poly=1.0
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: cdtvDim, eps_rkf=1e-8, eps_stiff=1e-6
   real :: ddt=0.0
@@ -105,6 +105,7 @@ module Cdata
   logical :: lini_t_eq_zero=.false.
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
+  real, dimension (nx) :: advec_poly, diffus_poly
   real, dimension (nx) :: advec_hypermesh_rho,advec_hypermesh_uu
   real, dimension (nx) :: advec_hypermesh_aa,advec_hypermesh_ss
   real, dimension (nx) :: diffus_nu,diffus_nu2,diffus_nu3
@@ -118,6 +119,7 @@ module Cdata
   real, dimension (nx) :: diffus_nud,diffus_nud3
   real, dimension (nx) :: diffus_nun,diffus_nun3
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
+  real                 :: dt1_poly_relax, trelax_poly
   real, dimension (nx) :: dt1_reac, reac_chem
   real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfirstpoint=.false.,llastpoint=.false.

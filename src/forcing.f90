@@ -708,21 +708,28 @@ module Forcing
       real, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst=0,nk
       integer :: ik,j,jf
+      logical :: lk_dot_dat_exists
 !
       if (ifirst==0) then
         if (lroot) print*,'forcing_irro: opening k.dat'
-        open(9,file='k.dat')
-        read(9,*) nk,kav
-        if (lroot) print*,'forcing_irro: average k=',kav
-        if (nk>mk) then
-          if (lroot) print*,'forcing_irro: dimension mk in forcing_irro is insufficient'
-          print*,'nk=',nk,'mk=',mk
-          call mpifinalize
+        inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
+        if (lk_dot_dat_exists) then
+          open(9,file='k.dat',status='old')
+          read(9,*) nk,kav
+          if (lroot) print*,'forcing_irro: average k=',kav
+          if (nk>mk) then
+            if (lroot) print*,'forcing_irro: dimension mk in forcing_irro is insufficient'
+            print*,'nk=',nk,'mk=',mk
+            call mpifinalize
+          endif
+          read(9,*) (kkx(ik),ik=1,nk)
+          read(9,*) (kky(ik),ik=1,nk)
+          read(9,*) (kkz(ik),ik=1,nk)
+          close(9)
+        else
+          call inevitably_fatal_error ('forcing_irro:', & 
+              'you must give an input k.dat file')
         endif
-        read(9,*) (kkx(ik),ik=1,nk)
-        read(9,*) (kky(ik),ik=1,nk)
-        read(9,*) (kkz(ik),ik=1,nk)
-        close(9)
         extent(1)=nx/=1
         extent(2)=ny/=1
         extent(3)=nz/=1
@@ -818,23 +825,30 @@ module Forcing
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
       real :: fd,fd2
+      logical :: lk_dot_dat_exists
 !
 !  additional stuff for test fields
 !
       if (ifirst==0) then
         if (lroot.and.ip<14) print*,'forcing_hel: opening k.dat'
-        open(9,file='k.dat')
-        read(9,*) nk,kav
-        if (lroot.and.ip<14) print*,'forcing_hel: average k=',kav
-        if (nk>mk) then
-          if (lroot) print*,'forcing_hel: mk in forcing_hel is set too small'
-          print*,'nk=',nk,'mk=',mk
-          call mpifinalize
+        inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
+        if (lk_dot_dat_exists) then
+          open(9,file='k.dat',status='old')
+          read(9,*) nk,kav
+          if (lroot.and.ip<14) print*,'forcing_hel: average k=',kav
+          if (nk>mk) then
+            if (lroot) print*,'forcing_hel: mk in forcing_hel is set too small'
+            print*,'nk=',nk,'mk=',mk
+            call mpifinalize
+          endif
+          read(9,*) (kkx(ik),ik=1,nk)
+          read(9,*) (kky(ik),ik=1,nk)
+          read(9,*) (kkz(ik),ik=1,nk)
+          close(9)
+        else
+          call inevitably_fatal_error ('forcing_hel:', & 
+              'you must give an input k.dat file')
         endif
-        read(9,*) (kkx(ik),ik=1,nk)
-        read(9,*) (kky(ik),ik=1,nk)
-        read(9,*) (kkz(ik),ik=1,nk)
-        close(9)
         extent(1)=nx/=1
         extent(2)=ny/=1
         extent(3)=nz/=1
@@ -1215,23 +1229,31 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
       real :: fd,fd2
+      logical :: lk_dot_dat_exists
 !
 !  additional stuff for test fields
 !
       if (ifirst==0) then
-        if (lroot.and.ip<14) print*,'forcing_hel_kprof: opening k.dat'
-        open(9,file='k.dat')
-        read(9,*) nk,kav
-        if (lroot.and.ip<14) print*,'forcing_hel_kprof: average k=',kav
-        if (nk>mk) then
-          if (lroot) print*,'forcing_hel_kprof: mk in forcing_hel_kprof is set too small'
-          print*,'nk=',nk,'mk=',mk
-          call mpifinalize
+        if (lroot) print*,'forcing_hel_kprof: opening k.dat'
+        inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
+        if (lk_dot_dat_exists) then
+          if (lroot.and.ip<14) print*,'forcing_hel_kprof: opening k.dat'
+          open(9,file='k.dat',status='old')
+          read(9,*) nk,kav
+          if (lroot.and.ip<14) print*,'forcing_hel_kprof: average k=',kav
+          if (nk>mk) then
+            if (lroot) print*,'forcing_hel_kprof: mk in forcing_hel_kprof is set too small'
+            print*,'nk=',nk,'mk=',mk
+            call mpifinalize
+          endif
+          read(9,*) (kkx(ik),ik=1,nk)
+          read(9,*) (kky(ik),ik=1,nk)
+          read(9,*) (kkz(ik),ik=1,nk)
+          close(9)
+        else
+          call inevitably_fatal_error ('forcing_hel_kprof:', & 
+              'you must give an input k.dat file')
         endif
-        read(9,*) (kkx(ik),ik=1,nk)
-        read(9,*) (kky(ik),ik=1,nk)
-        read(9,*) (kkz(ik),ik=1,nk)
-        close(9)
         extent(1)=nx/=1
         extent(2)=ny/=1
         extent(3)=nz/=1
@@ -1629,7 +1651,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       if (ifirst==0) then
         if (lroot) print*,'forcing_hel_both: opening k.dat'
         if (lroot) print*,'Equator',equator
-        open(9,file='k.dat')
+        open(9,file='k.dat',status='old')
         read(9,*) nk,kav
         if (lroot) print*,'forcing_hel_both: average k=',kav
         if (nk>mk) then
@@ -2821,7 +2843,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       if (ifirst==0) then
         if (lroot) print*,'force_hel_noshear: opening k.dat'
-        open(9,file='k.dat')
+        open(9,file='k.dat',status='old')
         read(9,*) nk,kav
         if (lroot) print*,'force_hel_noshear: average k=',kav
         if (nk>mk) then
@@ -3356,7 +3378,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
       if (ifirst==0) then
          if (lroot) print*,'forcing_hel_smooth: opening k.dat'
-         open(9,file='k.dat')
+         open(9,file='k.dat',status='old')
          read(9,*) nk,kav
          if (lroot) print*,'forcing_hel_smooth: average k=',kav
          if (nk>mk) then

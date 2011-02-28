@@ -13,6 +13,7 @@
 !
 ! PENCILS PROVIDED poly(3,3);trp;fr;frC(3,3)
 ! PENCILS PROVIDED u_dot_gradC(3,3);Cijk(3,3,3); del2poly(3,3);
+! PENCILS PROVIDED div_frC(3); divC(3); grad_fr(3)
 !
 !***************************************************************
 module Polymer
@@ -93,6 +94,12 @@ module Polymer
         tau_poly1=1.
       endif
 !
+! give warning if polymeric backreaction is set true but polymer
+! density, mu_poly is set to zero.
+!
+      if(lpolyback.and.(mu_poly.eq.0.)) & 
+          call warning ('initialize_polymer','lpolyback=T but mu_poly=0!')
+!
     endsubroutine initialize_polymer
 !***********************************************************************
     subroutine init_poly(f)
@@ -165,11 +172,11 @@ module Polymer
 !
 !  If we consider backreaction from the polymer to the fluid.
 !
-!      if (lhydro.and.lpolyback) then
-!        lpenc_requested(i_div_frC)=.true.
-!        lpenc_requested(i_divC)=.true.
-!        lpenc_requested(i_grad_fr)=.true.
-!      endif
+      if (lhydro.and.lpolyback) then
+        lpenc_requested(i_div_frC)=.true.
+        lpenc_requested(i_divC)=.true.
+        lpenc_requested(i_grad_fr)=.true.
+      endif
 !
 !  If advection by the velocity is turned on.
 !
@@ -215,11 +222,11 @@ module Polymer
         lpencil_in(i_uu)=.true.
         lpencil_in(i_Cijk)=.true.
       endif
-!      if (lpencil_in(i_div_frC)) then
-!        lpencil_in(i_divC)=.true.
-!        lpencil_in(i_grad_fr)=.true.
-!      endif
-!      if (lpencil_in(i_divC)) lpencil_in(i_Cijk) = .true.
+      if (lpencil_in(i_div_frC)) then
+        lpencil_in(i_divC)=.true.
+        lpencil_in(i_grad_fr)=.true.
+      endif
+      if (lpencil_in(i_divC)) lpencil_in(i_Cijk) = .true.
       if (lpencil_in(i_frC)) then
         lpencil_in(i_fr)=.true.
         lpencil_in(i_poly)=.true.
@@ -268,13 +275,16 @@ module Polymer
         case ('oldroyd-B')
           call calc_pencils_oldroyd_b(f,p)
         case ('FENE-P')
-!         call fatal_error('init_poly','no such polymer model')
           call calc_pencils_fene_p(f,p)
         case default
           call fatal_error('calc_pencils_polymer','no such polymer model')
       endselect
 !
       if (ldiagnos) call polymer_diagnostic(f,p)
+!
+! Time step constaint
+!
+      trelax_poly=tau_poly
 !
     endsubroutine calc_pencils_polymer
 !***********************************************************************
@@ -299,18 +309,18 @@ module Polymer
         enddo; enddo
       endif
 ! div C
-!      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
+      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
-!      if (lpencil(i_grad_fr)) then
-!        call  grad(f,ipoly_fr,p%grad_fr)
-!        call dot_mn_vm(p%grad_fr,p%poly,grad_fr_dotC)
-!      endif
+      if (lpencil(i_grad_fr)) then
+        call  grad(f,ipoly_fr,p%grad_fr)
+        call dot_mn_vm(p%grad_fr,p%poly,grad_fr_dotC)
+      endif
 ! div_frC
-!      if (lpencil(i_div_frC)) then
-!        do j=1,3
-!          p%div_frC(:,j)=p%fr(:)*p%divC(:,j)+grad_fr_dotC(:,j)
-!        enddo
-!      endif
+      if (lpencil(i_div_frC)) then
+        do j=1,3
+          p%div_frC(:,j)=p%fr(:)*p%divC(:,j)+grad_fr_dotC(:,j)
+        enddo
+      endif
 !
     endsubroutine calc_pencils_fene_p
 !***********************************************************************
@@ -330,11 +340,11 @@ module Polymer
 !
       if (lpencil(i_frC)) p%frC = p%poly
 ! div C
-!      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
+      if (lpencil(i_divC)) call div_mn_2tensor(p%Cijk,p%divC)
 ! grad f(r_p)
-!      if (lpencil(i_grad_fr)) p%grad_fr=0.
+      if (lpencil(i_grad_fr)) p%grad_fr=0.
 ! div_frC
-!      if (lpencil(i_div_frC)) p%div_frC=p%divC
+      if (lpencil(i_div_frC)) p%div_frC=p%divC
 !
     endsubroutine calc_pencils_oldroyd_b
 !***********************************************************************
@@ -374,16 +384,16 @@ module Polymer
         call identify_bcs('P32',ip32)
       endif
 !
-!  Add backreaction due to the polymer to momentum equation.
+!  Add backreaction due to the polymer to momentum equation (default).
 !
-!      if (lhydro.and.lpolyback) then
-!        if (tau_poly/=0.0) then
-!          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ &
-!              mu_poly*tau_poly1*p%div_frC
-!        endif
-!      endif
+      if (lhydro.and.lpolyback) then
+        if (tau_poly/=0.0) then
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ &
+              mu_poly*tau_poly1*p%div_frC
+        endif
+      endif
 !
-!  If we are advecting the polymer.
+!  If we are advecting the polymer (which is default).
 !
       if (lpolyadvect)  then
         ipk=0
