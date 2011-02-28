@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   pc_GUI_companion.pro     ;;;
+;;;   pc_gui_companion.pro     ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;  $Id$
 ;;;
@@ -300,7 +300,7 @@ end
 
 
 ; Dummy routine
-pro pc_GUI_companion
+pro pc_gui_companion
 
 	pc_GUI_companion_loaded = 1
 end
