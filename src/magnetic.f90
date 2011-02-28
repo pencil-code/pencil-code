@@ -259,7 +259,7 @@ module Magnetic
   integer :: idiag_jbrms=0      ! DIAG_DOC: $\left<(\jv\cdot\Bv)^2\right>^{1/2}$
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
-  integer :: idiag_hjbm=0   ! DIAG_DOC:
+  integer :: idiag_hjbm=0       ! DIAG_DOC:
   integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
   integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
   integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
@@ -337,9 +337,9 @@ module Magnetic
   integer :: idiag_axm=0        ! DIAG_DOC:
   integer :: idiag_aym=0        ! DIAG_DOC:
   integer :: idiag_azm=0        ! DIAG_DOC:
-  integer :: idiag_a2m=0        ! DIAG_DOC:
-  integer :: idiag_arms=0       ! DIAG_DOC:
-  integer :: idiag_amax=0       ! DIAG_DOC:
+  integer :: idiag_a2m=0        ! DIAG_DOC: $\left<\Av^2\right>$
+  integer :: idiag_arms=0       ! DIAG_DOC: $\left<\Av^2\right>^{1/2}$
+  integer :: idiag_amax=0       ! DIAG_DOC: $\max(|\Av|)$
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
