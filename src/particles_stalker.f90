@@ -16,10 +16,10 @@
 module Particles_stalker
 !
   use Cdata
+  use Messages
   use Particles_cdata
   use Particles_map
   use Particles_sub
-  use Messages
 !
   implicit none
 !
@@ -32,11 +32,12 @@ module Particles_stalker
   logical :: lstalk_uu=.true., lstalk_guu=.false.
   logical :: lstalk_rho=.true., lstalk_grho=.false.
   logical :: lstalk_bb=.true., lstalk_ap=.true.
+  logical :: lstalk_potself=.true.
 !
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
       lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
-      lstalk_bb,lstalk_ap
+      lstalk_bb, lstalk_ap, lstalk_potself
 !
   namelist /particles_stalker_run_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc
@@ -65,13 +66,14 @@ module Particles_stalker
 !
 !  Turn off stalking if physics not selected.
 !
-      if (ivpx==0)   lstalk_vv=.false.
-      if (iuu==0)    lstalk_uu=.false.
-      if (iuu==0)    lstalk_guu=.false.
-      if (ilnrho==0) lstalk_rho=.false.
-      if (ilnrho==0) lstalk_grho=.false.
-      if (iaa==0)    lstalk_bb=.false.
-      if (iap==0)    lstalk_ap=.false.
+      if (ivpx==0)     lstalk_vv=.false.
+      if (iuu==0)      lstalk_uu=.false.
+      if (iuu==0)      lstalk_guu=.false.
+      if (ilnrho==0)   lstalk_rho=.false.
+      if (ilnrho==0)   lstalk_grho=.false.
+      if (iaa==0)      lstalk_bb=.false.
+      if (iap==0)      lstalk_ap=.false.
+      if (ipotself==0) lstalk_potself=.false.
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
@@ -81,14 +83,15 @@ module Particles_stalker
 !  Count the number of variables to be stalked.
 !
       nvar_stalk=0
-      if (lstalk_xx)   nvar_stalk=nvar_stalk+3
-      if (lstalk_vv)   nvar_stalk=nvar_stalk+3
-      if (lstalk_ap)   nvar_stalk=nvar_stalk+1
-      if (lstalk_uu)   nvar_stalk=nvar_stalk+3
-      if (lstalk_guu)  nvar_stalk=nvar_stalk+9
-      if (lstalk_rho)  nvar_stalk=nvar_stalk+1
-      if (lstalk_grho) nvar_stalk=nvar_stalk+3
-      if (lstalk_bb)   nvar_stalk=nvar_stalk+3
+      if (lstalk_xx)      nvar_stalk=nvar_stalk+3
+      if (lstalk_vv)      nvar_stalk=nvar_stalk+3
+      if (lstalk_ap)      nvar_stalk=nvar_stalk+1
+      if (lstalk_uu)      nvar_stalk=nvar_stalk+3
+      if (lstalk_guu)     nvar_stalk=nvar_stalk+9
+      if (lstalk_rho)     nvar_stalk=nvar_stalk+1
+      if (lstalk_grho)    nvar_stalk=nvar_stalk+3
+      if (lstalk_bb)      nvar_stalk=nvar_stalk+3
+      if (lstalk_potself) nvar_stalk=nvar_stalk+1
 !
 !  Write information on which variables are stalked to file.
 !
@@ -105,13 +108,15 @@ module Particles_stalker
           if (lstalk_rho)  write(1,'(A)',advance='no') 'rho,'
           if (lstalk_grho) write(1,'(A)',advance='no') 'drhodx,drhody,drhodz,'
           if (lstalk_bb)   write(1,'(A)',advance='no') 'bx,by,bz,'
+          if (lstalk_potself) write(1,'(A)',advance='no') 'potself,'
          close (1)
       endif
 !
 !  Read time of next stalking from file.
 !
       if (.not. lstarting) then
-        open(1,file=trim(datadir)//'/tstalk.dat',form='formatted',status='unknown')
+        open(1,file=trim(datadir)//'/tstalk.dat',form='formatted', &
+            status='unknown')
           read(1,*) tstalk, nout
         close(1)
       else
@@ -146,6 +151,7 @@ module Particles_stalker
       real, dimension (npar_stalk) :: duydx, duydy, duydz
       real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
       real, dimension (npar_stalk) :: bx, by, bz, ap
+      real, dimension (npar_stalk) :: potself
       real, dimension (:,:), allocatable :: values
       integer, dimension (npar_stalk) :: k_stalk
       integer :: i, k, npar_stalk_loc, ivalue
@@ -227,15 +233,25 @@ module Particles_stalker
 !  Local density gradient.
 !
         if (lstalk_grho) then
-          call stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ilnrho,1,drhodx)
-          call stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ilnrho,2,drhody)
-          call stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ilnrho,3,drhodz)
+          call stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ilnrho,1, &
+              drhodx)
+          call stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ilnrho,2, &
+              drhody)
+          call stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ilnrho,3, &
+              drhodz)
         endif
 !
-!  Magnetic field.
+!  Local magnetic field.
 !
         if (lstalk_bb) then
           call stalk_magnetic(f,fp,k_stalk,npar_stalk_loc,ineargrid,bx,by,bz)
+        endif
+!
+!  Local gravitational potential.
+!
+        if (lstalk_potself) then
+          call stalk_variable(f,fp,k_stalk,npar_stalk_loc,ineargrid,ipotself, &
+              potself)
         endif
 !
 !  Write information to a file
@@ -294,6 +310,9 @@ module Particles_stalker
               ivalue=ivalue+1; values(ivalue,:)=bx(1:npar_stalk_loc)
               ivalue=ivalue+1; values(ivalue,:)=by(1:npar_stalk_loc)
               ivalue=ivalue+1; values(ivalue,:)=bz(1:npar_stalk_loc)
+            endif
+            if (lstalk_potself) then
+              ivalue=ivalue+1; values(ivalue,:)=potself(1:npar_stalk_loc)
             endif
             write(1) values
             deallocate(values)
