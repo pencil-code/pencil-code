@@ -2685,6 +2685,11 @@ module Initcond
         if (lroot) then
           print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
           print*,'htube: radius,eps=',radius,eps
+          if (i1==i2) then
+            print*,'htube: set scalar'
+          else
+            print*,'htube: set vector'
+          endif
         endif
 !
 ! completely quenched "gaussian"
@@ -2698,14 +2703,12 @@ module Initcond
 !  check whether vector or scalar
 !
           if (i1==i2) then
-            if (lroot) print*,'htube: set scalar'
             f(l1:l2,m,n,i1)=tmp
           elseif (i1+2==i2) then
-            if (lroot) print*,'htube: set vector'
             f(l1:l2,m,n,i1 )=+(z(n)-center1_z)*tmp
             f(l1:l2,m,n,i1+1)=tmp*eps
             f(l1:l2,m,n,i1+2)=-(x(l1:l2)-center1_x)*tmp
-         else
+          else
             if (lroot) print*,'htube: bad value of i2=',i2
           endif
 !
@@ -2772,10 +2775,10 @@ module Initcond
 !***********************************************************************
     subroutine htube_erf(ampl,f,i1,i2,a,eps,center1_x,center1_z,width)
 !
-!  Horizontal flux tube (for vector potential) which gives error-function border profile
-! for the magnetic field. , or passive scalar)
+!  Horizontal flux tube (for vector potential) which gives 
+!  error-function border profile for the magnetic field., or passive scalar
 !
-!   18-mar-09/dhruba: aped from htube
+!   18-mar-09/dhruba: adapted from htube
 !
       use Sub, only: erfunc
 !
@@ -2786,41 +2789,43 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
-        if (lroot) print*,'htube: set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'htube_erf: set variable to zero; i1,i2=',i1,i2
       else
         if (lroot) then
-          print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
-          print*,'htube: radius,eps=',radius,eps
+          print*,'htube_erf: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
+          print*,'htube_erf: radius,eps=',a,eps
+          if (i1==i2) then
+            print*,'htube_erf: set scalar'
+          else
+            print*,'htube_erf: set vector'
+          endif
         endif
 !
 ! An integral of error function.
 !
-        do n=n1,n2; do m=m1,m2;do l=l1,l2
+        do n=n1,n2; do l=l1,l2
           radius= sqrt((x(l)-center1_x)**2+(z(n)-center1_z)**2)
           a_minus_r= a - radius
           if (radius > tini) then
-             tmp = (-(exp(-width*a_minus_r**2))/(4.*sqrt(pi)*width) +  &
-                  radius*(1+erfunc(width*a_minus_r))/4. + &
-                  2*a*(exp(-(a**2)*(width**2)) - exp(-(a_minus_r**2)*(width**2)))/(8.*radius*width) + &
-                  (1+2*(a**2)*(width**2))*(erfunc(a*width) - erfunc(width*a_minus_r))/(8.*radius*width**2))/radius
+            tmp = (-(exp(-width*a_minus_r**2))/(4.*sqrt(pi)*width) +  &
+                radius*(1+erfunc(width*a_minus_r))/4. + &
+                2*a*(exp(-(a**2)*(width**2)) - exp(-(a_minus_r**2)*(width**2)))/(8.*radius*width) + &
+                (1+2*(a**2)*(width**2))*(erfunc(a*width) - erfunc(width*a_minus_r))/(8.*radius*width**2))/radius
           else
-             tmp = 0
-             write(*,*) 'wrong place:radius,tini',radius,tini
+            tmp = 0
+            write(*,*) 'radius <  tini',radius,tini
           endif
-          write(*,*) 'Dhruba:radius,tini,a,a_minus_r,width,tmp',radius,tini,a,a_minus_r,width,tmp
 !
 !  check whether vector or scalar
 !
           if (i1==i2) then
-            if (lroot) print*,'htube: set scalar'
-            f(l,m,n,i1)=tmp
+            f(l,:,n,i1)=tmp
           elseif (i1+2==i2) then
-            if (lroot) print*,'htube: set vector'
-            f(l,m,n,i1 )=-(z(n)-center1_z)*tmp*ampl
-            f(l,m,n,i1+1)=tmp*eps
-            f(l,m,n,i1+2)=+(x(l)-center1_x)*tmp*ampl
+            f(l,:,n,i1 )=-(z(n)-center1_z)*tmp*ampl
+            f(l,:,n,i1+1)=tmp*eps
+            f(l,:,n,i1+2)=+(x(l)-center1_x)*tmp*ampl
          else
-            if (lroot) print*,'htube: bad value of i2=',i2
+            if (lroot) print*,'htube_erf: bad value of i2=',i2
           endif
 !
         enddo; enddo;enddo
@@ -3860,7 +3865,7 @@ module Initcond
             call fourier_transform(u_re,u_im,linv=.true.)
             f(l1:l2,m1:m2,n1:n2,i)=u_re
 !
-            if (lroot) then 
+            if (lroot) then
               if (cutoff==0) then
                 print*,'powern: k^',initpower,' spectrum : var  i=',i
               else
