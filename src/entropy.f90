@@ -3614,7 +3614,7 @@ module Entropy
             if(.not.lhcond_global) then
               call get_gravz_heatcond()
               hcond=hcond_zprof(n)
-              call write_zprof('hcond',hcond_zprof)
+!              call write_zprof('hcond',hcond_zprof)
             endif
             if(chi_t/=0.0) call get_gravz_chit()
             lfirstcall_hcond=.false. 
@@ -3704,7 +3704,7 @@ module Entropy
 !  Write out hcond z-profile (during first time step only).
 !
 !DM+GG This is done earlier now. 
-!      if (lgravz) call write_zprof('hcond',hcond)
+      if (lgravz) call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array.
 !
