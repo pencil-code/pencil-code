@@ -160,7 +160,16 @@ module Boundcond
                   ! BCX_DOC: cylindrical perfect conductor
                   ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpc_x(f,topbot,j)
-                case ('v')
+               case ('cpp')
+                  ! BCX_DOC: cylindrical perfect conductor
+                  ! BCX_DOC: implies $f''+f'/R=0$
+                  call bc_cpp_x(f,topbot,j)
+               case ('cpz')
+                  ! BCX_DOC: cylindrical perfect conductor
+                  ! BCX_DOC: implies $f''+f'/R=0$
+                  call bc_cpz_x(f,topbot,j)
+  
+              case ('v')
                   ! BCX_DOC: vanishing third derivative
                   call bc_van_x(f,topbot,j)
                 case ('cop')
@@ -1017,7 +1026,10 @@ module Boundcond
 !  i.e. A1 = - (1-dx/2R)*A_(-1)/(1+x/2R).
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
-!
+!  this can not be used in the setup for -a ..a with cpc on both sides,
+!  for both sides A=0 on the boundary does for example not allow a constant Bz 
+!  removed this restriction in cpp
+!  note that for A!=0 boundary conditions for Aphi and Az are not the same, hence cpz
 !  11-nov-09/axel+koen: coded
 !
       character (len=3) :: topbot
@@ -1029,7 +1041,7 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        dxR=-dx/x(l2)
+        dxR=-dx/x(l1)
         i=-0; f(l2+i,:,:,j)=0.
         i=-1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
         extra1=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
@@ -1038,7 +1050,7 @@ module Boundcond
         i=-3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
 !
       case ('top')               ! top boundary
-        dxR=dx/x(l2)
+        dxR=-dx/x(l2)
         i=0; f(l2+i,:,:,j)=0.
         i=1; f(l2+i,:,:,j)=-(1.-.5*dxR)*f(l2-i,:,:,j)/(1.+.5*dxR)
         extra1=(1.+.5*dxR)*f(l2+i,:,:,j)+(1.-.5*dxR)*f(l2-i,:,:,j)
@@ -1053,6 +1065,88 @@ module Boundcond
 !
     endsubroutine bc_cpc_x
 !***********************************************************************
+    subroutine bc_cpz_x(f,topbot,j)
+!
+!  This condition gives R(RA)"-(RA)'=0, i e perfect conductor condition for Az in cylindrical coordinates.
+!  We compute the A1 point using a 2nd-order formula,
+!  Next, we compute A2 using a 4th-order formula,
+!  and finally A3 using a 6th-order formula.
+!
+!  28-feb-11/koen: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (my,mz) :: f1_co,f2_co
+      integer :: i,j
+      real :: dxR
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        dxR=-dx/x(l1)
+        i=-1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(1+i*dxR)*(2-dxR))/(-dxR-2)/(1-i*dxR)
+	f1_co=(2+dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        i=-2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(-1+dxR)*(1+i*dxR))/(1+dxR)/(1-i*dxR)
+	f2_co=(-1-dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        i=-3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(2-3*dxR)*(1+i*dxR))/(-2-3*dxR)/(1-i*dxR)
+!
+      case ('top')               ! top boundary
+        dxR=-dx/x(l2)
+        i=1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(1+i*dxR)*(2-dxR))/(-dxR-2)/(1-i*dxR)
+	f1_co=(2+dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        i=2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(-1+dxR)*(1+i*dxR))/(1+dxR)/(1-i*dxR)
+	f2_co=(-1-dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(2-3*dxR)*(1+i*dxR))/(-2-3*dxR)/(1-i*dxR)
+!!
+      case default
+        print*, "bc_cpz_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_cpz_x
+!***********************************************************************
+    subroutine bc_cpp_x(f,topbot,j)
+!
+!  This condition gives RA"+A'=0, i e perfect conductor condition for Aphi in cylindrical coordinates.
+!  We compute the A1 point using a 2nd-order formula,
+!  i.e. A1 = - (1-dx/2R)*A_(-1)/(1+x/2R).
+!  Next, we compute A2 using a 4th-order formula,
+!  and finally A3 using a 6th-order formula.
+!
+!  28-feb-11/koen: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (my,mz) :: f1_co,f2_co
+      integer :: i,j
+      real :: dxR
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        dxR=-dx/x(l1)
+        i=-1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(-2-dxR))/(2-dxR)
+	f1_co=-(2-dxR)*f(l2+i,:,:,j)+(-2-dxR)*f(l2-i,:,:,j)
+        i=-2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(1+dxR))/(-1+dxR)
+	f2_co=-(-1+dxR)*f(l2+i,:,:,j)+(1+dxR)*f(l2-i,:,:,j)
+        i=-3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(-2-3*dxR))/(2-3*dxR)
+!
+      case ('top')               ! top boundary
+        dxR=-dx/x(l2)
+        i=1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(-2-dxR))/(2-dxR)
+	f1_co=-(2-dxR)*f(l2+i,:,:,j)+(-2-dxR)*f(l2-i,:,:,j)
+        i=2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(1+dxR))/(-1+dxR)
+	f2_co=-(-1+dxR)*f(l2+i,:,:,j)+(1+dxR)*f(l2-i,:,:,j)
+        i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(-2-3*dxR))/(2-3*dxR)
+!
+      case default
+        print*, "bc_cpp_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_cpp_x
+!***********************************************************************
+
     subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
 !
 !  This routine works like bc_sym_x, but sets the function value to val
