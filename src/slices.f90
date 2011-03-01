@@ -297,7 +297,7 @@ module Slices
 !
       elseif (slice_position=='w') then
         if (nprocx>1) call warning('setup_slice', &
-            'slice_position=w may be wrong for nrpocx>1')
+            'slice_position=w may be wrong for nprocx>1')
         !midplane slices
         !ix_loc=nxgrid/2+nghost
         iy = nygrid/2+nghost

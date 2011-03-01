@@ -74,7 +74,7 @@ module Sub
   public :: max_for_dt
 !
   public :: write_dx_general, numeric_precision, wdim, rdim
-  public :: write_zprof, remove_zprof
+  public :: write_zprof, remove_zprof, write_zprof_once
 !
   public :: tensor_diffusion_coef
 !
@@ -4471,6 +4471,39 @@ nameloop: do
       endif
 !
     endsubroutine write_zprof
+!***********************************************************************
+    subroutine write_zprof_once(fname,a)
+!
+!  Writes z-profile to a file (if constructed for identical pencils).
+!
+!  10-jul-05/axel: coded
+!
+      use General, only: safe_character_assign
+!
+      real, dimension(mz) :: a
+      integer :: iz
+      character (len=*) :: fname
+!
+      integer :: unit=1
+      character (len=120) :: wfile
+!
+!  Do this only for the first step.
+!
+      if (lwrite_prof) then
+!
+!  Write zprofile file.
+!
+        call safe_character_assign(wfile, &
+            trim(directory)//'/zprof_once_'//trim(fname)//'.dat')
+        open(unit,file=wfile,position='append')
+        do iz=1,mz
+          write(unit,*) z(iz),a(iz)
+        enddo
+        close(unit)
+!
+      endif
+!
+    endsubroutine write_zprof_once
 !***********************************************************************
     subroutine remove_zprof()
 !
