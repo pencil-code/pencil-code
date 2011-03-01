@@ -22,5 +22,6 @@ DUSTVELOCITY =   dustvelocity
 
 PARTICLES =   particles_tracers
 
-# Use double precision
+FOURIER   =   fourier_fftpack
+
 REAL_PRECISION = double
