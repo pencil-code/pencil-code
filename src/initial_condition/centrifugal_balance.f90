@@ -86,14 +86,14 @@ module InitialCondition
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
   logical :: lcorrect_selfgravity=.false.
-  real :: gravitational_const
+  real :: gravitational_const=0.
 !
 ! For the noise
 ! 
   real :: rho_rms=0.05
   integer :: xmodes=10,ymodes=10,zmodes=0
   logical :: llowk_noise=.false.,lgaussian_distributed_noise=.true.
-  real :: xmid=1.5,border1,border2,Lxn
+  real :: xmid=1.5,border1=0.,border2=0.,Lxn=1.
 !
   namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const,&
