@@ -39,7 +39,7 @@ module Particles_cdata
   integer :: nbin_ap_dist=100
 !
   logical :: linterpolate_spline=.true.
-  logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
+  logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
   logical :: lmigration_real_check=.true.
