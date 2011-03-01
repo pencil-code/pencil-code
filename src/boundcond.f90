@@ -160,16 +160,15 @@ module Boundcond
                   ! BCX_DOC: cylindrical perfect conductor
                   ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpc_x(f,topbot,j)
-               case ('cpp')
+                case ('cpp')
                   ! BCX_DOC: cylindrical perfect conductor
                   ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpp_x(f,topbot,j)
-               case ('cpz')
+                case ('cpz')
                   ! BCX_DOC: cylindrical perfect conductor
                   ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpz_x(f,topbot,j)
-  
-              case ('v')
+                case ('v')
                   ! BCX_DOC: vanishing third derivative
                   call bc_van_x(f,topbot,j)
                 case ('cop')
@@ -257,7 +256,8 @@ module Boundcond
                   ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$
                   call bc_set_spder_x(f,topbot,j,fbcx12(j))
                 case ('sfr')
-                  ! BCX_DOC: stress-free boundary condition for spherical coordinate system.
+                  ! BCX_DOC: stress-free boundary condition
+                  ! BCX_DOC: for spherical coordinate system.
                   call bc_set_sfree_x(f,topbot,j)
                 case ('nfr')
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
@@ -269,12 +269,13 @@ module Boundcond
                   ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
                   call bc_set_sa2_x(f,topbot,j)
                 case ('pfc')
-                  ! BCX_DOC: perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ .
+                  ! BCX_DOC: perfect-conductor in spherical
+                  ! BCX_DOC: coordinate: $d/dr( A_r) + 2/r = 0$ .
                   call bc_set_pfc_x(f,topbot,j)
-                 case ('fix')
+                case ('fix')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_fix_x(f,topbot,j,fbcx12(j))
-                 case ('fil')
+                case ('fil')
                   ! BCX_DOC: set boundary value from a file
                   call bc_file_x(f,topbot,j)
                 case ('cfb')
@@ -471,15 +472,19 @@ module Boundcond
                 ! BCY_DOC: to all ghost cells, but suppressing any inflow
                 call bc_copy_y_noinflow(f,topbot,j)
               case ('sfr')
-                ! BCY_DOC: stress-free boundary condition for spherical coordinate system.
+                ! BCY_DOC: stress-free boundary condition for spherical
+                ! BCY_DOC: coordinate system.
                 call bc_set_sfree_y(f,topbot,j)
               case ('nfr')
                 ! BCY_DOC: Normal-field bc for spherical coordinate system.
                 ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
                 call bc_set_nfr_y(f,topbot,j)
               case ('pfc')
-                !BCY_DOC: perfect conducting boundary condition along $\theta$ boundary
+                ! BCY_DOC: perfect conducting boundary condition
+                ! BCY_DOC: along $\theta$ boundary
                 call bc_set_pfc_y(f,topbot,j)
+              case ('twi')
+                call bc_twist_xz(f,topbot,j)
               case ('nil','')
                 ! BCY_DOC: do nothing; assume that everything is set
               case default
@@ -656,12 +661,12 @@ module Boundcond
                 ! BCZ_DOC: temperature is calculated in hydrostatic equilibrium.
                 if (.not. lgrav) &
                     call fatal_error ('boundconds_z', "'hse' requires gravity")
-                if (.not. leos) &
-                    call fatal_error ('boundconds_z', "'hse' requires an eos module")
+                if (.not. leos) call fatal_error ('boundconds_z', &
+                    "'hse' requires an eos module")
                 if ((ilnrho == 0) .or. (ilnTT == 0)) &
                     call fatal_error ('boundconds_z', "'hse' requires lnrho and lnTT")
-                if (j /= ilnTT) &
-                    call fatal_error ('boundconds_z', "'hse' works only in lnTT")
+                if (j /= ilnTT) call fatal_error ('boundconds_z', &
+                    "'hse' works only in lnTT")
                 call bcz_hydrostatic_temp(f,topbot)
               case ('cp')
                 ! BCZ_DOC: constant pressure
@@ -1027,9 +1032,11 @@ module Boundcond
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
 !  this can not be used in the setup for -a ..a with cpc on both sides,
-!  for both sides A=0 on the boundary does for example not allow a constant Bz 
+!  for both sides A=0 on the boundary does for example not allow a constant Bz
 !  removed this restriction in cpp
-!  note that for A!=0 boundary conditions for Aphi and Az are not the same, hence cpz
+!  note that for A!=0 boundary conditions for Aphi and Az are not the same,
+!  hence cpz
+!
 !  11-nov-09/axel+koen: coded
 !
       character (len=3) :: topbot
@@ -1067,7 +1074,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_cpz_x(f,topbot,j)
 !
-!  This condition gives R(RA)"-(RA)'=0, i e perfect conductor condition for Az in cylindrical coordinates.
+!  This condition gives R(RA)"-(RA)'=0, i e perfect conductor condition
+!  for Az in cylindrical coordinates.
 !  We compute the A1 point using a 2nd-order formula,
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
@@ -1085,17 +1093,17 @@ module Boundcond
       case ('bot')               ! bottom boundary
         dxR=-dx/x(l1)
         i=-1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(1+i*dxR)*(2-dxR))/(-dxR-2)/(1-i*dxR)
-	f1_co=(2+dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        f1_co=(2+dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l2-i,:,:,j)*(1+i*dxR)
         i=-2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(-1+dxR)*(1+i*dxR))/(1+dxR)/(1-i*dxR)
-	f2_co=(-1-dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        f2_co=(-1-dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l2-i,:,:,j)*(1+i*dxR)
         i=-3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(2-3*dxR)*(1+i*dxR))/(-2-3*dxR)/(1-i*dxR)
 !
       case ('top')               ! top boundary
         dxR=-dx/x(l2)
         i=1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(1+i*dxR)*(2-dxR))/(-dxR-2)/(1-i*dxR)
-	f1_co=(2+dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        f1_co=(2+dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l2-i,:,:,j)*(1+i*dxR)
         i=2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(-1+dxR)*(1+i*dxR))/(1+dxR)/(1-i*dxR)
-	f2_co=(-1-dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l2-i,:,:,j)*(1+i*dxR)
+        f2_co=(-1-dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l2-i,:,:,j)*(1+i*dxR)
         i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(2-3*dxR)*(1+i*dxR))/(-2-3*dxR)/(1-i*dxR)
 !!
       case default
@@ -1107,7 +1115,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_cpp_x(f,topbot,j)
 !
-!  This condition gives RA"+A'=0, i e perfect conductor condition for Aphi in cylindrical coordinates.
+!  This condition gives RA"+A'=0, i e perfect conductor condition
+!  for Aphi in cylindrical coordinates.
 !  We compute the A1 point using a 2nd-order formula,
 !  i.e. A1 = - (1-dx/2R)*A_(-1)/(1+x/2R).
 !  Next, we compute A2 using a 4th-order formula,
@@ -1126,17 +1135,17 @@ module Boundcond
       case ('bot')               ! bottom boundary
         dxR=-dx/x(l1)
         i=-1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(-2-dxR))/(2-dxR)
-	f1_co=-(2-dxR)*f(l2+i,:,:,j)+(-2-dxR)*f(l2-i,:,:,j)
+        f1_co=-(2-dxR)*f(l2+i,:,:,j)+(-2-dxR)*f(l2-i,:,:,j)
         i=-2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(1+dxR))/(-1+dxR)
-	f2_co=-(-1+dxR)*f(l2+i,:,:,j)+(1+dxR)*f(l2-i,:,:,j)
+        f2_co=-(-1+dxR)*f(l2+i,:,:,j)+(1+dxR)*f(l2-i,:,:,j)
         i=-3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(-2-3*dxR))/(2-3*dxR)
 !
       case ('top')               ! top boundary
         dxR=-dx/x(l2)
         i=1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(-2-dxR))/(2-dxR)
-	f1_co=-(2-dxR)*f(l2+i,:,:,j)+(-2-dxR)*f(l2-i,:,:,j)
+        f1_co=-(2-dxR)*f(l2+i,:,:,j)+(-2-dxR)*f(l2-i,:,:,j)
         i=2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(1+dxR))/(-1+dxR)
-	f2_co=-(-1+dxR)*f(l2+i,:,:,j)+(1+dxR)*f(l2-i,:,:,j)
+        f2_co=-(-1+dxR)*f(l2+i,:,:,j)+(1+dxR)*f(l2-i,:,:,j)
         i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(-2-3*dxR))/(2-3*dxR)
 !
       case default
@@ -1146,7 +1155,6 @@ module Boundcond
 !
     endsubroutine bc_cpp_x
 !***********************************************************************
-
     subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
 !
 !  This routine works like bc_sym_x, but sets the function value to val
@@ -3731,19 +3739,19 @@ module Boundcond
       case ('bot')
          select case (force_lower_bound)
          case ('vel_time')
-            if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
-            call get_shared_variable('ampl_forc', ampl_forc, ierr)
-            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting ampl_forc")
-            call get_shared_variable('k_forc', k_forc, ierr)
-            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting k_forc")
-            call get_shared_variable('w_forc', w_forc, ierr)
-            if (ierr/=0) call stop_it("BC_FORCE_X: "//&
-                   "there was a problem when getting w_forc")
-            if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
-                   ampl_forc, k_forc, w_forc
-            f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
+           if (j /= iuy) call stop_it("BC_FORCE_X: only valid for uy")
+           call get_shared_variable('ampl_forc', ampl_forc, ierr)
+           if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+               "there was a problem when getting ampl_forc")
+           call get_shared_variable('k_forc', k_forc, ierr)
+           if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+               "there was a problem when getting k_forc")
+           call get_shared_variable('w_forc', w_forc, ierr)
+           if (ierr/=0) call stop_it("BC_FORCE_X: "//&
+               "there was a problem when getting w_forc")
+           if (headtt) print*, 'BC_FORCE_X: ampl_forc, k_forc, w_forc=',&
+               ampl_forc, k_forc, w_forc
+           f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, mz)
          case default
             if (lroot) print*, "No such value for force_lower_bound: <", &
                  trim(force_lower_bound),">"
@@ -6573,7 +6581,7 @@ module Boundcond
 !
 !  Set entropy to match temperature in the ghost zones to boundary value
 !  value. Density ghost zones need to be calculated again here and corners
-!  must be included to avoid NAN's. 
+!  must be included to avoid NAN's.
 !
 !  13-feb-11/fred: check that 'ism' or 'a2' also set for bcz density.
 !
@@ -6599,13 +6607,13 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        do k=1,3 
+        do k=1,3
           f(:,:,n1-k,j)=f(:,:,n1,j) &
               +(cp-cv)*(log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1)))
         enddo
-!                                                                                 
+!
       case ('top')               ! top boundary
-        do k=1,3 
+        do k=1,3
           f(:,:,n2+k,j)=f(:,:,n2,j) &
               +(cp-cv)*(log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))
         enddo
@@ -6619,5 +6627,38 @@ module Boundcond
           f(:,:,:,j-1)=log(f(:,:,:,j-1))
 !
     endsubroutine bc_ctz
+!***********************************************************************
+    subroutine bc_twist_xz(f,topbot,j)
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,ix,iz
+      real :: cx,cz,rad,radm,amp,amp0
+!
+      cx = (l1+l2)/2.
+      cz = (n1+n2)/2.
+!
+      radm = (l1+l2)/16.
+      amp0 = 1.
+!
+      if ((j < iux) .or. (j > iuz)) call fatal_error('bc_twist_xz', &
+          'only for iux to iuz')
+!
+      select case (topbot)
+      case ('bot')
+        do ix=l1,l2
+          do iz=n1,n2
+            rad = sqrt( (cx-ix)**2. + (cz-iz)**2.)
+            amp = amp0*rad/radm * exp(-rad/radm+1.)
+            f(ix,0:m1,iz,iux) = -amp * cos( real(iz-nghost)/(1.*nz)*pi)
+            f(ix,0:m1,iz,iuz) = amp * cos( real(ix-nghost)/(1.*nx)*pi)
+            f(ix,0:m1,iz,iuy) = 0.
+          enddo
+        enddo
+      case default
+        call fatal_error('bc_twist_xz','only for bottom up to now')
+      endselect
+!
+    endsubroutine  bc_twist_xz
 !***********************************************************************
 endmodule Boundcond
