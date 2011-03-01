@@ -12,9 +12,11 @@
 
 
 ; Prepares the varset
-pro prepare_varset, num, units, coords, varset, overset
+pro prepare_varset, num, units, coords, varset, overset, dir
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+
+	datadir = dir
 
 	unit = units
 	coord = { x:coords.x*unit.length, y:coords.y*unit.length, z:coords.z*unit.length }
@@ -28,13 +30,15 @@ end
 
 
 ; Precalculates a data set and loads data, if necessary
-pro precalc, i, number=number, varfile=varfile, show_aver=show_aver, vars=vars
+pro precalc, i, number=number, varfile=varfile, datadir=dir, show_aver=show_aver, vars=vars
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 
 	; Default settings
 	default, show_aver, 0
 	default, number, i
+	default, dir, pc_get_datadir()
+        default, datadir, dir
 
 	if (varfiles[i].number le 0) then varfiles[i].number = number
 
@@ -42,7 +46,7 @@ pro precalc, i, number=number, varfile=varfile, show_aver=show_aver, vars=vars
 		default, varfile, "var.dat"
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
-			pc_read_var, varfile=varfile, object=vars, /quiet
+			pc_read_var, varfile=varfile, object=vars, datadir=datadir, /quiet
 			sources = tag_names (vars)
 		end
 		varfiles[i].title = varfile
@@ -64,7 +68,7 @@ end
 ; Precalculates a data set
 pro precalc_data, i, vars
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 
 	tags = tag_names (varsets[i])
 

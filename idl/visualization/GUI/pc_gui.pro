@@ -70,7 +70,7 @@ if (not pc_gui_loaded) then BEGIN
 		nghost_y = nghost
 		nghost_z = nghost
 	end
-	pc_read_dim, obj=dim, /quiet
+	pc_read_dim, obj=dim, datadir=datadir, /quiet
 	default, nghost_x, dim.nghostx
 	default, nghost_y, dim.nghosty
 	default, nghost_z, dim.nghostz
@@ -78,7 +78,7 @@ if (not pc_gui_loaded) then BEGIN
 	ny = dim.my - 2*nghost_y
 	nz = dim.mz - 2*nghost_z
 
-	pc_units, obj=unit
+	pc_units, obj=unit, datadir=datadir
 
 	procdir = datadir+"/proc0/"
 	file_struct = file_info (procdir+varfile)
@@ -174,11 +174,11 @@ if (not pc_gui_loaded) then BEGIN
 
 
 	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density/unit.length^3, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str }
-	pc_read_grid, obj=grid, /trim, /quiet
+	pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
 	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
 
 	time_series = file_search (datadir, "time_series.dat")
-	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts, /quiet
+	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts, datadir=datadir, /quiet
 	show_timeseries, ts, tags, units
 
 
@@ -214,7 +214,7 @@ if (not pc_gui_loaded) then BEGIN
 	dummy = 0
 	dummy_3D = 0
 
-	prepare_varset, num_selected+1, units, coords, varset, overplot
+	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir
 
 	; Precalculate initial timestep
 	precalc, 0, varfile=varfile
