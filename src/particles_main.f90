@@ -83,6 +83,10 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+!  TSC assignment/interpolation overwrites CIC in case they are both set.
+!
+      if (lparticlemesh_tsc) lparticlemesh_cic=.false.
+!
 !  Check if there is enough total space allocated for particles.
 !
       if (npar/mpar_loc>ncpus) then
