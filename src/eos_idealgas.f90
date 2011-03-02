@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED TTb; rhop; eth; geth(3); glneth(3)
+! PENCILS PROVIDED TTb; rhop; eth; geth(3); glneth(3); del2eth
 !
 !***************************************************************
 module EquationOfState
@@ -653,25 +653,6 @@ module EquationOfState
         endif
 !
       case (irho_eth,ilnrho_eth)
-        if (lpencil_in(i_del2lnTT)) then
-          lpencil_in(i_glnTT)=.true.
-          lpencil_in(i_glnrho)=.true.
-          lpencil_in(i_del2lnrho)=.true.
-          lpencil_in(i_eth)=.true.
-        endif
-        if (lpencil_in(i_hlnTT)) then
-          lpencil_in(i_hlnrho)=.true.
-          lpencil_in(i_geth)=.true.
-          lpencil_in(i_glneth)=.true.
-        endif
-        if (lpencil_in(i_gTT)) then
-          lpencil_in(i_TT)=.true.
-          lpencil_in(i_glnTT)=.true.
-        endif
-        if (lpencil_in(i_glnTT)) then
-          lpencil_in(i_glnrho)=.true.
-          lpencil_in(i_glneth)=.true.
-        endif
         if (lpencil_in(i_cs2).or. &
             lpencil_in(i_TT).or. &
             lpencil_in(i_lnTT).or. &
@@ -680,6 +661,29 @@ module EquationOfState
           lpencil_in(i_rho1)=.true.
         endif
         if (lpencil_in(i_pp)) lpencil_in(i_eth)=.true.
+        if (lpencil_in(i_TT)) then
+          lpencil_in(i_cv1)=.true.
+          lpencil_in(i_rho1)=.true.
+          lpencil_in(i_eth)=.true.
+        endif
+        if (lpencil_in(i_lnTT)) lpencil_in(i_TT)=.true.
+        if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
+        if (lpencil_in(i_gTT)) then
+          lpencil_in(i_rho1)=.true.
+          lpencil_in(i_cv1)=.true.
+          lpencil_in(i_geth)=.true.
+          lpencil_in(i_TT)=.true.
+          lpencil_in(i_rho)=.true.
+        endif
+        if (lpencil_in(i_del2TT)) then
+          lpencil_in(i_rho1)=.true.
+          lpencil_in(i_cv1)=.true.
+          lpencil_in(i_del2eth)=.true.
+          lpencil_in(i_TT)=.true.
+          lpencil_in(i_del2rho)=.true.
+          lpencil_in(i_grho)=.true.
+          lpencil_in(i_gTT)=.true.
+        endif
         if (lpencil_in(i_glneth)) then
           lpencil_in(i_geth)=.true.
           lpencil_in(i_eth)=.true.
@@ -961,23 +965,20 @@ module EquationOfState
 !
       case (irho_eth,ilnrho_eth)
         if (lpencil(i_eth)) p%eth=f(l1:l2,m,n,ieth)
-        if (lpencil(i_geth)) call grad(f,ieosvar2,p%geth)
-        if (lpencil(i_glneth)) call multsv(1./p%eth,p%geth,p%glneth)
-!
+        if (lpencil(i_geth)) call grad(f,ieth,p%geth)
+        if (lpencil(i_del2eth)) call del2(f,ieth,p%del2eth)
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*p%eth*p%rho1
         if (lpencil(i_pp)) p%pp=gamma_m1*p%eth
-        if (lpencil(i_TT)) p%TT=gamma*cp1*p%rho1*p%eth
-        if (lpencil(i_lnTT)) p%lnTT=alog(gamma*cp1*p%rho1*p%eth)
-        if (lpencil(i_TT1)) p%TT1=1./(gamma*cp1*p%rho1*p%eth)
-!
-        if (lpencil(i_glnTT)) p%glnTT=p%glneth - p%glnrho
-        if (lpencil(i_gTT)) call multsv(p%TT,p%glnTT,p%gTT)
-!
-        if (lpencil(i_hlnTT).or.lpencil(i_del2lnTT)) then
-          call thermal_energy_hessian(f,ieosvar2,del2lneth,hlneth)
-          p%hlnTT=hlneth-p%hlnrho
-          p%del2lnTT=del2lneth-p%del2lnrho
+        if (lpencil(i_TT)) p%TT=p%cv1*p%rho1*p%eth
+        if (lpencil(i_lnTT)) p%lnTT=alog(p%TT)
+        if (lpencil(i_TT1)) p%TT1=1/p%TT
+        if (lpencil(i_gTT)) then
+          do i=1,3
+            p%gTT(:,i)=p%rho1*(p%cv1*p%geth(:,i)-p%TT*p%grho(:,i))
+          enddo
         endif
+        if (lpencil(i_del2TT)) p%del2TT= &
+            p%rho1*(p%cv1*p%del2eth-p%TT*p%del2rho-2*sum(p%grho*p%gTT,2))
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
       endselect
