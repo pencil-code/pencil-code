@@ -6650,9 +6650,9 @@ module Boundcond
           do iz=n1,n2
             rad = sqrt( (cx-ix)**2. + (cz-iz)**2.)
             amp = amp0*rad/radm * exp(-rad/radm+1.)
-            f(ix,0:m1,iz,iux) = -amp * cos( real(iz-nghost)/(1.*nz)*pi)
-            f(ix,0:m1,iz,iuz) = amp * cos( real(ix-nghost)/(1.*nx)*pi)
-            f(ix,0:m1,iz,iuy) = 0.
+            f(ix,1:m1,iz,iux) = -amp * cos( real(iz-nghost)/(1.*nz)*pi)
+            f(ix,1:m1,iz,iuz) = amp * cos( real(ix-nghost)/(1.*nx)*pi)
+            f(ix,1:m1,iz,iuy) = 0.
           enddo
         enddo
       case default
