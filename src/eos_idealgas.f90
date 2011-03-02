@@ -714,6 +714,15 @@ module EquationOfState
       real, dimension(nx,3,3) :: hlneth
       integer :: i
 !
+!  Inverse cv and cp values.
+!
+      if (lpencil(i_cv1)) p%cv1=cv1
+      if (lpencil(i_cp1)) p%cp1=cp1
+      if (lpencil(i_cp))  p%cp=1/p%cp1
+      if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
+!
+      if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.0
+!
 !  THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 !  FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
 !  The code is not wrong however since this is correctly
@@ -887,8 +896,7 @@ module EquationOfState
               'for input pair (pp,ss) anelastic must be used')
         endif
         if (leos_isentropic) then
-!          call fatal_error("calc_pencils_eos","isentropic not implemented for (pp,ss) ")
-          if (lpencil(i_ss)) p%ss=0.0d0
+          if (lpencil(i_ss)) p%ss=0.0
           if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(rho0*cs20))/gamma
           if (lpencil(i_rho)) p%rho=exp(log(gamma*p%pp/(rho0*cs20))/gamma)
           if (lpencil(i_TT)) p%TT=(p%pp/pp0)**(1.-gamma_inv)
@@ -905,18 +913,6 @@ module EquationOfState
         elseif (leos_localisothermal) then
           call fatal_error('calc_pencils_eos', &
               'Local Isothermal case not implemented for ipp_ss')
-        else
-!          if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))/gamma-p%ss*cp1
-!          if (lpencil(i_rho)) p%rho=exp(p%lnrho)
-!          if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
-!          if (lpencil(i_lnTT)) p%lnTT=gamma_m1*p%lnrho-log(Rgas)+p%ss*cp1
-!          if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-!          if (lpencil(i_TT1)) p%TT1=1/p%TT
-!          if (lpencil(i_cs2))  p%cs2=gamma*p%pp/p%rho
-!          if (lpencil(i_glnTT)) p%glnTT=gamma_m1*p%glnrho+cv1*p%gss
-!          if (lpencil(i_del2lnTT)) then
-!              p%del2lnTT=(gamma_m1-1.0)*p%del2lnrho+cv1*p%del2ss
-!          endif
         endif
 !
       case (ipp_cs2)
@@ -931,8 +927,6 @@ module EquationOfState
           p%pp=f(l1:l2,m,n,ipp)
         else
           if (lpencil(i_cs2)) p%cs2=cs20
-!          if (lpencil(i_lnrho)) p%lnrho=log((exp(f(l1:l2,m,n,ilnrho))+p%pp/cs20)/2.0)
-!          if (lpencil(i_rho)) p%rho=(f(l1:l2,m,n,ilnrho)+p%pp/cs20)/2.0
           if (lpencil(i_lnrho)) p%lnrho=log(p%pp/cs20)
           if (lpencil(i_rho)) p%rho=(p%pp/cs20)
           if (lpencil(i_lnTT)) p%lnTT=lnTT0
@@ -982,15 +976,6 @@ module EquationOfState
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
       endselect
-!
-!  Inverse cv and cp values.
-!
-      if (lpencil(i_cv1)) p%cv1=cv1
-      if (lpencil(i_cp1)) p%cp1=cp1
-      if (lpencil(i_cp))  p%cp=1/p%cp1
-      if (lpencil(i_cp1tilde)) p%cp1tilde=cp1
-!
-      if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
 !
     endsubroutine calc_pencils_eos
 !***********************************************************************
