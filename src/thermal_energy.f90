@@ -30,19 +30,19 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: eth_left, eth_right, widtheth, eth_const=1.0, chi=0.0
+  real :: eth_left, eth_right, widtheth, eth_const=1.0, chi=0.0, chi_shock=0.0
   logical :: lviscosity_heat=.true.
   character (len=labellen), dimension(ninit) :: initeth='nothing'
 !
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initeth, eth_left, eth_right, widtheth, eth_const, chi
+      initeth, eth_left, eth_right, widtheth, eth_const, chi, chi_shock
 !
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lviscosity_heat, chi
+      lviscosity_heat, chi, chi_shock
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -174,7 +174,22 @@ module Entropy
       if (lhydro) lpenc_requested(i_fpres)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lviscosity.and.lviscosity_heat) lpenc_requested(i_visc_heat)=.true.
-      if (chi/=0.0) lpenc_requested(i_del2eth)=.true.
+      if (chi/=0.0) then
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_cp)=.true.
+        lpenc_requested(i_del2TT)=.true.
+        lpenc_requested(i_grho)=.true.
+        lpenc_requested(i_gTT)=.true.
+      endif
+      if (chi_shock/=0.0) then
+        lpenc_requested(i_cp)=.true.
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_del2TT)=.true.
+        lpenc_requested(i_grho)=.true.
+        lpenc_requested(i_gTT)=.true.
+        lpenc_requested(i_gshock)=.true.
+      endif
 !
 !  Diagnostic pencils.
 !
@@ -300,7 +315,16 @@ module Entropy
 !
 !  Thermal energy diffusion.
 !
-      if (chi/=0.0) df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth)+chi*p%del2eth
+      if (chi/=0.0) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + &
+            p%rho*p%cp*chi*p%del2TT+p%cp*chi*sum(p%grho*p%gTT,2)
+      endif
+!
+      if (chi_shock/=0.0) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock*p%cp*( &
+            p%rho*p%shock*p%del2TT + p%shock*sum(p%grho*p%gTT,2) + &
+            p%rho*sum(p%gshock*p%gTT,2))
+      endif
 !
 !  Diagnostics.
 !
