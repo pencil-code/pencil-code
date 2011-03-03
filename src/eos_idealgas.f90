@@ -264,7 +264,15 @@ module EquationOfState
         write (1,*) 'cp=',cp
         close (1)
       endif
-      if (lanelastic) then
+!
+      call put_shared_variable('cp',cp,ierr)
+        if (ierr/=0) call stop_it("cp: "//&
+             "there was a problem when sharing cp")
+      call put_shared_variable('cv',cv,ierr)
+        if (ierr/=0) call stop_it("cv: "//&
+             "there was a problem when sharing cv")
+! 
+     if (lanelastic) then
         call put_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
         if (ierr/=0) call stop_it("lanelastic_lin: "//&
              "there was a problem when sharing lanelastic_lin")
