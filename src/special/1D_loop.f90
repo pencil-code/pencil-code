@@ -304,7 +304,7 @@ module Special
       real, dimension (nx) :: chi,glnTT2,rhs
 !
       chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
-          cubic_step(t,init_time,init_time)*p%cp1
+          cubic_step(real(t),init_time,init_time)*p%cp1
 !
       call dot2(p%glnTT,glnTT2)
 !
@@ -437,7 +437,7 @@ module Special
 !
     endif
 !
-    rtv_cool = rtv_cool * cubic_step(t,init_time,init_time)
+    rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_time)
 !
 !     add to temperature equation
 !
@@ -550,7 +550,7 @@ module Special
       endif
 !
 !  Adjust time scale by the initialization time
-      tau_inv_tmp =  tau_inv_tmp * cubic_step(t,init_time,init_time)
+      tau_inv_tmp =  tau_inv_tmp * cubic_step(real(t),init_time,init_time)
 !
       newton  = newton * tau_inv_tmp
 !
@@ -757,7 +757,7 @@ module Special
 ! Add to energy equation
 !
       rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-          cubic_step(t,init_time,init_time)
+          cubic_step(real(t),init_time,init_time)
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
@@ -776,7 +776,7 @@ module Special
 !  L = Div( Grad(lnT)^2 Grad(T))
 !
       use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use Sub,             only : dot2,dot,multsv,multmv
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
