@@ -60,6 +60,7 @@ module Gravity
   real :: r0_pot=0.0
   real :: g_A, g_C
   real :: cs0hs=0.0, H0hs=0.0
+  real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
   integer :: n_pot=10
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero'
   character (len=labellen) :: gravz_profile='const'
@@ -82,7 +83,8 @@ module Gravity
       ss_bot, ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
-      lboussinesq, n_pot, cs0hs, H0hs, grav_tilt, grav_amp
+      lboussinesq, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, & 
+      potx_const,poty_const,potz_const
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -216,11 +218,12 @@ module Gravity
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
         gravx=-alog(pot_ratio)/dgravx
         gravx_xpencil=gravx*.5/cosh((x-xgrav)/dgravx)**2
-        potx_xpencil=-gravx*.5*(1.+tanh((x-xgrav)/dgravx))*dgravx
+        potx_xpencil=-gravx*.5*(1.+tanh((x-xgrav)/dgravx))*dgravx + potx_const
 !
       case ('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal x-grav, gravx=',gravx
         gravx_xpencil = -gravx*sin(kx_gg*x)
+        potx_xpencil  = -gravx/kx_gg*cos(kx_gg*x) + potx_const
 !
       case ('Baker74')
         !abag added, need to make adaptable to any width/position
@@ -228,12 +231,12 @@ module Gravity
         gravx_xpencil =(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
             gravx*sin(2*(x-pi/2.))
         potx_xpencil=(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
-            gravx*(.5*cos(2*(x-pi/2.))-0.5)
+            gravx*(.5*cos(2*(x-pi/2.))-0.5) + potx_const
 !
       case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
-        potx_xpencil=-gravx/x
+        potx_xpencil=-gravx/x + potx_const
         g0=gravx
         call put_shared_variable('gravx', gravx, ierr)
 !
@@ -242,7 +245,7 @@ module Gravity
         gravx_xpencil=cos((x-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
         gravx_xpencil=gravx * gravx_xpencil
         potx_xpencil =sin((x-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
-        potx_xpencil =gravx*(xyz0(1)+Lxyz(1))/pi * potx_xpencil
+        potx_xpencil =gravx*(xyz0(1)+Lxyz(1))/pi * potx_xpencil + potx_const
 !
       case default
         if (lroot) print*, &
@@ -263,16 +266,18 @@ module Gravity
 !
       case ('const')
         if (lroot) print*,'initialize_gravity: constant y-grav=', gravy
-        gravy_ypencil=gravy
-        poty_ypencil=-gravy*(y-yinfty)
+        gravy_ypencil = gravy
+        poty_ypencil  = -gravy*(y-yinfty)
 !
       case ('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal y-grav, gravy=', gravy
         gravy_ypencil = -gravy*sin(ky_gg*y)
+        poty_ypencil  = -gravy/ky_gg*cos(ky_gg*y) + poty_const
 !
       case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler gravy, y-grav=', gravy
         gravy_ypencil = -gravy/y**2
+        poty_ypencil  = -gravy/y + poty_const
 !
       case default
         if (lroot) print*, &
@@ -350,7 +355,7 @@ module Gravity
         nu_epicycle2=nu_epicycle**2
         if (lroot) print*,'initialize_gravity: spherical z-grav, nu, z1=', nu_epicycle, z1
         gravz_zpencil=-nu_epicycle2*z/(1.0+(z/z1)**2)
-        potz_zpencil=0.5*nu_epicycle2*z1**2*alog(1.0+(z/z1)**2)
+        potz_zpencil=0.5*nu_epicycle2*z1**2*alog(1.0+(z/z1)**2) + potz_const
 !
 !  Linear gravity potential with additional x dependence.
 !  Calculate xdep here, but don't multiply it onto gravz_zpencil
@@ -370,16 +375,17 @@ module Gravity
                          'smoothed to zero at top/bottom, nu=', nu_epicycle
         prof = 1. + (z/zref)**(2*n_pot)
         gravz_zpencil = -nu_epicycle2*z/prof**(1./n_pot+1.)
-        potz_zpencil = 0.5*nu_epicycle2*z**2/prof**(1./n_pot)
+        potz_zpencil = 0.5*nu_epicycle2*z**2/prof**(1./n_pot) + potz_const
 !
       case ('sinusoidal')
         if (lroot) print*,'initialize_gravity: sinusoidal z-grav, gravz=', gravz
         gravz_zpencil = -gravz*sin(kz_gg*z)
-        potz_zpencil = -gravz/kz_gg*cos(kz_gg*z)
+        potz_zpencil = -gravz/kz_gg*cos(kz_gg*z) + potz_const
 !
       case ('kepler')
         if (lroot) print*,'initialize_gravity: kepler z-grav, gravz=', gravz
         gravz_zpencil = -gravz/z**2
+        potz_zpencil  = -gravz/z + potz_const
 !
       case ('Ferriere')
 !
