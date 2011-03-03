@@ -235,6 +235,7 @@ module Gravity
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x
         g0=gravx
+        call put_shared_variable('gravx', gravx, ierr)
 !
       case ('loop')
         if (lroot) print*,'initialize_gravity: 1D loop, gravx=',gravx
