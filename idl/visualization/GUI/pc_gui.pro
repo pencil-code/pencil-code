@@ -53,6 +53,7 @@ default_mass_str      = 'kg'
 
 ; Initial varfile
 default, varfile, 'var.dat'
+default, crashfile, 'crash.dat'
 
 
 ; Default data directory
@@ -91,6 +92,16 @@ if (not pc_gui_loaded) then BEGIN
 		endif
 	endif
 
+	file_struct = file_info (procdir+crashfile)
+	if (file_struct.exists) then begin
+		print, "A '"+crashfile+"' exists, do you want to load it instead of '"+varfile+"'?"
+		repeat begin
+			answer = "y"
+			read, answer, format="(A)", prompt="(Y)es / (N)o: "
+		end until (any (strcmp (answer, ['n', 'y'], /fold_case)))
+		if (strcmp (answer, 'y', /fold_case)) then varfile = crashfile
+	end
+
 
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
 	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
@@ -120,7 +131,7 @@ if (not pc_gui_loaded) then BEGIN
 		print, "There are > ", strtrim (num_snapshots, 2), " < snapshot files available."
 		print, "(This corresponds to ", strtrim (round (num_snapshots * gb_per_file * 10) / 10., 2), " GB.)"
 		if ((stepping eq 1) and (skipping eq 0)) then begin
-			print, "'"+procdir+varfile+"' will be read anyways."
+			print, "'"+datadir+"/.../"+varfile+"' will be read anyways."
 			print, "Do you want to load additional files into the cache?"
 			repeat begin
 				answer = "n"
