@@ -25,6 +25,10 @@
                     implies $f''(x_0)=0$ \\
   \var{cpc}       & cylindrical perfect conductor
                     implies $f''+f'/R=0$ \\
+  \var{cpp}       & cylindrical perfect conductor
+                    implies $f''+f'/R=0$ \\
+  \var{cpz}       & cylindrical perfect conductor
+                    implies $f''+f'/R=0$ \\
   \var{v}         & vanishing third derivative \\
   \var{cop}       & copy value of last physical point to all ghost cells \\
   \var{1s}        & onesided \\
@@ -55,13 +59,15 @@
   \var{e3}        & extrapolation in log [maintain a power law] \\
   \var{hat}       & top hat jet profile in spherical coordinate. \\
   \var{spd}       & sets $d(rA_{\alpha})/dr = \mathtt{fbcx12(j)}$ \\
-  \var{sfr}       & stress-free boundary condition for spherical coordinate system. \\
+  \var{sfr}       & stress-free boundary condition
+                    for spherical coordinate system. \\
   \var{nfr}       & Normal-field bc for spherical coordinate system.
                     Some people call this the ``(angry) hedgehog bc''. \\
   \var{sa2}       & $(d/dr)(r B_{\phi}) = 0$ imposes
                     boundary condition on 2nd derivative of
                     $r A_{\phi}$. Same applies to $\theta$ component. \\
-  \var{pfc}       & perfect-conductor in spherical coordinate: $d/dr( A_r) + 2/r = 0$ . \\
+  \var{pfc}       & perfect-conductor in spherical
+                    coordinate: $d/dr( A_r) + 2/r = 0$ . \\
   \var{fix}       & set boundary value [really??] \\
   \var{fil}       & set boundary value from a file \\
   \var{g}         & set to given value(s) or function \\

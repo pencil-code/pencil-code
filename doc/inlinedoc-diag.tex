@@ -438,6 +438,9 @@
                     \quad(time step relative to
                     resistive time step;
                     see \S~\ref{time-step}) \\
+  \var{a2m}       & $\left<\Av^2\right>$ \\
+  \var{arms}      & $\left<\Av^2\right>^{1/2}$ \\
+  \var{amax}      & $\max(|\Av|)$ \\
   \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
                     \quad(mean inverse plasma beta) \\
   \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
@@ -902,7 +905,6 @@
                     \quad(mean internal energy) \\
   \var{ppm}       & $\left< p \right>$ \\
   \var{TTm}       & $\left<T\right>$ \\
-  \var{gTmax}     & $\max (|\nabla T|)$ \\
   \var{ethm}      & $\left< e_{\text{th}}\right> =
                     \left< c_v \rho T \right> $
                     \quad(mean thermal energy) \\
@@ -1329,6 +1331,24 @@
   \var{kap13}     & $\kappa_{13}$ \\
   \var{kap23}     & $\kappa_{23}$ \\
   \var{kap33}     & $\kappa_{33}$ \\
+  \var{gam11z}    & $\gamma_{1}^{(1)}(z,t)$ \\
+  \var{gam12z}    & $\gamma_{2}^{(1)}(z,t)$ \\
+  \var{gam13z}    & $\gamma_{3}^{(1)}(z,t)$ \\
+  \var{gam21z}    & $\gamma_{1}^{(2)}(z,t)$ \\
+  \var{gam22z}    & $\gamma_{2}^{(2)}(z,t)$ \\
+  \var{gam23z}    & $\gamma_{3}^{(2)}(z,t)$ \\
+  \var{gam31z}    & $\gamma_{1}^{(3)}(z,t)$ \\
+  \var{gam32z}    & $\gamma_{2}^{(3)}(z,t)$ \\
+  \var{gam33z}    & $\gamma_{3}^{(3)}(z,t)$ \\
+  \var{kap11z}    & $\kappa_{11}(z,t)$ \\
+  \var{kap21z}    & $\kappa_{21}(z,t)$ \\
+  \var{kap31z}    & $\kappa_{31}(z,t)$ \\
+  \var{kap12z}    & $\kappa_{12}(z,t)$ \\
+  \var{kap22z}    & $\kappa_{22}(z,t)$ \\
+  \var{kap32z}    & $\kappa_{32}(z,t)$ \\
+  \var{kap13z}    & $\kappa_{13}(z,t)$ \\
+  \var{kap23z}    & $\kappa_{23}(z,t)$ \\
+  \var{kap33z}    & $\kappa_{33}(z,t)$ \\
   \var{mgam33}    & $\tilde\gamma_{33}$ \\
   \var{mkap33}    & $\tilde\kappa_{33}$ \\
   \var{ngam33}    & $\hat\gamma_{33}$ \\
@@ -1345,8 +1365,6 @@
   \var{c4pt}      & $c^{4}$ \\
   \var{c5pt}      & $c^{5}$ \\
   \var{c6pt}      & $c^{6}$ \\
-  \var{gam3z}     & $\gamma_{3}(z,t)$ \\
-  \var{kap33z}    & $\kappa_{33}(z,t)$ \\
   \var{F11z}      & ${\cal F}_1^{1}$ \\
   \var{F21z}      & ${\cal F}_2^{1}$ \\
   \var{F31z}      & ${\cal F}_3^{1}$ \\
