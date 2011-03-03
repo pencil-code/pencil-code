@@ -826,6 +826,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'special_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
 endmodule Special
