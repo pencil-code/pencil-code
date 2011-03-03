@@ -97,7 +97,7 @@ module Special
 !
       if (.not.lstarting.and.tau_inv_newton/=0.) then
         open(unit,file=trim(directory_snap)//filename, &
-            form='unformatted',status='unknown',recl=lend*mz)
+            form='unformatted',status='unknown',recl=lend*mx)
         read(unit) xtmp
         read(unit) lnrho_init_prof
         read(unit) lnTT_init_prof
