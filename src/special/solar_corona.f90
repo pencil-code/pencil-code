@@ -2228,7 +2228,15 @@ module Special
       call random_seed_wrapper(GET=points_rstate)
       call random_seed_wrapper(PUT=global_rstate)
 !
-      if (lroot .and. lwrite_driver) call write_driver (t, Ux, Uy)
+      if (lwrite_driver) then
+        if (lroot) call write_driver (t, Ux, Uy)
+        if (nzgrid == 1) then
+          ! Stabilize 2D-runs
+          f(:,:,:,iuz) = 0.0
+          f(:,:,:,ilnTT) = lnTT_init_z(irefz)
+          f(:,:,:,ilnrho) = lnrho_init_z(irefz)
+        endif
+      endif
 !
     endsubroutine gran_driver
 !***********************************************************************
