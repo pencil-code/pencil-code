@@ -160,7 +160,7 @@ module Magnetic
       B_ext, J_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       by_left, by_right, bz_left, bz_right, &
       relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
-      amplaaJ, amplaaB, RFPrad, &	!kk
+      amplaaJ, amplaaB, RFPrad, &
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
