@@ -74,6 +74,8 @@ module Magnetic
   integer, parameter :: nresi_max=4
 !
   real, dimension (ninit) :: amplaa=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
+  real, dimension (ninit) :: amplaaJ=0.0, amplaaB=0.0, RFPrad=1.0
+
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
@@ -158,6 +160,7 @@ module Magnetic
       B_ext, J_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       by_left, by_right, bz_left, bz_right, &
       relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
+      amplaaJ, amplaaB, RFPrad, &	!kk
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
@@ -1179,6 +1182,14 @@ module Magnetic
 !
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iaz)=.25*amplaa(j)*x(l1:l2)**2*(1.-.25*x(l1:l2)**2)
+          enddo; enddo
+	case ('JzBz_cyl_ct')
+!
+!  Initial  Az=(r/2)^2 [1-(r/2)^2]  corresponds to Bphi=r/2 and Jz=1.
+!
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iaz)=-amplaaJ(j)*(x(l1:l2)**2)/4
+            f(l1:l2,m,n,iay)=amplaaB(j)*(x(l1:l2))/2
           enddo; enddo
         case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
         case ('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,ky_aa(j),mu0)
