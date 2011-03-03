@@ -159,7 +159,7 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real :: dummy,cp1=1.
-      integer :: lend,ierr
+      integer :: lend,lend_b8,ierr
       integer :: i,j
       integer, parameter :: unit=12
 !
@@ -173,7 +173,8 @@ contains
       real, dimension (mx) :: profile_x
       logical :: lread_lnrho=.false., lread_lnTT=.false.
 !
-      inquire(IOLENGTH=lend) dummy
+      inquire(IOLENGTH=lend) 1.0
+      inquire(IOLENGTH=lend_b8) 1.0d0
 !
       lread_lnTT=(lnTT_init=='prof_lnTT')
       lread_lnrho=(lnrho_init=='prof_lnrho')
@@ -186,7 +187,7 @@ contains
           if (.not. file_exists (lnrho_dat)) call stop_it_if_any ( &
               .true., 'setup_special: file not found: '//trim(lnrho_dat))
 ! find out, how many data points our profile file has
-          prof_nz = (file_size (lnrho_dat) - 2*2*4) / (lend*4 * 2)
+          prof_nz = (file_size (lnrho_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
         endif
         call stop_it_if_any(.false.,'')
         call mpibcast_int (prof_nz,1)
@@ -270,7 +271,7 @@ contains
           if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
               .true., 'setup_special: file not found: '//trim(lnT_dat))
 ! find out, how many data points our profile file has
-          prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
+          prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
         endif
         call stop_it_if_any(.false.,'')
         call mpibcast_int(prof_nz,1)
@@ -383,12 +384,13 @@ contains
     integer :: prof_nz
     real, dimension(:), allocatable :: prof_lnTT,prof_z
     real :: tmp_lnrho,tmp_lnT,tmpdT,tmp_z,dz_step,lnrho_0
-    integer :: i,lend,j,ierr,unit=1
+    integer :: i,lend,lend_b8,j,ierr,unit=1
 !
 ! file location settings
     character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
 !
-    inquire(IOLENGTH=lend) lnrho_0
+    inquire(IOLENGTH=lend) 1.0
+    inquire(IOLENGTH=lend_b8) 1.0d0
 !
     if (lentropy.or.ltemperature_nolog.or.lthermal_energy.or.ldensity_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
@@ -402,7 +404,7 @@ contains
       if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
           .true., 'setup_special: file not found: '//trim(lnT_dat))
 ! find out, how many data points our profile file has
-      prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
+      prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
     endif
 !
     call stop_it_if_any(.false.,'')
@@ -556,7 +558,7 @@ contains
     integer :: prof_nx
     real, dimension(:), allocatable :: prof_lnTT,prof_x
     real :: tmp_lnrho,lnrho_0,ztmp,integrand
-    integer :: i,lend,j,ierr,unit=1
+    integer :: i,lend,lend_b8,j,ierr,unit=1
     real, dimension(mx) :: xgrav,lnTT_loop
     real :: cp1=1
 !
@@ -566,7 +568,8 @@ contains
     if (leos) call get_cp1(cp1)
     call get_xgravity(xgrav)
 !
-    inquire(IOLENGTH=lend) lnrho_0
+    inquire(IOLENGTH=lend) 1.0
+    inquire(IOLENGTH=lend_b8) 1.0d0
 !
     if (lentropy.or.ltemperature_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
@@ -580,7 +583,7 @@ contains
       if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
           .true., 'setup_special: file not found: '//trim(lnT_dat))
 ! find out, how many data points our profile file has
-      prof_nx = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
+      prof_nx = (file_size (lnT_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
     endif
 !
     call stop_it_if_any(.false.,'')
@@ -604,7 +607,7 @@ contains
     call mpibcast_real (prof_lnTT,prof_nx)
     call mpibcast_real (prof_x,prof_nx)
     !
-    prof_x = prof_x/unit_length*1e6
+    prof_x = prof_x/unit_length
     prof_lnTT = prof_lnTT - alog(real(unit_temperature))
 !
 !  project T profile onto the loop

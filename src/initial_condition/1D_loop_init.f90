@@ -135,8 +135,8 @@ contains
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: dummy,cp1=1.,ztmp
-      integer :: lend,ierr
+      real :: cp1=1.,ztmp
+      integer :: lend,lend_b8,ierr
       integer :: i,j
       integer, parameter :: unit=12
 !
@@ -150,7 +150,8 @@ contains
 !
       logical :: lread_lnrho=.false., lread_lnTT=.false.
 !
-      inquire(IOLENGTH=lend) dummy
+      inquire(IOLENGTH=lend) 1.0
+      inquire(IOLENGTH=lend_b8) 1.0d0
 !
       lread_lnTT=((lnTT_init=='prof_lnTT_z').or.(lnTT_init=='prof_lnTT_loop'))
       lread_lnrho=((lnrho_init=='prof_lnrho_z').or.(lnrho_init=='prof_lnrho_loop'))
@@ -246,7 +247,7 @@ contains
           if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
               .true., 'setup_special: file not found: '//trim(lnT_dat))
 ! find out, how many data points our profile file has
-          prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*4 * 2)
+          prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
         endif
         call stop_it_if_any(.false.,'')
         call mpibcast_int(prof_nz,1)
