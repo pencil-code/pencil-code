@@ -96,9 +96,9 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i,j
 !
-        if (init_ux /=0.) then
+        if ((init_ux /=0.) .and. (nygrid>1)) then
          do i=1,my
-!           f(:,i,:,iux)=sin(2.*PI*y(i)/Lxyz(2))*init_ux
+           f(:,i,:,iux)=cos(2.*PI*y(i)/Lxyz(2))*init_ux
          enddo
 !
         endif
@@ -112,7 +112,7 @@ module InitialCondition
           enddo
         endif
         if ((init_uy /=0.) .and. (X_wind == impossible)) then
-          f(j,:,:,iuy)=f(j,:,:,iuy)+init_uy
+          f(:,:,:,iuy)=f(:,:,:,iuy)+init_uy
         endif
         if (init_uz /=0.) then
           do i=1,mz
@@ -394,11 +394,11 @@ module InitialCondition
       if (linit_temperature) then
         if (lcurved) then
           do j=1,my         
-            init_x1_ar(j)=init_x1*(1-0.2*sin(6.*PI*y(j)/Lxyz(2)))
-            init_x2_ar(j)=init_x2*(1+0.2*sin(6.*PI*y(j)/Lxyz(2)))
+            init_x1_ar(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
+            init_x2_ar(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
           enddo
-          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.2*sin(6.*PI*y(:)/Lxyz(2)))
-          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.2*sin(6.*PI*y(:)/Lxyz(2)))
+          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.1*sin(4.*PI*y(:)/Lxyz(2)))
+          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.1*sin(4.*PI*y(:)/Lxyz(2)))
         else
           init_x1_ar=init_x1
           init_x2_ar=init_x2
@@ -521,7 +521,7 @@ module InitialCondition
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3) 
          endif
 !
-         if (nxgrid>1) then
+         if ((nxgrid>1) .and. (nygrid==1)) then
             f(:,:,:,iux)=f(:,:,:,iux)+init_ux
          endif
 !       
