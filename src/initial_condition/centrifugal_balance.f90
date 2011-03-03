@@ -93,12 +93,12 @@ module InitialCondition
   real :: rho_rms=0.05
   integer :: xmodes=10,ymodes=10,zmodes=0
   logical :: llowk_noise=.false.,lgaussian_distributed_noise=.true.
-  real :: xmid=1.5,border1=0.,border2=0.,Lxn=1.
+  real :: xmid=1.5,rborder_int=0.,rborder_ext=0.,Lxn=1.
 !
   namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const,&
        xmodes,ymodes,zmodes,rho_rms,llowk_noise,xmid,&
-       lgaussian_distributed_noise,border1,border2
+       lgaussian_distributed_noise,rborder_int,rborder_ext
 !
   contains
 !***********************************************************************
@@ -121,7 +121,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      Lxn=Lx-2*(border1+border2)
+      Lxn=Lx-2*(rborder_int+rborder_ext)
 !
       call keep_compiler_quiet(f)
 !
@@ -915,7 +915,7 @@ module InitialCondition
 !
 ! Exclude the border
 !
-          if ((xi.gt.xyz0(1)+2*border1).and.(xi.lt.xyz1(1)-2*border2)) then
+          if ((xi.gt.xyz0(1)+2*rborder_int).and.(xi.lt.xyz1(1)-2*rborder_ext)) then
             lump_of_sines(i,m,n)=lump_of_sines(i,m,n) + &
                  sin(2*pi*(ll*xi/Lxn + mm*yi/Ly + nn*zi/Lz+ phase))
           endif
