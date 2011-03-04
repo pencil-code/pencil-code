@@ -445,6 +445,10 @@ module Boundcond
                 !  ghost zones at the initial coded value, i.e.,
                 !  keep the gradient frozen as well
                 call bc_freeze_var_y(topbot,j)
+              case ('fBs')
+                ! BCZ_DOC: frozen-in B-field (s)
+                call bc_frozen_in_bb(topbot,j)
+                call bc_sym_y(f,+1,topbot,j) ! symmetry
               case ('1')
                 ! BCY_DOC: f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
