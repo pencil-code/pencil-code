@@ -1183,7 +1183,7 @@ module Magnetic
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iaz)=.25*amplaa(j)*x(l1:l2)**2*(1.-.25*x(l1:l2)**2)
           enddo; enddo
-	case ('JzBz_cyl_ct')
+        case ('JzBz_cyl_ct')
 !
 !  Initial  Az=(r/2)^2 [1-(r/2)^2]  corresponds to Bphi=r/2 and Jz=1.
 !
