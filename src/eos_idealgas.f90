@@ -718,8 +718,7 @@ module EquationOfState
       intent(in) :: f
       intent(inout) :: p
 !
-      real, dimension(nx) :: tmp,del2lneth
-      real, dimension(nx,3,3) :: hlneth
+      real, dimension(nx) :: tmp
       integer :: i
 !
 !  Inverse cv and cp values.
