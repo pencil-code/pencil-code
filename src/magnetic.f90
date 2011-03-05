@@ -279,7 +279,7 @@ module Magnetic
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
   integer :: idiag_fxbxm=0      ! DIAG_DOC: $\left<f_x B_x\right>$
-  integer :: idiag_epsM=0       ! DIAG_DOC: $\left<2\eta\mu_0\jv^2\right>$
+  integer :: idiag_epsM=0       ! DIAG_DOC: $\left<\eta\mu_0\jv^2\right>$
   integer :: idiag_epsAD=0      ! DIAG_DOC: $\left<\rho^{-1} t_{\rm AD}
                                 ! DIAG_DOC: (\vec{J}\times\vec{B})^2\right>$
                                 ! DIAG_DOC: (heating by ion-neutrals friction)
@@ -350,12 +350,6 @@ module Magnetic
   integer :: idiag_bxm=0        ! DIAG_DOC: $\left<\left<B\right>_{yz}^2\right>_x^{1/2}$
   integer :: idiag_bym=0        ! DIAG_DOC: $\left<\left<B\right>_{zx}^2\right>_y^{1/2}$
   integer :: idiag_bzm=0        ! DIAG_DOC: $\left<\left<B\right>_{xy}^2\right>_z^{1/2}$
-  integer :: idiag_bx2m=0       ! DIAG_DOC: $\left<B_x^2\right>$
-  integer :: idiag_by2m=0       ! DIAG_DOC: $\left<B_y^2\right>$
-  integer :: idiag_bz2m=0       ! DIAG_DOC: $\left<B_z^2\right>$
-  integer :: idiag_bx2mx=0      ! DIAG_DOC: $\left<B_x^2\right>_{yz}$
-  integer :: idiag_by2mx=0      ! DIAG_DOC: $\left<B_y^2\right>_{yz}$
-  integer :: idiag_bz2mx=0      ! DIAG_DOC: $\left<B_z^2\right>_{yz}$
   integer :: idiag_bxbym=0      ! DIAG_DOC: $\left<B_x B_y\right>$
   integer :: idiag_bxbymx=0     ! DIAG_DOC: $\left<B_x B_y\right>_{yz}$
   integer :: idiag_bxbzm=0      ! DIAG_DOC:
@@ -439,6 +433,12 @@ module Magnetic
   integer :: idiag_kx_aa=0      ! DIAG_DOC: $k_x$
   integer :: idiag_kmz=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>/
                                 ! DIAG_DOC:  \left<\left<\Bv\right>_{xy}^2\right>$
+  integer :: idiag_bx2m=0       ! DIAG_DOC: $\left< B_x^2 \right>$
+  integer :: idiag_by2m=0       ! DIAG_DOC: $\left< B_y^2 \right>$
+  integer :: idiag_bz2m=0       ! DIAG_DOC: $\left< B_z^2 \right>$
+  integer :: idiag_bx2mx=0      ! DIAG_DOC: $\left< B_x^2 \right>_{yz}$
+  integer :: idiag_by2mx=0      ! DIAG_DOC: $\left< B_y^2 \right>_{yz}$
+  integer :: idiag_bz2mx=0      ! DIAG_DOC: $\left< B_z^2 \right>_{yz}$
   integer :: idiag_bx2my=0      ! DIAG_DOC: $\left< B_x^2 \right>_{xz}$
   integer :: idiag_by2my=0      ! DIAG_DOC: $\left< B_y^2 \right>_{xz}$
   integer :: idiag_bz2my=0      ! DIAG_DOC: $\left< B_z^2 \right>_{xz}$
@@ -1520,7 +1520,7 @@ module Magnetic
 !
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0 .or. &
-          idiag_ajm/=0 ) &
+          idiag_ajm/=0) &
           lpenc_diagnos(i_j2)=.true.
 !
       if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
@@ -2568,7 +2568,7 @@ module Magnetic
 !  and in bottommost (topmost) pencils.
 !
       do j=1,3
-        if (lfrozen_bb_bot(j).and.lfirst_proc_z .and.n==n1) fres(:,j)=0.
+        if (lfrozen_bb_bot(j).and.lfirst_proc_z.and.n==n1) fres(:,j)=0.
         if (lfrozen_bb_top(j).and.llast_proc_z.and.n==n2) fres(:,j)=0.
       enddo
 !
@@ -2993,7 +2993,7 @@ module Magnetic
 !
 !  Not correct for hyperresistivity:
 !
-        if (idiag_epsM/=0) call sum_mn_name(eta*p%j2,idiag_epsM)
+        if (idiag_epsM/=0) call sum_mn_name(eta*mu0*p%j2,idiag_epsM)
 !
 !  Heating by ion-neutrals friction.
 !
