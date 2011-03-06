@@ -148,6 +148,7 @@ pro cslice_event, event
 			val_min = val_max
 			WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		end
+		pos_b[selected_cube,sub_aver] = val_min
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'SCALE_TOP': begin
@@ -156,6 +157,7 @@ pro cslice_event, event
 			val_max = val_min
 			WIDGET_CONTROL, sl_max, SET_VALUE = val_max
 		end
+		pos_t[selected_cube,sub_aver] = val_max
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'MIN_MAX': begin
@@ -163,13 +165,16 @@ pro cslice_event, event
 		val_max = max (cube)
 		WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		WIDGET_CONTROL, sl_max, SET_VALUE = val_max
+		pos_b[selected_cube,sub_aver] = val_min
+		pos_t[selected_cube,sub_aver] = val_max
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'FREEZE': begin
 		WIDGET_CONTROL, sl_min, SENSITIVE = 0
 		WIDGET_CONTROL, sl_max, SENSITIVE = 0
 		WIDGET_CONTROL, range, set_value='RELEASE RANGE', set_uvalue='RELEASE'
-		prepare_cube, selected_cube
+		pos_b[selected_cube,sub_aver] = val_min
+		pos_t[selected_cube,sub_aver] = val_max
 		frozen = 1
 	end
 	'RELEASE': begin
@@ -181,18 +186,15 @@ pro cslice_event, event
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'VAR': begin
-		last = selected_cube
-		selected_cube = event.index
-		if (last ne event.index) then begin
-			prepare_cube, last
+		if (selected_cube ne event.index) then begin
+			prepare_cube, event.index
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		end
 	end
 	'SNAP': begin
-		last = selected_cube
 		if (selected_snapshot ne event.index) then begin
 			prepare_set, event.index
-			prepare_cube, last
+			prepare_cube, -1
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			if (selected_snapshot lt num_snapshots - 1) then prev_active = 1 else prev_active = 0
 			if (selected_snapshot gt 0) then next_active = 1 else next_active = 0
@@ -208,7 +210,7 @@ pro cslice_event, event
 		selected_snapshot -= 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 		prepare_set, selected_snapshot
-		prepare_cube, selected_cube
+		prepare_cube, -1
 		WIDGET_CONTROL, prev, SENSITIVE = 1
 		if (selected_snapshot le 0) then WIDGET_CONTROL, next, SENSITIVE = 0
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -217,7 +219,7 @@ pro cslice_event, event
 		selected_snapshot += 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 		prepare_set, selected_snapshot
-		prepare_cube, selected_cube
+		prepare_cube, -1
 		if (selected_snapshot ge num_snapshots - 1) then WIDGET_CONTROL, prev, SENSITIVE = 0
 		WIDGET_CONTROL, next, SENSITIVE = 1
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -463,6 +465,9 @@ pro draw_averages, number
 	end else begin
 		window, 13, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 2, 2]
+		normal_charsize = !P.CHARSIZE
+		if (normal_charsize le 0.0) then normal_charsize = 1.0
+		!P.CHARSIZE = 1.25 * normal_charsize
 		max_subplots = 4
 		num_subplots = 0
 		if (any (strcmp (tags, 'ln_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
@@ -491,6 +496,7 @@ pro draw_averages, number
 			num_subplots += 1
 			vert_prof, varsets[number].j[cut], coord=coord.z, title = 'current density', log=1
 		end
+		!P.CHARSIZE = normal_charsize
 	end
 end
 
@@ -513,7 +519,7 @@ end
 
 
 ; Prepares a cube for visualisation
-pro prepare_cube, last_index
+pro prepare_cube, cube_index
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
@@ -528,6 +534,7 @@ pro prepare_cube, last_index
 	af_minimum = 6
 
 	; get selected cube from set
+	if (cube_index ge 0) then selected_cube = cube_index
 	tag = set.(selected_cube)
 	res = execute ("cube = reform (varsets[selected_snapshot]."+tag+"[cut], num_x, num_y, num_z)")
 	if (not res) then begin
@@ -540,9 +547,8 @@ pro prepare_cube, last_index
 
 	if (frozen) then begin
 		; find intermediate minimum and maximum values
-		tmp_range = get_range (cube)
-		tmp_min = tmp_range[0]
-		tmp_max = tmp_range[1]
+		tmp_min = min (cube)
+		tmp_max = max (cube)
 
 		; update slider to intermediate min/max values
 		WIDGET_CONTROL, sl_min, SET_VALUE = [ val_min, (tmp_min < val_min), tmp_max ]
@@ -553,17 +559,9 @@ pro prepare_cube, last_index
 		val_max = max (cube)
 		val_range = get_range (cube)
 
-		if (last_index ge 0) then begin
-			; save slider positions of previous cube
-			WIDGET_CONTROL, sl_min, GET_VALUE = b
-			pos_b(last_index, sub_aver) = b
-			WIDGET_CONTROL, sl_max, GET_VALUE = t
-			pos_t(last_index, sub_aver) = t
-		end
-
 		; set default slider positions (min/max)
-		if (not finite (pos_b[selected_cube,sub_aver], /NaN)) then pos_b[selected_cube,sub_aver] = val_min
-		if (not finite (pos_t[selected_cube,sub_aver], /NaN)) then pos_t[selected_cube,sub_aver] = val_max
+		if (finite (pos_b[selected_cube,sub_aver], /NaN)) then pos_b[selected_cube,sub_aver] = val_min
+		if (finite (pos_t[selected_cube,sub_aver], /NaN)) then pos_t[selected_cube,sub_aver] = val_max
 
 		; adjust slider positions to fit inside value range
 		if (pos_b[selected_cube,sub_aver] lt val_min) then pos_b[selected_cube,sub_aver] = val_min
@@ -702,8 +700,8 @@ pro reset_GUI
 	px = num_x / 2
 	py = num_y / 2
 	pz = num_z / 2
-	pos_b = replicate (-1.0, num_cubes, 2)
-	pos_t = replicate (-1.0, num_cubes, 2)
+	pos_b = replicate (!VALUES.D_NAN, num_cubes, 2)
+	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2)
 
 	prepare_cube, -1
 
