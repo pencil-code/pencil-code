@@ -374,13 +374,13 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				contour, reform (field_x_y[px, *, *], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				contour, reform (field_x_y[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_y_x[px, *, *], num_over_y, num_over_z), reform (field_z_x[px, *, *], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				velovect, reform (field_y_x[px,*,*], num_over_y, num_over_z), reform (field_z_x[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
-			wset, wcut_x
+			wset, wcut_y
 			plot, cube[px,*,pz], xrange=[0,num_y], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			oplot, cube[px,*,pz], psym=3, color=200
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
@@ -404,13 +404,13 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				contour, reform (field_y_x[*, py, *], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				contour, reform (field_y_x[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_x_y[*, py, *], num_over_x, num_over_z), reform (field_z_y[*, py, *], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				velovect, reform (field_x_y[*,py,*], num_over_x, num_over_z), reform (field_z_y[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
-			wset, wcut_y
+			wset, wcut_x
 			plot, cube[*,py,pz], xrange=[0,num_x], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			oplot, cube[*,py,pz], psym=3, color=200
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
@@ -434,9 +434,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, ii
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				contour, reform (field_z_x[*, *, pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				contour, reform (field_z_x[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_x_z[*, *, pz], num_over_x, num_over_y), reform (field_y_z[*, *, pz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				velovect, reform (field_x_z[*,*,pz], num_over_x, num_over_y), reform (field_y_z[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
@@ -851,20 +851,20 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 	MOTHER	= WIDGET_BASE (title='compare cube-slices')
 	BASE    = WIDGET_BASE (MOTHER, /col)
-	TOP     = WIDGET_BASE (BASE, /row)
-	scol    = WIDGET_BASE (top, /col)
+	CTRL    = WIDGET_BASE (BASE, /row)
+	scol    = WIDGET_BASE (CTRL, /col)
 	scot    = WIDGET_BASE (scol, /col)
 	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=sl_x_active)
 	scot    = WIDGET_BASE (scol, /col)
 	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=sl_y_active)
 	scot    = WIDGET_BASE (scol, /col)
 	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=sl_z_active)
-	bcol    = WIDGET_BASE (top, /col)
+	bcol    = WIDGET_BASE (CTRL, /col)
 	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCALE', set_value=abs_scale)
 	b_sub   = CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
 	b_cro   = CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
 	aver    = WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')
-	bcol    = WIDGET_BASE (top, /col)
+	bcol    = WIDGET_BASE (CTRL, /col)
 	bcot    = WIDGET_BASE (bcol, /row)
 	vars    = WIDGET_DROPLIST (bcot, value=tags, uvalue='VAR', sensitive=vars_active, EVENT_PRO=cslice_event, title='data set')
 	bcot    = WIDGET_BASE (bcol, /row)
@@ -873,20 +873,20 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	snap    = WIDGET_DROPLIST (bcot, value=snaps, uvalue='SNAP', sensitive=snap_active, EVENT_PRO=cslice_event, title='time step')
 	prev    = WIDGET_BUTTON (bcot, value='-', uvalue='PREV', sensitive=prev_active, EVENT_PRO=cslice_event)
 	next    = WIDGET_BUTTON (bcot, value='+', uvalue='NEXT', sensitive=next_active, EVENT_PRO=cslice_event)
-	bcol    = WIDGET_BASE (top, /col)
+	bcol    = WIDGET_BASE (CTRL, /col)
 	tmp	= WIDGET_BUTTON (bcol, value='RESET', uvalue='RESET', xsize=100)
 	tmp	= WIDGET_BUTTON (bcol, value='LOAD', uvalue='LOAD', xsize=100)
 	tmp	= WIDGET_BUTTON (bcol, value='SAVE', uvalue='SAVE', xsize=100)
 	play	= WIDGET_BUTTON (bcol, value='PLAY', uvalue='PLAY', xsize=100, sensitive=snap_active)
 	tmp	= WIDGET_BUTTON (bcol, value='QUIT', uvalue='QUIT', xsize=100)
-	drow    = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	DISP    = WIDGET_BASE (BASE, /row)
+	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_yz = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_xz = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
+	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wimg_xy = !d.window
 	MID     = WIDGET_BASE (BASE, /col)
@@ -901,15 +901,15 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
 
-	cut_height = min([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
-	LOW     = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT1', xsize=num_y*bin_y, ysize=cut_height, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wcut_x  = !d.window
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT2', xsize=num_x*bin_x, ysize=cut_height, retain=2)
+	cut_height = min ([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
+	CUTS    = WIDGET_BASE (BASE, /row)
+	tmp     = WIDGET_DRAW (CUTS, xsize=num_y*bin_y, ysize=cut_height, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_y  = !d.window
-	tmp     = WIDGET_DRAW (LOW, UVALUE='CUT3', xsize=num_z*bin_z>128, ysize=cut_height, retain=2)
+	tmp     = WIDGET_DRAW (CUTS, xsize=num_x*bin_x, ysize=cut_height, retain=2)
+	WIDGET_CONTROL, tmp, /REALIZE
+	wcut_x  = !d.window
+	tmp     = WIDGET_DRAW (CUTS, xsize=num_z*bin_z>128, ysize=cut_height, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_z  = !d.window
 
