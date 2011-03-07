@@ -9,6 +9,24 @@
 ;;;   Add more comments
 
 
+; Returns the position of a coordinate
+function find_coord, pos, data, num
+
+	pixel = 0
+	if (num gt 1) then begin
+		for i = 0, num-2 do begin
+			if (pos lt 0.5*(data[i]+data[i+1])) then begin
+				pixel = i
+				break
+			endif
+		end
+		if (pos ge 0.5*(data[num-2]+data[num-1])) then pixel = num - 1
+	endif
+
+	return, pixel
+end
+
+
 ; Check value range and extend it, if necessary (for sliders or plotting)
 function get_range, data
 
@@ -42,10 +60,11 @@ end
 ; Event handling of visualisation window
 pro cslice_event, event
 
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -82,19 +101,43 @@ pro cslice_event, event
 	'SHOW_AVER': begin 
 		draw_averages, selected_snapshot
 	end
+	'COX': begin
+		WIDGET_CONTROL, event.id, GET_VALUE = pos
+		px = find_coord (pos, coord.x, num_x)
+		if (event.update) then WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
+		WIDGET_CONTROL, sl_x, SET_VALUE = px
+		DRAW_IMAGE_1 = 1
+	end
+	'COY': begin
+		WIDGET_CONTROL, event.id, GET_VALUE = pos
+		py = find_coord (pos, coord.y, num_y)
+		if (event.update) then WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
+		WIDGET_CONTROL, sl_y, SET_VALUE = py
+		DRAW_IMAGE_2 = 1
+	end
+	'COZ': begin
+		WIDGET_CONTROL, event.id, GET_VALUE = pos
+		pz = find_coord (pos, coord.z, num_z)
+		if (event.update) then WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
+		WIDGET_CONTROL, sl_z, SET_VALUE = pz
+		DRAW_IMAGE_3 = 1
+	end
 	'SLX': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		px = pos
+		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		DRAW_IMAGE_1 = 1
 	end
 	'SLY': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		py = pos
+		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		DRAW_IMAGE_2 = 1
 	end
 	'SLZ': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		pz = pos
+		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		DRAW_IMAGE_3 = 1
 	end
 	'DRAW_YZ': begin
@@ -107,6 +150,8 @@ pro cslice_event, event
 			if ((py ne last_py) or (pz ne last_pz)) then begin
 				WIDGET_CONTROL, sl_y, SET_VALUE = py
 				WIDGET_CONTROL, sl_z, SET_VALUE = pz
+				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
+				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
 		endif
@@ -122,6 +167,8 @@ pro cslice_event, event
 			if ((px ne last_px) or (pz ne last_pz)) then begin
 				WIDGET_CONTROL, sl_x, SET_VALUE = px
 				WIDGET_CONTROL, sl_z, SET_VALUE = pz
+				WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
+				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
 		endif
@@ -137,6 +184,8 @@ pro cslice_event, event
 			if ((px ne last_px) or (py ne last_py)) then begin
 				WIDGET_CONTROL, sl_x, SET_VALUE = px
 				WIDGET_CONTROL, sl_y, SET_VALUE = py
+				WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
+				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
 		endif
@@ -250,6 +299,9 @@ pro cslice_event, event
 			WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
 			WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
 			WIDGET_CONTROL, b_cro, SET_VALUE = show_cross
+			WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
+			WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
+			WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 			WIDGET_CONTROL, sl_x, SET_VALUE = px
 			WIDGET_CONTROL, sl_y, SET_VALUE = py
 			WIDGET_CONTROL, sl_z, SET_VALUE = pz
@@ -339,7 +391,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; stepping of crosshairs
@@ -524,7 +576,7 @@ pro prepare_cube, cube_index
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; SETTINGS:
@@ -600,7 +652,7 @@ pro prepare_overplot
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; SETTINGS:
@@ -686,9 +738,10 @@ end
 ; Resets everything and redraws the window
 pro reset_GUI
 
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	selected_cube = 0
@@ -708,6 +761,9 @@ pro reset_GUI
 	WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
 	WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
 	WIDGET_CONTROL, b_cro, SET_VALUE = show_cross
+	WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
+	WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
+	WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 	WIDGET_CONTROL, sl_x, SET_VALUE = px
 	WIDGET_CONTROL, sl_y, SET_VALUE = py
 	WIDGET_CONTROL, sl_z, SET_VALUE = pz
@@ -733,7 +789,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; DEFAULT SETTINGS:
@@ -758,7 +814,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (n_elements (units) ge 1) then unit = units
 	if (n_elements (unit) eq 0) then begin
 		print, "WARNING: setting units to unity."
-		unit = { velocity:1, temperature:1, length:1, time:1, density:1 }
+		unit = { velocity:1, temperature:1, length:1, time:1, density:1, default_length_str:'' }
 	end
 
 	if (n_elements (scaling) eq 0) then scaling = 1
@@ -834,11 +890,11 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (num_snapshots ge 2) then prev_active = 1 else prev_active = 0
 	next_active = 0
 
-	if (num_x gt 1) then sl_x_active = 1 else sl_x_active = 0
-	if (num_y gt 1) then sl_y_active = 1 else sl_y_active = 0
-	if (num_z gt 1) then sl_z_active = 1 else sl_z_active = 0
+	if (num_x gt 1) then coord_x_active = 1 else coord_x_active = 0
+	if (num_y gt 1) then coord_y_active = 1 else coord_y_active = 0
+	if (num_z gt 1) then coord_z_active = 1 else coord_z_active = 0
 
-	dimensionality = sl_x_active + sl_y_active + sl_z_active
+	dimensionality = coord_x_active + coord_y_active + coord_z_active
 	if (dimensionality eq 0) then begin
 		print, "Are you sure, you want to visualize 0D data?"
 		print, "(If yes, just type '.continue' and press the return key.)"
@@ -853,12 +909,28 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	BASE    = WIDGET_BASE (MOTHER, /col)
 	CTRL    = WIDGET_BASE (BASE, /row)
 	scol    = WIDGET_BASE (CTRL, /col)
-	scot    = WIDGET_BASE (scol, /col)
-	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=sl_x_active)
-	scot    = WIDGET_BASE (scol, /col)
-	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=sl_y_active)
-	scot    = WIDGET_BASE (scol, /col)
-	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=sl_z_active)
+	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
+
+	if (unit.default_length_str) then begin
+		co_x    = CW_FIELD (scot, title='X ['+unit.default_length_str+']:', uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, /floating, /all_events, xsize=12)
+	end else begin
+		co_x    = CW_FIELD (scot, title='X:', uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, /integer, /all_events, xsize=12)
+	endelse
+	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=coord_x_active)
+	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
+	if (unit.default_length_str) then begin
+		co_y    = CW_FIELD (scot, title='Y ['+unit.default_length_str+']:', uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, /floating, /all_events, xsize=12)
+	end else begin
+		co_y    = CW_FIELD (scot, title='Y:', uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, /integer, /all_events, xsize=12)
+	endelse
+	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=coord_y_active)
+	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
+	if (unit.default_length_str) then begin
+		co_z    = CW_FIELD (scot, title='Z ['+unit.default_length_str+']:', uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, /floating, /all_events, xsize=12)
+	end else begin
+		co_z    = CW_FIELD (scot, title='Z:', uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, /integer, /all_events, xsize=12)
+	endelse
+	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=coord_z_active)
 	bcol    = WIDGET_BASE (CTRL, /col)
 	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCALE', set_value=abs_scale)
 	b_sub   = CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
@@ -892,11 +964,12 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	MID     = WIDGET_BASE (BASE, /col)
 	bcot    = WIDGET_BASE (MID, /row)
 
-	sl_min  = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='SCALE_BOT', /double, /edit, min=val_min, max=val_max, drag=1, value=val_min, xsize=((2*num_x*bin_x+num_y*bin_y)/2>(400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2)<500 )
+	sl_size = ((2*num_x*bin_x+num_y*bin_y)/2.5 > (400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2) < 500
+	sl_min  = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='SCALE_BOT', /double, /edit, min=val_min, max=val_max, drag=1, value=val_min, xsize=sl_size)
 	bcol    = WIDGET_BASE (bcot, /col)
 	min_max	= WIDGET_BUTTON (bcol, value='<= min SET max =>', uvalue='MIN_MAX', xsize=120)
 	range	= WIDGET_BUTTON (bcol, value='FREEZE RANGE', uvalue='FREEZE', xsize=120)
-	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_min, max=val_max, drag=1, value=val_max, xsize=((2*num_x*bin_x+num_y*bin_y)/2>(400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2)<500 )
+	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_min, max=val_max, drag=1, value=val_max, xsize=sl_size)
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
