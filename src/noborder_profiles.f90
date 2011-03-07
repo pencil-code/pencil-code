@@ -59,7 +59,10 @@ module BorderProfiles
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
-    subroutine request_border_driving()
+    subroutine request_border_driving(border_var)
+!
+      character (len=labellen) :: border_var
+      call keep_compiler_quiet(border_var)
 !
     endsubroutine request_border_driving
 !***********************************************************************

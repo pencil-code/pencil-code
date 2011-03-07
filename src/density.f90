@@ -395,7 +395,7 @@ module Density
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderlnrho/='nothing') call request_border_driving()
+      if (borderlnrho/='nothing') call request_border_driving(borderlnrho)
 !
 !  Check if we are solving partially force-free equations.
 !

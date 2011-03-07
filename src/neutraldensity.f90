@@ -207,7 +207,7 @@ module NeutralDensity
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderlnrhon/='nothing') call request_border_driving()
+      if (borderlnrhon/='nothing') call request_border_driving(borderlnrhon)
 !
     endsubroutine initialize_neutraldensity
 !***********************************************************************

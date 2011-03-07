@@ -153,7 +153,7 @@ module NeutralVelocity
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the modules can request the right pencils.
 !
-      if (borderuun/='nothing') call request_border_driving()
+      if (borderuun/='nothing') call request_border_driving(borderuun)
 !
 !  Turn off advection for 0-D runs.
 !

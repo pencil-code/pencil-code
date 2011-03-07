@@ -631,7 +631,7 @@ module Hydro
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderuu/='nothing') call request_border_driving()
+      if (borderuu/='nothing') call request_border_driving(borderuu)
 !
 !  Share lcoriolis_force and lcentrifugal_force so the Particles module
 !  knows whether to apply them or not.

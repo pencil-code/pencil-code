@@ -736,7 +736,7 @@ module Entropy
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderss/='nothing') call request_border_driving()
+      if (borderss/='nothing') call request_border_driving(borderss)
 !
 !  Shared variables.
 !

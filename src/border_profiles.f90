@@ -27,6 +27,12 @@ module BorderProfiles
   real, dimension(my) :: border_prof_y=1.0
   real, dimension(mz) :: border_prof_z=1.0
 !
+! WL: Ideally,this 4D array f_init should be allocatable, since it 
+!     is only used in specific conditions in the code (only when the 
+!     border profile chosen is 'initial-condition').
+!
+  real, dimension(mx,my,mz,mvar) :: f_init
+!
   logical :: lborder_driving=.false.
   logical :: lborder_quenching=.false.
 !
@@ -148,14 +154,45 @@ module BorderProfiles
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
-    subroutine request_border_driving()
+    subroutine request_border_driving(border_var)
 !
 !  Tell the BorderProfiles subroutine that we need border driving.
-!  Used for requesting the right pencils.
+!  Used for requesting the right pencils. Also save the initial 
+!  conditions in case that is the border profile to be used. 
 !
 !  25-aug-09/anders: coded
+!  06-mar-11/wlad  : added IC functionality
+!
+      character (len=labellen) :: border_var
+      logical :: lread=.true.,exists
 !
       lborder_driving=.true.
+!
+!  Check if there is a variable requesting initial condition as border
+!
+      if (lread.and.border_var=='initial-condition') then         
+!
+!  Check if VAR0 exists
+!
+        inquire(FILE=trim(directory_snap)//'/VAR0',EXIST=exists)
+        if (.not.exists) then
+          print*,'VAR0 for iproc=',iproc,'not found!'
+          print*,'Check lwrite_ic in start.in. If it'
+          print*,'is false, re-run start.csh with lwrite_ic=T' 
+          STOP 1
+        endif
+!
+!  Read the date into an initial condition array f_init that will be saved
+!
+        open(1,FILE=trim(directory_snap)//'/VAR0',FORM='unformatted')
+        read(1) f_init
+        close(1)
+!
+!  Switch lread to false so it does not read VAR0 multiple times
+!
+        lread=.false.
+!
+      endif
 !
     endsubroutine request_border_driving
 !***********************************************************************
@@ -214,9 +251,9 @@ module BorderProfiles
       integer,intent(in) :: ivar
 !
       if (lspherical_coords.or.lcylinder_in_a_box) then
-        call set_border_xy(f,ivar,tmp)
+        call set_border_xy(ivar,tmp)
       elseif (lcylindrical_coords) then
-        call set_border_xz(f,ivar,tmp)
+        call set_border_xz(ivar,tmp)
       else 
         print*,'The system has no obvious symmetry. It is    '
         print*,'better to stop and check how you want to save'
@@ -226,7 +263,7 @@ module BorderProfiles
 !
     endsubroutine set_border_initcond
 !***********************************************************************
-    subroutine set_border_xy(f,ivar,tmp)
+    subroutine set_border_xy(ivar,tmp)
 !
 !  Save the initial condition for a quantity that is 
 !  symmetric in the z axis. That can be a vertically 
@@ -235,13 +272,12 @@ module BorderProfiles
 !
 !  28-apr-09/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (nx,ny,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: tmp
       integer,intent(in) :: ivar
 !
       if (lfirst .and. it==1) then
-        fsave_init(:,m-m1+1,ivar)=f(l1:l2,m,npoint,ivar)
+        fsave_init(:,m-m1+1,ivar)=f_init(l1:l2,m,npoint,ivar)
         if (headtt.and.ip <= 6) &
              print*,'saving initial condition for ivar=',ivar
       endif
@@ -250,7 +286,7 @@ module BorderProfiles
 !
     endsubroutine set_border_xy
 !***********************************************************************
-    subroutine set_border_xz(f,ivar,tmp)
+    subroutine set_border_xz(ivar,tmp)
 !
 !  Save the initial condition for a quantity that is 
 !  symmetric in the y axis. An azimuthally symmetric 
@@ -258,15 +294,14 @@ module BorderProfiles
 !
 !  28-apr-09/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,nz,mvar), save :: fsave_init
       real, dimension (nx), intent(out) :: tmp
       integer,intent(in) :: ivar
 !
       if (lfirst .and. it==1) then
-         fsave_init(:,n-n1+1,ivar)=f(l1:l2,mpoint,n,ivar)
-         if (headtt.and.ip <= 6) &
-              print*,'saving initial condition for ivar=',ivar
+        fsave_init(:,n-n1+1,ivar)=f_init(l1:l2,mpoint,n,ivar)
+        if (headtt.and.ip <= 6) &
+             print*,'saving initial condition for ivar=',ivar
       endif
 !
       tmp=fsave_init(:,n-n1+1,ivar)

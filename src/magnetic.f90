@@ -949,7 +949,7 @@ module Magnetic
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderaa/='nothing') call request_border_driving()
+      if (borderaa/='nothing') call request_border_driving(borderaa)
 !
 !  Register an extra aux slot for bb if requested (so bb and jj are written
 !  to snapshots and can be easily analyzed later). For this to work you
