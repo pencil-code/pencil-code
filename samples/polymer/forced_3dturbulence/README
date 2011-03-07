@@ -1,0 +1,20 @@
+Directory:
+    ${PENCIL_HOME}/samples/polymer
+SVN Id:
+Maintainer:
+    Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
+Added:
+    07-Feb-2010
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+   This is a three dimensional forced (non-helical) turbulence with polymers.
+A polymeric viscosity is at present being used. This part of the code
+is still being developed but it is added to the samples to inhibit
+it from breaking down by future check ins. The algoritm used
+is described in the following paper.  
+Reference:
+"Direct numerical simulations of statistically steady, homogeneous, 
+isotropic fluid turbulence with polymer additives." 
+Prasad Perlekar, Dhrubaditya Mitra, Rahul Pandit, Phys. Rev. E 82, 066313 (2010) 
+(arXiv:1008.0051v2)

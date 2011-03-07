@@ -1,0 +1,28 @@
+!
+!  mean field dynamo with dynamical quenching
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2011-02-28 09:11:28 dhruba Exp $'
+  nt=50, it1=2, cdt=0.4, cdtv=0.30, isave=5, itorder=3
+  dsnap=.2, dvid=.5, ialive=1
+  lwrite_aux=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&forcing_run_pars
+  iforce='helical', force=0.05, relhel=1.,
+/
+&viscosity_run_pars
+  nu=5e-3
+/
+&polymer_run_pars
+poly_model='FENE-P'
+tau_poly=1.
+mu_poly=1e-1
+eta_poly=1e-3
+fenep_L=10.
+/

@@ -1,0 +1,17 @@
+!                     -*-f90-*-   (for emacs)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2011-02-28 09:11:28 dhruba Exp $'
+/
+&eos_init_pars
+gamma=1
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&polymer_init_pars
+initpoly='sphere',ini_radius=1e-2
+/
