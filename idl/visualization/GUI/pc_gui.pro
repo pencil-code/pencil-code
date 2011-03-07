@@ -128,6 +128,7 @@ if (not pc_gui_loaded) then BEGIN
 	stepping = 1
 	if (num_snapshots gt 0) then begin
 		print, ""
+		print, "============================================================================="
 		print, "There are > ", strtrim (num_snapshots, 2), " < snapshot files available."
 		print, "(This corresponds to ", strtrim (round (num_snapshots * gb_per_file * 10) / 10., 2), " GB.)"
 		if ((stepping eq 1) and (skipping eq 0)) then begin
