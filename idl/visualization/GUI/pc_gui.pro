@@ -155,9 +155,9 @@ if (not pc_gui_loaded) then BEGIN
 				repeat begin
 					read, stepping, format="(I)", prompt="(0..."+strtrim (num_snapshots-skipping, 2)+"): "
 				end until ((stepping ge 0) and (stepping le num_snapshots-skipping))
-				if ((num_snapshots-skipping gt 1) and (stepping ge 1)) then begin
+				max_files = floor ((num_snapshots-1-skipping)/stepping) + 1
+				if ((max_files gt 1) and (stepping ge 1)) then begin
 					print, "How many files do you want to read in total?"
-					max_files = floor ((num_snapshots-1-skipping)/stepping) + 1
 					repeat begin
 						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (max_files, 2)+"): "
 					end until ((files_total ge 0) and (files_total le max_files))
