@@ -81,7 +81,7 @@ module InitialCondition
   implicit none
 !
   include '../initial_condition.h'
-
+!
   real :: fring1=0.0, Iring1=0.0, Rring1=1.0, wr1=0.3
   real :: fring2=0.0, Iring2=0.0, Rring2=1.0, wr2=0.3
   real :: fring3=0.0, Iring3=0.0, Rring3=1.0, wr3=0.3
@@ -93,8 +93,6 @@ module InitialCondition
   character (len=labellen) :: fring_profile='tanh'
   real, dimension(ninit) :: amplaa
   character (len=labellen), dimension(ninit) :: initring='nothing'
-!
-!!  integer :: dummy
 !
   namelist /initial_condition_pars/  fring1, Iring1, Rring1, wr1, &
        axisr1, dispr1, fring2, Iring2, Rring2, wr2, axisr2, dispr2, &
@@ -177,21 +175,24 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: j
-      
 !
       do j=1,ninit
 !
         select case (initring(j))
-          case ('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,iaa,fring_profile)
-          case ('fluxrings_WB'); call fluxrings(amplaa(j),f,iuu,iaa,fring_profile)
-          case ('fluxrings_BW'); call fluxrings(amplaa(j),f,iaa,iuu,fring_profile)
-          case ('fluxrings_WW'); call fluxrings(amplaa(j),f,iuu,iuu,fring_profile)
+          case ('fluxrings', '4')
+            call fluxrings(amplaa(j),f,iaa,iaa,fring_profile)
+          case ('fluxrings_WB')
+            call fluxrings(amplaa(j),f,iuu,iaa,fring_profile)
+          case ('fluxrings_BW')
+            call fluxrings(amplaa(j),f,iaa,iuu,fring_profile)
+          case ('fluxrings_WW')
+            call fluxrings(amplaa(j),f,iuu,iuu,fring_profile)
           case ('nothing')
-!            
+!
           case default
-!                                                                                                           
-!  Catch unknown values                                                                                     
-!                                                                                                           
+!
+!  Catch unknown values
+!
             call fatal_error('initring', &
                  'initring "' // trim(initring(j)) // '" not recognised')
 !
@@ -314,7 +315,7 @@ module InitialCondition
     endsubroutine read_initial_condition_pars
 !***********************************************************************
     subroutine write_initial_condition_pars(unit)
-!     
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=initial_condition_pars)
@@ -331,7 +332,7 @@ module InitialCondition
 !   7-jun-09/axel: added gaussian and constant (or box) profiles
 !
       use Mpicomm, only: stop_it
-      use Sub
+      use Sub, only: erfunc
 !
       real, dimension (nx,3) :: vv
       real, dimension (nx) :: xx1,yy1,zz1,phi,tmp
