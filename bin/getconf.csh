@@ -349,12 +349,14 @@ else if ($hn =~ *.hpc2n.umu.se ) then
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
   set $mpirun=mpirun
 #------------------------------------------------
-else if ($hn =~ norlx51) then
+else if ($hn =~ meera*)  then
   echo "******************************"
-  echo "norlx51"
+  echo "Meera : Dhruba's laptop"
   echo " ******************************"
+  source ${HOME}/.cshrc
+  set $mpirun=${HOME}/Library/bin/mpirun
 #------------------------------------------------
-else if ($hn =~ norlx55) then
+else if ($hn =~ norlx5*) then
   echo "******************************"
   echo "NORDITA cluster"
   echo " ******************************"

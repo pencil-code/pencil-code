@@ -85,6 +85,7 @@ my %tests = (
                          1d-tests/sod_10
                          1d-tests/ambipolar_diffusion
                          helical-MHDturb
+                         polymer/forced_3dturbulence 
                          testfield_z
                          random_uu_particles
                          1d-tests/solar-atmosphere-temperature
