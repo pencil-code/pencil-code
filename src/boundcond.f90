@@ -1095,21 +1095,21 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        dxR=-dx/x(l1)
-        i=-1; f(l1+i,:,:,j)=(4*f(l1,:,:,j)+f(l1-i,:,:,j)*(1+i*dxR)*(2-dxR))/(-dxR-2)/(1-i*dxR)
-        f1_co=(2+dxR)*f(l1+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l1-i,:,:,j)*(1+i*dxR)
-        i=-2; f(l1+i,:,:,j)=(30*f(l1,:,:,j)+8*f1_co+f(l1-i,:,:,j)*(-1+dxR)*(1+i*dxR))/(1+dxR)/(1-i*dxR)
-        f2_co=(-1-dxR)*f(l1+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l1-i,:,:,j)*(1+i*dxR)
-        i=-3; f(l1+i,:,:,j)=(490*f(l1,:,:,j)+270*f1_co+27*f2_co-f(l1-i,:,:,j)*(2-3*dxR)*(1+i*dxR))/(-2-3*dxR)/(1-i*dxR)
+        dxR=dx/x(l1)
+        i=-1; f(l1+i,:,:,j)=(f(l1,:,:,j)*2+f(l1-i,:,:,j)*(dxR/2-1))/(dxR/2+1)
+        f1_co=(1+dxR/2)*f(l1+i,:,:,j)+(1-dxR/2)*f(l1-i,:,:,j)
+        i=-2; f(l1+i,:,:,j)=(30*f(l1,:,:,j)+16*f1_co+(dxR-1)*f(l1-i,:,:,j))/(dxR+1)
+        f2_co=(1+dxR)*f(l1+i,:,:,j)+(1-dxR)*f(l1-i,:,:,j)
+        i=-3; f(l1+i,:,:,j)=(490*f(l1,:,:,j)-270*f1_co+27*f2_co+(3*dxR-2)*f(l1-i,:,:,j))/(3*dxR+2)
 !
       case ('top')               ! top boundary
-        dxR=-dx/x(l2)
-        i=1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(1+i*dxR)*(2-dxR))/(-dxR-2)/(1-i*dxR)
-        f1_co=(2+dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(2-dxR)*f(l2-i,:,:,j)*(1+i*dxR)
-        i=2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(-1+dxR)*(1+i*dxR))/(1+dxR)/(1-i*dxR)
-        f2_co=(-1-dxR)*f(l2+i,:,:,j)*(1-i*dxR)+(-1+dxR)*f(l2-i,:,:,j)*(1+i*dxR)
-        i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(2-3*dxR)*(1+i*dxR))/(-2-3*dxR)/(1-i*dxR)
-!!
+        dxR=dx/x(l2)
+        i=1; f(l2+i,:,:,j)=(f(l2,:,:,j)*(2+dxR**2)+f(l2-i,:,:,j)*(dxR/2-1))/(dxR/2+1)
+        f1_co=(1+dxR/2)*f(l2+i,:,:,j)+(1-dxR/2)*f(l2-i,:,:,j)
+        i=2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+16*f1_co+(dxR-1)*f(l2-i,:,:,j))/(dxR+1)
+        f2_co=(1+dxR)*f(l2+i,:,:,j)+(1-dxR)*f(l2-i,:,:,j)
+        i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)-270*f1_co+27*f2_co+(3*dxR-2)*f(l2-i,:,:,j))/(3*dxR+2)
+!
       case default
         print*, "bc_cpz_x: ", topbot, " should be 'top' or 'bot'"
 !
@@ -1137,20 +1137,20 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        dxR=-dx/x(l1)
-        i=-1; f(l1+i,:,:,j)=(4*f(l1,:,:,j)+f(l1-i,:,:,j)*(-2-dxR))/(2-dxR)
-        f1_co=-(2-dxR)*f(l1+i,:,:,j)+(-2-dxR)*f(l1-i,:,:,j)
-        i=-2; f(l1+i,:,:,j)=(30*f(l1,:,:,j)+8*f1_co+f(l1-i,:,:,j)*(1+dxR))/(-1+dxR)
-        f2_co=-(-1+dxR)*f(l1+i,:,:,j)+(1+dxR)*f(l1-i,:,:,j)
-        i=-3; f(l1+i,:,:,j)=(490*f(l1,:,:,j)+270*f1_co+27*f2_co-f(l1-i,:,:,j)*(-2-3*dxR))/(2-3*dxR)
+        dxR=dx/x(l1)
+        i=-1; f(l1+i,:,:,j)=(f(l1,:,:,j)*(2+dxR**2)+f(l1-i,:,:,j)*(dxR/2-1))/(dxR/2+1)
+        f1_co=(1+dxR/2)*f(l1+i,:,:,j)+(1-dxR/2)*f(l1-i,:,:,j)
+        i=-2; f(l1+i,:,:,j)=((30+12*dxR**2)*f(l1,:,:,j)+16*f1_co+(dxR-1)*f(l1-i,:,:,j))/(dxR+1)
+        f2_co=(1+dxR)*f(l1+i,:,:,j)+(1-dxR)*f(l1-i,:,:,j)
+        i=-3; f(l1+i,:,:,j)=((490+180*dxR**2)*f(l1,:,:,j)-270*f1_co+27*f2_co+(3*dxR-2)*f(l1-i,:,:,j))/(3*dxR+2)
 !
       case ('top')               ! top boundary
-        dxR=-dx/x(l2)
-        i=1; f(l2+i,:,:,j)=(4*f(l2,:,:,j)+f(l2-i,:,:,j)*(-2-dxR))/(2-dxR)
-        f1_co=-(2-dxR)*f(l2+i,:,:,j)+(-2-dxR)*f(l2-i,:,:,j)
-        i=2; f(l2+i,:,:,j)=(30*f(l2,:,:,j)+8*f1_co+f(l2-i,:,:,j)*(1+dxR))/(-1+dxR)
-        f2_co=-(-1+dxR)*f(l2+i,:,:,j)+(1+dxR)*f(l2-i,:,:,j)
-        i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)+270*f1_co+27*f2_co-f(l2-i,:,:,j)*(-2-3*dxR))/(2-3*dxR)
+        dxR=dx/x(l2)
+        i=1; f(l2+i,:,:,j)=(f(l2,:,:,j)*(2+dxR**2)+f(l2-i,:,:,j)*(dxR/2-1))/(dxR/2+1)
+        f1_co=(1+dxR/2)*f(l2+i,:,:,j)+(1-dxR/2)*f(l2-i,:,:,j)
+        i=2; f(l2+i,:,:,j)=((30+12*dxR**2)*f(l2,:,:,j)+16*f1_co+(dxR-1)*f(l2-i,:,:,j))/(dxR+1)
+        f2_co=(1+dxR)*f(l2+i,:,:,j)+(1-dxR)*f(l2-i,:,:,j)
+        i=3; f(l2+i,:,:,j)=((490+180*dxR**2)*f(l2,:,:,j)-270*f1_co+27*f2_co+(3*dxR-2)*f(l2-i,:,:,j))/(3*dxR+2)
 !
       case default
         print*, "bc_cpp_x: ", topbot, " should be 'top' or 'bot'"
