@@ -412,7 +412,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform (cube[px,*,*], num_y, num_z) > val_min) < val_max
-		if ((bin_y ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
+		if ((bin_y ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), 1, cubic=0)
 		val_range = get_range (ii)
 		wset, wimg_yz
 		if (show_cross) then begin
@@ -442,7 +442,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform (cube[*, py, *], num_x, num_z) > val_min) < val_max
-		if ((bin_x ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), cubic = 0)
+		if ((bin_x ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), 1, cubic=0)
 		val_range = get_range (ii)
 		wset, wimg_xz
 		if (show_cross) then begin
@@ -472,7 +472,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		ii = (reform (cube[*, *, pz], num_x, num_y) > val_min) < val_max
-		if ((bin_x ne 1) or (bin_y ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
+		if ((bin_x ne 1) or (bin_y ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), 1, cubic=0)
 		val_range = get_range (ii)
 		wset, wimg_xy
 		if (show_cross) then begin
