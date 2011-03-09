@@ -192,6 +192,16 @@ module Mpicomm
     module procedure collect_xy_4D
   endinterface
 !
+  interface distribute_z
+    module procedure distribute_z_3D
+    module procedure distribute_z_4D
+  endinterface
+!
+  interface collect_z
+    module procedure collect_z_3D
+    module procedure collect_z_4D
+  endinterface
+!
   interface distribute_to_pencil_xy
     module procedure distribute_to_pencil_xy_2D
   endinterface
@@ -3364,6 +3374,182 @@ module Mpicomm
 !
     endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
+    function blocks_equal(msg,a,b)
+!
+!  Helper routine to check the consistendy of the ghost cell values.
+!
+!  07-mar-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: msg
+      real, dimension (:,:,:,:), intent(in) :: a, b
+      logical :: blocks_equal
+!
+      integer :: num_x, num_y, num_z, num_a, px, py, pz, pa
+!
+      num_x = size (a, 1)
+      num_y = size (a, 2)
+      num_z = size (a, 3)
+      num_a = size (a, 4)
+!
+      if (num_x /= size (b, 1)) call stop_it ('blocks_equal: size mismatch in X')
+      if (num_y /= size (b, 2)) call stop_it ('blocks_equal: size mismatch in Y')
+      if (num_z /= size (b, 3)) call stop_it ('blocks_equal: size mismatch in Z')
+      if (num_a /= size (b, 4)) call stop_it ('blocks_equal: size mismatch in A')
+!
+      blocks_equal = .true.
+      do pa = 1, num_a
+        do pz = 1, num_z
+          do py = 1, num_y
+            do px = 1, num_x
+              if (a(px,py,pz,pa) /= b(px,py,pz,pa)) then
+                write (100+iproc,*) msg, ' => ', px, py, pz, pa, ' : ', a(px,py,pz,pa), b(px,py,pz,pa)
+                blocks_equal = .false.
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+!
+    endfunction blocks_equal
+!***********************************************************************
+    subroutine check_ghosts_consistency(f, msg)
+!
+!  Helper routine to check the consistendy of the ghost cell values.
+!
+!  07-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      character (len=*), intent(in) :: msg
+!
+      real, dimension (:,:,:,:), allocatable :: buffer, global, lower, middle, upper
+      integer :: px, py, pz, lx, ux, ly, uy, lz, uz, alloc_err
+      logical :: ok
+!
+      if (lpencil_check_at_work) return
+!
+      if (lfirst_proc_xy) then
+        allocate (buffer(mx*nprocx,my*nprocy,mz,mfarray), stat=alloc_err)
+        if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate buffer memory.')
+      endif
+      if (lroot) then
+        allocate (global(mx*nprocx,my*nprocy,mz*nprocz,mfarray), stat=alloc_err)
+        if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate global memory.')
+        allocate (lower(mx,my,mz,mfarray), middle(mx,my,mz,mfarray), upper(mx,my,mz,mfarray), stat=alloc_err)
+        if (alloc_err > 0) call stop_it ('check_ghosts_consistency: could not allocate box memory.')
+      endif
+!
+      call collect_xy (f, buffer)
+      if (lfirst_proc_xy) call collect_z (buffer, global)
+!
+      if (lfirst_proc_xy) deallocate (buffer)
+      if (.not. lroot) return
+!
+      ok = .true.
+!
+      ! check in X:
+      do py = 1, nprocy
+        do pz = 1, nprocz
+          if (nprocx == 1) then
+            if (lperi(1)) then
+              middle = global(:,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
+              ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", middle(l2i:l2,:,:,:), middle(1:l1-1,:,:,:))
+              ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", middle(l2+1:mx,:,:,:), middle(l1:l1i,:,:,:))
+            endif
+          else
+            do px = 1, nprocx
+              lx = px - 1
+              if (lperi(1) .and. (lx < 1)) lx = lx + nprocx
+              ux = px + 1
+              if (lperi(1) .and. (ux > nprocx)) ux = ux - nprocx
+              middle = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
+              ! check lower neighbor
+              if (lx > 0) then
+                lower = global((lx-1)*mx+1:lx*mx,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
+                ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", lower(l2i:l2,:,:,:), middle(1:l1-1,:,:,:))
+              endif
+              ! check upper neighbor
+              if (ux <= nprocx) then
+                upper = global((ux-1)*mx+1:ux*mx,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
+                ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", middle(l2+1:mx,:,:,:), upper(l1:l1i,:,:,:))
+              endif
+            enddo
+          endif
+        enddo
+      enddo
+!
+      ! check in Y:
+      do px = 1, nprocx
+        do pz = 1, nprocz
+          if (nprocy == 1) then
+            if (lperi(2)) then
+              middle = global((px-1)*mx+1:px*mx,:,(pz-1)*mz+1:pz*mz,:)
+              ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", middle(:,m2i:m2,:,:), middle(:,1:m1-1,:,:))
+              ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", middle(:,m2+1:my,:,:), middle(:,m1:m1i,:,:))
+            endif
+          else
+            do py = 1, nprocy
+              ly = ipy - 1
+              if (lperi(2) .and. (ly < 1)) ly = ly + nprocy
+              uy = ipy + 1
+              if (lperi(2) .and. (uy > nprocy)) uy = uy - nprocy
+              middle = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
+              ! check lower neighbor
+              if (ly > 0) then
+                lower = global((px-1)*mx+1:px*mx,(ly-1)*my+1:ly*my,(pz-1)*mz+1:pz*mz,:)
+                ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", lower(:,m2i:m2,:,:), middle(:,1:m1-1,:,:))
+              endif
+              ! check upper neighbor
+              if (uy <= nprocy) then
+                upper = global((px-1)*mx+1:px*mx,(uy-1)*my+1:uy*my,(pz-1)*mz+1:pz*mz,:)
+                ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", middle(:,m2+1:my,:,:), upper(:,m1:m1i,:,:))
+              endif
+            enddo
+          endif
+        enddo
+      enddo
+!
+      ! check in z:
+      do px = 1, nprocx
+        do py = 1, nprocy
+          if (nprocz == 1) then
+            if (lperi(3)) then
+              middle = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,:,:)
+              ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", middle(:,:,n2i:n2,:), middle(:,:,1:n1-1,:))
+              ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", middle(:,:,n2+1:mz,:), middle(:,:,n1:n1i,:))
+            endif
+          else
+            do pz = 1, nprocz
+              lz = pz - 1
+              if (lperi(3) .and. (lz < 1)) lz = lz + nprocz
+              uz = pz + 1
+              if (lperi(3) .and. (uz > nprocz)) uz = uz - nprocz
+              middle = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
+              ! check lower neighbor
+              if (lz > 0) then
+                lower = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,(lz-1)*mz+1:lz*mz,:)
+                ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", lower(:,:,n2i:n2,:), middle(:,:,1:n1-1,:))
+              endif
+              ! check upper neighbor
+              if (uz <= nprocz) then
+                upper = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,(uz-1)*mz+1:uz*mz,:)
+                ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", middle(:,:,n2+1:mz,:), upper(:,:,n1:n1i,:))
+              endif
+            enddo
+          endif
+        enddo
+      enddo
+!
+      if (.not. ok) then
+        write (*,*) '=> ERROR: found inconsistency in ghost cells!'
+        write (*,*) '=> SUBROUTINE: ', msg
+        call sleep (1)
+        stop
+      endif
+!
+      if (lroot) deallocate (global, lower, middle, upper)
+!
+    endsubroutine check_ghosts_consistency
+!***********************************************************************
     subroutine fill_zghostzones_3vec(vec,ivar)
 !
 !  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of
@@ -3856,6 +4042,260 @@ module Mpicomm
       deallocate (buffer)
 !
     endsubroutine collect_xy_4D
+!***********************************************************************
+    subroutine distribute_z_3D (in, out, source_proc)
+!
+!  This routine divides a large array of 3D data on the source processor
+!  and distributes it to all processors in the z-direction. 
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding z-direction (Default: 0, equals lfirst_proc_z).
+!
+!  08-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz ! transfer box sizes
+      integer :: pz, broadcaster, partner, nbox, alloc_err
+      integer, parameter :: ytag=117
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      nbox = bnx*bny*bnz
+!
+      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('distribute_z_3D: not enough memory for buffer!', .true.)
+!
+      broadcaster = ipx + ipy*nprocx
+      if (present (source_proc)) broadcaster = broadcaster + source_proc*nprocxy
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx /= size (in, 1)) &
+            call stop_fatal ('distribute_z_4D: x dim must be equal between in and out', lfirst_proc_z)
+        if (bny /= size (in, 2)) &
+            call stop_fatal ('distribute_z_4D: y dim must be equal between in and out', lfirst_proc_z)
+        if (bnz * nprocz /= size (in, 3)) &
+            call stop_fatal ('distribute_z_4D: input z dim must be nprocz*output', lfirst_proc_z)
+!
+        do pz = 0, nprocz-1
+          partner = ipx + ipy*nprocx + pz*nprocxy
+          if (iproc == partner) then
+            ! data is local
+            out = in(:,:,pz*bnz+1:(pz+1)*bnz)
+          else
+            ! send to partner
+            buffer = in(:,:,pz*bnz+1:(pz+1)*bnz)
+            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        out = buffer
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine distribute_z_3D
+!***********************************************************************
+    subroutine distribute_z_4D (in, out, source_proc)
+!
+!  This routine divides a large array of 4D data on the source processor
+!  and distributes it to all processors in the z-direction. 
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding z-direction (Default: 0, equals lfirst_proc_z).
+!
+!  08-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: pz, broadcaster, partner, nbox, alloc_err
+      integer, parameter :: ytag=117
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      bna = size (out, 4)
+      nbox = bnx*bny*bnz*bna
+!
+      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('distribute_z_4D: not enough memory for buffer!', .true.)
+!
+      broadcaster = ipx + ipy*nprocx
+      if (present (source_proc)) broadcaster = broadcaster + source_proc*nprocxy
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx /= size (in, 1)) &
+            call stop_fatal ('distribute_z_4D: x dim must be equal between in and out', lfirst_proc_z)
+        if (bny /= size (in, 2)) &
+            call stop_fatal ('distribute_z_4D: y dim must be equal between in and out', lfirst_proc_z)
+        if (bnz * nprocz /= size (in, 3)) &
+            call stop_fatal ('distribute_z_4D: input z dim must be nprocz*output', lfirst_proc_z)
+        if (bna /= size (in, 4)) &
+            call stop_fatal ('distribute_z_4D: 4th dim must equal between in and out', lfirst_proc_z)
+!
+        do pz = 0, nprocz-1
+          partner = ipx + ipy*nprocx + pz*nprocxy
+          if (iproc == partner) then
+            ! data is local
+            out = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
+          else
+            ! send to partner
+            buffer = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
+            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+          endif
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        out = buffer
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine distribute_z_4D
+!***********************************************************************
+    subroutine collect_z_3D (in, out, dest_proc)
+!
+!  Collect 3D data from all processors in the z-direction
+!  and combine it into one large array on one destination processor.
+!  'dest_proc' is the iproc number relative to the first processor
+!  in the corresponding z-direction (Default: 0, equals lfirst_proc_z).
+!
+!  08-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      integer :: bnx, bny, bnz ! transfer box sizes
+      integer :: pz, collector, partner, nbox, alloc_err
+      integer, parameter :: ytag=118
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (in, 1)
+      bny = size (in, 2)
+      bnz = size (in, 3)
+      nbox = bnx*bny*bnz
+!
+      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('collect_z_3D: not enough memory for buffer!', .true.)
+!
+      collector = ipx + ipy*nprocx
+      if (present (dest_proc)) collector = collector + dest_proc*nprocxy
+!
+      if (iproc == collector) then
+        ! collect the data
+        if (bnx /= size (out, 1)) &
+            call stop_fatal ('collect_z_3D: x dim must equal between in and out', lfirst_proc_z)
+        if (bny /= size (out, 2)) &
+            call stop_fatal ('collect_z_3D: y dim must equal between in and out', lfirst_proc_z)
+        if (bnz * nprocz /= size (out, 3)) &
+            call stop_fatal ('collect_z_3D: output z dim must be nprocz*input', lfirst_proc_z)
+!
+        do pz = 0, nprocz-1
+          partner = ipx + ipy*nprocx + pz*nprocxy
+          if (iproc == partner) then
+            ! data is local
+            out(:,:,pz*bnz+1:(pz+1)*bnz) = in
+          else
+            ! receive from partner
+            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            out(:,:,pz*bnz+1:(pz+1)*bnz) = buffer
+          endif
+        enddo
+      else
+        ! send to collector
+        buffer = in
+        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine collect_z_3D
+!***********************************************************************
+    subroutine collect_z_4D (in, out, dest_proc)
+!
+!  Collect 4D data from all processors in the z-direction
+!  and combine it into one large array on one destination processor.
+!  'dest_proc' is the iproc number relative to the first processor
+!  in the corresponding z-direction (Default: 0, equals lfirst_proc_z).
+!
+!  08-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: pz, collector, partner, nbox, alloc_err
+      integer, parameter :: ytag=118
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (in, 1)
+      bny = size (in, 2)
+      bnz = size (in, 3)
+      bna = size (in, 4)
+      nbox = bnx*bny*bnz*bna
+!
+      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('collect_z_4D: not enough memory for buffer!', .true.)
+!
+      collector = ipx + ipy*nprocx
+      if (present (dest_proc)) collector = collector + dest_proc*nprocxy
+!
+      if (iproc == collector) then
+        ! collect the data
+        if (bnx /= size (out, 1)) &
+            call stop_fatal ('collect_z_4D: x dim must equal between in and out', lfirst_proc_z)
+        if (bny /= size (out, 2)) &
+            call stop_fatal ('collect_z_4D: y dim must equal between in and out', lfirst_proc_z)
+        if (bnz * nprocz /= size (out, 3)) &
+            call stop_fatal ('collect_z_4D: output z dim must be nprocz*input', lfirst_proc_z)
+        if (bna /= size (out, 4)) &
+            call stop_fatal ('collect_z_4D: 4th dim must equal between in and out', lfirst_proc_z)
+!
+        do pz = 0, nprocz-1
+          partner = ipx + ipy*nprocx + pz*nprocxy
+          if (iproc == partner) then
+            ! data is local
+            out(:,:,pz*bnz+1:(pz+1)*bnz,:) = in
+          else
+            ! receive from partner
+            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            out(:,:,pz*bnz+1:(pz+1)*bnz,:) = buffer
+          endif
+        enddo
+      else
+        ! send to collector
+        buffer = in
+        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+      deallocate (buffer)
+!
+    endsubroutine collect_z_4D
 !***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out, broadcaster)
 !

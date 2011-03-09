@@ -148,6 +148,16 @@ module Mpicomm
     module procedure collect_xy_4D
   endinterface
 !
+  interface distribute_z
+    module procedure distribute_z_3D
+    module procedure distribute_z_4D
+  endinterface
+!
+  interface collect_z
+    module procedure collect_z_3D
+    module procedure collect_z_4D
+  endinterface
+!
   interface distribute_to_pencil_xy
     module procedure distribute_to_pencil_xy_2D
   endinterface
@@ -1378,6 +1388,86 @@ module Mpicomm
 !
     endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
+    function blocks_equal(msg,a,b)
+!
+!  Helper routine to check the equality of two arrays.
+!
+!  07-mar-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: msg
+      real, dimension (:,:,:,:), intent(in) :: a, b
+      logical :: blocks_equal
+!
+      integer :: num_x, num_y, num_z, num_a, px, py, pz, pa
+!
+      num_x = size (a, 1)
+      num_y = size (a, 2)
+      num_z = size (a, 3)
+      num_a = size (a, 4)
+!
+      if (num_x /= size (b, 1)) call stop_it ('blocks_equal: size mismatch in X')
+      if (num_y /= size (b, 2)) call stop_it ('blocks_equal: size mismatch in Y')
+      if (num_z /= size (b, 3)) call stop_it ('blocks_equal: size mismatch in Z')
+      if (num_a /= size (b, 4)) call stop_it ('blocks_equal: size mismatch in A')
+!
+      blocks_equal = .true.
+      do pa = 1, num_a
+        do pz = 1, num_z
+          do py = 1, num_y
+            do px = 1, num_x
+              if (a(px,py,pz,pa) /= b(px,py,pz,pa)) then
+                write (99,*) msg, ' => ', px, py, pz, pa, ' : ', a(px,py,pz,pa), b(px,py,pz,pa)
+                blocks_equal = .false.
+              endif
+            enddo
+          enddo
+        enddo
+      enddo
+!
+    endfunction blocks_equal
+!***********************************************************************
+    subroutine check_ghosts_consistency(f,routine)
+!
+!  Helper routine to check the consistendy of the ghost cell values.
+!
+!  07-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      character (len=*), intent(in) :: routine
+!
+      logical :: ok
+!
+      if (lpencil_check_at_work) return
+!
+      ok = .true.
+!
+      ! check in X:
+      if (lperi(1)) then
+        ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", f(l2i:l2,:,:,:), f(1:l1-1,:,:,:))
+        ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", f(l2+1:mx,:,:,:), f(l1:l1i,:,:,:))
+      endif
+!
+      ! check in Y:
+      if (lperi(2)) then
+        ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", f(:,m2i:m2,:,:), f(:,1:m1-1,:,:))
+        ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", f(:,m2+1:my,:,:), f(:,m1:m1i,:,:))
+      endif
+!
+      ! check in z:
+      if (lperi(2)) then
+        ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", f(:,:,n2i:n2,:), f(:,:,1:n1-1,:))
+        ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", f(:,:,n2+1:mz,:), f(:,:,n1:n1i,:))
+      endif
+!
+      if (.not. ok) then
+        write (*,*) '=> ERROR: found inconsistency in ghost cells!'
+        write (*,*) '=> SUBROUTINE: ', routine
+        call sleep (1)
+        stop
+      endif
+!
+    endsubroutine check_ghosts_consistency
+!***********************************************************************
     subroutine sum_xy (in, out)
 !
 !  Sum up 0D data in the xy-plane and distribute back the sum.
@@ -1486,6 +1576,70 @@ module Mpicomm
       if (present (out) .or. present (dest_proc)) out = in
 !
     endsubroutine collect_xy_4D
+!***********************************************************************
+    subroutine distribute_z_3D (in, out, source_proc)
+!
+!  This routine divides a large array of 3D data on the source processor
+!  and distributes it to all processors in the z-direction. 
+!
+!  09-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      if (present (source_proc) .and. (iproc /= source_proc)) return
+!
+      out = in
+!
+    endsubroutine distribute_z_3D
+!***********************************************************************
+    subroutine distribute_z_4D (out, in, source_proc)
+!
+!  This routine divides a large array of 4D data on the source processor
+!  and distributes it to all processors in the z-direction. 
+!
+!  09-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      if (present (source_proc) .and. (iproc /= source_proc)) return
+!
+      out = in
+!
+    endsubroutine distribute_z_4D
+!***********************************************************************
+    subroutine collect_z_3D (in, out, dest_proc)
+!
+!  Collect 3D data from all processors in the z-direction
+!  and combine it into one large array on one destination processor.
+!
+!  09-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(in) :: in
+      real, dimension(:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      if (present (out) .or. present (dest_proc)) out = in
+!
+    endsubroutine collect_z_3D
+!***********************************************************************
+    subroutine collect_z_4D (in, out, dest_proc)
+!
+!  Collect 4D data from all processors in the z-direction
+!  and combine it into one large array on one destination processor.
+!
+!  09-mar-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      if (present (out) .or. present (dest_proc)) out = in
+!
+    endsubroutine collect_z_4D
 !***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out)
 !
