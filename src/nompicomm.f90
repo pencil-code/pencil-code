@@ -1428,7 +1428,7 @@ module Mpicomm
 !***********************************************************************
     subroutine check_ghosts_consistency(f,routine)
 !
-!  Helper routine to check the consistendy of the ghost cell values.
+!  Helper routine to check the consistency of the ghost cell values.
 !
 !  07-mar-2011/Bourdin.KIS: coded
 !
