@@ -3376,7 +3376,7 @@ module Mpicomm
 !***********************************************************************
     function blocks_equal(msg,a,b)
 !
-!  Helper routine to check the consistendy of the ghost cell values.
+!  Helper routine to check the equality of two arrays.
 !
 !  07-mar-2011/Bourdin.KIS: coded
 !
