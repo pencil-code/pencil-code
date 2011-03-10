@@ -742,7 +742,7 @@ module Entropy
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderss/='nothing') call request_border_driving()
+      if (borderss/='nothing') call request_border_driving(borderss)
 !
 !  Shared variables.
 !
@@ -3582,9 +3582,9 @@ module Entropy
       real, dimension (nx) :: thdiff,g2,del2ss1
       real, dimension (nx) :: hcond,chit_prof
       real, dimension (nx,3,3) :: tmp
-      real, save :: z_prev=-1.23e20
+      !real, save :: z_prev=-1.23e20
       real :: s2,c2,sc
-      integer :: j,ix,ic
+      integer :: j,ix
 !
       save :: hcond, glhc, chit_prof, glchit_prof
 !
@@ -4843,7 +4843,7 @@ module Entropy
       real, pointer :: cv, gravx,xc,xb
       real, dimension (:), pointer :: gravx_xpencil
       real, dimension (mx) :: dTTdxc,glhc,mpoly_xprof,dmpoly_dx
-      integer :: ierr,ii
+      integer :: ierr
       real :: Lum
 !
        call get_shared_variable('xb',xb,ierr)
