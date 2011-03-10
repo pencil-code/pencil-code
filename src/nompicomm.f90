@@ -1411,7 +1411,7 @@ module Mpicomm
       if (num_a /= size (b, 4)) call stop_it ('blocks_equal: size mismatch in A')
 !
       blocks_equal = .true.
-      do pa = 1, num_a
+      do pa = 1, min (num_a, mcom)
         do pz = 1, num_z
           do py = 1, num_y
             do px = 1, num_x
@@ -1443,20 +1443,20 @@ module Mpicomm
 !
       ! check in X:
       if (lperi(1)) then
-        ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", f(l2i:l2,:,:,:), f(1:l1-1,:,:,:))
-        ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", f(l2+1:mx,:,:,:), f(l1:l1i,:,:,:))
+        ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", f(l2i:l2,m1:m2,n1:n2,:), f(1:l1-1,m1:m2,n1:n2,:))
+        ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", f(l2+1:mx,m1:m2,n1:n2,:), f(l1:l1i,m1:m2,n1:n2,:))
       endif
 !
       ! check in Y:
       if (lperi(2)) then
-        ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", f(:,m2i:m2,:,:), f(:,1:m1-1,:,:))
-        ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", f(:,m2+1:my,:,:), f(:,m1:m1i,:,:))
+        ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", f(l1:l2,m2i:m2,n1:n2,:), f(l1:l2,1:m1-1,n1:n2,:))
+        ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", f(l1:l2,m2+1:my,n1:n2,:), f(l1:l2,m1:m1i,n1:n2,:))
       endif
 !
       ! check in z:
       if (lperi(2)) then
-        ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", f(:,:,n2i:n2,:), f(:,:,1:n1-1,:))
-        ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", f(:,:,n2+1:mz,:), f(:,:,n1:n1i,:))
+        ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", f(l1:l2,m1:m2,n2i:n2,:), f(l1:l2,m1:m2,1:n1-1,:))
+        ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", f(l1:l2,m1:m2,n2+1:mz,:), f(l1:l2,m1:m2,n1:n1i,:))
       endif
 !
       if (.not. ok) then

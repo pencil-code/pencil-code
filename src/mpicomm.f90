@@ -3397,7 +3397,7 @@ module Mpicomm
       if (num_a /= size (b, 4)) call stop_it ('blocks_equal: size mismatch in A')
 !
       blocks_equal = .true.
-      do pa = 1, num_a
+      do pa = 1, min (num_a, mcom)
         do pz = 1, num_z
           do py = 1, num_y
             do px = 1, num_x
@@ -3452,8 +3452,8 @@ module Mpicomm
           if (nprocx == 1) then
             if (lperi(1)) then
               middle = global(:,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
-              ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", middle(l2i:l2,:,:,:), middle(1:l1-1,:,:,:))
-              ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", middle(l2+1:mx,:,:,:), middle(l1:l1i,:,:,:))
+              ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", middle(l2i:l2,m1:m2,n1:n2,:), middle(1:l1-1,m1:m2,n1:n2,:))
+              ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", middle(l2+1:mx,m1:m2,n1:n2,:), middle(l1:l1i,m1:m2,n1:n2,:))
             endif
           else
             do px = 1, nprocx
@@ -3465,12 +3465,12 @@ module Mpicomm
               ! check lower neighbor
               if (lx > 0) then
                 lower = global((lx-1)*mx+1:lx*mx,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
-                ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", lower(l2i:l2,:,:,:), middle(1:l1-1,:,:,:))
+                ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", lower(l2i:l2,m1:m2,n1:n2,:), middle(1:l1-1,m1:m2,n1:n2,:))
               endif
               ! check upper neighbor
               if (ux <= nprocx) then
                 upper = global((ux-1)*mx+1:ux*mx,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
-                ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", middle(l2+1:mx,:,:,:), upper(l1:l1i,:,:,:))
+                ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", middle(l2+1:mx,m1:m2,n1:n2,:), upper(l1:l1i,m1:m2,n1:n2,:))
               endif
             enddo
           endif
@@ -3483,8 +3483,8 @@ module Mpicomm
           if (nprocy == 1) then
             if (lperi(2)) then
               middle = global((px-1)*mx+1:px*mx,:,(pz-1)*mz+1:pz*mz,:)
-              ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", middle(:,m2i:m2,:,:), middle(:,1:m1-1,:,:))
-              ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", middle(:,m2+1:my,:,:), middle(:,m1:m1i,:,:))
+              ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", middle(l1:l2,m2i:m2,n1:n2,:), middle(l1:l2,1:m1-1,n1:n2,:))
+              ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", middle(l1:l2,m2+1:my,n1:n2,:), middle(l1:l2,m1:m1i,n1:n2,:))
             endif
           else
             do py = 1, nprocy
@@ -3496,12 +3496,12 @@ module Mpicomm
               ! check lower neighbor
               if (ly > 0) then
                 lower = global((px-1)*mx+1:px*mx,(ly-1)*my+1:ly*my,(pz-1)*mz+1:pz*mz,:)
-                ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", lower(:,m2i:m2,:,:), middle(:,1:m1-1,:,:))
+                ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", lower(l1:l2,m2i:m2,n1:n2,:), middle(l1:l2,1:m1-1,n1:n2,:))
               endif
               ! check upper neighbor
               if (uy <= nprocy) then
                 upper = global((px-1)*mx+1:px*mx,(uy-1)*my+1:uy*my,(pz-1)*mz+1:pz*mz,:)
-                ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", middle(:,m2+1:my,:,:), upper(:,m1:m1i,:,:))
+                ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", middle(l1:l2,m2+1:my,n1:n2,:), upper(l1:l2,m1:m1i,n1:n2,:))
               endif
             enddo
           endif
@@ -3514,8 +3514,8 @@ module Mpicomm
           if (nprocz == 1) then
             if (lperi(3)) then
               middle = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,:,:)
-              ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", middle(:,:,n2i:n2,:), middle(:,:,1:n1-1,:))
-              ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", middle(:,:,n2+1:mz,:), middle(:,:,n1:n1i,:))
+              ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", middle(l1:l2,m1:m2,n2i:n2,:), middle(l1:l2,m1:m2,1:n1-1,:))
+              ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", middle(l1:l2,m1:m2,n2+1:mz,:), middle(l1:l2,m1:m2,n1:n1i,:))
             endif
           else
             do pz = 1, nprocz
@@ -3527,12 +3527,12 @@ module Mpicomm
               ! check lower neighbor
               if (lz > 0) then
                 lower = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,(lz-1)*mz+1:lz*mz,:)
-                ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", lower(:,:,n2i:n2,:), middle(:,:,1:n1-1,:))
+                ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", lower(l1:l2,m1:m2,n2i:n2,:), middle(l1:l2,m1:m2,1:n1-1,:))
               endif
               ! check upper neighbor
               if (uz <= nprocz) then
                 upper = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,(uz-1)*mz+1:uz*mz,:)
-                ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", middle(:,:,n2+1:mz,:), upper(:,:,n1:n1i,:))
+                ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", middle(l1:l2,m1:m2,n2+1:mz,:), upper(l1:l2,m1:m2,n1:n1i,:))
               endif
             enddo
           endif
