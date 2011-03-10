@@ -228,7 +228,7 @@ module Magnetic
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
       lB_ext_pot, D_smag, brms_target, &
       rescaling_fraction, &
-      lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, zdep_profile, &
+      lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, xdep_profile, &
       eta_width, eta_z0, eta_z1, eta_x0, eta_x1, eta_spitzer, &
       borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
