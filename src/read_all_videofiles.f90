@@ -5,10 +5,10 @@ program rvid_box
 !
 !  read and combine slices from individual processor directories data
 !  /procN, write them to data/, where the can be used by used by
-!  rvid_box.pro.Adapated from read_videosslices.f90 but reads
+!  rvid_box.pro. Adapated from read_videofiles.f90 but reads
 !  all files without wating for a user input.
 !
-!  17-dez-10/bing: coded
+!  17-dec-10/bing: coded
 !
       use Cparam
       use General
@@ -40,8 +40,7 @@ program rvid_box
 !
       logical :: exists,lfirst_slice=.true.
 !
-!
-!  read name of the field from video.in
+!  Read name of the field from video.in
 !
       inquire(file='video.in',exist=exists)
       if (exists) then
@@ -51,7 +50,7 @@ program rvid_box
         STOP 1
       endif
 !
-! loop over aller processors to find the positions of the slices.
+! Loop over aller processors to find the positions of the slices.
 ! Therefore read all slice_postions.dat
 !
       ipz1=-1; ipz2=-1; ipz3=-1
@@ -63,7 +62,9 @@ program rvid_box
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
             call chn(iproc,chproc,'directory_names')
             call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+!
 ! check for existence first
+!
             inquire(FILE=trim(directory)//'/slice_position.dat',EXIST=exists)
             if (.not.exists) then
               print*,'slice_position.dat for iproc=',iproc,'not found!'
@@ -88,6 +89,7 @@ program rvid_box
       enddo
 !
 !  Need to reset
+!
       if (ipz1/=-1) lread_slice_xy=.true.
       if (ipz2/=-1) lread_slice_xy2=.true.
       if (ipz3/=-1) lread_slice_xy3=.true.
@@ -382,7 +384,6 @@ program rvid_box
         if (allocated(xz_t)) deallocate(xz_t)
       endif
 !
-!
 !  First yz plane
 !
       if (lread_slice_yz) then
@@ -433,9 +434,9 @@ contains
 !***********************************************************************
   subroutine get_fullname(iproc,field,slice,fullname)
 !
-! Finds the full name of the slice file including path.
+!  Finds the full name of the slice file including path.
 !
-! 24-feb-11/ccyang: coded
+!  24-feb-11/ccyang: coded
 !
     integer, intent(in) :: iproc                 ! processor index
     character(len=*), intent(in) :: field        ! field name
@@ -454,15 +455,15 @@ contains
 !***********************************************************************
   subroutine append_number(string1,string2,k)
 !
-! Appends the number k to string1 and assigns it to string2.
+!  Appends the number k to string1 and assigns it to string2.
 !
-! 24-feb-11/ccyang: coded
+!  24-feb-11/ccyang: coded
 !
     character(len=*), intent(in) :: string1
     character(len=*), intent(out) :: string2
     integer, intent(in) :: k
 !
-! Restricted to 5 digits due to the limitation of subroutine chn
+!  Restricted to 5 digits due to the limitation of subroutine chn
 !
     character(len=5) :: num
 !
