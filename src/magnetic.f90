@@ -129,7 +129,8 @@ module Magnetic
   logical :: lresi_hyper3_polar=.false.
   logical :: lresi_hyper3_mesh=.false.
   logical :: lresi_hyper3_strict=.false.
-  logical :: lresi_zdep=.false., lresi_dust=.false., lresi_xydep=.false.
+  logical :: lresi_zdep=.false., lresi_xdep=.false., lresi_xydep=.false.
+  logical :: lresi_dust=.false.
   logical :: lresi_hyper3_aniso=.false.
   logical :: lresi_eta_shock=.false.
   logical :: lresi_eta_shock_perp=.false.
@@ -178,6 +179,7 @@ module Magnetic
   real :: height_eta=0.0, eta_out=0.0
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
+  real :: eta_x0=1.0, eta_x1=1.0
   real :: alphaSSm=0.0, J_ext_quench=0.0
   real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
@@ -189,6 +191,8 @@ module Magnetic
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(mz) :: coskz,sinkz,eta_z
   real, dimension(mz,3) :: geta_z
+  real, dimension(mx) :: eta_x
+  real, dimension(mx,3) :: geta_x
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -202,6 +206,7 @@ module Magnetic
   logical :: lhalox=.false.
   logical :: lrun_initaa=.false.
   character (len=labellen) :: zdep_profile='fs'
+  character (len=labellen) :: xdep_profile='two-step'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 !
@@ -231,7 +236,7 @@ module Magnetic
       lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump,&
-      lrun_initaa,two_step_factor
+      lrun_initaa,two_step_factor,eta_x0,eta_x1
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -793,6 +798,10 @@ module Magnetic
           if (lroot) print*, 'resistivity: xy-dependent'
           lresi_xydep=.true.
           call eta_xy_dep(eta_xy,geta_xy,eta_xy_profile)
+        case ('xdep')
+          if (lroot) print*, 'resistivity: x-dependent'
+          lresi_xdep=.true.
+          call eta_xdep(eta_x,geta_x,xdep_profile)
         case ('zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
@@ -1351,8 +1360,9 @@ module Magnetic
       if (.not.lweyl_gauge) &
           lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_eta_const.or.lresi_shell.or. &
-          lresi_eta_shock.or.lresi_smagorinsky.or.lresi_zdep.or. &
-          lresi_xydep.or.lresi_smagorinsky_cross.or.lresi_spitzer)) &
+          lresi_eta_shock.or.lresi_smagorinsky.or. &
+          lresi_zdep.or.lresi_xdep.or.lresi_xydep.or. &
+          lresi_smagorinsky_cross.or.lresi_spitzer)) &
           lpenc_requested(i_del2a)=.true.
       if (lresi_sqrtrhoeta_const) then
         lpenc_requested(i_jj)=.true.
@@ -1414,7 +1424,8 @@ module Magnetic
         lpenc_requested(i_aij)=.true.
         lpenc_requested(i_uij)=.true.
       endif
-      if (lresi_shell .or. lresi_zdep .or. lresi_xydep) lpenc_requested(i_diva)=.true.
+      if (lresi_shell.or.lresi_zdep.or.lresi_xdep.or.lresi_xydep) &
+           lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
@@ -2307,6 +2318,14 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_xy_max
         etatotal=etatotal+eta_xy(l1,m)
+      endif
+!
+      if (lresi_xdep) then
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta_x(l1:l2)*p%del2a(:,j)+geta_x(l1:l2,j)*p%diva
+        enddo
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_x(l1:l2)
+        etatotal=etatotal+eta_x(l1:l2)
       endif
 !
       if (lresi_zdep) then
@@ -5752,6 +5771,7 @@ module Magnetic
 !
 !   2-jul-2009/koen: creates an xy-dependent resistivity (for RFP studies)
 !   (under reconstruction)
+!
       real, dimension(mx,my) :: eta_xy,r2,gradr_eta_xy
       real, dimension(mx,my,3)  :: geta_xy
       character (len=labellen) :: eta_xy_profile
@@ -5876,6 +5896,81 @@ module Magnetic
       endselect
 !
     endsubroutine eta_zdep
+!***********************************************************************
+    subroutine eta_xdep(eta_x,geta_x,xdep_profile)
+!
+!  creates a x-dependent resistivity for protoplanetary disk studies
+!
+!  09-mar-2011/wlad: adapted from eta_xdep
+!
+      use General, only: erfcc
+      use Sub, only: step, der_step
+!
+      real, dimension(mx) :: eta_x,x2
+      real, dimension(mx,3) :: geta_x
+      character (len=labellen) :: xdep_profile
+!      integer :: i
+!
+      intent(out) :: eta_x,geta_x
+!
+      select case (xdep_profile)
+        case ('fs')
+          x2 = x**2.
+!  resistivity profile from Fleming & Stone (ApJ 585:908-920)
+          eta_x = eta*exp(-x2/2.+sigma_ratio*erfcc(abs(x))/4.)
+!
+! its gradient:
+          geta_x(:,1) = 0.
+          geta_x(:,2) = 0.
+          geta_x(:,3) = eta_x*(-x-sign(1.,x)*sigma_ratio*exp(-x2)/(2.*sqrt(pi)))
+!
+        case ('tanh')
+!  default to spread gradient over ~5 grid cells.
+           if (eta_width == 0.) eta_width = 5.*dx
+           eta_x = eta*0.5*(tanh((x + eta_x0)/eta_width) &
+             - tanh((x - eta_x0)/eta_width))
+!
+! its gradient:
+           geta_x(:,1) = 0.
+           geta_x(:,2) = 0.
+           geta_x(:,3) = -eta/(2.*eta_width) * ((tanh((x + eta_x0)/eta_width))**2. &
+             - (tanh((x - eta_x0)/eta_width))**2.)
+!
+!  Single step function
+!
+        case ('step')
+!
+!  default to spread gradient over ~5 grid cells.
+!
+           if (eta_width == 0.) eta_width = 5.*dx
+           eta_x = eta + eta*(eta_jump-1.)*step(x,eta_x0,-eta_width)
+!
+! its gradient:
+           geta_x(:,1) = 0.
+           geta_x(:,2) = 0.
+           geta_x(:,3) = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_width)
+!
+!  Two-step function
+!
+        case ('two_step','two-step')
+!
+!  Default to spread gradient over ~5 grid cells,
+!
+           if (eta_width == 0.) eta_width = 5.*dx
+           eta_x = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
+             (step(x,eta_x0,eta_width)-step(x,eta_x1,eta_width))
+!
+!  ... and its gradient. Note that the sign of the second term enters
+!  with the opposite sign, because we have used negative eta_width.
+!
+           geta_x(:,1) = 0.
+           geta_x(:,2) = 0.
+           geta_x(:,3) = eta*(eta_jump-two_step_factor)*( &
+             der_step(x,eta_x0,-eta_width)+der_step(x,eta_x1,eta_width))
+!
+      endselect
+!
+    endsubroutine eta_xdep
 !***********************************************************************
     subroutine correct_lorentz_force(f,lfield,const,pblaw)
 !
