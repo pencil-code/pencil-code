@@ -5901,7 +5901,8 @@ module Magnetic
 !
 !  creates a x-dependent resistivity for protoplanetary disk studies
 !
-!  09-mar-2011/wlad: adapted from eta_xdep
+!  09-mar-2011/wlad: adapted from eta_zdep
+!  10-mar-2011/axel: corrected gradient term: should point in z
 !
       use General, only: erfcc
       use Sub, only: step, der_step
@@ -5916,25 +5917,31 @@ module Magnetic
       select case (xdep_profile)
         case ('fs')
           x2 = x**2.
+!
 !  resistivity profile from Fleming & Stone (ApJ 585:908-920)
+!
           eta_x = eta*exp(-x2/2.+sigma_ratio*erfcc(abs(x))/4.)
 !
 ! its gradient:
-          geta_x(:,1) = 0.
+!
+          geta_x(:,1) = eta_x*(-x-sign(1.,x)*sigma_ratio*exp(-x2)/(2.*sqrt(pi)))
           geta_x(:,2) = 0.
-          geta_x(:,3) = eta_x*(-x-sign(1.,x)*sigma_ratio*exp(-x2)/(2.*sqrt(pi)))
+          geta_x(:,3) = 0.
 !
         case ('tanh')
+!
 !  default to spread gradient over ~5 grid cells.
+!
            if (eta_width == 0.) eta_width = 5.*dx
            eta_x = eta*0.5*(tanh((x + eta_x0)/eta_width) &
              - tanh((x - eta_x0)/eta_width))
 !
 ! its gradient:
-           geta_x(:,1) = 0.
-           geta_x(:,2) = 0.
-           geta_x(:,3) = -eta/(2.*eta_width) * ((tanh((x + eta_x0)/eta_width))**2. &
+!
+           geta_x(:,1) = -eta/(2.*eta_width) * ((tanh((x + eta_x0)/eta_width))**2. &
              - (tanh((x - eta_x0)/eta_width))**2.)
+           geta_x(:,2) = 0.
+           geta_x(:,3) = 0.
 !
 !  Single step function
 !
@@ -5944,11 +5951,14 @@ module Magnetic
 !
            if (eta_width == 0.) eta_width = 5.*dx
            eta_x = eta + eta*(eta_jump-1.)*step(x,eta_x0,-eta_width)
+print*,eta_x
 !
-! its gradient:
-           geta_x(:,1) = 0.
+!  its gradient:
+!  Note that geta_x points then only in the x direction.
+!
+           geta_x(:,1) = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_width)
            geta_x(:,2) = 0.
-           geta_x(:,3) = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_width)
+           geta_x(:,3) = 0.
 !
 !  Two-step function
 !
@@ -5962,11 +5972,12 @@ module Magnetic
 !
 !  ... and its gradient. Note that the sign of the second term enters
 !  with the opposite sign, because we have used negative eta_width.
+!  Note that geta_x points then only in the x direction.
 !
-           geta_x(:,1) = 0.
-           geta_x(:,2) = 0.
-           geta_x(:,3) = eta*(eta_jump-two_step_factor)*( &
+           geta_x(:,1) = eta*(eta_jump-two_step_factor)*( &
              der_step(x,eta_x0,-eta_width)+der_step(x,eta_x1,eta_width))
+           geta_x(:,2) = 0.
+           geta_x(:,3) = 0.
 !
       endselect
 !
