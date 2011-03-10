@@ -449,6 +449,10 @@ module Boundcond
                 ! BCZ_DOC: frozen-in B-field (s)
                 call bc_frozen_in_bb(topbot,j)
                 call bc_sym_y(f,+1,topbot,j) ! symmetry
+              case ('fB')
+                ! BCZ_DOC: frozen-in B-field (a2)
+                call bc_frozen_in_bb(topbot,j)
+                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
               case ('1')
                 ! BCY_DOC: f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
@@ -487,8 +491,6 @@ module Boundcond
                 ! BCY_DOC: perfect conducting boundary condition
                 ! BCY_DOC: along $\theta$ boundary
                 call bc_set_pfc_y(f,topbot,j)
-              case ('twi')
-                call bc_twist_xz(f,topbot,j)
               case ('nil','')
                 ! BCY_DOC: do nothing; assume that everything is set
               case default
@@ -5451,8 +5453,8 @@ module Boundcond
     subroutine bc_frozen_in_bb(topbot,j)
 !
 !  Set flags to indicate that magnetic flux is frozen-in at the
-!  z boundary. The implementation occurs in daa_dt where magnetic
-!  diffusion is switched off in that layer.
+!  boundary. The implementation occurs in daa_dt where magnetic
+!  diffusion is switched off in the corresponding layer.
 !
       use SharedVariables, only: get_shared_variable
 !
@@ -6631,38 +6633,5 @@ module Boundcond
           f(:,:,:,j-1)=log(f(:,:,:,j-1))
 !
     endsubroutine bc_ctz
-!***********************************************************************
-    subroutine bc_twist_xz(f,topbot,j)
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: j,ix,iz
-      real :: cx,cz,rad,radm,amp,amp0
-!
-      cx = (l1+l2)/2.
-      cz = (n1+n2)/2.
-!
-      radm = (l1+l2)/16.
-      amp0 = 1.
-!
-      if ((j < iux) .or. (j > iuz)) call fatal_error('bc_twist_xz', &
-          'only for iux to iuz')
-!
-      select case (topbot)
-      case ('bot')
-        do ix=l1,l2
-          do iz=n1,n2
-            rad = sqrt( (cx-ix)**2. + (cz-iz)**2.)
-            amp = amp0*rad/radm * exp(-rad/radm+1.)
-            f(ix,1:m1,iz,iux) = -amp * cos( real(iz-nghost)/(1.*nz)*pi)
-            f(ix,1:m1,iz,iuz) = amp * cos( real(ix-nghost)/(1.*nx)*pi)
-            f(ix,1:m1,iz,iuy) = 0.
-          enddo
-        enddo
-      case default
-        call fatal_error('bc_twist_xz','only for bottom up to now')
-      endselect
-!
-    endsubroutine  bc_twist_xz
 !***********************************************************************
 endmodule Boundcond
