@@ -400,7 +400,7 @@ module Forcing
         profy_ampl=1.
         profx_hel=1.
         do m=1,my
-          profy_hel=cos(y(m)); 
+          profy_hel(m)=cos(y(m)); 
         enddo
         profz_ampl=1.; profz_hel=1.
 !
