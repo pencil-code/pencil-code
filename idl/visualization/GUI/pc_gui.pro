@@ -4,20 +4,30 @@
 ;;;  $Id$
 ;;;
 ;;;  Description:
-;;;   Framework for precalculation and comparision of output in pencil units.
-;;;   Calls cmp_cslice_cache for visualisation of full 3D data.
+;;;   Framework for precalculation and comparision of Pencil VAR* files.
+;;;   Calls cmp_cslice_cache for visualisation of a full 3D dataset.
 ;;;
-;;;  To do:
-;;;   Add more comments
+;;;   To run the Graphical User Interface (GUI), please go to a simulation
+;;;   directory, open IDL there, and type ".r pc_gui".
+;;;
+;;;   Optional settings that can be done before starting the GUI:
+;;;   IDL> scaling = (0,+oo]         ; magnification factor
+;;;   IDL> datadir = "my_data_dir"   ; alternative data directory
+;;;   IDL> varfile = "VAR123"        ; default is "var.dat"
+;;;
 
+; Compile accompanying functions and routines:
 @pc_gui_companion
 resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 
-;;; Settings:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Settings that can be changed by the user:
 
-; Quantities to be visualized:
-; => Available quantities for visualization are:
+;;;
+;;; Physical quantities to be visualized
+;;;
+; Available quantities for visualization are:
 ; 'Temp', 'rho'             ; temperature and density
 ; 'ln_rho', 'log_rho'       ; logarithmic densities
 ; 'ux', 'uy', 'uz', 'u_abs' ; velocity components and the absolute value
@@ -34,13 +44,17 @@ quantities = { temperature:'Temp', currentdensity:'j',            $
                impulse_density_z:'rho_u_z' }
 
 
-; Quantities to be overplotted (calculated in 'precalc_data'):
-; => Available quantities for overplotting are:
+;;;
+;;; Quantities to be overplotted (calculated in 'precalc_data')
+;;;
+; Available quantities for overplotting are:
 ; 'b', 'a_contour', and 'u'
 overplot_quantities = { magnetic_field:'b', fieldlines:'a_contour', velocities:'u' }
 
 
-; Preferred units for display
+;;;
+;;; Preferred units for display
+;;;
 default_length        = 1.e6
 default_length_str    = 'Mm'
 default_velocity      = 1.e3
@@ -51,15 +65,20 @@ default_mass          = 1.0
 default_mass_str      = 'kg'
 
 
-; Initial varfile
+;;;
+;;; Initial varfile
+;;;
 default, varfile, 'var.dat'
 default, crashfile, 'crash.dat'
 
 
-; Default data directory
+;;;
+;;; Default data directory
+;;;
 default, datadir, pc_get_datadir()
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; MAIN PROGRAM:
 
 default, pc_gui_loaded, 0
