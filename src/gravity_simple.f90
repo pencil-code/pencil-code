@@ -239,6 +239,11 @@ module Gravity
         potx_xpencil=-gravx/x + potx_const
         g0=gravx
         call put_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx_xpencil')
 !
       case ('loop')
         if (lroot) print*,'initialize_gravity: 1D loop, gravx=',gravx

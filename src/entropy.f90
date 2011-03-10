@@ -104,8 +104,10 @@ module Entropy
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=5) :: iinit_str
-  real, dimension (mz), save :: hcond_zprof,chit_zprof
+  real, dimension (mz),   save :: hcond_zprof,chit_zprof
   real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
+  real, dimension (mx),   save :: hcond_xprof,chit_xprof
+  real, dimension (mx,3), save :: gradloghcond_xprof
 !
 !  xy-averaged field
 !
@@ -466,6 +468,10 @@ module Entropy
           endif
 !
         endif
+! FbotKbot is required here for boundcond 
+      else if (lgravx) then
+        if (coord_system=='spherical'.or.lconvection_gravx.and.(.not.lhcond_global)) &
+             FbotKbot=Fbot/hcond0
       endif
 !
 !  Make sure all relevant parameters are set for spherical shell problems.
@@ -736,7 +742,7 @@ module Entropy
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderss/='nothing') call request_border_driving(borderss)
+      if (borderss/='nothing') call request_border_driving()
 !
 !  Shared variables.
 !
@@ -2131,7 +2137,7 @@ module Entropy
           if (lmultilayer) then
             if (lgravz) then
               lpenc_requested(i_z_mn)=.true.
-            else
+            else 
               lpenc_requested(i_r_mn)=.true.
             endif
           endif
@@ -3578,7 +3584,7 @@ module Entropy
       real, dimension (nx,3,3) :: tmp
       real, save :: z_prev=-1.23e20
       real :: s2,c2,sc
-      integer :: j,ix
+      integer :: j,ix,ic
 !
       save :: hcond, glhc, chit_prof, glchit_prof
 !
@@ -3637,20 +3643,40 @@ module Entropy
                 glchit_prof(ix,:)=gradlogchit_zprof(n,:)
               enddo
           endif
-! if not gravz 
+! If not gravz, using or not hcond_global
         else
+          if(lfirstcall_hcond.and.lfirstpoint) then
+            if(.not.lhcond_global) then
+               call get_gravx_heatcond()
+            endif
+            lfirstcall_hcond=.false. 
+          endif   
           if (lhcond_global) then
             hcond=f(l1:l2,m,n,iglobal_hcond)
             glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
-            call heatcond(hcond,p)
-            call gradloghcond(glhc,p)
+            hcond = hcond_xprof(l1:l2)
+            glhc = gradloghcond_xprof(l1:l2,:)
           endif
           if (chi_t/=0.0) then
             call chit_profile(chit_prof)
             call gradlogchit_profile(glchit_prof)
           endif
         endif
+! GG: Commented Commented out the following
+!        else
+!          if (lhcond_global) then
+!            hcond=f(l1:l2,m,n,iglobal_hcond)
+!            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+!          else
+!            call heatcond(hcond,p)
+!            call gradloghcond(glhc,p)
+!          endif
+!          if (chi_t/=0.0) then
+!            call chit_profile(chit_prof)
+!           call gradlogchit_profile(glchit_prof)
+!          endif
+!        endif
 !
 !  DM+GG: Commented out the following. If the present set up work
 !  we shall remove this in a week.
@@ -3694,7 +3720,7 @@ module Entropy
 !  where chix = K/(cp rho) is needed for diffus_chi calculation.
 !
         chix = p%rho1*hcond*p%cp1
-        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)        
         call dot(p%glnTT,glnThcond,g2)
           if (pretend_lnTT) then
             thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
@@ -4802,6 +4828,67 @@ module Entropy
       gradloghcond_zprof(:,3) = hcond0*gradloghcond_zprof(:,3)
 !
     endsubroutine get_gravz_heatcond
+!***********************************************************************
+    subroutine get_gravx_heatcond()
+! 
+! Calculate x dependent heat conductivity and its gradient 
+! and stores them in the arrays which are saved at the first time
+! step and used in all the next. 
+!
+!  10-march-2011/gustavo: Adapted from idl script strat_poly.pro
+!
+      use SharedVariables, only: get_shared_variable
+      use Sub, only: step, der_step
+      use Mpicomm, only: stop_it
+      real, pointer :: cv, gravx,xc,xb
+      real, dimension (:), pointer :: gravx_xpencil
+      real, dimension (mx) :: dTTdxc,glhc,mpoly_xprof,dmpoly_dx
+      integer :: ierr,ii
+      real :: Lum
+!
+       call get_shared_variable('xb',xb,ierr)
+      if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
+           "there was a problem when getting xb")
+      call get_shared_variable('xc',xc,ierr)
+      if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
+           "there was a problem when getting xc")
+      if(.not.lmultilayer) call fatal_error('get_gravx_heatcond:',&
+           'dont call if you have only one layer')
+      call get_shared_variable('cv', cv, ierr)
+      if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
+           "there was a problem when getting cv")
+      call get_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
+      if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
+           "there was a problem when getting gravx_xpencil")
+      call get_shared_variable('gravx', gravx, ierr)
+      if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
+           "there was a problem when getting gravx")
+!
+      if(.not.lmultilayer) call fatal_error('get_gravx_heatcond:',&
+           'dont call if you have only one layer')
+!
+! Radial profile of the polytropic index
+      mpoly_xprof = mpoly0 - (mpoly0-mpoly1)*step(x,xb,widthss) - &
+           (mpoly1-mpoly2)*step(x,xc,widthss)
+      dmpoly_dx = -(mpoly0-mpoly1)*der_step(x,xb,widthss) - &
+           (mpoly1-mpoly2)*der_step(x,xc,widthss)
+!
+! Hidrostatic equilibrium relations
+      dTTdxc = gravx_xpencil / (cv*gamma_m1*(mpoly_xprof+1.))
+      Lum = Fbot * (4.*pi*xyz0(1)**2)
+!
+! Kappa and its gradient are computed here
+      hcond_xprof = -Lum/(4.*pi*x**2*dTTdxc)
+      glhc = Lum*cv*gamma_m1/(4.*pi*gravx) * dmpoly_dx 
+      gradloghcond_xprof(:,1) = glhc
+      gradloghcond_xprof(:,2:3) = 0.
+!
+      FbotKbot=Fbot/hcond_xprof(l1)
+      FtopKtop=Ftop/hcond_xprof(l2)
+      hcondxbot=hcond_xprof(l1)
+      hcondxtop=hcond_xprof(l2)
+!
+    endsubroutine get_gravx_heatcond
 !***********************************************************************
     subroutine heatcond(hcond,p)
 !
