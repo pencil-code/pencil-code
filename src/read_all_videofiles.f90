@@ -40,17 +40,26 @@ program rvid_box
 !
       logical :: exists,lfirst_slice=.true.
 !
-!  Read name of the field from video.in
+!  Read name of the field from a file containing the field to be read. 
+!  Use videoread.in as default. If that does not exist, use video.in 
+!  (that will read all fields). video.in is the default file used to 
+!  tell the code which fields to write slices. Ideally, we should have 
+!  a separate file telling read_all_videofiles which slices to read. 
 !
-      inquire(file='video.in',exist=exists)
+      inquire(file='videoread.in',exist=exists)
       if (exists) then
-        open(lun_video,file='video.in')
+        open(lun_video,file='videoread.in')
       else
-        print*,'ERROR: video.in not found'
-        STOP 1
+        inquire(file='video.in',exist=exists)
+        if (exists) then
+          open(lun_video,file='video.in')
+        else
+          print*,'ERROR: neither videoread.in nor video.in found'
+          STOP 1
+        endif
       endif
 !
-! Loop over aller processors to find the positions of the slices.
+! Loop over all processors to find the positions of the slices.
 ! Therefore read all slice_postions.dat
 !
       ipz1=-1; ipz2=-1; ipz3=-1
