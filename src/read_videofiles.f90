@@ -69,8 +69,8 @@
       field=cfield(1:isep1)
       if (cfield(isep1+1:isep2)/=' ') read(cfield(isep1:isep2),*) nevery
 !
-! loop over aller processors to find the positions of the slices.
-! Therefore read all slice_postions.dat
+! loop over all processors to find the positions of the slices.
+! Therefore read all slice_positions.dat
 !
       ipz1=-1; ipz2=-1; ipz3=-1
       ipz4=-1; ipy1=-1; ipx1=-1
