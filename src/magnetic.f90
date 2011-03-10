@@ -228,15 +228,15 @@ module Magnetic
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
       lB_ext_pot, D_smag, brms_target, &
       rescaling_fraction, &
-      lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, eta_width, &
-      eta_z0, eta_z1,eta_spitzer, &
+      lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, zdep_profile, &
+      eta_width, eta_z0, eta_z1, eta_x0, eta_x1, eta_spitzer, &
       borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
       lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, &
       luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump,&
-      lrun_initaa,two_step_factor,eta_x0,eta_x1
+      lrun_initaa,two_step_factor
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -798,11 +798,11 @@ module Magnetic
           if (lroot) print*, 'resistivity: xy-dependent'
           lresi_xydep=.true.
           call eta_xy_dep(eta_xy,geta_xy,eta_xy_profile)
-        case ('xdep')
+        case ('xdep','eta-xdep')
           if (lroot) print*, 'resistivity: x-dependent'
           lresi_xdep=.true.
           call eta_xdep(eta_x,geta_x,xdep_profile)
-        case ('zdep')
+        case ('zdep','eta-zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
           call eta_zdep(eta_z,geta_z,zdep_profile)
