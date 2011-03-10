@@ -242,18 +242,19 @@ module BorderProfiles
 !
     endsubroutine calc_pencils_borderprofiles
 !***********************************************************************
-    subroutine set_border_initcond(f,ivar,tmp)
+    subroutine set_border_initcond(f,ivar,fborder)
 !
       use Messages, only: fatal_error
+      use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
-      real, dimension (nx), intent(out) :: tmp
+      real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
 !
       if (lspherical_coords.or.lcylinder_in_a_box) then
-        call set_border_xy(ivar,tmp)
+        call set_border_xy(ivar,fborder)
       elseif (lcylindrical_coords) then
-        call set_border_xz(ivar,tmp)
+        call set_border_xz(ivar,fborder)
       else 
         print*,'The system has no obvious symmetry. It is    '
         print*,'better to stop and check how you want to save'
@@ -261,9 +262,11 @@ module BorderProfiles
         call fatal_error('set_border_initcond','')
       endif
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine set_border_initcond
 !***********************************************************************
-    subroutine set_border_xy(ivar,tmp)
+    subroutine set_border_xy(ivar,fborder)
 !
 !  Save the initial condition for a quantity that is 
 !  symmetric in the z axis. That can be a vertically 
@@ -273,7 +276,7 @@ module BorderProfiles
 !  28-apr-09/wlad: coded
 !
       real, dimension (nx,ny,mvar), save :: fsave_init
-      real, dimension (nx), intent(out) :: tmp
+      real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
 !
       if (lfirst .and. it==1) then
@@ -282,11 +285,11 @@ module BorderProfiles
              print*,'saving initial condition for ivar=',ivar
       endif
 !
-      tmp=fsave_init(:,m-m1+1,ivar)
+      fborder=fsave_init(:,m-m1+1,ivar)
 !
     endsubroutine set_border_xy
 !***********************************************************************
-    subroutine set_border_xz(ivar,tmp)
+    subroutine set_border_xz(ivar,fborder)
 !
 !  Save the initial condition for a quantity that is 
 !  symmetric in the y axis. An azimuthally symmetric 
@@ -295,7 +298,7 @@ module BorderProfiles
 !  28-apr-09/wlad: coded
 !
       real, dimension (nx,nz,mvar), save :: fsave_init
-      real, dimension (nx), intent(out) :: tmp
+      real, dimension (nx), intent(out) :: fborder
       integer,intent(in) :: ivar
 !
       if (lfirst .and. it==1) then
@@ -304,7 +307,7 @@ module BorderProfiles
              print*,'saving initial condition for ivar=',ivar
       endif
 !
-      tmp=fsave_init(:,n-n1+1,ivar)
+      fborder=fsave_init(:,n-n1+1,ivar)
 !
     endsubroutine set_border_xz
 !***********************************************************************
