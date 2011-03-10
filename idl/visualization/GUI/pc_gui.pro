@@ -11,9 +11,23 @@
 ;;;   directory, open IDL there, and type ".r pc_gui".
 ;;;
 ;;;   Optional settings that can be done before starting the GUI:
-;;;   IDL> scaling = (0,+oo]         ; magnification factor
-;;;   IDL> datadir = "my_data_dir"   ; alternative data directory
-;;;   IDL> varfile = "VAR123"        ; default is "var.dat"
+;;;   IDL> scaling = (0,+oo]            ; magnification factor
+;;;   IDL> datadir = "my_data_dir"      ; alternative data directory
+;;;   IDL> varfile = "VAR123"           ; default is "var.dat"
+;;;   IDL> default_length = 1           ; default length display unit
+;;;   IDL> default_length_str = '...'   ; default length display unit
+;;;   IDL> default_velocity = 1         ; default velocity display unit
+;;;   IDL> default_velocity_str = '...' ; default velocity display unit
+;;;   IDL> default_density = 1          ; default density display unit
+;;;   IDL> default_density_str = '...'  ; default density display unit
+;;;   IDL> default_mass = 1             ; default mass display unit
+;;;   IDL> default_mass_str = '...'     ; default mass display unit
+;;;
+;;;   The GUI can be closed, but the data stays in memory. Then, the scaling
+;;;   parameter can be changed and the GUI can be started again, without the
+;;;   need to reload all the data.
+;;;
+;;;   At first startum, time series analysis windows are displayed.
 ;;;
 
 ; Compile accompanying functions and routines:
@@ -37,11 +51,15 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ; 'j'                       ; absolute value of the current density
 ; 'rho_u_z'                 ; vertical component of the impulse density
 ; (more quantities can be defined in 'precalc_data', see pc_gui_companion.pro)
-quantities = { temperature:'Temp', currentdensity:'j',            $
-               magnetic_energy:'rho_mag', magnetic_field_z:'bz',  $
-               velocity:'u_abs', velocity_z:'u_z',                $
-               logarithmic_density:'log_rho',                     $
-               impulse_density_z:'rho_u_z' }
+default, quantities = { $
+	temperature:'Temp', $
+	currentdensity:'j', $
+	magnetic_energy:'rho_mag', $
+	magnetic_field_z:'bz', $
+	velocity:'u_abs', $
+	velocity_z:'u_z', $
+	logarithmic_density:'log_rho', $
+	impulse_density_z:'rho_u_z' }
 
 
 ;;;
@@ -49,20 +67,23 @@ quantities = { temperature:'Temp', currentdensity:'j',            $
 ;;;
 ; Available quantities for overplotting are:
 ; 'b', 'a_contour', and 'u'
-overplot_quantities = { magnetic_field:'b', fieldlines:'a_contour', velocities:'u' }
+default, overplot_quantities = { $
+	magnetic_field:'b', $
+	fieldlines:'a_contour', $
+	velocities:'u' }
 
 
 ;;;
 ;;; Preferred units for display
 ;;;
-default_length        = 1.e6
-default_length_str    = 'Mm'
-default_velocity      = 1.e3
-default_velocity_str  = 'km/s'
-default_density       = 1.0
-default_density_str   = 'kg/m^3'
-default_mass          = 1.0
-default_mass_str      = 'kg'
+default, default_length        , 1.e6
+default, default_length_str    , 'Mm'
+default, default_velocity      , 1.e3
+default, default_velocity_str  , 'km/s'
+default, default_density       , 1.0
+default, default_density_str   , 'kg/m^3'
+default, default_mass          , 1.0
+default, default_mass_str      , 'kg'
 
 
 ;;;
