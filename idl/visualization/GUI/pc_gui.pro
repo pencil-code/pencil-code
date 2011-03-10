@@ -51,7 +51,7 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ; 'j'                       ; absolute value of the current density
 ; 'rho_u_z'                 ; vertical component of the impulse density
 ; (more quantities can be defined in 'precalc_data', see pc_gui_companion.pro)
-default, quantities = { $
+default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
 	magnetic_energy:'rho_mag', $
@@ -67,7 +67,7 @@ default, quantities = { $
 ;;;
 ; Available quantities for overplotting are:
 ; 'b', 'a_contour', and 'u'
-default, overplot_quantities = { $
+default, overplot_quantities, { $
 	magnetic_field:'b', $
 	fieldlines:'a_contour', $
 	velocities:'u' }
