@@ -3451,12 +3451,14 @@ module Mpicomm
         do pz = 1, nprocz
           if (nprocx == 1) then
             if (lperi(1)) then
+              write (100+iproc,*) 'Checking subdomain: ', 1, py, pz
               middle = global(:,(py-1)*my+1:py*my,(pz-1)*mz+1:pz*mz,:)
               ok = ok .and. blocks_equal ("X  l2i:l2 <>  1:l1-1", middle(l2i:l2,m1:m2,n1:n2,:), middle(1:l1-1,m1:m2,n1:n2,:))
               ok = ok .and. blocks_equal ("X l2+1:mx <> l1:l1i ", middle(l2+1:mx,m1:m2,n1:n2,:), middle(l1:l1i,m1:m2,n1:n2,:))
             endif
           else
             do px = 1, nprocx
+              write (100+iproc,*) 'Checking subdomain: ', px, py, pz
               lx = px - 1
               if (lperi(1) .and. (lx < 1)) lx = lx + nprocx
               ux = px + 1
@@ -3482,12 +3484,14 @@ module Mpicomm
         do pz = 1, nprocz
           if (nprocy == 1) then
             if (lperi(2)) then
+              write (100+iproc,*) 'Checking subdomain: ', px, 1, pz
               middle = global((px-1)*mx+1:px*mx,:,(pz-1)*mz+1:pz*mz,:)
               ok = ok .and. blocks_equal ("Y  m2i:m2 <>  1:m1-1", middle(l1:l2,m2i:m2,n1:n2,:), middle(l1:l2,1:m1-1,n1:n2,:))
               ok = ok .and. blocks_equal ("Y m2+1:my <> m1:m1i ", middle(l1:l2,m2+1:my,n1:n2,:), middle(l1:l2,m1:m1i,n1:n2,:))
             endif
           else
             do py = 1, nprocy
+              write (100+iproc,*) 'Checking subdomain: ', px, py, pz
               ly = ipy - 1
               if (lperi(2) .and. (ly < 1)) ly = ly + nprocy
               uy = ipy + 1
@@ -3513,12 +3517,14 @@ module Mpicomm
         do py = 1, nprocy
           if (nprocz == 1) then
             if (lperi(3)) then
+              write (100+iproc,*) 'Checking subdomain: ', px, py, 1
               middle = global((px-1)*mx+1:px*mx,(py-1)*my+1:py*my,:,:)
               ok = ok .and. blocks_equal ("Z  n2i:n2 <>  1:n1-1", middle(l1:l2,m1:m2,n2i:n2,:), middle(l1:l2,m1:m2,1:n1-1,:))
               ok = ok .and. blocks_equal ("Z n2+1:mz <> n1:n1i ", middle(l1:l2,m1:m2,n2+1:mz,:), middle(l1:l2,m1:m2,n1:n1i,:))
             endif
           else
             do pz = 1, nprocz
+              write (100+iproc,*) 'Checking subdomain: ', px, py, pz
               lz = pz - 1
               if (lperi(3) .and. (lz < 1)) lz = lz + nprocz
               uz = pz + 1
