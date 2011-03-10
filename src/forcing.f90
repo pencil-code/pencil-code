@@ -393,6 +393,17 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
 !
+!  turn on forcing intensity above x=x0 with cosy profile
+!
+      elseif (iforce_profile=='above_x0_cosy') then
+        profx_ampl=.5*(1.+erfunc((x-r_ff)/width_ff))
+        profy_ampl=1.
+        profx_hel=1.
+        do m=1,my
+          profy_hel=cos(y(m)); 
+        enddo
+        profz_ampl=1.; profz_hel=1.
+!
 !  just a change in intensity in the z direction
 !
       elseif (iforce_profile=='intensity') then
