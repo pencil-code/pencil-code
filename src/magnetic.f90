@@ -5951,7 +5951,6 @@ module Magnetic
 !
            if (eta_width == 0.) eta_width = 5.*dx
            eta_x = eta + eta*(eta_jump-1.)*step(x,eta_x0,-eta_width)
-print*,eta_x
 !
 !  its gradient:
 !  Note that geta_x points then only in the x direction.
