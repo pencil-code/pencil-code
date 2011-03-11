@@ -453,6 +453,10 @@ program start
     call random_seed_wrapper(PUT=seed)
   endif
 !
+!  Final update of ghost cells, after that 'f' must not be altered, anymore.
+!
+  call update_ghosts(f)
+!
 !  Write initial condition to disk.
 !
   if (lwrite_ic) then
