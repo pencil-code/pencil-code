@@ -15,19 +15,20 @@
 ;;;   IDL> datadir = "my_data_dir"      ; alternative data directory
 ;;;   IDL> varfile = "VAR123"           ; default is "var.dat"
 ;;;   IDL> default_length = 1           ; default length display unit
-;;;   IDL> default_length_str = '...'   ; default length display unit
+;;;   IDL> default_length_str = '...'   ; default length string
 ;;;   IDL> default_velocity = 1         ; default velocity display unit
-;;;   IDL> default_velocity_str = '...' ; default velocity display unit
+;;;   IDL> default_velocity_str = '...' ; default velocity string
 ;;;   IDL> default_density = 1          ; default density display unit
-;;;   IDL> default_density_str = '...'  ; default density display unit
+;;;   IDL> default_density_str = '...'  ; default density string
 ;;;   IDL> default_mass = 1             ; default mass display unit
-;;;   IDL> default_mass_str = '...'     ; default mass display unit
+;;;   IDL> default_mass_str = '...'     ; default mass string
 ;;;
 ;;;   The GUI can be closed, but the data stays in memory. Then, the scaling
 ;;;   parameter can be changed and the GUI can be started again, without the
 ;;;   need to reload all the data.
 ;;;
-;;;   At first startum, time series analysis windows are displayed.
+;;;   At first startup, time series analysis windows are displayed.
+;;;   Only quantities can be analysed that are set in the 'print.in' file.
 ;;;
 
 ; Compile accompanying functions and routines:
