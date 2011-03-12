@@ -9,24 +9,6 @@
 ;;;   Add more comments
 
 
-; Returns the position of a coordinate
-function find_coord, pos, data, num
-
-	pixel = 0
-	if (num gt 1) then begin
-		for i = 0, num-2 do begin
-			if (pos lt 0.5*(data[i]+data[i+1])) then begin
-				pixel = i
-				break
-			endif
-		end
-		if (pos ge 0.5*(data[num-2]+data[num-1])) then pixel = num - 1
-	endif
-
-	return, pixel
-end
-
-
 ; Check value range and extend it, if necessary (for sliders or plotting)
 function get_range, data
 
@@ -47,11 +29,11 @@ function get_range, data
 		if (min eq 0.0) then begin
 			min = -1d-42
 			max = 1d-42
-		endif else begin
+		end else begin
 			min *= 0.99999
 			max *= 1.00001
-		endelse
-	endif
+		end
+	end
 
 	return, [min, max]
 end
@@ -103,21 +85,21 @@ pro cslice_event, event
 	end
 	'COX': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		px = find_coord (pos, coord.x, num_x)
+		px = find_index (pos, coord.x, num_x)
 		if (event.update) then WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, sl_x, SET_VALUE = px
 		DRAW_IMAGE_1 = 1
 	end
 	'COY': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		py = find_coord (pos, coord.y, num_y)
+		py = find_index (pos, coord.y, num_y)
 		if (event.update) then WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, sl_y, SET_VALUE = py
 		DRAW_IMAGE_2 = 1
 	end
 	'COZ': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		pz = find_coord (pos, coord.z, num_z)
+		pz = find_index (pos, coord.z, num_z)
 		if (event.update) then WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		WIDGET_CONTROL, sl_z, SET_VALUE = pz
 		DRAW_IMAGE_3 = 1
@@ -154,7 +136,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
-		endif
+		end
 		if (event.release) then button_pressed_yz = 0
 	end
 	'DRAW_XZ': begin
@@ -171,7 +153,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
-		endif
+		end
 		if (event.release) then button_pressed_xz = 0
 	end
 	'DRAW_XY': begin
@@ -188,7 +170,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
-		endif
+		end
 		if (event.release) then button_pressed_xy = 0
 	end
 	'SCALE_BOT': begin
@@ -257,20 +239,26 @@ pro cslice_event, event
 	end
 	'NEXT': begin
 		selected_snapshot -= 1
+		if (selected_snapshot le 0) then begin
+			WIDGET_CONTROL, next, SENSITIVE = 0
+			selected_snapshot = 0
+		end
+		WIDGET_CONTROL, prev, SENSITIVE = 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 		prepare_set, selected_snapshot
 		prepare_cube, -1
-		WIDGET_CONTROL, prev, SENSITIVE = 1
-		if (selected_snapshot le 0) then WIDGET_CONTROL, next, SENSITIVE = 0
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'PREV': begin
 		selected_snapshot += 1
+		if (selected_snapshot ge num_snapshots - 1) then begin
+			WIDGET_CONTROL, prev, SENSITIVE = 0
+			selected_snapshot = num_snapshots - 1
+		end
+		WIDGET_CONTROL, next, SENSITIVE = 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 		prepare_set, selected_snapshot
 		prepare_cube, -1
-		if (selected_snapshot ge num_snapshots - 1) then WIDGET_CONTROL, prev, SENSITIVE = 0
-		WIDGET_CONTROL, next, SENSITIVE = 1
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'OVER': begin
@@ -808,7 +796,12 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 
 	set = set_names
-	if (n_elements (overplots) eq 0) then overplots = {none:'none'} else overplots = create_struct ({none:'none'}, overplots)
+	if (n_elements (overplots) eq 0) then overplots = {none:'none'} $
+	else begin
+		if (not any (strlowcase (tag_names (overplots)) eq 'none')) then begin
+			overplots = create_struct ({none:'none'}, overplots)
+		end
+	end
 	overplot = overplots
 
 	if (n_elements (units) ge 1) then unit = units
@@ -915,21 +908,21 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 		co_x    = CW_FIELD (scot, title='X ['+unit.default_length_str+']:', uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, /floating, /all_events, xsize=12)
 	end else begin
 		co_x    = CW_FIELD (scot, title='X:', uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, /integer, /all_events, xsize=12)
-	endelse
+	end
 	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=coord_x_active)
 	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
 	if (unit.default_length_str) then begin
 		co_y    = CW_FIELD (scot, title='Y ['+unit.default_length_str+']:', uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, /floating, /all_events, xsize=12)
 	end else begin
 		co_y    = CW_FIELD (scot, title='Y:', uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, /integer, /all_events, xsize=12)
-	endelse
+	end
 	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=coord_y_active)
 	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
 	if (unit.default_length_str) then begin
 		co_z    = CW_FIELD (scot, title='Z ['+unit.default_length_str+']:', uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, /floating, /all_events, xsize=12)
 	end else begin
 		co_z    = CW_FIELD (scot, title='Z:', uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, /integer, /all_events, xsize=12)
-	endelse
+	end
 	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=coord_z_active)
 	bcol    = WIDGET_BASE (CTRL, /col)
 	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCALE', set_value=abs_scale)
