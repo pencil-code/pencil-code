@@ -5,7 +5,7 @@
 !  disk with an imposed (cylindrically symmetric) sound speed 
 !  profile in spherical coordinates. 
 !
-!  07-may-09/wlad: adapted from noinitial_condition.f90
+!  10-feb-11/axel: adapted from noinitial_condition.f90
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,10 +25,10 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: b0,s0,width,p0
+  real :: b0,s0,width,p0,eps=1.
 !
   namelist /initial_condition_pars/ &
-      b0,s0,width,p0
+      b0,s0,width,p0,eps
 !
   contains
 !***********************************************************************
@@ -78,7 +78,7 @@ module InitialCondition
       term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
       term2=(2.*x**2-width**2)*exp(-argum**2)
       press=p0-(.5*b0/s0)**2*(term1+term2)
-      del_lnrho=alog(press/cs20)
+      del_lnrho=eps*alog(press/cs20)
 !
       do n=1,mz
         do m=1,my
