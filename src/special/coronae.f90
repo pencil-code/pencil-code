@@ -32,6 +32,8 @@ module Special
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=0.
   real :: limiter_tensordiff=3
   real :: u_amplifier=1.
+  integer :: twisttype=0
+  real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -42,8 +44,8 @@ module Special
   real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
-      heat_par_exp3,u_amplifier, &
-      Kpara,Kperp,init_time2, &
+      heat_par_exp3,u_amplifier,twist_u0,rmin,rmax, &
+      Kpara,Kperp,init_time2,twisttype,centerx,centery,centerz, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
@@ -397,6 +399,8 @@ module Special
       integer :: i,j,ipt
       real :: tmp,dA
 !
+      if (twisttype/=0) call uu_twist(f)
+!
       if (ipz == 0) then
         if ((lgranulation.and.Bavoid < huge1).or.Bz_flux /= 0.) call set_B2(f)
 !
@@ -455,6 +459,14 @@ module Special
       if (lmag_time_bound.and. (ipz == 0)) call mag_time_bound(f)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+  subroutine special_calc_magnetic(f,df,p)
+    use Mpicomm, only:  check_ghosts_consistency
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    real, dimension (mx,my,mz,mvar), intent(inout) :: df
+    type (pencil_case), intent(in) :: p
+!    call check_ghosts_consistency(f,'bla')
+  endsubroutine special_calc_magnetic
 !***********************************************************************
   subroutine special_calc_entropy(f,df,p)
 !
@@ -1001,17 +1013,37 @@ module Special
           , -0.66650 /)
 !
       real, dimension (nx), intent(in) :: lnTT
-      real, dimension (nx) :: slope,ordinate,get_lnQ
-      integer :: i
+      real, dimension (nx) :: get_lnQ
+      real :: slope,ordinate
+      integer :: i,j=18
+      logical :: notdone
 !
       get_lnQ=-1000.
 !
-      do i=1,36
-        where(lnTT >= intlnT(i) .and. lnTT < intlnT(i+1))
-          slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-          ordinate = intlnQ(i) - slope*intlnT(i)
-          get_lnQ = slope*lnTT + ordinate
-        endwhere
+      do i=1,nx
+!
+        notdone=.true.
+        do while (notdone)
+!
+          if (lnTT(i) >= intlnT(j) .and. lnTT(i) < intlnT(j+1)) then
+!
+! define slope and ordinate for linear interpolation
+!
+            slope=(intlnQ(j+1)-intlnQ(j))/(intlnT(j+1)-intlnT(j))
+            ordinate=intlnQ(j) - slope*intlnT(j)
+!
+            get_lnQ(i) = slope*lnTT(i) + ordinate
+            notdone = .false.
+          else
+            j = j + sign(1.,lnTT(i)-intlnT(j))
+            if (j <= 0) then
+              j=1
+              notdone=.false.
+            elseif (j >= 37)
+              call fatal_error('get_lnQ','lnTT to large'
+            endif
+          endif
+        enddo
       enddo
 !
     endfunction get_lnQ
@@ -1328,6 +1360,51 @@ module Special
       if (allocated(k2)) deallocate(k2)
 !
     endsubroutine mag_time_bound
+!***********************************************************************
+    subroutine uu_twist(f)
+!
+! 1: rigid body twist in the y=0 plane
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: rad,d_x,d_y,d_z,amp0
+      integer :: i,j
+!
+      select case (twisttype)
+      case (1)
+        if (ipy == 0) then
+          do i=1,nx
+            do j=1,nz
+              d_z = z(j+nghost)-centerz
+              d_x = x(i+nghost)-centerx
+              rad = sqrt(d_x**2. + d_z**2.)
+              !
+              if ((rmin <= rad) .and. (rad <= rmax)) then
+                amp0 = twist_u0 * rad
+                f(i+nghost,m1,j+nghost,iux) = amp0 *d_z/rad
+                f(i+nghost,m1,j+nghost,iuz) = -amp0 *d_x/rad
+              endif
+            enddo
+          enddo
+        endif
+      case (2)
+        if (ipy == 0) then
+          do i=1,nx
+            do j=1,ny
+              d_y = y(j+nghost)-centery
+              d_x = x(i+nghost)-centerx
+              rad = sqrt(d_x**2. + d_y**2.)
+!
+              if ((rmin <= rad) .and. (rad <= rmax)) then
+                amp0 = twist_u0 * rad
+                f(i+nghost,m1,j+nghost,iux) = amp0 *d_y/rad
+                f(i+nghost,m1,j+nghost,iuy) = -amp0 *d_x/rad
+              endif
+            enddo
+          enddo
+        endif
+      endselect
+!
+    endsubroutine uu_twist
 !***********************************************************************
     subroutine set_driver_params()
 !
