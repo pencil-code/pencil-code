@@ -354,9 +354,9 @@ module Special
       K_chrom=Kchrom*(1.-cubic_step(glnTT_2,lnTT0_chrom,width_lnTT_chrom))
       chix=p%rho1*K_chrom*p%cp1
 !
-      tmpv(:,1) = p%hlnTT(:,2,3)-p%hlnTT(:,3,2) 
-      tmpv(:,2) = p%hlnTT(:,3,1)-p%hlnTT(:,1,3) 
-      tmpv(:,3) = p%hlnTT(:,1,2)-p%hlnTT(:,2,1) 
+      tmpv(:,1) = p%hlnTT(:,2,3)-p%hlnTT(:,3,2)
+      tmpv(:,2) = p%hlnTT(:,3,1)-p%hlnTT(:,1,3)
+      tmpv(:,3) = p%hlnTT(:,1,2)-p%hlnTT(:,2,1)
 !
       call cross(tmpv,p%glnTT,tmpv2)
 !
@@ -495,18 +495,38 @@ module Special
           -79.7462, -80.1990, -80.9052, -81.3196, -81.9874, -82.2023,&
           -82.5093, -82.5477, -82.4172, -82.2637, -82.1793 , -82.2023 /)
 !
-      real, dimension (nx) :: lnTT,get_lnQ
-      real, dimension (nx) :: slope,ordinate
-      integer :: i
+      real, dimension (nx), intent(in) :: lnTT
+      real, dimension (nx) :: get_lnQ
+      real :: slope,ordinate
+      integer :: i,j=18
+      logical :: notdone
 !
       get_lnQ=-1000.
 !
-      do i=1,35
-        where(lnTT .ge. intlnT(i) .and. lnTT .lt. intlnT(i+1))
-          slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
-          ordinate = intlnQ(i) - slope*intlnT(i)
-          get_lnQ = slope*lnTT + ordinate
-        endwhere
+      do i=1,nx
+        notdone=.true.
+!
+        do while (notdone)
+!
+          if (lnTT(i) >= intlnT(j) .and. lnTT(i) < intlnT(j+1)) then
+!
+! define slope and ordinate for linear interpolation
+!
+            slope=(intlnQ(j+1)-intlnQ(j))/(intlnT(j+1)-intlnT(j))
+            ordinate=intlnQ(j) - slope*intlnT(j)
+!
+            get_lnQ(i) = slope*lnTT(i) + ordinate
+            notdone = .false.
+          else
+            j = j + sign(1.,lnTT(i)-intlnT(j))
+            if (j <= 0) then
+              j=1
+              notdone=.false.
+            elseif (j >= 37) then
+              call fatal_error('get_lnQ','lnTT to large')
+            endif
+          endif
+        enddo
       enddo
 !
     endfunction get_lnQ
@@ -609,10 +629,12 @@ module Special
         if (headtt) print*,'iheattype:',iheattype(i)
         select case(iheattype(i))
         case ('nothing')
+          ! do nothing
         case ('one-sided')
           !
           heatinput=heatinput + &
               heat_par_exp(1)*exp(-x(l1:l2)/heat_par_exp(2))/heat_unit
+!
           heatinput=heatinput + &
               heat_par_exp2(1)*exp(-x(l1:l2)/heat_par_exp2(2))/heat_unit
           !
