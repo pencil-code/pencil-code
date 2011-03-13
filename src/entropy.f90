@@ -2710,7 +2710,7 @@ module Entropy
       real, dimension (mx) :: cs2mx_tmp
       real, dimension (mx,my) :: cs2mxy_tmp
 !
-      intent(inout) :: f
+      intent(in) :: f
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
