@@ -75,7 +75,7 @@ module Grid
       real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
       real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
 !
-      real :: a,b
+      real :: a,b,c
       integer :: i
 !
       lequidist=(grid_func=='linear')
@@ -310,6 +310,38 @@ module Grid
             enddo
           endif
 !
+        case ('log')
+          ! Grid distance increases logarithmically
+          ! .i.e., grid spacing increases linearly
+          a= log(xyz1(1)/xyz0(1))/(xi1up-xi1lo)
+          b= .5*(xi1up+xi1lo-log(xyz1(1)*xyz0(1))/a)
+!          
+          call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2,param=c)
+          call grid_profile(a*(xi1lo-b),grid_func(1),g1lo,param=c)
+          call grid_profile(a*(xi1up-b),grid_func(1),g1up,param=c)
+!
+          x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+!
+        case ('power-law')
+          ! Grid distance increases as a power-root
+          ! .i.e., grid spacing increases as a power-law
+          if (coeff_grid(1) == 0.) &
+               call fatal_error('construct_grid:', 'Cannot create '//&
+               'a grid for a power-law of zero. Please check.')
+          c= coeff_grid(1)
+          a= (xyz1(1)**c-xyz0(1)**c)/(xi1up-xi1lo)
+          b= .5*(xi1up+xi1lo-(xyz1(1)**c+xyz0(1)**c)/a)
+!
+          call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2,param=c)
+          call grid_profile(a*(xi1lo-b),grid_func(1),g1lo,param=c)
+          call grid_profile(a*(xi1up-b),grid_func(1),g1up,param=c)
+!
+          x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+
         case ('squared')
           ! Grid distance increases linearily
           a=max(nxgrid,1)
@@ -365,6 +397,7 @@ module Grid
 !
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
+!
 !DM should this be xprim**3 ?
 !        dx_tilde=-xprim2/xprim**3
       endif
@@ -1385,7 +1418,19 @@ module Grid
         ! Grid distance increases linearily
         g=0.5*xi**2
         if (present(gder1)) gder1= xi
-        if (present(gder2)) gder2= 0.
+        if (present(gder2)) gder2= 0.      
+!
+      case ('log')
+        ! Grid distance increases linearily
+        g=exp(xi)
+        if (present(gder1)) gder1=  g
+        if (present(gder2)) gder2=  g
+!
+      case ('power-law')
+        ! Grid distance increases according to a power-law
+        g=xi**(1./param)
+        if (present(gder1)) gder1=1./param*              xi**(1/param-1)
+        if (present(gder2)) gder2=1./param*(1./param-1.)*xi**(1/param-2)
 !
       case ('frozensphere')
         ! Just like sinh, except set dx constant below a certain radius.
