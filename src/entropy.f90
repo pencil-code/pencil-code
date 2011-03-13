@@ -469,7 +469,7 @@ module Entropy
 !
         endif
 ! FbotKbot is required here for boundcond 
-      else if (lgravx) then
+      elseif (lgravx) then
         if (coord_system=='spherical'.or.lconvection_gravx.and.(.not.lhcond_global)) &
              FbotKbot=Fbot/hcond0
       endif
@@ -2137,6 +2137,7 @@ module Entropy
           if (lmultilayer) then
             if (lgravz) then
               lpenc_requested(i_z_mn)=.true.
+            elseif (lgravx) then
             else 
               lpenc_requested(i_r_mn)=.true.
             endif
@@ -3644,7 +3645,7 @@ module Entropy
               enddo
           endif
 ! If not gravz, using or not hcond_global
-        else
+        elseif (lgravx) then
           if(lfirstcall_hcond.and.lfirstpoint) then
             if(.not.lhcond_global) then
                call get_gravx_heatcond()
@@ -3662,22 +3663,19 @@ module Entropy
             call chit_profile(chit_prof)
             call gradlogchit_profile(glchit_prof)
           endif
+        else
+          if (lhcond_global) then
+            hcond=f(l1:l2,m,n,iglobal_hcond)
+            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
+          else
+            call heatcond(hcond,p)
+            call gradloghcond(glhc,p)
+          endif
+          if (chi_t/=0.0) then
+            call chit_profile(chit_prof)
+            call gradlogchit_profile(glchit_prof)
+          endif
         endif
-! GG: Commented Commented out the following
-!        else
-!          if (lhcond_global) then
-!            hcond=f(l1:l2,m,n,iglobal_hcond)
-!            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
-!          else
-!            call heatcond(hcond,p)
-!            call gradloghcond(glhc,p)
-!          endif
-!          if (chi_t/=0.0) then
-!            call chit_profile(chit_prof)
-!           call gradlogchit_profile(glchit_prof)
-!          endif
-!        endif
-!
 !  DM+GG: Commented out the following. If the present set up work
 !  we shall remove this in a week.
 ! 
@@ -4846,7 +4844,7 @@ module Entropy
       integer :: ierr
       real :: Lum
 !
-       call get_shared_variable('xb',xb,ierr)
+      call get_shared_variable('xb',xb,ierr)
       if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
            "there was a problem when getting xb")
       call get_shared_variable('xc',xc,ierr)
@@ -4873,7 +4871,7 @@ module Entropy
       dmpoly_dx = -(mpoly0-mpoly1)*der_step(x,xb,widthss) - &
            (mpoly1-mpoly2)*der_step(x,xc,widthss)
 !
-! Hidrostatic equilibrium relations
+! Hydrostatic equilibrium relations
       dTTdxc = gravx_xpencil / (cv*gamma_m1*(mpoly_xprof+1.))
       Lum = Fbot * (4.*pi*xyz0(1)**2)
 !
@@ -4887,6 +4885,10 @@ module Entropy
       FtopKtop=Ftop/hcond_xprof(l2)
       hcondxbot=hcond_xprof(l1)
       hcondxtop=hcond_xprof(l2)
+      if (lroot) print*, &
+           ' get_gravx_heatcond: hcond computed from gravity dependent ' //&
+           ' hydrostatic equilibrium relations, hcondxbot, FbotKbot =', &
+           hcondxbot, FbotKbot
 !
     endsubroutine get_gravx_heatcond
 !***********************************************************************
