@@ -313,6 +313,7 @@ module Grid
         case ('log')
           ! Grid distance increases logarithmically
           ! .i.e., grid spacing increases linearly
+          ! d[log x] = const ==> dx = const*x
           a= log(xyz1(1)/xyz0(1))/(xi1up-xi1lo)
           b= .5*(xi1up+xi1lo-log(xyz1(1)*xyz0(1))/a)
 !          
@@ -325,8 +326,9 @@ module Grid
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
         case ('power-law')
-          ! Grid distance increases as a power-root
-          ! .i.e., grid spacing increases as a power-law
+          ! Grid distance increases as a power-law set by c=coeff_grid(1)
+          ! i.e., grid distance increases as an inverse power-law
+          ! d[x^c] = const ==> dx = const/x^(c-1)
           if (coeff_grid(1) == 0.) &
                call fatal_error('construct_grid:', 'Cannot create '//&
                'a grid for a power-law of zero. Please check.')
@@ -1421,7 +1423,7 @@ module Grid
         if (present(gder2)) gder2= 0.      
 !
       case ('log')
-        ! Grid distance increases linearily
+        ! Grid distance increases logarithmically
         g=exp(xi)
         if (present(gder1)) gder1=  g
         if (present(gder2)) gder2=  g
