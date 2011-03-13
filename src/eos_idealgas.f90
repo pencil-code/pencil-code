@@ -2272,7 +2272,8 @@ module EquationOfState
       use SharedVariables, only: get_shared_variable
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
-      logical, pointer :: lmultilayer, lheatc_chiconst
+      real, pointer :: hcond0_kramers, nkramers
+      logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2313,6 +2314,15 @@ module EquationOfState
       call get_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux: "//&
            "there was a problem when getting lheatc_chiconst")
+      call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting hcond0_kramers")
+      call get_shared_variable('nkramers',nkramers,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting nkramers")
+      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux: "//&
+           "there was a problem when getting lheatc_kramers")
 !
       select case (topbot)
 !
@@ -2336,11 +2346,15 @@ module EquationOfState
           cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
         endif
 !
-!  check whether we have chi=constant at bottom, in which case
+!  Check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy.
+!  Check also whether Kramers opacity is used, then hcond itself depends
+!  on density and temperature.
 !
         if (lheatc_chiconst) then
           tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+        else if (lheatc_kramers) then
+          tmp_xy=Fbot*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
         else
           tmp_xy=FbotKbot/cs2_xy
         endif
@@ -2362,31 +2376,39 @@ module EquationOfState
 !
       case ('top')
 !
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
+!  calculate Fbot/(K*cs2)
 !
-        rho_xy=exp(f(:,:,n2,ilnrho))
-        cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
-!
-!  check whether we have chi=constant at top, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy.
-!
-!DM+PC we think in the following top should be replaced by bot we have
-! done one change. Axel, you introduced these lines in version 10959 could
-! please have a look.
-        if (lheatc_chiconst) then
-! The following line may be wrong Fbot -> Ftop
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+        if (ldensity_nolog) then
+          rho_xy=f(:,:,n2,irho)
+          cs2_xy=cs20*exp(gamma_m1*(log(f(:,:,n2,irho))-lnrho0)+cv1*f(:,:,n2,iss))
         else
-!          tmp_xy=FbotKbot/cs2_xy
+          rho_xy=exp(f(:,:,n2,ilnrho))
+          cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+        endif
+!
+!  Check whether we have chi=constant at top, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy.
+!  Check also whether Kramers opacity is used, then hcond itself depends
+!  on density and temperature.
+!
+        if (lheatc_chiconst) then
+          tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
+        else if (lheatc_kramers) then
+          tmp_xy=Ftop*rho_xy**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_xy**(6.5*nkramers+1.))
+        else
           tmp_xy=FtopKtop/cs2_xy
         endif
 !
 !  enforce ds/dz + gamma_m1/gamma*dlnrho/dz = - gamma_m1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
+          if (ldensity_nolog) then
+            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
+              (log(f(:,:,n2-i,irho)/f(:,:,n2+i,irho))+2*i*dz*tmp_xy)
+          else
+            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)* &
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
+          endif
         enddo
 !
       case default

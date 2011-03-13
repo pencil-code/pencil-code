@@ -71,6 +71,7 @@ module Entropy
   real, dimension(mx), target :: zrho
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0
+  real, target :: hcond0_kramers=0.0, nkramers=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -80,6 +81,7 @@ module Entropy
   logical, target :: lheatc_chiconst=.false.
   logical :: lheatc_tensordiffusion=.false., lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.,lheatc_sqrtrhochiconst=.false.
+  logical, target :: lheatc_kramers=.false.
   logical :: lheatc_corona=.false.,lheatc_chitherm=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
@@ -88,6 +90,7 @@ module Entropy
   logical :: lupw_ss=.false.
   logical :: lcalc_ssmean=.false., lcalc_ss_volaverage=.false.
   logical :: lcalc_cs2mean=.false., lcalc_cs2mz_mean=.false.
+  logical :: lcalc_ssmeanxy=.false.
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas
@@ -114,8 +117,8 @@ module Entropy
   real, dimension (mz) :: ssmz,cs2mz
   real, dimension (nz,3) :: gssmz
   real, dimension (nz) :: del2ssmz
-  real, dimension (mx) :: cs2mx
-  real, dimension (mx,my) :: cs2mxy
+  real, dimension (mx) :: cs2mx, ssmx
+  real, dimension (mx,my) :: cs2mxy, ssmxy
 !
 !  Input parameters.
 !
@@ -129,7 +132,7 @@ module Entropy
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
       tau_cool_ss, &
       TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, &
-      rho0ts, T0hs, lconvection_gravx, Fbot
+      rho0ts, T0hs, lconvection_gravx, Fbot, hcond0_kramers, nkramers
 !
 !  Run parameters.
 !
@@ -150,7 +153,8 @@ module Entropy
       TTref_cool, mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, &
       xtop, tau_cool2, tau_cool_ss, tau_diff, lfpres_from_pressure, &
       chit_aniso, lchit_aniso_simplified, lconvection_gravx, &
-      ltau_cool_variable, TT_powerlaw
+      ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
+      nkramers
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -206,6 +210,10 @@ module Entropy
   integer :: idiag_fradz=0      ! DIAG_DOC: $F_{\rm rad}$
   integer :: idiag_fradz_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kprof)
   integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, from Kprof)
+  integer :: idiag_fradz_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kramers'
+                                   ! DIAG_DOC: opacity)
+  integer :: idiag_fradxy_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, 
+                                    ! DIAG_DOC: from Kramers' opacity)
   integer :: idiag_fturbz=0     ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! DIAG_DOC: s\right>_{xy}$ \quad(turbulent
                                 ! DIAG_DOC: heat flux)
@@ -597,6 +605,7 @@ module Entropy
       lheatc_tensordiffusion=.false.
       lheatc_spitzer=.false.
       lheatc_hubeny=.false.
+      lheatc_kramers=.false.
       lheatc_corona=.false.
       lheatc_shock=.false.
       lheatc_hyper3ss=.false.
@@ -635,6 +644,9 @@ module Entropy
         case ('hubeny')
           lheatc_hubeny=.true.
           if (lroot) print*, 'heat conduction: hubeny'
+        case ('kramers')
+          lheatc_kramers=.true.
+          if (lroot) print*, 'heat conduction: kramers'
         case ('corona')
           lheatc_corona=.true.
           if (lroot) print*, 'heat conduction: corona'
@@ -689,6 +701,9 @@ module Entropy
       endif
       if ((lheatc_spitzer.or.lheatc_corona) .and. (Kgpara==0.0 .or. Kgperp==0.0) ) then
         call warning('initialize_entropy','Kgperp or Kgpara is zero!')
+      endif
+      if (lheatc_kramers .and. hcond0_kramers==0.0) then
+        call warning('initialize_entropy','hcond0_kramers is zero!')
       endif
       if (lheatc_hyper3ss .and. chi_hyper3==0.0) &
            call warning('initialize_entropy','chi_hyper3 is zero!')
@@ -800,6 +815,15 @@ module Entropy
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting lviscosity_heat')
+      call put_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcond0_kramers')
+      call put_shared_variable('nkramers',nkramers,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting nkramers')
+      call put_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting lheatc_kramers')
 !
       call keep_compiler_quiet(lstarting)
 !
@@ -2170,6 +2194,16 @@ module Entropy
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_TT)=.true.
       endif
+      if (lheatc_kramers) then
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_cv1)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+      endif
       if (lheatc_corona) then
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_lnrho)=.true.
@@ -2276,6 +2310,10 @@ module Entropy
       endif
       if (idiag_fturbxy/=0 .or. idiag_fturbrxy/=0 .or. &
           idiag_fturbthxy/=0) then
+          lpenc_diagnos2d(i_rho)=.true.
+          lpenc_diagnos2d(i_TT)=.true.
+      endif
+      if (idiag_fradxy_kramers/=0) then
           lpenc_diagnos2d(i_rho)=.true.
           lpenc_diagnos2d(i_TT)=.true.
       endif
@@ -2512,6 +2550,7 @@ module Entropy
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
       if (lheatc_hubeny)   call calc_heatcond_hubeny(df,p)
+      if (lheatc_kramers)  call calc_heatcond_kramers(df,p)
       if (lheatc_corona) then
         call calc_heatcond_spitzer(df,p)
         call newton_cool(df,p)
@@ -2707,8 +2746,8 @@ module Entropy
       integer :: l,m,n
       real :: fact, cv1
       real, dimension (mz) :: cs2mz_tmp, ssmz1_tmp
-      real, dimension (mx) :: cs2mx_tmp
-      real, dimension (mx,my) :: cs2mxy_tmp
+      real, dimension (mx) :: cs2mx_tmp, ssmx1_tmp
+      real, dimension (mx,my) :: cs2mxy_tmp, ssmxy1_tmp
 !
       intent(in) :: f
 !
@@ -2733,6 +2772,41 @@ module Entropy
         gssmz(:,1:2)=0.
         call der_z(ssmz,gssmz(:,3))
         call der2_z(ssmz,del2ssmz)
+      endif
+!
+!  Compute yz- and z-averages of entropy.
+!
+      if (lcalc_ssmeanxy) then
+!
+!  Radial (yz) average
+!
+        fact=1./nyz
+        do l=1,mx
+          ssmx(l)=fact*sum(f(l,m1:m2,n1:n2,iss))
+        enddo
+!
+!  Communication over all processors in the yz plane.
+!
+        if (nprocy>1.or.nprocz>1) then
+          call mpiallreduce_sum(ssmx,ssmx1_tmp,mx,idir=23)
+          ssmx=ssmx1_tmp
+        endif
+!
+!  Azimuthal (z) average
+!
+        fact=1./nzgrid
+        do l=1,mx
+          do m=1,my
+            ssmxy(l,m)=fact*sum(f(l,m,n1:n2,iss))
+          enddo
+        enddo
+!
+        if (nprocz>1) then
+!
+          call mpiallreduce_sum(ssmxy,ssmxy1_tmp,(/mx,my/),idir=3)
+          ssmxy = ssmxy1_tmp
+!
+        endif
       endif
 !
 !  Compute average sound speed cs2(x) and cs2(x,y)
@@ -3563,6 +3637,92 @@ module Entropy
 !
     endsubroutine calc_heatcond_hubeny
 !***********************************************************************
+    subroutine calc_heatcond_kramers(df,p)
+!
+!  Heat conduction using Kramers' opacity law
+!
+!  23-feb-11/pete: coded
+!
+      use Diagnostics
+      use IO, only: output_pencil
+      use Sub, only: dot, notanumber
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: thdiff, chix, g2
+      integer :: j
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+!  Diffusion of the form
+!      rho*T*Ds/Dt = ... + nab.(K*gradT),
+!  where
+!      K = K_0*(T**6.5/rho**2)**n.
+!  In reality n=1, but we may need to use n\=1 for numerical reasons.
+!
+!  Here chix = K/(cp rho) is needed for diffus_chi calculation.
+!
+      chix = p%cp1*hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)
+      call dot(-2.*nkramers*p%glnrho+6.5*nkramers*p%glnTT,p%glnTT,g2)
+      if (pretend_lnTT) then
+        thdiff = p%cv1*hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)*(p%del2lnTT+g2)
+      else
+        thdiff = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)*(p%del2lnTT+g2)
+      endif
+!
+!  Write radiative flux array.
+!
+      if (l1davgfirst) then
+        if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-chix*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_kramers)
+      endif
+!
+!  2d-averages
+!
+      if (l2davgfirst) then
+        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-chix*p%rho*p%TT*p%glnTT(:,1)/p%cp1,idiag_fradxy_kramers)
+      endif
+!
+!  Check for NaNs initially.
+!
+      if (headt .and. (hcond0_kramers/=0.0)) then
+        if (notanumber(p%rho1))    print*,'calc_heatcond_kramers: NaNs in rho1'
+        if (notanumber(chix))      print*,'calc_heatcond_kramers: NaNs in chix'
+        if (notanumber(p%del2ss))  print*,'calc_heatcond_kramers: NaNs in del2ss'
+        if (notanumber(p%TT))      print*,'calc_heatcond_kramers: NaNs in TT'
+        if (notanumber(p%glnTT))   print*,'calc_heatcond_kramers: NaNs in glnT'
+        if (notanumber(g2))        print*,'calc_heatcond_kramers: NaNs in g2'
+        if (notanumber(thdiff))    print*,'calc_heatcond_kramers: NaNs in thdiff'
+!
+!  Most of these should trigger the following trap.
+!
+        if (notanumber(thdiff)) then
+          print*, 'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
+          call fatal_error('calc_heatcond_kramers','NaNs in thdiff')
+        endif
+      endif
+!
+!  At the end of this routine, add all contribution to
+!  thermal diffusion on the rhs of the entropy equation,
+!  so Ds/Dt = ... + thdiff = ... + (...)/(rho*T)
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
+      if (headtt) print*,'calc_heatcond_kramers: added thdiff'
+!
+!  Check maximum diffusion from thermal diffusion.
+!  NB: With heat conduction, the second-order term for entropy is
+!    gamma*chix*del2ss.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_kramers
+!***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
 !  In this routine general heat conduction profiles are being provided.
@@ -3591,9 +3751,6 @@ module Entropy
 !
       intent(in) :: p
       intent(out) :: df
-!
-!PJK: tentatively allowed lnTT to be used
-!      if (pretend_lnTT) call fatal_error('calc_heatcond','not implemented when pretend_lnTT = T')
 !
 !  Heat conduction / entropy diffusion
 !
@@ -4301,6 +4458,19 @@ module Entropy
 !
         prof2= step(x(l1:l2),rcool,wcool)
         heat = heat - cool*prof2*(p%cs2-cs2cool)/cs2cool
+!
+!  Enforce latitudinal gradient of entropy plus additional cooling
+!  layer on top.
+!
+      case ('shell+latss')
+        if (rcool==0.0) rcool=r_ext
+        prof = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
+        prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
+        heat = heat - cool*prof*(ssmxy(l1:l2,m)-prof1*ssmx(l1:l2))
+!
+        prof2= step(x(l1:l2),rcool,wcool)
+        heat = heat - cool*prof2*(p%cs2-cs2cool)/cs2cool
+!
       case default
         write(unit=errormsg,fmt=*) &
             'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
@@ -4561,6 +4731,7 @@ module Entropy
         idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0;
         idiag_fradxy_Kprof=0; idiag_fconvxy=0;
+        idiag_fradz_kramers=0; idiag_fradxy_kramers=0; 
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
       endif
 !
@@ -4621,6 +4792,7 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_kramers',idiag_fradz_kramers)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TT2mz',idiag_TT2mz)
@@ -4647,6 +4819,7 @@ module Entropy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbrxy',idiag_fturbrxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fturbthxy',idiag_fturbthxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_Kprof',idiag_fradxy_Kprof)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fradxy_kramers',idiag_fradxy_kramers)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvxy',idiag_fconvxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvyxy',idiag_fconvyxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvzxy',idiag_fconvzxy)
