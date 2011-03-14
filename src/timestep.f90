@@ -20,11 +20,12 @@ module Timestep
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
 !
-      use BorderProfiles
-      use Equ
+      use BorderProfiles, only: border_quenching
+      use Equ, only: pde
       use Interstellar, only: calc_snr_damp_int
-      use Mpicomm
-      use Particles_main
+      use Mpicomm, only: mpifinalize, mpireduce_max,mpibcast_real
+      use Particles_main, only: particles_timestep_first, &
+          particles_timestep_second
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
 !
