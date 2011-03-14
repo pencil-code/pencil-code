@@ -478,8 +478,10 @@ module Entropy
         endif
 ! FbotKbot is required here for boundcond 
       elseif (lgravx) then
-        if (coord_system=='spherical'.or.lconvection_gravx.and.(.not.lhcond_global)) &
+        if (coord_system=='spherical'.or.lconvection_gravx.and.(.not.lhcond_global)) then
              FbotKbot=Fbot/hcond0
+             hcondxbot = hcond0
+        endif
       endif
 !
 !  Make sure all relevant parameters are set for spherical shell problems.
@@ -5054,14 +5056,9 @@ module Entropy
       gradloghcond_xprof(:,1) = glhc
       gradloghcond_xprof(:,2:3) = 0.
 !
-      FbotKbot=Fbot/hcond_xprof(l1)
-      FtopKtop=Ftop/hcond_xprof(l2)
-      hcondxbot=hcond_xprof(l1)
-      hcondxtop=hcond_xprof(l2)
       if (lroot) print*, &
            ' get_gravx_heatcond: hcond computed from gravity dependent ' //&
-           ' hydrostatic equilibrium relations, hcondxbot, FbotKbot =', &
-           hcondxbot, FbotKbot
+           ' hydrostatic equilibrium relations' 
 !
     endsubroutine get_gravx_heatcond
 !***********************************************************************
