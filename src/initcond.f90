@@ -4535,7 +4535,11 @@ module Initcond
 !
       tmp2(:)=0.0
       sumtmp(:)=0.0
-      tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
+      if (ldensity_nolog) then
+        tmp1=sum(f(l1:l2,m1,n1:n2,irho))
+      else
+        tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
+      endif
 !
 !  Calculate the total mass on each processor tmp1 and identify it with the
 !  appropriate processor in the array tmp2
@@ -4566,6 +4570,13 @@ module Initcond
         do n=n1,n2
         do m=m1,m2
           f(l1:l2,m,n,i  )=0.0
+          if (ldensity_nolog) then
+            f(l1:l2,m,n,i+1)=ampl*(sumtmp(iproc+1)+&
+                sum(f(l1:l2,m,n1:n,irho)))*dx*dz
+          else
+            f(l1:l2,m,n,i+1)=ampl*(sumtmp(iproc+1)+&
+                sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
+          endif
           f(l1:l2,m,n,i+1)=-ampl*(sumtmp(iproc+1)+&
               sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
           f(l1:l2,m,n,i+2)=0.0
@@ -4597,7 +4608,11 @@ module Initcond
 !
       tmp2(:)=0.0
       sumtmp(:)=0.0
-      tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
+      if (ldensity_nolog) then
+        tmp1=sum(f(l1:l2,m1,n1:n2,irho))
+      else
+        tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
+      endif
 !
 !  Calculate the total mass on each processor tmp1 and identify it with the
 !  appropriate processor in the array tmp2
@@ -4627,8 +4642,13 @@ module Initcond
         if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
         do n=n1,n2
         do m=m1,m2
-          f(l1:l2,m,n,i)=ampl*(sumtmp(iproc+1)+&
-              sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
+          if (ldensity_nolog) then
+            f(l1:l2,m,n,i)=ampl*(sumtmp(iproc+1)+&
+                sum(f(l1:l2,m,n1:n,irho)))*dx*dz
+          else
+            f(l1:l2,m,n,i)=ampl*(sumtmp(iproc+1)+&
+                sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
+          endif
           f(l1:l2,m,n,i+1)=0.0
           f(l1:l2,m,n,i+2)=0.0
         enddo

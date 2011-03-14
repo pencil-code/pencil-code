@@ -682,11 +682,12 @@ module Boundcond
                 ! BCZ_DOC: symmetric temp.
                 ! BCZ_DOC:
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
-              case ('ism')
-                ! BCZ_DOC: special for interstellar runs
-                if (j==iuz) call bc_steady_z(f,topbot,iuz)
-                if (j==irho.or.j==ilnrho) call bc_onesided_z(f,topbot,j)
+              case ('ctz')
+                ! BCZ_DOC: for interstellar runs copy T 
                 if (j==iss) call bc_ctz(f,topbot,iss)
+              case ('cdz')
+                ! BCZ_DOC: for interstellar runs limit rho
+                call bc_cdz(f,topbot,j)
               case ('asT')
                 ! BCZ_DOC: select entropy for uniform ghost temperature
                 ! BCZ_DOC: matching fluctuating boundary value,
@@ -794,8 +795,8 @@ module Boundcond
                 ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
                 call bc_outflow_zero_deriv_z(f,topbot,j)
               case ('ubs')
-                ! BCZ_DOC: symmetric outflow,
-                ! but match boundary inflow (experimental)
+                ! BCZ_DOC: copy boundary outflow,
+                ! but limit inflow +ve inward gradient (experimental)
                 call bc_steady_z(f,topbot,j)
               case ('win')
                 ! BCZ_DOC: forces massflux given as
@@ -5292,10 +5293,11 @@ module Boundcond
 !
 !  Steady in/outflow boundary conditions.
 !
-!  If the velocity vector points out of the box, the velocity boundary
-!  condition is set to 's', otherwise it is set to boundary value.
+!  Match ghost to outward velocity on boundary. Impose positive inward 
+!  gradient in ghost zones for inflow on boundary.
 !
 !  06-nov-2010/fred: implemented
+!  14-mar-2011/fred: amended 
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5309,10 +5311,17 @@ module Boundcond
 !
       case ('bot')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n1,j)<0.0) then  !'s'
-            do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1+i,j); enddo
-          else                         !'u(n1)'
+          if (f(ix,iy,n1,j) <= 0.0) then
             do i=1,nghost; f(ix,iy,n1-i,j)=f(ix,iy,n1,j); enddo
+          else
+            if (f(ix,iy,n1,j) > f(ix,iy,n1+1,j)) then
+              f(ix,iy,n1-1,j)=0.5*(f(ix,iy,n1,j)    +f(ix,iy,n1+1,j))
+            else 
+              f(ix,iy,n1-1,j)=2.0* f(ix,iy,n1,j)    -f(ix,iy,n1+1,j)
+            endif
+            do i=2,nghost
+              f(ix,iy,n1-i,j)=2.0* f(ix,iy,n1-i+1,j)-f(ix,iy,n1-i+2,j)
+            enddo
           endif
         enddo; enddo
 !
@@ -5320,10 +5329,17 @@ module Boundcond
 !
       case ('top')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n2,j)>0.0) then  !'s'
-            do i=1,nghost; f(ix,iy,n2+i,j)=f(ix,iy,n2-i,j); enddo
-          else                         !'u(n2)'
+          if (f(ix,iy,n2,j) >= 0.0) then
             do i=1,nghost; f(ix,iy,n2+i,j)=f(ix,iy,n2,j); enddo
+          else
+            if (f(ix,iy,n2,j) < f(ix,iy,n2-1,j)) then
+              f(ix,iy,n2+1,j)=0.5*(f(ix,iy,n2,j)    +f(ix,iy,n2-1,j))
+            else
+              f(ix,iy,n2+1,j)=2.0* f(ix,iy,n2,j)    -f(ix,iy,n2-1,j)
+            endif
+            do i=2,nghost
+              f(ix,iy,n2+i,j)=2.0* f(ix,iy,n2+i-1,j)-f(ix,iy,n2+i-2,j)
+            enddo
           endif
         enddo; enddo
 !
@@ -6626,7 +6642,7 @@ module Boundcond
 !  value. Density ghost zones need to be calculated again here and corners
 !  must be included to avoid NAN's.
 !
-!  13-feb-11/fred: check that 'ism' or 'a2' also set for bcz density.
+!  14-mar-11/fred: check that 'cdz' is also set for bcz density.
 !
       use EquationOfState, only: get_cv1,get_cp1
 !
@@ -6634,31 +6650,31 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
       real :: cv1,cp1,cv,cp
+      real, dimension (mx,my,mz) :: lnrho_
 !
-      call get_cv1(cv1);cv=1./cv1
-      call get_cp1(cp1);cp=1./cp1
+      call get_cv1(cv1); cv=1./cv1
+      call get_cp1(cp1); cp=1./cp1
 !
-      call bc_onesided_z(f,topbot,j-1)
+      call bc_cdz(f,topbot,j-1)
 !
+      lnrho_=f(:,:,:,j-1)
       if (ldensity_nolog) then
-        where (f(:,:,:,j-1)<=0.0) f(:,:,:,j-1)=tini*15.0
+        where (lnrho_<=0) lnrho_=tini
+        lnrho_=log(lnrho_)
       endif
-!
-      if (.not.ldensity_nolog) &
-          f(:,:,:,j-1)=exp(f(:,:,:,j-1))
-!
+
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
         do k=1,3
-          f(:,:,n1-k,j)=f(:,:,n1,j) &
-              +(cp-cv)*(log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1)))
+          f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
+              (lnrho_(:,:,n1-k+1)-lnrho_(:,:,n1-k))
         enddo
 !
       case ('top')               ! top boundary
         do k=1,3
-          f(:,:,n2+k,j)=f(:,:,n2,j) &
-              +(cp-cv)*(log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))
+          f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
+              (lnrho_(:,:,n2+k-1)-lnrho_(:,:,n2+k))
         enddo
 !
       case default
@@ -6666,9 +6682,38 @@ module Boundcond
 !
       endselect
 !
-      if (.not.ldensity_nolog) &
-          f(:,:,:,j-1)=log(f(:,:,:,j-1))
-!
     endsubroutine bc_ctz
+!***********************************************************************
+    subroutine bc_cdz(f,topbot,j)
+!
+!  Set ghost values to diminishing amplitude of boundary value.
+!  Motivation density spikes in 'ism' runs leading to temp spikes that
+!  crash the code on outflows, but halo density much lower so 'cop' 
+!  induces mass inflows which are too high to be physically sustainable.
+!
+!  13-feb-11/fred: adapted from bc_ctz
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j,k
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+          do k=1,3
+            f(:,:,n1-k,j)=f(:,:,n1-k+1,j)*(1.0-10.*dz)
+          enddo
+!
+      case ('top')               ! top boundary
+          do k=1,3
+            f(:,:,n2+k,j)=f(:,:,n2+k-1,j)*(1.0-10.*dz)
+          enddo
+!
+      case default
+        print*, "bc_cdz ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_cdz
 !***********************************************************************
 endmodule Boundcond

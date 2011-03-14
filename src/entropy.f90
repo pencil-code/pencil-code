@@ -633,7 +633,7 @@ module Entropy
           if (lroot) print*, 'heat conduction: constant chi'
         case ('chi-therm')
           lheatc_chitherm=.true.
-          if (lroot) print*, 'heat conduction: constant chi except high TT'
+          if (lroot) print*, 'heat conduction: chi scaled with c_s'
         case ('sqrtrhochi-const')
           lheatc_sqrtrhochiconst=.true.
           if (lroot) print*, 'heat conduction: constant sqrt(rho)*chi'
