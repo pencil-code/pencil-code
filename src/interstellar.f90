@@ -146,14 +146,24 @@ module Interstellar
 !
 !  SNe placement limitations (for code stability)
 !
-  double precision, parameter :: rho_SN_min_cgs=1e-28
-  real, parameter :: TT_SN_max_cgs=5E8
-  real :: rho_SN_min=impossible, TT_SN_max=impossible
+  double precision, parameter :: rho_SN_min_cgs=1e-28,rho_SN_max_cgs=5e-24
+  real, parameter :: TT_SN_max_cgs=5E9
+  real :: rho_SN_min=impossible, TT_SN_max=impossible, rho_SN_max=impossible
 !
 !  SNI per (x,y)-area explosion rate
 !
-  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
+  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56 
   real :: SNI_area_rate=impossible, SNII_area_rate=impossible
+!
+!  SNII rate=5.e-12 mass(H1+HII)/solar_mass
+!  van den Bergh/Tammann Annu. Rev Astron. Astrophys. 1991 29:363-407
+!  SNI rate=4.7e-14/solar_mass + 0.35 x SNII rate
+!  Mannucci et al A&A 433, 807-814 (2005)
+!
+  double precision, parameter :: SNII_mass_rate_cgs=1.584434515D-19
+  double precision, parameter :: SNI_mass_rate_cgs=1.489368444D-21 
+  real :: SNII_mass_rate, SNI_mass_rate
+  logical :: lSN_mass_rate=.false.
 !
 !  Some useful constants
 !
@@ -186,7 +196,8 @@ module Interstellar
 !
 !  SNe composition
 !
-  logical :: lSN_eth=.true., lSN_ecr=.true.,lSN_mass=.true., lSN_velocity=.false.
+  logical :: lSN_eth=.true., lSN_ecr=.true., lSN_mass=.true., &
+      lSN_velocity=.false.
 !
 !  Total mass added by a SNe
 !
@@ -211,9 +222,10 @@ module Interstellar
   real :: r_SNI=3.e+4, r_SNII=4.e+3
   real :: average_SNI_heating=0., average_SNII_heating=0.
 !
-!  Limit placed of minimum density resulting from cavity creation
+!  Limit placed of minimum density resulting from cavity creation and
+!  parameters for thermal_hse(hydrostatic equilibrium) assuming RBr
 !
-  real, parameter :: rho_min=1.e-6,  rho0ts_cgs=1.67262158e-24, T0hs_cgs=2.284e3
+  real, parameter :: rho_min=1.e-6, rho0ts_cgs=3.5e-24, T0hs_cgs=7.088e2
   real :: rho0ts=impossible, T0hs=impossible
 !
 !  Cooling timestep limiter coefficient
@@ -255,6 +267,7 @@ module Interstellar
 !  TT & z-dependent uv-heating profile
 !
   real, dimension(mz) :: heat_z, zrho
+  logical :: lthermal_hse=.false., lheatz_min=.true.
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
@@ -280,7 +293,7 @@ module Interstellar
 !
 !  SN type flags
 !
-  logical :: lSNI=.true., lSNII=.false.
+  logical :: lSNI=.true., lSNII=.false., lSNII_gaussian=.true.
 !
 ! Damp central regions of SNRs at early times
 !
@@ -355,7 +368,8 @@ module Interstellar
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
       uniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       SNR_damping, cooling_select, heating_select, heating_rate, rho0ts, &
-      T0hs, TT_SN_max, rho_SN_min, N_mass
+      T0hs, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
+      lthermal_hse, lheatz_min
 !
 ! run parameters
 !
@@ -374,8 +388,8 @@ module Interstellar
       lheating_UV, cooling_select, heating_select, heating_rate, &
       lcooltime_smooth, lcooltime_despike, cooltime_despike_factor, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      lTT_cutoff, TT_cutoff, N_mass, addrate, T0hs, rho0ts
-
+      lTT_cutoff, TT_cutoff, N_mass, addrate, T0hs, rho0ts, &
+      lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min
 !
   contains
 !
@@ -757,6 +771,7 @@ module Interstellar
       if (unit_system=='cgs') then
         if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs / unit_temperature
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
+        if (rho_SN_max==impossible) rho_SN_max=rho_SN_max_cgs / unit_density
         TT_SN_min=TT_SN_min_cgs / unit_temperature
         TT_cutoff=TT_cutoff_cgs / unit_temperature
         TT_cutoff1=1.0/TT_cutoff
@@ -765,6 +780,8 @@ module Interstellar
         if (SNII_area_rate==impossible) &
             SNII_area_rate=7.5*SNI_area_rate_cgs * unit_length**2 * unit_time
         if (h_SNI==impossible) h_SNI=h_SNI_cgs / unit_length
+        SNII_mass_rate=SNII_mass_rate_cgs*unit_time
+        SNI_mass_rate=SNI_mass_rate_cgs*unit_time
         h_SNII=h_SNII_cgs / unit_length
         solar_mass=solar_mass_cgs / unit_mass
         if (lroot) &
@@ -855,7 +872,7 @@ module Interstellar
             '---it----------t--------itype-iproc----l-----m----n---', &
             '-----x------------y------------z-------', &
             '----rho-----------TT-----------EE---------t_sedov----', &
-            '--radius------site_mass------maxTT----'
+            '--radius------site_mass------maxTT----t_interval---'
         close(1)
       endif
 !
@@ -1338,16 +1355,19 @@ module Interstellar
 !
       if (lroot) print*, 'thermal-hs: '// &
           'hydrostatic thermal equilibrium density and entropy profiles'
+!
       do n=1,mz
-!
-        logrho = log(rho0ts)+(g_A*g_B*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
-            log(T0hs/(g_A*g_B)* &
-            (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D))) 
+        if (lthermal_hse) then 
+          logrho = log(rho0ts)+(g_A*g_B*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
+              log(T0hs/(g_A*g_B)* &
+              (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D))) 
+        else
+          logrho = log(rho0ts)-0.015*(- &
+              g_A*g_B+ &
+              g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D) 
+        endif
+        logrho=max(logrho,-80.0)
         zrho(n)=exp(logrho)
-!
-!  Maintain minimum uv-heating function at high altitudes through min density.
-!
-!
       enddo
 !
 !  Share zrho and T0hs for use with entropy to initialize density and
@@ -1371,7 +1391,8 @@ module Interstellar
 !            initlnrho='thermal-hs' in density.f90
 !            initss='thermal-hs' in entropy.f90
 !            heating_select='thermal-hs' in interstellar.f90
-!  Using here a similar method to O. Gressel 2008 (PhD)
+!  Using here a similar method to O. Gressel 2008 (PhD) lthermal_hse=T
+!  or similar to Joung & Mac Low Apj 653 Dec 2006 without hse 
 !
 !  22-mar-10/fred:
 !  adapted from galactic-hs,ferriere-hs
@@ -1387,8 +1408,9 @@ module Interstellar
 !
       real :: g_A, g_C
       real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B ,g_D
-      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
+      double precision :: g_B ,g_D, H_z
+      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21, &
+                                     H_z_cgs=9.258D20
       real, dimension(mz) :: lambda=0.0, lnTT, TT
       integer :: j
 !
@@ -1407,6 +1429,7 @@ module Interstellar
         g_C = g_C_cgs/unit_velocity*unit_time
         g_D = g_D_cgs/unit_length
         g_B = g_B_cgs/unit_length
+        H_z = H_z_cgs/unit_length
       else if (unit_system=='SI') then
         call fatal_error('initialize_entopy', &
             'SI unit conversions not inplemented')
@@ -1416,14 +1439,20 @@ module Interstellar
         TT(n)=T0hs/(g_A*g_B)* &
             (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
         lnTT(n)=log(TT(n))
+        zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
       enddo
-      lam_loop: do j=1,ncool
-        if (lncoolT(j) >= lncoolT(j+1)) exit lam_loop
-        where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) 
-          lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
-        endwhere
-      enddo lam_loop
-      zheat=lambda*zrho
+      if (lthermal_hse) then
+        lam_loop: do j=1,ncool
+          if (lncoolT(j) >= lncoolT(j+1)) exit lam_loop
+          where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) 
+            lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
+          endwhere
+        enddo lam_loop
+        zheat=lambda*zrho
+      endif
+      if (lheatz_min) then
+        where (zheat<1e-5*GammaUV) zheat=1e-5*GammaUV
+      endif
       do n=n1,n2
         if (lstarting) then
           f(:,:,n,icooling)=zheat(n)
@@ -1460,7 +1489,7 @@ module Interstellar
       type (pencil_case) :: p
 !
       real, dimension (nx), intent(inout) :: Hmax
-      real, dimension (nx) :: heat,cool,heatcool,netheat
+      real, dimension (nx) :: heat,cool,heatcool,netheat,netcool
       real, dimension (nx) :: damp_profile,gsh2
       real :: minqty
       integer :: i, iSNR
@@ -1575,8 +1604,11 @@ module Interstellar
           where (heatcool<0.0) netheat=0.0 
           call max_mn_name(netheat/p%ee,idiag_Hmax)
         endif
-        if (idiag_taucmin/=0) &
-          call max_mn_name(-heatcool/p%ee,idiag_taucmin,lreciprocal=.true.)
+        if (idiag_taucmin/=0) then
+          netcool=-heatcool
+          where (heatcool>=0.0) netcool=1.0
+          call max_mn_name(netcool/p%ee,idiag_taucmin,lreciprocal=.true.)
+        endif
         if (idiag_Lamm/=0) &
           call sum_mn_name(p%rho1*cool*p%TT1,idiag_Lamm)
         if (idiag_nrhom/=0) &
@@ -1739,15 +1771,28 @@ module Interstellar
             call find_nearest_SNI(f,SNRs(iSNR))
           endif
 !
-          if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
-              (SNRs(iSNR)%site%TT > TT_SN_max)) then
-            cycle
+          if (.not.lSN_scale_rad) then
+            if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
+                (SNRs(iSNR)%site%TT > TT_SN_max)) then
+              cycle
+            endif
+          else
+!
+!  Avoid sites with dense mass shown to excessively cool remnants, given the
+!  high thermal conductivity we are forced to adopt. 
+!
+            if (SNRs(iSNR)%site%rho > rho_SN_max) then
+              cycle
+            endif
           endif
 !
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
-            call set_next_SNI
             l_SNI=.true.
+            if (lSN_mass_rate) then
+              call set_interval(f,t_interval_SNI,l_SNI)
+            endif
+            call set_next_SNI
             exit
           endif
         enddo
@@ -1768,6 +1813,87 @@ module Interstellar
       endif
 !
     endsubroutine check_SNI
+!*****************************************************************************
+    subroutine check_SNIIb(f,l_SNI)
+!
+!  If time for next SNI, then implement, and calculate time of subsequent SNI.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: try_count, iSNR, ierr
+      logical :: l_SNI
+!
+      intent(inout) :: f, l_SNI
+!
+!  Identifier
+!
+      if (headtt) print*,'check_SNIIb: ENTER'
+!
+      if (t >= t_next_SNII) then
+        iSNR=get_free_SNR()
+        SNRs(iSNR)%site%TT=1e20
+        SNRs(iSNR)%site%rho=0.0
+        SNRs(iSNR)%t=t
+        SNRs(iSNR)%SN_type=2
+        SNRs(iSNR)%radius=width_SN
+        try_count=500
+!
+        do while (try_count>0)
+          ierr=iEXPLOSION_OK
+          try_count=try_count-1
+!
+          if (uniform_zdist_SNI) then
+            call position_SN_uniformz(f,SNRs(iSNR))
+          else
+            call position_SN_gaussianz(f,h_SNII,SNRs(iSNR))
+          endif
+!
+          if (lforce_locate_SNI.and.(SNRs(iSNR)%site%rho < rho_SN_min).or. &
+              (SNRs(iSNR)%site%TT > TT_SN_max)) then
+            call find_nearest_SNI(f,SNRs(iSNR))
+          endif
+!
+          if (.not.lSN_scale_rad) then
+            if ((SNRs(iSNR)%site%rho < rho_SN_min) .or. &
+                (SNRs(iSNR)%site%TT > TT_SN_max)) then
+              cycle
+            endif
+          else
+!
+!  Avoid sites with dense mass shown to excessively cool remnants, given the
+!  high thermal conductivity we are forced to adopt. 
+!
+            if (SNRs(iSNR)%site%rho > rho_SN_max) then
+              cycle
+            endif
+          endif
+!
+          call explode_SN(f,SNRs(iSNR),ierr,preSN)
+          if (ierr==iEXPLOSION_OK) then
+            if (lSN_mass_rate) then
+              call set_interval(f,t_interval_SNI,l_SNI)
+            endif
+            call set_next_SNII
+            exit
+          endif
+        enddo
+!
+        if (try_count==0) then
+          if (lroot) print*, &
+              "check_SNIIb: 500 RETRIES OCCURED - skipping SNII insertion"
+        endif
+!
+!  Free up slots in case loop fails repeatedly over many time steps.
+!
+        call free_SNR(iSNR)
+!
+!  Reset ierr or else explode_SN may terminate erroneously on subsequent
+!  timesteps never to be reset.
+!
+        ierr=iEXPLOSION_OK
+      endif
+      l_SNI=.true.
+!
+    endsubroutine check_SNIIb
 !***********************************************************************
     subroutine set_next_SNI()
 !
@@ -1814,6 +1940,65 @@ module Interstellar
 !
     endsubroutine set_next_SNII
 !*****************************************************************************
+    subroutine set_interval(f,t_interval,l_SNI)
+!
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use EquationOfState, only: getmu
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real :: t_interval, surface_massII, mu
+      integer :: iz
+      real, dimension(nx,ny,nz) :: disk_massII
+      real, dimension(1) :: MmpiII, msumtmpII
+      logical :: l_SNI
+!
+      intent(IN) :: f, l_SNI
+      intent(OUT) :: t_interval
+!
+!  Identifier
+!
+      if (headtt) print*,'set_interval: ENTER'
+!
+!  Adapt expected time interval until next SN depending on the ISM mass
+!  within 2x h_SN of midplane
+!
+!  SNII rate=5.e-12 mass(H1+HII)/solar_mass
+!  van den Bergh/Tammann Annu. Rev Astron. Astrophys. 1991 29:363-407
+!  SNI rate=4.7e-14 mass(H1+HII)/solar_mass + 0.35 x SNII rate
+!  Mannucci et al A&A 433, 807-814 (2005)
+!
+      if (ldensity_nolog) then
+        disk_massII=f(l1:l2,m1:m2,n1:n2,irho)
+      else
+        disk_massII=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      endif
+!
+      do iz=1,nz
+        if (abs(z(iz+nghost))>2.0*h_SNII) disk_massII(1:nx,1:ny,iz)=0.0
+      enddo
+!
+      surface_massII=sum(disk_massII)
+      msumtmpII=(/ surface_massII /)
+      call mpireduce_sum(msumtmpII,MmpiII,1)
+      call mpibcast_real(MmpiII,1)
+      surface_massII=MmpiII(1)*dv
+!
+      call getmu(f,mu)
+!
+      if (l_SNI) then
+!        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/ &
+!            surface_massII/mu
+        t_interval=7.5*solar_mass/SNII_mass_rate/surface_massII/mu
+        if (lroot.and.ip<20) print*, &
+            'set_interval: expected interval for SNI  =',t_interval
+      else
+        t_interval=solar_mass/surface_massII/SNII_mass_rate/mu
+        if (lroot.and.ip<20) print*, &
+            'set_interval: expected interval for SNII  =',t_interval
+      endif
+!        
+    endsubroutine set_interval
+!*****************************************************************************
     subroutine check_SNII(f,l_SNI)
 !
 !  Check for SNII, via self-regulating scheme.
@@ -1833,8 +2018,7 @@ module Interstellar
       logical :: l_SNI
       real :: dtsn
 !
-      intent(in) :: l_SNI
-      intent(inout) :: f
+      intent(inout) :: f,l_SNI
 !
 !  Identifier
 !
@@ -1842,6 +2026,11 @@ module Interstellar
 !
       if (l_SNI) return         ! Only do if no SNI this step.
 !
+      if (lSNII_gaussian) then  ! Skip location by mass.
+        call check_SNIIb(f,l_SNI) 
+        return
+      endif
+      
       iSNR=get_free_SNR()
 !
 !  Determine and sum all cells comprising dense cooler clouds where type II
@@ -1948,6 +2137,9 @@ module Interstellar
           SNRs(iSNR)%SN_type=2
           call explode_SN(f,SNRs(iSNR),ierr,preSN)
           if (ierr==iEXPLOSION_OK) then
+            if (lSN_mass_rate) then
+              call set_interval(f,t_interval_SNII,l_SNI)
+            endif
             call set_next_SNII
             last_SN_t=t
           endif
@@ -1959,6 +2151,7 @@ module Interstellar
 !
       ierr=iEXPLOSION_OK
       call free_SNR(iSNR)
+      l_SNI=.true.
 !
     endsubroutine check_SNII
 !*****************************************************************************
@@ -2484,7 +2677,7 @@ module Interstellar
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu
       real :: maxlnTT, site_mass, maxTT
-      real :: radiusA, radiusB
+      real :: radiusA, radiusB, t_interval_SN
       integer :: i
 !
       logical :: lmove_mass=.false.
@@ -2510,7 +2703,7 @@ module Interstellar
           SNR%rhom=rhom
         enddo
         SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%radius=max(SNR%radius,1.25*dxmax)
+        SNR%radius=max(SNR%radius,1.75*dxmax)
       endif
       call get_properties(f,SNR,rhom,ekintot)
       SNR%rhom=rhom
@@ -2844,14 +3037,15 @@ module Interstellar
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
-          if (maxlnTT>alog(2.*TT_SN_new)) then
+          if (maxTT>5.*TT_SN_new) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_UNEVEN
             endif
             return
           endif
 !
-          if (maxlnTT>2*alog(TT_SN_max).or.sqrt(TT_SN_new)>TT_SN_max) then
+          if (maxTT>TT_SN_max) then
+!          if (maxlnTT>2*alog(TT_SN_max).or.sqrt(TT_SN_new)>TT_SN_max) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
             endif
@@ -2978,6 +3172,11 @@ module Interstellar
 !
       if (lroot.and.ip<20) print*, &
           'explode_SN: SNR%MM=',SNR%MM
+      if (SNR%SN_type==1) then
+        t_interval_SN=t_interval_SNI
+      else
+        t_interval_SN=t_interval_SNII
+      endif
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
@@ -2995,10 +3194,10 @@ module Interstellar
         print*, 'explode_SN:  Ambient mass = ', site_mass
         print*, 'explode_SN:    Sedov time = ', SNR%t_sedov
         print*, 'explode_SN:    Shell velocity  = ', uu_sedov
-        write(1,'(i10,e13.5,5i6,10e13.5)')  &
+        write(1,'(i10,e13.5,5i6,11e13.5)')  &
             it, t, SNR%SN_type, SNR%iproc, SNR%l, SNR%m, SNR%n, &
             SNR%x, SNR%y, SNR%z, SNR%site%rho, SNR%site%TT, SNR%EE, &
-            SNR%t_sedov, SNR%radius, site_mass, maxTT
+            SNR%t_sedov, SNR%radius, site_mass, maxTT, t_interval_SN
         close(1)
       endif
 !
