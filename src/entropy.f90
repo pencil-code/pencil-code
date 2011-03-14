@@ -212,7 +212,7 @@ module Entropy
   integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, from Kprof)
   integer :: idiag_fradz_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kramers'
                                    ! DIAG_DOC: opacity)
-  integer :: idiag_fradxy_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, 
+  integer :: idiag_fradxy_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged,
                                     ! DIAG_DOC: from Kramers' opacity)
   integer :: idiag_fturbz=0     ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! DIAG_DOC: s\right>_{xy}$ \quad(turbulent
@@ -476,7 +476,7 @@ module Entropy
           endif
 !
         endif
-! FbotKbot is required here for boundcond 
+! FbotKbot is required here for boundcond
       elseif (lgravx) then
         if (coord_system=='spherical'.or.lconvection_gravx.and.(.not.lhcond_global)) then
              FbotKbot=Fbot/hcond0
@@ -1944,7 +1944,7 @@ module Entropy
 !   equilibrium.
 !
 !   22-jan-10/fred
-!   
+!
       use EquationOfState, only: eosperturb
       use Mpicomm, only: mpibcast_real
 !
@@ -2164,7 +2164,7 @@ module Entropy
             if (lgravz) then
               lpenc_requested(i_z_mn)=.true.
             elseif (lgravx) then
-            else 
+            else
               lpenc_requested(i_r_mn)=.true.
             endif
           endif
@@ -3652,7 +3652,6 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff, chix, g2
-      integer :: j
 !
       intent(in) :: p
       intent(out) :: df
@@ -3773,10 +3772,10 @@ module Entropy
         if (lgravz) then
 !
 ! DM+GG Added routines to compute hcond and gradloghcond_zprof.
-! When called for the first time calculate z dependent profile of 
+! When called for the first time calculate z dependent profile of
 ! heat conductivity. For all other times use this stored arrays.
-! We also write the z dependent profile of heatconduction and 
-! gradient-logarithm of heat conduction. 
+! We also write the z dependent profile of heatconduction and
+! gradient-logarithm of heat conduction.
 !
           if(lfirstcall_hcond.and.lfirstpoint) then
             if(.not.lhcond_global) then
@@ -3785,9 +3784,9 @@ module Entropy
               call write_zprof_once('gloghcond',gradloghcond_zprof(:,3))
             endif
             if(chi_t/=0.0) call get_gravz_chit()
-            lfirstcall_hcond=.false. 
+            lfirstcall_hcond=.false.
           endif
-! 
+!
           if(lhcond_global) then
             hcond=f(l1:l2,m,n,iglobal_hcond)
             glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
@@ -3797,7 +3796,7 @@ module Entropy
                 glhc(ix,:)=gradloghcond_zprof(n,:)
               enddo
           endif
-          if (chi_t/= 0.0) then   
+          if (chi_t/= 0.0) then
             chit_prof=chit_zprof(n)
               do ix=1,nx
                 glchit_prof(ix,:)=gradlogchit_zprof(n,:)
@@ -3809,8 +3808,8 @@ module Entropy
             if(.not.lhcond_global) then
                call get_gravx_heatcond()
             endif
-            lfirstcall_hcond=.false. 
-          endif   
+            lfirstcall_hcond=.false.
+          endif
           if (lhcond_global) then
             hcond=f(l1:l2,m,n,iglobal_hcond)
             glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
@@ -3837,7 +3836,7 @@ module Entropy
         endif
 !  DM+GG: Commented out the following. If the present set up work
 !  we shall remove this in a week.
-! 
+!
 !  For vertical geometry, we only need to calculate this
 !  for each new value of z -> speedup by about 8% at 32x32x64.
 !
@@ -3877,7 +3876,7 @@ module Entropy
 !  where chix = K/(cp rho) is needed for diffus_chi calculation.
 !
         chix = p%rho1*hcond*p%cp1
-        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)        
+        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
           if (pretend_lnTT) then
             thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
@@ -3889,8 +3888,8 @@ module Entropy
 !  Write out hcond z-profile (during first time step only).
 !
 !DM+GG This is done earlier now. The profile writing done earlier in this
-! code also includes the ghost zones. This commented line may stay longer 
-! than the ones above.  
+! code also includes the ghost zones. This commented line may stay longer
+! than the ones above.
 !      if (lgravz) call write_zprof('hcond',hcond)
 !
 !  Write radiative flux array.
@@ -4733,7 +4732,7 @@ module Entropy
         idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0;
         idiag_fradxy_Kprof=0; idiag_fconvxy=0;
-        idiag_fradz_kramers=0; idiag_fradxy_kramers=0; 
+        idiag_fradz_kramers=0; idiag_fradxy_kramers=0;
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
       endif
 !
@@ -4979,15 +4978,15 @@ module Entropy
 !***********************************************************************
     subroutine get_gravz_heatcond()
 !
-! Calculate z dependent heat conductivity and its gradient 
+! Calculate z dependent heat conductivity and its gradient
 ! and stores them in the arrays which are saved at the first time
-! step and used in all the next. 
+! step and used in all the next.
 !
 !  25-feb-2011/gustavo+dhruba: stolen from heatcond below
 !
       use Gravity, only: z1, z2
       use Sub, only: step,der_step
-      
+
 !
       if(.not.lmultilayer) call fatal_error('get_gravz_heatcond:',&
            'dont call if you have only one layer')
@@ -5003,10 +5002,10 @@ module Entropy
     endsubroutine get_gravz_heatcond
 !***********************************************************************
     subroutine get_gravx_heatcond()
-! 
-! Calculate x dependent heat conductivity and its gradient 
+!
+! Calculate x dependent heat conductivity and its gradient
 ! and stores them in the arrays which are saved at the first time
-! step and used in all the next. 
+! step and used in all the next.
 !
 !  10-march-2011/gustavo: Adapted from idl script strat_poly.pro
 !
@@ -5052,13 +5051,13 @@ module Entropy
 !
 ! Kappa and its gradient are computed here
       hcond_xprof = -Lum/(4.*pi*x**2*dTTdxc)
-      glhc = Lum*cv*gamma_m1/(4.*pi*gravx) * dmpoly_dx 
+      glhc = Lum*cv*gamma_m1/(4.*pi*gravx) * dmpoly_dx
       gradloghcond_xprof(:,1) = glhc
       gradloghcond_xprof(:,2:3) = 0.
 !
       if (lroot) print*, &
            ' get_gravx_heatcond: hcond computed from gravity dependent ' //&
-           ' hydrostatic equilibrium relations' 
+           ' hydrostatic equilibrium relations'
 !
     endsubroutine get_gravx_heatcond
 !***********************************************************************
@@ -5144,9 +5143,9 @@ module Entropy
 !***********************************************************************
     subroutine get_gravz_chit()
 !
-! Calculate z dependent chi_t and its gradient 
+! Calculate z dependent chi_t and its gradient
 ! and stores them in the arrays which are saved at the first time
-! step and used in all the next. 
+! step and used in all the next.
 !
 !  25-feb-2011/gustavo+dhruba: stolen from chit_profile below
 !
