@@ -4707,8 +4707,10 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
 !
-      real, dimension (:,:), allocatable :: tmp_yz,cs2_yz
-      real, pointer :: FbotKbot, FtopKtop
+      real, dimension (:,:), allocatable :: tmp_yz,cs2_yz,rho_yz
+      real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
+      real, pointer :: hcond0_kramers, nkramers
+      logical, pointer :: lheatc_kramers
       integer :: i,ierr,stat
 !
 !  Allocate memory for large arrays.
@@ -4719,6 +4721,9 @@ module Boundcond
       allocate(cs2_yz(my,mz),stat=stat)
       if (stat>0) call fatal_error('bc_ss_flux_x', &
           'Could not allocate memory for cs2_yz')
+      allocate(rho_yz(my,mz),stat=stat)
+      if (stat>0) call fatal_error('bc_ss_flux_x', &
+          'Could not allocate memory for rho_yz')
 !
 !  Do the 'c1' boundary condition (constant heat flux) for entropy and
 !  pretend_lnTT. Check whether we want to do top or bottom (this is
@@ -4727,6 +4732,21 @@ module Boundcond
       call get_shared_variable('FbotKbot',FbotKbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
            "there was a problem when getting FbotKbot")
+      call get_shared_variable('Fbot',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting Fbot")
+      call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting hcond0_kramers")
+      call get_shared_variable('nkramers',nkramers,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting nkramers")
+      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting lheatc_kramers")
+      call get_shared_variable('cp',cp,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting cp")
 !
       select case (topbot)
 !
@@ -4734,6 +4754,7 @@ module Boundcond
 !  ===============
 !
       case ('bot')
+        if (headtt) print*,'bc_ss_flux_x: Fbot=',Fbot
         if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -4752,16 +4773,21 @@ module Boundcond
 !  Both, bottom and top boundary conditions are corrected for linear density
 !
           if (ldensity_nolog) then
+            rho_yz=f(l1,:,:,irho)
             cs2_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
           else
+            rho_yz=exp(f(l1,:,:,ilnrho))
             cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
-          tmp_yz=FbotKbot/cs2_yz
+          if (lheatc_kramers) then
+            tmp_yz=Fbot*rho_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_yz**(6.5*nkramers+1.))
+          else
+            tmp_yz=FbotKbot/cs2_yz
+          endif
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
 !
           do i=1,nghost
-!           f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+(cp-cv)* &
             if (ldensity_nolog) then
               f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
                   (log(f(l1+i,:,:,irho))-log(f(l1-i,:,:,irho))+2*i*dx*tmp_yz)
@@ -4780,7 +4806,11 @@ module Boundcond
         call get_shared_variable('FtopKtop',FtopKtop,ierr)
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
              "there was a problem when getting FtopKtop")
+      call get_shared_variable('Ftop',Fbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting Ftop")
 !
+        if (headtt) print*,'bc_ss_flux_x: Ftop=',Ftop
         if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -4795,11 +4825,17 @@ module Boundcond
 !  calculate Ftop/(K*cs2)
 !
           if (ldensity_nolog) then
+            rho_yz=f(l2,:,:,irho)
             cs2_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
           else
+            rho_yz=exp(f(l2,:,:,ilnrho))
             cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
-          tmp_yz=FtopKtop/cs2_yz
+          if (lheatc_kramers) then
+            tmp_yz=Ftop*rho_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_yz**(6.5*nkramers+1.))
+          else
+            tmp_yz=FtopKtop/cs2_yz
+          endif
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Ftop/(K*cs2)
 !
@@ -4824,6 +4860,7 @@ module Boundcond
 !
       if (allocated(tmp_yz)) deallocate(tmp_yz)
       if (allocated(cs2_yz)) deallocate(cs2_yz)
+      if (allocated(rho_yz)) deallocate(rho_yz)
 !
     endsubroutine bc_ss_flux_x
 !***********************************************************************
