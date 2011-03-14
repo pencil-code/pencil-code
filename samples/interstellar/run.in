@@ -17,47 +17,39 @@
 &hydro_run_pars
 /
 &density_run_pars
-  diffrho=0.02
-  diffrho_shock=0.50
+  diffrho=0.2
+  diffrho_shock=1.0
   lmassdiff_fix=T
   idiff='normal','shock'
-  lupw_lnrho=T
 /
 &grav_run_pars
 /
 &entropy_run_pars
   iheatcond='chi-therm','shock'
-  chi_th=0.02,chi_shock=1.0
-  lupw_ss=T
+  chi_th=0.2,chi_shock=1.0
 /
 &magnetic_run_pars
 !  llorentzforce=F
-  iresistivity='sqrtrhoeta-const','eta-shock'
+  iresistivity='eta-const','eta-shock'
   eta=0.000196,eta_shock=1.0
 /
 &interstellar_run_pars
-  width_SN=0.009
-  lSN_scale_rad=T
+  width_SN=0.032
+  lSN_scale_rad=F
   N_mass=80.0
   frac_eth=1.0
   frac_ecr=0.0
   lSN_ecr=F
-  h_SNI=0.325
   lSNII=T
   lSNI=T
   t_next_SNII=0.0
   t_next_SNI=0.0
-  SNII_area_rate=25096.363926627693083292
-  SNI_area_rate=4182.728
   TT_SN_min=0.0
-  TT_SN_max=1.0e2
-  rho_SN_min=0.0175
-  cloud_rho=0.7250
-  cloud_TT=0.80
+  TT_SN_max=1.0e8
   lSN_mass=T
   energy_width_ratio=1.0
   velocity_width_ratio=1.0
-  thermal_profile='gaussian'
+  thermal_profile='gaussian3'
   mass_width_ratio=1.0
   mass_profile='gaussian3'
   mass_movement='off'
@@ -66,22 +58,21 @@
 !  ampl_SN=3.182093016 !without kinetic energy
   ampl_SN=1.591046508 !with 50% kinetic energy
   kampl_SN=1.591046508 !with 50% kinetic energy
-  mass_SN=6.303127e-8
-  heatcool_shock_cutoff=0.0125
-  heatcool_shock_cutoff_rate=0.0125
-  cooling_select='SSrr'
+  mass_SN=2.531673204e-7 !4 solar masses
+  heatcool_shock_cutoff_rate=0.01
+  cooling_select='RBr'
+  lthermal_hse=T
   heating_select='thermal-hs'
   lcooltime_smooth=F
-!  ladd_massflux=T
   SNR_damping=0.0 !any non-zero value ldamping=T value not used
 /
 &shear_run_pars
 /
 &viscosity_run_pars
   ivisc='nu-therm','nu-shock'
-  nu=0.02,nu_shock=10.0
+  nu=0.2,nu_shock=10.0
 /
 &shock_run_pars
   lshock_first=T
-  lshock_max5=T
+  lshock_max5=F
 /
