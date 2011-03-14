@@ -113,6 +113,7 @@ module Magnetic
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: fluxtube_border_width=impossible
   real :: eta_jump=0.0, damp=0., two_step_factor=1.
+  real :: radRFP=1.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: mix_factor=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
@@ -161,7 +162,7 @@ module Magnetic
       B_ext, J_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       by_left, by_right, bz_left, bz_right, &
       relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
-      amplaaJ, amplaaB, RFPrad, &
+      amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
@@ -1200,7 +1201,22 @@ module Magnetic
             f(l1:l2,m,n,iaz)=-amplaaJ(j)*(x(l1:l2)**2)/4
             f(l1:l2,m,n,iay)=amplaaB(j)*(x(l1:l2))/2
           enddo; enddo
-        case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
+        case ('JzBz_cyl_ct_sq')
+!
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iaz)=-amplaaJ(j)*(x(l1:l2)**2)/4
+            f(l1:l2,m,n,iay)=amplaaB(j)*x(l1:l2)/2*(RFPrad(j)**2-x(l1:l2)**2/2)
+          enddo; enddo
+!
+!  (work in progress, koen 14/03/11)
+!
+        case ('JzBz_cyl_4_4')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iaz)=-amplaaJ(j)/4*x(l1:l2)**2*(RFPrad(j)**4-x(l1:l2)**4/9)
+            f(l1:l2,m,n,iay)=amplaaB(j)/2*x(l1:l2)*(RFPrad(j)**4-x(l1:l2)**4/3)
+          enddo; enddo
+!
+       case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
         case ('Alfven-y'); call alfven_y(amplaa(j),f,iuu,iaa,ky_aa(j),mu0)
         case ('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,kz_aa(j),mu0)
         case ('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,kx_aa(j),ky_aa(j))
@@ -5958,6 +5974,17 @@ module Magnetic
            geta_x(:,1) = eta*(eta_jump-1.)*der_step(x,eta_x0,-eta_width)
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
+!
+!
+        case ('RFP_1D')
+!
+           eta_x = eta*(1+9*(x/radRFP)**30)**2
+!
+! its gradient:
+           geta_x(:,1) = 2*eta*(1+9*(x/radRFP)**30)*270*(x/radRFP)**29/radRFP
+           geta_x(:,2) = 0.
+           geta_x(:,3) = 0.
+!
 !
 !  Two-step function
 !
