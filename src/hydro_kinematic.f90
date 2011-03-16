@@ -271,7 +271,7 @@ module Hydro
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone, argx
-      real :: fac, fac2, argy, argz, cxt, cyt, czt
+      real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha
@@ -727,6 +727,27 @@ module Hydro
         endif
         if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
             *cos(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
+!
+!  1-D Potential flow, u=gradphi, with phi=cos(kx*X+ky*Y+kz*Z),
+!  and X=x-ct, Y=y-ct, Z=z-ct.
+!
+      case ('potentialz') 
+        if (headtt) print*,'1-D potential; ampl_kinflow,omega_kinflow=',&
+            ampl_kinflow,omega_kinflow
+        if (headtt) print*,'1-D potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
+        fac=ampl_kinflow
+        omt=omega_kinflow*t
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=-fac*kx_uukin*&
+              sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)-omt)
+          p%uu(:,2)=-fac*ky_uukin*&
+              sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)-omt)
+          p%uu(:,3)=-fac*kz_uukin*&
+              sin(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)-omt)
+        endif
+        if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
+            *cos(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)-omt)
 !
 !  Potential random flow, u=gradphi, with phi=cos(x-x0)*cosy*cosz;
 !  assume kx_uukin=ky_uukin=kz_uukin.
