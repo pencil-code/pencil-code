@@ -30,7 +30,7 @@ module Special
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
   logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
-  logical :: lwrite_driver=.false.
+  logical :: lnc_density_depend=.false.,lwrite_driver=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
@@ -59,7 +59,7 @@ module Special
        Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
-       iheattype,dt_gran,cool_type,lwrite_driver, &
+       iheattype,dt_gran,cool_type,lnc_density_depend,lwrite_driver, &
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
@@ -1045,10 +1045,15 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
       endif
 !
-      ! Density dependant Newton cooling of temperature profile
+      ! Newton cooling of temperature profile
       if (tdown /= 0.0) then
-        ! Find reference temperature to actual density profile
-        call find_ref_temp (p%lnrho, lnTT_ref)
+        if (lnc_density_depend) then
+          ! Find reference temperature to actual density profile
+          call find_ref_temp (p%lnrho, lnTT_ref)
+        else
+          ! Height dependant refernece temperaure profile
+          lnTT_ref = lnTT_init_z(n1:n2)
+        endif
         ! Calculate newton cooling factor to reference temperature
         newton = exp (lnTT_ref - p%lnTT) - 1.0
         if (allp /= 0.0) then
