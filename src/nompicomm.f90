@@ -1351,14 +1351,17 @@ module Mpicomm
 !***********************************************************************
     subroutine communicate_vect_field_ghosts(f,topbot,start_index)
 !
-!  Helper routine for bc_aa_pot in Magnetic.
-!  Needed due to Fourier transforms which only work on (l1:l2,m1:m2)
+!  Helper routine for communication of ghost cell values of a vector field.
+!  Needed by potential field extrapolations, which only compute nx*ny arrays.
+!  Can also be used for synchronization of changed uu values with ghost cells,
+!  if the start_index parameter set to iux (default is iax).
 !
 !   8-oct-2006/tobi: Coded
+!  28-dec-2010/Bourdin.KIS: extended to work for any 3D vector field data.
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-      integer, optional :: start_index
+      integer, intent(in), optional :: start_index
 !
       integer :: nn1,nn2,is,ie
 !
