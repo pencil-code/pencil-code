@@ -1,4 +1,4 @@
-! $Id $
+! $Id$
 !
 !  This module tests the ghost zones consistency.
 !  For more documentation about the ghost zones, please refer to Mpicomm.f90.

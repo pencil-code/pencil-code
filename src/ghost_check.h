@@ -1,5 +1,5 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-!$Id $
+!$Id$
 !
   private
 
