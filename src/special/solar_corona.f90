@@ -862,7 +862,7 @@ module Special
       real, dimension(nx) :: tmp
 !
       if (lgranulation .and. (.not. lpencil_check_at_work)) then
-        if (n.eq.n1.and.ipz.eq.0) then
+        if (lfirst_proc_z .and. (n == irefz)) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - &
               tau_inv*(f(l1:l2,m,n,iux)-ux_local(:,m-nghost))
 !
