@@ -121,13 +121,9 @@
       if (lread_slice_xz)  nproc_tot=nproc_tot+nprocx*nprocz
       if (lread_slice_yz)  nproc_tot=nproc_tot+nprocy*nprocz
 !
-      if (nproc_tot>89) then
-        write(*,*) 'Maximum file unit number will be exceeded.'
-        write(*,*) 'Please use src/read_all_videofiles.x instead.'
-        STOP 1
-      else
-        write(*,*) 'Number of file units which will be used',nproc_tot
-      endif
+      write(*,*) 'Number of file units which will be used:',nproc_tot
+      write(*,*) 'In case of restricted number of file units (system dependend)'
+      write(*,*) 'use ./src/read_all_videofiles.x instead'
 !
 !  loop through all times
 !  reset error to false at each time step
