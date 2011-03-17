@@ -161,13 +161,13 @@ module Special
         close(unit)
       else
         if (ldensity_nolog) then
-          lnrho_init_prof = alog(f(l1,m1,:,irho))
+          lnrho_init_prof = log(f(l1,m1,:,irho))
         else
           lnrho_init_prof = f(l1,m1,:,ilnrho)
         endif
         if (ltemperature) then
           if (ltemperature_nolog) then
-            lnTT_init_prof = alog(f(l1,m1,:,iTT))
+            lnTT_init_prof = log(f(l1,m1,:,iTT))
           else
             lnTT_init_prof = f(l1,m1,:,ilnTT)
           endif
@@ -175,7 +175,7 @@ module Special
           lnTT_init_prof = f(l1,m1,:,ilnTT)
         else if (lthermal_energy) then
           if (leos) call get_cp1(cp1)
-          lnTT_init_prof=alog(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
+          lnTT_init_prof=log(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
         else
           call fatal_error('initialize_special', &
               'not implemented for current set of thermodynamic variables')
@@ -460,58 +460,54 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-  subroutine special_calc_magnetic(f,df,p)
-    use Mpicomm, only:  check_ghosts_consistency
-    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    type (pencil_case), intent(in) :: p
-!    call check_ghosts_consistency(f,'bla')
-  endsubroutine special_calc_magnetic
-!***********************************************************************
-  subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_entropy(f,df,p)
 !
 ! Additional terms to the right hand side of the
 ! energy equation
 !
 !  04-sep-10/bing: coded
 !
-    use Deriv, only: der6
+      use Deriv, only: der6
 !
-    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    type (pencil_case), intent(in) :: p
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
 !
-    real, dimension (nx) :: hc,tmp
+      real, dimension (nx) :: hc,tmp
 !
-    if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
-    if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
-    if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
-    if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
-    if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
-    if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
+      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
+      if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
+      if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
+      if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
+      if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
+      if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
  !
-    if (hyper3_chi /= 0.) then
-      hc(:) = 0.
-      call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
-      hc = hc + tmp
-      call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
-      hc = hc + tmp
-      call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
-      hc = hc + tmp
-      hc = hyper3_chi*hc
-      if (ltemperature .and. (.not.ltemperature_nolog)) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+      where (f(l1:l2,m1,n1,ilnrho) < log(1e-13/unit_density) )
+        f(l1:l2,m1,n1,ilnrho) = log(1e-13/unit_density)
+      endwhere
+!
+      if (hyper3_chi /= 0.) then
+        hc(:) = 0.
+        call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
+        hc = hc + tmp
+        call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
+        hc = hc + tmp
+        call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
+        hc = hc + tmp
+        hc = hyper3_chi*hc
+        if (ltemperature .and. (.not.ltemperature_nolog)) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
 !
 !  due to ignoredx hyper3_chi has [1/s]
 !
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
-            + hyper3_chi
-      else
-        call fatal_error('hyper3_chi special','only for ltemperature')
+          if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
+              + hyper3_chi
+        else
+          call fatal_error('hyper3_chi special','only for ltemperature')
+        endif
       endif
-    endif
 !
-  endsubroutine special_calc_entropy
+    endsubroutine special_calc_entropy
 !***********************************************************************
   subroutine calc_heatcond_spitzer(df,p)
 !
@@ -919,15 +915,15 @@ module Special
     real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
     real :: unit_lnQ
 !
-    unit_lnQ=3*alog(real(unit_velocity))+&
-        5*alog(real(unit_length))+alog(real(unit_density))
-    lnTT_SI = p%lnTT + alog(real(unit_temperature))
+    unit_lnQ=3*log(real(unit_velocity))+&
+        5*log(real(unit_length))+log(real(unit_density))
+    lnTT_SI = p%lnTT + log(real(unit_temperature))
 !
 !  calculate ln(ne*ni) :
 !  ln(ne*ni) = ln( 1.17*rho^2/(1.34*mp)^2)
-!  lnneni = 2*p%lnrho + alog(1.17) - 2*alog(1.34)-2.*alog(real(m_p))
+!  lnneni = 2*p%lnrho + log(1.17) - 2*log(1.34)-2.*log(real(m_p))
 !
-    lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
+    lnneni = 2.*(p%lnrho+61.4412 +log(real(unit_mass)))
 !
     lnQ   = get_lnQ(lnTT_SI)
 !
@@ -1746,7 +1742,7 @@ module Special
               if (init) then
                 call random_number_wrapper(rand)
                 current%data(5)=t+(rand*2-1)*current%data(6)* &
-                    (-alog(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
+                    (-log(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
 !
                 current%data(3)=current%data(4)* &
                     exp(-((t-current%data(5))/current%data(6))**pow)
@@ -1835,7 +1831,7 @@ module Special
       current%data(6)=lifet_arr(level)*(1+(2*rand-1)*0.1)
 !
       current%data(5)=t+current%data(6)* &
-          (-alog(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
+          (-log(thresh*ampl_arr(level)/current%data(4)))**(1./pow)
 !
       current%data(3)=current%data(4)* &
             exp(-((t-current%data(5))/current%data(6))**pow)
@@ -2366,7 +2362,7 @@ module Special
 !
 !  quench velocities to one percent of the granule velocities
       do i=1,ny
-        q(:,i) = cubic_step(alog10(beta(:,i)),0.,1.)*(1.-quench)+quench
+        q(:,i) = cubic_step(log10(beta(:,i)),0.,1.)*(1.-quench)+quench
       enddo
       !
       Ux = Ux * q
