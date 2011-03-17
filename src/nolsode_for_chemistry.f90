@@ -16,8 +16,6 @@ module LsodeForChemistry
 !
   contains
 !***********************************************************************
-    include 'pencil_init.inc' ! defines subroutine initialize_pencils()
-!***********************************************************************
     subroutine pde_chemistry(f,df,p)
 !
 !  29-nov-10/julien: coded
