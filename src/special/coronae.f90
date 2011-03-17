@@ -15,7 +15,7 @@ module Special
 !
   use Cdata
   use Messages, only: fatal_error, warning, svn_id
-  use Sub, only: keep_compiler_quiet, cubic_step
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -32,7 +32,7 @@ module Special
   real :: dampuu=0.,wdampuu,pdampuu,init_time2=0.
   real :: limiter_tensordiff=3
   real :: u_amplifier=1.
-  integer :: twisttype=0
+  integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
 !
@@ -52,7 +52,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,B_ext_special
+      heat_par_b2,B_ext_special,irefz
 !
 ! variables for print.in
 !
@@ -144,8 +144,8 @@ module Special
     real :: dummy=1.,cp1=1.
     logical :: exists
 !
-    call keep_compiler_quiet(f)
-    call keep_compiler_quiet(ztmp)
+    if (irefz > n2) call fatal_error('initialize_special', &
+        'irefz is outside proc boundaries, ask Sven')
 !
     inquire(IOLENGTH=lend) dummy
 !
@@ -439,7 +439,8 @@ module Special
           elseif (nxgrid == 1) then
             dA=dy*unit_length
           endif
-          f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
+!
+          f(l1:l2,m1:m2,irefz,iax:iaz) = f(l1:l2,m1:m2,irefz,iax:iaz) * &
               Bz_flux/(Bzflux*dA*unit_magnetic)
         endif
       endif
@@ -743,7 +744,7 @@ module Special
 !  => chi =  Grad(lnT)^2
 !
       use Diagnostics, only: max_mn_name
-      use Sub, only: dot2,dot,multsv,multmv,cubic_step
+      use Sub, only: dot2,dot,multsv,multmv
       use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -853,7 +854,7 @@ module Special
 !  L = Div( Grad(lnT)^2 Grad(T))
 !
       use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use Sub,             only : dot2,dot,multsv,multmv
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -908,6 +909,7 @@ module Special
 !
     use EquationOfState, only: gamma
     use Diagnostics,     only: max_mn_name
+    use Sub, only: cubic_step
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
@@ -1049,7 +1051,7 @@ module Special
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub, only: dot2
+      use Sub, only: dot2, cubic_step
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
       real, dimension (nx) :: heatinput,rhs,b2
@@ -1141,6 +1143,7 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: lnrho0
+      use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -2194,48 +2197,56 @@ module Special
 !***********************************************************************
     subroutine set_B2(f)
 !
+! computes the magnetic energy density and net flux
+! at a given height irefz
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,ny) :: bbx,bby,bbz,fac
-      integer :: irefz=n1
 !
 ! compute B = curl(A) for irefz layer
 !
 ! Bx
       if (nygrid /= 1) then
         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-        bbx= fac*(+ 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
+        bbx= fac*( &
+            + 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
             -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
             +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
       endif
       if (nzgrid /= 1) then
         fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-        bbx= bbx -fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
+        bbx= bbx -fac*( &
+            + 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
             -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
             +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
       endif
 ! By
       if (nzgrid /= 1) then
         fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-        bby= fac*(+ 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
+        bby= fac*( &
+            + 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
             -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
             +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
       endif
       if (nxgrid /= 1) then
         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-        bby=bby-fac*(+45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
+        bby=bby-fac*( &
+            +45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
             -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
             +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
       endif
 ! Bz
       if (nxgrid /= 1) then
         fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-        bbz= fac*(+ 45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
+        bbz= fac*( &
+            +45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
             -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
             +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
       endif
       if (nygrid /= 1) then
         fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-        bbz=bbz-fac*(+45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
+        bbz=bbz-fac*( &
+            +45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
             -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
             +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
       endif
@@ -2335,6 +2346,7 @@ module Special
     subroutine footpoint_quenching(f)
 !
       use EquationofState, only: gamma_m1,gamma_inv,lnrho0,cs20,get_cp1
+      use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
