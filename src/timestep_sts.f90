@@ -33,7 +33,7 @@ module Timestep
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: dt_sts
+      real :: dt_sts,super_step
       real, dimension(1) :: dt1, dt1_local
       integer :: j
       real, dimension (itorder) :: tau_sts
@@ -53,29 +53,22 @@ module Timestep
         endif
 !
 ! Getting an array with the substeps
-      call substeps(dt,tau_sts)
+        super_step=0
+        call substeps(dt,tau_sts)
 !
 ! Temporal loop over N substeps      
       do itsub=1,itorder         
         lfirst=(itsub==1)
         llast=(itsub==itorder)
 !
-! This if is used in rk_2n because for lfirst alpha_ts=0
-! Here I don't understand yet why I need it for the routine to work
-        if (lfirst) then
-          df=0
-        else
-          df=df !(could be subsumed into pde, but is dangerous!)
-        endif
-!
 !  Change df according to the chosen physics modules.
 !
-        call pde(f,df,p)
+     call pde(f,df,p)  
 !
 !  If we are in the first time substep we need to calculate timestep dt.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
-        dt_sts = tau_sts(itsub)
+        dt_sts = tau_sts(itorder-itsub+1)
 !
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)
@@ -83,14 +76,16 @@ module Timestep
         do j=1,mvar; do n=n1,n2; do m=m1,m2
 !ajwm Note to self... Just how much overhead is there in calling
 !ajwm a sub this often...
-           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_sts*df(l1:l2,m,n,j)
+           f(l1:l2,m,n,j) = f(l1:l2,m,n,j) + dt_sts*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
 !  Increase time.
 !
+        super_step = super_step + dt_sts
         t = t + dt_sts
 !
       enddo
+      print*,' GG original step, super_step = ',dt,super_step
 !
     endsubroutine sts
 !***********************************************************************
@@ -101,14 +96,11 @@ module Timestep
 !  17-march-11/gustavo: coded
 !
       real, dimension (itorder) :: tau
-      real :: ss,dtdiff
+      real :: dtdiff
       integer :: it
-      ss = 0.
       do it=1,itorder
          tau(it) = dtdiff / ((-1.+nu_sts)*cos(((2.*it-1.)*pi)/(2.*itorder)) &
               + 1. + nu_sts)
-         ss = ss+tau(it)
-!         print*,'GG tau = ',tau_sts(it)
       enddo
 !      
     endsubroutine substeps
@@ -140,7 +132,7 @@ module Timestep
 !  Coefficients for up to order 3.
 !
       if(lsuper_time_stepping) then
-         call stop_it ('You are ussing the UNTESTED module STS')
+!         call stop_it ('You are ussing the UNTESTED module STS')
          call sts(f,df,p)
          return
       endif
