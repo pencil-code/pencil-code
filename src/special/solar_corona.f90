@@ -1280,13 +1280,13 @@ module Special
       if (Ksat/=0.) then
         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
 !
-        where (glnTT2 .le. tini)
+        where (glnTT2 <= tini)
           chi_2 =  0.
         elsewhere
           chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2))
         endwhere
 !
-        where (chi_1 .gt. chi_2)
+        where (chi_1 > chi_2)
           gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
           gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
           gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,glnTT2)
@@ -1312,7 +1312,7 @@ module Special
       call dot(p%bb,p%glnTT,cosbgT)
       call dot2(p%bb,b2)
 !
-      where (glnTT2*b2.le.tini)
+      where (glnTT2*b2 <= tini)
         cosbgT=0.
       elsewhere
         cosbgT=cosbgT/sqrt(glnTT2*b2)
@@ -1359,7 +1359,7 @@ module Special
 !
       rhs=p%TT*(tmpi*(p%del2lnTT+2.*tmpi + g2)+tmpj)/max(tini,sqrt(tmpi))
 !
-!      if (itsub .eq. 3 .and. ip .eq. 118) &
+!      if (itsub == 3 .and. ip == 118) &
 !          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
@@ -1449,10 +1449,10 @@ module Special
 !
       rhs = gamma*chix*tmp
 !
-      if (.not.(ipz.eq.nprocz-1.and.n.ge.n2-3)) &
+      if ((.not. llast_proc_z) .or. (n < n2-3)) &
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
 !
-!      if (itsub .eq. 3 .and. ip .eq. 118) &
+!      if (itsub == 3 .and. ip == 118) &
 !          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
 !
       if (lfirst.and.ldt) then
@@ -1729,7 +1729,7 @@ module Special
       select case(cool_type)
       case(1)
         do i=1,15
-          where(lnTT .ge. intlnT1(i) .and. lnTT .lt. intlnT1(i+1))
+          where(lnTT >= intlnT1(i) .and. lnTT < intlnT1(i+1))
             slope=(intlnQ1(i+1)-intlnQ1(i))/(intlnT1(i+1)-intlnT1(i))
             ordinate = intlnQ1(i) - slope*intlnT1(i)
             get_lnQ = slope*lnTT + ordinate
@@ -1738,7 +1738,7 @@ module Special
 !
       case(2)
         do i=1,36
-          where(lnTT .ge. intlnT(i) .and. lnTT .lt. intlnT(i+1))
+          where(lnTT >= intlnT(i) .and. lnTT < intlnT(i+1))
             slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
             ordinate = intlnQ(i) - slope*intlnT(i)
             get_lnQ = slope*lnTT + ordinate
@@ -1902,11 +1902,11 @@ module Special
           call random_seed_wrapper(GET=global_rstate)
           call random_seed_wrapper(PUT=nano_seed)
 !
-          if (nano_start .eq. 0.) then
+          if (nano_start == 0.) then
             ! If 0 roll to see if a nanoflare occurs
             call random_number_wrapper(nano_start)
             !
-            if (nano_start .gt. 0.95 ) then
+            if (nano_start > 0.95 ) then
               ! 5% chance for a nanoflare to occur, then get the location.
               call normal_deviate(nano_pos_z)
               nano_pos_z=nano_pos_z*lz
@@ -1920,7 +1920,7 @@ module Special
             endif
           endif
           !
-          if (nano_start .ne. 0.) then
+          if (nano_start /= 0.) then
             ! if nano_start is not 0. then there is a nanoflare!
             ! 2nd assumption , nanoflare takes 60 seconds =)
             nano_flare_energy=10.d17 !joules
@@ -1935,7 +1935,7 @@ module Special
 !
             heatinput=heatinput + heat_nano/heat_unit
 !
-            if (nano_time .le. 0.) nano_start=0.
+            if (nano_time <= 0.) nano_start=0.
           end if
           !
           !SAVE NANO_SEED
@@ -1953,7 +1953,7 @@ module Special
         case ('event')
           ! one small point heating event (gaussian to prevent too strong gradients)
           ! one point in time, one point in space!
-          if (t*unit_time .gt. 150. .AND. t*unit_time .lt. 1000.) then
+          if (t*unit_time > 150. .AND. t*unit_time < 1000.) then
             event_pos(1)=7.5
             event_pos(2)=15.
             heat_event=10.*exp(-((250.-t*unit_time))**2/(2*(20.*unit_time)**2))* &
@@ -1965,8 +1965,8 @@ module Special
         case ('event1D')
           ! one small point heating event (gaussian to prevent too strong gradients)
           ! one point in time, one point in space!
-          if (t*unit_time .gt. 300. .AND. t*unit_time .lt. 10000.) then
-            if (t*unit_time .gt. 300. .AND. t*unit_time .lt. 301.) &
+          if (t*unit_time > 300. .AND. t*unit_time < 10000.) then
+            if (t*unit_time > 300. .AND. t*unit_time < 301.) &
                 print*,'EVENTTTT!!!!!'
             event_pos(1)=10.
             heat_event1D=10.*exp(-((400.-t))**2/( 2*50.**2))* &
@@ -2014,9 +2014,9 @@ module Special
 ! (no smaller than 6 grid points across)
 !     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
-      if (unit_system.eq.'SI') then
+      if (unit_system == 'SI') then
         granr=max(0.8*1.e6/unit_length,3*dx,3*dy)
-      elseif  (unit_system.eq.'cgs') then
+      elseif  (unit_system == 'cgs') then
         granr=max(0.8*1.e8/unit_length,3*dx,3*dy)
       endif
 !
@@ -2044,9 +2044,9 @@ module Special
 ! Has to be multiplied by the smallest distance, since velocity=ampl/dist
 ! should now also be dependant on smallest granluar scale resolvable.
 !
-      if (unit_system.eq.'SI') then
+      if (unit_system == 'SI') then
         ampl=sqrt(dxdy2)/granr*0.28e4/unit_velocity
-      elseif (unit_system.eq.'cgs') then
+      elseif (unit_system == 'cgs') then
         ampl=sqrt(dxdy2)/granr*0.28e6/unit_velocity
       endif
 !
@@ -2676,7 +2676,7 @@ module Special
           dist2=max(xdist**2+ydist**2,dxdy2)
           dist=sqrt(dist2)
 !
-          if (dist.lt.avoid*granr.and.t.lt.current%t_amp_max) avoid_gran(i,j)=1
+          if (dist < avoid*granr .and. t < current%t_amp_max) avoid_gran(i,j)=1
 !
           wtmp=current%amp/dist
 !
@@ -2685,8 +2685,8 @@ module Special
 !
           vv=exp(1.)*current%amp*tmp*exp(-tmp)
 !
-          if (wtmp.gt.w(i,j)*(1-ig)) then
-            if (wtmp.gt.w(i,j)*(1+ig)) then
+          if (wtmp > w(i,j)*(1-ig)) then
+            if (wtmp > w(i,j)*(1+ig)) then
               ! granular area
               vx(i,j)=vv*xdist/dist
               vy(i,j)=vv*ydist/dist
@@ -2698,7 +2698,7 @@ module Special
               w(i,j) =max(w(i,j),wtmp)
             end if
           endif
-          if (w(i,j) .gt. ampl/(granr*(1+ig))) avoid_gran(i,j)=1
+          if (w(i,j) > ampl/(granr*(1+ig))) avoid_gran(i,j)=1
         enddo
       enddo
 !
@@ -2792,7 +2792,7 @@ module Special
             exp(-((t-current%t_amp_max)/current%t_life)**pow)
 !
 ! remove point if amplitude is less than threshold
-        if (current%amp/ampl.lt.thresh) then
+        if (current%amp/ampl < thresh) then
           call del_point
         else
           current => current%next
@@ -3161,9 +3161,9 @@ module Special
 ! Normalize to given total rms-velocity
         vrms=sqrt(sum(vx**2+vy**2)/(nxgrid*nygrid))+tini
 !
-        if (unit_system.eq.'SI') then
+        if (unit_system == 'SI') then
           vtot=3.*1e3/unit_velocity
-        elseif (unit_system.eq.'cgs') then
+        elseif (unit_system == 'cgs') then
           vtot=3.*1e5/unit_velocity
         else
           vtot=0.
