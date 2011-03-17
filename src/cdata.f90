@@ -102,6 +102,11 @@ module Cdata
   real :: ddt=0.0
   real :: dt1_last=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37
+! Variables used in the Super_time_stepping module
+! under development (gustavo)
+  real :: nu_sts=0.1
+  logical :: lsuper_time_stepping=.false.
+!
   logical :: lini_t_eq_zero=.false.
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
