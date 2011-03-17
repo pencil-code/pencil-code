@@ -6639,8 +6639,8 @@ module Boundcond
     subroutine bc_ctz(f,topbot,j)
 !
 !  Set entropy to match temperature in the ghost zones to boundary value
-!  value. Density ghost zones need to be calculated again here and corners
-!  must be included to avoid NAN's.
+!  value with small increment. Density ghost zones need to be calculated
+!  again here and corners must be included to avoid NAN's.
 !
 !  14-mar-11/fred: check that 'cdz' is also set for bcz density.
 !
@@ -6667,13 +6667,13 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         do k=1,3
-          f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
+          f(:,:,n1-k,j)=log(1.0+10.0*dz)+f(:,:,n1-k+1,j)+(cp-cv)*&
               (lnrho_(:,:,n1-k+1)-lnrho_(:,:,n1-k))
         enddo
 !
       case ('top')               ! top boundary
         do k=1,3
-          f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
+          f(:,:,n2+k,j)=log(1.0+10.0*dz)+f(:,:,n2+k-1,j)+(cp-cv)*&
               (lnrho_(:,:,n2+k-1)-lnrho_(:,:,n2+k))
         enddo
 !
