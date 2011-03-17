@@ -1052,7 +1052,7 @@ module Special
           call find_ref_temp (p%lnrho, lnTT_ref)
         else
           ! Height dependant refernece temperaure profile
-          lnTT_ref = lnTT_init_z(n1:n2)
+          lnTT_ref = lnTT_init_z(n)
         endif
         ! Calculate newton cooling factor to reference temperature
         newton = exp (lnTT_ref - p%lnTT) - 1.0
