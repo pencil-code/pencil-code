@@ -2827,9 +2827,6 @@ print*,'NATA'
 !
     enddo
 !
-    if (lreactions .and. ireac /= 0 .and. ((.not.llsode).or.lchemonly)) &
-        call get_reac_rate(f,p)
-!
     if (ldensity .and. lcheminp) then
 !
       if (l1step_test) then
@@ -2928,6 +2925,9 @@ print*,'NATA'
           call calc_heatcond_chemistry(f,df,p)
 !
     endif
+!
+    if (lreactions .and. ireac /= 0 .and. ((.not.llsode).or.lchemonly)) &
+        call get_reac_rate(sum_hhk_DYDt_reac,f,p)
 !
 !  Atmosphere case
 !
@@ -5631,6 +5631,7 @@ print*,'NATA'
       real :: del
 !      logical :: lzone_y=.false.,lzone_z=.false.
       logical :: dir_damp1=.true. !, dir_damp2=.false., dir_damp3=.false.
+      logical :: lright=.true., lleft=.true.
 !
        ux_ref=0.
        uy_ref=0.
@@ -5657,6 +5658,7 @@ print*,'NATA'
 !
 !  On the right side
 !
+         if (lright) then
          ll1=nxgrid-sz_x
          ll2=nxgrid
          do i = l1,l2
@@ -5669,9 +5671,11 @@ print*,'NATA'
 !            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
           endif
          enddo
+         endif
 !
 !  On the left side
 !
+         if (lleft) then
          ll1=1
          ll2=sz_x
          do i = l1,l2
@@ -5684,6 +5688,7 @@ print*,'NATA'
 !            df(i,m,n,ilnTT)=df(i,m,n,ilnTT)-func_x*(f(i,m,n,ilnTT)-lnTT_ref)*dt1
           endif
          enddo
+         endif
 !
        endif
 !
@@ -6291,19 +6296,20 @@ print*,'NATA'
 !
     endsubroutine FlameMaster_ini
 !***********************************************************************
-   subroutine get_reac_rate(f,p)
+   subroutine get_reac_rate(wt,f,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx)  :: wt
       real, dimension (nx,nchemspec) :: ydot
       integer :: k
       type (pencil_case) :: p
 !
-      do k = 1,nchemspec
-        ydot(:,k) = p%DYDt_reac(:,k)*p%rho(:)
-      enddo 
-!
+      ydot = p%DYDt_reac
       f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))=   &
           f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
+!
+      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1)=   &
+          f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
 !
     endsubroutine get_reac_rate
 !***********************************************************************
