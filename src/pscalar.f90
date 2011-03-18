@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cc; cc1; lncc; glncc(3); uglncc; del2lncc
-! PENCILS PROVIDED hlncc(3,3)
+! PENCILS PROVIDED hlncc(3,3); udropav(3)
 !
 !***************************************************************
 module Pscalar
@@ -34,10 +34,11 @@ module Pscalar
   real :: ampllncc2=0.0, kx_lncc=1.0, ky_lncc=1.0, kz_lncc=1.0, radius_lncc=0.0
   real :: epsilon_lncc=0.0, cc_const=0.0
   logical :: lupw_lncc=.false.
+  logical :: ldustdrift=.false.
 !
   namelist /pscalar_init_pars/ &
       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-      radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc
+      radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc, ldustdrift
 !
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0
   real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
@@ -261,8 +262,13 @@ module Pscalar
 ! glncc
       if (lpencil(i_glncc)) call grad(f,ilncc,p%glncc)
 ! uglncc
-      if (lpencil(i_uglncc)) &
+      if (lpencil(i_uglncc)) then
+        if (ldustdrift) then
+          call u_dot_grad(f,ilncc,p%glncc,p%udropav,p%uglncc,UPWIND=lupw_lncc)
+        else
           call u_dot_grad(f,ilncc,p%glncc,p%uu,p%uglncc,UPWIND=lupw_lncc)
+        endif
+      endif
 ! del2lncc
       if (lpencil(i_del2lncc)) call del2(f,ilncc,p%del2lncc)
 ! hlncc
