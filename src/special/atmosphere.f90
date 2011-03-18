@@ -72,8 +72,8 @@ module Special
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
 
-  real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.
-  real :: nd0, r0, delta, uy_ref
+  real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
+  real :: nd0, r0, delta, uy_bz, ux_bz, Ntot=1e3
   
 ! Keep some over used pencils
 !
@@ -81,7 +81,7 @@ module Special
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
-      nd0, r0, delta,lbuffer_zone_uy,uy_ref
+      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -206,8 +206,8 @@ module Special
       endif
 !
    !   print*,'cloud index', ind_cloud
-      print*,'water index', ind_H2O
-      print*,'N2 index', ind_N2
+      print*,'special: water index', ind_H2O
+      print*,'special: N2 index', ind_N2
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -452,7 +452,6 @@ module Special
             )
       endif
 !
-!
        dt1=1./(3.*dt)
        del=0.1
 !
@@ -473,19 +472,24 @@ module Special
            ll1=sz_r_x
            ll2=l2
            if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
-            uy_ref=0.
+!            uy_ref=0.
            if (lzone_right) then
-!             df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
-!              -(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
+             df(ll1:ll2,m,n,iux)=df(ll1:ll2,m,n,iux)&
+              -(f(ll1:ll2,m,n,iux)-ux_bz)*dt1
+!             
+             df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
+              -(f(ll1:ll2,m,n,iuy)-uy_bz)*dt1
+
+!
            endif
          elseif (j==2) then
            ll1=l1
            ll2=sz_l_x
            if (x(l1)==xyz0(1)) lzone_left=.true.
-            uy_ref=0.
+!            uy_ref=0.
            if (lzone_left) then
-               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
-                 -(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
+!               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
+!                 -(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
            endif
          endif
 !
@@ -656,6 +660,57 @@ module Special
       call keep_compiler_quiet(p)
 
     endsubroutine special_calc_chemistry
+!***********************************************************************
+    subroutine special_calc_pscalar(f,df,p)
+!
+     use Cdata
+     use General, only: spline_integral
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!      real, dimension (nx) :: fmax, rmax,ppsf_max
+      real, dimension (nx,ndustspec) :: f_tmp
+      real, dimension (ndustspec) :: ff_tmp,ttt
+!      real :: ff_tmp_sum
+!      logical :: lstop
+      integer :: k,i
+
+        if (lpscalar) then
+ !         if (lstop) then       
+ !         do i=1,nx
+ !           lstop=.true.
+ !         do k=2,ndustspec
+ !           if (lstop) then
+ !           if (f(l1+i-1,m,n,ind(k))>f(l1+i-1,m,n,ind(k-1))) then
+ !            fmax(i)=f(l1+i-1,m,n,ind(k))
+ !            rmax(i)=dsize(k)
+ !            lstop=.false.
+ !           endif
+ !           endif
+ !         enddo
+ !         enddo
+ !         endif
+ !
+          do i=1,nx
+!            ff_tmp_sum=0.
+          do k=1,ndustspec
+           ff_tmp(k)= (p%ppwater(i)-p%ppsf(i,k)) &
+              *f(l1+i-1,m,n,ind(k))/dsize(k)
+!           ff_tmp_sum=ff_tmp_sum + ff_tmp(k)
+          enddo
+!
+           ttt= spline_integral(dsize,ff_tmp)
+           ttt(ndustspec)=ttt(ndustspec)/(dsize(ndustspec)-dsize(1))
+!
+           df(l1+i-1,m,n,ilncc) = df(l1+i-1,m,n,ilncc) &
+               - p%rho(i)/Ntot*(Dwater*m_w/Rgas/p%TT(i)/rho_w) &
+               *ttt(ndustspec)
+!                *ff_tmp_sum 
+          enddo
+!
+        endif
+!
+    endsubroutine  special_calc_pscalar
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !

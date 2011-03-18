@@ -48,7 +48,7 @@ module InitialCondition
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real :: X_wind=impossible, spot_size=1.
-     real :: AA=0.66e-4, BB0=1.5*1e-16
+     real :: AA=0.66e-4, d0=2.4e-6 !, BB0=1.5*1e-16
      real :: dsize_min=0., dsize_max=0., r0=0. 
      real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
@@ -59,7 +59,7 @@ module InitialCondition
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
-     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, BB0, lcurved, &
+     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, d0, lcurved, &
      ltanh_prof
 !
   contains
@@ -449,10 +449,12 @@ module InitialCondition
        if (lreinit_water) then
 !
           ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+!          ddsize0=(alog(6e-6)-alog(1.5e-6))/(max(ndustspec,2)-1)
           ddsize0=(alog(6e-6)-alog(1.5e-6))/(max(ndustspec,2)-1)
           do i=0,(ndustspec-1)
             lnds(i+1)=alog(dsize_min)+i*ddsize
             dsize(i+1)=exp(lnds(i+1))
+!            dsize0(i+1)=exp(alog(1.5e-6)+i*ddsize0)
             dsize0(i+1)=exp(alog(1.5e-6)+i*ddsize0)
             if (dsize(i+1)>r0) ii_max=i+1
           enddo
@@ -463,7 +465,7 @@ module InitialCondition
            psf(:,:,:,k)=psat(:,:,:) &
              *exp(AA/exp(f(:,:,:,ilnTT))/2./dsize(k) &
 !                 -10.7*dsize0(k)**3/(8.*dsize(k)**3))
-                  -BB0/(8.*dsize(k)**3))
+                  -10.7*d0**3/(8.*dsize(k)**3))
          enddo
 !
          if ((init_water1/=0.) .or. (init_water2/=0.)) lline_profile=.true.
