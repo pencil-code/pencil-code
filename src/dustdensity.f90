@@ -179,9 +179,9 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (ndustspec) :: Ntot_tmp, lnds
       integer :: i,j,k
-      real :: ddsize, ddsize0
+      real :: ddsize !, ddsize0
       logical :: lnothing
-
+!
       if (.not. ldustvelocity) call copy_bcs_dust_short
 !
 !  Set ind requal to ilnnd if we are considering non-logarithmic density.
@@ -320,8 +320,6 @@ module Dustdensity
 print*,'N total= ', Ntot
           endif
         endif
-
-         
 !
 !  calculate universal gas constant based on Boltzmann constant
 !  and the proton mass
@@ -564,7 +562,7 @@ print*,'N total= ', Ntot
             if (lmdvar) then
             do k=1,ndustspec
               f(:,:,:,imd(k))=4./3.*PI*dsize(k)**3*rho_w &
-                   *init_distr(k)*dds(k)/m_w*exp(f(:,:,:,ilnrho)) 
+                   *init_distr(k)*dds(k)/m_w*exp(f(:,:,:,ilnrho))
             enddo
               if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
                 open(file_id,file=output_file)
@@ -839,7 +837,7 @@ print*,'N total= ', Ntot
       if (lmice .and. diffmi/=0.) lpenc_requested(i_del2mi)=.true.
 !
 !
-!      
+!
       if (latm_chemistry) then
         lpenc_requested(i_Ywater)=.true.
         lpenc_requested(i_pp)=.true.
@@ -858,7 +856,6 @@ print*,'N total= ', Ntot
           lpenc_requested(i_udropav)=.true.
         endif
       endif
-    
 !
       lpenc_diagnos(i_nd)=.true.
       if (maxval(idiag_epsdrms)/=0) lpenc_diagnos(i_rho1)=.true.
@@ -876,13 +873,12 @@ print*,'N total= ', Ntot
 !
       logical, dimension(npencils) :: lpencil_in
 !
-
       if (lpencil_in(i_udgnd)) then
         lpencil_in(i_uud)=.true.
         lpencil_in(i_gnd)=.true.
       endif
       if (lpencil_in(i_gnd)) lpencil_in(i_nd)=.true.
-
+!
       if (lpencil_in(i_udglnnd)) then
         lpencil_in(i_uud)=.true.
         lpencil_in(i_glnnd)=.true.
@@ -931,7 +927,7 @@ print*,'N total= ', Ntot
           lpencil_in(i_nd)=.true.
           lpencil_in(i_rho)=.true.
         endif
-        
+!
         if (lpencil_in(i_ccondens)) then
            lpencil_in(i_nd)=.true.
            lpencil_in(i_ppsat)=.true.
@@ -939,7 +935,7 @@ print*,'N total= ', Ntot
            lpencil_in(i_Ywater)=.true.
            lpencil_in(i_pp)=.true.
         endif
-       
+!
         if (lpencil_in(i_dndr))  then
           lpencil_in(i_rho)=.true.
           lpencil_in(i_Ywater)=.true.
@@ -948,7 +944,6 @@ print*,'N total= ', Ntot
         endif
       endif
 !
-
     endsubroutine pencil_interdep_dustdensity
 !***********************************************************************
     subroutine calc_pencils_dustdensity(f,p)
@@ -960,12 +955,11 @@ print*,'N total= ', Ntot
 !
       use Sub
       use General, only: spline_integral
-      
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp, Imr, fmax,rmax
+      real, dimension (nx) :: tmp, Imr
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (nx,ndustspec) :: dndr_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt
@@ -973,7 +967,7 @@ print*,'N total= ', Ntot
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
-
+!
 ! nd
       do k=1,ndustspec
         if (lpencil(i_nd)) then
@@ -994,7 +988,7 @@ print*,'N total= ', Ntot
             call grad(f,ind(k),p%gnd(:,:,k))
           endif
         endif
-
+!
 ! glnnd
         if (lpencil(i_glnnd)) then
           if (ldustdensity_log) then
@@ -1158,7 +1152,7 @@ print*,'N total= ', Ntot
             p%udrop(:,1,k)=p%udrop(:,1,k)-1e6*dsize(k)**2
           endif
         endif
-
+!
 ! udropgnd
         if (lpencil(i_udropgnd)) then
           call dot_mn(p%udrop(:,:,k),p%gnd(:,:,k),p%udropgnd(:,k))
@@ -1218,7 +1212,7 @@ print*,'N total= ', Ntot
               do k=1,ndustspec
                 if (p%ppsat(i) /= 0.) then
                   ff_tmp(k)=p%nd(i,k)*dsize(k)  &
-                    *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)) 
+                    *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
                 endif
               enddo
                 if (any(dsize==0.0)) then
@@ -1304,9 +1298,9 @@ print*,'N total= ', Ntot
 !  Redistribution over the size in the atmospheric physics case
 !
         do k=1,ndustspec
-          if (k==1) then 
+          if (k==1) then
             df(l1:l2,m,n,ind(k)) = 0.
-          else 
+          else
             df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k) &
                +p%dndr(:,k)
             do i=1,mx
@@ -1320,7 +1314,7 @@ print*,'N total= ', Ntot
           if (lmdvar) then
               df(l1:l2,m,n,imd(k)) =  4*PI*dsize(k)**2*p%nd(:,k)*Dwater &
                 *(p%ppwater-p%ppsf(:,k))/(Rgas*p%TT*m_w*p%mu1)*p%rho
-
+!
             do i=1,mx
               if ((f(i,m,n,imd(k))+df(i,m,n,imd(k))*dt)<1e-25 ) &
                   df(i,m,n,imd(k))=1e-25*dt
@@ -1328,7 +1322,6 @@ print*,'N total= ', Ntot
             endif
           if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
         enddo
-       
 !
 !   End of atmospheric case
 !
@@ -1497,7 +1490,6 @@ print*,'N total= ', Ntot
 !
       if (lspecial) call special_calc_dustdensity(f,df,p)
 !
-
     endsubroutine dndmd_dt
 !***********************************************************************
     subroutine redist_mdbins(f)
@@ -1700,7 +1692,7 @@ print*,'N total= ', Ntot
             else
 !  28-dec-10/bing: what is the default value of deltavd_therm?
 !                  if ldeltavd_thermal=F then the variable is not set.
-            
+!
               call fatal_error('COAG_KERNEL', &
                   'deltavd_therm may be used unitialized please check')
             endif
@@ -2061,7 +2053,7 @@ print*,'N total= ', Ntot
           slices%xy3=f(l1:l2 ,m1:m2 ,iz3_loc,ind(i9))
           if (lwrite_slice_xy4) &
           slices%xy4=f(l1:l2 ,m1:m2 ,iz4_loc,ind(i9))
-          slices%ready=.true.    
+          slices%ready=.true.
         case ('nd10')
           slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ind(i10))
           slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ind(i10))
@@ -2202,7 +2194,7 @@ print*,'N total= ', Ntot
            call fatal_error('droplet_redistr', &
                 'p%pp or dsize  has zero value(s)')
          else
-
+!
 !           ff_tmp(:,k)=f(l1:l2,m,n,ind(k))/dsize(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
 !           ff_tmp0(:,k)=init_distr(k)/dsize(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
            ff_tmp(:,k)=f(l1:l2,m,n,ind(k))*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
@@ -2216,7 +2208,7 @@ print*,'N total= ', Ntot
 !
       dndr_dr(:,i1) = ff_tmp0(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
                     - ff_tmp0(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
-                    + ff_tmp0(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) 
+                    + ff_tmp0(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3))
 !
       do k=2,ndustspec-1
 !
@@ -2234,7 +2226,7 @@ print*,'N total= ', Ntot
       dndr_dr(:,ndustspec)=-ff_tmp(:,ii3)*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &
                            +ff_tmp(:,ii2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
                            -ff_tmp(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
-      
+!
 !
       dndr_dr(:,ndustspec) = dndr_dr(:,ndustspec)/dsize(ndustspec)  &
           -ff_tmp(:,ii1)/dsize(ndustspec)**2
@@ -2315,7 +2307,7 @@ print*,'N total= ', Ntot
 !   renormalization of the dust species
 !
       use General, only: spline_integral
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (ndustspec) :: ff_tmp, ttt
       integer :: k,i1,i2,i3
@@ -2324,23 +2316,23 @@ print*,'N total= ', Ntot
       character (len=20) :: output_file3="./data/nd3.out"
       character (len=20) :: output_file4="./data/nd4.out"
       integer :: file_id=123
-
+!
       do i1=l1,l2
       do i2=m1,m2
       do i3=n1,n2
       do k=1,ndustspec
-        ff_tmp(k)=f(i1,i2,i3,ind(k)) 
+        ff_tmp(k)=f(i1,i2,i3,ind(k))
       enddo
         ttt= spline_integral(dsize,ff_tmp)
 !
       do k=1,ndustspec
-        f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)  
+        f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)
       enddo
 !
       enddo
-      enddo  
       enddo
-
+      enddo
+!
 !
 ! since the writing into the var.dat file does not work well  for f(:,:,:,ind)
 ! now it is written here. Later it will be removed.
@@ -2363,7 +2355,7 @@ print*,'N total= ', Ntot
           endif
         close(file_id)
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
-!        print*,ttt(ndustspec) 
+!        print*,ttt(ndustspec)
       endif
       if (it == 20000) then
         open(file_id,file=output_file2)
@@ -2403,7 +2395,7 @@ print*,'N total= ', Ntot
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
       endif
-
+!
       if (it == 120000) then
         open(file_id,file=output_file4)
             write(file_id,'(7E12.4)') t
@@ -2423,11 +2415,10 @@ print*,'N total= ', Ntot
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
       endif
-
+!
       endif
-
+!
     endsubroutine dustspec_normalization
-!***********************************************************************
 !***********************************************************************
     subroutine copy_bcs_dust_short
 !
