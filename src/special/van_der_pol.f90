@@ -34,13 +34,14 @@ module Special
   ! input parameters
   real :: u1ini=1.5e-2,u2ini=0
   real :: tau=3.e-3, om1=3.8, finalamp=0.025
+  real :: om_forc=3.8, amp_forc=0.1
   character(len=50) :: init='zero'
   namelist /special_init_pars/ &
     init,u1ini,u2ini
 
   ! run parameters
   namelist /special_run_pars/ &
-    tau, finalamp, om1
+    tau, finalamp, om1, om_forc, amp_forc
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -192,7 +193,8 @@ module Special
 !
         df(l1:l2,m,n,ispecial1)=df(l1:l2,m,n,ispecial1)+u2
         df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)+ &
-                          2*tau*(1.-u1**2/finalamp**2)*u2 -om1**2*u1
+                          2*tau*(1.-u1**2/finalamp**2)*u2 -om1**2*u1 + &
+                          om1**2 * amp_forc*cos(om_forc*t)
 !
 !  diagnostics
 !
