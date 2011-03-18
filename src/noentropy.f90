@@ -47,6 +47,8 @@ module Entropy
   integer :: idiag_ethm=0       ! DIAG_DOC: $\left<\varrho e\right>$
                                 ! DIAG_DOC:   \quad(mean thermal
                                 ! DIAG_DOC:   [=internal] energy)
+  integer :: idiag_ufpresm=0
+  integer :: idiag_uduum=0
 !
   contains
 !***********************************************************************
@@ -260,7 +262,9 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      real, dimension(nx) :: ufpres, uduu
       integer :: j,ju
+      integer :: i
 !
       intent(in) :: f,p
       intent(out) :: df
@@ -302,6 +306,20 @@ module Entropy
         if (idiag_thermalpressure/=0) &
             call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure,p)
         if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if (idiag_ufpresm/=0) then
+          ufpres=0
+          do i = 1, 3
+            ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
+          enddo
+          call sum_mn_name(p%rho*ufpres,idiag_ufpresm)
+        endif
+        if (idiag_uduum/=0) then
+          uduu=0
+          do i = 1, 3
+            uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
+          enddo
+          call sum_mn_name(p%rho*uduu,idiag_uduum)
+        endif
       endif
 !
       call keep_compiler_quiet(f)
@@ -373,6 +391,7 @@ module Entropy
 !
       if (lreset) then
         idiag_dtc=0; idiag_ugradpm=0; idiag_thermalpressure=0; idiag_ethm=0;
+        idiag_ufpresm=0; idiag_uduum=0
       endif
 !
       do iname=1,nname
@@ -380,6 +399,8 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_thermalpressure)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
+        call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
+        call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
 !
 !  Write column where which entropy variable is stored.

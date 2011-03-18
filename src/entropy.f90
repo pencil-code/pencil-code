@@ -249,6 +249,8 @@ module Entropy
   integer :: idiag_uzTTmxy=0    ! DIAG_DOC: $\left< u_z T \right>_{z}$
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
+  integer :: idiag_ufpresm=0     ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$ 
+  integer :: idiag_uduum=0
 !
   contains
 !***********************************************************************
@@ -2458,7 +2460,9 @@ module Entropy
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
+      real, dimension(nx) :: ufpres, uduu
       integer :: j,ju
+      integer :: i
 !
       intent(inout)  :: f,p
       intent(out) :: df
@@ -2626,6 +2630,20 @@ module Entropy
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_fconvm/=0) &
             call sum_mn_name(p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
+        if (idiag_ufpres/=0) then
+            ufpres=0.
+            do i = 1, 3
+              ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
+            enddo
+            call sum_mn_name(p%rho*ufpres,idiag_ufpresm)        
+        endif
+        if (idiag_uduum/=0) then
+            uduu=0.
+            do i = 1, 3
+              uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
+            enddo
+            call sum_mn_name(p%rho*uduu,idiag_uduum)        
+        endif
 !
 !  Analysis for the baroclinic term.
 !
@@ -4734,6 +4752,7 @@ module Entropy
         idiag_fradxy_Kprof=0; idiag_fconvxy=0;
         idiag_fradz_kramers=0; idiag_fradxy_kramers=0;
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
+        idiag_ufpresm=0; idiag_uduum=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -4767,6 +4786,8 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'gTxgsrms',idiag_gTxgsrms)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_TTp)
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
+        call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
+        call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
