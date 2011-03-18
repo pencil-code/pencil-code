@@ -573,35 +573,39 @@ module Snapshot
       character (len=*) :: file
 !
       t_sp = t
-      open(lun_output+1,FILE=file//'_form')
+      open(lun_output+1,FILE=file//'.form')
 !
       if (lwrite_2d) then
         if (nx==1) then
           do i = m1, m2
             do j = n1, n2
-              write(lun_output+1,'(22(f12.5))') t_sp,x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
+              write(lun_output+1,'(40(f12.5))') x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
             enddo
           enddo
         elseif (ny==1) then
           do i = l1, l2
             do j = n1, n2
-              write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
+              write(lun_output+1,'(40(f12.5))') x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
             enddo
           enddo
         elseif (nz==1) then
           do i = l1, l2
             do j = m1, m2
-              write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
+              write(lun_output+1,'(40(f12.5))') x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
             enddo
           enddo
         else
           call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
         endif
+      else if (ny==1.and.nz==1) then
+        do i = l1, l2
+          write(lun_output+1,'(40(f12.5))') x(i),a(i,m1,n1,:)
+        enddo
       else
         do i = l1, l2
           do j = m1, m2
             do k = n1, n2
-              write(lun_output+1,'(22(f12.5))') t_sp,x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
+              write(lun_output+1,'(40(f12.5))') x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
             enddo
           enddo
         enddo
@@ -678,7 +682,7 @@ module Snapshot
       if (nz==1) write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=1'
       else
       if (ny==1.and.nz==1) then
-      write(lun_output+2,*) ' I=',nx, ', J=1, K='
+      write(lun_output+2,*) ' I=',nx, ', J=  1, K=  1'
       else
       write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=',nz
       endif
