@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
-! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp; mu1
+! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp; mu1; udropav(3)
 !
 !***************************************************************
 module Dustdensity
@@ -51,7 +51,7 @@ module Dustdensity
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0.
   real :: rho_w=1.0, rho_s=3., Aconst=1.0e-6, Dwater=22.0784e-2, r0, delta
-  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot, AA=0.66e-4, BB0=1.5*1e-16!1.5e-16
+  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot, AA=0.66e-4, d0=2.4e-6!BB0=1.5*1e-16!1.5e-16
   real :: nd_reuni,nd00=1.
   integer :: ind_extra
   integer :: iglobal_nd=0
@@ -68,7 +68,7 @@ module Dustdensity
   logical :: ldiffd_shock=.false.
   logical :: latm_chemistry=.false.
   logical :: lresetuniform_dustdensity=.false.
-  logical :: lnoaerosol=.false.
+  logical :: lnoaerosol=.false., lBBsimple=.false.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, nd00, mdave0, Hnd, &
@@ -77,7 +77,7 @@ module Dustdensity
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
-      r0, delta, lmdvar, lmice, BB0
+      r0, delta, lmdvar, lmice, d0, lBBsimple
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -291,11 +291,13 @@ module Dustdensity
       if (latm_chemistry) then
         if (dsize_max/=0.0) then
           ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
-          ddsize0=(alog(6e-6)-alog(1.5e-6))/(max(ndustspec,2)-1)
+!          ddsize0=(alog(6e-6)-alog(1.5e-6))/(max(ndustspec,2)-1)
+!        ddsize0=(alog(6e-6)-alog(1.5e-6))/(max(ndustspec,2)-1)
           do i=0,(ndustspec-1)
             lnds(i+1)=alog(dsize_min)+i*ddsize
             dsize(i+1)=exp(lnds(i+1))
-            dsize0(i+1)=exp(alog(1.5e-6)+i*ddsize0)
+!            dsize0(i+1)=exp(alog(1.5e-6)+i*ddsize0)
+!            dsize0(i+1)=exp(alog(1.5e-6)+i*ddsize0)
           enddo
 !
           do k=1,ndustspec
@@ -308,14 +310,14 @@ module Dustdensity
           endif
           enddo
           do k=1,ndustspec
-!            init_distr(k)=nd0*exp(-((dsize(k)-(dsize_max+dsize_min)*0.5)/1e-4)**2)
              init_distr(k)=nd00*1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
                *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
-             BB(k)=BB0!10.7*dsize0(k)**3
+             BB(k)=10.7*d0**3 !BB0!
           enddo
           if (ndustspec>4) then
             Ntot_tmp=spline_integral(dsize,init_distr)
             Ntot=Ntot_tmp(ndustspec)
+print*,'N total= ', Ntot
           endif
         endif
 
@@ -851,6 +853,10 @@ module Dustdensity
         lpenc_requested(i_fcloud)=.true.
         if (lmdvar) lpenc_requested(i_md)=.true.
 !        lpenc_requested(i_mi)=.true.
+        if (lpscalar) then
+          lpenc_requested(i_cc)=.true.
+          lpenc_requested(i_udropav)=.true.
+        endif
       endif
     
 !
@@ -917,6 +923,7 @@ module Dustdensity
           lpencil_in(i_udrop)=.true.
           lpencil_in(i_gnd)=.true.
         endif
+        if (lpencil_in(i_udropav)) lpencil_in(i_cc)=.true.
 !        if (lpencil_in(i_fcloud)) lpencil_in(i_nd)=.true.
         if (lpencil_in(i_ppsat)) lpencil_in(i_TT1)=.true.
         if (lpencil_in(i_ppsf)) then
@@ -958,7 +965,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: tmp, Imr
+      real, dimension (nx) :: tmp, Imr, fmax,rmax
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (nx,ndustspec) :: dndr_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt
@@ -1151,10 +1158,12 @@ module Dustdensity
             p%udrop(:,1,k)=p%udrop(:,1,k)-1e6*dsize(k)**2
           endif
         endif
+
 ! udropgnd
         if (lpencil(i_udropgnd)) then
           call dot_mn(p%udrop(:,:,k),p%gnd(:,:,k),p%udropgnd(:,k))
         endif
+!end loop over k=1,ndustspec
       enddo
 ! fcloud
         if (lpencil(i_fcloud)) then
@@ -1176,13 +1185,15 @@ module Dustdensity
 !
         if (lpencil(i_ppsf)) then
           do k=1, ndustspec
-            if (dsize(k)>0.) then
-!              p%ppsf(:,k)=p%ppsat &
-!                *exp(AA*p%TT1/2./dsize(k)-BB(k)/(8.*(dsize(k)**3-8e-6**3)))
-              p%ppsf(:,k)=p%ppsat &
-                *exp(AA*p%TT1/2./dsize(k)-BB(k) &
-                /(8.*dsize(k)**3-0.*8.*dsize0(k)**3))
-            endif
+          if (dsize(k)>0.) then
+          if (lBBsimple) then
+            p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+                                -BB(k)/(8.*dsize(k)**3))
+          else
+            p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
+                                -10.7*p%cc**3/(8.*dsize(k)**3))
+          endif
+          endif
           enddo
         endif
 ! ccondens
@@ -1231,6 +1242,15 @@ module Dustdensity
                 p%dndr(:,k)=-Imr*dndr_tmp(:,k)
               enddo
             endif
+        endif
+! udropav
+        if (lpencil(i_udropav)) then
+          if (lnoaerosol) then
+            p%udropav=0.
+          else
+            p%udropav(:,:)=p%uu(:,:)
+            p%udropav(:,1)=p%uu(:,1)-1e6*p%cc**2
+          endif
         endif
 !
     endsubroutine calc_pencils_dustdensity
@@ -1290,8 +1310,8 @@ module Dustdensity
             df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k) &
                +p%dndr(:,k)
             do i=1,mx
-              if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<1e-25 ) &
-                df(i,m,n,ind(k))=1e-25*dt
+              if ((f(i,m,n,ind(k))+df(i,m,n,ind(k))*dt)<0.) &
+                df(i,m,n,ind(k))=1e-25*dt*0.
             enddo
           endif
         enddo
@@ -1308,6 +1328,7 @@ module Dustdensity
             endif
           if (lmice)  df(l1:l2,m,n,imi(k)) = 0.
         enddo
+       
 !
 !   End of atmospheric case
 !
@@ -2301,6 +2322,7 @@ module Dustdensity
       character (len=20) :: output_file="./data/nd.out"
       character (len=20) :: output_file2="./data/nd2.out"
       character (len=20) :: output_file3="./data/nd3.out"
+      character (len=20) :: output_file4="./data/nd4.out"
       integer :: file_id=123
 
       do i1=l1,l2
@@ -2381,6 +2403,27 @@ module Dustdensity
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
       endif
+
+      if (it == 120000) then
+        open(file_id,file=output_file4)
+            write(file_id,'(7E12.4)') t
+        if (lmdvar) then
+          do k=1,ndustspec
+            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+          enddo
+        else
+          do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+        endif
+        close(file_id)
+        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
+!        print*,ttt(ndustspec)
+      endif
+
       endif
 
     endsubroutine dustspec_normalization
