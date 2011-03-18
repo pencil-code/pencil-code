@@ -2630,7 +2630,7 @@ module Entropy
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
         if (idiag_fconvm/=0) &
             call sum_mn_name(p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
-        if (idiag_ufpres/=0) then
+        if (idiag_ufpresm/=0) then
             ufpres=0.
             do i = 1, 3
               ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
