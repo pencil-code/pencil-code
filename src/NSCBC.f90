@@ -605,7 +605,7 @@ include 'NSCBC.h'
 !          in the reference paper of Yoo et al. (CTM 2006) from where the LODI 
 !          relations were copied.
 !          In addition, the relation for L_2 given by Yoo et al. was modified
-!          according to new developments using different hypotheses.
+!          using different hypotheses.
 !
             L_2=nscbc_sigma_in*cs*rho0*Rgas*mu1*(gamma-1.)*(1-Mach**2) &
                 *(TT-T_t)/Lxyz(dir1) - (cs2*T_1-T_5)
@@ -640,13 +640,13 @@ include 'NSCBC.h'
 !
           if (inlet_from_file) then 
             L_3 = nscbc_sigma_in*(u_tslice(dir2)-0.)*cs/Lxyz(dir1)
-            L_3 = L_3 + nscbc_sigma_in*u_in(:,:,dir1)*(fslice(:,:,dir2)-u_in(:,:,dir2))&
+            L_3 = L_3 + nscbc_sigma_in*u_t*(fslice(:,:,dir2)-u_in(:,:,dir2))&
                 *ngrid/Lxyz(dir1)
             L_4 = nscbc_sigma_in*(u_tslice(dir3)-0.)*cs/Lxyz(dir1)
-            L_4 = L_4 + nscbc_sigma_in*u_in(:,:,dir1)*(fslice(:,:,dir3)-u_in(:,:,dir3))&
+            L_4 = L_4 + nscbc_sigma_in*u_t*(fslice(:,:,dir3)-u_in(:,:,dir3))&
                 *ngrid/Lxyz(dir1)  
             L_5 = nscbc_sigma_in*cs2*rho0*sgn*(u_tslice(dir1)-u_t)*(1-Mach**2)/Lxyz(dir1)
-            L_5 = L_5 + nscbc_sigma_in*sgn*rho0*cs*(cs+u_in(:,:,dir1))* &
+            L_5 = L_5 + nscbc_sigma_in*sgn*rho0*cs*(cs+u_t)* &
                 (fslice(:,:,dir1)-u_in(:,:,dir1))*ngrid/Lxyz(dir1)
           endif
 !
