@@ -124,7 +124,7 @@ module Poisson
           call fatal_error("inverse_laplacian","")
         endif
         !call inverse_laplacian_expandgrid(phi)
-      else if (nxgrid /= nzgrid) then
+      else if (nxgrid/=nzgrid .and. (nxgrid/=1 .and. nzgrid/=1)) then
         call inverse_laplacian_fft_z(phi)
       else
         call inverse_laplacian_fft(phi)
