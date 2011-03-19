@@ -316,6 +316,10 @@
   \var{fradz}     & $F_{\rm rad}$ \\
   \var{fradz_Kprof} & $F_{\rm rad}$ (from Kprof) \\
   \var{fradxy_Kprof} & $F_{\rm rad}$ ($xy$-averaged, from Kprof) \\
+  \var{fradz_kramers} & $F_{\rm rad}$ (from Kramers'
+                    opacity) \\
+  \var{fradxy_kramers} & $F_{\rm rad}$ ($xy$-averaged,
+                    from Kramers' opacity) \\
   \var{fturbz}    & $\left<\varrho T \chi_t \nabla_z
                     s\right>_{xy}$ \quad(turbulent
                     heat flux) \\
@@ -338,6 +342,7 @@
   \var{uzTTmxy}   & $\left< u_z T \right>_{z}$ \\
   \var{ssmxy}     & $\left< s \right>_{z}$ \\
   \var{ssmxz}     & $\left< s \right>_{y}$ \\
+  \var{ufpresm}   & $\left< -u/\rho\nabla p \right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
@@ -384,7 +389,7 @@
   \var{ujm}       & $\left<\uv\cdot\Jv\right>$ \\
   \var{fbm}       & $\left<\fv\cdot\Bv\right>$ \\
   \var{fxbxm}     & $\left<f_x B_x\right>$ \\
-  \var{epsM}      & $\left<2\eta\mu_0\jv^2\right>$ \\
+  \var{epsM}      & $\left<\eta\mu_0\jv^2\right>$ \\
   \var{epsAD}     & $\left<\rho^{-1} t_{\rm AD}
                     (\vec{J}\times\vec{B})^2\right>$
                     (heating by ion-neutrals friction) \\
@@ -448,12 +453,6 @@
   \var{bxm}       & $\left<\left<B\right>_{yz}^2\right>_x^{1/2}$ \\
   \var{bym}       & $\left<\left<B\right>_{zx}^2\right>_y^{1/2}$ \\
   \var{bzm}       & $\left<\left<B\right>_{xy}^2\right>_z^{1/2}$ \\
-  \var{bx2m}      & $\left<B_x^2\right>$ \\
-  \var{by2m}      & $\left<B_y^2\right>$ \\
-  \var{bz2m}      & $\left<B_z^2\right>$ \\
-  \var{bx2mx}     & $\left<B_x^2\right>_{yz}$ \\
-  \var{by2mx}     & $\left<B_y^2\right>_{yz}$ \\
-  \var{bz2mx}     & $\left<B_z^2\right>_{yz}$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
   \var{bxbymx}    & $\left<B_x B_y\right>_{yz}$ \\
   \var{axmz}      & $\left<{\cal A}_x\right>_{xy}$ \\
@@ -527,6 +526,12 @@
   \var{kx_aa}     & $k_x$ \\
   \var{kmz}       & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>/
                     \left<\left<\Bv\right>_{xy}^2\right>$ \\
+  \var{bx2m}      & $\left< B_x^2 \right>$ \\
+  \var{by2m}      & $\left< B_y^2 \right>$ \\
+  \var{bz2m}      & $\left< B_z^2 \right>$ \\
+  \var{bx2mx}     & $\left< B_x^2 \right>_{yz}$ \\
+  \var{by2mx}     & $\left< B_y^2 \right>_{yz}$ \\
+  \var{bz2mx}     & $\left< B_z^2 \right>_{yz}$ \\
   \var{bx2my}     & $\left< B_x^2 \right>_{xz}$ \\
   \var{by2my}     & $\left< B_y^2 \right>_{xz}$ \\
   \var{bz2my}     & $\left< B_z^2 \right>_{xz}$ \\

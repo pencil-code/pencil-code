@@ -13,6 +13,8 @@
   \multicolumn{2}{c}{Module \file{boundcond.f90}} \\
 \midrule
   \var{cfb}       & radial centrifugal balance \\
+  \var{fBs}       & frozen-in B-field (s) \\
+  \var{fB}        & frozen-in B-field (a2) \\
   \var{0}         & zero value in ghost zones, free value on boundary \\
   \var{p}         & periodic \\
   \var{s}         & symmetry \\
@@ -43,7 +45,8 @@
                      \\
   \var{sT}        & symmetric temp.
                      \\
-  \var{ism}       & special for interstellar runs \\
+  \var{ctz}       & for interstellar runs copy T \\
+  \var{cdz}       & for interstellar runs limit rho \\
   \var{asT}       & select entropy for uniform ghost temperature
                     matching fluctuating boundary value,
                     $T_{N-i}=T_{N}=$;
@@ -85,7 +88,7 @@
   \var{ou0}       & allow outflow, but no inflow
                     forces ghost cells and boundary to not point inwards
                     relaxes to vanishing 1st derivative at boundary \\
-  \var{ubs}       & symmetric outflow, \\
+  \var{ubs}       & copy boundary outflow, \\
   \var{win}       & forces massflux given as
                     $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$ \\
   \var{cop}       & copy value of last physical point to all ghost cells \\
