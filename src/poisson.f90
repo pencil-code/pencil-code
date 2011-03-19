@@ -373,7 +373,7 @@ module Poisson
 !
       complex, dimension(nzgrid) :: cz
 !
-      integer :: ix, iy, iz
+      integer :: ix, iy
       real    :: kx2, ky2, a0, a1
 !
 !  Initialize the array wsave and other constants for future use.
