@@ -27,14 +27,15 @@ module Poisson
   real :: kmax=0.0
   logical :: lrazor_thin=.false., lsemispectral=.false., lklimit_shear=.false.
   logical :: lexpand_grid=.false.
+  logical :: lisoz=.false.
 !
   include 'poisson.h'
 !
   namelist /poisson_init_pars/ &
-      lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid
+      lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid, lisoz
 !
   namelist /poisson_run_pars/ &
-      lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid
+      lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid, lisoz
 !
   contains
 !***********************************************************************
@@ -111,20 +112,22 @@ module Poisson
 !
       if (lsemispectral) then
         call inverse_laplacian_semispectral(phi)
-      else
-        if (lexpand_grid) then
-          if (lroot) then 
-            print*,'The poisson solver for global disk was moved to an '
-            print*,'experimental module because it uses too much memory. '
-            print*,'If your memory requirements are modest ( < 500 proc) '
-            print*,'use POISSON=experimental/poisson_expand.f90 in your '
-            print*,'Makefile.local file'
-            call fatal_error("inverse_laplacian","")
-          endif
-          !call inverse_laplacian_expandgrid(phi)
-        else
-          call inverse_laplacian_fft(phi)
+      else if (lisoz) then
+        call inverse_laplacian_isoz(phi)
+      else if (lexpand_grid) then
+        if (lroot) then 
+          print*,'The poisson solver for global disk was moved to an '
+          print*,'experimental module because it uses too much memory. '
+          print*,'If your memory requirements are modest ( < 500 proc) '
+          print*,'use POISSON=experimental/poisson_expand.f90 in your '
+          print*,'Makefile.local file'
+          call fatal_error("inverse_laplacian","")
         endif
+        !call inverse_laplacian_expandgrid(phi)
+      else if (nxgrid /= nzgrid) then
+        call inverse_laplacian_fft_z(phi)
+      else
+        call inverse_laplacian_fft(phi)
       endif
 !
       call keep_compiler_quiet(f)
@@ -347,6 +350,207 @@ module Poisson
       endif
 !
     endsubroutine inverse_laplacian_semispectral
+!***********************************************************************
+    subroutine inverse_laplacian_fft_z(phi)
+!
+!  Solve the Poisson equation with nxgrid = nygrid /= nzgrid.
+!
+!  10-sep-2009/ccyang: coded
+!
+      use Mpicomm, only: transp_xz, transp_zx
+!
+      real, dimension(nx,ny,nz), intent(inout) :: phi
+!
+      real, dimension(nx,ny,nz) :: phii
+!
+      integer, parameter :: nxt = nx / nprocz
+      real, dimension(nzgrid,nxt) :: phirt, phiit
+!
+      logical :: l1st = .true.
+      real, save, dimension(4*nzgrid+15) :: wsave
+      real, save, dimension(nzgrid)      :: kz2
+      integer, save :: ikx0, iky0
+!
+      complex, dimension(nzgrid) :: cz
+!
+      integer :: ix, iy, iz
+      real    :: kx2, ky2, a0, a1
+!
+!  Initialize the array wsave and other constants for future use.
+!
+      if (l1st) then
+        call cffti(nzgrid, wsave)
+        kz2 = kz_fft**2
+        ikx0 = ipz * nxt
+        iky0 = ipy * ny
+        l1st = .false.
+      end if
+!
+!  Forward transform in xy
+!
+      phii = 0.
+      if (lshear) then
+        call fourier_transform_shear_xy(phi, phii)
+      else
+        call fourier_transform_xy(phi, phii)
+!#ccyang: Note that x and y are swapped in fourier_transform_xy.
+      endif
+!
+!  Convolution in z
+!
+      if (lshear) a0 = deltay / Lx
+      do iy = 1, ny
+!
+        call transp_xz(phi(:,iy,:),  phirt)
+        call transp_xz(phii(:,iy,:), phiit)
+!
+        if (lshear) then
+          ky2 = ky_fft(iky0+iy)**2
+          a1  = a0 * ky_fft(iky0+iy)
+        else
+          ky2 = kx_fft(iky0+iy)**2
+        end if
+!
+        do ix = 1, nxt
+!
+          if (lshear) then
+            kx2 = (kx_fft(ikx0+ix) + a1)**2
+          else
+            kx2 = ky_fft(ikx0+ix)**2
+          end if
+!
+          cz = cmplx(phirt(:,ix), phiit(:,ix))
+          call cfftf (nzgrid, cz, wsave)
+          where (kx2 /= 0. .or. ky2 /= 0. .or. kz2 /= 0)
+            cz = -cz / (kx2 + ky2 + kz2) / nzgrid
+          elsewhere
+            cz = 0.
+          end where
+          call cfftb (nzgrid, cz, wsave)
+!
+          phirt(:,ix) = real(cz)
+          phiit(:,ix) = aimag(cz)
+!
+        end do
+!
+        call transp_zx(phirt, phi(:,iy,:))
+        call transp_zx(phiit, phii(:,iy,:))
+!
+      end do
+!
+!  Inverse transform in xy
+!
+      if (lshear) then
+        call fourier_transform_shear_xy(phi,phii,linv=.true.)
+      else
+        call fourier_transform_xy(phi,phii,linv=.true.)
+      endif
+!
+      return
+!
+    endsubroutine inverse_laplacian_fft_z
+!***********************************************************************
+    subroutine inverse_laplacian_isoz(phi)
+!
+!  Solve the Poisson equation with isolated boundary condition in the z-
+!  direction and periodic in the x- and y- directions.
+!
+!  11-jan-2008/ccyang: coded
+!
+!  Reference: Yang, Mac Low, & Menou 2011 (arXiv:1103.3268)
+!
+      use Mpicomm, only: transp_xz, transp_zx
+!
+      real, dimension(nx,ny,nz) :: phi
+!
+      real, dimension(nx,ny,nz) :: phii
+!
+      integer, parameter :: nzg2 = 2 * nzgrid
+      integer, parameter :: nxt = nx / nprocz
+      real, dimension(nzgrid,nxt) :: phirt, phiit
+!
+      logical, save :: l1st = .true.
+      real, save, dimension(4*nzg2+15) :: wsave
+      real, save, dimension(nzg2)      :: kz2
+      real,    save :: dz2h
+      integer, save :: ikx0, iky0
+!
+      complex, dimension(nzg2) :: cz
+!
+      integer :: ix, iy, iz, iz1
+      real    :: kx2, ky2, a0, a1
+!
+!  Initialize the array wsave and other constants for future use.
+!
+      if (l1st) then
+        call cffti(nzg2, wsave)
+        kz2 = (/(iz**2, iz = 0, nzgrid), &
+                ((iz - nzgrid)**2, iz = 1, nzgrid - 1)/) * (pi / Lz)**2
+        dz2h = .5 * dz * dz
+        ikx0 = ipz * nxt
+        iky0 = ipy * ny
+        l1st = .false.
+      end if
+!
+!  Forward transform in xy
+!
+      phii = 0.
+      if (lshear) then
+        call fourier_transform_shear_xy(phi, phii)
+      else
+        call fourier_transform_xy(phi, phii)
+!#ccyang: Note that x and y are swapped in fourier_transform_xy.
+      endif
+!
+!  Convolution in z
+!
+      if (lshear) a0 = deltay / Lx
+      do iy = 1, ny
+        call transp_xz(phi(:,iy,:),  phirt)
+        call transp_xz(phii(:,iy,:), phiit)
+        if (lshear) then
+          ky2 = ky_fft(iky0+iy)**2
+          a1  = a0 * ky_fft(iky0+iy)
+        else
+          ky2 = kx_fft(iky0+iy)**2
+        end if
+        do ix = 1, nxt
+          if (lshear) then
+            kx2 = (kx_fft(ikx0+ix) + a1)**2
+          else
+            kx2 = ky_fft(ikx0+ix)**2
+          end if
+          if (kx2 /= 0. .or. ky2 /= 0.) then
+            cz(1:nzgrid) = (/cmplx(phirt(:,ix), phiit(:,ix))/)
+            cz(nzgrid+1:nzg2) = 0.
+            call cfftf (nzg2, cz, wsave)
+            cz = -cz / (kx2 + ky2 + kz2) / nzg2
+            call cfftb (nzg2, cz, wsave)
+          else
+            cz = 0.
+            do iz = 1, nzgrid; do iz1 = 1, nzgrid
+              cz(iz) = cz(iz) + cmplx(phirt(iz1,ix), phiit(iz1,ix)) * &
+                                abs(iz - iz1) * dz2h
+            end do; end do
+          end if
+          phirt(:,ix) = real(cz(1:nzgrid))
+          phiit(:,ix) = aimag(cz(1:nzgrid))
+        end do
+        call transp_zx(phirt, phi(:,iy,:))
+        call transp_zx(phiit, phii(:,iy,:))
+      end do
+!
+!  Inverse transform in xy
+!
+      if (lshear) then
+        call fourier_transform_shear_xy(phi,phii,linv=.true.)
+      else
+        call fourier_transform_xy(phi,phii,linv=.true.)
+      endif
+!
+      return
+!
+    endsubroutine inverse_laplacian_isoz
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
