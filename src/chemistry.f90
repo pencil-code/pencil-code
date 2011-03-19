@@ -4,7 +4,7 @@
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxiliary variables added by this 
+! variables and auxiliary variables added by this
 ! CPARAM logical, parameter :: lchemistry = .true.
 !
 ! MVAR CONTRIBUTION 1
@@ -6301,7 +6301,6 @@ print*,'NATA'
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx)  :: wt
       real, dimension (nx,nchemspec) :: ydot
-      integer :: k
       type (pencil_case) :: p
 !
       ydot = p%DYDt_reac
