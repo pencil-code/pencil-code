@@ -84,10 +84,11 @@ module Polymer
 !  14-aug-08/dhruba: initialize polymer field
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
+!
       if (tau_poly>tini) then
         tau_poly1=1./tau_poly
       else
@@ -97,7 +98,7 @@ module Polymer
 ! give warning if polymeric backreaction is set true but polymer
 ! density, mu_poly is set to zero.
 !
-      if(lpolyback.and.(mu_poly.eq.0.)) & 
+      if(lpolyback.and.(mu_poly.eq.0.)) &
           call warning ('initialize_polymer','lpolyback=T but mu_poly=0!')
 !
     endsubroutine initialize_polymer
@@ -269,7 +270,7 @@ module Polymer
 ! u_dot_gradC
       if (lpencil(i_u_dot_gradC))&
           call u_dot_grad_mat(f,ipoly,p%Cijk,p%uu,p%u_dot_gradC, &
-            UPWIND=lupw_poly) 
+            UPWIND=lupw_poly)
 !
       select case (poly_model)
         case ('oldroyd-B')
@@ -332,6 +333,8 @@ module Polymer
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      call keep_compiler_quiet(f)
+!
 ! f(r_p)
 !
       if (lpencil(i_fr)) p%fr(:) = 1.
@@ -353,9 +356,13 @@ module Polymer
 !  Calculates the diagnostic quantities for polymer module
 !  Most basic pencils should come first, as others may depend on them.
 !
-      use Diagnostics
+      use Diagnostics, only: sum_mn_name
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f)
+!
       if (idiag_polytrm/=0)   call sum_mn_name(p%trp,idiag_polytrm)
 !
     endsubroutine polymer_diagnostic
@@ -427,11 +434,11 @@ module Polymer
       endselect
 !
 !  polymer diffusion (sometime only for numerical stability)
-!      
+!
       ipk=0
       do ipi=1,3
         do ipj=ipi,3
-          df(l1:l2,m,n,ipoly+ipk)= & 
+          df(l1:l2,m,n,ipoly+ipk)= &
               df(l1:l2,m,n,ipoly+ipk)-eta_poly*p%del2poly(:,ipi,ipj)
           ipk=ipk+1
         enddo
@@ -441,7 +448,7 @@ module Polymer
 !***********************************************************************
     subroutine simple_dpoly_dt(f,df,p)
 !
-! the simplest algorithm. 
+! the simplest algorithm.
 !
 !  24-feb-11/dhruba: moved to a subroutine
 !
@@ -449,6 +456,8 @@ module Polymer
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: ipi,ipj,ipk
+!
+      call keep_compiler_quiet(f)
 !
       ipk=0
       do ipi=1,3
@@ -471,7 +480,7 @@ module Polymer
 !
       select case (poly_model)
         case ('oldroyd-B')
-!         do nothing          
+!         do nothing
           call keep_compiler_quiet(f)
         case ('FENE-P')
           do iz=1,mz; do iy=1,my; do ix=1,mx
@@ -540,6 +549,9 @@ module Polymer
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices)
+!
     endsubroutine get_slices_polymer
 !***********************************************************************
     subroutine rprint_polymer(lreset,lwrite)
@@ -553,7 +565,7 @@ module Polymer
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname, inamez, inamey, inamex
+      integer :: iname !, inamez, inamey, inamex
       logical :: lwr
 !
       lwr = .false.
