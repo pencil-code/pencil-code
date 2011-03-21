@@ -22,7 +22,7 @@ module Special
 !
   include '../special.h'
 !
-  real :: Kpara=0.,Kperp=0.,cool_RTV=0.,Kchrom=0.
+  real :: Kpara=0.,Kperp=0.,Ksat=0.,cool_RTV=0.,Kchrom=0.
   real :: exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.
   real :: tau_inv_newton=0.,exp_newton=0.
   real :: tanh_newton=0.,cubic_newton=0.
@@ -40,7 +40,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
       width_newton,tanh_newton,cubic_newton,Kchrom, &
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
-      exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso
+      exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat
 !
 ! variables for print.in
 !
@@ -297,17 +297,42 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot2
+      use Sub, only: dot2,dot
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: chi,glnTT2,rhs
+      real, dimension (nx) :: chi_sat,gKpara,gKsat
+      real, dimension (nx,3) :: tmpv2,tmpv
+      real :: Ksatb
+      integer :: i,j
 !
       chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
           cubic_step(real(t),init_time,init_time)*p%cp1
 !
       call dot2(p%glnTT,glnTT2)
 !
+      gKpara = 3.5 * glnTT2
+!
+      if (Ksat/=0.) then
+        Ksatb = Ksat*7.28d7 /unit_velocity**3. * unit_temperature**1.5
+        chi_sat =  Ksatb * sqrt(p%TT/max(tini,glnTT2))
+        tmpv(:,:)=0.
+        do i=1,3
+          do j=1,3
+            tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
+          enddo
+        enddo
+        do i=1,3 
+          tmpv2(:,i) = p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
+        enddo
+        call dot(tmpv2,p%glnTT,gKsat)
+        where (chi > chi_sat)
+          chi = chi_sat
+          gKpara = gKsat
+        endwhere
+      endif
+
       rhs = gamma * chi * (3.5 * glnTT2 + p%del2lnTT)
 !
 !  Add to energy equation.
