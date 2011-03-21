@@ -2039,6 +2039,21 @@ module Mpicomm
 !
     endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************
+    subroutine y2x(a,xi,zj,zproc_no,ay)
+!
+!  Load the y dimension of an array in a 1-d array.
+!
+!  21-mar-2011/axel: adapted from z2x
+!
+      real, dimension(nx,ny,nz), intent(in) :: a
+      real, dimension(ny), intent(out) :: ay
+      integer, intent(in) :: xi,zj,zproc_no
+!
+      ay(:)=a(xi,:,zj)
+      if (NO_WARN) print*,zproc_no
+!
+    endsubroutine y2x
+!***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !
 !  Load the z dimension of an array in a 1-d array.

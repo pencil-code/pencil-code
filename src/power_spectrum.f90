@@ -1311,14 +1311,16 @@ endsubroutine pdf
 ! ----------------------------------------------------------------------
 !
       use Sub, only: curli
-      use Mpicomm, only: stop_it, z2x
+      use Mpicomm, only: stop_it, y2x, z2x
       use Fourier, only: fourier_transform_real_1
 !
   integer :: j,l,im,in,ivec,ispec,ifirst_fft
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1
   real, dimension(nx) :: bb
+  real, dimension(nygrid/2) :: spectrumy,spectrumy_sum
   real, dimension(nzgrid/2) :: spectrum,spectrum_sum
+  real, dimension(nygrid) :: aatempy
   real, dimension(nzgrid) :: aatemp
   real, dimension(2*nzgrid+15) :: fftpack_temp
   real :: nVol2d,spec_real,spec_imag
@@ -1329,13 +1331,15 @@ endsubroutine pdf
   if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !--------------Makes sense only in spherical coordinate system -----------
-  if (.not.lspherical_coords) call stop_it("power_phi works only in spherical coordinates")
+  if (.not.(lspherical_coords.or.lcylindrical_coords)) &
+      call stop_it("power_phi works only in spherical or cylindrical coords")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !  Ignore *2*pi/Lx factor, because later we want k to be integers
   !
   !
+  nVol2d=0.
   spectrum=0.
   spectrum_sum=0.
   !
@@ -1344,67 +1348,110 @@ endsubroutine pdf
   !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
   do ivec=1,3
-     !
-     if (trim(sp)=='u') then
-        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-      elseif (trim(sp)=='b') then
-        do n=n1,n2
-           do m=m1,m2
-              call curli(f,iaa,bb,ivec)
-              im=m-nghost
-              in=n-nghost
-              a1(:,im,in)=bb
-           enddo
+    !
+    if (trim(sp)=='u') then
+      a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+    elseif (trim(sp)=='b') then
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iaa,bb,ivec)
+          im=m-nghost
+          in=n-nghost
+          a1(:,im,in)=bb
         enddo
-     elseif (trim(sp)=='a') then
-        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-     else
-        print*,'There are no such sp=',trim(sp)
-     endif
+      enddo
+    elseif (trim(sp)=='a') then
+      a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+    else
+      print*,'There are no such sp=',trim(sp)
+    endif
 !
-     ifirst_fft=1
-     do l=1,nx
-       do m=1,ny
-         do j=1,nprocy
-           call z2x(a1,l,m,j,aatemp)
+    ifirst_fft=1
+    do l=1,nx
+      if (lspherical_coords) then
+        do m=1,ny
+          do j=1,nprocy
+            call z2x(a1,l,m,j,aatemp)
+!
 ! For multiple processor runs aatemp exists only in the root
 ! processor. Hence rest of the analysis is done only
 ! in the root processor
-           if (lroot) then
-!             write(*,*)l,m,j,'got data shall fft'
-             call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
-             ifirst_fft = ifirst_fft+1
-             spectrum(1)=(aatemp(1)**2)&
-                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-             do ispec=2,nzgrid/2
-               spec_real=aatemp(2*ispec-2)
-               spec_imag=aatemp(2*ispec-1)
-               spectrum(ispec)= 2.*(spec_real**2+spec_imag**2)&
-                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-             enddo
-             spectrum(nzgrid/2)=(aatemp(nzgrid)**2)&
-                    *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-             spectrum_sum=spectrum_sum+spectrum
-             nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
-           else
-             nVol2d=1.
-           endif
-         enddo ! loop over yproc
-       enddo   ! loop over ny
-     enddo     ! loop over nx
+!AB: is nVol2d correctly initialized? Did this now above. OK?
 !
-   enddo !(from loop over ivec)
+            if (lroot) then
+!             write(*,*)l,m,j,'got data shall fft'
+              call fourier_transform_real_1(aatemp,nzgrid,ifirst_fft,fftpack_temp)
+              ifirst_fft = ifirst_fft+1
+              spectrum(1)=(aatemp(1)**2)&
+                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+              do ispec=2,nzgrid/2
+                spec_real=aatemp(2*ispec-2)
+                spec_imag=aatemp(2*ispec-1)
+                spectrum(ispec)= 2.*(spec_real**2+spec_imag**2)&
+                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+              enddo
+              spectrum(nzgrid/2)=(aatemp(nzgrid)**2)&
+                     *r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+              spectrum_sum=spectrum_sum+spectrum
+              nVol2d = nVol2d+r2_weight(l)*sinth_weight_across_proc(m+(j-1)*ny)
+            else
+              nVol2d=1.
+            endif
+          enddo ! loop over yproc
+        enddo   ! loop over ny
+      elseif (lcylindrical_coords) then
+        do n=1,nz
+          do j=1,nprocz
+            call y2x(a1,l,n,j,aatempy)
+!
+! For multiple processor runs aatemp exists only in the root
+! processor. Hence rest of the analysis is done only
+! in the root processor
+!
+            if (lroot) then
+!             write(*,*)l,n,j,'got data shall fft'
+              call fourier_transform_real_1(aatempy,nygrid,ifirst_fft,fftpack_temp)
+              ifirst_fft = ifirst_fft+1
+              spectrumy(1)=(aatempy(1)**2)&
+                     *rcyl_weight(l)
+              do ispec=2,nygrid/2
+                spec_real=aatempy(2*ispec-2)
+                spec_imag=aatempy(2*ispec-1)
+                spectrumy(ispec)= 2.*(spec_real**2+spec_imag**2)&
+                     *rcyl_weight(l)
+              enddo
+              spectrumy(nygrid/2)=(aatempy(nygrid)**2)&
+                     *rcyl_weight(l)
+              spectrumy_sum=spectrumy_sum+spectrumy
+              nVol2d = nVol2d+rcyl_weight(l)
+            else
+              nVol2d=1.
+            endif
+          enddo ! loop over zproc
+        enddo   ! loop over nz
+      else
+        call fatal_error('power_phi','neither spherical nor cylindrical')
+      endif
+    enddo     ! loop over nx
+!
+  enddo !(from loop over ivec)
 !
 !  append to diagnostics file
 !
   if (iproc==root) then
-     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
-          ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
-     spectrum_sum=.5*spectrum_sum
-     open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
-     write(1,*) t
-     write(1,'(1p,8e10.2)') spectrum_sum/nVol2d
-     close(1)
+    if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
+         ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
+    open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+!
+    if (lspherical_coords) then
+      spectrum_sum=.5*spectrum_sum
+      write(1,'(1p,8e10.2)') spectrum_sum/nVol2d
+    elseif (lcylindrical_coords) then
+      spectrumy_sum=.5*spectrumy_sum
+      write(1,'(1p,8e10.2)') spectrumy_sum/nVol2d
+    endif
+    close(1)
   endif
   !
   endsubroutine power_phi

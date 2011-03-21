@@ -5706,9 +5706,50 @@ module Mpicomm
 !
     endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************
+    subroutine y2x2(a,xi,zj,zproc_no,ay)
+!
+!  Load the y dimension of an array in a 1-d array.
+!
+      real, dimension(nx,ny,nz), intent(in) :: a
+      real, dimension(nygrid), intent(out) :: ay
+      real, dimension(nygrid) :: ay_local
+      integer, intent(in) :: xi,zj,zproc_no
+      integer :: nz_iniz,nz_finz
+!
+      ay=0.
+      ay_local=0.
+      if (ipz==(zproc_no-1)) then
+        nz_iniz=ipz*nz+1
+        nz_finz=(ipz+1)*nz
+        ay_local(nz_iniz:nz_finz)=a(xi,:,zj)
+      else
+      ay_local=0.
+      endif
+      call mpireduce_sum(ay_local,ay,nygrid)
+! maybe we should synchrosize here.
+      call mpibarrier
+!
+ay_local(:)=a(xi,:,zj)
+    endsubroutine y2x2
+!***********************************************************************
+    subroutine y2x(a,xi,zj,zproc_no,ay)
+!
+!  Load the y dimension of an array in a 1-d array.
+!
+!  21-mar-2011/axel: adapted from z2x
+!
+      real, dimension(nx,ny,nz), intent(in) :: a
+      real, dimension(ny), intent(out) :: ay
+      integer, intent(in) :: xi,zj,zproc_no
+!
+      ay(:)=a(xi,:,zj)
+      if (NO_WARN) print*,zproc_no
+!
+    endsubroutine y2x
+!***********************************************************************
     subroutine z2x(a,xi,yj,yproc_no,az)
 !
-!  COMMENT ME! (AND POSSIBLY MOVE ME TO WHERE I AM USED).
+!  Load the z dimension of an array in a 1-d array.
 !
       real, dimension(nx,ny,nz), intent(in) :: a
       real, dimension(nzgrid), intent(out) :: az
