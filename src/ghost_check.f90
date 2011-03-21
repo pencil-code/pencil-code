@@ -194,7 +194,7 @@ module Ghost_check
       if (.not. ok) then
         write (*,*) '=> ERROR: found inconsistency in ghost cells!'
         write (*,*) '=> SUBROUTINE: ', msg
-        call sleep (1)
+        !call sleep (1)
         stop
       endif
 !
@@ -239,7 +239,7 @@ module Ghost_check
       if (.not. ok) then
         write (*,*) '=> ERROR: found inconsistency in ghost cells!'
         write (*,*) '=> SUBROUTINE: ', routine
-        call sleep (1)
+        !call sleep (1)
         stop
       endif
 !
