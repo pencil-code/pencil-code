@@ -269,9 +269,9 @@ module Magnetic
   integer :: idiag_ajm=0        ! DIAG_DOC: $\left<\jv\cdot\Av\right>$
   integer :: idiag_jbm=0        ! DIAG_DOC: $\left<\jv\cdot\Bv\right>$
   integer :: idiag_hjbm=0       ! DIAG_DOC:
-  integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (temp)
-  integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (north)
-  integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$ (south)
+  integer :: idiag_jbmh=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>$ (temp)
+  integer :: idiag_jbmn=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>$ (north)
+  integer :: idiag_jbms=0       ! DIAG_DOC: $\left<\Jv\cdot\Bv\right>$ (south)
   integer :: idiag_ubm=0        ! DIAG_DOC: $\left<\uv\cdot\Bv\right>$
   integer :: idiag_dubrms=0     ! DIAG_DOC: $\left<(\uv-\Bv)^2\right>^{1/2}$
   integer :: idiag_dobrms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}-\Bv)^2
