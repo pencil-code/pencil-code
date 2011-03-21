@@ -42,7 +42,7 @@
   public :: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
   public :: remap_to_pencil_yz, unmap_from_pencil_yz
 
-  public :: z2x
+  public :: y2x,z2x
   public :: MPI_adi_x, MPI_adi_z
 
   public :: parallel_open, parallel_close
