@@ -183,6 +183,7 @@ module Diagnostics
 !  Write to stdout.
 !
         write(*,'(a)') trim(line)
+!        call flush() ! has to wait until F2003
 !
       endif                     ! (lroot)
 !
