@@ -52,7 +52,7 @@ for i=0,nvar-1 do begin
   cmd=varnames[i]+'=fltarr(nx,nit)*one'
   if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
 endfor
-var=fltarr(nx)*one
+var=fltarr(nx*nvar)*one
 tt =fltarr(nit)*one
 ;;
 ;;  Prepare for read
@@ -75,9 +75,9 @@ for it=0L,nit-1 do begin
   readf, file, t
   tt[it]=t
 ;; Read data
+  readf, file, var
   for i=0,nvar-1 do begin
-    readf, file, var
-    cmd=varnames[i]+'[*,it]=var'
+    cmd=varnames[i]+'[*,it]=var[i*nx:(i+1)*nx-1]'
     if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
   endfor
 endfor
