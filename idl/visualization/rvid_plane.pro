@@ -90,10 +90,16 @@ if(keyword_set(doublebuffer)) then begin
   widget_control,/realize,base
   widget_control,draw,get_value=windex
 endif else $
-if (keyword_set(newwindow)) then window, /free, xsize=wsx, ysize=wsy, title=title $
-                            else window, xsize=wsx, ysize=wsy, title=title
 ;
 if (keyword_set(png_truecolor)) then png=1
+;
+; if png's are requested don't open a window
+;
+if (not keyword_set(png)) then begin
+   if (keyword_set(newwindow)) then begin
+      window, /free, xsize=wsx, ysize=wsy, title=title 
+   endif else window, xsize=wsx, ysize=wsy, title=title
+endif
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat.
 ;
