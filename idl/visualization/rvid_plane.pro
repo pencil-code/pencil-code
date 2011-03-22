@@ -528,6 +528,8 @@ if (keyword_set(mpeg)) then begin
   print,'Writing MPEG file..'
   mpeg_save, mpegID, filename=mpeg_name
   mpeg_close, mpegID
+  set_plot,'X'
 end
+if (keyword_set(png))  then set_plot,'X'
 ;
 END
