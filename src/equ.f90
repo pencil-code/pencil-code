@@ -37,6 +37,8 @@ module Equ
       use EquationOfState
       use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
                          forcing_continuous
+! To check ghost cell consistency, please uncomment the following line:
+!     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df
       use Gravity
       use Grid, only: calc_pencils_grid
@@ -464,6 +466,9 @@ module Equ
 !  Note: some no-modules (e.g. nohydro) also calculate some pencils,
 !  so it would be wrong to check for lhydro etc in such cases.
 !
+! To check ghost cell consistency, please uncomment the following 2 lines:
+!       if (.not. lpencil_check_at_work .and. necessary(imn)) &
+!       call check_ghosts_consistency (f, 'before calc_pencils_*')
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
