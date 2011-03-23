@@ -1142,7 +1142,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
           enddo
 !
-        case ('dragforce_equilibrium')
+        case ('dragforce_equilibrium','dragforce-equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
 !  (from Nakagawa, Sekiya, & Hayashi 1986).
@@ -1205,7 +1205,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           enddo
 !
-        case ('dragforce_equi_dust')
+        case ('dragforce_equi_dust','dragforce-equi-dust')
 !
 !  Equilibrium between drag force and Coriolis force on the dust.
 !
@@ -1222,7 +1222,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
           enddo
 !
-        case ('init_equi_gas')
+        case ('init_equi_gas','init-equi-gas')
 !
 !  Equilibrium motion gas (with coriolis included)
 !
