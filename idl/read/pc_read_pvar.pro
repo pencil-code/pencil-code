@@ -44,10 +44,10 @@ dummy=file_search('./data/param2.nml', COUNT=countfile)
 ; Check if we are inserting particles continuously
 ;
 if (countfile gt 0) then begin
-  pc_read_param, object=param2, /param2, datadir=datadir
+  pc_read_param, object=param2, /param2, datadir=datadir, quiet=quiet
   linsert_particles_continuously=param2.linsert_particles_continuously
 endif else begin
-  pc_read_param, object=param, datadir=datadir
+  pc_read_param, object=param, datadir=datadir, quiet=quiet
   linsert_particles_continuously=param.linsert_particles_continuously
 endelse
 ;
