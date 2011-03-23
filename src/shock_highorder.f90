@@ -352,9 +352,9 @@ module Shock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
 !
       if (ldiagnos) then
-        if (idiag_shockm/=0)   call sum_mn_name(p%shock,idiag_shockm)
+        if (idiag_shockm/=0)   call sum_mn_name( p%shock,idiag_shockm)
         if (idiag_shockmin/=0) call max_mn_name(-p%shock,idiag_shockmin,lneg=.true.)
-        if (idiag_shockmax/=0) call max_mn_name(p%shock,idiag_shockmax)
+        if (idiag_shockmax/=0) call max_mn_name( p%shock,idiag_shockmax)
       endif
 !
       if (l1davgfirst) then
