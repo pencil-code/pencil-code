@@ -2455,7 +2455,7 @@ module Special
       integer, parameter :: unit=10
       real, dimension(6) :: buffer
 !
-      inquire (iolength=len) current%amp
+      inquire (iolength=len) first%amp
 !
       if (present (issnap)) then
         write (filename,'("driver/pts_",I1.1,"_",I3.3,".dat")') level, issnap
