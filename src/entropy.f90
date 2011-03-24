@@ -3949,11 +3949,15 @@ module Entropy
         if (lcalc_ssmean) then
           do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
           del2ss1=p%del2ss-del2ssmz(n-n1+1)
-          call dot(p%glnrho+p%glnTT+glchit_prof,gss1,g2)
+          call dot(p%glnrho+p%glnTT,gss1,g2)
           thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
+          call dot(glchit_prof,gss1,g2)
+          thdiff=thdiff+chi_t*(del2ss1+g2)
         else
-          call dot(p%glnrho+p%glnTT+glchit_prof,p%gss,g2)
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
+          call dot(glchit_prof,p%gss,g2)
+          thdiff=thdiff+chi_t*g2
         endif
       endif
 !
