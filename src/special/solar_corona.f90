@@ -674,6 +674,7 @@ module Special
       endif
 !
       if (Kgpara/=0.0) then
+        lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_TT)=.true.
@@ -1263,7 +1264,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kpara * p%rho1 * p%TT**expo* &
+      chi_1 =  Kpara * p%rho1 * p%TT**expo * p%cp1 * &
           cubic_step(real(t*unit_time),init_time,init_time)
 !
       tmpv(:,:)=0.
@@ -1279,12 +1280,7 @@ module Special
 !
       if (Ksat/=0.) then
         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
-!
-        where (glnTT2 <= tini)
-          chi_2 =  0.
-        elsewhere
-          chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2))
-        endwhere
+        chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
 !
         where (chi_1 > chi_2)
           gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
