@@ -19,7 +19,7 @@ module Special
 !
   implicit none
 !
-  real :: Kpara=0.,Kperp=0.
+  real :: Kpara=0.,Kperp=0.,Kc=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
@@ -45,7 +45,7 @@ module Special
 !
   namelist /special_run_pars/ &
       heat_par_exp3,u_amplifier,twist_u0,rmin,rmax, &
-      Kpara,Kperp,init_time2,twisttype,centerx,centery,centerz, &
+      Kpara,Kperp,Kc,init_time2,twisttype,centerx,centery,centerz, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
@@ -530,6 +530,7 @@ module Special
     real, dimension (nx) :: thdiff,chi_spitzer
     real, dimension (nx) :: vKpara,vKperp,tmp
     real, dimension (nx) :: glnT2_1,glnT2,b2,b2_1
+    real, dimension (nx) :: chi_c
 !
     integer :: i,j
 !
@@ -562,6 +563,7 @@ module Special
       enddo
     enddo
     chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1
+    chi_c = Kc*dxmin*c_light*cdtv
 !
 !  Calculate gradient of variable diffusion coefficients.
 !
