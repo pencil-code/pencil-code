@@ -316,7 +316,7 @@ module Special
 !
       if (Ksat/=0.) then
         Ksatb = Ksat*7.28d7 /unit_velocity**3. * unit_temperature**1.5
-        chi_sat =  Ksatb * sqrt(p%TT/max(tini,glnTT2))
+        chi_sat =  Ksatb * sqrt(p%TT/max(tini,glnTT2))*p%cp1
         tmpv(:,:)=0.
         do i=1,3
           do j=1,3
