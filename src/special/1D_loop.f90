@@ -22,7 +22,7 @@ module Special
 !
   include '../special.h'
 !
-  real :: Kpara=0.,Kperp=0.,Ksat=0.,cool_RTV=0.,Kchrom=0.
+  real :: Kpara=0.,Kperp=0.,Ksat=0.,Kc=0.,cool_RTV=0.,Kchrom=0.
   real :: exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.
   real :: tau_inv_newton=0.,exp_newton=0.
   real :: tanh_newton=0.,cubic_newton=0.
@@ -40,7 +40,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
       width_newton,tanh_newton,cubic_newton,Kchrom, &
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
-      exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat
+      exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc
 !
 ! variables for print.in
 !
@@ -51,6 +51,10 @@ module Special
 !
 ! variables for video.in
 !
+  real, target, dimension (nx,ny) :: spitzer_xy,spitzer_xy2
+  real, target, dimension (nx,ny) :: spitzer_xy3,spitzer_xy4
+  real, target, dimension (nx,nz) :: spitzer_xz
+  real, target, dimension (ny,nz) :: spitzer_yz
   real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
   real, target, dimension (nx,nz) :: rtv_xz
   real, target, dimension (ny,nz) :: rtv_yz
@@ -182,6 +186,14 @@ module Special
         lpenc_requested(i_cp1)=.true.
       endif
 !
+      if (Ksat /= 0.) then
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -238,6 +250,15 @@ module Special
 !  Loop over slices
 !
       select case (trim(slices%name))
+!
+    case ('spitzer')
+      slices%yz => spitzer_yz
+      slices%xz => spitzer_xz
+      slices%xy => spitzer_xy
+      slices%xy2=> spitzer_xy2
+      if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
+      if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
+      slices%ready=.true.
 !
       case ('rtv')
         slices%yz =>rtv_yz
@@ -302,9 +323,9 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: chi,glnTT2,rhs
-      real, dimension (nx) :: chi_sat,gKpara,gKsat
+      real, dimension (nx) :: chi_sat,chi_c,gKc,gKpara,gKsat
       real, dimension (nx,3) :: tmpv2,tmpv
-      real :: Ksatb
+      real :: Ksatb,Kcb
       integer :: i,j
 !
       chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
@@ -314,7 +335,7 @@ module Special
 !
       gKpara = 3.5 * glnTT2
 !
-      if (Ksat/=0.) then
+      if (Ksat /= 0.) then
         Ksatb = Ksat*7.28d7 /unit_velocity**3. * unit_temperature**1.5
         chi_sat =  Ksatb * sqrt(p%TT/max(tini,glnTT2))*p%cp1
         tmpv(:,:)=0.
@@ -323,7 +344,7 @@ module Special
             tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
           enddo
         enddo
-        do i=1,3 
+        do i=1,3
           tmpv2(:,i) = p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
         enddo
         call dot(tmpv2,p%glnTT,gKsat)
@@ -332,8 +353,20 @@ module Special
           gKpara = gKsat
         endwhere
       endif
-
-      rhs = gamma * chi * (3.5 * glnTT2 + p%del2lnTT)
+!
+! limit the diffusion speed to the speed of light
+!
+      if (Kc /= 0.) then
+        Kcb = Kc * dxmin * c_light * cdtv
+        chi_c = Kcb
+        call dot(p%glnTT+p%glnrho,p%glnTT,gKc)
+        where (chi > chi_c)
+          chi = chi_c
+          gKpara = gKc
+        endwhere
+      endif
+!
+      rhs = gamma * chi * (gKpara + p%del2lnTT)
 !
 !  Add to energy equation.
       if (ltemperature) then
@@ -357,6 +390,17 @@ module Special
         if (ldiagnos.and.idiag_dtchi2/=0.) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
+      endif
+!
+      if (lvideo) then
+!
+! slices
+        spitzer_yz(m-m1+1,n-n1+1)=1./chi(ix_loc-l1+1)
+        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= 1./chi
+        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= 1./chi
+        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= 1./chi
+        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= 1./chi
+        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= 1./chi
       endif
 !
     endsubroutine calc_heatcond_spitzer
