@@ -122,6 +122,13 @@ module InitialCondition
       f(l1:l2,m1:m2,n1:n2,irho)=1.
       lump_of_sines=0.
 !      
+      if (lroot) then 
+        print*,'initial_condition_lnrho: Calculating the finite-amplitude '
+        print*,'                         pertubations. It will loop the whole '
+        print*,'                         grid for every mode. May take a '
+        print*,'                         little while.'
+      endif
+!
       do ll=-xmodes,xmodes ; do mm=0,ymodes ; do nn=-zmodes,zmodes
 !
         if (lroot) call random_number_wrapper(phase)
