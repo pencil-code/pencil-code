@@ -3952,7 +3952,7 @@ module Entropy
           call dot(p%glnrho+p%glnTT,gss1,g2)
           thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
           call dot(glchit_prof,gss1,g2)
-          thdiff=thdiff+chi_t*(del2ss1+g2)
+          thdiff=thdiff+chi_t*g2
         else
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
