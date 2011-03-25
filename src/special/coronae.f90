@@ -526,11 +526,11 @@ module Special
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
 !
-    real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
+    real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2,gKc
     real, dimension (nx) :: thdiff,chi_spitzer
     real, dimension (nx) :: vKpara,vKperp,tmp
     real, dimension (nx) :: glnT2_1,glnT2,b2,b2_1
-    real, dimension (nx) :: chi_c
+    real, dimension (nx) :: chi_c, K_c
 !
     integer :: i,j
 !
@@ -563,7 +563,6 @@ module Special
       enddo
     enddo
     chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1
-    chi_c = Kc*dxmin*c_light*cdtv
 !
 !  Calculate gradient of variable diffusion coefficients.
 !
@@ -580,6 +579,19 @@ module Special
 !    tmpv=p%glnrho-tmpv2
     tmpv=p%glnrho !-tmpv2
     call multsv_mn(vKperp,tmpv,gvKperp)
+!
+    if (Kc /= 0.) then
+      chi_c = Kc*dxmin*c_light*cdtv
+      K_c = chi_c*exp(p%lnrho+p%lnTT)*p%cp1*gamma
+      call multsv_mn(K_c,p%glnrho+p%glnTT,gKc)
+      where (chi_spitzer > chi_c)
+        chi_spitzer = chi_c
+        vKpara = K_c
+        gvKpara(:,1) = gKc(:,1)
+        gvKpara(:,2) = gKc(:,2)
+        gvKpara(:,3) = gKc(:,3)
+      endwhere
+    endif
 !
 !  Calculate diffusion term.
 !
