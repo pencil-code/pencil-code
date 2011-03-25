@@ -805,6 +805,14 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-qrealsize=8 #(genius1|jugene[3-4])
 #CFLAGS_DOUBLE=-qrealsize=8 #(genius1|jugene[3-4])
 ##
+## Curie cluster:
+##
+#FC=mpif90 #(curie[0-9]+|curie[0-9]+.c-curie.tgcc.ccc.cea.fr)
+#CC=icc -ipo #(curie[0-9]+|curie[0-9]+.c-curie.tgcc.ccc.cea.fr)
+#AR=xiar #(curie[0-9]+|curie[0-9]+.c-curie.tgcc.ccc.cea.fr)
+#FFLAGS=-xsse4.2 -axsse4.2 -ipo -O3 #(curie[0-9]+|curie[0-9]+.c-curie.tgcc.ccc.cea.fr)
+#FFLAGS_DOUBLE=-r8 #(curie[0-9]+|curie[0-9]+.c-curie.tgcc.ccc.cea.fr)
+##
 ## Toulouse's machines: efigi, galileo, mithra, & pcgastine
 ##
 #include $(PENCIL_HOME)/src/Makefile_ifort.incl #(efigi|mithra|galileo|pcgastine)
