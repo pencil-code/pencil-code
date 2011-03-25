@@ -130,18 +130,6 @@ program run
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
-!  Size of box at local processor.
-!
-  Lxyz_loc(1)=Lxyz(1)/nprocx
-  Lxyz_loc(2)=Lxyz(2)/nprocy
-  Lxyz_loc(3)=Lxyz(3)/nprocz
-  xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
-  xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
-  xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
-  xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
-  xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
-  xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
-!
 !  Set up directory names `directory' and `directory_snap'.
 !
   call directory_names()
@@ -150,6 +138,29 @@ program run
 !
   if (ip<=6.and.lroot) print*, 'reading grid coordinates'
   call rgrid(trim(directory)//'/grid.dat')
+!
+! Size of box at local processor. The if-statement is for 
+! backward compatibility.
+!
+      if (all(lequidist)) then 
+        Lxyz_loc(1)=Lxyz(1)/nprocx
+        Lxyz_loc(2)=Lxyz(2)/nprocy
+        Lxyz_loc(3)=Lxyz(3)/nprocz
+        xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1) 
+        xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
+        xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
+        xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
+        xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
+        xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
+      else
+        xyz0_loc(1)=x(l1) ; xyz1_loc(1)=x(l2)
+        xyz0_loc(2)=y(m1) ; xyz1_loc(2)=y(m2)
+        xyz0_loc(3)=z(n1) ; xyz1_loc(3)=z(n2)
+!
+        Lxyz_loc(1)=xyz1_loc(1) - xyz0_loc(1)
+        Lxyz_loc(2)=xyz1_loc(2) - xyz0_loc(3)
+        Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
+      endif
 !
 ! Calculate dimensionality
 !
