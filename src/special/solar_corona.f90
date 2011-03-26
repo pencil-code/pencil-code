@@ -1026,7 +1026,6 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: lnrho0
-      use Mpicomm, only: mpibcast_real, mpibcast_int
       use Sub, only: sine_step
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
