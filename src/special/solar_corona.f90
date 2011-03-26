@@ -161,7 +161,7 @@ module Special
       if ((Bavoid > 0.0) .and. (.not. lmagnetic)) &
           call fatal_error ('solar_corona', &
               'Bavoid needs the magnetic module.')
-      if ((tdown /= 0.0) .and. (allp == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
+      if ((tdown > 0.0) .and. (allp == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
           call fatal_error ('solar_corona', &
               "Please select decaying of Newton Cooling using 'allp' or 'nc_lnrho_num_magn'.")
 !
