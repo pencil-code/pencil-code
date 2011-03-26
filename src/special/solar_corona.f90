@@ -2399,7 +2399,7 @@ module Special
       inquire (file=filename, exist=ex)
 !
       if (ex) then
-        inquire (iolength=len) current%amp
+        inquire (iolength=len) first%amp
         write (*,'(A,A)') 'Reading file: ', filename
         open (unit, file=filename, access="direct", recl=len*6)
 !
