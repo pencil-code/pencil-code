@@ -2335,8 +2335,7 @@ module Particles_mpicomm
 !  TODO: No good that it uses xgrid,ygrid,zgrid, i.e., global arrays.
 !        The best thing would be to find what is the processor has the 
 !        needed grid points, and communicate just that local array. 
-!that 
-!        brackets the 
+!
 !  27-mar-11/wlad: coded
 !
       real, dimension (:) :: q
