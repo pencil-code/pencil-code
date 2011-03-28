@@ -378,8 +378,8 @@ module Particles_sub
               endif
             endif
           elseif (boundz=='out') then
-            !let particles be out of the box, why not?
-            !do nothing, the particle is happy
+            ! massive particles can be out of the box
+            ! the star, for example, in a cylindrical simulation
           elseif (boundz=='rmv') then
             if (lcartesian_coords) then
               if (fp(k,izp)<=xyz0(3) .or. fp(k,izp)>=xyz1(3)) then
