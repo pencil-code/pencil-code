@@ -482,10 +482,13 @@ module Special
       if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
- !
+!
+! WARNING this is temporary
       where (f(l1:l2,m1,n1,ilnrho) < log(1e-13/unit_density) )
         f(l1:l2,m1,n1,ilnrho) = log(1e-13/unit_density)
       endwhere
+      if (ipz == nprocz-1) &
+          f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2,ilnTT))/(16.*nx*ny)
 !
       if (hyper3_chi /= 0.) then
         hc(:) = 0.
@@ -581,7 +584,7 @@ module Special
     call multsv_mn(vKperp,tmpv,gvKperp)
 !
     if (Kc /= 0.) then
-      chi_c = Kc*dxmin*c_light*cdtv
+      chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
       K_c = chi_c*exp(p%lnrho+p%lnTT)*p%cp1*gamma
       call multsv_mn(K_c,p%glnrho+p%glnTT,gKc)
       where (chi_spitzer > chi_c)
@@ -865,7 +868,7 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_glnTT_iso(df,p)
 !
-!  L = Div( Grad(lnT)^2 Grad(T))
+!  L = Div( Grad(lnT)^2 *rho Grad(T))
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
@@ -873,36 +876,70 @@ module Special
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: glnT2,glnT_glnr
-      real, dimension (nx) :: tmp,rhs,chi
+      real, dimension (nx,3) :: gK_grad
+      real, dimension (nx) :: glnTT2,gK_glnTT,glnr_glnT
+      real, dimension (nx) :: K_c,K_grad
+      real, dimension (nx) :: chi_grad,chi_c
+      real, dimension (nx) :: rhs
       integer :: i
 !
       intent(in) :: p
       intent(out) :: df
 !
-      call dot2(p%glnTT,glnT2)
-      call dot(p%glnTT,p%glnrho,glnT_glnr)
+      call dot2(p%glnTT,glnTT2)
+      call dot(p%glnrho,p%glnTT,glnr_glnT)
+!
+! compute K_grad
+!
+      K_grad = hcond_grad_iso*glnTT2
+!
+! compute grad(K_grad)
 !
       do i=1,3
-        tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,1,i) + &
-                    p%glnTT(:,2)*p%hlnTT(:,2,i) + &
-                    p%glnTT(:,3)*p%hlnTT(:,3,i)
+        gK_grad(:,i) = 2*(p%glnTT(:,1)*p%hlnTT(:,1,i) + &
+                          p%glnTT(:,2)*p%hlnTT(:,2,i) + &
+                          p%glnTT(:,3)*p%hlnTT(:,3,i))
       enddo
-      call dot(p%glnTT,tmpv,tmp)
+!      
+      chi_grad = glnTT2*hcond_grad_iso*gamma*p%cp1
 !
-      chi = glnT2*hcond_grad_iso
+      if (Kc /= 0.) then
+        chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
+        K_c = chi_c/(gamma*p%cp1)
 !
-      rhs = 2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)
+! chi is always positiv
+        where (abs(chi_grad) > abs(chi_c))
+          chi_grad = chi_c
+          K_grad = K_c
+          gK_grad(:,1) = 0.
+          gK_grad(:,2) = 0.
+          gK_grad(:,3) = 0.
+        endwhere
+      endif
+!
+      call dot(gK_grad,p%glnTT,gK_glnTT)
+
+      rhs = gK_glnTT + K_grad*(glnr_glnT+glnTT2+p%del2lnTT)
 !
       if (ltemperature .and. (.not. ltemperature_nolog)) then
-        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond_grad_iso
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*gamma*rhs
       else
         call fatal_error('calc_heatcond_glnTT_iso','only for ltemperature')
       endif
 !
+      if (lvideo) then
+!
+! slices
+        hgrad_yz(m-m1+1,n-n1+1)=rhs(ix_loc-l1+1)
+        if (m == iy_loc)  hgrad_xz(:,n-n1+1)= rhs
+        if (n == iz_loc)  hgrad_xy(:,m-m1+1)= rhs
+        if (n == iz2_loc) hgrad_xy2(:,m-m1+1)= rhs
+        if (n == iz3_loc) hgrad_xy3(:,m-m1+1)= rhs
+        if (n == iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
+      endif
+!
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        diffus_chi=diffus_chi+chi_grad*dxyz_2
         if (ldiagnos.and.idiag_dtchi2 /= 0.) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
@@ -985,12 +1022,12 @@ module Special
     if (lvideo) then
 !
 ! slices
-      rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
-      if (m == iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
-      if (n == iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
-      if (n == iz2_loc) rtv_xy2(:,m-m1+1)= rtv_cool
-      if (n == iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
-      if (n == iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
+      rtv_yz(m-m1+1,n-n1+1)=-lnQ(ix_loc-l1+1)
+      if (m == iy_loc)  rtv_xz(:,n-n1+1)= -lnQ
+      if (n == iz_loc)  rtv_xy(:,m-m1+1)= -lnQ
+      if (n == iz2_loc) rtv_xy2(:,m-m1+1)=-lnQ
+      if (n == iz3_loc) rtv_xy3(:,m-m1+1)= -lnQ
+      if (n == iz4_loc) rtv_xy4(:,m-m1+1)= -lnQ
     endif
 !
      if (lfirst.and.ldt) then
