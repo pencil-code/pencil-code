@@ -224,6 +224,10 @@ else if ($hn =~ *.kis.uni-freiburg.de) then
   echo "KIS machines - Freiburg"
   set mpirun = /opt/local/mpich/bin/mpirun
 
+else if (($hn =~ curie\d+) || ($hn =~ *.c-curie.tgcc.ccc.cea.fr)) then
+  echo "Curie cluster - France"
+  set mpirun = ccc_mprun
+
 else if ($hn =~ hamlet) then
   echo "hamlet pc, Heidelberg (formerly in Copenhagen)"
   set mpirun = /home/ajohan/mpich/bin/mpirun
