@@ -123,6 +123,7 @@ module Particles_mpicomm
         ibx=modulo(ibrick,nbx)
         iby=modulo(ibrick/nbx,nby)
         ibz=ibrick/(nbx*nby)
+!
         xbrick(:,ibrick)=x(l1+ibx*nxb-1:l1+(ibx+1)*nxb)
         ybrick(:,ibrick)=y(m1+iby*nyb-1:m1+(iby+1)*nyb)
         zbrick(:,ibrick)=z(n1+ibz*nzb-1:n1+(ibz+1)*nzb)
@@ -458,25 +459,37 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
+            if (lequidist(1)) then 
+              ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
+            else
+              call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
+            endif
             ipx0=(ix0-1)/nx
             ix0=ix0-ipx0*nx
             ibx0=(ix0-1)/nxb
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
+            if (lequidist(2)) then 
+              iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
+            else
+              call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
+            endif
             ipy0=(iy0-1)/ny
             iy0=iy0-ipy0*ny
             iby0=(iy0-1)/nyb
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            iz0=nint((fp(k,izp)-zref_par)*dz1)+1
+            if (lequidist(3)) then 
+              iz0=nint((fp(k,izp)-zref_par)*dz1)+1
+            else
+              call find_index_by_bisection(fp(k,izp),zgrid,iz0)
+            endif
             ipz0=(iz0-1)/nz
             iz0=iz0-ipz0*nz
             ibz0=(iz0-1)/nzb
-          endif
+           endif
 !
 !  Calculate processor and brick index of particle.
 !
@@ -829,21 +842,33 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
+            if (lequidist(1)) then 
+              ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
+            else
+              call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
+            endif
             ipx0=(ix0-1)/nx
             ix0=ix0-ipx0*nx
             ibx0=(ix0-1)/nxb
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
+            if (lequidist(2)) then 
+              iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
+            else
+              call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
+            endif
             ipy0=(iy0-1)/ny
             iy0=iy0-ipy0*ny
             iby0=(iy0-1)/nyb
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            iz0=nint((fp(k,izp)-zref_par)*dz1)+1
+            if (lequidist(3)) then
+              iz0=nint((fp(k,izp)-zref_par)*dz1)+1
+            else
+              call find_index_by_bisection(fp(k,izp),zgrid,iz0)
+            endif
             ipz0=(iz0-1)/nz
             iz0=iz0-ipz0*nz
             ibz0=(iz0-1)/nzb
@@ -1220,21 +1245,33 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
+            if (lequidist(1)) then 
+              ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
+            else
+              call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
+            endif
             ipx0=(ix0-1)/nx
             ix0=ix0-ipx0*nx
             ibx0=(ix0-1)/nxb
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
+            if (lequidist(2)) then 
+              iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
+            else
+              call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
+            endif
             ipy0=(iy0-1)/ny
             iy0=iy0-ipy0*ny
             iby0=(iy0-1)/nyb
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            iz0=nint((fp(k,izp)-zref_par)*dz1)+1
+            if (lequidist(3)) then 
+              iz0=nint((fp(k,izp)-zref_par)*dz1)+1
+            else
+              call find_index_by_bisection(fp(k,izp),zgrid,iz0)
+            endif
             ipz0=(iz0-1)/nz
             iz0=iz0-ipz0*nz
             ibz0=(iz0-1)/nzb
@@ -2288,5 +2325,44 @@ module Particles_mpicomm
       endif
 !
     endsubroutine report_missing_particles
+!***********************************************************************
+    subroutine find_index_by_bisection(qpar,q,iq0)
+!
+!  Given a particle location (qpar), find the index of 
+!  the nearest grid cell by bisecting the interval. Its main
+!  use is for non-equidistant grids. Adapted from existing code.
+!
+!  TODO: No good that it uses xgrid,ygrid,zgrid, i.e., global arrays.
+!        The best thing would be to find what is the processor has the 
+!        needed grid points, and communicate just that local array. 
+!that 
+!        brackets the 
+!  27-mar-11/wlad: coded
+!
+      real, dimension (:) :: q
+      real :: qpar
+      integer :: iq0,jl,ju,jm
+!      
+      intent (in) :: qpar,q
+      intent (out) :: iq0
+!
+      jl=1
+      ju=size(q)
+!
+      do while((ju-jl)>1)
+        jm=(ju+jl)/2
+        if (qpar > q(jm)) then
+          jl=jm
+        else
+          ju=jm
+        endif
+      enddo
+      if (qpar-q(jl) <= q(ju)-qpar) then
+        iq0=jl
+      else
+        iq0=ju
+      endif
+!      
+    endsubroutine find_index_by_bisection
 !***********************************************************************
 endmodule Particles_mpicomm

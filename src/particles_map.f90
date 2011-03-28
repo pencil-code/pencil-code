@@ -496,28 +496,13 @@ module Particles_map
       do k=1,npar_loc
 !
 !  Find nearest grid point in x-direction.
+!  Find nearest grid point by bisection if the grid is not equidistant.
 !
         if (nxgrid/=1) then
           if (lequidist(1)) then
             ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
           else
-!
-!  Find nearest grid point by bisection if the grid is not equidistant.
-!
-            ju=l2; jl=l1
-            do while((ju-jl)>1)
-              jm=(ju+jl)/2
-              if (fp(k,ixp) > x(jm)) then
-                jl=jm
-              else
-                ju=jm
-              endif
-            enddo
-            if (fp(k,ixp)-x(jl) <= x(ju)-fp(k,ixp)) then
-              ix0=jl
-            else
-              ix0=ju
-            endif
+            call find_index_by_bisection(fp(k,ixp),x,ix0)
           endif
         endif
 !
@@ -527,23 +512,7 @@ module Particles_map
           if (lequidist(2)) then
             iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
           else
-!
-!  Find nearest grid point by bisection if the grid is not equidistant.
-!
-            ju=m2; jl=m1
-            do while((ju-jl)>1)
-              jm=(ju+jl)/2
-              if (fp(k,iyp) > y(jm)) then
-                jl=jm
-              else
-                ju=jm
-              endif
-            enddo
-            if (fp(k,iyp)-y(jl) <= y(ju)-fp(k,iyp)) then
-              iy0=jl
-            else
-              iy0=ju
-            endif
+            call find_index_by_bisection(fp(k,iyp),y,iy0)
           endif
         endif
 !
@@ -553,23 +522,7 @@ module Particles_map
           if (lequidist(3)) then
             iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
           else
-!
-!  Find nearest grid point by bisection if the grid is not equidistant.
-!
-            ju=n2; jl=n1
-            do while((ju-jl)>1)
-              jm=(ju+jl)/2
-              if (fp(k,izp) > z(jm)) then
-                jl=jm
-              else
-                ju=jm
-              endif
-            enddo
-            if (fp(k,izp)-z(jl) <= z(ju)-fp(k,izp)) then
-              iz0=jl
-            else
-              iz0=ju
-            endif
+            call find_index_by_bisection(fp(k,izp),z,iz0)
           endif
         endif
 !

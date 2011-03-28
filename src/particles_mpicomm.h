@@ -18,3 +18,4 @@
   public :: lfill_blocks_density, lfill_blocks_velocity
   public :: lfill_blocks_gpotself, lfill_bricks_velocity
   public :: lreblock_particles_run, it1_loadbalance
+  public :: find_index_by_bisection
