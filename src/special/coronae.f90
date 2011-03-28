@@ -896,9 +896,10 @@ module Special
 ! compute grad(K_grad)
 !
       do i=1,3
-        gK_grad(:,i) = 2*(p%glnTT(:,1)*p%hlnTT(:,1,i) + &
-                          p%glnTT(:,2)*p%hlnTT(:,2,i) + &
-                          p%glnTT(:,3)*p%hlnTT(:,3,i))
+        gK_grad(:,i) = hcond_grad_iso*2*( &
+            p%glnTT(:,1)*p%hlnTT(:,1,i) + &
+            p%glnTT(:,2)*p%hlnTT(:,2,i) + &
+            p%glnTT(:,3)*p%hlnTT(:,3,i))
       enddo
 !      
       chi_grad = glnTT2*hcond_grad_iso*gamma*p%cp1
