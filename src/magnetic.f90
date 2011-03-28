@@ -116,6 +116,7 @@ module Magnetic
   real :: radRFP=1.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: mix_factor=0.
+  real :: RFPradB=1., RFPradJ=1.
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -160,6 +161,7 @@ module Magnetic
 !
   namelist /magnetic_init_pars/ &
       B_ext, J_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
+      RFPradB, RFPradJ, &
       by_left, by_right, bz_left, bz_right, &
       relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
       amplaaJ, amplaaB, RFPrad, radRFP, &
@@ -1067,8 +1069,8 @@ module Magnetic
 !
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old
-      real :: beq2
+      real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
+      real :: beq2,RFPradB12,RFPradJ12
       integer :: j
 !
       do j=1,ninit
@@ -1214,6 +1216,18 @@ module Magnetic
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iaz)=-amplaaJ(j)/4*x(l1:l2)**2*(RFPrad(j)**4-x(l1:l2)**4/9)
             f(l1:l2,m,n,iay)=amplaaB(j)/2*x(l1:l2)*(RFPrad(j)**4-x(l1:l2)**4/3)
+          enddo; enddo
+!
+!  generalized
+!
+        case ('JzBz_cyl_RFPradJB')
+          RFPradB12=1./RFPradB
+          RFPradJ12=1./RFPradJ
+          x1=x(l1:l2)
+          x2=x(l1:l2)**2
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay)=+.50*amplaaB(j)*x1*(1.-.50*x2*RFPradB12)
+            f(l1:l2,m,n,iaz)=-.25*amplaaJ(j)*x2*(1.-.25*x2*RFPradJ12)
           enddo; enddo
 !
        case ('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,kx_aa(j))
