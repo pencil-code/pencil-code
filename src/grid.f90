@@ -1548,7 +1548,7 @@ module Grid
 !
 !  19-oct-10/wlad: coded
 !
-      use Mpicomm
+      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
 !
       real, dimension(nx) :: xrecv,dx1recv
       real, dimension(ny) :: yrecv,dy1recv
@@ -1562,7 +1562,7 @@ module Grid
 !  All processors of the same row (ipx,ipy or ipz) 
 !  send their array values to the root.
 !
-        if (ipy==0.and.ipz==0) call mpisend_real(x(l1:l2),nx,root,111)
+        if ((ipy==0).and.(ipz==0)) call mpisend_real(x(l1:l2),nx,root,111)
       else
 !
 !  The root processor, in turn, receives the data from the others
@@ -1578,7 +1578,7 @@ module Grid
 !
             iproc_recv=jx
             call mpirecv_real(xrecv,nx,iproc_recv,111)
-            call mpirecv_real(dx1recv,nx,iproc_recv,119)
+! WLAD please check:   call mpirecv_real(dx1recv,nx,iproc_recv,119)
 !
             ido=jx    *nx + 1 
             iup=(jx+1)*nx
