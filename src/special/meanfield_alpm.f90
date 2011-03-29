@@ -264,10 +264,10 @@ module Special
             alpm_divu=alpm*p%divu
             df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
           endif
-          if (alpmdiff/=0) then
-            call del2(f,ialpm,del2alpm)
-            df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
-          endif
+        endif
+        if (alpmdiff/=0) then
+          call del2(f,ialpm,del2alpm)
+          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
         endif
       endif
 !
