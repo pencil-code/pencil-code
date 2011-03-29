@@ -22,21 +22,28 @@ module Special
 !
   include '../special.h'
 !
+  interface add_interpolated
+    module procedure add_interpolated_2D
+    module procedure add_interpolated_4D
+  endinterface
+!
   integer, parameter :: max_gran_levels=3
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
-  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.
+  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.,b_tau=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
   logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
+  logical :: luse_mag_field=.false.
   logical :: lnc_density_depend=.false.,lwrite_driver=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
+  real :: mag_time_offset=0.
 !
-  real, dimension (nx,ny) :: A_init_x, A_init_y
+  real, dimension(nx,ny,n1,3) :: A_init
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -47,6 +54,10 @@ module Special
   real, dimension (mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
+! file location settings
+  character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
+  character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+!
 ! input parameters
   namelist /special_init_pars/ &
        linit_uu,linit_lnrho,linit_lnTT,prof_type
@@ -56,11 +67,12 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz, &
-       Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
+       b_tau,Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
        iheattype,dt_gran,cool_type,lnc_density_depend,lwrite_driver, &
-       nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width
+       nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
+       luse_mag_field, mag_time_offset
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
@@ -175,7 +187,11 @@ module Special
 !
       if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
 !
-      call setup_magnetic()
+      ! Setup initial magnetic field for the bottom layer
+      if (lfirst_proc_z .and. (bmdi /= 0.0)) then
+        call read_mag_field (1, mag_field_dat, A_init)
+      endif
+!
       call setup_profiles()
 !
       call keep_compiler_quiet(f)
@@ -228,136 +244,6 @@ module Special
       endif
 !
     endsubroutine init_special
-!***********************************************************************
-    subroutine setup_magnetic()
-!
-!  Compute and save initial magnetic vector potential A_init_x/_y.
-!
-!  25-mar-10/Bourdin.KIS: coded
-!
-      use Fourier, only: fourier_transform_other
-      use Mpicomm, only: mpisend_real, mpirecv_real
-      use Syscalls, only: file_exists
-!
-      real, dimension(:,:), allocatable :: kx, ky, k2
-      real, dimension(:,:), allocatable :: Bz0_i, Bz0_r
-      real, dimension(:,:), allocatable :: Ax_i, Ay_i
-      real, dimension(:,:), allocatable :: Ax_r, Ay_r
-      real, dimension(:), allocatable :: kxp, kyp
-!
-      real :: dummy
-      integer :: idx2,idy2,lend,ierr
-      integer :: i,px,py
-      integer, parameter :: unit=12,Ax_tag=366,Ay_tag=367
-!
-      ! file location settings
-      character (len=*), parameter :: mag_field_txt = 'driver/mag_field.txt'
-      character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
-!
-!
-      ! don't touch anything during a RELOAD:
-      if (lreloading) return
-!
-      inquire (IOLENGTH=lend) dummy
-!
-      if (.not. lfirst_proc_z .or. (bmdi == 0.0)) then
-        A_init_x = 0.0
-        A_init_y = 0.0
-      else
-        ! Magnetic field is set only in the bottom layer
-        if (lroot) then
-          allocate(kx(nxgrid,nygrid), ky(nxgrid,nygrid), k2(nxgrid,nygrid), kxp(nxgrid), kyp(nygrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('setup_magnetic', &
-              'Could not allocate memory for wave vector variables', .true.)
-          allocate(Bz0_r(nxgrid,nygrid), Bz0_i(nxgrid,nygrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('setup_magnetic', &
-              'Could not allocate memory for vertical magnetic field variables', .true.)
-          allocate(Ax_r(nxgrid,nygrid), Ay_r(nxgrid,nygrid), Ax_i(nxgrid,nygrid), Ay_i(nxgrid,nygrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('setup_magnetic', &
-              'Could not allocate memory for vector potential A variables', .true.)
-          ! Auxiliary quantities:
-          ! idx2 and idy2 are essentially =2, but this makes compilers
-          ! complain if nygrid=1 (in which case this is highly unlikely to be
-          ! correct anyway), so we try to do this better:
-          idx2 = min(2,nxgrid)
-          idy2 = min(2,nygrid)
-!
-          kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
-          kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-!
-          kx=spread(kxp,2,nygrid)
-          ky=spread(kyp,1,nxgrid)
-!
-          k2 = kx*kx + ky*ky
-!
-          ! Read in magnetogram
-          if (file_exists(mag_field_txt)) then
-            open (unit,file=mag_field_txt)
-            read (unit,*,iostat=ierr) Bz0_r
-            if (ierr /= 0) call fatal_error ('setup_magnetic', &
-                'Error reading magnetogram file: "'//trim(mag_field_txt)//'"', .true.)
-            close (unit)
-          elseif (file_exists(mag_field_dat)) then
-            open (unit,file=mag_field_dat,form='unformatted',status='unknown', &
-                recl=lend*nxgrid*nygrid,access='direct')
-            read (unit,rec=1,iostat=ierr) Bz0_r
-            if (ierr /= 0) call fatal_error ('setup_magnetic', &
-                'Error reading magnetogram file: "'//trim(mag_field_dat)//'"', .true.)
-            close (unit)
-          else
-            call fatal_error ('setup_magnetic', 'No magnetogram file found.', .true.)
-          endif
-!
-          ! Gauss to Tesla and SI to PENCIL units
-          Bz0_r = Bz0_r * 1e-4 / unit_magnetic
-          Bz0_i = 0.
-!
-          ! Fourier Transform of Bz0:
-          call fourier_transform_other(Bz0_r,Bz0_i)
-!
-          where (k2 /= 0)
-            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(n1) )
-            Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(n1) )
-!
-            Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(n1) )
-            Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(n1) )
-          elsewhere
-            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
-            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(n1) )
-!
-            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
-            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(n1) )
-          endwhere
-!
-          deallocate(kx, ky, k2, kxp, kyp, Bz0_i, Bz0_r)
-!
-          call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
-          call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
-!
-          ! Distribute initial A data
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px /= 0) .or. (py /= 0)) then
-                A_init_x = Ax_r(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                A_init_y = Ay_r(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-                call mpisend_real (A_init_x, (/ nx, ny /), px+py*nprocx, Ax_tag)
-                call mpisend_real (A_init_y, (/ nx, ny /), px+py*nprocx, Ay_tag)
-              endif
-            enddo
-          enddo
-          A_init_x = Ax_r(1:nx,1:ny)
-          A_init_y = Ay_r(1:nx,1:ny)
-!
-          deallocate(Ax_r, Ay_r, Ax_i, Ay_i)
-!
-        else
-          ! Receive initial A data
-          call mpirecv_real (A_init_x, (/ nx, ny /), 0, Ax_tag)
-          call mpirecv_real (A_init_y, (/ nx, ny /), 0, Ay_tag)
-        endif
-      endif
-!
-    endsubroutine setup_magnetic
 !***********************************************************************
     subroutine setup_profiles()
 !
@@ -993,32 +879,360 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension(mx,my,mz,mfarray) :: f
 !
-! Push vector potential back to initial vertical magnetic field values
-      if (lfirst_proc_z .and. (bmdi /= 0.0)) then
-        f(l1:l2,m1:m2,n1,iax)=f(l1:l2,m1:m2,n1,iax)*(1.-dt*bmdi) + &
-            dt*bmdi * A_init_x
-        f(l1:l2,m1:m2,n1,iay)=f(l1:l2,m1:m2,n1,iay)*(1.-dt*bmdi) + &
-            dt*bmdi * A_init_y
+      real, save :: time_mag_l, time_mag_r
+      real, dimension(:,:,:,:), allocatable, save :: A_l, A_r
+      real, dimension(:,:), allocatable, save :: BB2_local
+      real :: Bz_total_flux=0.0
 !
-        if (bmdi*dt > 1.0) call stop_it('special_before_boundary: bmdi*dt > 1 ')
+! Push vector potential back to initial vertical magnetic field values:
+!
+      if (lfirst_proc_z .and. (bmdi /= 0.0)) then
+        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) &
+            * (1.-dt*bmdi) + A_init(:,:,n1,1:2) * dt*bmdi
+        if (bmdi*dt > 1) call fatal_error ('special before boundary', &
+            'bmdi*dt > 1', lfirst_proc_xy)
       endif
 !
 ! Read external velocity file. Has to be read before the granules are
 ! calculated.
       if (luse_ext_vel_field) call read_ext_vel_field()
 !
+      if (luse_mag_field .and. lfirst_proc_z) then
+        ! External magnetic field
+        call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
+            A_init, time_mag_l, time_mag_r, A_l, A_r)
+        ! Drive the magnetic field
+        call mag_driver (A_init, Bz_total_flux, f)
+      endif
+!
+      ! Prepare for footpoint quenching (lquench), flux conservation (Bz_flux),
+      ! and the granulation computation (lgranulation and Bavoid).
+      if ((lquench .and. lfirst_proc_z) .or. ((Bavoid > 0.) .and. lgran_proc) &
+          .or. (lgranulation .and. (Bavoid > 0.) .and. lfirst_proc_z)) then
+        if (lfirst_proc_z .and. .not. allocated (BB2_local)) then
+          allocate (BB2_local(nx,ny), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('special_before_boundary', &
+              'Could not allocate memory for BB2', .true.)
+        endif
+        ! Compute magnetic energy BB2 for granulation driver.
+        call set_BB2 (f, BB2_local, Bz_total_flux)
+      endif
+!
 ! Compute photospheric granulation.
       if (lgranulation) then
-        if (.not. lpencil_check_at_work) call gran_driver(f)
+        if (.not. lpencil_check_at_work) call gran_driver(f, BB2_local)
       endif
 !
       if (lmassflux) call get_wind_speed_offset(f)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine update_mag_field (time_offset, times_dat, field_dat, A, time_l, time_r, A_l, A_r)
+!
+!  Check if an update of the vertical magnetic field is needed and load data.
+!  An interpolated vector field will be added to Ax and Ay.
+!  The previous frame (l) and following frame (r) are updated.
+!
+!  18-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: time_offset
+      character (len=*), intent(in) :: times_dat, field_dat
+      real, dimension(nx,ny,n1,3), intent(inout) :: A
+      real, intent(inout) :: time_l, time_r
+      real, dimension(:,:,:,:), allocatable, intent(inout) :: A_l, A_r
+!
+      real :: time
+      integer :: pos_l, pos_r
+!
+      time = t - time_offset
+!
+      if (.not. allocated (A_l)) then
+        allocate (A_l(nx,ny,n1,2), A_r(nx,ny,n1,2), stat=alloc_err)
+        if (alloc_err > 0) &
+            call fatal_error ('special_before_boundary', 'Could not allocate memory for A_l/r', .true.)
+!
+        ! Load previous (l) frame and store it in (r), will be shifted later
+        call find_frame (time, times_dat, 'l', pos_l, time_l)
+        if (pos_l == 0) then
+          ! The simulation started before the first frame of the time series
+          ! start with a fixed magnetogram using the first frame
+          pos_l = 1
+          time_l = -time_offset
+        endif
+        call read_mag_field (pos_l, field_dat, A_r)
+        ! Make sure that the following (r) frame will get loaded:
+        time_r = time_l
+      endif
+!
+      if (time >= time_r) then
+        ! Shift data from following (r) to previous (l) frame
+        A_l = A_r
+        time_l = time_r
+        ! Read new following (r) frame
+        call find_frame (time, times_dat, 'r', pos_r, time_r)
+        call read_mag_field (pos_r, field_dat, A_r)
+      endif
+!
+      A = 0.0
+      ! Store interpolated values to initial vector potential
+      call add_interpolated (time, time_l, time_r, A_l, A_r, A)
+!
+    endsubroutine update_mag_field
+!***********************************************************************
+    subroutine read_mag_field (frame, filename, A)
+!
+!  Reads a Bz-magnetogram at the given position in a time series file.
+!  The data is expected to be in Gauss units, not using F77 record markers.
+!  After computing the vector field A, it will be distributed in the xy-plane.
+!  This routine must be called from all processors in one ipz-plane.
+!
+!  'frame' specifies the frame number to be read.
+!  'type' can be 'asc' or 'bin' to choose the file format.
+!  'value' will be filled with the data devided by data_unit.
+!
+!  07-jan-2011/Bourdin.KIS: coded
+!
+      use Fourier, only: setup_extrapol_fact, field_extrapol_z_parallel
+      use Mpicomm, only: mpisend_real, mpirecv_real
+!
+      integer, intent(in) :: frame
+      character (len=*), intent(in) :: filename
+      real, dimension(nx,ny,n1,2), intent(out) :: A
+!
+      integer, parameter :: bnx=nxgrid, bny=ny/nprocx ! data in pencil shape
+      integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
+      integer, parameter :: unit=12, Bz_tag=356
+      real, dimension(:,:,:), allocatable, save :: fact
+      real, dimension(:,:), allocatable :: Bz
+      integer :: py, partner, rec_len
+      real, parameter :: reduce_factor=0.25
+!
+      if (mod (nygrid, nprocxy) /= 0) call fatal_error ('read_mag_field', &
+          'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+      if (mod (nxgrid, nprocxy) /= 0) call fatal_error ('read_mag_field', &
+          'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+!
+      allocate (Bz(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error ('read_mag_field', &
+          'Could not allocate memory for Bz', .true.)
+!
+      if (lfirst_proc_xy) then
+        ! Read Bz field from file and send to remote processors
+        inquire (iolength=rec_len) unit_magnetic
+        rec_len = rec_len * bnx * bny
+        open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
+        do py=1, nprocxy-1
+          partner = py + ipz*nprocxy
+          read (unit, rec=py+(frame-1)*nprocxy+1) Bz
+          call mpisend_real (Bz, (/ bnx, bny /), partner, Bz_tag+partner)
+        enddo
+        read (unit, rec=(frame-1)*nprocxy+1) Bz
+        close (unit)
+      else
+        ! Receive Bz field
+        call mpirecv_real (Bz, (/ bnx, bny /), ipz*nprocxy, Bz_tag+iproc)
+      endif
+!
+      ! Convert Gauss to Tesla / SI to PENCIL units
+      Bz = Bz * 1.e-4 / unit_magnetic
+!
+      if (.not. allocated (fact)) then
+        ! Setup exponential factor for bottom boundary
+        allocate (fact(enx,eny,n1), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('read_mag_field', &
+            'Could not allocate memory for fact', .true.)
+        call setup_extrapol_fact (z(1:n1), z(n1), fact, reduce_factor)
+      endif
+!
+      call field_extrapol_z_parallel (Bz, A, fact)
+!
+      deallocate (Bz)
+!
+    endsubroutine read_mag_field
+!***********************************************************************
+    subroutine find_frame (time, filename, frame_type, frame_pos, frame_time)
+!
+!  Finds the position of the frame before/at (l) or after (r) the given time.
+!  If a frame matches 'time', this frame is considered to be (l).
+!  The time table is expected to be in SI units, not using F77 record markers.
+!
+!  'time' is the reference time that is being searched for.
+!  'filename' is the time table file name.
+!  'frame_type' indicates the desired frame type (l) or (r).
+!  'frame_pos' is set to the position (record number) of the desired frame.
+!  'frame_time' is set to the time of the corresponding frame.
+!
+!  07-jan-2011/Bourdin.KIS: coded
+!
+      use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
+      use Syscalls, only: file_exists
+!
+      real, intent(in) :: time
+      character (len=*), intent(in) :: filename
+      character (len=*), intent(in) :: frame_type
+      integer, intent(out) :: frame_pos
+      real, intent(out) :: frame_time
+!
+      integer :: px, py, partner, rec_len, ierr
+      real :: time_l, delta_t
+      integer, parameter :: unit=12, tag_pos=314, tag_time=315
+!
+      if (lfirst_proc_xy) then
+!
+        if (.not. file_exists (filename)) then
+          ! No time series => use only first frame, forever
+          call warning ('solar_corona', '"'//trim (filename)//'" not found, using only first frame, forever!')
+          frame_pos = 1
+          frame_time = huge (0.0)
+        else
+          ! Read the time table from file
+          inquire (iolength=rec_len) frame_time
+          open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
+!
+          delta_t = 0.0
+          frame_pos = 1
+          read (unit, rec=frame_pos, iostat=ierr) time_l
+          if (ierr /= 0) call fatal_error ('find_frame', trim (filename)//' seems empty.', .true.)
+          time_l = time_l / unit_time
+          if (time_l < 0.0) call fatal_error ('find_frame', trim (filename)//' first frame must be >= 0.', .true.)
+          if (time < time_l) then
+            ! 'time' is still before the first frame
+            ! => set following (r) frame to point to the first frame
+            ierr = -1
+            frame_time = time_l
+            time_l = 0.0
+          endif
+!
+          do while (ierr == 0)
+            frame_pos = frame_pos + 1
+            read (unit, rec=frame_pos, iostat=ierr) frame_time
+            if (ierr == 0) then
+              frame_time = frame_time / unit_time + delta_t
+              ! Test if correct time step has been reached
+              if ((time >= time_l) .and. (time < frame_time)) exit
+              ! If not, continue searching...
+              time_l = frame_time
+            else
+              ! There was an error while reading, check why
+              if (frame_pos <= 2) call fatal_error ('find_frame', &
+                  trim (filename)//' contains less than two frames.', .true.)
+              if (time_l <= 0.0) call fatal_error ('find_frame', &
+                  trim (filename)//' last frame must have time > 0.', .true.)
+              ! EOF reached => read from beginning
+              delta_t = delta_t + time_l
+              frame_pos = 0
+              ierr = 0
+            endif
+          enddo
+          close (unit)
+!
+          if (frame_type == 'l') then
+            frame_pos = frame_pos - 1
+            frame_time = time_l
+          endif
+        endif
+!
+        ! Distribute results in the xy-plane
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (partner == iproc) cycle
+            call mpisend_int (frame_pos, 1, partner, tag_pos+partner)
+            call mpisend_real (frame_time, 1, partner, tag_time+partner)
+          enddo
+        enddo
+      else
+        ! Receive results
+        call mpirecv_int (frame_pos, 1, ipz*nprocxy, tag_pos+iproc)
+        call mpirecv_real (frame_time, 1, ipz*nprocxy, tag_time+iproc)
+      endif
+!
+    endsubroutine find_frame
+!***********************************************************************
+    subroutine mag_driver (A, Bz_total_flux, f)
+!
+! Drive bottom boundary magnetic field and apply flux conservation.
+!
+! 23-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(nx,ny,n1,3), intent(in) :: A
+      real, intent(in) :: Bz_total_flux
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      real :: dA
+!
+      if (dt*b_tau > 1) call fatal_error ('solar_corona/mag_driver', &
+          'dt is to large: dt*b_tau > 1', lfirst_proc_xy)
+!
+      ! Set sum(|Bz|) to the given Bz_flux.
+      if (lfirst_proc_z) then
+        if (Bz_flux /= 0.0) then
+          if (nygrid == 1) then
+            dA = dx * unit_length
+          elseif (nxgrid == 1) then
+            dA = dy * unit_length
+          else
+            dA = dx*dy * unit_length**2
+          endif
+          f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
+              Bz_flux / (Bz_total_flux * dA * unit_magnetic)
+        endif
+      endif
+!
+      ! Push vector field back to desired direction.
+      f(l1:l2,m1:m2,1:n1,iax:iaz) = f(l1:l2,m1:m2,1:n1,iax:iaz) * (1.-dt*b_tau) + A * dt*b_tau
+!
+    endsubroutine mag_driver
+!***********************************************************************
+    subroutine add_interpolated_2D (time, time_l, time_r, data_l, data_r, data)
+!
+!  Adds interpolated 2D data to a given field.
+!
+!  24-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: time, time_l, time_r
+      real, dimension(:,:), intent(in) :: data_l, data_r
+      real, dimension(:,:), intent(inout) :: data
+!
+      real :: factor
+!
+      if (time <= time_l) then
+        data = data + data_l
+      elseif (time >= time_r) then
+        data = data + data_r
+      else
+        ! Interpolate data
+        factor = (time - time_l) / (time_r - time_l)
+        data = data + data_l * (1.0 - factor) + data_r * factor
+      endif
+!
+    endsubroutine add_interpolated_2D
+!***********************************************************************
+    subroutine add_interpolated_4D (time, time_l, time_r, data_l, data_r, data)
+!
+!  Adds interpolated 4D data to a given field.
+!
+!  24-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: time, time_l, time_r
+      real, dimension(:,:,:,:), intent(in) :: data_l, data_r
+      real, dimension(:,:,:,:), intent(inout) :: data
+!
+      real :: factor
+!
+      if (time <= time_l) then
+        data = data + data_l
+      elseif (time >= time_r) then
+        data = data + data_r
+      else
+        ! Interpolate data
+        factor = (time - time_l) / (time_r - time_l)
+        data = data + data_l * (1.0 - factor) + data_r * factor
+      endif
+!
+    endsubroutine add_interpolated_4D
 !***********************************************************************
     subroutine calc_heat_cool_newton(df,p)
 !
@@ -2090,7 +2304,7 @@ module Special
 !
     endsubroutine set_gran_params
 !***********************************************************************
-    subroutine gran_driver(f)
+    subroutine gran_driver(f, BB2_local)
 !
 ! This routine replaces the external computing of granular velocity
 ! pattern initially written by B. Gudiksen (2004)
@@ -2108,13 +2322,14 @@ module Special
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx,ny), intent(in) :: BB2_local
+!
       real, dimension(:,:), allocatable :: buffer
       integer :: i, level, partner
-      real, dimension(nx,ny) :: pp_tmp,BB2_local,beta,quench
-      real :: cp1=1.,dA
+      real, dimension(nx,ny) :: pp_tmp,beta,quench
+      real :: cp1=1.
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
-      real :: Bz_total_flux
 !
 ! Update velocity field only every dt_gran after the first iteration
       if ((t < next_time) .and. .not.(lfirst .and. (it == 1))) return
@@ -2124,25 +2339,6 @@ module Special
 ! is done
       call random_seed_wrapper(GET=global_rstate)
       call random_seed_wrapper(PUT=points_rstate)
-!
-! Get magnetic field energy for footpoint quenching.
-! The processors from the ipz=0 plane have to take part, too.
-      if (lmagnetic .and. (lgran_proc .or. lfirst_proc_z)) then
-        call set_BB2(f,BB2_local,Bz_total_flux)
-!
-! Set sum(abs(Bz)) to  a given flux.
-        if (Bz_flux/=0.0) then
-          if (nxgrid/=1.and.nygrid/=1) then
-            dA=dx*dy*unit_length**2
-          elseif (nygrid==1) then
-            dA=dx*unit_length
-          elseif (nxgrid==1) then
-            dA=dy*unit_length
-          endif
-          f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
-              Bz_flux/(Bz_total_flux*dA*unit_magnetic)
-        endif
-      endif
 !
 ! Compute granular velocities.
       if (lgran_proc) &
