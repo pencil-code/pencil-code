@@ -3037,15 +3037,14 @@ module Interstellar
 !  Broadcast maxlnTT from remnant to all processors so all take the same path
 !  after these checks.
 !
-          if (maxTT>5.*TT_SN_new) then
-            if (present(ierr)) then
-              ierr=iEXPLOSION_TOO_UNEVEN
-            endif
-            return
-          endif
+!          if (maxTT>5.*TT_SN_new) then
+!            if (present(ierr)) then
+!              ierr=iEXPLOSION_TOO_UNEVEN
+!            endif
+!            return
+!          endif
 !
           if (maxTT>TT_SN_max) then
-!          if (maxlnTT>2*alog(TT_SN_max).or.sqrt(TT_SN_new)>TT_SN_max) then
             if (present(ierr)) then
               ierr=iEXPLOSION_TOO_HOT
             endif
