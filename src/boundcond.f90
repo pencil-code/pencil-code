@@ -4291,7 +4291,7 @@ module Boundcond
 !  17-feb-10/bing: coded
 !  25-jul-10/Bourdin.KIS: parallelized
 !
-      use Fourier, only : field_extrapol_z_parallel
+      use Fourier, only : setup_extrapol_fact, field_extrapol_z_parallel
       use Mpicomm, only : mpisend_real, mpirecv_real, &
                           mpisend_logical, mpirecv_logical
 !
@@ -4319,9 +4319,9 @@ module Boundcond
       real, dimension (:,:), allocatable :: k_2 ! wave vector length
       integer :: kx_start, pos_z, i
       real :: delta_z
-      real, parameter :: reduce_factor=0.25, enhance_factor=1.0
+      real, parameter :: reduce_factor=0.25
 !
-      real :: mu0_SI, u_b, time_SI
+      real :: time_SI
 !
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
@@ -4515,12 +4515,9 @@ module Boundcond
 !
         endif
 !
-        ! convert units
-        mu0_SI = 4.*pi*1.e-7
-        u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-!
-        Bz0_l = Bz0_l * 1e-4 / u_b
-        Bz0_r = Bz0_r * 1e-4 / u_b
+        ! Gauss to Tesla and SI to PENCIL units
+        Bz0_l = Bz0_l * 1e-4 / unit_magnetic
+        Bz0_r = Bz0_r * 1e-4 / unit_magnetic
 !
         if (luse_vel_field) then
           vx_l = vx_l / unit_velocity
@@ -4541,32 +4538,10 @@ module Boundcond
 !  Fourier Transform of Bz0:
 !
       if (.not. allocated (exp_fact)) then
-!
         ! Setup exponential factor for bottom boundary
         allocate (exp_fact(enx,eny,nghost+1), stat=stat)
         if (stat > 0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for exp_fact', .true.)
-        allocate (k_2(enx,eny), stat=stat)
-        if (stat > 0) call fatal_error ('bc_force_aa_time', 'Could not allocate memory for k_2', .true.)
-!
-        ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
-        kx_start = (ipx+ipy*nprocx)*eny
-        k_2 = spread (ky_fft(1:enx), 2, eny)**2 + spread (kx_fft(kx_start+1:kx_start+eny), 1, enx)**2
-        if (kx_start == 0) k_2(1,1) = 1.0 ! dummy value to avoid division by zero
-        exp_fact = spread (exp (sqrt (k_2)), 3, nghost+1)
-!
-        ! Setup increase of fourrier coefficients for bottom boundary
-        do pos_z = 1, nghost
-          delta_z = z(n1) - z(n1-nghost+pos_z-1) ! dz is positive => increase
-          ! Enhance (delta_z<0) or reduce (delta_z>0) extrapolation
-          if (delta_z < 0.0) delta_z = delta_z * enhance_factor
-          if (delta_z > 0.0) delta_z = delta_z * reduce_factor
-          ! Include normalization factor for fourier transform: 1/(nxgrid*nygrid)
-          exp_fact(:,:,pos_z) = exp_fact(:,:,pos_z) ** delta_z / (k_2 * nxgrid*nygrid)
-        enddo
-        exp_fact(:,:,nghost+1) = 1.0 / (k_2 * nxgrid*nygrid)
-        if (kx_start == 0) exp_fact(1,1,:) = 1.0 / (nxgrid*nygrid)
-!
-        if (allocated (k_2)) deallocate (k_2)
+        call setup_extrapol_fact (z(1:n1), z(n1), exp_fact, reduce_factor)
       endif
 !
       call field_extrapol_z_parallel (Bz0, f(l1:l2,m1:m2,n1-nghost:n1,iax:iay), exp_fact)
