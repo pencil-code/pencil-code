@@ -520,6 +520,26 @@ module Fourier
 !
     endsubroutine fft_xyz_parallel_4D
 !***********************************************************************
+    subroutine setup_extrapol_fact(z,ref_z,factor,reduce)
+!
+!  Subroutine to setup 'factor' for z-extrapolation of a vector potential.
+!  'factor' is the multiplication factor for the Fourier coefficients,
+!  including the normalization.
+!
+      real, dimension (:), intent(in) :: z
+      integer, intent(in) :: ref_z
+      real, dimension (:,:,:), intent(out) :: factor
+      real, intent(in), optional :: reduce
+!
+      call fatal_error('setup_extrapol_fact', &
+          'this sub is not available in nofourier.f90!', lfirst_proc_xy)
+!
+      call keep_compiler_quiet(z)
+      call keep_compiler_quiet(ref_z)
+      call keep_compiler_quiet(factor)
+!
+    endsubroutine setup_extrapol_fact
+!***********************************************************************
     subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
 !  Subroutine to do a z-extrapolation of a vector potential using

@@ -12,6 +12,6 @@
   public :: fourier_transform_xy_xy_other
   public :: fft_x_parallel, fft_y_parallel, fft_z_parallel
   public :: fft_xy_parallel, fft_xyz_parallel
-  public :: vect_pot_extrapol_z_parallel,field_extrapol_z_parallel
+  public :: setup_extrapol_fact, vect_pot_extrapol_z_parallel, field_extrapol_z_parallel
   public :: fourier_transform_real_1
 

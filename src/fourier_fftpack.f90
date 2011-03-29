@@ -3389,6 +3389,64 @@ module Fourier
 !
     endsubroutine fft_xyz_parallel_4D
 !***********************************************************************
+    subroutine setup_extrapol_fact(z,ref_z,factor,reduce)
+!
+!  Subroutine to setup 'factor' for z-extrapolation of a vector potential.
+!  'factor' is the multiplication factor for the Fourier coefficients,
+!  including the normalization.
+!  'z' gives the z-coordinates.
+!  'ref_z' gives the reference z-coordinate for the extrapolation.
+!  'reduce' is used to reduce the eventual enhancement of contrast
+!  in cases where a z is smaller than z(ref_z) (="intrapolation").
+!  nx is restricted to be an integer multiple of nprocy.
+!  ny is restricted to be an integer multiple of nprocx.
+!
+!  25-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension (:), intent(in) :: z
+      real, intent(in) :: ref_z
+      real, dimension (:,:,:), intent(out) :: factor
+      real, intent(in), optional :: reduce
+!
+      integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
+      integer :: onz, pos_z, kx_start, alloc_err
+      real :: delta_z
+      real, dimension (:,:), allocatable :: k_2
+!
+!
+      onz = size (z, 1)
+!
+      if (size (factor, 3) /= onz) &
+          call fatal_error ('setup_extrapol_fact', 'z dimension differs between z and factor', lfirst_proc_xy)
+      if ((size (factor, 1) /= enx) .or. (size (factor, 2) /= eny)) &
+          call fatal_error ('setup_extrapol_fact', 'factor x/y-dimension is invalid', lfirst_proc_xy)
+!
+      allocate (k_2(enx,eny), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error ('setup_extrapol_fact', 'Could not allocate memory for k_2', .true.)
+!
+      ! Get wave numbers in transposed pencil shape and calculate exp(|k|)
+      kx_start = (ipx + ipy*nprocx)*eny
+      k_2 = spread (ky_fft, 2, eny)**2 + spread (kx_fft(kx_start+1:kx_start+eny), 1, enx)**2
+      ! Set dummy value to avoid later division by zero:
+      if (kx_start == 0) k_2(1,1) = 1.0
+!
+      ! Setup fourier coefficients factor for extrapolation/intrapolation
+      factor(:,:,onz) = exp (sqrt (k_2))
+      do pos_z = 1, onz
+        delta_z = ref_z - z(pos_z)
+        ! delta_z negative => decay of contrast
+        ! delta_z positive => enhancement of contrast (can be reduced)
+        if (present (reduce) .and. (delta_z > 0.0)) delta_z = delta_z * reduce
+        ! Include normalization of FFT: 1/(nxgrid*nygrid)
+        factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
+      enddo
+      ! Special case for kx=0 and ky=0
+      if (kx_start == 0) factor(1,1,:) = 1.0 / (nxgrid*nygrid)
+!
+      deallocate (k_2)
+!
+    endsubroutine setup_extrapol_fact
+!***********************************************************************
     subroutine vect_pot_extrapol_z_parallel(in,out,factor)
 !
 !  Subroutine to do a z-extrapolation of a vector potential using
