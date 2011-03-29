@@ -35,6 +35,7 @@ module Special
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
+  logical :: coronae_fix=.false.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -52,7 +53,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,B_ext_special,irefz
+      heat_par_b2,B_ext_special,irefz,coronae_fix
 !
 ! variables for print.in
 !
@@ -484,11 +485,13 @@ module Special
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
 !
 ! WARNING this is temporary
-      where (f(l1:l2,m1,n1,ilnrho) < log(1e-13/unit_density) )
-        f(l1:l2,m1,n1,ilnrho) = log(1e-13/unit_density)
-      endwhere
-      if (ipz == nprocz-1) &
-          f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2,ilnTT))/(16.*nx*ny)
+      if (coronae_fix) then
+        where (f(l1:l2,m1,n1,ilnrho) < log(1e-13/unit_density) )
+          f(l1:l2,m1,n1,ilnrho) = log(1e-13/unit_density)
+        endwhere
+        if (ipz == nprocz-1) &
+            f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2,ilnTT))/(16.*nx*ny)
+      endif
 !
       if (hyper3_chi /= 0.) then
         hc(:) = 0.
