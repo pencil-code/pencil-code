@@ -52,7 +52,7 @@ module Initcond
   public :: hawley_etal99a
   public :: robertsflow
   public :: const_lou
-  public :: corona_init,mdi_init,temp_hydrostatic
+  public :: corona_init,mdi_init,mag_init,temp_hydrostatic
   public :: innerbox
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
@@ -4268,7 +4268,7 @@ module Initcond
 !
 !  Allocate memory for arrays.
 !
-      if (.not.lequidist(1).or..not.lequidist(2)) call fatal_error('mag_init', &
+      if (.not.lequidist(1).or..not.lequidist(2)) call fatal_error('mdi_init', &
           'not yet implemented for non-equidistant grids')
 !
       iostat = 0
@@ -4408,6 +4408,113 @@ module Initcond
       if (allocated(A_i)) deallocate(A_i)
 !
     endsubroutine mdi_init
+!***********************************************************************
+    subroutine mag_init(f)
+!
+!  Intialize the vector potential with a potential field extrapolation.
+!
+!  29-Mar-2011/Bourdin.KIS : coded, adapted parts from 'mdi_init'.
+!
+      use Fourier, only: setup_extrapol_fact, field_extrapol_z_parallel
+      use Mpicomm, only: stop_it_if_any, mpisend_real, mpirecv_real
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension (:,:), allocatable :: Bz
+      real, dimension (:,:,:), allocatable :: exp_fact
+      integer, parameter :: bnx=nxgrid, bny=ny/nprocx ! data in pencil shape
+      integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
+      integer, parameter :: unit=11
+      integer, parameter :: tag_xy=131, tag_z=132
+      integer :: py, pz, partner
+      real :: Bz_flux
+      logical :: exists
+      integer :: alloc_err, io_err, rec_len
+      real, parameter :: reduce_factor=0.25
+!
+      ! file location settings
+      character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+!
+      if (.not. lperi(1) .or. .not. lperi(2)) call fatal_error ('mag_init', &
+          'Currently only implemented for xy-periodic setups!')
+      if (.not. lequidist(1) .or. .not. lequidist(2)) call fatal_error ('mag_init', &
+          'not yet implemented for non-equidistant grids')
+      if (mod (nygrid, nprocxy) /= 0) call fatal_error ('mag_init', &
+          'nygrid needs to be an integer multiple of nprocx*nprocy')
+      if (mod (nxgrid, nprocxy) /= 0) call fatal_error ('mag_init', &
+          'nxgrid needs to be an integer multiple of nprocx*nprocy')
+!
+!  Allocate memory for arrays.
+!
+      allocate (Bz(bnx,bny), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error('mag_init', &
+          'Could not allocate memory for Bz', .true.)
+      allocate (exp_fact(enx,eny,mz), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error('mag_init', &
+          'Could not allocate memory for exp_fact', .true.)
+!
+      if (lroot) then
+        inquire (file=mag_field_dat, exist=exists)
+        call stop_it_if_any(.not. exists, &
+            'mag_init: Magnetogram file not found: "'//trim(mag_field_dat)//'"')
+        inquire (iolength=rec_len) unit_magnetic
+        open (unit, file=mag_field_dat, form='unformatted', recl=rec_len*bnx*bny, access='direct')
+        do py = 1, nprocxy-1
+          partner = py + ipz*nprocxy
+          ! read Bz data for remote processors
+          read (unit, rec=1+py) Bz
+          ! send Bz data to remote
+          call mpisend_real (Bz, (/ bnx, bny /), partner, tag_xy)
+        enddo
+        ! read local Bz data
+        read (unit, rec=1) Bz
+        close (unit)
+      else
+        call stop_it_if_any(.false.,'')
+        if (lfirst_proc_z) then
+          ! receive Bz data
+          partner = ipy + ipz*nprocxy
+          call mpirecv_real (Bz, (/ bnx, bny /), 0, tag_xy)
+        endif
+      endif
+!
+      if (nprocz > 1) then
+        ! distribute Bz along the z-direction
+        if (lfirst_proc_z) then
+          do pz = 1, nprocz-1
+            partner = ipx + ipy*nprocx + pz*nprocxy
+            call mpisend_real (Bz, (/ bnx, bny /), partner, tag_z)
+          enddo
+        else
+          partner = ipx + ipy*nprocx
+          call mpirecv_real (Bz, (/ bnx, bny /), partner, tag_z)
+        endif
+      endif
+!
+      ! Gauss to Tesla and SI to PENCIL units
+      Bz = Bz * 1e-4 / unit_magnetic
+!
+      if (lroot) then
+        if ((nxgrid==1).and.(nygrid/=1)) then
+          Bz_flux = sum(abs(Bz)) * dy * unit_magnetic*unit_length
+          write (*,*) 'Bz flux: sum(|B|)*dl [Tm] =', Bz_flux
+        elseif ((nxgrid/=1).and.(nygrid==1)) then
+          Bz_flux = sum(abs(Bz)) * dx * unit_magnetic*unit_length
+          write (*,*) 'Bz flux: sum(|B|)*dl [Tm] =', Bz_flux
+        elseif ((nxgrid/=1).and.(nygrid/=1)) then
+          Bz_flux = sum(abs(Bz)) * dx*dy * unit_magnetic*unit_length**2
+          write (*,*) 'Bz flux: sum(|B|)*dA [Tm^2] =', Bz_flux
+        endif
+      endif
+!
+!  Perform the field extrapolation in parallel.
+!
+      call setup_extrapol_fact (z, xyz0(3), exp_fact, reduce_factor)
+      call field_extrapol_z_parallel (Bz, f(l1:l2,m1:m2,:,iax:iay), exp_fact)
+!
+      deallocate (Bz, exp_fact)
+!
+    endsubroutine mag_init
 !***********************************************************************
     subroutine temp_hydrostatic(f,rho0)
 !
