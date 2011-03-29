@@ -146,7 +146,6 @@ module Particles_map
 !  If we have solid geometry we might want some special treatment very close
 !  to the surface of the solid geometry
 !
-
       if (lsolid_cells) then
         do ivar=ivar1,ivar2
           f_tmp(ivar)=gp(ivar-ivar1+1)
@@ -476,7 +475,6 @@ module Particles_map
       integer :: k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
       logical :: lspecial_boundx,lnbody
-      integer :: jl,jm,ju
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent(in)  :: fp
@@ -530,12 +528,12 @@ module Particles_map
 !
 !  Small fix for the fact that we have some special particles that ARE
 !  allowed to be outside of the box (a star in cylindrical coordinates,
-!  for instance). 
+!  for instance).
 !
         lspecial_boundx=.false.
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (lnbody.and.bcspx=='out') lspecial_boundx=.true.
-        if (.not.lspecial_boundx) then 
+        if (.not.lspecial_boundx) then
 !
 !  Round off errors may put a particle closer to a ghost point than to a
 !  physical point. Either stop the code with a fatal error or fix problem
@@ -649,14 +647,14 @@ module Particles_map
 !  Straight insertion.
       case (1)
         do k=2,npar_loc
-
+!
           j=k
-
+!
           do while ( ilmn_par(k)<ilmn_par(j-1) )
             j=j-1
             if (j==1) exit
           enddo
-
+!
           if (j/=k) then
             ncount=ncount+k-j
 !
@@ -691,7 +689,7 @@ module Particles_map
         enddo
 !  Shell sort.
       case (2)
-
+!
         do ih=1,21
           do k=1+hshellsort(ih),npar_loc
             ilmn_par_tmp=ilmn_par(k)
@@ -710,14 +708,14 @@ module Particles_map
         enddo
 !  Counting sort.
       case (3)
-
+!
         kk=k1_imn
         do k=1,npar_loc
           ipark_sorted(kk(ilmn_par(k)))=k
           kk(ilmn_par(k))=kk(ilmn_par(k))+1
         enddo
         ncount=npar_loc
-
+!
       endselect
 !
 !  Sort particle data according to sorting index.
@@ -838,7 +836,7 @@ module Particles_map
         do k=1,npar_loc
           !exclude the massive particles from the mapping
           lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if (.not.lnbody) then 
+          if (.not.lnbody) then
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
           endif
@@ -866,7 +864,7 @@ module Particles_map
 !
           do k=1,npar_loc
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then 
+            if (.not.lnbody) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
               ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -914,7 +912,7 @@ module Particles_map
 !
           do k=1,npar_loc
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then 
+            if (.not.lnbody) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
                 ixx0=ix0-1; ixx1=ix0+1
@@ -989,7 +987,7 @@ module Particles_map
           if (lparticles_radius.or.lparticles_number.or.lparticles_mass) then
             do k=1,npar_loc
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then 
+              if (.not.lnbody) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
                 if (lparticles_mass) then
@@ -1017,7 +1015,7 @@ module Particles_map
         if (.not.(lparticles_radius.or.lparticles_number.or. &
             lparticles_mass)) then
           if (lcartesian_coords) then
-            f(l1:l2,m1:m2,n1:n2,irhop)=rhop_swarm*f(l1:l2,m1:m2,n1:n2,irhop)  
+            f(l1:l2,m1:m2,n1:n2,irhop)=rhop_swarm*f(l1:l2,m1:m2,n1:n2,irhop)
           else
             do m=m1,m2; do n=n1,n2
               f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_swarm*dvolume_1
@@ -1073,7 +1071,7 @@ module Particles_map
 !
             do k=1,npar_loc
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then 
+              if (.not.lnbody) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 ixx0=ix0; iyy0=iy0; izz0=iz0
                 ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -1106,7 +1104,7 @@ module Particles_map
 !
             do k=1,npar_loc
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then 
+              if (.not.lnbody) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 if (nxgrid/=1) then
                   ixx0=ix0-1; ixx1=ix0+1
@@ -1150,9 +1148,9 @@ module Particles_map
                     if (nzgrid/=1) &
                          weight_z = 0.75  -   ((fp(k,izp)-z(izz))*dz_1(izz))**2
                   endif
- 
+!
                   weight=1.0
- 
+!
                   if (nxgrid/=1) weight=weight*weight_x
                   if (nygrid/=1) weight=weight*weight_y
                   if (nzgrid/=1) weight=weight*weight_z
