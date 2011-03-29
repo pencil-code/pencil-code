@@ -527,7 +527,7 @@ module Fourier
 !  including the normalization.
 !
       real, dimension (:), intent(in) :: z
-      integer, intent(in) :: ref_z
+      real, intent(in) :: ref_z
       real, dimension (:,:,:), intent(out) :: factor
       real, intent(in), optional :: reduce
 !
