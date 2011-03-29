@@ -498,6 +498,7 @@ module Magnetic
   integer :: idiag_bxbzmxz=0    ! DIAG_DOC: $\left< B_x B_z \right>_{y}$
   integer :: idiag_bybzmxz=0    ! DIAG_DOC: $\left< B_y B_z \right>_{y}$
   integer :: idiag_jbmxy=0      ! DIAG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
+  integer :: idiag_abmxy=0      ! DIAG_DOC: $\left< \Av\cdot\Bv \right>_{z}$
   integer :: idiag_examxy1=0   ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
   integer :: idiag_examxy2=0   ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_y$
   integer :: idiag_examxy3=0   ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_z$
@@ -1546,7 +1547,9 @@ module Magnetic
       if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
          ) lpenc_diagnos2d(i_aa)=.true.
 !
-      if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
+      if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0 &
+           .or. idiag_abmxy/=0 &
+      ) lpenc_diagnos(i_a2)=.true.
       if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
           .or. idiag_abmz/=0 .or. idiag_abrms/=0 &
           .or. idiag_abumx/=0 .or. idiag_abumy/=0 .or. idiag_abumz/=0 &
@@ -3451,6 +3454,7 @@ module Magnetic
         if (idiag_by2mxy/=0) call zsum_mn_name_xy(p%bb(:,2)**2,idiag_by2mxy)
         if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb(:,3)**2,idiag_bz2mxy)
         if (idiag_jbmxy/=0)  call zsum_mn_name_xy(p%jb,idiag_jbmxy)
+        if (idiag_abmxy/=0)  call zsum_mn_name_xy(p%ab,idiag_abmxy)
         if (idiag_examxy1/=0)  call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
         if (idiag_examxy2/=0)  call zsum_mn_name_xy(p%exa(:,2),idiag_examxy2)
         if (idiag_examxy3/=0)  call zsum_mn_name_xy(p%exa(:,3),idiag_examxy3)
@@ -6469,6 +6473,7 @@ module Magnetic
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
         idiag_Exmxy=0 ; idiag_Eymxy=0; idiag_Ezmxy=0;
         idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0 ; idiag_jbmxy=0
+        idiag_abmxy=0
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
         idiag_axmxy=0; idiag_aymxy=0; idiag_azmxy=0
         idiag_Eymxz=0; idiag_Ezmxz=0; idiag_jxbm=0; idiag_uxbm=0; idiag_oxuxbm=0
@@ -6892,6 +6897,7 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxbzmxy',idiag_bxbzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bybzmxy',idiag_bybzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'jbmxy',idiag_jbmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'abmxy',idiag_abmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy1',idiag_examxy1)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy2',idiag_examxy2)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'examxy3',idiag_examxy3)
