@@ -941,7 +941,7 @@ module Special
       character (len=*), intent(in) :: times_dat, field_dat
       real, dimension(nx,ny,n1,3), intent(inout) :: A
       real, intent(inout) :: time_l, time_r
-      real, dimension(:,:,:,:), allocatable, intent(inout) :: A_l, A_r
+      real, dimension(:,:,:,:), allocatable :: A_l, A_r
 !
       real :: time
       integer :: pos_l, pos_r
