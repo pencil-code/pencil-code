@@ -4316,9 +4316,7 @@ module Boundcond
       real, dimension (:,:), allocatable, save :: vx, vy
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact ! exponential factor
-      real, dimension (:,:), allocatable :: k_2 ! wave vector length
-      integer :: kx_start, pos_z, i
-      real :: delta_z
+      integer :: i
       real, parameter :: reduce_factor=0.25
 !
       real :: time_SI
