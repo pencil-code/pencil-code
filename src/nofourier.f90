@@ -537,6 +537,7 @@ module Fourier
       call keep_compiler_quiet(z)
       call keep_compiler_quiet(ref_z)
       call keep_compiler_quiet(factor)
+      call keep_compiler_quiet(present(reduce))
 !
     endsubroutine setup_extrapol_fact
 !***********************************************************************
