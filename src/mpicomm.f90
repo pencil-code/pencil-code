@@ -5714,14 +5714,14 @@ module Mpicomm
       real, dimension(nygrid), intent(out) :: ay
       real, dimension(nygrid) :: ay_local
       integer, intent(in) :: xi,zj,zproc_no
-      integer :: nz_iniz,nz_finz
+      integer :: my_iniy,my_finy
 !
       ay=0.
       ay_local=0.
       if (ipz==(zproc_no-1)) then
-        nz_iniz=ipz*nz+1
-        nz_finz=(ipz+1)*nz
-        ay_local(nz_iniz:nz_finz)=a(xi,:,zj)
+        my_iniy=ipy*ny+1
+        my_finy=(ipy+1)*ny
+        ay_local(my_iniy:my_finy)=a(xi,:,zj)
       else
       ay_local=0.
       endif
