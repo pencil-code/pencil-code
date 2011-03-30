@@ -4429,7 +4429,7 @@ module Initcond
       integer :: py, pz, partner
       real :: Bz_flux
       logical :: exists
-      integer :: alloc_err, io_err, rec_len
+      integer :: alloc_err, rec_len
       real, parameter :: reduce_factor=0.25
 !
       ! file location settings
