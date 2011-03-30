@@ -194,6 +194,9 @@ module Special
         strat=1.
       endif
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -250,11 +253,10 @@ module Special
       use Gravity
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: cs2,rho,lnrho,ss,pot,strat
+      real, dimension (nx) :: cs2,rho,lnrho,ss
       real, dimension (nx,nz) :: pp_tmp,pp_sumy
       real, dimension (nz) :: pp_sum
-      integer :: nn,i,itsub
-      character (len=5) :: sit
+      integer :: nn,i
 !
       if (lstratification.and.&
           (.not.lstatic_stratification)) then 
@@ -367,6 +369,9 @@ endsubroutine read_special_run_pars
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
 !  Write information to index.pro
 !
       if (lreset) then
@@ -410,6 +415,8 @@ endsubroutine read_special_run_pars
 !      
       df(l1:l2,m,n,iux)= df(l1:l2,m,n,iux)+Bshear*p0*(rho1-rho01)
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_entropy(f,df,p)
@@ -452,6 +459,8 @@ endsubroutine read_special_run_pars
         print*,"stop and check."
         call fatal_error("global_baroclinic","")
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
