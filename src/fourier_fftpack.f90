@@ -3397,7 +3397,7 @@ module Fourier
 !  'z' gives the z-coordinates.
 !  'ref_z' gives the reference z-coordinate for the extrapolation.
 !  'reduce' is used to reduce the eventual enhancement of contrast
-!  in cases where a z is smaller than z(ref_z) (="intrapolation").
+!  in cases where a z is smaller than ref_z (="intrapolation").
 !  nx is restricted to be an integer multiple of nprocy.
 !  ny is restricted to be an integer multiple of nprocx.
 !
