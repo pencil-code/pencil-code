@@ -116,31 +116,6 @@ module Selfgravity
         call fatal_error('initialize_selfgravity','')
       endif
 !
-      if (lselfgravity_gas.and..not.(lhydro.and.ldensity)) then
-        if (lroot) print*, 'initialize_selfgravity: must choose a hydro '// &
-            'and a density module in Makefile.local for self-gravity'
-        call fatal_error('initialize_selfgravity','')
-      endif
-!
-      if (lselfgravity_dust.and..not.(ldustvelocity.and.ldustdensity)) then
-        if (lroot) then
-          print*, 'initialize_selfgravity: must choose a dust velocity '// &
-              'and a dust density module in Makefile.local for '// &
-              'self-gravity on the dust fluid'
-        endif
-        call fatal_error('initialize_selfgravity','')
-      endif
-!
-      if (lselfgravity_neutrals.and.&
-           .not.(lneutralvelocity.and.lneutraldensity)) then
-        if (lroot) then
-          print*, 'initialize_selfgravity: must choose a neutral velocity '// &
-              'and a neutral density module in Makefile.local for '// &
-              'self-gravity on the neutral fluid'
-        endif
-        call fatal_error('initialize_selfgravity','')
-      endif
-!
 !  Share the variable tstart_selfgrav so that it can be used by other
 !  self-gravity modules.
 !
@@ -337,7 +312,7 @@ module Selfgravity
 !
 !  Consider self-gravity from gas and dust density or from either one.
 !
-        if (lhydro.and.ldensity.and.lselfgravity_gas) then
+        if (ldensity.and.lselfgravity_gas) then
           if (ldensity_nolog) then
             rhs_poisson = f(l1:l2,m1:m2,n1:n2,irho)
           else
@@ -347,7 +322,7 @@ module Selfgravity
 !
 !  Contribution from dust.
 !
-        if (ldustdensity.and.ldustvelocity.and.lselfgravity_dust) then
+        if (ldustdensity.and.lselfgravity_dust) then
           if (ldustdensity_log) then
             if (lselfgravity_gas) then  ! No need to zero rhs
               rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
@@ -365,7 +340,7 @@ module Selfgravity
 !
 !  Contribution from neutrals.
 !
-        if (lneutraldensity.and.lneutralvelocity.and.lselfgravity_neutrals) then
+        if (lneutraldensity.and.lselfgravity_neutrals) then
           if (lneutraldensity_nolog) then
             if (lselfgravity_gas.or.lselfgravity_dust) then! No need to zero rhs
               rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhon)
