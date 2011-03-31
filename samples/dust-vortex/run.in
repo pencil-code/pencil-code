@@ -17,6 +17,7 @@
 &grav_run_pars
 /
 &dustvelocity_run_pars
+  iviscd='simplified'
   nud=2.0e-3, betad=1.0e-3, ldragforce_gas=T
 /
 &dustdensity_run_pars
