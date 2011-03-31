@@ -13,8 +13,8 @@
 !
 ! PENCILS PROVIDED glnnd(3,ndustspec); gmi(3,ndustspec); gmd(3,ndustspec)
 ! PENCILS PROVIDED gnd(3,ndustspec); grhod(3,ndustspec)
-! PENCILS PROVIDED md(ndustspec); mi(ndustspec)
-! PENCILS PROVIDED nd(ndustspec); rhod(ndustspec); epsd(ndustspec)
+! PENCILS PROVIDED md(ndustspec); mi(ndustspec); nd(ndustspec)
+! PENCILS PROVIDED rhod(ndustspec); rhod1(ndustspec); epsd(ndustspec)
 ! PENCILS PROVIDED udgmi(ndustspec); udgmd(ndustspec); udglnnd(ndustspec)
 ! PENCILS PROVIDED udgnd(ndustspec); glnnd2(ndustspec)
 ! PENCILS PROVIDED sdglnnd(3,ndustspec); del2nd(ndustspec); del2rhod(ndustspec)
@@ -24,6 +24,7 @@
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
 ! PENCILS PROVIDED ppsf(ndustspec); mu1; Ywater; pp; mu1; udropav(3)
+! PENCILS PROVIDED glnrhod(3,ndustspec)
 !
 !***************************************************************
 module Dustdensity
@@ -913,7 +914,12 @@ print*,'N total= ', Ntot
         lpencil_in(i_sdij)=.true.
         lpencil_in(i_glnnd)=.true.
       endif
-       if (latm_chemistry) then
+      if (lpencil_in(i_glnrhod)) then
+        lpencil_in(i_grhod)=.true.
+        lpencil_in(i_rhod1)=.true.
+      endif
+!
+      if (latm_chemistry) then
         if (lpencil_in(i_gnd)) lpencil_in(i_nd)=.true.
         if (lpencil_in(i_udrop)) lpencil_in(i_uu)=.true.
         if (lpencil_in(i_udropgnd)) then
@@ -921,7 +927,6 @@ print*,'N total= ', Ntot
           lpencil_in(i_gnd)=.true.
         endif
         if (lpencil_in(i_udropav)) lpencil_in(i_cc)=.true.
-!        if (lpencil_in(i_fcloud)) lpencil_in(i_nd)=.true.
         if (lpencil_in(i_ppsat)) lpencil_in(i_TT1)=.true.
         if (lpencil_in(i_ppsf)) then
           lpencil_in(i_md)=.true.
@@ -964,11 +969,9 @@ print*,'N total= ', Ntot
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (nx,ndustspec) :: dndr_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt
-!      logical :: zero_ppsf=.false.
       integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
-!
 ! nd
       do k=1,ndustspec
         if (lpencil(i_nd)) then
@@ -989,7 +992,6 @@ print*,'N total= ', Ntot
             call grad(f,ind(k),p%gnd(:,:,k))
           endif
         endif
-!
 ! glnnd
         if (lpencil(i_glnnd)) then
           if (ldustdensity_log) then
@@ -1025,10 +1027,22 @@ print*,'N total= ', Ntot
             p%md(:,k)=md(k)
           endif
         endif
+! rhod
+        if (lpencil(i_rhod)) p%rhod(:,k)=p%nd(:,k)*p%md(:,k)
+! rhod1
+        if (lpencil(i_rhod1)) p%rhod1(:,k)=1/p%rhod(:,k)
+! epsd=rhod/rho
+        if (lpencil(i_epsd)) p%epsd(:,k)=p%rhod(:,k)*p%rho1
 ! grhod
         if (lpencil(i_grhod)) then
           do i=1,3
             p%grhod(:,i,k)=p%gnd(:,i,k)*p%md(:,k)
+          enddo
+        endif
+! glnrhod
+        if (lpencil(i_grhod)) then
+          do i=1,3
+            p%glnrhod(:,i,k)=p%rhod1(:,k)*p%grhod(:,i,k)
           enddo
         endif
 ! mi
@@ -1067,10 +1081,6 @@ print*,'N total= ', Ntot
                            UPWIND=lupw_ndmdmi)
           p%udgmi(:,k)=tmp
         endif
-! rhod
-        if (lpencil(i_rhod)) p%rhod(:,k)=p%nd(:,k)*p%md(:,k)
-! epsd=rhod/rho
-        if (lpencil(i_epsd)) p%epsd(:,k)=p%rhod(:,k)*p%rho1
 ! sdglnnd
         if (lpencil(i_sdglnnd)) &
             call multmv_mn(p%sdij(:,:,:,k),p%glnnd(:,:,k),p%sdglnnd(:,:,k))
