@@ -35,29 +35,37 @@ module Dustvelocity
   public :: ad, scolld, ustcst, tausd1, tausd
   public :: unit_md, dust_chemistry, mumon, mmon, mi, md
 !
+  integer, parameter :: nvisc_max=4
   complex, dimension (7) :: coeff
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
-  real, dimension(ndustspec) :: md=1.0,mdplus,mdminus,ad,surfd,mi,rhodsad1
-  real, dimension(ndustspec) :: tausd=1.,betad=0.,nud=0.,nud_hyper3=0.
-  real :: ampluud=0.,ampl_udx=0.0,ampl_udy=0.0,ampl_udz=0.0
+  real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad
+  real, dimension(ndustspec) :: surfd, mi, rhodsad1
+  real, dimension(ndustspec) :: tausd=1.0, betad=0.0
+  real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0
+  real :: ampluud=0.0, ampl_udx=0.0, ampl_udy=0.0, ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
-  real :: kx_uud=1.,ky_uud=1.,kz_uud=1.
-  real :: rhods=1.,nd0=1.,md0=1.,rhod0=1.
-  real :: ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.0
-  real :: nud_all=0.,betad_all=0.,tausd_all=0.
-  real :: mmon,mumon,mumon1,surfmon,ustcst,unit_md=1.0
+  real :: kx_uud=1.0, ky_uud=1.0, kz_uud=1.0
+  real :: rhods=1.0, nd0=1.0, md0=1.0, rhod0=1.0
+  real :: ad0=0.0, ad1=0.0, dimd1=0.333333, deltamd=1.0
+  real :: nud_all=0.0, betad_all=0.0, tausd_all=0.0
+  real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
   real :: scaleHtaus=1.0, z0taus=0.0, widthtaus=1.0
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
-  logical :: lviscosity_dust=.true.
   logical :: ldustvelocity_shorttausd=.false., lvshear_dust_global_eps=.false.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
+  logical :: lviscd_simplified=.false., lviscd_nud_const=.false.
+  logical :: lviscd_shock=.false.
+  logical :: lviscd_hyper3_simplified=.false.
+  logical :: lviscd_hyper3_rhod_nud_const=.false.
+  logical :: lviscd_hyper3_nud_const=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
-  character (len=labellen) :: draglaw='epstein_cst',iviscd='simplified'
+  character (len=labellen), dimension(nvisc_max) :: iviscd=''
+  character (len=labellen) :: draglaw='epstein_cst'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 !
   namelist /dustvelocity_init_pars/ &
@@ -72,23 +80,25 @@ module Dustvelocity
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, &
       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd, &
-      nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
+      nud_shock, nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
 !
   integer :: idiag_ekintot_dust=0
   integer, dimension(ndustspec) :: idiag_ud2m=0
-  integer, dimension(ndustspec) :: idiag_udxm=0,idiag_udym=0,idiag_udzm=0
-  integer, dimension(ndustspec) :: idiag_udx2m=0,idiag_udy2m=0,idiag_udz2m=0
-  integer, dimension(ndustspec) :: idiag_udm2=0,idiag_oudm=0,idiag_od2m=0
-  integer, dimension(ndustspec) :: idiag_udrms=0,idiag_udmax=0,idiag_odrms=0
-  integer, dimension(ndustspec) :: idiag_odmax=0,idiag_rdudmax=0
-  integer, dimension(ndustspec) :: idiag_udxmz=0,idiag_udymz=0,idiag_udzmz=0
-  integer, dimension(ndustspec) :: idiag_udx2mz=0,idiag_udy2mz=0,idiag_udz2mz=0
-  integer, dimension(ndustspec) :: idiag_udmx=0,idiag_udmy=0,idiag_udmz=0
-  integer, dimension(ndustspec) :: idiag_udxmxy=0,idiag_udymxy=0,idiag_udzmxy=0
-  integer, dimension(ndustspec) :: idiag_divud2m=0,idiag_epsKd=0
-  integer, dimension(ndustspec) :: idiag_dtud=0,idiag_dtnud=0
-  integer, dimension(ndustspec) :: idiag_rdudxm=0,idiag_rdudym=0,idiag_rdudzm=0
-  integer, dimension(ndustspec) :: idiag_rdudx2m=0
+  integer, dimension(ndustspec) :: idiag_udxm=0, idiag_udym=0, idiag_udzm=0
+  integer, dimension(ndustspec) :: idiag_udx2m=0, idiag_udy2m=0, idiag_udz2m=0
+  integer, dimension(ndustspec) :: idiag_udm2=0, idiag_oudm=0, idiag_od2m=0
+  integer, dimension(ndustspec) :: idiag_udrms=0, idiag_udmax=0, idiag_odrms=0
+  integer, dimension(ndustspec) :: idiag_odmax=0, idiag_rdudmax=0
+  integer, dimension(ndustspec) :: idiag_udxmz=0, idiag_udymz=0, idiag_udzmz=0
+  integer, dimension(ndustspec) :: idiag_udx2mz=0, idiag_udy2mz=0
+  integer, dimension(ndustspec) :: idiag_udz2mz=0
+  integer, dimension(ndustspec) :: idiag_udmx=0, idiag_udmy=0, idiag_udmz=0
+  integer, dimension(ndustspec) :: idiag_udxmxy=0, idiag_udymxy=0
+  integer, dimension(ndustspec) :: idiag_udzmxy=0
+  integer, dimension(ndustspec) :: idiag_divud2m=0, idiag_epsKd=0
+  integer, dimension(ndustspec) :: idiag_dtud=0, idiag_dtnud=0
+  integer, dimension(ndustspec) :: idiag_rdudxm=0, idiag_rdudym=0
+  integer, dimension(ndustspec) :: idiag_rdudzm=0, idiag_rdudx2m=0
 !
   contains
 !***********************************************************************
@@ -143,8 +153,8 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: k
-      real :: gsurften,Eyoung,nu_Poisson,Eyoungred
+      integer :: i, k
+      real :: gsurften, Eyoung, nu_Poisson, Eyoungred
 !
 !  Copy boundary condition on first dust species to all others.
 !
@@ -159,12 +169,6 @@ module Dustvelocity
           print*, 'register_dustvelocity: constant grain mass'
         endif
       endif
-!
-!  Turn off dust viscosity if zero viscosity
-!
-      if (maxval(nud) == 0.) lviscosity_dust=.false.
-      if (lroot) print*, &
-          'initialize_dustvelocity: lviscosity_dust=',lviscosity_dust
 !
 !  Calculate inverse of minimum gas friction time.
 !
@@ -189,13 +193,13 @@ module Dustvelocity
         select case (dust_chemistry)
 
         case ('nothing')
-          gsurften   = 0.
-          Eyoung     = 1.
-          nu_Poisson = 0.
-          Eyoungred  = 1.
-          unit_md = 1.
-          mumon   = 1.
-          mmon    = 1.
+          gsurften   = 0.0
+          Eyoung     = 1.0
+          nu_Poisson = 0.0
+          Eyoungred  = 1.0
+          unit_md = 1.0
+          mumon   = 1.0
+          mmon    = 1.0
 
         case ('ice')
 !
@@ -206,7 +210,7 @@ module Dustvelocity
           nu_Poisson = 0.25 !
           Eyoungred  = Eyoung/(2*(1-nu_Poisson**2))
 
-          mumon = 18.
+          mumon = 18.0
           mmon  = mumon*1.6733e-24
           unit_md = mmon
 
@@ -300,6 +304,33 @@ module Dustvelocity
         if (lroot) print*, 'initialize_dustvelocity: Global pressure '// &
             'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
+!
+      do i=1,nvisc_max
+        select case (iviscd(i))
+        case ('nothing','')
+        case ('simplified', '0')
+          if (lroot) print*, 'Viscous force (dust): nud*del2ud'
+          lviscd_simplified=.true.
+        case ('nud-const')
+          if (lroot) print*, &
+               'Viscous force (dust): nud*(del2ud+graddivud/3+2Sd.glnnd)'
+          lviscd_nud_const=.true.
+        case ('shock','nud-shock')
+          lviscd_shock=.true.
+        case ('hyper3_simplified')
+          if (lroot) print*, 'Viscous force (dust): nud*del6ud'
+          lviscd_hyper3_simplified=.true.
+        case ('hyper3_rhod_nud-const')
+          if (lroot) print*, 'Viscous force (dust): mud/rhod*del6ud'
+          lviscd_hyper3_rhod_nud_const=.true.
+        case ('hyper3_nud-const')
+          if (lroot) print*, 'Viscous force (dust): nud*(del6ud+S.glnnd)'
+          lviscd_hyper3_nud_const=.true.
+        case default
+          if (lroot) print*, 'No such value for iviscd: ', trim(iviscd(i))
+          call fatal_error('initialize_dustvelocity','')
+        endselect
+      enddo
 !
       call keep_compiler_quiet(f)
 !
@@ -692,22 +723,27 @@ module Dustvelocity
           lpenc_requested(i_rho)=.true.
         endif
       endif
-      if (lviscosity_dust) then
-        if ((iviscd=='nud-const' .or. iviscd=='hyper3_nud-const') &
-            .and. ldustdensity) then
-          lpenc_requested(i_sdij)=.true.
-          lpenc_requested(i_glnnd)=.true.
-        endif
-        if (iviscd=='simplified' .or. iviscd=='nud-const') &
-            lpenc_requested(i_del2ud)=.true.
-        if (iviscd=='hyper3_simplified' .or. iviscd=='hyper3_nud-const' .or. &
-            iviscd=='hyper3_rhod_nud-const') &
-            lpenc_requested(i_del6ud)=.true.
-        if (iviscd=='nud-const' .or. iviscd=='hyper3_nud-const') &
-            lpenc_requested(i_sdglnnd)=.true.
-        if (iviscd=='nud-const') lpenc_requested(i_graddivud)=.true.
-        if (iviscd=='hyper3_rhod_nud-const') lpenc_requested(i_rhod)=.true.
+      if (lviscd_nud_const .or. lviscd_hyper3_nud_const .and. &
+          ldustdensity) then
+        lpenc_requested(i_sdij)=.true.
+        lpenc_requested(i_glnnd)=.true.
       endif
+      if (lviscd_simplified .or. lviscd_nud_const) &
+          lpenc_requested(i_del2ud)=.true.
+      if (lviscd_shock) then
+        lpenc_requested(i_divud)=.true.
+        lpenc_requested(i_glnrhod)=.true.
+        lpenc_requested(i_graddivud)=.true.
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_gshock)=.true.
+      endif
+      if (lviscd_hyper3_simplified .or. lviscd_hyper3_nud_const .or. &
+          lviscd_hyper3_rhod_nud_const) &
+          lpenc_requested(i_del6ud)=.true.
+      if (lviscd_nud_const .or. lviscd_hyper3_nud_const) &
+          lpenc_requested(i_sdglnnd)=.true.
+      if (lviscd_nud_const) lpenc_requested(i_graddivud)=.true.
+      if (lviscd_hyper3_rhod_nud_const) lpenc_requested(i_rhod)=.true.
       if (beta_dPdr_dust/=0.) lpenc_requested(i_cs2)=.true.
 !
       lpenc_diagnos(i_uud)=.true.
@@ -750,7 +786,7 @@ module Dustvelocity
         lpencil_in(i_ood)=.true.
       endif
       if (lpencil_in(i_sdij)) then
-        if (iviscd=='nud-const') then
+        if (lviscd_nud_const) then
           lpencil_in(i_udij)=.true.
           lpencil_in(i_divud)=.true.
         endif
@@ -800,27 +836,26 @@ module Dustvelocity
         if (lpencil(i_oud)) call dot_mn(p%ood(:,:,k),p%uud(:,:,k),p%oud(:,k))
 ! sdij
         if (lpencil(i_sdij)) then
-          select case (iviscd)
-          case ('nud-const')
+          if (lviscd_nud_const) then
             do j=1,3
               do i=1,3
                 p%sdij(:,i,j,k)=.5*(p%udij(:,i,j,k)+p%udij(:,j,i,k))
               enddo
               p%sdij(:,j,j,k)=p%sdij(:,j,j,k)-.333333*p%divud(:,k)
             enddo
-          case ('hyper3_nud-const')
+          elseif (lviscd_hyper3_nud_const) then
             call gij(f,iuud(k),tmp_pencil_3x3,5)
             do i=1,3
               do j=1,3
                 p%sdij(:,i,j,k)=tmp_pencil_3x3(:,i,j)
               enddo
             enddo
-          case default
+          else
             if (headtt) then
               write (unit=errormsg,fmt=*) 'No rate-of-strain tensor matches iviscd=', iviscd
               call warning('calc_pencils_dustvelocity',errormsg)
             endif
-          endselect
+          endif
         endif
 ! del2ud
         if (lpencil(i_del2ud)) call del2v(f,iuud(k),p%del2ud(:,:,k))
@@ -850,12 +885,12 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: fviscd,AA_sfta,BB_sfta
-      real, dimension (nx) :: tausg1,mudrhod1
-      real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
-      integer :: i,j,k
+      real, dimension (nx,3) :: fviscd, AA_sfta, BB_sfta, tmp, tmp2
+      real, dimension (nx) :: tausg1, mudrhod1
+      real :: c2, s2
+      integer :: i, j, k
 !
-      intent(in) :: f,p
+      intent(in) :: f, p
       intent(out) :: df
 !
 !  Identify module and boundary conditions.
@@ -979,72 +1014,73 @@ module Dustvelocity
 !
 !  Add viscosity on dust
 !
-          if (lviscosity_dust) then
-!
           fviscd=0.0
-! AJ: this only works if viscosity coefficient is same for all species:
-          diffus_nud=0.0  ! Do not sum viscosity from all dust species
-!
-            select case (iviscd)
+          diffus_nud=0.0
 !
 !  Viscous force: nud*del2ud
 !     -- not physically correct (no momentum conservation)
 !
-            case ('simplified')
-              if (headtt) print*, 'Viscous force (dust): nud*del2ud'
-              fviscd = fviscd + nud(k)*p%del2ud(:,:,k)
-              if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_2
+          if (lviscd_simplified) then
+            fviscd = fviscd + nud(k)*p%del2ud(:,:,k)
+            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_2
+          endif
 !
 !  Viscous force: nud*(del2ud+graddivud/3+2Sd.glnnd)
 !    -- the correct expression for nud=const
 !
-            case ('nud-const')
-              if (headtt) print*, &
-                  'Viscous force (dust): nud*(del2ud+graddivud/3+2Sd.glnnd)'
-              if (ldustdensity) then
-                fviscd = fviscd + 2*nud(k)*p%sdglnnd(:,:,k) + &
-                    nud(k)*(p%del2ud(:,:,k)+1/3.*p%graddivud(:,:,k))
-              else
-                fviscd = fviscd + nud(k)*(p%del2ud(:,:,k)+1/3.*p%graddivud(:,:,k))
-              endif
-              if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_2
+          if (lviscd_nud_const) then
+            if (ldustdensity) then
+              fviscd = fviscd + 2*nud(k)*p%sdglnnd(:,:,k) + &
+                  nud(k)*(p%del2ud(:,:,k)+1/3.0*p%graddivud(:,:,k))
+            else
+              fviscd = fviscd + nud(k)*(p%del2ud(:,:,k)+1/3.*p%graddivud(:,:,k))
+            endif
+            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_2
+          endif
+!
+!  Viscous force: nu_shock
+!
+          if (lviscd_shock) then
+            if (ldustdensity) then
+              call multsv(p%divud(:,k),p%glnrhod(:,:,k),tmp2)
+              tmp = tmp2 + p%graddivud(:,:,k)
+              call multsv(nud_shock(k)*p%shock,tmp,tmp2)
+              call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
+              fviscd = fviscd + tmp
+              if (lfirst.and.ldt) &
+                  diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
+            endif
+          endif
 !
 !  Viscous force: nud*del6ud (not momentum-conserving)
 !
-            case ('hyper3_simplified')
-              if (headtt) print*, 'Viscous force (dust): nud*del6ud'
-              fviscd = fviscd + nud_hyper3(k)*p%del6ud(:,:,k)
-              if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
-
-            case ('hyper3_rhod_nud-const')
+          if (lviscd_hyper3_simplified) then
+            fviscd = fviscd + nud_hyper3(k)*p%del6ud(:,:,k)
+            if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
+          endif
 !
 !  Viscous force: mud/rhod*del6ud
 !
-              if (headtt) print*, 'Viscous force (dust): mud/rhod*del6ud'
-              mudrhod1=(nud_hyper3(k)*nd0*md0)/p%rhod(:,k)   ! = mud/rhod
-              do i=1,3
-                fviscd(:,i) = fviscd(:,i) + mudrhod1*p%del6ud(:,i,k)
-              enddo
-              if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
-
-            case ('hyper3_nud-const')
+          if (lviscd_hyper3_rhod_nud_const) then
+            mudrhod1=(nud_hyper3(k)*nd0*md0)/p%rhod(:,k)   ! = mud/rhod
+            do i=1,3
+              fviscd(:,i) = fviscd(:,i) + mudrhod1*p%del6ud(:,i,k)
+            enddo
+            if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
+          endif
 !
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
-              if (headtt) print*, 'Viscous force (dust): nud*(del6ud+S.glnnd)'
-              fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
-              if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
 
-            case default
-
-              write (unit=errormsg,fmt=*) 'No such value for iviscd: ', trim(iviscd)
-              call fatal_error('duud_dt',errormsg)
-
-            endselect
-
-          df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + fviscd
+          if (lviscd_hyper3_nud_const) then
+            fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
+            if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
 
           endif
+!
+!  Add to dust equation of motion.
+!
+          df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + fviscd
 !
 !  ``uud/dx'' for timestep
 !
