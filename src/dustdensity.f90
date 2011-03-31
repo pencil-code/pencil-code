@@ -87,6 +87,7 @@ module Dustdensity
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
+  integer :: idiag_rhodmxy=0, idiag_ndmxy=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
@@ -352,12 +353,10 @@ print*,'N total= ', Ntot
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: eps
-      real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt
-      !real :: water_ice=1.
-      integer :: j,k,l
+      real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt
+      integer :: j, k, l, file_id=123
       logical :: lnothing
       character (len=20) :: output_file="./data/nd.out"
-      integer :: file_id=123
 !
 !  Different initializations of nd.
 !
@@ -858,6 +857,8 @@ print*,'N total= ', Ntot
       endif
 !
       lpenc_diagnos(i_nd)=.true.
+      if (idiag_rhodmxy/=0) lpenc_diagnos(i_rhod)=.true.
+!
       if (maxval(idiag_epsdrms)/=0) lpenc_diagnos(i_rho1)=.true.
       if (maxval(idiag_rhodm)/=0 .or. maxval(idiag_rhodmin)/=0 .or. &
           maxval(idiag_rhodmax)/=0) lpenc_diagnos(i_rhod)=.true.
@@ -1408,6 +1409,8 @@ print*,'N total= ', Ntot
             df(l1:l2,m,n,imi(k)) + diffmi*p%del2mi(:,k)
       enddo
 !
+      if (lspecial) call special_calc_dustdensity(f,df,p)
+!
 !  Diagnostic output
 !
       if (ldiagnos) then
@@ -1488,7 +1491,12 @@ print*,'N total= ', Ntot
         if (idiag_mdm/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
       endif
 !
-      if (lspecial) call special_calc_dustdensity(f,df,p)
+!  2d-averages
+!
+      if (l2davgfirst) then
+        if (idiag_ndmxy/=0)   call zsum_mn_name_xy(p%nd(:,1),idiag_ndmxy)
+        if (idiag_rhodmxy/=0) call zsum_mn_name_xy(p%rhod(:,1),idiag_rhodmxy)
+      endif
 !
     endsubroutine dndmd_dt
 !***********************************************************************
@@ -1861,7 +1869,7 @@ print*,'N total= ', Ntot
       use Diagnostics, only: parse_name
       use General, only: chn
 !
-      integer :: iname,inamez,inamex,k
+      integer :: iname,inamez,inamex,inamexy,k
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=5) :: sdust,sdustspec
@@ -1880,7 +1888,7 @@ print*,'N total= ', Ntot
 !
       if (lreset) then
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
-        idiag_rhodmin=0; idiag_rhodmax=0
+        idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
       endif
@@ -1928,6 +1936,15 @@ print*,'N total= ', Ntot
           call parse_name(inamex,cnamex(inamex),cformx(inamex), &
               'ndmx'//trim(sdust), idiag_ndmx(k))
         enddo
+!
+!  Check for those quantities for which we want z-averages.
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy, cnamexy(inamexy), cformxy(inamexy), &
+            'rhodmxy', idiag_rhodmxy)
+        call parse_name(inamexy, cnamexy(inamexy), cformxy(inamexy), &
+            'ndmxy', idiag_ndmxy)
+      enddo
 !
 !  End loop over dust layers
 !
