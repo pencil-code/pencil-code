@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cs2; pp; TT1; Ma2
+! PENCILS PROVIDED cs2; pp; TT1; Ma2; fpres(3)
 !
 !***************************************************************
 module Entropy
@@ -30,6 +30,8 @@ module Entropy
   real :: Ftop=impossible, FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lheatc_chiconst=.false.
+  logical :: lviscosity_heat=.false.
+!
   integer :: idiag_dtc=0, idiag_ssm=0, idiag_ugradpm=0
 !
   contains
@@ -55,6 +57,7 @@ module Entropy
 !  24-nov-02/tony: coded
 !
       use EquationOfState
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -83,6 +86,8 @@ module Entropy
             'with beta_glnrho_global=', beta_glnrho_global
       endif
 !
+      call put_shared_variable('lviscosity_heat',lviscosity_heat)
+!
     endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f)
@@ -104,11 +109,7 @@ module Entropy
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (leos.and.ldt) lpenc_requested(i_cs2)=.true.
-      if (lhydro) then
-        lpenc_requested(i_cs2)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_epsd)=.true.
-      endif
+      if (lhydro) lpenc_requested(i_fpres)=.true.
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
       if (idiag_ugradpm/=0) then
@@ -131,6 +132,11 @@ module Entropy
       if (lpencil_in(i_Ma2)) then
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
+      endif
+      if (lpencil_in(i_fpres)) then
+        lpencil_in(i_cs2)=.true.
+        lpencil_in(i_glnrho)=.true.
+        lpencil_in(i_rho)=.true.
       endif
       if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
       if (lpencil_in(i_cs2) .and. gamma_m1/=0.) lpencil_in(i_lnrho)=.true.
@@ -158,12 +164,11 @@ module Entropy
       intent(in) :: f
       intent(inout) :: p
 ! cs2
-
       if (lpencil(i_cs2)) then
-        if (gamma==1.) then
-           p%cs2=cs20
+        if (gamma==1.0) then
+          p%cs2=cs20
         else
-           p%cs2=cs20*exp(gamma_m1*(p%lnrho-lnrho0))
+          p%cs2=cs20*exp(gamma_m1*(p%lnrho-lnrho0))
         endif
      endif
 ! Ma2
@@ -172,8 +177,8 @@ module Entropy
       if (lpencil(i_pp)) p%pp=1/gamma*p%cs2*p%rho
 ! TT1
       if (lpencil(i_TT1)) then
-        if (gamma==1. .or. cs20==0) then
-          p%TT1=0.
+        if (gamma==1.0 .or. cs20==0.0) then
+          p%TT1=0.0
         else
           p%TT1=gamma_m1/p%cs2
         endif
@@ -182,6 +187,12 @@ module Entropy
       if (lpencil(i_uud)) p%uud(:,:,1)=p%uu
 ! divud (for dust continuity equation in one fluid approximation)
       if (lpencil(i_divud)) p%divud(:,1)=p%divu
+! fpres
+      if (lpencil(i_fpres)) then
+        do i=1,3
+          p%fpres(:,i)=-1/(1+p%rho/f(l1:l2,m,n,ind(1)))*p%cs2*p%glnrho(:,i)
+        enddo
+      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
@@ -205,10 +216,7 @@ module Entropy
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
       if (lhydro) then
-        do j=1,3
-          ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-1/(1+p%epsd(:,1))*p%cs2*p%glnrho(:,j)
-        enddo
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres
 !
 !  Add pressure force from global density gradient.
 !
@@ -359,5 +367,16 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine fill_farray_pressure
+!***********************************************************************
+    subroutine calc_lentropy_pars(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_lentropy_pars
 !***********************************************************************
 endmodule Entropy
