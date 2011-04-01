@@ -2277,9 +2277,13 @@ module Boundcond
                enddo
             else
               do ix=1,mx
+! DM+GG: temporally commented out  
+!                somega=x(ix)*Omega*sinth(m1-k)*( &
+!                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
+!                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
                 somega=x(ix)*Omega*sinth(m1-k)*( &
-                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
-                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
+                   exp(cos2thmpk*LH1(ix)/(4.*nu))&
+                        /exp((cos2thm_k)*LH1(ix)/(4.*nu)) -1.)
                 f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
                    (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
                    *(exp(-LH1(ix)*cos2thm_k/(4.*nu))*sinth(m1-k)) &
@@ -2305,9 +2309,13 @@ module Boundcond
                enddo
              else
               do ix=1,mx
-                somega=x(ix)*Omega*sinth(m2+k)*( &
-                   exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
-                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
+! DM+GG: Temporally comented out
+!                somega=x(ix)*Omega*sinth(m2+k)*( &
+!                   exp(2*cos2thmpk*LH1(ix)/(4.*nu))&
+!                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
+                 somega=x(ix)*Omega*sinth(m2+k)*( &
+                      exp(cos2thm_k*LH1(ix)/(4.*nu))    &
+                      / exp(cos2thmpk*LH1(ix)/(4.*nu))-1.)
                 f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
                      (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
                     *(exp(-LH1(ix)*cos2thmpk/(4.*nu))*sinth(m2+k)) &
