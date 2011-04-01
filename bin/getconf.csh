@@ -327,7 +327,7 @@ else if ($hn =~ *.maths.qmul.ac.uk) then
     endif
   endif
 #------------------------------------------------
-else if (($hn =~ comp*) || ($masterhost =~ andromeda)) then
+else if (($hn =~ Xcomp*) || ($masterhost =~ andromeda)) then
   echo "QMUL Maths cluster (andromeda) - LONDON"
   echo "******************************"
   echo "Always use  multiple of 8 no. of processors .."
@@ -350,6 +350,23 @@ else if ($hn =~ *.hpc2n.umu.se ) then
   echo "OMP_NUM_THREADS" $OMP_NUM_THREADS
   #
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
+  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+  set $mpirun=mpirun
+#------------------------------------------
+else if ($hn =~ compute-*.local ) then
+  echo "Warp cluster (warp) - Pittsburg"
+  echo "******************************"
+  echo "Always use  multiple of 8 no. of processors .."
+  echo "..for multiprecossor jobs. "
+  echo " ******************************"
+# module load openmpi/psc
+  #
+# limit stacksize 524288
+# setenv OMP_NUM_THREADS 1
+# echo "limit stacksize 524288"
+# echo "OMP_NUM_THREADS" $OMP_NUM_THREADS
+  #
+  setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
   set $mpirun=mpirun
 #------------------------------------------------
