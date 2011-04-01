@@ -36,7 +36,7 @@ pro cslice, cube, limits, units=units, coords=coords, scaling=scaling
 	if (n_elements (limits) eq 0) then limits = reform (lindgen (num_x, num_y, num_z), num_x, num_y, num_z)
 
 	set = { cube:cube }
-	cmp_cslice, set, limits, units=units, scaling=scaling
+	cmp_cslice, set, limits, units=units, coords=coords, scaling=scaling
 
 	return
 end

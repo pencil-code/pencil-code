@@ -10,7 +10,7 @@
 
 
 ; Simple interface to cmp_cslice_cache without caching mechanism
-pro cmp_cslice, sets, limits, units=units, scaling=scaling
+pro cmp_cslice, sets, limits, units=units, coords=coords, scaling=scaling
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 

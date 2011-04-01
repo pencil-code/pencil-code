@@ -865,8 +865,9 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	bin_y = scaling[1]
 	bin_z = scaling[2]
 
-	if (n_elements (coords) ge 1) then coord = coords
-	if (n_elements (coord) eq 0) then begin
+	if (n_elements (coords) ge 1) then begin
+		coord = coords
+	end else begin
 		print, "WARNING: setting the pixel size to unit length."
 		coord = { x:findgen(num_x)*unit.length, y:findgen(num_y)*unit.length, z:findgen(num_z)*unit.length }
 	end
