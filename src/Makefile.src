@@ -639,9 +639,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-DFUNDERSC=1 #(dintel|student10)
 #LD_MPI=-L /home/ajohan/local/openmpi/lib -lmpi -lmpi_f77 #(dintel|student10)
 ##
-#FC=ifort #(opto[1-4])
-#FFLAGS=-O3 -I/home/johansen/mpich/include #(opto[1-4])
-#LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
 #FC=/afs/@cell/common/soft/intel/Compiler/11.1/c/bin/intel64/bin/ifort #(aims*)
 #FFLAGS=-I /afs/@cell/common/soft/intel/impi/3.2.2/include/ -O3 #(aims*)
 #LD_MPI=-L/afs/@cell/common/soft/intel/impi/3.2.2/lib64/ -lmpi -lmpiif #(aims*)
@@ -751,7 +748,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI=-L/usr/local/mpich/lib #(pcponty)
 #LD_MPI= # (Samos|fire|sandin)
 #LD_MPI=-L/usr/lib/lam/lib -llam -lmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd|metropolis)
-#CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
 #CFLAGS=-DFUNDERSC=1 #(obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd|metropolis)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin)
