@@ -882,7 +882,6 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
 !
       real, save :: time_mag_l, time_mag_r
-      real, dimension(:,:,:,:), allocatable, save :: A_l, A_r
       real, dimension(:,:), allocatable, save :: BB2_local
       real :: Bz_total_flux=0.0
 !
@@ -901,10 +900,10 @@ module Special
 !
       if (luse_mag_field .and. lfirst_proc_z) then
         ! External magnetic field
-        call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
-            A_init, time_mag_l, time_mag_r, A_l, A_r)
+        call update_mag_field(mag_time_offset, mag_times_dat, mag_field_dat, &
+            A_init, time_mag_l, time_mag_r)
         ! Drive the magnetic field
-        call mag_driver (A_init, Bz_total_flux, f)
+        call mag_driver(A_init, Bz_total_flux, f)
       endif
 !
       ! Prepare for footpoint quenching (lquench), flux conservation (Bz_flux),
@@ -929,7 +928,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine update_mag_field (time_offset, times_dat, field_dat, A, time_l, time_r, A_l, A_r)
+    subroutine update_mag_field (time_offset, times_dat, field_dat, A, time_l, time_r)
 !
 !  Check if an update of the vertical magnetic field is needed and load data.
 !  An interpolated vector field will be added to Ax and Ay.
@@ -942,41 +941,47 @@ module Special
       real, dimension(nx,ny,n1,3), intent(inout) :: A
       real, intent(inout) :: time_l, time_r
       real, dimension(:,:,:,:), allocatable :: A_l, A_r
+      logical, save :: lfirst_call=.true.
 !
       real :: time
-      integer :: pos_l, pos_r
+      integer :: pos_l, pos_r, alloc_err_sum
 !
       time = t - time_offset
 !
-      if (.not. allocated (A_l)) then
-        allocate (A_l(nx,ny,n1,2), A_r(nx,ny,n1,2), stat=alloc_err)
-        if (alloc_err > 0) &
-            call fatal_error ('special_before_boundary', 'Could not allocate memory for A_l/r', .true.)
-!
-        ! Load previous (l) frame and store it in (r), will be shifted later
-        call find_frame (time, times_dat, 'l', pos_l, time_l)
-        if (pos_l == 0) then
-          ! The simulation started before the first frame of the time series
-          ! start with a fixed magnetogram using the first frame
-          pos_l = 1
-          time_l = -time_offset
+      if (lfirst_call) then
+        if (.not. allocated(A_l)) allocate(A_l(nx,ny,n1,2),stat=alloc_err_sum)
+        if (.not. allocated(A_r)) allocate(A_r(nx,ny,n1,2),stat=alloc_err)
+        alloc_err_sum = abs(alloc_err_sum) + abs(alloc_err)
+        if (alloc_err_sum == 0) then
+! Load previous (l) frame and store it in (r), will be shifted later
+          call find_frame (time, times_dat, 'l', pos_l, time_l)
+          if (pos_l == 0) then
+! The simulation started before the first frame of the time series
+! start with a fixed magnetogram using the first frame
+            pos_l = 1
+            time_l = -time_offset
+          endif
+          call read_mag_field (pos_l, field_dat, A_r)
+! Make sure that the following (r) frame will get loaded:
+          time_r = time_l
+          lfirst_call=.false.
+        else
+          call fatal_error ('update_mag_field', &
+              'Could not allocate memory for A_l/r', .true.)
         endif
-        call read_mag_field (pos_l, field_dat, A_r)
-        ! Make sure that the following (r) frame will get loaded:
-        time_r = time_l
       endif
 !
       if (time >= time_r) then
-        ! Shift data from following (r) to previous (l) frame
+! Shift data from following (r) to previous (l) frame
         A_l = A_r
         time_l = time_r
-        ! Read new following (r) frame
+! Read new following (r) frame
         call find_frame (time, times_dat, 'r', pos_r, time_r)
         call read_mag_field (pos_r, field_dat, A_r)
       endif
 !
       A = 0.0
-      ! Store interpolated values to initial vector potential
+! Store interpolated values to initial vector potential
       call add_interpolated (time, time_l, time_r, A_l, A_r, A)
 !
     endsubroutine update_mag_field
