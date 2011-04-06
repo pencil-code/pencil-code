@@ -588,7 +588,7 @@ module Special
 !
     if (Kc /= 0.) then
       chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
-      K_c = chi_c*exp(p%lnrho+p%lnTT)*p%cp1*gamma
+      K_c = chi_c*exp(p%lnrho+p%lnTT)/(p%cp1*gamma)
       call multsv_mn(K_c,p%glnrho+p%glnTT,gKc)
       where (chi_spitzer > chi_c)
         chi_spitzer = chi_c
@@ -1026,12 +1026,12 @@ module Special
     if (lvideo) then
 !
 ! slices
-      rtv_yz(m-m1+1,n-n1+1)=-lnQ(ix_loc-l1+1)
-      if (m == iy_loc)  rtv_xz(:,n-n1+1)= -lnQ
-      if (n == iz_loc)  rtv_xy(:,m-m1+1)= -lnQ
-      if (n == iz2_loc) rtv_xy2(:,m-m1+1)=-lnQ
-      if (n == iz3_loc) rtv_xy3(:,m-m1+1)= -lnQ
-      if (n == iz4_loc) rtv_xy4(:,m-m1+1)= -lnQ
+      rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
+      if (m == iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
+      if (n == iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
+      if (n == iz2_loc) rtv_xy2(:,m-m1+1)=rtv_cool
+      if (n == iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
+      if (n == iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
     endif
 !
      if (lfirst.and.ldt) then
@@ -1093,7 +1093,8 @@ module Special
               j=1
               notdone=.false.
             elseif (j >= 37) then
-              call fatal_error('get_lnQ','lnTT to large')
+              !call fatal_error('get_lnQ','lnTT to large')
+              notdone=.false.
             endif
           endif
         enddo
