@@ -2637,9 +2637,12 @@ k_loop:   do while (.not. (k>npar_loc))
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                           rhop_swarm*rho1_point*dragforce*weight
                     else
-                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
-                          dvolume_1(ixx)*rho1_point*dragforce*weight
+                      call fatal_error("dvvt_dt_pencil", & 
+                           "back reaction not implemented for "//&
+                           "non-cartesian coordinates")
+                      !df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                      !    rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
+                      !    dvolume_1(ixx)*rho1_point*dragforce*weight
                     endif
                   enddo; enddo; enddo
 !
@@ -2711,9 +2714,12 @@ k_loop:   do while (.not. (k>npar_loc))
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                           rhop_swarm*rho1_point*dragforce*weight
                     else
-                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
-                          dvolume_1(ixx)*rho1_point*dragforce*weight
+                      call fatal_error("dvvt_dt_pencil", & 
+                           "back reaction not implemented for "//&
+                           "non-cartesian coordinates")
+                      !df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                      !    rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
+                      !    dvolume_1(ixx)*rho1_point*dragforce*weight
                     endif
                   enddo; enddo; enddo
                 else
@@ -2725,9 +2731,12 @@ k_loop:   do while (.not. (k>npar_loc))
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                         rhop_swarm*p%rho1(l-nghost)*dragforce
                   else
-                    df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                        rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
-                        dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
+                    call fatal_error("dvvt_dt_pencil", & 
+                         "back reaction not implemented for "//&
+                         "non-cartesian coordinates")
+                    !df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                    !    rhop_swarm*box_volume/(nxgrid*nygrid*nzgrid)* &
+                    !    dvolume_1(l-nghost)*p%rho1(l-nghost)*dragforce
                   endif
                 endif
               endif

@@ -1017,8 +1017,10 @@ module Particles_map
           if (lcartesian_coords) then
             f(l1:l2,m1:m2,n1:n2,irhop)=rhop_swarm*f(l1:l2,m1:m2,n1:n2,irhop)
           else
+            call fatal_error("map_xxp_grid"," Particle mapping not "//&
+                 "implemented for non-cartesian coordinates.")
             do m=m1,m2; do n=n1,n2
-              f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_swarm*dvolume_1
+              !f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_swarm*dvolume_1
             enddo; enddo
           endif
         endif

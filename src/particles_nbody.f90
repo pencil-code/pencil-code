@@ -1571,7 +1571,7 @@ module Particles_nbody
       real, dimension(maxsink,mspvar) :: fcsp_proc
       real, dimension(nx,3) :: vvpm
       real, dimension(nx) :: rho_jeans,rho_jeans_dust,vpm2
-      real, dimension(nx) :: Delta1
+      real, dimension(nx) :: Delta1,dvolume
       integer, dimension(nx,mpar_loc) :: pik
       integer :: i,k,kn,inx0,nc,ks,nc_loc,j
       integer::nc_proc
@@ -1638,6 +1638,8 @@ module Particles_nbody
             else
               pcs2=cs20
             endif
+!
+            dvolume = dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)      
 !
 !  Jeans analysis of the Gas
 !
