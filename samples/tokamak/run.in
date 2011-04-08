@@ -1,0 +1,27 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Sample run parameters
+!
+&run_pars
+  cvsid='$Id$',
+  nt=20, it1=2, cdt=0.9, isave=50, itorder=3
+  dsnap=20., dvid=200., ialive=1
+! lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&forcing_run_pars
+  lforcing_cont=T,  iforcing_cont='xz', ampl_ff=1e-2
+/
+&magnetic_run_pars
+  eta=1e-2
+  lforcing_cont_aa=T
+/
+&viscosity_run_pars
+  nu=1e-2
+/

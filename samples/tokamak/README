@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/tokamak
+SVN Id:
+    $Id$
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+    08-Apr-2011
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    64x32x64 for nu=eta=5e-3 is fine.
+Comments:
+    more to be added here
+References:
+    to be added

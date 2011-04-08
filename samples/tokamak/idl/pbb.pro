@@ -1,0 +1,13 @@
+pc_read_var,obj=var,/bb,/trimall
+;
+n=0
+xx=var.x#cos(var.y)
+yy=var.x#sin(var.y)
+;
+bb=reform(var.bb(*,*,n,1))
+xxx=transpose([transpose(xx),transpose(reform(xx(*,0)))])
+yyy=transpose([transpose(yy),transpose(reform(yy(*,0)))])
+bbb=transpose([transpose(bb),transpose(reform(bb(*,0)))])
+contour,bbb,xxx,yyy,/fill,nlev=30,/iso
+;
+END

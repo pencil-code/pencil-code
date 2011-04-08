@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id$',
+  lperi=F,T,T
+  xyz0=1.,0.     ,-1.
+  xyz1=3.,6.28319,+1.
+  bcx='a','s','s','s','s','f','f'
+  coord_system='cylindrical_coords'
+  random_gen='nr_f90'
+/
+&initial_condition_pars
+  b0=0., s0=2., width=.5, p0=1.
+/
+&eos_init_pars
+  gamma=1., cs0=10.
+/
+&hydro_init_pars
+  inituu='gaussian-noise', ampluu=1e-4
+/
+&density_init_pars
+/
+&magnetic_init_pars
+/

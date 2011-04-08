@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<buildinfo version="0.1" xmlns:media="http://www.nordita.dk/software/pencil-code/buildinfo">
+  <timestamp>Fri Apr  8 10:52:08 CEST 2011</timestamp>
+  <buildhost>
+    <hostname>nl6</hostname>
+    <os>Linux</os>
+    <osrelease>2.6.24-23-generic</osrelease>
+    <user>brandenb</user>
+    <uptime> 10:52:08 up 2 days,  4:51,  6 users,  load average: 0.48, 0.29, 0.20</uptime>
+  </buildhost>
+  <buildtime><timestamp type='start'>Fri Apr  8 10:51:50 CEST 2011</timestamp>
+<timestamp type='end'>Fri Apr  8 10:52:08 CEST 2011</timestamp></buildtime>
+  <makeinfo>
+    <var name="FC">ifort -std95 </var>
+    <var name="F77">ifort -std95 </var>
+    <var name="F90"></var>
+    <var name="FFLAGS">-O1  -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ </var>
+    <var name="F90FLAGS"></var>
+    <var name="F77FLAGS"></var>
+    <var name="FFLAGS_GENERAL"></var>
+    <var name="CFLAGS_GENERAL"></var>
+    <var name="LDMPI"></var>
+    <var name="LDONLYFLAGS"></var>
+  </makeinfo>
+  <rundirinfo>
+</rundirinfo>
+  <moduleinfo>
+    <module name="MPICOMM" option="">
+<source></source>'
+</module>'
+    <module name="GLOBAL" option="">
+<source></source>'
+</module>'
+    <module name="GRID" option="">
+<source></source>'
+</module>'
+    <module name="IO" option="">
+<source></source>'
+</module>'
+    <module name="FFT" option="">
+<source></source>'
+</module>'
+    <module name="FFTPACK" option="">
+<source></source>'
+</module>'
+    <module name="POWER" option="nopower_spectrum">
+<source>nopower_spectrum.f90</source>'
+</module>'
+    <module name="DEBUG" option="nodebug">
+<source>nodebug.f90</source>'
+</module>'
+    <module name="HYDRO" option="hydro">
+<source>hydro.f90</source>'
+</module>'
+    <module name="VISCOSITY" option="viscosity">
+<source>viscosity.f90</source>'
+</module>'
+    <module name="DENSITY" option="density">
+<source>density.f90</source>'
+</module>'
+    <module name="ENTROPY" option="noentropy">
+<source>noentropy.f90</source>'
+</module>'
+    <module name="MAGNETIC" option="magnetic">
+<source>magnetic.f90</source>'
+</module>'
+    <module name="RADIATION" option="noradiation">
+<source>noradiation.f90</source>'
+</module>'
+    <module name="PSCALAR" option="nopscalar">
+<source>nopscalar.f90</source>'
+</module>'
+    <module name="CHIRAL" option="nochiral">
+<source>nochiral.f90</source>'
+</module>'
+    <module name="DUSTVELOCITY" option="nodustvelocity">
+<source>nodustvelocity.f90</source>'
+</module>'
+    <module name="DUSTDENSITY" option="nodustdensity">
+<source>nodustdensity.f90</source>'
+</module>'
+    <module name="INTERSTELLAR" option="nointerstellar">
+<source>nointerstellar.f90</source>'
+</module>'
+    <module name="COSMICRAY" option="nocosmicray">
+<source>nocosmicray.f90</source>'
+</module>'
+    <module name="COSMICRAYFLUX" option="nocosmicrayflux">
+<source>nocosmicrayflux.f90</source>'
+</module>'
+    <module name="EOS" option="eos_idealgas">
+<source>eos_idealgas.f90</source>'
+</module>'
+    <module name="STRUCT_FUNC" option="nostruct_func">
+<source>nostruct_func.f90</source>'
+</module>'
+    <module name="INITCOND_SPEC" option="">
+<source></source>'
+</module>'
+    <module name="SHOCK" option="noshock">
+<source>noshock.f90</source>'
+</module>'
+    <module name="TESTFIELD" option="notestfield">
+<source>notestfield.f90</source>'
+</module>'
+    <module name="TESTFLOW" option="notestflow">
+<source>notestflow.f90</source>'
+</module>'
+    <module name="TESTPERTURB" option="notestperturb">
+<source>notestperturb.f90</source>'
+</module>'
+    <module name="GRAVITY" option="nogravity">
+<source>nogravity.f90</source>'
+</module>'
+    <module name="FORCING" option="experimental/fcont_sample">
+<source>experimental/fcont_sample.f90</source>'
+</module>'
+    <module name="SHEAR" option="noshear">
+<source>noshear.f90</source>'
+</module>'
+    <module name="TIMEAVG" option="notimeavg">
+<source>notimeavg.f90</source>'
+</module>'
+    <module name="SPECIAL" option="nospecial">
+<source>nospecial.f90</source>'
+</module>'
+    <module name="PARTICLES" option="noparticles">
+<source>noparticles.f90</source>'
+</module>'
+    <module name="PARTICLES_SUB" option="noparticles_sub">
+<source>noparticles_sub.f90</source>'
+</module>'
+    <module name="PARTICLES_MAIN" option="noparticles_main">
+<source>noparticles_main.f90</source>'
+</module>'
+    <module name="PARTICLES_RADIUS" option="noparticles_radius">
+<source>noparticles_radius.f90</source>'
+</module>'
+    <module name="SHOCK_PROFILE" option="">
+<source></source>'
+</module>'
+    <module name="SHOCK_FINDER" option="">
+<source></source>'
+</module>'
+  </moduleinfo>
+</buildinfo>

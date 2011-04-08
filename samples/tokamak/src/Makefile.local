@@ -1,0 +1,14 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM=nompicomm
+FORCING=noforcing
+ENTROPY=noentropy
+MAGNETIC=magnetic
+HYDRO=hydro
+DENSITY=density
+VISCOSITY=viscosity
+FORCING=experimental/forcing_cont_sample
+INITIAL_CONDITION=initial_condition/fluxring_cylindrical
