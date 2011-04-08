@@ -775,8 +775,8 @@ module Grid
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
           box_volume = box_volume*Lxyz(1)
-          dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
+          dvolume    = 1./dvolume_1
           dVol_x=xprim
         else
           dVol_x=1.
@@ -786,8 +786,8 @@ module Grid
 !
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
-          dvolume    = dvolume   *dy
           dvolume_1  = dvolume_1 *dy_1(mpoint)
+          dvolume    = 1./dvolume_1
           dVol_y=yprim
         else
           dVol_y=1.
@@ -797,8 +797,8 @@ module Grid
 !
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
-          dvolume    = dvolume   *dz
           dvolume_1  = dvolume_1 *dz_1(npoint)
+          dvolume    = 1./dvolume_1
           dVol_z=zprim
         else
           dVol_z=1.
@@ -884,8 +884,8 @@ module Grid
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
           box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
-          dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
+          dvolume    = 1./dvolume_1
           dVol_x=x**2*xprim
         else
           dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
@@ -895,13 +895,13 @@ module Grid
 !
         if (nygrid/=1) then
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
-          dvolume    = dvolume   *x(l1:l2)*dy
           dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)
+          dvolume    = 1./dvolume_1
           dVol_y=sinth*yprim
         else
           box_volume = box_volume*2.
-          dvolume    = dvolume   *x(l1:l2)*2.
           dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)*.5
+          dvolume    = 1./dvolume_1
           dVol_y=2.
         endif
 !
@@ -909,13 +909,13 @@ module Grid
 !
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
-          dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*dz
           dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)
+          dvolume    = 1./dvolume_1
           dVol_z=zprim
         else
           box_volume = box_volume*2.*pi
-          dvolume    = dvolume   *x(l1:l2)*sinth(mpoint)*2.*pi
           dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)*.5*pi_1
+          dvolume    = 1./dvolume_1
           dVol_z=2.*pi
         endif
 !
@@ -979,8 +979,8 @@ module Grid
         box_volume=1.;dvolume=1.;dvolume_1=1.
         if (nxgrid/=1) then
           box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
-          dvolume    = dvolume   *dx
           dvolume_1  = dvolume_1 *dx_1(l1:l2)
+          dvolume    = 1./dvolume_1
           dVol_x=x*xprim
         else
           dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
@@ -990,13 +990,13 @@ module Grid
 !
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
-          dvolume    = dvolume   *rcyl_mn*dy
           dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(mpoint)
+          dvolume    = 1./dvolume_1
           dVol_y=yprim
         else
           box_volume = box_volume*2.*pi
-          dvolume    = dvolume   *rcyl_mn*2.*pi
           dvolume_1  = dvolume_1 *rcyl_mn1*.5*pi_1
+          dvolume    = 1./dvolume_1
           dVol_y=2.*pi
         endif
 !
@@ -1004,8 +1004,8 @@ module Grid
 !
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
-          dvolume    = dvolume   *dz
           dvolume_1  = dvolume_1 *dz_1(npoint)
+          dvolume    = 1./dvolume_1
           dVol_z=zprim
         else
           dVol_z=1.
