@@ -12,3 +12,4 @@ DENSITY=density
 VISCOSITY=viscosity
 FORCING=experimental/forcing_cont_sample
 INITIAL_CONDITION=initial_condition/fluxring_cylindrical
+REAL_PRECISION=double
