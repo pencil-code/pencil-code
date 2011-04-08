@@ -305,7 +305,7 @@ default, scaling, fix (256.0 / max ([dim.nx, dim.ny, dim.nz]))
 if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
 
-cmp_cslice_cache, quantities, limits, scaling=scaling, overplots=overplot_quantities
+cmp_cslice_cache, quantities, limits, scaling=scaling, coords=coords, overplots=overplot_quantities
 
 window, 0, xsize=8, ysize=8, retain=2
 !P.MULTI = [0, 1, 1]
