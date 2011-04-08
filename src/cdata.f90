@@ -51,7 +51,7 @@ module Cdata
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
-  real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight,dvolume,dvolume_1
+  real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
   real, dimension (my) :: cos1th,tanth
   real, dimension (nygrid) :: sinth_weight_across_proc

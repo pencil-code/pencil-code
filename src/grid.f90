@@ -772,11 +772,9 @@ module Grid
 !  Box volume and volume element.
 !  x-extent
 !
-        box_volume=1.;dvolume=1.;dvolume_1=1.
+        box_volume=1.
         if (nxgrid/=1) then
           box_volume = box_volume*Lxyz(1)
-          dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dvolume    = 1./dvolume_1
           dVol_x=xprim
         else
           dVol_x=1.
@@ -786,8 +784,6 @@ module Grid
 !
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
-          dvolume_1  = dvolume_1 *dy_1(mpoint)
-          dvolume    = 1./dvolume_1
           dVol_y=yprim
         else
           dVol_y=1.
@@ -797,8 +793,6 @@ module Grid
 !
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
-          dvolume_1  = dvolume_1 *dz_1(npoint)
-          dvolume    = 1./dvolume_1
           dVol_z=zprim
         else
           dVol_z=1.
@@ -876,16 +870,16 @@ module Grid
 !  Box volume and volume element - it is wrong for spherical, since
 !  sinth also changes with y-position.
 !
+!  WL: Is this comment above still relevant?
+!
 !  Split up volume differential as (dr) * (r*dtheta) * (r*sinth*dphi)
 !  and assume that sinth=1 if there is no theta extent.
 !  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
 !  r extent:
 !
-        box_volume=1.;dvolume=1.;dvolume_1=1.
+        box_volume=1.
         if (nxgrid/=1) then
           box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
-          dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dvolume    = 1./dvolume_1
           dVol_x=x**2*xprim
         else
           dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
@@ -895,13 +889,9 @@ module Grid
 !
         if (nygrid/=1) then
           box_volume = box_volume*(-(cos(xyz1(2))  -cos(xyz0(2))))
-          dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)
-          dvolume    = 1./dvolume_1
           dVol_y=sinth*yprim
         else
           box_volume = box_volume*2.
-          dvolume_1  = dvolume_1 *r1_mn*dy_1(mpoint)*.5
-          dvolume    = 1./dvolume_1
           dVol_y=2.
         endif
 !
@@ -909,13 +899,9 @@ module Grid
 !
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
-          dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)
-          dvolume    = 1./dvolume_1
           dVol_z=zprim
         else
           box_volume = box_volume*2.*pi
-          dvolume_1  = dvolume_1 *r1_mn*sin1th(mpoint)*dz_1(npoint)*.5*pi_1
-          dvolume    = 1./dvolume_1
           dVol_z=2.*pi
         endif
 !
@@ -976,11 +962,9 @@ module Grid
 !
 !  Box volume and volume element.
 !
-        box_volume=1.;dvolume=1.;dvolume_1=1.
+        box_volume=1.
         if (nxgrid/=1) then
           box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
-          dvolume_1  = dvolume_1 *dx_1(l1:l2)
-          dvolume    = 1./dvolume_1
           dVol_x=x*xprim
         else
           dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
@@ -990,13 +974,9 @@ module Grid
 !
         if (nygrid/=1) then
           box_volume = box_volume*Lxyz(2)
-          dvolume_1  = dvolume_1 *rcyl_mn1*dy_1(mpoint)
-          dvolume    = 1./dvolume_1
           dVol_y=yprim
         else
           box_volume = box_volume*2.*pi
-          dvolume_1  = dvolume_1 *rcyl_mn1*.5*pi_1
-          dvolume    = 1./dvolume_1
           dVol_y=2.*pi
         endif
 !
@@ -1004,8 +984,6 @@ module Grid
 !
         if (nzgrid/=1) then
           box_volume = box_volume*Lxyz(3)
-          dvolume_1  = dvolume_1 *dz_1(npoint)
-          dvolume    = 1./dvolume_1
           dVol_z=zprim
         else
           dVol_z=1.
