@@ -534,6 +534,12 @@ module Particles
         close (1)
       endif
 !
+      if (.not.lcartesian_coords) then 
+        call warning("initialize_particles","Particle mapping not "//&
+             "fully functional for non-cartesian coordinates.")
+      endif
+
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles
