@@ -226,6 +226,7 @@ pro cslice_event, event
 		if (selected_snapshot ne event.index) then begin
 			prepare_set, event.index
 			prepare_cube, -1
+			prepare_overplot
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			if (selected_snapshot lt num_snapshots - 1) then prev_active = 1 else prev_active = 0
 			if (selected_snapshot gt 0) then next_active = 1 else next_active = 0
@@ -247,6 +248,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 		prepare_set, selected_snapshot
 		prepare_cube, -1
+		prepare_overplot
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'PREV': begin
@@ -259,6 +261,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 		prepare_set, selected_snapshot
 		prepare_cube, -1
+		prepare_overplot
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
 	'OVER': begin
@@ -331,6 +334,7 @@ pro cslice_event, event
 		end
 		prepare_set, previous_snapshot
 		prepare_cube, -1
+		prepare_overplot
 		frozen = orig_frozen
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		if (num_cubes ge 2) then vars_active = 1 else vars_active = 0
@@ -745,6 +749,7 @@ pro reset_GUI
 	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2)
 
 	prepare_cube, -1
+	prepare_overplot
 
 	WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
 	WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
