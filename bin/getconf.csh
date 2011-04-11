@@ -643,6 +643,8 @@ else if ($hn =~ emil-login*.pdc.kth.se*) then
     source /cfs/emil/pdc/gustavog/cshrc_lindgren
   else if ($USER =~ brandenb) then
     source /cfs/emil/pdc/brandenb/cshrc_lindgren
+  else if ($USER =~ warnecke) then
+    source /cfs/emil/pdc/warnecke/cshrc_lindgren
   else
     source /mnt/lustre_server/pdc/dmitra/pencil-code/dhruba/cshrc_lindgren
   endif
