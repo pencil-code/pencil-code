@@ -228,21 +228,6 @@ nz=mz-nghostz*2
   ;end
 ;end
 
-if lint_shell then begin
-  
-  nk=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1 
-  kshell = fltarr(nk)
-     
-  if lint_z then $
-    spectrum1=fltarr(nk) $
-  else $
-    spectrum1=fltarr(nk,nz)
-    
-endif else if lint_z then $
-  spectrum1=fltarr(nx,ny) $
-else $
-  spectrum1=fltarr(nx,ny,nz)
-
 kxs = fltarr(nx) & kys = fltarr(ny) 
   
 k0=2.*!pi/Lz
@@ -264,16 +249,54 @@ openr,1, datatopdir+'/'+file1
   point_lun, -1, pos0
   headline = ''
   readf, 1, headline
-  witheader=strpos(headline,'power spectrum') ne -1 
+  witheader=strpos(headline,'power spectrum') ne -1
   
   if witheader then begin
+
+    if (strpos(headline,'shell-integrated') ne -1) ne lint_shell then begin
+    
+      if lint_shell then $
+        print, 'Warning: File header says "not shell-integrated" - assume that' $
+      else $
+        print, 'Warning: File header says "shell-integrated" - assume that'
+        
+      lint_shell = ~lint_shell
+      
+    endif
+    
+    if (strpos(headline,'z-integrated') ne -1) ne lint_z then begin
+
+      if lint_z then $
+        print, 'Warning: File header says "not z-integrated" - assume that' $
+      else $
+        print, 'Warning: File header says "z-integrated" - assume that'
+        
+      lint_z = ~lint_z
+      
+    endif
   
     readf, 1, headline
-    
-    if (lint_shell) then $
-      readf, 1, kshell $
-    else $ 
-      readf, 1, kxs, kys
+
+    if lint_shell then begin
+      
+      nk=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1 
+      kshell = fltarr(nk)
+         
+      if lint_z then $
+        spectrum1=fltarr(nk) $
+      else $
+        spectrum1=fltarr(nk,nz)
+        
+    endif else if lint_z then $
+      spectrum1=fltarr(nx,ny) $
+    else $
+      spectrum1=fltarr(nx,ny,nz)
+
+    if strpos(headline,'Wavenumbers') eq -1 then $
+      print, 'Warning: File header corrupt!'
+     
+    readf, 1, kxs, kys 
+    if (lint_shell) then readf, 1, kshell 
     
     point_lun, -1, pos 
    
@@ -282,7 +305,7 @@ openr,1, datatopdir+'/'+file1
     kxs=(findgen(nx)-nx/2)*2*!pi/Lx                ;,(nx+1)/2)*2*!pi/Lx
     kys=(findgen(ny)-ny/2)*2*!pi/Ly                ;,(ny+1)/2)*2*!pi/Ly
      
-    if lint_shell then $
+    if lint_shell then $                           ; valid for old style files
       for ix=0,nx-1 do $
         for iy=0,ny-1 do begin
           ik = round( sqrt( kxs(ix)^2+kys(iy)^2 )/(2*!pi/Lx) )
@@ -310,6 +333,7 @@ openr,1, datatopdir+'/'+file1
       else begin
         readf,1,headline
         readf,1, kxs, kys
+        if (lint_shell) then readf, 1, kshell
       endelse
  
       readf,1,time
@@ -399,8 +423,11 @@ endif
       if strpos(headline,'power spectrum') eq -1 then $
         point_lun, 1, pos $
       else begin
+        
         readf,1,headline
         readf,1, kxs, kys
+        if (lint_shell) then readf, 1, kshell
+
       endelse
       readf,1,time
       
@@ -513,9 +540,9 @@ endif
       set_plot, 'X'
       
       for it=0,n_elements(tt)-1 do begin 
-        contour, spec1(*,*,it),kxs,kys, nlevels=30, /fill, c_colors=8.*indgen(30), xrange=[-15.,15.], yr=[-5.,5.], xtitle='kx', ytitle='ky' 
+        contour, spec1(*,*,it),kxs,kys, nlevels=30, /fill, c_colors=8.*indgen(30), xrange=[-15.,15.], yr=[-5.,5.], xtitle='kx', ytitle='ky'
         xyouts, 15.1, 4., string(tt(it))
-        wait, .1 
+        wait, .1
       endfor
       ;goto, loop2;
 loop1:
@@ -535,43 +562,62 @@ loop1:
         set_plot, 'PS'
         device, file='power.ps'
       endif else begin
-        set_plot, 'x'   
+        set_plot, 'X'   
       endelse
   
-      ikx1=12 & ikx2=20                      ;ikx1=31 & ikx2=33
-      iky1=15 & iky2=17
+      ikx0 = 0
+      while ikx0 ge 0 do begin
       
-      for ikx=ikx1,ikx2,8 do begin
+        read, ikx0, iky0, prompt='Wellenzahlen:'
         
-        if ikx eq ikx1 then $
-	  exinds1 = gen_exinds(spec1(ikx,17,*)) $
-	else $
-	  exinds = gen_exinds(spec1(ikx,17,*))
-      
-      endfor 
-loop2:     
-      itmin=0  & itmax=n_elements(tt)-1
-      while itmax ge 0 do begin
-      
-        read, itmin, prompt='itmin= (>0)'
-        read, itmax, prompt='itmax= (<'+string(n_elements(tt), format='(i4)')+', Stop by negative itmax)'
-	
-	plot_segs, tt(itmin:itmax), spec1(ikx2,iky2,itmin:itmax), exinds-itmin, colors=[!p.color], /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
-        ;plot , tt(itmin:itmax), spec1(ikx2,iky2,itmin:itmax), /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
-        ;oplot, tt(itmin:itmax), spec1(ikx1,iky1,itmin:itmax), linest=3, color=250
+        if ikx0 ge 0 and iky0 ge 0 then begin
         
-	plot_segs, tt(itmin:itmax), spec1(ikx1,iky2,itmin:itmax), exinds1-itmin, colors=[!p.color], /overplot
-        ;oplot, tt(itmin:itmax), spec1(ikx1,iky2,itmin:itmax)	   
-        ;oplot, tt(itmin:itmax), spec1(ikx2,iky1,itmin:itmax), linest=3, color=250
-	
-	xyouts, .5*tt(itmax), 0.5*spec1(ikx2,iky2,0.5*itmax), '++'
-	xyouts, .5*tt(itmax),  3.*spec1(ikx2,iky1,0.5*itmax), '+-'
-	
-        xyouts, .8*tt(itmax), 1.e-10, '!7k!D!8x!N!3='+string(2.*!pi/kxs(ikx2)/Lx, format='(f4.1)')+'!8L!Dx!N!3'
-        xyouts, .8*tt(itmax), 1.e-11, '!7k!D!8y!N!3='+string(2.*!pi/kys(iky2)/Ly, format='(f4.1)')+'!8L!Dy!N!3'
+          ikx1 = 16-ikx0 & ikx2 = 16+ikx0
+          iky1 = 16-iky0 & iky2 = 16+iky0
+          
+          for ikx=ikx1,ikx2,8 do begin
+            
+            if ikx eq ikx1 then $
+              exinds1 = gen_exinds(spec1(ikx,iky2,*)) $
+            else $
+              exinds = gen_exinds(spec1(ikx,iky2,*))
+          
+          endfor 
+loop2:       
+          itmin=0  & itmax=n_elements(tt)-1
+          while itmax ge 0 do begin
+          
+            read, itmin, prompt='itmin= (>0)'
+            read, itmax, prompt='itmax= (<'+string(n_elements(tt), format='(i4)')+', Stop by negative itmax)'
 
+            if itmin ge 0 and itmax ge 0 then begin
+            
+              plot_segs, tt(itmin:itmax), spec1(ikx1,iky2,itmin:itmax), exinds1-itmin, colors=[!p.color], /overplot
+              ;oplot, tt(itmin:itmax), spec1(ikx1,iky2,itmin:itmax)      
+              ;oplot, tt(itmin:itmax), spec1(ikx2,iky1,itmin:itmax), linest=3, color=250
+
+              if ikx2 eq ikx1+8 then begin
+              
+                plot_segs, tt(itmin:itmax), spec1(ikx2,iky2,itmin:itmax), exinds-itmin, colors=[!p.color], /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
+                ;plot , tt(itmin:itmax), spec1(ikx2,iky2,itmin:itmax), /ylog, xtitle='!8t', ytitle='!8E!Dk!N!3'
+                ;oplot, tt(itmin:itmax), spec1(ikx1,iky1,itmin:itmax), linest=3, color=250
+              
+                xyouts, .5*tt(itmax), 0.5*spec1(ikx2,iky2,0.5*itmax), '++'
+                xyouts, .5*tt(itmax),  3.*spec1(ikx2,iky1,0.5*itmax), '+-'
+
+                xyouts, .8*tt(itmax), 1.e-10, '!7k!D!8x!N!3='+string(2.*!pi/kxs(ikx2)/Lx, format='(f4.1)')+'!8L!Dx!N!3'
+                xyouts, .8*tt(itmax), 1.e-11, '!7k!D!8y!N!3='+string(2.*!pi/kys(iky2)/Ly, format='(f4.1)')+'!8L!Dy!N!3'
+
+                openw, 12, 'powjxb.dat'
+                printf, 12, itmin, itmax
+                printf, 12, spec1(ikx2,iky2,itmin:itmax)
+                printf, 12, spec1(ikx1,iky2,itmin:itmax)
+                close, 12
+              endif
+            endif  
+          endwhile
+        endif
       endwhile
-      
       stop
 cont1:    
     endif
