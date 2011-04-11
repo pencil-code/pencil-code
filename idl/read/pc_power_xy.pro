@@ -292,11 +292,18 @@ openr,1, datatopdir+'/'+file1
     else $
       spectrum1=fltarr(nx,ny,nz)
 
-    if strpos(headline,'Wavenumbers') eq -1 then $
+    if strpos(headline,'avenumbers') eq -1 then $
       print, 'Warning: File header corrupt!'
      
     readf, 1, kxs, kys 
-    if (lint_shell) then readf, 1, kshell 
+    if (lint_shell) then begin
+    
+      readf, 1, headline
+      if strpos(headline,'avenumbers') eq -1 then $
+        print, 'Warning: File header corrupt!'
+        
+      readf, 1, kshell 
+    endif
     
     point_lun, -1, pos 
    
@@ -333,7 +340,14 @@ openr,1, datatopdir+'/'+file1
       else begin
         readf,1,headline
         readf,1, kxs, kys
-        if (lint_shell) then readf, 1, kshell
+        if (lint_shell) then begin
+        
+          readf, 1, headline
+          if strpos(headline,'avenumbers') eq -1 then $
+            print, 'Warning: File header corrupt!'
+            
+          readf, 1, kshell 
+        endif
       endelse
  
       readf,1,time
@@ -426,7 +440,11 @@ endif
         
         readf,1,headline
         readf,1, kxs, kys
-        if (lint_shell) then readf, 1, kshell
+        
+        if (lint_shell) then begin
+          readf, 1, headline
+          readf, 1, kshell 
+        endif
 
       endelse
       readf,1,time
