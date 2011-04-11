@@ -185,6 +185,7 @@ module Cdata
 !
   integer, dimension(mseed) :: seed=0
   integer :: nseed=0, seed0=1812
+  integer, parameter :: ndustspec0=8
   real, dimension (2) :: fran1,fran2
 !
 !  Module flags.
@@ -212,7 +213,7 @@ module Cdata
   logical :: lpscalar_nolog=.false.
   logical :: lalpm=.false.
   logical :: lradiation_ray=.false.,lradiation_fld=.false.
-  logical :: ldustdensity_log=.false., lmdvar=.false., lmice=.false.
+  logical :: ldustdensity_log=.false., lmdvar=.false., lmice=.false., ldcore=.false.
   logical :: lneutraldensity_nolog=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
@@ -267,7 +268,8 @@ module Cdata
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0
   integer :: iaphi=0,ibphi=0,ieth=0
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0
-  integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0
+  integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0,idc=0,ilndc=0
+  integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0
   integer, dimension(nchemspec) :: ichemspec=0
   integer :: ilnrhon=0,irhon=0,iuun=0,iunx=0,iuny=0,iunz=0
   integer :: iglobal_bx_ext=0, iglobal_by_ext=0, iglobal_bz_ext=0

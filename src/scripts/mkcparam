@@ -208,14 +208,21 @@ my $npencils=$#pencil_names+1;
 # More processing of dust information.
 #
 ($ndustspec,$mvar_per_dust) = split /\*/, $dust_string;
+
 if ($ndustspec >= 1) {
   if ($mvar_per_dust > 1) {
     if ($mvar_per_dust == 2 || $mvar_per_dust == 5) {
-      $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust + 1; }
+     $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust + 1; }
     else {
-      $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust; } }
+      if ($mvar_per_dust == 9) {
+        $mvar = $mvar + ($ndustspec)*$mvar_per_dust -1; }
+      else {
+        $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust; } } }
+    
   else {
     $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust; } }
+
+
 #
 # More processing of chemistry information.
 #

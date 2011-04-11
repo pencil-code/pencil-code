@@ -54,7 +54,6 @@ module Special
 !  use Density, only: rho_up
   use EquationOfState
 
-
   implicit none
 
   include '../special.h'
@@ -65,23 +64,25 @@ module Special
 
   character (len=labellen) :: initstream='default'
   real, dimension(ndustspec) :: dsize, dds
+  real, dimension(ndustspec0) :: dsize0, dds0
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_H2O, ind_N2! ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
+  real :: dsize0_max=0.,dsize0_min=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
 
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, delta, uy_bz, ux_bz, Ntot=1e3
-  
+   
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
-      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz
+      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -201,6 +202,16 @@ module Special
             dds(k)=dsize(k+1)-dsize(k)
           elseif (k==ndustspec) then
             dds(k)=dsize(k)-dsize(k-1)
+          endif
+          enddo
+!
+          do i=1,ndustspec0
+          if ((i>1) .and. (i<ndustspec0)) then
+            dds0(i)=(dsize0(i+1)-dsize0(i-1))/2.
+          elseif (i==1) then
+            dds0(i)=(dsize0(i+1)-dsize0(i))/2
+          elseif (i==ndustspec0) then
+            dds0(i)=(dsize0(i)-dsize0(i-1))/2
           endif
           enddo
       endif
@@ -776,6 +787,176 @@ module Special
 !
     endsubroutine special_boundconds
 !***********************************************************************
+   subroutine special_after_timestep(f,df,dt_)
+!
+!  Possibility to modify the f and df after df is updated.
+!  Used for the Fargo shift, for instance.
+!
+!  27-nov-08/wlad: coded
+!
+
+      use General, only: spline_integral
+      use Dustdensity
+
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
+      real, dimension (ndustspec) :: ff_tmp, ttt, ttt2
+      integer :: k,i,i1,i2,i3
+      character (len=20) :: output_file="./data/nd.out"
+      character (len=20) :: output_file2="./data/nd2.out"
+      character (len=20) :: output_file3="./data/nd3.out"
+      character (len=20) :: output_file4="./data/nd4.out"
+      integer :: file_id=123
+! 
+      if (.not. ldustdensity_log) then
+      do i1=l1,l2
+      do i2=m1,m2
+      do i3=n1,n2
+!
+         do k=1,ndustspec 
+            if (f(i1,i2,i3,ind(k))<10) f(i1,i2,i3,ind(k))=10
+            if (ldcore) then
+              do i=1, ndustspec0
+                if (f(i1,i2,i3,idcj(k,i))<10) f(i1,i2,i3,idcj(k,i))=10
+              enddo
+            endif
+          enddo
+!         
+      enddo
+      enddo  
+      enddo
+      endif
+!
+      call dustspec_normalization(f)
+      call write_0d_result(f)
+!
+    endsubroutine  special_after_timestep
+!***********************************************************************
+     subroutine write_0d_result(f)
+!
+!   7-apr-11/Natalia: coded
+!   writing the results in 0d case
+!
+      use General, only: spline_integral
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (ndustspec) :: ff_tmp, ttt
+      integer :: k,i
+      character (len=20) :: output_file="./data/nd.out"
+      character (len=20) :: output_file2="./data/nd2.out"
+      character (len=20) :: output_file3="./data/nd3.out"
+      character (len=20) :: output_file4="./data/nd4.out"
+      integer :: file_id=123
+!
+        if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
+      if (it == 1) then
+        open(file_id,file=output_file)
+            write(file_id,'(7E12.4)') t
+          if (lmdvar) then
+            do k=1,ndustspec
+              if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+               write(file_id,'(7E15.8)') dsize(k), &
+                 f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+            enddo
+          elseif (ldcore) then
+           do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
+             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+           enddo
+          else
+            do k=1,ndustspec
+              write(file_id,'(7E15.8)') dsize(k), &
+                f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+            enddo
+          endif
+        close(file_id)
+        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
+!        print*,ttt(ndustspec) 
+      endif
+      if (it == 200) then
+        open(file_id,file=output_file2)
+            write(file_id,'(7E12.4)') t
+         if (lmdvar) then
+          do k=1,ndustspec
+            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+             write(file_id,'(7E15.8)') dsize(k), &
+               f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+          enddo
+
+         elseif (ldcore) then
+           do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
+             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+           enddo
+         else
+           do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+               f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+         endif
+        close(file_id)
+        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
+!        print*,ttt(ndustspec)
+      endif
+      if (it == 25000) then
+        open(file_id,file=output_file3)
+            write(file_id,'(7E12.4)') t
+        if (lmdvar) then
+          do k=1,ndustspec
+            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+          enddo
+        elseif (ldcore) then
+           do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
+             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+        else
+          do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+        endif
+        close(file_id)
+        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
+!        print*,ttt(ndustspec)
+      endif
+
+      if (it == 50000) then
+        open(file_id,file=output_file4)
+            write(file_id,'(7E12.4)') t
+        if (lmdvar) then
+          do k=1,ndustspec
+            if (f(l1,m1,n1,imd(k)) <1e-20) f(l1,m1,n1,imd(k))=0.
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), f(l1,m1,n1,imd(k))
+          enddo
+        elseif (ldcore) then
+          do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho)), &
+             f(l1,m1,n1,idcj(k,5))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+        else
+          do k=1,ndustspec
+             write(file_id,'(7E15.8)') dsize(k), &
+             f(l1,m1,n1,ind(k))*dsize(k)*exp(f(l1,m1,n1,ilnrho))
+          enddo
+        endif
+        close(file_id)
+        ttt= spline_integral(dsize,f(l1,m1,n1,ind))
+!        print*,ttt(ndustspec)
+      endif
+      endif
+!  
+      endsubroutine  write_0d_result
+!***********************************************************************
+!-----------------------------------------------------------------------
 !
 !  PRIVATE UTITLITY ROUTINES
 !

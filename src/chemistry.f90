@@ -687,7 +687,6 @@ module Chemistry
 !  Interface for user's own initial condition
 !
 !
-print*,'NATA'
 !
       if (linitial_condition) call initial_condition_chemistry(f)
 !
