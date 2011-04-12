@@ -1391,6 +1391,26 @@ module Mpicomm
 !
     endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
+    subroutine communicate_xy_ghosts(data)
+!
+!  Helper routine for communication of ghost cells in horizontal direction.
+!
+!  11-apr-2011/Bourdin.KIS: adapted from communicate_vect_field_ghosts.
+!
+      real, dimension (mx,my), intent (inout) :: data
+!
+!  Periodic boundaries in y
+!
+      data(l1:l2,   1:m1-1) = data(l1:l2,m2i:m2 )
+      data(l1:l2,m2+1:my  ) = data(l1:l2, m1:m1i)
+!
+!  Periodic boundaries in x
+!
+      data(   1:l1-1,:) = data(l2i:l2 ,:)
+      data(l2+1:mx  ,:) = data( l1:l1i,:)
+!
+    endsubroutine communicate_xy_ghosts
+!***********************************************************************
     subroutine sum_xy (in, out)
 !
 !  Sum up 0D data in the xy-plane and distribute back the sum.

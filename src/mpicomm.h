@@ -31,7 +31,8 @@
   public :: transp, transp_xy, transp_xy_other, transp_other
   public :: transp_xz, transp_zx
 
-  public :: communicate_vect_field_ghosts, fill_zghostzones_3vec
+  public :: communicate_vect_field_ghosts, communicate_xy_ghosts
+  public :: fill_zghostzones_3vec
 
   public :: sum_xy, distribute_xy, collect_xy
   public :: distribute_z, collect_z

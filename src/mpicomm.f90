@@ -3375,6 +3375,88 @@ module Mpicomm
 !
     endsubroutine communicate_vect_field_ghosts
 !***********************************************************************
+    subroutine communicate_xy_ghosts(data)
+!
+!  Helper routine for communication of ghost cells in horizontal direction.
+!
+!  11-apr-2011/Bourdin.KIS: adapted from communicate_vect_field_ghosts.
+!
+      real, dimension (mx,my), intent (inout) :: data
+!
+      real, dimension (nx,nghost) :: lbufyo,ubufyo,lbufyi,ubufyi
+      real, dimension (nghost,ny+2*nghost) :: lbufxo,ubufxo,lbufxi,ubufxi
+      integer :: nbufx,nbufy
+!
+!  Periodic boundaries in y -- communicate along y if necessary
+!
+      if (nprocy > 1) then
+!
+        lbufyo = data(l1:l2, m1:m1i)
+        ubufyo = data(l1:l2,m2i:m2 )
+!
+        nbufy = nx * nghost
+!
+        call MPI_IRECV (ubufyi, nbufy, MPI_REAL, yuneigh, tolowy, &
+                       MPI_COMM_WORLD, irecv_rq_fromuppy, mpierr)
+        call MPI_IRECV (lbufyi, nbufy, MPI_REAL, ylneigh, touppy, &
+                       MPI_COMM_WORLD, irecv_rq_fromlowy, mpierr)
+        call MPI_ISEND (lbufyo, nbufy, MPI_REAL, ylneigh, tolowy, &
+                       MPI_COMM_WORLD, isend_rq_tolowy, mpierr)
+        call MPI_ISEND (ubufyo, nbufy, MPI_REAL, yuneigh, touppy, &
+                       MPI_COMM_WORLD, isend_rq_touppy, mpierr)
+!
+        call MPI_WAIT (irecv_rq_fromuppy, irecv_stat_fu, mpierr)
+        call MPI_WAIT (irecv_rq_fromlowy, irecv_stat_fl, mpierr)
+!
+        data(l1:l2,   1:m1-1) = lbufyi
+        data(l1:l2,m2+1:my  ) = ubufyi
+!
+        call MPI_WAIT (isend_rq_tolowy, isend_stat_tl, mpierr)
+        call MPI_WAIT (isend_rq_touppy, isend_stat_tu, mpierr)
+!
+      else
+!
+        data(l1:l2,   1:m1-1) = data(l1:l2,m2i:m2 )
+        data(l1:l2,m2+1:my  ) = data(l1:l2, m1:m1i)
+!
+      endif
+!
+!  Periodic boundaries in x
+!
+      if (nprocx > 1) then
+!
+        lbufxo = data( l1:l1i,:)
+        ubufxo = data(l2i:l2 ,:)
+!
+        nbufx = nghost * (ny + 2*nghost)
+!
+        call MPI_IRECV (ubufxi, nbufx, MPI_REAL, xuneigh, tolowx, &
+                       MPI_COMM_WORLD, irecv_rq_fromuppx, mpierr)
+        call MPI_IRECV (lbufxi, nbufx, MPI_REAL, xlneigh, touppx, &
+                       MPI_COMM_WORLD, irecv_rq_fromlowx, mpierr)
+        call MPI_ISEND (lbufxo, nbufx, MPI_REAL, xlneigh, tolowx, &
+                       MPI_COMM_WORLD, isend_rq_tolowx, mpierr)
+        call MPI_ISEND (ubufxo, nbufx, MPI_REAL, xuneigh, touppx, &
+                       MPI_COMM_WORLD, isend_rq_touppx, mpierr)
+!
+        call MPI_WAIT (irecv_rq_fromuppx, irecv_stat_fu, mpierr)
+        call MPI_WAIT (irecv_rq_fromlowx, irecv_stat_fl, mpierr)
+!
+        data(   1:l1-1,:) = lbufxi
+        data(l2+1:mx  ,:) = ubufxi
+!
+        call MPI_WAIT (isend_rq_tolowx, isend_stat_tl, mpierr)
+        call MPI_WAIT (isend_rq_touppx, isend_stat_tu, mpierr)
+!
+      else
+!
+        data(   1:l1-1,:) = data(l2i:l2 ,:)
+        data(l2+1:mx  ,:) = data( l1:l1i,:)
+!
+      endif
+!
+    endsubroutine communicate_xy_ghosts
+!***********************************************************************
     subroutine fill_zghostzones_3vec(vec,ivar)
 !
 !  Fills z-direction ghostzones of (mz,3)-array vec depending on the number of
