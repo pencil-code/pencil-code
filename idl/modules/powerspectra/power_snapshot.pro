@@ -3,10 +3,11 @@
 ;;
 ;; Calculate energy spectrum of 3-D cube.
 ;;
+;;   var           : 3-D variable to make power spectrum of
 ;;   eks           : shell-integrated spectrum
-;;   fkx           : 1-D averaged spectrum <f(kx,y,z)>_(y,z)
-;;   fky           : 1-D averaged spectrum <f(x,ky,z)>_(x,z)
-;;   fkz           : 1-D averaged spectrum <f(x,y,kz)>_(x,y)
+;;   vkx           : 1-D averaged spectrum <f(kx,y,z)>_(y,z)
+;;   vky           : 1-D averaged spectrum <f(x,ky,z)>_(x,z)
+;;   vkz           : 1-D averaged spectrum <f(x,y,kz)>_(x,y)
 ;;   ks            : scalar shell wavenumber
 ;;   kx, ky, kz    : scalar wavenumber in x, y and z
 ;;   k0x, k0y, k0z : unit wavenumbers
@@ -14,7 +15,7 @@
 ;;   nks           : number of shells to sum over
 ;;   deltak        : radius difference of shells
 ;;
-pro power_snapshot, ff, eks=eks, fkx=fkx, fky=fky, fkz=fkz, $
+pro power_snapshot, var, eks=eks, vkx=vkx, vky=vky, vkz=vkz, $
     nshell=nshell, ks=ks, kx=kx, ky=ky, kz=kz, $
     k0x=k0x, k0y=k0y, k0z=k0z, Lx=Lx, Ly=Ly, Lz=Lz, deltak=deltak, nks=nks, $
     double=double, plot=plot, ps=ps, filename=filename, $
@@ -33,46 +34,46 @@ one =1.0
 if (keyword_set(double)) then begin
   zero=0.0d
   one =1.0d
-  ff=double(ff)
+  var=double(var)
 endif
 ;
-sizeff=size(ff)
+sizevar=size(var)
 ;
-if (sizeff[0] ge 1) then nx=sizeff[1] else nx=1
-if (sizeff[0] ge 2) then ny=sizeff[2] else ny=1
-if (sizeff[0] ge 3) then nz=sizeff[3] else nz=1
+if (sizevar[0] ge 1) then nx=sizevar[1] else nx=1
+if (sizevar[0] ge 2) then ny=sizevar[2] else ny=1
+if (sizevar[0] ge 3) then nz=sizevar[3] else nz=1
 ;
 ;  1-D spectrum in x-direction
 ;
-if (arg_present(fkx)) then begin
-  fkx=fltarr(nx/2)*zero
+if (arg_present(vkx)) then begin
+  vkx=fltarr(nx/2)*zero
   for n=0,nz-1 do begin & for m=0,ny-1 do begin
-    AA=fft(reform(ff[*,m,n]),-1)
-    for j=0,nx/2-1 do fkx[j] = fkx[j] + 2*abs(AA[j])
+    AA=fft(reform(var[*,m,n]),-1)
+    for j=0,nx/2-1 do vkx[j] = vkx[j] + 2*abs(AA[j])
   endfor & endfor
-  fkx=fkx/(ny*nz)
+  vkx=vkx/(ny*nz)
 endif
 ;
 ;  1-D spectrum in y-direction
 ;
-if (arg_present(fky)) then begin
-  fky=fltarr(ny/2)*zero
+if (arg_present(vky)) then begin
+  vky=fltarr(ny/2)*zero
   for n=0,nz-1 do begin & for l=0,nx-1 do begin
-    AA=fft(reform(ff[l,*,n]),-1)
-    for j=0,ny/2-1 do fky[j] = fky[j] + 2*abs(AA[j])
+    AA=fft(reform(var[l,*,n]),-1)
+    for j=0,ny/2-1 do vky[j] = vky[j] + 2*abs(AA[j])
   endfor & endfor
-  fky=fky/(nx*nz)
+  vky=vky/(nx*nz)
 endif
 ;
 ;  1-D spectrum in z-direction
 ;
-if (arg_present(fkz)) then begin
-  fkz=fltarr(nz/2)*zero
+if (arg_present(vkz)) then begin
+  vkz=fltarr(nz/2)*zero
   for m=0,ny-1 do begin & for l=0,nx-1 do begin
-    AA=fft(reform(ff[l,m,*]),-1)
-    for j=0,nz/2-1 do fkz[j] = fkz[j] + 2*abs(AA[j])
+    AA=fft(reform(var[l,m,*]),-1)
+    for j=0,nz/2-1 do vkz[j] = vkz[j] + 2*abs(AA[j])
   endfor & endfor
-  fkz=fkz/(nx*ny)
+  vkz=vkz/(nx*ny)
 endif
 ;
 ;  3-D shell-integrated spectrum.
@@ -111,7 +112,7 @@ if (arg_present(eks)) then begin
 ;
 ;  Transform to wavenumber space.
 ;
-  fkk=fft(ff)
+  vkk=fft(var)
 ;
 ;  Loop over all vector k, calculate |k| and assign to proper shell.
 ;
@@ -119,7 +120,7 @@ if (arg_present(eks)) then begin
     k=round(sqrt(kx[ikx]^2+ky[iky]^2+kz[ikz]^2)/deltak)
     if (debug) then print, ikx, kx[ikx], iky, ky[iky], ikz, kz[ikz], k
     if (k lt n_elements(ks)) then begin
-      eks[k]=eks[k]+abs(fkk[ikx,iky,ikz])^2
+      eks[k]=eks[k]+abs(vkk[ikx,iky,ikz])^2
       nshell[k]=nshell[k]+1
     endif else begin
       if (debug) then print, '** Mode not allocated to any shell'
@@ -129,22 +130,22 @@ if (arg_present(eks)) then begin
 ;  Print total number of modes that were allocated to a shell.
 ;
   if (not quiet) then begin
-    print, 'total(nshell)=', total(nshell), ' / total(modes)=', n_elements(fkk)
+    print, 'total(nshell)=', total(nshell), ' / total(modes)=', n_elements(vkk)
   endif
 endif
 ;
 ;  Make simple plot if requested.
 ;
 if (plot) then begin
-  pmin=min(fkx[1:nx/2-1])
-  pmax=max(fkx[1:nx/2-1])
+  pmin=min(vkx[1:nx/2-1])
+  pmax=max(vkx[1:nx/2-1])
   if (ny gt 1) then begin
-    pmin=min([pmin,fky[1:ny/2-1]])
-    pmax=max([pmax,fky[1:ny/2-1]])
+    pmin=min([pmin,vky[1:ny/2-1]])
+    pmax=max([pmax,vky[1:ny/2-1]])
   endif
   if (nz gt 1) then begin
-    pmin=min([pmin,fkz[1:nz/2-1]])
-    pmax=max([pmax,fkz[1:nz/2-1]])
+    pmin=min([pmin,vkz[1:nz/2-1]])
+    pmax=max([pmax,vkz[1:nz/2-1]])
   endif
 
   linestyles=[0,1,2]
@@ -160,13 +161,13 @@ if (plot) then begin
     !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
   endif
   
-  plot, fkx, xtitle='k/k0', ytitle='|g(k)|', $
+  plot, vkx, xtitle='k/k0', ytitle='|g(k)|', $
       xrange=[1.0,nx/2], $
       yrange=[10.0^floor(alog10(pmin)),10.0^ceil(alog10(pmax))], $
       /xlog, /ylog, $
       linestyle=linestyles[0]
-  if (ny gt 1) then oplot, fky, linestyle=linestyles[1]
-  if (nz gt 1) then oplot, fkz, linestyle=linestyles[2]
+  if (ny gt 1) then oplot, vky, linestyle=linestyles[1]
+  if (nz gt 1) then oplot, vkz, linestyle=linestyles[2]
 ;  legend, ['k!Dx!N','k!Dy!N','k!Dz!N'], linestyle=linestyles, /bottom
   if (not nolegend) then legend, ['1','2','3'], linestyle=linestyles, /bottom
 
