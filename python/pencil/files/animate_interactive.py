@@ -9,10 +9,8 @@
 import numpy as np
 import pylab as plt
 import time
-import os, sys # for making the movie
+import os # for making the movie
 from matplotlib.backends.backend_tkagg import *
-import mtTkinter as tk # for thread save GUI (from http://tkinter.unpythonic.net/wiki/mtTkinter)
-import sys
 import thread # for GUI
 
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
