@@ -723,6 +723,10 @@ module Boundcond
                 ! BCZ_DOC: simple linear extrapolation in first order
                 !  with an included damping to zero (useful for velocities)
                 call bcz_extrapol_damped(f,topbot,j)
+              case ('exm')
+                ! BCZ_DOC: simple linear extrapolation in first order
+                !  with an included local averaging of a 7x7 array
+                call bcz_extrapol_mean(f,topbot,j)
               case ('b1')
                 ! BCZ_DOC: extrapolation with zero value (improved 'a')
                 call bc_extrap0_2_0(f,topbot,j)
@@ -3545,6 +3549,77 @@ module Boundcond
 !
     endsubroutine bcz_extrapol_damped
 !***********************************************************************
+    subroutine bcz_extrapol_mean (f, topbot, j)
+!
+!  Simple linear extrapolation in first order
+!  with an included local averaging of a 7x7 array.
+!  The last two grid points in z are used to determine the slope.
+!  The 3 neighbouring grid points in x and y contribute to the local average.
+!
+!  11-apr-11/Bourdin.KIS: coded
+!
+      character (len=3), intent(in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: j
+!
+      integer :: i
+      real, dimension (mx,my) :: m, rho_ref
+!
+!
+      select case (topbot)
+      case ('bot')
+        ! bottom (left end of the domain)
+        rho_ref = f(:,:,n1,j)
+        call average_xy (rho_ref, 3)
+        m = (f(:,:,n1+1,j) - rho_ref) / (z(n1+1) - z(n1))
+        do i = 1, nghost
+          f(:,:,n1-i,j) = rho_ref + m * (z(n1-i) - z(n1))
+        enddo
+        m = (f(:,:,n1+1,j) - f(:,:,n1-1,j)) / (z(n1+1) - z(n1-1))
+        f(:,:,n1,j) = f(:,:,n1+1,j) + m * (z(n1) - z(n1+1))
+      case ('top')
+        ! top (right end of the domain)
+        rho_ref = f(:,:,n2,j)
+        call average_xy (rho_ref, 3)
+        m = (rho_ref - f(:,:,n2-1,j)) / (z(n2) - z(n2-1))
+        do i = 1, nghost
+          f(:,:,n2+i,j) = rho_ref + m * (z(n2+i) - z(n2))
+        enddo
+        m = (f(:,:,n2+1,j) - f(:,:,n2-1,j)) / (z(n2+1) - z(n2-1))
+        f(:,:,n2,j) = f(:,:,n2-1,j) + m * (z(n2) - z(n2-1))
+      case default
+        call fatal_error ('bcz_extrapol_mean', 'invalid argument', lfirst_proc_xy)
+      endselect
+!
+    endsubroutine bcz_extrapol_mean
+!***********************************************************************
+    subroutine average_xy (data, num)
+!
+!  Simple averaging over a num*num array in x and y direction.
+!
+!  11-apr-11/Bourdin.KIS: coded
+!
+      use Mpicomm, only: communicate_xy_ghosts
+!
+      real, dimension (mx,my), intent(inout) :: data
+      integer, intent(in) :: num
+!
+      real, dimension (mx,my) :: out
+      integer :: px, py
+!
+!
+      out = 0.0
+      do px = l1, l2
+        do py = m1, m2
+          out(px,py) = sum (data(px-num:px+num,py-num:py+num))
+        enddo
+      enddo
+      data = out / (num*2+1)**2
+!
+      call communicate_xy_ghosts (data)
+!
+    endsubroutine average_xy
+!***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
 !  "One-sided" boundary condition for density.
@@ -5535,7 +5610,7 @@ module Boundcond
       character (len=3), intent (in) :: topbot
 !
       integer :: i
-      real, dimension (mx,my) :: T_inv
+      real, dimension (mx,my) :: T_inv, grad_rho
       real :: g_ref, delta_z, inv_cp_cv, cp_inv
       real, dimension (:), pointer :: gravz_zpencil
 !
@@ -5551,7 +5626,8 @@ module Boundcond
           delta_z = z(n1-i) - z(n1-i+1)
           g_ref = gravz_zpencil(n1-i+1)
           T_inv = exp (-f(:,:,n1-i+1,ilnTT))
-          f(:,:,n1-i,ilnTT) = f(:,:,n1-i+1,ilnTT) + f(:,:,n1-i+1,ilnrho) - f(:,:,n1-i,ilnrho) + g_ref*delta_z*inv_cp_cv*T_inv
+          grad_rho = f(:,:,n1-i+1,ilnrho) - f(:,:,n1-i,ilnrho)
+          f(:,:,n1-i,ilnTT) = f(:,:,n1-i+1,ilnTT) + grad_rho + g_ref*delta_z*inv_cp_cv*T_inv
         enddo
       case ('top')
         ! top (right end of the domain)
@@ -5559,7 +5635,8 @@ module Boundcond
           delta_z = z(n2+i) - z(n2+i-1)
           g_ref = gravz_zpencil(n2+i-1)
           T_inv = exp (-f(:,:,n2+i-1,ilnTT))
-          f(:,:,n2+i,ilnTT) = f(:,:,n2+i-1,ilnTT) + f(:,:,n2+i-1,ilnrho) - f(:,:,n2+i,ilnrho) + g_ref*delta_z*inv_cp_cv*T_inv
+          grad_rho = f(:,:,n2+i-1,ilnrho) - f(:,:,n2+i,ilnrho)
+          f(:,:,n2+i,ilnTT) = f(:,:,n2+i-1,ilnTT) + grad_rho + g_ref*delta_z*inv_cp_cv*T_inv
         enddo
       case default
         call fatal_error ('bcz_hydrostatic_temp', 'invalid argument', lfirst_proc_xy)
