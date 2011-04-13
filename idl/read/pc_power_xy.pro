@@ -249,11 +249,11 @@ openr,1, datatopdir+'/'+file1
   point_lun, -1, pos0
   headline = ''
   readf, 1, headline
-  witheader=strpos(headline,'power spectrum') ne -1
+  witheader=strpos(strlowcase(headline),'power spectrum') ne -1
   
   if witheader then begin
-
-    if (strpos(headline,'shell-integrated') ne -1) ne lint_shell then begin
+    
+    if (strpos(strlowcase(headline),'shell-integrated') ne -1) ne lint_shell then begin
     
       if lint_shell then $
         print, 'Warning: File header says "not shell-integrated" - assume that' $
@@ -264,7 +264,7 @@ openr,1, datatopdir+'/'+file1
       
     endif
     
-    if (strpos(headline,'z-integrated') ne -1) ne lint_z then begin
+    if (strpos(strlowcase(headline),'z-integrated') ne -1) ne lint_z then begin
 
       if lint_z then $
         print, 'Warning: File header says "not z-integrated" - assume that' $
@@ -292,14 +292,14 @@ openr,1, datatopdir+'/'+file1
     else $
       spectrum1=fltarr(nx,ny,nz)
 
-    if strpos(headline,'avenumbers') eq -1 then $
+    if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
       print, 'Warning: File header corrupt!'
      
     readf, 1, kxs, kys 
     if (lint_shell) then begin
     
       readf, 1, headline
-      if strpos(headline,'avenumbers') eq -1 then $
+      if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
         print, 'Warning: File header corrupt!'
         
       readf, 1, kshell 
@@ -335,7 +335,7 @@ openr,1, datatopdir+'/'+file1
       point_lun, -1, pos
       readf,1,headline
     
-      if strpos(headline,'power spectrum') eq -1 then $
+      if strpos(strlowcase(headline),'power spectrum') eq -1 then $
         point_lun, 1, pos $
       else begin
         readf,1,headline
@@ -343,7 +343,7 @@ openr,1, datatopdir+'/'+file1
         if (lint_shell) then begin
         
           readf, 1, headline
-          if strpos(headline,'avenumbers') eq -1 then $
+          if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
             print, 'Warning: File header corrupt!'
             
           readf, 1, kshell 
@@ -434,7 +434,7 @@ endif
       point_lun, -1, pos
       readf,1,headline
     
-      if strpos(headline,'power spectrum') eq -1 then $
+      if strpos(strlowcase(headline),'power spectrum') eq -1 then $
         point_lun, 1, pos $
       else begin
         
