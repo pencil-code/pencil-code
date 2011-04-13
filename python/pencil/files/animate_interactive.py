@@ -17,6 +17,7 @@ import mtTkinter as tk  # makes tkinter thread save
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
                         fontsize = 24, cBar = 0, sloppy = True,
+                        rangeMin = [], rangeMax = [],
                         #interpol = 'nearest', colorTable = 'hot', aspectRatio = 'auto',
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
@@ -249,8 +250,10 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     nY = len(data[0,0,:])
     
     # determine the minimum and maximum values of the data set
-    dataMin = np.min(data)
-    dataMax = np.max(data)
+    if not(rangeMin):
+        rangeMin = np.min(data)
+    if not(rangeMax):
+        rangeMax = np.max(data)
     
     # setup the plot
     if movieFile:
@@ -279,7 +282,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     plane = np.zeros((nX,nY))
 
     # calibrate the displayed colors for the data range
-    image = ax.imshow(plane, vmin=dataMin, vmax=dataMax, **kwimshow)
+    image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax, **kwimshow)
     colorbar = fig.colorbar(image)
     
     # plot the arrows
