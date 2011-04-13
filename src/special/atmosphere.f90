@@ -445,7 +445,7 @@ module Special
       real, dimension (mx) :: func_x
       real    :: del,width
       integer :: l_sz
-      integer :: i, j, sz_l_x,sz_r_x,ll1,ll2
+      integer :: i, j, sz_l_x,sz_r_x,ll1,ll2, sz_x
       real    :: dt1
       logical :: lzone_left, lzone_right
 !
@@ -473,27 +473,34 @@ module Special
 
          sz_r_x=l2-int(del*nxgrid)
          sz_l_x=int(del*nxgrid)+l1
-!
-         ll1=l1
-         ll2=l2
+         sz_x=int(del*nxgrid)
 
-        if (lbuffer_zone_uy) then
+
+        
+
+!
+!         ll1=l1
+!         ll2=l2
+
+        if (lbuffer_zone_uy .and. (nxgrid/=1)) then
         do j=1,2
 
          if (j==1) then
-           ll1=sz_r_x
-           ll2=l2
-           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
+!           ll1=sz_r_x
+!           ll2=l2
+            ll1=nxgrid-sz_x
+            ll2=nxgrid
+
+           do i = l1,l2
+           if (x(i) >= xgrid(ll1)) lzone_right=.true.
+!           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
 !            uy_ref=0.
            if (lzone_right) then
-             df(ll1:ll2,m,n,iux)=df(ll1:ll2,m,n,iux)&
-              -(f(ll1:ll2,m,n,iux)-ux_bz)*dt1
-!             
-             df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
-              -(f(ll1:ll2,m,n,iuy)-uy_bz)*dt1
-
-!
+             df(i,m,n,iux)=df(i,m,n,iux)-(f(i,m,n,iux)-ux_bz)*dt1
+             df(i,m,n,iuy)=df(i,m,n,iuy)-(f(i,m,n,iuy)-uy_bz)*dt1
            endif
+           enddo
+!
          elseif (j==2) then
            ll1=l1
            ll2=sz_l_x
