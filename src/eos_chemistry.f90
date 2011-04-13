@@ -1753,7 +1753,7 @@ module EquationOfState
 
       logical :: emptyfile
       logical :: found_specie
-      integer :: file_id=123, ind_glob, ind_chem
+      integer :: file_id=123, ind_glob, ind_chem, i
       real    :: lewisk
       character (len=10) :: specie_string
 !
@@ -1761,9 +1761,9 @@ module EquationOfState
 !
       open(file_id,file="lewis.dat")
 !
-      if (lroot) print*, 'the following species are found '//&
-          'in lewis.dat: beginning of the list:'
+      if (lroot) print*, 'lewis.dat: beginning of the list:'
 !
+      i=0
       dataloop: do
         read(file_id,*,end=1000) specie_string, lewisk
         emptyFile=.false.
@@ -1771,19 +1771,21 @@ module EquationOfState
         call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
 !
         if (found_specie) then
-          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' ind_chem=',ind_chem
+          if (lroot) print*,specie_string,' ind_glob=',ind_glob,' Lewis=', lewisk
           Lewis_coef(ind_chem) = lewisk
+          i=i+1
         endif
       enddo dataloop
 !
 ! Stop if lewis.dat is empty
 !
 
-1000  if (emptyFile)  call stop_it('The input file lewis.dat was empty!')
+1000  if (emptyFile)  call stop_it('End of the file!')
 !
       if (lroot) then
-        print*, 'the following species are found in lewis.dat: end of the list:'
-        print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
+        print*, 'lewis.dat: end of the list:'
+        if (i == 0) &
+            print*, 'File lewis.dat empty ===> Lewis numbers set to unity'
       endif
 !
       close(file_id)
