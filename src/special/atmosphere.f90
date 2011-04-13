@@ -471,7 +471,7 @@ module Special
          lzone_left=.false.
          lzone_right=.false.
 
-         sz_r_x=l1+nxgrid-int(del*nxgrid)
+         sz_r_x=l2-int(del*nxgrid)
          sz_l_x=int(del*nxgrid)+l1
 !
          ll1=l1
