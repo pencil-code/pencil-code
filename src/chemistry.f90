@@ -2934,9 +2934,13 @@ module Chemistry
       if (lcloud.and.(.not.lchemonly)) then
 !
         df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
-              + p%ccondens
+              - p%ccondens
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-              - 2.5e6/1005.*p%ccondens*p%TT1
+              + 2.5e6/1005.*p%ccondens*p%TT1
+
+!print*,f(l1,m1,n1,ichemspec(index_H2O)), p%ccondens
+!print*,exp(f(l1,m1,n1,ilnTT)),2.5e6/1005.*p%ccondens,1./p%TT1
+
 !
 ! this is for debuging purposes: one check that the sum of all mass fractions is 1
 !

@@ -65,6 +65,7 @@ module Special
   character (len=labellen) :: initstream='default'
   real, dimension(ndustspec) :: dsize, dds
   real, dimension(ndustspec0) :: dsize0, dds0
+  real, dimension(ndustspec0) :: Ntot_i
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_H2O, ind_N2! ind_cloud=0
   real :: sigma=1., Period=1.
@@ -82,7 +83,7 @@ module Special
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
-      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min
+      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -687,22 +688,7 @@ module Special
       integer :: k,i
 
         if (lpscalar) then
- !         if (lstop) then       
- !         do i=1,nx
- !           lstop=.true.
- !         do k=2,ndustspec
- !           if (lstop) then
- !           if (f(l1+i-1,m,n,ind(k))>f(l1+i-1,m,n,ind(k-1))) then
- !            fmax(i)=f(l1+i-1,m,n,ind(k))
- !            rmax(i)=dsize(k)
- !            lstop=.false.
- !           endif
- !           endif
- !         enddo
- !         enddo
- !         endif
- !
-          do i=1,nx
+           do i=1,nx
 !            ff_tmp_sum=0.
           do k=1,ndustspec
            ff_tmp(k)= (p%ppwater(i)-p%ppsf(i,k)) &
@@ -796,7 +782,7 @@ module Special
 !
 
       use General, only: spline_integral
-      use Dustdensity
+!      use Dustdensity
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
@@ -828,10 +814,74 @@ module Special
       enddo
       endif
 !
-      call dustspec_normalization(f)
+      call dustspec_normalization_(f)
       call write_0d_result(f)
 !
     endsubroutine  special_after_timestep
+!***********************************************************************
+    subroutine dustspec_normalization_(f)
+!
+!   20-sep-10/Natalia: coded
+!   renormalization of the dust species
+!   called in special_after_timestep
+!
+      use General, only: spline_integral
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (ndustspec) :: ff_tmp, ttt, ttt2
+      integer :: k,i,i1,i2,i3
+!
+      do i1=l1,l2
+      do i2=m1,m2
+      do i3=n1,n2
+!
+        if (ldcore) then
+!
+         do k=1,ndustspec
+             ff_tmp(k)=f(i1,i2,i3,ind(k)) 
+         enddo
+           ttt2= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
+        do i=1,ndustspec0
+          do k=1,ndustspec
+            ff_tmp(k)=f(i1,i2,i3,idcj(k,i)) 
+          enddo       
+            ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
+          do k=1,ndustspec
+           f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i))*Ntot_i(i)/ttt(ndustspec)  
+!            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i)) &
+!             *(ttt2(ndustspec)*dds0(i)/(dsize0_max-dsize0_min)) /ttt(ndustspec)  
+          enddo
+        enddo
+!         
+          do i=1,ndustspec0
+          do k=1,ndustspec
+!            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i)) &
+!                   *Ntot_i(i)/(ttt(ndustspec)*dds0(i)/(dsize0_max-dsize0_min))  
+!
+          enddo
+          enddo
+! 
+         do k=1,ndustspec
+           f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt2(ndustspec)  
+         enddo
+ !       
+        else
+          if (.not. ldustdensity_log) then
+            do k=1,ndustspec
+              ff_tmp(k)=f(i1,i2,i3,ind(k)) 
+            enddo
+              ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
+            do k=1,ndustspec
+              f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)  
+            enddo
+          endif
+        endif
+!
+      enddo
+      enddo  
+      enddo
+!
+    endsubroutine dustspec_normalization_
 !***********************************************************************
      subroutine write_0d_result(f)
 !
@@ -901,7 +951,7 @@ module Special
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
       endif
-      if (it == 25000) then
+      if (it == 20000) then
         open(file_id,file=output_file3)
             write(file_id,'(7E12.4)') t
         if (lmdvar) then
@@ -927,7 +977,7 @@ module Special
 !        print*,ttt(ndustspec)
       endif
 
-      if (it == 50000) then
+      if (it == 40000) then
         open(file_id,file=output_file4)
             write(file_id,'(7E12.4)') t
         if (lmdvar) then

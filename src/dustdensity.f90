@@ -75,7 +75,7 @@ module Dustdensity
   logical :: ldiffd_shock=.false.
   logical :: latm_chemistry=.false.
   logical :: lresetuniform_dustdensity=.false.
-  logical :: lnoaerosol=.false.
+  logical :: lnoaerosol=.false., lnocondens_term=.false.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, nd00, mdave0, Hnd, &
@@ -85,13 +85,13 @@ module Dustdensity
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
       r0, delta, delta0, lmdvar, lmice, ldcore, d0, &
-      dsize0_min, dsize0_max, r0_core
+      dsize0_min, dsize0_max, r0_core, Ntot, lnocondens_term
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
-      diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol
+      diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, lnocondens_term
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
@@ -359,7 +359,7 @@ module Dustdensity
           endif
           enddo
           do k=1,ndustspec
-            init_distr(k)=nd00*1e3/0.856E-03/(2.*pi)**0.5/dsize(k)/alog(delta) &
+            init_distr(k)=nd00*Ntot/0.856E-03/(2.*pi)**0.5/dsize(k)/alog(delta) &
               *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
             if (ldustdensity_log) then
               init_distr_log(k)=log(init_distr(k))
@@ -1224,10 +1224,10 @@ module Dustdensity
           if (lnoaerosol) then
             p%udrop=0.
           else
-            if (.not. ldustdensity) then
+!            if (.not. ldustdensity) then
               p%udrop(:,:,k)=p%uu(:,:)
               p%udrop(:,1,k)=p%udrop(:,1,k)-1e6*dsize(k)**2
-            endif
+!            endif
           endif
         endif
 !
@@ -1281,7 +1281,7 @@ module Dustdensity
           else
            Imr=Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
            do i=1,nx
-            if (lnoaerosol) then
+            if (lnoaerosol .or. lnocondens_term) then
               p%ccondens(i)=0.
             else
               do k=1,ndustspec
@@ -1299,7 +1299,7 @@ module Dustdensity
                 else
                   ttt= spline_integral(dsize,ff_tmp)
                 endif
-                p%ccondens(i)=-4.*pi*Imr(i)*rho_w*ttt(ndustspec)*0.
+                 p%ccondens(i)=4.*pi*Imr(i)*rho_w*ttt(ndustspec)
             endif
            enddo
           endif
@@ -2493,70 +2493,7 @@ module Dustdensity
 !
     endsubroutine droplet_init
 !***********************************************************************
-    subroutine dustspec_normalization(f)
-!
-!   20-sep-10/Natalia: coded
-!   renormalization of the dust species
-!   called in special_after_timestep
-!
-      use General, only: spline_integral
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (ndustspec) :: ff_tmp, ttt, ttt2
-      integer :: k,i,i1,i2,i3
-!
-      do i1=l1,l2
-      do i2=m1,m2
-      do i3=n1,n2
-!
-        if (ldcore) then
-!
-         do k=1,ndustspec
-             ff_tmp(k)=f(i1,i2,i3,ind(k)) 
-         enddo
-           ttt2= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
-        do i=1,ndustspec0
-          do k=1,ndustspec
-            ff_tmp(k)=f(i1,i2,i3,idcj(k,i)) 
-          enddo       
-            ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
-          do k=1,ndustspec
-           f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i))*Ntot_i(i)/ttt(ndustspec)  
-!            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i)) &
-!             *(ttt2(ndustspec)*dds0(i)/(dsize0_max-dsize0_min)) /ttt(ndustspec)  
-          enddo
-        enddo
-!         
-          do i=1,ndustspec0
-          do k=1,ndustspec
-!            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i)) &
-!                   *Ntot_i(i)/(ttt(ndustspec)*dds0(i)/(dsize0_max-dsize0_min))  
-!
-          enddo
-          enddo
-! 
-         do k=1,ndustspec
-           f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt2(ndustspec)  
-         enddo
- !       
-        else
-          if (.not. ldustdensity_log) then
-            do k=1,ndustspec
-              ff_tmp(k)=f(i1,i2,i3,ind(k)) 
-            enddo
-              ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
-            do k=1,ndustspec
-              f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)  
-            enddo
-          endif
-        endif
-!
-      enddo
-      enddo  
-      enddo
-!
-    endsubroutine dustspec_normalization
-!***********************************************************************
+
     subroutine copy_bcs_dust_short
 !
 !  Copy boundary conditions on first dust species to all others
@@ -2573,7 +2510,7 @@ module Dustdensity
           bcx2(imd) = bcx2(imd(1))
         endif
 !
-         bcy(ind)  =  bcy(ind(1))
+        bcy(ind)  =  bcy(ind(1))
         bcy1(ind)  = bcy1(ind(1))
         bcy2(ind)  = bcy2(ind(1))
         if (lmdvar) then
