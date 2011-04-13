@@ -10,13 +10,13 @@ import numpy as np
 import pylab as plt
 import time
 import os # for making the movie
-from matplotlib.backends.backend_tkagg import *
 import thread # for GUI
+import mtTkinter as tk  # makes tkinter thread save
+
 
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
-                        fontsize = 24,
-                        cBar = 0,
+                        fontsize = 24, cBar = 0, sloppy = True,
                         #interpol = 'nearest', colorTable = 'hot', aspectRatio = 'auto',
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
@@ -66,7 +66,11 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
      *cBar*: [ 0 | 1 | 2 ]
        Determines how the colorbar changes:
        (0 - no cahnge; 1 - keep extreme values constant; 2 - change extreme values).
-              
+     
+     *sloppy*: [ True | False ]
+       If True the update of the plot lags one frame behind. This speeds up the
+       plotting.
+     
      *arrowsX*:
        Data containing the x-component of the arrows.
        
@@ -129,9 +133,9 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
             
         if plotArrows:
             arrows.set_UVC(U = arrowsX[tStep,::arrowsRes,::arrowsRes], V = arrowsY[tStep,::arrowsRes,::arrowsRes])
-
-        #manager.canvas.draw()
-                
+        
+        if sloppy == False:
+            manager.canvas.draw()
     
     # play the movie
     def play(threadName):               
@@ -158,10 +162,13 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     
     # call the play function as a seperate thread (for GUI)
     def play_thread(event):
-        try:
-            thread.start_new_thread(play, ("playThread", ))
-        except:
-            print "Error: unable to start play thread"
+        global pause
+        
+        if pause == True:
+            try:
+                thread.start_new_thread(play, ("playThread", ))
+            except:
+                print "Error: unable to start play thread"
 
 
     def pausing(event):               
@@ -190,7 +197,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         sliderTime.set_val(t[tStep])
 
     
-    pause = False
+    pause = True
     plotArrows = False
     
     # check if the data has the right dimensions
@@ -287,8 +294,9 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         
 
     # for real-time image display
-    #manager = plt.get_current_fig_manager()
-    #manager.show()
+    if sloppy == False:
+        manager = plt.get_current_fig_manager()
+        manager.show()
 
 
     tStep = 0
@@ -330,7 +338,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         sliderTime = plt.Slider(sliderTimeAxes, 'time', t[0], t[-1], valinit = 0.0)
         def update(val):
             global tStep
-            # find the closest time step to the slider time value
+            # find the closest time step to the slider time value            
             for i in range(len(t)):
                 if t[i] < sliderTime.val:
                     tStep = i
@@ -341,4 +349,5 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         sliderTime.on_changed(update)
     
         plt.show()
+        
     print 'done'
