@@ -57,8 +57,10 @@ module Dustdensity
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0., dsize0_min=1e-6, dsize0_max=5e-6
-  real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2, r0, r0_core=2.4e-6, delta=1.2, delta0=1.2
-  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot, AA=0.66e-4, d0=2.4e-6, BB0=1.5e-16
+  real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2, r0, r0_core=2.4e-6
+  real :: delta=1.2, delta0=1.2
+  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot
+  real :: AA=0.66e-4, d0=2.4e-6, BB0=1.5e-16
   real :: nd_reuni,nd00=1.
   integer :: ind_extra
   integer :: iglobal_nd=0
@@ -91,7 +93,8 @@ module Dustdensity
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
-      diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, lnocondens_term
+      diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
+      lnocondens_term
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
@@ -171,7 +174,7 @@ module Dustdensity
 !  Register dust core distribution.
 !
       if (ldcore) then
-
+!
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
         call chn(ndustspec,sdust)
@@ -189,11 +192,8 @@ module Dustdensity
           idcj(k,i) = idc(k)+i-1
         enddo
       enddo
-
-
+!
       endif
-
-
 !
 !  Identify version number (generated automatically by CVS).
 !
@@ -226,7 +226,7 @@ module Dustdensity
       if (ldustdensity_log .and. ldcore) then
           ilndc=idc; ilndcj= idcj
       endif
-      
+
 !
       if (lroot) print*, 'initialize_dustdensity: '// &
           'ldustcoagulation,ldustcondensation =', &
@@ -384,7 +384,7 @@ module Dustdensity
           if (ldcore) then
             Ntot_tmp2=0
               print*,'delta0',delta0, delta
-            do i=1,ndustspec0; do k=1,ndustspec 
+            do i=1,ndustspec0; do k=1,ndustspec
               init_distr_ki(k,i)=init_distr(k)/(2.*pi)**0.5/dsize0(i)/alog(delta0) &
                 *exp(-(alog(2.*dsize0(i))-alog(2.*r0_core))**2/(2.*(alog(delta0))**2)) &
                 *dds0(i)
@@ -393,7 +393,7 @@ module Dustdensity
               Ntot_i(i)=Ntot_tmp(ndustspec)*0.856E-03
               Ntot_tmp2=Ntot_tmp2+Ntot_i(i)
               print*,'Ntot_i', Ntot_i(i),i
-            enddo 
+            enddo
             print*,'N total= ', Ntot, Ntot_tmp2
             Ntot=Ntot_tmp2
             print*,'N total final= ', Ntot
@@ -434,7 +434,6 @@ module Dustdensity
       !real :: water_ice=1.
       integer :: j,k,l,i
       logical :: lnothing
-      character (len=20) :: output_file="./data/nd.out"
 !
 !  Different initializations of nd.
 !
@@ -637,7 +636,7 @@ module Dustdensity
             f(:,:,:,ind(k)) = init_distr(k)
           enddo
           if (ldcore) then
-            do i=1,ndustspec0; do k=1,ndustspec 
+            do i=1,ndustspec0; do k=1,ndustspec
               f(:,:,:,idcj(k,i))=init_distr_ki(k,i)
             enddo; enddo
           endif
@@ -684,7 +683,7 @@ module Dustdensity
       if (ldustdensity_log .and. ldcore) then
           f(l1:l2,m1:m2,n1:n2,ilndc(:)) = &
           log(f(l1:l2,m1:m2,n1:n2,idc(:)))
-        do i=1,ndustspec0  
+        do i=1,ndustspec0
           f(l1:l2,m1:m2,n1:n2,ilndcj(:,i)) = &
           log(f(l1:l2,m1:m2,n1:n2,idcj(:,i)))
         enddo
@@ -1291,7 +1290,7 @@ module Dustdensity
                       *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
                   else
                    ff_tmp(k)=p%nd(i,k)*dsize(k)  &
-                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i)) 
+                      *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k)/p%ppsat(i))
                   endif
                 endif
               enddo
@@ -1348,9 +1347,7 @@ module Dustdensity
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, sum_tmp
       real, dimension (nx,ndustspec) :: dndr_tmp
-      real, dimension (ndustspec0) :: ff_tmp, ttt
-      real :: Ntot_tmp
-      integer :: k,i,i1,i2
+      integer :: k,i
 !
       intent(in)  :: f,p
       intent(out) :: df
@@ -1390,20 +1387,20 @@ module Dustdensity
                                 -BB(i)/(8.*dsize(k)**3))
              enddo
              call droplet_redistr(p,f,ppsf_full(:,:,i),dndr_tmp,i)
-             do k=1, ndustspec; 
+             do k=1, ndustspec;
                dndr_full(:,k,i)=-Imr*dndr_tmp(:,k)
-               df(l1:l2,m,n,idcj(k,i)) = df(l1:l2,m,n,idcj(k,i)) +dndr_full(:,k,i) 
-             enddo 
+               df(l1:l2,m,n,idcj(k,i))=df(l1:l2,m,n,idcj(k,i))+dndr_full(:,k,i)
+             enddo
             enddo
             do k=1, ndustspec
-!              if (k==1) then 
+!              if (k==1) then
 !                df(l1:l2,m,n,ind(k)) = 0.
 !              else
-               sum_tmp=0. 
+               sum_tmp=0.
                do i=1, ndustspec0
 !                    +p%dndr(:,k)
 !                     + dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
-                 sum_tmp = sum_tmp + dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
+                 sum_tmp=sum_tmp+dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
                enddo
                df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + sum_tmp
                df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k)
@@ -1417,20 +1414,19 @@ module Dustdensity
               enddo
             else
               do k=1,ndustspec
-!              if (k==1) then 
+!              if (k==1) then
 !                df(l1:l2,m,n,ind(k)) = 0.
-!              else 
+!              else
                 df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
                    - p%udropgnd(:,k) + p%dndr(:,k)
 !              endif
-              enddo        
+              enddo
             endif
           endif
 !
 !   End of atmospheric case
 !
       endif
-
 !
 !  Calculate kernel of coagulation equation
 !
@@ -1447,7 +1443,6 @@ module Dustdensity
 !  Loop over dust layers
 !  this is a non-atmospheric case (for latm_chemistry=F)
 !
-
       if (.not. latm_chemistry) then
       do k=1,ndustspec
 !
@@ -1912,6 +1907,7 @@ module Dustdensity
     endsubroutine read_dustdensity_init_pars
 !***********************************************************************
     subroutine write_dustdensity_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=dustdensity_init_pars)
@@ -1919,6 +1915,7 @@ module Dustdensity
     endsubroutine write_dustdensity_init_pars
 !***********************************************************************
     subroutine read_dustdensity_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -2075,7 +2072,8 @@ module Dustdensity
       real, dimension (mx,mz) :: f_tmpy
       real, dimension (mx,my) :: f_tmpz
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9, i10=10
-      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19,i20=20
+      integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16
+      integer :: i17=17,i18=18,i19=19,i20=20
       integer :: ii,jj
       type (slice_data) :: slices
 !
@@ -2317,12 +2315,11 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr, dndr_dr2, ff_tmp, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i!,nd_full_i
-      integer :: k, i1=1,i2=2,i3=3, i, ind_tmp=3
-      integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
-      real :: rr1=0.,rr2=0.,rr3=0.
-      intent(in) :: ppsf_full_i, i 
+      integer :: k, i, ind_tmp=3
+!
+      intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr
-
+!
        if (ndustspec<3) then
          call fatal_error('droplet_redistr', &
           'Number of dust species is smaller than 3')
@@ -2358,7 +2355,7 @@ module Dustdensity
            call deriv_size(ff_tmp,ff_tmp0,dndr_dr2)
 !
            do k=1,ndustspec
-             dndr_dr(:,k) = dndr_dr2(:,k) & 
+             dndr_dr(:,k) = dndr_dr2(:,k) &
                 + dndr_dr(:,k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
            enddo
 !
@@ -2377,7 +2374,7 @@ module Dustdensity
          call deriv_size(ff_tmp,ff_tmp0,dndr_dr)
 !
          do k=1,ndustspec
-           dndr_dr(:,k) = dndr_dr(:,k)/dsize(k)-ff_tmp(:,k)/dsize(k)**2    
+           dndr_dr(:,k) = dndr_dr(:,k)/dsize(k)-ff_tmp(:,k)/dsize(k)**2
          enddo
              dndr_dr(:,1:ind_tmp)=0.
        endif
@@ -2385,16 +2382,16 @@ module Dustdensity
       endif
 !
     endsubroutine droplet_redistr
-!*********************************************************************** 
+!***********************************************************************
     subroutine deriv_size(ff,ff0, dff_dr)
-!  
+!
 !   Calculation of the derivative of the function ff on the size r
 !
       real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
       integer :: k,i1=1,i2=2,i3=3
       integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
-      intent(in) :: ff, ff0 
+      intent(in) :: ff, ff0
       intent(out) :: dff_dr
 !
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
@@ -2407,7 +2404,7 @@ module Dustdensity
       dff_dr(:,i1) = (ff0(:,i1)*(rr1-rr2+rr1-rr3)/((rr1-rr2)*(rr1-rr3))  &
                     - ff0(:,i2)*(rr1-rr3)/((rr1-rr2)*(rr2-rr3)) &
                     + ff0(:,i3)*(rr1-rr2)/((rr1-rr3)*(rr2-rr3)) )
-!    
+!
       do k=2,ndustspec-1
 !
         rr1=dsize(k-1)
@@ -2493,7 +2490,6 @@ module Dustdensity
 !
     endsubroutine droplet_init
 !***********************************************************************
-
     subroutine copy_bcs_dust_short
 !
 !  Copy boundary conditions on first dust species to all others
