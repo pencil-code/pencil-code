@@ -73,6 +73,7 @@ module Chemistry
 !
      logical :: lheatc_chemistry=.true.
      logical :: lDiff_simple=.false.
+     logical :: lDiff_lewis=.false.
      logical :: lThCond_simple=.false.
      logical :: lT_const=.false.
      logical :: ldiff_fick=.false.
@@ -151,7 +152,7 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, &
+      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, lDiff_lewis, &
       lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,init_rho,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
@@ -167,7 +168,7 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
-      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lThCond_simple,&
+      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lThCond_simple,&
       visc_const,cp_const,reinitialize_chemistry,init_from_file,lfilter_strict, &
       init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
       ldiff_corr, ldiff_fick, lreac_as_aux, reac_rate_method,global_phi
@@ -2925,13 +2926,12 @@ module Chemistry
 !
     endif
 !
-    if (lreactions .and. ireac /= 0 .and. ((.not.llsode).or.lchemonly)) &
+    if (lreactions .and. ireac /= 0 .and. (lchemonly.or.(.not.llsode.and.llast))) &
         call get_reac_rate(sum_hhk_DYDt_reac,f,p)
 !
 !  Atmosphere case
 !
       if (lcloud.and.(.not.lchemonly)) then
-!
 !
         df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
               + p%ccondens
@@ -3809,19 +3809,21 @@ module Chemistry
           print*,'tran.dat file with transport data is found.'
         endif
         call read_transport_data
-      else if (lew_exist) then
+      endif
+!
+      if (lew_exist) then
         if (lroot) then
           print*,'lewis.dat file with transport data is found.'
           print*,'Species diffusion coefficients calculated using constant Lewis numbers.'
         endif
         call read_Lewis
-      else
-        if (lroot) then
-          print*,'tran.dat file with transport data is not found.'
-          print*,'lewis.dat file with Lewis numbers is not found.'
-          print*,'Now diffusion coefficients is ',chem_diff
-          print*,'Now species viscosity is ',nu_spec
-        endif
+      endif
+!
+      if (lroot .and. .not.tran_exist .or. .not.lew_exist) then
+        print*,'tran.dat file with transport data is not found.'
+        print*,'lewis.dat file with Lewis numbers is not found.'
+        print*,'Now diffusion coefficients is ',chem_diff
+        print*,'Now species viscosity is ',nu_spec
         Bin_Diff_coef=chem_diff/(unit_length*unit_length/unit_time)
         do k=1,nchemspec
           species_viscosity(:,:,:,k)=nu_spec(k)/&
@@ -5140,7 +5142,7 @@ module Chemistry
 !  Calculate diffusion term, p%DYDt_diff
 !
 !  22-jun-10/julien: Evaluation of mass diffusion fluxes using Fick's law for simplified
-!                     diffusion using constant Lewis numbers
+!                    diffusion using constant Lewis numbers
 !
       use Sub, only: del2,grad,dot_mn
 !
@@ -6277,7 +6279,7 @@ module Chemistry
             do ii = 1, nchemspec
               sum = sum + f(i,j,k,iuz+2+ii)
             enddo
-            f(i,j,k,iuz+2:iuz+2+nchemspec) = f(i,j,k,iuz+2:iuz+2+nchemspec)/sum
+            f(i,j,k,iuz+3:iuz+3+nchemspec) = f(i,j,k,iuz+3:iuz+3+nchemspec)/sum
 !
           enddo
         enddo
