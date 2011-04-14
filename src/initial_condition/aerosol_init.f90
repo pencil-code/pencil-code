@@ -95,6 +95,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i,j
+      real :: del=10.
 !
         if ((init_ux /=0.) .and. (nygrid>1)) then
          do i=1,my
@@ -104,11 +105,17 @@ module InitialCondition
         endif
         if ((init_uy /=0.) .and. (X_wind /= impossible)) then
           do j=1,mx
-            if (x(j)>X_wind) then
-              f(j,:,:,iuy)=f(j,:,:,iuy)+init_uy
-            else
-              f(j,:,:,iuy)=f(j,:,:,iuy)
-            endif
+!            if (x(j)>X_wind-del) then
+               
+             f(j,:,:,iuy)=f(j,:,:,iuy) &
+              +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
+              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
+              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
+
+!              f(j,:,:,iuy)=f(j,:,:,iuy)+init_uy
+!            else
+!              f(j,:,:,iuy)=f(j,:,:,iuy)
+!            endif
           enddo
         endif
         if ((init_uy /=0.) .and. (X_wind == impossible)) then
