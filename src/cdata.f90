@@ -179,7 +179,7 @@ module Cdata
   real :: Omega=0.0, theta=0.0, qshear=0.0, Sshear=impossible, deltay=0.0
 !DM : Omega is now used in the viscosity routine too, for Lambda effect in rotating
 ! coordinate. This should be taken care of by 'shared variables' if in future
-! Omega should be moved from cdata to hydro. 
+! Omega should be moved from cdata to hydro.
 !
 !  Random numbers.
 !
@@ -213,7 +213,7 @@ module Cdata
   logical :: lpscalar_nolog=.false.
   logical :: lalpm=.false.
   logical :: lradiation_ray=.false.,lradiation_fld=.false.
-  logical :: ldustdensity_log=.false., lmdvar=.false., lmice=.false., ldcore=.false.
+  logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
   logical :: lneutraldensity_nolog=.false.
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
@@ -250,7 +250,7 @@ module Cdata
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtestpq=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: iuutest=0,iuxtestpq=0,iuztestpq=0,ihhtestpq=0
-  integer :: ispitzerx=0,ispitzery=0,ispitzerz=0
+  integer :: ispitzerx=0,ispitzery=0,ispitzerz=0,ispitzer=0
   integer :: ntestscalar=0,ntestfield=0,ntestflow=0
   integer :: icctest=0,icctestpq=0,iug=0
   integer :: iam=0,iamx=0,iamy=0,iamz=0
@@ -346,9 +346,10 @@ module Cdata
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.
-  logical :: lwrite_xyaverages=.false.,lwrite_xzaverages=.false.,lwrite_yzaverages=.false., &
-             lwrite_phizaverages=.false.
-  logical :: lwrite_yaverages=.false.,lwrite_zaverages=.false.,lwrite_phiaverages=.false.
+  logical :: lwrite_xyaverages=.false.,lwrite_xzaverages=.false.
+  logical :: lwrite_yzaverages=.false.,lwrite_phizaverages=.false.
+  logical :: lwrite_yaverages=.false.,lwrite_zaverages=.false.
+  logical :: lwrite_phiaverages=.false.
   logical :: ldiagnos_need_zaverages=.false.
   logical :: ltime_integrals=.false.
   character (len=1) :: slice_position='p'
