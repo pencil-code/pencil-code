@@ -158,7 +158,7 @@ contains
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: dummy,cp1=1.
+      real :: cp1=1.
       integer :: lend,lend_b8,ierr
       integer :: i,j
       integer, parameter :: unit=12
