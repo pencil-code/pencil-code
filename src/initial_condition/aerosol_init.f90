@@ -551,6 +551,8 @@ module InitialCondition
       real :: PP_, init_water1__,init_water2__,init_x1__,init_x2__,del
       real, dimension (mx,my,mz) :: air_mass_ar_, psat_
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
+      real, dimension (my,mz) :: init_water1_min,init_water2_max
+
 !
          if ((init_water1__/=0.) .or. (init_water2__/=0.)) then
            do i=1,mx
@@ -567,6 +569,11 @@ module InitialCondition
              endif
            enddo
          elseif ((init_x1__/=0.) .or. (init_x2__/=0.)) then
+           init_water1_min(:,:)= &
+                 psat_(1,:,:)/(PP_*air_mass_ar_(1,:,:)/18.)*dYw1
+           init_water2_max(:,:)= &
+                 psat_(mx,:,:)/(PP_*air_mass_ar_(mx,:,:)/18.)*dYw2
+
            do i=1,mx
              if (x(i)<=init_x1__) then
                init_water1_(i,:,:)= &
@@ -578,6 +585,8 @@ module InitialCondition
                  psat_(i,:,:)/(PP_*air_mass_ar_(i,:,:)/18.)*dYw2
                f(i,:,:,ichemspec(index_H2O))=init_water2_(i,:,:)
              endif
+           enddo
+           do i=1,mx
              if (x(i)>init_x1__ .and. x(i)<init_x2__) then
 !
                f(i,:,:,ichemspec(index_H2O))=&
@@ -591,8 +600,8 @@ module InitialCondition
            do i=1,mx
              if (ltanh_prof) then
                 f(i,:,:,ichemspec(index_H2O))= &
-                   (init_water2_(mx,:,:)+init_water1_(1,:,:))*0.5  &
-                  +((init_water2_(mx,:,:)-init_water1_(1,:,:))*0.5)  &
+                   (init_water2_max(:,:)+init_water1_min(:,:))*0.5  &
+                  +((init_water2_max(:,:)-init_water1_min(:,:))*0.5)  &
                   *(exp(x(i)/del)-exp(-x(i)/del)) &
                   /(exp(x(i)/del)+exp(-x(i)/del))
              endif
