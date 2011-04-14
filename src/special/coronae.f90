@@ -6,7 +6,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 0
+! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -21,7 +21,7 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,Kc=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
-  real :: hyper3_chi=0.
+  real :: hyper3_chi=0.,tau_inv_spitzer=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.
   real :: width_newton=0.,gauss_newton=0.
@@ -53,7 +53,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,B_ext_special,irefz,coronae_fix
+      heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer
 !
 ! variables for print.in
 !
@@ -72,6 +72,10 @@ module Special
   real, target, dimension (nx,ny) :: spitzer_xy3,spitzer_xy4
   real, target, dimension (nx,nz) :: spitzer_xz
   real, target, dimension (ny,nz) :: spitzer_yz
+  real, target, dimension (nx,ny) :: sflux_xy,sflux_xy2
+  real, target, dimension (nx,ny) :: sflux_xy3,sflux_xy4
+  real, target, dimension (nx,nz) :: sflux_xz
+  real, target, dimension (ny,nz) :: sflux_yz
   real, target, dimension (nx,ny) :: newton_xy,newton_xy2,newton_xy3,newton_xy4
   real, target, dimension (nx,nz) :: newton_xz
   real, target, dimension (ny,nz) :: newton_yz
@@ -113,22 +117,28 @@ module Special
 !  miscellaneous variables
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
   real :: Bzflux
+  real :: Kspitzer_SI = 2e-11, Kspitzer=0.
 !
   contains
 !
 !***********************************************************************
-  subroutine register_special()
+    subroutine register_special()
 !
 !  Set up indices for variables in special modules and write svn id.
 !
 !  10-sep-10/bing: coded
 !
-    if (lroot) call svn_id( &
-        "$Id$")
+      use FArrayManager
 !
-  endsubroutine register_special
+      call farray_register_pde('spitzer',ispitzer,vector=3)
+      ispitzerx=ispitzer; ispitzery=ispitzer+1; ispitzerz=ispitzer+2
+!      
+      if (lroot) call svn_id( &
+          "$Id$")
+!
+    endsubroutine register_special
 !***********************************************************************
-  subroutine initialize_special(f,lstarting)
+    subroutine initialize_special(f,lstarting)
 !
 !  Called by start.f90 together with lstarting=.true.   and then
 !  called by run.f90   together with lstarting=.false.  after reading
@@ -136,257 +146,393 @@ module Special
 !
 !  13-sep-10/bing: coded
 !
-    use EquationOfState, only: gamma,get_cp1
-    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-    logical, intent(in) :: lstarting
-    real, dimension (mz) :: ztmp
-    character (len=*), parameter :: filename='/strat.dat'
-    integer :: lend,unit=12
-    real :: dummy=1.,cp1=1.
-    logical :: exists
+      use EquationOfState, only: gamma,get_cp1
 !
-    if (irefz > n2) call fatal_error('initialize_special', &
-        'irefz is outside proc boundaries, ask Sven')
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      logical, intent(in) :: lstarting
+      real, dimension (mz) :: ztmp
+      character (len=*), parameter :: filename='/strat.dat'
+      integer :: lend,unit=12
+      real :: dummy=1.,cp1=1.
+      logical :: exists
 !
-    inquire(IOLENGTH=lend) dummy
+      Kspitzer = Kspitzer_SI /unit_density/unit_velocity**3./ &
+          unit_length*unit_temperature**(3.5)
 !
-    if (.not.lstarting.and.tau_inv_newton /= 0.) then
+      if (irefz > n2) call fatal_error('initialize_special', &
+          'irefz is outside proc boundaries, ask Sven')
 !
-      inquire(FILE=trim(directory_snap)//filename,EXIST=exists)
-      if (exists) then
-        open(unit,file=trim(directory_snap)//filename, &
-            form='unformatted',status='unknown',recl=lend*mz)
-        read(unit) ztmp
-        read(unit) lnrho_init_prof
-        read(unit) lnTT_init_prof
-        close(unit)
-      else
-        if (ldensity_nolog) then
-          lnrho_init_prof = log(f(l1,m1,:,irho))
+      inquire(IOLENGTH=lend) dummy
+!
+      if (.not.lstarting.and.tau_inv_newton /= 0.) then
+!
+        inquire(FILE=trim(directory_snap)//filename,EXIST=exists)
+        if (exists) then
+          open(unit,file=trim(directory_snap)//filename, &
+              form='unformatted',status='unknown',recl=lend*mz)
+          read(unit) ztmp
+          read(unit) lnrho_init_prof
+          read(unit) lnTT_init_prof
+          close(unit)
         else
-          lnrho_init_prof = f(l1,m1,:,ilnrho)
-        endif
-        if (ltemperature) then
-          if (ltemperature_nolog) then
-            lnTT_init_prof = log(f(l1,m1,:,iTT))
+          if (ldensity_nolog) then
+            lnrho_init_prof = log(f(l1,m1,:,irho))
           else
-            lnTT_init_prof = f(l1,m1,:,ilnTT)
+            lnrho_init_prof = f(l1,m1,:,ilnrho)
           endif
-        else if (lentropy.and.pretend_lnTT) then
-          lnTT_init_prof = f(l1,m1,:,ilnTT)
-        else if (lthermal_energy) then
-          if (leos) call get_cp1(cp1)
-          lnTT_init_prof=log(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
-        else
-          call fatal_error('initialize_special', &
-              'not implemented for current set of thermodynamic variables')
+          if (ltemperature) then
+            if (ltemperature_nolog) then
+              lnTT_init_prof = log(f(l1,m1,:,iTT))
+            else
+              lnTT_init_prof = f(l1,m1,:,ilnTT)
+            endif
+          else if (lentropy.and.pretend_lnTT) then
+            lnTT_init_prof = f(l1,m1,:,ilnTT)
+          else if (lthermal_energy) then
+            if (leos) call get_cp1(cp1)
+            lnTT_init_prof=log(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
+          else
+            call fatal_error('initialize_special', &
+                'not implemented for current set of thermodynamic variables')
+          endif
+!
+          open(unit,file=trim(directory_snap)//filename, &
+              form='unformatted',status='unknown',recl=lend*mz)
+          write(unit) z(:)
+          write(unit) lnrho_init_prof
+          write(unit) lnTT_init_prof
+          close(unit)
         endif
-!
-        open(unit,file=trim(directory_snap)//filename, &
-            form='unformatted',status='unknown',recl=lend*mz)
-        write(unit) z(:)
-        write(unit) lnrho_init_prof
-        write(unit) lnTT_init_prof
-        close(unit)
       endif
-    endif
 !
-    if (.not.lstarting.and.lgranulation.and.ipz == 0) then
-      if (lhydro) then
-        call set_driver_params()
-      else
-        call fatal_error &
+      if (.not.lstarting.and.lgranulation.and.ipz == 0) then
+        if (lhydro) then
+          call set_driver_params()
+        else
+          call fatal_error &
               ('initialize_special','granulation only works for lhydro=T')
+        endif
       endif
-    endif
 !
-  endsubroutine initialize_special
+    endsubroutine initialize_special
 !***********************************************************************
-  subroutine read_special_run_pars(unit,iostat)
+    subroutine init_special(f)
+!
+!  initialise special condition; called from start.f90
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      intent(inout) :: f
+!
+!  Initialization for the non-fourier heat transprot
+!
+      f(:,:,:,ispitzerx:ispitzerz) = 0.
+!
+    endsubroutine init_special
+!***********************************************************************
+    subroutine read_special_run_pars(unit,iostat)
 !
 !  04-sep-10/bing: coded
 !
-    integer, intent(in) :: unit
-    integer, intent(inout), optional :: iostat
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
 !
-    if (present(iostat)) then
-      read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-    else
-      read(unit,NML=special_run_pars,ERR=99)
-    endif
+      if (present(iostat)) then
+        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=special_run_pars,ERR=99)
+      endif
 !
- 99    return
+99    return
 !
-  endsubroutine read_special_run_pars
+    endsubroutine read_special_run_pars
 !***********************************************************************
-  subroutine write_special_run_pars(unit)
+    subroutine write_special_run_pars(unit)
 !
 !  04-sep-10/bing: coded
 !
-    integer, intent(in) :: unit
+      integer, intent(in) :: unit
 !
-    write(unit,NML=special_run_pars)
+      write(unit,NML=special_run_pars)
 !
-  endsubroutine write_special_run_pars
+    endsubroutine write_special_run_pars
 !***********************************************************************
-  subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special()
 !
 !  All pencils that this special module depends on are specified here.
 !
 !  04-sep-10/bing: coded
 !
-    if (Kpara /= 0.) then
-      lpenc_requested(i_cp1)=.true.
-      lpenc_requested(i_bb)=.true.
-      lpenc_requested(i_bij)=.true.
-      lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_glnTT)=.true.
-      lpenc_requested(i_hlnTT)=.true.
-      lpenc_requested(i_lnrho)=.true.
-      lpenc_requested(i_glnrho)=.true.
-    endif
+      if (tau_inv_spitzer /= 0.) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+      endif
 !
-    if (hcond_grad_iso /= 0.) then
-      lpenc_requested(i_glnTT)=.true.
-      lpenc_requested(i_hlnTT)=.true.
-      lpenc_requested(i_del2lnTT)=.true.
-      lpenc_requested(i_glnrho)=.true.
-      lpenc_requested(i_cp1)=.true.
-    endif
+      if (Kpara /= 0.) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
 !
-    if (hcond_grad /= 0.) then
-      lpenc_requested(i_bb)=.true.
-      lpenc_requested(i_bij)=.true.
-      lpenc_requested(i_glnTT)=.true.
-      lpenc_requested(i_hlnTT)=.true.
-      lpenc_requested(i_del2lnTT)=.true.
-      lpenc_requested(i_glnrho)=.true.
-      lpenc_requested(i_cp1)=.true.
-    endif
+      if (hcond_grad_iso /= 0.) then
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
 !
-    if (cool_RTV /= 0.) then
-      lpenc_requested(i_cp1)=.true.
-      lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_lnrho)=.true.
-    endif
+      if (hcond_grad /= 0.) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_cp1)=.true.
+      endif
 !
-    if (tau_inv_newton /= 0.) then
-      lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_lnrho)=.true.
-    endif
+      if (cool_RTV /= 0.) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+      endif
 !
-    if (iheattype(1) /= 'nothing') then
-      lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_rho1)=.true.
-      lpenc_requested(i_cp1)=.true.
-      lpenc_requested(i_bb)=.true.
-    endif
+      if (tau_inv_newton /= 0.) then
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+      endif
 !
-  endsubroutine pencil_criteria_special
+      if (iheattype(1) /= 'nothing') then
+        lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_bb)=.true.
+      endif
+!
+    endsubroutine pencil_criteria_special
 !***********************************************************************
-  subroutine rprint_special(lreset,lwrite)
+    subroutine rprint_special(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to special
 !
 !  04-sep-10/bing: coded
 !
-    use Diagnostics, only: parse_name
+      use Diagnostics, only: parse_name
 !
-    integer :: iname
-    logical :: lreset,lwr
-    logical, optional :: lwrite
+      integer :: iname
+      logical :: lreset,lwr
+      logical, optional :: lwrite
 !
-    intent(in) :: lreset, lwrite
+      intent(in) :: lreset, lwrite
 !
-    lwr = .false.
-    if (present(lwrite)) lwr=lwrite
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
-    if (lreset) then
-      idiag_dtchi2=0.
-      idiag_dtrad=0.
-      idiag_dtnewt=0
-      idiag_dtgran=0
-    endif
+      if (lreset) then
+        idiag_dtchi2=0.
+        idiag_dtrad=0.
+        idiag_dtnewt=0
+        idiag_dtgran=0
+      endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-    do iname=1,nname
-      call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
-      call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
-      call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
-      call parse_name(iname,cname(iname),cform(iname),'dtgran',idiag_dtgran)
-    enddo
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
+        call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
+        call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
+        call parse_name(iname,cname(iname),cform(iname),'dtgran',idiag_dtgran)
+      enddo
 !
 !  write column where which variable is stored
 !
-    if (lwr) then
-      write(3,*) 'i_dtchi2=',idiag_dtchi2
-      write(3,*) 'i_dtrad=',idiag_dtrad
-      write(3,*) 'i_dtnewt=',idiag_dtnewt
-      write(3,*) 'i_dtgran=',idiag_dtgran
-    endif
+      if (lwr) then
+        write(3,*) 'i_dtchi2=',idiag_dtchi2
+        write(3,*) 'i_dtrad=',idiag_dtrad
+        write(3,*) 'i_dtnewt=',idiag_dtnewt
+        write(3,*) 'i_dtgran=',idiag_dtgran
+      endif
 !
-  endsubroutine rprint_special
+    endsubroutine rprint_special
 !***********************************************************************
-  subroutine get_slices_special(f,slices)
+    subroutine dspecial_dt(f,df,p)
+!
+!  calculate right hand side of ONE OR MORE extra coupled PDEs
+!  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
+!  m,n are global variables looped over in equ.f90
+!
+!  Due to the multi-step Runge Kutta timestepping used one MUST always
+!  add to the present contents of the df array.  NEVER reset it to zero.
+!
+!  Several precalculated Pencils of information are passed for
+!  efficiency.
+!
+!  06-oct-03/tony: coded
+!
+      use EquationOfState, only: gamma
+      use Diagnostics,     only : max_mn_name
+      use Sub, only: div, dot, dot2, identify_bcs, del2v, cubic_step
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension(nx) :: b2,b2_1,bglnTT,fac,q_sat
+      real, dimension(nx) :: div_spitzer,rhs,spitzer_abs
+      real :: Ksat=1.
+      integer :: i
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+!  Identify module and boundary conditions.
+!
+      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+      if (headtt) then
+        call identify_bcs('spitzerx',ispitzerx)
+        call identify_bcs('spitzery',ispitzery)
+        call identify_bcs('spitzerz',ispitzerz)
+      endif
+!
+      if (tau_inv_spitzer /= 0.) then
+        call dot2(p%bb,b2)
+        b2_1=1./max(tini,b2)
+!
+        call dot(p%bb,p%glnTT,bglnTT)
+!
+        fac = Kspitzer*bglnTT*b2_1*exp(3.5*p%lnTT)
+!
+        do i=1,3
+          df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
+              tau_inv_spitzer*(-f(l1:l2,m,n,ispitzer+i-1)-fac*p%bb(:,i))
+        enddo
+!
+!  Limit by saturation heat flux
+!
+        spitzer_abs(:)=0.
+        do i=1,3
+          spitzer_abs(:)=spitzer_abs(:) + f(l1:l2,m,n,ispitzer+i-1)**2
+        enddo
+        q_sat = Ksat*7.28e7*exp(p%lnrho+1.5*p%lnTT)
+!
+        where (sqrt(spitzer_abs) > q_sat)
+          f(l1:l2,m,n,ispitzerx)=f(l1:l2,m,n,ispitzerx)/sqrt(spitzer_abs)*q_sat
+          f(l1:l2,m,n,ispitzery)=f(l1:l2,m,n,ispitzery)/sqrt(spitzer_abs)*q_sat
+          f(l1:l2,m,n,ispitzerz)=f(l1:l2,m,n,ispitzerz)/sqrt(spitzer_abs)*q_sat
+        endwhere
+!
+        call div(f,ispitzer,div_spitzer)
+!
+        rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_spitzer
+!
+        if (llast_proc_z.and.coronae_fix) rhs = rhs*(1.-cubic_step(1.*n,n2-12.,9.))
+!
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+!
+        if (lvideo) then
+!
+! slices
+          spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
+          if (m == iy_loc)  spitzer_xz(:,n-n1+1)= -rhs
+          if (n == iz_loc)  spitzer_xy(:,m-m1+1)= -rhs
+          if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= -rhs
+          if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= -rhs
+          if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= -rhs
+        endif
+!
+        if (lfirst.and.ldt) then
+          dt1_max=max(dt1_max,rhs/cdts)
+          dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
+          if (ldiagnos.and.idiag_dtrad /= 0.) then
+            itype_name(idiag_dtrad)=ilabel_max_dt
+            call max_mn_name(rhs/cdts,idiag_dtrad,l_dt=.true.)
+          endif
+        endif
+      endif
+!
+    endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
 !
 !  Write slices for animation of special variables.
 !
 !  204-sep-10/bing: coded
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
-    type (slice_data), intent(inout) :: slices
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      type (slice_data), intent(inout) :: slices
 !
 !  Loop over slices
 !
-    select case (trim(slices%name))
+      select case (trim(slices%name))
 !
 !  Magnetic vector potential (code variable)
 !
-    case ('spitzer')
-      slices%yz => spitzer_yz
-      slices%xz => spitzer_xz
-      slices%xy => spitzer_xy
-      slices%xy2=> spitzer_xy2
-      if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
-      if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
-      slices%ready=.true.
+      case ('sflux')
+        if (slices%index>=3) then
+          slices%ready=.false.
+        else
+          slices%index=slices%index+1
+          slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,ispitzerx-1+slices%index)
+          slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,ispitzerx-1+slices%index)
+          slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,ispitzerx-1+slices%index)
+          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ispitzerx-1+slices%index)
+          if (lwrite_slice_xy3) &
+              slices%xy3=f(l1:l2,m1:m2,slices%iz3,ispitzerx-1+slices%index)
+          if (lwrite_slice_xy4) &
+              slices%xy4=f(l1:l2,m1:m2,slices%iz4,ispitzerx-1+slices%index)
+          if (slices%index<=3) slices%ready=.true.
+        endif
 !
-    case ('newton')
-      slices%yz => newton_yz
-      slices%xz => newton_xz
-      slices%xy => newton_xy
-      slices%xy2=> newton_xy2
-      if (lwrite_slice_xy3) slices%xy3=> newton_xy3
-      if (lwrite_slice_xy4) slices%xy4=> newton_xy4
-      slices%ready=.true.
+      case ('newton')
+        slices%yz => newton_yz
+        slices%xz => newton_xz
+        slices%xy => newton_xy
+        slices%xy2=> newton_xy2
+        if (lwrite_slice_xy3) slices%xy3=> newton_xy3
+        if (lwrite_slice_xy4) slices%xy4=> newton_xy4
+        slices%ready=.true.
 !
-    case ('rtv')
-      slices%yz => rtv_yz
-      slices%xz => rtv_xz
-      slices%xy => rtv_xy
-      slices%xy2=> rtv_xy2
-      if (lwrite_slice_xy3) slices%xy3=> rtv_xy3
-      if (lwrite_slice_xy4) slices%xy4=> rtv_xy4
-      slices%ready=.true.
+      case ('spitzer')
+        slices%yz => sflux_yz
+        slices%xz => sflux_xz
+        slices%xy => sflux_xy
+        slices%xy2=> sflux_xy2
+        if (lwrite_slice_xy3) slices%xy3=> sflux_xy3
+        if (lwrite_slice_xy4) slices%xy4=> sflux_xy4
+        slices%ready=.true.
 !
-    case ('hgrad')
-      slices%yz => hgrad_yz
-      slices%xz => hgrad_xz
-      slices%xy => hgrad_xy
-      slices%xy2=> hgrad_xy2
-      if (lwrite_slice_xy3) slices%xy3=> hgrad_xy3
-      if (lwrite_slice_xy4) slices%xy4=> hgrad_xy4
-      slices%ready=.true.
+      case ('rtv')
+        slices%yz => rtv_yz
+        slices%xz => rtv_xz
+        slices%xy => rtv_xy
+        slices%xy2=> rtv_xy2
+        if (lwrite_slice_xy3) slices%xy3=> rtv_xy3
+        if (lwrite_slice_xy4) slices%xy4=> rtv_xy4
+        slices%ready=.true.
 !
-    endselect
+      case ('hgrad')
+        slices%yz => hgrad_yz
+        slices%xz => hgrad_xz
+        slices%xy => hgrad_xy
+        slices%xy2=> hgrad_xy2
+        if (lwrite_slice_xy3) slices%xy3=> hgrad_xy3
+        if (lwrite_slice_xy4) slices%xy4=> hgrad_xy4
+        slices%ready=.true.
 !
-    call keep_compiler_quiet(f)
+      endselect
 !
-  endsubroutine get_slices_special
+    endsubroutine get_slices_special
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
@@ -486,8 +632,8 @@ module Special
 !
 ! WARNING this is temporary
       if (coronae_fix) then
-        where (f(l1:l2,m1,n1,ilnrho) < log(1e-13/unit_density) )
-          f(l1:l2,m1,n1,ilnrho) = log(1e-13/unit_density)
+        where (f(l1:l2,m,n,ilnrho) < log(1e-13/unit_density) )
+          f(l1:l2,m,n,ilnrho) = log(1e-13/unit_density)
         endwhere
         if (ipz == nprocz-1) &
             f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2,ilnTT))/(16.*nx*ny)
@@ -516,7 +662,7 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
-  subroutine calc_heatcond_spitzer(df,p)
+    subroutine calc_heatcond_spitzer(df,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines.
@@ -525,124 +671,123 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-    use Diagnostics,     only : max_mn_name
-    use EquationOfState, only: gamma
-    use Sub, only: dot2_mn, multsv_mn
+      use Diagnostics,     only : max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot2_mn, multsv_mn, cubic_step
 !
-    real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    type (pencil_case), intent(in) :: p
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
 !
-    real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2,gKc
-    real, dimension (nx) :: thdiff,chi_spitzer
-    real, dimension (nx) :: vKpara,vKperp,tmp
-    real, dimension (nx) :: glnT2_1,glnT2,b2,b2_1
-    real, dimension (nx) :: chi_c, K_c
+      real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2,gKc
+      real, dimension (nx) :: thdiff,chi_spitzer
+      real, dimension (nx) :: vKpara,vKperp,tmp
+      real, dimension (nx) :: glnT2_1,glnT2,b2,b2_1
+      real, dimension (nx) :: chi_c, K_c
 !
-    integer :: i,j
+      integer :: i,j
 !
 !  Calculate variable diffusion coefficients along pencils.
 !
-    call dot2_mn(p%bb,b2)
-    b2_1=1./max(tini,b2)
+      call dot2_mn(p%bb,b2)
+      b2_1=1./max(tini,b2)
 !
-    vKpara = Kpara * exp(p%lnTT*3.5)
-!    vKperp = Kperp * b2_1*exp(2.*p%lnrho+0.5*p%lnTT)
-!    vKperp = Kperp * b2_1*exp(p%lnrho)
-    vKperp = Kperp * exp(p%lnrho)
+      vKpara = Kpara * exp(p%lnTT*3.5)
+      vKperp = Kperp * b2_1*exp(2.*p%lnrho+0.5*p%lnTT)
 !
 !  For time step limitiation we have to find the effective heat flux:
 !  abs(K) = [K1.delta_ij + (K0-K1).bi.bj].ei.ej
 !  where K0=vKpara and K1=vKperp.
 !
-    call dot2_mn(p%glnTT,glnT2)
-    glnT2_1=1./max(tini,glnT2)
+      call dot2_mn(p%glnTT,glnT2)
+      glnT2_1=1./max(tini,glnT2)
 !
-    chi_spitzer=0.
-    do i=1,3
-      do j=1,3
-        tmp =       p%glnTT(:,i)*glnT2_1*p%glnTT(:,j)
-        tmp = tmp * p%bb(:,i)*b2_1*p%bb(:,j)
-        tmp = tmp * (vKpara-vKperp)
-        chi_spitzer=chi_spitzer+ tmp
-        if (i == j) chi_spitzer=chi_spitzer+ &
-            vKperp*glnT2_1*p%glnTT(:,i)*p%glnTT(:,j)
+      chi_spitzer=0.
+      do i=1,3
+        do j=1,3
+          tmp =       p%glnTT(:,i)*glnT2_1*p%glnTT(:,j)
+          tmp = tmp * p%bb(:,i)*b2_1*p%bb(:,j)
+          tmp = tmp * (vKpara-vKperp)
+          chi_spitzer=chi_spitzer+ tmp
+          if (i == j) chi_spitzer=chi_spitzer+ &
+              vKperp*glnT2_1*p%glnTT(:,i)*p%glnTT(:,j)
+        enddo
       enddo
-    enddo
-    chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1
+      chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1
 !
 !  Calculate gradient of variable diffusion coefficients.
 !
-    call multsv_mn(3.5*vKpara,p%glnTT,gvKpara)
+      call multsv_mn(3.5*vKpara,p%glnTT,gvKpara)
 !
-    do i=1,3
-      tmpv(:,i)=0.
-      do j=1,3
-        tmpv(:,i)=tmpv(:,i) + p%bb(:,j)*p%bij(:,j,i)
+      do i=1,3
+        tmpv(:,i)=0.
+        do j=1,3
+          tmpv(:,i)=tmpv(:,i) + p%bb(:,j)*p%bij(:,j,i)
+        enddo
       enddo
-    enddo
-    call multsv_mn(2.*b2_1,tmpv,tmpv2)
-!    tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
-!    tmpv=p%glnrho-tmpv2
-    tmpv=p%glnrho !-tmpv2
-    call multsv_mn(vKperp,tmpv,gvKperp)
+      call multsv_mn(2.*b2_1,tmpv,tmpv2)
+      tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv2
+      tmpv=p%glnrho-tmpv2
+      call multsv_mn(vKperp,tmpv,gvKperp)
 !
-    if (Kc /= 0.) then
-      chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
-      K_c = chi_c*exp(p%lnrho+p%lnTT)/(p%cp1*gamma)
-      call multsv_mn(K_c,p%glnrho+p%glnTT,gKc)
-      where (chi_spitzer > chi_c)
-        chi_spitzer = chi_c
-        vKpara = K_c
-        gvKpara(:,1) = gKc(:,1)
-        gvKpara(:,2) = gKc(:,2)
-        gvKpara(:,3) = gKc(:,3)
-      endwhere
-    endif
+      if (Kc /= 0.) then
+        chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
+        K_c = chi_c*exp(p%lnrho+p%lnTT)/(p%cp1*gamma)
+        call multsv_mn(K_c,p%glnrho+p%glnTT,gKc)
+        where (chi_spitzer > chi_c)
+          chi_spitzer = chi_c
+          vKpara = K_c
+          gvKpara(:,1) = gKc(:,1)
+          gvKpara(:,2) = gKc(:,2)
+          gvKpara(:,3) = gKc(:,3)
+        endwhere
+      endif
 !
 !  Calculate diffusion term.
 !
-    thdiff = 0.
-    call tensor_diffusion(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
-        GVKPERP=gvKperp,GVKPARA=gvKpara)
+      thdiff = 0.
+      call tensor_diffusion(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
+          GVKPERP=gvKperp,GVKPARA=gvKpara)
+!
+      if (llast_proc_z) thdiff = thdiff*(1.-cubic_step(1.*n,n2-12.,9.))
 !
 !  Add to energy equation.
-    if (ltemperature) then
-      if (ltemperature_nolog) then
-        thdiff = thdiff*exp(-p%lnrho)*gamma*p%cp1
-        df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT) + thdiff
-      else
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          thdiff = thdiff*exp(-p%lnrho)*gamma*p%cp1
+          df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT) + thdiff
+        else
+          thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
+        endif
+      else if (lentropy.and.pretend_lnTT) then
         thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
         df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
+      else if (lthermal_energy) then
+        df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + thdiff
+      else
+        call fatal_error('calc_heatcond_spitzer', &
+            'not implemented for current set of thermodynamic variables')
       endif
-    else if (lentropy.and.pretend_lnTT) then
-      thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
-    else if (lthermal_energy) then
-      df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + thdiff
-    else
-      call fatal_error('calc_heatcond_spitzer', &
-          'not implemented for current set of thermodynamic variables')
-    endif
 !
-    if (lvideo) then
+      if (lvideo) then
 !
 ! slices
-      spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
-      if (m == iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
-      if (n == iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
-      if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
-      if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
-      if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
-    endif
-!
-    if (lfirst.and.ldt) then
-      diffus_chi=diffus_chi+gamma*chi_spitzer*dxyz_2
-      if (ldiagnos.and.idiag_dtchi2 /= 0.) then
-        call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
+        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
+        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
+        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
+        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
+        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
       endif
-    endif
 !
-  endsubroutine calc_heatcond_spitzer
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chi_spitzer*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2 /= 0.) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_spitzer
 !***********************************************************************
     subroutine tensor_diffusion(gecr,ecr_ij,bij,bb, &
         vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
@@ -904,7 +1049,7 @@ module Special
             p%glnTT(:,2)*p%hlnTT(:,2,i) + &
             p%glnTT(:,3)*p%hlnTT(:,3,i))
       enddo
-!      
+!
       chi_grad = glnTT2*hcond_grad_iso*gamma*p%cp1
 !
       if (Kc /= 0.) then
@@ -951,7 +1096,7 @@ module Special
 !
     endsubroutine calc_heatcond_glnTT_iso
 !***********************************************************************
-  subroutine calc_heat_cool_RTV(df,p)
+    subroutine calc_heat_cool_RTV(df,p)
 !
 !  Computes the radiative loss in the optical thin corona.
 !  Zero order estimation for the electron number densities by
@@ -962,87 +1107,87 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-    use EquationOfState, only: gamma
-    use Diagnostics,     only: max_mn_name
-    use Sub, only: cubic_step
+      use EquationOfState, only: gamma
+      use Diagnostics,     only: max_mn_name
+      use Sub, only: cubic_step
 !
-    real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    type (pencil_case), intent(in) :: p
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
 !
-    real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
-    real :: unit_lnQ
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
+      real :: unit_lnQ
 !
-    unit_lnQ=3*log(real(unit_velocity))+&
-        5*log(real(unit_length))+log(real(unit_density))
-    lnTT_SI = p%lnTT + log(real(unit_temperature))
+      unit_lnQ=3*log(real(unit_velocity))+&
+          5*log(real(unit_length))+log(real(unit_density))
+      lnTT_SI = p%lnTT + log(real(unit_temperature))
 !
 !  calculate ln(ne*ni) :
 !  ln(ne*ni) = ln( 1.17*rho^2/(1.34*mp)^2)
 !  lnneni = 2*p%lnrho + log(1.17) - 2*log(1.34)-2.*log(real(m_p))
 !
-    lnneni = 2.*(p%lnrho+61.4412 +log(real(unit_mass)))
+      lnneni = 2.*(p%lnrho+61.4412 +log(real(unit_mass)))
 !
-    lnQ   = get_lnQ(lnTT_SI)
+      lnQ   = get_lnQ(lnTT_SI)
 !
-    rtv_cool = exp(lnQ-unit_lnQ+lnneni)
+      rtv_cool = exp(lnQ-unit_lnQ+lnneni)
 !
-    if (exp_RTV /= 0.) then
-      call warning('cool_RTV','exp_RTV not yet implemented')
-    elseif (tanh_RTV /= 0.) then
-      rtv_cool=rtv_cool*cool_RTV* &
-          0.5*(1.-tanh(width_RTV*(p%lnrho-tanh_RTV)))
+      if (exp_RTV /= 0.) then
+        call warning('cool_RTV','exp_RTV not yet implemented')
+      elseif (tanh_RTV /= 0.) then
+        rtv_cool=rtv_cool*cool_RTV* &
+            0.5*(1.-tanh(width_RTV*(p%lnrho-tanh_RTV)))
 !
-    elseif (cubic_RTV /= 0.) then
-      rtv_cool=rtv_cool*cool_RTV* &
-          (1.-cubic_step(p%lnrho,cubic_RTV,width_RTV))
+      elseif (cubic_RTV /= 0.) then
+        rtv_cool=rtv_cool*cool_RTV* &
+            (1.-cubic_step(p%lnrho,cubic_RTV,width_RTV))
 !
-    else
-      if (headtt) call warning("calc_heat_cool_RTV","cool acts everywhere")
-    endif
+      else
+        if (headtt) call warning("calc_heat_cool_RTV","cool acts everywhere")
+      endif
 !
-    if (init_time /= 0.) &
-        rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
+      if (init_time /= 0.) &
+          rtv_cool = rtv_cool * cubic_step(real(t),init_time,init_width)
 !
 !     add to the energy equation
 !
-    if (ltemperature) then
-      if (ltemperature_nolog) then
-        rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnrho)
-        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)-rtv_cool
-      else
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnrho)
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)-rtv_cool
+        else
+          rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
+        endif
+      else if (lentropy.and.pretend_lnTT) then
         rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
+      else if (lthermal_energy) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth)-rtv_cool
+      else
+        call fatal_error('calc_heat_cool_RTV', &
+            'not implemented for current set of thermodynamic variables')
       endif
-    else if (lentropy.and.pretend_lnTT) then
-      rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
-    else if (lthermal_energy) then
-      df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth)-rtv_cool
-    else
-      call fatal_error('calc_heat_cool_RTV', &
-          'not implemented for current set of thermodynamic variables')
-    endif
 !
-    if (lvideo) then
+      if (lvideo) then
 !
 ! slices
-      rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
-      if (m == iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
-      if (n == iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
-      if (n == iz2_loc) rtv_xy2(:,m-m1+1)=rtv_cool
-      if (n == iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
-      if (n == iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
-    endif
-!
-     if (lfirst.and.ldt) then
-      dt1_max=max(dt1_max,rtv_cool/cdts)
-      if (ldiagnos.and.idiag_dtrad /= 0.) then
-        itype_name(idiag_dtrad)=ilabel_max_dt
-        call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
+        rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
+        if (m == iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
+        if (n == iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
+        if (n == iz2_loc) rtv_xy2(:,m-m1+1)=rtv_cool
+        if (n == iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
+        if (n == iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
       endif
-    endif
 !
-  endsubroutine calc_heat_cool_RTV
+      if (lfirst.and.ldt) then
+        dt1_max=max(dt1_max,rtv_cool/cdts)
+        if (ldiagnos.and.idiag_dtrad /= 0.) then
+          itype_name(idiag_dtrad)=ilabel_max_dt
+          call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heat_cool_RTV
 !***********************************************************************
     function get_lnQ(lnTT)
 !
