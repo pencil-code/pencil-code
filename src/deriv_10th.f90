@@ -1716,7 +1716,7 @@ module Deriv
 !
       call fatal_error("deriv_10th","der2_z not implemented yet")
 !
-! To avoid xcompiler warnings:
+! To avoid compiler warnings:
       df2=f(n1:n2)
 !
     endsubroutine der2_z
