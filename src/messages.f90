@@ -55,7 +55,7 @@ module Messages
     subroutine initialize_messages
 !
 ! Set a flag if colored output has been requested.
-! Also set a flad if fake_parallel_io is requested. 
+! Also set a flag if fake_parallel_io is requested. 
 !
       inquire(FILE="COLOR", EXIST=ltermcap_color)
       inquire(FILE="FAKE_PARALLEL_IO", EXIST=lfake_parallel_io)
