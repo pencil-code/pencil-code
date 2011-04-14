@@ -166,8 +166,10 @@ module Magnetic_meanfield
       endif
 !
       if (lrhs_term2) then
-        rhs_termz=rhs_term_amplz*(-x(l1:l2)**2)/4.      !kk
-        rhs_termy=rhs_term_amplphi*x(l1:l2)/2.          !kk
+        !rhs_termz=rhs_term_amplz*(-x(l1:l2)**2)/4.      !kk
+        !rhs_termy=rhs_term_amplphi*x(l1:l2)/2.          !kk
+        rhs_termy=.50*rhs_term_amplphi*(1.-x(l1:l2))*x(l1:l2)
+        rhs_termz=.25*rhs_term_amplz*(.75-(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
       endif
 !
 !  if meanfield theory is invoked, we want to send meanfield_etat to
