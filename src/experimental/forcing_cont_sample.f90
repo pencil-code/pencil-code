@@ -450,47 +450,11 @@ module Forcing
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
       if (iforcing_cont=='xz') then
         if (lroot) print*,'forcing_cont: xz--calc sinx, cosx, etc'
-        profx_ampl=(x(l1:l2)-xyz0(1))*(xyz1(1)-x(l1:l2))
-        !profy_ampl=(y-xyz0(2))*(xyz1(2)-y)
+        profx_ampl=ampl_ff*(x(l1:l2)-xyz0(1))*(xyz1(1)-x(l1:l2))
         profz_ampl=(z-xyz0(3))*(xyz1(3)-z)
-      elseif (iforcing_cont=='RobertsFlow' .or. iforcing_cont=='RobertsFlow_exact' ) then
-        if (lroot) print*,'forcing_cont: Roberts Flow'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-      elseif (iforcing_cont=='RobertsFlow-zdep') then
-        if (lroot) print*,'forcing_cont: z-dependent Roberts Flow'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-      elseif (iforcing_cont=='nocos') then
-        if (lroot) print*,'forcing_cont: nocos flow'
-        sinx=sin(k1_ff*x)
-        siny=sin(k1_ff*y)
-        sinz=sin(k1_ff*z)
-     elseif (iforcing_cont=='KolmogorovFlow-x') then
-        if (lroot) print*,'forcing_cont: Kolmogorov flow'
-        cosx=cos(k1_ff*x)
-     elseif (iforcing_cont=='KolmogorovFlow-z') then
-        if (lroot) print*,'forcing_cont: Kolmogorov flow z'
-        cosz=cos(k1_ff*z)
-      elseif (iforcing_cont=='TG') then
-        if (lroot) print*,'forcing_cont: TG'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        cosz=cos(k1_ff*z)
-        if (lembed) then
-          embedx=.5+.5*tanh(x/width_fcont)*tanh((pi-x)/width_fcont)
-          embedy=.5+.5*tanh(y/width_fcont)*tanh((pi-y)/width_fcont)
-          embedz=.5+.5*tanh(z/width_fcont)*tanh((pi-z)/width_fcont)
-          sinx=embedx*sinx; cosx=embedx*cosx
-          siny=embedy*siny; cosy=embedy*cosy
-          cosz=embedz*cosz
-        endif
-      elseif (iforcing_cont=='sinx') then
-        sinx=sin(k1_ff*x)
-        if (tgentle > 0.) then
-          lgentle=.true.
-          if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
-        endif
+      elseif (iforcing_cont=='1-(4/3)(1-r^2/4)*r^2') then
+        if (lroot) print*,'forcing_cont: 1-(4/3)(1-r^2/4)*r^2'
+        profx_ampl=ampl_ff*(1.-4./3.*(1.-.25*x(l1:l2)**2)*x(l1:l2)**2)
       endif
 !
     endsubroutine initialize_forcing
@@ -3789,115 +3753,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         select case (iforcing_cont)
         case('xz')
-          fact=1.-eps_fcont
           force(:,1)=0.
-          force(:,2)=fact*profx_ampl*profz_ampl(n)
+          force(:,2)=profx_ampl*profz_ampl(n)
           force(:,3)=0.
-        case ('AKA')
-          fact=sqrt(2.)*ampl_ff
-          force(:,1)=fact*phi1_ff(m    )
-          force(:,2)=fact*phi2_ff(l1:l2)
-          force(:,3)=fact*(phi1_ff(m)+phi2_ff(l1:l2))
-        case ('grav_z')
-          force(:,1)=0
-          force(:,2)=0
-          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
-        case ('grav_xz')
-          call get_shared_variable('gravx', gravx, ierr)
-          if (ierr/=0) call stop_it("forcing: "//&
-            "there was a problem when getting gravx")
-          force(:,1)=gravx*ampl_ff*cos(omega_ff*t)
-          force(:,2)=0
-          force(:,3)=gravz*ampl_ff*cos(omega_ff*t)
-        case('KolmogorovFlow-x')
-          fact=ampl_ff
-          force(:,1)=0
-          force(:,2)=fact*cosx(l1:l2)
-          force(:,3)=0
-        case('KolmogorovFlow-z')
-          fact=ampl_ff
-          force(:,1)=fact*cosz(n)
+        case ('1-(4/3)(1-r^2/4)*r^2')
+          force(:,1)=0.
           force(:,2)=0.
-          force(:,3)=0.
-        case ('nocos')
-          fact=ampl_ff
-          force(:,1)=fact*sinz(n)
-          force(:,2)=fact*sinx(l1:l2)
-          force(:,3)=fact*siny(m)
-        case('RobertsFlow')
-          fact=ampl_ff
-          force(:,1)=-fact*cosx(l1:l2)*siny(m)
-          force(:,2)=+fact*sinx(l1:l2)*cosy(m)
-          force(:,3)=+relhel*fact*cosx(l1:l2)*cosy(m)*sqrt2
-        case('RobertsFlow2d')
-          fact=ampl_ff
-          i2d1=1;i2d2=2;i2d3=3
-          if (l2dxz) then
-            i2d1=2;i2d2=1;i2d3=2
-          endif
-          if (l2dyz) then
-            i2d1=3;i2d2=2;i2d3=1
-          endif
-          force(:,i2d1)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
-          force(:,i2d2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
-          force(:,i2d3)= 0.
-        case ('RobertsFlow_exact')
-          kx=k1_ff; ky=k1_ff
-          kf=sqrt(kx*kx+ky*ky)
-          call getnu(nu_input=nu)
-          fact=ampl_ff*kf*kf*nu
-          fact2=ampl_ff*ampl_ff*kx*ky
-!
-!!print*, 'forcing: kx, ky, kf, fact, fact2=', kx, ky, kf, fact, fact2
-          force(:,1)=-fact*ky*cosx(l1:l2)*siny(m) - fact2*ky*sinx(l1:l2)*cosx(l1:l2)
-          force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
-          force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
-!
-        case ('RobertsFlow-zdep')
-          if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
-          fpara=quintic_step(z(n),-1.+eps_fcont,eps_fcont) &
-               -quintic_step(z(n),+1.-eps_fcont,eps_fcont)
-          dfpara=quintic_der_step(z(n),-1.+eps_fcont,eps_fcont)&
-                -quintic_der_step(z(n),+1.-eps_fcont,eps_fcont)
-!
-!  abbreviations
-!
-          sqrt21k1=1./(sqrt2*k1_ff)
-!
-!  amplitude factor missing in upper lines
-!
-          force(:,1)=-ampl_ff*cosx(l1:l2)*siny(m) &
-                -dfpara*ampl_ff*sinx(l1:l2)*cosy(m)*sqrt21k1
-          force(:,2)=+ampl_ff*sinx(l1:l2)*cosy(m) &
-                -dfpara*ampl_ff*cosx(l1:l2)*siny(m)*sqrt21k1
-          force(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
-!
-        case ('sinx')
-          if (lgentle.and.t<tgentle) then
-            fact=.5*ampl_ff*(1.-cos(pi*t/tgentle))
-          else
-            fact=ampl_ff
-          endif
-          force(:,1)=fact*sinx(l1:l2)
-          force(:,2)=0.
-          force(:,3)=0.
-!
-        case ('TG')
-          fact=2.*ampl_ff
-          force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
-          force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
-          force(:,3)=0.
-
-!
-! Continuous emf required in Induction equation for the Mag Buoy Inst
-!
-        case('mbi_emf')
-          fact=2.*ampl_bb*eta_bb/width_bb**2
-          arg=(z(n)-z_bb)/width_bb
-          force(:,1)=fact*tanh(arg)/(cosh(arg))**2
-          force(:,2)=0.0
-          force(:,3)=0.0
-!
+          force(:,3)=profx_ampl
         case default
           call stop_it('forcing: no continuous iforcing_cont specified')
         endselect
