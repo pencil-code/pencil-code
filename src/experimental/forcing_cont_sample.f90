@@ -26,8 +26,8 @@ module Forcing
 !
   implicit none
 !
-  include 'record_types.h'
-  include 'forcing.h'
+  include '../record_types.h'
+  include '../forcing.h'
 !
   real :: force=0.,force2=0.
   real :: relhel=1.,height_ff=0.,r_ff=0.,rcyl_ff=0.
