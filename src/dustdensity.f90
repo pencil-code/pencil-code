@@ -59,7 +59,7 @@ module Dustdensity
   real :: dsize_min=0., dsize_max=0., dsize0_min=1e-6, dsize0_max=5e-6
   real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2, r0, r0_core=2.4e-6
   real :: delta=1.2, delta0=1.2
-  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot
+  real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot=1e3
   real :: AA=0.66e-4, d0=2.4e-6, BB0=1.5e-16
   real :: nd_reuni,nd00=1.
   integer :: ind_extra
@@ -372,7 +372,8 @@ module Dustdensity
               print*,'BB(i)', BB(i)
             enddo
           else
-            BB0=10.7*(2.4e-6)**2*d0
+!            BB0=15e-16!10.7*(2.4e-6)**2*d0
+             BB(i)=10.7*(d0)**3
             print*,'BB0= ',  BB0
           endif
 !
