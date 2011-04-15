@@ -1219,6 +1219,13 @@ module Magnetic
             f(l1:l2,m,n,iay)=amplaaB(j)/2*x(l1:l2)*(RFPrad(j)**4-x(l1:l2)**4/3)
           enddo; enddo
 !
+!  Uniform B-field in cylindrical coordinates
+!
+        case ('Bz=const(cyl)')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay)=.5*x(l1:l2)*amplaaB(j)
+          enddo; enddo
+!
 !  generalized
 !
         case ('JzBz_cyl_RFPradJB')
