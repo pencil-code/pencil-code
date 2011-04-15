@@ -105,13 +105,14 @@ module InitialCondition
         endif
         if ((init_uy /=0.) .and. (X_wind /= impossible)) then
           do j=1,mx
-!            if (x(j)>X_wind-del) then
+           
                
              f(j,:,:,iuy)=f(j,:,:,iuy) &
               +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
               *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
               /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
 
+!            if (x(j)>X_wind) then
 !              f(j,:,:,iuy)=f(j,:,:,iuy)+init_uy
 !            else
 !              f(j,:,:,iuy)=f(j,:,:,iuy)
@@ -173,12 +174,13 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (my,mz) :: init_water1,init_water2
+      real, dimension (my,mz) :: init_water1,init_water2, &
+               init_water1_tmp,init_water2_tmp
       !real, dimension (mx,my,mz), intent(inout) :: f
       real, dimension (ndustspec) ::  lnds
       real :: ddsize, ddsize0, del, air_mass, PP
-      integer :: i, ii_max
-      logical :: lstop=.true.
+      integer :: i, ii, ii_max
+      logical :: lstop=.true., lstart1=.false., lstart2=.false.
 !
 
       ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
@@ -194,11 +196,32 @@ module InitialCondition
 
       call air_field_local(f, air_mass, PP)
       if (nxgrid>1) then
-        do i=l1,l2
-          call calc_boundary_water(f, air_mass, ii_max, PP, &
-                             init_water1,init_water2, i)
+        do i=1,2
+
+          if (i==1) then
+            ii=l1
+            if (x(ii) == xyz0(1)) lstart1=.true.
+          elseif (i==2) then
+            ii=l2
+            if (x(ii) == xyz0(1)+Lxyz(1)) lstart2=.true.
+          endif
+
+          if (lstart1) then
+            call calc_boundary_water(f, air_mass, ii_max, PP, &
+                             init_water1_tmp,init_water2_tmp, ii)
+            init_water1=init_water1_tmp
+            lstart1=.false.
+          elseif (lstart2) then
+            call calc_boundary_water(f, air_mass, ii_max, PP, &
+                             init_water1_tmp,init_water2_tmp, ii)
+            init_water2=init_water2_tmp
+            lstart2=.false.
+          endif
         enddo
       endif
+
+     print*, init_water1(m1,n1),x(l1),x(l2)
+     print*, init_water2(m1,n1),x(l1),x(l2)
 
       call reinitialization(f, air_mass, PP, ii_max,init_water1,init_water2)
 !
