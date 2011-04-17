@@ -838,10 +838,12 @@ module Dustvelocity
         if (lpencil(i_sdij)) then
           if (lviscd_nud_const) then
             do j=1,3
-              do i=1,3
-                p%sdij(:,i,j,k)=.5*(p%udij(:,i,j,k)+p%udij(:,j,i,k))
+              p%sdij(:,j,j,k)=p%udij(:,j,j,k)
+              do i=j+1,3
+                p%sdij(:,i,j,k)=0.5*(p%udij(:,i,j,k)+p%udij(:,j,i,k))
+                p%sdij(:,j,i,k)=p%sdij(:,i,j,k)
               enddo
-              p%sdij(:,j,j,k)=p%sdij(:,j,j,k)-.333333*p%divud(:,k)
+              p%sdij(:,j,j,k)=p%sdij(:,j,j,k)-(1/3.0)*p%divud(:,k)
             enddo
           elseif (lviscd_hyper3_nud_const) then
             call gij(f,iuud(k),tmp_pencil_3x3,5)
