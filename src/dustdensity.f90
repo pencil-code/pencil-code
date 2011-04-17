@@ -963,6 +963,7 @@ module Dustdensity
         lpencil_in(i_nd)=.true.
         lpencil_in(i_md)=.true.
       endif
+      if (lpencil_in(i_rhod1)) lpencil_in(i_rhod)=.true.
       if (lpencil_in(i_epsd)) then
         lpencil_in(i_rho1)=.true.
         lpencil_in(i_rhod)=.true.
