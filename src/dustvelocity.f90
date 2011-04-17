@@ -59,7 +59,7 @@ module Dustvelocity
   logical :: ldustvelocity_shorttausd=.false., lvshear_dust_global_eps=.false.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
   logical :: lviscd_simplified=.false., lviscd_nud_const=.false.
-  logical :: lviscd_shock=.false.
+  logical :: lviscd_shock=.false., lviscd_shock_simplified=.false.
   logical :: lviscd_hyper3_simplified=.false.
   logical :: lviscd_hyper3_rhod_nud_const=.false.
   logical :: lviscd_hyper3_nud_const=.false.
@@ -317,6 +317,8 @@ module Dustvelocity
           lviscd_nud_const=.true.
         case ('shock','nud-shock')
           lviscd_shock=.true.
+        case ('shock_simplified','nud-shock_simplified')
+          lviscd_shock_simplified=.true.
         case ('hyper3_simplified')
           if (lroot) print*, 'Viscous force (dust): nud*del6ud'
           lviscd_hyper3_simplified=.true.
@@ -737,6 +739,12 @@ module Dustvelocity
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
       endif
+      if (lviscd_shock_simplified) then
+        lpenc_requested(i_divud)=.true.
+        lpenc_requested(i_graddivud)=.true.
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_gshock)=.true.
+      endif
       if (lviscd_hyper3_simplified .or. lviscd_hyper3_nud_const .or. &
           lviscd_hyper3_rhod_nud_const) &
           lpenc_requested(i_del6ud)=.true.
@@ -1040,18 +1048,31 @@ module Dustvelocity
             if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_2
           endif
 !
-!  Viscous force: nu_shock
+!  Viscous force: nud_shock
 !
           if (lviscd_shock) then
             if (ldustdensity) then
               call multsv(p%divud(:,k),p%glnrhod(:,:,k),tmp2)
               tmp = tmp2 + p%graddivud(:,:,k)
-              call multsv(nud_shock(k)*p%shock,tmp,tmp2)
-              call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
-              fviscd = fviscd + tmp
-              if (lfirst.and.ldt) &
-                  diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
+            else
+              tmp = p%graddivud(:,:,k)
             endif
+            call multsv(nud_shock(k)*p%shock,tmp,tmp2)
+            call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
+            fviscd = fviscd + tmp
+            if (lfirst.and.ldt) &
+                diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
+          endif
+!
+!  Viscous force: nud_shock simplified (not momentum conserving)
+!
+          if (lviscd_shock_simplified) then
+            tmp = p%graddivud(:,:,k)
+            call multsv(nud_shock(k)*p%shock,tmp,tmp2)
+            call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
+            fviscd = fviscd + tmp
+            if (lfirst.and.ldt) &
+                diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
           endif
 !
 !  Viscous force: nud*del6ud (not momentum-conserving)
