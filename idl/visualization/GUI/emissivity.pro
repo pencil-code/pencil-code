@@ -5,16 +5,10 @@
 ;;;
 ;;;  Description:
 ;;;   Fast and simple to use tool to view and compare emissivities of different ions.
-;;;   This tool expects, that '.r analyse' has already been executed.
+;;;   This tool expects, that '.r pc_gui' has already been executed.
 ;;;
 ;;;  To do:
 ;;;   Add more comments
-
-
-;;; Settings:
-
-; Quantities to be used for emissivity (calculated in 'precalc_data'):
-emissivity_quantities = { temperature:'Temp', logarithmic_density:'ln_rho' }
 
 
 ; Event handling of emissivity visualisation window
@@ -85,20 +79,20 @@ end
 pro precalc_emissivity
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
-	common settings_common, idx1, idx2, idx3, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_1, af_2, af_3
-	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax, dimensionality
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	T_0 = parameter[selected_emissivity].T_ex
 	dT = parameter[selected_emissivity].delta_T
 
-;	for iy = 0, num_1-1 do em_x = em_x * exp (rho_0 - ((varsets[selected_snapshot].ln_rho[cut])[*,iy,cut_z:num_3-1] > rho_0)) + em[*,iy,cut_z:num_3-1]
-;	for ix = 0, num_2-1 do em_y = em_y * exp (rho_0 - ((varsets[selected_snapshot].ln_rho[cut])[ix,*,cut_z:num_3-1] > rho_0)) + em[ix,*,cut_z:num_3-1]
-;	for iz = cut_z, num_3-1 do em_z = em_z * exp (rho_0 - ((varsets[selected_snapshot].ln_rho[cut])[*,*,iz] > rho_0)) + em[*,*,iz]
+;	for iy = 0, num_x-1 do em_x = em_x * 10^(rho_0 - ((varsets[selected_snapshot].log_rho[cut])[*,iy,cut_z:num_z-1] > rho_0)) + em[*,iy,cut_z:num_z-1]
+;	for ix = 0, num_y-1 do em_y = em_y * 10^(rho_0 - ((varsets[selected_snapshot].log_rho[cut])[ix,*,cut_z:num_z-1] > rho_0)) + em[ix,*,cut_z:num_z-1]
+;	for iz = cut_z, num_z-1 do em_z = em_z * 10^(rho_0 - ((varsets[selected_snapshot].log_rho[cut])[*,*,iz] > rho_0)) + em[*,*,iz]
 
-;	em = (1 - cos (((1 - ((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) > 0) * !PI)) * exp ((varsets[selected_snapshot].ln_rho[cut]) * 2)
-	em = ((1 - ((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) > 0) * exp ((varsets[selected_snapshot].ln_rho[cut]) * 2)
+;	em = (1 - cos (((1 - ((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) > 0) * !PI)) * 10^((varsets[selected_snapshot].log_rho[cut]) * 2)
+	em = ((1 - ((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) > 0) * 10^((varsets[selected_snapshot].log_rho[cut]) * 2)
 
 	em_x = total (em, 1)
 	em_y = total (em, 2)
@@ -108,8 +102,8 @@ pro precalc_emissivity
 	if (sub_horiz) then begin
 		m = 0
 		std = 10^mean ([sl_min, sl_max])
-		for z=cut_z, num_3-1 do begin
-			zs = min ([num_3/2, num_3-aver_z-1])
+		for z=cut_z, num_z-1 do begin
+			zs = min ([num_z/2, num_z-aver_z-1])
 			if (z lt zs) then begin
 				m = 0
 				for iz=zs, zs+aver_z do m += max (em_x[*,iz]) + max (em_y[*,iz])
@@ -122,9 +116,9 @@ pro precalc_emissivity
 		end
 	end
 
-	if (bin1 ne 1 or bin3 ne 1) then em_x = congrid (em_x, fix (num_1*bin1), fix ((num_3-cut_z)*bin3), cubic = 0)
-	if (bin2 ne 1 or bin3 ne 1) then em_y = congrid (em_y, fix (num_2*bin2), fix ((num_3-cut_z)*bin3), cubic = 0)
-	if (bin1 ne 1 or bin2 ne 1) then em_z = congrid (em_z, fix (num_1*bin1), fix (num_2*bin2), cubic = 0)
+	if (bin_x ne 1 or bin_z ne 1) then em_x = congrid (em_x, fix (num_x*bin_x), fix ((num_z-cut_z)*bin_z), cubic = 0)
+	if (bin_y ne 1 or bin_z ne 1) then em_y = congrid (em_y, fix (num_y*bin_y), fix ((num_z-cut_z)*bin_z), cubic = 0)
+	if (bin_x ne 1 or bin_y ne 1) then em_z = congrid (em_z, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
 end
 
 
@@ -133,7 +127,7 @@ pro plot_emissivity
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
-	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax, dimensionality
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	wset, wem_x
 	tvscl, (em_x[*,cut_z:*] > emin) < emax, 0, cut_z
@@ -151,7 +145,7 @@ pro emissivity, sets, limits, scaling=scaling
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
-	common slider_common, bin1, bin2, bin3, num_1, num_2, num_3, pos_b, pos_t, csmin, csmax, dimensionality
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	; Emissivities for different ions (values with only one decimal digit are UNVERIFIED)
 	; Temperatures are logarithmic to the base of 10
@@ -165,7 +159,10 @@ pro emissivity, sets, limits, scaling=scaling
 		{ title:'O V',     lambda:630,  T_ion:5.38, T_ex:5.35, T_DEM:5.40, T_MHD:5.44, delta_T:0.28 }, $
 		{ title:'O VI',    lambda:1032, T_ion:5.45, T_ex:5.44, T_DEM:5.50, T_MHD:5.60, delta_T:0.23 }, $
 		{ title:'Ne VIII', lambda:770,  T_ion:5.81, T_ex:5.76, T_DEM:5.82, T_MHD:5.89, delta_T:0.16 }, $
-		{ title:'Mg X',    lambda:625,  T_ion:6.04, T_ex:6.01, T_DEM:6.01, T_MHD:6.06, delta_T:0.17 } $
+		{ title:'Mg X',    lambda:625,  T_ion:6.04, T_ex:6.01, T_DEM:6.01, T_MHD:6.06, delta_T:0.17 }, $
+		{ title:'Fe IX',   lambda:173,  T_ion:0.0,  T_ex:5.8,  T_DEM:0.0,  T_MHD:0.0,  delta_T:0.5 }, $  ; needs verifivation
+		{ title:'Fe XII',  lambda:195,  T_ion:0.0,  T_ex:6.0,  T_DEM:0.0,  T_MHD:0.0,  delta_T:0.3 }, $  ; needs verifivation
+		{ title:'Fe XV',   lambda:195,  T_ion:0.0,  T_ex:6.35, T_DEM:0.0,  T_MHD:0.0,  delta_T:0.25 } $  ; needs verifivation
 	      ]
 	n_emissivities = n_elements (parameter)
 
@@ -179,16 +176,16 @@ pro emissivity, sets, limits, scaling=scaling
 	sub_horiz = 0
 	aver_z = 10
 
-	em = fltarr (num_1,num_2,num_3)
-	em_x = fltarr (num_2,num_3)
-	em_y = fltarr (num_1,num_3)
-	em_z = fltarr (num_1,num_2)
+	em = fltarr (num_x,num_y,num_z)
+	em_x = fltarr (num_y,num_z)
+	em_y = fltarr (num_x,num_z)
+	em_z = fltarr (num_x,num_y)
 
 	MOTHER	= WIDGET_BASE (title='emissivitiy')
 	BASE    = WIDGET_BASE (MOTHER, /col)
 	TOP     = WIDGET_BASE (base, /row)
 	col     = WIDGET_BASE (top, /col)
-	tmp     = WIDGET_SLIDER (col, uvalue='CUT_Z', value=cut_z, min=0, max=num_1-1, xsize=num_3*bin3, /drag)
+	tmp     = WIDGET_SLIDER (col, uvalue='CUT_Z', value=cut_z, min=0, max=num_x-1, xsize=num_z*bin_z, /drag)
 	col     = WIDGET_BASE (top, /col)
 	emis    = WIDGET_DROPLIST (col, value=(parameter[*].title), uvalue='EMIS', EVENT_PRO=emissivity_event, title='ion')
 	col     = WIDGET_BASE (top, /col)
@@ -196,19 +193,19 @@ pro emissivity, sets, limits, scaling=scaling
 	col     = WIDGET_BASE (top, /col)
 	tmp	= WIDGET_BUTTON (col, value='QUIT', UVALUE='QUIT', xsize=100)
 	drow    = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_X', xsize=num_2*bin2, ysize=num_3*bin3)
+	tmp     = WIDGET_DRAW (drow, UVALUE='EM_X', xsize=num_y*bin_y, ysize=num_z*bin_z)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wem_x   = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Y', xsize=num_1*bin1, ysize=num_3*bin3)
+	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Y', xsize=num_x*bin_x, ysize=num_z*bin_z)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wem_y   = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Z', xsize=num_1*bin1, ysize=num_2*bin2)
+	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Z', xsize=num_x*bin_x, ysize=num_y*bin_y)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wem_z   = !d.window
 	TOP2    = WIDGET_BASE (base, /col)
 
-	val_b   = CW_FSLIDER (TOP2, uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=(2*num_1*bin1+num_2*bin2)>max([num_1,num_2,num_3]) )
-	val_t   = CW_FSLIDER (TOP2, uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=(2*num_1*bin1+num_2*bin2)>max([num_1,num_2,num_3]) )
+	val_b   = CW_FSLIDER (TOP2, uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=(2*num_x*bin_x+num_y*bin_y)>max([num_x,num_y,num_z]) )
+	val_t   = CW_FSLIDER (TOP2, uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=(2*num_x*bin_x+num_y*bin_y)>max([num_x,num_y,num_z]) )
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
@@ -225,6 +222,12 @@ pro emissivity, sets, limits, scaling=scaling
 
 	return
 end
+
+
+;;; Settings:
+
+; Quantities to be used for emissivity (calculated in 'precalc_data'):
+emissivity_quantities = { temperature:'Temp', logarithmic_density:'ln_rho' }
 
 
 emissivity, emissivity_quantities, lmn12, scaling=scaling
