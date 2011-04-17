@@ -162,7 +162,7 @@ pro emissivity, sets, limits, scaling=scaling
 		{ title:'Mg X',    lambda:625,  T_ion:6.04, T_ex:6.01, T_DEM:6.01, T_MHD:6.06, delta_T:0.17 }, $
 		{ title:'Fe IX',   lambda:173,  T_ion:0.0,  T_ex:5.8,  T_DEM:0.0,  T_MHD:0.0,  delta_T:0.5 }, $  ; needs verifivation
 		{ title:'Fe XII',  lambda:195,  T_ion:0.0,  T_ex:6.0,  T_DEM:0.0,  T_MHD:0.0,  delta_T:0.3 }, $  ; needs verifivation
-		{ title:'Fe XV',   lambda:195,  T_ion:0.0,  T_ex:6.35, T_DEM:0.0,  T_MHD:0.0,  delta_T:0.25 } $  ; needs verifivation
+		{ title:'Fe XV',   lambda:284,  T_ion:0.0,  T_ex:6.35, T_DEM:0.0,  T_MHD:0.0,  delta_T:0.25 } $  ; needs verifivation
 	      ]
 	n_emissivities = n_elements (parameter)
 
