@@ -238,6 +238,7 @@ if (not pc_gui_loaded) then BEGIN
 	show_timeseries, ts, tags, units
 
 
+	print, "Allocating memory..."
 	dummy = dindgen (dim.mx, dim.my, dim.mz)
 	dummy_3D = findgen (dim.mx, dim.my, dim.mz, 3)
 
@@ -269,6 +270,7 @@ if (not pc_gui_loaded) then BEGIN
 
 	dummy = 0
 	dummy_3D = 0
+	print, "...finished."
 
 	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir
 
