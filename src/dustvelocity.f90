@@ -1293,30 +1293,31 @@ module Dustvelocity
 !***********************************************************************
     subroutine rprint_dustvelocity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for hydro part
+!  Reads and registers print parameters relevant for dust velocity.
 !
 !   3-may-02/axel: coded
-!  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics
       use General, only: chn
 !
-      integer :: iname,inamez,k
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+!
+      integer :: iname, inamez, inamexy, k
+      logical :: lwr
       character (len=5) :: sdust
 !
-!  Write information to index.pro that should not be repeated for i
+!  Write information to index.pro that should not be repeated for i.
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
+!
       if (lwr) then
         write(3,*) 'ndustspec=',ndustspec
         write(3,*) 'nname=',nname
       endif
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_dtud=0; idiag_dtnud=0; idiag_ud2m=0; idiag_udx2m=0
@@ -1396,7 +1397,7 @@ module Dustvelocity
               'epsKd'//trim(sdust),idiag_epsKd(k))
         enddo
 !
-!  check for those quantities for which we want xy-averages
+!  Check for those quantities for which we want xy-averages.
 !
         do inamez=1,nnamez
           call parse_name(inamez,cnamez(inamez),cformz(inamez), &
@@ -1411,6 +1412,17 @@ module Dustvelocity
               'udy2mz'//trim(sdust),idiag_udy2mz(k))
           call parse_name(inamez,cnamez(inamez),cformz(inamez), &
               'udz2mz'//trim(sdust),idiag_udz2mz(k))
+        enddo
+!
+!  Check for those quantities for which we want z-averages.
+!
+        do inamexy=1,nnamexy
+          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
+              'udxmxy'//trim(sdust),idiag_udxmxy(k))
+          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
+              'udymxy'//trim(sdust),idiag_udymxy(k))
+          call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy), &
+              'udzmxy'//trim(sdust),idiag_udzmxy(k))
         enddo
 !
 !  End loop over dust layers
