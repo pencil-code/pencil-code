@@ -676,6 +676,42 @@ else if ($hn =~ emil-login*.pdc.kth.se*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
+else if ($hn =~ aprun*) then
+  echo "Kraken -- NICS, Tennessee, USA"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = ''
+  set mpirun = 'aprun'
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
+  setenv SCRATCH_DIR /lustre/scratch/${USER}
+  set letter = `echo ~ | xargs dirname | xargs dirname | xargs basename`
+  echo "letter = $letter"
+  set rundir = `echo $PBS_O_WORKDIR | sed -e 's/nics\/'"$letter"'\/home/lustre\/scratch/g' `
+  echo "rundir = $rundir"
+  set TMPDIR = $rundir/tmp
+  if (! -e $TMPDIR)  mkdir -p $TMPDIR
+  if (-e FAKE_PARALLEL_IO) cp FAKE_PARALLEL_IO $rundir
+  if (-e NEVERLOCK) cp NEVERLOCK $rundir
+  set files = `ls $PBS_O_WORKDIR/*.in $PBS_O_WORKDIR/*.csh`
+  foreach file ($files)
+    echo "copying  $file"
+    cp $file $rundir
+  end
+  cd $rundir
+  if (! -e data) mkdir -p ./data
+  if (! -e src) mkdir -p ./src
+  set files = `ls $PBS_O_WORKDIR/src/*.x $PBS_O_WORKDIR/src/*.local`
+  foreach file ($files)
+    echo "copying $file `pwd`/src"
+    cp $file $rundir/src
+  end
+#----------------------------------------------
 else if (($hn =~ n[0-9]*) && ($USER =~ pkapyla || $USER =~ fagent)) then
   echo "Vuori - CSC, Espoo, Finland"
   set mpirunops = ''
