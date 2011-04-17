@@ -431,9 +431,8 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: eps
-      real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt
-      !real :: water_ice=1.
-      integer :: j,k,l,i
+      real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt
+      integer :: j, k, l, i
       logical :: lnothing
 !
 !  Different initializations of nd.
@@ -924,11 +923,13 @@ module Dustdensity
       endif
 !
       lpenc_diagnos(i_nd)=.true.
-      if (idiag_rhodmxy/=0) lpenc_diagnos2d(i_rhod)=.true.
 !
       if (maxval(idiag_epsdrms)/=0) lpenc_diagnos(i_rho1)=.true.
       if (maxval(idiag_rhodm)/=0 .or. maxval(idiag_rhodmin)/=0 .or. &
           maxval(idiag_rhodmax)/=0) lpenc_diagnos(i_rhod)=.true.
+!
+      if (idiag_ndmxy/=0)   lpenc_diagnos2d(i_nd)=.true.
+      if (idiag_rhodmxy/=0) lpenc_diagnos2d(i_rhod)=.true.
 !
     endsubroutine pencil_criteria_dustdensity
 !***********************************************************************
@@ -1595,6 +1596,11 @@ module Dustdensity
 !
 !  2d-averages
 !
+      if (l2davgfirst) then
+        if (idiag_ndmxy/=0)   call zsum_mn_name_xy(p%nd(:,1),idiag_ndmxy)
+        if (idiag_rhodmxy/=0) call zsum_mn_name_xy(p%rhod(:,1),idiag_rhodmxy)
+      endif
+!
     endsubroutine dndmd_dt
 !***********************************************************************
     subroutine redist_mdbins(f)
@@ -1960,20 +1966,21 @@ module Dustdensity
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for compressible part
+!  Reads and registers print parameters relevant for dust density.
 !
 !   3-may-02/axel: coded
-!  27-may-02/axel: added possibility to reset list
 !
       use Diagnostics, only: parse_name
       use General, only: chn
 !
-      integer :: iname,inamez,inamex,inamexy,k
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-      character (len=5) :: sdust,sdustspec
 !
-!  Write information to index.pro that should not be repeated for all species
+      integer :: iname, inamez, inamex, inamexy, k
+      logical :: lwr
+      character (len=5) :: sdust, sdustspec
+!
+!  Write information to index.pro that should not be repeated for all species.
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -1983,7 +1990,7 @@ module Dustdensity
         write(3,*) 'nname=',nname
       endif
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
@@ -1994,7 +2001,7 @@ module Dustdensity
 !
       call chn(ndustspec,sdustspec)
 !
-!  Loop over dust species (for species-dependent diagnostics)
+!  Loop over dust species (for species-dependent diagnostics).
 !
       do k=1,ndustspec
         call chn(k-1,sdust)
@@ -2045,11 +2052,11 @@ module Dustdensity
               'ndmxy', idiag_ndmxy)
         enddo
 !
-!  End loop over dust layers
+!  End loop over dust layers.
 !
       enddo
 !
-!  Non-species-dependent diagnostics
+!  Non-species-dependent diagnostics.
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ndmt',idiag_ndmt)
