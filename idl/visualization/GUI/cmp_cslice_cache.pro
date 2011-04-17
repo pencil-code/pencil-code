@@ -576,6 +576,7 @@ pro prepare_cube, cube_index
 	af_fraction = 1.0 / 8.0
 	; minimum size of crosshairs
 	af_minimum = 6
+	af_maximum = 32
 
 	; get selected cube from set
 	if (cube_index ge 0) then selected_cube = cube_index
@@ -626,12 +627,9 @@ pro prepare_cube, cube_index
 	num_z = (size (cube))[3]
 
 	; setup crosshairs parameters
-	af_x = round (num_x * af_fraction)
-	af_y = round (num_y * af_fraction)
-	af_z = round (num_z * af_fraction)
-	if (af_x < af_minimum) then af_x = af_minimum
-	if (af_y < af_minimum) then af_y = af_minimum
-	if (af_z < af_minimum) then af_z = af_minimum
+	af_x = (round (num_x * af_fraction) > af_minimum) < af_maximum
+	af_y = (round (num_y * af_fraction) > af_minimum) < af_maximum
+	af_z = (round (num_z * af_fraction) > af_minimum) < af_maximum
 
 	return
 end
