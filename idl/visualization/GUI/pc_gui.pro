@@ -5,7 +5,10 @@
 ;;;
 ;;;  Description:
 ;;;   Framework for precalculation and comparision of Pencil VAR* files.
-;;;   Calls cmp_cslice_cache for visualisation of a full 3D dataset.
+;;;   Calls 'cmp_cslice_cache' for visualisation of a full 3D dataset.
+;;;   These routines are intended for usage with Euclidian coordinates.
+;;;   Non-equidistant grid coordinates are in principle supported,
+;;;   but will be displayed as if they were stretched to an equidistand grid.
 ;;;
 ;;;   To run the Graphical User Interface (GUI), please go to a simulation
 ;;;   directory, open IDL there, and type ".r pc_gui".
@@ -27,8 +30,10 @@
 ;;;   parameter can be changed and the GUI can be started again, without the
 ;;;   need to reload all the data.
 ;;;
-;;;   At first startup, time series analysis windows are displayed.
-;;;   Only quantities can be analysed that are set in the 'print.in' file.
+;;;   See the settings section below to select physical quantities for display.
+;;;
+;;;   At first startup, time series analysis windows are displayed. There,
+;;;   only those quantities can be analysed that are listed in 'print.in'.
 ;;;
 
 ; Compile accompanying functions and routines:
