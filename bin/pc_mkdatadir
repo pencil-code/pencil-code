@@ -172,6 +172,10 @@ else if ($hn =~ mhdc ) then # ukmhd cluster
   set str='s/home/workspace/g'
 else if ($hn =~ starpc37.maths.qmul.ac.uk ) then # starpc37.qmul.ac.uk
   set str='s/home\/network/scratch/g'
+else if ($hn =~ kraken*) then # NICS Kraken cluster
+  echo $hn
+  set letter = `echo ~ | xargs dirname | xargs dirname | xargs basename`
+  set str='s/nics\/'"$letter"'\/home/lustre\/scratch/g'
 else
 #
 #  Set the default to empty string (to make local data directory; see below).

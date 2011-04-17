@@ -691,7 +691,6 @@ else if ($hn =~ aprun*) then
   set local_binary = 0
   setenv SCRATCH_DIR /lustre/scratch/${USER}
   set letter = `echo ~ | xargs dirname | xargs dirname | xargs basename`
-  echo "letter = $letter"
   set rundir = `echo $PBS_O_WORKDIR | sed -e 's/nics\/'"$letter"'\/home/lustre\/scratch/g' `
   echo "rundir = $rundir"
   set TMPDIR = $rundir/tmp
