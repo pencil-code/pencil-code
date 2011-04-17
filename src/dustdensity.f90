@@ -2038,12 +2038,12 @@ module Dustdensity
 !
 !  Check for those quantities for which we want z-averages.
 !
-      do inamexy=1,nnamexy
-        call parse_name(inamexy, cnamexy(inamexy), cformxy(inamexy), &
-            'rhodmxy', idiag_rhodmxy)
-        call parse_name(inamexy, cnamexy(inamexy), cformxy(inamexy), &
-            'ndmxy', idiag_ndmxy)
-      enddo
+        do inamexy=1,nnamexy
+          call parse_name(inamexy, cnamexy(inamexy), cformxy(inamexy), &
+              'rhodmxy', idiag_rhodmxy)
+          call parse_name(inamexy, cnamexy(inamexy), cformxy(inamexy), &
+              'ndmxy', idiag_ndmxy)
+        enddo
 !
 !  End loop over dust layers
 !
