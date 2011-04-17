@@ -924,7 +924,7 @@ module Dustdensity
       endif
 !
       lpenc_diagnos(i_nd)=.true.
-      if (idiag_rhodmxy/=0) lpenc_diagnos(i_rhod)=.true.
+      if (idiag_rhodmxy/=0) lpenc_diagnos2d(i_rhod)=.true.
 !
       if (maxval(idiag_epsdrms)/=0) lpenc_diagnos(i_rho1)=.true.
       if (maxval(idiag_rhodm)/=0 .or. maxval(idiag_rhodmin)/=0 .or. &
