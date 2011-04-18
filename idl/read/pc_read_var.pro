@@ -77,7 +77,7 @@ pro pc_read_var,                                                  $
     allprocs=allprocs,                                            $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
-    dim=dim, param=param, par2=par2, ivar=ivar,                   $
+    dim=dim, param=param, grid=grid, par2=par2, ivar=ivar,        $
     datadir=datadir, proc=proc, additional=additional,            $
     nxrange=nxrange, nyrange=nyrange, nzrange=nzrange,            $
     stats=stats, nostats=nostats, quiet=quiet, help=help,         $
@@ -169,11 +169,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;  
   coord_system=param.coord_system
 ;
-; Call pc_read_grid to make sure any derivative stuff is correctly set in the
-; common block. Don't need the data for anything though.
+; Read the grid. Calling pc_read_grid also makes sure any derivative stuff is
+; correctly set in the common block.
 ;
-  pc_read_grid, dim=dim, proc=proc, datadir=datadir, param=param, /quiet, $
-      swap_endian=swap_endian
+  pc_read_grid, object=grid, dim=dim, proc=proc, datadir=datadir, $
+      param=param, swap_endian=swap_endian, /quiet
 ;
 ; Read problem dimensions (global)...
 ;
