@@ -34,17 +34,17 @@ module Special
               ispecial3=0,ispecial4=0
 
   ! input parameters
-  real :: beta_real,beta_imag,mu_real,mu_imag,gam,rho,Lreal_ini,Limag_ini,Rreal_ini,&
+  real :: beta_real,beta_imag,mu_real,mu_imag,gam,gam_imag,rho,Lreal_ini,Limag_ini,Rreal_ini,&
       Rimag_ini
   real, dimension (ninit) :: ampl=0.
   character (len=labellen), dimension(ninit) :: init='nothing'
   namelist /special_init_pars/ &
-    init,ampl,beta_real,beta_imag,gam,mu_real,mu_imag,rho,Lreal_ini,&
+    init,ampl,beta_real,beta_imag,gam,gam_imag,mu_real,mu_imag,rho,Lreal_ini,&
     Limag_ini,Rreal_ini,Rimag_ini
 
   ! run parameters
   namelist /special_run_pars/ &
-    beta_real,beta_imag,gam,rho,mu_real,mu_imag
+    beta_real,beta_imag,gam,gam_imag,rho,mu_real,mu_imag
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -205,25 +205,25 @@ module Special
 !
 !        write(*,*) 'DM',ispecial1,gam*Lreal,Lreal
         df(l1:l2,m,n,ispecial1)=df(l1:l2,m,n,ispecial1)&
-             +gam*Lreal& 
+             +gam*Lreal-gam_imag*Limag& 
 !             -(beta_real*Lreal-beta_imag*Limag)*((Lreal*Lreal+Limag*Limag)&
 !                  +(Rreal*Rreal+Rimag*Rimag)) 
              -(beta_real*Lreal-beta_imag*Limag)*(Rreal*Rreal+Rimag*Rimag) &
              -(mu_real*Lreal-mu_imag*Limag)*(Lreal*Lreal+Limag*Limag) 
         df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)&
-             +gam*Limag&
+             +gam*Limag+gam_imag*Lreal&
 !             -(beta_real*Limag+beta_imag*Lreal)*((Lreal*Lreal+Limag*Limag)&
 !                  + (Rreal*Rreal+Rimag*Rimag))
              -(beta_real*Limag+beta_imag*Lreal)*(Rreal*Rreal+Rimag*Rimag) &
              -(mu_real*Limag+mu_imag*Lreal)*(Lreal*Lreal+Limag*Limag)
         df(l1:l2,m,n,ispecial3)=df(l1:l2,m,n,ispecial3)&
-              +gam*Rreal&
+              +gam*Rreal-gam_imag*Rimag&
 !             -(beta_real*Rreal-beta_imag*Rimag)*((Lreal*Lreal+Limag*Limag)&
 !                  + (Rreal*Rreal+Rimag*Rimag))
              -(beta_real*Rreal-beta_imag*Rimag)*(Lreal*Lreal+Limag*Limag) &
              -(mu_real*Rreal-mu_imag*Rimag)*(Rreal*Rreal+Rimag*Rimag) 
         df(l1:l2,m,n,ispecial4)=df(l1:l2,m,n,ispecial4)&
-              +gam*Rimag&
+              +gam*Rimag+gam_imag*Rreal&
 !             -(beta_real*Rimag+beta_imag*Rreal)*((Lreal*Lreal+Limag*Limag)&
 !                  + (Rreal*Rreal+Rimag*Rimag))
              -(beta_real*Rimag+beta_imag*Rreal)*(Lreal*Lreal+Limag*Limag) &
