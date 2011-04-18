@@ -693,7 +693,8 @@ else if ($hn =~ aprun*) then
   set letter = `echo ~ | xargs dirname | xargs dirname | xargs basename`
   set rundir = `echo $PBS_O_WORKDIR | sed -e 's/nics\/'"$letter"'\/home/lustre\/scratch/g' `
   echo "rundir = $rundir"
-  set TMPDIR = $rundir/tmp
+  setenv TMPDIR "$rundir/tmp"
+  echo "TMPDIR = $TMPDIR"
   if (! -e $TMPDIR)  mkdir -p $TMPDIR
   if (-e FAKE_PARALLEL_IO) cp FAKE_PARALLEL_IO $rundir
   if (-e NEVERLOCK) cp NEVERLOCK $rundir
