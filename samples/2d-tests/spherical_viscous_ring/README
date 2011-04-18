@@ -10,4 +10,27 @@ Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
     100x100x1 (nu=0.00015)
-Comments:
+Comments: 
+
+Added as test Frederic Masset's setup
+
+  "2D 1/2 thick off-centered Keplerian viscous ring spread"
+
+This should test the viscous stress tensor in spherical coordinates. The
+description is
+
+"This test follows the evolution of a thick viscous ring in a potential with
+axial symmetry around the z-axis. The potential is Keplerian in the distance to
+the axis, and harmonic in  z with a minimum at z=1. The gas sound speed is
+uniform, therefore the ``disk'' (or ring) thickness is uniform and constant, and
+its equatorial plane is located at z=1, as shown in the left plot. This test is
+not performed in cylindrical coordinates as it would be natural, but rather in
+spherical coordinates. The idea is that if any term of the viscous stress tensor
+was wrong, this would appear straight away in the test. The right plot shows the
+density in the z=1 plane at different dates, compared against the theoretical
+expectations."
+
+Webpage
+
+  http://www.maths.qmul.ac.uk/~masset/hd/tests.html
+
