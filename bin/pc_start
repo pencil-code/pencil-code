@@ -1,0 +1,8 @@
+#!/bin/sh
+#
+#  Neat wrapper for running start.x through pc_run.
+#
+#  Use because you are too lazy to type 'pc_run start' or because you want
+#  to submit the script to a queue which does not allow options to the script.
+#
+pc_run start
