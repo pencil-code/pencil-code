@@ -11,7 +11,7 @@
 default, varfile, 'var.dat'
 default, datadir, pc_get_datadir()
 ;
-pc_read_dim, obj=dim, /quiet
+pc_read_dim, obj=dim, datadir=datadir, /quiet
 default, nghost_x, dim.nghostx
 default, nghost_y, dim.nghosty
 default, nghost_z, dim.nghostz
@@ -32,9 +32,10 @@ if (file_struct.exists eq 0) then begin
   endif
 endif
 ;
-pc_units, obj=unit
-pc_read_grid, obj=grid, /quiet
-pc_read_var, varfile=varfile, object=vars, /quiet
+pc_units, obj=unit, datadir=datadir
+pc_read_grid, obj=grid, datadir=datadir, /quiet
+pc_read_param, obj=param, datadir=datadir, /quiet
+pc_read_var, varfile=varfile, datadir=datadir, object=vars, /quiet
 ;
 varfile_loaded = varfile
 ;

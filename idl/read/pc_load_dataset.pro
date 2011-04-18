@@ -13,7 +13,7 @@
 ;
 ; Same code as procedure, using the include file:
 ;
-pro pc_load_dataset, varfile, datadir=datadir, procdir=procdir, vars=vars, dim=dim, grid=grid, unit=unit, nx=nx, ny=ny, nz=nz, nghost_x=nghost_x, nghost_y=nghost_y, nghost_z=nghost_z, lmn12=lmn12
+pro pc_load_dataset, varfile, datadir=datadir, procdir=procdir, vars=vars, dim=dim, grid=grid, unit=unit, param=param, nx=nx, ny=ny, nz=nz, nghost_x=nghost_x, nghost_y=nghost_y, nghost_z=nghost_z, lmn12=lmn12
 ;
   default, varfile, 'var.dat'
   default, varfile_loaded, ''
