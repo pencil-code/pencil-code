@@ -105,6 +105,10 @@ module Cparam
   real, parameter :: sqrt2=1.41421356237309504880168872420970D0
   real, parameter :: four_pi_over_three=4.0/3.0*pi
 !
+!  first zeros of Bessel functions of order 0 and 1
+!
+  real, parameter :: k1bessel0=2.4048255577, k1bessel1=3.8317060
+!
 !  Physical constants, taken from
 !  http://physics.nist.gov/cuu/Constants/index.html.
 !

@@ -150,9 +150,11 @@ module Forcing
 !  read seed field parameters
 !  nothing done from start.f90 (lstarting=.true.)
 !
+      use General, only: bessj
       use Mpicomm, only: stop_it
       use Sub, only: inpui,step_scalar,erfunc
       real :: zstar
+      integer :: l
 !
       logical :: lstarting
 !
@@ -491,6 +493,10 @@ module Forcing
           lgentle=.true.
           if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
         endif
+      elseif (iforcing_cont=='J0_k1x') then
+        do l=l1,l2
+          profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
+        enddo
       endif
 !
     endsubroutine initialize_forcing
@@ -3888,7 +3894,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
           force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
           force(:,3)=0.
-
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
 !
@@ -3898,6 +3903,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*tanh(arg)/(cosh(arg))**2
           force(:,2)=0.0
           force(:,3)=0.0
+!
+!  Bessel function forcing
+!
+        case('J0_k1x')
+          force(:,1)=0.0
+          force(:,2)=0.0
+          force(:,3)=profx_ampl
 !
         case default
           call stop_it('forcing: no continuous iforcing_cont specified')
