@@ -35,7 +35,7 @@ module Magnetic_meanfield
 !
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: meanfield_etat_profile='const'
-  character (len=labellen) :: meanfield_Beq_profile='const'
+  character (len=labellen) :: meanfield_Beq_profile='const',qp_model='atan'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
 !
 ! Input parameters
@@ -63,8 +63,9 @@ module Magnetic_meanfield
   real :: alpha_rmax=0.0, alpha_width=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
-  real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0 !kk
-  real, dimension(nx) :: rhs_termz, rhs_termy !kk
+  real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
+  real :: qp_d, qp_x0
+  real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: rhs_term
   real, dimension(mz) :: etat_z
   real, dimension(mz,3) :: getat_z
@@ -72,12 +73,13 @@ module Magnetic_meanfield
   logical :: lEMF_profile=.false.
   logical :: lalpha_profile_total=.false.
   logical :: ldelta_profile=.false.
-  logical :: lrhs_term=.false., lrhs_term2=.false. !kk
+  logical :: lrhs_term=.false., lrhs_term2=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
       alpha_eps, alpha_width, lmeanfield_noalpm, alpha_profile, &
       x_surface, z_surface, &
+      qp_d, qp_x0, qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
@@ -364,9 +366,9 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
-      real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq
+      real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq, B2renorm
       real, dimension (nx,3) :: Bk_Bki,tmp_jxb,exa_meanfield
-      real :: kx,fact
+      real :: kx,fact,qp_c
 !
       intent(inout) :: f,p
 !
@@ -399,11 +401,20 @@ module Magnetic_meanfield
           meanfield_Bp21=1./(meanfield_Bp*Beq)**2
           meanfield_Be21=1./(meanfield_Be*Beq)**2
           meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
-          meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
           meanfield_qe_func=meanfield_qe*(1.-2*pi_1*atan(p%b2*meanfield_Be21))
           meanfield_qs_der=2*pi_1*meanfield_qs*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
-          meanfield_qp_der=2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
           meanfield_qe_der=2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
+          meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
+          meanfield_qp_der=2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
+          if(qp_model=='rational') then
+            B2renorm=1/Beq**2
+!           qp_d_fit=(130+50*magpra)/magpra/magrey**2
+!           qp_x0_fit=2.5*alog(1000./magpra)/magrey
+            qp_c=qp_d/4*(1-qp_x0**2/qp_d)**2  !qp_d is defined as a positive value
+            meanfield_qp_func=(qp_x0**2+qp_c)/(p%b2*B2renorm+qp_c)
+            meanfield_qp_der=-meanfield_qp_func/(p%b2*B2renorm+qp_c)
+          endif
+
 !
 !  Add -(1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !
