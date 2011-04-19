@@ -3859,7 +3859,7 @@ module Chemistry
 !
       if (.not.lew_exist .and. lDiff_lewis .and. lroot) then
           print*, 'No lewis.dat file present, switch to simplified diffusion'
-          lDiff_lewis=F; lDiff_simple=T 
+          lDiff_lewis=.false.; lDiff_simple=.true. 
       endif
 !
       if (lroot .and. .not.tran_exist .and. .not.lew_exist) then
