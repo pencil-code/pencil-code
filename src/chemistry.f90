@@ -10,14 +10,15 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cv; cv1; cp;  glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
+! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
 ! PENCILS PROVIDED nu; gradnu(3); rho;
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
-! PENCILS PROVIDED lambda; glambda(3)
+! PENCILS PROVIDED lambda; glambda(3); lambda1
 ! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec), glnpp(3); cs2
 !
-! PENCILS PROVIDED glnpp(3); del2pp; mu1; gmu1(3); pp; gTT(3); ccondens; ppwater
+! PENCILS PROVIDED glnpp(3); del2pp; mu1; mukmu1(nchemspec); gmu1(3); glnmu(3)
+! PENCILS PROVIDED pp; gTT(3); ccondens; ppwater
 ! PENCILS PROVIDED Ywater
 !
 !***************************************************************
@@ -73,10 +74,10 @@ module Chemistry
 !
      logical :: lheatc_chemistry=.true.
      logical :: lDiff_simple=.false.
-     logical :: lDiff_lewis=.false.
      logical :: lThCond_simple=.false.
      logical :: lT_const=.false.
-     logical :: ldiff_fick=.false.
+     logical :: lDiff_fick=.false.
+     logical :: lFlux_simple=.false.
      logical :: ldiff_corr=.false.
      logical, save :: tran_exist=.false.
      logical, save :: lew_exist=.false.
@@ -152,7 +153,7 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, lDiff_lewis, &
+      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, lFlux_simple, &
       lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,init_rho,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
@@ -168,10 +169,10 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
-      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lThCond_simple,&
-      visc_const,cp_const,reinitialize_chemistry,init_from_file,lfilter_strict, &
-      init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
-      ldiff_corr, ldiff_fick, lreac_as_aux, reac_rate_method,global_phi
+      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lFlux_simple, &
+      lThCond_simple,visc_const,cp_const,reinitialize_chemistry,init_from_file, &
+      lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
+      ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
@@ -715,8 +716,13 @@ module Chemistry
       if (lreactions) lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
 !
-      if (ldiffusion .and. lDiff_simple) then
+      if (ldiffusion) then
         lpenc_requested(i_Diff_penc_add)=.true.
+      endif
+!
+      if (ldiffusion .and. .not.lDiff_fick) then
+        lpenc_requested(i_mukmu1)=.true.
+        lpenc_requested(i_glnmu)=.true.
       endif
 !
        if (lcheminp) then
@@ -724,6 +730,7 @@ module Chemistry
          lpenc_requested(i_cv)=.true.
          lpenc_requested(i_cp)=.true.
          lpenc_requested(i_cv1)=.true.
+         lpenc_requested(i_cp1)=.true.
 !         if (lreactions)
           lpenc_requested(i_H0_RT)=.true.
 !         if (lreactions)
@@ -739,6 +746,7 @@ module Chemistry
          if (lheatc_chemistry) then
            lpenc_requested(i_lambda)=.true.
            lpenc_requested(i_glambda)=.true.
+           lpenc_requested(i_lambda1)=.true.
          endif
 !
          if (latmchem .or. lcloud) then
@@ -758,7 +766,9 @@ module Chemistry
       logical, dimension(npencils) :: lpencil_in
 !
         if (lpencil_in(i_cv1))    lpencil_in(i_cv)=.true.
-        if (lpencil_in(i_glambda))  lpencil_in(i_lambda)=.true.
+        if (lpencil_in(i_cp1))    lpencil_in(i_cp)=.true.
+        if (lpencil_in(i_glambda).or.lpencil_in(i_lambda1)) &
+            lpencil_in(i_lambda)=.true.
 !
          if (lpencil_in(i_H0_RT).or.lpencil_in(i_S0_R))  then
             lpencil_in(i_TT)=.true.
@@ -844,6 +854,18 @@ module Chemistry
        enddo
       endif
 !
+!      if (lpencil(i_mukmu1) .and. ldiffusion2) then
+      if (lpencil(i_mukmu1)) then
+       do k=1,nchemspec
+        p%mukmu1(:,k)=species_constants(k,imass)/unit_mass*p%mu1(:)
+       enddo
+      endif
+      if (lpencil(i_glnmu)) then
+       do i=1,3
+        p%glnmu(:,i)=-p%gmu1(:,i)/p%mu1(:)
+       enddo
+      endif
+!
       if (lcheminp) then
 !
         if (lpencil(i_glncp) .and. lThCond_simple) then
@@ -857,9 +879,11 @@ module Chemistry
 !
         if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
 !
-        if (lpencil(i_cv1)) p%cv1=1./p%cv
+        if (lpencil(i_cv1)) p%cv1 = 1./p%cv
 !
         if (lpencil(i_cp)) p%cp = cp_full(l1:l2,m,n)
+!
+        if (lpencil(i_cp1)) p%cp1 = 1./p%cp
 !
 !  Viscosity of a mixture
 !
@@ -990,26 +1014,84 @@ module Chemistry
         p%DYDt_reac=0.
       endif
 !
+! Calculate the thermal diffusivity
+!
+!      if (ldiffusion2 .and. lpencil(i_lambda) .and. lheatc_chemistry) then
+      if (lpencil(i_lambda) .and. lheatc_chemistry) then
+      if ((lThCond_simple) .or. (lambda_const<impossible))then
+!
+        if (lThCond_simple) then
+!
+!  04-18-11/Julien: Modified the computation of simple heat conductivity according
+!                   to Smooke & Giovangigli 1991. lambda_const is now equal to 2.58e-4
+!                   instead of 1e4, and represents the ratio \lambda0/cp0. Formula:
+!                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
+!
+          if (lambda_const==impossible) lambda_const=2.58e-4
+          p%lambda=lambda_const*p%cp*exp(0.7*log(p%TT(:)/298.))
+          if (lpencil(i_glambda))  then
+           do i=1,3
+            p%glambda(:,i)=p%lambda(:)*(0.7*p%glnTT(:,i)+p%glncp(:,i))
+           enddo
+          endif
+        elseif ((.not. lThCond_simple) .and. (lambda_const<impossible)) then
+          p%lambda=lambda_const
+          if (lpencil(i_glambda)) p%glambda=0.
+        endif
+      else
+       p%lambda=lambda_full(l1:l2,m,n)
+       if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
+      endif
+      if (lpencil(i_lambda1)) p%lambda1=1./p%lambda
+      endif
+!
 ! Calculate the diffusion term and the corresponding pencil
 !
-! There are 2 cases:
+! There are 4 cases:
 ! 1) the case of simplifyed expression for the difusion coef. (Oran paper,)
-! 2) the case of the constant diffusion coefficient
+! 2) the case of constant diffusion coefficients
+! 3) the case of constant Lewis numbers with diffusion coef. depending on heat diffusivity
+! 4) full complex diffusion coefficients
 !
-       if (ldiffusion2 .and. lpencil(i_Diff_penc_add)) then
-       if  ((Diff_coef_const<impossible) .or. (lDiff_simple) ) then
+       if (lpencil(i_Diff_penc_add)) then
          if (lDiff_simple) then
-           if (Diff_coef_const==impossible)  Diff_coef_const=10.
+!
+!  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
+!                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
+!                   does not represent a constant diffusion coefficient, but \rho0 D0.
+!                   Diff_penc_add are still the diffusion coefficients. Formula:
+!                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
+!
+           if (Diff_coef_const==impossible) Diff_coef_const=2.58e-4
            do k=1,nchemspec
-             p%Diff_penc_add(:,k)=Diff_coef_const &
-                *exp(0.7*(log(p%TT(:)/p%TT(1))+log(p%rho(1)/p%rho(:))))  &
-                *species_constants(k,imass)/unit_mass*mu1_full(l1:l2,m,n)
+             p%Diff_penc_add(:,k)=Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
+             if (lew_exist) p%Diff_penc_add(:,k)= p%Diff_penc_add(:,k)*Lewis_coef1(k) 
            enddo
+!
+!  Constant diffusion coefficients
+!
          elseif ((.not. lDiff_simple) .and. (Diff_coef_const<impossible)) then
-           p%Diff_penc_add(:,:)=Diff_coef_const
+           do k=1,nchemspec
+             p%Diff_penc_add(:,k)=Diff_coef_const*p%rho1
+           enddo
+!
+!  Diffusion coefficient of a mixture with constant Lewis numbers and given heat conductivity
+!
+         else if ((.not. lDiff_simple) .and. lew_exist) then
+           do k=1,nchemspec
+             p%Diff_penc_add(:,k)=p%lambda*p%rho1*p%cp1*Lewis_coef1(k)
+           enddo
+!
+!  Full diffusion coefficient case
+!      
+         else
+           do k=1,nchemspec
+             p%Diff_penc_add(:,k)=Diff_full_add(l1:l2,m,n,k)
+           enddo
          endif
-      endif
-      endif
+       endif
+!
+!  More initialization of pencils
 !
       if (ldiffusion2 .and. lpencil(i_DYDt_diff)) then
         if (.not.lchemonly) then
@@ -1027,34 +1109,10 @@ module Chemistry
         RHS_Y_full(l1:l2,m,n,:)=p%DYDt_reac+p%DYDt_diff
       endif
 !
-! Calculate the thermal diffusivity
-!
-!      if (ldiffusion2 .and. lpencil(i_lambda) .and. lheatc_chemistry) then
-      if (lpencil(i_lambda) .and. lheatc_chemistry) then
-      if ((lThCond_simple) .or. (lambda_const<impossible))then
-        if (lThCond_simple) then
-          if (lambda_const==impossible) lambda_const=1e4
-          p%lambda=lambda_const &
-              *exp(0.7*log(p%TT(:)/p%TT(1)))*cp_full(l1:l2,m,n)/cp_full(l1,m,n)
-          if (lpencil(i_glambda))  then
-           do i=1,3
-            p%glambda(:,i)=p%lambda(:)*(0.7*p%glnTT(:,i)+p%glncp(:,i))
-           enddo
-          endif
-        elseif ((.not. lThCond_simple) .and. (lambda_const<impossible)) then
-          p%lambda=lambda_const
-          if (lpencil(i_glambda)) p%glambda=0.
-        endif
-      else
-       p%lambda=lambda_full(l1:l2,m,n)
-       if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
-      endif
-      endif
-!
       if (lpencil(i_cs2) .and. lcheminp) then
         if (any(p%cv==0.0)) then
         else
-          p%cs2=p%cp/p%cv*p%mu1*p%TT*Rgas
+          p%cs2=p%cp*p%cv1*p%mu1*p%TT*Rgas
         endif
       endif
 !
@@ -2344,35 +2402,11 @@ module Chemistry
                  endif
                  endif
                 enddo
-                Diff_full(:,j2,j3,k)=mu1_full(:,j2,j3)*tmp_sum2&
-                    /tmp_sum
+                Diff_full_add(:,j2,j3,k)=mu1_full(:,j2,j3)*tmp_sum2/tmp_sum
               enddo
              endif
             endif
-            do k=1,nchemspec
-              if (species_constants(k,imass)>0.) then
-                Diff_full_add(:,j2,j3,k)=Diff_full(:,j2,j3,k)*&
-                    species_constants(k,imass)/unit_mass &
-                    *mu1_full(:,j2,j3)
-              endif
-            enddo
          enddo
-         enddo
-!
-!  Diffusion coefficient of a mixture with constant Lewis numbers
-!
-       else if ((.not. lDiff_simple).and.lew_exist) then
-         do j3=nn1,nn2
-           do j2=mm1,mm2
-             Diff_full(:,j2,j3,:)=0.
-             if (.not.lone_spec) then
-               do k=1,nchemspec
-                 Diff_full_add(:,j2,j3,k)=lambda_full(:,j2,j3)/&
-                     (rho_full(:,j2,j3)*cp_full(:,j2,j3)*Lewis_coef(k))
-!
-               enddo
-             endif
-           enddo
          enddo
        endif
 !
@@ -2381,7 +2415,7 @@ module Chemistry
         if (lheatc_chemistry .and. (.not.lThCond_simple)) then
           call calc_therm_diffus_coef(f)
         endif
-        endif
+      endif
 !
         else
           call stop_it('This case works only for cgs units system!')
@@ -2435,11 +2469,11 @@ module Chemistry
             unit_energy/unit_time/unit_length/unit_temperature)
         write(file_id,*) ''
         write(file_id,*) 'Species  Diffusion coefficient, cm^2/s'
-        if (.not. ldiff_simple) then
+        if (.not. lDiff_simple) then
           do k=1,nchemspec
             write(file_id,'(7E12.4)')&
-                Diff_full(l1,m1,n1,k)*unit_length**2/unit_time, &
-                Diff_full(l2,m2,n2,k)*unit_length**2/unit_time
+                Diff_full_add(l1,m1,n1,k)*unit_length**2/unit_time, &
+                Diff_full_add(l2,m2,n2,k)*unit_length**2/unit_time
           enddo
         endif
         endif
@@ -2858,23 +2892,23 @@ module Chemistry
             sum_hhk_DYDt_reac=sum_hhk_DYDt_reac-p%hhk_full(:,k)*p%DYDt_reac(:,k)
           endif
 !
+!  Sum over all species of diffusion terms
+!
           if (ldiffusion2) then
-            if (lDiff_simple) then
-              do i=1,3
-                dk_D(:,i)=(p%gXXk(:,i,k) &
-                    +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
-                    *p%Diff_penc_add(:,k)
-              enddo
-            else if (ldiff_fick) then
+            if (lDiff_fick) then
               call grad(f,ichemspec(k),gchemspec)
               do i=1,3
-                dk_D(:,i)=gchemspec(:,i)*Diff_full_add(l1:l2,m,n,k)
+                dk_D(:,i)=gchemspec(:,i)*p%Diff_penc_add(:,k)
+              enddo
+            else if (lFlux_simple) then
+              do i=1,3
+                dk_D(:,i)=p%gXXk(:,i,k)*p%Diff_penc_add(:,k)*p%mukmu1(:,k)
               enddo
             else
               do i=1,3
                 dk_D(:,i)=(p%gXXk(:,i,k) &
                     +(XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k)))*p%glnpp(:,i)) &
-                    *Diff_full_add(l1:l2,m,n,k)
+                    *p%Diff_penc_add(:,k)*p%mukmu1(:,k)
               enddo
             endif
 !
@@ -2979,7 +3013,7 @@ module Chemistry
 !--------------------------------------
 !
               diffus_chem(j)=diffus_chem(j)+&
-                  maxval(Diff_full(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+                  maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
             else
               diffus_chem(j)=0.
             endif
@@ -3788,7 +3822,6 @@ module Chemistry
 !
       inquire(file='tran.dat',exist=tran_exist)
       inquire(file='lewis.dat',exist=lew_exist)
-      if (lew_exist) ldiff_fick=.true.
 !
 !  Allocate binary diffusion coefficient array
 !
@@ -3823,7 +3856,7 @@ module Chemistry
         call read_Lewis
       endif
 !
-      if (lroot .and. .not.tran_exist .or. .not.lew_exist) then
+      if (lroot .and. .not.tran_exist .and. .not.lew_exist) then
         print*,'tran.dat file with transport data is not found.'
         print*,'lewis.dat file with Lewis numbers is not found.'
         print*,'Now diffusion coefficients is ',chem_diff
@@ -5155,9 +5188,9 @@ module Chemistry
       real, dimension (nx) :: Xk_Yk
       real, dimension (nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
       real, dimension (nx) :: del2chemspec
-      real, dimension (nx) :: diff_op,diff_op1,diff_op2,del2XX,  del2lnpp!del2pp,
-      real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp
-      real, dimension (nx) :: sum_gdiff=0.,diff_op3
+      real, dimension (nx) :: diff_op,diff_op1,diff_op2,diff_op3,del2XX,  del2lnpp!del2pp,
+      real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp, glnmu_glnpp
+      real, dimension (nx) :: sum_gdiff=0.,gY_sumdiff
       real, dimension (nx,3)  :: sum_diff=0., dk_D
       real :: diff_k
       integer :: k,i
@@ -5192,64 +5225,85 @@ module Chemistry
 !
 !  Detailed chemistry and transport using CHEMKIN formalism.
 !
-          if (ldiffusion.and.(.not.ldiff_fick)) then
-            call del2(XX_full(:,:,:,k),del2XX)
-            call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
+         if (ldiffusion) then
 !
-            if (lDiff_simple) then
-              do i=1,3
-                gDiff_full_add(:,i)=species_constants(k,imass)/unit_mass* &
-                    p%Diff_penc_add(:,k) &
-                    *((p%glnTT(:,i)+p%glnrho(:,i))*(0.7-1.) &
-                    *mu1_full(l1:l2,m,n)+p%gmu1(:,i))
-              enddo
-            else
-              call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-            endif
-            call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
-!
-! Neglect terms including pressure gradients for the simplified diffusion
-!
-           if (.not. lDiff_simple) then
-             call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
-             do i=1,3
-               gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
-             enddo
-             del2lnpp=p%del2pp/p%pp-glnpp_glnpp
-             Xk_Yk=XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
-             call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
-             call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
-             call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
-           endif
-          else if (ldiffusion.and.ldiff_fick) then
-            call del2(f,ichemspec(k),del2chemspec)
-            call grad(f,ichemspec(k),gchemspec)
-            call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-            call dot_mn(p%glnrho,gchemspec,diff_op1)
-            call dot_mn(gDiff_full_add,gchemspec,diff_op2)
-          endif
+!  Calculate diffusion coefficient gradients gDiff_full_add in 3 cases:
+!    1) Simplified diffusion coefficients
+!    2) Constant Lewis numbers and heat conductivity
+!    3) Detailed transport
 !
           if (lDiff_simple) then
-! Have removed all terms including pressure gradients as these are supposed
-! to be small and not required for such as crude approxiamtion as the simplified
-! diffustion method.
+            do i=1,3
+              gDiff_full_add(:,i)=p%Diff_penc_add(:,k)*(0.7*p%glnTT(:,i)-p%glnrho(:,i))
+            enddo
+          else if ((.not.lDiff_simple) .and. lew_exist) then
+            do i=1,3
+              gDiff_full_add(:,i)=(p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
+                  *p%Diff_penc_add(:,k)
+            enddo 
+          else
+            call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
+          endif
 !
-           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2XX+diff_op1)+diff_op2
+!  Calculate the terms needed by the diffusion fluxes in 3 cases:
+!    1) Fickian diffusion law (gradient of species MASS fractions)
+!    2) Simplified fluxes (gradient of species MOLAR fractions)
+!    3) Detailed transport (with pressure gradients included)
+!
+          if (lDiff_fick) then
+            call del2(f,ichemspec(k),del2chemspec)
+            call grad(f,ichemspec(k),gchemspec)
+            call dot_mn(p%glnrho,gchemspec,diff_op1)
+            call dot_mn(gDiff_full_add,gchemspec,diff_op2)
+          else if (lFlux_simple) then
+            call del2(XX_full(:,:,:,k),del2XX)
+            call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
+            call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
+            call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
+          else
+            call del2(XX_full(:,:,:,k),del2XX)
+            call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
+            call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
+            call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
+            call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
+            do i=1,3
+              gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
+            enddo
+            del2lnpp=p%del2pp/p%pp-glnpp_glnpp
+            Xk_Yk=XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
+            call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
+            call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
+            call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
+            call dot_mn(p%glnmu,p%glnpp,glnmu_glnpp)
+          endif
+!
+!  Calculate the diffusion fluxes and dk_D in 3 cases:
+!    1) Fickian diffusion law (gradient of species MASS fractions)
+!    2) Simplified diffusion fluxes (only gradient of species MOLAR fractions)
+!    3) Detailed transport (with pressure gradients included)
+!  Note that the ratio Wk/Wm is introduced here and not during the calculation
+!  of species diffusion coefficients as before. It indeed depends on the diffusion
+!  flux formulation and not on the diffusive properties of each species.
+!
+          if (lDiff_fick) then
+           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2chemspec+diff_op1)+diff_op2
            do i=1,3
-            dk_D(:,i)=p%Diff_penc_add(:,k)*p%gXXk(:,i,k)
+            dk_D(:,i)=p%Diff_penc_add(:,k)*gchemspec(:,i)
+           enddo         
+          else if (lFlux_simple) then
+           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(del2XX+diff_op1-diff_op3)+&
+               p%mukmu1(:,k)*diff_op2
+           do i=1,3
+            dk_D(:,i)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*p%gXXk(:,i,k)
            enddo
-          else if ((.not.lDiff_simple).and.(.not.ldiff_fick)) then
-           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2XX+diff_op1)+diff_op2 &
-           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(:)*del2lnpp &
-           +Diff_full_add(l1:l2,m,n,k)*Xk_Yk(:)*glnrho_glnpp &
-           +Xk_Yk(:)*gD_glnpp+Diff_full_add(l1:l2,m,n,k)*glnpp_gXkYk
+          else 
+           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(del2XX+diff_op1-diff_op3)+&
+               p%mukmu1(:,k)*diff_op2+ &
+               p%Diff_penc_add(:,k)*p%mukmu1(:,k)*Xk_Yk(:)*(del2lnpp+glnrho_glnpp-glnmu_glnpp)+ &
+               Xk_Yk(:)*p%mukmu1(:,k)*gD_glnpp+p%Diff_penc_add(:,k)*p%mukmu1(:,k)*glnpp_gXkYk
            do i=1,3
-            dk_D(:,i)=Diff_full_add(l1:l2,m,n,k)*(p%gXXk(:,i,k)+Xk_Yk(:)*p%glnpp(:,i))
-           enddo
-          else if (ldiff_fick) then
-           p%DYDt_diff(:,k)=Diff_full_add(l1:l2,m,n,k)*(del2chemspec+diff_op1)+diff_op2
-           do i=1,3
-            dk_D(:,i)=Diff_full_add(l1:l2,m,n,k)*gchemspec(:,i)
+            dk_D(:,i)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(p%gXXk(:,i,k)+ &
+                Xk_Yk(:)*p%glnpp(:,i))
            enddo
           endif
 !
@@ -5260,6 +5314,7 @@ module Chemistry
            sum_gdiff(:) = sum_gdiff(:)+ p%DYDt_diff(:,k)
          endif
         endif
+       endif
       enddo
 !
 !  Adding correction diffusion velocity to ensure mass balance
@@ -5267,9 +5322,9 @@ module Chemistry
       if (ldiffusion.and.ldiff_corr) then
         do k=1,nchemspec
          call grad(f,ichemspec(k),gchemspec)
-         call dot_mn(gchemspec(:,:),sum_diff,diff_op3)
+         call dot_mn(gchemspec(:,:),sum_diff,gY_sumdiff)
          p%DYDt_diff(:,k)=p%DYDt_diff(:,k)-   &
-            (diff_op3+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
+            (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
         enddo
       endif
 !
