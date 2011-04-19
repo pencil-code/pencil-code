@@ -104,7 +104,7 @@ module Particles_main
 !  Set mass and number density of individual particles inside each
 !  superparticle. The mass of a superparticle is defined through
 !
-!    *   mp_swarm : mass of constituent particles
+!    *      mpmat : mass of constituent particles
 !    *   np_swarm : number density of constituent particles
 !    * rhop_swarm : mass density of superparticle
 !
@@ -114,19 +114,19 @@ module Particles_main
       if (rhop_const/=0.0) then
         rhop_swarm=rhop_const/(real(npar)/(nxgrid*nygrid*nzgrid))
         if (lparticles_radius) then
-          if (mp_swarm/=0.0 .or. np_swarm/=0.0) then
+          if (mpmat/=0.0 .or. np_swarm/=0.0) then
             if (lroot) print*, 'particles_initialize_modules: '// &
-                'may not set mp_swarm or np_swarm when setting rhop_const'
+                 'may not set mpmat or np_swarm when setting rhop_const'
             call fatal_error('particles_initialize_modules','')
           endif
         else
-          if (mp_swarm/=0.0 .and. np_swarm/=0.0) then
+          if (mpmat/=0.0 .and. np_swarm/=0.0) then
             if (lroot) print*, 'particles_initialize_modules: '// &
-                'must set only mp_swarm or np_swarm when using rhop_const'
+                'must set only mpmat or np_swarm when using rhop_const'
             call fatal_error('particles_initialize_modules','')
           endif
-          if (mp_swarm==0.0) mp_swarm=rhop_swarm/np_swarm
-          if (np_swarm==0.0) np_swarm=rhop_swarm/mp_swarm
+          if (mpmat   ==0.0) mpmat   =rhop_swarm/np_swarm
+          if (np_swarm==0.0) np_swarm=rhop_swarm/mpmat
         endif
       elseif (np_const/=0.0) then
         if (lparticles_number) then
@@ -135,16 +135,16 @@ module Particles_main
           call fatal_error('particles_initialize_modules','')
         endif
         if (.not.lparticles_radius) then
-          if (mp_swarm==0.0) then
+          if (mpmat==0.0) then
             if (lroot) print*, 'particles_initialize_modules: '// &
-                'must have mp_swarm non zero when setting np_const'
+                'must have mpmat non zero when setting np_const'
             call fatal_error('particles_initialize_modules','')
           endif
         endif
         np_swarm=np_const/(real(npar)/(nxgrid*nygrid*nzgrid))
-        rhop_swarm=np_swarm*mp_swarm
+        rhop_swarm=np_swarm*mpmat
       else
-        if (rhop_swarm==0.0) rhop_swarm=mp_swarm*np_swarm
+        if (rhop_swarm==0.0) rhop_swarm=mpmat*np_swarm
       endif
 !
 !  Initialize individual modules.
@@ -178,7 +178,7 @@ module Particles_main
         if (lroot) then
           print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &
-              'np_swarm, mp_swarm, rhop_swarm=', np_swarm, mp_swarm, rhop_swarm
+              'np_swarm, mpmat, rhop_swarm=', np_swarm, mpmat, rhop_swarm
         endif
         call fatal_error('particles_initialize_modules','')
       endif

@@ -73,11 +73,11 @@ module Particles_spin
 !
 !  Indices for particle spin
 !
- !     ipsx=npvar+1
- !     ipsy=npvar+2
- !     ipsz=npvar+3
+!     ipsx=npvar+1
+!     ipsy=npvar+2
+!     ipsz=npvar+3
 !
- !     npvar=npvar+3
+!     npvar=npvar+3
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -134,21 +134,21 @@ module Particles_spin
       real, dimension (mpar_loc,mpvar) :: fp
 !
       intent(inout) :: f
- !     integer :: j
+!     integer :: j
 !
       if (lroot) print*,'init_particles_spin: oo will be generated '// &
           'at run-time.'
 !
- !     do j=1,ninit
- !       select case (initsp(j))
+!     do j=1,ninit
+!       select case (initsp(j))
 !
- !       case ('nothing')
- !         if (lroot) print*,'init_particles_spin: nothing (setting initial '// &
- !           'particle spin to zero for all particles'
- !         fp(1:npar_loc,ipsx:ipsz)=0.0
+!       case ('nothing')
+!         if (lroot) print*,'init_particles_spin: nothing (setting initial '// &
+!           'particle spin to zero for all particles'
+!         fp(1:npar_loc,ipsx:ipsz)=0.0
 !
- !       endselect
- !     enddo
+!       endselect
+!     enddo
 !       
     endsubroutine init_particles_spin
 !***********************************************************************
@@ -170,11 +170,9 @@ module Particles_spin
 !  processor's grid. Ghost zones will have to be set by the boundary conditions
 !  and mpi communication as usual.
 !
-      do m=m1,m2
-      do n=n1,n2
+      do m=m1,m2;do n=n1,n2
         call curl(f,iux,f(l1:l2,m,n,iox:ioz))
-      enddo
-      enddo
+      enddo;enddo
 !
     endsubroutine particles_spin_prepencil_calc
 !***********************************************************************
@@ -230,18 +228,18 @@ module Particles_spin
 !  Calculate torque on particle due to the shear flow, and
 !  update the particles' spin.
 !
- !     if (lmagnus_lift) then
- !       do k=k1_imn(imn),k2_imn(imn)
+!     if (lmagnus_lift) then
+!       do k=k1_imn(imn),k2_imn(imn)
 !
 !  Calculate angular momentum
 !
- !         ip_tilde=0.4*mp_swarm*fp(k,iap)**2
+!         ip_tilde=0.4*mpmat*fp(k,iap)**2
 !
- !         tau=8.0*pi*interp_rho(k)*nu*fp(k,iap)**3* &
- !             (0.5*interp_oo(k,:)-fp(k,ipsx:ipsz))
- !         dfp(k,ipsx:ipsz)=dfp(k,ipsx:ipsz)+tau/ip_tilde
- !       enddo
- !     endif
+!         tau=8.0*pi*interp_rho(k)*nu*fp(k,iap)**3* &
+!             (0.5*interp_oo(k,:)-fp(k,ipsx:ipsz))
+!         dfp(k,ipsx:ipsz)=dfp(k,ipsx:ipsz)+tau/ip_tilde
+!       enddo
+!     endif
 !
     endsubroutine dps_dt_pencil
 !***********************************************************************
@@ -369,11 +367,11 @@ module Particles_spin
         call calc_saffman_liftforce(fp,k,rep,dlift)
         liftforce=liftforce+dlift
       endif
- !     if (lmagnus_lift) then
- !       call calc_magnus_liftforce(fp,k,rep,dlift)
- !       liftforce=liftforce+dlift
- !       endif
- !     endif
+!     if (lmagnus_lift) then
+!       call calc_magnus_liftforce(fp,k,rep,dlift)
+!       liftforce=liftforce+dlift
+!       endif
+!     endif
 !
     endsubroutine calc_liftforce
 !***********************************************************************
@@ -395,19 +393,20 @@ module Particles_spin
       intent(in) :: fp, k, rep
       intent(out) :: dlift
 !
-      real :: csaff,dia,beta,oo,nu
+      real :: csaff,diameter,beta,oo,nu
 !
       call getnu(nu_imput=nu)
 !
       if (.not.lparticles_radius) then
-        print*,'calc_saffman_liftforce: Particle_radius module must be enabled!'
+        if (lroot) print*,'calc_saffman_liftforce: '//&
+             'Particle_radius module must be enabled!'
         call fatal_error('calc_saffman_liftforce','')
       endif
 !
-      dia=2*fp(iap)
+      diameter=2*fp(iap)
       oo=sqrt(sum(interp_oo(k,:)**2))
 !
-      beta=dia**2*oo/(2.0*rep*nu)
+      beta=diameter**2*oo/(2.0*rep*nu)
       if (beta<0.005) then
         beta=0.005
       elseif (beta>0.4) then
@@ -421,7 +420,8 @@ module Particles_spin
       endif
 !
       call cross(interp_uu(k,:)-fp(ivpx:ivpz),interp_oo(k,:),dlift)
-      dlift=1.61*csaff*dia**2*nu**0.5*interp_rho(k)*oo**(-0.5)*dlift/mp_swarm
+      dlift=1.61*csaff*diameter**2*nu**0.5*&
+                 interp_rho(k)*oo**(-0.5)*dlift/mpmat
 !
     endsubroutine calc_saffman_liftforce
 !***********************************************************************
@@ -447,7 +447,8 @@ module Particles_spin
       real, dimension(3) :: ps_rel,uu_rel
 !
       if (.not.lparticles_radius) then
-        print*,'calc_magnus_liftforce: Particle_radius module must be enabled!'
+        if (lroot) print*,'calc_magnus_liftforce: '//&
+             'Particle_radius module must be enabled!'
         call fatal_error('calc_magnus_liftforce','')
       endif
 !
@@ -466,7 +467,7 @@ module Particles_spin
       ps_rel=fp(ipsx:ipsz)-0.5*interp_oo(k,:)
       call cross(uu_rel,ps_rel,dlift)
       dlift=dlift/sqrt(sum(ps_rel**2))
-      dlift=0.25*interp_rho(k)*(rep*nu/fp(iap))*const_lr*area/mp_swarm*dlift
+      dlift=0.25*interp_rho(k)*(rep*nu/fp(iap))*const_lr*area/mpmat*dlift
 !
     endsubroutine calc_magnus_liftforce
 !***********************************************************************

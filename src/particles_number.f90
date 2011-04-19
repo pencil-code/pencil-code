@@ -82,8 +82,8 @@ module Particles_number
       allocate(kneighbour(mpar_loc))
       lshepherd_neighbour=.true.
 !
-      if (mp_swarm/=0.0) then
-        np_swarm0=rhop_swarm/mp_swarm
+      if (mpmat/=0.0) then
+        np_swarm0=rhop_swarm/mpmat
       else
         call warning('initialize_particles_number', &
             'Cowardly refusing to divide by zero -- did you set ap0?')

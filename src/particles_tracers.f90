@@ -121,7 +121,7 @@ module Particles
       endif
       if (lroot) then
         print*, 'initialize_particles: '// &
-            'mass per constituent particle mp_swarm=', mp_swarm
+            'mass per constituent particle mpmat=', mpmat
         print*, 'initialize_particles: '// &
             'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &

@@ -15,7 +15,7 @@ module Particles_cdata
   real, parameter :: npar_per_cell=npar/(1.0*nwgrid)
   real :: rp_int=-impossible, rp_ext=-impossible
   real :: dsnap_par_minor=0.0, dsnap_par=0.0
-  real :: rhopmat=1.0, rhopmat1=1.0
+  real :: rhopmat=1.0, rhopmat1=1.0, mpmat=0.0
   real :: mp_swarm=0.0, np_swarm=0.0, rhop_swarm=0.0
   real :: four_pi_rhopmat_over_three
   real :: np_const=0.0, rhop_const=0.0

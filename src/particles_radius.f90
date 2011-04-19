@@ -103,9 +103,9 @@ module Particles_radius
           lparticles_number .or. lparticles_spin)) then
         call fatal_error('initialize_particles_radius: npart_radii > 1','')
       else
-        mp_swarm=4/3.0*pi*rhopmat*ap0(1)**3
+        mpmat=4/3.0*pi*rhopmat*ap0(1)**3
         if (lroot) print*, 'initialize_particles_radius: '// &
-            'mass per dust grain mp_swarm=', mp_swarm
+            'mass per dust grain mpmat=', mpmat
       endif
 !
       if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar) then

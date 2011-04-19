@@ -101,7 +101,7 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
-      beta_dPdr_dust, np_swarm, mp_swarm, rhop_swarm, eps_dtog, nu_epicycle, &
+      beta_dPdr_dust, np_swarm, mpmat, rhop_swarm, eps_dtog, nu_epicycle, &
       rp_int, rp_ext, gravx_profile, gravz_profile, gravr_profile, gravx, &
       gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, eps1, lmigration_redo, &
       ldragforce_equi_global_eps, coeff, kx_vvp, ky_vvp, kz_vvp, amplvvp, &
@@ -327,7 +327,7 @@ module Particles
       endif
       if (lroot) then
         print*, 'initialize_particles: '// &
-            'mass per constituent particle mp_swarm=', mp_swarm
+            'mass per constituent particle mpmat=', mpmat
         print*, 'initialize_particles: '// &
             'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &
@@ -529,7 +529,7 @@ module Particles
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
           write (1,*) 'np_swarm=', np_swarm
-          write (1,*) 'mp_swarm=', mp_swarm
+          write (1,*) 'mpmat=', mpmat
           write (1,*) 'rhop_swarm=', rhop_swarm
         close (1)
       endif

@@ -299,7 +299,7 @@ module Particles_map
                   elseif (lparticles_radius) then
                     weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_swarm*fp(k,inpswarm)
+                    weight0=mpmat*fp(k,inpswarm)
                   else
                     weight0=1.0
                   endif
@@ -376,7 +376,7 @@ module Particles_map
                   elseif (lparticles_radius) then
                     weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_swarm*fp(k,inpswarm)
+                    weight0=mpmat*fp(k,inpswarm)
                   else
                     weight0=1.0
                   endif
@@ -456,7 +456,7 @@ module Particles_map
                   elseif (lparticles_radius) then
                     weight0=four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm
                   elseif (lparticles_number) then
-                    weight0=mp_swarm*fp(k,inpswarm)
+                    weight0=mpmat*fp(k,inpswarm)
                   else
                     weight0=1.0
                   endif
