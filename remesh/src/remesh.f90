@@ -1,4 +1,4 @@
-! $Id: remesh.f90,v 1.33 2008-09-23 03:32:17 brandenb Exp $
+! $Id$
 !
 !***********************************************************************
 program remesh
@@ -159,7 +159,8 @@ program remesh
       call safe_character_assign(file,&
           trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
       if (ip<8) print*,'Reading '//trim(file)
-      open(1,file=file,form='unformatted')
+      open(2,file=file,form='unformatted')
+
 !
 ! Possibility to jump here from below
 !
