@@ -3857,6 +3857,11 @@ module Chemistry
         call read_Lewis
       endif
 !
+      if (.not.lew_exist .and. lDiff_lewis .and. lroot) then
+          print*, 'No lewis.dat file present, switch to simplified diffusion'
+          lDiff_lewis=F; lDiff_simple=T 
+      endif
+!
       if (lroot .and. .not.tran_exist .and. .not.lew_exist) then
         print*,'tran.dat file with transport data is not found.'
         print*,'lewis.dat file with Lewis numbers is not found.'
