@@ -74,6 +74,7 @@ module Chemistry
 !
      logical :: lheatc_chemistry=.true.
      logical :: lDiff_simple=.false.
+     logical :: lDiff_lewis=.false.
      logical :: lThCond_simple=.false.
      logical :: lT_const=.false.
      logical :: lDiff_fick=.false.
@@ -153,7 +154,7 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, lFlux_simple, &
+      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, lDiff_lewis,lFlux_simple, &
       lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const,&
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,init_rho,&
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
@@ -169,7 +170,7 @@ module Chemistry
       lkreactions_profile, lkreactions_alpha, &
       chem_diff,chem_diff_prefactor, nu_spec, ldiffusion, ladvection, &
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
-      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lFlux_simple, &
+      lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lFlux_simple, &
       lThCond_simple,visc_const,cp_const,reinitialize_chemistry,init_from_file, &
       lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density,&
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi
@@ -1077,7 +1078,7 @@ module Chemistry
 !
 !  Diffusion coefficient of a mixture with constant Lewis numbers and given heat conductivity
 !
-         else if ((.not. lDiff_simple) .and. lew_exist) then
+         else if (lDiff_lewis .and. lew_exist) then
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=p%lambda*p%rho1*p%cp1*Lewis_coef1(k)
            enddo
@@ -2367,7 +2368,7 @@ module Chemistry
 !
 !  Diffusion coefficient of a mixture from tran.dat file
 !
-       if ((.not. lDiff_simple).and.(.not. lew_exist)) then
+       if ((.not. lDiff_simple).and.(.not. lDiff_lewis)) then
 !
          do j3=nn1,nn2
          do j2=mm1,mm2
@@ -5236,7 +5237,7 @@ module Chemistry
             do i=1,3
               gDiff_full_add(:,i)=p%Diff_penc_add(:,k)*(0.7*p%glnTT(:,i)-p%glnrho(:,i))
             enddo
-          else if ((.not.lDiff_simple) .and. lew_exist) then
+          else if (lDiff_lewis .and. lew_exist) then
             do i=1,3
               gDiff_full_add(:,i)=(p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
                   *p%Diff_penc_add(:,k)
