@@ -164,6 +164,8 @@ program remesh
 !
 ! Possibility to jump here from below
 !
+      print*,'mx,my,mz,mvar=',mx,my,mz,mvar
+      print*,'lshear=',lshear
       read(1) a
 !
 !  try first to read with deltay, but if that fails then
@@ -187,7 +189,12 @@ program remesh
 !  try again if lshort
 !
       if (lshort) then
-        read(1) t_sp,x,y,z,dx,dy,dz
+        read(1,err=994,end=994) t_sp,x,y,z,dx,dy,dz
+        goto 993
+994     continue
+        print*,'lshear,t_sp=',lshear,t_sp
+        !backspace(1)
+        !read(1) t_sp !,x,y,z !,dx,dy,dz
       endif
 !
 993   continue

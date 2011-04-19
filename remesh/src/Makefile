@@ -73,6 +73,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 ## (AB/22-06-03: Here I've cut+pasted the current block from $PENCIL_HOME/src)
 ## The -tpp7 flag leads to a 10% speedup on nl6
 #FC=f95
+#FC=mpif90
 #FFLAGS=-O3
 #F90FLAGS=-u -tpp7
 #F90FLAGS= # (fire)
