@@ -193,13 +193,13 @@ pro emissivity, sets, limits, scaling=scaling
 	col     = WIDGET_BASE (top, /col)
 	tmp	= WIDGET_BUTTON (col, value='QUIT', UVALUE='QUIT', xsize=100)
 	drow    = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_X', xsize=num_y*bin_y, ysize=num_z*bin_z)
+	tmp     = WIDGET_DRAW (drow, UVALUE='EM_X', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wem_x   = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Y', xsize=num_x*bin_x, ysize=num_z*bin_z)
+	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Y', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wem_y   = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Z', xsize=num_x*bin_x, ysize=num_y*bin_y)
+	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Z', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wem_z   = !d.window
 	TOP2    = WIDGET_BASE (base, /col)
