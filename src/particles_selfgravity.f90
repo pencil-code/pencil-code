@@ -307,15 +307,27 @@ module Particles_selfgravity
 !  a grid cell in one time-step.
 !
             if (lfirst.and.ldt) then
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost), &
-                  sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid(k,1)))/cdtpg)
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost), &
-                  sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid(k,2)))/cdtpg)
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost), &
-                  sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid(k,3)))/cdtpg)
+              if (lparticles_blocks) then
+                dt1_max(ineargrid(k,1)-nghostb)= &
+                    max(dt1_max(ineargrid(k,1)-nghostb), &
+                    sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid(k,1)))/cdtpg)
+                dt1_max(ineargrid(k,1)-nghostb)= &
+                    max(dt1_max(ineargrid(k,1)-nghostb), &
+                    sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid(k,2)))/cdtpg)
+                dt1_max(ineargrid(k,1)-nghostb)= &
+                    max(dt1_max(ineargrid(k,1)-nghostb), &
+                    sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid(k,3)))/cdtpg)
+              else
+                dt1_max(ineargrid(k,1)-nghost)= &
+                    max(dt1_max(ineargrid(k,1)-nghost), &
+                    sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid(k,1)))/cdtpg)
+                dt1_max(ineargrid(k,1)-nghost)= &
+                    max(dt1_max(ineargrid(k,1)-nghost), &
+                    sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid(k,2)))/cdtpg)
+                dt1_max(ineargrid(k,1)-nghost)= &
+                    max(dt1_max(ineargrid(k,1)-nghost), &
+                    sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid(k,3)))/cdtpg)
+              endif
             endif
 !
             if (ldiagnos) then
