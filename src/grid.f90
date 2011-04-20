@@ -882,7 +882,7 @@ module Grid
           box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
           dVol_x=x**2*xprim
         else
-          dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
+          dVol_x=1.
         endif
 !
 !  Theta extent (if non-radially symmetric)
@@ -892,7 +892,7 @@ module Grid
           dVol_y=sinth*yprim
         else
           box_volume = box_volume*2.
-          dVol_y=2.
+          dVol_y=1.
         endif
 !
 !  phi extent (if non-axisymmetry)
@@ -902,7 +902,7 @@ module Grid
           dVol_z=zprim
         else
           box_volume = box_volume*2.*pi
-          dVol_z=2.*pi
+          dVol_z=1.
         endif
 !
 !  weighted coordinates for integration purposes
@@ -967,7 +967,7 @@ module Grid
           box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
           dVol_x=x*xprim
         else
-          dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
+          dVol_x=1.
         endif
 !
 !  theta extent (non-cylindrically symmetric)
@@ -977,7 +977,7 @@ module Grid
           dVol_y=yprim
         else
           box_volume = box_volume*2.*pi
-          dVol_y=2.*pi
+          dVol_y=1.
         endif
 !
 !  z extent (vertically extended)
