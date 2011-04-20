@@ -155,7 +155,7 @@ COMPILE_OPT IDL2,HIDDEN
     if (file_struct.exists) then begin
       pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
     endif else begin
-      print, 'Could not find '+datadir+'/param2.'
+      print, 'Could not find '+datadir+'/param2.nml'
       if (magic) then print, 'This may give problems with magic variables.'
     endelse
   endif
