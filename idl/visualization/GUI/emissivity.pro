@@ -185,7 +185,7 @@ pro emissivity, sets, limits, scaling=scaling
 	BASE    = WIDGET_BASE (MOTHER, /col)
 	TOP     = WIDGET_BASE (base, /row)
 	col     = WIDGET_BASE (top, /col)
-	tmp     = WIDGET_SLIDER (col, uvalue='CUT_Z', value=cut_z, min=0, max=num_x-1, xsize=num_z*bin_z, /drag)
+	tmp     = WIDGET_SLIDER (col, uvalue='CUT_Z', value=cut_z, min=0, max=num_z-1, xsize=num_z*bin_z, /drag)
 	col     = WIDGET_BASE (top, /col)
 	emis    = WIDGET_DROPLIST (col, value=(parameter[*].title), uvalue='EMIS', EVENT_PRO=emissivity_event, title='ion')
 	col     = WIDGET_BASE (top, /col)
