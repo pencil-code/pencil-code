@@ -151,8 +151,8 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0) then begin
-    spawn, 'ls '+datadir+'/param2.nml', dummy, exit_status=exit_status
-    if (exit_status eq 0) then begin
+    file_struct = file_info (datadir+'/param2.nml')
+    if (file_struct.exists) then begin
       pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
     endif else begin
       print, 'Could not find '+datadir+'/param2.'
