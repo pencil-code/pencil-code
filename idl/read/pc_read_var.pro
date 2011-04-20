@@ -150,13 +150,13 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
-  if (n_elements(par2) eq 0 and magic) then begin
+  if (n_elements(par2) eq 0) then begin
     spawn, 'ls '+datadir+'/param2.nml', dummy, exit_status=exit_status
     if (exit_status eq 0) then begin
       pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
     endif else begin
-      print, 'Could not find '+datadir+'/param2. This may give problems with'+ $
-          ' magic variables.'
+      print, 'Could not find '+datadir+'/param2.'
+      if (magic) then print, 'This may give problems with magic variables.'
     endelse
   endif
 ;
