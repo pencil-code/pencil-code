@@ -85,7 +85,7 @@ default, overplot_quantities, { $
 ;;; Preferred units for display
 ;;;
 default, default_length             , 1.e6
-default, default_length_str         , 'Mm '
+default, default_length_str         , 'Mm'
 default, default_velocity           , 1.e3
 default, default_velocity_str       , 'km/s'
 default, default_density            , 1.0
