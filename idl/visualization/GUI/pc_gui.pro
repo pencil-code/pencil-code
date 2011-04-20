@@ -55,11 +55,13 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ; 'Bx', 'By', 'Bz'          ; magnetic field components
 ; 'rho_mag'                 ; magnetic energy density
 ; 'j'                       ; absolute value of the current density
+; 'HR_ohm'                  ; ohmic heating rate per volume (eta*mu0*j^2)
 ; 'rho_u_z'                 ; vertical component of the impulse density
 ; (more quantities can be defined in 'precalc_data', see pc_gui_companion.pro)
 default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
+	ohmic_heating_rate:'HR_ohm', $
 	magnetic_energy:'rho_mag', $
 	magnetic_field_z:'bz', $
 	velocity:'u_abs', $
@@ -82,14 +84,16 @@ default, overplot_quantities, { $
 ;;;
 ;;; Preferred units for display
 ;;;
-default, default_length        , 1.e6
-default, default_length_str    , 'Mm'
-default, default_velocity      , 1.e3
-default, default_velocity_str  , 'km/s'
-default, default_density       , 1.0
-default, default_density_str   , 'kg/m^3'
-default, default_mass          , 1.0
-default, default_mass_str      , 'kg'
+default, default_length             , 1.e6
+default, default_length_str         , 'Mm '
+default, default_velocity           , 1.e3
+default, default_velocity_str       , 'km/s'
+default, default_density            , 1.0
+default, default_density_str        , 'kg/m^3'
+default, default_mass               , 1.0
+default, default_mass_str           , 'kg'
+default, default_magnetic_field     , 1e-4
+default, default_magnetic_field_str , 'Gauß'
 
 
 ;;;
@@ -112,21 +116,6 @@ default, pc_gui_loaded, 0
 
 if (not pc_gui_loaded) then BEGIN
 
-	if (n_elements (nghost) gt 0) then begin
-		nghost_x = nghost
-		nghost_y = nghost
-		nghost_z = nghost
-	end
-	pc_read_dim, obj=dim, datadir=datadir, /quiet
-	default, nghost_x, dim.nghostx
-	default, nghost_y, dim.nghosty
-	default, nghost_z, dim.nghostz
-	nx = dim.mx - 2*nghost_x
-	ny = dim.my - 2*nghost_y
-	nz = dim.mz - 2*nghost_z
-
-	pc_units, obj=unit, datadir=datadir
-
 	procdir = datadir+"/proc0/"
 	file_struct = file_info (procdir+varfile)
 	if (file_struct.exists eq 0) then begin
@@ -148,6 +137,18 @@ if (not pc_gui_loaded) then BEGIN
 		if (strcmp (answer, 'y', /fold_case)) then varfile = crashfile
 	end
 
+	if (n_elements (nghost) gt 0) then begin
+		nghost_x = nghost
+		nghost_y = nghost
+		nghost_z = nghost
+	end
+	pc_read_dim, obj=dim, datadir=datadir, /quiet
+	default, nghost_x, dim.nghostx
+	default, nghost_y, dim.nghosty
+	default, nghost_z, dim.nghostz
+	nx = dim.mx - 2*nghost_x
+	ny = dim.my - 2*nghost_y
+	nz = dim.mz - 2*nghost_z
 
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
 	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
@@ -234,7 +235,8 @@ if (not pc_gui_loaded) then BEGIN
 	print, ""
 
 
-	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density/unit.length^3, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str }
+	pc_units, obj=unit, datadir=datadir
+	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
 	pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
 	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
 
@@ -277,7 +279,10 @@ if (not pc_gui_loaded) then BEGIN
 	dummy_3D = 0
 	print, "...finished."
 
-	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir
+
+	pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
+	pc_read_param, obj=run_param, /param2, dim=dim, datadir=datadir, /quiet
+	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir, param, run_param
 
 	; Precalculate initial timestep
 	precalc, 0, varfile=varfile

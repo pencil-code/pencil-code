@@ -524,7 +524,10 @@ pro draw_averages, number
 			num_subplots += 1
 			vert_prof, varsets[number].rho[cut], coord=coord.z, title = 'density ['+unit.default_density_str+']'
 		end
-		if (any (strcmp (tags, 'u_abs', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		if (any (strcmp (tags, 'u_z', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			vert_prof, varsets[number].u_z[cut], coord=coord.z, title = 'vertical velocity ['+unit.default_velocity_str+']'
+		end else if (any (strcmp (tags, 'u_abs', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			vert_prof, varsets[number].u_abs[cut], coord=coord.z, title = 'absolute velocity ['+unit.default_velocity_str+']'
 		end
@@ -548,7 +551,7 @@ end
 ; Prepares a data set for visualisation
 pro prepare_set, i
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
@@ -565,7 +568,7 @@ end
 ; Prepares a cube for visualisation
 pro prepare_cube, cube_index
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
@@ -638,7 +641,7 @@ end
 ; Prepares an overplot for visualisation
 pro prepare_overplot
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
@@ -728,7 +731,7 @@ end
 ; Resets everything and redraws the window
 pro reset_GUI
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
@@ -776,7 +779,7 @@ end
 ; Sophisticated interface with caching of VAR-files
 pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=scaling, overplots=overplots
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen

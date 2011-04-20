@@ -12,14 +12,16 @@
 
 
 ; Prepares the varset
-pro prepare_varset, num, units, coords, varset, overset, dir
+pro prepare_varset, num, units, coords, varset, overset, dir, params, run_params
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
 	datadir = dir
 
 	unit = units
 	coord = { x:coords.x*unit.length, y:coords.y*unit.length, z:coords.z*unit.length }
+	param = params
+	run_param = run_params
 
 	varfiles = { title:"-", loaded:0, number:0, precalc_done:0 }
 	varfiles = replicate (varfiles, num)
@@ -32,7 +34,7 @@ end
 ; Precalculates a data set and loads data, if necessary
 pro precalc, i, number=number, varfile=varfile, datadir=dir, show_aver=show_aver, vars=vars
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
 	; Default settings
 	default, show_aver, 0
@@ -68,7 +70,7 @@ end
 ; Precalculates a data set
 pro precalc_data, i, vars
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
 	tags = tag_names (varsets[i])
 
@@ -102,37 +104,42 @@ pro precalc_data, i, vars
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
 		if (any (strcmp (tags, 'Ax', /fold_case))) then begin
 			; Magnetic vector potential x-component
-			varsets[i].Ax = vars.aa[*,*,*,0]
+			varsets[i].Ax = vars.aa[*,*,*,0] * unit.magnetic_field
 		end
 		if (any (strcmp (tags, 'Ay', /fold_case))) then begin
 			; Magnetic vector potential y-component
-			varsets[i].Ay = vars.aa[*,*,*,1]
+			varsets[i].Ay = vars.aa[*,*,*,1] * unit.magnetic_field
 		end
 		if (any (strcmp (tags, 'Az', /fold_case))) then begin
 			; Magnetic vector potential z-component
-			varsets[i].Az = vars.aa[*,*,*,2]
+			varsets[i].Az = vars.aa[*,*,*,2] * unit.magnetic_field
 		end
 		; Magnetic field
-		bb = curl (vars.aa) / unit.length
+		bb = curl (vars.aa) * unit.magnetic_field
 		if (any (strcmp (tags, 'bx', /fold_case))) then begin
 			; Magnetic field x-component
-			varsets[i].bx = bb[*,*,*,0]
+			varsets[i].bx = bb[*,*,*,0] / unit.default_magnetic_field
 		end
 		if (any (strcmp (tags, 'by', /fold_case))) then begin
 			; Magnetic field y-component
-			varsets[i].by = bb[*,*,*,1]
+			varsets[i].by = bb[*,*,*,1] / unit.default_magnetic_field
 		end
 		if (any (strcmp (tags, 'bz', /fold_case))) then begin
 			; Magnetic field z-component
-			varsets[i].bz = bb[*,*,*,2]
+			varsets[i].bz = bb[*,*,*,2] / unit.default_magnetic_field
 		end
 		if (any (strcmp (tags, 'rho_mag', /fold_case))) then begin
 			; Magnetic energy density
 			varsets[i].rho_mag = dot2 (bb)
 		end
+		mu0_SI = 4.0 * !Pi * 1.e-7
 		if (any (strcmp (tags, 'j', /fold_case))) then begin
 			; Current density
-			varsets[i].j = sqrt (sqrt (dot2 (curlcurl (vars.aa))) / unit.length^2)
+			varsets[i].j = sqrt (sqrt (dot2 (curlcurl (vars.aa)))) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+		end
+		if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
+			; Ohming heating rate
+			varsets[i].HR_ohm = run_param.eta * mu0_SI * sqrt (dot2 (curlcurl (vars.aa))) * (unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length)^2
 		end
 	end
 	if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
@@ -180,11 +187,11 @@ pro precalc_data, i, vars
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
 		if (any (strcmp (over_tags, 'b', /fold_case))) then begin
 			; Magnetic field overplot
-			oversets[i].b = float (bb)
+			oversets[i].b = float (bb) / unit.default_magnetic_field
 		end
 		if (any (strcmp (over_tags, 'a_contour', /fold_case))) then begin
 			; Magnetic field lines overplot
-			oversets[i].a_contour = float (vars.aa)
+			oversets[i].a_contour = float (vars.aa) * unit.magnetic_field
 		end
 	end
 end
