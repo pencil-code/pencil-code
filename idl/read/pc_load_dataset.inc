@@ -12,7 +12,7 @@ default, varfile, 'var.dat'
 default, datadir, pc_get_datadir()
 ;
 pc_units, obj=unit, datadir=datadir
-pc_read_var, varfile=varfile, datadir=datadir, object=vars, param=param, dim=dim, grid=grid, /quiet
+pc_read_var, varfile=varfile, datadir=datadir, object=vars, param=param, par2=run_param, dim=dim, grid=grid, /quiet
 ;
 default, nghost_x, dim.nghostx
 default, nghost_y, dim.nghosty
