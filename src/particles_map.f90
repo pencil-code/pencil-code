@@ -1018,8 +1018,8 @@ module Particles_map
             f(l1:l2,m1:m2,n1:n2,irhop)=rhop_swarm*f(l1:l2,m1:m2,n1:n2,irhop)
           else
             do m=m1,m2; do n=n1,n2
-              f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_swarm*&
-                   dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
+              f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_swarm/&
+                   (dVol_x(l1:l2)*dVol_y(m)*dVol_z(n))
             enddo; enddo
           endif
         endif
