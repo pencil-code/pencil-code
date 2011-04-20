@@ -326,9 +326,21 @@ module Particles
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
+!
+      if (mp_swarm==0.0) then 
+        if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
+          rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
+        else
+          rhom=1.0
+        endif
+        mp_swarm=eps_dtog*rhom*box_volume/(real(npar))
+      endif
+!
       if (lroot) then
         print*, 'initialize_particles: '// &
             'mass per constituent particle mpmat=', mpmat
+        print*, 'initialize_particles: '// &
+            'mass per superparticle mp_swarm =', mp_swarm
         print*, 'initialize_particles: '// &
             'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &
