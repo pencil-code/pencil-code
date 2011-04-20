@@ -161,7 +161,7 @@ module Particles
   integer :: idiag_rpm=0, idiag_rp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
-  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
+  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
@@ -171,6 +171,7 @@ module Particles
   integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
+  integer :: idiag_epspmin=0, idiag_epspmax=0
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
@@ -1894,14 +1895,14 @@ k_loop:   do while (.not. (k>npar_loc))
           idiag_rhopmax/=0 .or. idiag_rhopmin/=0 .or. idiag_rhopmphi/=0 .or. &
           idiag_rhopmx/=0 .or. idiag_rhopmy/=0 .or. idiag_rhopmz/=0) &
           lpenc_diagnos(i_rhop)=.true.
-      if (idiag_rhopmxy/=0 .or. idiag_rhopmr/=0 .or. idiag_rhopmxz/=0) &
           lpenc_diagnos2d(i_rhop)=.true.
       if (idiag_dedragp/=0 .or. idiag_decollp/=0) then
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
       endif
       if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
-      if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0) &
+      if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0 .or. &
+          idiag_epspmin/=0 .or. idiag_epspmax/=0) &
           lpenc_diagnos(i_epsp)=.true.
 !
     endsubroutine pencil_criteria_particles
@@ -2300,6 +2301,8 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
         if (idiag_epotpm/=0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
+        if (idiag_vpmax/=0) call max_par_name( &
+            sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
@@ -2869,6 +2872,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
         if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
         if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
+        if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
+        if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
@@ -4116,7 +4121,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
-        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
+        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0; idiag_vpmax=0
         idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
         idiag_lpx2m=0; idiag_lpy2m=0; idiag_lpz2m=0
@@ -4124,6 +4129,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_rhoptilm=0; idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
+        idiag_epspmin=0; idiag_epspmax=0
         idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
@@ -4165,6 +4171,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
         call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
+        call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
             idiag_rhopvpxm)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpym', &
@@ -4193,6 +4200,8 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'rhop2m',idiag_rhop2m)
         call parse_name(iname,cname(iname),cform(iname),'rhopmin',idiag_rhopmin)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
+        call parse_name(iname,cname(iname),cform(iname),'epspmin',idiag_epspmin)
+        call parse_name(iname,cname(iname),cform(iname),'epspmax',idiag_epspmax)
         call parse_name(iname,cname(iname),cform(iname),'rhopmphi',idiag_rhopmphi)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
         call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
