@@ -22,7 +22,7 @@ module Grid
 !
 !  Special definition for degenerate directions
 !
-  logical :: ldegenerate_direction=.false.
+  logical :: ldegenerate_directions=.false.
 !
   private
 !
