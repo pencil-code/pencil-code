@@ -373,9 +373,10 @@ module Shock
 !  23-nov-02/tony: coded
 !  17-dec-08/ccyang: add divergence threshold
 !
-      use Boundcond, only: boundconds_x,boundconds_y,boundconds_z
-      use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry,mpiallreduce_max
-      use sub, only: div
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry, &
+                         mpiallreduce_max
+      use Sub, only: div
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -387,11 +388,16 @@ module Shock
       integer :: ni,nj,nk
       real :: shock_max, a=0., a1
 !
-!  Compute divergence
+!  Initialize shock to impossibly large number to force code crash in case of
+!  inconsistencies in boundary conditions.
+!
+      f(:,:,:,ishock)=impossible
+!
+!  Compute divergence of velocity field.
 !
       call boundconds_x(f,iux,iux)
 !
-      call initiate_isendrcv_bdry(f,iuy,iuz)
+      call initiate_isendrcv_bdry(f,iux,iuz)
 !
       do imn=1,ny*nz
 !
@@ -399,19 +405,20 @@ module Shock
         m = mm(imn)
 !
         if (necessary(imn)) then
-          call finalize_isendrcv_bdry(f,iuy,iuz)
+          call finalize_isendrcv_bdry(f,iux,iuz)
           call boundconds_y(f,iuy,iuy)
           call boundconds_z(f,iuz,iuz)
         endif
 ! The following will calculate div u for any coordinate system. 
         call div(f,iuu,penc)
-        f(l1:l2,m,n,ishock) = max(0.,-penc)
+        f(l1:l2,m,n,ishock) = max(0.0,-penc)
 !
       enddo
 !
 !  Cut off small divergence if requested.
 !
-      if (div_threshold > 0.) where(f(:,:,:,ishock) < div_threshold) f(:,:,:,ishock) = 0.
+      if (div_threshold > 0.0) &
+          where(f(:,:,:,ishock) < div_threshold) f(:,:,:,ishock) = 0.0
 !
 !  Take maximum over a number of grid cells
 !
@@ -419,11 +426,20 @@ module Shock
       nj = merge(ishock_max,0,nygrid > 1)
       nk = merge(ishock_max,0,nzgrid > 1)
 !
+!  Because of a bug in the shearing boundary conditions we must first manually
+!  set the y boundary conditions on the shock profile.
+!
+      if (lshear) then
+        call boundconds_y(f,ishock,ishock)
+        call initiate_isendrcv_bdry(f,ishock,ishock)
+        call finalize_isendrcv_bdry(f,ishock,ishock)
+      endif
+!
       call boundconds_x(f,ishock,ishock)
 !
       call initiate_isendrcv_bdry(f,ishock,ishock)
 !
-      tmp = 0.
+      tmp = 0.0
 !
       do imn=1,ny*nz
 !
@@ -436,7 +452,7 @@ module Shock
           call boundconds_z(f,ishock,ishock)
         endif
 !
-        penc = 0.
+        penc = 0.0
 !
         do k=-nk,nk
         do j=-nj,nj
@@ -458,10 +474,19 @@ module Shock
       nj = merge(3,0,nygrid > 1)
       nk = merge(3,0,nzgrid > 1)
 !
+!  Because of a bug in the shearing boundary conditions we must first manually
+!  set the y boundary conditions on the shock profile.
+!
+      if (lshear) then
+        call boundconds_y(f,ishock,ishock)
+        call initiate_isendrcv_bdry(f,ishock,ishock)
+        call finalize_isendrcv_bdry(f,ishock,ishock)
+      endif
+!
       call boundconds_x(f,ishock,ishock)
       call initiate_isendrcv_bdry(f,ishock,ishock)
 !
-      tmp = 0.
+      tmp = 0.0
 !
       do imn=1,ny*nz
 !
@@ -474,7 +499,7 @@ module Shock
           call boundconds_z(f,ishock,ishock)
         endif
 !
-        penc = 0.
+        penc = 0.0
 !
         do k=-nk,nk
         do j=-nj,nj
@@ -510,7 +535,7 @@ module Shock
 !
 !  Scale by dxmax**2
 !
-        f(:,:,:,ishock) = tmp*dxmax**2
+        f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)*dxmax**2
       endif
 !
     endsubroutine calc_shock_profile
