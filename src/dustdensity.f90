@@ -2324,7 +2324,7 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr, dndr_dr2, ff_tmp, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i!,nd_full_i
-      integer :: k, i, ind_tmp=3
+      integer :: k, i, ind_tmp=6
 !
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr
@@ -2375,17 +2375,18 @@ module Dustdensity
              ff_tmp(:,k)=f(l1:l2,m,n,idcj(k,i))*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
              ff_tmp0(:,k)=init_distr_ki(k,i)*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
            else
-             ff_tmp(:,k)=p%nd(:,k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
-             ff_tmp0(:,k)=init_distr(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)
+             ff_tmp(:,k)=p%nd(:,k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
+             ff_tmp0(:,k)=init_distr(k)*(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
            endif
          enddo
 !
-         call deriv_size(ff_tmp,ff_tmp0,dndr_dr)
+!         call deriv_size(ff_tmp,ff_tmp0,dndr_dr)
+          call deriv_size(ff_tmp,ff_tmp0,dndr_dr)
 !
-         do k=1,ndustspec
-           dndr_dr(:,k) = dndr_dr(:,k)/dsize(k)-ff_tmp(:,k)/dsize(k)**2
-         enddo
-             dndr_dr(:,1:ind_tmp)=0.
+ !        do k=1,ndustspec
+ !          dndr_dr(:,k) = dndr_dr(:,k)/dsize(k)-ff_tmp(:,k)/dsize(k)**2
+ !        enddo
+  !           dndr_dr(:,1:ind_tmp)=0.
        endif
 !
       endif

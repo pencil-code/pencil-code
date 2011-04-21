@@ -489,7 +489,7 @@ module Special
 !           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
 !            uy_ref=0.
            if (lzone_right) then
-!             df(i,m,n,iux)=df(i,m,n,iux)-(f(i,m,n,iux)-ux_bz)*dt1
+             df(i,m,n,iux)=df(i,m,n,iux)-(f(i,m,n,iux)-ux_bz)*dt1
              df(i,m,n,iuy)=df(i,m,n,iuy)-(f(i,m,n,iuy)-uy_bz)*dt1
            endif
            enddo

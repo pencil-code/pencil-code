@@ -711,7 +711,7 @@ module InitialCondition
                  air_mass_ar=0.
                do k=1,nchemspec
                  if ((ichemspec(k)/=ichemspec(index_N2)) &
-                     .and. (ichemspec(k)/=ichemspec(index_N2))) then
+                     .and. (ichemspec(k)/=ichemspec(index_H2O))) then
                  air_mass_ar(:,:)=air_mass_ar(:,:)+f(ll,:,:,ichemspec(k)) &
                     /species_constants(k,imass)
                  elseif (ichemspec(k)==ichemspec(index_N2)) then
