@@ -499,7 +499,7 @@ module Shock
 !  Communicate uu ghost zones
           call boundconds_x(f,iux,iuz)
           call initiate_isendrcv_bdry(f,iux,iuz)
-          f(:,:,:,ishock)=0.
+          f(:,:,:,ishock)=impossible
 !
 !  Divu over internal region
 !
