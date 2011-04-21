@@ -9,7 +9,6 @@
   lpencil_check=T
 /
 &magnetic_run_pars
-  lmeanfield_theory=T
   eta=1e-2
 /
 &magn_mf_run_pars
