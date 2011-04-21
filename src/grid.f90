@@ -20,6 +20,10 @@ module Grid
 !
   implicit none
 !
+!  Special definition for degenerate directions
+!
+  logical :: lWlad=.false.
+!
   private
 !
   public :: construct_grid
@@ -730,6 +734,7 @@ module Grid
 !  Coordinate-related issues: nonuniform meshes, different coordinate systems
 !
 !  20-jul-10/wlad: moved here from register
+!  21-apr-11/axel: insert special lWlad option for degenerate directions
 !
       use Sub, only: remove_zprof
       use Mpicomm
@@ -882,7 +887,8 @@ module Grid
           box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
           dVol_x=x**2*xprim
         else
-          dVol_x=1.
+!         dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3)
+          if (lWlad) then; dVol_x=1.; else; dVol_x=1./3.*(xyz1(1)**3-xyz0(1)**3); endif
         endif
 !
 !  Theta extent (if non-radially symmetric)
@@ -892,7 +898,8 @@ module Grid
           dVol_y=sinth*yprim
         else
           box_volume = box_volume*2.
-          dVol_y=1.
+!         dVol_y=2.
+          if (lWlad) then; dVol_y=1.; else; dVol_y=2.; endif
         endif
 !
 !  phi extent (if non-axisymmetry)
@@ -902,7 +909,8 @@ module Grid
           dVol_z=zprim
         else
           box_volume = box_volume*2.*pi
-          dVol_z=1.
+!         dVol_z=2.*pi
+          if (lWlad) then; dVol_z=1.; else; dVol_z=2.*pi; endif
         endif
 !
 !  weighted coordinates for integration purposes
@@ -967,7 +975,8 @@ module Grid
           box_volume = box_volume*.5*(xyz1(1)**2-xyz0(1)**2)
           dVol_x=x*xprim
         else
-          dVol_x=1.
+!         dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2)
+          if (lWlad) then; dVol_x=1.; else; dVol_x=1./2.*(xyz1(1)**2-xyz0(1)**2); endif
         endif
 !
 !  theta extent (non-cylindrically symmetric)
@@ -977,7 +986,8 @@ module Grid
           dVol_y=yprim
         else
           box_volume = box_volume*2.*pi
-          dVol_y=1.
+!         dVol_y=2.*pi
+          if (lWlad) then; dVol_y=1.; else; dVol_y=2.*pi; endif
         endif
 !
 !  z extent (vertically extended)
