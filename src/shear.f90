@@ -22,8 +22,8 @@ module Shear
 !
   implicit none
 !
-  real :: x0_shear=0.0, qshear0=0.0, sini=0.
-  real :: Sshear1=0., Sshear_sini=0.
+  real :: x0_shear=0.0, qshear0=0.0, sini=0.0
+  real :: Sshear1=0.0, Sshear_sini=0.0
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
@@ -31,12 +31,14 @@ module Shear
   include 'shear.h'
 !
   namelist /shear_init_pars/ &
-      qshear,qshear0,Sshear,Sshear1,deltay,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear,sini
+      qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
+      lshearadvection_as_shift, lmagnetic_stretching, lrandomx0, x0_shear, &
+      sini
 !
   namelist /shear_run_pars/ &
-      qshear,qshear0,Sshear,Sshear1,deltay,Omega,lshearadvection_as_shift, &
-      lmagnetic_stretching,lrandomx0,x0_shear,sini
+      qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
+      lshearadvection_as_shift, lmagnetic_stretching, lrandomx0, x0_shear, &
+      sini
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
   integer :: idiag_deltay=0     ! DIAG_DOC: deltay
