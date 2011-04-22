@@ -56,7 +56,7 @@
   public :: read_thermodyn,write_thermodyn
   public :: read_transport_data
   public :: read_species,find_species_index,find_mass
-  public :: species_constants,  tran_data, Lewis_coef
+  public :: species_constants,  tran_data, Lewis_coef, Lewis_coef1
 !  public :: B_n, alpha_n, E_an, low_coeff,high_coeff,troe_coeff,a_k4
 !  public :: Mplus_case, tran_data
 
