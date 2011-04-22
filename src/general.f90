@@ -23,7 +23,7 @@ module General
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
-  public :: chn
+  public :: chn, parser
 !
   include 'record_types.h'
 !
@@ -1656,5 +1656,56 @@ module General
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine linear_interpolate
+!***********************************************************************
+integer function parser( zeile, feld, lenf, tz )
+!
+! Parses string zeile according to separator character tz; 
+! Puts up to lenf substrings consecutively into feld.
+! Returns number of found substrings.
+!
+!  10-apr-11/MR: coded
+! 
+  character (LEN=*),               intent(in)  :: zeile
+  character (LEN=*), dimension(*), intent(out) :: feld
+  integer,                         intent(in)  :: lenf
+  character,                       intent(in)  :: tz
+
+  integer :: ind, inda, lenz
+
+  parser = 0
+  inda = 1
+  lenz = len_trim(zeile)
+
+  do while ( inda <= lenz )
+
+    ind = index( zeile(inda:), tz )
+
+    if ( inda+ind-1 < lenz .and. parser == lenf ) then
+      print*, 'Parser - Warning: too many substrings!'
+      return
+    endif
+
+    parser = parser+1
+
+    if ( ind == 0 ) then 
+
+      feld(parser) = trim(zeile(inda:))
+      return
+
+    else
+
+      if ( ind>1 ) then
+        feld(parser) = trim(zeile(inda:inda+ind-2))
+      else
+        feld(parser) = ''
+      endif
+
+      inda = inda+ind
+
+    endif
+    
+  enddo
+
+endfunction parser
 !***********************************************************************
 endmodule General
