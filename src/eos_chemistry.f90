@@ -83,7 +83,7 @@ module EquationOfState
 !
  real, dimension(nchemspec,18) :: species_constants
  real, dimension(nchemspec,7)     :: tran_data
- real, dimension(nchemspec) :: Lewis_coef
+ real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
 
 
 !NILS: Why do we spend a lot of memory allocating these variables here????
@@ -1773,6 +1773,7 @@ module EquationOfState
         if (found_specie) then
           if (lroot) print*,specie_string,' ind_glob=',ind_glob,' Lewis=', lewisk
           Lewis_coef(ind_chem) = lewisk
+          Lewis_coef1(ind_chem) = 1./lewisk
           i=i+1
         endif
       enddo dataloop
