@@ -105,7 +105,7 @@ module Cdata
 ! Variables used in the Super_time_stepping module
 ! under development (gustavo)
   real :: nu_sts=0.1
-  logical :: lsuper_time_stepping=.false.
+  logical :: lsuper_time_stepping=.false., lreset_tstart=.false.
 !
   logical :: lini_t_eq_zero=.false.
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2

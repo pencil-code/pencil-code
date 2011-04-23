@@ -452,7 +452,17 @@ module Snapshot
         else
           read(1) t_sp,x,y,z,dx,dy,dz
         endif
-        t = t_sp
+!
+!  set initial time to that of snapshot, unless
+!  this is overridden
+!
+        if (lreset_tstart) then
+          t=tstart
+        else
+          t=t_sp
+        endif
+!
+!  verify the ip, x, y, and z readings
 !
         if (ip<=3) print*,'input_snap: ip,x=',ip,x
         if (ip<=3) print*,'input_snap: y=',y

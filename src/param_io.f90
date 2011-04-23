@@ -106,7 +106,8 @@ module Param_IO
       r_ext_border, lfreeze_varsquare, lfreeze_varint, lfreeze_varext, &
       xfreeze_square, yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, &
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &
-      fshift_int, fshift_ext, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, &
+      fshift_int, fshift_ext, &
+      lreset_tstart, tstart, fbcx1, fbcx2, fbcy1, fbcy2, fbcz1, fbcz2, &
       fbcx1_2, fbcx2_2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
       Udrift_bc, ttransient, tavg, idx_tavg, lserial_io, nr_directions, &
