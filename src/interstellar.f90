@@ -1754,7 +1754,7 @@ module Interstellar
         SNRs(iSNR)%t=t
         SNRs(iSNR)%SN_type=1
         SNRs(iSNR)%radius=width_SN
-        try_count=500
+        try_count=50
 !
         do while (try_count>0)
           ierr=iEXPLOSION_OK
@@ -1799,7 +1799,7 @@ module Interstellar
 !
         if (try_count==0) then
           if (lroot) print*, &
-              "check_SNI: 500 RETRIES OCCURED - skipping SNI insertion"
+              "check_SNI: 50 RETRIES OCCURED - skipping SNI insertion"
         endif
 !
 !  Free up slots in case loop fails repeatedly over many time steps.
@@ -1835,7 +1835,7 @@ module Interstellar
         SNRs(iSNR)%t=t
         SNRs(iSNR)%SN_type=2
         SNRs(iSNR)%radius=width_SN
-        try_count=500
+        try_count=50
 !
         do while (try_count>0)
           ierr=iEXPLOSION_OK
@@ -1879,7 +1879,7 @@ module Interstellar
 !
         if (try_count==0) then
           if (lroot) print*, &
-              "check_SNIIb: 500 RETRIES OCCURED - skipping SNII insertion"
+              "check_SNIIb: 50 RETRIES OCCURED - skipping SNII insertion"
         endif
 !
 !  Free up slots in case loop fails repeatedly over many time steps.
