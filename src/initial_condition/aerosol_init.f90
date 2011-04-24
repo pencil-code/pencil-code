@@ -49,7 +49,7 @@ module InitialCondition
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real :: X_wind=impossible, spot_size=1.
      real :: AA=0.66e-4, d0=2.4e-6 !, BB0=1.5*1e-16
-     real :: dsize_min=0., dsize_max=0., r0=0. 
+     real :: dsize_min=0., dsize_max=0., r0=0., Period=2. 
      real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false., lcurved=.false.!, linit_density=.false.
@@ -60,7 +60,7 @@ module InitialCondition
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, d0, lcurved, &
-     ltanh_prof
+     ltanh_prof, Period
 !
   contains
 !***********************************************************************
@@ -99,7 +99,7 @@ module InitialCondition
 !
         if ((init_ux /=0.) .and. (nygrid>1)) then
          do i=1,my
-           f(:,i,:,iux)=cos(2.*PI*y(i)/Lxyz(2))*init_ux
+           f(:,i,:,iux)=cos(Period*PI*y(i)/Lxyz(2))*init_ux
          enddo
 !
         endif
