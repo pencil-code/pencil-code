@@ -1087,6 +1087,13 @@ module Chemistry
 !      
          else
            do k=1,nchemspec
+             !
+             ! This check can be removed once the auto-test works fine:
+             !
+             if (.not. allocated(Diff_full_add)) then
+               call inevitably_fatal_error(&
+                   'calc_pencils_chemistry', 'diff_full_add is not allocated')
+             endif
              p%Diff_penc_add(:,k)=Diff_full_add(l1:l2,m,n,k)
            enddo
          endif
