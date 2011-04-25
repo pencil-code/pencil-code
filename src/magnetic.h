@@ -25,6 +25,7 @@
   public :: lelectron_inertia, inertial_length, linertial_2
   public :: idiag_axmz,idiag_aymz
   public :: idiag_bxmz,idiag_bymz
+  public :: dynamical_resistivity
 
 !ajwm SHOULDN'T BE SHARED
 !

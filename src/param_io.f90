@@ -124,7 +124,8 @@ module Param_IO
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
-      llsode, lsplit_second, nu_sts,lsuper_time_stepping
+      llsode, lsplit_second, nu_sts,lsuper_time_stepping, &
+      ldynamical_diffusion, re_mesh
 !
   contains
 !***********************************************************************

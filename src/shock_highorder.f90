@@ -36,13 +36,10 @@ module Shock
   integer :: ishock_max=1
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
-  logical :: lfixed_Re_mesh=.false.
   real    :: div_threshold=0.
-  real    :: Re_mesh=.95
 !
   namelist /shock_run_pars/ &
-      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,div_threshold, &
-      lfixed_Re_mesh, Re_mesh
+      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,div_threshold
 ! 
   integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
   integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
@@ -515,15 +512,15 @@ module Shock
 !
 !  Scale given a fixed mesh Reynolds number or
 !
-      if (lfixed_Re_mesh) then
-        if (headtt) print *, 'Shock: fix mesh Reynolds number at ', Re_mesh
+      if (ldynamical_diffusion) then
+        if (headtt) print *, 'Shock: fix mesh Reynolds number at ', re_mesh
         if (lfirst) then
           max_loc = (/ l1-1, m1-1, n1-1 /) + maxloc(tmp(l1:l2,m1:m2,n1:n2))
           a1 = tmp(max_loc(1),max_loc(2),max_loc(3))
           call mpiallreduce_max(a1, shock_max)
           if (shock_max > 0.) then
             if (shock_max == a1) then
-              a1 = dxmax * sqrt(sum(f(max_loc(1),max_loc(2),max_loc(3),iux:iuz)**2)) / (Re_mesh * shock_max)
+              a1 = dxmax * sqrt(sum(f(max_loc(1),max_loc(2),max_loc(3),iux:iuz)**2)) / (re_mesh * shock_max)
             else
               a1 = 0.
             endif

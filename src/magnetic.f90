@@ -6985,4 +6985,27 @@ module Magnetic
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
+    subroutine dynamical_resistivity(umax)
+!
+!  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
+!
+!  22-04-11/ccyang: coded
+!
+      real, intent(in) :: umax
+!     
+      logical :: lfirst1 = .true.
+      real, save :: c0
+!
+!  Hyper-viscosity coefficient
+!
+      if (eta_hyper3 /= 0.) then
+        if (lfirst1) then
+          c0 = (dxmax / pi)**5 / re_mesh
+          lfirst1 = .false.
+        end if
+        eta_hyper3 = c0 * umax
+      end if
+!
+    endsubroutine dynamical_resistivity
+!***********************************************************************
 endmodule Magnetic

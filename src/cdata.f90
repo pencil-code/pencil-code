@@ -584,5 +584,10 @@ module Cdata
 !  the full vorticity field (see equ.f90:pde)
 !
   logical :: lparticles_prepencil_calc
+!
+!  Dynamical diffusion coefficients with fixed mesh Reynolds number.
+!
+  logical :: ldynamical_diffusion=.false.
+  real :: re_mesh=1.
 !***********************************************************************
 endmodule Cdata

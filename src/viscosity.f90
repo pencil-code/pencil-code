@@ -1604,6 +1604,29 @@ module Viscosity
 !
     endsubroutine getnu
 !***********************************************************************
+    subroutine dynamical_viscosity(umax)
+!
+!  Dynamically set viscosity coefficient given fixed mesh Reynolds number.
+!
+!  22-04-11/ccyang: coded
+!
+      real, intent(in) :: umax
+!
+      logical :: lfirst1 = .true.
+      real, save :: c0
+!
+!  Hyper-viscosity coefficient
+!
+      if (nu_hyper3 /= 0.) then
+        if (lfirst1) then
+          c0 = (dxmax / pi)**5 / re_mesh
+          lfirst1 = .false.
+        endif
+        nu_hyper3 = c0 * umax
+      end if
+!
+    endsubroutine dynamical_viscosity
+!***********************************************************************
     subroutine calc_lambda(p,div_lambda)
 !
 !  Calculates the lambda effect

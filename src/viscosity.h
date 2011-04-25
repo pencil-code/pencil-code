@@ -9,6 +9,7 @@
   public :: pencil_criteria_viscosity, pencil_interdep_viscosity
   public :: calc_pencils_viscosity
   public :: calc_visc_heat_ppd, getnu
+  public :: dynamical_viscosity
 !
 !ajwm SHOULDN'T BE SHARED
   public :: lvisc_first

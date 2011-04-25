@@ -68,7 +68,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Viscosity, only: calc_viscosity, calc_pencils_viscosity
+      use Viscosity, only: calc_viscosity, calc_pencils_viscosity, dynamical_viscosity
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
@@ -81,6 +81,7 @@ module Equ
       real, dimension(1) :: mass_per_proc
       integer :: iv
       integer :: ivar1,ivar2
+      real :: umax = 0.
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
       intent(out)    :: df, p
@@ -258,6 +259,17 @@ module Equ
 !
       if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
       if (lhyperresistivity_strict) call hyperresistivity_strict(f)
+!
+!  Dynamical diffusion coefficients
+!
+      if (lfirst .and. ldynamical_diffusion) then
+        call mpiallreduce_max(sqrt(maxval(f(l1:l2,m1:m2,n1:n2,iux)**2 &
+                                        + f(l1:l2,m1:m2,n1:n2,iuy)**2 &
+                                        + f(l1:l2,m1:m2,n1:n2,iuz)**2)), umax)
+        if (lviscosity) call dynamical_viscosity(umax)
+        if (ldensity) call dynamical_diffusion(umax)
+        if (lmagnetic) call dynamical_resistivity(umax)
+      endif
 !
 !  For calculating the pressure gradient directly from the pressure (which is
 !  derived from the basic thermodynamical variables), we need to fill in the
