@@ -329,4 +329,14 @@ module Magnetic
 !
     endsubroutine remove_mean_emf
 !***********************************************************************
+    subroutine dynamical_resistivity(umax)
+!
+!  dummy
+!
+      real, intent(in) :: umax
+!     
+      call keep_compiler_quiet(umax)
+!
+    endsubroutine dynamical_resistivity
+!***********************************************************************
 endmodule Magnetic
