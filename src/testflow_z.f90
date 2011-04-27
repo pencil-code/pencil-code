@@ -31,6 +31,7 @@ module Testflow
   use Cparam
   use Messages
   use Cdata, only : mname
+  use Diagnostics              !!, only : idiag_map
 !
   implicit none
 !
@@ -62,8 +63,8 @@ module Testflow
     module procedure update_diag2
   endinterface
 
-  integer, parameter :: njtestflow=6  !obsolete, but needed for compilation (MR)
-  integer :: njtestflow_loc=6
+!  integer, parameter :: njtestflow=6  !obsolete, but needed for compilation (MR)
+  integer :: njtestflow_loc=njtestflow
 !
 ! Slice precalculation buffers
 !
@@ -117,7 +118,8 @@ module Testflow
              lburgers_testflow=.false., &
              lprescribed_velocity=.false., &
              lremove_mean_momenta_testflow=.false., &
-             lremove_mean_enthalpy_z=.false.
+             lremove_mean_enthalpy_z=.false., &
+             lshear_as_param=.false.
 !
   character (len=labellen) :: itestflow='W11-W22'
 !
@@ -128,7 +130,8 @@ module Testflow
                                lburgers_testflow,   &    ! flag for disconnecting enthalpy(pressure) from velocity
                                lprescribed_velocity,&    ! flag for prescribed velocity, prescription via p%fcont, only effective if lkinem_testflow=.true.
                                lremove_mean_momenta_testflow, &  ! flag for removing mean momenta in 0-solution
-                               lremove_mean_enthalpy_z,&   ! flag for removing xy-mean of enthalpy in 0-solution
+                               lremove_mean_enthalpy_z,& ! flag for removing xy-mean of enthalpy in 0-solution
+                               lshear_as_param,     &    ! flag for treating of shear as a problem parameter, instead of a mean flow
                                nutest,              &    ! viscosity in testflow equations
                                nutest1,             &    ! reciprocal viscosity
                                itestflow,           &    ! name of used testflow set, legal values
@@ -165,13 +168,13 @@ module Testflow
   integer, dimension(0:njtestflow) :: idiag_upqrms=0    ! DIAG_DOC: $\left<{u^{pq}}^2\right>$
   integer, dimension(0:njtestflow) :: idiag_hpqrms=0    ! DIAG_DOC: $\left<{h^{pq}}^2\right>$
 !
-  integer :: idiag_ux0mz=0                          ! DIAG_DOC: $\left<u_{x}\right>_{xy}$
-  integer :: idiag_uy0mz=0                          ! DIAG_DOC: $\left<u_{y}\right>_{xy}$
-  integer :: idiag_uz0mz=0                          ! DIAG_DOC: $\left<u_{z}\right>_{xy}$
+  integer :: idiag_ux0mz=0                              ! DIAG_DOC: $\left<u_{x}\right>_{xy}$
+  integer :: idiag_uy0mz=0                              ! DIAG_DOC: $\left<u_{y}\right>_{xy}$
+  integer :: idiag_uz0mz=0                              ! DIAG_DOC: $\left<u_{z}\right>_{xy}$
 !
   integer :: nname_old
-  integer, dimension(mname) :: idiag_map
-
+!
+  integer :: idiag_map(100)
   contains
 !
 !***********************************************************************
@@ -478,7 +481,7 @@ module Testflow
 !
 !AXEL f(:,:,:,iuutest:iuutest+ntestflow-1)=0.
 !
-      do j=1,ninit*njtest
+      do j=1,ninit*njtestflow
 !
 !  loop over different choices of initial conditions
 !
@@ -629,12 +632,12 @@ module Testflow
 !  24-jun-08/MR: modified
 !
       use Cdata
-      use Diagnostics
       use Sub
       use Mpicomm, only: stop_it
       use density, only: glnrhomz
       use Hydro, only: uumz, guumz, traceless_strain, coriolis_cartesian, &
                        lforcing_cont_uu, ampl_fcont_uu
+      use Shear, only: shear_variables
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -647,7 +650,7 @@ module Testflow
 !
       real, dimension (nx,3) :: uutest,uufluct,del2utest,graddivutest,ghtest,ghfluct,U0testgu,ugU0test
       real, dimension (nx,3,3) :: uijfluct
-      real, dimension (nx,3) :: U0test,gU0test                      !!!MR: needless x-dimension for 0-sizes
+      real, dimension (nx,3) :: U0test,gU0test                      !!!MR: needless x-dimension for 0-quantities
       real, dimension (nx)   :: hhtest,U0ghtest,upq2,divutest, divufluct
       real :: gH0test
 !
@@ -845,7 +848,7 @@ module Testflow
 
               call div_mn( uijfluct, divufluct, uufluct )
               call traceless_strain( uijfluct, divufluct, uijfluct, uufluct )
-                                                         !this parameter without meaning in cartesian geometry
+                                                                    !this parameter without meaning in cartesian geometry
             else
 
               uijfluct = p%sij                                               ! uijfluct now contains sij !!!
@@ -891,7 +894,6 @@ module Testflow
             endif
             df(l1:l2,m,n,iuxtest:iuztest) =   df(l1:l2,m,n,iuxtest:iuztest) &
                                             + nutest*(del2utest+(1./3.)*graddivutest)
-
           endif
 
         endif
@@ -909,6 +911,11 @@ module Testflow
 !
         if ( jtest>0 .or. .not.lprescribed_velocity ) then
           call coriolis_cartesian(df,uutest,iuxtest)
+!
+! add Shear if considered a parameter
+!
+        if ( lshear .and. lshear_as_param ) &
+          call shear_variables(df,f,ntestflow,iuutest,4,.true.)
 !
 !  check for testflow timestep
 !
@@ -1121,7 +1128,6 @@ module Testflow
 !
       use Cdata
       use Sub
-      use Diagnostics
       use density, only: glnrhomz
       use Hydro, only: uumz, traceless_strain
       use Mpicomm, only: mpiallreduce_sum
@@ -1230,7 +1236,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
                 !!call multmv(uijtest,uutest,unltest)
                 call u_dot_grad(f,iuxtest,uijtest,uutest,unltest,UPWIND=ltestflow_upw_uu)       ! (u0.grad)(u0)
 
-                !!call dot_mn(uutest,ghtest,hnltest)                                            ! u0.grad(h0)
+                !!call dot_mn(uutest,ghtest,hnltest)                                            
                 if ( .not.lburgers_testflow ) &
                   call u_dot_grad(f,ihhtest,ghtest,uutest,hnltest,UPWIND=ltestflow_upw_lnrho)   ! u0.grad(h0)
 
@@ -1248,10 +1254,10 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
               if ( .not.lburgers_testflow ) then
 !
-                !!call dot_mn(uufluct,ghtest ,hnltest)                                        ! u.grad(htest)
+                !!call dot_mn(uufluct,ghtest ,hnltest)                                        
                 call u_dot_grad(f,ihhtest,ghtest,uufluct,hnltest,ltestflow_upw_lnrho)         ! u.grad(htest)
 !
-                !!call dot_mn(uutest,gh0,hnltest,.true.)                                      ! utest.grad(h0)
+                !!call dot_mn(uutest,gh0,hnltest,.true.)                                      
                 call u_dot_grad(f,iuutest+3,gh0,uutest,hnltest,ltestflow_upw_lnrho,.true.)    ! utest.grad(h0)
 !
               endif
@@ -1384,10 +1390,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         !!print*, 'unltestm, hnltestm:', minval(unltestm),maxval(unltestm), minval(hnltestm),maxval(hnltestm)
         !!if (ldiagnos) print*, 'unltestm, hnltestm:', z(n), unltestm(1,1), unltestm(2,1), unltestm(1,2), unltestm(2,2)
 
-! calculation of the coefficients
-!
-        if (ldiagnos) &
-          call calc_coeffcients(n,unltestm,hnltestm)
+        if (ldiagnos) call calc_coefficients(n,unltestm,hnltestm)
 !
         lfirstpoint=.false.
 !
@@ -1446,9 +1449,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
     endsubroutine calc_ltestflow_nonlin_terms
 !***********************************************************************
-    subroutine calc_coeffcients(indz,Fipq,Qipq)
+    subroutine calc_coefficients(indz,Fipq,Qipq)
 !
-    use Diagnostics
     use Cdata
 !
     integer, intent(in) :: indz
@@ -1518,7 +1520,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !  calculate theta-scalar
 !
           if ( idiag_theta/=0) &
-            call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_theta )         ! \theta    !!! still wrong
+            call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_theta )          ! \theta    !!! still wrong
 
         case('quadratic','quasi-periodic')
 !
@@ -1567,13 +1569,13 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           if ( idiag_kappa/=0) then
 !
             do i=1,2
-              call surf_mn_name( Qipq(i), idiag_kappa+i-1 )        ! \kappa_i
+              call surf_mn_name( Qipq(i), idiag_kappa+i-1 )                    ! \kappa_i
             enddo
 !
             if ( idiag_psi/=0) then
 !
               do i=1,2
-                call surf_mn_name( -Qipq(i+2)+Qipq(i)*z(indz), idiag_psi+i-1 )        ! \psi_i
+                call surf_mn_name( -Qipq(i+2)+Qipq(i)*z(indz), idiag_psi+i-1 ) ! \psi_i
               enddo
             endif
 !
@@ -1583,7 +1585,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
           do i=1,2
             do j=1,2
-              call surf_mn_name(Fipq(i,j),idiag_galij(i,j))          ! \gal_{ij}
+              call surf_mn_name(Fipq(i,j),idiag_galij(i,j))                   ! \gal_{ij}
             enddo
           enddo
 !
@@ -1621,7 +1623,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !      else
 !        if (idiag_aklamij(1,2)/=0) call sum_name(+cz(iz)*Fipq(1,3)+sz(indz)*Fipq(1,4),idiag_aklamij(1,2))
 !
-    endsubroutine calc_coeffcients
+    endsubroutine calc_coefficients
 !***********************************************************************
     subroutine set_uutest(uutest,jtest)
 !
@@ -1952,7 +1954,6 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !   3-jun-05/axel: adapted from rprint_magnetic
 !
       use Cdata
-      use Diagnostics
 !
       logical           :: lreset
       logical, optional :: lwrite
