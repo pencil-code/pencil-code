@@ -12,3 +12,8 @@ Recommended resolution:
     64x64 (nu=5e-3)
 Comments:
     Penetrative convection 2D-runs using a mixinglength setup.
+Reference:
+    Dintrans, Brandenburg, Nordlund & Stein: "Spectrum and amplitudes of
+    internal gravity waves excited by penetrative convection in solar-type
+    stars", A&A, 438, 365-376 (2005).
+
