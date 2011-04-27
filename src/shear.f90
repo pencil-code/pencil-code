@@ -96,7 +96,7 @@ module Shear
         endif
         Sshear_sini=Sshear*sini
       endif
-!
+
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine read_shear_init_pars(unit,iostat)
@@ -229,16 +229,19 @@ module Shear
 !  6-jul-02/axel: runs through all nvar variables; added timestep check
 ! 16-aug-02/axel: use now Sshear which is calculated in param_io.f90
 ! 20-aug-02/axel: added magnetic stretching term
+! 25-feb-11/MR:   restored shearing of testflow solutions, when demanded
+! 20-Mar-11/MR:   testflow variables now completely processed in testflow module
 !
       use Deriv, only: der
       use Diagnostics, only: max_mn_name
+      use Cparam, only: ltestflow
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: uy0,dfdy
-      integer :: j,k
+      integer :: j,k,jseg,nseg,na,ne
 !
       intent(in)  :: f
 !
@@ -256,9 +259,30 @@ module Shear
 !  Advection of all variables by shear flow.
 !
       if (.not. lshearadvection_as_shift) then
-        do j=1,nvar
-          call der(f,j,dfdy,2)
-          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
+! 
+        if ( ltestflow ) then
+!
+!  Treatment of variables in two segments necessary as 
+!  shear is potentially handled differently in testflow
+!
+          nseg = 2
+          ne = iuutest-1
+        else
+          nseg = 1
+          ne = nvar
+        endif
+
+        na=1
+        do jseg=1,nseg
+
+          do j=na,ne
+            call der(f,j,dfdy,2)
+            df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
+          enddo
+
+          na=iuutest+ntestflow
+          ne=nvar
+
         enddo
       endif
 !
@@ -322,6 +346,67 @@ module Shear
       endif
 !
     endsubroutine shearing
+!***********************************************************************
+    subroutine shear_variables(df,f,nvars,jstart,jstep,shear1)
+!
+! 20-Mar-11/MR: coded; allow shear treatment of variables in other modules
+!               jstart, jend - start and end indices of slots in df to which advection term is added
+!               jstep        - stepsize in df for selecting slots to which Langrangian shear is added;
+!                              only relevant for velocity variables, jstart corresponds to u_x;
+!                              default value: 3
+!                              = 0 : Langrangian shear is not added
+!
+      use Deriv, only: der
+
+      real, dimension(mx,my,mz,mfarray), intent(in)  :: f
+      real, dimension(mx,my,mz,mvar)   , intent(out) :: df
+
+      integer, intent(in)	    :: nvars, jstart 
+      integer, intent(in), optional :: jstep
+      logical, intent(in), optional :: shear1
+
+      integer :: j,jend,js
+      real, dimension (nx) :: uy0,dfdy
+      real :: sh
+
+      if ( .not.present(jstep) ) then
+        js = 3
+      else
+        js = jstep
+      endif
+
+      if ( .not.present(shear1) ) then
+        sh = Sshear
+      else if ( shear1 ) then
+        sh = Sshear1
+      else
+        sh = Sshear
+      endif
+
+!  Add shear (advection) term, -uy0*df/dy, for all variables.
+!
+      uy0=Sshear*(x(l1:l2)-x0_shear)
+!
+!  Advection of all variables by shear flow.
+!
+      jend = jstart+nvars-1
+
+      if (.not. lshearadvection_as_shift) then
+        do j=jstart,jend
+          call der(f,j,dfdy,2)
+          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
+        enddo
+      endif
+!
+!  Lagrangian shear of background velocity profile.
+!
+      if ( js>0 ) then
+        do j=jstart,jend,js
+          df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-sh*f(l1:l2,m,n,j)
+        enddo
+      endif
+
+    endsubroutine shear_variables  
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)
 !
