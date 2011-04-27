@@ -1,6 +1,6 @@
 !                               -*-f90-*-   (for emacs)
 !
-! Isothermal atmosphere
+! Oscillations of an entropy bubble in an isothermal atmosphere
 ! Run parameters
 !
 &run_pars
