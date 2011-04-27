@@ -1030,6 +1030,12 @@ module Grid
 !
       endif
 !
+!  Inverse volume elements
+!      
+      dVol1_x = 1./dVol_x
+      dVol1_y = 1./dVol_y
+      dVol1_z = 1./dVol_z
+!
 !  Define inner and outer radii for non-cartesian coords.
 !  If the user did not specify them yet (in start.in),
 !  these are the first point of the first x-processor,
