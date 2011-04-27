@@ -3834,7 +3834,7 @@ module Chemistry
 !  Allocate binary diffusion coefficient array
 !
       if (.not.lreloading) then
-        if (.not. lfix_Sc .and. (.not. lDiff_simple)) then
+        if (ldiffusion .and. .not. lfix_Sc) then
 !NILS: Since Bin_diff_coeff is such a huge array we must check if it
 !NILS: required to define it for the full domain!!!!!!
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
@@ -4976,7 +4976,7 @@ module Chemistry
 !
 ! Check if we use simplified version of the binary diffusion calculation
 !
-        if (ldiffusion .and. (.not. lDiff_simple)) then
+        if (ldiffusion .and. (.not. lDiff_simple) .and. (.not. lDiff_lewis)) then
 !
 !  Do non-simplified binary diffusion coefficient
 !
@@ -5044,7 +5044,7 @@ module Chemistry
           enddo
 !
       else
-        if (.not. lDiff_simple) then
+        if (.not. lDiff_simple .and. .not. lDiff_lewis) then
           Bin_Diff_coef=0.
         endif
       endif
