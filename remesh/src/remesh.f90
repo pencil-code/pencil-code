@@ -159,8 +159,7 @@ program remesh
       call safe_character_assign(file,&
           trim(datadir)//'/proc'//trim(ch)//'/'//trim(varfile))
       if (ip<8) print*,'Reading '//trim(file)
-      open(2,file=file,form='unformatted')
-
+      open(1,file=file,form='unformatted')
 !
 ! Possibility to jump here from below
 !
