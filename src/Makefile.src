@@ -1009,31 +1009,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##F77FLAGS= #(norlx50)
 ##LD_MPI=#(norlx50)
 ##
-##  norlx51 Nordita computer
-##
-#FC=g95 -fno-second-underscore #(norlx51)
-#F90FLAGS= -freal=nan -finteger=-2147483648 -fbounds-check ftrace=full -Wall -Wno=140,141,109,112,137 -Werror#(norlx51)
-#F90FLAGS= -freal=nan -finteger=-2147483648 -fbounds-check -Wall -Wno=140,141,109,112,137 -Werror#(norlx51)
-#F77=g95 #(norlx51)
-#F77FLAGS= #(norlx51)
-#LD_MPI= -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx51)
-##
-##  More stringent settings for auto-testing
-##
-#FC=g95 -fno-second-underscore -std=f95 -I/usr/lib/openmpi/include #(norlx51)
-##FC=g95 -fno-second-underscore -I/usr/lib/openmpi/include #(norlx51)
-#F77=$(FC) #(norlx51)
-#FFLAGS=-O1 -g #(norlx51)
-#FFLAGS_SLOPPY=-O1 -g -freal=nan -finteger=-2147483648 -fbounds-check -ftrace=full -Wall -Wno=140,141,109,112,137#(norlx51)
-#F90FLAGS=$(FFLAGS_SLOPPY) -Werror#(norlx51)
-#F77FLAGS=$(FFLAGS_SLOPPY)#(norlx51)
-#FFLAGS_DOUBLE=-r8#(norlx51)
-#LIBMPISUFFIX=#(norlx51)
-#CC=gcc#(norlx51)
-#CFLAGS=-O3 -Wall -DFUNDERSC=1#(norlx51)
-#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl#(norlx51)
-#FFLAGS_DOUBLE=-r8#(norlx51)
-##
 ##  Buenos Aires
 ##
 #FC=mpif90 #(caps.iafe.uba.ar)
