@@ -93,7 +93,7 @@ module Particles_number
       if (lroot) print*, 'initialize_particles_number: '// &
           'number density per particle np_swarm0=', np_swarm0
 !
-      if (.not(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
+      if (.not.(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
            'initialize_particles_number', 'particles_number only '// &
            'implemented for Cartesian equidistant grids.')
 !
