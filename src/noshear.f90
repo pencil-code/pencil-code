@@ -182,6 +182,10 @@ module Shear
 !***********************************************************************
     subroutine shear_variables(f,df,nvars,jstart)
 !
+!  Dummy routine.
+!
+!  28-apr-11/wlad: coded
+!
       real, dimension(mx,my,mz,mfarray), intent(in)  :: f
       real, dimension(mx,my,mz,mvar)   , intent(out) :: df
       integer, intent(in) :: nvars, jstart 
