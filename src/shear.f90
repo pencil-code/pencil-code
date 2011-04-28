@@ -357,11 +357,11 @@ module Shear
 !                 only relevant for velocity variables, 
 !                 jstart corresponds to u_x; default value: 3
 !                 = 0 : Langrangian shear is not added
-
+!
 ! 20-Mar-11/MR: coded
 !
       use Deriv, only: der
-
+!
       real, dimension(mx,my,mz,mfarray), intent(in)  :: f
       real, dimension(mx,my,mz,mvar)   , intent(out) :: df
 !
