@@ -365,7 +365,7 @@ module Shear
       real, dimension(mx,my,mz,mfarray), intent(in)  :: f
       real, dimension(mx,my,mz,mvar)   , intent(out) :: df
 !
-      integer, intent(in)	    :: nvars, jstart 
+      integer, intent(in) :: nvars, jstart 
       integer, intent(in), optional :: jstep
       logical, intent(in), optional :: shear1
 !
