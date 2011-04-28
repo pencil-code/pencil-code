@@ -362,8 +362,8 @@ module Shear
 !
       use Deriv, only: der
 !
-      real, dimension(mx,my,mz,mfarray), intent(in)  :: f
-      real, dimension(mx,my,mz,mvar)   , intent(out) :: df
+      real, dimension(mx,my,mz,mfarray), intent(in)    :: f
+      real, dimension(mx,my,mz,mvar)   , intent(inout) :: df
 !
       integer, intent(in) :: nvars, jstart 
       integer, intent(in), optional :: jstep
