@@ -226,7 +226,6 @@ module Dustdensity
       if (ldustdensity_log .and. ldcore) then
           ilndc=idc; ilndcj= idcj
       endif
-
 !
       if (lroot) print*, 'initialize_dustdensity: '// &
           'ldustcoagulation,ldustcondensation =', &
@@ -2324,7 +2323,7 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr, dndr_dr2, ff_tmp, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i!,nd_full_i
-      integer :: k, i, ind_tmp=6
+      integer :: k, i !, ind_tmp=6
 !
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr
