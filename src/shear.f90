@@ -96,7 +96,7 @@ module Shear
         endif
         Sshear_sini=Sshear*sini
       endif
-
+!
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine read_shear_init_pars(unit,iostat)
@@ -271,18 +271,18 @@ module Shear
           nseg = 1
           ne = nvar
         endif
-
+!
         na=1
         do jseg=1,nseg
-
+!
           do j=na,ne
             call der(f,j,dfdy,2)
             df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
           enddo
-
+!
           na=iuutest+ntestflow
           ne=nvar
-
+!
         enddo
       endif
 !
