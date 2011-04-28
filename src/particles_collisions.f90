@@ -123,6 +123,10 @@ module Particles_collisions
             'calculating collision time from friction time')
       endif
 !
+      if (.not(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
+           'initialize_particles_collisions', 'collisions only implemented '// &
+           'for Cartesian equidistant grids.')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !

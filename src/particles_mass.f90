@@ -79,6 +79,10 @@ module Particles_mass
         call get_shared_variable('rhs_poisson_const',rhs_poisson_const)
       endif
 !
+      if (.not(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
+           'initialize_particles_mass', 'particles_mass only implemented '// &
+           'for Cartesian equidistant grids.')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
