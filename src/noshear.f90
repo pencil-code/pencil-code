@@ -188,9 +188,7 @@ module Shear
 !
       real, dimension(mx,my,mz,mfarray), intent(in)  :: f
       real, dimension(mx,my,mz,mvar)   , intent(out) :: df
-      integer, intent(in) :: nvars, jstart 
-!
-      df=0.
+      integer,                           intent(in)  :: nvars, jstart 
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
