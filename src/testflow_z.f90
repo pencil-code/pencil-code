@@ -915,7 +915,7 @@ module Testflow
 ! add Shear if considered a parameter
 !
         if ( lshear .and. lshear_as_param ) &
-          call shear_variables(df,f,ntestflow,iuutest,4,.true.)
+          call shear_variables(f,df,ntestflow,iuutest,4,.true.)
 !
 !  check for testflow timestep
 !

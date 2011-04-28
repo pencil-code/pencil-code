@@ -347,34 +347,38 @@ module Shear
 !
     endsubroutine shearing
 !***********************************************************************
-    subroutine shear_variables(df,f,nvars,jstart,jstep,shear1)
+    subroutine shear_variables(f,df,nvars,jstart,jstep,shear1)
 !
-! 20-Mar-11/MR: coded; allow shear treatment of variables in other modules
-!               jstart, jend - start and end indices of slots in df to which advection term is added
-!               jstep        - stepsize in df for selecting slots to which Langrangian shear is added;
-!                              only relevant for velocity variables, jstart corresponds to u_x;
-!                              default value: 3
-!                              = 0 : Langrangian shear is not added
+!  Allow shear treatment of variables in other modules
+!  jstart, jend - start and end indices of slots in df 
+!                 to which advection term is added
+!  jstep        - stepsize in df for selecting slots to 
+!                 which Langrangian shear is added;
+!                 only relevant for velocity variables, 
+!                 jstart corresponds to u_x; default value: 3
+!                 = 0 : Langrangian shear is not added
+
+! 20-Mar-11/MR: coded
 !
       use Deriv, only: der
 
       real, dimension(mx,my,mz,mfarray), intent(in)  :: f
       real, dimension(mx,my,mz,mvar)   , intent(out) :: df
-
+!
       integer, intent(in)	    :: nvars, jstart 
       integer, intent(in), optional :: jstep
       logical, intent(in), optional :: shear1
-
+!
       integer :: j,jend,js
       real, dimension (nx) :: uy0,dfdy
       real :: sh
-
+!
       if ( .not.present(jstep) ) then
         js = 3
       else
         js = jstep
       endif
-
+!
       if ( .not.present(shear1) ) then
         sh = Sshear
       else if ( shear1 ) then
@@ -382,7 +386,7 @@ module Shear
       else
         sh = Sshear
       endif
-
+!
 !  Add shear (advection) term, -uy0*df/dy, for all variables.
 !
       uy0=Sshear*(x(l1:l2)-x0_shear)
@@ -390,7 +394,7 @@ module Shear
 !  Advection of all variables by shear flow.
 !
       jend = jstart+nvars-1
-
+!
       if (.not. lshearadvection_as_shift) then
         do j=jstart,jend
           call der(f,j,dfdy,2)
@@ -405,7 +409,7 @@ module Shear
           df(l1:l2,m,n,j+1)=df(l1:l2,m,n,j+1)-sh*f(l1:l2,m,n,j)
         enddo
       endif
-
+!
     endsubroutine shear_variables  
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)

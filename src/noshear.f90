@@ -180,6 +180,20 @@ module Shear
 !
     endsubroutine boundcond_shear
 !***********************************************************************
+    subroutine shear_variables(f,df,nvars,jstart)
+!
+      real, dimension(mx,my,mz,mfarray), intent(in)  :: f
+      real, dimension(mx,my,mz,mvar)   , intent(out) :: df
+      integer, intent(in)	    :: nvars, jstart 
+!
+      df=0.
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(nvars,jstart)
+!
+    endsubroutine shear_variables
+!***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !
 !  Dummy routine.
