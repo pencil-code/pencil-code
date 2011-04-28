@@ -1,4 +1,4 @@
-! $Id: particles_number.f90 14421 2010-07-23 23:55:02Z Bourdin.KIS $
+! $Id$
 !
 !  This module takes care of everything related to the mass represented by
 !  each (super)particle.

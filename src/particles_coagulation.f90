@@ -1,4 +1,4 @@
-! $Id: particles_collisions.f90 13730 2010-04-23 15:05:00Z sven.bingert $
+! $Id$
 !
 !  This modules takes care of instantaneous coagulation, shattering,
 !  erosion, and bouncing of superparticles.

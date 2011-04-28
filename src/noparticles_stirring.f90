@@ -1,4 +1,4 @@
-! $Id: particles_collisions.f90 15772 2010-12-30 12:53:14Z anders@astro.lu.se $
+! $Id$
 !
 !  This module takes care of stirring of particles.
 !
