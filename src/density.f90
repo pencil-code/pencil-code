@@ -134,6 +134,7 @@ module Density
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
+  integer :: idiag_grhomax=0    ! DIAG_DOC: $\max (|\nabla \varrho|)$
 !
   contains
 !***********************************************************************
@@ -216,7 +217,7 @@ module Density
 !
       if (lfargo_advection) then
         lcontinuity_gas=.false.
-        if (lroot) print*,& 
+        if (lroot) print*,&
              'initialize_density: fargo used, turned off continuity equation'
       endif
 !
@@ -515,7 +516,7 @@ module Density
         case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
         case ('invsqr')
-          do ix=1,mx 
+          do ix=1,mx
             if (x(ix)<=r0_rho) then
               f(ix,:,:,ilnrho)=0.0
             else
@@ -997,9 +998,9 @@ module Density
           f(:,:,:,ilnrho) = log(rho_const + f(:,:,:,ilnrho))
 !
         case ('linz')
-! linearly increasing with z 
-          do ix=l1,l2;do iy=m1,m2 
-            f(ix,iy,1:mz,ilnrho) = log(rho_bottom+ & 
+! linearly increasing with z
+          do ix=l1,l2;do iy=m1,m2
+            f(ix,iy,1:mz,ilnrho) = log(rho_bottom+ &
                     ((rho_top-rho_bottom)/(Lxyz(3)))*(z(1:mz)-xyz0(3)) )
           enddo;enddo
 !
@@ -1376,6 +1377,8 @@ module Density
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
+!  Diagnostic pencils.
+!
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
@@ -1385,6 +1388,7 @@ module Density
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
+      if (idiag_grhomax/=0) lpenc_diagnos(i_grho)=.true.
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -1469,7 +1473,6 @@ module Density
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
 !
       use WENO_transport
-      use Mpicomm, only: stop_it
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1540,7 +1543,6 @@ module Density
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
 !
       use WENO_transport
-      use Mpicomm, only: stop_it
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1624,7 +1626,6 @@ module Density
 !
       use Deriv, only: der6
       use Diagnostics
-      use Mpicomm, only: stop_it
       use Special, only: special_calc_density
       use Sub
       use SharedVariables, only : get_shared_variable
@@ -1769,7 +1770,7 @@ module Density
 !  diagnostics). A good value for diffrho_hyper3_mesh is 5 (which is currently
 !  the default). This method should also work in all coordinate systems.
 !
-!WL: Why should diffrho_hyper3_mesh be 5? An explanation should go in the manual. 
+!WL: Why should diffrho_hyper3_mesh be 5? An explanation should go in the manual.
 !
 !
       if (ldiff_hyper3_mesh) then
@@ -1925,6 +1926,10 @@ module Density
         if (idiag_uglnrhom/=0) call sum_mn_name(p%uglnrho,idiag_uglnrhom)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+        if (idiag_grhomax/=0) then
+          call dot2(p%grho,tmp)
+          call max_mn_name(sqrt(tmp),idiag_grhomax)
+        endif
       endif
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
@@ -2353,7 +2358,7 @@ module Density
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0
-        idiag_rhomxz=0
+        idiag_rhomxz=0; idiag_grhomax=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -2373,6 +2378,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
+        call parse_name(iname,cname(iname),cform(iname),'grhomax',idiag_grhomax)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
@@ -2606,13 +2612,13 @@ module Density
     endsubroutine anelastic_after_mn
 !***********************************************************************
     subroutine dynamical_diffusion(umax)
-!   
+!
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
-!  
+!
 !  22-04-11/ccyang: coded
-!  
+!
       real, intent(in) :: umax
-!     
+!
       logical :: lfirst1 = .true.
       real, save :: c0
 !
