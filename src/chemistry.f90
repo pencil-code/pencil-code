@@ -1066,7 +1066,7 @@ module Chemistry
            if (Diff_coef_const==impossible) Diff_coef_const=2.58e-4
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
-             if (lew_exist) p%Diff_penc_add(:,k)= p%Diff_penc_add(:,k)*Lewis_coef1(k) 
+             if (lew_exist) p%Diff_penc_add(:,k)= p%Diff_penc_add(:,k)*Lewis_coef1(k)
            enddo
 !
 !  Constant diffusion coefficients
@@ -1084,7 +1084,7 @@ module Chemistry
            enddo
 !
 !  Full diffusion coefficient case
-!      
+!
          else
            do k=1,nchemspec
              !
@@ -2979,10 +2979,10 @@ module Chemistry
               - p%ccondens
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
               + 2.5e6/1005.*p%ccondens*p%TT1
-
+!
 !print*,f(l1,m1,n1,ichemspec(index_H2O)), p%ccondens
 !print*,exp(f(l1,m1,n1,ilnTT)),2.5e6/1005.*p%ccondens,1./p%TT1
-
+!
 !
 ! this is for debuging purposes: one check that the sum of all mass fractions is 1
 !
@@ -3866,7 +3866,7 @@ module Chemistry
 !
       if (.not.lew_exist .and. lDiff_lewis .and. lroot) then
           print*, 'No lewis.dat file present, switch to simplified diffusion'
-          lDiff_lewis=.false.; lDiff_simple=.true. 
+          lDiff_lewis=.false.; lDiff_simple=.true.
       endif
 !
       if (lroot .and. .not.tran_exist .and. .not.lew_exist) then
@@ -5253,7 +5253,7 @@ module Chemistry
             do i=1,3
               gDiff_full_add(:,i)=(p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
                   *p%Diff_penc_add(:,k)
-            enddo 
+            enddo
           else
             call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
           endif
@@ -5302,14 +5302,14 @@ module Chemistry
            p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2chemspec+diff_op1)+diff_op2
            do i=1,3
             dk_D(:,i)=p%Diff_penc_add(:,k)*gchemspec(:,i)
-           enddo         
+           enddo
           else if (lFlux_simple) then
            p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(del2XX+diff_op1-diff_op3)+&
                p%mukmu1(:,k)*diff_op2
            do i=1,3
             dk_D(:,i)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*p%gXXk(:,i,k)
            enddo
-          else 
+          else
            p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(del2XX+diff_op1-diff_op3)+&
                p%mukmu1(:,k)*diff_op2+ &
                p%Diff_penc_add(:,k)*p%mukmu1(:,k)*Xk_Yk(:)*(del2lnpp+glnrho_glnpp-glnmu_glnpp)+ &
