@@ -19,6 +19,13 @@ module Particles_sub
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
+  public :: get_rhopswarm
+!
+  interface get_rhopswarm
+     module procedure get_rhopswarm_ineargrid
+     module procedure get_rhopswarm_point
+     module procedure get_rhopswarm_pencil
+  endinterface
 !
   contains
 !***********************************************************************
@@ -637,6 +644,10 @@ module Particles_sub
 !***********************************************************************
     subroutine get_particles_interdistance(xx1,xx2,vector,distance,lsquare)
 !      
+!  The name of the subroutine is pretty self-explanatory. 
+!
+!  14-mar-08/wlad: moved here from particles_nbody
+!
       real,dimension(3) :: xx1,xx2,evr
       real :: e1,e2,e3,e10,e20,e30
       real,dimension(3),optional :: vector
@@ -832,5 +843,74 @@ module Particles_sub
       endif
 !
     endsubroutine output_particle_size_dist
+!***********************************************************************
+    subroutine get_rhopswarm_ineargrid(mp_swarm_tmp,ineark,rhop_swarm_tmp)
+!     
+!  Subroutine to calculate rhop_swarm, the mass density of a single 
+!  superparticle. The fundamental quantity is actually mp_swarm, the 
+!  mass of a superparticle. From that one calculates rhop_swarm=mp_swarm/dV, 
+!  where dV is the volume of a cell. In an equidistant Cartesian grid
+!  this is simply a constant, and set in the beginning of the code. In 
+!  polar and non-equidistant grids dV varies with position such that 
+!
+!    dV = dVol_x(l) * dVol_y(m) * dVol_z(n) 
+!  
+!  This subroutine takes care of this variation, also ensuring that the 
+!  impact on equidistant Cartesian grids is minimal. 
+!
+!  Retrieves a scalar.
+!
+!  29-apr-11/wlad: coded
+!
+      integer, dimension (3), intent(in) :: ineark
+      real,    intent(in)  :: mp_swarm_tmp
+      real,    intent(out) :: rhop_swarm_tmp
+      integer  :: il,im,in
+!
+      if (lcartesian_coords.and.all(lequidist)) then
+        rhop_swarm_tmp = rhop_swarm
+      else
+        il = ineark(1) ; im = ineark(2) ; in = ineark(3) 
+        rhop_swarm_tmp = mp_swarm_tmp*dVol1_x(il)*dVol1_y(im)*dVol1_z(in)
+      endif
+!
+    endsubroutine get_rhopswarm_ineargrid
+!***********************************************************************
+    subroutine get_rhopswarm_point(mp_swarm_,il,im,in,rhop_swarm_)
+!     
+!  Same as get_rhopswarm_ineargrid, for general grid points il,im,in. 
+!  Retrieves a scalar. 
+!
+!  29-apr-11/wlad: coded
+!
+      real,    intent(in)  :: mp_swarm_tmp
+      real,    intent(out) :: rhop_swarm_tmp
+      integer, intent(in)  :: il,im,in
+!
+      if (lcartesian_coords.and.all(lequidist)) then 
+        rhop_swarm_tmp = rhop_swarm
+      else
+        rhop_swarm_tmp = mp_swarm_tmp*dVol1_x(il)*dVol1_y(im)*dVol1_z(in)
+      endif
+!
+    endsubroutine get_rhopswarm_point
+!***********************************************************************
+    subroutine get_rhopswarm_pencil(mp_swarm_tmp,im,in,rhop_swarm_tmp)
+!
+!  Same as get_rhopswarm_ineargrid, but retrieves a pencil.
+!
+!  29-apr-11/wlad: coded
+!
+      real,                intent(in)  :: mp_swarm_tmp
+      real, dimension(nx), intent(out) :: rhop_swarm_tmp
+      integer,             intent(in)  :: im,in
+!
+      if (lcartesian_coords.and.all(lequidist)) then 
+        rhop_swarm_tmp = rhop_swarm
+      else
+        rhop_swarm_tmp = mp_swarm_tmp*dVol1_x(l1:l2)*dVol1_y(im)*dVol1_z(in)
+      endif
+!
+      endsubroutine get_rhopswarm_pencil
 !***********************************************************************
 endmodule Particles_sub
