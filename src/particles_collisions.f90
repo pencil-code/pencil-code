@@ -123,8 +123,8 @@ module Particles_collisions
             'calculating collision time from friction time')
       endif
 !
-      if (.not(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
-           'initialize_particles_collisions', 'collisions only implemented '// &
+      if (.not.(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
+           'initialize_particles_collisions','collisions only implemented '// &
            'for Cartesian equidistant grids.')
 !
       call keep_compiler_quiet(f)
@@ -625,7 +625,7 @@ module Particles_collisions
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
       integer :: j,k
-!      
+!
       real, dimension (3) :: vvcm, vvkcm, vvkcmnew, vvkcm_normal, vvkcm_parall
       real, dimension (3) :: tmp1, tmp2, nvec
       real :: theta_rot, phi_rot
