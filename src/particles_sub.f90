@@ -876,7 +876,7 @@ module Particles_sub
 !
     endsubroutine get_rhopswarm_ineargrid
 !***********************************************************************
-    subroutine get_rhopswarm_point(mp_swarm_,il,im,in,rhop_swarm_)
+    subroutine get_rhopswarm_point(mp_swarm_tmp,il,im,in,rhop_swarm_tmp)
 !     
 !  Same as get_rhopswarm_ineargrid, for general grid points il,im,in. 
 !  Retrieves a scalar. 
