@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 2
 ! MPVAR CONTRIBUTION 3
 !
-! PENCILS PROVIDED np; rhop; epsp
+! PENCILS PROVIDED np; rhop; epsp; rhop_swarm
 !
 !***************************************************************
 module Particles
@@ -108,20 +108,26 @@ module Particles
 !
       real :: rhom
 !
-      if (rhop_swarm==0.0) then
+      if (rhop_swarm==0.0 .or. mp_swarm==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
         if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
-        rhop_swarm=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (rhop_swarm==0.0) &
+             rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (mp_swarm==0.0) & 
+             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
+!
       if (lroot) then
         print*, 'initialize_particles: '// &
             'mass per constituent particle mpmat=', mpmat
+        print*, 'initialize_particles: '// &
+            'mass per superparticle mp_swarm =', mp_swarm
         print*, 'initialize_particles: '// &
             'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &
@@ -304,7 +310,13 @@ module Particles
             print*, 'init_particles: drag equilibrium'
             print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
           endif
+!
+          if (.not.(lcartesian_coords.and.(all(lequidist)))) &
+               call fatal_error("init_particles","dragforce_equilibrium " //&
+               "initial condition not implemented for polar or " //&
+               "non-equidistant grids")               
 !  Calculate average dust-to-gas ratio in box.
+          
           if (ldensity_nolog) then
             eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
                 sum(f(l1:l2,m1:m2,n1:n2,irho))
@@ -386,6 +398,11 @@ module Particles
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_rhop) .and. irhop==0) then 
+        lpencil_in(i_np)=.true.
+        lpencil_in(i_rhop_swarm)=.true.
+      endif
+!
       if (lpencil_in(i_epsp)) then
         lpencil_in(i_rho)=.true.
         lpencil_in(i_rhop)=.true.
@@ -408,7 +425,8 @@ module Particles
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
+          call get_rhopswarm(mp_swarm,m,n,p%rhop_swarm)
+          p%rhop=p%rhop_swarm*p%np
         endif
       endif
 ! epsp
