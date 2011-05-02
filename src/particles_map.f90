@@ -814,13 +814,15 @@ module Particles_map
 !
 !  27-nov-05/anders: coded
 !
-      use GhostFold, only: fold_f
-      use Mpicomm,   only: stop_it
+      use GhostFold,     only: fold_f
+      use Mpicomm,       only: stop_it
+      use Particles_sub, only: get_rhopswarm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      real, dimension(nx) :: rhop_swarm_mn
       real :: weight0, weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
@@ -1014,14 +1016,10 @@ module Particles_map
         if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
         if (.not.(lparticles_radius.or.lparticles_number.or. &
             lparticles_mass)) then
-          if (lcartesian_coords) then
-            f(l1:l2,m1:m2,n1:n2,irhop)=rhop_swarm*f(l1:l2,m1:m2,n1:n2,irhop)
-          else
-            do m=m1,m2; do n=n1,n2
-              f(l1:l2,m,n,irhop)=f(l1:l2,m,n,irhop)*mp_swarm/&
-                   (dVol_x(l1:l2)*dVol_y(m)*dVol_z(n))
-            enddo; enddo
-          endif
+          do m=m1,m2; do n=n1,n2
+            call get_rhopswarm(mp_swarm,m,n,rhop_swarm_mn)
+            f(l1:l2,m,n,irhop)=rhop_swarm_mn*f(l1:l2,m,n,irhop)
+          enddo; enddo
         endif
 !        call sharpen_tsc_density(f)
       endif
@@ -1034,13 +1032,15 @@ module Particles_map
 !
 !  07-oct-08/anders: coded
 !
-      use GhostFold, only: fold_f
-      use Mpicomm,   only: stop_it
+      use GhostFold,     only: fold_f
+      use Mpicomm,       only: stop_it
+      use Particles_sub, only: get_rhopswarm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      real, dimension(nx) :: rhop_swarm_mn
       real :: weight, weight_x, weight_y, weight_z
       integer :: ivp, k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
@@ -1177,9 +1177,13 @@ module Particles_map
 !
 !  Normalize the assigned momentum by the particle density in the grid cell.
 !
-          where (f(l1:l2,m1:m2,n1:n2,irhop)/=0.0) &
-              f(l1:l2,m1:m2,n1:n2,iupx+ivp)=rhop_swarm* &
-              f(l1:l2,m1:m2,n1:n2,iupx+ivp)/f(l1:l2,m1:m2,n1:n2,irhop)
+          do m=m1,m2 ; do n=n1,n2
+            call get_rhopswarm(mp_swarm,m,n,rhop_swarm_mn)
+            where (f(l1:l2,m,n,irhop)/=0.0) 
+              f(l1:l2,m,n,iupx+ivp)=rhop_swarm_mn*&
+              f(l1:l2,m,n,iupx+ivp)/f(l1:l2,m,n,irhop)
+            endwhere
+          enddo;enddo
         enddo
 !
       endif
