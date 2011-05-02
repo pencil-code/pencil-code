@@ -87,7 +87,7 @@ module Dustdensity
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
       r0, delta, delta0, lmdvar, lmice, ldcore, d0, &
-      dsize0_min, dsize0_max, r0_core, Ntot, lnocondens_term
+      dsize0_min, dsize0_max, r0_core, Ntot, lnocondens_term, BB0
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -372,7 +372,7 @@ module Dustdensity
             enddo
           else
 !            BB0=15e-16!10.7*(2.4e-6)**2*d0
-             BB(i)=10.7*(d0)**3
+!             BB(i)=10.7*(d0)**3
             print*,'BB0= ',  BB0
           endif
 !
