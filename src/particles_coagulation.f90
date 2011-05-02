@@ -112,6 +112,10 @@ module Particles_coagulation
             four_pi_rhopmat_over_three*minimum_particle_radius**3
       endif
 !
+      if (.not.(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
+           'initialize_particles_coagulation', 'Coagulation only '// &
+           'implemented for Cartesian equidistant grids.')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
