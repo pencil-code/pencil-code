@@ -748,7 +748,8 @@ module Special
       call tensor_diffusion(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
           GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
-      if (llast_proc_z) thdiff = thdiff*(1.-cubic_step(1.*n,n2-12.,9.))
+      if (coronae_fix .and. llast_proc_z) &
+          thdiff = thdiff*(1.-cubic_step(1.*n,n2-12.,9.))
 !
 !  Add to energy equation.
       if (ltemperature) then
