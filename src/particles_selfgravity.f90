@@ -238,7 +238,8 @@ module Particles_selfgravity
 !
       real, dimension (3) :: gpotself
       real, dimension (1) :: potself
-      integer :: k
+      real :: rhop_swarm_pt
+      integer :: k, ix0, iy0, iz0
       logical :: lheader, lnbody, lfirstcall=.true.
 !
       intent (in) :: f, fp
@@ -345,7 +346,8 @@ module Particles_selfgravity
                 if (lparticles_mass) then
                   call sum_par_name(potself*fp(k,irhopswarm),idiag_potselfpm)
                 else
-                  call sum_par_name(potself*rhop_swarm,idiag_potselfpm)
+                  call get_rhopswarm(mp_swarm,ineargrid(k,:),rhop_swarm_pt)
+                  call sum_par_name(potself*rhop_swarm_pt,idiag_potselfpm)
                 endif
               endif
             endif
