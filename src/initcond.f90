@@ -1555,9 +1555,9 @@ module Initcond
         k=abs(kz)
         if (k==0) print*,'beltrami: k must not be zero!'
         cfuncz=sign(sqrt(abs(ampl/k)),kz)*&
-            real(cos(k*z+ph)+omgsqr*cos(omg*k*z+ph)+omg*cos(omgsqr*k*z+ph))
+            real(cos(k*z+ph)-omgsqr*cos(omg*k*z+ph)-omg*cos(omgsqr*k*z+ph))
         sfuncz=sign(sqrt(abs(ampl/k)),kz)*&
-            real(sin(k*z+ph)+omgsqr*sin(omg*k*z+ph)+omg*sin(omgsqr*k*z+ph))
+            real(sin(k*z+ph)-omgsqr*sin(omg*k*z+ph)-omg*sin(omgsqr*k*z+ph))
         if (present(kz2)) sfuncz=sfuncz*sin(kz2*z+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kz=',k

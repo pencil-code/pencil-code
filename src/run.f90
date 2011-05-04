@@ -588,6 +588,7 @@ program run
 !  Add forcing and/or do rescaling (if applicable).
 !
     if (lforcing) call addforce(f)
+!    if (lspecial) call special_stochastic
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
     if (lrescaling_testfield) call rescaling_testfield(f)
     if (lrescaling_testscalar) call rescaling_testscalar(f)

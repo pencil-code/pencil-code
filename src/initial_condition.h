@@ -25,3 +25,4 @@
   public ::  initial_condition_vvp
   public ::  read_initial_condition_pars
   public ::  write_initial_condition_pars
+  public ::  initial_condition_clean_up

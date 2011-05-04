@@ -998,6 +998,8 @@ module Forcing
 !
 !  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
 !  case one needs to scale by 2pi/Lx, etc.
+!DM: the previous comments seems to be wrong because we have already used
+! scale_kvector_to_box option above. Axel, what do you think ?
 !
       fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
       fy=exp(cmplx(0.,ky*k1_ff*y))

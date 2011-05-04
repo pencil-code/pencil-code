@@ -66,7 +66,7 @@ program start
   use Hyperresi_strict, only: hyperresistivity_strict
   use Hypervisc_strict, only: hyperviscosity_strict
   use Initcond
-  use InitialCondition, only: initial_condition_all
+  use InitialCondition, only: initial_condition_all, initial_condition_clean_up
   use Interstellar,     only: init_interstellar
   use IO
   use Lorenz_gauge,     only: init_lorenz_gauge
@@ -525,6 +525,7 @@ program start
 !
   call farray_clean_up()
   call sharedvars_clean_up()
+  call initial_condition_clean_up()
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.

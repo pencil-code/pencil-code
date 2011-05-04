@@ -1,64 +1,12 @@
-! $Id$
-!
-!  This module provide a way for users to specify custom initial
-!  conditions.
-!
-!  The module provides a set of standard hooks into the Pencil Code
-!  and currently allows the following customizations:
-!
-!   Description                               | Relevant function call
-!  ------------------------------------------------------------------------
-!   Initial condition registration            | register_initial_condition
-!     (pre parameter read)                    |
-!   Initial condition initialization          | initialize_initial_condition
-!     (post parameter read)                   |
-!                                             |
-!   Initial condition for momentum            | initial_condition_uu
-!   Initial condition for density             | initial_condition_lnrho
-!   Initial condition for entropy             | initial_condition_ss
-!   Initial condition for magnetic potential  | initial_condition_aa
-!                                             |
-!   Initial condition for all in one call     | initial_condition_all
-!     (called last)                           |
-!
-!   And a similar subroutine for each module with an "init_XXX" call.
-!   The subroutines are organized IN THE SAME ORDER THAT THEY ARE CALLED.
-!   First uu, then lnrho, then ss, then aa, and so on.
+! $Id: noinitial_condition.f90 15726 2010-12-22 20:34:26Z ccyang@ucolick.org $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: linitial_condition = .false.
+! CPARAM logical, parameter :: linitial_condition = .true.
 !
 !***************************************************************
-!
-! HOW TO USE THIS FILE
-! --------------------
-!
-! Change the line above to
-!    linitial_condition = .true.
-! to enable use of custom initial conditions.
-!
-! The rest of this file may be used as a template for your own initial
-! conditions. Simply fill out the prototypes for the features you want
-! to use.
-!
-! Save the file with a meaningful name, e.g. mhs_equilibrium.f90, and
-! place it in the $PENCIL_HOME/src/initial_condition directory. This
-! path has been created to allow users to optionally check their
-! contributions in to the Pencil Code SVN repository. This may be
-! useful if you are working on/using an initial condition with
-! somebody else or may require some assistance from one from the main
-! Pencil Code team. HOWEVER, less general initial conditions should
-! not go here (see below).
-!
-! You can also place initial condition files directly in the run
-! directory. Simply create the folder 'initial_condition' at the same
-! level as the *.in files and place an initial condition file there.
-! With pc_setupsrc this file is linked automatically into the local
-! src directory. This is the preferred method for initial conditions
-! that are not very general.
 !
 ! To use your additional initial condition code, edit the
 ! Makefile.local in the src directory under the run directory in which
@@ -80,11 +28,22 @@ module InitialCondition
 !
   implicit none
 !
-  include 'initial_condition.h'
+  include '../initial_condition.h'
+  integer :: mk
+  real :: kav
+  double precision, allocatable,dimension (:) :: kkx,kky,kkz
+  integer :: no_of_modes
+  real :: relhel=0.,ampluu,amplaa
+  real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
+  logical :: lheluu=.false.,lhelaa=.false.,lscale_kvector_fac,lscale_kvector_tobox
+  logical :: lkvec_allocated=.false.
+  logical, dimension (3) :: extent
 !
 !!  integer :: dummy
 !
-!!  namelist /initial_condition_pars/ dummy
+  namelist /initial_condition_pars/  &
+  no_of_modes,relhel,lheluu,lhelaa,ampluu,amplaa,scale_kvectorx,scale_kvectory,&
+  scale_kvectorz
 !
   contains
 !***********************************************************************
@@ -95,7 +54,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-         "$Id$")
+         "$Id: noinitial_condition.f90 15726 2010-12-22 20:34:26Z ccyang@ucolick.org $")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -107,7 +66,14 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)
+      call read_inputk()
+! make lhelaa etc consistent
+      if((amplaa.ne.0).and. (.not.lhelaa)) & 
+          call inevitably_fatal_error ('initialize_initial_condition:', & 
+              'amplaa nonzero but lhelaa zero')
+      if((ampluu.ne.0).and. (.not.lheluu)) & 
+          call inevitably_fatal_error ('initialize_initial_condition:', & 
+              'ampluu nonzero but lheluu zero')
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
@@ -133,9 +99,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-!  SAMPLE IMPLEMENTATION
-!
-      call keep_compiler_quiet(f)
+      if (lheluu) call generate_random_hel (f,iuu,ampluu)
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
@@ -176,9 +140,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-!  SAMPLE IMPLEMENTATION
-!
-      call keep_compiler_quiet(f)
+      if (lhelaa) call generate_random_hel(f,iaa,amplaa)
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
@@ -186,7 +148,7 @@ module InitialCondition
 !
 !  Initialize testfield.
 !
-!  07-may-09/wlad: coded
+!  04-may-11/dhruba: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -377,14 +339,13 @@ module InitialCondition
 !  this file into an initial condition, so it 
 !  is able to read the namelist.  
 !
-!!      if (present(iostat)) then
-!!        read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
-!!      else
-!!        read(unit,NML=initial_condition_pars,ERR=99)
-!!      endif
+      if (present(iostat)) then
+        read(unit,NML=initial_condition_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=initial_condition_pars,ERR=99)
+      endif
 !
-      call keep_compiler_quiet(unit)
-      call keep_compiler_quiet(present(iostat))
+99    return
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
@@ -398,17 +359,163 @@ module InitialCondition
 !  this file into an initial condition, so it 
 !  is able to write the namelist.  
 !
-!!      write(unit,NML=initial_condition_pars)
-!
-      call keep_compiler_quiet(unit)
+      write(unit,NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************
-    subroutine initial_condition_clean_up
+    subroutine read_inputk
+!
+!  read input file containg k vectors
 !
 !  04-may-11/dhruba: coded
-! dummy
-!      
+!
+      logical :: lkini_dot_dat_exists
+      integer :: ik
+!--------------------------------------------
+      inquire(FILE="kini.dat", EXIST=lkini_dot_dat_exists)
+      if (lkini_dot_dat_exists) then
+          open(9,file='kini.dat',status='old')
+          read(9,*) mk,kav
+          allocate(kkx(mk),kky(mk),kkz(mk))
+          lkvec_allocated=.true.
+          read(9,*) (kkx(ik),ik=1,mk)
+          read(9,*) (kky(ik),ik=1,mk)
+          read(9,*) (kkz(ik),ik=1,mk)
+          close(9)
+        else
+          call inevitably_fatal_error ('read_inputk:', & 
+              'you must give an input kini.dat file')
+        endif
+        extent(1)=nx/=1
+        extent(2)=ny/=1
+        extent(3)=nz/=1
+!--------------------------------------------
+    endsubroutine read_inputk
+!***********************************************************************
+    subroutine generate_random_hel (f,ivar,amp)
+!
+!  generates initial condition which is a sum of random beltrami
+! waves. Copied from forcing_hel in forcing module with minor
+! modifications. 
+!
+!  04-may-11/dhruba: coded
+!
+      use Sub
+      use General, only : random_number_wrapper
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer, intent(in) :: ivar
+      real, intent (in) :: amp
+      complex, dimension (mx) :: fx
+      complex, dimension (my) :: fy
+      complex, dimension (mz) :: fz
+      real, dimension (3) :: coef1,coef2
+      real, dimension(3) :: e1,e2,ee,kk      
+      real, dimension (2) :: fran
+      real :: phase,phi,kx,ky,kz,k2,k,force_ampl,pi_over_Lx,norm,ffnorm
+      real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
+      integer :: ikk,ik,j
+! Randomly selects nk number of modes from the mk read from the file
+! kini.dat. Then adds their contribution with random phases.  
+      do ikk=1,no_of_modes
+        call random_number_wrapper(fran)
+        phase=pi*(2*fran(1)-1.)
+        ik=mk*(.9999*fran(2))+1
+! scale the kvectors if demanded
+        if (lscale_kvector_fac) then
+          kx=kkx(ik)*scale_kvectorx
+          ky=kky(ik)*scale_kvectory
+          kz=kkz(ik)*scale_kvectorz
+          pi_over_Lx=0.5
+        elseif (lscale_kvector_tobox) then
+          kx=kkx(ik)*(2.*pi/Lxyz(1))
+          ky=kky(ik)*(2.*pi/Lxyz(2))
+          kz=kkz(ik)*(2.*pi/Lxyz(3))
+          pi_over_Lx=pi/Lxyz(1)
+        else
+          kx=kkx(ik)
+          ky=kky(ik)
+          kz=kkz(ik)
+          pi_over_Lx=0.5
+        endif
+!
+!  compute k^2 and output wavenumbers
+!
+        k2=kx**2+ky**2+kz**2
+        k=sqrt(k2)
+!
+!  Find e-vector:
+!  Start with old method (not isotropic) for now.
+!  Pick e1 if kk not parallel to ee1. ee2 else.
+!
+        if ((ky==0).and.(kz==0)) then
+          ex=0; ey=1; ez=0
+        else
+          ex=1; ey=0; ez=0
+        endif
+ !
+ !  Isotropize ee in the plane perp. to kk by
+ !  (1) constructing two basis vectors for the plane perpendicular
+ !      to kk, and
+ !  (2) choosing a random direction in that plane (angle phi)
+ !  Need to do this in order for the forcing to be isotropic.
+ !
+        kk = (/kx, ky, kz/)
+        ee = (/ex, ey, ez/)
+        call cross(kk,ee,e1)
+        call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+        call cross(kk,e1,e2)
+        call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+        call random_number_wrapper(phi); phi = phi*2*pi
+        ee = cos(phi)*e1 + sin(phi)*e2
+        ex=ee(1); ey=ee(2); ez=ee(3)
+!
+!  k.e
+!
+        call dot(kk,ee,kde)
+!
+!  k x e
+!
+        kex=ky*ez-kz*ey
+        key=kz*ex-kx*ez
+        kez=kx*ey-ky*ex
+!
+!  k x (k x e)
+!
+        kkex=ky*kez-kz*key
+        kkey=kz*kex-kx*kez
+        kkez=kx*key-ky*kex
+!
+! set the amplitude
+!
+        ffnorm=sqrt(1.+relhel**2)*k*sqrt(k2-kde**2)/sqrt(kav)
+        fact=amp/ffnorm
+!
+        fx=exp(cmplx(0.,kx*x+phase))*fact
+        fy=exp(cmplx(0.,ky*y))
+        fz=exp(cmplx(0.,kz*z))
+!
+!  prefactor; treat real and imaginary parts separately (coef1 and coef2),
+!  so they can be multiplied by different profiles below.
+!
+        coef1(1)=k*kex; coef2(1)=relhel*kkex
+        coef1(2)=k*key; coef2(2)=relhel*kkey
+        coef1(3)=k*kez; coef2(3)=relhel*kkez
+!
+        do n=n1,n2;do m=m1,m2
+          do j=1,3
+            if (extent(j)) then
+              f(l1:l2,m,n,ivar+j-1)= f(l1:l2,m,n,ivar+j-1) + &
+                  fact*real(cmplx(coef1(j),coef2(j))*fx(l1:l2)*fy(m)*fz(n))
+            endif
+          enddo
+        enddo;enddo
+!
+      enddo ! loop over ikk
+!
+    endsubroutine generate_random_hel
+!***********************************************************************
+    subroutine initial_condition_clean_up
+      if (lkvec_allocated) deallocate(kkx,kky,kkz)
     endsubroutine initial_condition_clean_up
 !***********************************************************************
 !***********************************************************************
@@ -420,6 +527,6 @@ module InitialCondition
 !**  copies dummy routines from noinitial_condition.f90 for any    **
 !**  InitialCondition routines not implemented in this file        **
 !**                                                                **
-    include 'initial_condition_dummies.inc'
+    include '../initial_condition_dummies.inc'
 !********************************************************************
 endmodule InitialCondition
