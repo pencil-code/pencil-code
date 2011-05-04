@@ -949,6 +949,34 @@ module Hydro
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
 !
+!  meridional circulation
+!
+      case ('circ_cartesian') 
+        if (headtt) print*,'just circulation'
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
+          p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
+          p%uu(:,3)=0.
+        endif
+        p%divu=0.
+        p%der6u(:,1)=wind_amp*der6_uprof
+        p%der6u(:,2)= 0.
+        p%der6u(:,3)= 0.
+!
+!  meridional circulation
+!
+      case ('circ_spherical') 
+        if (headtt) print*,'just circulation (spherical)'
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
+          p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
+          p%uu(:,3)=0.
+        endif
+        p%divu=0.
+        p%der6u(:,1)=wind_amp*der6_uprof
+        p%der6u(:,2)= 0.
+        p%der6u(:,3)= 0.
+!
 ! Radial wind+circulation
 !
       case ('radial-wind+circ') 
