@@ -239,7 +239,7 @@ module Particles_selfgravity
       real, dimension (3) :: gpotself
       real, dimension (1) :: potself
       real :: rhop_swarm_pt
-      integer :: k, ix0, iy0, iz0
+      integer :: k
       logical :: lheader, lnbody, lfirstcall=.true.
 !
       intent (in) :: f, fp
@@ -280,7 +280,7 @@ module Particles_selfgravity
 !
 !  Polynomial interpolation can lead to self acceleration of isolated particle,
 !  since one must use the same assignment and interpolation function.
-!                
+!
                 if (lroot) then
                   print*, 'dvvp_dt_selfgrav: polynomial interpolation not '// &
                           'allowed'
@@ -291,10 +291,10 @@ module Particles_selfgravity
             else
               gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
             endif
-!            
+!
 !  Possibility of switching off self-gravity for the massive n-body particles.
 !
-            if (lparticles_nbody.and.(.not.lselfgravity_nbodyparticles)) then 
+            if (lparticles_nbody.and.(.not.lselfgravity_nbodyparticles)) then
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               if (lnbody) gpotself=0
             endif
