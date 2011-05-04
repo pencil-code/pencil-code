@@ -42,7 +42,6 @@ module Particles_map
 !  30-dec-04/anders: coded
 !
       use Solid_Cells
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
@@ -87,7 +86,7 @@ module Particles_map
         print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
         print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
         print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call stop_it('interpolate_linear')
+        call fatal_error('interpolate_linear','point outside of interval')
       endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
@@ -466,8 +465,6 @@ module Particles_map
 !  23-jan-05/anders: coded
 !  08-jul-08/kapelrud: support for non-equidistant grids
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -815,7 +812,6 @@ module Particles_map
 !  27-nov-05/anders: coded
 !
       use GhostFold,     only: fold_f
-      use Mpicomm,       only: stop_it
       use Particles_sub, only: get_rhopswarm
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1033,7 +1029,6 @@ module Particles_map
 !  07-oct-08/anders: coded
 !
       use GhostFold,     only: fold_f
-      use Mpicomm,       only: stop_it
       use Particles_sub, only: get_rhopswarm
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1195,8 +1190,6 @@ module Particles_map
 !  Calculate the beginning and ending index of particles in a pencil.
 !
 !  24-apr-06/anders: coded
-!
-      use Mpicomm, only: stop_it
 !
       integer, dimension (mpar_loc,3) :: ineargrid
 !
