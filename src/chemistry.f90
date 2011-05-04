@@ -717,15 +717,6 @@ module Chemistry
       if (lreactions) lpenc_requested(i_DYDt_reac)=.true.
       lpenc_requested(i_DYDt_diff)=.true.
 !
-      if (ldiffusion) then
-        lpenc_requested(i_Diff_penc_add)=.true.
-      endif
-!
-      if (ldiffusion .and. .not.lDiff_fick) then
-        lpenc_requested(i_mukmu1)=.true.
-        lpenc_requested(i_glnmu)=.true.
-      endif
-!
        if (lcheminp) then
          lpenc_requested(i_rho)=.true.
          lpenc_requested(i_cv)=.true.
@@ -753,6 +744,14 @@ module Chemistry
          if (latmchem .or. lcloud) then
            lpenc_requested(i_ppwater)=.true.
            lpenc_requested(i_Ywater)=.true.
+         endif
+!
+         if (ldiffusion) then
+           lpenc_requested(i_Diff_penc_add)=.true.
+           if (.not.lDiff_fick) then
+             lpenc_requested(i_mukmu1)=.true.
+             lpenc_requested(i_glnmu)=.true.
+           endif
          endif
        endif
 !
@@ -963,6 +962,7 @@ module Chemistry
               endif
             enddo
           endif
+!
         endif
       endif
 !
@@ -1048,6 +1048,8 @@ module Chemistry
 !
 ! Calculate the diffusion term and the corresponding pencil
 !
+      if (lcheminp) then
+!
 ! There are 4 cases:
 ! 1) the case of simplifyed expression for the difusion coef. (Oran paper,)
 ! 2) the case of constant diffusion coefficients
@@ -1085,19 +1087,13 @@ module Chemistry
 !
 !  Full diffusion coefficient case
 !
-         else
+         else 
            do k=1,nchemspec
-             !
-             ! This check can be removed once the auto-test works fine:
-             !
-             if (.not. allocated(Diff_full_add)) then
-               call inevitably_fatal_error(&
-                   'calc_pencils_chemistry', 'diff_full_add is not allocated')
-             endif
              p%Diff_penc_add(:,k)=Diff_full_add(l1:l2,m,n,k)
            enddo
          endif
        endif
+      endif
 !
 !  More initialization of pencils
 !
@@ -3870,6 +3866,8 @@ module Chemistry
       endif
 !
       if (lroot .and. .not.tran_exist .and. .not.lew_exist) then
+        if (chem_diff == 0.) &
+            call inevitably_fatal_error('chemkin data', 'chem_diff = 0.')
         print*,'tran.dat file with transport data is not found.'
         print*,'lewis.dat file with Lewis numbers is not found.'
         print*,'Now diffusion coefficients is ',chem_diff
