@@ -19,7 +19,6 @@ module Particles_stalker
   use Messages
   use Particles_cdata
   use Particles_map
-  use Particles_sub
 !
   implicit none
 !
