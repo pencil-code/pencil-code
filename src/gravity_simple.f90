@@ -140,7 +140,7 @@ module Gravity
         if (gravx_profile == 'zero' .and. &
             gravy_profile == 'zero' .and. &
             gravz_profile == 'zero') then
-          call fatal_error('initialize_gravity', &
+          call warning('initialize_gravity', &
               'You do not need gravity_simple for zero gravity...')
         endif
       endif
