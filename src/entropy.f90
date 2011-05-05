@@ -350,7 +350,7 @@ module Entropy
 !
       if (mixinglength_flux/=0.0) then
         Fbot=mixinglength_flux
-        hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
+        hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma_inv/gravz
         hcond1 = (mpoly1+1.)/(mpoly0+1.)
         hcond2 = (mpoly2+1.)/(mpoly0+1.)
         Kbot=hcond0
@@ -962,7 +962,7 @@ module Entropy
              if (ampl_ss/=0.0) &
                  call blob(ampl_ss,f,iss,radius_ss, &
                  center1_x,center1_y,center1_z)
-             hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
+             hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma_inv/gravz
              print*,'init_ss : Fbot, hcond0=', Fbot, hcond0
           case ('sedov')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
