@@ -122,7 +122,7 @@ module Grid
 !  particle migration (see redist_particles_bounds). The select cases
 !  should use these arrays to set g{2,3}proc using the grid function.
 !
-      if (lparticles) then
+      if (lparticles .or. lsolid_cells) then
         do i=0,nprocx
           xi1proc(2*i)  =i*nx-1
           xi1proc(2*i+1)=i*nx
@@ -170,7 +170,7 @@ module Grid
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
@@ -188,7 +188,7 @@ module Grid
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
@@ -215,7 +215,7 @@ module Grid
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             b=dxi_fact(3)
             call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
@@ -239,7 +239,7 @@ module Grid
           xprim = g1der1
           xprim2= g1der2
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(xi1proc,grid_func(1),g1proc, &
               dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
             g1proc=x00+g1proc-g1lo
@@ -255,7 +255,7 @@ module Grid
           xprim =    Lx*(g1der1*a   )/2
           xprim2=    Lx*(g1der2*a**2)/2
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
             g1proc=x00+Lx*(g1proc-g1lo)/2
             g1proc(0)=g1proc(1)-x(l1+1)+x(l1)
@@ -290,7 +290,7 @@ module Grid
           xprim =    Lx*(g1der1*a   )
           xprim2=    Lx*(g1der2*a**2)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
              call fatal_error('construct_grid: non-equidistant grid', &
                   'half-duct not implemented for particles.')
 !            call grid_profile(a*xi1proc-pi/2,grid_func(1),g1proc)
@@ -434,7 +434,7 @@ module Grid
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
@@ -452,7 +452,7 @@ module Grid
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
@@ -479,7 +479,7 @@ module Grid
           yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             b=dxi_fact(3)
             call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
@@ -496,7 +496,7 @@ module Grid
           yprim =    Ly*(g2der1*a   )/2
           yprim2=    Ly*(g2der2*a**2)/2
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*xi2proc-pi/2,grid_func(2),g2proc)
             g2proc=y00+Ly*(g2proc-g2lo)/2
             g2proc(0)=g2proc(1)-y(m1+1)+y(m1)
@@ -536,7 +536,7 @@ module Grid
           yprim = g2der1
           yprim2= g2der2
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(xi2proc,grid_func(2),g2proc, &
               dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
             g2proc=y00+g2proc-g2lo
@@ -582,7 +582,7 @@ module Grid
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
           endif
@@ -600,7 +600,7 @@ module Grid
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=b)
             g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
           endif
@@ -627,7 +627,7 @@ module Grid
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             b=dxi_fact(3)
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc,param=b)
             g3proc=z00+Lz*(g3proc  -  g3lo)/(g3up-g3lo)
@@ -650,7 +650,7 @@ module Grid
           zprim = g3der1
           zprim2= g3der2
 !
-          if (lparticles) then
+          if (lparticles .or. lsolid_cells) then
             call grid_profile(xi3proc,grid_func(3),g3proc, &
               dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
             g3proc=z00+g3proc-g3lo
@@ -668,7 +668,7 @@ module Grid
 !  Compute averages across processor boundaries to calculate the physical
 !  boundaries
 !
-      if (lparticles) then
+      if (lparticles .or. lsolid_cells) then
         do i=0,nprocx
           procx_bounds(i)=(g1proc(2*i)+g1proc(2*i+1))*0.5
         enddo
