@@ -5608,7 +5608,7 @@ endsubroutine get_gravz_chit
 !
 !  17-jan-07/dintrans: coded
 !
-    use EquationOfState, only: gamma, gamma_m1, mpoly0, mpoly1, lnrho0, cs20
+    use EquationOfState, only: lnrho0
     use Sub, only: step, erfunc, interp1
 !
     integer, parameter   :: nr=100
@@ -5634,10 +5634,10 @@ endsubroutine get_gravz_chit
       u=r(i)/sqrt(2.)/wheat
       if (nzgrid == 1) then
         lumi(i)=luminosity*(1.-exp(-u**2))
-        g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
+        g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*(1.-gamma_inv)
       else
         lumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
-        g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
+        g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*(1.-gamma_inv)
       endif
     enddo
 !
