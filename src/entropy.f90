@@ -5397,7 +5397,7 @@ endsubroutine get_gravz_chit
 !
 !  Interpolate.
 !
-      lnrhobot=interp1(zz,lnrhom,nzgrid,z1,.true.)
+      lnrhobot=interp1(zz,lnrhom,nzgrid,z1,ldescending=.true.)
       rhobot=exp(lnrhobot)
 !
     endsubroutine strat_MLT
