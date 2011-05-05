@@ -5345,14 +5345,14 @@ endsubroutine get_gravz_chit
 !  equations until rho=1 at the bottom of convection zone (z=z1)
 !  see Eqs. (20-21-22) in Brandenburg et al., AN, 326 (2005)
 !
-      use EquationOfState, only: gamma, gamma_m1
+!      use EquationOfState, only: gamma, gamma_m1
       use Gravity, only: z1, z2, gravz
+      use Sub, only: interp1
 !
       real, dimension (nzgrid) :: zz, lnrhom, tempm
       real :: rhotop, zm, ztop, dlnrho, dtemp, &
               mixinglength_flux, lnrhobot, rhobot
       real :: del, delad, fr_frac, fc_frac, fc, polyad
-      integer :: nbot1, nbot2
 !
 !  Initial values at the top.
 !
@@ -5395,18 +5395,9 @@ endsubroutine get_gravz_chit
         lnrhom(iz)=lnrhom(iz-1)-dlnrho*dz
       enddo
 !
-!  Find the value of rhobot.
-!
-      do iz=1,nzgrid
-        if (zz(iz)<z1) exit
-      enddo
-      nbot1=iz-1
-      nbot2=iz
-!
 !  Interpolate.
 !
-      lnrhobot=lnrhom(nbot1)+(lnrhom(nbot2)-lnrhom(nbot1))/ &
-               (zz(nbot2)-zz(nbot1))*(z1-zz(nbot1))
+      lnrhobot=interp1(zz,lnrhom,nzgrid,z1,.true.)
       rhobot=exp(lnrhobot)
 !
     endsubroutine strat_MLT

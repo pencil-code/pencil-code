@@ -5211,28 +5211,44 @@ nameloop: do
 !
     endsubroutine get_radial_distance
 !***********************************************************************
-    function interp1(r,fr,nr,r0)
+    function interp1(r,fr,nr,r0,ldescending)
 !
 !  20-dec-07/dintrans: coded
+!  Note: if ldescending=T, then input arrays r and fr are in descending
+!  order and we first reverse them.
 !
       integer :: nr,istop,i,i1,i2
-      real, dimension (nr) :: r,fr
+      real, dimension (nr) :: r,fr,r1,fr1
       real    :: r0,interp1
+      logical, optional :: ldescending
 !
-      if (r0 == r(1)) then
-        interp1=fr(1)
+      if (present(ldescending)) then
+        if (ldescending) then
+          r1=r(nr:1:-1)
+          fr1=fr(nr:1:-1)
+        else
+          r1=r
+          fr1=fr
+        endif
+      else
+        r1=r
+        fr1=fr
+      endif
+!
+      if (r0 == r1(1)) then
+        interp1=fr1(1)
         return
-      elseif (r0 > r(nr)) then
-        interp1=fr(nr)
+      elseif (r0 > r1(nr)) then
+        interp1=fr1(nr)
         return
       else
         istop=0 ; i=1
         do while (istop /= 1)
-          if (r(i) >= r0) istop=1
+          if (r1(i) >= r0) istop=1
           i=i+1
         enddo
         i1=i-2 ; i2=i-1
-        interp1=(fr(i1)*(r(i2)-r0)+fr(i2)*(r0-r(i1)))/(r(i2)-r(i1))
+        interp1=(fr1(i1)*(r1(i2)-r0)+fr1(i2)*(r0-r1(i1)))/(r1(i2)-r1(i1))
       endif
 !
     endfunction interp1
