@@ -5607,7 +5607,7 @@ endsubroutine get_gravz_chit
 !
     integer :: i,nr
     real, dimension (nr) :: r,flux,g,lnrho,temp
-    real :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max, &
+    real :: dtemp,dlnrho,dr,rhotop,rhobot,lnrhobot, &
             polyad,delad,fr_frac,fc_frac,fc,del,Rgas
 !
 !  Needed for computing a MLT stratification.
