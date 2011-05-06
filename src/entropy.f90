@@ -70,7 +70,7 @@ module Entropy
   real, target :: T0hs=impossible
   real, dimension(mx), target :: zrho
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
-  real :: xbot=0.0, xtop=0.0
+  real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -132,7 +132,8 @@ module Entropy
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
       tau_cool_ss, &
       TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, &
-      rho0ts, T0hs, lconvection_gravx, Fbot, hcond0_kramers, nkramers
+      rho0ts, T0hs, lconvection_gravx, Fbot, hcond0_kramers, nkramers, &
+      alpha_MLT
 !
 !  Run parameters.
 !
@@ -5485,17 +5486,39 @@ endsubroutine get_gravz_chit
     real, dimension (mx,my,mz,mfarray), intent(inout) :: f
     integer, parameter   :: nr=100
     integer              :: i,l,iter
-    real, dimension (nr) :: r,lnrho,temp,hcond
-    real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,g
+    real, dimension (nr) :: r,lnrho,temp,hcond,g,flux
+    real                 :: u,r_mn,lnrho_r,temp_r,cs2,ss,lumi,Rgas
     real                 :: rhotop, rbot,rt_old,rt_new,rhobot,rb_old,rb_new,crit,r_max
 !
-!  Uncomment to force rhotop=rho0 and just compute the corresponding setup.
+!  Define the radial grid r=[0,r_max] and needed radial profiles.
 !
-!   rhotop=rho0
-!   call strat_heat(lnrho,temp,rhotop,rhobot)
-!   goto 20
+      if (nzgrid == 1) then
+        r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
+      else
+        r_max=sqrt(xyz1(1)**2+xyz1(2)**2+xyz1(3)**2)
+      endif
+      do i=1,nr
+        r(i)=r_max*float(i-1)/(nr-1)
+        u=r(i)/sqrt(2.)/wheat
+        if (i==1) then
+          flux(1)=0.
+        else
+          if (nzgrid==1) then
+            lumi=luminosity*(1.-exp(-u**2))
+            flux(i)=lumi/(2.*pi*r(i))
+          else
+            lumi=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
+            flux(i)=lumi/(4.*pi*r(i)**2)
+          endif
+        endif
+      enddo
+      Rgas=1.-gamma_inv
+      g=-flux*Rgas*(mpoly0+1.)/hcond0
+      hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
+              +(hcond2-1.)*step(r,r_ext,widthss)
+      hcond=hcond0*hcond
 !
-!  The bottom value that we want for density at r=r_bcz, actually given by rho0.
+!  The bottom value we want for density at r=r_bcz, actually given by rho0.
 !
     rbot=rho0
     rt_old=0.1*rbot
@@ -5505,13 +5528,13 @@ endsubroutine get_gravz_chit
 !  Produce first estimate.
 !
     rhotop=rt_old
-    call strat_heat(lnrho,temp,rhotop,rhobot)
+    call strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
     rb_old=rhobot
 !
 !  Next estimate.
 !
     rhotop=rt_new
-    call strat_heat(lnrho,temp,rhotop,rhobot)
+    call strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
     rb_new=rhobot
 !
     do 10 iter=1,10
@@ -5522,14 +5545,12 @@ endsubroutine get_gravz_chit
 !
       crit=abs(rhotop/rt_new-1.)
       if (crit<=1e-4) goto 20
-      call strat_heat(lnrho,temp,rhotop,rhobot)
+      call strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
 !
 !  Update new estimates.
 !
-      rt_old=rt_new
-      rb_old=rb_new
-      rt_new=rhotop
-      rb_new=rhobot
+      rt_old=rt_new ; rb_old=rb_new
+      rt_new=rhotop ; rb_new=rhobot
  10 continue
  20 print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
@@ -5540,21 +5561,11 @@ endsubroutine get_gravz_chit
       T0=cs20/gamma_m1
       print*,'final rho0, lnrho0, T0=',rho0, lnrho0, T0
 !
-!  Define the radial grid r=[0,r_max].
-!
-      if (nzgrid == 1) then
-        r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
-      else
-        r_max=sqrt(xyz1(1)**2+xyz1(2)**2+xyz1(3)**2)
-      endif
-      do i=1,nr
-        r(i)=r_max*float(i-1)/(nr-1)
-      enddo
+!  Compute rho and ss arrays from interpolations.
 !
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-!
         do l=l1,l2
           if (nzgrid == 1) then
             r_mn=sqrt(x(l)**2+y(m)**2)
@@ -5570,38 +5581,21 @@ endsubroutine get_gravz_chit
       enddo
 !
       if (lroot) then
-        hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
-                +(hcond2-1.)*step(r,r_ext,widthss)
-        hcond=hcond0*hcond
         print*,'--> writing initial setup to data/proc0/setup.dat'
         open(unit=11,file=trim(directory)//'/setup.dat')
         write(11,'(a1,a5,5a14)') '#','r','rho','ss','cs2','grav','hcond'
         do i=nr,1,-1
-          u=r(i)/sqrt(2.)/wheat
-          if (nzgrid == 1) then
-            lumi=luminosity*(1.-exp(-u**2))
-          else
-            lumi=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
-          endif
-          if (r(i) /= 0.) then
-            if (nzgrid == 1) then
-              g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*(1.-gamma_inv)
-            else
-              g=-lumi/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*(1.-gamma_inv)
-            endif
-          else
-            g=0.
-          endif
           call get_soundspeed(log(temp(i)),cs2)
           call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
-          write(11,'(f6.3,4e14.5,1pe14.5)') r(i),exp(lnrho(i)),ss,cs2,g,hcond(i)
+          write(11,'(f6.3,4e14.5,1pe14.5)') r(i),exp(lnrho(i)),ss, &
+          cs2,g(i),hcond(i)
         enddo
         close(11)
       endif
 !
     endsubroutine star_heat
 !***********************************************************************
-    subroutine strat_heat(lnrho,temp,rhotop,rhobot)
+    subroutine strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
 !
 !  Compute the radial stratification for two superposed polytropic
 !  layers and a central heating.
@@ -5611,43 +5605,18 @@ endsubroutine get_gravz_chit
     use EquationOfState, only: lnrho0
     use Sub, only: step, erfunc, interp1
 !
-    integer, parameter   :: nr=100
-    integer              :: i
-    real, dimension (nr) :: r,lumi,hcond,g,lnrho,temp
-    real                 :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max
+    integer :: i,nr
+    real, dimension (nr) :: r,flux,g,hcond,lnrho,temp
+    real :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max, &
+            polyad,delad,fr_frac,fc_frac,fc,del,Rgas
 !
-!  Define the radial grid r=[0,r_max].
+!  Needed for computing a MLT stratification.
 !
-    if (nzgrid == 1) then
-      r_max=sqrt(xyz1(1)**2+xyz1(2)**2)
-    else
-      r_max=sqrt(xyz1(1)**2+xyz1(2)**2+xyz1(3)**2)
-    endif
-    do i=1,nr
-      r(i)=r_max*float(i-1)/(nr-1)
-    enddo
-!
-!  Luminosity and gravity radial profiles.
-!
-    lumi(1)=0. ; g(1)=0.
-    do i=2,nr
-      u=r(i)/sqrt(2.)/wheat
-      if (nzgrid == 1) then
-        lumi(i)=luminosity*(1.-exp(-u**2))
-        g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*(1.-gamma_inv)
-      else
-        lumi(i)=luminosity*(erfunc(u)-2.*u/sqrt(pi)*exp(-u**2))
-        g(i)=-lumi(i)/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*(1.-gamma_inv)
-      endif
-    enddo
-!
-!  Radiative conductivity profile.
-!
-    hcond1=(mpoly1+1.)/(mpoly0+1.)
-    hcond2=(mpoly2+1.)/(mpoly0+1.)
-    hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
-            +(hcond2-1.)*step(r,r_ext,widthss)
-    hcond=hcond0*hcond
+    polyad=1./gamma_m1
+    delad=1.-gamma_inv
+    fr_frac=delad*(mpoly0+1.)
+    fc_frac=1.-fr_frac
+    Rgas=1.-gamma_inv
 !
 !  Start from surface values for rho and temp.
 !
@@ -5656,34 +5625,24 @@ endsubroutine get_gravz_chit
     do i=nr-1,1,-1
       if (r(i+1) > r_ext) then
 !
-!  Isothermal exterior.
+!  Isothermal exterior for r > r_ext.
 !
         dtemp=0.
         dlnrho=-gamma*g(i+1)/cs20
       elseif (r(i+1) > r_bcz) then
 !
-!  Convective zone.
+!  Convection zone for r_bcz < r < r_ext: MLT solution if alpha_MLT/=0.
 !
-!       if (nzgrid == 1) then
-!         dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
-!       else
-!         dtemp=lumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
-!       endif
-!       dlnrho=mpoly0*dtemp/temp(i+1)
-!
-!  Force adiabatic stratification with m0=3/2 (assume cp=1).
-!
-        dtemp=-g(i+1)
-        dlnrho=3./2.*dtemp/temp(i+1)
+        fc=fc_frac*flux(i+1)
+        del=delad+alpha_MLT*(fc/ &
+                (exp(lnrho(i+1))*(gamma_m1*temp(i+1))**1.5))**.6666667
+        dtemp=-g(i+1)/Rgas*del
+        dlnrho=-g(i+1)/(Rgas*temp(i+1))*(1.-del)
       else
 !
-!  Radiative zone.
+!  Radiative zone for r < r_bcz.
 !
-        if (nzgrid == 1) then
-          dtemp=lumi(i+1)/(2.*pi*r(i+1))/hcond(i+1)
-        else
-          dtemp=lumi(i+1)/(4.*pi*r(i+1)**2)/hcond(i+1)
-        endif
+        dtemp=flux(i+1)/hcond(i+1)
         dlnrho=mpoly1*dtemp/temp(i+1)
       endif
       temp(i)=temp(i+1)+dtemp*dr
@@ -5694,7 +5653,6 @@ endsubroutine get_gravz_chit
 !
     lnrhobot=interp1(r,lnrho,nr,r_bcz)
     rhobot=exp(lnrhobot)
-    print*, 'find rhobot=', rhobot
 !
     endsubroutine strat_heat
 !***********************************************************************
