@@ -5514,11 +5514,8 @@ endsubroutine get_gravz_chit
       enddo
       Rgas=1.-gamma_inv
       g=-flux*Rgas*(mpoly0+1.)/hcond0
-      hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
-              +(hcond2-1.)*step(r,r_ext,widthss)
-      hcond=hcond0*hcond
 !
-!  The bottom value we want for density at r=r_bcz, actually given by rho0.
+!  The bottom density value we want at r=r_bcz, actually given by rho0.
 !
     rbot=rho0
     rt_old=0.1*rbot
@@ -5528,13 +5525,13 @@ endsubroutine get_gravz_chit
 !  Produce first estimate.
 !
     rhotop=rt_old
-    call strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
+    call strat_heat(nr,r,flux,g,lnrho,temp,rhotop,rhobot)
     rb_old=rhobot
 !
 !  Next estimate.
 !
     rhotop=rt_new
-    call strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
+    call strat_heat(nr,r,flux,g,lnrho,temp,rhotop,rhobot)
     rb_new=rhobot
 !
     do 10 iter=1,10
@@ -5545,7 +5542,7 @@ endsubroutine get_gravz_chit
 !
       crit=abs(rhotop/rt_new-1.)
       if (crit<=1e-4) goto 20
-      call strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
+      call strat_heat(nr,r,flux,g,lnrho,temp,rhotop,rhobot)
 !
 !  Update new estimates.
 !
@@ -5581,6 +5578,9 @@ endsubroutine get_gravz_chit
       enddo
 !
       if (lroot) then
+        hcond=1.+(hcond1-1.)*step(r,r_bcz,-widthss) &
+                +(hcond2-1.)*step(r,r_ext,widthss)
+        hcond=hcond0*hcond
         print*,'--> writing initial setup to data/proc0/setup.dat'
         open(unit=11,file=trim(directory)//'/setup.dat')
         write(11,'(a1,a5,5a14)') '#','r','rho','ss','cs2','grav','hcond'
@@ -5595,7 +5595,7 @@ endsubroutine get_gravz_chit
 !
     endsubroutine star_heat
 !***********************************************************************
-    subroutine strat_heat(nr,r,flux,g,hcond,lnrho,temp,rhotop,rhobot)
+    subroutine strat_heat(nr,r,flux,g,lnrho,temp,rhotop,rhobot)
 !
 !  Compute the radial stratification for two superposed polytropic
 !  layers and a central heating.
@@ -5606,7 +5606,7 @@ endsubroutine get_gravz_chit
     use Sub, only: step, erfunc, interp1
 !
     integer :: i,nr
-    real, dimension (nr) :: r,flux,g,hcond,lnrho,temp
+    real, dimension (nr) :: r,flux,g,lnrho,temp
     real :: dtemp,dlnrho,dr,u,rhotop,rhobot,lnrhobot,r_max, &
             polyad,delad,fr_frac,fc_frac,fc,del,Rgas
 !
@@ -5627,8 +5627,7 @@ endsubroutine get_gravz_chit
 !
 !  Isothermal exterior for r > r_ext.
 !
-        dtemp=0.
-        dlnrho=-gamma*g(i+1)/cs20
+        del=0.
       elseif (r(i+1) > r_bcz) then
 !
 !  Convection zone for r_bcz < r < r_ext: MLT solution if alpha_MLT/=0.
@@ -5636,15 +5635,14 @@ endsubroutine get_gravz_chit
         fc=fc_frac*flux(i+1)
         del=delad+alpha_MLT*(fc/ &
                 (exp(lnrho(i+1))*(gamma_m1*temp(i+1))**1.5))**.6666667
-        dtemp=-g(i+1)/Rgas*del
-        dlnrho=-g(i+1)/(Rgas*temp(i+1))*(1.-del)
       else
 !
 !  Radiative zone for r < r_bcz.
 !
-        dtemp=flux(i+1)/hcond(i+1)
-        dlnrho=mpoly1*dtemp/temp(i+1)
+        del=1./(mpoly1+1.)
       endif
+      dtemp=-g(i+1)/Rgas*del
+      dlnrho=-g(i+1)/(Rgas*temp(i+1))*(1.-del)
       temp(i)=temp(i+1)+dtemp*dr
       lnrho(i)=lnrho(i+1)+dlnrho*dr
     enddo
