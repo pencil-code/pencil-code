@@ -549,7 +549,7 @@ module Entropy
 !
 !  Compute the gravity profile inside the star.
 !
-          star_cte=(mpoly0+1.)/hcond0*gamma_m1/gamma
+          star_cte=(mpoly0+1.)/hcond0*(1.-gamma_inv)
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
         case ('cylind_layers')
@@ -5585,9 +5585,9 @@ endsubroutine get_gravz_chit
           endif
           if (r(i) /= 0.) then
             if (nzgrid == 1) then
-              g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma
+              g=-lumi/(2.*pi*r(i))*(mpoly0+1.)/hcond0*(1.-gamma_inv)
             else
-              g=-lumi/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*gamma_m1/gamma
+              g=-lumi/(4.*pi*r(i)**2)*(mpoly0+1.)/hcond0*(1.-gamma_inv)
             endif
           else
             g=0.
