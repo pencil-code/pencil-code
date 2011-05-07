@@ -127,7 +127,7 @@ module Particles
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
       rhopmat, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1, &
-      xp2, yp2, zp2, vpx2, vpy2, vpz2
+      xp2, yp2, zp2, vpx2, vpy2, vpz2, lsinkparticle_1, rsinkparticle_1
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -154,7 +154,8 @@ module Particles
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
-      loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist
+      loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
+      lsinkparticle_1, rsinkparticle_1
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -2946,14 +2947,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-sep-08/anders: coded
 !
+      use Mpicomm
       use Solid_Cells
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
-      real :: rp
-      integer :: k
+      real, dimension(3) :: momp_swarm_removed, momp_swarm_removed_send
+      real :: rp, rhop_swarm_removed, rhop_swarm_removed_send
+      real :: xsinkpar, ysinkpar, zsinkpar
+      integer :: k, ksink, iproc_sink, iproc_sink_send
+      integer, parameter :: itag1=100, itag2=101
 !
       if (lsinkpoint) then
         k=1
@@ -2966,6 +2971,92 @@ k_loop:   do while (.not. (k>npar_loc))
             k=k+1
           endif
         enddo
+      endif
+!
+      if (lsinkparticle_1) then
+!
+!  Search for position of particle with index 1.
+!
+        xsinkpoint=0.0
+        ysinkpoint=0.0
+        zsinkpoint=0.0
+        iproc_sink=-1
+        do k=1,npar_loc
+          if (ipar(k)==1) then
+            ksink=k
+            iproc_sink=iproc
+            xsinkpar=fp(k,ixp)
+            ysinkpar=fp(k,iyp)
+            zsinkpar=fp(k,izp)
+          endif
+        enddo
+!
+!  Communicate position of sink particle to all processors.
+!
+        iproc_sink_send=iproc_sink
+        call mpireduce_max_int(iproc_sink_send,iproc_sink)
+        call mpibcast_int(iproc_sink)
+        call mpibcast_real(xsinkpar,proc=iproc_sink)
+        call mpibcast_real(ysinkpar,proc=iproc_sink)
+        call mpibcast_real(zsinkpar,proc=iproc_sink)
+!
+!  Remove particle that are too close to sink particle.
+!
+        if (lparticles_mass) then
+          rhop_swarm_removed=0.0
+          momp_swarm_removed=0.0
+        endif
+!
+        do k=1,npar_loc
+          rp=sqrt((fp(k,ixp)-xsinkpar)**2+(fp(k,iyp)-ysinkpar)**2+ &
+             (fp(k,izp)-zsinkpar)**2)
+          if (ipar(k)/=1 .and. rp<rsinkparticle_1) then
+            if (lparticles_mass) then
+              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm) 
+              momp_swarm_removed = momp_swarm_removed + &
+                  fp(k,ivpx:ivpz)*fp(k,irhopswarm)
+              if (lshear) then
+                momp_swarm_removed(2) = momp_swarm_removed(2) + &
+                    Sshear*fp(k,ixp)*fp(k,irhopswarm)
+              endif
+            endif
+            call remove_particle(fp,ipar,k,dfp,ineargrid)
+          endif
+        enddo
+!
+!  Add mass and momentum to sink particle.
+!
+        if (lparticles_mass) then
+          rhop_swarm_removed_send=rhop_swarm_removed
+          momp_swarm_removed_send=momp_swarm_removed
+          call mpireduce_sum(rhop_swarm_removed_send,rhop_swarm_removed)
+          call mpireduce_sum(momp_swarm_removed_send,momp_swarm_removed,3)
+          if (lroot) then
+            call mpisend_real(rhop_swarm_removed,1,iproc_sink,itag1)
+            call mpisend_real(momp_swarm_removed,3,iproc_sink,itag2)
+          endif
+          if (iproc==iproc_sink) then
+            call mpirecv_real(rhop_swarm_removed,1,0,itag1)
+            call mpirecv_real(momp_swarm_removed,3,0,itag2)
+            if (lshear) then
+              fp(ksink,ivpx) = (fp(ksink,ivpx)* &
+                  fp(ksink,irhopswarm) + momp_swarm_removed(1))/ &
+                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
+              fp(ksink,ivpy) = ((fp(ksink,ivpy)+Sshear*fp(ksink,ixp))* &
+                  fp(ksink,irhopswarm) + momp_swarm_removed(2))/ &
+                  (fp(ksink,irhopswarm) + rhop_swarm_removed) - &
+                  Sshear*fp(ksink,ixp)
+              fp(ksink,ivpz) = (fp(ksink,ivpz)* &
+                  fp(ksink,irhopswarm) + momp_swarm_removed(3))/ &
+                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
+            else
+              fp(ksink,ivpx:ivpz) = (fp(ksink,ivpx:ivpz)* &
+                  fp(ksink,irhopswarm) + momp_swarm_removed)/ &
+                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
+            endif
+            fp(ksink,irhopswarm) = fp(ksink,irhopswarm) + rhop_swarm_removed
+          endif
+        endif
       endif
 !
 !  Remove particles if they are within a solid geometry
