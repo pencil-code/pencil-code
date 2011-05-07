@@ -165,6 +165,7 @@ module Particles
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
+  integer :: idiag_rhopvpysm=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
@@ -2384,6 +2385,16 @@ k_loop:   do while (.not. (k>npar_loc))
                 fp(1:npar_loc,ivpz), idiag_rhopvpzm)
           endif
         endif
+        if (idiag_rhopvpysm/=0) then
+          if (lparticles_mass) then
+            call sum_par_name(fp(1:npar_loc,irhopswarm)* &
+                Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
+                Sshear*fp(1:npar_loc,ixp),idiag_rhopvpysm)
+          endif
+        endif
         if (idiag_mpt/=0) then
           do k=1,npar_loc
             if (lparticles_number) np_swarm=fp(k,inpswarm)
@@ -4261,7 +4272,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0; idiag_vpmax=0
-        idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0
+        idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0; idiag_rhopvpysm=0
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
         idiag_lpx2m=0; idiag_lpy2m=0; idiag_lpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
@@ -4317,6 +4328,8 @@ k_loop:   do while (.not. (k>npar_loc))
             idiag_rhopvpym)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
             idiag_rhopvpzm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
+            idiag_rhopvpysm)
         call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
         call parse_name(iname,cname(iname),cform(iname),'lpym',idiag_lpym)
         call parse_name(iname,cname(iname),cform(iname),'lpzm',idiag_lpzm)
