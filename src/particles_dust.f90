@@ -3030,9 +3030,15 @@ k_loop:   do while (.not. (k>npar_loc))
             iz1=0; iz2=0
           endif
           do iz=iz1,iz2; do iy=iy1,iy2; do ix=ix1,ix2
-            rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
-                        (fp(k,iyp)+Ly*iy-ysinkpar)**2+ &
-                        (fp(k,izp)+Lz*iz-zsinkpar)**2)
+            if (lshear) then
+              rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
+                          (fp(k,iyp)+Ly*iy-deltay*ix-ysinkpar)**2+ &
+                          (fp(k,izp)+Lz*iz-zsinkpar)**2)
+            else
+              rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
+                          (fp(k,iyp)+Ly*iy-ysinkpar)**2+ &
+                          (fp(k,izp)+Lz*iz-zsinkpar)**2)
+            endif
             if (rp<0.0) then
               rp=rp_box
             else
