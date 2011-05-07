@@ -818,13 +818,18 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 	if (n_elements (scaling) eq 0) then scaling = 1
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
+	if (n_elements (coords) ge 1) then coord = coords
 
 	; setup limits, if necessary
 	if (n_elements (limits) eq 0) then begin
+		if (n_elements (coord) eq 0) then begin
+			print, "Please either provide the limits parameter or the coordinate system."
+			stop
+		end
 		dims = size (varsets.(0))
-		nghost_x = (dims[1] - (size (coord.x))[1]) / 2
-		nghost_y = (dims[2] - (size (coord.y))[1]) / 2
-		nghost_z = (dims[3] - (size (coord.z))[1]) / 2
+		nghost_x = (dims[1] - (size (coords.x))[1]) / 2
+		nghost_y = (dims[2] - (size (coords.y))[1]) / 2
+		nghost_z = (dims[3] - (size (coords.z))[1]) / 2
 		num_x = dims[1] - 2*nghost_x
 		num_y = dims[2] - 2*nghost_y
 		num_z = dims[3] - 2*nghost_z
@@ -832,6 +837,20 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	end
 
 	cut = reform (limits, (size (limits))[1], (size (limits))[2], (size (limits))[3])
+
+	; setup coordinate system, if necessary
+	if (n_elements (coord) eq 0) then begin
+		print, "WARNING: setting the pixel size to default length."
+		if ((n_elements (num_x) eq 0) or (n_elements (num_y) eq 0) or (n_elements (num_z) eq 0)) then begin
+			print, "Please either provide the limits parameter or set up num_x, num_y, and num_z."
+			stop
+		end
+		dims = size (varsets.(0))
+		nghost_x = (dims[1] - num_x) / 2
+		nghost_y = (dims[2] - num_y) / 2
+		nghost_z = (dims[3] - num_z) / 2
+		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, nx:num_x, ny:num_y, nz:num_z, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1 }
+	end
 
 	wimg_yz = !d.window
 	wimg_xz = !d.window
@@ -870,13 +889,6 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	bin_x = scaling[0]
 	bin_y = scaling[1]
 	bin_z = scaling[2]
-
-	if (n_elements (coords) ge 1) then begin
-		coord = { x:coords.x*unit.length, y:coords.y*unit.length, z:coords.z*unit.length }
-	end else begin
-		print, "WARNING: setting the pixel size to unit length."
-		coord = { x:findgen(num_x)*unit.length, y:findgen(num_y)*unit.length, z:findgen(num_z)*unit.length }
-	end
 
 
 	px = num_x / 2

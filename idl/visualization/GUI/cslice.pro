@@ -25,7 +25,7 @@ pro cslice, cube, limits, units=units, coords=coords, scaling=scaling
 	; setup a scaling factor to have a minimum size, if necessary
 	dim = size (cube)
 	default, scaling, fix (256 / max (dim[1:3]))
-	if (n_elements (scaling) eq 1) then if (scaling lt 1) then scaling = 1
+	if (any (scaling lt (1.0 / min (dim[1:3])))) then scaling = 1.0 / min (dim[1:3])
 
 	; setup cube dimensions
 	num_x = (size (cube))[1]

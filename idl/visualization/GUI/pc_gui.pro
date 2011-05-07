@@ -109,6 +109,20 @@ default, crashfile, 'crash.dat'
 default, datadir, pc_get_datadir()
 
 
+;;;
+;;; Default technical parameters
+;;;
+default, pre_allocate_memory, 1
+default, data_reduction, 1.0
+if (n_elements (data_reduction) eq 1) then data_reduction = replicate (data_reduction, 3)
+if (any (data_reduction lt 1.0)) then begin
+	print, "Reset data reduction factor to 1.0, must not be smaller."
+	print, "(Type .c to continue.)"
+	stop
+	data_reduction = data_reduction > 1.0
+end
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; MAIN PROGRAM:
 
@@ -116,10 +130,10 @@ default, pc_gui_loaded, 0
 
 if (not pc_gui_loaded) then BEGIN
 
-	procdir = datadir+"/proc0/"
+	procdir = datadir+"/allprocs/"
 	file_struct = file_info (procdir+varfile)
 	if (file_struct.exists eq 0) then begin
-		procdir = datadir+"/allprocs/"
+		procdir = datadir+"/proc0/"
 		file_struct = file_info (procdir+varfile)
 		if (file_struct.exists eq 0) then begin
 			print, "No '"+varfile+"' file found."
@@ -127,8 +141,7 @@ if (not pc_gui_loaded) then BEGIN
 		endif
 	endif
 
-	file_struct = file_info (procdir+crashfile)
-	if (file_struct.exists) then begin
+	if ((file_info (procdir+crashfile)).exists) then begin
 		print, "A '"+crashfile+"' exists, do you want to load it instead of '"+varfile+"'?"
 		repeat begin
 			answer = "y"
@@ -149,6 +162,9 @@ if (not pc_gui_loaded) then BEGIN
 	nx = dim.mx - 2*nghost_x
 	ny = dim.my - 2*nghost_y
 	nz = dim.mz - 2*nghost_z
+	disp_size_x = round ((dim.mx - 2*dim.nghostx) / data_reduction[0]) > 1
+	disp_size_y = round ((dim.my - 2*dim.nghosty) / data_reduction[1]) > 1
+	disp_size_z = round ((dim.mz - 2*dim.nghostz) / data_reduction[2]) > 1
 
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
 	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
@@ -238,16 +254,21 @@ if (not pc_gui_loaded) then BEGIN
 	pc_units, obj=unit, datadir=datadir
 	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
 	pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
-	coords = { x:grid.x/default_length, y:grid.y/default_length, z:grid.z/default_length }
 
-	time_series = file_search (datadir, "time_series.dat")
-	if ((n_elements (dt) le 0) and (strlen (time_series[0]) gt 0)) then pc_read_ts, obj=ts, datadir=datadir, /quiet
+	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
+
+	if ((n_elements (dt) le 0) and (file_info (datadir+"/time_series.dat")).exists)) then pc_read_ts, obj=ts, datadir=datadir, /quiet
 	show_timeseries, ts, tags, units
 
 
 	print, "Allocating memory..."
-	dummy = dindgen (dim.mx, dim.my, dim.mz)
-	dummy_3D = findgen (dim.mx, dim.my, dim.mz, 3)
+	if (pre_allocate_memory) then begin
+		dummy = dindgen (coords.nx, coords.ny, coords.nz)
+		dummy_3D = findgen (coords.nx, coords.ny, coords.nz, 3)
+	end else begin
+		dummy = 0.0
+		dummy_3D = 0.0
+	end
 
 	; Create varset dummy
 	exec_str = "varset = { "
@@ -289,13 +310,11 @@ if (not pc_gui_loaded) then BEGIN
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, num_selected, varfile=snapshots[skipping], vars=vars
-		time_start = vars.t
+		precalc, num_selected, varfile=snapshots[skipping], time=time_start
 		if (skipping ge 1) then show_timeseries, ts, tags, units, start_time=time_start
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
-			precalc, 1, varfile=snapshots[skipping + (num_selected-1)*stepping]
-			time_end = vars.t
+			precalc, 1, varfile=snapshots[skipping + (num_selected-1)*stepping], time=time_end
 			if (ignore_end ge 1) then show_timeseries, ts, tags, units, start_time=time_start, end_time=time_end
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
@@ -313,7 +332,7 @@ if (not pc_gui_loaded) then BEGIN
 END
 
 ; scaling factor for visualisation
-default, scaling, fix (256.0 / max ([dim.nx, dim.ny, dim.nz]))
+default, scaling, fix (256.0 / max ([coords.nx, coords.ny, coords.nz]))
 if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
 
