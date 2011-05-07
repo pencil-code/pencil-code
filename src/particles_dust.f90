@@ -3061,10 +3061,10 @@ k_loop:   do while (.not. (k>npar_loc))
               rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm) 
               momp_swarm_removed = momp_swarm_removed + &
                   fp(k,ivpx:ivpz)*fp(k,irhopswarm)
-              if (lshear) then
-                momp_swarm_removed(2) = momp_swarm_removed(2) + &
-                    Sshear*fp(k,ixp)*fp(k,irhopswarm)
-              endif
+!              if (lshear) then
+!                momp_swarm_removed(2) = momp_swarm_removed(2) + &
+!                    Sshear*fp(k,ixp)*fp(k,irhopswarm)
+!              endif
             endif
             call remove_particle(fp,ipar,k,dfp,ineargrid)
           else
@@ -3099,22 +3099,22 @@ k_loop:   do while (.not. (k>npar_loc))
                 zsinkpar=fp(k,izp)
               endif
             enddo
-            if (lshear) then
-              fp(ksink,ivpx) = (fp(ksink,ivpx)* &
-                  fp(ksink,irhopswarm) + momp_swarm_removed(1))/ &
-                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
-              fp(ksink,ivpy) = ((fp(ksink,ivpy)+Sshear*fp(ksink,ixp))* &
-                  fp(ksink,irhopswarm) + momp_swarm_removed(2))/ &
-                  (fp(ksink,irhopswarm) + rhop_swarm_removed) - &
-                  Sshear*fp(ksink,ixp)
-              fp(ksink,ivpz) = (fp(ksink,ivpz)* &
-                  fp(ksink,irhopswarm) + momp_swarm_removed(3))/ &
-                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
-            else
+!            if (lshear) then
+!              fp(ksink,ivpx) = (fp(ksink,ivpx)* &
+!                  fp(ksink,irhopswarm) + momp_swarm_removed(1))/ &
+!                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
+!              fp(ksink,ivpy) = ((fp(ksink,ivpy)+Sshear*fp(ksink,ixp))* &
+!                  fp(ksink,irhopswarm) + momp_swarm_removed(2))/ &
+!                  (fp(ksink,irhopswarm) + rhop_swarm_removed) - &
+!                  Sshear*fp(ksink,ixp)
+!              fp(ksink,ivpz) = (fp(ksink,ivpz)* &
+!                  fp(ksink,irhopswarm) + momp_swarm_removed(3))/ &
+!                  (fp(ksink,irhopswarm) + rhop_swarm_removed)
+!            else
               fp(ksink,ivpx:ivpz) = (fp(ksink,ivpx:ivpz)* &
                   fp(ksink,irhopswarm) + momp_swarm_removed)/ &
                   (fp(ksink,irhopswarm) + rhop_swarm_removed)
-            endif
+!            endif
             fp(ksink,irhopswarm) = fp(ksink,irhopswarm) + rhop_swarm_removed
           endif
         endif
