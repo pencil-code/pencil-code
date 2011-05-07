@@ -104,6 +104,10 @@ module Mpicomm
     module procedure mpireduce_max_arr
   endinterface
 !
+  interface mpireduce_max_int
+    module procedure mpireduce_max_scl_int
+  endinterface
+!
   interface mpiallreduce_sum
     module procedure mpiallreduce_sum_scl
     module procedure mpiallreduce_sum_arr
