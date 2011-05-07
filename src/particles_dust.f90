@@ -2955,9 +2955,10 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: momp_swarm_removed, momp_swarm_removed_send
-      real :: rp, rhop_swarm_removed, rhop_swarm_removed_send
+      real :: rp, rp_box, rhop_swarm_removed, rhop_swarm_removed_send
       real :: xsinkpar, ysinkpar, zsinkpar
       integer :: k, ksink, iproc_sink, iproc_sink_send
+      integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
       integer, parameter :: itag1=100, itag2=101
 !
       if (lsinkpoint) then
@@ -3000,16 +3001,44 @@ k_loop:   do while (.not. (k>npar_loc))
         call mpibcast_real(ysinkpar,proc=iproc_sink)
         call mpibcast_real(zsinkpar,proc=iproc_sink)
 !
-!  Remove particle that are too close to sink particle.
+!  Remove particles that are too close to sink particle.
 !
         if (lparticles_mass) then
           rhop_swarm_removed=0.0
           momp_swarm_removed=0.0
         endif
 !
-        do k=1,npar_loc
-          rp=sqrt((fp(k,ixp)-xsinkpar)**2+(fp(k,iyp)-ysinkpar)**2+ &
-             (fp(k,izp)-zsinkpar)**2)
+        k=1
+        do while (k<=npar_loc)
+          rp=-1.0
+!
+!  Take into account periodic boundary conditions.
+!
+          if (bcpx=='p' .and. nxgrid/=1) then
+            ix1=-1; ix2=+1
+          else
+            ix1=0; ix2=0
+          endif
+          if (bcpy=='p' .and. nygrid/=1) then
+            iy1=-1; iy2=+1
+          else
+            iy1=0; iy2=0
+          endif
+          if (bcpz=='p' .and. nzgrid/=1) then
+            iz1=-1; iz2=+1
+          else
+            iz1=0; iz2=0
+          endif
+          do iz=iz1,iz2; do iy=iy1,iy2; do ix=ix1,ix2
+            rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
+                        (fp(k,iyp)+Ly*iy-ysinkpar)**2+ &
+                        (fp(k,izp)+Lz*iz-zsinkpar)**2)
+            if (rp<0.0) then
+              rp=rp_box
+            else
+              rp=min(rp,rp_box)
+            endif
+          enddo; enddo; enddo
           if (ipar(k)/=1 .and. rp<rsinkparticle_1) then
             if (lparticles_mass) then
               rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm) 
@@ -3021,6 +3050,8 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
             endif
             call remove_particle(fp,ipar,k,dfp,ineargrid)
+          else
+            k=k+1
           endif
         enddo
 !
@@ -3038,6 +3069,19 @@ k_loop:   do while (.not. (k>npar_loc))
           if (iproc==iproc_sink) then
             call mpirecv_real(rhop_swarm_removed,1,0,itag1)
             call mpirecv_real(momp_swarm_removed,3,0,itag2)
+!
+!  Need to find sink particle again since particle removal may have shifted
+!  its index.
+!
+            do k=1,npar_loc
+              if (ipar(k)==1) then
+                ksink=k
+                iproc_sink=iproc
+                xsinkpar=fp(k,ixp)
+                ysinkpar=fp(k,iyp)
+                zsinkpar=fp(k,izp)
+              endif
+            enddo
             if (lshear) then
               fp(ksink,ivpx) = (fp(ksink,ivpx)* &
                   fp(ksink,irhopswarm) + momp_swarm_removed(1))/ &
