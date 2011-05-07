@@ -112,6 +112,7 @@ pro precalc_data, i, vars
 			; Velocity z-component
 			varsets[i].u_z = uu[*,*,*,2] * unit.velocity / unit.default_velocity
 		end
+		uu = 0
 	end
 	if (any (strcmp (tags, 'Temp', /fold_case))) then begin
 		; Temperature
@@ -189,7 +190,7 @@ pro precalc_data, i, vars
 		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
 			varsets[i].rho_u_z = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
 		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].rho_u_z = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * uu[l1:l2,m1:m2,n1:n2,2] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
+			varsets[i].rho_u_z = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
 		endif
 	end
 
@@ -197,7 +198,7 @@ pro precalc_data, i, vars
 	if (any (strcmp (sources, 'uu', /fold_case))) then begin
 		if (any (strcmp (over_tags, 'u', /fold_case))) then begin
 			; Velocity overplot
-			oversets[i].u = float (uu * unit.velocity / unit.default_velocity)
+			oversets[i].u = float (vars.uu[l1:l2,m1:m2,n1:n2,*] * unit.velocity / unit.default_velocity)
 		end
 	end
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
@@ -215,6 +216,7 @@ pro precalc_data, i, vars
 			oversets[i].a_contour[*,*,*,1] = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp)) * unit.magnetic_field
 			oversets[i].a_contour[*,*,*,2] = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp)) * unit.magnetic_field
 		end
+		bb = 0
 	end
 end
 
