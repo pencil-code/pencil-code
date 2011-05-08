@@ -10,7 +10,7 @@
 
 
 ; Simple interface to cmp_cslice_cache without caching mechanism
-pro cmp_cslice, sets, limits, units=units, coords=coords, scaling=scaling
+pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
@@ -49,6 +49,9 @@ pro cmp_cslice, sets, limits, units=units, coords=coords, scaling=scaling
 	; setup limits, if necessary
 	if (n_elements (limits) eq 0) then begin
 		dims = size (varsets.(0))
+		default, num_x, dims[1]
+		default, num_y, dims[2]
+		default, num_z, dims[3]
 		limits = reform (lindgen (dims[1], dims[2], dims[3]), num_x, num_y, num_z)
 	end
 

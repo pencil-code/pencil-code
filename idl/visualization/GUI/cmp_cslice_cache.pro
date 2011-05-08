@@ -813,7 +813,7 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (n_elements (units) ge 1) then unit = units
 	if (n_elements (unit) eq 0) then begin
 		print, "WARNING: setting units to unity."
-		unit = { velocity:1, temperature:1, length:1, time:1, density:1, default_length_str:'' }
+		unit = { velocity:1, temperature:1, length:1, time:1, density:1, default_length:1, default_length_str:'-', default_velocity:1, default_velocity_str:'-', default_density:1.0, default_density_str:'-', default_mass:1.0, default_mass_str:'-' }
 	end
 
 	if (n_elements (scaling) eq 0) then scaling = 1
@@ -834,6 +834,11 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 		num_y = dims[2] - 2*nghost_y
 		num_z = dims[3] - 2*nghost_z
 		limits = reform (nghost_x+spread(indgen(num_x),[1,2],[num_y,num_z]) + dims[1]*(nghost_y+spread(indgen(num_y),[0,2],[num_x,num_z])) + dims[1]*dims[2]*(nghost_z+spread(indgen(num_z),[0,1],[num_x,num_y])), num_x, num_y, num_z)
+	end else begin
+		dims = size (limits)
+		default, num_x, dims[1]
+		default, num_y, dims[2]
+		default, num_z, dims[3]
 	end
 
 	cut = reform (limits, (size (limits))[1], (size (limits))[2], (size (limits))[3])
