@@ -61,13 +61,13 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
-	ohmic_heating_rate:'HR_ohm', $
-	magnetic_energy:'rho_mag', $
-	magnetic_field_z:'bz', $
 	velocity:'u_abs', $
 	velocity_z:'u_z', $
-	logarithmic_density:'log_rho', $
-	impulse_density_z:'rho_u_z' }
+	logarithmic_density:'log_rho' }
+;	magnetic_field_z:'bz', $
+;	magnetic_energy:'rho_mag', $
+;	ohmic_heating_rate:'HR_ohm', $
+;	impulse_density_z:'rho_u_z' }
 
 
 ;;;
@@ -112,7 +112,6 @@ default, datadir, pc_get_datadir()
 ;;;
 ;;; Default technical parameters
 ;;;
-default, pre_allocate_memory, 1
 default, data_reduction, 1.0
 if (n_elements (data_reduction) eq 1) then data_reduction = replicate (data_reduction, 3)
 if (any (data_reduction lt 1.0)) then begin
@@ -262,13 +261,8 @@ if (not pc_gui_loaded) then BEGIN
 
 
 	print, "Allocating memory..."
-	if (pre_allocate_memory) then begin
-		dummy = dindgen (coords.nx, coords.ny, coords.nz)
-		dummy_3D = findgen (coords.nx, coords.ny, coords.nz, 3)
-	end else begin
-		dummy = 0.0
-		dummy_3D = 0.0
-	end
+	dummy = dindgen (coords.nx, coords.ny, coords.nz)
+	dummy_3D = findgen (coords.nx, coords.ny, coords.nz, 3)
 
 	; Create varset dummy
 	exec_str = "varset = { "
