@@ -128,7 +128,7 @@ module Hydro
   real :: ruxm=0.,ruym=0.,ruzm=0.
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
-  real :: ampl1_diffrot=0.,ampl2_diffrot=0.
+  real :: ampl1_diffrot=0.,ampl2_diffrot=0., ampl_wind=0.
   real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
@@ -162,7 +162,7 @@ module Hydro
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
       wdamp, tau_damp_ruxm, tau_damp_ruym, tau_damp_ruzm, tau_diffrot1, &
       u0_advec, inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
-      xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, &
+      xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, ampl_wind, &
       lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
@@ -4655,6 +4655,17 @@ module Hydro
        prof_amp1=  slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*(f(l1:l2,m,n,iuz) &
              - prof_amp1)
+!
+! vertical shear in uz with respect to uz (slow wind)
+!
+      case ('breeze')
+      if (.not.lcalc_uumean) then
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+             -(f(l1:l2,m,n,iuz)-ampl_wind*z(n)/(2.*pi))/tau_damp_ruzm
+      else
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+             -(uumz(n,3)-ampl_wind*z(n)/(2.*pi))/tau_damp_ruzm
+      endif
 !
 !  Radial shear profile
 !
