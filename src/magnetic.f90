@@ -1187,8 +1187,7 @@ module Magnetic
           enddo; enddo
         case ('spot')
           do n=n1,n2; do m=m1,m2
-            !f(l1:l2,m,n,iaz)=exp(-((x(l1:l2)-xyz1(1))**2+(y(m)-.5*xyz0(2))**2)/.1**2)
-            f(l1:l2,m,n,iaz)=exp(-((x(l1:l2)-xyz1(1))**2+(y(m))**2)/.1**2)
+            f(l1:l2,m,n,iaz)=amplaa(j)*exp(-((x(l1:l2)-xyz1(1))**2+(y(m))**2)/radius**2)
           enddo; enddo
         case ('Az=x2')
           do n=n1,n2; do m=m1,m2
@@ -5956,7 +5955,7 @@ module Magnetic
       real, dimension(mx) :: eta_x,x2
       real, dimension(mx,3) :: geta_x
       character (len=labellen) :: xdep_profile
-!      integer :: i
+      integer :: l
 !
       intent(out) :: eta_x,geta_x
 !
@@ -5974,6 +5973,8 @@ module Magnetic
           geta_x(:,2) = 0.
           geta_x(:,3) = 0.
 !
+!  tanh profile
+!
         case ('tanh')
 !
 !  default to spread gradient over ~5 grid cells.
@@ -5986,6 +5987,20 @@ module Magnetic
 !
            geta_x(:,1) = -eta/(2.*eta_width) * ((tanh((x + eta_x0)/eta_width))**2. &
              - (tanh((x - eta_x0)/eta_width))**2.)
+           geta_x(:,2) = 0.
+           geta_x(:,3) = 0.
+!
+!  linear profile
+!
+        case ('linear')
+!
+!  default to spread gradient over ~5 grid cells.
+!
+           eta_x = eta*(1.+(x-xyz1(1))/eta_width)
+!
+! its gradient:
+!
+           geta_x(:,1) = eta/eta_width
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
 !
@@ -6005,12 +6020,12 @@ module Magnetic
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
 !
-!
         case ('RFP_1D')
 !
            eta_x = eta*(1+9*(x/radRFP)**30)**2
 !
 ! its gradient:
+!
            geta_x(:,1) = 2*eta*(1+9*(x/radRFP)**30)*270*(x/radRFP)**29/radRFP
            geta_x(:,2) = 0.
            geta_x(:,3) = 0.
@@ -6036,6 +6051,16 @@ module Magnetic
            geta_x(:,3) = 0.
 !
       endselect
+!
+!  debug output (currently only on root processor)
+!
+      if (lroot) then
+        print*
+        print*,'x, eta_x, geta_x(:,1)'
+        do l=l1,l2
+          write(*,'(1p3e11.3)') x(l),eta_x(l),geta_x(l,1)
+        enddo
+      endif
 !
     endsubroutine eta_xdep
 !***********************************************************************

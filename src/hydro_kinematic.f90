@@ -949,7 +949,9 @@ module Hydro
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
 !
-!  meridional circulation
+!  meridional circulation; psi=.5*(x-x0)*(x-x1)*(y-y0)*(y-y1), so
+!  ux=+dpsi/dy=+(x-x0)*(x-x1)*y
+!  uy=-dpsi/dx=-x*(y-y0)*(y-y1)
 !
       case ('circ_cartesian') 
         if (headtt) print*,'just circulation'
