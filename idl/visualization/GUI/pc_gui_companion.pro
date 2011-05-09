@@ -122,6 +122,36 @@ pro precalc_data, i, vars
 			varsets[i].Temp = congrid (vars.TT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.temperature
 		end
 	end
+	if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
+		; Natural logarithmic density
+		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
+			varsets[i].ln_rho = alog (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
+		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
+			varsets[i].ln_rho = alog (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
+		end
+	end else if (any (strcmp (tags, 'log_rho', /fold_case))) then begin
+		; Logarithmic density
+		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
+			varsets[i].log_rho = alog10 (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
+		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
+			varsets[i].log_rho = alog10 (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
+		end
+	end else if (any (strcmp (tags, 'rho', /fold_case))) then begin
+		; Density
+		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
+			varsets[i].rho = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density
+		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
+			varsets[i].rho = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density
+		end
+	end
+	if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
+		; Vertical component of impulse density
+		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
+			varsets[i].rho_u_z = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
+		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
+			varsets[i].rho_u_z = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
+		endif
+	end
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
 		if (any (strcmp (tags, 'Ax', /fold_case))) then begin
 			; Magnetic vector potential x-component
@@ -162,36 +192,6 @@ pro precalc_data, i, vars
 			; Ohming heating rate
 			varsets[i].HR_ohm = run_param.eta * mu0_SI * sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * (unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length)^2
 		end
-	end
-	if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
-		; Natural logarithmic density
-		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].ln_rho = alog (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
-		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].ln_rho = alog (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
-		end
-	end else if (any (strcmp (tags, 'log_rho', /fold_case))) then begin
-		; Logarithmic density
-		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].log_rho = alog10 (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
-		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].log_rho = alog10 (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
-		end
-	end else if (any (strcmp (tags, 'rho', /fold_case))) then begin
-		; Density
-		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].rho = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density
-		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].rho = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density
-		end
-	end
-	if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
-		; Vertical component of impulse density
-		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			varsets[i].rho_u_z = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
-		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			varsets[i].rho_u_z = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
-		endif
 	end
 
 	over_tags = tag_names (oversets[i])
