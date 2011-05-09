@@ -1197,12 +1197,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Set particle velocity field.
           do k=1,npar_loc
 !  Take either global or local dust-to-gas ratio.
-            if (.not. ldragforce_equi_global_eps) then
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              if (ldensity_nolog) then
-                eps=f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
-              else
-                eps=f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
+            if (ldragforce_equi_noback) then
+              eps=0.0
+            else
+              if (.not. ldragforce_equi_global_eps) then
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+                if (ldensity_nolog) then
+                  eps=f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
+                else
+                  eps=f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
+                endif
               endif
             endif
 !
@@ -1215,7 +1219,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           enddo
 !
-        case ('dragforce_equi_dust','dragforce-equi-dust')
+        case ('dragforce_equi_nohydro')
+!
+          do k=1,npar_loc
+            fp(k,ivpx) = fp(k,ivpx) - 2*Deltauy_gas_friction* &
+                1/(1.0/(Omega*tausp)+Omega*tausp)
+            fp(k,ivpy) = fp(k,ivpy) - Deltauy_gas_friction* &
+                1/(1.0+(Omega*tausp)**2)
+          enddo
+!
+        case ('dragforce_equi_dust')
 !
 !  Equilibrium between drag force and Coriolis force on the dust.
 !
@@ -1230,22 +1243,6 @@ k_loop:   do while (.not. (k>npar_loc))
                 1/(Omega*tausp+1/(Omega*tausp))*beta_dPdr_dust*cs
             fp(k,ivpy) = fp(k,ivpy) - &
                 1/(1.0+1/(Omega*tausp)**2)*beta_dPdr_dust/2*cs
-          enddo
-!
-        case ('init_equi_gas','init-equi-gas')
-!
-!  Equilibrium motion gas (with coriolis included)
-!
-          if (lroot) then
-            print*, 'init_particles: equilibrium gas'
-            print*, 'init_particles: Deltauy_gas_friction=', Deltauy_gas_friction
-          endif
-!  Set particle velocity field.
-          do k=1,npar_loc
-            fp(k,ivpx) = fp(k,ivpx) - &
-                (2*Deltauy_gas_friction)/(Omega*tausp+1/(Omega*tausp))
-            fp(k,ivpy) = fp(k,ivpy) - &
-                Deltauy_gas_friction/(1.0+1/(Omega*tausp)**2)
           enddo
 !
        case ('Keplerian','keplerian')
