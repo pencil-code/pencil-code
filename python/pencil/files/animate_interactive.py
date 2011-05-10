@@ -12,13 +12,14 @@ import time
 import os # for making the movie
 import thread # for GUI
 import mtTkinter as tk  # makes tkinter thread save
+from matplotlib.colors import LightSource
 
 
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
                         fontsize = 24, cBar = 0, sloppy = True,
                         rangeMin = [], rangeMax = [],
-                        #interpol = 'nearest', colorTable = 'hot', aspectRatio = 'auto',
+                        shade = False, azdeg = 0, altdeg = 65,
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
                         arrowsColor = 'black', plotArrowsGrid = False,
@@ -31,13 +32,13 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     
       animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
-                        fontsize = 24,
-                        cBar = 0,
-                        #interpol = 'nearest', colorTable = 'hot', aspectRatio = 'auto',
+                        fontsize = 24, cBar = 0, sloppy = True,
+                        rangeMin = [], rangeMax = [],
+                        shade = False, azdeg = 0, altdeg = 65,
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
                         arrowsColor = 'black', plotArrowsGrid = False,
-                        movieFile = '', keepImages = False,
+                        movieFile = '', bitrate = 1800, keepImages = False,
                         **kwimshow)
     
     Assemble a 2D animation from a 3D array. *data* has to be a 3D array who's
@@ -72,6 +73,18 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
        If True the update of the plot lags one frame behind. This speeds up the
        plotting.
      
+     *rangeMin*, *rangeMax*:
+       Range of the colortable.
+       
+     *shade*: [ False | True ]
+       If True plot a shaded relief plot instead of the usual colormap.
+       Note that with this option cmap has to be specified like
+       cmap = plt.cm.hot instead of cmap = 'hot'. Shading cannot
+       be used with the cBar = 0 option.
+     
+     *azdeg*, *altdeg*:
+       Azimuth and altitude of the light source for the shading.
+       
      *arrowsX*:
        Data containing the x-component of the arrows.
        
@@ -122,25 +135,29 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         if movieFile:
             ax.set_title(title+r'$\quad$'+r'$t={0}$'.format(t[tStep]), fontsize = fontsize)
         
+        if shade == False:
+            image.set_data(data[tStep,:,:])           
+        else:                
+            image.set_data(rgb[tStep,:,:,:])   
+            
         if (cBar == 0):
-            image.set_data(data[tStep,:,:])
+            pass
         if (cBar == 1):
-            image.set_data(data[tStep,:,:])
             colorbar.set_clim(vmin=data[tStep,:,:].min(), vmax=data[tStep,:,:].max())
         if (cBar == 2):
-            image.set_data(data[tStep,:,:])
             colorbar.set_clim(vmin=data[tStep,:,:].min(), vmax=data[tStep,:,:].max())
             colorbar.update_bruteforce(data[tStep,:,:])
             
         if plotArrows:
             arrows.set_UVC(U = arrowsX[tStep,::arrowsRes,::arrowsRes], V = arrowsY[tStep,::arrowsRes,::arrowsRes])
         
-        if sloppy == False:
+        if (sloppy == False) or (movieFile):
             manager.canvas.draw()
-    
+
+
     # play the movie
     def play(threadName):               
-        global tStep, sliderTime, pause, rootWindow
+        global tStep, sliderTime, pause
         
         pause = False
         while (tStep < nT) & (pause == False):        
@@ -161,7 +178,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         tStep -= 1
             
     
-    # call the play function as a seperate thread (for GUI)
+    # call the play function as a separate thread (for GUI)
     def play_thread(event):
         global pause
         
@@ -196,7 +213,6 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
             tStep = len(t)-1
         # plot the frame and update the time slider
         sliderTime.set_val(t[tStep])
-
     
     pause = True
     plotArrows = False
@@ -209,7 +225,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     # transpose the data according to dimOrder
     unOrdered = data
     data = np.transpose(unOrdered, dimOrder)
-    unOrdered = []
+    unOrdered = []        
     
     # check if arrows should be plotted
     if len(arrowsX.shape) == 3:
@@ -279,8 +295,27 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     ax.set_title(title, fontsize = fontsize)
     ax.set_xlabel(xlabel, fontsize = fontsize)
     ax.set_ylabel(ylabel, fontsize = fontsize)
-    plane = np.zeros((nX,nY))
+    if shade:
+        plane = np.zeros((nX,nY,3))
+    else:
+        plane = np.zeros((nX,nY))
 
+    # apply shading if True
+    if shade:
+        ls = LightSource(azdeg = azdeg, altdeg = altdeg)
+        rgb = []
+        # shading can be only used with cBar = 2 or cBar = 3 at the moment
+        if cBar == 0:
+            cBar = 1
+        # check if colormap is set, if not set it to 'copper'
+        if kwimshow.has_key('cmap') == False:
+            kwimshow['cmap'] = plt.cm.copper
+        for i in range(len(data[:,0,0])):
+            tmp = ls.shade(data[i,:,:], kwimshow['cmap'])
+            rgb.append(tmp.tolist())
+        rgb = np.array(rgb)
+        tmp = []
+        
     # calibrate the displayed colors for the data range
     image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax, **kwimshow)
     colorbar = fig.colorbar(image)
