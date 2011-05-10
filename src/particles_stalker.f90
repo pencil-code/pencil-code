@@ -66,14 +66,14 @@ module Particles_stalker
 !  Turn off stalking if physics not selected.
 !
       if (ivpx==0)       lstalk_vv=.false.
+      if (iap==0)        lstalk_ap=.false.
+      if (irhopswarm==0) lstalk_rhopswarm=.false.
       if (iuu==0)        lstalk_uu=.false.
       if (iuu==0)        lstalk_guu=.false.
       if (ilnrho==0)     lstalk_rho=.false.
       if (ilnrho==0)     lstalk_grho=.false.
       if (iaa==0)        lstalk_bb=.false.
-      if (iap==0)        lstalk_ap=.false.
       if (ipotself==0)   lstalk_potself=.false.
-      if (irhopswarm==0) lstalk_rhopswarm=.false.
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
@@ -86,31 +86,31 @@ module Particles_stalker
       if (lstalk_xx)        nvar_stalk=nvar_stalk+3
       if (lstalk_vv)        nvar_stalk=nvar_stalk+3
       if (lstalk_ap)        nvar_stalk=nvar_stalk+1
+      if (lstalk_rhopswarm) nvar_stalk=nvar_stalk+1
       if (lstalk_uu)        nvar_stalk=nvar_stalk+3
       if (lstalk_guu)       nvar_stalk=nvar_stalk+9
       if (lstalk_rho)       nvar_stalk=nvar_stalk+1
       if (lstalk_grho)      nvar_stalk=nvar_stalk+3
       if (lstalk_bb)        nvar_stalk=nvar_stalk+3
       if (lstalk_potself)   nvar_stalk=nvar_stalk+1
-      if (lstalk_rhopswarm) nvar_stalk=nvar_stalk+1
 !
 !  Write information on which variables are stalked to file.
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/particles_stalker_header.dat', &
             status='unknown')
-          if (lstalk_xx)   write(1,'(A)',advance='no') 'xp,yp,zp,'
-          if (lstalk_vv)   write(1,'(A)',advance='no') 'vpx,vpy,vpz,'
-          if (lstalk_ap)   write(1,'(A)',advance='no') 'ap,'
-          if (lstalk_uu)   write(1,'(A)',advance='no') 'ux,uy,uz,'
-          if (lstalk_guu)  write(1,'(A)',advance='no') 'duxdx,duxdy,duxdz,'
-          if (lstalk_guu)  write(1,'(A)',advance='no') 'duydx,duydy,duydz,'
-          if (lstalk_guu)  write(1,'(A)',advance='no') 'duzdx,duzdy,duzdz,'
-          if (lstalk_rho)  write(1,'(A)',advance='no') 'rho,'
-          if (lstalk_grho) write(1,'(A)',advance='no') 'drhodx,drhody,drhodz,'
-          if (lstalk_bb)   write(1,'(A)',advance='no') 'bx,by,bz,'
-          if (lstalk_potself)   write(1,'(A)',advance='no') 'potself,'
+          if (lstalk_xx)        write(1,'(A)',advance='no') 'xp,yp,zp,'
+          if (lstalk_vv)        write(1,'(A)',advance='no') 'vpx,vpy,vpz,'
+          if (lstalk_ap)        write(1,'(A)',advance='no') 'ap,'
           if (lstalk_rhopswarm) write(1,'(A)',advance='no') 'rhopswarm,'
+          if (lstalk_uu)        write(1,'(A)',advance='no') 'ux,uy,uz,'
+          if (lstalk_guu)       write(1,'(A)',advance='no') 'duxdx,duxdy,duxdz,'
+          if (lstalk_guu)       write(1,'(A)',advance='no') 'duydx,duydy,duydz,'
+          if (lstalk_guu)       write(1,'(A)',advance='no') 'duzdx,duzdy,duzdz,'
+          if (lstalk_rho)       write(1,'(A)',advance='no') 'rho,'
+          if (lstalk_grho)      write(1,'(A)',advance='no') 'drhodx,drhody,drhodz,'
+          if (lstalk_bb)        write(1,'(A)',advance='no') 'bx,by,bz,'
+          if (lstalk_potself)   write(1,'(A)',advance='no') 'potself,'
          close (1)
       endif
 !
