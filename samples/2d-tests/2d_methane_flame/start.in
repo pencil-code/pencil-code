@@ -1,0 +1,38 @@
+!
+!  Initialisation parameters for 2d_methane_flame case.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2010-05-19 14:36:03 nilshau Exp $',
+  unit_system='cgs'
+  unit_temperature=1.
+  unit_velocity=1.
+  unit_length=1.
+  lperi=F,T,T
+  bcx = 'set:a2','set:a2','set:a2', 'a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2','set:a2'
+  fbcx1 =  19.,0.,0.,-6.78019,5.70378,0.737,0.,0.,0.,0.22374,0.,0.,0.,0.03926,0.,0.,0.,0.,0.,0.,0.
+  fbcx2 =  0.,0.,0.,-8.59696,7.52132,0.737,0.0000035,0.00000013,0.000027,0.06744,0.00047,0.08763,0.,0.,0.000093,0.107,0.,0.,0.,0.,0.
+  Lxyz  =  0.5,   0.5,  0.1
+  xyz0  = -0.25,  -0.25, 0.
+/
+&eos_init_pars
+/
+&hydro_init_pars
+  inituu='const_uu'
+  uu_const=0.
+/
+&density_init_pars
+  ldensity_nolog=F
+/
+&entropy_init_pars
+/
+&chemistry_init_pars
+  initchem='FlameMaster'
+  flame_pos= 0.
+  file_name='CH4_p01_0phi0_7000tu0300'
+/
+&NSCBC_init_pars
+  nscbc_bc = 'part_ref_inlet:part_ref_outlet','',''
+  nscbc_sigma_out= 0.25
+  nscbc_sigma_in= 5.
+  p_infty= 1.013e6
+/
