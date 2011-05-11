@@ -44,7 +44,8 @@ endelse
 ;       on cylinder(s), as well as their position
 cylinder_particle_deposition,ncylinders,npart_radii,startparam,objpvar,irmv,$
   trmv,xdir,xpos,ypos,radius,init_uu,print_remove_data,solid_colls=solid_colls,$
-  front_colls=front_colls,back_colls=back_colls,theta_arr=theta_arr
+  front_colls=front_colls,back_colls=back_colls,theta_arr=theta_arr,$
+  impact_vel_arr=impact_vel_arr
 
 ; <cylinder_capture_efficiency>: calculates capture efficiency of
 ;       cylinder
@@ -63,7 +64,7 @@ endif
 ; <cylinder_plot_deposition>: Plots theta(t) and deposition
 ;       distribution between particle radii
 cylinder_plot_deposition,ts,oneradius,npart_radii,objpvar,theta_arr,savefile,$
-  startparam,r_i=r_i
+  startparam,r_i=r_i,impact_vel_arr=impact_vel_arr
 
 END
 ;+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -76,7 +77,8 @@ pro cylinder_particle_deposition,ncylinders,npart_radii,startparam,objpvar,irmv,
                                  trmv,xdir,xpos,ypos,radius,init_uu,$
                                  print_remove_data,solid_colls=solid_colls,$
                                  front_colls=front_colls,back_colls=back_colls,$
-                                 theta_arr=theta_arr
+                                 theta_arr=theta_arr,$
+                                 impact_vel_arr=impact_vel_arr
 
 dims=size(irmv)
 solid_colls=fltarr(ncylinders,npart_radii)
@@ -84,6 +86,7 @@ solid_colls[*,*]=0
 front_colls=solid_colls
 back_colls=solid_colls
 theta_arr=fltarr(ncylinders,npart_radii,1400000,2)
+impact_vel_arr=fltarr(ncylinders,npart_radii,1400000,4)
 ;
 ;Loop over all cylinders
 ;
@@ -95,6 +98,9 @@ for icyl=0,ncylinders-1 do begin
         if (dims[0]>0) then begin              
             x0=objpvar.xx[irmv[k],0]-xpos[icyl]
             y0=objpvar.xx[irmv[k],1]-ypos[icyl]
+            vx=objpvar.vv[irmv[k],0]
+            vy=objpvar.vv[irmv[k],1]
+            vz=objpvar.vv[irmv[k],2]
             deposition_radius2=x0^2+y0^2
             deposition_radius=sqrt(deposition_radius2)
             ;
@@ -136,6 +142,19 @@ for icyl=0,ncylinders-1 do begin
                               solid_colls[icyl,ipart_radii],0]=theta
                     theta_arr[icyl,ipart_radii,$
                               solid_colls[icyl,ipart_radii],1]=trmv[k]
+                endif
+                ;
+                ; Store the velocity at impaction in an array
+                ;
+                if (total(solid_colls[icyl]) lt 100000) then begin
+                    impact_vel_arr[icyl,ipart_radii,$
+                              solid_colls[icyl,ipart_radii],0]=trmv[k]
+                    impact_vel_arr[icyl,ipart_radii,$
+                              solid_colls[icyl,ipart_radii],1]=vx
+                    impact_vel_arr[icyl,ipart_radii,$
+                              solid_colls[icyl,ipart_radii],2]=vy
+                    impact_vel_arr[icyl,ipart_radii,$
+                              solid_colls[icyl,ipart_radii],3]=vz
                 endif
                 ;
                 ;Find the number of solid collisions
@@ -293,7 +312,8 @@ END
 ;       distribution between particle radii
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro cylinder_plot_deposition,ts,oneradius,npart_radii,objpvar,theta_arr,$
-                             savefile,startparam,r_i=r_i
+                             savefile,startparam,r_i=r_i,$
+                             impact_vel_arr=impact_vel_arr
 ;
 ; Find where (in radians) the particles hit 
 ; the surface of the cylinder as a
@@ -347,8 +367,8 @@ for i=0,npart_radii-1 do begin
     if (oneradius and i eq r_i) then break
 end
 first=1
-!x.range=[min(startparam.ap0[0:npart_radii-1]),$
-          max(startparam.ap0[0:npart_radii-1])]
+!x.range=[min(startparam.ap0[0:npart_radii-1])*0.5,$
+          max(startparam.ap0[0:npart_radii-1])*2.0]
 for i=0,npart_radii-1 do begin
     theta_=total(theta_arr[*,i,*,0],1)
     rad_=startparam.ap0[i]
@@ -368,7 +388,82 @@ for i=0,npart_radii-1 do begin
         end
     endif
 end
+
+
+WINDOW,5,XSIZE=256*2,YSIZE=256*2
+!p.multi=[0,1,2]
+!x.range=[min(startparam.ap0[0:npart_radii-1])*0.5,$
+          max(startparam.ap0[0:npart_radii-1])*2.0]
+!y.range=[min(impact_vel_arr[*,*,*,1:3]),max(impact_vel_arr[*,*,*,1:3])]
+first=1
+for i=0,npart_radii-1 do begin
+    theta_=total(impact_vel_arr[*,i,*,1],1)
+    time_=total(impact_vel_arr[*,i,*,0],1)
+    here=where(theta_ ne 0)
+    if (here[0] ne -1) then begin
+        particle_hit=1
+        theta=theta_[here]
+        rad_=startparam.ap0[i]
+        timereal=time_[here]
+        rad=time_[here]
+        rad[*]=rad_
+        dims=size(theta)
+        ind=indgen(dims[1])
+        if (min(timereal) lt tmin2) then begin
+            tmin2=min(timereal)
+        endif
+        if (max(timereal) gt tmax2) then begin
+            tmax2=max(timereal)
+        endif
+        if (first) then begin
+            plot_oi,rad,theta,ps=1,ytit='!8v!dx!n!6',xtit='particle radius'
+            if (savefile) then begin
+                ap0=startparam.ap0[0:npart_radii-1]
+                save,timereal,impact_vel_arr,ap0,$
+                  filename='./data/impact_vel_arr.sav'
+            endif
+            first=0
+        endif else begin
+            oplot,rad,theta,ps=1
+        end
+    endif
+    if (oneradius and i eq r_i) then break
+end
+
+first=1
+for i=0,npart_radii-1 do begin
+    theta_=total(impact_vel_arr[*,i,*,2],1)
+    time_=total(impact_vel_arr[*,i,*,0],1)
+    here=where(theta_ ne 0)
+    if (here[0] ne -1) then begin
+        particle_hit=1
+        theta=theta_[here]
+        rad_=startparam.ap0[i]
+        timereal=time_[here]
+        rad=time_[here]
+        rad[*]=rad_
+        dims=size(theta)
+        ind=indgen(dims[1])
+        if (min(timereal) lt tmin2) then begin
+            tmin2=min(timereal)
+        endif
+        if (max(timereal) gt tmax2) then begin
+            tmax2=max(timereal)
+        endif
+        if (first) then begin
+            plot_oi,rad,theta,ps=1,ytit='!8v!dy!n!6',xtit='particle radius'
+            first=0
+        endif else begin
+            oplot,rad,theta,ps=1
+        end
+    endif
+    if (oneradius and i eq r_i) then break
+end
+
+
 !p.multi=[0,1,1]
+!x.range=''
+!y.range=''
 if (particle_hit) then begin
     print,'The first particle hit the surface at  t =',tmin2
     print,'The last particle hit the surface at   t =',tmax2
