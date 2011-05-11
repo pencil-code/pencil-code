@@ -1,0 +1,18 @@
+!                     -*-f90-*-   (for emacs)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2010-05-19 14:35:08 nilshau Exp $'
+  Lxyz  =  0.5 ,   0.5 ,  0.1
+  xyz0  = -0.25,  -0.25,  0.
+/
+&eos_init_pars
+  cs0=120000
+/
+&hydro_init_pars
+  inituu='gaussian-noise',ampluu=0e-3
+/
+&density_init_pars
+  ldensity_nolog=T
+/
