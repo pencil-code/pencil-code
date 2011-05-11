@@ -117,6 +117,7 @@ my %tests = (
                           1d-tests/toomre-x
                           2d-tests/bubble
                           2d-tests/conv-slab-MLT
+                          2d-tests/2d_methane_flame
                           interstellar
                           interlocked-fluxrings
                           conv-slab-flat
