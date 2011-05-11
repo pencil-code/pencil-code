@@ -6,6 +6,7 @@
   nt=31, it1=5, cdtv=0.4, isave=100, itorder=3
   dsnap=5e-4, dvid=5e-4, dtmin=1e-30, dt=1e-8
   lpencil_check=T, lpencil_check_small=T, lrandom_f_pencil_check=F
+  llsode=T, lsplit_second=T
 /
 &eos_run_pars
 /

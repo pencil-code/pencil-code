@@ -9,6 +9,6 @@ DENSITY   =   density
 ENTROPY   =   temperature_ionization
 CHEMISTRY =   chemistry
 EOS       =   eos_chemistry
-#TIMESTEP  =   timestep_rkf
+TIMESTEP  =   timestep_LSODE
 REAL_PRECISION=double
 NSCBC = NSCBC
