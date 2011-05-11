@@ -27,9 +27,9 @@ module Cdata
 !
 !  Cartesian coordinate system.
 !
-  real, dimension (nxgrid) :: xgrid, dxgrid_1
-  real, dimension (nygrid) :: ygrid, dygrid_1
-  real, dimension (nzgrid) :: zgrid, dzgrid_1
+  real, dimension (nxgrid) :: xgrid, dxgrid_1, dxvolume_1
+  real, dimension (nygrid) :: ygrid, dygrid_1, dyvolume_1
+  real, dimension (nzgrid) :: zgrid, dzgrid_1, dzvolume_1
   real, dimension (mx) :: x,dx_1,dx_tilde,xprim,dVol_x,dVol1_x
   real, dimension (my) :: y,dy_1,dy_tilde,yprim,dVol_y,dVol1_y
   real, dimension (mz) :: z,dz_1,dz_tilde,zprim,dVol_z,dVol1_z
