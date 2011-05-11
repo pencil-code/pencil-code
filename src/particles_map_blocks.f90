@@ -216,7 +216,8 @@ module Particles_map
 !
 !  01-nov-09/anders: coded
 !
-      use GhostFold, only: fold_f
+      use GhostFold,     only: fold_f
+      use Particles_sub, only: get_rhopswarm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
@@ -225,8 +226,11 @@ module Particles_map
       real :: weight0, weight, weight_x, weight_y, weight_z
       real, save :: dx1, dy1, dz1
       real :: d1x, d1y, d1z
+      real :: rhop_swarm_pt
+      real :: dVol1x,dVol1y,dVol1z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib, izg0
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
+      integer :: lb,mb,nb,iq
       logical :: lnbody
       logical, save :: lfirstcall=.true.
 !
@@ -473,9 +477,23 @@ module Particles_map
 !
 !  Multiply assigned particle number density by the mass density per particle.
 !
-        if (.not.(lparticles_radius.or.lparticles_number)) &
+        if (.not.(lparticles_radius.or.lparticles_number)) then
+          if (lcartesian_coords.and.(all(lequidist))) then 
             fb(:,:,:,irhop,0:nblock_loc-1)= &
-            rhop_swarm*fb(:,:,:,irhop,0:nblock_loc-1)
+                 rhop_swarm*fb(:,:,:,irhop,0:nblock_loc-1)
+          else
+!
+            do ib=0,nblock_loc-1
+              do nb=1,mzb ; call get_inverse_volume(zb(nb,ib),zgrid,3,dVol1z)
+              do mb=1,myb ; call get_inverse_volume(yb(mb,ib),ygrid,2,dVol1y)
+              do lb=1,mxb ; call get_inverse_volume(xb(lb,ib),xgrid,1,dVol1x) 
+                rhop_swarm_pt  = mp_swarm*dVol1x*dVol1y*dVol1z
+                fb(lb,mb,nb,irhop,ib) = rhop_swarm_pt*fb(lb,mb,nb,irhop,ib)
+              enddo;enddo;enddo
+            enddo
+!
+          endif
+        endif
 !
 !  Fill the bricks on each processor with particle density assigned on the
 !  blocks.
@@ -1480,12 +1498,17 @@ module Particles_map
     endsubroutine shepherd_neighbour_block
 !***********************************************************************
     subroutine get_inverse_dxyz(q,qgrid,idir,dq1,d1q) 
-!      
+!
+!  Fetch inverse grid element arrays. So far uses global arrays. To be 
+!  re-defined later using clever communication. 
+!
+!  29-mar-2011/wlad: coded
+!
       real, dimension (:), intent(in) :: qgrid
-      real, intent(in) :: q, dq1
+      real, intent(in)    :: q, dq1
       integer, intent(in) :: idir
-      real, intent(out) :: d1q
-      integer :: iq
+      real, intent(out)   :: d1q
+      integer             :: iq
 !  
       if (lequidist(idir)) then 
         d1q=dq1
@@ -1501,6 +1524,30 @@ module Particles_map
       endif
 !
     endsubroutine get_inverse_dxyz
+!***********************************************************************
+    subroutine get_inverse_volume(q,qgrid,idir,dVol1q) 
+!
+!  Fetch inverse volume arrays. So far uses global arrays. To be 
+!  re-defined later using clever communication. 
+!
+!  11-may-11/wlad: coded
+!
+      real, dimension (:), intent(in) :: qgrid
+      real, intent(in)    :: q
+      integer, intent(in) :: idir
+      real, intent(out)   :: dVol1q
+      integer             :: iq
+!  
+      call find_index_by_bisection(q,qgrid,iq)
+      if (idir==1) then 
+        dVol1q=dxvolume_1(iq)
+      else if (idir==2) then 
+        dVol1q=dyvolume_1(iq)
+      else if (idir==3) then 
+        dVol1q=dzvolume_1(iq)
+      endif
+!
+    endsubroutine get_inverse_volume
 !***********************************************************************
     subroutine interpolation_consistency_check()
 !

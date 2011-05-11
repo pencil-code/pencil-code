@@ -19,7 +19,7 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; epsp
+! PENCILS PROVIDED np; rhop; epsp; rhop_swarm
 !
 !***************************************************************
 module Particles
@@ -95,7 +95,7 @@ module Particles
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, mp_swarm, np_swarm, rhop_swarm, &
+      ldragforce_gas_par, ldragforce_dust_par, mp_swarm, np_swarm, &
       eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
@@ -263,20 +263,26 @@ module Particles
 !  where rhop_swarm is the mass density per superparticle, N_cell is the number
 !  of particles per grid cell and rhom is the mean gas density in the box.
 !
-      if (rhop_swarm==0.0) then
-!  For stratification, take into account gas present outside the simulation box.
-        if ( (lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
+      if (rhop_swarm==0.0 .or. mp_swarm==0.0) then
+! For stratification, take into account gas present outside the simulation box.
+        if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
-        rhop_swarm=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (rhop_swarm==0.0) &
+             rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (mp_swarm==0.0) & 
+             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
+!
       if (lroot) then
         print*, 'initialize_particles: '// &
             'mass per constituent particle mpmat=', mpmat
+        print*, 'initialize_particles: '// &
+            'mass per superparticle mp_swarm =', mp_swarm
         print*, 'initialize_particles: '// &
             'number density per superparticle np_swarm=', np_swarm
         print*, 'initialize_particles: '// &
@@ -332,7 +338,7 @@ module Particles
         open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
           write (1,*) 'np_swarm=', np_swarm
           write (1,*) 'mpmat=', mpmat
-          write (1,*) 'rhop_swarm=', rhop_swarm
+          write (1,*) 'mp_swarm=', mp_swarm
         close (1)
       endif
 !
@@ -1107,7 +1113,8 @@ k_loop:   do while (.not. (k>npar_loc))
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
+          call get_rhopswarm(mp_swarm,m,n,p%rhop_swarm)
+          p%rhop=p%rhop_swarm*f(l1:l2,m,n,inp)
         endif
       endif
 !
@@ -1442,8 +1449,15 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_ekinp/=0) call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+        if (idiag_ekinp/=0) then 
+          if (lcartesian_coords.and.(all(lequidist))) then 
+            call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
+                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+          else
+            call sum_par_name(0.5*mp_swarm* &
+                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)            
+          endif
+        endif
         if (idiag_epotpm/=0) call sum_par_name( &
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
@@ -1646,7 +1660,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mxb,myb,mzb) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (3) :: dragforce, uup
-      real :: rho1_point, tausp1_par
+      real :: rho1_point, tausp1_par, rhop_swarm_pt
       real :: weight, weight_x, weight_y, weight_z
       integer :: k, l, ix0, iy0, iz0, ib, iblock, lb, mb, nb
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
@@ -1760,8 +1774,9 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
                       endif
 !  Add friction force to grid point.
+                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,rhop_swarm_pt)
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
-                          rhop_swarm*rho1_point*dragforce*weight
+                          rhop_swarm_pt*rho1_point*dragforce*weight
                     enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -1825,8 +1840,9 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
                       endif
 !  Add friction force to grid point.
+                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,rhop_swarm_pt)
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
-                          rhop_swarm*rho1_point*dragforce*weight
+                          rhop_swarm_pt*rho1_point*dragforce*weight
                     enddo; enddo; enddo
                   else
 !
@@ -1837,9 +1853,11 @@ k_loop:   do while (.not. (k>npar_loc))
                     else
                       rho1_point=exp(-fb(ix0,iy0,iz0,ilnrho,ib))
                     endif
+                    !WL: Why is this l being defined?
                     l=ineargrid(k,1)
+                    call get_rhopswarm(mp_swarm,ix0,iy0,iz0,rhop_swarm_pt)
                     dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
-                        rhop_swarm*rho1_point*dragforce
+                        rhop_swarm_pt*rho1_point*dragforce
                   endif
                 endif
 !
