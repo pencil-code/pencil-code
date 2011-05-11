@@ -31,7 +31,7 @@
 /
 &NSCBC_run_pars
   inlet_from_file=T
-  turb_inlet_dir='./turbulent_box'
+  turb_inlet_dir='./turbulent_field'
   nscbc_sigma_out= 0.25
   nscbc_sigma_in= 5.
 /
