@@ -61,13 +61,13 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
+	ohmic_heating_rate:'HR_ohm', $
+	magnetic_energy:'rho_mag', $
+	magnetic_field_z:'bz', $
 	velocity:'u_abs', $
 	velocity_z:'u_z', $
-	logarithmic_density:'log_rho' }
-;	magnetic_field_z:'bz', $
-;	magnetic_energy:'rho_mag', $
-;	ohmic_heating_rate:'HR_ohm', $
-;	impulse_density_z:'rho_u_z' }
+	logarithmic_density:'log_rho', $
+	impulse_density_z:'rho_u_z' }
 
 
 ;;;
@@ -300,21 +300,21 @@ if (not pc_gui_loaded) then BEGIN
 	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir, param, run_param
 
 	; Precalculate initial timestep
-	precalc, 0, varfile=varfile
+	precalc, 0, varfile=varfile, dim=dim
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, num_selected, varfile=snapshots[skipping], time=time_start
+		precalc, num_selected, varfile=snapshots[skipping], dim=dim, time=time_start
 		if (skipping ge 1) then show_timeseries, ts, tags, units, start_time=time_start
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
-			precalc, 1, varfile=snapshots[skipping + (num_selected-1)*stepping], time=time_end
+			precalc, 1, varfile=snapshots[skipping + (num_selected-1)*stepping], dim=dim, time=time_end
 			if (ignore_end ge 1) then show_timeseries, ts, tags, units, start_time=time_start, end_time=time_end
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
 					; Precalculate selected timesteps
 					pos = skipping + (i-1)*stepping
-					precalc, num_selected+1-i, varfile=snapshots[pos]
+					precalc, num_selected+1-i, varfile=snapshots[pos], dim=dim
 				end
 			end
 		end
