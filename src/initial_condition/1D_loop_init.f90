@@ -59,7 +59,7 @@ contains
         write(*,*)
         write(*,*) "Kpara=",2e-11 /unit_density/unit_velocity**3./ &
             unit_length*unit_temperature**3.5
-        
+!
         write(*,*) "hcond_grad=",1e9*dxmax**3*unit_temperature/unit_velocity**3
         write(*,*) "-------------------------------------------------------------"
       endif
@@ -111,7 +111,7 @@ contains
       case ('tanh_z','tanh_loop')
         call setup_tanh(f)
       case default
-        call fatal_error('initial_condition_lnrho', &
+        call fatal_error('initial_condition', &
             'no such value for lnTT_init')
       endselect
 !
@@ -460,10 +460,10 @@ contains
     subroutine setup_tanh(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mz) :: TT,z_SI,TT_var
+      real, dimension (mx) :: TT,z_SI,TT_var
       integer :: i,j
 !
-      z_SI = z*unit_length
+      z_SI = Lxyz(1) / pi *sin( x/Lxyz(1)*pi ) *unit_length
 !
       TT = (T1-T0)*(0.5*tanh((z_SI-z0_tanh)/width_tanh)+0.5)+T0
 !
@@ -478,9 +478,9 @@ contains
         call fatal_error('setup_tanh','only works for ltemperature=T')
       endif
 !
-      do i=1,mx
-        do j=1,my
-          f(i,j,:,ilnTT) = TT_var
+      do i=1,my
+        do j=1,mz
+          f(:,i,j,ilnTT) = TT_var
         enddo
       enddo
 !
