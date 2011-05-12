@@ -155,6 +155,13 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
+      if (tau_inv_spitzer/=0.) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+      endif
+!
       if (Kpara/=0.) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_lnrho)=.true.
