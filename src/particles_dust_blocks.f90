@@ -1624,15 +1624,15 @@ k_loop:   do while (.not. (k>npar_loc))
           if (npar_iblock(iblock)/=0) then
             do k=k1_iblock(iblock),k2_iblock(iblock)
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              dt1_advpx=abs(fp(k,ivpx))*dx_1(l1)
+              dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
               if (lshear) then
-                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(m1)
+                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
               else
-                dt1_advpy=abs(fp(k,ivpy))*dy_1(m1)
+                dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
               endif
-              dt1_advpz=abs(fp(k,ivpz))*dz_1(n1)
-              dt1_max(1)=max(dt1_max(1), &
-                  sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
+              dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+              dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
+                 sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
             enddo
           endif
         endif
