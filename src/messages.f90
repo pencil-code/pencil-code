@@ -55,7 +55,7 @@ module Messages
     subroutine initialize_messages
 !
 ! Set a flag if colored output has been requested.
-! Also set a flag if fake_parallel_io is requested. 
+! Also set a flag if fake_parallel_io is requested.
 !
       inquire(FILE="COLOR", EXIST=ltermcap_color)
       inquire(FILE="FAKE_PARALLEL_IO", EXIST=lfake_parallel_io)
@@ -190,7 +190,7 @@ module Messages
 !
       character(len=*) :: location
       character(len=*) :: message
-
+!
       if (.not.llife_support) then
         errors=errors+1
 !
@@ -263,7 +263,6 @@ module Messages
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
       integer :: wf=18, wv=7, wd=19 ! width of individual fields
-!     integer :: wa=15 ! 07-dec-09 bing: commented out because it wasn't used
       integer :: wd1=0
       logical, save :: lfirstcall=.true.
 !
@@ -334,7 +333,7 @@ module Messages
             revision(1:wv), &
             date(1:wd), &
             trim(author)
- 
+!
         write(1,fmt) "SVN: ", &
             trim(filename), &
             revision(1:wv), &
@@ -422,13 +421,13 @@ module Messages
       character(len=*) :: string
       integer :: idx0, idx1
       character(len=*) substring
-
+!
       if (1 <= idx0 .and. idx0 <= idx1 .and. idx1 <= len(string)) then
         substring = string(idx0:idx1)
       else
         substring = "???"
       endif
-
+!
     endsubroutine extract_substring
 !***********************************************************************
     subroutine life_support_off(message)
