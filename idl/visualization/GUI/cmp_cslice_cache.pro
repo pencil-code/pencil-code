@@ -982,11 +982,11 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	bcot    = WIDGET_BASE (MID, /row)
 
 	sl_size = ((2*num_x*bin_x+num_y*bin_y)/2.5 > (400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2) < 500
-	sl_min  = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='SCALE_BOT', /double, /edit, min=val_min, max=val_max, drag=1, value=val_min, xsize=sl_size)
+	sl_min  = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='SCALE_BOT', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_min, xsize=sl_size)
 	bcol    = WIDGET_BASE (bcot, /col)
 	min_max	= WIDGET_BUTTON (bcol, value='<= min SET max =>', uvalue='MIN_MAX', xsize=120)
 	range	= WIDGET_BUTTON (bcol, value='FREEZE RANGE', uvalue='FREEZE', xsize=120)
-	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_min, max=val_max, drag=1, value=val_max, xsize=sl_size)
+	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_max, xsize=sl_size)
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
