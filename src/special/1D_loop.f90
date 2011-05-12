@@ -6,7 +6,7 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 0
+! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -29,12 +29,13 @@ module Special
   real :: width_newton=0.,width_RTV=0.
   real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
   real :: hcond_grad_iso=0.
+  real :: tau_inv_spitzer
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
-
+!
   namelist /special_run_pars/ &
       Kpara,Kperp,cool_RTV,tau_inv_newton,exp_newton,init_time, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
@@ -67,16 +68,22 @@ module Special
   real, save, dimension (mx) :: lnTT_init_prof,lnrho_init_prof
   integer, save, dimension(mseed) :: nano_seed
 !
+  real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
+  real :: Ksaturation_SI = 7e7,Ksaturation=0.
+!
   contains
 !***********************************************************************
     subroutine register_special()
 !
 !  Set up indices for variables in special modules.
 !
-!  6-oct-03/tony: coded
+      use FArrayManager
+!
+      call farray_register_pde('spitzer',ispitzer,vector=3)
+      ispitzerx=ispitzer; ispitzery=ispitzer+1; ispitzerz=ispitzer+2
 !
       if (lroot) call svn_id( &
-           "$Id$")
+          "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -94,6 +101,11 @@ module Special
       character (len=*), parameter :: filename='/strat.dat'
       integer :: lend,unit=12
       real :: dummy=1.
+!
+      Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
+          unit_length*unit_temperature**(3.5)
+!
+      Ksaturation = Ksaturation_SI /unit_velocity**3.*unit_temperature**1.5
 !
       call keep_compiler_quiet(f)
 !
@@ -237,6 +249,71 @@ module Special
       endif
 !
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine dspecial_dt(f,df,p)
+!
+!  12-may-11/bingert: coded
+!
+      use EquationOfState, only: gamma
+      use Diagnostics,     only : max_mn_name
+      use Sub, only: div, identify_bcs, multsv
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension(nx) :: rhs,div_sp
+      real, dimension (nx,3) :: K1
+      integer :: i
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+!  Identify module and boundary conditions.
+!
+      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+!
+      if (headtt) then
+        call identify_bcs('spitzer',ispitzer)
+      endif
+!
+      if (tau_inv_spitzer /= 0.) then
+!
+        call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
+!
+        do i=1,3
+          df(l1:l2,m,n,ispitzer-1+i) = df(l1:l2,m,n,ispitzer-1+i) + &
+              tau_inv_spitzer*(-f(l1:l2,m,n,ispitzer-1+i)-K1(:,i) )
+        enddo
+!
+        call div(f,ispitzer,div_sp)
+!
+        rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_sp
+!
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+!
+        if (lvideo) then
+!
+! slices
+!
+          spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
+          if (m == iy_loc)  spitzer_xz(:,n-n1+1)= -rhs
+          if (n == iz_loc)  spitzer_xy(:,m-m1+1)= -rhs
+          if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= -rhs
+          if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= -rhs
+          if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= -rhs
+        endif
+!
+        if (lfirst.and.ldt) then
+          dt1_max=max(dt1_max,abs(rhs)/cdts)
+          dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
+          if (ldiagnos.and.idiag_dtrad /= 0.) then
+            itype_name(idiag_dtrad)=ilabel_max_dt
+            call max_mn_name(rhs/cdts,idiag_dtrad,l_dt=.true.)
+          endif
+        endif
+      endif
+!
+    endsubroutine dspecial_dt
 !***********************************************************************
     subroutine get_slices_special(f,slices)
 !
@@ -685,7 +762,7 @@ module Special
       integer :: i
 !
       heat_unit= unit_density*unit_velocity**3/unit_length
-
+!
       x_Mm = x(l1:l2)*unit_length*1e-6
 !
 ! The height in [Mm]
@@ -732,7 +809,7 @@ module Special
               heat_par_exp2(1)*exp(-height/heat_par_exp2(2))/heat_unit
 !
           heat_flux=heat_flux + heat_par_exp2(1)*heat_par_exp2(2)*1e6
-
+!
           if (headtt) print*,'Flux for exp2 heating: ', &
               heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
               (1.-exp(-lz*unit_length*1e-6/heat_par_exp2(2)))
@@ -764,7 +841,7 @@ module Special
           ! LOAD NANO_SEED
           call random_seed_wrapper(GET=global_rstate)
           call random_seed_wrapper(PUT=nano_seed)
-
+!
           if (nano_start .eq. 0.) then
             ! If 0 roll to see if a nanoflare occurs
             call random_number_wrapper(nano_start)
