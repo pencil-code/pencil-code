@@ -255,13 +255,14 @@ pro show_timeseries, ts, tags, unit, start_time=start_time, end_time=end_time
 		if (any (strcmp (tags, 'dtc', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtc])
 		if (any (strcmp (tags, 'dtchi', /fold_case)))  then y_minmax = minmax ([y_minmax, ts.dtchi])
 		if (any (strcmp (tags, 'dtchi2', /fold_case))) then y_minmax = minmax ([y_minmax, ts.dtchi2])
+		if (any (strcmp (tags, 'dtd', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtd])
 
 		ts.t *= unit.time
 		ts.dt *= unit.time
 		x_minmax *= unit.time
 		y_minmax *= unit.time
 
-		plot, ts.t, ts.dt, title = 'dt(t) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
+		plot, ts.t, ts.dt, title = 'dt(t) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} d{-l} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
 		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
 			oplot, ts.t, ts.dtu*unit.time, linestyle=2, color=11061000
 			print, "dtu   :", ts.dtu[0]
@@ -293,6 +294,10 @@ pro show_timeseries, ts, tags, unit, start_time=start_time, end_time=end_time
 		if (any (strcmp (tags, 'dtchi2', /fold_case))) then begin
 			oplot, ts.t, ts.dtchi2*unit.time, linestyle=3, color=41215
 			print, "dtchi2:", ts.dtchi2[0]
+		end
+		if (any (strcmp (tags, 'dtd', /fold_case))) then begin
+			oplot, ts.t, ts.dtd*unit.time, linestyle=2, color=16737000
+			print, "dtc   :", ts.dtd[0]
 		end
 
 		window, 12, xsize=1000, ysize=800, title='time series analysis'+add_title, retain=2
