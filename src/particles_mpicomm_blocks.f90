@@ -27,12 +27,12 @@ module Particles_mpicomm
   integer, parameter :: n1b=nghostb+1,n2b=n1b+nzb-1
   integer :: nbrick_foster, nproc_parent, nproc_foster, nblock_loc
   integer, dimension (0:nblockmax-1) :: k1_iblock, k2_iblock, npar_iblock
-  real, dimension (mxb,0:nbricks-1) :: xbrick
-  real, dimension (myb,0:nbricks-1) :: ybrick
-  real, dimension (mzb,0:nbricks-1) :: zbrick
-  real, dimension (mxb,0:nblockmax-1) :: xb
-  real, dimension (myb,0:nblockmax-1) :: yb
-  real, dimension (mzb,0:nblockmax-1) :: zb
+  real, dimension (mxb,0:nbricks-1) :: xbrick,dx1brick
+  real, dimension (myb,0:nbricks-1) :: ybrick,dy1brick
+  real, dimension (mzb,0:nbricks-1) :: zbrick,dz1brick
+  real, dimension (mxb,0:nblockmax-1) :: xb,dx1b
+  real, dimension (myb,0:nblockmax-1) :: yb,dy1b
+  real, dimension (mzb,0:nblockmax-1) :: zb,dz1b
 !
   real, dimension (mxb,myb,mzb,mvar+maux,0:nblockmax-1) :: fb
   real, dimension (mxb,myb,mzb,mvar,0:nblockmax-1) :: dfb
@@ -127,6 +127,10 @@ module Particles_mpicomm
         xbrick(:,ibrick)=x(l1+ibx*nxb-1:l1+(ibx+1)*nxb)
         ybrick(:,ibrick)=y(m1+iby*nyb-1:m1+(iby+1)*nyb)
         zbrick(:,ibrick)=z(n1+ibz*nzb-1:n1+(ibz+1)*nzb)
+!
+        dx1brick(:,ibrick)=dx_1(l1+ibx*nxb-1:l1+(ibx+1)*nxb)
+        dy1brick(:,ibrick)=dy_1(m1+iby*nyb-1:m1+(iby+1)*nyb)
+        dz1brick(:,ibrick)=dz_1(n1+ibz*nzb-1:n1+(ibz+1)*nzb)
       enddo
 !
       if (lstarting.or.(lreblock_particles_run)) then
@@ -159,6 +163,10 @@ module Particles_mpicomm
           xb(:,iblock)=xbrick(:,ibrick)
           yb(:,iblock)=ybrick(:,ibrick)
           zb(:,iblock)=zbrick(:,ibrick)
+!
+          dx1b(:,iblock)=dx1brick(:,ibrick)
+          dy1b(:,iblock)=dy1brick(:,ibrick)
+          dz1b(:,iblock)=dz1brick(:,ibrick)
         enddo
       else
 !
@@ -1337,6 +1345,9 @@ module Particles_mpicomm
             xb(:,nblock_loc-1)=xbrick(:,ibrick_rec)
             yb(:,nblock_loc-1)=ybrick(:,ibrick_rec)
             zb(:,nblock_loc-1)=zbrick(:,ibrick_rec)
+            dx1b(:,nblock_loc-1)=dx1brick(:,ibrick_rec)
+            dy1b(:,nblock_loc-1)=dy1brick(:,ibrick_rec)
+            dz1b(:,nblock_loc-1)=dz1brick(:,ibrick_rec)
             call sort_blocks()
             ibrick_global_arr(0:nblock_loc-1)= &
                 iproc_parent_block(0:nblock_loc-1)*nbricks+ &
@@ -1563,9 +1574,9 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc) :: ipar
 !
-      real, dimension (mxb,0:nblockmax-1) :: xb_recv
-      real, dimension (myb,0:nblockmax-1) :: yb_recv
-      real, dimension (mzb,0:nblockmax-1) :: zb_recv
+      real, dimension (mxb,0:nblockmax-1) :: xb_recv,dx1b_recv
+      real, dimension (myb,0:nblockmax-1) :: yb_recv,dy1b_recv
+      real, dimension (mzb,0:nblockmax-1) :: zb_recv,dz1b_recv
       integer, dimension (MPI_STATUS_SIZE) :: stat
       integer, dimension (0:nbricks-1) :: npbrick, iproc_foster_old
       integer, dimension (0:nblockmax-1) :: npblock, ibrick_give, ibrick_recv
@@ -1576,7 +1587,8 @@ module Particles_mpicomm
       integer :: npar_brick_taken, npar_want, npar_give
       integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
       integer :: iblock_old, nbrick_give, nbrick_recv, ibrick_global
-      integer :: iproc_left, iproc_right, tag_id=100, ierr, ireq, nreq
+      integer :: iproc_left, iproc_right, tag_id=100, tag_id2=1000 
+      integer :: ierr, ireq, nreq
       integer :: iblock1, iblock2, iproc_recv, iproc_send
       integer :: ipvar, nblock_send, npar_loc_tmp
       integer :: k1_send, k2_send
@@ -1936,6 +1948,9 @@ module Particles_mpicomm
         call MPI_IRECV(xb_recv(:,iblock:iblock), mxb, &
             MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        call MPI_IRECV(dx1b_recv(:,iblock:iblock), mxb, &
+            MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
         nreq=nreq+1
         ireq_array(nreq)=ireq
         iblock=iblock+1
@@ -1950,6 +1965,9 @@ module Particles_mpicomm
           call MPI_ISEND(xb(:,iblock:iblock), mxb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          call MPI_ISEND(dx1b(:,iblock:iblock), mxb, &
+              MPI_DOUBLE_PRECISION, iproc_send, &
+              tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
@@ -1961,6 +1979,7 @@ module Particles_mpicomm
       enddo
 !
       xb(:,0:nblock_loc-1)=xb_recv(:,0:nblock_loc-1)
+      dx1b(:,0:nblock_loc-1)=dx1b_recv(:,0:nblock_loc-1)
 !
 !  Communicate yb array.
 !
@@ -1973,6 +1992,9 @@ module Particles_mpicomm
         call MPI_IRECV(yb_recv(:,iblock:iblock), &
             myb, MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        call MPI_IRECV(dy1b_recv(:,iblock:iblock), &
+            myb, MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
         nreq=nreq+1
         ireq_array(nreq)=ireq
         iblock=iblock+1
@@ -1987,6 +2009,9 @@ module Particles_mpicomm
           call MPI_ISEND(yb(:,iblock:iblock), myb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          call MPI_ISEND(dy1b(:,iblock:iblock), myb, &
+              MPI_DOUBLE_PRECISION, iproc_send, &
+              tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
@@ -1998,6 +2023,7 @@ module Particles_mpicomm
       enddo
 !
       yb(:,0:nblock_loc-1)=yb_recv(:,0:nblock_loc-1)
+      dy1b(:,0:nblock_loc-1)=dy1b_recv(:,0:nblock_loc-1)
 !
 !  Communicate zb array.
 !
@@ -2010,6 +2036,9 @@ module Particles_mpicomm
         call MPI_IRECV(zb_recv(:,iblock:iblock), mzb, &
             MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        call MPI_IRECV(dz1b_recv(:,iblock:iblock), mzb, &
+            MPI_DOUBLE_PRECISION, iproc_recv, &
+            tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
         nreq=nreq+1
         ireq_array(nreq)=ireq
         iblock=iblock+1
@@ -2024,6 +2053,9 @@ module Particles_mpicomm
           call MPI_ISEND(zb(:,iblock:iblock), mzb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          call MPI_ISEND(dz1b(:,iblock:iblock), mzb, &
+              MPI_DOUBLE_PRECISION, iproc_send, &
+              tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
@@ -2035,6 +2067,7 @@ module Particles_mpicomm
       enddo
 !
       zb(:,0:nblock_loc-1)=zb_recv(:,0:nblock_loc-1)
+      dz1b(:,0:nblock_loc-1)=dz1b_recv(:,0:nblock_loc-1)
 !
 !  Remove the particles that are no longer at the present processor.
 !
@@ -2132,6 +2165,9 @@ module Particles_mpicomm
           write(lun_output) xb(:,0:nblock_loc-1)
           write(lun_output) yb(:,0:nblock_loc-1)
           write(lun_output) zb(:,0:nblock_loc-1)
+          write(lun_output) dx1b(:,0:nblock_loc-1)
+          write(lun_output) dy1b(:,0:nblock_loc-1)
+          write(lun_output) dz1b(:,0:nblock_loc-1)
         else
           write(lun_output) -1
           write(lun_output) -1
@@ -2184,6 +2220,9 @@ module Particles_mpicomm
           read(lun_output) xb(:,0:nblock_loc-1)
           read(lun_output) yb(:,0:nblock_loc-1)
           read(lun_output) zb(:,0:nblock_loc-1)
+          read(lun_output) dx1b(:,0:nblock_loc-1)
+          read(lun_output) dy1b(:,0:nblock_loc-1)
+          read(lun_output) dz1b(:,0:nblock_loc-1)
         else
           read(lun_output) dummy
           read(lun_output) dummy
@@ -2255,6 +2294,9 @@ module Particles_mpicomm
       xb(:,0:nblock_loc-1)=xb(:,i_sorted_proc(0:nblock_loc-1))
       yb(:,0:nblock_loc-1)=yb(:,i_sorted_proc(0:nblock_loc-1))
       zb(:,0:nblock_loc-1)=zb(:,i_sorted_proc(0:nblock_loc-1))
+      dx1b(:,0:nblock_loc-1)=dx1b(:,i_sorted_proc(0:nblock_loc-1))
+      dy1b(:,0:nblock_loc-1)=dy1b(:,i_sorted_proc(0:nblock_loc-1))
+      dz1b(:,0:nblock_loc-1)=dz1b(:,i_sorted_proc(0:nblock_loc-1))
 !
 !  Calculate the number of particles in each brick.
 !
