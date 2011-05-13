@@ -37,9 +37,11 @@ module Shock
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
   real    :: div_threshold=0.
+  logical :: lrewrite_shock_boundary=.false.
 !
   namelist /shock_run_pars/ &
-      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,div_threshold
+      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,&
+      div_threshold,lrewrite_shock_boundary
 ! 
   integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
   integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
@@ -532,7 +534,11 @@ module Shock
 !
 !  Scale by dxmax**2
 !
-        f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)*dxmax**2
+        if (.not.lrewrite_shock_boundary) then 
+          f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)*dxmax**2
+        else
+          f(:,:,:,ishock) = tmp*dxmax**2
+        endif
       endif
 !
     endsubroutine calc_shock_profile
