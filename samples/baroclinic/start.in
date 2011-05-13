@@ -1,0 +1,34 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2009-09-12 16:05:39 wlyra Exp $',
+  xyz0  =  -0.2,  0.0,  -0.1
+  xyz1  =   0.2,  1.6,   0.1
+  lperi =      T,      T,      T
+  ip=14
+  lwrite_ic=T
+  lwrite_aux=T
+/
+&initial_condition_pars
+  rho_rms=0.05
+/
+&eos_init_pars
+  cs0=0.1, gamma=1.4, rho0=1.0
+/
+&hydro_init_pars
+  Omega=1.0
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='gaussian-noise',ampllnrho=1e-4
+/
+&entropy_init_pars
+/
+&shear_init_pars
+  qshear=1.5
+  lshearadvection_as_shift=F
+/
+&special_init_pars
+/

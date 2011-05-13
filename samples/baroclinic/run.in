@@ -1,0 +1,41 @@
+!                          -*-f90-*- (for Emacs)
+!
+!  Run parameters for MRI turbulence
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2009-09-24 08:59:37 wlyra Exp $',
+  nt=100, it1=10, cdt=0.4, cdtv=0.4, isave=300, itorder=3,
+  dsnap=628.31853, dtmin=1.0e-6, dvid=1.0
+  lbidiagonal_derij=F
+  lpencil_check=T
+  tmax=6300.
+  lwrite_aux=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  idiff='hyper3-mesh','shock'
+  diffrho_hyper3_mesh=5,diffrho_shock=1.
+/
+&entropy_run_pars
+ TTref_cool=2.5e-2
+ tau_cool=6.283
+ iheatcond='hyper3-mesh','shock'
+ chi_hyper3_mesh=5,chi_shock=1.
+/
+&shear_run_pars
+  qshear=1.5
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh','nu-shock'
+  nu_hyper3_mesh=5,nu_shock=1.
+/
+&special_run_pars
+  Bshear=2.0
+  lunstratified=T
+/
+&shock_run_pars
+  lrewrite_shock_boundary=T
+/
