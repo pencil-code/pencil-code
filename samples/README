@@ -12,7 +12,7 @@ conv-slab-noequi                    Sven Bingert <mail/bingert[dot]com>
 conv-slab                           Wolfgang Dobler <wdobler/gmail[dot]com>
 corona                              Sven Bingert <mail/bingert[dot]com>
 cosmicray                           Andrew Snodin <Andrew.Snodin/newcastle[dot]ac[dot]uk>
-dust_turb_globaldisk                Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
+dust_turb_globaldisk                Wladimir Lyra <wlyra/amnh[dot]org>
 dust-vortex                         Anders Johansen <johansen/mpia[dot]de>
 forced-boundary                     Sven Bingert <mail/bingert[dot]com>
 geodynamo                           Graeme Sarson <G.R.Sarson/newcastle[dot]ac[dot]uk>
@@ -40,8 +40,8 @@ testfield_z                         Axel Brandenburg <brandenb/nordita[dot]dk>
 0d-tests/chemistry_H2_ignition_rkf  Natalia Babkovskaia <nbabkovskaia/gmail[dot]com>
 0d-tests/heating_ionize             Tobias Heinemann <T.Heinemann/damtp[dot]cam[dot]ac[dot]uk>
 0d-tests/heating_ionize             Axel Brandenburg <brandenb/nordita[dot]dk>
-0d-tests/solar_system               Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
-1d-tests/ambipolar_diffusion        Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
+0d-tests/solar_system               Wladimir Lyra <wlyra/amnh[dot]org>
+1d-tests/ambipolar_diffusion        Wladimir Lyra <wlyra/amnh[dot]org>
 1d-tests/sod_10                     Axel Brandenburg <brandenb/nordita[dot]dk>
 1d-tests/sod_10s                    Axel Brandenburg <brandenb/nordita[dot]dk>
 1d-tests/solar-atmosphere           Tobias Heinemann <T.Heinemann/damtp[dot]cam[dot]ac[dot]uk>
@@ -51,8 +51,8 @@ testfield_z                         Axel Brandenburg <brandenb/nordita[dot]dk>
 2d-tests/bubble                     Boris Dintrans <dintrans/ast[dot]obs-mip[dot]fr>
 2d-tests/chemistry_GrayScott        Axel Brandenburg <brandenb/nordita[dot]dk>
 2d-tests/conv-slab-MLT              Boris Dintrans <dintrans/ast[dot]obs-mip[dot]fr>
-2d-tests/cylindrical_gdisk          Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
-2d-tests/globaldisc                 Wladimir Lyra <wlyra/astro[dot]uu[dot]se>
+2d-tests/cylindrical_gdisk          Wladimir Lyra <wlyra/amnh[dot]org>
+2d-tests/globaldisc                 Wladimir Lyra <wlyra/amnh[dot]org>
 2d-tests/GMSW1976                   Wolfgang Dobler <wdobler/gmail[dot]com>
 2d-tests/Kelvin-Helmholtz-disc      Anders Johansen <johansen/mpia[dot]de>
 2d-tests/selfgravitating-shearwave  Anders Johansen <johansen/mpia[dot]de>
