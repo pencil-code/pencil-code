@@ -6058,7 +6058,7 @@ module Magnetic
         print*
         print*,'x, eta_x, geta_x(:,1)'
         do l=l1,l2
-          write(*,'(1p3e11.3)') x(l),eta_x(l),geta_x(l,1)
+          write(*,'(1p,3e11.3)') x(l),eta_x(l),geta_x(l,1)
         enddo
       endif
 !
