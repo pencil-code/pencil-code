@@ -9,6 +9,7 @@
   public :: l1b, l2b, m1b, m2b, n1b, n2b
   public :: nbrick_foster, nproc_parent, nproc_foster, nblock_loc
   public :: xbrick, ybrick, zbrick, xb, yb, zb
+  public :: dx1brick, dy1brick, dz1brick, dx1b, dy1b, dz1b
   public :: k1_iblock, k2_iblock, npar_iblock
   public :: fb, dfb
   public :: ibrick_parent_block, iproc_parent_block, inearblock
