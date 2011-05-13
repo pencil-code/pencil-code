@@ -225,7 +225,6 @@ module Particles_map
 !
       real :: weight0, weight, weight_x, weight_y, weight_z
       real, save :: dx1, dy1, dz1
-      real :: d1x, d1y, d1z
       real :: rhop_swarm_pt
       real :: dVol1x,dVol1y,dVol1z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib, izg0
@@ -308,18 +307,16 @@ module Particles_map
                     weight0=1.0
                   endif
 !
-                  do izz=izz0,izz1; call get_inverse_dxyz(zb(izz,ib),zgrid,3,dz1,d1z) 
-                  do iyy=iyy0,iyy1; call get_inverse_dxyz(yb(iyy,ib),ygrid,2,dy1,d1y)
-                  do ixx=ixx0,ixx1; call get_inverse_dxyz(xb(ixx,ib),zgrid,1,dx1,d1x)
+                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
 !
                     weight=weight0
 !
                     if (nxgrid/=1) weight=weight* &
-                        ( 1.0-abs(fp(k,ixp)-xb(ixx,ib))*d1x )
+                        ( 1.0-abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib) )
                     if (nygrid/=1) weight=weight* &
-                        ( 1.0-abs(fp(k,iyp)-yb(iyy,ib))*d1y )
+                        ( 1.0-abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib) )
                     if (nzgrid/=1) weight=weight* &
-                        ( 1.0-abs(fp(k,izp)-zb(izz,ib))*d1z )
+                        ( 1.0-abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib) )
 !
                     fb(ixx,iyy,izz,irhop,ib)=fb(ixx,iyy,izz,irhop,ib) + weight
 !
@@ -389,30 +386,28 @@ module Particles_map
 !  neighbours are. A particle that is situated exactly on a grid point gives
 !  3/4 contribution to that grid point and 1/8 to each of the neighbours.
 !
-                  do izz=izz0,izz1 ; call get_inverse_dxyz(zb(izz,ib),zgrid,3,dz1,d1z)
-                  do iyy=iyy0,iyy1 ; call get_inverse_dxyz(yb(iyy,ib),ygrid,2,dy1,d1y)
-                  do ixx=ixx0,ixx1 ; call get_inverse_dxyz(xb(ixx,ib),zgrid,1,dx1,d1x)
+                  do izz=izz0,izz1 ; do iyy=iyy0,iyy1 ; do ixx=ixx0,ixx1
 !
                     if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
-                      weight_x=1.125-1.5* abs(fp(k,ixp)-xb(ixx,ib))*d1x+ &
-                           0.5*(abs(fp(k,ixp)-xb(ixx,ib))*d1x)**2
+                      weight_x=1.125-1.5* abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib)+ &
+                           0.5*(abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib))**2
                     else
                       if (nxgrid/=1) &
-                           weight_x=0.75-   ((fp(k,ixp)-xb(ixx,ib))*d1x)**2
+                           weight_x=0.75-   ((fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib))**2
                     endif
                     if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
-                      weight_y=1.125-1.5* abs(fp(k,iyp)-yb(iyy,ib))*d1y+ &
-                           0.5*(abs(fp(k,iyp)-yb(iyy,ib))*d1y)**2
+                      weight_y=1.125-1.5* abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib)+ &
+                           0.5*(abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib))**2
                     else
                       if (nygrid/=1) &
-                           weight_y=0.75 -   ((fp(k,iyp)-yb(iyy,ib))*d1y)**2
+                           weight_y=0.75 -   ((fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib))**2
                     endif
                     if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
-                      weight_z=1.125-1.5* abs(fp(k,izp)-zb(izz,ib))*d1z+ &
-                           0.5*(abs(fp(k,izp)-zb(izz,ib))*d1z)**2
+                      weight_z=1.125-1.5* abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib)+ &
+                           0.5*(abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib))**2
                     else
                       if (nzgrid/=1) &
-                           weight_z=0.75 -   ((fp(k,izp)-zb(izz,ib))*d1z)**2
+                           weight_z=0.75 -   ((fp(k,izp)-zb(izz,ib))*dz1b(izz,ib))**2
                     endif
 !
                     weight=weight0
@@ -1496,34 +1491,6 @@ module Particles_map
       endif
 !
     endsubroutine shepherd_neighbour_block
-!***********************************************************************
-    subroutine get_inverse_dxyz(q,qgrid,idir,dq1,d1q) 
-!
-!  Fetch inverse grid element arrays. So far uses global arrays. To be 
-!  re-defined later using clever communication. 
-!
-!  29-mar-2011/wlad: coded
-!
-      real, dimension (:), intent(in) :: qgrid
-      real, intent(in)    :: q, dq1
-      integer, intent(in) :: idir
-      real, intent(out)   :: d1q
-      integer             :: iq
-!  
-      if (lequidist(idir)) then 
-        d1q=dq1
-      else
-        call find_index_by_bisection(q,qgrid,iq)
-        if (idir==1) then 
-          d1q=dxgrid_1(iq)
-        else if (idir==2) then 
-          d1q=dygrid_1(iq)
-        else if (idir==3) then 
-          d1q=dzgrid_1(iq)
-        endif
-      endif
-!
-    endsubroutine get_inverse_dxyz
 !***********************************************************************
     subroutine get_inverse_volume(q,qgrid,idir,dVol1q) 
 !
