@@ -48,4 +48,5 @@
   tausp=1.0
   lparticlemesh_tsc=T
   bcpx='flk',bcpy='out'
+  eps_dtog=0.01
 /
