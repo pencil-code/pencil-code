@@ -294,11 +294,11 @@ module Snapshot
         if (jxbxy_spec) call power_xy(f,'jxb')
 !
         do ispec=1,n_spectra
-
+!
           if ( xy_specs(ispec)/='' ) then
-
+!
             ipos = index(xy_specs(ispec), '.'); sp1=''; sp2=''
- 
+! 
             if ( ipos==0 ) then
               call power_xy(f,trim(xy_specs(ispec)))
             else
@@ -313,7 +313,7 @@ module Snapshot
               endif
             endif
           endif
-
+!
         enddo
 !
 !  phi power spectra (in spherical or cylindrical coordinates)
