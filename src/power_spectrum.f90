@@ -81,13 +81,15 @@ module power_spectrum
 
       n_spectra = parser( xy_spec, xy_specs, 10, ',' )
 
-      if ( uxy_spec ) &
-        where ( xy_specs == 'u' ) uxy_spec=.false.
-      if ( jxbxy_spec ) &
-        where ( xy_specs == 'jxb' ) jxbxy_spec=.false.
-      if ( jxbxy_spec ) &
-        where ( xy_specs == 'b' ) bxy_spec=.false.
-
+      do i=1,10
+        if ( xy_specs(i) == 'u' ) then
+          uxy_spec=.false.
+        else if ( xy_specs(i) == 'jxb' ) then
+          jxbxy_spec=.false.
+        else if ( xy_specs(i) == 'b' ) then
+          bxy_spec=.false.
+        endif
+      enddo
 99    return
 
     endsubroutine read_power_spectrum_runpars
