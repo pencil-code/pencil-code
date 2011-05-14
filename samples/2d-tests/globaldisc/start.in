@@ -43,6 +43,7 @@
 /
 &particles_init_pars
   initxxp='random', initvvp='random'
+  eps_dtog=0.01
 /
 &particles_nbody_init_pars
   initxxsp='fixed-cm'
