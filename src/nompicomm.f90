@@ -226,6 +226,11 @@ module Mpicomm
     module procedure unmap_from_pencil_yz_4D
   endinterface
 !
+  interface mpigather_and_out
+    module procedure mpigather_and_out_real
+    module procedure mpigather_and_out_cmplx
+  endinterface
+
   contains
 !***********************************************************************
     subroutine mpicomm_init()
@@ -2215,35 +2220,91 @@ module Mpicomm
     subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
 !
 !  21-dec-10/MR: coded
+!  20-apr-11/MR: buffer dimensions corrected
 !
-      real, dimension(nxgrid,ny)     :: sendbuf
-      real, dimension(nxgrid,nygrid) :: recvbuf
-      integer                        :: n1
-      integer, optional              :: lproc
+      real, dimension(n1,nz)    , intent(in)  :: sendbuf
+      real, dimension(n1,nzgrid), intent(out) :: recvbuf
+      integer, optional,          intent(in)  :: lproc
+      integer,                    intent(in)  :: n1
 !
       recvbuf = sendbuf
 !
       if (NO_WARN) print*,n1,present(lproc)
 !
     endsubroutine mpigather_z
-!***********************************************************************
-    subroutine mpigather_and_out( sendbuf, unit, ltransp )
+!****************************************************************************************
+    subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange, zrange )
 !
 !  21-dec-10/MR: coded
+!  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
+!  10-may-11/MR: modified into real and complex flavors
 !
-! here no parallelization in x allowed
+      use General, only: write_by_ranges_2d_real, write_by_ranges_2d_cmplx
 !
       implicit none
 !
-      real, dimension(nxgrid,ny,nz), intent(in) :: sendbuf   ! nx=nxgrid !
-      integer,                       intent(in) :: unit
-      logical, optional,             intent(in) :: ltransp
+      real,    dimension(nxgrid,nygrid,nzgrid),          intent(in) :: sendbuf
+      complex, dimension(nxgrid,nygrid,nzgrid,ncomp),    intent(in) :: sendbuf_cmplx   
+      integer,                                           intent(in) :: unit, ncomp
+      logical,                                 optional, intent(in) :: ltransp
+      integer, dimension(3,*),                 optional, intent(in) :: kxrange, kyrange,zrange
+   
+      integer :: k,kl,ncompl,ic
+      logical :: ltrans, lcomplex
+      integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
 !
-      write(1,'(1p,8e10.2)') sendbuf
+      lcomplex = .false.
+      ncompl = 1
+      goto 1
+
+      entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange, zrange )
+      ncompl = ncomp
+      lcomplex = .true.
+
+   1  if ( .not.present(ltransp) ) then
+        ltrans=.false.
+      else
+        ltrans=ltransp
+      endif
+!
+      if ( .not.present(kxrange) ) then
+        kxrangel = 0
+        kxrangel(:,1) = (/1,nxgrid,1/)
+      else
+        kxrangel=kxrange(:,1:10)
+      endif
+!
+      if ( .not.present(kyrange) ) then
+        kyrangel = 0
+        kyrangel(:,1) = (/1,nygrid,1/)
+      else
+        kyrangel=kyrange(:,1:10)
+      endif
+!
+      if ( .not.present(zrange) ) then
+        zrangel = 0
+        zrangel(:,1) = (/1,nzgrid,1/)
+      else
+        zrangel=zrange(:,1:10)
+      endif
+!
+      do ic=1,ncompl
+        do k=1,10 
+          if ( zrangel(1,k) > 0 ) then
+            do kl=zrangel(1,k),zrangel(2,k),zrangel(3,k)
+              if ( lcomplex ) then
+                call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,kl,ic), kxrangel, kyrangel, ltrans )
+              else
+                call write_by_ranges_2d_real( 1, sendbuf(1,1,kl), kxrangel, kyrangel, ltrans )
+              endif
+            enddo
+          endif
+        enddo
+      enddo
 !
       if (NO_WARN) print*,unit,present(ltransp)
 !
-    endsubroutine mpigather_and_out
+    endsubroutine mpigather_and_out_real
 !***********************************************************************
     subroutine mpimerge_1d(vector,nk,idir)
 !
