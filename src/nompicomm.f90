@@ -226,10 +226,10 @@ module Mpicomm
     module procedure unmap_from_pencil_yz_4D
   endinterface
 !
-  interface mpigather_and_out
-    module procedure mpigather_and_out_real
-    module procedure mpigather_and_out_cmplx
-  endinterface
+!  interface mpigather_and_out
+!    module procedure mpigather_and_out_real
+!    module procedure mpigather_and_out_cmplx
+!  endinterface
 
   contains
 !***********************************************************************
