@@ -1574,7 +1574,6 @@ module Grid
 !
         if ((ipy==0).and.(ipz==0)) then 
           call mpisend_real(x(l1:l2),nx,root,111)
-          call mpisend_real(dVol1_x(l1:l2),nx,root,118)
         endif
       else
 !
@@ -1591,7 +1590,6 @@ module Grid
 !
             iproc_recv=jx
             call mpirecv_real(xrecv,nx,iproc_recv,111)
-            call mpirecv_real(dVol1_x_recv,nx,iproc_recv,118)
 !
             ido=jx    *nx + 1 
             iup=(jx+1)*nx
