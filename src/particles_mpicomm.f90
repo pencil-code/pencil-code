@@ -25,6 +25,8 @@ module Particles_mpicomm
   real, dimension (1,0:0) :: xbrick=0, ybrick=0, zbrick=0, xb=0, yb=0, zb=0
   real, dimension (1,0:0) :: dx1brick=0, dy1brick=0, dz1brick=0
   real, dimension (1,0:0) :: dx1b=0, dy1b=0, dz1b=0
+  real, dimension (1,0:0) :: dVol1xbrick=0, dVol1ybrick=0, dVol1zbrick=0
+  real, dimension (1,0:0) :: dVol1xb=0, dVol1yb=0, dVol1zb=0
   real, dimension (1,1,1,1,0:0) :: fb, dfb
   real :: xref_par=0.0, yref_par=0.0, zref_par=0.0
   integer :: it1_loadbalance=-1
