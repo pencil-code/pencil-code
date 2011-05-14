@@ -268,6 +268,14 @@ varcontent[iuun].idlvarloc  = 'uun_loc'
 varcontent[iuun].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iuun].skip       = 2
 ;
+default, ispitzer, 0
+varcontent[ispitzer].variable   = 'Heat flux vector according to Spitzer'
+varcontent[ispitzer].idlvar     = 'spitzer'
+varcontent[ispitzer].idlinit    = INIT_3VECTOR
+varcontent[ispitzer].idlvarloc  = 'spitzer_loc'
+varcontent[ispitzer].idlinitloc = INIT_3VECTOR_LOC
+varcontent[ispitzer].skip       = 2
+;
 default, ilnrhon, 0
 varcontent[ilnrhon].variable   = 'Log density of neutrals (lnrhon)'
 varcontent[ilnrhon].idlvar     = 'lnrhon'
