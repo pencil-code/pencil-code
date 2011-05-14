@@ -479,10 +479,9 @@ module Particles_map
           else
 !
             do ib=0,nblock_loc-1
-              do nb=1,mzb ; call get_inverse_volume(zb(nb,ib),zgrid,3,dVol1z)
-              do mb=1,myb ; call get_inverse_volume(yb(mb,ib),ygrid,2,dVol1y)
-              do lb=1,mxb ; call get_inverse_volume(xb(lb,ib),xgrid,1,dVol1x) 
-                rhop_swarm_pt  = mp_swarm*dVol1x*dVol1y*dVol1z
+              do nb=1,mzb ; do mb=1,myb ; do lb=1,mxb
+                rhop_swarm_pt  = mp_swarm*&
+                     dVol1xb(lb,ib)*dVol1yb(mb,ib)*dVol1zb(nb,ib)
                 fb(lb,mb,nb,irhop,ib) = rhop_swarm_pt*fb(lb,mb,nb,irhop,ib)
               enddo;enddo;enddo
             enddo
@@ -1491,30 +1490,6 @@ module Particles_map
       endif
 !
     endsubroutine shepherd_neighbour_block
-!***********************************************************************
-    subroutine get_inverse_volume(q,qgrid,idir,dVol1q) 
-!
-!  Fetch inverse volume arrays. So far uses global arrays. To be 
-!  re-defined later using clever communication. 
-!
-!  11-may-11/wlad: coded
-!
-      real, dimension (:), intent(in) :: qgrid
-      real, intent(in)    :: q
-      integer, intent(in) :: idir
-      real, intent(out)   :: dVol1q
-      integer             :: iq
-!  
-      call find_index_by_bisection(q,qgrid,iq)
-      if (idir==1) then 
-        dVol1q=dxvolume_1(iq)
-      else if (idir==2) then 
-        dVol1q=dyvolume_1(iq)
-      else if (idir==3) then 
-        dVol1q=dzvolume_1(iq)
-      endif
-!
-    endsubroutine get_inverse_volume
 !***********************************************************************
     subroutine interpolation_consistency_check()
 !
