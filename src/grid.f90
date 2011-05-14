@@ -1560,9 +1560,9 @@ module Grid
 !
       use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
 !
-      real, dimension(nx) :: xrecv,dx1recv,dVol1_x_recv
-      real, dimension(ny) :: yrecv,dy1recv,dVol1_y_recv
-      real, dimension(nz) :: zrecv,dz1recv,dVol1_z_recv
+      real, dimension(nx) :: xrecv
+      real, dimension(ny) :: yrecv
+      real, dimension(nz) :: zrecv
       integer :: jx,jy,jz,iup,ido,iproc_recv
 !
 !  Serial x array
@@ -1574,7 +1574,6 @@ module Grid
 !
         if ((ipy==0).and.(ipz==0)) then 
           call mpisend_real(x(l1:l2),nx,root,111)
-          call mpisend_real(dx_1(l1:l2),nx,root,119)
           call mpisend_real(dVol1_x(l1:l2),nx,root,118)
         endif
       else
@@ -1592,19 +1591,14 @@ module Grid
 !
             iproc_recv=jx
             call mpirecv_real(xrecv,nx,iproc_recv,111)
-            call mpirecv_real(dx1recv,nx,iproc_recv,119)
             call mpirecv_real(dVol1_x_recv,nx,iproc_recv,118)
 !
             ido=jx    *nx + 1 
             iup=(jx+1)*nx
             xgrid(ido:iup)=xrecv
-            dxgrid_1(ido:iup)=dx1recv
-            dxvolume_1(ido:iup)=dVol1_x_recv
           else
             !the root just copies its value to the serial array
             xgrid(1:nx)=x(l1:l2)
-            dxgrid_1(1:nx)=dx_1(l1:l2)
-            dxvolume_1(1:nx)=dVol1_x(l1:l2)
           endif
         enddo
       endif
@@ -1613,70 +1607,48 @@ module Grid
 !  procedure for y and z arrays.
 !
       call mpibcast_real(xgrid,nxgrid)
-      call mpibcast_real(dxgrid_1,nxgrid)
-      call mpibcast_real(dxvolume_1,nxgrid)
 !
 !  Serial y-array
 !
       if (iproc/=root) then
         if (ipx==0.and.ipz==0) then 
           call mpisend_real(y(m1:m2),ny,root,222)
-          call mpisend_real(dy_1(m1:m2),ny,root,229)
-          call mpisend_real(dVol1_y(m1:m2),ny,root,228)
         endif
       else
         do jy=0,nprocy-1
           if (jy/=root) then
             iproc_recv=nprocx*jy
             call mpirecv_real(yrecv,ny,iproc_recv,222)
-            call mpirecv_real(dy1recv,ny,iproc_recv,229)
-            call mpirecv_real(dVol1_y_recv,ny,iproc_recv,228)
             ido=jy    *ny + 1
             iup=(jy+1)*ny
             ygrid(ido:iup)=yrecv
-            dygrid_1(ido:iup)=dy1recv
-            dyvolume_1(ido:iup)=dVol1_y_recv
           else
             ygrid(1:ny)=y(m1:m2)
-            dygrid_1(1:ny)=dy_1(m1:m2)
-            dyvolume_1(1:ny)=dVol1_y(m1:m2)
           endif
         enddo
       endif
       call mpibcast_real(ygrid,nygrid)
-      call mpibcast_real(dygrid_1,nygrid)
-      call mpibcast_real(dyvolume_1,nygrid)
 !
 !  Serial z-array
 !
       if (iproc/=root) then
         if (ipx==0.and.ipy==0) then 
           call mpisend_real(z(n1:n2),nz,root,333)
-          call mpisend_real(dz_1(n1:n2),nz,root,339)
-          call mpisend_real(dVol1_z(n1:n2),nz,root,338)
         endif
       else
         do jz=0,nprocz-1
           if (jz/=root) then
             iproc_recv=nprocx*nprocy*jz
             call mpirecv_real(zrecv,nz,iproc_recv,333)
-            call mpirecv_real(dz1recv,nz,iproc_recv,339)
-            call mpirecv_real(dvol1_z_recv,nz,iproc_recv,338)
             ido=jz    *nz + 1
             iup=(jz+1)*nz
             zgrid(ido:iup)=zrecv
-            dzgrid_1(ido:iup)=dz1recv
-            dzvolume_1(ido:iup)=dVol1_z_recv
           else
             zgrid(1:nz)=z(n1:n2)
-            dzgrid_1(1:nz)=dz_1(n1:n2)
-            dzvolume_1(1:nz)=dVol1_z(n1:n2)
           endif
         enddo
       endif
       call mpibcast_real(zgrid,nzgrid)
-      call mpibcast_real(dzgrid_1,nzgrid)
-      call mpibcast_real(dzvolume_1,nzgrid)
 !
     endsubroutine construct_serial_arrays
 !***********************************************************************
