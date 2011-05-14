@@ -97,7 +97,7 @@ if (keyword_set(png_truecolor)) then png=1
 ;
 if (not keyword_set(png)) then begin
    if (keyword_set(newwindow)) then begin
-      window, /free, xsize=wsx, ysize=wsy, title=title 
+      window, /free, xsize=wsx, ysize=wsy, title=title
    endif else window, xsize=wsx, ysize=wsy, title=title
 endif
 ;
@@ -134,7 +134,7 @@ endif else begin
   print,'file_slice=',file_slice
 endelse
 ;
-if (keyword_set(polar)) then begin 
+if (keyword_set(polar)) then begin
   if (anglecoord eq 'y') then begin
     theta = y
   end else if (anglecoord eq 'z') then begin
@@ -224,12 +224,12 @@ if (keyword_set(shell)) then begin
     z[i0z:i1z] = zloc[i0zloc:i1zloc]
 ;
   endfor
-; 
+;
   xx = spread(x, [1,2], [my,mz])
   yy = spread(y, [0,2], [mx,mz])
   zz = spread(z, [0,1], [mx,my])
   rr = sqrt(xx^2+yy^2+zz^2)
-;  
+;
 ;  Assume slices are all central for now -- perhaps generalize later.
 ;  nb: need pass these into boxbotex_scl for use after scaling of image;
 ;      otherwise pixelisation can be severe...
@@ -423,7 +423,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane)
         if(keyword_set(doublebuffer)) then begin
 ;
 ;  Paint into buffer.
-;       
+;
           window,xsize=wsx,ysize=wsy,/pixmap,/free
           pixID=!D.Window
         endif
@@ -486,7 +486,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane)
 ;
           image = tvrd(true=1)
           if (keyword_set(colmpeg)) then begin
-;  ngrs seem to need to work explictly with 24-bit color to get 
+;  ngrs seem to need to work explictly with 24-bit color to get
 ;  color mpegs to come out on my local machines...
             image24 = bytarr(3,Nwx,Nwy)
             tvlct, red, green, blue, /get
