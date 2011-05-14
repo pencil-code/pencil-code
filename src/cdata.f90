@@ -460,7 +460,8 @@ module Cdata
   logical :: j_spec=.false.,jb_spec=.false.,oo_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
-  character (LEN=12) :: xy_spec=''
+  character (LEN=40) :: xy_spec=''
+  character (LEN=10), dimension(10) :: xy_specs=''
   logical :: EP_spec=.false.
   logical :: ro_spec=.false.,TT_spec=.false.,ss_spec=.false.,cc_spec=.false.,cr_spec=.false.
   logical :: lr_spec=.false.,r2u_spec=.false.,r3u_spec=.false.
