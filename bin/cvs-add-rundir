@@ -32,6 +32,10 @@ cvs add src/*.local
 
 if (-e k.dat) cvs add k.dat
 if (-e stratification.dat) cvs add stratification.dat
+if (-e prof_lnrho.dat) cvs add prof_lnrho.dat
+if (-e prof_lnT.dat) cvs add prof_lnT.dat
+if (-e driver) cvs add driver
+if (-e driver/mag_field.dat) cvs add driver/mag_field.dat
 
 if ($commit) then
   cvs commit
