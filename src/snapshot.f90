@@ -196,6 +196,7 @@ module Snapshot
 !  07-oct-02/nils: adapted from wsnap
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
 !  28-dec-02/axel: call structure from herel; allow optional lwrite_only
+!  22-apr-11/MR: added possibility to get quantity for xy-power-spectrum from xy_specs
 !
       use Boundcond, only: update_ghosts
       use Particles_main, only: particles_powersnap
@@ -213,8 +214,9 @@ module Snapshot
       logical :: lspec,llwrite_only=.false.,ldo_all
       integer, save :: ifirst=0,nspec
       real, save :: tspec
-      integer :: ivec,im,in,stat,ipos
+      integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
+      character (LEN=40) :: str
 !
 !  Allocate memory for b_vec at run time.
 !
@@ -291,19 +293,28 @@ module Snapshot
         if (bxy_spec  ) call power_xy(f,'b')
         if (jxbxy_spec) call power_xy(f,'jxb')
 !
-        if ( xy_spec/='' ) then
-          ipos = index(xy_spec, '.'); sp1=''; sp2=''
-          if ( ipos>1 ) then
-            sp1 = xy_spec(1:ipos-1)
-            if ( ipos<=len_trim(xy_spec)-1 ) sp2=xy_spec(ipos+1:)
-          endif
+        do ispec=1,n_spectra
+
+          if ( xy_specs(ispec)/='' ) then
+
+            ipos = index(xy_specs(ispec), '.'); sp1=''; sp2=''
+ 
+            if ( ipos==0 ) then
+              call power_xy(f,trim(xy_specs(ispec)))
+            else
+              str = xy_specs(ispec)
+              if ( ipos>1 ) sp1 = str(1:ipos-1)
+              if ( ipos<=len_trim(xy_specs(ispec))-1 ) sp2=str(ipos+1:)
 !
-          if ( sp1=='' .or. sp2=='' ) then
-            print*, 'powersnap: Warning - '//trim(xy_spec)//' no valid identifier !'
-          else
-            call power_xy(f,sp1,sp2)
+              if ( sp1=='' .or. sp2=='' ) then
+                print*, 'powersnap: Warning - '//trim(xy_specs(ispec))//' no valid identifier !'
+              else
+                call power_xy(f,sp1,sp2)
+              endif
+            endif
           endif
-        endif
+
+        enddo
 !
 !  phi power spectra (in spherical or cylindrical coordinates)
 !
