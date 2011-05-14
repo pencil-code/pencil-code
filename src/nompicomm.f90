@@ -230,7 +230,7 @@ module Mpicomm
 !    module procedure mpigather_and_out_real
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
-
+!
   contains
 !***********************************************************************
     subroutine mpicomm_init()
@@ -2256,11 +2256,11 @@ module Mpicomm
       lcomplex = .false.
       ncompl = 1
       goto 1
-
+!
       entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange, zrange )
       ncompl = ncomp
       lcomplex = .true.
-
+!
    1  if ( .not.present(ltransp) ) then
         ltrans=.false.
       else
