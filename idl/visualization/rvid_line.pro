@@ -3,7 +3,7 @@ pro rvid_line,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   test=test,proc=proc,exponential=exponential,map=map,tt=tt,noplot=noplot,$
   extension=extension, sqroot=sqroot, nocontour=nocontour,imgdir=imgdir, $
   squared=squared, exsquared=exsquared, against_time=against_time,func=func, $
-  findmax=findmax,left_max=max_left,right_max=max_right, csection=csection, $
+  findmax=findmax, csection=csection,xrange=xrange, $
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
   log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
   xstyle=xstyle,ystyle=ystyle,fluct=fluct
@@ -221,10 +221,10 @@ while (not eof(1)) do begin
         if (not keyword_set(noplot)) then begin
           if (keyword_set(exponential)) then begin
             plot, xaxisscale, exp(axz), psym=psym, yrange=[amin,amax], $
-                  xstyle=xstyle,ystyle=ystyle
+                  xstyle=xstyle,ystyle=ystyle,xrange=xrange
           endif else begin
             plot, xaxisscale, axz, psym=psym, yrange=[amin,amax], _extra=_extra, $
-                  xstyle=xstyle,ystyle=ystyle  
+                  xstyle=xstyle,ystyle=ystyle,xrange=xrange 
           endelse
         endif
         if (keyword_set(png)) then begin
