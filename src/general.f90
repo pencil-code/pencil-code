@@ -511,7 +511,7 @@ module General
 !
     endsubroutine chn
 !***********************************************************************
-  character function intochar(i) 
+  character function intochar(i)
 !
   integer, intent(in) :: i
 !
@@ -1548,7 +1548,7 @@ module General
 !
 !  30-dec-04/anders: coded
 !  04-nov-10/nils: moved from particles_map to general
-!  22-apr-11/MR: changed to logical function to get rid of dependence on 
+!  22-apr-11/MR: changed to logical function to get rid of dependence on
 !  module Messages
 !
       use Cdata
@@ -1570,7 +1570,7 @@ module General
 !
 !  Determine index value of lowest lying corner point of grid box surrounding
 !  the interpolation point.
-!     
+!
       linear_interpolate = .true.
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
@@ -1686,12 +1686,12 @@ module General
 !***********************************************************************
     integer function parser( zeile, feld, lenf, tz )
 !
-! Parses string zeile according to separator character tz; 
+! Parses string zeile according to separator character tz;
 ! Puts up to lenf substrings consecutively into feld.
 ! Returns number of found substrings.
 !
 !  10-apr-11/MR: coded
-! 
+!
       character (LEN=*),               intent(in)  :: zeile
       character (LEN=*), dimension(*), intent(out) :: feld
       integer,                         intent(in)  :: lenf
@@ -1714,7 +1714,7 @@ module General
 !
         parser = parser+1
 !
-        if ( ind == 0 ) then 
+        if ( ind == 0 ) then
 !
           feld(parser) = trim(zeile(inda:))
           return
@@ -1730,13 +1730,13 @@ module General
           inda = inda+ind
 !
         endif
-!        
+!
       enddo
 !
     endfunction parser
 !***********************************************************************
   subroutine write_full_columns_real(unit,buffer,range,unfilled,ncol,fmt)
-!        
+!
 ! range-wise output of a real or complex vector in ncol columns
 ! unfilled (inout) - number of unfilled slots in last written line
 !
@@ -1749,7 +1749,7 @@ module General
     integer,                        intent(inout) :: unfilled
     integer,              optional, intent(in)    :: ncol
     character(LEN=*),     optional, intent(in)    :: fmt
-
+!
     integer          :: ncoll, nd, ia, ie, rest
     character(LEN=5) :: str
     character(LEN=20):: fmtl, fmth
@@ -1784,17 +1784,17 @@ module General
       ncoll = 8
     endif
 !
-    if ( unfilled > 0 ) then 
+    if ( unfilled > 0 ) then
 !
       fmth = fmtl
       if ( nd>unfilled ) then
         ie = range(1)+(unfilled-1)*range(3)
-        call chn(unfilled,str)                          
+        call chn(unfilled,str)
       else
         ie = range(2)
         if (nd<unfilled) fmth = trim(fmtl)//'$'
-        call chn(nd,str)                          
-      endif 
+        call chn(nd,str)
+      endif
 !
       nd = nd-unfilled
 !
@@ -1816,26 +1816,26 @@ module General
     endif
 !
     rest = mod(nd,ncoll)
-    ie = (nd-rest-1)*range(3) + ia 
-!   
+    ie = (nd-rest-1)*range(3) + ia
+!
     if ( rest<nd ) then
       call chn(ncoll,str)
       if (lcomplex) then
         write(1,'(1p,'//str//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
-      else 
-        write(1,'(1p,'//str//trim(fmtl)//')') buffer(ia:ie:range(3)) 
+      else
+        write(1,'(1p,'//str//trim(fmtl)//')') buffer(ia:ie:range(3))
       endif
     endif
-!   
+!
     if ( rest > 0 ) then
-!                                                         
-      call chn(rest,str)                                                        
+!
+      call chn(rest,str)
       if (lcomplex) then
         write(1,'(1p,'//str//trim(fmtl)//'$)') buffer_cmplx(ie+range(3):range(2):range(3))
       else
         write(1,'(1p,'//str//trim(fmtl)//'$)') buffer(ie+range(3):range(2):range(3))
       endif
-! 
+!
       unfilled = ncoll-rest
     else
       unfilled = 0
@@ -1846,18 +1846,18 @@ module General
     subroutine merge_ranges( ranges, ie, range, ia )
 !
 ! merges ranges ia through ie in vector ranges with range
-! 
+!
 ! 20-apr-11/MR: coded
 !
       integer, dimension(3,*),          intent(inout) :: ranges
-      integer,  	                intent(in)    :: ie
+      integer,                          intent(in)    :: ie
       integer, dimension(3),            intent(inout) :: range
       integer,                optional, intent(in)    :: ia
       integer :: i, step, ial
 !
       if ( present(ia) ) then
         ial = ia
-      else 
+      else
         ial = 1
       endif
 !
@@ -1870,8 +1870,8 @@ module General
 !
             if ( range(1) <= ranges(2,i)+step .and. &
                  range(2) >= ranges(1,i)-step .and. &
-          	 mod(range(1)-ranges(1,i),step) == 0 ) then
-!              
+                 mod(range(1)-ranges(1,i),step) == 0 ) then
+!
               ranges(1,i) = min( ranges(1,i), range(1) )
               ranges(2,i) = max( ranges(2,i), range(2) )
               range = 0
@@ -1879,7 +1879,7 @@ module General
             endif
 !
           else
-!           no implementation yet   
+!           no implementation yet
           endif
         endif
 !
@@ -1903,7 +1903,7 @@ module General
       ios=0; ios1=0; ios2=0
 !
       if ( crange /= '' ) then
-!        
+!
         range = defrange
 !
         isep = index(crange,':')
@@ -1924,20 +1924,20 @@ module General
             if ( isep1 == isep ) isep1 = lenrng+1
 !
             if ( isep1 > isep+1 ) then
-              read( crange(isep+1:isep1-1),*,IOSTAT=ios1 ) range(2)  
+              read( crange(isep+1:isep1-1),*,IOSTAT=ios1 ) range(2)
               if ( ios1 == 0 ) &
                 range(2) = min(max(defrange(1),range(2)),defrange(2))
             endif
 !
             if ( isep1 < lenrng ) then
 !
-              read( crange(isep1+1:lenrng),*,IOSTAT=ios2 ) range(3)  
-!              
+              read( crange(isep1+1:lenrng),*,IOSTAT=ios2 ) range(3)
+!
               if ( ios2 == 0 ) range(3) = abs(range(3))
 !
             endif
           endif
-!       
+!
           if ( range(1) > range(2) ) then
             tmp = range(1); range(1) = range(2); range(2) = tmp
           endif
@@ -1964,12 +1964,12 @@ module General
     integer function get_range_no( ranges, nr )
 !
 ! determines total number of elements selected by all ranges in ranges
-! 
+!
 ! 20-apr-11/MR: coded
 !
       integer, dimension(3,*), intent(in) :: ranges
       integer,       optional, intent(in) :: nr
-! 
+!
       integer :: i, nrl
 !
       get_range_no = 0
@@ -1995,7 +1995,7 @@ module General
 !
 ! 10-may-11/MR: coded
 !
-    integer,                           intent(in)           :: unit 
+    integer,                           intent(in)           :: unit
     integer, dimension(3,*)          , intent(in)           :: xranges, yranges
     real,    dimension(nxgrid,nygrid), intent(in)           :: buffer
     complex, dimension(nxgrid,nygrid), intent(in)           :: buffer_cmplx
@@ -2060,7 +2060,7 @@ module General
     integer, dimension(3,*), intent(in) :: ranges
 !
     integer :: unfilled, i
-    logical :: lcomplex 
+    logical :: lcomplex
 !
     lcomplex = .false.
     goto 1
