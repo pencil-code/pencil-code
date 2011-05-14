@@ -57,6 +57,7 @@
   interp_pol_rho='cic'
   interp_pol_TT='cic'
   interp_pol_uu='cic'
+  eps_dtog=1.0
 /
 &particles_radius_init_pars
   initap='constant'
