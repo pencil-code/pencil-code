@@ -2001,7 +2001,7 @@ module General
     complex, dimension(nxgrid,nygrid), intent(in)           :: buffer_cmplx
     logical,                           intent(in), optional :: trans
 !
-    integer :: i,j,il,jl,unfilled
+    integer :: i,j,jl,unfilled
     logical :: transl, lcomplex
 !
     lcomplex = .false.
