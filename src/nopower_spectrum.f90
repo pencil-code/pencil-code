@@ -6,6 +6,8 @@ module power_spectrum
 !
   implicit none
 !
+  integer :: n_spectra=0
+
   include 'power_spectrum.h'
 !
   contains
