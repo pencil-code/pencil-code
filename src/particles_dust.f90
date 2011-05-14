@@ -37,7 +37,7 @@ module Particles
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0
@@ -311,13 +311,16 @@ module Particles
         if (lroot) print*, 'initialize_particles: Global pressure '// &
             'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
+!
 !  Calculate mass density per particle (for back-reaction drag force on gas)
-!  following the formula
+!  based on the dust-to-gas ratio eps:
+!
 !    rhop_swarm*N_cell = eps*rhom
+!
 !  where rhop_swarm is the mass density per superparticle, N_cell is the number
 !  of particles per grid cell and rhom is the mean gas density in the box.
 !
-      if (rhop_swarm==0.0 .or. mp_swarm==0.0) then
+      if (eps_dtog>0.0) then
 ! For stratification, take into account gas present outside the simulation box.
         if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
@@ -325,9 +328,9 @@ module Particles
           rhom=1.0
         endif
         if (rhop_swarm==0.0) &
-             rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+            rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
         if (mp_swarm==0.0) & 
-             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
+            mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
