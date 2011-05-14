@@ -2329,7 +2329,7 @@ module Hydro
 !
     intent(in)  :: uij, divu, ss
     intent(out) :: sij
-
+!
     if ( .not.present(ss) ) then
       ssl=.false.
     else
