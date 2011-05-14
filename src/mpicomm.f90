@@ -390,12 +390,6 @@ module Mpicomm
         call stop_it('initialize_mpicomm')
       endif
 !
-!  Warn the user if using nprocx>1 (this warning should eventually be deleted).
-!
-      if (nprocx/=1) then
-        if (lroot) print*, 'WARNING: for nprocx > 1 Fourier transform is not OK'
-      endif
-!
 !  Avoid overlapping ghost zones.
 !
       if ((nx<nghost) .and. (nxgrid/=1)) &
@@ -3580,7 +3574,7 @@ module Mpicomm
     subroutine distribute_xy_2D (in, out, source_proc)
 !
 !  This routine divides a large array of 2D data on the source processor
-!  and distributes it to all processors in the xy-plane. 
+!  and distributes it to all processors in the xy-plane.
 !  'source_proc' is the iproc number relative to the first processor
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !
@@ -3641,7 +3635,7 @@ module Mpicomm
     subroutine distribute_xy_3D (in, out, source_proc)
 !
 !  This routine divides a large array of 3D data on the source processor
-!  and distributes it to all processors in the xy-plane. 
+!  and distributes it to all processors in the xy-plane.
 !  'source_proc' is the iproc number relative to the first processor
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !
@@ -3705,7 +3699,7 @@ module Mpicomm
     subroutine distribute_xy_4D (in, out, source_proc)
 !
 !  This routine divides a large array of 4D data on the source processor
-!  and distributes it to all processors in the xy-plane. 
+!  and distributes it to all processors in the xy-plane.
 !  'source_proc' is the iproc number relative to the first processor
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !
@@ -3962,7 +3956,7 @@ module Mpicomm
     subroutine distribute_z_3D (in, out, source_proc)
 !
 !  This routine divides a large array of 3D data on the source processor
-!  and distributes it to all processors in the z-direction. 
+!  and distributes it to all processors in the z-direction.
 !  'source_proc' is the iproc number relative to the first processor
 !  in the corresponding z-direction (Default: 0, equals lfirst_proc_z).
 !
@@ -4024,7 +4018,7 @@ module Mpicomm
     subroutine distribute_z_4D (in, out, source_proc)
 !
 !  This routine divides a large array of 4D data on the source processor
-!  and distributes it to all processors in the z-direction. 
+!  and distributes it to all processors in the z-direction.
 !  'source_proc' is the iproc number relative to the first processor
 !  in the corresponding z-direction (Default: 0, equals lfirst_proc_z).
 !
@@ -6265,21 +6259,19 @@ module Mpicomm
   logical,                      optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
   integer, dimension(3,*),      optional,intent(in   ) :: kxrange, kyrange, zrange
 !
-  integer :: i,j,np,iproca,iproce,nprocxy,nxy,tag,ix,n8,fcnt,nkx,nky
+  integer :: i,np,iproca,iproce,nprocxy,nxy,tag
   integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
-
+!
   integer, dimension(MPI_STATUS_SIZE) :: status
   integer :: k,ii,ncompl,ic
   logical :: ltrans, lcomplex
   real,    allocatable :: rowbuf(:)
   complex, allocatable :: rowbuf_cmplx(:)
-
-  character(len=5) :: ch8, chy
-
+!
   lcomplex = .false.
   ncompl = 1
   goto 1
-
+!
   entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange,zrange )
 !
   lcomplex = .true.
@@ -6335,26 +6327,26 @@ module Mpicomm
     do k=1,10
       if ( zrangel(1,k) > 0 ) then
         do iz = zrangel(1,k), zrangel(2,k), zrangel(3,k)
-          if ( iz >= n1 .and. iz <= n2 ) then     
+          if ( iz >= n1 .and. iz <= n2 ) then
 !
             if (ltrans) then
-!      
+!
               do ii=1,10
                 if ( kyrangel(1,ii) > 0 ) then
                   do iy = kyrangel(1,ii), kyrangel(2,ii), kyrangel(3,ii)
-     
+!
                     if ( lroot .and. np==1 ) then
                       if (lcomplex) then
-                        call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iy,1,iz,ic), kxrangel )  
-                      else    
-                        call write_by_ranges_1d_real( 1, sendbuf(iy,1,iz), kxrangel )  
+                        call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iy,1,iz,ic), kxrangel )
+                      else
+                        call write_by_ranges_1d_real( 1, sendbuf(iy,1,iz), kxrangel )
                       endif
                     endif
-!                                                                           
+!
                     do i=iproca,iproce
-!      
+!
                       tag = nprocxy*(iz+1)*iy + nprocxy*iz + i-iproca               ! overflow possible for large ncpuxy, nz, nxgrid
-
+!
                       if (lroot) then
                         if (lcomplex) then
                           call MPI_RECV(rowbuf_cmplx, ny, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
@@ -6372,17 +6364,17 @@ module Mpicomm
                           call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
                         endif
                       endif
-!      
+!
                     enddo
 !
                   enddo
-                endif     
+                endif
               enddo
-!      
+!
               call mpibarrier()         ! necessary ?
-!      
+!
             else
-
+!
               if (lroot .and. np==1 ) then
                 if (lcomplex) then
                   call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
@@ -6390,9 +6382,9 @@ module Mpicomm
                   call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
                 endif
               endif
-!      
+!
               do i=iproca,iproce
-!      
+!
                 tag = nprocxy*iz+i-iproca
                 if (lroot) then
                   if (lcomplex) then
@@ -6409,7 +6401,7 @@ module Mpicomm
                     call MPI_SEND(sendbuf(1,1,iz), nxy, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
                   endif
                 endif
-!      
+!
               enddo
             endif
           endif
