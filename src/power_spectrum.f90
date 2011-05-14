@@ -41,8 +41,7 @@ module power_spectrum
       integer, intent(in)              :: unit
       integer, intent(inout), optional :: iostat
 !
-      logical :: dum
-      integer :: i, nr
+      integer :: i
       character (LEN=20), dimension(10) :: czranges
 !
       if (present(iostat)) then
@@ -490,7 +489,7 @@ module power_spectrum
 !
   !integer, parameter :: nk=nx/2                      ! actually nxgrid/2 *sqrt(2.)  !!!
 !
-  integer :: i,j,il,jl,k,ikx,iky,ikz,ivec,nk,ncomp,nkx,nky,npz,nkl
+  integer :: i,il,jl,k,ikx,iky,ikz,ivec,nk,ncomp,nkx,nky,npz,nkl
   real,    dimension(nx,ny,nz)            :: ar,ai
   real,    dimension(:,:,:), allocatable  :: br,bi
   real,    allocatable, dimension(:)      :: spectrum1,spectrum1_sum, kshell
