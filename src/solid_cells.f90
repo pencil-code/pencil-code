@@ -1257,8 +1257,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  23-dec-2008/nils: coded
 !  22-apr-2009/nils: added special treatment close to the solid surface
+!  20-apr-2011/MR: adapted calls to linear_interpolate, added corresp. calls to fatal_error
 !
       use General, only: linear_interpolate
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mvar) :: f_tmp
@@ -1281,10 +1283,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       xxp=(/xmirror,ymirror,zmirror/)
       inear=(/lower_i,lower_j,lower_k/)
       if (lnew_interpolation_method .and. ivar==iux) then
-        call linear_interpolate(f,iux,iuz,xxp,gp,inear,.false.)
+        if ( .not. linear_interpolate(f,iux,iuz,xxp,gp,inear,.false.) ) &
+          call fatal_error('linear_interpolate','')
         phi_=gp
       else
-        call linear_interpolate(f,ivar,ivar,xxp,gp(1),inear,.false.)
+        if ( .not. linear_interpolate(f,ivar,ivar,xxp,gp(1),inear,.false.) ) &
+          call fatal_error('linear_interpolate','')
         phi_(1)=gp(1)
       endif
 !
@@ -1317,6 +1321,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  22-apr-2009/nils: added special treatment close to the solid surface
 !
       use General, only: linear_interpolate
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mvar), intent(out) :: f_tmp
@@ -1340,7 +1345,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       xxp=(/xmirror,ymirror,zmirror/)
       inear=(/lower_i,lower_j,lower_k/)
-      call linear_interpolate(f,iux,mvar,xxp,f_tmp,inear,.false.)
+      if ( .not. linear_interpolate(f,iux,mvar,xxp,f_tmp,inear,.false.) ) &
+        call fatal_error('linear_interpolate','')
 !
 !  If the mirror point is very close to the surface of the object
 !  some special treatment is required.
@@ -1533,6 +1539,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         cornervalue,cornerindex, fluid_point,iobj)
 !
       use General, only: linear_interpolate
+      use Messages, only: fatal_error
       use Sub
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -1696,7 +1703,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  points of "gridplane".
 !
       inear=(/lower_i,lower_j,lower_k/)
-      call linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.)
+      if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
+        call fatal_error('linear_interpolate','')
 !
 !  Now we know the value associated with any variable in the point "g",
 !  given by "fvar".
