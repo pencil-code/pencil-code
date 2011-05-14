@@ -23,7 +23,10 @@ module General
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
-  public :: chn, parser
+  public :: chn, parser, write_full_columns
+  public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
+            write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
+            write_by_ranges_2d_real, write_by_ranges_2d_cmplx
 !
   include 'record_types.h'
 !
@@ -40,6 +43,18 @@ module General
 !
   interface safe_character_prepend
     module procedure safe_character_prepend_2
+  endinterface
+
+  interface write_full_columns
+    module procedure write_full_columns_real
+    module procedure write_full_columns_cmplx
+  endinterface
+!
+  interface write_by_ranges
+    module procedure write_by_ranges_1d_real
+    module procedure write_by_ranges_1d_cmplx
+    module procedure write_by_ranges_2d_real
+    module procedure write_by_ranges_2d_cmplx
   endinterface
 !
 !  State and default generator of random numbers.
@@ -495,6 +510,14 @@ module General
       endif
 !
     endsubroutine chn
+!***********************************************************************
+  character function intochar(i) 
+!
+  integer, intent(in) :: i
+!
+  write(intochar,'(i1)') i
+!
+  endfunction intochar
 !***********************************************************************
     subroutine chk_time(label,time1,time2)
 !
@@ -1513,7 +1536,7 @@ module General
 !
     endsubroutine cyclic
 !***********************************************************************
-    subroutine linear_interpolate(f,ivar1,ivar2,xxp,gp,inear,lcheck)
+   logical function linear_interpolate(f,ivar1,ivar2,xxp,gp,inear,lcheck)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using the linear interpolation formula
@@ -1525,9 +1548,10 @@ module General
 !
 !  30-dec-04/anders: coded
 !  04-nov-10/nils: moved from particles_map to general
+!  22-apr-11/MR: changed to logical function to get rid of dependence on 
+!  module Messages
 !
       use Cdata
-      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
@@ -1546,7 +1570,9 @@ module General
 !
 !  Determine index value of lowest lying corner point of grid box surrounding
 !  the interpolation point.
-!
+!     
+      linear_interpolate = .true.
+
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
       if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
       if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
@@ -1569,7 +1595,8 @@ module General
         print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
         print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
         print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call fatal_error('linear_interpolate','')
+        linear_interpolate = .false.
+        return
       endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
@@ -1655,9 +1682,9 @@ module General
 !
       if (lfirstcall) lfirstcall=.false.
 !
-    endsubroutine linear_interpolate
+    endfunction linear_interpolate
 !***********************************************************************
-integer function parser( zeile, feld, lenf, tz )
+    integer function parser( zeile, feld, lenf, tz )
 !
 ! Parses string zeile according to separator character tz; 
 ! Puts up to lenf substrings consecutively into feld.
@@ -1665,47 +1692,396 @@ integer function parser( zeile, feld, lenf, tz )
 !
 !  10-apr-11/MR: coded
 ! 
-  character (LEN=*),               intent(in)  :: zeile
-  character (LEN=*), dimension(*), intent(out) :: feld
-  integer,                         intent(in)  :: lenf
-  character,                       intent(in)  :: tz
+      character (LEN=*),               intent(in)  :: zeile
+      character (LEN=*), dimension(*), intent(out) :: feld
+      integer,                         intent(in)  :: lenf
+      character,                       intent(in)  :: tz
 
-  integer :: ind, inda, lenz
+      integer :: ind, inda, lenz
 
-  parser = 0
-  inda = 1
-  lenz = len_trim(zeile)
+      parser = 0
+      inda = 1
+      lenz = len_trim(zeile)
 
-  do while ( inda <= lenz )
+      do while ( inda <= lenz )
 
-    ind = index( zeile(inda:), tz )
+        ind = index( zeile(inda:), tz )
 
-    if ( inda+ind-1 < lenz .and. parser == lenf ) then
-      print*, 'Parser - Warning: too many substrings!'
-      return
+        if ( inda+ind-1 < lenz .and. parser == lenf ) then
+          print*, 'Parser - Warning: too many substrings!'
+          return
+        endif
+
+        parser = parser+1
+
+        if ( ind == 0 ) then 
+
+          feld(parser) = trim(zeile(inda:))
+          return
+
+        else
+
+          if ( ind>1 ) then
+            feld(parser) = trim(zeile(inda:inda+ind-2))
+          else
+            feld(parser) = ''
+          endif
+
+          inda = inda+ind
+
+        endif
+        
+      enddo
+
+    endfunction parser
+!***********************************************************************
+  subroutine write_full_columns_real(unit,buffer,range,unfilled,ncol,fmt)
+!        
+! range-wise output of a real or complex vector in ncol columns
+! unfilled (inout) - number of unfilled slots in last written line
+!
+!  20-apr-11/MR: coded
+!
+    integer,                        intent(in)    :: unit
+    real,    dimension(*),          intent(in)    :: buffer
+    complex, dimension(*),          intent(in)    :: buffer_cmplx
+    integer, dimension(3),          intent(in)    :: range
+    integer,                        intent(inout) :: unfilled
+    integer,              optional, intent(in)    :: ncol
+    character(LEN=*),     optional, intent(in)    :: fmt
+
+    integer          :: ncoll, nd, ia, ie, rest
+    character(LEN=5) :: str
+    character(LEN=20):: fmtl, fmth
+    logical          :: lcomplex
+
+    lcomplex = .false.
+
+    if ( present(fmt) ) then
+      fmtl = fmt
+    else
+      fmtl = 'e10.2'
     endif
 
-    parser = parser+1
+    goto 1
 
-    if ( ind == 0 ) then 
+  entry write_full_columns_cmplx(unit,buffer_cmplx,range,unfilled,ncol,fmt)
 
-      feld(parser) = trim(zeile(inda:))
-      return
+    lcomplex = .true.
 
+    if ( present(fmt) ) then
+      fmtl = '('//fmt//',1x,'//fmt//')'
     else
+      fmtl = '(e10.2,1x,e10.2)'
+    endif
 
-      if ( ind>1 ) then
-        feld(parser) = trim(zeile(inda:inda+ind-2))
+ 1  nd = get_range_no(range,1)
+    if ( nd==0 ) return
+
+    if ( present(ncol) ) then
+      ncoll = ncol
+    else
+      ncoll = 8
+    endif
+
+    if ( unfilled > 0 ) then 
+
+      fmth = fmtl
+      if ( nd>unfilled ) then
+        ie = range(1)+(unfilled-1)*range(3)
+        call chn(unfilled,str)                          
       else
-        feld(parser) = ''
+        ie = range(2)
+        if (nd<unfilled) fmth = trim(fmtl)//'$'
+        call chn(nd,str)                          
+      endif 
+
+      nd = nd-unfilled
+
+      if (lcomplex) then
+        write(1,'(1p,'//str//trim(fmth)//')') buffer_cmplx(range(1):ie:range(3))
+      else
+        write(1,'(1p,'//str//trim(fmth)//')') buffer(range(1):ie:range(3))
+!        print*, 'str,buffer, nd=', str, buffer(range(1):ie:range(3)), nd
       endif
 
-      inda = inda+ind
-
+      if ( nd>0 ) then
+        ia = ie + range(3)
+      else
+        unfilled = -nd
+        return
+      endif
+    else
+      ia = range(1)
     endif
-    
-  enddo
 
-endfunction parser
+    rest = mod(nd,ncoll)
+    ie = (nd-rest-1)*range(3) + ia 
+   
+    if ( rest<nd ) then
+      call chn(ncoll,str)
+      if (lcomplex) then
+        write(1,'(1p,'//str//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
+      else 
+        write(1,'(1p,'//str//trim(fmtl)//')') buffer(ia:ie:range(3)) 
+      endif
+    endif
+   
+    if ( rest > 0 ) then
+                                                         
+      call chn(rest,str)                                                        
+      if (lcomplex) then
+        write(1,'(1p,'//str//trim(fmtl)//'$)') buffer_cmplx(ie+range(3):range(2):range(3))
+      else
+        write(1,'(1p,'//str//trim(fmtl)//'$)') buffer(ie+range(3):range(2):range(3))
+      endif
+ 
+      unfilled = ncoll-rest
+    else
+      unfilled = 0
+    endif
+
+  end subroutine write_full_columns_real
+!***********************************************************************
+    subroutine merge_ranges( ranges, ie, range, ia )
+!
+! merges ranges ia through ie in vector ranges with range
+! 
+! 20-apr-11/MR: coded
+!
+      integer, dimension(3,*),          intent(inout) :: ranges
+      integer,  	                intent(in)    :: ie
+      integer, dimension(3),            intent(inout) :: range
+      integer,                optional, intent(in)    :: ia
+
+      integer :: i, step, ial
+
+      if ( present(ia) ) then
+        ial = ia
+      else 
+        ial = 1
+      endif
+
+      do i=ial,ie
+
+        if ( ranges(1,i) > 0) then
+
+          step = range(3)
+          if ( ranges(3,i) == step ) then
+
+            if ( range(1) <= ranges(2,i)+step .and. &
+                 range(2) >= ranges(1,i)-step .and. &
+          	 mod(range(1)-ranges(1,i),step) == 0 ) then
+              
+              ranges(1,i) = min( ranges(1,i), range(1) )
+              ranges(2,i) = max( ranges(2,i), range(2) )
+              range = 0
+
+            endif
+
+          else
+!           no implementation yet   
+          endif
+        endif
+
+      enddo
+
+    endsubroutine merge_ranges
+!***********************************************************************
+    logical function read_range( crange, defrange, range )
+!
+! reads a range (start,stop,step) from string crange of the shape [0...9][:[0...9][:[0...9]]]
+! adjusts range not to exceed limits of default range defrange
+!
+! 20-apr-11/MR: coded
+!
+      character (LEN=20)   , intent(in)  :: crange
+      integer, dimension(3), intent(in)  :: defrange
+      integer, dimension(3), intent(out) :: range
+
+      integer :: isep, isep1, ios, ios1, ios2, lenrng, tmp
+
+      ios=0; ios1=0; ios2=0
+
+      if ( crange /= '' ) then
+        
+        range = defrange
+
+        isep = index(crange,':')
+        lenrng = len_trim(crange)
+
+        if ( isep > 0 ) then
+
+          if ( isep > 1 ) then
+            read( crange(1:isep-1),*,IOSTAT=ios ) range(1)
+            if ( ios == 0 ) &
+              range(1) = min(max(defrange(1),range(1)),defrange(2))
+          endif
+
+          if ( isep < lenrng ) then
+
+            isep1 = index(crange(isep+1:lenrng),':')+isep
+
+            if ( isep1 == isep ) isep1 = lenrng+1
+
+            if ( isep1 > isep+1 ) then
+              read( crange(isep+1:isep1-1),*,IOSTAT=ios1 ) range(2)  
+              if ( ios1 == 0 ) &
+                range(2) = min(max(defrange(1),range(2)),defrange(2))
+            endif
+
+            if ( isep1 < lenrng ) then
+
+              read( crange(isep1+1:lenrng),*,IOSTAT=ios2 ) range(3)  
+              
+              if ( ios2 == 0 ) range(3) = abs(range(3))
+
+            endif
+          endif
+       
+          if ( range(1) > range(2) ) then
+            tmp = range(1); range(1) = range(2); range(2) = tmp
+          endif
+
+        else
+
+          read( crange, *,IOSTAT=ios ) range(1)
+          if ( ios == 0 ) &
+            range(1) = min(max(defrange(1),range(1)),defrange(2))
+          range(2) = range(1)
+
+        endif
+
+        if ( ios/=0 .or. ios1/=0 .or. ios2/=0 ) &
+          print*, 'read_range - Warning: invalid data in range!'
+
+        read_range = .true.
+      else
+        read_range = .false.
+      endif
+
+    endfunction read_range
+!***********************************************************************
+    integer function get_range_no( ranges, nr )
+!
+! determines total number of elements selected by all ranges in ranges
+! 
+! 20-apr-11/MR: coded
+!
+      integer, dimension(3,*), intent(in) :: ranges
+      integer,       optional, intent(in) :: nr
+ 
+      integer :: i, nrl
+
+      get_range_no = 0
+
+      if ( present(nr) ) then
+        nrl = nr
+      else
+        nrl = 10
+      endif
+
+      do i=1,nrl
+        if ( ranges(1,i) > 0 ) &
+          get_range_no = get_range_no + &
+                      ceiling( (ranges(2,i)-ranges(1,i)+1.)/ranges(3,i))
+      enddo
+
+    end function get_range_no
+!******************************************************************************
+  subroutine write_by_ranges_2d_real( unit, buffer, xranges, yranges, trans )
+!
+! writes a real or complex 2D array controlled by lists of ranges
+! xranges and yranges for each of the two dimensions; output optionally transposed
+!
+! 10-may-11/MR: coded
+!
+    integer,                           intent(in)           :: unit 
+    integer, dimension(3,*)          , intent(in)           :: xranges, yranges
+    real,    dimension(nxgrid,nygrid), intent(in)           :: buffer
+    complex, dimension(nxgrid,nygrid), intent(in)           :: buffer_cmplx
+    logical,                           intent(in), optional :: trans
+
+    integer :: i,j,il,jl,unfilled
+    logical :: transl, lcomplex
+
+    lcomplex = .false.
+    goto 1
+
+  entry write_by_ranges_2d_cmplx( unit, buffer_cmplx, xranges, yranges, trans )
+
+    lcomplex = .true.
+
+ 1  unfilled = 0
+
+    if ( present(trans) ) then
+      transl = trans
+    else
+      transl = .false.
+    endif
+
+    do j=1,10
+      if ( yranges(1,j) > 0 ) then
+        do jl=yranges(1,j),yranges(2,j),yranges(3,j)
+          do i=1,10
+            if ( xranges(1,i) > 0 ) then
+              if ( transl ) then
+                if (lcomplex) then
+                  call write_full_columns_cmplx( unit, buffer_cmplx(jl,:), xranges(1,i), unfilled )
+                else
+                  call write_full_columns_real( unit, buffer(jl,:), xranges(1,i), unfilled )
+                endif
+              else
+                if (lcomplex) then
+                  call write_full_columns_cmplx( unit, buffer_cmplx(1,jl), xranges(1,i), unfilled )
+                else
+                  call write_full_columns_real( unit, buffer(1,jl), xranges(1,i), unfilled )
+                endif
+              endif
+            endif
+          enddo
+        enddo
+      endif
+    enddo
+
+    if ( unfilled > 0 ) write( unit,'(a)')
+
+  end subroutine write_by_ranges_2d_real
+!***********************************************************************
+  subroutine write_by_ranges_1d_real(unit,buffer,ranges)
+!
+! writes a real or complex vector controlled by lists of ranges
+! output optionally transposed
+!
+! 10-may-11/MR: coded
+!
+    integer,                 intent(in) :: unit
+    real,    dimension(*)  , intent(in) :: buffer
+    complex, dimension(*)  , intent(in) :: buffer_cmplx
+    integer, dimension(3,*), intent(in) :: ranges
+
+    integer :: unfilled, i
+    logical :: lcomplex 
+
+    lcomplex = .false.
+    goto 1
+
+  entry  write_by_ranges_1d_cmplx(unit,buffer_cmplx,ranges)
+    lcomplex = .true.
+
+ 1  unfilled = 0
+    do i=1,10
+      if ( ranges(1,i) > 0 ) then
+        if (lcomplex) then
+          call write_full_columns_cmplx( unit, buffer_cmplx, ranges(1,i), unfilled )
+        else
+          call write_full_columns_real( unit, buffer, ranges(1,i), unfilled )
+        endif
+      endif
+    enddo
+
+    if ( unfilled > 0 ) write(unit,'(a)')
+
+  end subroutine write_by_ranges_1d_real
 !***********************************************************************
 endmodule General
