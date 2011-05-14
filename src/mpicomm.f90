@@ -270,6 +270,11 @@ module Mpicomm
     module procedure unmap_from_pencil_yz_4D
   endinterface
 !
+  interface mpigather_and_out
+    module procedure mpigather_and_out_real
+    module procedure mpigather_and_out_cmplx
+  endinterface
+!
   include 'mpif.h'
 !
 !  initialize debug parameter for this routine
@@ -6240,29 +6245,47 @@ module Mpicomm
   enddo
 !
   endsubroutine mpigather
-!***********************************************************************
-  subroutine mpigather_and_out( sendbuf, unit, ltransp )
+!*************************************************************************************
+  subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange,zrange )
 !
 !  22-nov-10/MR: coded
+!  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !
 !  transfers the chunks of a 3D array from each processor to root
 !  and writes them out in right order
 !
 ! here no parallelization in x allowed
 !
-  implicit none
+  use General, only: chn, write_by_ranges_2d_cmplx, write_by_ranges_2d_real, &
+                          write_by_ranges_1d_cmplx, write_by_ranges_1d_real
 !
-  real, dimension(nxgrid,ny,nz), intent(inout) :: sendbuf   ! nx=nxgrid !
-  integer,                       intent(in   ) :: unit
-  logical, optional,             intent(in   ) :: ltransp   ! if true, transposition x <-> y
+  real,    dimension(nxgrid,ny,nz),      intent(inout) :: sendbuf
+  complex, dimension(nxgrid,ny,nz,ncomp),intent(inout) :: sendbuf_cmplx
+  integer,                               intent(in   ) :: unit, ncomp
+  logical,                      optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
+  integer, dimension(3,*),      optional,intent(in   ) :: kxrange, kyrange, zrange
 !
-  integer :: i,j,np,iproca,iproce,nprocxy,nxy,tag,ix,n8,fcnt
+  integer :: i,j,np,iproca,iproce,nprocxy,nxy,tag,ix,n8,fcnt,nkx,nky
+  integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
+
   integer, dimension(MPI_STATUS_SIZE) :: status
-  logical :: ltrans
-  real, allocatable :: rowbuf(:)
+  integer :: k,ii,ncompl,ic
+  logical :: ltrans, lcomplex
+  real,    allocatable :: rowbuf(:)
+  complex, allocatable :: rowbuf_cmplx(:)
+
   character(len=5) :: ch8, chy
+
+  lcomplex = .false.
+  ncompl = 1
+  goto 1
+
+  entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange,zrange )
 !
-  if (NO_WARN) print*,unit
+  lcomplex = .true.
+  ncompl = ncomp
+!
+1 if (NO_WARN) print*,unit
 !
   if ( .not.present(ltransp) ) then
     ltrans=.false.
@@ -6270,122 +6293,150 @@ module Mpicomm
     ltrans=ltransp
   endif
 !
-  if (ltrans) allocate( rowbuf(ny) )
+  if ( .not.present(kxrange) ) then
+    kxrangel = 0
+    kxrangel(:,1) = (/1,nxgrid,1/)
+  else
+    kxrangel = kxrange(:,1:10)
+  endif
+!
+  if ( .not.present(kyrange) ) then
+    kyrangel = 0
+    kyrangel(:,1)=(/1,nygrid,1/)
+  else
+    kyrangel = kyrange(:,1:10)
+  endif
+!
+  if ( .not.present(zrange) ) then
+    zrangel = 0
+    zrangel(:,1) = (/1,nzgrid,1/)
+  else
+    zrangel = zrange(:,1:10)
+  endif
+!
+  if (ltrans) then
+    if (lcomplex) then
+      allocate( rowbuf(ny) )
+    else
+      allocate( rowbuf_cmplx(ny) )
+    endif
+  endif
 !
   nprocxy = nprocx*nprocy                             ! nprocx=1
   nxy = nxgrid*ny
 !
   iproca=1; iproce=-1
 !
+  do ic=1,ncompl
   do np=1,nprocz
 !
     iproce = iproce + nprocxy
 !
-    do j=1,nz
+    do k=1,10
+      if ( zrangel(1,k) > 0 ) then
+        do iz = zrangel(1,k), zrangel(2,k), zrangel(3,k)
+          if ( iz >= n1 .and. iz <= n2 ) then     
 !
-      if (ltrans) then
-!
-        fcnt=0
-!
-        do ix=1,nxgrid
-!
-          if (lroot .and. np==1) then
+            if (ltrans) then
+!      
+              do ii=1,10
+                if ( kyrangel(1,ii) > 0 ) then
+                  do iy = kyrangel(1,ii), kyrangel(2,ii), kyrangel(3,ii)
+     
+                    if ( lroot .and. np==1 ) then
+                      if (lcomplex) then
+                        call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iy,1,iz,ic), kxrangel )  
+                      else    
+                        call write_by_ranges_1d_real( 1, sendbuf(iy,1,iz), kxrangel )  
+                      endif
+                    endif
+!                                                                           
+                    do i=iproca,iproce
+!      
+                      tag = nprocxy*(iz+1)*iy + nprocxy*iz + i-iproca               ! overflow possible for large ncpuxy, nz, nxgrid
 
-            if (fcnt>0) then                                                              ! this coding guarantees that
-              call chn(8-fcnt,ch8)                                                        !             .
-              write(1,'(1p,'//ch8//'(e10.2))') sendbuf(ix,1:8-fcnt,j)                     !             .
-            endif                                                                         !             .
-            fcnt=update_cnt(fcnt,8,n8)                                                    !             .
-            if (n8>0) write(1,'(1p,8e10.2)') sendbuf(ix,1:n8,j)                           !             .
-            if (fcnt>0) then                                                              !
-              call chn(ny-n8,chy)                                                         !
-              write(1,'(1p,'//chy//'(e10.2)$)') sendbuf(ix,n8+1:,j)                       ! all lines in the output have 8 entries
-            endif
+                      if (lroot) then
+                        if (lcomplex) then
+                          call MPI_RECV(rowbuf_cmplx, ny, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
+                          call write_by_ranges_1d_cmplx( 1, rowbuf_cmplx, kxrangel )
+                        else
+                          call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+                          call write_by_ranges_1d_real( 1, rowbuf, kxrangel )
+                        endif
+                      else if ( iproc==i ) then
+                        if (lcomplex) then
+                          rowbuf_cmplx=sendbuf_cmplx(iy,:,iz,ic)
+                          call MPI_SEND(rowbuf_cmplx, ny, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                        else
+                          rowbuf=sendbuf(iy,:,iz)
+                          call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+                        endif
+                      endif
+!      
+                    enddo
 !
-          endif
+                  enddo
+                endif     
+              enddo
+!      
+              call mpibarrier()         ! necessary ?
+!      
+            else
 
-          do i=iproca,iproce
-!
-            tag = nprocxy*(j+1)*ix + nprocxy*j + i-iproca              ! overflow possible for large ncpuxy, nz, nxgrid
-
-            if (lroot) then
-              call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
-
-              if (fcnt>0) then
-                call chn(8-fcnt,ch8)
-                write(1,'(1p,'//ch8//'(e10.2))') rowbuf(1:8-fcnt)
+              if (lroot .and. np==1 ) then
+                if (lcomplex) then
+                  call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
+               else
+                  call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
+                endif
               endif
-!
-              fcnt=update_cnt(fcnt,8,n8)
-              if (n8>0  ) write(1,'(1p,8e10.2)') rowbuf(1:n8)
-              if (fcnt>0) then
-                call chn(ny-n8,chy)
-                write(1,'(1p,'//chy//'(e10.2)$)') rowbuf(n8+1:)
-              endif
-!
-            else if ( iproc==i ) then
-              rowbuf=sendbuf(ix,:,j)
-              call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+!      
+              do i=iproca,iproce
+!      
+                tag = nprocxy*iz+i-iproca
+                if (lroot) then
+                  if (lcomplex) then
+                    call MPI_RECV(sendbuf_cmplx(1,1,iz,ic), nxy, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
+                    call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
+                  else
+                    call MPI_RECV(sendbuf(1,1,iz), nxy, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+                    call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
+                  endif
+                else if ( iproc==i ) then
+                  if (lcomplex) then
+                    call MPI_SEND(sendbuf_cmplx(1,1,iz,ic), nxy, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                  else
+                    call MPI_SEND(sendbuf(1,1,iz), nxy, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+                  endif
+                endif
+!      
+              enddo
             endif
-!
-          enddo
-!
-        enddo
-!
-        call mpibarrier()         ! necessary ?
-!
-      else
-        if (lroot .and. np==1) &
-          write(1,'(1p,8e10.2)') sendbuf(:,:,j)
-!
-        do i=iproca,iproce
-!
-          tag = nprocxy*j+i-iproca
-          if (lroot) then
-            call MPI_RECV(sendbuf(1,1,j), nxy, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
-            write(1,'(1p,8e10.2)') sendbuf(:,:,j)
-          else if ( iproc==i ) then
-            call MPI_SEND(sendbuf(1,1,j), nxy, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
-            !print*, 'SEND:', j, i, tag, sendbuf(4,2,j)
           endif
-!
         enddo
       endif
-!
     enddo
+!
     iproca = iproce+1
 !
+  enddo
   enddo
 !
   if (ltrans) deallocate(rowbuf)
 !
   contains
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  subroutine chn(n,ch)                                ! internal subroutine
-    character ch
-    integer n
-    ch = intochar(n)
-  endsubroutine chn
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  character function intochar(i)                      ! internal function
+  integer function update_cnt(fcnt,len,ntot,nl)            ! internal function
 !
-  integer, intent(in) :: i
-!
-  write(intochar,'(i1)') i
-!
-  endfunction intochar
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  integer function update_cnt(fcnt,len,nl)            ! internal function
-!
-  integer, intent(in ) :: fcnt,len
+  integer, intent(in ) :: fcnt,len,ntot
   integer, intent(out) :: nl
 !
   integer :: nr
 !
   if (fcnt>0) then
-    nr=ny-(len-fcnt)
+    nr=ntot-(len-fcnt)
   else
-    nr=ny
+    nr=ntot
   endif
 !
   update_cnt=mod(nr,len)
@@ -6393,7 +6444,7 @@ module Mpicomm
 !
   endfunction update_cnt
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  endsubroutine mpigather_and_out
+  endsubroutine mpigather_and_out_real
 !***********************************************************************
   subroutine merge_1d( vec1, vec2, n, type )
 !
@@ -6466,5 +6517,5 @@ module Mpicomm
   endselect
 !
   endfunction mpigetcomm
-!***********************************************************************
+!**************************************************************************
 endmodule Mpicomm
