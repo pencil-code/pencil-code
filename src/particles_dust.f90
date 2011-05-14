@@ -132,7 +132,7 @@ module Particles
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
       ldragforce_gas_par, ldragforce_dust_par, np_swarm, mp_swarm, &
-      rhop_swarm,eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
+      rhop_swarm, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, &
       gravz, gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, &
       tstart_dragforce_par, tstart_grav_par, lparticlemesh_cic, &
