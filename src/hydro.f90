@@ -1521,7 +1521,7 @@ module Hydro
 ! divu
       if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
 ! sij
-      if (lpencil(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu)
+      if (lpencil(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
 ! sij2
       if (lpencil(i_sij2)) call multm2_mn(p%sij,p%sij2)
 ! uij5
@@ -2310,22 +2310,31 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine traceless_strain(uij,divu,sij,uu)
+    subroutine traceless_strain(uij,divu,sij,uu,ss)
 !
 !  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
 !  and divergence divu within each pencil;
 !  curvilinear co-ordinates require optional velocity argument uu
 !
 !  16-oct-09/MR: carved out from calc_pencils_hydro
+!  10-apr-11/MR: optional parameter ss added, replaces use of global lshear_rateofstrain
 !
     real, dimension (nx,3,3)         :: uij, sij
     real, dimension (nx)             :: divu
     real, dimension (nx,3), optional :: uu
+    logical, optional                :: ss
 !
     integer :: i,j
+    logical :: ssl
 !
-    intent(in)  :: uij, divu
+    intent(in)  :: uij, divu, ss
     intent(out) :: sij
+
+    if ( .not.present(ss) ) then
+      ssl=.false.
+    else
+      ssl=ss
+    endif
 !
 !  In-place operation is possible, i.e. uij and sij may refer to the same array.
 !
@@ -2363,11 +2372,9 @@ module Hydro
       sij(:,2,1)=sij(:,1,2)
     endif
 !
-    if (lshear) then
-      if (lshear_rateofstrain) then
-        sij(:,1,2)=sij(:,1,2)+Sshear
-        sij(:,2,1)=sij(:,2,1)+Sshear
-      endif
+    if (lshear .and. ssl) then
+      sij(:,1,2)=sij(:,1,2)+Sshear
+      sij(:,2,1)=sij(:,2,1)+Sshear
     endif
 !
     endsubroutine traceless_strain
@@ -3253,16 +3260,16 @@ module Hydro
 !
     endsubroutine output_persistent_hydro
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=hydro_init_pars,ERR=99)
-      endif
+    subroutine read_hydro_init_pars(unit,iostat) 
+!    
+      integer, intent(in) :: unit 
+      integer, intent(inout), optional :: iostat 
+!      
+      if (present(iostat)) then 
+        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat) 
+      else 
+        read(unit,NML=hydro_init_pars,ERR=99) 
+      endif 
 !
 99    return
 !
@@ -3276,16 +3283,16 @@ module Hydro
 !
     endsubroutine write_hydro_init_pars
 !***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=hydro_run_pars,ERR=99)
-      endif
+    subroutine read_hydro_run_pars(unit,iostat) 
+!    
+      integer, intent(in) :: unit 
+      integer, intent(inout), optional :: iostat 
+!      
+      if (present(iostat)) then 
+        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat) 
+      else 
+        read(unit,NML=hydro_run_pars,ERR=99) 
+      endif 
 !
 99    return
 !
