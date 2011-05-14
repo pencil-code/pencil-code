@@ -51,6 +51,7 @@
 &special_init_pars
 /
 &particles_init_pars
+  eps_dtog=1.0
 /
 &particles_radius_init_pars
 /
