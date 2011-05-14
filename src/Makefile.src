@@ -1774,23 +1774,22 @@ run.x: run.o
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
 basics=cparam.o cdata.o general.o $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o
-utilities=messages.o $(MPICOMM_OBJ)
 #
 combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o
-	$(LD) $(LDFLAGS) combine_videofiles.o $(basics) $(utilities) $(LD_MPI) -o combine_videofiles.x
+	$(LD) $(LDFLAGS) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x
 #
 read_videofiles.o: $(basics)
 read_videofiles.x: read_videofiles.o
-	$(LD) $(LDFLAGS) read_videofiles.o $(basics) $(utilities) $(LD_MPI) -o read_videofiles.x
+	$(LD) $(LDFLAGS) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x
 #
 read_all_videofiles.o: $(basics)
 read_all_videofiles.x: read_all_videofiles.o
-	$(LD) $(LDFLAGS) read_all_videofiles.o $(basics) $(utilities) $(LD_MPI) -o read_all_videofiles.x
+	$(LD) $(LDFLAGS) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x
 #
 read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
-	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(utilities) $(LD_MPI) -o read_vectorfiles.x
+	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
