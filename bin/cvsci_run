@@ -29,8 +29,12 @@ cd $dir
 #
 cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat data
 #
-cd data
-cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat
+if (-e data) then
+    cd data
+    cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat
+else
+    echo "no data directory found"
+endif
 #
 #  add alpeta.sav, if it exists
 #
