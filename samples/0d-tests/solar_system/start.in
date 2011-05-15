@@ -12,7 +12,7 @@
   coord_system='cylindric'
 /
 &particles_init_pars
-  rhop_const=1.0
+  rhop_swarm=1.0
 /
 &particles_nbody_init_pars
   initxxsp='fixed-cm'
