@@ -1068,21 +1068,21 @@ module Particles_map
 !  For an equidistant grid we only need to do this at the first call.
 !
       if (lequidist(1)) then
-        if (lfirstcall) dx1=dx_1(ix0) !1/dx
+        if (lfirstcall) dx1=dx1b(ix0,ib) !1/dx
       else
-        dx1=1/(xb(ix0+1,ib)-xb(ix0,ib))
+        dx1=dx1b(ix0,ib)
       endif
 !
       if (lequidist(2)) then
-        if (lfirstcall) dy1=dy_1(iy0)
+        if (lfirstcall) dy1=dy1b(iy0,ib)
       else
-        dy1=1/(yb(iy0+1,ib)-yb(iy0,ib))
+        dy1=dy1b(iy0,ib)
       endif
 !
       if (lequidist(3)) then
-        if (lfirstcall) dz1=dz_1(iz0)
+        if (lfirstcall) dz1=dz1b(iz0,ib)
       else
-        dz1=1/(zb(iz0+1,ib)-zb(iz0,ib))
+        dz1=dz1b(iz0,ib)
       endif
 !
       if ( (.not. all(lequidist)) .or. lfirstcall) then
@@ -1217,14 +1217,32 @@ module Particles_map
         call fatal_error('interpolate_quadratic','')
       endif
 !
-!  A few values that only need to be calcultad once.
+!  A few values that only need to be calculated once for equidistant grids.
 !
-      if (lfirstcall) then
-        dx1=1/dx; dx2=1/dx**2
-        dz1=1/dz; dz2=1/dz**2
-        dx1dz1=1/(dx*dz)
-        dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
-        lfirstcall=.false.
+      if (lequidist(1)) then 
+        if (lfirstcall) then 
+          dx1=1/dx; dx2=1/dx**2
+        endif
+      else
+        dx1=dx1b(ix0,ib); dx2=dx1**2
+      endif
+!
+      if (lequidist(3)) then 
+        if (lfirstcall) then 
+          dz1=1/dz; dz2=1/dz**2
+        endif
+      else
+        dz1=dz1b(iz0,ib); dz2=dz1**2
+      endif
+!
+      if (lequidist(1).and.lequidist(3)) then 
+        if (lfirstcall) then
+          dx1dz1=1/(dx*dz)
+          dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
+        endif
+      else
+        dx1dz1=dx1*dz1
+        dx2dz1=dx2*dz1; dx1dz2=dx1*dz1; dx2dz2=dx2*dz2
       endif
 !
 !  Define function values at the grid points.
@@ -1262,6 +1280,8 @@ module Particles_map
 !
       call keep_compiler_quiet(ipar)
 !
+      if (lfirstcall) lfirstcall=.false.
+!
     endsubroutine interpolate_quadratic
 !***********************************************************************
     subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
@@ -1294,9 +1314,9 @@ module Particles_map
 !  Redefine the interpolation point in coordinates relative to nearest grid
 !  point and normalize with the cell size.
 !
-      dxp0=(xxp(1)-xb(ix0,ib))*dx_1(ix0)
-      dyp0=(xxp(2)-yb(iy0,ib))*dy_1(iy0)
-      dzp0=(xxp(3)-zb(iz0,ib))*dz_1(iz0)
+      dxp0=(xxp(1)-xb(ix0,ib))*dx1b(ix0,ib)
+      dyp0=(xxp(2)-yb(iy0,ib))*dy1b(iy0,ib)
+      dzp0=(xxp(3)-zb(iz0,ib))*dz1b(iz0,ib)
 !
 !  Interpolation formulae.
 !
