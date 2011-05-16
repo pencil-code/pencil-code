@@ -1397,7 +1397,8 @@ module Magnetic
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
           lweyl_gauge.or.lspherical_coords.or.lJ_ext) &
-!  WL: but doesn't seem to be needed for the cylindrical case
+!WL: but doesn't seem to be needed for the cylindrical case
+!AB: at least in spherical we must use Weyl (get wiggles otherwise), so need jj
           lpenc_requested(i_jj)=.true.
       if (.not.lweyl_gauge) &
           lpenc_requested(i_del2a)=.true.
@@ -1596,6 +1597,7 @@ module Magnetic
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0) lpenc_diagnos(i_beta)=.true.
+      if (idiag_bxmz/=0 .or. idiag_bymz/=0) lpenc_diagnos(i_bb)=.true.
       if (idiag_djuidjbim/=0) lpenc_diagnos(i_djuidjbi)=.true.
       if (idiag_b2divum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_b2divum/=0) lpenc_diagnos(i_b2)=.true.
@@ -1604,6 +1606,7 @@ module Magnetic
       if (idiag_jxbxbm/=0) lpenc_diagnos(i_jxbxb)=.true.
       if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
       if (idiag_exaym2/=0 .or. idiag_exjm2/=0 &
+          .or. idiag_jxmz/=0 .or. idiag_jymz/=0 &
           .or. idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 &
           .or. idiag_ambmz/=0 .or. idiag_jmbmz/=0 .or. idiag_kmz/=0 &
           .or. idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
