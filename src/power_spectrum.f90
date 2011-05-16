@@ -57,7 +57,7 @@ module power_spectrum
       if ( lintegrate_shell .or. lintegrate_z ) lcomplex = .false.
 !
       if ( .not.lintegrate_shell ) then
-
+!
         call get_kranges( ckxrange, kxrange, nxgrid )
         call get_kranges( ckyrange, kyrange, nygrid )
 !
@@ -89,11 +89,11 @@ module power_spectrum
           bxy_spec=.false.
         endif
       enddo
-
+!
       if (uxy_spec  ) n_spectra = n_spectra+1
       if (bxy_spec  ) n_spectra = n_spectra+1
       if (jxbxy_spec) n_spectra = n_spectra+1
-
+!
 99    return
 !
     endsubroutine read_power_spectrum_runpars
