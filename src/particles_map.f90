@@ -104,19 +104,19 @@ module Particles_map
       if (lequidist(1)) then
         if (lfirstcall) dx1=dx_1(ix0) !1/dx
       else
-        dx1=1/(x(ix0+1)-x(ix0))
+        dx1=dx_1(ix0)
       endif
 !
       if (lequidist(2)) then
         if (lfirstcall) dy1=dy_1(iy0)
       else
-        dy1=1/(y(iy0+1)-y(iy0))
+        dy1=dy_1(iy0)
       endif
 !
       if (lequidist(3)) then
         if (lfirstcall) dz1=dz_1(iz0)
       else
-        dz1=1/(z(iz0+1)-z(iz0))
+        dz1=dz_1(iz0)
       endif
 !
       if ( (.not. all(lequidist)) .or. lfirstcall) then
@@ -264,14 +264,32 @@ module Particles_map
         call fatal_error('interpolate_quadratic','')
       endif
 !
-!  A few values that only need to be calcultad once.
+!  A few values that only need to be calculated once for equidistant grids.
 !
-      if (lfirstcall) then
-        dx1=1/dx; dx2=1/dx**2
-        dz1=1/dz; dz2=1/dz**2
-        dx1dz1=1/(dx*dz)
-        dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
-        lfirstcall=.false.
+      if (lequidist(1)) then 
+        if (lfirstcall) then 
+          dx1=1/dx; dx2=1/dx**2
+        endif
+      else
+        dx1=dx_1(ix0); dx2=dx1**2
+      endif
+!
+      if (lequidist(3)) then 
+        if (lfirstcall) then 
+          dz1=1/dz; dz2=1/dz**2
+        endif
+      else
+        dz1=dz_1(iz0); dz2=dz1**2
+      endif
+!
+      if (lequidist(1).and.lequidist(3)) then 
+        if (lfirstcall) then
+          dx1dz1=1/(dx*dz)
+          dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
+        endif
+      else
+        dx1dz1=dx1*dz1
+        dx2dz1=dx2*dz1; dx1dz2=dx1*dz1; dx2dz2=dx2*dz2
       endif
 !
 !  Define function values at the grid points.
