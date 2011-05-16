@@ -1764,11 +1764,11 @@ k_loop:   do while (.not. (k>npar_loc))
                     do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
                       weight=1.0
                       if (nxgrid/=1) weight=weight* &
-                          ( 1.0-abs(fp(k,ixp)-xb(ixx,ib))*dx_1(l1) )
+                          ( 1.0-abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib) )
                       if (nygrid/=1) weight=weight* &
-                          ( 1.0-abs(fp(k,iyp)-yb(iyy,ib))*dy_1(m1) )
+                          ( 1.0-abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib) )
                       if (nzgrid/=1) weight=weight* &
-                          ( 1.0-abs(fp(k,izp)-zb(izz,ib))*dz_1(n1) )
+                          ( 1.0-abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib) )
                       if (ldensity_nolog) then
                         rho1_point=1/fb(ixx,iyy,izz,ilnrho,ib)
                       else
@@ -1809,25 +1809,25 @@ k_loop:   do while (.not. (k>npar_loc))
 !
                     do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
                       if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
-                        weight_x=1.125-1.5* abs(fp(k,ixp)-xb(ixx,ib))*dx_1(l1) + &
-                                       0.5*(abs(fp(k,ixp)-xb(ixx,ib))*dx_1(l1))**2
+                        weight_x=1.125-1.5* abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib) + &
+                                       0.5*(abs(fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib))**2
                       else
                         if (nxgrid/=1) &
-                             weight_x=0.75-((fp(k,ixp)-xb(ixx,ib))*dx_1(l1))**2
+                             weight_x=0.75-((fp(k,ixp)-xb(ixx,ib))*dx1b(ixx,ib))**2
                       endif
                       if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
-                        weight_y=1.125-1.5* abs(fp(k,iyp)-yb(iyy,ib))*dy_1(m1) + &
-                                       0.5*(abs(fp(k,iyp)-yb(iyy,ib))*dy_1(m1))**2
+                        weight_y=1.125-1.5* abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib) + &
+                                       0.5*(abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib))**2
                       else
                         if (nygrid/=1) &
-                             weight_y=0.75-((fp(k,iyp)-yb(iyy,ib))*dy_1(m1))**2
+                             weight_y=0.75-((fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib))**2
                       endif
                       if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
-                        weight_z=1.125-1.5* abs(fp(k,izp)-zb(izz,ib))*dz_1(n1) + &
-                                       0.5*(abs(fp(k,izp)-zb(izz,ib))*dz_1(n2))**2
+                        weight_z=1.125-1.5* abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib) + &
+                                       0.5*(abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib))**2
                       else
                         if (nzgrid/=1) &
-                             weight_z=0.75-((fp(k,izp)-zb(izz,ib))*dz_1(n1))**2
+                             weight_z=0.75-((fp(k,izp)-zb(izz,ib))*dz1b(izz,ib))**2
                       endif
 !
                       weight=1.0
