@@ -1624,14 +1624,15 @@ k_loop:   do while (.not. (k>npar_loc))
           if (npar_iblock(iblock)/=0) then
             do k=k1_iblock(iblock),k2_iblock(iblock)
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
+              dt1_advpx=abs(fp(k,ivpx))*dx1b(ix0,iblock)
               if (lshear) then
-                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
+                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))&
+                           *dy1b(iy0,iblock)
               else
-                dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
+                dt1_advpy=abs(fp(k,ivpy))*dy1b(iy0,iblock)
               endif
-              dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
-              dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
+              dt1_advpz=abs(fp(k,ivpz))*dz1b(iz0,iblock)
+              dt1_max(ix0+nghost-l1)=max(dt1_max(ix0+nghost-l1), &
                  sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
             enddo
           endif
@@ -1774,7 +1775,7 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
                       endif
 !  Add friction force to grid point.
-                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,rhop_swarm_pt)
+                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,ib,rhop_swarm_pt)
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
                           rhop_swarm_pt*rho1_point*dragforce*weight
                     enddo; enddo; enddo
@@ -1840,7 +1841,7 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
                       endif
 !  Add friction force to grid point.
-                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,rhop_swarm_pt)
+                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,ib,rhop_swarm_pt)
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
                           rhop_swarm_pt*rho1_point*dragforce*weight
                     enddo; enddo; enddo
@@ -1855,7 +1856,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     endif
                     !WL: Why is this l being defined?
                     l=ineargrid(k,1)
-                    call get_rhopswarm(mp_swarm,ix0,iy0,iz0,rhop_swarm_pt)
+                    call get_rhopswarm(mp_swarm,ix0,iy0,iz0,ib,rhop_swarm_pt)
                     dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
                         rhop_swarm_pt*rho1_point*dragforce
                   endif

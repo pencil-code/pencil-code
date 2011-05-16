@@ -25,6 +25,7 @@ module Particles_sub
      module procedure get_rhopswarm_ineargrid
      module procedure get_rhopswarm_point
      module procedure get_rhopswarm_pencil
+     module procedure get_rhopswarm_block
   endinterface
 !
   contains
@@ -894,6 +895,28 @@ module Particles_sub
       endif
 !
     endsubroutine get_rhopswarm_point
+!***********************************************************************
+    subroutine get_rhopswarm_block(mp_swarm_tmp,il,im,in,ib,rhop_swarm_tmp)
+!     
+!  Same as get_rhopswarm_point, but for the volume elements as block arrays.
+!  Retrieves a scalar. 
+!
+!  29-apr-11/wlad: coded
+!
+      use Particles_mpicomm, only: dVol1xb, dVol1yb, dVol1zb
+!
+      real,    intent(in)  :: mp_swarm_tmp
+      real,    intent(out) :: rhop_swarm_tmp
+      integer, intent(in)  :: il,im,in,ib
+!
+      if (lcartesian_coords.and.all(lequidist)) then 
+        rhop_swarm_tmp = rhop_swarm
+      else
+        rhop_swarm_tmp = mp_swarm_tmp*&
+             dVol1xb(il,ib)*dVol1yb(im,ib)*dVol1zb(in,ib)
+      endif
+!
+    endsubroutine get_rhopswarm_block
 !***********************************************************************
     subroutine get_rhopswarm_pencil(mp_swarm_tmp,im,in,rhop_swarm_tmp)
 !
