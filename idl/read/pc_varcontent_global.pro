@@ -23,7 +23,7 @@ index=strsplit(res,'&',/extract)
 nindex=n_elements(index)
 for i=0,nindex-1 do begin
   if (execute(index[i]) ne 1) then $
-  message, 'pc_varcontent: there was a problem with index.pro', /info
+  message, 'pc_varcontent_global: there was a problem with index.pro', /info
 endfor
 ;
 ;  Make an array of structures in which to store their descriptions.
