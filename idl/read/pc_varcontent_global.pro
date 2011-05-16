@@ -82,111 +82,137 @@ endelse
 ; and will only update the dummy index zero entry
 ;
 default, iglobal_bx_ext, 0
-if (iglobal_bx_ext ne 0) then iglobal_bx_ext=iglobal_bx_ext-dim.mvar-dim.maux
-varcontent[iglobal_bx_ext].variable   = 'Magnetic field (bx_ext)'
-varcontent[iglobal_bx_ext].idlvar     = 'bx_ext'
-varcontent[iglobal_bx_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_bx_ext].idlvarloc  = 'bx_ext_loc'
-varcontent[iglobal_bx_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_bx_ext gt 0) then begin
+  iglobal_bx_ext=iglobal_bx_ext-dim.mvar-dim.maux
+  varcontent[iglobal_bx_ext].variable   = 'Magnetic field (bx_ext)'
+  varcontent[iglobal_bx_ext].idlvar     = 'bx_ext'
+  varcontent[iglobal_bx_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_bx_ext].idlvarloc  = 'bx_ext_loc'
+  varcontent[iglobal_bx_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_by_ext, 0
-if (iglobal_by_ext ne 0) then iglobal_by_ext=iglobal_by_ext-dim.mvar-dim.maux
-varcontent[iglobal_by_ext].variable   = 'Magnetic field (by_ext)'
-varcontent[iglobal_by_ext].idlvar     = 'by_ext'
-varcontent[iglobal_by_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_by_ext].idlvarloc  = 'by_ext_loc'
-varcontent[iglobal_by_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_by_ext gt 0) then begin
+  iglobal_by_ext=iglobal_by_ext-dim.mvar-dim.maux
+  varcontent[iglobal_by_ext].variable   = 'Magnetic field (by_ext)'
+  varcontent[iglobal_by_ext].idlvar     = 'by_ext'
+  varcontent[iglobal_by_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_by_ext].idlvarloc  = 'by_ext_loc'
+  varcontent[iglobal_by_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_bz_ext, 0
-if (iglobal_bz_ext ne 0) then iglobal_bz_ext=iglobal_bz_ext-dim.mvar-dim.maux
-varcontent[iglobal_bz_ext].variable   = 'Magnetic field (bz_ext)'
-varcontent[iglobal_bz_ext].idlvar     = 'bz_ext'
-varcontent[iglobal_bz_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_bz_ext].idlvarloc  = 'bz_ext_loc'
-varcontent[iglobal_bz_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_bz_ext gt 0) then begin
+  iglobal_bz_ext=iglobal_bz_ext-dim.mvar-dim.maux
+  varcontent[iglobal_bz_ext].variable   = 'Magnetic field (bz_ext)'
+  varcontent[iglobal_bz_ext].idlvar     = 'bz_ext'
+  varcontent[iglobal_bz_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_bz_ext].idlvarloc  = 'bz_ext_loc'
+  varcontent[iglobal_bz_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_jx_ext, 0
-if (iglobal_jx_ext ne 0) then iglobal_jx_ext=iglobal_jx_ext-dim.mvar-dim.maux
-varcontent[iglobal_jx_ext].variable   = 'Current density (jx_ext)'
-varcontent[iglobal_jx_ext].idlvar     = 'jx_ext'
-varcontent[iglobal_jx_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_jx_ext].idlvarloc  = 'jx_ext_loc'
-varcontent[iglobal_jx_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_jx_ext gt 0) then begin
+  iglobal_jx_ext=iglobal_jx_ext-dim.mvar-dim.maux
+  varcontent[iglobal_jx_ext].variable   = 'Current density (jx_ext)'
+  varcontent[iglobal_jx_ext].idlvar     = 'jx_ext'
+  varcontent[iglobal_jx_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_jx_ext].idlvarloc  = 'jx_ext_loc'
+  varcontent[iglobal_jx_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_jy_ext, 0
-if (iglobal_jy_ext ne 0) then iglobal_jy_ext=iglobal_jy_ext-dim.mvar-dim.maux
-varcontent[iglobal_jy_ext].variable   = 'Current density (jy_ext)'
-varcontent[iglobal_jy_ext].idlvar     = 'jy_ext'
-varcontent[iglobal_jy_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_jy_ext].idlvarloc  = 'jy_ext_loc'
-varcontent[iglobal_jy_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_jy_ext gt 0) then begin
+  iglobal_jy_ext=iglobal_jy_ext-dim.mvar-dim.maux
+  varcontent[iglobal_jy_ext].variable   = 'Current density (jy_ext)'
+  varcontent[iglobal_jy_ext].idlvar     = 'jy_ext'
+  varcontent[iglobal_jy_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_jy_ext].idlvarloc  = 'jy_ext_loc'
+  varcontent[iglobal_jy_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_jz_ext, 0
-if (iglobal_jz_ext ne 0) then iglobal_jz_ext=iglobal_jz_ext-dim.mvar-dim.maux
-varcontent[iglobal_jz_ext].variable   = 'Current density (jz_ext)'
-varcontent[iglobal_jz_ext].idlvar     = 'jz_ext'
-varcontent[iglobal_jz_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_jz_ext].idlvarloc  = 'jz_ext_loc'
-varcontent[iglobal_jz_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_jz_ext gt 0) then begin
+  iglobal_jz_ext=iglobal_jz_ext-dim.mvar-dim.maux
+  varcontent[iglobal_jz_ext].variable   = 'Current density (jz_ext)'
+  varcontent[iglobal_jz_ext].idlvar     = 'jz_ext'
+  varcontent[iglobal_jz_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_jz_ext].idlvarloc  = 'jz_ext_loc'
+  varcontent[iglobal_jz_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_ex_ext, 0
-if (iglobal_ex_ext ne 0) then iglobal_ex_ext=iglobal_ex_ext-dim.mvar-dim.maux
-varcontent[iglobal_ex_ext].variable   = 'Electromotive force (ex_ext)'
-varcontent[iglobal_ex_ext].idlvar     = 'ex_ext'
-varcontent[iglobal_ex_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_ex_ext].idlvarloc  = 'ex_ext_loc'
-varcontent[iglobal_ex_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_ex_ext gt 0) then begin
+  iglobal_ex_ext=iglobal_ex_ext-dim.mvar-dim.maux
+  varcontent[iglobal_ex_ext].variable   = 'Electromotive force (ex_ext)'
+  varcontent[iglobal_ex_ext].idlvar     = 'ex_ext'
+  varcontent[iglobal_ex_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_ex_ext].idlvarloc  = 'ex_ext_loc'
+  varcontent[iglobal_ex_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_ey_ext, 0
-if (iglobal_ey_ext ne 0) then iglobal_ey_ext=iglobal_ey_ext-dim.mvar-dim.maux
-varcontent[iglobal_ey_ext].variable   = 'Electromotive force (ey_ext)'
-varcontent[iglobal_ey_ext].idlvar     = 'ey_ext'
-varcontent[iglobal_ey_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_ey_ext].idlvarloc  = 'ey_ext_loc'
-varcontent[iglobal_ey_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_ey_ext gt 0) then begin
+  iglobal_ey_ext=iglobal_ey_ext-dim.mvar-dim.maux
+  varcontent[iglobal_ey_ext].variable   = 'Electromotive force (ey_ext)'
+  varcontent[iglobal_ey_ext].idlvar     = 'ey_ext'
+  varcontent[iglobal_ey_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_ey_ext].idlvarloc  = 'ey_ext_loc'
+  varcontent[iglobal_ey_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglobal_ez_ext, 0
-if (iglobal_ez_ext ne 0) then iglobal_ez_ext=iglobal_ez_ext-dim.mvar-dim.maux
-varcontent[iglobal_ez_ext].variable   = 'Electromotive force (ez_ext)'
-varcontent[iglobal_ez_ext].idlvar     = 'ez_ext'
-varcontent[iglobal_ez_ext].idlinit    = INIT_SCALAR
-varcontent[iglobal_ez_ext].idlvarloc  = 'ez_ext_loc'
-varcontent[iglobal_ez_ext].idlinitloc = INIT_SCALAR_LOC
+if (iglobal_ez_ext gt 0) then begin
+  iglobal_ez_ext=iglobal_ez_ext-dim.mvar-dim.maux
+  varcontent[iglobal_ez_ext].variable   = 'Electromotive force (ez_ext)'
+  varcontent[iglobal_ez_ext].idlvar     = 'ez_ext'
+  varcontent[iglobal_ez_ext].idlinit    = INIT_SCALAR
+  varcontent[iglobal_ez_ext].idlvarloc  = 'ez_ext_loc'
+  varcontent[iglobal_ez_ext].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, ics2, 0
-if (ics2 ne 0) then ics2=ics2-dim.mvar-dim.maux
-varcontent[ics2].variable   = 'Sound speed'
-varcontent[ics2].idlvar     = 'cs2'
-varcontent[ics2].idlinit    = INIT_SCALAR
-varcontent[ics2].idlvarloc  = 'cs2_loc'
-varcontent[ics2].idlinitloc = INIT_SCALAR_LOC
+if (ics2 gt 0) then begin
+  ics2=ics2-dim.mvar-dim.maux
+  varcontent[ics2].variable   = 'Sound speed'
+  varcontent[ics2].idlvar     = 'cs2'
+  varcontent[ics2].idlinit    = INIT_SCALAR
+  varcontent[ics2].idlvarloc  = 'cs2_loc'
+  varcontent[ics2].idlinitloc = INIT_SCALAR_LOC
+endif
 ;
 default, iglnTT, 0
-if (iglnTT ne 0) then iglnTT=iglnTT-dim.mvar-dim.maux
-varcontent[iglnTT].variable   = 'Gradient of logarithmic temperature'
-varcontent[iglnTT].idlvar     = 'glnTT'
-varcontent[iglnTT].idlinit    = INIT_3VECTOR
-varcontent[iglnTT].idlvarloc  = 'lnTT_loc'
-varcontent[iglnTT].idlinitloc = INIT_3VECTOR_LOC
-varcontent[iglnTT].skip       = 2
+if (iglnTT gt 0) then begin
+  iglnTT=iglnTT-dim.mvar-dim.maux
+  varcontent[iglnTT].variable   = 'Gradient of logarithmic temperature'
+  varcontent[iglnTT].idlvar     = 'glnTT'
+  varcontent[iglnTT].idlinit    = INIT_3VECTOR
+  varcontent[iglnTT].idlvarloc  = 'lnTT_loc'
+  varcontent[iglnTT].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iglnTT].skip       = 2
+endif
 ;
 default, igg, 0
-if (igg ne 0) then igg=igg-dim.mvar-dim.maux
-varcontent[igg].variable   = 'Gravitational acceleration'
-varcontent[igg].idlvar     = 'gg'
-varcontent[igg].idlinit    = INIT_3VECTOR
-varcontent[igg].idlvarloc  = 'gg_loc'
-varcontent[igg].idlinitloc = INIT_3VECTOR_LOC
-varcontent[igg].skip       = 2
+if (igg gt 0) then begin
+  igg=igg-dim.mvar-dim.maux
+  varcontent[igg].variable   = 'Gravitational acceleration'
+  varcontent[igg].idlvar     = 'gg'
+  varcontent[igg].idlinit    = INIT_3VECTOR
+  varcontent[igg].idlvarloc  = 'gg_loc'
+  varcontent[igg].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[igg].skip       = 2
+endif
 ;
 default, iglobal_gg, 0
-if (iglobal_gg ne 0) then iglobal_gg=iglobal_gg-dim.mvar-dim.maux
-varcontent[iglobal_gg].variable   = 'Gravitational acceleration'
-varcontent[iglobal_gg].idlvar     = 'gg'
-varcontent[iglobal_gg].idlinit    = INIT_3VECTOR
-varcontent[iglobal_gg].idlvarloc  = 'gg_loc'
-varcontent[iglobal_gg].idlinitloc = INIT_3VECTOR_LOC
-varcontent[iglobal_gg].skip       = 2
+if (iglobal_gg gt 0) then begin
+  iglobal_gg=iglobal_gg-dim.mvar-dim.maux
+  varcontent[iglobal_gg].variable   = 'Gravitational acceleration'
+  varcontent[iglobal_gg].idlvar     = 'gg'
+  varcontent[iglobal_gg].idlinit    = INIT_3VECTOR
+  varcontent[iglobal_gg].idlvarloc  = 'gg_loc'
+  varcontent[iglobal_gg].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iglobal_gg].skip       = 2
+endif
 ;
 ;  Zero out default definition in case it has been set by mistake.
 ;
@@ -194,6 +220,10 @@ varcontent[0].variable = 'UNKNOWN'
 varcontent[0].idlvar   = 'UNKNOWN'
 varcontent[0].idlinit  = '0.0'
 varcontent[0].skip     = 0
+; Maybe this should be changed to:
+; varcontent=varcontent[1:*]
+; which would make unnecessary the hardcoded removing of the first entry
+; in some other IDL scripts. (Bourdin.KIS)
 ;
 return, varcontent
 ;
