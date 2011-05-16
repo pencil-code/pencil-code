@@ -54,10 +54,10 @@ module power_spectrum
       kyrange(:,1) = (/1,nygrid,1/)
       zrange (:,1) = (/1,nzgrid,1/)
 !
-      if ( lintegrate_shell .or. lintegrate_z ) then
-        lcomplex = .false.
-      else
+      if ( lintegrate_shell .or. lintegrate_z ) lcomplex = .false.
 !
+      if ( .not.lintegrate_shell ) then
+
         call get_kranges( ckxrange, kxrange, nxgrid )
         call get_kranges( ckyrange, kyrange, nygrid )
 !
@@ -89,6 +89,11 @@ module power_spectrum
           bxy_spec=.false.
         endif
       enddo
+
+      if (uxy_spec  ) n_spectra = n_spectra+1
+      if (bxy_spec  ) n_spectra = n_spectra+1
+      if (jxbxy_spec) n_spectra = n_spectra+1
+
 99    return
 !
     endsubroutine read_power_spectrum_runpars
@@ -345,6 +350,7 @@ module power_spectrum
      !print*, 'ivec1=', ivec
      call fourier_transform_xz(a1,b1)    !!!! MR: causes error - ivec is set back from 1 to 0
      !print*, 'ivec2=', ivec
+!    to be replaced by comp_spectrum( f, sp, ivec, ar, ai, fourier_transform_xz )
 !
 !  integration over shells
 !
@@ -742,7 +748,7 @@ module power_spectrum
       call mpireduce_sum(spectrum1,spectrum1_sum,nk)
     else
       call mpireduce_sum(spectrum2,spectrum2_sum,(/nk,nz/),12)
-      call mpigather_z(spectrum2_sum,spectrum2_global,nk,nz)
+      call mpigather_z(spectrum2_sum,spectrum2_global,nk) 
     endif
 !
   else if (lintegrate_z) then
@@ -770,6 +776,7 @@ module power_spectrum
             enddo
           endif
         enddo
+!        print*, 'nach write'
       endif
 !
     else
@@ -784,6 +791,7 @@ module power_spectrum
   endif
 !
   call mpibarrier()          ! necessary ?
+!  print*, 'nach barrier:', iproc, ipy, ipz
 !
   if (lintegrate_shell) then
 !
