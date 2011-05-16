@@ -1,0 +1,12 @@
+Maintainer:
+    Wladimir Lyra <wlyra/amnh[dot]org>
+Added:
+    2011-may-16
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    - Not a production run - 
+Comments:
+    Sample to test the particle block domain decomposition code with 
+    non-equidistant grids.
+

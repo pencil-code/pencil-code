@@ -1,0 +1,49 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2011-03-24 20:03:33 wlyra Exp $',
+  xyz0  =  -0.2,  -0.8,  -0.4
+  xyz1  =   0.2,   0.8,   0.4
+  lperi =      T,      T,      T
+  !bcz='s','s','a','a2','a2','s'
+  ip=14
+  lwrite_ic=T
+  lwrite_aux=T
+  grid_func=, , 'sinh'
+  coeff_grid=, , 8
+  xyz_star=, , 0.
+/
+&eos_init_pars
+  cs0=0.1, rho0=1.0
+  gamma=1.4
+/
+&hydro_init_pars
+  Omega=1.0
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_rho'
+  rho_const=1.
+/
+&grav_init_pars
+  gravz_profile='zero'
+  kz_gg=3.9269908           ! = pi/Lz
+  nu_epicycle=0.!1.0        ! = Omega
+  gravz=0.!0.25464791       ! = Omega^2/kz
+  potz_const=0.!0.064845561 ! = Omega^2/kz^2
+/
+&entropy_init_pars
+/
+&special_init_pars
+/
+&particles_init_pars
+  initxxp='random', initvvp='zero'
+  zp0=0.01
+  eps_dtog=0.01, tausp=1.
+  gravz_profile='linear'
+  nu_epicycle=1.0
+  lparticlemesh_tsc=T
+  lparticlemesh_cic=F
+/

@@ -1,0 +1,39 @@
+!                          -*-f90-*- (for Emacs)
+!
+!  Run parameters for MRI turbulence
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2011-03-24 20:03:33 wlyra Exp $',
+  nt=10, it1=1, cdt=0.4, cdtv=0.4, isave=100, itorder=3
+  dsnap=62.831853, dtmin=1.0e-6, dvid=0.1
+  lbidiagonal_derij=F
+  lpencil_check=T
+  lwrite_aux=T
+  ip=20
+  max_walltime=171000 !time in seconds equiv to 47.5 h
+  iz=128
+  tmax=5.0
+  !dt=1e-3
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  idiff='hyper3-mesh'
+  diffrho_hyper3_mesh=5.
+/
+&grav_run_pars
+/
+&entropy_run_pars
+ iheatcond='hyper3-mesh'
+ chi_hyper3_mesh=5.
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh'
+  nu_hyper3_mesh=5.
+/
+&particles_run_pars
+ ldragforce_dust_par=T
+ ldragforce_gas_par=T
+/
