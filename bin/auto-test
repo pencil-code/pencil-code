@@ -105,6 +105,7 @@ my %tests = (
                          2d-tests/spherical_viscous_ring
                          2d-tests/field-loop-fargo
                          baroclinic
+                         1d-tests/sedimentation-noneq-blocks
                     )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
