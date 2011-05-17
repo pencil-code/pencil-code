@@ -18,39 +18,38 @@
 ;                    varfile=varfile, datadir=datadir, proc=proc, $
 ;                    /nostats, /quiet, /help
 ; KEYWORD PARAMETERS:
-;    datadir: specify the root data directory. Default is './data'   [string]
-;       proc: specify a processor to get the data from. Default: ALL [integer]
-;    varfile: name for the var file, default: 'var.dat'              [string]
-;       ivar: a number to optionally append to the end of the        [integer]
-;             varfile name.
+;    datadir: Specifies the root data directory. Default: './data'.  [string]
+;       proc: Specifies processor to get the data from. Default: ALL [integer]
+;    varfile: Name of the var file. Default: 'var.dat'.              [string]
+;       ivar: Number of the varfile, to be appended optionally.      [integer]
+;   tx,ty,tz: Target sizes of data cube for data reduction.          [integer]
+;             (Any non-default setting implies /trimall)
 ;
-;     object: optional structure in which to return all the above    [structure]
-;             (or those vars specified in 'variables')
-;  variables: array of variable name to return                       [string(*)]
-;  exit_status: suppress fatal errors in favour of reporting the
-;               error through exit_status/=0.
+;     object: Optional structure in which to return the loaded data. [structure]
+;  variables: Array of names of variables to read.                   [string(*)]
+;exit_status: Suppress fatal errors in favour of reporting the
+;             error through exit_status/=0.
 ;
-;  /allprocs: Load data from allprocs directory
-;  /additional: Load all variables stored in the files, PLUS any additional
-;               variables specified with the variables=[] option.
-;     /magic: call pc_magic_var to replace special variable names with their
-;             functional equivalents
-;    /global: add global values to snapshot variables.
+;  /allprocs: Load data from the allprocs directory.
+;/additional: Load all variables stored in the files, PLUS any additional
+;             variables specified with the variables=[] option.
+;     /magic: Call pc_magic_var to replace special variable names with their
+;             functional equivalents.
+;    /global: Add global values to snapshot variables.
 ;
-;   /trimxyz: remove ghost points from the x,y,z arrays that are returned
-;   /trimall: remove ghost points from all returned variables and x,y,z arrays
-;             - this is equivalent to wrapping each requested variable with
-;                     pc_noghost(..., dim=dim)
-;               pc_noghost will skip, i.e. do nothing to variables not
-;               initially of size (dim.mx,dim.my,dim.mz)
-;   /unshear: convert coordinates to unsheared frame (needed for Fourier
-;             transform)
-;     /ghost: set ghost zones on derived variables (such as bb)
+;   /trimxyz: Remove ghost points from the returned x,y,z arrays.
+;   /trimall: Remove ghost points from all returned variables and x,y,z arrays.
+;             This is equivalent to wrapping each requested variable with
+;             > pc_noghost(..., dim=dim)
+;             pc_noghost will skip those variables with an initial size
+;             unequal to (dim.mx,dim.my,dim.mz).
+;   /unshear: Convert coordinates to unsheared frame (needed for FFT).
+;     /ghost: Set ghost zones on derived variables (such as bb).
 ;
-;   /nostats: don't print any summary statistics for the returned fields
-;     /stats: force printing of summary statistics even if quiet is set
-;     /quiet: instruction not to print any 'helpful' information
-;      /help: display this usage information, and exit
+;     /quiet: Suppress any information messages and summary statistics.
+;   /nostats: Suppress only summary statistics.
+;     /stats: Force printing of summary statistics even if /quiet is set.
+;      /help: Display this usage information, and exit.
 ;
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
