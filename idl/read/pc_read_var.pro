@@ -216,8 +216,13 @@ COMPILE_OPT IDL2,HIDDEN
 ; Initialize / set default returns for ALL variables.
 ;
   t=zero
-  x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
-  dx=zero & dy=zero & dz=zero & deltay=zero
+  x=fltarr(dim.mx)*one
+  y=fltarr(dim.my)*one
+  z=fltarr(dim.mz)*one
+  dx=zero
+  dy=zero
+  dz=zero
+  deltay=zero
 ;
   if (nprocs gt 1) then begin
     xloc=fltarr(procdim.mx)*one
@@ -382,7 +387,8 @@ COMPILE_OPT IDL2,HIDDEN
       endif else begin
         i0x=procdim.ipx*procdim.nx+procdim.nghostx
         i1x=i0x+procdim.mx-1L-procdim.nghostx
-        i0xloc=procdim.nghostx & i1xloc=procdim.mx-1L
+        i0xloc=procdim.nghostx
+        i1xloc=procdim.mx-1L
       endelse
 ;
       if (procdim.ipy eq 0L) then begin
