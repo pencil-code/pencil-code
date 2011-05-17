@@ -52,7 +52,7 @@ end
 ;
 ; Having these shortcuts makes using transformation routines
 ; like pc_eoscalc that have been written in a very high-level
-; general purpose way somewhat less t
+; general purpose way somewhat easier.
 ;
 ; See idl/magic/pc_magic_var.pro to view/add useful variables.
 ; NB the behaviour of pc_read_magic can be dependent upon other parameters etc.
