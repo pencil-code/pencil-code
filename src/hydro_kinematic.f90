@@ -398,6 +398,20 @@ module Hydro
         endif
         if (lpencil(i_divu)) p%divu=0.
 !
+!  Glen-Roberts flow (positive helicity), alternative version
+!
+      case ('varhel-roberts')
+        if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
+        fac=ampl_kinflow
+        eps1=1.-eps_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+          p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+          p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)*eps1
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  1-D Glen-Roberts flow (positive helicity, no y-dependence)
 !
       case ('poshel-roberts-1d') 
@@ -770,13 +784,27 @@ module Hydro
 !  Convection rolls
 !  Stream function: psi_y = cos(kx*x) * cos(kz*z)
 !
-      case ('rolls') 
+      case ('rolls')
         if (headtt) print*,'Convection rolls; kx_kinflow,kz_uukin=',kx_kinflow,kz_kinflow
 ! uu
         if (lpencil(i_uu)) then
-          p%uu(:,1)=ampl_kinflow*kz_kinflow*cos(kx_kinflow*x(l1:l2))*sin(kz_kinflow*z(n))
+          p%uu(:,1)=+ampl_kinflow*kz_kinflow*cos(kx_kinflow*x(l1:l2))*sin(kz_kinflow*z(n))
           p%uu(:,2)=+0.
-          p%uu(:,3)=ampl_kinflow*kx_kinflow*sin(kx_kinflow*x(l1:l2))*cos(kz_kinflow*z(n))
+          p%uu(:,3)=-ampl_kinflow*kx_kinflow*sin(kx_kinflow*x(l1:l2))*cos(kz_kinflow*z(n))
+        endif
+! divu
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Convection rolls
+!  Stream function: psi_y = sin(kx*x) * sin(kz*z)
+!
+      case ('rolls2')
+        if (headtt) print*,'Convection rolls2; kx_kinflow,kz_uukin=',kx_kinflow,kz_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=-ampl_kinflow*kz_kinflow*sin(kx_kinflow*x(l1:l2))*cos(kz_kinflow*z(n))
+          p%uu(:,2)=+0.
+          p%uu(:,3)=+ampl_kinflow*kx_kinflow*cos(kx_kinflow*x(l1:l2))*sin(kz_kinflow*z(n))
         endif
 ! divu
         if (lpencil(i_divu)) p%divu=0.
