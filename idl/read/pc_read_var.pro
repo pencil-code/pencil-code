@@ -536,6 +536,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (validate_variables) then begin
     skipvariable=make_array(n_elements(variables),/INT,value=0)
     for iv=0,n_elements(variables)-1 do begin
+      if (tags[iv] eq variables[iv]) then continue
       res=execute(tags[iv]+'='+variables[iv])
       if (not res) then begin
         if (not keyword_set(quiet)) then $
