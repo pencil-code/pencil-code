@@ -216,7 +216,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Initialize / set default returns for ALL variables.
 ;
   t=zero
-  x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
+  x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
   dx=zero & dy=zero & dz=zero & deltay=zero
 ;
   if (nprocs gt 1) then begin
@@ -331,7 +331,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ''
     print, 'The file '+varfile+' contains: ', content
     print, ''
-    print, 'The grid dimension is ', mx, my, mz
+    print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
     print, ''
   endif
 ;
