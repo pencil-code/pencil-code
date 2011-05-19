@@ -29,7 +29,7 @@ module Special
   real :: width_newton=0.,width_RTV=0.
   real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
   real :: hcond_grad_iso=0.
-  real :: tau_inv_spitzer
+  real :: tau_inv_spitzer=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -41,7 +41,8 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss, &
       width_newton,tanh_newton,cubic_newton,Kchrom, &
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
-      exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc
+      exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc, &
+      tau_inv_spitzer
 !
 ! variables for print.in
 !
@@ -296,7 +297,7 @@ module Special
 !
         rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_sp
 !
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+!        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
         if (lvideo) then
 !
@@ -335,14 +336,30 @@ module Special
 !
       select case (trim(slices%name))
 !
-    case ('spitzer')
-      slices%yz => spitzer_yz
-      slices%xz => spitzer_xz
-      slices%xy => spitzer_xy
-      slices%xy2=> spitzer_xy2
-      if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
-      if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
-      slices%ready=.true.
+      case ('sflux')
+        if (slices%index>=3) then
+          slices%ready=.false.
+        else
+          slices%index=slices%index+1
+          slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,ispitzerx-1+slices%index)
+          slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,ispitzerx-1+slices%index)
+          slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,ispitzerx-1+slices%index)
+          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ispitzerx-1+slices%index)
+          if (lwrite_slice_xy3) &
+              slices%xy3=f(l1:l2,m1:m2,slices%iz3,ispitzerx-1+slices%index)
+          if (lwrite_slice_xy4) &
+              slices%xy4=f(l1:l2,m1:m2,slices%iz4,ispitzerx-1+slices%index)
+          if (slices%index<=3) slices%ready=.true.
+        endif
+!
+      case ('spitzer')
+        slices%yz => spitzer_yz
+        slices%xz => spitzer_xz
+        slices%xy => spitzer_xy
+        slices%xy2=> spitzer_xy2
+        if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
+        if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
+        slices%ready=.true.
 !
       case ('rtv')
         slices%yz =>rtv_yz
