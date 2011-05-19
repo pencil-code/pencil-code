@@ -4339,13 +4339,13 @@ module Initcond
       if (lroot) then
         if (nxgrid==1.and.nygrid/=1) then
           Bzflux =  sum(abs(Bz0_r * 1e-4))*dy*unit_length
-          write (*,*) 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
+          write (*,'(A,E10.2)') 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
         elseif (nxgrid/=1.and.nygrid==1) then
           Bzflux =  sum(abs(Bz0_r * 1e-4))*dx*unit_length
-          write (*,*) 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
+          write (*,'(A,E10.2)') 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
         elseif (nxgrid/=1.and.nygrid/=1) then
           Bzflux =  sum(abs(Bz0_r * 1e-4))*dx*unit_length*dy*unit_length
-          write (*,*) 'Bz flux sum(|B|)*dA [Tm^2] :',Bzflux
+          write (*,'(A,E10.2)') 'Bz flux sum(|B|)*dA [Tm^2] :',Bzflux
         endif
       endif
 !
