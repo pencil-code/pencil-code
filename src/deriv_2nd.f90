@@ -8,15 +8,15 @@
 !
 !***************************************************************
 module Deriv
-
+!
   use Messages
   use Cparam
   use Mpicomm, only: stop_it
-
+!
   implicit none
-
+!
   private
-
+!
   public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
@@ -24,7 +24,7 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der_z, der2_z
-
+!
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
 !debug  integer, parameter :: icount_der4  = 3         !DERCOUNT
@@ -33,7 +33,7 @@ module Deriv
 !debug  integer, parameter :: icount_derij = 6         !DERCOUNT
 !debug  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
 !debug  integer, parameter :: icount_der_other = 8     !DERCOUNT
-
+!
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
     module procedure der_other  ! derivative of another field
@@ -48,14 +48,14 @@ module Deriv
     module procedure derij_main   ! derivative of an 'mvar' variable
     module procedure derij_other  ! derivative of another field
   endinterface
-
+!
   interface  der_onesided_4_slice                ! Overload the der function
     module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
     module procedure  der_onesided_4_slice_other ! derivative of another field
   endinterface
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine initialize_deriv()
 !
@@ -240,7 +240,7 @@ module Deriv
         call fatal_error('der_pencil','')
       endif
 !
-      if (lcylindrical_coords.or.lspherical_coords) & 
+      if (lcylindrical_coords.or.lspherical_coords) &
            call fatal_error("der_pencil","Not implemented for non-cartesian")
 !
     endsubroutine der_pencil
@@ -309,7 +309,7 @@ module Deriv
           df2=0.
         endif
       endif
-
+!
 !
     endsubroutine der2_main
 !***********************************************************************
@@ -384,7 +384,7 @@ module Deriv
           df2=0.
         endif
       endif
-
+!
 !
     endsubroutine der2_other
 !***********************************************************************
@@ -475,7 +475,7 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
           call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
 !
@@ -656,7 +656,7 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
           call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
 !
@@ -754,7 +754,7 @@ module Deriv
                'just works if upwinding is used')
         endif
      endif
-!     
+!
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -968,7 +968,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         call stop_it("deriv_2nd: derij_main not implemented yet")
@@ -1158,7 +1158,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
@@ -1558,12 +1558,12 @@ module Deriv
 !
       use Cdata
 !
-!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
 !
 !   Because of its original intended use in relation to solving
-!   characteristic equations on boundaries (NSCBC), this sub should 
+!   characteristic equations on boundaries (NSCBC), this sub should
 !   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
 !   scaling factors and connection terms should instead be done when
 !   solving the characteristic equations.
@@ -1623,12 +1623,12 @@ module Deriv
 !
       use Cdata
 !
-!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos. 
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
 !
 !   Because of its original intended use in relation to solving
-!   characteristic equations on boundaries (NSCBC), this sub should 
+!   characteristic equations on boundaries (NSCBC), this sub should
 !   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
 !   scaling factors and connection terms should instead be done when
 !   solving the characteristic equations.
@@ -1686,23 +1686,60 @@ module Deriv
 !***********************************************************************
     subroutine der_z(f,df)
 !
-! dummy routine
+!  z derivative operating on a z-dependent 1-D array
+!
+!  19-may-11/bing: adapted from der_main; note that f is not the f array!
+!
+      use Cdata
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
-      call stop_it("deriv_2nd: der_Z not implemented yet")
+      real, dimension (nz) :: fac
+!
+      if (nzgrid/=1) then
+        fac=.5*dz_1(n1:n2)
+        df=fac*(f(n1+1:n2+1)-f(n1-1:n2-1))
+      else
+        df=0.
+        if (ip<=5) print*, 'der_z: Degenerate case in z-direction'
+      endif
+!
+      if (lspherical_coords) &
+          call stop_it('der_z (2nd order: not implemented for spherical coords')
 !
     endsubroutine der_z
 !***********************************************************************
     subroutine der2_z(f,df2)
 !
-! dummy routine
+!  z derivative operating on a z-dependent 1-D array
+!
+!  19-may-11/bing: adapted from der_z and der_main
+!
+      use Cdata
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
 !
-      call stop_it("deriv_2nd: der2_z not implemented yet")
+      real, dimension (nz) :: fac,df
+      real, parameter :: der2_coef0=-2., der2_coef1=1.
+!
+      if (nzgrid/=1) then
+        fac=dz_1(n1:n2)**2
+        df2=fac*(der2_coef0*f(n1:n2) &
+            +der2_coef1*(f(n1+1:n2+1)+f(n1-1:n2-1)))
+!
+        if (.not.lequidist(3)) then
+          call der_z(f,df)
+          df2=df2+dz_tilde(n1:n2)*df
+        endif
+      else
+        df2=0.
+        if (ip<=5) print*, 'der2_z: Degenerate case in z-direction'
+      endif
+!
+      if (lspherical_coords) &
+          call stop_it('der2_z (2nd order:not implemented for spherical coords')
 !
     endsubroutine der2_z
 !***********************************************************************
