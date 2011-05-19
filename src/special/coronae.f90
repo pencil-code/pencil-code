@@ -36,6 +36,7 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
+  logical :: eighth_moment=.false.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -53,7 +54,8 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer
+      heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
+      eighth_moment
 !
 ! variables for print.in
 !
@@ -117,7 +119,11 @@ module Special
 !  miscellaneous variables
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
   real :: Bzflux
-  real :: Kspitzer_SI = 2e-11, Kspitzer=0.
+  real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
+  real :: Kspitzer_perp_SI = 3e12, Kspitzer_perp=0.
+  real :: Ksaturation_SI = 7e7,Ksaturation=0.
+!
+  real :: nu_ee
 !
   contains
 !
@@ -132,7 +138,7 @@ module Special
 !
       call farray_register_pde('spitzer',ispitzer,vector=3)
       ispitzerx=ispitzer; ispitzery=ispitzer+1; ispitzerz=ispitzer+2
-!      
+!
       if (lroot) call svn_id( &
           "$Id$")
 !
@@ -153,11 +159,25 @@ module Special
       real, dimension (mz) :: ztmp
       character (len=*), parameter :: filename='/strat.dat'
       integer :: lend,unit=12
-      real :: dummy=1.,cp1=1.
+      real :: dummy=1.,cp1=1.,eps0,unit_ampere,e_charge
       logical :: exists
 !
-      Kspitzer = Kspitzer_SI /unit_density/unit_velocity**3./ &
+      Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
           unit_length*unit_temperature**(3.5)
+!
+      Kspitzer_perp = Kspitzer_perp_SI/ &
+          (unit_velocity**3.*unit_magnetic**2.*unit_length)* &
+          (unit_density*sqrt(unit_temperature))
+!
+      Ksaturation = Ksaturation_SI /unit_velocity**3. * unit_temperature**1.5
+!
+      eps0 =1./mu0/c_light**2.
+!
+      unit_ampere = unit_velocity*sqrt(mu0/(4.*pi*1e-7)*unit_density)*unit_length
+      e_charge= 1.602176e-19/unit_time/unit_ampere
+
+      nu_ee = 4.D0/3. *sqrt(pi) * 20.D0/ sqrt(m_e) * &
+          ((e_charge**2./(4.D0*pi*eps0))**2.D0)/(k_B**1.5) * 0.872 /m_p
 !
       if (irefz > n2) call fatal_error('initialize_special', &
           'irefz is outside proc boundaries, ask Sven')
@@ -222,11 +242,25 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+!      real, dimension (mx) ::  glnT
+!      integer :: i,j
       intent(inout) :: f
 !
 !  Initialization for the non-fourier heat transprot
-!
-      f(:,:,:,ispitzerx:ispitzerz) = 0.
+! !
+!       Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
+!           unit_length*unit_temperature**(3.5)
+! !
+!       f(:,:,:,ispitzerz)=0.
+!       do i=1,my
+!         do j=n1,n2
+! !
+!           glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
+! !
+!  !         f(:,i,j,ispitzerz) =1e-4* Kspitzer_para * exp(3.5*f(:,i,j,ilnTT))*glnT
+!         enddo
+!       enddo
+      f(:,:,:,ispitzerx:ispitzerz)=0.
 !
     endsubroutine init_special
 !***********************************************************************
@@ -263,9 +297,21 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
+      if (eighth_moment) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_uij)=.true.
+      endif
+!
       if (tau_inv_spitzer /= 0.) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_lnrho)=.true.
@@ -383,14 +429,18 @@ module Special
 !
       use EquationOfState, only: gamma
       use Diagnostics,     only : max_mn_name
-      use Sub, only: div, dot, dot2, identify_bcs, del2v, cubic_step
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: b2,b2_1,bglnTT,fac,q_sat
-      real, dimension(nx) :: div_spitzer,rhs,spitzer_abs
-      real :: Ksat=1.
+      real, dimension(nx) :: b2_1
+      real, dimension(nx) :: div_spitzer,rhs
+      real, dimension(nx,3) :: K1
+      real, dimension(nx,3) :: spitzer_vec
+      real, dimension(nx) :: tmp,dt_1_8th,nu_coll
+      real, dimension(nx,3) :: q
+      real :: coeff
       integer :: i
 !
       intent(in) :: p
@@ -406,37 +456,26 @@ module Special
       endif
 !
       if (tau_inv_spitzer /= 0.) then
-        call dot2(p%bb,b2)
-        b2_1=1./max(tini,b2)
 !
-        call dot(p%bb,p%glnTT,bglnTT)
+        b2_1=1./max(tini,p%b2)
 !
-        fac = Kspitzer*bglnTT*b2_1*exp(3.5*p%lnTT)
+        call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
 !
+        call dot(K1,p%bb,tmp)
+        call multsv(b2_1*tmp,p%bb,spitzer_vec)
+!
+        q = f(l1:l2,m,n,ispitzerx:ispitzerz)
+
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
-              tau_inv_spitzer*(-f(l1:l2,m,n,ispitzer+i-1)-fac*p%bb(:,i))
+              tau_inv_spitzer*(-q(:,i)-spitzer_vec(:,i))
         enddo
 !
 !  Limit by saturation heat flux
 !
-        spitzer_abs(:)=0.
-        do i=1,3
-          spitzer_abs(:)=spitzer_abs(:) + f(l1:l2,m,n,ispitzer+i-1)**2
-        enddo
-        q_sat = Ksat*7.28e7*exp(p%lnrho+1.5*p%lnTT)
-!
-        where (sqrt(spitzer_abs) > q_sat)
-          f(l1:l2,m,n,ispitzerx)=f(l1:l2,m,n,ispitzerx)/sqrt(spitzer_abs)*q_sat
-          f(l1:l2,m,n,ispitzery)=f(l1:l2,m,n,ispitzery)/sqrt(spitzer_abs)*q_sat
-          f(l1:l2,m,n,ispitzerz)=f(l1:l2,m,n,ispitzerz)/sqrt(spitzer_abs)*q_sat
-        endwhere
-!
         call div(f,ispitzer,div_spitzer)
 !
         rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_spitzer
-!
-        if (llast_proc_z.and.coronae_fix) rhs = rhs*(1.-cubic_step(1.*n,n2-12.,9.))
 !
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
@@ -452,12 +491,55 @@ module Special
         endif
 !
         if (lfirst.and.ldt) then
-          dt1_max=max(dt1_max,rhs/cdts)
           dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
-          if (ldiagnos.and.idiag_dtrad /= 0.) then
-            itype_name(idiag_dtrad)=ilabel_max_dt
-            call max_mn_name(rhs/cdts,idiag_dtrad,l_dt=.true.)
-          endif
+        endif
+      endif
+!
+! Eighth moment approximation
+!
+      if (eighth_moment) then
+!
+        b2_1=1./max(tini,p%b2)
+!
+        coeff = 0.872*5./2.*(k_B/m_e)*(k_B/m_p)
+        call multsv(coeff*exp(2.0*p%lnTT+p%lnrho),p%glnTT,K1)
+!
+        call dot(K1,p%bb,tmp)
+        call multsv(b2_1*tmp,p%bb,spitzer_vec)
+!
+        q = f(l1:l2,m,n,ispitzerx:ispitzerz)
+!
+        nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)
+!
+        do i=1,3
+          df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) &
+              -nu_coll*q(:,i)-spitzer_vec(:,i)
+        enddo
+!
+!  Limit by saturation heat flux
+!
+        call div(f,ispitzer,div_spitzer)
+!
+        rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_spitzer
+!
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+!
+        if (lvideo) then
+!
+          rhs = -nu_coll
+!
+! slices
+          spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
+          if (m == iy_loc)  spitzer_xz(:,n-n1+1)= -rhs
+          if (n == iz_loc)  spitzer_xy(:,m-m1+1)= -rhs
+          if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= -rhs
+          if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= -rhs
+          if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= -rhs
+        endif
+!
+        if (lfirst.and.ldt) then
+          dt_1_8th = nu_coll
+          dt1_max=max(dt1_max,dt_1_8th/cdts)
         endif
       endif
 !
@@ -475,8 +557,6 @@ module Special
 !  Loop over slices
 !
       select case (trim(slices%name))
-!
-!  Magnetic vector potential (code variable)
 !
       case ('sflux')
         if (slices%index>=3) then
@@ -504,12 +584,12 @@ module Special
         slices%ready=.true.
 !
       case ('spitzer')
-        slices%yz => sflux_yz
-        slices%xz => sflux_xz
-        slices%xy => sflux_xy
-        slices%xy2=> sflux_xy2
-        if (lwrite_slice_xy3) slices%xy3=> sflux_xy3
-        if (lwrite_slice_xy4) slices%xy4=> sflux_xy4
+        slices%yz => spitzer_yz
+        slices%xz => spitzer_xz
+        slices%xy => spitzer_xy
+        slices%xy2=> spitzer_xy2
+        if (lwrite_slice_xy3) slices%xy3=> spitzer_xy3
+        if (lwrite_slice_xy4) slices%xy4=> spitzer_xy4
         slices%ready=.true.
 !
       case ('rtv')
