@@ -766,24 +766,24 @@ module Shock
       if (nxgrid/=1) then
          if (mx>=5) then
             maxf(1     ,:,:) = max(f(1     ,:,:),  &
-                                     f(2     ,:,:),  &
-                                     f(3     ,:,:))
+                                   f(2     ,:,:),  &
+                                   f(3     ,:,:))
             maxf(2     ,:,:) = max(f(1     ,:,:), &
-                                     f(2     ,:,:), &
-                                     f(3     ,:,:), &
-                                     f(4     ,:,:))
+                                   f(2     ,:,:), &
+                                   f(3     ,:,:), &
+                                   f(4     ,:,:))
             maxf(3:mx-2,:,:) = max(f(1:mx-4,:,:), &
-                                     f(2:mx-3,:,:), &
-                                     f(3:mx-2,:,:), &
-                                     f(4:mx-1,:,:), &
-                                     f(5:mx  ,:,:))
+                                   f(2:mx-3,:,:), &
+                                   f(3:mx-2,:,:), &
+                                   f(4:mx-1,:,:), &
+                                   f(5:mx  ,:,:))
             maxf(mx-1,:,:)   = max(f(mx-3  ,:,:), &
-                                     f(mx-2  ,:,:), &
-                                     f(mx-1  ,:,:), &
-                                     f(mx    ,:,:))
+                                   f(mx-2  ,:,:), &
+                                   f(mx-1  ,:,:), &
+                                   f(mx    ,:,:))
             maxf(mx  ,:,:)   = max(f(mx-2  ,:,:), &
-                                     f(mx-1  ,:,:), &
-                                     f(mx    ,:,:))
+                                   f(mx-1  ,:,:), &
+                                   f(mx    ,:,:))
          elseif (mx==4) then
             maxf(1,:,:)=max(f(1,:,:),f(2,:,:),f(3,:,:))
             maxf(2,:,:)=max(f(1,:,:),f(2,:,:),f(3,:,:),f(4,:,:))
@@ -852,24 +852,24 @@ module Shock
       if (nzgrid/=1) then
          if (mz>=5) then
             maxf(:,:,1     ) = max(tmp(:,:,1     ),  &
-                                     tmp(:,:,2     ),  &
-                                     tmp(:,:,3     ))
+                                   tmp(:,:,2     ),  &
+                                   tmp(:,:,3     ))
             maxf(:,:,2     ) = max(tmp(:,:,1     ), &
-                                     tmp(:,:,2     ), &
-                                     tmp(:,:,3     ), &
-                                     tmp(:,:,4     ))
+                                   tmp(:,:,2     ), &
+                                   tmp(:,:,3     ), &
+                                   tmp(:,:,4     ))
             maxf(:,:,3:mz-2) = max(tmp(:,:,1:mz-4), &
-                                     tmp(:,:,2:mz-3), &
-                                     tmp(:,:,3:mz-2), &
-                                     tmp(:,:,4:mz-1), &
-                                     tmp(:,:,5:mz  ))
+                                   tmp(:,:,2:mz-3), &
+                                   tmp(:,:,3:mz-2), &
+                                   tmp(:,:,4:mz-1), &
+                                   tmp(:,:,5:mz  ))
             maxf(:,:,mz-1  ) = max(tmp(:,:,mz-3  ), &
-                                     tmp(:,:,mz-2  ), &
-                                     tmp(:,:,mz-1  ), &
-                                     tmp(:,:,mz    ))
+                                   tmp(:,:,mz-2  ), &
+                                   tmp(:,:,mz-1  ), &
+                                   tmp(:,:,mz    ))
             maxf(:,:,mz    ) = max(tmp(:,:,mz-2  ), &
-                                     tmp(:,:,mz-1  ), &
-                                     tmp(:,:,mz    ))
+                                   tmp(:,:,mz-1  ), &
+                                   tmp(:,:,mz    ))
          elseif (mz==4) then
             maxf(:,:,1)=max(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3))
             maxf(:,:,2)=max(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3),tmp(:,:,4))
@@ -908,12 +908,12 @@ module Shock
       if (nxgrid/=1) then
          if (mx>=3) then
             maxf(1     ,:,:) = max(f(1     ,:,:), &
-                                     f(2     ,:,:))
+                                   f(2     ,:,:))
             maxf(2:mx-1,:,:) = max(f(1:mx-2,:,:), &
-                                     f(2:mx-1,:,:), &
-                                     f(3:mx  ,:,:))
+                                   f(2:mx-1,:,:), &
+                                   f(3:mx  ,:,:))
             maxf(  mx  ,:,:) = max(f(  mx-1,:,:), &
-                                     f(  mx  ,:,:))
+                                   f(  mx  ,:,:))
          else
             maxf=f
          endif
@@ -927,12 +927,12 @@ module Shock
       if (nygrid/=1) then
          if (my>=3) then
             tmp(:,1     ,:) = max(maxf(:,1     ,:),  &
-                                    maxf(:,2     ,:))
+                                  maxf(:,2     ,:))
             tmp(:,2:my-1,:) = max(maxf(:,1:my-2,:), &
-                                    maxf(:,2:my-1,:), &
-                                    maxf(:,3:my  ,:))
+                                  maxf(:,2:my-1,:), &
+                                  maxf(:,3:my  ,:))
             tmp(:,  my  ,:) = max(maxf(:,  my-1,:), &
-                                    maxf(:,  my  ,:))
+                                  maxf(:,  my  ,:))
          else
             tmp=maxf
          endif
@@ -946,12 +946,12 @@ module Shock
       if (nzgrid/=1) then
          if (mz>=3) then
             maxf(:,:,1     ) = max(tmp(:,:,1     ),  &
-                                     tmp(:,:,2     ))
+                                   tmp(:,:,2     ))
             maxf(:,:,2:mz-1) = max(tmp(:,:,1:mz-2), &
-                                     tmp(:,:,2:mz-1), &
-                                     tmp(:,:,3:mz  ))
+                                   tmp(:,:,2:mz-1), &
+                                   tmp(:,:,3:mz  ))
             maxf(:,:,mz    ) = max(tmp(:,:,  mz-1), &
-                                     tmp(:,:,  mz  ))
+                                   tmp(:,:,  mz  ))
          endif
       else
          maxf=tmp
