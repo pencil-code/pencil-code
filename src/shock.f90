@@ -173,7 +173,7 @@ module Shock
             print*, '                  periodic! (you must set a proper boundary condition for the'
             print*, '                  shock viscosity)'
             print*, 'initialize_shock: bcz=', bcz
-            print*, 'initialize_shock: to suppress this error,' 
+            print*, 'initialize_shock: to suppress this error,'
             print*, '                  set lforce_periodic_shockviscosity=T in  &shock_run_pars'
           endif
           call fatal_error('initialize_shock','')
@@ -222,7 +222,7 @@ module Shock
       write(unit,NML=shock_run_pars)
 !
     endsubroutine write_shock_run_pars
-!*******************************************************************
+!***********************************************************************
     subroutine rprint_shock(lreset,lwrite)
 !
 !  Writes ishock to index.pro file
@@ -288,7 +288,7 @@ module Shock
       endselect
 !
     endsubroutine get_slices_shock
-!!***********************************************************************
+!***********************************************************************
     subroutine pencil_criteria_shock()
 !
 !  All pencils that the Viscosity module depends on are specified here.
@@ -395,7 +395,7 @@ module Shock
 !debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_shock_profile_simple
-!!***********************************************************************
+!***********************************************************************
     subroutine calc_shock_profile(f)
 !
 !  Calculate divu based shock profile to be used in viscosity and
@@ -958,7 +958,6 @@ module Shock
       endif
 !
     endsubroutine shock_max3_farray
-!
 !***********************************************************************
 !Utility routines - poss need moving elsewhere
     subroutine shock_max3_pencil(f,j,maxf)
