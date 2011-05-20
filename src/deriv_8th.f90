@@ -10,6 +10,7 @@
 module Deriv
 !
   use Messages
+  use Cdata
 !
   implicit none
 !
@@ -59,10 +60,6 @@ module Deriv
     subroutine initialize_deriv()
 !
 !  Initialize stencil coefficients
-!
-      use Cdata
-!
-      real :: border_width, lborder, uborder
 !
       select case (der2_type)
 !
@@ -292,11 +289,10 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
 !
-!
       if (j==1) then
         if (nxgrid/=1) then
           fac=dx_1(l1:l2)**2
-          df2=fac*(der2_coef0*f (l1  :l2  ,m,n,k) &
+          df2=fac*(der2_coef0* f(l1  :l2  ,m,n,k) &
                   +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
                   +der2_coef2*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
                   +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)) &
@@ -1667,7 +1663,7 @@ module Deriv
       real, dimension (mx,my,mz) :: f
       real, dimension (:,:) :: df
       real :: fac
-      integer :: pos,k,sgn,j
+      integer :: pos,sgn,j
 !
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
