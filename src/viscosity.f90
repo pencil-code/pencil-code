@@ -103,8 +103,8 @@ module Viscosity
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   viscous time step;
                                 ! DIAG_DOC:  see \S~\ref{time-step})
-  integer :: idiag_meshRemax=0    ! DIAG_DOC: Mesh Reynolds number
-  integer :: idiag_Reshock=0  ! DIAG_DOC: Mesh Reynolds number at shock
+  integer :: idiag_meshRemax=0  ! DIAG_DOC: Mesh Reynolds number
+  integer :: idiag_Reshock=0    ! DIAG_DOC: Mesh Reynolds number at shock
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbym=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
@@ -812,7 +812,7 @@ module Viscosity
 !  viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3+2S.glnrho)
 !  -- the correct expression for rho*nu=const
 !
-        muTT=nu*p%rho1*sqrt(exp(p%lnTT)) 
+        muTT=nu*p%rho1*sqrt(exp(p%lnTT))
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
               muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))&
@@ -856,7 +856,7 @@ module Viscosity
             enddo
           endif
         endif
-
+!
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+muTT
       endif
@@ -1591,7 +1591,7 @@ module Viscosity
           nu_pencil=nu
         elseif (lvisc_rho_nu_const) then
           nu_pencil=nu*p%rho1
-        elseif (lvisc_nu_therm) then    
+        elseif (lvisc_nu_therm) then
           nu_pencil=nu*sqrt(exp(p%lnTT))
         elseif (lvisc_mu_therm) then
           nu_pencil=nu*sqrt(exp(p%lnTT))*p%rho1
