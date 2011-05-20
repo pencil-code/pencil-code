@@ -8,13 +8,13 @@
 !
 !***************************************************************
 module Deriv
-
+!
   use Messages
-
+!
   implicit none
-
+!
   private
-
+!
   public :: initialize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
@@ -32,7 +32,7 @@ module Deriv
 !debug  integer, parameter :: icount_derij = 6         !DERCOUNT
 !debug  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
 !debug  integer, parameter :: icount_der_other = 8     !DERCOUNT
-
+!
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
     module procedure der_other  ! derivative of another field
@@ -47,21 +47,20 @@ module Deriv
     module procedure derij_main   ! derivative of an 'mvar' variable
     module procedure derij_other  ! derivative of another field
   endinterface
-
+!
   interface  der_onesided_4_slice                ! Overload the der function
     module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
     module procedure  der_onesided_4_slice_other ! derivative of another field
   endinterface
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine initialize_deriv()
 !
 !  Initialize stencil coefficients
 !
       use Cdata
-      use Messages
 !
       real :: border_width, lborder, uborder
 !
@@ -158,7 +157,7 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  25-aug-09/axel: adapted from deriv
-
+!
       use Cdata
 !
       real, dimension (mx,my,mz) :: f
@@ -343,7 +342,7 @@ module Deriv
           df2=0.
         endif
       endif
-
+!
 !
     endsubroutine der2_main
 !***********************************************************************
@@ -416,7 +415,7 @@ module Deriv
           df2=0.
         endif
       endif
-
+!
 !
     endsubroutine der2_other
 !***********************************************************************
@@ -503,7 +502,7 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
           call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
 !
@@ -680,7 +679,7 @@ module Deriv
       else
         igndx = .false.
       endif
-
+!
       if (.not. lequidist(j)) &
           call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
 !
@@ -1006,7 +1005,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
@@ -1192,7 +1191,7 @@ module Deriv
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
           endif
         endif
-
+!
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
@@ -1585,7 +1584,6 @@ module Deriv
     endsubroutine der_upwind1st
 !***********************************************************************
     subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
-      use Cdata
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
@@ -1600,6 +1598,8 @@ module Deriv
 !   7-jul-08/arne: coded.
 !  25-aug-09/axel: copied from deriv, but not adapted yet
 !
+      use Cdata
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:) :: df
       real :: fac
@@ -1607,7 +1607,7 @@ module Deriv
 !
       intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1648,7 +1648,6 @@ module Deriv
     endsubroutine
 !***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
-      use Cdata
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
@@ -1663,6 +1662,8 @@ module Deriv
 !   7-jul-08/arne: coded.
 !  25-aug-09/axel: copied from deriv, but not adapted yet
 !
+      use Cdata
+!
       real, dimension (mx,my,mz) :: f
       real, dimension (:,:) :: df
       real :: fac
@@ -1670,7 +1671,7 @@ module Deriv
 !
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
-
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
@@ -1714,7 +1715,7 @@ module Deriv
 !
 ! dummy routine
 !
-      use Cparam, only: mz, nz 
+      use Cparam, only: mz, nz
       use Mpicomm, only: stop_it
 !
       real, dimension (mz), intent(in)  :: f
