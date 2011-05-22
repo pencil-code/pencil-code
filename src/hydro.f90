@@ -932,6 +932,14 @@ module Hydro
               -ampluu(j)*exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/widthuu)
           enddo; enddo
 !
+!  X-point
+!
+        case ('x-point_xy')
+          if (lroot) print*,'init_uu: X-point'
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+x(l1:l2)
+            f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-y(m)
+          enddo; enddo
 !
         case ('Alfven-circ-x')
 !
