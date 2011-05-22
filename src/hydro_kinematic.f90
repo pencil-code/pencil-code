@@ -742,6 +742,22 @@ module Hydro
         if (lpencil(i_divu)) p%divu=-fac*(kx_uukin**2+ky_uukin**2+kz_uukin**2) &
             *cos(kx_uukin*x(l1:l2)+ky_uukin*y(m)+kz_uukin*z(n)+phasez_uukin)
 !
+!  Incompressible 2D, u=curl(yy*psi), with psi=cos(kx*X+ky*Y+kz*Z),
+!  and X=x-ct, Y=y-ct, Z=z-ct.
+!
+      case ('incompressible-2D-xz') 
+        if (headtt) print*,'incompr, 2D; ampl_kinflow,omega_kinflow=',&
+            ampl_kinflow,omega_kinflow
+        if (headtt) print*,'incompr, 2D; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
+        fac=ampl_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+fac*kz_uukin*sin(kx_uukin*x(l1:l2)+kz_uukin*z(n))
+          p%uu(:,2)=+0.
+          p%uu(:,3)=-fac*kx_uukin*sin(kx_uukin*x(l1:l2)+kz_uukin*z(n))
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  1-D Potential flow, u=gradphi, with phi=cos(kx*X+ky*Y+kz*Z),
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
@@ -987,6 +1003,22 @@ module Hydro
           p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
           p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
           p%uu(:,3)=0.
+        endif
+        p%divu=0.
+        p%der6u(:,1)=wind_amp*der6_uprof
+        p%der6u(:,2)= 0.
+        p%der6u(:,3)= 0.
+!
+!  meridional circulation; psi=.5*(x-x0)*(x-x1)*(y-y0)*(y-y1), so
+!  ux=+dpsi/dy=+(x-x0)*(x-x1)*y
+!  uy=-dpsi/dx=-x*(y-y0)*(y-y1)
+!
+      case ('circ_cartesian_xz') 
+        if (headtt) print*,'just circulation'
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=-(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*z(n)
+          p%uu(:,2)=-0.
+          p%uu(:,3)=+x(l1:l2)*(z(n)-xyz0(3))*(z(n)-xyz1(3))
         endif
         p%divu=0.
         p%der6u(:,1)=wind_amp*der6_uprof
