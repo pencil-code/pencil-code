@@ -41,7 +41,7 @@ module Forcing
   real :: dtforce=0., dtforce_duration=-1.0, force_strength=0.
   real, dimension(3) :: force_direction=(/0.,0.,0./)
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
-  real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
+  real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
@@ -85,7 +85,7 @@ module Forcing
   logical :: lembed=.false.,lshearing_adjust_old=.false.
   logical :: lgentle=.false.
   character (len=labellen) :: iforcing_cont='ABC'
-  real :: ampl_ff=1.,width_fcont=1.,x1_fcont=0.,x2_fcont=0.
+  real :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
   real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
   real :: tgentle=0.
   real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
@@ -116,7 +116,7 @@ module Forcing
        lhelical_test,lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
        ck_equator_gap,ck_gap_step,&
        lforcing_cont,iforcing_cont, &
-       lembed,k1_ff,ampl_ff,width_fcont,x1_fcont,x2_fcont, &
+       lembed, k1_ff, ampl_ff, ampl1_ff, width_fcont, x1_fcont, x2_fcont, &
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
@@ -496,6 +496,7 @@ module Forcing
       elseif (iforcing_cont=='J0_k1x') then
         do l=l1,l2
           profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
+          profx_ampl1(l-l1+1)=ampl1_ff*bessj(1,k1bessel0*x(l))
         enddo
       endif
 !
@@ -3910,7 +3911,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case('J0_k1x')
           force(:,1)=0.0
-          force(:,2)=0.0
+          force(:,2)=profx_ampl1
           force(:,3)=profx_ampl
 !
         case default
