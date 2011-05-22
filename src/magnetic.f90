@@ -1185,9 +1185,13 @@ module Magnetic
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=-0.5*amplaa(j)*z(n)**2/Lxyz(3)
           enddo; enddo
-        case ('spot')
+        case ('spot_xy')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iaz)=amplaa(j)*exp(-((x(l1:l2)-xyz1(1))**2+(y(m))**2)/radius**2)
+          enddo; enddo
+        case ('spot_xz')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iay)=amplaa(j)*exp(-(x(l1:l2)**2+(z(n)-xyz1(3))**2)/radius**2)
           enddo; enddo
         case ('Az=x2')
           do n=n1,n2; do m=m1,m2
