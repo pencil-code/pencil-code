@@ -117,6 +117,7 @@ module Magnetic
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: mix_factor=0.
   real :: RFPradB=1., RFPradJ=1.
+  real :: th_spot=PI/4
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -172,7 +173,7 @@ module Magnetic
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
-      lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor
+      lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor,th_spot
 !
 ! Run parameters
 !
@@ -1193,6 +1194,11 @@ module Magnetic
         case ('spot_xz')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=amplaa(j)*exp(-(x(l1:l2)**2+(z(n)-xyz1(3))**2)/radius**2)
+          enddo; enddo
+        case ('spot_spherical')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iaz)=amplaa(j)*exp(-((x(l1:l2)-xyz1(1))**2)/0.04**2)* &
+                  exp(-(y(m)-th_spot*pi/180.)**2/radius**2)
           enddo; enddo
         case ('Az=x2')
           do n=n1,n2; do m=m1,m2
