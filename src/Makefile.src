@@ -20,7 +20,7 @@ GRID              =   grid
 GSL               = nogsl
 INITIAL_CONDITION = noinitial_condition
 IO                =   io_dist
-MPICOMM           =   mpicomm
+MPICOMM           = nompicomm
 NSCBC             = noNSCBC
 POWER             = nopower_spectrum
 SOLID_CELLS       = nosolid_cells
@@ -1644,6 +1644,14 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CC=gcc #(groovy|ip237*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(groovy|ip237*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(groovy|ip237*)
+## 
+## giuseppe's laptop
+## 
+#FC=gfortran #(giuseppe)
+#FFLAGS=-O3 #(giuseppe)
+#CFLAGS=-DFUNDERSC=1 #(giuseppe)
+##
+
 
 ##
 ## SunOS:
