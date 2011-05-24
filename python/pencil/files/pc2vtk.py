@@ -76,7 +76,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
-                    fd.write(struct.pack(">f", var.rho[i,j,k]))
+                    fd.write(struct.pack(">f", var.rho[k,j,i]))
     except:
         pass
     
@@ -88,7 +88,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
-                    fd.write(struct.pack(">f", var.lnrho[i,j,k]))
+                    fd.write(struct.pack(">f", var.lnrho[k,j,i]))
     except:
         pass
                 
@@ -139,7 +139,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", var.TT[i,j,k]))
+                        fd.write(struct.pack(">f", var.TT[k,j,i]))
         except:
             pass
 
@@ -151,7 +151,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", var.lnTT[i,j,k]))
+                        fd.write(struct.pack(">f", var.lnTT[k,j,i]))
         except:
             pass
     
@@ -233,7 +233,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", var.rho[i,j,k]))
+                        fd.write(struct.pack(">f", var.rho[k,j,i]))
         except:
             pass
         
@@ -245,7 +245,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", var.lnrho[i,j,k]))
+                        fd.write(struct.pack(">f", var.lnrho[k,j,i]))
         except:
             pass
                     
@@ -296,7 +296,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", var.TT[i,j,k]))
+                        fd.write(struct.pack(">f", var.TT[k,j,i]))
         except:
             pass
 
@@ -308,7 +308,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", var.lnTT[i,j,k]))
+                        fd.write(struct.pack(">f", var.lnTT[k,j,i]))
         except:
             pass
 
