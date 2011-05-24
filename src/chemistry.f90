@@ -2961,11 +2961,11 @@ module Chemistry
 !
       if (lheatc_chemistry.and.(.not.lchemonly)) &
           call calc_heatcond_chemistry(f,df,p)
-!
     endif
 !
-    if (lreactions .and. ireac /= 0 .and. (lchemonly.or.(.not.llsode.and.llast))) &
-        call get_reac_rate(sum_hhk_DYDt_reac,f,p)
+    if (lreactions .and. ireac/=0 .and. ((.not.llsode).or.lchemonly)) then
+      if (llast) call get_reac_rate(sum_hhk_DYDt_reac,f,p)
+    endif
 !
 !  Atmosphere case
 !
