@@ -2135,7 +2135,7 @@ module Diagnostics
 !***********************************************************************
     subroutine allocate_fnames(nnamel)
 !
-!  Allocate space needed for reading the video.in file.
+!  Allocate arrays needed for diagnostics.
 !
 !   23-mar-10/Bourdin.KIS: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
@@ -2144,29 +2144,30 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cname)) then
+      if (.not.allocated(cname)) then
         allocate(cname(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cname')
+        if (stat>0) call fatal_error('allocate_fnames', &
+            'Could not allocate memory for cname')
+        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+            'cname   with nname   =', nnamel
       endif
+      cname=''
 !
-      if ( .not.allocated(fname) ) then
+      if (.not.allocated(fname)) then
         allocate(fname(nnamel),stat=stat)
-!
-        if (stat>0) &
-            call fatal_error('allocate_fnames', &
-              'Could not allocate memory for fname', .true.)
-        if (lroot) print*, 'allocate_fnames: allocated memory for '// &
-            'fname with nname =', nnamel
+        if (stat>0) call fatal_error('allocate_fnames', &
+            'Could not allocate memory for fname')
+        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+            'fname   with nname   =', nnamel
       endif
-      fname=0.
+      fname=0.0
 !
-      if ( .not.allocated(cform) ) then
+      if (.not.allocated(cform)) then
         allocate(cform(nnamel),stat=stat)
-!
-        if (stat>0) &
-            call fatal_error('allocate_fnames', &
-              'Could not allocate memory for cform', .true.)
+        if (stat>0) call fatal_error('allocate_fnames', &
+            'Could not allocate memory for cform')
+        if (lroot) print*, 'allocate_fnames    : allocated memory for '// &
+            'cform   with nname   =', nnamel
       endif
       cform=''
 !
@@ -2174,7 +2175,7 @@ module Diagnostics
 !***********************************************************************
     subroutine allocate_vnames(nnamel)
 !
-!  Allocate space needed for reading the video.in file.
+!  Allocate arrays needed for video slices.
 !
 !   23-mar-10/Bourdin.KIS: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
@@ -2183,20 +2184,20 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cnamev)) then
+      if (.not.allocated(cnamev)) then
         allocate(cnamev(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamev')
-      endif
-!
-      if (lroot) print*, 'allocate_vnames: allocated memory for '// &
+        if (stat>0) call fatal_error('allocate_vnames', &
+            'Could not allocate memory for cnamev')
+        if (lroot) print*, 'allocate_vnames    : allocated memory for '// &
             'cnamev  with nnamev  =', nnamel
+      endif
+      cnamev=''
 !
     endsubroutine allocate_vnames
 !***********************************************************************
     subroutine allocate_xyaverages(nnamel)
 !
-!  Allocate the variables needed for xy-averages.
+!  Allocate arrays needed for xy-averages.
 !
 !   24-nov-09/anders: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
@@ -2210,36 +2211,38 @@ module Diagnostics
 !  averages, and only evaluates its output for special purposes
 !  such as computing mean field energies in calc_bmz, for example,
 !
-      if (.not. allocated(cnamez)) then
+      if (.not.allocated(cnamez)) then
         allocate(cnamez(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamez')
+        if (stat>0) call fatal_error('allocate_xyaverages', &
+            'Could not allocate memory for cnamez')
+        if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
+            'cnamez  with nnamez  =', nnamel
       endif
+      cnamez=''
 !
-      if ( .not.allocated(fnamez) ) then
+      if (.not.allocated(fnamez)) then
         allocate(fnamez(nz,nprocz,nnamel),stat=stat)
-!
-        if (stat>0) &
-          call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for fnamez', .true.)
-!
-          if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
+        if (stat>0) call fatal_error('allocate_xyaverages', &
+            'Could not allocate memory for fnamez')
+        if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
             'fnamez  with nnamez  =', nnamel
       endif
-      fnamez=0.
+      fnamez=0.0
 !
-      if ( .not.allocated(cformz) ) then
+      if (.not.allocated(cformz)) then
         allocate(cformz(nnamel),stat=stat)
-        if (stat>0) &
-          call fatal_error('allocate_xyaverages', &
-            'Could not allocate memory for cformz', .true.)
+        if (stat>0) call fatal_error('allocate_xyaverages', &
+            'Could not allocate memory for cformz')
+        if (lroot) print*, 'allocate_xyaverages: allocated memory for '// &
+            'cformz  with nnamez  =', nnamel
       endif
+      cformz=''
 !
     endsubroutine allocate_xyaverages
 !***********************************************************************
     subroutine allocate_xzaverages(nnamel)
 !
-!  Allocate the variables needed for xz-averages.
+!  Allocate arrays needed for xz-averages.
 !
 !   24-nov-09/anders: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
@@ -2248,36 +2251,38 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cnamey)) then
+      if (.not.allocated(cnamey)) then
         allocate(cnamey(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamey')
+        if (stat>0) call fatal_error('allocate_xzaverages', &
+            'Could not allocate memory for cnamey')
+        if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
+            'cnamey  with nnamey  =', nnamel
       endif
+      cnamey=''
 !
-      if ( .not.allocated(fnamey) ) then
+      if (.not.allocated(fnamey)) then
         allocate(fnamey(ny,nprocy,nnamel),stat=stat)
-!
-        if (stat>0) &
-          call fatal_error('allocate_xzaverages', &
-              'Could not allocate memory for fnamey', .true.)
-!
+        if (stat>0) call fatal_error('allocate_xzaverages', &
+            'Could not allocate memory for fnamey', .true.)
         if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
             'fnamey  with nnamey  =', nnamel
       endif
-      fnamey=0.
+      fnamey=0.0
 !
-      if ( .not.allocated(cformy) ) then
+      if (.not.allocated(cformy)) then
         allocate(cformy(nnamel),stat=stat)
-        if (stat>0) &
-          call fatal_error('allocate_xzaverages', &
+        if (stat>0) call fatal_error('allocate_xzaverages', &
             'Could not allocate memory for cformy', .true.)
+        if (lroot) print*, 'allocate_xzaverages: allocated memory for '// &
+            'cformy  with nnamey  =', nnamel
       endif
+      cformy=''
 !
     endsubroutine allocate_xzaverages
 !***********************************************************************
     subroutine allocate_yzaverages(nnamel)
 !
-!  Allocate the variables needed for yz-averages.
+!  Allocate arrays needed for yz-averages.
 !
 !   24-nov-09/anders: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
@@ -2286,37 +2291,38 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cnamex)) then
+      if (.not.allocated(cnamex)) then
         allocate(cnamex(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamex')
+        if (stat>0) call fatal_error('allocate_yzaverages', &
+            'Could not allocate memory for cnamex')
+        if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
+            'cnamex  with nnamex  =', nnamel
       endif
+      cnamex=''
 !
-      if ( .not.allocated(fnamex) ) then
+      if (.not.allocated(fnamex)) then
         allocate(fnamex(nx,nprocx,nnamel),stat=stat)
-!
-        if (stat>0) &
-            call fatal_error('allocate_yzaverages', &
-              'Could not allocate memory for fnamex', .true.)
-!
+        if (stat>0) call fatal_error('allocate_yzaverages', &
+            'Could not allocate memory for fnamex')
         if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
             'fnamex  with nnamex  =', nnamel
       endif
-      fnamex=0.
+      fnamex=0.0
 !
-      if ( .not.allocated(cformx) ) then
+      if (.not.allocated(cformx)) then
         allocate(cformx(nnamel),stat=stat)
-!
-        if (stat>0) &
-            call fatal_error('allocate_yzaverages', &
-              'Could not allocate memory for cformx', .true.)
-!
+        if (stat>0) call fatal_error('allocate_yzaverages', &
+            'Could not allocate memory for cformx')
+        if (lroot) print*, 'allocate_yzaverages: allocated memory for '// &
+            'cformx  with nnamex  =', nnamel
       endif
+      cformx=''
+!
     endsubroutine allocate_yzaverages
 !***********************************************************************
     subroutine allocate_phizaverages(nnamel)
 !
-!  Allocate the variables needed for phiz-averages.
+!  Allocate arrays needed for phiz-averages.
 !
 !   24-nov-09/anders: copied from allocate_yaverages
 !   11-jan-11/MR: parameter nnamel added
@@ -2327,34 +2333,37 @@ module Diagnostics
 !
       if (.not. allocated(cnamer)) then
         allocate(cnamer(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamer')
+        if (stat>0) call fatal_error('allocate_phizaverages', &
+            'Could not allocate memory for cnamer')
+        if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
+            'cnamer  with nnamel =', nnamel
       endif
+      cnamer=''
 !
       mnamer=nnamel+1
-      if ( .not.allocated(fnamer) ) then
+      if (.not.allocated(fnamer)) then
         allocate(fnamer(nrcyl,mnamer),stat=stat)
-!
-        if (stat>0) &
-            call fatal_error('allocate_phizaverages', &
-              'Could not allocate memory for fnamer', .true.)
+        if (stat>0) call fatal_error('allocate_phizaverages', &
+            'Could not allocate memory for fnamer')
         if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
             'fnamer  with nnamer+1 =', mnamer
       endif
-      fnamer=0.
+      fnamer=0.0
 !
-      if ( .not.allocated(cformr) ) then
+      if (.not.allocated(cformr)) then
         allocate(cformr(nnamel),stat=stat)
-        if (stat>0) &
-          call fatal_error('allocate_phizaverages', &
-              'Could not allocate memory for cformr', .true.)
+        if (stat>0) call fatal_error('allocate_phizaverages', &
+            'Could not allocate memory for cformr')
+        if (lroot) print*, 'allocate_phizaverages: allocated memory for '// &
+            'cformr  with nnamel =', nnamel
       endif
+      cformr=''
 !
     endsubroutine allocate_phizaverages
 !***********************************************************************
     subroutine allocate_yaverages(nnamel)
 !
-!  Allocate the variables needed for y-averages.
+!  Allocate arrays needed for y-averages.
 !
 !   12-aug-09/dhruba: coded
 !   11-jan-11/MR: parameter nnamel added
@@ -2363,37 +2372,38 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cnamexz)) then
+      if (.not.allocated(cnamexz)) then
         allocate(cnamexz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamexz')
+        if (stat>0) call fatal_error('allocate_yaverages', &
+            'Could not allocate memory for cnamexz')
+        if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
+            'cnamexz with nnamexz =', nnamel
       endif
+      cnamexz=''
 !
-      if ( .not.allocated(fnamexz) ) then
+      if (.not.allocated(fnamexz)) then
         allocate(fnamexz(nx,nz,nnamel),stat=stat)
-!
-        if (stat>0) &
-          call fatal_error('allocate_yaverages', &
-              'Could not allocate memory for fnamexz', .true.)
-!
+        if (stat>0) call fatal_error('allocate_yaverages', &
+            'Could not allocate memory for fnamexz')
         if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
             'fnamexz with nnamexz =', nnamel
       endif
-      fnamexz=0.
+      fnamexz=0.0
 !
-      if ( .not.allocated(cformxz) ) then
+      if (.not.allocated(cformxz)) then
         allocate(cformxz(nnamel),stat=stat)
-!
-        if (stat>0) &
-          call fatal_error('allocate_yaverages', &
-            'Could not allocate memory for cformxz', .true.)
+        if (stat>0) call fatal_error('allocate_yaverages', &
+            'Could not allocate memory for cformxz')
+        if (lroot) print*, 'allocate_yaverages : allocated memory for '// &
+            'cformxz with nnamexz =', nnamel
       endif
+      cformxz=''
 !
     endsubroutine allocate_yaverages
 !*******************************************************************
     subroutine allocate_zaverages(nnamel)
 !
-!  Allocate the variables needed for z-averages.
+!  Allocate arrays needed for z-averages.
 !
 !   12-aug-09/dhruba: coded
 !   11-jan-11/MR: parameter nnamel added
@@ -2402,36 +2412,39 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cnamexy)) then
+      if (.not.allocated(cnamexy)) then
         allocate(cnamexy(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamexy')
+        if (stat>0) call fatal_error('allocate_zaverages', &
+            'Could not allocate memory for cnamexy')
+        if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
+            'cnamexy with nnamexy =', nnamel
       endif
+      cnamexy=''
 !
-      if ( .not.allocated(fnamexy) ) then
+      if (.not.allocated(fnamexy)) then
         allocate(fnamexy(nx,ny,nnamel),stat=stat)
-!
-        if (stat>0) &
-          call fatal_error('allocate_zaverages', &
-              'Could not allocate memory for fnamexy', .true.)
-!
+        if (stat>0) call fatal_error('allocate_zaverages', &
+            'Could not allocate memory for fnamexy')
         if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
             'fnamexy with nnamexy =', nnamel
       endif
-      fnamexy=0.
+      fnamexy=0.0
 !
-      if ( .not.allocated(cformxy) ) then
+      if (.not.allocated(cformxy)) then
         allocate(cformxy(nnamel),stat=stat)
         if (stat>0) &
           call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for cformxy', .true.)
+            'Could not allocate memory for cformxy')
+        if (lroot) print*, 'allocate_zaverages : allocated memory for '// &
+            'fnamexy with cformxy =', nnamel
       endif
+      cformxy=''
 !
     endsubroutine allocate_zaverages
 !*******************************************************************
     subroutine allocate_phiaverages(nnamel)
 !
-!  Allocate the variables needed for phi-averages.
+!  Allocate arrays needed for phi-averages.
 !
 !   24-nov-09/anders: copied from allocate_zaverages
 !   11-jan-11/MR: parameter nnamel=iadd+nnamerz instead of nnamerz
@@ -2440,31 +2453,32 @@ module Diagnostics
 !
       integer :: stat
 !
-      if (.not. allocated(cnamerz)) then
+      if (.not.allocated(cnamerz)) then
         allocate(cnamerz(nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_sound', &
-            ' ') !!!'Could not allocate memory for cnamerz')
+        if (stat>0) call fatal_error('allocate_phiaverages', &
+            'Could not allocate memory for cnamerz')
+        if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
+            'cnamerz with nnamerz =', nnamel
       endif
+      cnamerz=''
 !
-      if ( .not.allocated(fnamerz) ) then
+      if (.not.allocated(fnamerz)) then
         allocate(fnamerz(nrcyl,0:nz,nprocz,nnamel),stat=stat)
-!
-        if (stat>0) &
-          call fatal_error('allocate_phiaverages', &
-              'Could not allocate memory for fnamerz', .true.)
-!
+        if (stat>0) call fatal_error('allocate_phiaverages', &
+            'Could not allocate memory for fnamerz')
         if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
             'fnamerz with nnamerz =', nnamel
       endif
-      fnamerz=0.
+      fnamerz=0.0
 !
-      if ( .not.allocated(cformrz) ) then
+      if (.not.allocated(cformrz)) then
         allocate(cformrz(nnamel),stat=stat)
-!
-        if (stat>0) &
-          call fatal_error('allocate_phiaverages', &
-            'Could not allocate memory for cformrz', .true.)
+        if (stat>0) call fatal_error('allocate_phiaverages', &
+            'Could not allocate memory for cformrz')
+        if (lroot) print*, 'allocate_phiaverages : allocated memory for '// &
+            'cformrz with nnamerz =', nnamel
       endif
+      cformrz=''
 !
     endsubroutine allocate_phiaverages
 !***********************************************************************
