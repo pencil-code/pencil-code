@@ -781,7 +781,7 @@ module Register
       nname = max(0,parallel_count_lines(print_in_file))
 !
       if (nname>0) then
-        call allocate_fnames(100)
+        call allocate_fnames(nname)
         ldummy = read_name_format(print_in_file,cname,nname)
       endif
       if ( nname==0 ) &

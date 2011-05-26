@@ -71,7 +71,7 @@ module Pencil_check
 !
       allocate(f_other(mx,my,mz,mfarray)  ,stat=mem_stat1)
       allocate(df_ref(mx,my,mz,mvar)      ,stat=mem_stat2)
-      allocate(fname_ref(mname)           ,stat=mem_stat3)
+      allocate(fname_ref(nname)           ,stat=mem_stat3)
       if ((mem_stat1>0).or.(mem_stat2>0).or.(mem_stat3>0)) then
         if (lroot) then
           print*, '  Large buffers are needed to perform these tests'
@@ -354,7 +354,7 @@ f_lop:  do iv=1,mvar
 !
         lconsistent=.true.
         lconsistent_allproc=.false.
-        do k=1,mname
+        do k=1,nname
           lconsistent=(fname(k)==fname_ref(k))
           if (.not.lconsistent) exit
         enddo
