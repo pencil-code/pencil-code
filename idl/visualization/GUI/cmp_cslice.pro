@@ -16,6 +16,9 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 
 	resolve_routine, "pc_gui_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
+	; DEFAULT SETTINGS:
+	min_size = 128
+
 	set_names = tag_names (sets)
 	num_names = n_elements (set_names)
 
@@ -46,12 +49,20 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 
 	varfiles = { title:"N/A", loaded:1, number:0, precalc_done:1 }
 
+	; setup a scaling factor to have a minimum size, if necessary
+	default, scaling, 1
+	dims = (size (varsets.(0)))[1:size (varsets.(0), /n_dimensions)]
+	if (not any (dims ge min_size)) then begin
+		scaling = ceil (min_size / double (max (dims)))
+	end
+	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
+
 	; setup limits, if necessary
 	if (n_elements (limits) eq 0) then begin
 		dims = size (varsets.(0))
-		default, num_x, dims[1]
-		default, num_y, dims[2]
-		default, num_z, dims[3]
+		num_x = dims[1]
+		num_y = dims[2]
+		num_z = dims[3]
 		limits = reform (lindgen (dims[1], dims[2], dims[3]), num_x, num_y, num_z)
 	end
 
