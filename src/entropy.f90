@@ -57,7 +57,7 @@ module Entropy
   real :: Kbot=impossible, Ktop=impossible
   real :: hcond2=impossible
   real :: chit_prof1=1.0, chit_prof2=1.0
-  real :: chit_aniso=0.0
+  real :: chit_aniso=0.0, chit_aniso_prof1=1.0, chit_aniso_prof2=1.0
   real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
   real :: tauheat_buffer=0.0, TTheat_buffer=0.0
   real :: zheat_buffer=0.0, dheat_buffer1=0.0
@@ -70,7 +70,7 @@ module Entropy
   real, target :: T0hs=impossible
   real, dimension(mx), target :: zrho
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
-  real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0
+  real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0, xbot_aniso=0.0, xtop_aniso=0.0
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -153,9 +153,10 @@ module Entropy
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &
       TTref_cool, mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, &
       xtop, tau_cool2, tau_cool_ss, tau_diff, lfpres_from_pressure, &
-      chit_aniso, lchit_aniso_simplified, lconvection_gravx, &
+      chit_aniso, chit_aniso_prof1, chit_aniso_prof2, &
+      lchit_aniso_simplified, lconvection_gravx, &
       ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
-      nkramers
+      nkramers, xbot_aniso, xtop_aniso
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -3758,16 +3759,16 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof,gss1
+      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof,gss1,glchit_aniso_prof
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,del2ss1
-      real, dimension (nx) :: hcond,chit_prof
+      real, dimension (nx) :: hcond,chit_prof,chit_aniso_prof
       real, dimension (nx,3,3) :: tmp
       !real, save :: z_prev=-1.23e20
       real :: s2,c2,sc
       integer :: j,ix
 !
-      save :: hcond, glhc, chit_prof, glchit_prof
+      save :: hcond, glhc, chit_prof, glchit_prof, chit_aniso_prof, glchit_aniso_prof
 !
       intent(in) :: p
       intent(out) :: df
@@ -3840,6 +3841,10 @@ module Entropy
             call chit_profile(chit_prof)
             call gradlogchit_profile(glchit_prof)
           endif
+          if (chit_aniso/=0.0) then
+            call chit_aniso_profile(chit_aniso_prof)
+            call gradlogchit_aniso_profile(glchit_aniso_prof)
+          endif
         else
           if (lhcond_global) then
             hcond=f(l1:l2,m,n,iglobal_hcond)
@@ -3852,40 +3857,11 @@ module Entropy
             call chit_profile(chit_prof)
             call gradlogchit_profile(glchit_prof)
           endif
+          if (chit_aniso/=0.0) then
+            call chit_aniso_profile(chit_aniso_prof)
+            call gradlogchit_aniso_profile(glchit_aniso_prof)
+          endif
         endif
-!  DM+GG: Commented out the following. If the present set up work
-!  we shall remove this in a week.
-!
-!  For vertical geometry, we only need to calculate this
-!  for each new value of z -> speedup by about 8% at 32x32x64.
-!
-!          if (z(n)/=z_prev) then
-!            if (lhcond_global) then
-!              hcond=f(l1:l2,m,n,iglobal_hcond)
-!              glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
-!            else
-!              call heatcond(hcond,p)
-!              call gradloghcond(glhc,p)
-!            endif
-!            if (chi_t/=0.0) then
-!              call chit_profile(chit_prof)
-!              call gradlogchit_profile(glchit_prof)
-!            endif
-!            z_prev = z(n)
-!          endif
-!        else
-!          if (lhcond_global) then
-!            hcond=f(l1:l2,m,n,iglobal_hcond)
-!            glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
-!          else
-!            call heatcond(hcond,p)
-!            call gradloghcond(glhc,p)
-!          endif
-!          if (chi_t/=0.0) then
-!            call chit_profile(chit_prof)
-!            call gradlogchit_profile(glchit_prof)
-!          endif
-!        endif
 !
 !  Diffusion of the form
 !
@@ -3924,10 +3900,10 @@ module Entropy
         if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
         if (idiag_fturbxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
         if (idiag_fturbrxy/=0) &
-            call zsum_mn_name_xy(-chi_t*chit_prof*chit_aniso*p%rho*p%TT* &
+            call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
             (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
         if (idiag_fturbthxy/=0) &
-            call zsum_mn_name_xy(-chi_t*chit_prof*chit_aniso*p%rho*p%TT* &
+            call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
             (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2)),idiag_fturbthxy)
       endif
 !
@@ -3990,7 +3966,7 @@ module Entropy
         if (lchit_aniso_simplified) then
 !
           call g2ij(f,iss,tmp)
-          thdiff=thdiff+chi_t*chit_aniso*chit_prof* &
+          thdiff=thdiff+chi_t*chit_aniso*chit_aniso_prof* &
               ((1.-3.*c2)*r1_mn*p%gss(:,1) + &
               (-sc*tmp(:,1,2))+(p%glnrho(:,2)+p%glnTT(:,2))*(-sc*p%gss(:,1)))
         else
@@ -3998,11 +3974,11 @@ module Entropy
 !  Otherwise use the full formulation.
 !
           thdiff=thdiff+chi_t*chit_aniso* &
-              ((glchit_prof(:,1)*c2+chit_prof/x(l1:l2))*p%gss(:,1)+ &
-              sc*(chit_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2))
+              ((glchit_aniso_prof(:,1)*c2+chit_aniso_prof/x(l1:l2))*p%gss(:,1)+ &
+              sc*(chit_aniso_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2))
 !
           call g2ij(f,iss,tmp)
-          thdiff=thdiff+chi_t*chit_prof*chit_aniso* &
+          thdiff=thdiff+chi_t*chit_aniso_prof*chit_aniso* &
               ((-sc*(tmp(:,1,2)+tmp(:,2,1))+c2*tmp(:,1,1)+s2*tmp(:,2,2))+ &
               ((p%glnrho(:,1)+p%glnTT(:,1))*(c2*p%gss(:,1)-sc*p%gss(:,2))+ &
               ( p%glnrho(:,2)+p%glnTT(:,2))*(s2*p%gss(:,2)-sc*p%gss(:,1))))
@@ -5253,6 +5229,49 @@ endsubroutine get_gravz_chit
       endif
 !
     endsubroutine gradlogchit_profile
+!***********************************************************************
+    subroutine chit_aniso_profile(chit_aniso_prof)
+!
+!  Calculate the chit_profile conductivity along a pencil.
+!  This is an attempt to remove explicit reference to chit_prof[0-2] from
+!  code, e.g. the boundary condition routine.
+!
+!  NB: if you modify this profile, you *must* adapt gradlogchit_aniso_prof 
+!  below.
+!
+!  27-apr-2011/pete: adapted from chit_profile
+!
+      use Sub, only: step
+!
+      real, dimension (nx) :: chit_aniso_prof
+!
+      if (lspherical_coords) then
+        chit_aniso_prof = &
+            1 + (chit_aniso_prof1-1)*step(x(l1:l2),xbot_aniso,-widthss) &
+            + (chit_aniso_prof2-1)*step(x(l1:l2),xtop_aniso,widthss)
+      endif
+!
+    endsubroutine chit_aniso_profile
+!***********************************************************************
+    subroutine gradlogchit_aniso_profile(glchit_aniso_prof)
+!
+!  Calculate grad(log chit_prof), where chit_prof is the heat conductivity
+!  NB: *Must* be in sync with heatcond() above.
+!
+!  27-apr-2011/pete: adapted from gradlogchit_profile
+!
+      use Sub, only: der_step
+!
+      real, dimension (nx,3) :: glchit_aniso_prof
+!
+      if (lspherical_coords) then
+        glchit_aniso_prof(:,1) = &
+            (chit_aniso_prof1-1)*der_step(x(l1:l2),xbot_aniso,-widthss) &
+            + (chit_aniso_prof2-1)*der_step(x(l1:l2),xtop_aniso,widthss)
+        glchit_aniso_prof(:,2:3) = 0.
+      endif
+!
+    endsubroutine gradlogchit_aniso_profile
 !***********************************************************************
     subroutine newton_cool(df,p)
 !
