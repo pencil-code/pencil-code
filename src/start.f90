@@ -356,10 +356,18 @@ program start
 !  alternatively: read existing snapshot and overwrite only some fields
 !  by the various procedures below.
 !
-  if (lread_oldsnap) then
-    call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
+!  If lmodify is true, read var.dat into auxiliary array df
+!  and read modify_filename into f
+!
+  if (lmodify) then
+    call rsnap(trim(directory_snap)//'/var.dat',df,mvar)
+    call rsnap(trim(directory_snap)//'/'//modify_filename,f,mvar)
   else
-    f(:,:,:,1:mvar)=0.0
+    if (lread_oldsnap) then
+      call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
+    else
+      f(:,:,:,1:mvar)=0.0
+    endif
   endif
 !
 !  The following init routines only need to add to f.
@@ -412,6 +420,7 @@ program start
 !
 !  If desired, the f array can be initialized in one call.
 !
+  !if (linitial_condition) call initial_condition_all(f,df)
   if (linitial_condition) call initial_condition_all(f)
 !
 !  If requested, write original stratification to file.
@@ -489,6 +498,8 @@ program start
         call write_snapshot_particles(directory_snap,f,ENUM=.false.)
     call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
     call wtime(trim(directory)//'/time.dat',t)
+  elseif (lmodify) then
+    call wsnap(trim(directory_snap)//'/'//modify_filename,f,mvar_io,ENUM=.false.)
   endif
   call wdim(trim(directory)//'/dim.dat')
 !

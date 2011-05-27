@@ -141,6 +141,7 @@ module Cdata
 !
   character (len=120) :: datadir='data'
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
+  character (len=120) :: modify_filename='modify.dat'
   real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
@@ -199,6 +200,7 @@ module Cdata
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
   logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
+  logical :: lmodify=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lfirst_proc_x=.true.,lfirst_proc_y=.true.,lfirst_proc_z=.true.
   logical :: lfirst_proc_xy=.true.,lfirst_proc_yz=.true.,lfirst_proc_xz=.true.
