@@ -70,15 +70,15 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #                   variables in the f-array.
 #
 # ---------------------------------------------------------------------- #
-my $mvar_decl     = '^\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
-my $maux_decl     = '^\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)\s*$';
-my $mglobal_decl  = '^\s*!\s*MGLOBAL\s*CONTRIBUTION\s*([0-9]+)\s*$';
-my $mscratch_decl = '^\s*!\s*MSCRATCH\s*CONTRIBUTION\s*([0-9]+)\s*$';
-my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*([0-9]+)\s*$';
-my $mpvar_decl    = '^\s*!\s*MPVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
-my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*([0-9]+\*[0-9])\s*$';
-my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*([0-9]+\*[0-9])\s*$';
-my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $mvar_decl     = '^\s*!\s*MVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $maux_decl     = '^\s*!\s*MAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $mglobal_decl  = '^\s*!\s*MGLOBAL\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $mscratch_decl = '^\s*!\s*MSCRATCH\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*(-?[0-9]+)\s*$';
+my $mpvar_decl    = '^\s*!\s*MPVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
+my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
+my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $pencils_decl  = '^\s*!\s*PENCILS\s*PROVIDED\s*(.*)\s*$';
 my $cparam_decl   = '^\s*!\s*CPARAM\s*(.*?)\s*$';
 # ---------------------------------------------------------------------- #
