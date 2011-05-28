@@ -1898,7 +1898,6 @@ k_loop:   do while (.not. (k>npar_loc))
           idiag_rhopmax/=0 .or. idiag_rhopmin/=0 .or. idiag_rhopmphi/=0 .or. &
           idiag_rhopmx/=0 .or. idiag_rhopmy/=0 .or. idiag_rhopmz/=0) &
           lpenc_diagnos(i_rhop)=.true.
-          lpenc_diagnos2d(i_rhop)=.true.
       if (idiag_dedragp/=0 .or. idiag_decollp/=0) then
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
@@ -1941,7 +1940,13 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
+      if (lpencil(i_np)) then
+        if (inp/=0) then
+          p%np=f(l1:l2,m,n,inp)
+        else
+          p%np=0.0
+        endif
+      endif
 !
       if (lpencil(i_rhop)) then
         if (irhop/=0) then
