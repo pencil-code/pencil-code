@@ -1306,17 +1306,20 @@ module Particles_mpicomm
             lmigrate=lmigrate_previous
           else
             lmigrate=.true.
-            iblockl=0; iblocku=nblock_loc-1
-            do while (abs(iblocku-iblockl)>1)
-              iblockm=(iblockl+iblocku)/2
-              if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
-                iblockl=iblockm
-              else
-                iblocku=iblockm
-              endif
-            enddo
-            if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
-                ibrick_global_rec==ibrick_global_arr(iblocku)) lmigrate=.false.
+            if (nblock_loc/=0) then
+              iblockl=0; iblocku=nblock_loc-1
+              do while (abs(iblocku-iblockl)>1)
+                iblockm=(iblockl+iblocku)/2
+                if (ibrick_global_rec>ibrick_global_arr(iblockm)) then
+                  iblockl=iblockm
+                else
+                  iblocku=iblockm
+                endif
+              enddo
+              if (ibrick_global_rec==ibrick_global_arr(iblockl) .or. &
+                  ibrick_global_rec==ibrick_global_arr(iblocku)) &
+                  lmigrate=.false.
+            endif
           endif
           ibrick_global_rec_previous=ibrick_global_rec
 !
