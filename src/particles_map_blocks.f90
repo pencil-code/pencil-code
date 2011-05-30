@@ -88,7 +88,7 @@ module Particles_map
 !  Find processor, brick, and grid x-coordinate.
 !
         if (nxgrid/=1) then
-          if (lequidist(1)) then 
+          if (lequidist(1)) then
             ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
           else
             call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
@@ -102,7 +102,7 @@ module Particles_map
 !  Find processor, brick, and grid y-coordinate.
 !
         if (nygrid/=1) then
-          if (lequidist(2)) then 
+          if (lequidist(2)) then
             iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
           else
             call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
@@ -116,7 +116,7 @@ module Particles_map
 !  Find processor, brick, and grid z-coordinate.
 !
         if (nzgrid/=1) then
-          if (lequidist(3)) then 
+          if (lequidist(3)) then
             iz0=nint((fp(k,izp)-zref_par)*dz1)+1
           else
             call find_index_by_bisection(fp(k,izp),zgrid,iz0)
@@ -226,10 +226,9 @@ module Particles_map
       real :: weight0, weight, weight_x, weight_y, weight_z
       real, save :: dx1, dy1, dz1
       real :: rhop_swarm_pt
-      real :: dVol1x,dVol1y,dVol1z
-      integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib, izg0
+      integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
-      integer :: lb,mb,nb,iq
+      integer :: lb,mb,nb
       logical :: lnbody
       logical, save :: lfirstcall=.true.
 !
@@ -283,7 +282,7 @@ module Particles_map
             if (npar_iblock(ib)/=0) then
               do k=k1_iblock(ib),k2_iblock(ib)
                 lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-                if (.not.lnbody) then 
+                if (.not.lnbody) then
                   ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -347,7 +346,7 @@ module Particles_map
             if (npar_iblock(ib)/=0) then
               do k=k1_iblock(ib),k2_iblock(ib)
                 lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-                if (.not.lnbody) then 
+                if (.not.lnbody) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
 !  decreases with the distance from the particle centre.
@@ -473,7 +472,7 @@ module Particles_map
 !  Multiply assigned particle number density by the mass density per particle.
 !
         if (.not.(lparticles_radius.or.lparticles_number)) then
-          if (lcartesian_coords.and.(all(lequidist))) then 
+          if (lcartesian_coords.and.(all(lequidist))) then
             fb(:,:,:,irhop,0:nblock_loc-1)= &
                  rhop_swarm*fb(:,:,:,irhop,0:nblock_loc-1)
           else
@@ -1016,11 +1015,13 @@ module Particles_map
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: i, ix0, iy0, iz0, ivar, ib
+      integer :: i, ix0, iy0, iz0, ib
       logical :: lfirstcall=.true.
 !
       intent(in)  :: xxp, ivar1
       intent(out)  :: gp
+!
+      call keep_compiler_quiet(f)
 !
 !  Abbreviations.
 !
@@ -1205,6 +1206,8 @@ module Particles_map
       intent(in)  :: xxp, ivar1
       intent(out) :: gp
 !
+      call keep_compiler_quiet(f)
+!
 !  Abbreviations.
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
@@ -1219,23 +1222,23 @@ module Particles_map
 !
 !  A few values that only need to be calculated once for equidistant grids.
 !
-      if (lequidist(1)) then 
-        if (lfirstcall) then 
+      if (lequidist(1)) then
+        if (lfirstcall) then
           dx1=1/dx; dx2=1/dx**2
         endif
       else
         dx1=dx1b(ix0,ib); dx2=dx1**2
       endif
 !
-      if (lequidist(3)) then 
-        if (lfirstcall) then 
+      if (lequidist(3)) then
+        if (lfirstcall) then
           dz1=1/dz; dz2=1/dz**2
         endif
       else
         dz1=dz1b(iz0,ib); dz2=dz1**2
       endif
 !
-      if (lequidist(1).and.lequidist(3)) then 
+      if (lequidist(1).and.lequidist(3)) then
         if (lfirstcall) then
           dx1dz1=1/(dx*dz)
           dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
@@ -1305,6 +1308,8 @@ module Particles_map
 !
       intent(in)  :: xxp, ivar1
       intent(out) :: gp
+!
+      call keep_compiler_quiet(f)
 !
 !  Abbreviations.
 !
@@ -1497,6 +1502,8 @@ module Particles_map
 !
       intent (in) :: fp, ineargrid
       intent (out) :: kshepherd, kneighbour
+!
+      call keep_compiler_quiet(fp)
 !
       kshepherd=0
       if (iblock==0) kneighbour=0
