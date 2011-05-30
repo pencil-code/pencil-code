@@ -50,7 +50,7 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, show_aver=show_aver
 			print, 'Reading: ', varfile, ' ... please wait!'
 			pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, /nostats
 			sources = tag_names (vars)
-			precalc_data, number, vars, dim
+			precalc_data, number, vars
 		end
 		varfiles[i].title = varfile
 		varfiles[i].loaded = 1
@@ -66,22 +66,22 @@ end
 
 
 ; Precalculates a data set
-pro precalc_data, i, vars, dim
+pro precalc_data, i, vars
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
 	; First and last physical value, excluding ghost cells
-	l1 = dim.l1
-	l2 = dim.l2
-	m1 = dim.m1
-	m2 = dim.m2
-	n1 = dim.n1
-	n2 = dim.n2
+	l1 = coord.l1
+	l2 = coord.l2
+	m1 = coord.m1
+	m2 = coord.m2
+	n1 = coord.n1
+	n2 = coord.n2
 
 	; Target size of local reduced data block
-	tx = coord.nx / dim.nprocx
-	ty = coord.ny / dim.nprocy
-	tz = coord.nz / dim.nprocz
+	tx = coord.nx
+	ty = coord.ny
+	tz = coord.nz
 
 	tags = tag_names (varsets[i])
 
