@@ -7,8 +7,3 @@ dtc(E10.2)        #sound speed (grad(p) term)
 nparmax(E10.2)
 zpm(E10.2)
 zp2m(E10.2)
-#dtdiffus(E10.2)   #total diffusion
-#dtd(E10.2)        #mass diffusion
-#dtchi(E10.2)      #thermal diffusion
-#dtnu(E10.2)       #momentum diffusion (viscosity)
-#dtdragp(E10.2)    #particle drag
