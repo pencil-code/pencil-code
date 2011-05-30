@@ -2232,7 +2232,7 @@ module Mpicomm
       if (NO_WARN) print*,n1,present(lproc)
 !
     endsubroutine mpigather_z
-!****************************************************************************************
+!***********************************************************************
     subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange, zrange )
 !
 !  21-dec-10/MR: coded
@@ -2318,6 +2318,6 @@ module Mpicomm
 !
       return
 !
-  endsubroutine mpimerge_1d
+    endsubroutine mpimerge_1d
 !***********************************************************************
 endmodule Mpicomm

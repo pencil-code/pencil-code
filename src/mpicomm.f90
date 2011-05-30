@@ -6136,377 +6136,375 @@ module Mpicomm
 !
     endfunction
 !***********************************************************************
-  subroutine mpigather_xy( sendbuf, recvbuf, lpz )
+    subroutine mpigather_xy( sendbuf, recvbuf, lpz )
+!
+!  Gathers the chunks of a 2D array from each processor of the z-layer lpz in
+!  a big array at the root of the layer. If lpz not present this is done for
+!  all layers (not checked).
+!
+!  Here no parallelization in x allowed.
 !
 !  18-nov-10/MR: coded
 !
-!  gathers the chunks of a 2D array from each processor of the z-layer lpz in a big array at the root of the layer
-!  if lpz not present this is done for all layers (not checked)
+      real, dimension(nxgrid,ny)     :: sendbuf   ! nx=nxgrid !
+      real, dimension(nxgrid,nygrid) :: recvbuf
+      integer, optional, intent(in)  :: lpz
 !
-  ! here no parallelization in x allowed
+      integer :: ncnt
+      logical :: cond
 !
-  implicit none
+      if (present(lpz)) then
+        cond = ipz==lpz
+      else
+        cond = .true.
+      endif
 !
-  real, dimension(nxgrid,ny)     :: sendbuf   ! nx=nxgrid !
-  real, dimension(nxgrid,nygrid) :: recvbuf
-  integer, optional, intent(in)  :: lpz
+      ncnt = nxgrid*ny
 !
-  integer :: ncnt
-  logical :: cond
+      if (cond) &
+        call MPI_GATHER(sendbuf, ncnt, MPI_REAL, recvbuf, ncnt, MPI_REAL, root, MPI_COMM_XYPLANE, mpierr)
 !
-  if (present(lpz)) then
-    cond = ipz==lpz
-  else
-    cond = .true.
-  endif
-!
-  ncnt = nxgrid*ny
-!
-  if (cond) &
-    call MPI_GATHER(sendbuf, ncnt, MPI_REAL, recvbuf, ncnt, MPI_REAL, root, MPI_COMM_XYPLANE, mpierr)
-!
-  endsubroutine mpigather_xy
+    endsubroutine mpigather_xy
 !***********************************************************************
-  subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
+    subroutine mpigather_z(sendbuf,recvbuf,n1,lproc)
+!
+!  Gathers the chunks of a 2D array from each processor along a z-beam at
+!  position, defined by lproc at root of the beam.
 !
 !  25-nov-10/MR: coded
 !
-!  gathers the chunks of a 2D array from each processor along a z-beam at position, defined by lproc at root of the beam
+      real, dimension(n1,nz)    , intent(in)  :: sendbuf
+      real, dimension(n1,nzgrid), intent(out) :: recvbuf
+      integer, optional,          intent(in)  :: lproc
+      integer,                    intent(in)  :: n1
 !
-  implicit none
+      integer lpx, lpy
 !
-  real, dimension(n1,nz)    , intent(in)  :: sendbuf
-  real, dimension(n1,nzgrid), intent(out) :: recvbuf
-  integer, optional,          intent(in)  :: lproc
-  integer,                    intent(in)  :: n1
+      if (present(lproc)) then
+        lpy = lproc/nprocx
+        lpx = mod(lproc,nprocx)
+      else
+        lpy=0; lpx=0
+      endif
 !
-  integer lpx, lpy
+      if ( ipx==lpx .and. ipy==lpy ) &
+        call MPI_GATHER(sendbuf, n1*nz, MPI_REAL, recvbuf, n1*nz, MPI_REAL, root, MPI_COMM_ZBEAM, mpierr)
 !
-  if (present(lproc)) then
-    lpy = lproc/nprocx
-    lpx = mod(lproc,nprocx)
-  else
-    lpy=0; lpx=0
-  endif
-!
-  if ( ipx==lpx .and. ipy==lpy ) &
-    call MPI_GATHER(sendbuf, n1*nz, MPI_REAL, recvbuf, n1*nz, MPI_REAL, root, MPI_COMM_ZBEAM, mpierr)
-!
-  endsubroutine mpigather_z
+    endsubroutine mpigather_z
 !***********************************************************************
-  subroutine mpigather( sendbuf, recvbuf )
+    subroutine mpigather( sendbuf, recvbuf )
+!
+!  Gathers the chunks of a 3D array from each processor in a big array at root.
+!
+!  Here no parallelization in x allowed.
 !
 !  19-nov-10/MR: coded
 !
-!  gathers the chunks of a 3D array from each processor in a big array at root
+      real, dimension(nxgrid,ny,nz)         :: sendbuf   ! nx=nxgrid !
+      real, dimension(nxgrid,nygrid,nzgrid) :: recvbuf
 !
-  ! here no parallelization in x allowed
+      integer :: ncnt, nshift, nlayer, i
+      integer, dimension(ncpus) :: counts, shifts
 !
-  implicit none
+      ncnt = nxgrid*ny
 !
-  real, dimension(nxgrid,ny,nz)         :: sendbuf   ! nx=nxgrid !
-  real, dimension(nxgrid,nygrid,nzgrid) :: recvbuf
+      if (lroot) then
 !
-  integer :: ncnt, nshift, nlayer, i
-  integer, dimension(ncpus) :: counts, shifts
+        counts = ncnt
+        nlayer = nz*nxgrid*nygrid
 !
-  ncnt = nxgrid*ny
+        shifts(1) = 0
+        nshift = nlayer
 !
-  if (lroot) then
+        do i=2,ncpus
 !
-    counts = ncnt
-    nlayer = nz*nxgrid*nygrid
+          if ( mod(i,nprocy)==1 ) then
+            shifts(i) = nshift
+            nshift = nshift+nlayer
+          else
+            shifts(i) = shifts(i-1)+ncnt
+          endif
 !
-    shifts(1) = 0
-    nshift = nlayer
+        enddo
 !
-    do i=2,ncpus
-!
-      if ( mod(i,nprocy)==1 ) then
-        shifts(i) = nshift
-        nshift = nshift+nlayer
-      else
-        shifts(i) = shifts(i-1)+ncnt
       endif
 !
-    enddo
-!
-  endif
-!
-  do i=1,nz
-    call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, shifts, &
+      do i=1,nz
+        call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, shifts, &
                      MPI_REAL, root, MPI_COMM_WORLD, mpierr)
-  enddo
+      enddo
 !
-  endsubroutine mpigather
-!*************************************************************************************
-  subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange,zrange )
+    endsubroutine mpigather
+!***********************************************************************
+    subroutine mpigather_and_out_real( sendbuf, unit, ltransp, kxrange, kyrange,zrange )
+!
+!  Transfers the chunks of a 3D array from each processor to root
+!  and writes them out in right order.
+!
+!  Here no parallelization in x allowed.
 !
 !  22-nov-10/MR: coded
 !  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !
-!  transfers the chunks of a 3D array from each processor to root
-!  and writes them out in right order
+      use General, only: chn, write_by_ranges_2d_cmplx, &
+                              write_by_ranges_2d_real, &
+                              write_by_ranges_1d_cmplx, &
+                              write_by_ranges_1d_real
 !
-! here no parallelization in x allowed
+      real,    dimension(nxgrid,ny,nz),      intent(inout) :: sendbuf
+      complex, dimension(nxgrid,ny,nz,ncomp),intent(inout) :: sendbuf_cmplx
+      integer,                               intent(in   ) :: unit, ncomp
+      logical,                      optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
+      integer, dimension(3,*),      optional,intent(in   ) :: kxrange, kyrange, zrange
 !
-  use General, only: chn, write_by_ranges_2d_cmplx, write_by_ranges_2d_real, &
-                          write_by_ranges_1d_cmplx, write_by_ranges_1d_real
+      integer :: i,np,iproca,iproce,nprocxy,nxy,tag
+      integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
 !
-  real,    dimension(nxgrid,ny,nz),      intent(inout) :: sendbuf
-  complex, dimension(nxgrid,ny,nz,ncomp),intent(inout) :: sendbuf_cmplx
-  integer,                               intent(in   ) :: unit, ncomp
-  logical,                      optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
-  integer, dimension(3,*),      optional,intent(in   ) :: kxrange, kyrange, zrange
+      integer, dimension(MPI_STATUS_SIZE) :: status
+      integer :: k,ii,ncompl,ic
+      logical :: ltrans, lcomplex
+      real,    allocatable :: rowbuf(:)
+      complex, allocatable :: rowbuf_cmplx(:)
 !
-  integer :: i,np,iproca,iproce,nprocxy,nxy,tag
-  integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
+      lcomplex = .false.
+      ncompl = 1
+      goto 1
 !
-  integer, dimension(MPI_STATUS_SIZE) :: status
-  integer :: k,ii,ncompl,ic
-  logical :: ltrans, lcomplex
-  real,    allocatable :: rowbuf(:)
-  complex, allocatable :: rowbuf_cmplx(:)
+      entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange,zrange )
 !
-  lcomplex = .false.
-  ncompl = 1
-  goto 1
+      lcomplex = .true.
+      ncompl = ncomp
 !
-  entry mpigather_and_out_cmplx( sendbuf_cmplx, ncomp, unit, ltransp, kxrange, kyrange,zrange )
+1     if (NO_WARN) print*,unit
 !
-  lcomplex = .true.
-  ncompl = ncomp
+      if ( .not.present(ltransp) ) then
+        ltrans=.false.
+      else
+        ltrans=ltransp
+      endif
 !
-1 if (NO_WARN) print*,unit
+      if ( .not.present(kxrange) ) then
+        kxrangel = 0
+        kxrangel(:,1) = (/1,nxgrid,1/)
+      else
+        kxrangel = kxrange(:,1:10)
+      endif
 !
-  if ( .not.present(ltransp) ) then
-    ltrans=.false.
-  else
-    ltrans=ltransp
-  endif
+      if ( .not.present(kyrange) ) then
+        kyrangel = 0
+        kyrangel(:,1)=(/1,nygrid,1/)
+      else
+        kyrangel = kyrange(:,1:10)
+      endif
 !
-  if ( .not.present(kxrange) ) then
-    kxrangel = 0
-    kxrangel(:,1) = (/1,nxgrid,1/)
-  else
-    kxrangel = kxrange(:,1:10)
-  endif
+      if ( .not.present(zrange) ) then
+        zrangel = 0
+        zrangel(:,1) = (/1,nzgrid,1/)
+      else
+        zrangel = zrange(:,1:10)
+      endif
 !
-  if ( .not.present(kyrange) ) then
-    kyrangel = 0
-    kyrangel(:,1)=(/1,nygrid,1/)
-  else
-    kyrangel = kyrange(:,1:10)
-  endif
+      if (ltrans) then
+        if (lcomplex) then
+          allocate( rowbuf(ny) )
+        else
+          allocate( rowbuf_cmplx(ny) )
+        endif
+      endif
 !
-  if ( .not.present(zrange) ) then
-    zrangel = 0
-    zrangel(:,1) = (/1,nzgrid,1/)
-  else
-    zrangel = zrange(:,1:10)
-  endif
+      nprocxy = nprocx*nprocy                             ! nprocx=1
+      nxy = nxgrid*ny
 !
-  if (ltrans) then
-    if (lcomplex) then
-      allocate( rowbuf(ny) )
-    else
-      allocate( rowbuf_cmplx(ny) )
-    endif
-  endif
+      iproca=1; iproce=-1
 !
-  nprocxy = nprocx*nprocy                             ! nprocx=1
-  nxy = nxgrid*ny
+      do ic=1,ncompl
+      do np=1,nprocz
 !
-  iproca=1; iproce=-1
+        iproce = iproce + nprocxy
 !
-  do ic=1,ncompl
-  do np=1,nprocz
+        do k=1,10
+          if ( zrangel(1,k) > 0 ) then
+            do iz = zrangel(1,k), zrangel(2,k), zrangel(3,k)
+              if ( iz >= n1 .and. iz <= n2 ) then
 !
-    iproce = iproce + nprocxy
+                if (ltrans) then
 !
-    do k=1,10
-      if ( zrangel(1,k) > 0 ) then
-        do iz = zrangel(1,k), zrangel(2,k), zrangel(3,k)
-          if ( iz >= n1 .and. iz <= n2 ) then
+                  do ii=1,10
+                    if ( kyrangel(1,ii) > 0 ) then
+                      do iy = kyrangel(1,ii), kyrangel(2,ii), kyrangel(3,ii)
 !
-            if (ltrans) then
+                        if ( lroot .and. np==1 ) then
+                          if (lcomplex) then
+                            call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iy,1,iz,ic), kxrangel )
+                          else
+                            call write_by_ranges_1d_real( 1, sendbuf(iy,1,iz), kxrangel )
+                          endif
+                        endif
 !
-              do ii=1,10
-                if ( kyrangel(1,ii) > 0 ) then
-                  do iy = kyrangel(1,ii), kyrangel(2,ii), kyrangel(3,ii)
+                        do i=iproca,iproce
 !
-                    if ( lroot .and. np==1 ) then
+                          tag = nprocxy*(iz+1)*iy + nprocxy*iz + i-iproca               ! overflow possible for large ncpuxy, nz, nxgrid
+!
+                          if (lroot) then
+                            if (lcomplex) then
+                              call MPI_RECV(rowbuf_cmplx, ny, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
+                              call write_by_ranges_1d_cmplx( 1, rowbuf_cmplx, kxrangel )
+                            else
+                              call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+                              call write_by_ranges_1d_real( 1, rowbuf, kxrangel )
+                            endif
+                          else if ( iproc==i ) then
+                            if (lcomplex) then
+                              rowbuf_cmplx=sendbuf_cmplx(iy,:,iz,ic)
+                              call MPI_SEND(rowbuf_cmplx, ny, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                            else
+                              rowbuf=sendbuf(iy,:,iz)
+                              call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+                            endif
+                          endif
+!
+                        enddo
+!
+                      enddo
+                    endif
+                  enddo
+!
+                  call mpibarrier()         ! necessary ?
+!
+                else
+!
+                  if (lroot .and. np==1 ) then
+                    if (lcomplex) then
+                      call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
+                    else
+                      call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
+                    endif
+                  endif
+!
+                  do i=iproca,iproce
+!
+                    tag = nprocxy*iz+i-iproca
+                    if (lroot) then
                       if (lcomplex) then
-                        call write_by_ranges_1d_cmplx( 1, sendbuf_cmplx(iy,1,iz,ic), kxrangel )
+                        call MPI_RECV(sendbuf_cmplx(1,1,iz,ic), nxy, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
+                        call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
                       else
-                        call write_by_ranges_1d_real( 1, sendbuf(iy,1,iz), kxrangel )
+                        call MPI_RECV(sendbuf(1,1,iz), nxy, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
+                        call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
+                      endif
+                    else if ( iproc==i ) then
+                      if (lcomplex) then
+                        call MPI_SEND(sendbuf_cmplx(1,1,iz,ic), nxy, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                      else
+                        call MPI_SEND(sendbuf(1,1,iz), nxy, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
                       endif
                     endif
 !
-                    do i=iproca,iproce
-!
-                      tag = nprocxy*(iz+1)*iy + nprocxy*iz + i-iproca               ! overflow possible for large ncpuxy, nz, nxgrid
-!
-                      if (lroot) then
-                        if (lcomplex) then
-                          call MPI_RECV(rowbuf_cmplx, ny, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
-                          call write_by_ranges_1d_cmplx( 1, rowbuf_cmplx, kxrangel )
-                        else
-                          call MPI_RECV(rowbuf, ny, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
-                          call write_by_ranges_1d_real( 1, rowbuf, kxrangel )
-                        endif
-                      else if ( iproc==i ) then
-                        if (lcomplex) then
-                          rowbuf_cmplx=sendbuf_cmplx(iy,:,iz,ic)
-                          call MPI_SEND(rowbuf_cmplx, ny, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
-                        else
-                          rowbuf=sendbuf(iy,:,iz)
-                          call MPI_SEND(rowbuf, ny, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
-                        endif
-                      endif
-!
-                    enddo
-!
                   enddo
                 endif
-              enddo
-!
-              call mpibarrier()         ! necessary ?
-!
-            else
-!
-              if (lroot .and. np==1 ) then
-                if (lcomplex) then
-                  call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
-               else
-                  call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
-                endif
               endif
-!
-              do i=iproca,iproce
-!
-                tag = nprocxy*iz+i-iproca
-                if (lroot) then
-                  if (lcomplex) then
-                    call MPI_RECV(sendbuf_cmplx(1,1,iz,ic), nxy, MPI_COMPLEX, i, tag, MPI_COMM_WORLD, status, mpierr)
-                    call write_by_ranges_2d_cmplx( 1, sendbuf_cmplx(1,1,iz,ic), kxrangel, kyrangel )
-                  else
-                    call MPI_RECV(sendbuf(1,1,iz), nxy, MPI_REAL, i, tag, MPI_COMM_WORLD, status, mpierr)
-                    call write_by_ranges_2d_real( 1, sendbuf(1,1,iz), kxrangel, kyrangel )
-                  endif
-                else if ( iproc==i ) then
-                  if (lcomplex) then
-                    call MPI_SEND(sendbuf_cmplx(1,1,iz,ic), nxy, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
-                  else
-                    call MPI_SEND(sendbuf(1,1,iz), nxy, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
-                  endif
-                endif
-!
-              enddo
-            endif
+            enddo
           endif
         enddo
-      endif
-    enddo
 !
-    iproca = iproce+1
+        iproca = iproce+1
 !
-  enddo
-  enddo
+      enddo
+      enddo
 !
-  if (ltrans) deallocate(rowbuf)
+      if (ltrans) deallocate(rowbuf)
 !
-  contains
+    contains
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  integer function update_cnt(fcnt,len,ntot,nl)            ! internal function
+      integer function update_cnt(fcnt,len,ntot,nl)        ! internal function
 !
-  integer, intent(in ) :: fcnt,len,ntot
-  integer, intent(out) :: nl
+        integer, intent(in ) :: fcnt,len,ntot
+        integer, intent(out) :: nl
 !
-  integer :: nr
+        integer :: nr
 !
-  if (fcnt>0) then
-    nr=ntot-(len-fcnt)
-  else
-    nr=ntot
-  endif
+        if (fcnt>0) then
+          nr=ntot-(len-fcnt)
+        else
+          nr=ntot
+        endif
 !
-  update_cnt=mod(nr,len)
-  nl=nr-update_cnt
+        update_cnt=mod(nr,len)
+        nl=nr-update_cnt
 !
-  endfunction update_cnt
+      endfunction update_cnt
 !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  endsubroutine mpigather_and_out_real
+    endsubroutine mpigather_and_out_real
 !***********************************************************************
-  subroutine merge_1d( vec1, vec2, n, type )
+    subroutine merge_1d( vec1, vec2, n, type )
+!
+!  Helper function for mpimerge_1d.
 !
 !  22-nov-10/MR: coded
 !
-! helper function for  mpimerge_1d
-!
-    real, dimension(n), intent(inout) :: vec2
-    real, dimension(n), intent(in)    :: vec1
-    integer,            intent(in)    :: n, type
+      real, dimension(n), intent(inout) :: vec2
+      real, dimension(n), intent(in)    :: vec1
+      integer,            intent(in)    :: n, type
 !
     ! merging
-    where ((vec2 < 0.) .and. (vec1 >= 0.)) vec2=vec1
+      where ((vec2 < 0.) .and. (vec1 >= 0.)) vec2=vec1
 !
-    if (NO_WARN) print *,type
+      if (NO_WARN) print *,type
 !
-  endsubroutine merge_1d
+    endsubroutine merge_1d
 !***********************************************************************
-  subroutine mpimerge_1d(vector,nk,idir)
+    subroutine mpimerge_1d(vector,nk,idir)
+!
+!  Merges vectors of processors along idir by filling invalid values (NaN).
 !
 !  22-nov-10/MR: coded
 !
-! merges vectors of processors along idir by filling invalid values (NaN
+      integer,             intent(in)    :: nk
+      real, dimension(nk), intent(inout) :: vector
+      integer, optional,   intent(in)    :: idir
 !
-  integer,             intent(in)    :: nk
-  real, dimension(nk), intent(inout) :: vector
-  integer, optional,   intent(in)    :: idir
+      integer                            :: mpiprocs,merge
+      real, dimension(nk)                :: recvbuf
+      integer, dimension(MPI_STATUS_SIZE):: status
 !
-  integer                            :: mpiprocs,merge
-  real, dimension(nk)                :: recvbuf
-  integer, dimension(MPI_STATUS_SIZE):: status
+      if (present(idir)) then
+        mpiprocs=mpigetcomm(idir)
+      else
+        mpiprocs=MPI_COMM_WORLD
+      endif
 !
-  if (present(idir)) then
-    mpiprocs=mpigetcomm(idir)
-  else
-    mpiprocs=MPI_COMM_WORLD
-  endif
+      call MPI_OP_CREATE( merge_1d, .false., merge, mpierr )
+      call MPI_REDUCE(vector, recvbuf, nk, MPI_REAL, merge, root, mpiprocs, mpierr)
+      vector = recvbuf
 !
-  call MPI_OP_CREATE( merge_1d, .false., merge, mpierr )
-  call MPI_REDUCE(vector, recvbuf, nk, MPI_REAL, merge, root, mpiprocs, mpierr)
-  vector = recvbuf
+      if (NO_WARN) print*,status
 !
-  if (NO_WARN) print*,status
-!
-  endsubroutine mpimerge_1d
+    endsubroutine mpimerge_1d
 !***********************************************************************
-  integer function mpigetcomm(idir)
+    integer function mpigetcomm(idir)
+!
+!  Derives communicator from index idir.
 !
 !  23-nov-10/MR: coded
 !
-!  derives communicator from index idir
+      integer, intent(in) :: idir
 !
-  integer, intent(in) :: idir
-!
-  select case(idir)
-    case(1)
-      mpigetcomm=MPI_COMM_XBEAM
-    case(2)
-      mpigetcomm=MPI_COMM_YBEAM
-    case(3)
-      mpigetcomm=MPI_COMM_ZBEAM
-    case(12)
-      mpigetcomm=MPI_COMM_XYPLANE
-    case(13)
-      mpigetcomm=MPI_COMM_XZPLANE
-    case(23)
-      mpigetcomm=MPI_COMM_YZPLANE
-    case default
-      mpigetcomm=MPI_COMM_WORLD
-  endselect
+      select case(idir)
+        case(1)
+          mpigetcomm=MPI_COMM_XBEAM
+        case(2)
+          mpigetcomm=MPI_COMM_YBEAM
+        case(3)
+          mpigetcomm=MPI_COMM_ZBEAM
+        case(12)
+          mpigetcomm=MPI_COMM_XYPLANE
+        case(13)
+          mpigetcomm=MPI_COMM_XZPLANE
+        case(23)
+          mpigetcomm=MPI_COMM_YZPLANE
+        case default
+          mpigetcomm=MPI_COMM_WORLD
+      endselect
 !
   endfunction mpigetcomm
 !**************************************************************************
