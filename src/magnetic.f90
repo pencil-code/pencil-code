@@ -118,6 +118,7 @@ module Magnetic
   real :: mix_factor=0.
   real :: RFPradB=1., RFPradJ=1.
   real :: th_spot=PI/4
+  real :: non_ffree_factor=1.
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -1153,8 +1154,9 @@ module Magnetic
         case ('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
         case ('x-point_xy'); call xpoint(amplaa(j),f,iaz,center1_x,center1_y)
-        case ('x-point_xy2'); call xpoint2(amplaa(j),f,iaz,center1_x,center1_y)
+!        case ('x-point_xy2'); call xpoint2(amplaa(j),f,iaz,center1_x,center1_y)
         case ('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+        case ('bhyperz'); call bhyperz(amplaa(j),f,iaa,kz_aa(j),non_ffree_factor)
         case ('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))
         case ('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)

@@ -24,7 +24,7 @@ module Initcond
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
-  public :: beltrami_complex
+  public :: beltrami_complex,bhyperz
   public :: rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: modes, modev, modeb, crazy
@@ -1490,6 +1490,30 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine bhyperz(ampl,f,i,kz,nfactor)
+!
+!  Beltrami field with wavelengths that are cube roots of unity
+!
+!
+      integer :: i
+      integer :: ix,iy,iz
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kz,nfactor
+!
+!
+!  set z-dependent Beltrami field
+!
+      do ix=1,mx; do iy=1,my;do iz=1,mz
+        f(ix,iy,iz,i) = ampl*( sin(kz*z(iz)) & 
+            +nfactor*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) & 
+                + sqrt(3.)*cos(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
+        f(ix,iy,iz,i+1) = ampl*( cos(kz*z(iz)) & 
+            -nfactor*(cos(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
+              +sqrt(3.)*sin(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
+      enddo;enddo;enddo
+!
+    endsubroutine bhyperz
 !***********************************************************************
     subroutine beltrami_complex(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase)
 !
