@@ -68,7 +68,7 @@ module Particles
   character (len=labellen) :: interp_pol_oo ='ngp'
   character (len=labellen) :: interp_pol_TT ='ngp'
   character (len=labellen) :: interp_pol_rho='ngp'
-!  
+!
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
@@ -87,7 +87,7 @@ module Particles
       tstart_dragforce_par, tstart_grav_par, tausp_species, &
       learly_particle_map, epsp_friction_increase, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, pdlaw, ldt_grav_par, &
-      lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, & 
+      lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
@@ -272,7 +272,7 @@ module Particles
         endif
         if (rhop_swarm==0.0) &
              rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (mp_swarm==0.0) & 
+        if (mp_swarm==0.0) &
              mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
@@ -503,7 +503,7 @@ module Particles
               if (nygrid/=1) fp(k,iyp)=phi
             elseif (lspherical_coords) then
               call fatal_error('init_particles','random-cylindrical '// &
-                  'not implemented for spherical coordinates') 
+                  'not implemented for spherical coordinates')
             endif
 !
             if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
@@ -739,7 +739,7 @@ k_loop:   do while (.not. (k>npar_loc))
               print*, 'init_particles: No such such value for initxxp: ', &
               trim(initxxp(j))
           call fatal_error('init_particles','')
-
+!
         endselect
 !
       enddo !  do j=1,ninit
@@ -782,22 +782,22 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Initial particle velocity.
 !
       do j=1,ninit
-
+!
         select case (initvvp(j))
-
+!
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
-
+!
         case ('zero')
           if (lroot) print*, 'init_particles: Zero particle velocity'
           fp(1:npar_loc,ivpx:ivpz)=0.0
-
+!
         case ('zero-shear')
           if (lroot) print*, 'init_particles: Zero particle velocity'
           fp(1:npar_loc,ivpy)=-Sshear*fp(1:npar_loc,ixp)
           fp(1:npar_loc,ivpx)=0.0
           fp(1:npar_loc,ivpz)=0.0
-
+!
         case ('constant')
           if (lroot) print*, 'init_particles: Constant particle velocity'
           if (lroot) &
@@ -813,7 +813,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(1:npar_loc,ivpy)=vpy0
             fp(1:npar_loc,ivpz)=vpz0
           endif
-
+!
         case ('sinwave-phase')
           if (lroot) print*, 'init_particles: sinwave-phase'
           if (lroot) &
@@ -823,7 +823,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,ivpy)=fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
             fp(k,ivpz)=fp(k,ivpz)+vpz0*sin(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
           enddo
-
+!
         case ('coswave-phase')
           if (lroot) print*, 'init_particles: coswave-phase'
           if (lroot) &
@@ -833,7 +833,7 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,ivpy)=fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
             fp(k,ivpz)=fp(k,ivpz)+vpz0*cos(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
           enddo
-
+!
         case ('random')
           if (lroot) print*, 'init_particles: Random particle velocities; '// &
               'delta_vp0=', delta_vp0
@@ -845,7 +845,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call random_number_wrapper(r)
             fp(k,ivpz) = fp(k,ivpz) + delta_vp0*(2*r-1)
           enddo
-
+!
         case ('random-x')
           if (lroot) print*, 'init_particles: Random particle x-velocity; '// &
               'delta_vp0=', delta_vp0
@@ -853,7 +853,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call random_number_wrapper(r)
             fp(k,ivpx) = fp(k,ivpx) + delta_vp0*(2*r-1)
           enddo
-
+!
         case ('random-y')
           if (lroot) print*, 'init_particles: Random particle y-velocity; '// &
               'delta_vp0=', delta_vp0
@@ -861,7 +861,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call random_number_wrapper(r)
             fp(k,ivpy) = fp(k,ivpy) + delta_vp0*(2*r-1)
           enddo
-
+!
         case ('random-z')
           if (lroot) print*, 'init_particles: Random particle z-velocity; '// &
               'delta_vp0=', delta_vp0
@@ -869,7 +869,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call random_number_wrapper(r)
             fp(k,ivpz) = fp(k,ivpz) + delta_vp0*(2*r-1)
           enddo
-
+!
         case ('average-to-zero')
           call mpireduce_sum(sum(fp(1:npar_loc,ivpx)),vpx_sum)
           fp(1:npar_loc,ivpx)=fp(1:npar_loc,ivpx)-vpx_sum/npar
@@ -877,7 +877,7 @@ k_loop:   do while (.not. (k>npar_loc))
           fp(1:npar_loc,ivpy)=fp(1:npar_loc,ivpy)-vpy_sum/npar
           call mpireduce_sum(sum(fp(1:npar_loc,ivpz)),vpz_sum)
           fp(1:npar_loc,ivpz)=fp(1:npar_loc,ivpz)-vpz_sum/npar
-
+!
         case ('jeans-wave-dustpar-x')
         ! assumes rhs_poisson_const=1 !
           do k=1,npar_loc
@@ -885,7 +885,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 (sqrt(1+4*1.0*1.0*tausp**2)-1)/ &
                 (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
           enddo
-
+!
         case ('dragforce_equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
@@ -1135,7 +1135,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
@@ -1235,13 +1234,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add Coriolis force from rotating coordinate frame.
 !
       if (Omega/=0.) then
-        if (lcoriolis_force_par) then 
+        if (lcoriolis_force_par) then
           if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
           Omega2=2*Omega
-          if (.not.lspherical_coords) then 
+          if (.not.lspherical_coords) then
             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
             dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
-          else 
+          else
             print*,'dvvp_dt: Coriolis force on the particles is '
             print*,'not yet implemented for spherical coordinates.'
             call fatal_error('dvvp_dt','')
@@ -1250,9 +1249,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 ! Centrifugal force
 !
-        if (lcentrifugal_force_par) then 
+        if (lcentrifugal_force_par) then
           if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
-          if (lcartesian_coords) then 
+          if (lcartesian_coords) then
 !
             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + &
                 Omega**2*fp(1:npar_loc,ixp)
@@ -1260,7 +1259,7 @@ k_loop:   do while (.not. (k>npar_loc))
             dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + &
                 Omega**2*fp(1:npar_loc,iyp)
 !
-          elseif (lcylindrical_coords) then 
+          elseif (lcylindrical_coords) then
             dfp(1:npar_loc,ivpx) = &
                 dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
           else
@@ -1449,13 +1448,13 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_ekinp/=0) then 
-          if (lcartesian_coords.and.(all(lequidist))) then 
+        if (idiag_ekinp/=0) then
+          if (lcartesian_coords.and.(all(lequidist))) then
             call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
                  sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
           else
             call sum_par_name(0.5*mp_swarm* &
-                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)            
+                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
           endif
         endif
         if (idiag_epotpm/=0) call sum_par_name( &
@@ -1720,7 +1719,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 endif
 !
 !  Get the friction time. For the case of |uup| ~> cs, the Epstein drag law
-!  is dependent on the relative mach number, hence the need to feed uup as 
+!  is dependent on the relative mach number, hence the need to feed uup as
 !  an optional argument to get_frictiontime.
 !
                 call get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock)
@@ -1908,7 +1907,7 @@ k_loop:   do while (.not. (k>npar_loc))
         else
 !
 !  No particles in this block.
-!          
+!
           if (lfirst.and.ldt) dt1_drag=0.0
         endif
       enddo
