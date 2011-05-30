@@ -1799,9 +1799,9 @@ module General
       nd = nd-unfilled
 !
       if (lcomplex) then
-        write(1,'(1p,'//str//trim(fmth)//')') buffer_cmplx(range(1):ie:range(3))
+        write(unit,'(1p,'//str//trim(fmth)//')') buffer_cmplx(range(1):ie:range(3))
       else
-        write(1,'(1p,'//str//trim(fmth)//')') buffer(range(1):ie:range(3))
+        write(unit,'(1p,'//str//trim(fmth)//')') buffer(range(1):ie:range(3))
 !        print*, 'str,buffer, nd=', str, buffer(range(1):ie:range(3)), nd
       endif
 !
@@ -1821,9 +1821,9 @@ module General
     if ( rest<nd ) then
       call chn(ncoll,str)
       if (lcomplex) then
-        write(1,'(1p,'//str//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
+        write(unit,'(1p,'//str//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
       else
-        write(1,'(1p,'//str//trim(fmtl)//')') buffer(ia:ie:range(3))
+        write(unit,'(1p,'//str//trim(fmtl)//')') buffer(ia:ie:range(3))
       endif
     endif
 !
@@ -1831,9 +1831,9 @@ module General
 !
       call chn(rest,str)
       if (lcomplex) then
-        write(1,'(1p,'//str//trim(fmtl)//'$)') buffer_cmplx(ie+range(3):range(2):range(3))
+        write(unit,'(1p,'//str//trim(fmtl)//'$)') buffer_cmplx(ie+range(3):range(2):range(3))
       else
-        write(1,'(1p,'//str//trim(fmtl)//'$)') buffer(ie+range(3):range(2):range(3))
+        write(unit,'(1p,'//str//trim(fmtl)//'$)') buffer(ie+range(3):range(2):range(3))
       endif
 !
       unfilled = ncoll-rest
