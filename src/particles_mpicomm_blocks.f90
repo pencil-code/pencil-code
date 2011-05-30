@@ -291,7 +291,7 @@ module Particles_mpicomm
           endif
 !
 !  Distribute particle species evenly among processors.
-!        
+!
           npar_per_species=npar/npar_species
 !
           do jspec=1,npar_species
@@ -430,7 +430,7 @@ module Particles_mpicomm
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
       integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, npar_loc_start
-      integer :: i, j, k, iblock, nmig_enter_proc_tot
+      integer :: i, j, k, nmig_enter_proc_tot
       integer :: ibrick_global_rec, ibrick_global_rec_previous
       integer :: iblockl, iblocku, iblockm
       integer :: nmig_leave_total, ileave_high_max
@@ -476,7 +476,7 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            if (lequidist(1)) then 
+            if (lequidist(1)) then
               ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
             else
               call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
@@ -487,7 +487,7 @@ module Particles_mpicomm
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            if (lequidist(2)) then 
+            if (lequidist(2)) then
               iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
             else
               call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
@@ -498,7 +498,7 @@ module Particles_mpicomm
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            if (lequidist(3)) then 
+            if (lequidist(3)) then
               iz0=nint((fp(k,izp)-zref_par)*dz1)+1
             else
               call find_index_by_bisection(fp(k,izp),zgrid,iz0)
@@ -859,7 +859,7 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            if (lequidist(1)) then 
+            if (lequidist(1)) then
               ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
             else
               call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
@@ -870,7 +870,7 @@ module Particles_mpicomm
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            if (lequidist(2)) then 
+            if (lequidist(2)) then
               iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
             else
               call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
@@ -1262,7 +1262,7 @@ module Particles_mpicomm
           ipx0=0; ipy0=0; ipz0=0
 !
           if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            if (lequidist(1)) then 
+            if (lequidist(1)) then
               ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
             else
               call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
@@ -1273,7 +1273,7 @@ module Particles_mpicomm
           endif
 !
           if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            if (lequidist(2)) then 
+            if (lequidist(2)) then
               iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
             else
               call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
@@ -1284,7 +1284,7 @@ module Particles_mpicomm
           endif
 !
           if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            if (lequidist(3)) then 
+            if (lequidist(3)) then
               iz0=nint((fp(k,izp)-zref_par)*dz1)+1
             else
               call find_index_by_bisection(fp(k,izp),zgrid,iz0)
@@ -1604,11 +1604,11 @@ module Particles_mpicomm
       integer :: npar_sum, npar_target, npar_recv, npar_requ
       integer :: npar_brick_taken, npar_want, npar_give
       integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
-      integer :: iblock_old, nbrick_give, nbrick_recv, ibrick_global
+      integer :: nbrick_give, nbrick_recv, ibrick_global
       integer :: iproc_left, iproc_right
-      integer :: tag_id=100, tag_id2=1000, tag_id3=10000 
+      integer :: tag_id=100, tag_id2=1000, tag_id3=10000
       integer :: ierr, ireq, nreq
-      integer :: iblock1, iblock2, iproc_recv, iproc_send
+      integer :: iproc_recv, iproc_send
       integer :: ipvar, nblock_send, npar_loc_tmp
       integer :: k1_send, k2_send
 !
@@ -1730,7 +1730,7 @@ module Particles_mpicomm
         endif
         call fatal_error_local_collect()
 !
-!  Inform the left processor of the particle contents of each adopted brick.  
+!  Inform the left processor of the particle contents of each adopted brick.
 !
         if (npar_give>0) call MPI_SEND(npbrick(ibrick_give(0:nbrick_give-1)), &
             nbrick_give, MPI_INTEGER, iproc_left, &
@@ -1789,7 +1789,7 @@ module Particles_mpicomm
               ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
-        endif 
+        endif
         ibrick=ibrick+1
       enddo
 !
@@ -2428,20 +2428,20 @@ module Particles_mpicomm
 !***********************************************************************
     subroutine find_index_by_bisection(qpar,q,iq0)
 !
-!  Given a particle location (qpar), find the index of 
+!  Given a particle location (qpar), find the index of
 !  the nearest grid cell by bisecting the interval. Its main
 !  use is for non-equidistant grids. Adapted from existing code.
 !
 !  TODO: No good that it uses xgrid,ygrid,zgrid, i.e., global arrays.
-!        The best thing would be to find what is the processor has the 
-!        needed grid points, and communicate just that local array. 
+!        The best thing would be to find what is the processor has the
+!        needed grid points, and communicate just that local array.
 !
 !  27-mar-11/wlad: coded
 !
       real, dimension (:) :: q
       real :: qpar
       integer :: iq0,jl,ju,jm
-!      
+!
       intent (in) :: qpar,q
       intent (out) :: iq0
 !
@@ -2461,7 +2461,7 @@ module Particles_mpicomm
       else
         iq0=ju
       endif
-!      
+!
     endsubroutine find_index_by_bisection
 !***********************************************************************
 endmodule Particles_mpicomm
