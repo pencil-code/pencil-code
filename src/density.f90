@@ -60,6 +60,7 @@ module Density
   real :: r0_rho=impossible
   real :: invgrav_ampl = 0.0
   real :: rnoise_int=impossible,rnoise_ext=impossible
+  real :: mass_source_tau1=1.
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -109,7 +110,7 @@ module Density
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons,&
-      lffree,ffree_profile,rzero_ffree,wffree
+      lffree,ffree_profile,rzero_ffree,wffree,mass_source_tau1
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -2217,8 +2218,10 @@ module Density
           dlnrhodt=mass_source_Mdot*fprofile
         case('bumpx')
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
-          fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm
+          fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm  
           dlnrhodt=mass_source_Mdot*fprofile
+        case('const' )
+          dlnrhodt=-mass_source_tau1*(f(l1:l2,m,n,ilnrho)-lnrho0)
         case('cylindric')
 !
 !  Cylindrical profile for inner cylinder.
