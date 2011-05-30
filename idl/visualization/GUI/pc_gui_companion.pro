@@ -48,12 +48,9 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, show_aver=show_aver
 		default, varfile, "var.dat"
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
-			nproc = dim.nprocx * dim.nprocy * dim.nprocz
-			for proc = 0, nproc-1 do begin
-				pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim_local, proc=proc, /quiet
-				if (proc eq 0) then sources = tag_names (vars)
-				precalc_data, number, vars, proc, dim_local
-			end
+			pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, /nostats
+			sources = tag_names (vars)
+			precalc_data, number, vars, dim
 		end
 		varfiles[i].title = varfile
 		varfiles[i].loaded = 1
@@ -69,7 +66,7 @@ end
 
 
 ; Precalculates a data set
-pro precalc_data, i, vars, proc, dim
+pro precalc_data, i, vars, dim
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
