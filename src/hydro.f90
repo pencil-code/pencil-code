@@ -4676,10 +4676,10 @@ module Hydro
       case ('breeze')
       if (.not.lcalc_uumean) then
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -(f(l1:l2,m,n,iuz)-ampl_wind*z(n)/(2.*pi))/tau_damp_ruzm
+             -tau_diffrot1*(f(l1:l2,m,n,iuz)-ampl_wind*z(n)/(2.*pi))
       else
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
-             -(uumz(n,3)-ampl_wind*z(n)/(2.*pi))/tau_damp_ruzm
+             -tau_diffrot1*(uumz(n,3)-ampl_wind*z(n)/(2.*pi))
       endif
 !
 !  Radial shear profile
