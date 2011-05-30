@@ -1128,6 +1128,7 @@ module Magnetic
         case ('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
         case ('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
         case ('diffrot'); call diffrot(amplaa(j),f,iay)
+        case ('hor-tanh'); call htanh(amplaa(j),f,iaz,epsilonaa)
         case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
                                      center1_x,center1_z)
         case ('hor-tube-x'); call htube_x(amplaa(j),f,iax,iaz,radius,epsilonaa, &
@@ -1155,7 +1156,7 @@ module Magnetic
         case ('vecpatternxy'); call vecpatternxy(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
         case ('x-point_xy'); call xpoint(amplaa(j),f,iaz,center1_x,center1_y)
-!        case ('x-point_xy2'); call xpoint2(amplaa(j),f,iaz,center1_x,center1_y)
+        case ('x-point_xy2'); call xpoint2(amplaa(j),f,iaz,center1_x,center1_y)
         case ('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('bhyperz'); call bhyperz(amplaa(j),f,iaa,kz_aa(j),non_ffree_factor)
         case ('sinxsinz_Hz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),KKz=kz_aa(j))

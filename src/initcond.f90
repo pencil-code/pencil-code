@@ -35,7 +35,7 @@ module Initcond
   public :: powern, power_randomphase
   public :: planet, planet_hc
   public :: random_isotropic_KS
-  public :: htube, htube2, htube_x, hat, hat3d
+  public :: htanh, htube, htube2, htube_x, hat, hat3d
   public :: htube_erf, xpoint, xpoint2
   public :: wave_uu, wave, parabola, linprof
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
@@ -2707,6 +2707,35 @@ module Initcond
      enddo
 !
     endsubroutine strange
+!***********************************************************************
+    subroutine htanh(ampl,f,i1,eps)
+!
+!  Horizontal flux tanh (for vector potential, or passive scalar)
+!
+!  30-may-11/axel: tanh layer
+!
+      integer :: i1
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: tmp,tanh_radius_sqr !,modulate
+      real :: ampl,eps
+!
+      if (ampl==0) then
+        f(:,:,:,i1)=0
+        if (lroot) print*,'htanh: set variable to zero; i1=',i1
+      else
+        if (lroot) then
+          print*,'htanh: implement y-dependent flux tanh in xz-plane; i1=',i1
+          print*,'htanh: eps=',eps
+        endif
+!
+! completely quenched "gaussian"
+!
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i1)=ampl*alog(cosh(eps*y(m)))
+        enddo; enddo
+      endif
+!
+    endsubroutine htanh
 !***********************************************************************
     subroutine htube(ampl,f,i1,i2,radius,eps,center1_x,center1_z)
 !

@@ -144,6 +144,9 @@ module Boundcond
                 case ('ss')
                   ! BCX_DOC: symmetry, plus function value given
                   call bc_symset_x(f,+1,topbot,j)
+                case ('sds')
+                  ! BCY_DOC: symmetric-derivative-set
+                  call bc_symderset_x(f,topbot,j,val=fbcx12)
                 case ('s0d')
                   ! BCX_DOC: symmetry, function value such that df/dx=0
                   call bc_symset0der_x(f,topbot,j)
@@ -402,6 +405,12 @@ module Boundcond
               case ('ss')
                 ! BCY_DOC: symmetry, plus function value given
                 call bc_symset_y(f,+1,topbot,j)
+              case ('sds')
+                ! BCY_DOC: symmetric-derivative-set
+                call bc_symderset_y(f,topbot,j,val=fbcy12)
+              case ('cds')
+                ! BCY_DOC: complex symmetric-derivative-set
+                call bc_csymderset_y(f,topbot,j,val=fbcy12)
               case ('s0d')
                 ! BCY_DOC: symmetry, function value such that df/dy=0
                 call bc_symset0der_y(f,topbot,j)
@@ -1214,6 +1223,32 @@ module Boundcond
 !
     endsubroutine bc_symset_x
 !***********************************************************************
+    subroutine bc_symderset_x(f,topbot,j,val)
+!
+!  This routine works like bc_sym_y, but sets the derivative value
+!
+!  30-may-11/axel: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      integer :: i,j
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j)-2*i*dx*val(j); enddo
+!
+      case ('top')               ! top boundary
+        do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+2*i*dx*val(j); enddo
+!
+      case default
+        print*, "bc_symderset_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_symderset_x
+!***********************************************************************
     subroutine bc_symset0der_x(f,topbot,j)
 !
 !  This routine works like bc_sym_x, but sets the function value to what
@@ -1574,7 +1609,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_symset_y(f,sgn,topbot,j,rel,val)
 !
-!  This routine works like bc_sym_x, but sets the function value to what
+!  This routine works like bc_sym_y, but sets the function value to what
 !  it should be for vanishing one-sided derivative.
 !  At the moment the derivative is only 2nd order accurate.
 !
@@ -1622,6 +1657,60 @@ module Boundcond
       endselect
 !
     endsubroutine bc_symset_y
+!***********************************************************************
+    subroutine bc_symderset_y(f,topbot,j,val)
+!
+!  This routine works like bc_sym_y, but sets the derivative value
+!
+!  30-may-11/axel: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      integer :: i,j
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-2*i*dy*val(j); enddo
+!
+      case ('top')               ! top boundary
+        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+2*i*dy*val(j); enddo
+!
+      case default
+        print*, "bc_symderset_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_symderset_y
+!***********************************************************************
+    subroutine bc_csymderset_y(f,topbot,j,val)
+!
+!  This routine works like bc_sym_y, but sets the derivative value
+!
+!  30-may-11/axel: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,mz) :: derval
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mcom), optional :: val
+      integer :: i,j
+!
+      derval=spread((xyz1(1)-x)*val(j),2,mz)
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do i=1,nghost; f(:,m1-i,:,j)=f(:,m1+i,:,j)-2*i*dy*derval; enddo
+!
+      case ('top')               ! top boundary
+        do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+2*i*dy*derval; enddo
+!
+      case default
+        print*, "bc_csymderset_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_csymderset_y
 !***********************************************************************
     subroutine bc_symset0der_y(f,topbot,j)
 !
