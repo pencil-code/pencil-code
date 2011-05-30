@@ -196,16 +196,16 @@ pro precalc_data, i, vars
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
 		if (any (strcmp (over_tags, 'b', /fold_case))) then begin
 			; Magnetic field overplot
-			oversets[i].b = float (congrid (reform (bb[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
-			oversets[i].b = float (congrid (reform (bb[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
-			oversets[i].b = float (congrid (reform (bb[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
+			oversets[i].b[*,*,*,0] = float (congrid (reform (bb[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
+			oversets[i].b[*,*,*,1] = float (congrid (reform (bb[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
+			oversets[i].b[*,*,*,2] = float (congrid (reform (bb[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
 		end
 		bb = 0
 		if (any (strcmp (over_tags, 'a_contour', /fold_case))) then begin
 			; Magnetic field lines overplot
-			oversets[i].a_contour = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) * unit.magnetic_field)
-			oversets[i].a_contour = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) * unit.magnetic_field)
-			oversets[i].a_contour = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) * unit.magnetic_field)
+			oversets[i].a_contour[*,*,*,0] = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) * unit.magnetic_field)
+			oversets[i].a_contour[*,*,*,1] = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) * unit.magnetic_field)
+			oversets[i].a_contour[*,*,*,2] = float (congrid (reform (vars.aa[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) * unit.magnetic_field)
 		end
 	end
 end
