@@ -394,9 +394,9 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	!P.MULTI = [0, 1, 1]
 
-	ox = round (bin_x / 2.0) - 1
-	oy = round (bin_y / 2.0) - 1
-	oz = round (bin_z / 2.0) - 1
+	ox = floor (bin_x / 2.0)
+	oy = floor (bin_y / 2.0)
+	oz = floor (bin_z / 2.0)
 
 	num_over_x = n_elements (field_x_indices)
 	num_over_y = n_elements (field_y_indices)
@@ -412,7 +412,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[i:i+1, pz*bin_z+oz] = val_range
 			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[py*bin_y+oy, i:i+1] = val_range
 			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[py*bin_y+oy, i:i+1] = val_range
-			if ((py le af_y) and (py lt num_y-1-af_y) and (pz le af_z) and (pz lt num_z-1-af_z)) then ii[0:1, 0] = val_range
+			if ((py le af_y) and (py ge num_y-1-af_y) and (pz le af_z) and (pz ge num_z-1-af_z)) then ii[0:1, 0] = val_range
 		end $
 		else if (abs_scale) then ii[0:1, 0] = val_range
 		tvscl, ii
