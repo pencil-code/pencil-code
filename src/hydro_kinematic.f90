@@ -1045,7 +1045,7 @@ module Hydro
       case ('mer_flow_dg11') 
         if (headtt) print*,'meridional flow as in Dikpati & Gilman 2011 (spherical)'
         if (lpencil(i_uu)) then
-          rho_prof=(1.*r1_mn-0.97)**1.5
+          rho_prof=(1./x(l1:l2)-0.97)**1.5
           ro=(1.-0.6)/5.
           psi1=sin(pi*(x(l1:l2)-rp)/(1.-rp))
           psi2=1.-exp(-1.*x(l1:l2)*y(m)**2.0000001)
@@ -1054,11 +1054,11 @@ module Hydro
           p%uu(:,1)=-(psi1*psi3*psi4*exp(-1.*x(l1:l2)*y(m)**2.0000001) &
                *(1.*2.0000001*x(l1:l2)*y(m)**(2.0000001-1)) &
                +psi1*psi2*psi4*(-4.*x(l1:l2)*exp(4.*x(l1:l2)*(y(m)-0.5*pi)))) &
-               *sin1th(m)*r1_mn**2/rho_prof
+               /(x(l1:l2)**2*rho_prof*sin(y(m)))
           p%uu(:,2)=(cos(pi*(x(l1:l2)-rp)/(1.-rp))*pi/(1.-rp)*psi2*psi3*psi4 &
                -exp(-1.*x(l1:l2)*y(m)**2.0000001)*(-1.*y(m)**2.0000001)*psi1*psi3*psi4 &
                -exp(4.*x(l1:l2)*(y(m)-0.5*pi))*(4.*(y(m)-0.5*pi))*psi1*psi2*psi4 &
-               -2.*(x(l1:l2)-ro)*psi1*psi2*psi3*psi4/0.4**2)*sin1th(m)*r1_mn/rho_prof
+               -2.*(x(l1:l2)-ro)*psi1*psi2*psi3*psi4/0.4**2)/(sin(y(m))*x(l1:l2)*rho_prof)
           p%uu(:,3)=0.
         endif
         p%divu=0.
