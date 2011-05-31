@@ -188,9 +188,9 @@ pro precalc_data, i, vars
 	if (any (strcmp (sources, 'uu', /fold_case))) then begin
 		if (any (strcmp (over_tags, 'u', /fold_case))) then begin
 			; Velocity overplot
-			oversets[i].u = float (congrid (reform (vars.uu[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
-			oversets[i].u = float (congrid (reform (vars.uu[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
-			oversets[i].u = float (congrid (reform (vars.uu[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
+			oversets[i].u[*,*,*,0] = float (congrid (reform (vars.uu[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
+			oversets[i].u[*,*,*,1] = float (congrid (reform (vars.uu[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
+			oversets[i].u[*,*,*,2] = float (congrid (reform (vars.uu[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
 		end
 	end
 	if (any (strcmp (sources, 'aa', /fold_case))) then begin
