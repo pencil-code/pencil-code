@@ -1505,10 +1505,10 @@ module Initcond
 !  set z-dependent Beltrami field
 !
       do ix=1,mx; do iy=1,my;do iz=1,mz
-        f(ix,iy,iz,i) = ampl*(nfactor*sin(kz*z(iz)) & 
-            +(1-nfactor)*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) & 
+        f(ix,iy,iz,i) = ampl*(nfactor*sin(kz*z(iz)) &
+            +(1-nfactor)*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
                 + sqrt(3.)*cos(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
-        f(ix,iy,iz,i+1) = ampl*(nfactor*cos(kz*z(iz)) & 
+        f(ix,iy,iz,i+1) = ampl*(nfactor*cos(kz*z(iz)) &
             -(1-nfactor)*(cos(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
               +sqrt(3.)*sin(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
       enddo;enddo;enddo
@@ -2716,7 +2716,6 @@ module Initcond
 !
       integer :: i1
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: tmp,tanh_radius_sqr !,modulate
       real :: ampl,eps
 !
       if (ampl==0) then
@@ -2847,7 +2846,7 @@ module Initcond
 !***********************************************************************
     subroutine htube_erf(ampl,f,i1,i2,a,eps,center1_x,center1_z,width)
 !
-!  Horizontal flux tube (for vector potential) which gives 
+!  Horizontal flux tube (for vector potential) which gives
 !  error-function border profile for the magnetic field., or passive scalar
 !
 !   18-mar-09/dhruba: adapted from htube
