@@ -270,7 +270,7 @@ module struct_func
       !
       if (llsf) then
         call mpireduce_sum(sf,sf_sum,(/imax,qmax,3/))  !Is this safe???
-        ndiv=nw*ncpus*2
+        ndiv=nwgrid*2
         sf_sum=sf_sum/ndiv
       endif
       !

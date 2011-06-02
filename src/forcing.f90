@@ -2814,8 +2814,8 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       fsum_tmp(1)=rho_uu_ff
       call mpireduce_sum(fsum_tmp,fsum,1)
-      if (lroot) rho_uu_ff=fsum(1)/(ncpus*nw)
-!      if (lroot) rho_uu_ff=rho_uu_ff/(ncpus*nw)
+      if (lroot) rho_uu_ff=fsum(1)/nwgrid
+!      if (lroot) rho_uu_ff=rho_uu_ff/nwgrid
       call mpibcast_real(rho_uu_ff,1)
 !
 !  scale forcing function
@@ -3462,12 +3462,12 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
-              !call sum_mn_name(ruf/(nw*ncpus),idiag_rufm)
+              !call sum_mn_name(ruf/nwgrid,idiag_rufm)
             enddo
           enddo
         endif
       endif
-      irufm=irufm/(ncpus*nw)
+      irufm=irufm/nwgrid
 !
 ! If we want to make energy input constant
 !

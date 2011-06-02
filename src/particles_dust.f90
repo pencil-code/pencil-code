@@ -328,7 +328,7 @@ module Particles
           rhom=1.0
         endif
         if (rhop_swarm==0.0) &
-            rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+            rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
         if (mp_swarm==0.0) & 
             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &

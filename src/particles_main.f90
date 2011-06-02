@@ -112,7 +112,7 @@ module Particles_main
 !  density and mass density per grid cell (np_const or rhop_const).
 !
       if (rhop_const/=0.0) then
-        rhop_swarm=rhop_const/(real(npar)/(nxgrid*nygrid*nzgrid))
+        rhop_swarm=rhop_const/(real(npar)/nwgrid)
         if (lparticles_radius) then
           if (mpmat/=0.0 .or. np_swarm/=0.0) then
             if (lroot) print*, 'particles_initialize_modules: '// &
@@ -141,7 +141,7 @@ module Particles_main
             call fatal_error('particles_initialize_modules','')
           endif
         endif
-        np_swarm=np_const/(real(npar)/(nxgrid*nygrid*nzgrid))
+        np_swarm=np_const/(real(npar)/nwgrid)
         rhop_swarm=np_swarm*mpmat
       else
         if (rhop_swarm==0.0) rhop_swarm=mpmat*np_swarm
