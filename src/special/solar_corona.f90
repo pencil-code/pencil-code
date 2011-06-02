@@ -36,12 +36,14 @@ module Special
   logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
   logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
   logical :: luse_mag_field=.false.
-  logical :: lnc_density_depend=.false.,lwrite_driver=.false.
+  logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
+  logical :: lwrite_driver=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
   real :: mag_time_offset=0.
+  real :: swamp_fade_start=0.0, swamp_diffrho=0.0, swamp_chi=0.0
 !
   real, dimension(nx,ny,n1,3) :: A_init
 !
@@ -70,8 +72,10 @@ module Special
        b_tau,Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
-       iheattype,dt_gran,cool_type,lnc_density_depend,lwrite_driver, &
+       iheattype,dt_gran,cool_type,lwrite_driver, &
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
+       lnc_density_depend, lnc_intrin_energy_depend, &
+       swamp_fade_start, swamp_diffrho, swamp_chi, &
        luse_mag_field, mag_time_offset
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
@@ -523,6 +527,26 @@ module Special
         lpenc_requested(i_lnTT)=.true.
       endif
 !
+      if (swamp_diffrho > 0.0) then
+        if (ldensity_nolog) then
+          lpenc_requested(i_del2rho)=.true.
+        else
+          lpenc_requested(i_del2lnrho)=.true.
+        endif
+      endif
+!
+      if (swamp_chi > 0.0) then
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            lpenc_requested(i_del2TT)=.true.
+          else
+            lpenc_requested(i_del2lnTT)=.true.
+          endif
+        elseif (lentropy) then
+          lpenc_requested(i_del2ss)=.true.
+        endif
+      endif
+!
       if (hcond1/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
@@ -806,6 +830,8 @@ module Special
             diffrho_hyper3
       endif
 !
+      if (swamp_diffrho > 0.0) call calc_swamp_density(f,df,p)
+!
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_density
@@ -867,6 +893,8 @@ module Special
       if (K_iso/=0.0) call calc_heatcond_grad(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
 !
+      if (swamp_chi > 0.0) call calc_swamp_temp(f,df,p)
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_before_boundary(f)
@@ -927,6 +955,98 @@ module Special
       if (lmassflux) call get_wind_speed_offset(f)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    function get_swamp_fade_fact(height)
+!
+!   Get height-dependant smooth fading factor for swamp layer at top.
+!
+!   02-jun-11/Bourdin.KIS: coded
+!
+      real :: get_swamp_fade_fact
+      real, intent(in) :: height
+!
+      real, save :: last_height = -1.0
+      real, save :: last_fade_fact = 0.0
+      real :: tau
+!
+      if (last_height == height) then
+        get_swamp_fade_fact = last_fade_fact
+      else
+        if (height <= swamp_fade_start) then
+          get_swamp_fade_fact = 0.0
+        else
+          ! tau is a normalized z, the transition interval is [-0.5, 0.5]:
+          tau = (height-swamp_fade_start) / (z(n2)-swamp_fade_start) - 0.5
+          if (tau <= -0.5) then
+            get_swamp_fade_fact = 0.0
+          elseif (tau >= 0.5) then
+            get_swamp_fade_fact = 1.0
+          else
+            get_swamp_fade_fact = 0.5 + tau * (1.5 - 2.0*tau**2)
+          endif
+        endif
+        last_height = height
+        last_fade_fact = get_swamp_fade_fact
+      endif
+!
+    endfunction get_swamp_fade_fact
+!***********************************************************************
+    subroutine calc_swamp_density(f,df,p)
+!
+!   Additional hight-dependant density diffusion (swamp layer at top).
+!
+!   02-jun-11/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: fdiff
+      real :: swamp_fade_fact
+!
+      swamp_fade_fact = get_swamp_fade_fact (z(n))
+      if (swamp_fade_fact > 0.0) then
+        if (ldensity_nolog) then
+          fdiff = swamp_fade_fact * swamp_diffrho * p%del2rho
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+        else
+          fdiff = swamp_fade_fact * swamp_diffrho * p%del2lnrho
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+        endif
+      endif
+!
+    endsubroutine calc_swamp_density
+!***********************************************************************
+    subroutine calc_swamp_temp(f,df,p)
+!
+!   Additional hight-dependant temperature diffusion (swamp layer at top).
+!
+!   02-jun-11/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: fdiff
+      real :: swamp_fade_fact
+!
+      swamp_fade_fact = get_swamp_fade_fact (z(n))
+      if (swamp_fade_fact > 0.0) then
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            fdiff = swamp_fade_fact * swamp_chi * p%del2TT
+            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + fdiff
+          else
+            fdiff = swamp_fade_fact * swamp_chi * p%del2lnTT
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + fdiff
+          endif
+        elseif (lentropy) then
+          fdiff = swamp_fade_fact * swamp_chi * p%del2ss
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + fdiff
+        endif
+      endif
+!
+    endsubroutine calc_swamp_temp
 !***********************************************************************
     subroutine update_mag_field (time_offset, times_dat, field_dat, A, time_l, time_r)
 !
@@ -1265,10 +1385,11 @@ module Special
       endif
 !
       ! Newton cooling of temperature profile
-      if (tdown /= 0.0) then
+      if ((tdown /= 0.0) .and. (.not. lnc_intrin_energy_depend)) then
         if (lnc_density_depend) then
           ! Find reference temperature to actual density profile
           call find_ref_temp (p%lnrho, lnTT_ref)
+          lnTT_ref = 0.5 * (lnTT_ref + lnTT_init_z(n))
         else
           ! Height dependant refernece temperaure profile
           lnTT_ref = lnTT_init_z(n)
@@ -1287,6 +1408,22 @@ module Special
             tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.25*nc_z_trans_width, -1.0))
         ! Add newton cooling term to entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
+      endif
+!
+      ! Newton cooling that keeps the intrinsic energy constant
+      if ((tdown /= 0.0) .and. lnc_intrin_energy_depend) then
+        ! Calculate intrinsic-energy-dependant inverse time scale and let cooling decay exponentially
+        tmp_tau = tdown * exp (-allp * (lnrho0*lnTT_init_z(n1) - p%lnrho*p%lnTT))
+        ! Optional height dependant smooth cutoff
+        if (nc_z_max /= 0.0) &
+            tmp_tau = tmp_tau * (1.0 - sine_step (z(n), nc_z_max, 0.25*nc_z_trans_width, -1.0))
+        ! Calculate newton cooling factor to reference temperature
+        newton = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnrho - p%lnTT) - 1.0
+        ! Calculate newton cooling factor to reference density
+        newtonr = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnTT - p%lnrho) - 1.0
+        ! Add newton cooling term to entropy and density
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
       endif
 !
       if (lfirst .and. ldt) then
