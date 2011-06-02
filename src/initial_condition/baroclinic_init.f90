@@ -20,12 +20,13 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: rho_rms=0.05
+  real :: rho_rms=0.05,xmid=0.0
   integer :: xmodes=10,ymodes=10,zmodes=0
   logical :: lunstratified=.false.,lgaussian_distributed_noise=.true.
 !
   namelist /initial_condition_pars/ &
-      xmodes,ymodes,zmodes,rho_rms,lunstratified,lgaussian_distributed_noise
+      xmodes,ymodes,zmodes,rho_rms,xmid,lunstratified,&
+      lgaussian_distributed_noise
 !
   contains
 !***********************************************************************
