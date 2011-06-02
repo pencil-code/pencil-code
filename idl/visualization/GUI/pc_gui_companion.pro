@@ -32,7 +32,7 @@ end
 
 
 ; Precalculates a data set and loads data, if necessary
-pro precalc, i, number=number, varfile=varfile, datadir=dir, show_aver=show_aver, time=time, dim=dim
+pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid, param=par, run_param=run_par, varcontent=varcontent, show_aver=show_aver, time=time
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
@@ -40,7 +40,9 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, show_aver=show_aver
 	default, show_aver, 0
 	default, number, i
 	default, dir, pc_get_datadir()
-        default, datadir, dir
+	default, datadir, dir
+	if (keyword_set (par)) then param = par
+	if (keyword_set (run_par)) then run_param = run_par
 
 	if (varfiles[i].number le 0) then varfiles[i].number = number
 
@@ -62,6 +64,8 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, show_aver=show_aver
 	print, 'Ready.'
 
 	if (show_aver) then draw_averages, number
+	if (keyword_set (par)) then par = param
+	if (keyword_set (run_par)) then run_par = run_param
 end
 
 
