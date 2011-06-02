@@ -23,11 +23,13 @@ module Cparam
   integer, parameter :: mcom=mvar+maux_com
 !
   integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
-  integer(KIND=ikind8), parameter :: nw=nx*ny*nz
+  integer, parameter :: nw=nx*ny*nz
   integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
   integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
   integer, parameter :: mz=nz+2*nghost,n1=1+nghost,n2=mz-nghost
-  integer(KIND=ikind8), parameter :: mw=mx*my*mz,nwgrid=nxgrid*nygrid*nzgrid
+  integer, parameter :: mw=mx*my*mz
+  integer(KIND=ikind8), parameter :: nwgrid=int(nxgrid,kind=ikind8)* &
+                    int(nygrid,kind=ikind8)*int(nzgrid,kind=ikind8)
 !
   integer, parameter :: l1i=l1+nghost-1,l2i=l2-nghost+1
   integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
