@@ -2054,13 +2054,13 @@ module Magnetic
         if (lJ_ext) then
           if (J_ext_quench/=0) then
             quench=1./(1.+J_ext_quench*p%b2)
-            p%jj(:,1)=p%jj(:,1)+J_ext(1)*quench
-            p%jj(:,2)=p%jj(:,2)+J_ext(2)*quench
-            p%jj(:,3)=p%jj(:,3)+J_ext(3)*quench
+            p%jj(:,1)=p%jj(:,1)-J_ext(1)*quench
+            p%jj(:,2)=p%jj(:,2)-J_ext(2)*quench
+            p%jj(:,3)=p%jj(:,3)-J_ext(3)*quench
           else
-            p%jj(:,1)=p%jj(:,1)+J_ext(1)
-            p%jj(:,2)=p%jj(:,2)+J_ext(2)
-            p%jj(:,3)=p%jj(:,3)+J_ext(3)
+            p%jj(:,1)=p%jj(:,1)-J_ext(1)
+            p%jj(:,2)=p%jj(:,2)-J_ext(2)
+            p%jj(:,3)=p%jj(:,3)-J_ext(3)
           endif
         endif
       endif
