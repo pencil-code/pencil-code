@@ -25,13 +25,12 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 	exe_1 = "varsets = { "
 	exe_2 = "set = { "
 	for i=0, num_names-1 do begin
-		if (i gt 0) then begin
-			exe_1 += ", "
-			exe_2 += ", "
-		end
-		exe_1 += set_names[i]+":sets."+set_names[i]
-		exe_2 += set_names[i]+":'"+set_names[i]+"'"
+		if ((size (sets.(i)))[0] ne 3) then continue
+		exe_1 += set_names[i]+":sets."+set_names[i]+", "
+		exe_2 += set_names[i]+":'"+set_names[i]+"', "
 	end
+	exe_1 = strmid (exe_1, 0, strlen (exe_1)-2)
+	exe_2 = strmid (exe_2, 0, strlen (exe_2)-2)
 	exe_1 += " }"
 	exe_2 += " }"
 
