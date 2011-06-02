@@ -3156,7 +3156,7 @@ module Hydro
               if (tau <= -0.5) then
                 fade_fact = 1.
               elseif (tau <= 0.5) then
-                fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
+                fade_fact = 0.5 - tau * (1.5 - 2.0*tau**2)
               else
                 call fatal_error("udamping","tau is invalid (tau > 0.5).")
               endif
