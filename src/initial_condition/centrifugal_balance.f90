@@ -858,7 +858,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx,ny,nz) :: lump_of_sines
-      real :: Lx,Ly,Lz,d0,phase,xi,yi,zi,nw1
+      real :: Lx,Ly,Lz,d0,phase,xi,yi,zi,nw1,fac
       real :: fmeantmp_rho2,fmeantmp_rho
       real :: fmean_rho2,fmean_rho
       real :: unnormalized_rho_rms
@@ -936,8 +936,15 @@ module InitialCondition
           mm1=m+m1-1
           do i=1,nx
             ll1=i+l1-1 ; xi=x(ll1)
+!
+            if (lgaussian_distributed_noise) then 
+              fac=exp(-(.5*(xi-xmid)/d0)**2)
+            else
+              fac=1
+            endif
+!
             f(ll1,mm1,nn1,irho)=f(ll1,mm1,nn1,irho) + &
-                lump_of_sines(i,m,n)*exp(-(.5*(xi-xmid)/d0)**2)
+                 lump_of_sines(i,m,n)*fac
           enddo
           fmeantmp_rho2=fmeantmp_rho2+nw1*sum(f(l1:l2,mm1,nn1,irho)**2)
           fmeantmp_rho =fmeantmp_rho +nw1*sum(f(l1:l2,mm1,nn1,irho))
