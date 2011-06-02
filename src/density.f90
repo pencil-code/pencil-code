@@ -208,7 +208,7 @@ module Density
 !
 !  Turn off continuity equation term for 0-D runs.
 !
-      if (nxgrid*nygrid*nzgrid==1) then
+      if (nwgrid==1) then
         lcontinuity_gas=.false.
         if (lroot) print*, &
              'initialize_density: 0-D run, turned off continuity equation'

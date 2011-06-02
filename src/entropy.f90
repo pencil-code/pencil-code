@@ -578,7 +578,7 @@ module Entropy
 !
 !  Turn off pressure gradient term and advection for 0-D runs.
 !
-      if (nxgrid*nygrid*nzgrid==1) then
+      if (nwgrid==1) then
         lpressuregradient_gas=.false.
         ladvection_entropy=.false.
         print*, 'initialize_entropy: 0-D run, turned off pressure gradient term'

@@ -2455,7 +2455,7 @@ module Initcond
 !
 !  Calculate <rho> and send to all processors
 !
-      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
+      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/nwgrid)
       call mpibcast_real(rho0,1)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
@@ -2570,7 +2570,7 @@ module Initcond
 !
 !  Calculate <rho> and send to all processors
 !
-      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
+      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/nwgrid)
       call mpibcast_real(rho0,1)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !

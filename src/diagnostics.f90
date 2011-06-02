@@ -370,8 +370,7 @@ module Diagnostics
 !
 !  The result is present everywhere
 !
-!     average_density=mass(1)/box_volume
-      average_density=mass(1)/(nxgrid*nygrid*nzgrid)
+      average_density=mass(1)/nwgrid
       call mpibcast_real(average_density,1)
 !
     endsubroutine get_average_density
@@ -421,7 +420,7 @@ module Diagnostics
           if (nz==1) intdz_rel=1.0
           dVol_rel1=1./(intdr_rel*intdphi_rel*intdz_rel)
         else
-          dVol_rel1=1./(nw*ncpus)
+          dVol_rel1=1./nwgrid
         endif
         first=.false.
         if (lroot.and.ip<=10) print*,'dVol_rel1=',dVol_rel1

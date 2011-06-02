@@ -609,7 +609,7 @@ module Hydro
 !
 !  Turn off advection for 0-D runs.
 !
-      if (nxgrid*nygrid*nzgrid==1) then
+      if (nwgrid==1) then
         ladvection_velocity=.false.
         if (lroot) print*, &
              'initialize_hydro: 0-D run, turned off advection of velocity'
