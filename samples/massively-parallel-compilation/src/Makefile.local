@@ -1,0 +1,49 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM               =   mpicomm
+IO                    =   io_dist
+TIMEAVG               =   timeavg
+
+
+HYDRO                 =   hydro
+SHOCK                 =   shock
+DENSITY               =   density
+ENTROPY               =   entropy
+MAGNETIC              =   magnetic
+MAGNETIC_MEANFIELD    =   magnetic/meanfield
+RADIATION             =   radiation_ray
+PSCALAR               =   pscalar
+CHIRAL                =   chiral
+COSMICRAY             =   cosmicray
+COSMICRAYFLUX         =   cosmicrayflux
+INTERSTELLAR          =   interstellar
+EOS                   =   eos_ionization
+TESTFIELD             =   inactive/testfield
+DUSTDENSITY           =   dustdensity
+DUSTVELOCITY          =   dustvelocity
+
+PARTICLES             =   particles_dust
+PARTICLES_MAIN        =   particles_main
+PARTICLES_NBODY       =   particles_nbody
+PARTICLES_NUMBER      =   particles_number
+PARTICLES_RADIUS      =   particles_radius
+PARTICLES_SELFGRAVITY =   particles_selfgravity
+PARTICLES_SUB         =   particles_sub
+
+SPECIAL               =   special/meanfield_alpm
+
+GRAVITY               =   gravity_simple
+SELFGRAVITY           =   selfgravity
+FORCING               =   forcing
+SHEAR                 =   shear
+BORDER_PROFILES       =   border_profiles
+
+POISSON               =   poisson
+FOURIER               =   fourier_fftpack
+POWER                 =   power_spectrum
+STRUCT_FUNC           =   struct_func
+
+

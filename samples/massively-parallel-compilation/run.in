@@ -1,0 +1,65 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+&run_pars
+  cvsid='$Id: run.in 16296 2011-02-15 09:59:26Z fred.gent.ncl $',
+  nt=1, it1=1, itorder=1, dtmax=1.0e-20
+  dsnap=1.0, tavg=2.0
+  lpencil_check=F, lpencil_check_small=T, lrandom_f_pencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&forcing_run_pars
+  radius_ff=1.0
+/
+&grav_run_pars
+/
+&selfgrav_run_pars
+/
+&poisson_run_pars
+/
+&entropy_run_pars
+/
+&magnetic_run_pars
+/
+&magn_mf_run_pars
+/
+&testfield_run_pars
+/
+&radiation_run_pars
+/
+&pscalar_run_pars
+/
+&chiral_run_pars
+/
+&dustvelocity_run_pars
+/
+&dustdensity_run_pars
+/
+&cosmicray_run_pars
+/
+&cosmicrayflux_run_pars
+/
+&interstellar_run_pars
+  TT_SN_min=0.0
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+/
+&special_run_pars
+/
+&shock_run_pars
+/
+&particles_run_pars
+/
+&particles_radius_run_pars
+/
+&particles_number_run_pars
+/
+&particles_selfgrav_run_pars
+/
+&particles_nbody_run_pars
+/

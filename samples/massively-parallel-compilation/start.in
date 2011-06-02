@@ -1,0 +1,64 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+&init_pars
+  cvsid='$Id: start.in 16907 2011-05-14 18:44:31Z anders@astro.lu.se $'
+  unit_length=3.16e21, unit_velocity=1.0e5, unit_density=1.0e-24
+  r_int=0.5, r_ext=1.0
+/
+&eos_init_pars
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&forcing_init_pars
+/
+&grav_init_pars
+  gravz_profile='const'
+/
+&selfgrav_init_pars
+/
+&poisson_init_pars
+/
+&entropy_init_pars
+/
+&magnetic_init_pars
+/
+&magn_mf_init_pars
+/
+&testfield_init_pars
+/
+&radiation_init_pars
+/
+&pscalar_init_pars
+/
+&chiral_init_pars
+/
+&dustvelocity_init_pars
+/
+&dustdensity_init_pars
+  initnd='const_nd'
+/
+&cosmicray_init_pars
+/
+&cosmicrayflux_init_pars
+/
+&interstellar_init_pars
+  lSN_eth=.false.
+/
+&shear_init_pars
+  qshear=1.0
+/
+&special_init_pars
+/
+&particles_init_pars
+  eps_dtog=1.0
+/
+&particles_radius_init_pars
+/
+&particles_number_init_pars
+/
+&particles_selfgrav_init_pars
+/
+&particles_nbody_init_pars     
+  pmass=1.0,1.0
+/
