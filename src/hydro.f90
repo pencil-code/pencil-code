@@ -3100,7 +3100,7 @@ module Hydro
 !
       real, dimension (nx) :: pdamp,fint_work,fext_work
       real, dimension (nx,3) :: fint,fext
-      real :: tau, fade_fact
+      real, save :: tau, fade_fact, last_t = -1.0
       integer :: i,j
 !
 !  warn about the damping term
@@ -3129,6 +3129,8 @@ module Hydro
             fade_fact = 1.
           else
             ! inside transition => smooth fading:
+            if (last_t /= t) then
+              last_t = t
 !
 !  smoothly fade out damping according to the following
 !  function of time:
@@ -3149,14 +3151,15 @@ module Hydro
 !  In the interval Tfade_start < t < Tdamp, damping goes smoothly to zero
 !  with continuous derivatives. (The default value for Tfade_start is Tdamp/2.)
 !
-            ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
-            tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
-            if (tau <= -0.5) then
-              fade_fact = 1.
-            elseif (tau <= 0.5) then
-              fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
-            else
-              call fatal_error("udamping","tau is invalid (tau > 0.5).")
+              ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
+              tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
+              if (tau <= -0.5) then
+                fade_fact = 1.
+              elseif (tau <= 0.5) then
+                fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
+              else
+                call fatal_error("udamping","tau is invalid (tau > 0.5).")
+              endif
             endif
           endif
 !
