@@ -50,9 +50,14 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid,
 		default, varfile, "var.dat"
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
-			pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, /nostats
+			if (i eq 0) then begin
+				pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, /nostats
+			endif else begin
+				pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, /quiet
+			endelse
 			sources = tag_names (vars)
 			precalc_data, number, vars
+			print, 'Ready.'
 		end
 		varfiles[i].title = varfile
 		varfiles[i].loaded = 1
@@ -61,7 +66,6 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid,
 		time = vars.t
 		vars = 0
 	end
-	print, 'Ready.'
 
 	if (show_aver) then draw_averages, number
 	if (keyword_set (par)) then par = param
