@@ -937,8 +937,8 @@ module Hydro
         case ('x-point_xy')
           if (lroot) print*,'init_uu: X-point'
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+x(l1:l2)
-            f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-y(m)
+            f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+ampluu(j)*x(l1:l2)
+            f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-ampluu(j)*y(m)
           enddo; enddo
 !
         case ('Alfven-circ-x')
