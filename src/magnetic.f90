@@ -1622,6 +1622,8 @@ module Magnetic
       if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
       if (idiag_exaym2/=0 .or. idiag_exjm2/=0 &
           .or. idiag_jxmz/=0 .or. idiag_jymz/=0 &
+          .or. idiag_jxpt/=0 .or. idiag_jypt/=0 .or. idiag_jzpt/=0 &
+          .or. idiag_jxp2/=0 .or. idiag_jyp2/=0 .or. idiag_jzp2/=0 &
           .or. idiag_jmx/=0 .or. idiag_jmy/=0 .or. idiag_jmz/=0 &
           .or. idiag_ambmz/=0 .or. idiag_jmbmz/=0 .or. idiag_kmz/=0 &
           .or. idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 &
@@ -3273,6 +3275,22 @@ module Magnetic
         if (idiag_b2b13m/=0) then
           b2b13=p%bb(:,2)*p%bij(:,1,3)
           call sum_mn_name(b2b13,idiag_b2b13m)
+        endif
+!
+!  current density components at one point (=pt).
+!
+        if (lroot.and.m==mpoint.and.n==npoint) then
+          if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
+          if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
+          if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)
+        endif
+!
+!  current density components at point 2 (=p2).
+!
+        if (lroot.and.m==mpoint2.and.n==npoint2) then
+          if (idiag_jxp2/=0) call save_name(p%jj(lpoint2-nghost,1),idiag_jxp2)
+          if (idiag_jyp2/=0) call save_name(p%jj(lpoint2-nghost,2),idiag_jyp2)
+          if (idiag_jzp2/=0) call save_name(p%jj(lpoint2-nghost,3),idiag_jzp2)
         endif
 !
       endif ! endif (ldiagnos)
