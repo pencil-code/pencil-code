@@ -1291,7 +1291,7 @@ module Special
           , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
           , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
           , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
-          , -0.66650 /)
+          , +250.66650 /)
 !
       real, dimension (nx), intent(in) :: lnTT
       real, dimension (nx) :: get_lnQ
@@ -1321,7 +1321,7 @@ module Special
               j=1
               notdone=.false.
             elseif (j >= 37) then
-              !call fatal_error('get_lnQ','lnTT to large')
+              call fatal_error('get_lnQ','lnTT to large')
               notdone=.false.
             endif
           endif
