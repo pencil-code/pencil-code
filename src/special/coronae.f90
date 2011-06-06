@@ -36,7 +36,7 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
-  logical :: eighth_moment=.false.
+  logical :: eighth_moment=.false.,mark=.false.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -55,7 +55,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
-      eighth_moment
+      eighth_moment,mark
 !
 ! variables for print.in
 !
@@ -627,6 +627,8 @@ module Special
       real :: tmp,dA
 !
       if (twisttype/=0) call uu_twist(f)
+!
+      if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
         if ((lgranulation.and.Bavoid < huge1).or.Bz_flux /= 0.) call set_B2(f)
@@ -2862,6 +2864,134 @@ module Special
       if (allocated(uy_ext_global)) deallocate(uy_ext_global)
 !
     endsubroutine read_ext_vel_field
+!***********************************************************************
+    subroutine mark_boundary(f)
+!
+      use Sub, only: notanumber
+      use General, only: chn, safe_character_assign
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+!
+      real, save :: tl=0.,tr=0.
+      character (len=*), parameter :: time_dat = 'boundlayer/times.dat'
+      character (len=27) :: data_dat
+      character (len=5) :: llabel,rlabel
+      integer :: frame,unit=1,lend=0,ierr=0,i,j
+      real :: delta_t=0.
+      logical :: init_left=.true.
+      real, dimension(nx,ny,4,8) :: left,right=0.
+      real, dimension(nx,ny) :: tmp
+!
+      if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
+      if (nprocx /= 1 .or. nprocy /= 1) call fatal_error('mark_boundary','works only for npx/y=1')
+!
+      inquire(IOLENGTH=lend) tl
+      if (t .ge. tr) then
+        open (unit,file=time_dat,form='unformatted',status='unknown',recl=lend,access='direct')
+        ierr = 0
+        frame = 0
+        do while (ierr == 0)
+          frame=frame+1
+          read (unit,rec=frame,iostat=ierr) tl
+          read (unit,rec=frame+1,iostat=ierr) tr
+          if (ierr /= 0) then
+            frame=1
+            delta_t = t*unit_time                  ! EOF is reached => read again
+            read (unit,rec=frame,iostat=ierr) tl
+            read (unit,rec=frame+1,iostat=ierr) tr
+            ierr=-1
+          else
+            if (t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t) ierr=-1
+            ! correct time step is reached
+          endif
+        enddo
+        call chn(10000+frame,rlabel)
+        call chn(10000+frame-1,llabel)
+        write (*,*) 'File numbers ',llabel,' and ',rlabel
+        close (unit)
+
+        if (init_left) then
+          call safe_character_assign(data_dat,'boundlayer/input_'//trim(llabel)//'.dat')
+          open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
+              recl=nxgrid*nygrid*lend,access='direct')
+
+          frame = 1
+          do j=1,8
+            do i=1,4
+              read (unit,rec=frame,iostat=ierr) tmp
+              left(:,:,i,j) = tmp
+              frame = frame+1
+            enddo
+          enddo
+          close(unit)
+        else
+          left = right
+          init_left=.false.
+        end if
+
+        ! Read new data
+        call safe_character_assign(data_dat,'boundlayer/input_'//trim(rlabel)//'.dat')
+        open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
+            recl=nxgrid*nygrid*lend,access='direct')
+
+        frame = 1
+        do j=1,8
+          do i=1,4
+            read (unit,rec=frame,iostat=ierr) right(:,:,i,j)
+            frame = frame+1
+          enddo
+        enddo
+        close(unit)
+      endif
+!
+! Interpolate data
+!
+!      write (*,*) minval(),maxval()
+!      write (*,*)       shape(left),shape(right)
+!      write (*,*) minval(left(:,:,:,1)),maxval(left(:,:,:,1)),'LE ,ux'
+!      write (*,*) minval(right(:,:,:,1)),maxval(right(:,:,:,1)),'RI ,ux'
+!      write (*,*) minval(left(:,:,:,2)),maxval(left(:,:,:,2)),'LE ,uy'
+!      write (*,*) minval(right(:,:,:,2)),maxval(right(:,:,:,2)),'RI ,uy'
+!      write (*,*) minval(left(:,:,:,3)),maxval(left(:,:,:,3)),'LE ,uz'
+!      write (*,*) minval(right(:,:,:,3)),maxval(right(:,:,:,3)),'RI ,uz'
+!      write (*,*) minval(left(:,:,:,5)),maxval(left(:,:,:,5)),'LE ,lnTT'
+!      write (*,*) minval(right(:,:,:,5)),maxval(right(:,:,:,5)),'RI ,lnTT'
+!      stop
+      do i=1,4
+        f(l1:l2,m1:m2,n1+1-i,iux) = ((t*unit_time - (tl+delta_t)) *  &
+            (right(:,:,n1+1-i,1) - left(:,:,n1+1-i,1)) / (tr - tl) + left(:,:,n1+1-i,1)) / &
+            unit_velocity
+!
+        f(l1:l2,m1:m2,n1+1-i,iuy) = ((t*unit_time - (tl+delta_t)) *  &
+            (right(:,:,n1+1-i,2) - left(:,:,n1+1-i,2)) / (tr - tl) + left(:,:,n1+1-i,2)) / &
+            unit_velocity
+! 
+        f(l1:l2,m1:m2,n1+1-i,iuz) = ((t*unit_time - (tl+delta_t)) *  &
+            (right(:,:,n1+1-i,3) - left(:,:,n1+1-i,3)) / (tr - tl) + left(:,:,n1+1-i,3)) / &
+            unit_velocity
+!
+        f(l1:l2,m1:m2,n1+1-i,ilnrho) = ((t*unit_time - (tl+delta_t)) *  &
+            (right(:,:,n1+1-i,4) - left(:,:,n1+1-i,4)) / (tr - tl) + left(:,:,n1+1-i,4)) - &
+            alog(unit_density)
+!
+        f(l1:l2,m1:m2,n1+1-i,ilnTT) = ((t*unit_time - (tl+delta_t)) *  &
+            (right(:,:,n1+1-i,5) - left(:,:,n1+1-i,5)) / (tr - tl) + left(:,:,n1+1-i,5)) - &
+            alog(unit_temperature)
+!
+        f(l1:l2,m1:m2,n1+1-i,iax) = ((t*unit_time - (tl+delta_t)) *  &
+            (right(:,:,n1+1-i,6) - left(:,:,n1+1-i,6)) / (tr - tl) + left(:,:,n1+1-i,6)) / &
+            unit_magnetic*unit_length
+!
+        f(l1:l2,m1:m2,n1+1-i,iay) = ((t*unit_time - (tl+delta_t)) *  &
+            (right(:,:,n1+1-i,7) - left(:,:,n1+1-i,7)) / (tr - tl) + left(:,:,n1+1-i,7)) / &
+            unit_magnetic*unit_length
+!
+        f(l1:l2,m1:m2,n1+1-i,iaz) = 0. !(t*unit_time - (tl+delta_t)) *  &
+ !        (right(:,:,n1+1-i,8) - left(:,:,n1+1-i,8)) / (tr - tl) + left(:,:,n1+1-i,8) / &
+ !           unit_magnetic*unit_length
+      enddo
+!
+    endsubroutine mark_boundary
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
