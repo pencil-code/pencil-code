@@ -43,7 +43,8 @@ module Special
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
   real :: mag_time_offset=0.
-  real :: swamp_fade_start=0.0, swamp_diffrho=0.0, swamp_chi=0.0
+  real :: swamp_fade_start=0.0, swamp_fade_end=0.0
+  real :: swamp_diffrho=0.0, swamp_chi=0.0
 !
   real, dimension(nx,ny,n1,3) :: A_init
 !
@@ -75,7 +76,7 @@ module Special
        iheattype,dt_gran,cool_type,lwrite_driver, &
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
        lnc_density_depend, lnc_intrin_energy_depend, &
-       swamp_fade_start, swamp_diffrho, swamp_chi, &
+       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
        luse_mag_field, mag_time_offset
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
@@ -974,9 +975,11 @@ module Special
       else
         if (height <= swamp_fade_start) then
           get_swamp_fade_fact = 0.0
+        elseif (height >= swamp_fade_end) then
+          get_swamp_fade_fact = 1.0
         else
           ! tau is a normalized z, the transition interval is [-0.5, 0.5]:
-          tau = (height-swamp_fade_start) / (z(n2)-swamp_fade_start) - 0.5
+          tau = (height-swamp_fade_start) / (swamp_fade_end-swamp_fade_start) - 0.5
           if (tau <= -0.5) then
             get_swamp_fade_fact = 0.0
           elseif (tau >= 0.5) then
