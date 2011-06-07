@@ -482,6 +482,7 @@ module Magnetic
   integer :: idiag_axmxy=0      ! DIAG_DOC: $\left< A_x \right>_{xy}$
   integer :: idiag_aymxy=0      ! DIAG_DOC: $\left< A_y \right>_{xy}$
   integer :: idiag_azmxy=0      ! DIAG_DOC: $\left< A_z \right>_{xy}$
+  integer :: idiag_b2mxz=0      ! DIAG_DOC: $\left< \Bv^2 \right>_{xz}$
   integer :: idiag_axmxz=0      ! DIAG_DOC: $\left< A_x \right>_{xz}$
   integer :: idiag_aymxz=0      ! DIAG_DOC: $\left< A_y \right>_{xz}$
   integer :: idiag_azmxz=0      ! DIAG_DOC: $\left< A_z \right>_{xz}$
@@ -3488,6 +3489,7 @@ module Magnetic
         if (idiag_axmxy/=0)  call zsum_mn_name_xy(p%aa(:,1),idiag_axmxy)
         if (idiag_aymxy/=0)  call zsum_mn_name_xy(p%aa(:,2),idiag_aymxy)
         if (idiag_azmxy/=0)  call zsum_mn_name_xy(p%aa(:,3),idiag_azmxy)
+        if (idiag_b2mxz/=0)  call ysum_mn_name_xz(p%b2,idiag_b2mxz)
         if (idiag_axmxz/=0)  call ysum_mn_name_xz(p%aa(:,1),idiag_axmxz)
         if (idiag_aymxz/=0)  call ysum_mn_name_xz(p%aa(:,2),idiag_aymxz)
         if (idiag_azmxz/=0)  call ysum_mn_name_xz(p%aa(:,3),idiag_azmxz)
@@ -6545,8 +6547,9 @@ module Magnetic
         idiag_examxy1=0; idiag_examxy3=0; idiag_examxy2=0
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
         idiag_Exmxy=0 ; idiag_Eymxy=0; idiag_Ezmxy=0;
-        idiag_bybzmxz=0; idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0 ; idiag_jbmxy=0
-        idiag_abmxy=0
+        idiag_bybzmxz=0;
+        idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0 ; idiag_jbmxy=0
+        idiag_abmxy=0; idiag_b2mxz=0;
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
         idiag_axmxy=0; idiag_aymxy=0; idiag_azmxy=0
         idiag_Eymxz=0; idiag_Ezmxz=0; idiag_jxbm=0; idiag_uxbm=0; idiag_oxuxbm=0
@@ -6934,6 +6937,7 @@ module Magnetic
 !  Check for those quantities for which we want y-averages.
 !
       do ixz=1,nnamexz
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'b2mxz',idiag_b2mxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'axmxz',idiag_axmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'aymxz',idiag_aymxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'azmxz',idiag_azmxz)
