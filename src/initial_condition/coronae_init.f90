@@ -254,9 +254,13 @@ contains
         if (allocated (prof_z)) deallocate (prof_z)
         if (allocated (prof_lnrho)) deallocate (prof_lnrho)
 !
+! REMARK: f-array is filled with log value even for ldensity_nolog=T
+!         because at the end of init_lnrho all values in the f-array are
+!         converted by  f = exp(f)
+!
         if (ldensity_nolog) then
-          if (direction=='z') f(:,:,:,irho)=spread(spread(exp(profile_z),1,mx),2,my)
-          if (direction=='x') f(:,:,:,irho)=spread(spread(exp(profile_x),2,my),3,mz)
+          if (direction=='z') f(:,:,:,irho)=spread(spread(profile_z,1,mx),2,my)
+          if (direction=='x') f(:,:,:,irho)=spread(spread(profile_x,2,my),3,mz)
         else
           if (direction=='z') f(:,:,:,ilnrho)=spread(spread(profile_z,1,mx),2,my)
           if (direction=='x') f(:,:,:,ilnrho)=spread(spread(profile_x,2,my),3,mz)
@@ -351,8 +355,11 @@ contains
           if (leos) call get_cp1(cp1)
           if (direction=='z') f(:,:,:,ieth)=spread(spread(exp(profile_z),1,mx),2,my)
           if (direction=='x') f(:,:,:,ieth)=spread(spread(exp(profile_x),2,my),3,mz)
+!
+! No difference for ldensity_nolog because f-array values are still log-values
+!
           if (ldensity_nolog) then
-            f(:,:,:,ieth)=f(:,:,:,ieth)*f(:,:,:,irho)/(gamma*cp1)
+            f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,irho))  /(gamma*cp1)
           else
             f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,ilnrho))/(gamma*cp1)
           endif
