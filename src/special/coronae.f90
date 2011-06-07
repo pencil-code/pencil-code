@@ -21,7 +21,7 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,Kc=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
-  real :: hyper3_chi=0.,tau_inv_spitzer=0.
+  real :: hyper3_chi=0.,hyper3_diffrho=0.,tau_inv_spitzer=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.
   real :: width_newton=0.,gauss_newton=0.
@@ -55,7 +55,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
-      eighth_moment,mark
+      eighth_moment,mark,hyper3_diffrho
 !
 ! variables for print.in
 !
@@ -742,6 +742,27 @@ module Special
         endif
       endif
 !
+      if (hyper3_diffrho /= 0.) then
+        hc(:) = 0.
+        call der6(f,ilnrho,tmp,1,IGNOREDX=.true.)
+        hc = hc + tmp
+        call der6(f,ilnrho,tmp,2,IGNOREDX=.true.)
+        hc = hc + tmp
+        call der6(f,ilnrho,tmp,3,IGNOREDX=.true.)
+        hc = hc + tmp
+        hc = hyper3_diffrho*hc
+        if (ldensity .and. (.not.ldensity_nolog)) then
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hc
+!
+!  due to ignoredx hyper3_diffrho has [1/s]
+!
+          if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
+              + hyper3_diffrho
+        else
+          call fatal_error('hyper3_diffrho special','only for ltemperature')
+        endif
+      endif
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine calc_heatcond_spitzer(df,p)
@@ -1226,6 +1247,7 @@ module Special
 !
       else
         if (headtt) call warning("calc_heat_cool_RTV","cool acts everywhere")
+        rtv_cool=rtv_cool*cool_RTV
       endif
 !
       if (init_time /= 0.) &
@@ -2965,7 +2987,7 @@ module Special
         f(l1:l2,m1:m2,n1+1-i,iuy) = ((t*unit_time - (tl+delta_t)) *  &
             (right(:,:,n1+1-i,2) - left(:,:,n1+1-i,2)) / (tr - tl) + left(:,:,n1+1-i,2)) / &
             unit_velocity
-! 
+!
         f(l1:l2,m1:m2,n1+1-i,iuz) = ((t*unit_time - (tl+delta_t)) *  &
             (right(:,:,n1+1-i,3) - left(:,:,n1+1-i,3)) / (tr - tl) + left(:,:,n1+1-i,3)) / &
             unit_velocity
