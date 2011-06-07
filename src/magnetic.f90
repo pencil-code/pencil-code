@@ -1666,7 +1666,7 @@ module Magnetic
         lpenc_diagnos(i_hjparallel)=.true.
         lpenc_diagnos(i_hjperp)=.true.
       endif
-      if (idiag_b2mphi/=0) lpenc_diagnos2d(i_b2)=.true.
+      if (idiag_b2mphi/=0 .or. idiag_b2mxz/=0) lpenc_diagnos2d(i_b2)=.true.
       if (idiag_brsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
       if (idiag_bthmphi/=0) lpenc_diagnos2d(i_evth)=.true.
       if (lisotropic_advection) lpenc_requested(i_va2)=.true.
