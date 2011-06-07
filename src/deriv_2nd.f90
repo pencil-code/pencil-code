@@ -10,8 +10,7 @@
 module Deriv
 !
   use Messages
-  use Cparam
-  use Mpicomm, only: stop_it
+  use Cdata
 !
   implicit none
 !
@@ -76,8 +75,6 @@ module Deriv
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  25-aug-09/axel: adapted from deriv
 !
-      use Cdata
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
@@ -132,8 +129,6 @@ module Deriv
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  25-aug-09/axel: not yet adapted from deriv
 !
-      use Cdata
-!
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
       integer :: j
@@ -141,7 +136,7 @@ module Deriv
       intent(in)  :: f,j
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der_other not implemented yet")
+      call fatal_error('deriv_2nd','der_other not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
@@ -188,9 +183,7 @@ module Deriv
 !  Calculate first derivative of any x, y or z pencil.
 !
 !  01-nov-07/anders: adapted from der
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (:) :: pencil,df
       integer :: j
@@ -198,7 +191,7 @@ module Deriv
       intent(in)  :: j, pencil
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der_pencil not implemented yet")
+      call fatal_error('deriv_2nd','der_pencil not implemented yet')
 !
 !  x-derivative
 !
@@ -254,8 +247,6 @@ module Deriv
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
@@ -322,9 +313,7 @@ module Deriv
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df2,fac,df
@@ -336,7 +325,7 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
 !
-      call stop_it("deriv_2nd: der2_other not implemented yet")
+      call fatal_error('deriv_2nd','der2_other not implemented yet')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -393,9 +382,7 @@ module Deriv
 !  Calculate 2nd derivative of any x, y or z pencil.
 !
 !  01-nov-07/anders: adapted from der2
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (:) :: pencil,df2
       integer :: j
@@ -403,7 +390,7 @@ module Deriv
       intent(in)  :: j, pencil
       intent(out) :: df2
 !
-      call stop_it("deriv_2nd: der2_pencil not implemented yet")
+      call fatal_error('deriv_2nd','der2_pencil not implemented yet')
 !
 !  x-derivative
 !
@@ -452,9 +439,7 @@ module Deriv
 !  Calculate 3rd derivative of a scalar, get scalar
 !
 !  10-feb-06/anders: adapted from der5
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -465,7 +450,7 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der3 not implemented yet")
+      call fatal_error('deriv_2nd','der3 not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
@@ -538,9 +523,7 @@ module Deriv
 !   8-jul-02/wolf: coded
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
@@ -552,7 +535,7 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der4 not implemented yet")
+      call fatal_error('deriv_2nd','der4 not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
@@ -633,9 +616,7 @@ module Deriv
 !  the ratios dx:dy:dz.
 !
 !  29-oct-04/anders: adapted from der6
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -646,7 +627,7 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der5 not implemented yet")
+      call fatal_error('deriv_2nd','der5 not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
@@ -719,9 +700,7 @@ module Deriv
 !  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -732,7 +711,7 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der6 not implemented yet")
+      call fatal_error('deriv_2nd','der6 not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
@@ -820,9 +799,7 @@ module Deriv
 !  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
@@ -833,7 +810,7 @@ module Deriv
       intent(in)  :: f,j,ignoredx
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der6_other not implemented yet")
+      call fatal_error('deriv_2nd','der6_other not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
@@ -916,9 +893,7 @@ module Deriv
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -971,7 +946,7 @@ module Deriv
 !
       else                      ! not using bidiagonal mixed derivatives
         !
-        call stop_it("deriv_2nd: derij_main not implemented yet")
+        call fatal_error('derij_main','only implemented for lbidiagonal_derij=T')
         !
         ! This is the old, straight-forward scheme
         !
@@ -1092,15 +1067,13 @@ module Deriv
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j
 !
-      call stop_it("deriv_2nd: derij_other not implemented yet")
+      call fatal_error('deriv_2nd','derij_other not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
@@ -1276,15 +1249,13 @@ module Deriv
 !  Calculate 6th derivative with respect to two different directions.
 !
 !  05-dec-06/anders: adapted from derij
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
-      call stop_it("deriv_2nd: der5i1j not implemented yet")
+      call fatal_error('deriv_2nd','der5i1j not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
@@ -1488,9 +1459,7 @@ module Deriv
 !  First order upwind derivative of variable
 !  Useful for advecting non-logarithmic variables
 !
-!  25-aug-09/axel: added stop_it, because it is not adapted yet
-!
-      use Cdata
+!  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
@@ -1500,7 +1469,7 @@ module Deriv
       intent(in)  :: f,uu,k,j
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der_upwind1st not implemented yet")
+      call fatal_error('deriv_2nd','der_upwind1st not implemented yet')
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
@@ -1556,8 +1525,6 @@ module Deriv
 !***********************************************************************
     subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
 !
-      use Cdata
-!
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
@@ -1578,7 +1545,7 @@ module Deriv
       intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der_onesided_4_slice_main not implemented yet")
+      call fatal_error('deriv_2nd','der_onesided_4_slice_main not implemented yet')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -1621,8 +1588,6 @@ module Deriv
 !***********************************************************************
    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
 !
-      use Cdata
-!
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
 !   sgn = +1 for forward difference, sgn = -1 for backwards difference.
@@ -1643,7 +1608,7 @@ module Deriv
       intent(in)  :: f,pos,sgn,j
       intent(out) :: df
 !
-      call stop_it("deriv_2nd: der_onesided_4_slice_other not implemented yet")
+      call fatal_error('deriv_2nd','der_onesided_4_slice_other not implemented yet')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -1690,8 +1655,6 @@ module Deriv
 !
 !  19-may-11/bing: adapted from der_main; note that f is not the f array!
 !
-      use Cdata
-!
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
@@ -1706,7 +1669,7 @@ module Deriv
       endif
 !
       if (lspherical_coords) &
-          call stop_it('der_z (2nd order: not implemented for spherical coords')
+          call fatal_error('der_z','not implemented for spherical coords')
 !
     endsubroutine der_z
 !***********************************************************************
@@ -1715,8 +1678,6 @@ module Deriv
 !  z derivative operating on a z-dependent 1-D array
 !
 !  19-may-11/bing: adapted from der_z and der_main
-!
-      use Cdata
 !
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
@@ -1739,7 +1700,7 @@ module Deriv
       endif
 !
       if (lspherical_coords) &
-          call stop_it('der2_z (2nd order:not implemented for spherical coords')
+          call fatal_error('der2_z','not implemented for spherical coords')
 !
     endsubroutine der2_z
 !***********************************************************************
