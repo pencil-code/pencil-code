@@ -594,7 +594,7 @@ module Deriv
       logical, optional :: ignoredx,upwind
       logical :: igndx
 !
-      intent(in)  :: f,k,j,ignoredx
+      intent(in)  :: f,k,j,ignoredx,upwind
       intent(out) :: df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
@@ -759,7 +759,7 @@ module Deriv
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
 !
-      intent(in)  :: f,k,j,ignoredx
+      intent(in)  :: f,k,j,ignoredx,upwind
       intent(out) :: df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
@@ -862,7 +862,7 @@ module Deriv
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
 !
-      intent(in)  :: f,j,ignoredx
+      intent(in)  :: f,j,ignoredx,upwind
       intent(out) :: df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
@@ -950,6 +950,9 @@ module Deriv
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
+!
+      intent(in) :: f,k,i,j
+      intent(out) :: df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
@@ -1133,6 +1136,9 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: i,j
 !
+      intent(in)  :: f,i,j
+      intent(out) :: df
+!
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
@@ -1312,6 +1318,8 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
+      intent(in) :: f,k,i,j
+      intent(out) :: df
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
