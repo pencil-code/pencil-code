@@ -4709,6 +4709,19 @@ module Hydro
              -tau_diffrot1*(uumxy(l1:l2,m,3)-ampl1_diffrot*tanh((x(l1:l2)-zbot)/wdamp))
       endif
 !
+!  Damp mean velocities in the corona above rdampext
+!
+      case ('damp_corona')
+      zbot=rdampext
+      if (.not.lcalc_uumeanxy) then
+        call fatal_error("damp_corona","you need to set lcalc_uumeanxy=T in hydro_run_pars")
+      else
+        prof_amp1=0.5*(tanh((x(l1:l2)-zbot)/wdamp)+1.)
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
+      endif
+!
 !  Latitudinal shear profile
 !
       case ('latitudinal_shear')
