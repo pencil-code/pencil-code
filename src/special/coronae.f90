@@ -743,6 +743,9 @@ module Special
       endif
 !
       if (hyper3_diffrho /= 0.) then
+        if (ldensity_nolog.and.(ilnrho /= irho)) &
+            call fatal_error('hyper3_diffrho special','please check')
+!
         hc(:) = 0.
         call der6(f,ilnrho,tmp,1,IGNOREDX=.true.)
         hc = hc + tmp
@@ -751,16 +754,12 @@ module Special
         call der6(f,ilnrho,tmp,3,IGNOREDX=.true.)
         hc = hc + tmp
         hc = hyper3_diffrho*hc
-        if (ldensity .and. (.not.ldensity_nolog)) then
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hc
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hc
 !
 !  due to ignoredx hyper3_diffrho has [1/s]
 !
-          if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
-              + hyper3_diffrho
-        else
-          call fatal_error('hyper3_diffrho special','only for ltemperature')
-        endif
+        if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
+            + hyper3_diffrho
       endif
 !
     endsubroutine special_calc_entropy
@@ -1343,7 +1342,7 @@ module Special
               j=1
               notdone=.false.
             elseif (j >= 37) then
-              call fatal_error('get_lnQ','lnTT to large')
+              call fatal_error('get_lnQ','lnTT to large',.true.)
               notdone=.false.
             endif
           endif
@@ -1413,7 +1412,7 @@ module Special
           heatinput=heatinput*cubic_step(real(t),init_time,init_width)
 !
 !
-      if (ltemperature .and. (.not.ltemperature_nolog)) then
+      if (ltemperature) then
         if (ltemperature_nolog) then
           rhs = p%rho1*gamma*p%cp1*heatinput
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + rhs
