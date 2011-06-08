@@ -682,31 +682,36 @@ module Testfield
 !  test fields linear in z, where the mean field depends onm x and y
 !
         case ('linear')
+!
+!  Volume averages first.
+!
           if (idiag_gam    /=0) call sum_mn_name(+2.*sx*sy(m)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
           if (idiag_alpPERP/=0) call sum_mn_name(-2.*sx*sy(m)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERP)
           if (idiag_alpPARA/=0) call sum_mn_name(-4.*sx*sy(m)* Eipq(:,3,1)             ,idiag_alpPARA)
 !
-          if (idiag_mu     /=0) call sum_mn_name(-4.*sy(m)*(sx*(Eipq(:,2,2)+.5*z(n)*(Eipq(:,1,1)-Eipq(:,2,1)))+cx*Eipq(:,2,3)),idiag_mu     )
-          if (idiag_betPERP/=0) call sum_mn_name(-2.*sy(m)*(sx*(Eipq(:,2,2)+.5*z(n)*(Eipq(:,1,1)-Eipq(:,2,1)))-cx*Eipq(:,2,3)),idiag_betPERP)
-          if (idiag_betPARA/=0) call sum_mn_name(+4.*cy(m)* sx* Eipq(:,3,2)                                                   ,idiag_betPARA)
+          if (idiag_mu     /=0) call sum_mn_name(-4.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1)))+cx*bampz1(n)*Eipq(:,2,3)),idiag_mu     )
+          if (idiag_betPERP/=0) call sum_mn_name(-2.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1)))-cx*bampz1(n)*Eipq(:,2,3)),idiag_betPERP)
+          if (idiag_betPARA/=0) call sum_mn_name(+4.*cy(m)*                                                        sx*bampz1(n)*Eipq(:,3,2) ,idiag_betPARA)
 !
-          if (idiag_del    /=0) call sum_mn_name(+2.*sy(m)*(sx*(Eipq(:,1,2)-.5*z(n)*(Eipq(:,1,1)+Eipq(:,2,1)))-cx*Eipq(:,1,3)),idiag_del    )
-          if (idiag_kapPERP/=0) call sum_mn_name(-4.*sy(m)*(sx*(Eipq(:,1,2)-.5*z(n)*(Eipq(:,1,1)+Eipq(:,2,1)))+cx*Eipq(:,1,3)),idiag_kapPERP)
-          if (idiag_kapPARA/=0) call sum_mn_name(-4.*sy(m)* sx* Eipq(:,3,3)                                                   ,idiag_kapPARA)
+          if (idiag_del    /=0) call sum_mn_name(+2.*sy(m)*(sx*(Eipq(:,1,2)-.5*z(n)*(Eipq(:,1,1)+Eipq(:,2,1)))-cx*bampz1(n)*Eipq(:,1,3)),idiag_del    )
+          if (idiag_kapPERP/=0) call sum_mn_name(-4.*sy(m)*(sx*(Eipq(:,1,2)-.5*z(n)*(Eipq(:,1,1)+Eipq(:,2,1)))+cx*bampz1(n)*Eipq(:,1,3)),idiag_kapPERP)
+          if (idiag_kapPARA/=0) call sum_mn_name(-4.*sy(m)*                                                    sx*bampz1(n)*Eipq(:,3,3) ,idiag_kapPARA)
 !
-!  Same, but for z-dependent output
+!  Same, but for z-dependent output (xy-averages)
 !
           if (idiag_gamz    /=0) call xysum_mn_name_z(+2.*sx*sy(m)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gamz    )
           if (idiag_alpPERPz/=0) call xysum_mn_name_z(-2.*sx*sy(m)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERPz)
           if (idiag_alpPARAz/=0) call xysum_mn_name_z(-4.*sx*sy(m)* Eipq(:,3,1)             ,idiag_alpPARAz)
 !
-          if (idiag_muz     /=0) call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1)))+cx*Eipq(:,2,3)*bampz1(n)),idiag_muz     )
-          if (idiag_betPERPz/=0) call xysum_mn_name_z(-2.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1)))-cx*Eipq(:,2,3)*bampz1(n)),idiag_betPERPz)
-          if (idiag_betPARAz/=0) call xysum_mn_name_z(+4.*cy(m)* sx* Eipq(:,3,2)*bampz1(n)                                                       ,idiag_betPARAz)
+          if (idiag_muz     /=0) call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1)))+cx*bampz1(n)*Eipq(:,2,3)),idiag_muz     )
+          if (idiag_betPERPz/=0) call xysum_mn_name_z(-2.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1)))-cx*bampz1(n)*Eipq(:,2,3)),idiag_betPERPz)
+          if (idiag_betPARAz/=0) call xysum_mn_name_z(+4.*cy(m)*                                                        sx*bampz1(n)*Eipq(:,3,2) ,idiag_betPARAz)
 !
-          if (idiag_delz    /=0) call xysum_mn_name_z(+2.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1)))-cx*Eipq(:,1,3)*bampz1(n)),idiag_delz    )
-          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1)))+cx*Eipq(:,1,3)*bampz1(n)),idiag_kapPERPz)
-          if (idiag_kapPARAz/=0) call xysum_mn_name_z(+4.*sy(m)* sx*(Eipq(:,3,1)   -bampz(n)*Eipq(:,3,3))                                        ,idiag_kapPARAz)
+          if (idiag_delz    /=0) call xysum_mn_name_z(+2.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1)))-cx*bampz1(n)*Eipq(:,1,3)),idiag_delz    )
+          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1)))+cx*bampz1(n)*Eipq(:,1,3)),idiag_kapPERPz)
+          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-4.*sy(m)*                                                        sx*bampz1(n)*Eipq(:,3,3) ,idiag_kapPARAz)
+          !if (idiag_kapPARAz/=0) call xysum_mn_name_z(+4.*sy(m)* sx*(Eipq(:,3,1)   -bampz(n)*Eipq(:,3,3))                                        ,idiag_kapPARAz)
+          !if (idiag_kapPARAz/=0) call xysum_mn_name_z(+4.*sy(m)* sx*(Eipq(:,3,1)   -bampz(n)*Eipq(:,3,3))                                        ,idiag_kapPARAz)
 !
 !  test fields linear in z, but mean field depends only on y
 !
@@ -738,9 +743,12 @@ module Testfield
           if (idiag_kapPERP/=0) call sum_mn_name(-2*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERP)
           if (idiag_kapPARA/=0) call sum_mn_name(-2* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARA)
 !
-!  test fields sinusoidal in all three directions
+!  Test fields sinusoidal in all three directions.
 !
         case ('sxsysz')
+!
+!  Volume averages first.
+!
           if (idiag_gam    /=0) call sum_mn_name(+4*sx*sy(m)*sz(n)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
           if (idiag_alpPERP/=0) call sum_mn_name(-4*sx*sy(m)*sz(n)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERP)
           if (idiag_alpPARA/=0) call sum_mn_name(-8*sx*sy(m)*sz(n)* Eipq(:,3,1)             ,idiag_alpPARA)
@@ -752,6 +760,21 @@ module Testfield
           if (idiag_del    /=0) call sum_mn_name(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_del    )
           if (idiag_kapPERP/=0) call sum_mn_name(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERP)
           if (idiag_kapPARA/=0) call sum_mn_name(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARA)
+!
+!  xy-averages next.
+!
+          if (idiag_gamz    /=0) call xysum_mn_name_z(+4*sx*sy(m)*sz(n)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gamz    )
+          if (idiag_alpPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*sz(n)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERPz)
+          if (idiag_alpPARAz/=0) call xysum_mn_name_z(-8*sx*sy(m)*sz(n)* Eipq(:,3,1)             ,idiag_alpPARAz)
+!
+          if (idiag_muz     /=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_muz     )
+          if (idiag_betPERPz/=0) call xysum_mn_name_z(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_betPERPz)
+          if (idiag_betPARAz/=0) call xysum_mn_name_z(+8*sx*                             ky1*cy(m)*sz(n)*Eipq(:,3,2) ,idiag_betPARAz)
+!
+          if (idiag_delz    /=0) call xysum_mn_name_z(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_delz    )
+          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERPz)
+          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARAz)
+!
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
         endselect
