@@ -1505,11 +1505,11 @@ module Initcond
 !  set z-dependent Beltrami field
 !
       do ix=1,mx; do iy=1,my;do iz=1,mz
-        f(ix,iy,iz,i) = ampl*(nfactor*sin(kz*z(iz)) &
-            +(1-nfactor)*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
+        f(ix,iy,iz,i) = ampl*((1-nfactor)*sin(kz*z(iz)) & 
+            +nfactor*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) & 
                 + sqrt(3.)*cos(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
-        f(ix,iy,iz,i+1) = ampl*(nfactor*cos(kz*z(iz)) &
-            -(1-nfactor)*(cos(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
+        f(ix,iy,iz,i+1) = ampl*((1-nfactor)*cos(kz*z(iz)) & 
+            - nfactor*(cos(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
               +sqrt(3.)*sin(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
       enddo;enddo;enddo
 !

@@ -2886,6 +2886,9 @@ module EquationOfState
                    'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
+!DM+PC next two lines need to be looked into. 
+        if (lread_oldsnap) &
+          cs2top=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*f(l2,m2,n2,ilnrho))
         if (lentropy .and. .not. pretend_lnTT) then
 !
 !  Distinguish cases for linear and logarithmic density

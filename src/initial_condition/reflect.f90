@@ -77,6 +77,7 @@ module InitialCondition
             f(:,:,:,iss) = 0.
           endif 
           if (lreflectua) then
+          write(*,*)'DM', 'reflecting uu, rescale_ff ',rescale_ff
            do iz=1,mz; do iy=1, my/2; do ix=1, mx
              tmpvec = f(ix,my-iy+1,iz,iux:iuz)
              f(ix,my-iy+1,iz,iux)= f(ix,iy,iz,iux)
@@ -89,6 +90,7 @@ module InitialCondition
           endif
 
       f(:,:,:,iuu:iuu+2)=r1*rescale_ff*f(:,:,:,iuu:iuu+2)+r2*fcopy(:,:,:,iuu:iuu+2)
+       write(*,*)'DM ff.uu',f(32,32,32,iuz)
 !
     endsubroutine initial_condition_uu
 !***********************************************************************

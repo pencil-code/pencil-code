@@ -101,7 +101,7 @@ module Dustdensity
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
-  integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
+  integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0,idiag_ndmz=0
   integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
 !
   contains
@@ -1572,19 +1572,31 @@ module Dustdensity
             endif
           endif
 !
-          if (l1davgfirst.and.idiag_rhodmz(k)/=0) then
-            if (lmdvar) then
-              call xysum_mn_name_z(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_rhodmz(k))
-            else
-              call xysum_mn_name_z(p%nd(:,k)*md(k),idiag_rhodmz(k))
-            endif
-          endif
+! If 1d averages are calculated first  
 !
-          if (l1davgfirst.and.idiag_ndmx(k)/=0) then
-            if (lmdvar) then
-              call yzsum_mn_name_x(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_ndmx(k))
-            else
-              call yzsum_mn_name_x(p%nd(:,k),idiag_ndmx(k))
+          if (l1davgfirst) then
+            if (idiag_rhodmz(k)/=0) then
+              if (lmdvar) then
+                call xysum_mn_name_z(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_rhodmz(k))
+              else
+                call xysum_mn_name_z(p%nd(:,k)*md(k),idiag_rhodmz(k))
+              endif
+            endif
+!
+            if (idiag_ndmx(k)/=0) then
+              if (lmdvar) then
+                call yzsum_mn_name_x(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_ndmx(k))
+              else
+                call yzsum_mn_name_x(p%nd(:,k),idiag_ndmx(k))
+              endif
+            endif
+!
+            if (idiag_ndmz(k)/=0) then
+              if (lmdvar) then
+                call xysum_mn_name_z(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_ndmz(k))
+              else
+                call xysum_mn_name_z(p%nd(:,k),idiag_ndmz(k))
+              endif
             endif
           endif
         enddo
@@ -1996,6 +2008,7 @@ module Dustdensity
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
+        idiag_ndmz=0
       endif
 !
       call chn(ndustspec,sdustspec)
@@ -2033,6 +2046,8 @@ module Dustdensity
         do inamez=1,nnamez
           call parse_name(inamez,cnamez(inamez),cformz(inamez), &
               'rhodmz'//trim(sdust), idiag_rhodmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'ndmz'//trim(sdust), idiag_ndmz(k))
         enddo
 !
 !  check for those quantities for which we want xy-averages

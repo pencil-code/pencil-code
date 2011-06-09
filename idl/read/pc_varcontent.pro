@@ -530,7 +530,7 @@ if (ichemspec gt 0) then begin
 endif
 ;
 default, iuud, 0
-if (iuud gt 0) then begin
+if (iuud[0] gt 0) then begin
   dustcount=n_elements(iuud) 
   if (dustcount gt 0L) then begin
     varcontent[iuud[0]].variable   = 'Dust velocity  (uud)'
@@ -543,7 +543,7 @@ if (iuud gt 0) then begin
 endif
 ;
 default, ind, 0
-if (ind gt 0) then begin
+if (ind[0] gt 0) then begin
   dustcount=n_elements(ind)
   if (dustcount gt 0L) then begin
     varcontent[ind[0]].variable   = 'Dust number density (nd)'

@@ -16,37 +16,7 @@
 #gb
 #restart-new-dir ../rot512_Om0b
 
-#
-#  save name of old directory
-#
-set olddir=`pwd`
-set newdir=$1
-cd $newdir
-#
-#  get number of cpus
-#
-set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-echo "$ncpus CPUs"
-#
-# Up here, datadir is not yet defined, so do it locally:
-# Determine data directory (defaults to `data')
-#
-if (-r datadir.in) then
-  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
-else
-  set datadir = "data"
-endif
-echo "$datadir"
-#
-cd $datadir
-pc_mkproctree $ncpus
-pwd
-echo "pc_mkproctree $ncpus"
-cd $olddir
-#
-#  copy from old to new run directory
-#
-cp data/dim.dat data/param* data/index* $1/data
+#cp data/dim.dat data/param* data/index* $1/data
 copy-proc-to-proc grid.dat $1
 copy-proc-to-proc dim.dat $1
 copy-proc-to-proc var.dat $1
