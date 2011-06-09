@@ -831,7 +831,7 @@ module Special
             diffrho_hyper3
       endif
 !
-      if (swamp_diffrho > 0.0) call calc_swamp_density(f,df,p)
+      if (swamp_diffrho > 0.0) call calc_swamp_density(df,p)
 !
       call keep_compiler_quiet(p)
 !
@@ -894,7 +894,7 @@ module Special
       if (K_iso/=0.0) call calc_heatcond_grad(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
 !
-      if (swamp_chi > 0.0) call calc_swamp_temp(f,df,p)
+      if (swamp_chi > 0.0) call calc_swamp_temp(df,p)
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -1017,13 +1017,12 @@ module Special
 !
     endfunction get_time_fade_fact
 !***********************************************************************
-    subroutine calc_swamp_density(f,df,p)
+    subroutine calc_swamp_density(df,p)
 !
 !   Additional hight-dependant density diffusion (swamp layer at top).
 !
 !   02-jun-11/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(in) :: p
 !
@@ -1043,13 +1042,12 @@ module Special
 !
     endsubroutine calc_swamp_density
 !***********************************************************************
-    subroutine calc_swamp_temp(f,df,p)
+    subroutine calc_swamp_temp(df,p)
 !
 !   Additional hight-dependant temperature diffusion (swamp layer at top).
 !
 !   02-jun-11/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(in) :: p
 !
