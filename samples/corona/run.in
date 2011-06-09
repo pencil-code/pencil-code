@@ -4,9 +4,9 @@
 &run_pars
   ip=14
   cvsid='$Id$'
-  nt=21, it1=5, isave=50
+  nt=26, it1=5, isave=50
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
-  dsnap=30. 
+  dsnap=1.
   !
   bcz = 's:a' ,'s:a' ,'a','set:a2','set:a2','pfe','nil','nil'
   fbcz1 = 0.,0.,0.,16.796295,0.78135928
@@ -42,6 +42,11 @@
   bmdi = 0.5   ! Refresh magnetogram
 !
   lgranulation=T
+
+  swamp_fade_start = 3.5
+  swamp_fade_start = 4.5
+  swamp_diffrho = 1e+1
+  swamp_chi = 1e+1
 /
 &shock_run_pars
   lforce_periodic_shockviscosity=T
