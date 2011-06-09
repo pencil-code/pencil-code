@@ -994,6 +994,29 @@ module Special
 !
     endfunction get_swamp_fade_fact
 !***********************************************************************
+    function get_time_fade_fact()
+!
+!   Get time-dependant fading factor for all init_time based processes.
+!
+!   09-jun-11/Bourdin.KIS: coded
+!
+      use Sub, only: cubic_step
+!
+      real :: get_time_fade_fact
+!
+      real, save :: last_time = -1.0
+      real, save :: last_fade_fact = 0.0
+!
+      if (last_time == t) then
+        get_time_fade_fact = last_fade_fact
+      else
+        get_time_fade_fact = cubic_step (real (t) * unit_time, init_time, init_time)
+        last_time = t
+        last_fade_fact = get_time_fade_fact
+      endif
+!
+    endfunction get_time_fade_fact
+!***********************************************************************
     subroutine calc_swamp_density(f,df,p)
 !
 !   Additional hight-dependant density diffusion (swamp layer at top).
@@ -1577,7 +1600,7 @@ module Special
 !      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
 !
       use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use Sub,             only : dot2,dot,multsv,multmv
 !--   use Io,              only : output_pencil
 !AB: output_pencil is not currently used and breaks the auto-test
       use EquationOfState, only : gamma
@@ -1622,8 +1645,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kpara * p%rho1 * p%TT**expo * p%cp1 * &
-          cubic_step(real(t*unit_time),init_time,init_time)
+      chi_1 =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_time_fade_fact()
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -1733,7 +1755,7 @@ module Special
 ! L = Div( K rho b*(b*Grad(T))
 !
       use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use Sub,             only : dot2,dot,multsv,multmv
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1799,7 +1821,7 @@ module Special
 !
 !  calculate rhs
 !
-      chix = hcond1*cubic_step(real(t*unit_time),init_time,init_time)
+      chix = hcond1 * get_time_fade_fact()
 !
       rhs = gamma*chix*tmp
 !
@@ -1827,7 +1849,7 @@ module Special
 !  => chi =  Grad(lnT)^2
 !
       use Diagnostics, only: max_mn_name
-      use Sub, only: dot2,dot,multsv,multmv,cubic_step
+      use Sub, only: dot2,dot,multsv,multmv
       use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1907,7 +1929,7 @@ module Special
       rhs = hcond2*(rhs + glnT2*tmp)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma*cubic_step(real(t*unit_time),init_time,init_time)
+          rhs*gamma*get_time_fade_fact()
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
@@ -1923,7 +1945,7 @@ module Special
 !  L = Div( Grad(lnT)^2 Grad(T))
 !
       use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv,cubic_step
+      use Sub,             only : dot2,dot,multsv,multmv
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1993,7 +2015,7 @@ module Special
       rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
       rtv_cool = gamma*p%cp1*exp(rtv_cool)
 !
-      rtv_cool = rtv_cool*cool_RTV *cubic_step(real(t*unit_time),init_time,init_time)
+      rtv_cool = rtv_cool*cool_RTV * get_time_fade_fact()
 !     for adjusting by setting cool_RTV in run.in
 !
       rtv_cool=rtv_cool &
@@ -2173,7 +2195,6 @@ module Special
       use Diagnostics, only: max_mn_name
       use General, only: random_number_wrapper,random_seed_wrapper, &
           normal_deviate
-      use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput,heat_flux
@@ -2338,8 +2359,7 @@ module Special
 !
 ! Add to energy equation
 !
-      rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput* &
-          cubic_step(real(t*unit_time),init_time,init_time)
+      rhs = p%TT1*p%rho1*gamma*p%cp1 * heatinput * get_time_fade_fact()
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
