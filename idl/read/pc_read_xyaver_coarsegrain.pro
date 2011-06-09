@@ -6,6 +6,7 @@ common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
 ;  30-mar-08/axel
 ;
 @xder_6th
+pc_read_kf,kf
 pc_read_xyaver,o=xyaver
 pc_read_param,o=param,/param2
 pc_read_param,o=param1
@@ -55,8 +56,8 @@ while not eof(1) do begin
 endwhile
 print
 print,'print save file line'
-printf,2,"save,file='xyaver_coarsegrain_'+str(nevery)+'.sav',zzz,t,nevery,"+aa
-print,"save,file='xyaver_coarsegrain_'+str(nevery)+'.sav',zzz,t,nevery,"+aa
+printf,2,"save,file='xyaver_coarsegrain_'+str(nevery)+'.sav',zzz,t,nevery,kf,"+aa
+print,"save,file='xyaver_coarsegrain_'+str(nevery)+'.sav',zzz,t,nevery,kf,"+aa
 close,1
 close,2
 ;print
