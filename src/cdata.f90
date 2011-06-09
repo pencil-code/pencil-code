@@ -476,9 +476,12 @@ module Cdata
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
 !
   ! Auxiliary parameters for boundary conditions:
-  real, dimension(mcom) :: fbcx1=0., fbcy1=0., fbcz1=0., fbcz1_1=0., fbcz1_2=0.
-  real, dimension(mcom) :: fbcx2=0., fbcy2=0., fbcz2=0., fbcz2_1=0., fbcz2_2=0.
-  real, dimension(mcom) :: fbcx1_2=0., fbcx2_2=0.
+  real, dimension(mcom) :: fbcx1=0., fbcx1_2=0.
+  real, dimension(mcom) :: fbcy1=0., fbcy1_1=0.
+  real, dimension(mcom) :: fbcz1=0., fbcz1_1=0., fbcz1_2=0.
+  real, dimension(mcom) :: fbcx2=0., fbcx2_2=0.
+  real, dimension(mcom) :: fbcy2=0., fbcy2_1=0.
+  real, dimension(mcom) :: fbcz2=0., fbcz2_1=0., fbcz2_2=0.
   ! Auxiliary parameters for distinct use only with bottom or top boundary:
   real, dimension(mcom) :: fbcx_bot=0., fbcx_top=0.
   real, dimension(mcom) :: fbcy_bot=0., fbcy_top=0.

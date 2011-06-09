@@ -533,9 +533,9 @@ module Density
             endif
           enddo
         case ('x-point_xy')
-          f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-.5*ampllnrho(j)*( &
-             spread(spread(x**2/cs20,2,my),3,mz) &
-            +spread(spread(y**2/cs20,1,mx),3,mz) )
+          f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-.5*ampllnrho(j)/cs20*( &
+             spread(spread(x**2,2,my),3,mz) &
+            +spread(spread(y**2,1,mx),3,mz) )
         case ('mode')
           call modes(ampllnrho(j),coeflnrho,f,ilnrho,kx_lnrho(j), &
               ky_lnrho(j),kz_lnrho(j))
