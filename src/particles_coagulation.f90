@@ -383,7 +383,8 @@ module Particles_coagulation
                     call random_number_wrapper(r)
                     if (r<=prob) then
 !
-                      call coagulation_fragmentation(fp,j,k,deltavjk)
+                      call coagulation_fragmentation(fp,j,k,deltavjk, &
+                          xpj,xpk,vpj,vpk)
 !
                       if (lparticles_number) then
                         npswarmk=fp(k,inpswarm)
@@ -481,7 +482,7 @@ module Particles_coagulation
 !
     endsubroutine particles_coagulation_blocks
 !***********************************************************************
-    subroutine coagulation_fragmentation(fp,j,k,deltavjk)
+    subroutine coagulation_fragmentation(fp,j,k,deltavjk,xpj,xpk,vpj,vpk)
 !
 !  Change the particle size to the new size, but keep the total mass in the
 !  particle swarm the same.
@@ -497,9 +498,13 @@ module Particles_coagulation
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: j, k
       real :: deltavjk
+      real, dimension (3) :: xpj, xpk, vpj, vpk
 !
+      real, dimension (3) :: vvcm, vvkcm, vvkcmnew, vvkcm_normal, vvkcm_parall
+      real, dimension (3) :: nvec
       real :: mpsma, mpbig, npsma, npbig, npnew, mpnew, apnew
-      real :: rhopsma, rhopbig
+      real :: rhopsma, rhopbig, apsma, apbig
+      real :: coeff_restitution, deltav_recoil, escape_speed
 !
       if (lparticles_number) then
 !
@@ -511,23 +516,49 @@ module Particles_coagulation
 !  Define mpbig, npbig, rhopbig for the superparticle with bigger particles.
 !
           if (fp(j,iap)<fp(k,iap)) then
+            apsma = fp(j,iap)
             mpsma = four_pi_rhopmat_over_three*fp(j,iap)**3
             npsma = fp(j,inpswarm)
+            apbig = fp(k,iap)
             mpbig = four_pi_rhopmat_over_three*fp(k,iap)**3
             npbig = fp(k,inpswarm)
           else
+            apsma = fp(k,iap)
             mpsma = four_pi_rhopmat_over_three*fp(k,iap)**3
             npsma = fp(k,inpswarm)
+            apbig = fp(j,iap)
             mpbig = four_pi_rhopmat_over_three*fp(j,iap)**3
             npbig = fp(j,inpswarm)
           endif
           rhopsma=mpsma*npsma
           rhopbig=mpbig*npbig
 !
-!  Particles stick when the mass ratio between large and small particles is
-!  sufficiently high. Otherwise they fragment.
+!  Calculate the coefficient of restitution. We base in here on the
+!  experimental fit of Higa et al. (1986) to ice at 100 K.
 !
-          if (mpbig/mpsma>critical_mass_ratio_sticking) then
+          coeff_restitution=(deltavjk/1.8)**(-alog10(deltavjk/1.8))
+!
+!  Particles stick:
+!
+!    a) when the mass ratio between large and small particles is
+!       sufficiently high.
+!
+!    b) when the recoil velocity is less than the escape speed
+!
+          nvec=(xpj-xpk)
+          nvec=nvec/sqrt(sum(nvec**2))
+          vvcm=0.5*(vpj+vpk)
+          vvkcm=vpk-vvcm
+          vvkcm_normal=nvec*(sum(vvkcm*nvec))
+          vvkcm_parall=vvkcm-vvkcm_normal
+          deltav_recoil=sqrt(sum((vvkcm_parall - &
+              coeff_restitution*vvkcm_normal)**2))
+          escape_speed =sqrt(2*GNewton*mpbig/apbig)
+!
+          if (mpbig/mpsma>critical_mass_ratio_sticking .or. &
+              deltav_recoil<escape_speed .or. &
+              fp(j,inpswarm)==1/(dx*dy*dz) .or. &
+              fp(k,inpswarm)==1/(dx*dy*dz)) then
             mpnew=mpbig+rhopsma/npbig
           else
             if (mpsma>2*minimum_particle_mass) then
@@ -565,6 +596,8 @@ module Particles_coagulation
             fp(k,iap)=apnew
             fp(j,inpswarm)=npnew
             fp(k,inpswarm)=npnew
+!            fp(j,ivpx:ivpz)=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
+!            fp(k,ivpx:ivpz)=fp(j,ivpx:ivpz)
           endif
         else
 !
