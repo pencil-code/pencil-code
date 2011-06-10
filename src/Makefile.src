@@ -904,7 +904,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FC=mpif90 #(p-bc9901.hpc2n.umu.se)
 #FFLAGS= -O3  #(p-bc9901.hpc2n.umu.se)
 #CC=mpicc #(p-bc9901.hpc2n.umu.se)
-#CFLAGS=-O3 -DFUNDERSC=2 #(p-bc9901.hpc2n.umu.se)
+#CFLAGS=-O3 -DFUNDERSC=1 #(p-bc9901.hpc2n.umu.se)
 #LD_MPI= #(p-bc9901.hpc2n.umu.se)
 #FFLAGS_DOUBLE=-r8 #(p-bc9901.hpc2n.umu.se)
 #LIBMPISUFFIX=#(p-bc9901.hpc2n.umu.se)
