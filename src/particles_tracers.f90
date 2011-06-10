@@ -388,7 +388,7 @@ module Particles
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
-    subroutine particles_dragforce_stiff
+    endsubroutine particles_dragforce_stiff
 !***********************************************************************
     subroutine pencil_criteria_particles()
 !
