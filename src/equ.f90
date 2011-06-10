@@ -200,8 +200,8 @@ module Equ
       if (lshear)        call shear_before_boundary(f)
       if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
-      if (lparticles)    call particles_before_boundary(f)
       if (ltestflow)     call testflow_before_boundary(f)
+      if (lparticles)    call particles_before_boundary(f)
 !
 !  Fetch fp to the special module
 !
