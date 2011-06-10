@@ -56,7 +56,7 @@ module Particles
   real :: tstart_collisional_cooling=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
-  real :: pdlaw=0.0, tausp_short_friction=0.0, tausp1_short_friction=0.0
+  real :: pdlaw=0.0
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   real :: particles_insert_rate
@@ -64,9 +64,9 @@ module Particles
   real :: max_particle_insert_time=huge1
   real :: Deltauy_gas_friction=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
-  integer :: iscratch_short_friction=0
+  integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
-  logical :: ldragforce_radialonly=.false.
+  logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
   logical :: lpar_spec=.false., lcompensate_friction_increase=.false.
   logical :: lcollisional_cooling_taucool=.false.
@@ -81,12 +81,13 @@ module Particles
   logical :: ldraglaw_eps_stk_transonic=.false.
   logical :: ldraglaw_variable_density=.false.
   logical :: lcoldstart_amplitude_correction=.false.
-  logical :: luse_tau_ap=.true., lshort_friction_approx=.false.
+  logical :: luse_tau_ap=.true.
   logical :: lbrownian_forces=.false.
   logical :: lenforce_policy=.false., lnostore_uu=.true.
   logical :: ldt_grav_par=.false., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
+  logical :: lcalc_uup=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -117,8 +118,8 @@ module Particles
       lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier,&
-      ldraglaw_eps_stk_transonic, pdlaw, lshort_friction_approx, &
-      tausp_short_friction,ldraglaw_steadystate,tstart_liftforce_par, &
+      ldraglaw_eps_stk_transonic, pdlaw, ldragforce_stiff, &
+      ldraglaw_steadystate, tstart_liftforce_par, &
       tstart_brownian_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, brownian_T0, &
       lnostore_uu, ldt_grav_par, ldragforce_radialonly, lsinkpoint, &
@@ -127,7 +128,8 @@ module Particles
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
       rhopmat, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1, &
-      xp2, yp2, zp2, vpx2, vpy2, vpz2, lsinkparticle_1, rsinkparticle_1
+      xp2, yp2, zp2, vpx2, vpy2, vpz2, lsinkparticle_1, rsinkparticle_1, &
+      lcalc_uup
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -144,8 +146,8 @@ module Particles
       lcompensate_friction_increase, lmigration_real_check,ldraglaw_variable, &
       luse_tau_ap, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, lshort_friction_approx, &
-      ldraglaw_variable_density, tausp_short_friction, ldraglaw_steadystate, &
+      ldraglaw_eps_stk_transonic, ldragforce_stiff, &
+      ldraglaw_variable_density, ldraglaw_steadystate, &
       tstart_liftforce_par, tstart_brownian_par, lbrownian_forces, &
       lenforce_policy, interp_pol_uu,interp_pol_oo, interp_pol_TT, &
       interp_pol_rho, brownian_T0, lnostore_uu, ldt_grav_par, &
@@ -214,10 +216,21 @@ module Particles
 !
       npvar=npvar+6
 !
-!  Set indices for auxiliary variables.
+!  Set indices for particle assignment.
 !
       if (.not. lnocalc_np) call farray_register_auxiliary('np',inp)
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop)
+      if (lcalc_uup .or. ldragforce_stiff) then
+        call farray_register_auxiliary('uup',iuup,vector=3)
+        iupx=iuup; iupy=iuup+1; iupz=iuup+2
+      endif
+!
+!  Special variable for stiff drag force equations.
+!
+      if (ldragforce_stiff) then
+        call farray_register_auxiliary('ffg',iffg,vector=3)
+        ifgx=iffg; ifgy=iffg+1; ifgz=iffg+2
+      endif
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -236,7 +249,6 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use EquationOfState, only: cs0
-      use FArrayManager, only: farray_acquire_scratch_area
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -420,30 +432,13 @@ module Particles
         call fatal_error('initialize_particles','')
       endif
 !
-!  Short friction time approximation. Need to keep track of pressure gradient
-!  force and Lorentz force, to be able to set the particle terminal velocity.
-!  Thus we open a vector scratch space already now.
+!  Stiff drag force approximation.
 !
-      if (lshort_friction_approx) then
-        call farray_acquire_scratch_area('scratch',iscratch_short_friction,3,ierr)
-        if (ierr/=0) then
-          if (lroot) print*, 'initialize_particles: there was a problem '// &
-              'defining scratch array for short friction time approximation'
+      if (ldragforce_stiff) then
+        if (ldragforce_dust_par .or. ldragforce_gas_par) then
+          if (lroot) print*, 'initialize_particles: stiff drag force '// &
+              'approximation is incompatible with normal drag'
           call fatal_error('initialize_particles','')
-        endif
-        if (ldragforce_gas_par) then
-          if (lroot) print*, 'initialize_particles: short friction time '// &
-              'approximation is incompatible with drag from particles to gas'
-          call fatal_error('initialize_particles','')
-        endif
-        if (tausp_short_friction/=0.0) then
-          tausp1_short_friction=1/tausp_short_friction
-          if (lroot) print*, 'initialize_particles: short friction time '// &
-              'approximation for all particles with tausp<', &
-              tausp_short_friction
-        else
-          if (lroot) print*, 'initialize_particles: short friction time '// &
-             'approximation for all particle sizes'
         endif
       endif
 !
@@ -1856,6 +1851,55 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine constant_richardson
 !***********************************************************************
+    subroutine particles_dragforce_stiff(f,fp,ineargrid)
+!
+!  Force stiff drag force equations towards their equilibrium.
+!
+!  10-june-11/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (nx) :: eps
+      real, dimension (3) :: vvp
+      integer :: imn, i, k, ix0, iy0, iz0
+!
+      if (ldragforce_stiff) then
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+          eps=f(l1:l2,m,n,irhop)/f(l1:l2,m,n,irho)
+          do i=0,2
+            f(l1:l2,m,n,iux+i)=eps*f(l1:l2,m,n,iupx+i)+f(l1:l2,m,n,iux+i)
+            f(l1:l2,m,n,iux+i)=f(l1:l2,m,n,iux+i) + &
+                eps/(1.0+eps)*tausp*f(l1:l2,m,n,ifgx+i)
+            f(l1:l2,m,n,iux+i)=f(l1:l2,m,n,iux+i)/(1.0+eps)
+          enddo
+          f(l1:l2,m,n,ifgx:ifgz)=f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,ifgx:ifgz)
+          do k=1,npar_loc
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            if (lparticlemesh_cic) then
+              call interpolate_linear(f,ifgx,ifgz, &
+                  fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+            elseif (lparticlemesh_tsc) then
+              if (linterpolate_spline) then
+                call interpolate_quadratic_spline(f,ifgx,ifgz, &
+                    fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+              else
+                call interpolate_quadratic(f,ifgx,ifgz, &
+                    fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+              endif
+            else
+              vvp=f(ix0,iy0,iz0,ifgx:ifgz)
+            endif
+            fp(k,ivpx:ivpz)=vvp
+          enddo
+        enddo
+      endif
+!
+    endsubroutine particles_dragforce_stiff
+!***********************************************************************
     subroutine pencil_criteria_particles()
 !
 !  All pencils that the Particles module depends on are specified here.
@@ -1886,9 +1930,10 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_cs2)=.true.
       endif
-      if (lshort_friction_approx) then
+      if (ldragforce_stiff) then
         lpenc_requested(i_fpres)=.true.
         lpenc_requested(i_jxbr)=.true.
+        lpenc_requested(i_fvisc)=.true.
       endif
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
@@ -2602,13 +2647,6 @@ k_loop:   do while (.not. (k>npar_loc))
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
 !
-!  Short friction time approximation. The particle velocity is set to the
-!  terminal velocity in dxxp_dt later. The cycle statement refers to the
-!  loop over particles above.
-!
-              if (lshort_friction_approx .and. &
-                  tausp1_par>tausp1_short_friction) cycle
-!
 !  Calculate and add drag force.
 !
               dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
@@ -2862,10 +2900,12 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-!  For short friction time approximation we need to record the pressure
-!  gradient force and the Lorentz force.
+!  For stiff drag force equations we need to store the forces that are
+!  unique to the gas.
 !
-      if (lshort_friction_approx) f(l1:l2,m,n,iscratch_short_friction:iscratch_short_friction+2)=p%fpres+p%jxbr
+      if (ldragforce_stiff) then
+        f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
+      endif
 !
 !  Diagnostic output.
 !

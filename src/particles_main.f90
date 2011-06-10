@@ -522,6 +522,8 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      if (lparticles)           call particles_dragforce_stiff(f,fp,ineargrid)
+!
 !  Calculate the summed gravity due to the massive particles.
 !  Needed because it is too slow to calculate the gravity at the
 !  position of all dust particles. So we calculate the gravity

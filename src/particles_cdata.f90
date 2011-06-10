@@ -33,7 +33,7 @@ module Particles_cdata
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0
   integer :: inpswarm=0, irhopswarm=0
   integer :: ipsx=0, ipsy=0, ipsz=0
-  integer :: iupx=0, iupy=0, iupz=0
+  integer :: iuup=0, iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
   integer :: inp=0
   integer :: idiag_nmigmax=0, npart_radii=0

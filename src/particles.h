@@ -3,7 +3,7 @@
  
   public :: register_particles, initialize_particles, init_particles
   public :: pencil_criteria_particles, pencil_interdep_particles
-  public :: calc_pencils_particles
+  public :: calc_pencils_particles, particles_dragforce_stiff
   public :: dxxp_dt, dvvp_dt, dxxp_dt_pencil, dvvp_dt_pencil
   public :: dxxp_dt_blocks, dvvp_dt_blocks
   public :: remove_particles_sink, create_sink_particles

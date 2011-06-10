@@ -1056,6 +1056,20 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine insert_particles
 !***********************************************************************
+    subroutine particles_dragforce_stiff(f,fp,ineargrid)
+!
+!  10-june-11/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    subroutine particles_dragforce_stiff
+!***********************************************************************
     subroutine pencil_criteria_particles()
 !
 !  All pencils that the Particles module depends on are specified here.
