@@ -743,7 +743,8 @@ module Particles_collisions
 !
 !  Stop after one collision (for testing purposes).
 !
-      if (lstop_at_first_collision) call die_gracefully
+      if (lstop_at_first_collision) call fatal_error('particle_collision', &
+          'stopping after first collision')
 !
     endsubroutine particle_collision
 !***********************************************************************
