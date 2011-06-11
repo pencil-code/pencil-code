@@ -707,6 +707,16 @@ if ((param.lwrite_aux ne 0) and (not noaux)) then begin
     varcontent[iupx].skip       = 2
   endif
 ;
+  default, ifgx, 0
+  if (ifgx gt 0) then begin
+    varcontent[ifgx].variable   = 'Gas terms for stiff drag forces (ffg)'
+    varcontent[ifgx].idlvar     = 'ffg'
+    varcontent[ifgx].idlinit    = INIT_3VECTOR
+    varcontent[ifgx].idlvarloc  = 'ffg_loc'
+    varcontent[ifgx].idlinitloc = INIT_3VECTOR_LOC
+    varcontent[ifgx].skip       = 2
+  endif
+;
   default, ipviscx, 0
   if (ipviscx gt 0) then begin
     varcontent[ipviscx].variable   = 'Particle viscosity field (pvisc)'
