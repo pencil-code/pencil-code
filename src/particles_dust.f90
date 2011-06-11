@@ -4316,6 +4316,9 @@ k_loop:   do while (.not. (k>npar_loc))
         write(3,*) 'iupx=', iupx
         write(3,*) 'iupy=', iupy
         write(3,*) 'iupz=', iupz
+        write(3,*) 'ifgx=', ifgx
+        write(3,*) 'ifgy=', ifgy
+        write(3,*) 'ifgz=', ifgz
       endif
 !
 !  Reset everything in case of reset.
