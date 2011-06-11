@@ -228,7 +228,7 @@ module Particles
 !  Special variable for stiff drag force equations.
 !
       if (ldragforce_stiff) then
-        call farray_register_auxiliary('ffg',iffg,vector=3)
+        call farray_register_auxiliary('ffg',iffg,communicated=.true.,vector=3)
         ifgx=iffg; ifgy=iffg+1; ifgz=iffg+2
       endif
 !
@@ -440,6 +440,7 @@ module Particles
               'approximation is incompatible with normal drag'
           call fatal_error('initialize_particles','')
         endif
+        f(l1:l2,m1:m2,n1:n2,ifgx:ifgz)=0.0
       endif
 !
 !  Initialize storage of energy gain released by shearing boundaries.
@@ -1857,6 +1858,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  10-june-11/anders: coded
 !
+      use Boundcond
+      use Mpicomm
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1865,36 +1869,39 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (3) :: vvp
       integer :: imn, i, k, ix0, iy0, iz0
 !
-      if (ldragforce_stiff) then
+      if (ldragforce_stiff .and. .not. lpencil_check_at_work) then
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
           eps=f(l1:l2,m,n,irhop)/f(l1:l2,m,n,irho)
           do i=0,2
-            f(l1:l2,m,n,iux+i)=eps*f(l1:l2,m,n,iupx+i)+f(l1:l2,m,n,iux+i)
-            f(l1:l2,m,n,iux+i)=f(l1:l2,m,n,iux+i) + &
-                eps/(1.0+eps)*tausp*f(l1:l2,m,n,ifgx+i)
-            f(l1:l2,m,n,iux+i)=f(l1:l2,m,n,iux+i)/(1.0+eps)
+            f(l1:l2,m,n,iux+i)=(f(l1:l2,m,n,iux+i)+eps*f(l1:l2,m,n,iupx+i) + &
+                eps/(1.0+eps)*tausp*f(l1:l2,m,n,ifgx+i))/(1.0+eps)
           enddo
           f(l1:l2,m,n,ifgx:ifgz)=f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,ifgx:ifgz)
-          do k=1,npar_loc
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            if (lparticlemesh_cic) then
-              call interpolate_linear(f,ifgx,ifgz, &
+        enddo
+        call boundconds_x(f,ifgx,ifgz)
+        call initiate_isendrcv_bdry(f,ifgx,ifgz)
+        call finalize_isendrcv_bdry(f,ifgx,ifgz)
+        call boundconds_y(f,ifgx,ifgz)
+        call boundconds_z(f,ifgx,ifgz)
+        do k=1,npar_loc
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          if (lparticlemesh_cic) then
+            call interpolate_linear(f,ifgx,ifgz, &
+                fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+          elseif (lparticlemesh_tsc) then
+            if (linterpolate_spline) then
+              call interpolate_quadratic_spline(f,ifgx,ifgz, &
                   fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
-            elseif (lparticlemesh_tsc) then
-              if (linterpolate_spline) then
-                call interpolate_quadratic_spline(f,ifgx,ifgz, &
-                    fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
-              else
-                call interpolate_quadratic(f,ifgx,ifgz, &
-                    fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
-              endif
             else
-              vvp=f(ix0,iy0,iz0,ifgx:ifgz)
+              call interpolate_quadratic(f,ifgx,ifgz, &
+                  fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
             endif
-            fp(k,ivpx:ivpz)=vvp
-          enddo
+          else
+            vvp=f(ix0,iy0,iz0,ifgx:ifgz)
+          endif
+          fp(k,ivpx:ivpz)=vvp
         enddo
       endif
 !
@@ -2903,7 +2910,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  For stiff drag force equations we need to store the forces that are
 !  unique to the gas.
 !
-      if (ldragforce_stiff) then
+      if (ldragforce_stiff .and. .not. lpencil_check_at_work) then
         f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
       endif
 !
@@ -4306,6 +4313,9 @@ k_loop:   do while (.not. (k>npar_loc))
         write(3,*) 'ivpz=', ivpz
         write(3,*) 'inp=', inp
         write(3,*) 'irhop=', irhop
+        write(3,*) 'iupx=', iupx
+        write(3,*) 'iupy=', iupy
+        write(3,*) 'iupz=', iupz
       endif
 !
 !  Reset everything in case of reset.
