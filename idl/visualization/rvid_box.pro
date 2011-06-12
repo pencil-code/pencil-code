@@ -36,8 +36,8 @@
 ;
 pro rvid_box, field, $
   mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin, tmax=tmax, $
-  max=amax,min=amin, noborder=noborder, imgdir=imgdir, dev=dev, $
-  nrepeat=nrepeat, wait=wait, stride=stride, datadir=datatopdir, $
+  max=amax,min=amin, noborder=noborder, imgprefix=imgprefix, imgdir=imgdir, $
+  dev=dev, nrepeat=nrepeat, wait=wait, stride=stride, datadir=datatopdir, $
   noplot=noplot, fo=fo, swapz=swapz, xsize=xsize, ysize=ysize, $
   title=title, itpng=itpng, global_scaling=global_scaling, proc=proc, $
   exponential=exponential, sqroot=sqroot, logarithmic=logarithmic, $
@@ -74,6 +74,7 @@ default,itpng,0 ;(image counter)
 default,noborder,[0,0,0,0,0,0]
 default,r_int,0.5
 default,r_ext,1.0
+default,imgprefix,'img_'
 default,imgdir,'.'
 default,dev,'x'
 default,magnify,1.0
@@ -472,7 +473,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
         bad=where(image eq 0) & image(bad)=255
         tvlct, red, green, blue, /GET
-        imgname = 'img_'+istr2+'.png'
+        imgname = imgprefix+istr2+'.png'
         write_png, imgdir+'/'+imgname, image, red, green, blue
         if (keyword_set(png_truecolor)) then $
             spawn, 'mogrify -type TrueColor ' + imgdir+'/'+imgname
