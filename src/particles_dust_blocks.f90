@@ -1068,7 +1068,7 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
-    subroutine particles_dragforce_stiff
+    endsubroutine particles_dragforce_stiff
 !***********************************************************************
     subroutine pencil_criteria_particles()
 !
