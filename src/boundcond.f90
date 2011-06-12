@@ -347,7 +347,7 @@ module Boundcond
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      real, dimension (mcom) :: fbcy12,fbcy12_1
+      real, dimension (mcom) :: fbcy12, fbcy12_1, fbcy12_2
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
@@ -370,10 +370,12 @@ module Boundcond
       case default
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
-            topbot='bot'; bc12=bcy1; fbcy12=fbcy1; fbcy12_1=fbcy1_1;
+            topbot='bot'; bc12=bcy1
+            fbcy12=fbcy1; fbcy12_1=fbcy1_1; fbcy12_2=fbcy1_2
             ip_ok=lfirst_proc_y
           else
-            topbot='top'; bc12=bcy2; fbcy12=fbcy2; fbcy12_1=fbcy2_1;
+            topbot='top'; bc12=bcy2
+            fbcy12=fbcy2; fbcy12_1=fbcy2_1; fbcy12_2=fbcy2_2
             ip_ok=llast_proc_y
           endif
 !
@@ -472,7 +474,7 @@ module Boundcond
                 call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
               case ('sep')
                 ! BCY_DOC: set boundary value
-                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12,val2=fbcy12_1)
+                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12,val2=fbcy12_1,val4=fbcy12_2)
               case ('e1')
                 ! BCY_DOC: extrapolation
                 call bcy_extrap_2_1(f,topbot,j)
@@ -1565,7 +1567,7 @@ module Boundcond
 !
     endsubroutine bc_antis_x
 !***********************************************************************
-    subroutine bc_sym_y(f,sgn,topbot,j,rel,val,val2)
+    subroutine bc_sym_y(f,sgn,topbot,j,rel,val,val2,val4)
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -1579,7 +1581,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val,val2
+      real, dimension (mcom), optional :: val,val2,val4
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -1591,6 +1593,7 @@ module Boundcond
       case ('bot')               ! bottom boundary
         if (present(val)) f(:,m1,:,j)=val(j)
         if (present(val2)) f(:,m1,:,j)=f(:,m1,:,j)+val2(j)*spread(x**2,2,mz)
+        if (present(val4)) f(:,m1,:,j)=f(:,m1,:,j)+val4(j)*spread(x**4,2,mz)
         if (relative) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
         else
@@ -1601,6 +1604,7 @@ module Boundcond
       case ('top')               ! top boundary
         if (present(val)) f(:,m2,:,j)=val(j)
         if (present(val2)) f(:,m2,:,j)=f(:,m2,:,j)+val2(j)*spread(x**2,2,mz)
+        if (present(val4)) f(:,m2,:,j)=f(:,m2,:,j)+val4(j)*spread(x**4,2,mz)
         if (relative) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
         else

@@ -77,7 +77,8 @@ module Param_IO
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
       tstart, &
-      fbcx1, fbcx2, fbcx1_2, fbcx2_2, fbcy1, fbcy2, fbcy1_1, fbcy2_1, &
+      fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
+      fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
       xyz_step, xi_step_frac, xi_step_width, dxi_fact, trans_width, &
@@ -110,8 +111,9 @@ module Param_IO
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &
       fshift_int, fshift_ext, &
       lreset_tstart, tstart, &
-      fbcx1, fbcx2, fbcy1, fbcy2, fbcy1_1, fbcy2_1, fbcz1, fbcz2, &
-      fbcx1_2, fbcx2_2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
+      fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
+      fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
+      fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
       Udrift_bc, ttransient, tavg, idx_tavg, lserial_io, nr_directions, &
       lsfu, lsfb, lsfz1, lsfz2, lsfflux, lpdfu, lpdfb, lpdfz1, lpdfz2, &

@@ -678,8 +678,8 @@ module Initcond
 !***********************************************************************
     subroutine xpoint2(ampl,f,i,x0,y0)
 !
-! Creates a magnetic X point for a 2D run.
-! The vector potential is given by A_z = ampl*(x-x0)*(y -y0)
+! Creates a magnetic X point (e.g., for a 2D run);
+! The vector potential is given by A_z = (1/2)*ampl*[(x-x0)^2-(y-y0)^2]
 !
 !  21-may-11/axel: coded
 !
