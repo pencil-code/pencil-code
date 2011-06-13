@@ -283,7 +283,13 @@ module Testfield
       endif
 !
       bampz=bamp*(ztestfield_offset+z)
-      bampz1=1./bampz
+!
+!  avoid dividing by zero
+!
+      bampz1=1.
+      where (abs(bampz)<=(.1*dz))
+        bampz1=1./bampz
+      endwhere
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
