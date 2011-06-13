@@ -5625,6 +5625,7 @@ endsubroutine get_gravz_chit
     use Sub, only: step, erfunc, interp1
 !
     integer :: i,nr
+    integer, dimension(1) :: i_ext
     real, dimension (nr) :: r,flux,g,lnrho,temp
     real :: dtemp,dlnrho,dr,rhotop,rhobot,lnrhobot, &
             polyad,delad,fr_frac,fc_frac,fc,del,Rgas
@@ -5668,8 +5669,16 @@ endsubroutine get_gravz_chit
 !
 !  Find the value of rhobot at the bottom of convection zone.
 !
-    lnrhobot=interp1(r,lnrho,nr,r_bcz)
-    rhobot=exp(lnrhobot)
+!    lnrhobot=interp1(r,lnrho,nr,r_bcz)
+!    rhobot=exp(lnrhobot)
+!  new constraint for the iterative computation of stratification: 
+!  --> we impose Mtot=1 in r=(0,r_ext)
+!
+    i_ext=minloc(abs(r-r_ext))
+    rhobot=sum(exp(lnrho(2:i_ext(1)-1))*r(2:i_ext(1)-1)**2)+ &
+      0.5*exp(lnrho(i_ext(1)))*r(i_ext(1))**2
+    rhobot=rhobot*4.*pi*dr
+    print*, 'total mass=', rhobot
 !
     endsubroutine strat_heat
 !***********************************************************************
