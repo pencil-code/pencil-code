@@ -16,7 +16,7 @@ from dim import read_dim
 class XyAver:
     pass
 
-def read_xyaver(varfile='xyaverages.dat',datadir='data/'):
+def read_xyaver(varfile='xyaverages.dat',datadir='data/', quiet=0):
     """read xy averaged data.
 
     returns a class xyaver containing a 1D time array and a 2D t-z array.
@@ -41,7 +41,8 @@ def read_xyaver(varfile='xyaverages.dat',datadir='data/'):
     if nz%8:
         rec_length += 1
     n_data_records = n_lines/rec_length
-    print "%s: reading %i records" % (__name__,n_data_records)
+    if (not quiet):
+        print "%s: reading %i records" % (__name__,n_data_records)
     
     # change the hardcode dtype!
     t = []
