@@ -99,7 +99,7 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       real, dimension (mx,my,mz,mfarray) :: f
+       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
        logical, intent(in) :: lstarting
 !
 !  Initialize shock profile to zero
@@ -269,7 +269,7 @@ module Shock
 !
 !  26-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -370,11 +370,13 @@ module Shock
        f(:,:,:,ishock)=max(0., -f(:,:,:,ishock))
      endif
 !
-!  take the max over 5 neighboring points and smooth.
+!  Take the max over 5 neighboring points and smooth.
 !  Note that this means that we'd need 4 ghost zones, so
 !  we use one-sided formulae on processor boundaries.
-!  Alternatively, to get the same result with and without MPI
-!  you may want to try lshock_max5=.false. (default is .true.)
+!  For that use lshock_max5=.true.
+!
+!  To get the same result with and without MPI
+!  we take only the max over 3 points.
 !
      if (lshock_max5) then
        call shock_max5(f(:,:,:,ishock),tmp)
@@ -1145,7 +1147,7 @@ module Shock
     subroutine shock_smooth_farray(f,smoothf)
 !
 !  return array smoothed with by 2 points either way
-!  skipping 3 data point all round
+!  skipping 3 data points all round
 !  i.e. result valid ()
 !
 !  23-nov-02/tony: coded
@@ -1280,12 +1282,12 @@ module Shock
     subroutine shock_divu_farray(f,df)
 !
 !  calculate divergence of a vector U, get scalar
-!  accurate to 2nd order, explicit,  centred an left and right biased
+!  accurate to 2nd order, explicit,  centred and left and right biased
 !
 !  23-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: df
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz), intent(out) :: df
       real :: fac
 !
       df=0.
@@ -1430,8 +1432,6 @@ module Shock
 !
 !  01-apr-05/tony: coded
 !
-      use Mpicomm, only: stop_it
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
       real :: cube, diamond, fac
@@ -1498,7 +1498,7 @@ module Shock
         enddo
         enddo
       else
-        call stop_it('shock_smooth_cube_diamond7: CASE NOT IMPLEMENTED');
+        call fatal_error('shock_smooth_cube_diamond7','CASE NOT IMPLEMENTED')
       endif
 !
     endsubroutine shock_smooth_cube_diamond7
@@ -1523,8 +1523,6 @@ module Shock
     endfunction scale_and_chop
 !***********************************************************************
     subroutine scale_and_chop_internalboundary(f)
-!
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
@@ -1607,8 +1605,6 @@ module Shock
 !  a surface flux integral using Gauss' Theorm
 !
 !  01-apr-05/tony: coded
-!
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
@@ -1729,7 +1725,7 @@ module Shock
         enddo
         enddo
       else
-        call stop_it('shock_smooth_octagon7: CASE NOT IMPLEMENTED');
+        call fatal_error('shock_smooth_octagon7','CASE NOT IMPLEMENTED')
       endif
 !
     endsubroutine shock_smooth_octagon7
