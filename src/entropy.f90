@@ -251,7 +251,7 @@ module Entropy
   integer :: idiag_uzTTmxy=0    ! DIAG_DOC: $\left< u_z T \right>_{z}$
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
-  integer :: idiag_ufpresm=0     ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$ 
+  integer :: idiag_ufpresm=0     ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
 !
   contains
@@ -2637,14 +2637,14 @@ module Entropy
             do i = 1, 3
               ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
             enddo
-            call sum_mn_name(p%rho*ufpres,idiag_ufpresm)        
+            call sum_mn_name(p%rho*ufpres,idiag_ufpresm)
         endif
         if (idiag_uduum/=0) then
             uduu=0.
             do i = 1, 3
               uduu=uduu+p%uu(:,i)*df(l1:l2,m,n,iux-1+i)
             enddo
-            call sum_mn_name(p%rho*uduu,idiag_uduum)        
+            call sum_mn_name(p%rho*uduu,idiag_uduum)
         endif
 !
 !  Analysis for the baroclinic term.
@@ -4988,7 +4988,6 @@ module Entropy
 !
       use Gravity, only: z1, z2
       use Sub, only: step,der_step
-
 !
       if(.not.lmultilayer) call fatal_error('get_gravz_heatcond:',&
            'dont call if you have only one layer')
@@ -5236,7 +5235,7 @@ endsubroutine get_gravz_chit
 !  This is an attempt to remove explicit reference to chit_prof[0-2] from
 !  code, e.g. the boundary condition routine.
 !
-!  NB: if you modify this profile, you *must* adapt gradlogchit_aniso_prof 
+!  NB: if you modify this profile, you *must* adapt gradlogchit_aniso_prof
 !  below.
 !
 !  27-apr-2011/pete: adapted from chit_profile
@@ -5627,7 +5626,7 @@ endsubroutine get_gravz_chit
     integer :: i,nr
     integer, dimension(1) :: i_ext
     real, dimension (nr) :: r,flux,g,lnrho,temp
-    real :: dtemp,dlnrho,dr,rhotop,rhobot,lnrhobot, &
+    real :: dtemp,dlnrho,dr,rhotop,rhobot, &
             polyad,delad,fr_frac,fc_frac,fc,del,Rgas
 !
 !  Needed for computing a MLT stratification.
@@ -5671,7 +5670,7 @@ endsubroutine get_gravz_chit
 !
 !    lnrhobot=interp1(r,lnrho,nr,r_bcz)
 !    rhobot=exp(lnrhobot)
-!  new constraint for the iterative computation of stratification: 
+!  new constraint for the iterative computation of stratification:
 !  --> we impose Mtot=1 in r=(0,r_ext)
 !
     i_ext=minloc(abs(r-r_ext))
