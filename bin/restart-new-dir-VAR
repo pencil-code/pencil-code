@@ -8,15 +8,36 @@
 #  existing directory tree underneath $1
 #  uses VAR6 to put in var.dat
 
-# to be done by hand:
-#mkdir rot512_Om0b
-#gt rot512_Om0b
-#mkdatadir
-#cd data
-#mkproc-tree 128
-#gb
-#restart-new-dir ../rot512_Om0b
-
+#
+#  save name of old directory
+#
+set olddir=`pwd`
+set newdir=$1
+cd $newdir
+#
+#  get number of cpus
+#
+set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+echo "$ncpus CPUs"
+#
+# Up here, datadir is not yet defined, so do it locally:
+# Determine data directory (defaults to `data')
+#
+if (-r datadir.in) then
+  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
+else
+  set datadir = "data"
+endif
+echo "$datadir"
+#
+cd $datadir
+pc_mkproctree $ncpus
+pwd
+echo "pc_mkproctree $ncpus"
+cd $olddir
+#
+#  copy from old to new run directory
+#
 if ($#argv == 0) then
   echo "Example: restart-new-dir-VAR ../hydro256e 46"
 else
