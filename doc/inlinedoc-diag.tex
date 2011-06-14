@@ -22,6 +22,7 @@
 %%   testfield_z.f90
 %%   nosolid_cells.f90
 %%   chemistry.f90
+%%   shock.f90
 %%   noentropy.f90
 %%   solid_cells.f90
 %%   testfield_axisym2.f90
@@ -898,7 +899,7 @@
                     \quad(time step relative to
                     viscous time step;
                     see \S~\ref{time-step}) \\
-  \var{meshRemax} & Mesh Reynolds number \\
+  \var{meshRemax} & Max mesh Reynolds number \\
   \var{Reshock}   & Mesh Reynolds number at shock \\
   \var{fviscmz}   & $\left<2\nu\varrho u_i
                     \mathcal{S}_{iz} \right>_{xy}$
@@ -1164,6 +1165,10 @@
   \var{Y17mz}     & $\left<Y_17\right>_{xy}(z)$ \\
   \var{Y18mz}     & $\left<Y_18\right>_{xy}(z)$ \\
   \var{Y19mz}     & $\left<Y_19\right>_{xy}(z)$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{shock.f90}} \\
+\midrule
+  \var{shockmax}  & Max shock number \\
 \midrule
   \multicolumn{2}{c}{Module \file{noentropy.f90}} \\
 \midrule

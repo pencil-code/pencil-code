@@ -9809,14 +9809,16 @@ modules
     \file{radiation_ray.f90} & Radiation transfer along rays.\\
     \file{noradiation.f90}& No radiative transfer. \\
     \midrule
-    \file{visc_const.f90} & Constant fluid viscosity. \\
-    \file{visc_shock.f90} & Constant fluid viscosity and variable shock
+    \file{viscosity.f90} & Constant dynamic or kinematic fluid viscosity. \\
+    \file{noviscosity.f90} & No constant fluid viscosity.\\
+    \midrule
+    \file{shock.f90} & Variable shock
                             viscosity (conserves energy) based upon
                             local strength of a shock.
                             The shock profile is calculated from the
                             velocity field.
-                     \emph{Still experimental and not fully tested. }. \\
-    \midrule
+                            \emph{Still experimental and not fully tested. } \\
+    \file{noshock.f90} & No shock viscosity.\\
     \midrule
     \file{forcing.f90}    & Add a forcing function to rhs of equation of motion
                             (typically helical forcing) for forced turbulence
@@ -10848,7 +10850,7 @@ possible inputs to the file \file{video.in}.
                 writes \file[]{TT.\{xz,yz,xy,xy2\}}  \\
 %
 \midrule
-  \multicolumn{2}{c}{Module \file{visc_shock.f90}} \\
+  \multicolumn{2}{c}{Module \file{shock.f90}} \\
 \midrule
   \var{shock} & shock viscosity $\nu_{\rm shock}$;
                 writes \file[]{shock.\{xz,yz,xy,xy2\}}  \\

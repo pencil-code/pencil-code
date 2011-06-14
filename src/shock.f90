@@ -50,7 +50,7 @@ module Shock
       lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
       lshock_max3_interp, lforce_periodic_shockviscosity
 !
-  integer :: idiag_shockmax=0
+  integer :: idiag_shockmax=0   ! DIAG_DOC: Max shock number
 !
   interface shock_max3
     module procedure shock_max3_farray
@@ -295,11 +295,10 @@ module Shock
 !
 !  20-11-04/anders: coded
 !
-!   dummy
-!
       if (idiag_shockmax/=0) then
           lpenc_diagnos(i_shock)=.true.
       endif
+!
     endsubroutine pencil_criteria_shock
 !***********************************************************************
     subroutine pencil_interdep_shock(lpencil_in)
@@ -334,7 +333,6 @@ module Shock
 ! gshock
       if (lpencil(i_gshock)) call grad(f,ishock,p%gshock)
 !
-!print*,maxval(f(l1:l2,m1:m2,n1:n2,ishock))
       if (ldiagnos.and.idiag_shockmax/=0) call max_mn_name(p%shock,idiag_shockmax)
 !
     endsubroutine calc_pencils_shock
