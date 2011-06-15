@@ -239,6 +239,14 @@ module Boundcond
                   ! BCX_DOC: overshoot boundary condition
                   ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$
                   call bc_overshoot_x(f,fbcx12,topbot,j)
+                case ('out')
+                  ! BCX_DOC: allow outflow, but no inflow
+                  ! BCX_DOC: forces ghost cells and boundary to not point inwards
+                  call bc_outflow_x(f,topbot,j,.true.)
+                case ('e1o')
+                  ! BCX_DOC: allow outflow, but no inflow
+                  ! BCX_DOC: uses the e1 extrapolation scheme
+                  call bc_outflow_x_e1(f,topbot,j,.true.)
                 case ('ant')
                   ! BCX_DOC: stops and prompts for adding documentation
                   call bc_antis_x(f,fbcx12,topbot,j)
@@ -5268,6 +5276,145 @@ module Boundcond
 !
     endsubroutine bc_inflow_z
 !***********************************************************************
+    subroutine bc_outflow_x(f,topbot,j,lforce_ghost)
+!
+!  Outflow boundary conditions.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to 'a'.
+!  If 'lforce_ghost' is true, the boundary and ghost cell values are forced
+!  to not point inwards. Otherwise the boundary value is forced to be 0.
+!
+!  14-jun-2011/axel: adapted from bc_outflow_z
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+      logical, optional :: lforce_ghost
+!
+      integer :: i, iy, iz
+      logical :: lforce
+!
+      lforce = .false.
+      if (present (lforce_ghost)) lforce = lforce_ghost
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do iy=1,my; do iz=1,mz
+          if (f(l1,iy,iz,j)<0.0) then  ! 's'
+            do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
+          else                         ! 'a'
+            do i=1,nghost; f(l1-i,iy,iz,j)=-f(l1+i,iy,iz,j); enddo
+            f(l1,iy,iz,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(l1-i,iy,iz,j) > 0.0) f(l1-i,iy,iz,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do iy=1,my; do iz=1,mz
+          if (f(l2,iy,iz,j)>0.0) then  ! 's'
+            do i=1,nghost; f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j); enddo
+          else                         ! 'a'
+            do i=1,nghost; f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j); enddo
+            f(l2,iy,iz,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(l2+i,iy,iz,j) < 0.0) f(l2+i,iy,iz,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_outflow_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_outflow_x
+!***********************************************************************
+    subroutine bc_outflow_x_e1(f,topbot,j,lforce_ghost)
+!
+!  Outflow boundary conditions.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to 'a'.
+!  If 'lforce_ghost' is true, the boundary and ghost cell values are forced
+!  to not point inwards. Otherwise the boundary value is forced to be 0.
+!
+!  14-jun-2011/axel: adapted from bc_outflow_x
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+      logical, optional :: lforce_ghost
+!
+      integer :: i, iy, iz
+      logical :: lforce
+!
+      lforce = .false.
+      if (present (lforce_ghost)) lforce = lforce_ghost
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do iy=1,my; do iz=1,mz
+          if (f(l1,iy,iz,j)<0.0) then  ! 's'
+            do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
+            f(l1-1,iy,iz,j)=0.25*(  9*f(l1,iy,iz,j)- 3*f(l1+1,iy,iz,j)- 5*f(l1+2,iy,iz,j)+ 3*f(l1+3,iy,iz,j))
+            f(l1-2,iy,iz,j)=0.05*( 81*f(l1,iy,iz,j)-43*f(l1+1,iy,iz,j)-57*f(l1+2,iy,iz,j)+39*f(l1+3,iy,iz,j))
+            f(l1-3,iy,iz,j)=0.05*(127*f(l1,iy,iz,j)-81*f(l1+1,iy,iz,j)-99*f(l1+2,iy,iz,j)+73*f(l1+3,iy,iz,j))
+          else                         ! 'a'
+            do i=1,nghost; f(l1-i,iy,iz,j)=-f(l1+i,iy,iz,j); enddo
+            f(l1,iy,iz,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(l1-i,iy,iz,j) > 0.0) f(l1-i,iy,iz,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        do iy=1,my; do iz=1,mz
+          if (f(l2,iy,iz,j)>0.0) then  ! 's'
+            f(l2+1,iy,iz,j)=0.25*(  9*f(l2,iy,iz,j)- 3*f(l2-1,iy,iz,j)- 5*f(l2-2,iy,iz,j)+ 3*f(l2-3,iy,iz,j))
+            f(l2+2,iy,iz,j)=0.05*( 81*f(l2,iy,iz,j)-43*f(l2-1,iy,iz,j)-57*f(l2-2,iy,iz,j)+39*f(l2-3,iy,iz,j))
+            f(l2+3,iy,iz,j)=0.05*(127*f(l2,iy,iz,j)-81*f(l2-1,iy,iz,j)-99*f(l2-2,iy,iz,j)+73*f(l2-3,iy,iz,j))
+          else                         ! 'a'
+            do i=1,nghost; f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j); enddo
+            f(l2,iy,iz,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(l2+i,iy,iz,j) < 0.0) f(l2+i,iy,iz,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        print*, "bc_outflow_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_outflow_x_e1
+!***********************************************************************
     subroutine bc_outflow_z(f,topbot,j,lforce_ghost)
 !
 !  Outflow boundary conditions.
@@ -5297,15 +5444,15 @@ module Boundcond
 !
       case ('bot')
         do iy=1,my; do ix=1,mx
-          if (f(ix,iy,n1,j)<0.0) then  ! 's'
-            do i=1,nghost; f(ix,iy,n1-i,j)=+f(ix,iy,n1+i,j); enddo
+          if (f(ix,iy,l1,j)<0.0) then  ! 's'
+            do i=1,nghost; f(ix,iy,l1-i,j)=+f(ix,iy,l1+i,j); enddo
           else                         ! 'a'
-            do i=1,nghost; f(ix,iy,n1-i,j)=-f(ix,iy,n1+i,j); enddo
-            f(ix,iy,n1,j)=0.0
+            do i=1,nghost; f(ix,iy,l1-i,j)=-f(ix,iy,l1+i,j); enddo
+            f(ix,iy,l1,j)=0.0
           endif
           if (lforce) then
             do i = 0, nghost
-              if (f(ix,iy,n1-i,j) > 0.0) f(ix,iy,n1-i,j) = 0.0
+              if (f(ix,iy,l1-i,j) > 0.0) f(ix,iy,l1-i,j) = 0.0
             enddo
           endif
         enddo; enddo
