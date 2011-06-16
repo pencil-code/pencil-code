@@ -677,7 +677,7 @@ module Testfield
 !  test fields linear in z
 !
         case ('linear')
-          call fatal_error{'testfield_axisym4','dont use this part'}
+          call fatal_error('testfield_axisym4','dont use this part')
           if (idiag_gam    /=0) call sum_mn_name(+.5*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
           if (idiag_alpPERP/=0) call sum_mn_name(-.5*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERP)
           if (idiag_alpPARA/=0) call sum_mn_name(-    Eipq(:,3,1)             ,idiag_alpPARA)
@@ -693,7 +693,7 @@ module Testfield
 !  test fields sinusoidal also in the z direction
 !
         case ('sinkz')
-          call fatal_error{'testfield_axisym4','dont use this part'}
+          call fatal_error('testfield_axisym4','dont use this part')
           if (idiag_gam    /=0) call sum_mn_name(+2*sy(m)*sz(n)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gam    )
           if (idiag_alpPERP/=0) call sum_mn_name(-2*sy(m)*sz(n)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERP)
           if (idiag_alpPARA/=0) call sum_mn_name(-4*sy(m)*sz(n)* Eipq(:,3,1)             ,idiag_alpPARA)
@@ -730,14 +730,18 @@ module Testfield
           if (idiag_alpPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)),idiag_alpPERPz)
           if (idiag_alpPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(cz(n)*Eipq(:,3,3)+sz(n)*Eipq(:,3,4)),idiag_alpPARAz)
 !
-          if (idiag_muz     /=0) call xysum_mn_name_z(+4*sx*(-kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))+ky1*cy(m)*(cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_muz)
-          if (idiag_betPERPz/=0) call xysum_mn_name_z(-2*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2))+ky1*cy(m)*(cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_betPERPz)
+          if (idiag_muz     /=0) call xysum_mn_name_z(+4*sx*(-kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+                                                             +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_muz)
+          if (idiag_betPERPz/=0) call xysum_mn_name_z(-2*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+                                                             +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4))),idiag_betPERPz)
 !
-          if (idiag_delz    /=0) call xysum_mn_name_z(+2*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))-ky1*cy(m)*(cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_delz)
-          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2))+ky1*cy(m)*(cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_kapPERPz)
+          if (idiag_delz    /=0) call xysum_mn_name_z(+2*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+                                                             -ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_delz)
+          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4*sx*(+kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+                                                             +ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4))),idiag_kapPERPz)
 !
-          if (idiag_betPARAz/=0) call xysum_mn_name_z(+4*sx*  ky1*cy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2))),idiag_betPARAz)
-          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-4*sx*  kz1*sy(m)*(-sz(n)*Eipq(:,3,3)+cz(n)*Eipq(:,3,4))),idiag_kapPARAz)
+          if (idiag_betPARAz/=0) call xysum_mn_name_z(+4*sx*  ky1*cy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2)) ,idiag_betPARAz)
+          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-4*sx*  kz1*sy(m)*(-sz(n)*Eipq(:,3,3)+cz(n)*Eipq(:,3,4)) ,idiag_kapPARAz)
 !
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -1160,6 +1164,9 @@ module Testfield
         idiag_alpPERP=0; idiag_alpPARA=0; idiag_gam=0
         idiag_betPERP=0; idiag_betPARA=0; idiag_del=0
         idiag_kapPERP=0; idiag_kapPARA=0; idiag_mu=0
+        idiag_alpPERPz=0; idiag_alpPARAz=0; idiag_gamz=0
+        idiag_betPERPz=0; idiag_betPARAz=0; idiag_delz=0
+        idiag_kapPERPz=0; idiag_kapPARAz=0; idiag_muz=0
         idiag_b1rms=0; idiag_b2rms=0; idiag_b3rms=0
         idiag_bx1pt=0; idiag_bx2pt=0; idiag_bx3pt=0
       endif
@@ -1186,25 +1193,21 @@ module Testfield
 !
 !  check for those quantities for which we want xy-averages
 !
-!     do inamez=1,nnamez
-!       call parse_name(inamez,cnamez(inamez),cformz(inamez),'M33z',idiag_M33z)
-!     enddo
-!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alpPERPz',idiag_alpPERPz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alpPARAz',idiag_alpPARAz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gamz',idiag_gamz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'betPERPz',idiag_betPERPz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'betPARAz',idiag_betPARAz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'delz',idiag_delz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapPERPz',idiag_kapPERPz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapPARAz',idiag_kapPARAz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'muz',idiag_muz)
+      enddo
+
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_alpPARA=',idiag_alpPARA
-        write(3,*) 'idiag_alpPERP=',idiag_alpPERP
-        write(3,*) 'idiag_gam=',idiag_gam
-        write(3,*) 'idiag_betPARA=',idiag_betPARA
-        write(3,*) 'idiag_betPERP=',idiag_betPERP
-        write(3,*) 'idiag_del=',idiag_del
-        write(3,*) 'idiag_kapPARA=',idiag_kapPARA
-        write(3,*) 'idiag_kapPERP=',idiag_kapPERP
-        write(3,*) 'idiag_mu=',idiag_mu
-        write(3,*) 'idiag_b1rms=',idiag_b1rms
-        write(3,*) 'idiag_b2rms=',idiag_b2rms
-        write(3,*) 'idiag_b3rms=',idiag_b3rms
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iaxtestpq=',iaxtestpq
         write(3,*) 'iaztestpq=',iaztestpq
