@@ -21,7 +21,7 @@ module Testfield
 
   implicit none
 
-  include 'testfield.h'
+  include '../testfield.h'
 !
 ! Slice precalculation buffers
 !
