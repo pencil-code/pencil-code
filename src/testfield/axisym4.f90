@@ -34,7 +34,7 @@ module Testfield
 !
   real, dimension(nx) :: sx
   real, dimension(my) :: sy,cy
-  real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz,kyBx1,kyBz1
+  real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz,kyBx1,kyBz1,zmask
   integer, parameter :: njtest=4
   real :: phase_testfield=.0
 !
@@ -46,6 +46,7 @@ module Testfield
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
+  real, dimension(2) :: zaver_range=(/-max_real,max_real/)
   real :: taainit=0.,daainit=0.,taainit_previous=0.
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
@@ -61,7 +62,7 @@ module Testfield
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
-       B_ext,zextent,initaatest, &
+       B_ext,zaver_range,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
        phasex_aatest,phasez_aatest, &
        luxb_as_aux,ljxb_as_aux
@@ -77,7 +78,8 @@ module Testfield
   logical :: lforcing_cont_aatest=.false.
   logical :: ltestfield_artifric=.false.
   namelist /testfield_run_pars/ &
-       B_ext,reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
+       B_ext,zaver_range, &
+       reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield, &
        ktestfield,kxtestfield,kytestfield, &
        ztestfield_offset, &
@@ -243,11 +245,23 @@ module Testfield
       s2z=s**2
       csz=c*s
 !
+!  Compute mask for z-averaging where z is in zaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      where (z>=zaver_range(1) .and. z<=zaver_range(2))
+        zmask=1.
+      elsewhere
+        zmask=0.
+      endwhere
+      zmask=zmask*nz/sum(zmask)
+!
 !  debug output
 !
       if (lroot.and.ip<14) then
         print*,'cz=',cz
         print*,'sz=',sz
+        print*,'zmask=',zmask
       endif
 !
 !  Also calculate its inverse, but only if different from zero
@@ -712,17 +726,40 @@ module Testfield
 !
 !  Volume averages first.
 !
-          if (idiag_gam    /=0) call sum_mn_name(-8*sx*sy(m)*sz(n)*Eipq(:,2,1),idiag_gam    )
-          if (idiag_alpPERP/=0) call sum_mn_name(-8*sx*sy(m)*sz(n)*Eipq(:,1,1),idiag_alpPERP)
-          if (idiag_alpPARA/=0) call sum_mn_name(-8*sx*sy(m)*sz(n)*Eipq(:,3,2),idiag_alpPARA)
+          if (idiag_gam    /=0) call sum_mn_name(-4*sx &
+            *sy(m)*(cz(n)*Eipq(:,2,1)+sz(n)*Eipq(:,2,2)) &
+            *zmask(n),idiag_gam    )
+          if (idiag_alpPERP/=0) call sum_mn_name(-4*sx &
+            *sy(m)*(cz(n)*Eipq(:,1,1)+sz(n)*Eipq(:,1,2)) &
+            *zmask(n),idiag_alpPERP)
+          if (idiag_alpPARA/=0) call sum_mn_name(-4*sx &
+            *sy(m)*(cz(n)*Eipq(:,3,3)+sz(n)*Eipq(:,3,4)) &
+            *zmask(n),idiag_alpPARA)
 !
-          if (idiag_mu     /=0) call sum_mn_name(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,1)-ky1*cy(m)*sz(n)*Eipq(:,1,2)),idiag_mu     )
-          if (idiag_betPERP/=0) call sum_mn_name(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,1)+ky1*cy(m)*sz(n)*Eipq(:,1,2)),idiag_betPERP)
-          if (idiag_betPARA/=0) call sum_mn_name(+8*sx*                             ky1*cy(m)*sz(n)*Eipq(:,3,1) ,idiag_betPARA)
+          if (idiag_mu     /=0) call sum_mn_name(+4*sx*( &
+            -kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_mu)
+          if (idiag_betPERP/=0) call sum_mn_name(-2*sx*( &
+            +kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_betPERP)
 !
-          if (idiag_del    /=0) call sum_mn_name(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,1)-ky1*cy(m)*sz(n)*Eipq(:,2,2)),idiag_del    )
-          if (idiag_kapPERP/=0) call sum_mn_name(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,1)+ky1*cy(m)*sz(n)*Eipq(:,2,2)),idiag_kapPERP)
-          if (idiag_kapPARA/=0) call sum_mn_name(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,2)                             ,idiag_kapPARA)
+          if (idiag_del    /=0) call sum_mn_name(+2*sx*( &
+            +kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            -ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_del)
+          if (idiag_kapPERP/=0) call sum_mn_name(-4*sx*( &
+            +kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            +ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_kapPERP)
+!
+          if (idiag_betPARA/=0) call sum_mn_name(+4*sx* &
+             ky1*cy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2)) &
+             *zmask(n),idiag_betPARA)
+          if (idiag_kapPARA/=0) call sum_mn_name(-4*sx* &
+             kz1*sy(m)*(-sz(n)*Eipq(:,3,3)+cz(n)*Eipq(:,3,4)) &
+             *zmask(n),idiag_kapPARA)
 !
 !  xy-averages next.
 !
