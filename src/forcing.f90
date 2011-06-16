@@ -387,14 +387,21 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.; profz_hel=1.
 !
-!  turn off forcing intensity above x=x0
+!  turn off forcing intensity above x=r_ff and y=r_ff
 !
       elseif (iforce_profile=='surface_xy') then
         profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff)); profx_hel=1.
         profy_ampl=.5*(1.-erfunc((y-r_ff)/width_ff)); profy_hel=1.
         profz_ampl=1.; profz_hel=1.
 !
-!  turn on forcing intensity above x=x0
+!  turn off forcing intensity above x=r_ff and y=r_ff
+!
+      elseif (iforce_profile=='surface_xz') then
+        profx_ampl=.5*(1.-erfunc((x-r_ff)/width_ff)); profx_hel=1.
+        profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff)); profz_hel=1.
+        profy_ampl=1.; profy_hel=1.
+!
+!  turn on forcing intensity above x=r_ff
 !
       elseif (iforce_profile=='above_x0') then
         profx_ampl=.5*(1.+erfunc((x-r_ff)/width_ff))

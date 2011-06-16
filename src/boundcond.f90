@@ -788,6 +788,9 @@ module Boundcond
               case ('set')
                 ! BCZ_DOC: set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
+              case ('sep')
+                ! BCY_DOC: set boundary value
+                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12,val2=fbcz12_1,val4=fbcz12_2)
               case ('der')
                 ! BCZ_DOC: set derivative on the boundary
                 call bc_set_der_z(f,topbot,j,fbcz12(j))
@@ -1775,7 +1778,7 @@ module Boundcond
 !
     endsubroutine bc_symset0der_y
 !***********************************************************************
-    subroutine bc_sym_z(f,sgn,topbot,j,rel,val)
+    subroutine bc_sym_z(f,sgn,topbot,j,rel,val,val2,val4)
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -1788,7 +1791,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mcom), optional :: val
+      real, dimension (mcom), optional :: val,val2,val4
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -1799,6 +1802,8 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         if (present(val)) f(:,:,n1,j)=val(j)
+        if (present(val2)) f(:,:,n1,j)=f(:,:,n1,j)+val2(j)*spread(x**2,2,my)
+        if (present(val4)) f(:,:,n1,j)=f(:,:,n1,j)+val4(j)*spread(x**4,2,my)
         if (relative) then
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
         else
@@ -1808,6 +1813,8 @@ module Boundcond
 !
       case ('top')               ! top boundary
         if (present(val)) f(:,:,n2,j)=val(j)
+        if (present(val2)) f(:,:,n2,j)=f(:,:,n2,j)+val2(j)*spread(x**2,2,my)
+        if (present(val4)) f(:,:,n2,j)=f(:,:,n2,j)+val4(j)*spread(x**4,2,my)
         if (relative) then
           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         else
