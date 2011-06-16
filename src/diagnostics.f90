@@ -52,6 +52,7 @@ module Diagnostics
     module procedure max_name_real
   endinterface max_name
 !
+  real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   integer :: mnamer
   character (len=5) :: ch2davg
 !

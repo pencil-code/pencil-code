@@ -333,7 +333,6 @@ module Cdata
   real, dimension(:,:,:,:), allocatable :: fnamerz
   integer, dimension (:,:), allocatable :: sound_coords_list
   real, dimension (nz,nprocz) :: z_allprocs=0.0
-  real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   character (len=30), allocatable :: cform(:),cform_sound(:), &
                                      cformxy(:),cformxz(:),cformrz(:), &
                                      cformz(:),cformy(:),cformx(:),cformr(:)
