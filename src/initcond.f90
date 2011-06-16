@@ -2769,7 +2769,7 @@ module Initcond
           tube_radius_sqr=(x(l1:l2)-center1_x)**2+(z(n)-center1_z)**2
 !         tmp=.5*ampl/modulate*exp(-tube_radius_sqr)/&
 !                   (max((radius*modulate)**2-tube_radius_sqr,1e-6))
-          tmp=1./(1.+tube_radius_sqr/radius**2)
+          tmp=ampl/(1.+tube_radius_sqr/radius**2)
 !
 !  check whether vector or scalar
 !
@@ -2855,7 +2855,7 @@ module Initcond
 !
       integer :: i1,i2,l
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,a,eps,width,tmp,radius,a_minus_r
+      real :: ampl,a,eps,width,tmp,radius,r_minus_a
       real :: center1_x,center1_z
 !
       if (ampl==0) then
@@ -2876,12 +2876,15 @@ module Initcond
 !
         do n=n1,n2; do l=l1,l2
           radius= sqrt((x(l)-center1_x)**2+(z(n)-center1_z)**2)
-          a_minus_r= a - radius
+          r_minus_a= radius -a
           if (radius > tini) then
-            tmp = (-(exp(-width*a_minus_r**2))/(4.*sqrt(pi)*width) +  &
-                radius*(1+erfunc(width*a_minus_r))/4. + &
-                2*a*(exp(-(a**2)*(width**2)) - exp(-(a_minus_r**2)*(width**2)))/(8.*radius*width) + &
-                (1+2*(a**2)*(width**2))*(erfunc(a*width) - erfunc(width*a_minus_r))/(8.*radius*width**2))/radius
+!            tmp = (-(exp(-width*a_minus_r**2))/(4.*sqrt(pi)*width) +  &
+!                radius*(1+erfunc(width*a_minus_r))/4. + &
+!                2*a*(exp(-(a**2)*(width**2)) - exp(-(a_minus_r**2)*(width**2)))/(8.*radius*width) + &
+!                (1+2*(a**2)*(width**2))*(erfunc(a*width) - erfunc(width*a_minus_r))/(8.*radius*width**2))/radius
+            tmp = (radius**2/2-0.5*(radius+a)*(r_minus_a*erfunc(r_minus_a/width)+width*exp(-r_minus_a**2/width**2)/sqrt(pi))&
+                  +0.25*width**2*erfunc(r_minus_a/width)+0.5*a*(-a*erfunc(-a/width)+width*exp(-a**2/width**2)/sqrt(pi))&
+                  -0.25*width**2*erfunc(-a/width))/radius**2
           else
             tmp = 0
             write(*,*) 'radius <  tini',radius,tini
@@ -2892,9 +2895,9 @@ module Initcond
           if (i1==i2) then
             f(l,:,n,i1)=tmp
           elseif (i1+2==i2) then
-            f(l,:,n,i1 )=-(z(n)-center1_z)*tmp*ampl
-            f(l,:,n,i1+1)=tmp*eps
-            f(l,:,n,i1+2)=+(x(l)-center1_x)*tmp*ampl
+            f(l,:,n,i1 )=f(l,:,n,i1)-(z(n)-center1_z)*tmp*ampl
+            f(l,:,n,i1+1)=f(l,:,n,i1+1)+tmp*eps
+            f(l,:,n,i1+2)=f(l,:,n,i1+2)+(x(l)-center1_x)*tmp*ampl
          else
             if (lroot) print*,'htube_erf: bad value of i2=',i2
           endif

@@ -89,6 +89,7 @@ module Magnetic
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(3) :: u0_advec=0.
   real, dimension(nx,3) :: uxbb
+  real, dimension(nx) :: eta_BB
   real, target :: zmode=1.0 !(temporary)
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
@@ -119,6 +120,7 @@ module Magnetic
   real :: RFPradB=1., RFPradJ=1.
   real :: th_spot=PI/4
   real :: non_ffree_factor=1.
+  real :: etaB
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -147,6 +149,7 @@ module Magnetic
   logical :: lresi_smagorinsky_cross=.false.
   logical :: lresi_anomalous=.false.
   logical :: lresi_spitzer=.false.
+  logical :: lresi_magfield=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
   logical :: lohmic_heat=.true., lneutralion_heat=.true.
@@ -175,7 +178,7 @@ module Magnetic
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
       lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor,th_spot,& 
-      non_ffree_factor
+      non_ffree_factor,etaB
 !
 ! Run parameters
 !
@@ -860,6 +863,9 @@ module Magnetic
         case ('spitzer')
           if (lroot) print*, 'resistivity: temperature dependent (Spitzer 1969)'
           lresi_spitzer=.true.
+        case ('magfield')
+          if (lroot) print*, 'resistivity: magnetic field dependent'
+          lresi_magfield=.true.
         case ('none')
           ! do nothing
         case ('')
@@ -1367,7 +1373,7 @@ module Magnetic
                 cs2=cs20*exp(gamma_m1*(lnrho_old-lnrho0) &
                   +gamma*f(l1:l2,m,n,iss))
                 f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/ &
-                  (beq2*cs2(1:nx)))
+                  (2*cs2(1:nx)))
                 f(l1:l2,m,n,iss)=gamma_inv*(log(cs2/cs20)-&
                   gamma_m1*f(l1:l2,m,n,ilnrho))
               else
@@ -2266,7 +2272,7 @@ module Magnetic
 !
       use Deriv, only: der6
       use Diagnostics
-      use EquationOfState, only: eoscalc
+      use EquationOfState, only: eoscalc, rho0,cs0
       use Io, only: output_pencil
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
@@ -2291,7 +2297,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
       real, dimension (nx) :: vdrift
-      real :: tmp,eta_out1
+      real :: tmp,eta_out1,maxetaBB
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
       integer :: isound,lspoint,mspoint,nspoint
@@ -2573,6 +2579,23 @@ module Magnetic
         endif
         if (lfirst.and.ldt) then
           diffus_eta=diffus_eta+eta_spitzer*exp(-1.5*p%lnTT)
+        endif
+      endif
+!
+! Magnetic field dependent resistivity
+!
+      if (lresi_magfield) then
+        eta_BB(:)=eta/(1.+etaB*p%bb(:,2)**2)
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i)=fres(:,i)-mu0*eta_BB(:)*p%jj(:,i)
+          enddo
+        else
+          call fatal_error('daa_dt','lweyl_gauge=T for lresi_magfield')
+        endif
+        if (lfirst.and.ldt) then
+          call max_mn(eta_BB,maxetaBB)
+          diffus_eta=diffus_eta+maxetaBB
         endif
       endif
 !

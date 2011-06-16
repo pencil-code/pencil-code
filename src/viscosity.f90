@@ -77,6 +77,7 @@ module Viscosity
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
   logical :: lmeanfield_nu=.false.
+  logical :: lmagfield_nu=.false.
   logical :: llambda_effect=.false.
   logical, pointer:: lviscosity_heat
 !
@@ -85,7 +86,7 @@ module Viscosity
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
-      offamp_lambda,lambda_jump,lmeanfield_nu,meanfield_nuB,PrM_turb,&
+      offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB,PrM_turb,&
       roffset_lambda
 !
 ! other variables (needs to be consistent with reset list below)
@@ -197,6 +198,7 @@ module Viscosity
         case ('nu-const')
           if (lroot) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
+!          if (meanfield_nuB/=0.) lpenc_requested(i_b2)=.true.
           lvisc_nu_const=.true.
         case ('nu-prof')
           if (lroot) print*,'viscous force with a vertical profile for nu'
@@ -658,6 +660,7 @@ module Viscosity
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nut_from_magnetic.or.lvisc_nu_therm .or. lvisc_mu_therm) &
           lpenc_requested(i_sglnrho)=.true.
+      if (lvisc_nu_const .and. lmagfield_nu) lpenc_requested(i_b2)=.true.
       if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
       if (ldensity.and.lvisc_nu_shock) then
         lpenc_requested(i_graddivu)=.true.
@@ -1445,13 +1448,20 @@ module Viscosity
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
       integer, dimension(1) :: max_loc
+      integer :: i
 !
       intent (in) :: p
       intent (inout) :: df
 !
 !  Add viscosity to equation of motion
 !
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
+      if (lmagfield_nu) then
+        do i=1,3
+          df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + p%fvisc(:,i)/(1.+p%b2/meanfield_nuB**2)
+        enddo
+      else
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
+      endif
 !
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
