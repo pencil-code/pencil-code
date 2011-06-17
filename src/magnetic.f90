@@ -1656,7 +1656,7 @@ module Magnetic
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
-          idiag_emag/=0 .or. idiag_b2mz) &
+          idiag_emag/=0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
       if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
       if (idiag_etajmax/=0) lpenc_diagnos(i_etaj)=.true.
