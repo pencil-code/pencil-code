@@ -1647,8 +1647,6 @@ module Sub
 !  Calculate del2 of a 3x3 symmetric matrix, get matrix
 !  23-feb-11/dhruba: coded in a new manner
 !
-      use Deriv, only: der
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: del2f
       real, dimension (nx) :: tmp
@@ -3918,7 +3916,7 @@ module Sub
       optional                  ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_p', &
+        call error('keep_compiler_quiet_bc', &
             'The world is a disk, and we never got here...')
         print*,                  v1
         if (present(v2)) print*, v2
@@ -3939,7 +3937,7 @@ module Sub
       optional          ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_p', &
+        call error('keep_compiler_quiet_sl', &
             'The world is a disk, and we never got here...')
         print*,                  v1%ix
         if (present(v2)) print*, v2%ix
@@ -3960,7 +3958,7 @@ module Sub
       optional ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_1', &
+        call error('keep_compiler_quiet_i', &
             'The world is a disk, and we never got here...')
         print*,                  v1
         if (present(v2)) print*, v2
@@ -4086,7 +4084,7 @@ module Sub
       optional          ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_l', &
+        call error('keep_compiler_quiet_c', &
             'The world is a disk, and we never got here...')
         print*,                  v1
         if (present(v2)) print*, v2
