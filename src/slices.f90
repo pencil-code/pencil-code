@@ -284,7 +284,8 @@ module Slices
 !
 ! xy2 is top layer as default.
 ! Please set iz2 in run.in to select a different layer
-! where 4 <= iz2 <= mzgrid-3
+! where nghsost <= iz2 <= mzgrid-nghost
+!
         lwrite_slice_xy2=llast_proc_z
         lwrite_slice_xy=(ipz==nprocz/2)
         lwrite_slice_xz=(ipy==nprocy/2)
