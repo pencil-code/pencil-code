@@ -21,9 +21,9 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,Kc=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
-  real :: hyper3_chi=0.,hyper3_diffrho=0.,tau_inv_spitzer=0.
+  real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper3_spi=0.,tau_inv_spitzer=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
-  real :: tau_inv_top=0.
+  real :: tau_inv_top=0.,chi_spi=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=huge1
@@ -55,7 +55,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
-      eighth_moment,mark,hyper3_diffrho
+      eighth_moment,mark,hyper3_diffrho,hyper3_spi,chi_spi
 !
 ! variables for print.in
 !
@@ -175,7 +175,7 @@ module Special
 !
       unit_ampere = unit_velocity*sqrt(mu0/(4.*pi*1e-7)*unit_density)*unit_length
       e_charge= 1.602176e-19/unit_time/unit_ampere
-
+!
       nu_ee = 4.D0/3. *sqrt(pi) * 20.D0/ sqrt(m_e) * &
           ((e_charge**2./(4.D0*pi*eps0))**2.D0)/(k_B**1.5) * 0.872 /m_p
 !
@@ -242,25 +242,26 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!      real, dimension (mx) ::  glnT
-!      integer :: i,j
+      real, dimension (mx) ::  glnT
+      integer :: i,j
+!
       intent(inout) :: f
 !
 !  Initialization for the non-fourier heat transprot
-! !
-!       Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
-!           unit_length*unit_temperature**(3.5)
-! !
-!       f(:,:,:,ispitzerz)=0.
-!       do i=1,my
-!         do j=n1,n2
-! !
-!           glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
-! !
-!  !         f(:,i,j,ispitzerz) =1e-4* Kspitzer_para * exp(3.5*f(:,i,j,ilnTT))*glnT
-!         enddo
-!       enddo
+!
+      Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
+          unit_length*unit_temperature**(3.5)
+!
       f(:,:,:,ispitzerx:ispitzerz)=0.
+      do i=1,my
+        do j=n1,n2
+!
+          glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
+!
+          f(:,i,j,ispitzerz) = - Kspitzer_para * &
+              exp(3.5*f(:,i,j,ilnTT))*glnT
+        enddo
+      enddo
 !
     endsubroutine init_special
 !***********************************************************************
@@ -315,6 +316,7 @@ module Special
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
       endif
 !
       if (Kpara /= 0.) then
@@ -428,6 +430,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use EquationOfState, only: gamma
+      use Deriv, only: der6, der4, der2, der
       use Diagnostics,     only : max_mn_name
       use Sub
 !
@@ -438,7 +441,7 @@ module Special
       real, dimension(nx) :: div_spitzer,rhs
       real, dimension(nx,3) :: K1
       real, dimension(nx,3) :: spitzer_vec
-      real, dimension(nx) :: tmp,dt_1_8th,nu_coll
+      real, dimension(nx) :: tmp,dt_1_8th,nu_coll,hc
       real, dimension(nx,3) :: q
       real :: coeff
       integer :: i
@@ -465,19 +468,42 @@ module Special
         call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
         q = f(l1:l2,m,n,ispitzerx:ispitzerz)
-
+!
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
               tau_inv_spitzer*(-q(:,i)-spitzer_vec(:,i))
         enddo
 !
+! add diffusion to heat conduction vector
+!
+         call der2(f,ispitzerz,tmp,3)
+         df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + chi_spi*tmp
+!
+! Add hyper diffusion to heat conduction vector
+!
+        if (hyper3_spi /= 0.) then
+          hc(:) = 0.
+          do i=1,3
+            call der6(f,ispitzerz,tmp,i,IGNOREDX=.true.)
+            hc = hc + tmp
+          enddo
+          hc = hyper3_chi*hc
+
+          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + hc
+!
+!  due to ignoredx hyper3_chi has [1/s]
+!
+         if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + hyper3_spi
+       endif
+!
+!
 !  Limit by saturation heat flux
 !
-        call div(f,ispitzer,div_spitzer)
+        call div(f,ispitzer,rhs)
 !
-        rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_spitzer
+        rhs = rhs *exp(-p%lnTT-p%lnrho)
 !
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
 !
         if (lvideo) then
 !
@@ -735,12 +761,30 @@ module Special
 !
 !  due to ignoredx hyper3_chi has [1/s]
 !
-          if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
-              + hyper3_chi
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/cdts)
         else
           call fatal_error('hyper3_chi special','only for ltemperature')
         endif
       endif
+!
+    endsubroutine special_calc_entropy
+!***********************************************************************
+    subroutine special_calc_density(f,df,p)
+!
+! Additional terms to the right hand side of the
+! density equation
+!
+!  17-jun-11/bing: coded
+!
+      use Deriv, only: der6
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: hc,tmp
+!
+      call keep_compiler_quiet(p)
 !
       if (hyper3_diffrho /= 0.) then
         if (ldensity_nolog.and.(ilnrho /= irho)) &
@@ -758,11 +802,10 @@ module Special
 !
 !  due to ignoredx hyper3_diffrho has [1/s]
 !
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
-            + hyper3_diffrho
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/cdts)
       endif
 !
-    endsubroutine special_calc_entropy
+    endsubroutine special_calc_density
 !***********************************************************************
     subroutine calc_heatcond_spitzer(df,p)
 !
@@ -1170,7 +1213,7 @@ module Special
       endif
 !
       call dot(gK_grad,p%glnTT,gK_glnTT)
-
+!
       rhs = gK_glnTT + K_grad*(glnr_glnT+glnTT2+p%del2lnTT)
 !
       if (ltemperature .and. (.not. ltemperature_nolog)) then
@@ -2930,12 +2973,12 @@ module Special
         call chn(10000+frame-1,llabel)
         write (*,*) 'File numbers ',llabel,' and ',rlabel
         close (unit)
-
+!
         if (init_left) then
           call safe_character_assign(data_dat,'boundlayer/input_'//trim(llabel)//'.dat')
           open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
               recl=nxgrid*nygrid*lend,access='direct')
-
+!
           frame = 1
           do j=1,8
             do i=1,4
@@ -2949,12 +2992,12 @@ module Special
           left = right
           init_left=.false.
         end if
-
+!
         ! Read new data
         call safe_character_assign(data_dat,'boundlayer/input_'//trim(rlabel)//'.dat')
         open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
             recl=nxgrid*nygrid*lend,access='direct')
-
+!
         frame = 1
         do j=1,8
           do i=1,4
