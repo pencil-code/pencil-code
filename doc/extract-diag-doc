@@ -90,7 +90,6 @@ my $file    = ($opts{'o'} || $opts{'output'}   || '-');
 ## Construct file list
 my ($src_files_ref, $all_src) = get_src_files(@ARGV);
 
-
 my $diag_doc = Pencil::DocExtractor->new(
     marker  => qr/!\s*DIAG_DOC:/,
     prefix  => qr/integer\s*::\s*idiag_([a-zA-Z0-9_]+)/,
@@ -100,6 +99,13 @@ my $diag_doc = Pencil::DocExtractor->new(
 
 my $phiavg_doc = Pencil::DocExtractor->new(
     marker  => qr/!\s*PHIAVG_DOC:/,
+    prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
+    verbose => $verbose,
+    debug   => $debug
+);
+
+my $xyavg_doc = Pencil::DocExtractor->new(
+    marker  => qr/!\s*XYAVG_DOC:/,
     prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
@@ -117,6 +123,7 @@ my $bcz_doc = $bc_doc->new(marker  => qr/!\s*BCZ_DOC:/);
 foreach my $file (@$src_files_ref) {
     $diag_doc->parse($file);
     $phiavg_doc->parse($file);
+    $xyavg_doc->parse($file);
     $bcx_doc ->parse($file);
     $bcy_doc ->parse($file);
     $bcz_doc ->parse($file);
@@ -127,6 +134,10 @@ $diag_doc->write_to_file({ file          => 'inlinedoc-diag.tex',
                            print_empty   => 0,
                          });
 $phiavg_doc->write_to_file({ file          => 'inlinedoc-phiavg.tex',
+                             sort_files    => 1,
+                             print_empty   => 0,
+                           });
+$xyavg_doc->write_to_file({ file          => 'inlinedoc-xyavg.tex',
                              sort_files    => 1,
                              print_empty   => 0,
                            });

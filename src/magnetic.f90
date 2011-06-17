@@ -375,8 +375,8 @@ module Magnetic
   integer :: idiag_bxbymz=0     ! DIAG_DOC:
   integer :: idiag_bxbzmz=0     ! DIAG_DOC:
   integer :: idiag_bybzmz=0     ! DIAG_DOC:
-  integer :: idiag_b2mz=0       ! DIAG_DOC: $\left<\Bv^2\right>_{xy}$
-  integer :: idiag_j2mz=0       ! DIAG_DOC: $\left<\jv^2\right>_{xy}$
+  integer :: idiag_b2mz=0       ! XYAVG_DOC: $\left<\Bv^2\right>_{xy}$
+  integer :: idiag_j2mz=0       ! XYAVG_DOC: $\left<\jv^2\right>_{xy}$
   integer :: idiag_axmz=0       ! DIAG_DOC: $\left<{\cal A}_x\right>_{xy}$
   integer :: idiag_aymz=0       ! DIAG_DOC: $\left<{\cal A}_y\right>_{xy}$
   integer :: idiag_azmz=0       ! DIAG_DOC: $\left<{\cal A}_z\right>_{xy}$
