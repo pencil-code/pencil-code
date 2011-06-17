@@ -209,9 +209,9 @@ contains
         call mpibcast_real (prof_z,prof_nz)
 !
 ! convert from logarithmic SI to Pencil units
-        prof_lnrho = prof_lnrho - alog(real(unit_density))
+        prof_lnrho = prof_lnrho - log(real(unit_density))
 !
-! convert z coordinates from [Mm] to Pencil units
+! convert z coordinates from [m] to Pencil units
         prof_z = prof_z / unit_length
 !
 ! interpolate density profile to Pencil grid
@@ -297,9 +297,9 @@ contains
         call mpibcast_real(prof_z,prof_nz)
 !
 ! convert from logarithmic SI to Pencil units
-        prof_lnTT = prof_lnTT - alog(real(unit_temperature))
+        prof_lnTT = prof_lnTT - log(real(unit_temperature))
 !
-! convert z coordinates from [Mm] to Pencil units
+! convert z coordinates from [m] to Pencil units
         prof_z = prof_z / unit_length
 !
 ! interpolate temperature profile to Pencil grid
@@ -402,7 +402,7 @@ contains
     if (lentropy.or.ltemperature_nolog.or.lthermal_energy.or.ldensity_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
-    lnrho_0 = alog(rho_init)
+    lnrho_0 = log(rho_init)
 !
 ! read temperature profile for interpolation
 !
@@ -436,7 +436,7 @@ contains
     call mpibcast_real (prof_z,prof_nz)
     !
     prof_z = prof_z*1.e6/unit_length
-    prof_lnTT = prof_lnTT - alog(real(unit_temperature))
+    prof_lnTT = prof_lnTT - log(real(unit_temperature))
     !
     ! get step width
     ! should be smaler than grid width and
@@ -501,12 +501,12 @@ contains
 !
     konst = gamma*cp1/gamma_m1
 !
-    lnrho_0=alog(rho_init)
+    lnrho_0=log(rho_init)
     f(:,:,n1,ilnrho)= lnrho_0
 !
     if (ltemperature_nolog) then
       TT = f(l1,m1,:,iTT)
-      lnTT = alog(f(l1,m1,:,iTT))
+      lnTT = log(f(l1,m1,:,iTT))
     else
       TT = exp(f(l1,m1,:,ilnTT))
       lnTT = f(l1,m1,:,ilnTT)
@@ -581,7 +581,7 @@ contains
     if (lentropy.or.ltemperature_nolog) &
         call fatal_error('hydrostatic','only implemented for ltemperature')
 !
-    lnrho_0 = alog(rho_init)
+    lnrho_0 = log(rho_init)
 !
 ! read temperature profile for interpolation
 !
@@ -615,7 +615,7 @@ contains
     call mpibcast_real (prof_x,prof_nx)
     !
     prof_x = prof_x/unit_length
-    prof_lnTT = prof_lnTT - alog(real(unit_temperature))
+    prof_lnTT = prof_lnTT - log(real(unit_temperature))
 !
 !  project T profile onto the loop
 !
@@ -736,7 +736,7 @@ contains
       if (ltemperature_nolog) then
         TT_var = TT / unit_temperature
       else
-        TT_var = alog(TT / unit_temperature)
+        TT_var = log(TT / unit_temperature)
       endif
     else
       TT_var = impossible
@@ -776,7 +776,7 @@ contains
 !
 !
       T0 = 6000./unit_temperature
-      lnrho0 = alog(3e-4/real(unit_density))
+      lnrho0 = log(3e-4/real(unit_density))
 !
       Tbot = T0 - beta(1)*(zpoly(1)-zbot)
       T1   = T0 + beta(2)*(zpoly(2)-zpoly(1))
