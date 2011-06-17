@@ -75,7 +75,7 @@ module Magnetic
 !
   real, dimension (ninit) :: amplaa=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
   real, dimension (ninit) :: amplaaJ=0.0, amplaaB=0.0, RFPrad=1.0
-
+!
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='nothing'
@@ -177,7 +177,7 @@ module Magnetic
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
-      lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor,th_spot,& 
+      lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor,th_spot,&
       non_ffree_factor,etaB
 !
 ! Run parameters
@@ -4328,14 +4328,14 @@ module Magnetic
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,iax-1+slices%index)
-            slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,iax-1+slices%index)
-            slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,iax-1+slices%index)
-            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iax-1+slices%index)
+            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iax-1+slices%index)
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iax-1+slices%index)
+            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iax-1+slices%index)
+            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iax-1+slices%index)
             if (lwrite_slice_xy3) &
-                 slices%xy3=f(l1:l2,m1:m2,slices%iz3,iax-1+slices%index)
+                 slices%xy3=f(l1:l2,m1:m2,iz3_loc,iax-1+slices%index)
             if (lwrite_slice_xy4) &
-                 slices%xy4=f(l1:l2,m1:m2,slices%iz4,iax-1+slices%index)
+                 slices%xy4=f(l1:l2,m1:m2,iz4_loc,iax-1+slices%index)
             if (slices%index<=3) slices%ready=.true.
           endif
 !
@@ -7085,7 +7085,7 @@ module Magnetic
 !  22-04-11/ccyang: coded
 !
       real, intent(in) :: umax
-!     
+!
       logical :: lfirst1 = .true.
       real, save :: c0
 !
