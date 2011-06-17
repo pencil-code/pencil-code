@@ -1,9 +1,10 @@
 work.pc work.pcl
-special
-initial_condition
 experimental
 inactive
+initial_condition
 pre_and_post_processing
+special
+testfield
 makefile Makefile
 magnetic
 *.d
