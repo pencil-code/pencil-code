@@ -86,8 +86,9 @@ module Entropy
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, &
       rcool, wcool, cool
 !
-!  Diagnostic variables (needs to be consistent with reset list below).
-!
+!  Diagnostic variables for print.in 
+! (needs to be consistent with reset list below) 
+! 
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -113,21 +114,32 @@ module Entropy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_ppmx=0       ! DIAG_DOC:
-  integer :: idiag_ppmy=0       ! DIAG_DOC:
-  integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left<p\right>_{xy}$
-  integer :: idiag_ppuzmz=0     ! XYAVG_DOC:
-  integer :: idiag_TTmx=0       ! DIAG_DOC:
-  integer :: idiag_TTmy=0       ! DIAG_DOC:
-  integer :: idiag_TTmz=0       ! XYAVG_DOC: $\left<T\right>_{xy}$
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmxz=0      ! DIAG_DOC:
+!
+! xy averaged diagnostics given in xyaver.in 
+!
+  integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left<p\right>_{xy}$
+  integer :: idiag_ppuzmz=0     ! XYAVG_DOC:
+  integer :: idiag_TTmz=0       ! XYAVG_DOC: $\left<T\right>_{xy}$
   integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left< e_{\text{th}}
                                 ! XYAVG_DOC: \right>_{xy}$
-  integer :: idiag_ethuxmx=0    ! DIAG_DOC:
   integer :: idiag_ethuxmz=0    ! XYAVG_DOC:
   integer :: idiag_ethuymz=0    ! XYAVG_DOC:
   integer :: idiag_ethuzmz=0    ! XYAVG_DOC:
+!
+! xz averaged diagnostics given in xzaver.in 
+!
+  integer :: idiag_ppmy=0       ! XZAVG_DOC: $\left<p\right>_{xz}$
+  integer :: idiag_TTmy=0       ! XZAVG_DOC: $\left<T\right>_{xz}$
+!
+! yz averaged diagnostics given in yzaver.in 
+!
+  integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left<p\right>_{yz}$
+  integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left<T\right>_{yz}$
+  integer :: idiag_ethuxmx=0    ! YZAVG_DOC:
+!
+! variables for slices given in video.in
 !
   real, dimension(nx,nz) :: pp_xz
   real, dimension(ny,nz) :: pp_yz
