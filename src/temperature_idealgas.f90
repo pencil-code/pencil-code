@@ -115,18 +115,19 @@ module Entropy
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ppmx=0       ! DIAG_DOC:
   integer :: idiag_ppmy=0       ! DIAG_DOC:
-  integer :: idiag_ppmz=0       ! DIAG_DOC:
-  integer :: idiag_ppuzmz=0     ! DIAG_DOC:
+  integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left<p\right>_{xy}$
+  integer :: idiag_ppuzmz=0     ! XYAVG_DOC:
   integer :: idiag_TTmx=0       ! DIAG_DOC:
   integer :: idiag_TTmy=0       ! DIAG_DOC:
-  integer :: idiag_TTmz=0       ! DIAG_DOC:
+  integer :: idiag_TTmz=0       ! XYAVG_DOC: $\left<T\right>_{xy}$
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmxz=0      ! DIAG_DOC:
-  integer :: idiag_ethmz=0      ! DIAG_DOC:
+  integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left< e_{\text{th}}
+                                ! XYAVG_DOC: \right>_{xy}$
   integer :: idiag_ethuxmx=0    ! DIAG_DOC:
-  integer :: idiag_ethuxmz=0    ! DIAG_DOC:
-  integer :: idiag_ethuymz=0    ! DIAG_DOC:
-  integer :: idiag_ethuzmz=0    ! DIAG_DOC:
+  integer :: idiag_ethuxmz=0    ! XYAVG_DOC:
+  integer :: idiag_ethuymz=0    ! XYAVG_DOC:
+  integer :: idiag_ethuzmz=0    ! XYAVG_DOC:
 !
   real, dimension(nx,nz) :: pp_xz
   real, dimension(ny,nz) :: pp_yz
