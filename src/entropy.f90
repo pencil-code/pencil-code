@@ -158,7 +158,8 @@ module Entropy
       ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
       nkramers, xbot_aniso, xtop_aniso
 !
-!  Diagnostic variables (need to be consistent with reset list below).
+!  Diagnostic variables for print.in 
+!  (need to be consistent with reset list below).
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
@@ -203,22 +204,13 @@ module Entropy
   integer :: idiag_gsrms=0      ! DIAG_DOC: $(\nabla s)_{\rm rms}$
   integer :: idiag_gTxgsrms=0   ! DIAG_DOC: $(\nabla T\times\nabla s)_{\rm rms}$
   integer :: idiag_fconvm=0     ! DIAG_DOC: $\left<\varrho u_z T \right>$
-  integer :: idiag_fconvz=0     ! DIAG_DOC: $\left<\varrho u_z T \right>_{xy}$
   integer :: idiag_fconvxy=0    ! DIAG_DOC: $\left<\varrho u_x T \right>_{z}$
   integer :: idiag_fconvyxy=0   ! DIAG_DOC: $\left<\varrho u_y T \right>_{z}$
   integer :: idiag_fconvzxy=0   ! DIAG_DOC: $\left<\varrho u_z T \right>_{z}$
-  integer :: idiag_dcoolz=0     ! DIAG_DOC: surface cooling flux
   integer :: idiag_dcoolxy=0    ! DIAG_DOC: surface cooling flux
-  integer :: idiag_fradz=0      ! DIAG_DOC: $F_{\rm rad}$
-  integer :: idiag_fradz_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kprof)
   integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, from Kprof)
-  integer :: idiag_fradz_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ (from Kramers'
-                                   ! DIAG_DOC: opacity)
   integer :: idiag_fradxy_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged,
                                     ! DIAG_DOC: from Kramers' opacity)
-  integer :: idiag_fturbz=0     ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_z
-                                ! DIAG_DOC: s\right>_{xy}$ \quad(turbulent
-                                ! DIAG_DOC: heat flux)
   integer :: idiag_fturbxy=0    ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_x
                                 ! DIAG_DOC: s\right>_{z}$
   integer :: idiag_fturbrxy=0   ! DIAG_DOC: $\left<\varrho T \chi_{ri} \nabla_i
@@ -228,32 +220,50 @@ module Entropy
                                 ! DIAG_DOC: \nabla_i s\right>_{z}$ \quad
                                 ! DIAG_DOC: (latitudinal part of anisotropic
                                 ! DIAG_DOC: turbulent heat flux)
-  integer :: idiag_ssmx=0       ! DIAG_DOC:
-  integer :: idiag_ssmy=0       ! DIAG_DOC:
-  integer :: idiag_ssmz=0       ! DIAG_DOC:
-  integer :: idiag_ppmx=0       ! DIAG_DOC:
-  integer :: idiag_ppmy=0       ! DIAG_DOC:
-  integer :: idiag_ppmz=0       ! DIAG_DOC:
   integer :: idiag_TTp=0        ! DIAG_DOC:
   integer :: idiag_ssmr=0       ! DIAG_DOC:
-  integer :: idiag_TTmx=0       ! DIAG_DOC:
-  integer :: idiag_TTmy=0       ! DIAG_DOC:
-  integer :: idiag_TTmz=0       ! DIAG_DOC: $\left< T \right>_{xy}$
-  integer :: idiag_TT2mz=0      ! DIAG_DOC: $\left< T^2 \right>_{xy}$
   integer :: idiag_TTmxy=0      ! DIAG_DOC:
   integer :: idiag_TTmxz=0      ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
-  integer :: idiag_uxTTmz=0     ! DIAG_DOC: $\left< u_x T \right>_{xy}$
-  integer :: idiag_uyTTmz=0     ! DIAG_DOC: $\left< u_y T \right>_{xy}$
-  integer :: idiag_uzTTmz=0     ! DIAG_DOC: $\left< u_z T \right>_{xy}$
   integer :: idiag_uxTTmxy=0    ! DIAG_DOC: $\left< u_x T \right>_{z}$
   integer :: idiag_uyTTmxy=0    ! DIAG_DOC: $\left< u_y T \right>_{z}$
   integer :: idiag_uzTTmxy=0    ! DIAG_DOC: $\left< u_z T \right>_{z}$
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
-  integer :: idiag_ufpresm=0     ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
+  integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
 !
+! xy averaged diagnostics given in xyaver.in 
+!
+  integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
+  integer :: idiag_fconvz=0     ! XYAVG_DOC: $\left<\varrho u_z T \right>_{xy}$
+  integer :: idiag_ssmz=0       ! XYAVG_DOC: $\left< s \right>_{xy}$
+  integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left< p \right>_{xy}$
+  integer :: idiag_TTmz=0       ! XYAVG_DOC: $\left< T \right>_{xy}$
+  integer :: idiag_TT2mz=0      ! XYAVG_DOC: $\left< T^2 \right>_{xy}$
+  integer :: idiag_uxTTmz=0     ! XYAVG_DOC: $\left< u_x T \right>_{xy}$
+  integer :: idiag_uyTTmz=0     ! XYAVG_DOC: $\left< u_y T \right>_{xy}$
+  integer :: idiag_uzTTmz=0     ! XYAVG_DOC: $\left< u_z T \right>_{xy}$
+  integer :: idiag_fradz_kramers=0 ! XYAVG_DOC: $F_{\rm rad}$ (from Kramers'
+                                   ! XYAVG_DOC: opacity)
+  integer :: idiag_fradz_Kprof=0 ! XYAVG_DOC: $F_{\rm rad}$ (from Kprof)
+  integer :: idiag_fturbz=0     ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
+                                ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
+                                ! XYAVG_DOC: heat flux)
+  integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
+!
+! xz averaged diagnostics given in xzaver.in 
+!
+  integer :: idiag_ssmy=0       ! XZAVG_DOC: $\left< s \right>_{xz}$
+  integer :: idiag_ppmy=0       ! XZAVG_DOC: $\left< p \right>_{xz}$
+  integer :: idiag_TTmy=0       ! XZAVG_DOC: $\left< T \right>_{xz}$
+!
+! yz averaged diagnostics given in yzaver.in 
+!
+  integer :: idiag_ssmx=0       ! YZAVG_DOC: $\left< s \right>_{yz}$
+  integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left< p \right>_{yz}$
+  integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left< T \right>_{yz}$
+!  
   contains
 !***********************************************************************
     subroutine register_entropy()
@@ -4045,7 +4055,7 @@ module Entropy
 !
 !  02-jul-02/wolf: coded
 !
-      use Diagnostics, only: sum_mn_name, xysum_mn_name_z
+      use Diagnostics, only: sum_mn_name
       use Gravity, only: z2
       use IO, only: output_pencil
       use Sub, only: step, cubic_step, write_zprof

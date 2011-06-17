@@ -3,6 +3,7 @@
 %% so think twice before you modify it.
 %%
 %% Source files:
+%%   entropy.f90
 %%   magnetic.f90
 %%   temperature_idealgas.f90
 
@@ -10,6 +11,25 @@
 \begin{longtable}{lp{0.7\textwidth}}
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
+\midrule
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
+\midrule
+  \var{fradz}     & $F_{\rm rad}$ \\
+  \var{fconvz}    & $\left<\varrho u_z T \right>_{xy}$ \\
+  \var{ssmz}      & $\left< s \right>_{xy}$ \\
+  \var{ppmz}      & $\left< p \right>_{xy}$ \\
+  \var{TTmz}      & $\left< T \right>_{xy}$ \\
+  \var{TT2mz}     & $\left< T^2 \right>_{xy}$ \\
+  \var{uxTTmz}    & $\left< u_x T \right>_{xy}$ \\
+  \var{uyTTmz}    & $\left< u_y T \right>_{xy}$ \\
+  \var{uzTTmz}    & $\left< u_z T \right>_{xy}$ \\
+  \var{fradz_kramers} & $F_{\rm rad}$ (from Kramers'
+                    opacity) \\
+  \var{fradz_Kprof} & $F_{\rm rad}$ (from Kprof) \\
+  \var{fturbz}    & $\left<\varrho T \chi_t \nabla_z
+                    s\right>_{xy}$ \quad(turbulent
+                    heat flux) \\
+  \var{dcoolz}    & surface cooling flux \\
 \midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
