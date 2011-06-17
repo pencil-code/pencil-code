@@ -744,13 +744,13 @@ module Testscalar
         if (idiag_gam33 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
         if (idiag_gam33z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33z)
 !
-        if (idiag_kapcPERP /=0) call   sum_mn_name  (-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*ktestscalar,idiag_kapcPERP)
-        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*ktestscalar,idiag_kapcPERPz)
+        if (idiag_kapcPERP /=0) call   sum_mn_name  (-4*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*ktestscalar,idiag_kapcPERP)
+        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*ktestscalar,idiag_kapcPERPz)
 !
         if (idiag_kapcPARA /=0) call   sum_mn_name  (-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2))*ktestscalar,idiag_kapcPARA)
         if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2))*ktestscalar,idiag_kapcPARAz)
 !
-        if (idiag_gamc    /=0) call   sum_mn_name  (-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
+        if (idiag_gamc    /=0) call   sum_mn_name  (-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gamc)
         if (idiag_gamcz   /=0) call xysum_mn_name_z(-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gamcz)
 !
 !  Extract values at one point.
