@@ -45,6 +45,7 @@ module Special
   real :: mag_time_offset=0.
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0
+  real :: lnrho_min=-max_real
 !
   real, dimension(nx,ny,n1,3) :: A_init
 !
@@ -77,7 +78,7 @@ module Special
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
        lnc_density_depend, lnc_intrin_energy_depend, &
        swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
-       luse_mag_field, mag_time_offset
+       luse_mag_field, mag_time_offset, lnrho_min
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
@@ -833,7 +834,11 @@ module Special
 !
       if (swamp_diffrho > 0.0) call calc_swamp_density(df,p)
 !
-      call keep_compiler_quiet(p)
+      if (lnrho_min > -max_real) then
+        fdiff = 1.0/64.0 * (lnrho_min - p%lnrho)
+        where (fdiff < 0.0) fdiff = 0.0
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+      endif
 !
     endsubroutine special_calc_density
 !***********************************************************************
