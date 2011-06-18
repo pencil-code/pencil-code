@@ -52,19 +52,30 @@ module Entropy
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
   integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right>$
-  integer :: idiag_ppmx=0
-  integer :: idiag_ppmy=0
-  integer :: idiag_ppmz=0
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left<T\right>$
-  integer :: idiag_TTmx=0
-  integer :: idiag_TTmy=0
-  integer :: idiag_TTmz=0
   integer :: idiag_TTmxy=0
   integer :: idiag_TTmxz=0
   integer :: idiag_pdivum=0
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
                               ! DIAG_DOC: \quad(mean thermal energy)
+!
+! xy averaged diagnostics given in xyaver.in
+!
+  integer :: idiag_ppmz=0     ! XYAVG_DOC: $\left<p\right>_{xy}$
+  integer :: idiag_TTmz=0     ! XYAVG_DOC: $\left<T\right>_{xy}$
+!
+! xz averaged diagnostics given in xzaver.in
+!
+  integer :: idiag_ppmy=0     ! XZAVG_DOC: $\left<p\right>_{xz}$
+  integer :: idiag_TTmy=0     ! XZAVG_DOC: $\left<T\right>_{xz}$
+!
+! yz averaged diagnostics given in yzaver.in
+!
+  integer :: idiag_ppmx=0     ! YZAVG_DOC: $\left<p\right>_{yz}$
+  integer :: idiag_TTmx=0     ! YZAVG_DOC: $\left<T\right>_{yz}$
+!
+! variables for slices given in video.in
 !
   real, dimension(nx,nz) :: pp_xz
   real, dimension(ny,nz) :: pp_yz
