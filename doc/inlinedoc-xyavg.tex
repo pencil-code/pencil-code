@@ -3,6 +3,7 @@
 %% so think twice before you modify it.
 %%
 %% Source files:
+%%   hydro.f90
 %%   entropy.f90
 %%   magnetic.f90
 %%   temperature_idealgas.f90
@@ -12,6 +13,40 @@
 \begin{longtable}{lp{0.7\textwidth}}
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro.f90}} \\
+\midrule
+  \var{u2mz}      & $\left< \Uv^2 \right>_{xy}$ \\
+  \var{o2mz}      & $\left< \Wv^2 \right>_{xy}$ \\
+  \var{divu2mz}   & $\left<(\nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{curlru2mz} & $\left<(\nabla\times\varrho\Uv)^2 \right>_{xy}$ \\
+  \var{divru2mz}  & $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$ \\
+  \var{fkinzmz}   & $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$ \\
+  \var{uxmz}      & $\left< u_x \right>_{xy}$
+                    \quad(horiz. averaged $x$
+                    velocity) \\
+  \var{divumz}    & $\left< {\rm div}\uv \right>_{xy}$ \\
+  \var{uzdivumz}  & $\left< u_z{\rm div}\uv \right>_{xy}$ \\
+  \var{oxmz}      & $\left< \omega_x \right>_{xy}$ \\
+  \var{oymz}      & $\left< \omega_y \right>_{xy}$ \\
+  \var{ozmz}      & $\left< \omega_z \right>_{xy}$ \\
+  \var{ux2mz}     & $\left<u_x^2\right>_{xy}$ \\
+  \var{uy2mz}     & $\left<u_y^2\right>_{xy}$ \\
+  \var{uz2mz}     & $\left<u_z^2\right>_{xy}$ \\
+  \var{rux2mz}    & $\left<\varrho u_x^2\right>_{xy}$ \\
+  \var{ruy2mz}    & $\left<\varrho u_y^2\right>_{xy}$ \\
+  \var{ruz2mz}    & $\left<\varrho u_z^2\right>_{xy}$ \\
+  \var{uxuymz}    & $\left<u_x u_y\right>_{xy}$ \\
+  \var{uxuzmz}    & $\left<u_x u_z\right>_{xy}$ \\
+  \var{uyuzmz}    & $\left<u_y u_z\right>_{xy}$ \\
+  \var{oxuxxmz}   & $\left<\omega_x u_{x,x}\right>_{xy}$ \\
+  \var{oyuxymz}   & $\left<\omega_y u_{x,y}\right>_{xy}$ \\
+  \var{oxuyxmz}   & $\left<\omega_x u_{y,x}\right>_{xy}$ \\
+  \var{oyuyymz}   & $\left<\omega_y u_{y,y}\right>_{xy}$ \\
+  \var{oxuzxmz}   & $\left<\omega_x u_{z,x}\right>_{xy}$ \\
+  \var{oyuzymz}   & $\left<\omega_y u_{z,y}\right>_{xy}$ \\
+  \var{oumz}      & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule

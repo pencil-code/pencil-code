@@ -3,6 +3,7 @@
 %% so think twice before you modify it.
 %%
 %% Source files:
+%%   hydro.f90
 %%   entropy.f90
 %%   magnetic.f90
 %%   temperature_idealgas.f90
@@ -12,6 +13,14 @@
 \begin{longtable}{lp{0.7\textwidth}}
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro.f90}} \\
+\midrule
+  \var{uxmy}      & $\left< u_x \right>_{xz}$ \\
+  \var{uymy}      & $\left< u_y \right>_{xz}$ \\
+  \var{uzmy}      & $\left< u_z \right>_{xz}$ \\
+  \var{oumy}      & $\left<\boldsymbol{\omega}
+                    \cdot\uv\right>_{xz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule

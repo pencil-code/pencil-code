@@ -214,61 +214,13 @@ module Hydro
   integer :: idiag_ux2ssm=0     ! DIAG_DOC: $\left<u_x^2\sin^2kz\right>$
   integer :: idiag_uy2ccm=0     ! DIAG_DOC: $\left<u_y^2\cos^2kz\right>$
   integer :: idiag_uy2ssm=0     ! DIAG_DOC: $\left<u_y^2\sin^2kz\right>$
-  integer :: idiag_ux2mx=0      ! DIAG_DOC: $\left<u_x^2\right>_{yz}$
-  integer :: idiag_uy2mx=0      ! DIAG_DOC: $\left<u_y^2\right>_{yz}$
-  integer :: idiag_uz2mx=0      ! DIAG_DOC: $\left<u_z^2\right>_{yz}$
-  integer :: idiag_ox2mx=0      ! DIAG_DOC: $\left<\omega_x^2\right>_{yz}$
-  integer :: idiag_oy2mx=0      ! DIAG_DOC: $\left<\omega_y^2\right>_{yz}$
-  integer :: idiag_oz2mx=0      ! DIAG_DOC: $\left<\omega_z^2\right>_{yz}$
   integer :: idiag_uxuycsm=0    ! DIAG_DOC: $\left<u_xu_y\cos kz\sin kz\right>$
-  integer :: idiag_ux2my=0      ! DIAG_DOC:
-  integer :: idiag_uy2my=0      ! DIAG_DOC:
-  integer :: idiag_uz2my=0      ! DIAG_DOC:
-  integer :: idiag_ux2mz=0      ! DIAG_DOC: $\left<u_x^2\right>_{xy}$
-  integer :: idiag_uy2mz=0      ! DIAG_DOC: $\left<u_y^2\right>_{xy}$
-  integer :: idiag_uz2mz=0      ! DIAG_DOC: $\left<u_z^2\right>_{xy}$
-  integer :: idiag_rux2mz=0     ! DIAG_DOC: $\left<\varrho u_x^2\right>_{xy}$
-  integer :: idiag_ruy2mz=0     ! DIAG_DOC: $\left<\varrho u_y^2\right>_{xy}$
-  integer :: idiag_ruz2mz=0     ! DIAG_DOC: $\left<\varrho u_z^2\right>_{xy}$
   integer :: idiag_uxuym=0      ! DIAG_DOC: $\left<u_x u_y\right>$
   integer :: idiag_uxuzm=0      ! DIAG_DOC: $\left<u_x u_z\right>$
   integer :: idiag_uyuzm=0      ! DIAG_DOC: $\left<u_y u_z\right>$
-  integer :: idiag_uxuymz=0     ! DIAG_DOC: $\left<u_x u_y\right>_{xy}$
-  integer :: idiag_uxuzmz=0     ! DIAG_DOC: $\left<u_x u_z\right>_{xy}$
-  integer :: idiag_uyuzmz=0     ! DIAG_DOC: $\left<u_y u_z\right>_{xy}$
-  integer :: idiag_oxuxxmz=0    ! DIAG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
-  integer :: idiag_oyuxymz=0    ! DIAG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
-  integer :: idiag_oxuyxmz=0    ! DIAG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
-  integer :: idiag_oyuyymz=0    ! DIAG_DOC: $\left<\omega_y u_{y,y}\right>_{xy}$
-  integer :: idiag_oxuzxmz=0    ! DIAG_DOC: $\left<\omega_x u_{z,x}\right>_{xy}$
-  integer :: idiag_oyuzymz=0    ! DIAG_DOC: $\left<\omega_y u_{z,y}\right>_{xy}$
-  integer :: idiag_uxuymy=0     ! DIAG_DOC:
-  integer :: idiag_uxuzmy=0     ! DIAG_DOC:
-  integer :: idiag_uyuzmy=0     ! DIAG_DOC:
-  integer :: idiag_uxuymx=0     ! DIAG_DOC:
-  integer :: idiag_uxuzmx=0     ! DIAG_DOC:
-  integer :: idiag_uyuzmx=0     ! DIAG_DOC:
-  integer :: idiag_uxmz=0       ! DIAG_DOC: $\left< u_x \right>_{x,y}$
-                                ! DIAG_DOC:   \quad(horiz. averaged $x$
-                                ! DIAG_DOC:   velocity)
-  integer :: idiag_uymz=0       ! DIAG_DOC:
-  integer :: idiag_uzmz=0       ! DIAG_DOC:
-  integer :: idiag_divumz=0     ! DIAG_DOC: $\left< {\rm div}\uv \right>_{xy}$
-  integer :: idiag_uzdivumz=0   ! DIAG_DOC: $\left< u_z{\rm div}\uv \right>_{xy}$
-  integer :: idiag_oxmz=0       ! DIAG_DOC: $\left< \omega_x \right>_{xy}$
-  integer :: idiag_oymz=0       ! DIAG_DOC: $\left< \omega_y \right>_{xy}$
-  integer :: idiag_ozmz=0       ! DIAG_DOC: $\left< \omega_z \right>_{xy}$
   integer :: idiag_umx=0        ! DIAG_DOC: $\left< u_x \right>$
   integer :: idiag_umy=0        ! DIAG_DOC: $\left< u_y \right>$
   integer :: idiag_umz=0        ! DIAG_DOC: $\left< u_z \right>$
-  integer :: idiag_uxmy=0       ! DIAG_DOC: $\left< u_x \right>_{y}$
-  integer :: idiag_uymy=0       ! DIAG_DOC: $\left< u_y \right>_{y}$
-  integer :: idiag_uzmy=0       ! DIAG_DOC: $\left< u_z \right>_{y}$
-  integer :: idiag_u2mz=0       ! DIAG_DOC: $\left< \Uv^2 \right>_{xy}$
-  integer :: idiag_o2mz=0       ! DIAG_DOC: $\left< \Wv^2 \right>_{xy}$
-  integer :: idiag_curlru2mz=0  ! DIAG_DOC: $\left<(\nabla\times\varrho\Uv)^2 \right>_{xy}$
-  integer :: idiag_divru2mz=0    ! DIAG_DOC: $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$
-  integer :: idiag_divu2mz=0    ! DIAG_DOC: $\left<(\nabla\cdot\uv)^2\right>_{xy}$
   integer :: idiag_omumz=0      ! DIAG_DOC: $\left<\left<\Wv\right>_{xy}
                                 ! DIAG_DOC:   \cdot\left<\Uv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad($xy$-averaged
@@ -314,9 +266,6 @@ module Hydro
   integer :: idiag_uxuymxz=0    ! DIAG_DOC: $\left< u_x u_y \right>_{y}$
   integer :: idiag_uxuzmxz=0    ! DIAG_DOC: $\left< u_x u_z \right>_{y}$
   integer :: idiag_uyuzmxz=0    ! DIAG_DOC: $\left< u_y u_z \right>_{y}$
-  integer :: idiag_uxmx=0       ! DIAG_DOC: $\left< u_x \right>_{yz}$
-  integer :: idiag_uymx=0       ! DIAG_DOC: $\left< u_y \right>_{yz}$
-  integer :: idiag_uzmx=0       ! DIAG_DOC: $\left< u_z \right>_{yz}$
   integer :: idiag_divum=0      ! DIAG_DOC: $\left<{\rm div}\uv)\right>$
   integer :: idiag_divu2m=0     ! DIAG_DOC: $\left<({\rm div}\uv)^2\right>$
   integer :: idiag_u3u21m=0     ! DIAG_DOC: $\left<u_3 u_{2,1}\right>$
@@ -325,12 +274,6 @@ module Hydro
   integer :: idiag_u2u31m=0     ! DIAG_DOC: $\left<u_2 u_{3,1}\right>$
   integer :: idiag_u3u12m=0     ! DIAG_DOC: $\left<u_3 u_{1,2}\right>$
   integer :: idiag_u1u23m=0     ! DIAG_DOC: $\left<u_1 u_{2,3}\right>$
-  integer :: idiag_u3u21mz=0    ! DIAG_DOC:
-  integer :: idiag_u1u32mz=0    ! DIAG_DOC:
-  integer :: idiag_u2u13mz=0    ! DIAG_DOC:
-  integer :: idiag_u2u31mz=0    ! DIAG_DOC:
-  integer :: idiag_u3u12mz=0    ! DIAG_DOC:
-  integer :: idiag_u1u23mz=0    ! DIAG_DOC:
   integer :: idiag_urmphi=0     ! PHIAVG_DOC: $\left<u_\varpi\right>_\varphi$
                                 ! PHIAVG_DOC: [cyl.\ polar coords
                                 ! PHIAVG_DOC:  $(\varpi,\varphi,z)$]
@@ -371,7 +314,6 @@ module Hydro
                                 ! DIAG_DOC:   \quad(mean Reynolds stress)
   integer :: idiag_ruyuzm=0     ! DIAG_DOC: $\left<\varrho u_y u_z\right>$
                                 ! DIAG_DOC:   \quad(mean Reynolds stress)
-  integer :: idiag_ruxuymz=0    ! DIAG_DOC:
   integer :: idiag_rlxm=0       ! DIAG_DOC: $\left< \rho y u_z - z u_y \right>$
   integer :: idiag_rlym=0       ! DIAG_DOC: $\left< \rho z u_x - x u_z \right>$
   integer :: idiag_rlzm=0       ! DIAG_DOC: $\left< \rho x u_y - y u_x \right>$
@@ -411,12 +353,6 @@ module Hydro
   integer :: idiag_ormr=0       ! DIAG_DOC:
   integer :: idiag_opmr=0       ! DIAG_DOC:
   integer :: idiag_ozmr=0       ! DIAG_DOC:
-  integer :: idiag_oumx=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC: \cdot\uv\right>_{yz}$
-  integer :: idiag_oumy=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC: \cdot\uv\right>_{xz}$
-  integer :: idiag_oumz=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC: \cdot\uv\right>_{xy}$
   integer :: idiag_oumxy=0      ! DIAG_DOC: $\left<\boldsymbol{\omega}
                                 ! DIAG_DOC: \cdot\uv\right>_{z}$
   integer :: idiag_oumxz=0      ! DIAG_DOC: $\left<\boldsymbol{\omega}
@@ -425,15 +361,6 @@ module Hydro
   integer :: idiag_uguym=0      ! DIAG_DOC:
   integer :: idiag_uguzm=0      ! DIAG_DOC:
   integer :: idiag_ugu2m=0      ! DIAG_DOC:
-  integer :: idiag_uguxmx=0     ! DIAG_DOC:
-  integer :: idiag_uguymx=0     ! DIAG_DOC:
-  integer :: idiag_uguzmx=0     ! DIAG_DOC:
-  integer :: idiag_uguxmy=0     ! DIAG_DOC:
-  integer :: idiag_uguymy=0     ! DIAG_DOC:
-  integer :: idiag_uguzmy=0     ! DIAG_DOC:
-  integer :: idiag_uguxmz=0     ! DIAG_DOC:
-  integer :: idiag_uguymz=0     ! DIAG_DOC:
-  integer :: idiag_uguzmz=0     ! DIAG_DOC:
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
   integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
@@ -444,10 +371,7 @@ module Hydro
   integer :: idiag_duydzma=0    ! DIAG_DOC:
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
-  integer :: idiag_ekinmz=0     ! DIAG_DOC:
   integer :: idiag_totangmom=0  ! DIAG_DOC:
-  integer :: idiag_fmasszmz=0   ! DIAG_DOC:
-  integer :: idiag_fkinzmz=0    ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
   integer :: idiag_fkinxmxy=0   ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$
   integer :: idiag_uxglnrym=0   ! DIAG_DOC: $\left<u_x\partial_y\ln\varrho\right>$
   integer :: idiag_uyglnrxm=0   ! DIAG_DOC: $\left<u_y\partial_x\ln\varrho\right>$
@@ -462,6 +386,91 @@ module Hydro
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
+!
+! xy averaged diagnostics given in xyaver.in
+!
+  integer :: idiag_u2mz=0       ! XYAVG_DOC: $\left< \Uv^2 \right>_{xy}$
+  integer :: idiag_o2mz=0       ! XYAVG_DOC: $\left< \Wv^2 \right>_{xy}$
+  integer :: idiag_divu2mz=0    ! XYAVG_DOC: $\left<(\nabla\cdot\uv)^2\right>_{xy}$
+  integer :: idiag_curlru2mz=0  ! XYAVG_DOC: $\left<(\nabla\times\varrho\Uv)^2 \right>_{xy}$
+  integer :: idiag_divru2mz=0   ! XYAVG_DOC: $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$
+  integer :: idiag_fmasszmz=0   ! XYAVG_DOC:
+  integer :: idiag_fkinzmz=0    ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
+  integer :: idiag_uxmz=0       ! XYAVG_DOC: $\left< u_x \right>_{xy}$
+                                ! XYAVG_DOC:   \quad(horiz. averaged $x$
+                                ! XYAVG_DOC:   velocity)
+  integer :: idiag_uymz=0       ! XYAVG_DOC:
+  integer :: idiag_uzmz=0       ! XYAVG_DOC:
+  integer :: idiag_divumz=0     ! XYAVG_DOC: $\left< {\rm div}\uv \right>_{xy}$
+  integer :: idiag_uzdivumz=0   ! XYAVG_DOC: $\left< u_z{\rm div}\uv \right>_{xy}$
+  integer :: idiag_oxmz=0       ! XYAVG_DOC: $\left< \omega_x \right>_{xy}$
+  integer :: idiag_oymz=0       ! XYAVG_DOC: $\left< \omega_y \right>_{xy}$
+  integer :: idiag_ozmz=0       ! XYAVG_DOC: $\left< \omega_z \right>_{xy}$
+  integer :: idiag_ux2mz=0      ! XYAVG_DOC: $\left<u_x^2\right>_{xy}$
+  integer :: idiag_uy2mz=0      ! XYAVG_DOC: $\left<u_y^2\right>_{xy}$
+  integer :: idiag_uz2mz=0      ! XYAVG_DOC: $\left<u_z^2\right>_{xy}$
+  integer :: idiag_rux2mz=0     ! XYAVG_DOC: $\left<\varrho u_x^2\right>_{xy}$
+  integer :: idiag_ruy2mz=0     ! XYAVG_DOC: $\left<\varrho u_y^2\right>_{xy}$
+  integer :: idiag_ruz2mz=0     ! XYAVG_DOC: $\left<\varrho u_z^2\right>_{xy}$
+  integer :: idiag_uxuymz=0     ! XYAVG_DOC: $\left<u_x u_y\right>_{xy}$
+  integer :: idiag_uxuzmz=0     ! XYAVG_DOC: $\left<u_x u_z\right>_{xy}$
+  integer :: idiag_uyuzmz=0     ! XYAVG_DOC: $\left<u_y u_z\right>_{xy}$
+  integer :: idiag_ruxuymz=0    ! XYAVG_DOC:
+  integer :: idiag_oxuxxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
+  integer :: idiag_oyuxymz=0    ! XYAVG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
+  integer :: idiag_oxuyxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
+  integer :: idiag_oyuyymz=0    ! XYAVG_DOC: $\left<\omega_y u_{y,y}\right>_{xy}$
+  integer :: idiag_oxuzxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{z,x}\right>_{xy}$
+  integer :: idiag_oyuzymz=0    ! XYAVG_DOC: $\left<\omega_y u_{z,y}\right>_{xy}$
+  integer :: idiag_ekinmz=0     ! XYAVG_DOC:
+  integer :: idiag_oumz=0       ! XYAVG_DOC: $\left<\boldsymbol{\omega}
+                                ! XYAVG_DOC: \cdot\uv\right>_{xy}$
+  integer :: idiag_uguxmz=0     ! XYAVG_DOC:
+  integer :: idiag_uguymz=0     ! XYAVG_DOC:
+  integer :: idiag_uguzmz=0     ! XYAVG_DOC:
+  integer :: idiag_u3u21mz=0    ! XYAVG_DOC:
+  integer :: idiag_u1u32mz=0    ! XYAVG_DOC:
+  integer :: idiag_u2u13mz=0    ! XYAVG_DOC:
+  integer :: idiag_u2u31mz=0    ! XYAVG_DOC:
+  integer :: idiag_u3u12mz=0    ! XYAVG_DOC:
+  integer :: idiag_u1u23mz=0    ! XYAVG_DOC:
+!
+! xz averaged diagnostics given in xzaver.in
+!
+  integer :: idiag_uxmy=0       ! XZAVG_DOC: $\left< u_x \right>_{xz}$
+  integer :: idiag_uymy=0       ! XZAVG_DOC: $\left< u_y \right>_{xz}$
+  integer :: idiag_uzmy=0       ! XZAVG_DOC: $\left< u_z \right>_{xz}$  
+  integer :: idiag_ux2my=0      ! XZAVG_DOC:
+  integer :: idiag_uy2my=0      ! XZAVG_DOC:
+  integer :: idiag_uz2my=0      ! XZAVG_DOC:
+  integer :: idiag_uxuymy=0     ! XZAVG_DOC:
+  integer :: idiag_uxuzmy=0     ! XZAVG_DOC:
+  integer :: idiag_uyuzmy=0     ! XZAVG_DOC:
+  integer :: idiag_oumy=0       ! XZAVG_DOC: $\left<\boldsymbol{\omega}
+                                ! XZAVG_DOC: \cdot\uv\right>_{xz}$
+  integer :: idiag_uguxmy=0     ! XZAVG_DOC:
+  integer :: idiag_uguymy=0     ! XZAVG_DOC:
+  integer :: idiag_uguzmy=0     ! XZAVG_DOC:
+!
+! yz averaged diagnostics given in yzaver.in
+!
+  integer :: idiag_uxmx=0       ! YZAVG_DOC: $\left< u_x \right>_{yz}$
+  integer :: idiag_uymx=0       ! YZAVG_DOC: $\left< u_y \right>_{yz}$
+  integer :: idiag_uzmx=0       ! YZAVG_DOC: $\left< u_z \right>_{yz}$  
+  integer :: idiag_ux2mx=0      ! YZAVG_DOC: $\left<u_x^2\right>_{yz}$
+  integer :: idiag_uy2mx=0      ! YZAVG_DOC: $\left<u_y^2\right>_{yz}$
+  integer :: idiag_uz2mx=0      ! YZAVG_DOC: $\left<u_z^2\right>_{yz}$
+  integer :: idiag_ox2mx=0      ! YZAVG_DOC: $\left<\omega_x^2\right>_{yz}$
+  integer :: idiag_oy2mx=0      ! YZAVG_DOC: $\left<\omega_y^2\right>_{yz}$
+  integer :: idiag_oz2mx=0      ! YZAVG_DOC: $\left<\omega_z^2\right>_{yz}$
+  integer :: idiag_uxuymx=0     ! YZAVG_DOC:
+  integer :: idiag_uxuzmx=0     ! YZAVG_DOC:
+  integer :: idiag_uyuzmx=0     ! YZAVG_DOC:
+  integer :: idiag_oumx=0       ! YZAVG_DOC: $\left<\boldsymbol{\omega}
+                                ! YZAVG_DOC: \cdot\uv\right>_{yz}$
+  integer :: idiag_uguxmx=0     ! YZAVG_DOC:
+  integer :: idiag_uguymx=0     ! YZAVG_DOC:
+  integer :: idiag_uguzmx=0     ! YZAVG_DOC:
 !
   contains
 !***********************************************************************
