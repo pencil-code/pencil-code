@@ -4,7 +4,9 @@
 %%
 %% Source files:
 %%   entropy.f90
+%%   magnetic.f90
 %%   temperature_idealgas.f90
+%%   thermal_energy.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -17,7 +19,23 @@
   \var{ppmx}      & $\left< p \right>_{yz}$ \\
   \var{TTmx}      & $\left< T \right>_{yz}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
+\midrule
+  \var{bxmx}      & $\left< B_x \right>_{yz}$ \\
+  \var{bymx}      & $\left< B_y \right>_{yz}$ \\
+  \var{bzmx}      & $\left< B_z \right>_{yz}$ \\
+  \var{bx2mx}     & $\left< B_x^2 \right>_{yz}$ \\
+  \var{by2mx}     & $\left< B_y^2 \right>_{yz}$ \\
+  \var{bz2mx}     & $\left< B_z^2 \right>_{yz}$ \\
+  \var{bxbymx}    & $\left<B_x B_y\right>_{yz}$ \\
+  \var{etatotalmx} & $\left<\eta\right>_{yz}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
+\midrule
+  \var{ppmx}      & $\left<p\right>_{yz}$ \\
+  \var{TTmx}      & $\left<T\right>_{yz}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{thermal_energy.f90}} \\
 \midrule
   \var{ppmx}      & $\left<p\right>_{yz}$ \\
   \var{TTmx}      & $\left<T\right>_{yz}$ \\
