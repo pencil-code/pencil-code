@@ -708,8 +708,8 @@ module Diagnostics
     subroutine write_1daverages()
 !
 !  Write 1d averages (z-averages, .., i.e. quantities that are only  1d
-!  after averaging). These are written every it1 timesteps (like the
-!  diagnostic line) and appended to their individual files.
+!  after averaging). These are written every it1d (default it1) timesteps
+!  and appended to their individual files.
 !
 !   7-aug-03/wolf: coded
 !
