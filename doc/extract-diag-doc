@@ -140,9 +140,9 @@ foreach my $file (@$src_files_ref) {
     $xyavg_doc->parse($file);
     $xzavg_doc->parse($file);
     $yzavg_doc->parse($file);
-    $bcx_doc ->parse($file);
-    $bcy_doc ->parse($file);
-    $bcz_doc ->parse($file);
+    $bcx_doc->parse($file);
+    $bcy_doc->parse($file);
+    $bcz_doc->parse($file);
 }
 
 $diag_doc->write_to_file({ file          => 'inlinedoc-diag.tex',
@@ -154,31 +154,32 @@ $phiavg_doc->write_to_file({ file          => 'inlinedoc-phiavg.tex',
                              print_empty   => 0,
                            });
 $xyavg_doc->write_to_file({ file          => 'inlinedoc-xyavg.tex',
-                             sort_files    => 1,
-                             print_empty   => 0,
+                            sort_files    => 1,
+                            print_empty   => 0,
                            });
 $xzavg_doc->write_to_file({ file          => 'inlinedoc-xzavg.tex',
-                             sort_files    => 1,
-                             print_empty   => 0,
+                            sort_files    => 1,
+                            print_empty   => 0,
                            });
 $yzavg_doc->write_to_file({ file          => 'inlinedoc-yzavg.tex',
-                             sort_files    => 1,
-                             print_empty   => 0,
+                            sort_files    => 1,
+                            print_empty   => 0,
                            });
-$bcx_doc ->write_to_file({ file          => 'inlinedoc-bcx.tex',
-                           sort_files    => 1,
-                           print_empty   => 0,
-                           descr_width   => '0.8\textwidth',
-                         });
-$bcy_doc ->write_to_file({ file          => 'inlinedoc-bcy.tex',
-                           sort_files    => 1,
-                           print_empty   => 0,
-                           descr_width   => '0.8\textwidth',
-                         });
-$bcz_doc ->write_to_file({ file          => 'inlinedoc-bcz.tex',
-                           sort_files    => 1,
-                           print_empty   => 0,
-                         });
+$bcx_doc->write_to_file({ file          => 'inlinedoc-bcx.tex',
+                          sort_files    => 1,
+                          print_empty   => 0,
+                          descr_width   => '0.8\textwidth',
+                        });
+$bcy_doc->write_to_file({ file          => 'inlinedoc-bcy.tex',
+                          sort_files    => 1,
+                          print_empty   => 0,
+                          descr_width   => '0.8\textwidth',
+                        });
+$bcz_doc->write_to_file({ file          => 'inlinedoc-bcz.tex',
+                          sort_files    => 1,
+                          print_empty   => 0,
+                          descr_width   => '0.8\textwidth',
+                        });
 
 # ---------------------------------------------------------------------- #
 sub get_src_files {
