@@ -2530,43 +2530,42 @@ for a $y$-$z$ slice):
 \label{S-averages}
 \index{Averages}
 
-\subsubsection{Horizontal averages}
-\label{S-hor-averages}
+\subsubsection{One-dimensional output averaged in two dimensions}
+\label{S-1d-averages}
 
-In the file \file{xyaver.in}, $z$-dependent (horizontal) averages are listed.
-They are written to the file \file[xyaverages.dat]{data/xyaverages.dat}.
-A new line of averages is written every \var{it1}th time steps.
+There is the possibility to output two-dimensional averages.
+The result then depends on the remaining dimension.
+The averages are listed in the files  \file{xyaver.in}, \file{xzaver.in},
+and  \file{yzaver.in} where the first letters indicate the averaging 
+directions. The output is then stored to the files
+\file[xyaverages.dat]{data/xyaverages.dat},
+\file[xzaverages.dat]{data/xzaverages.dat}, and  
+\file[yzaverages.dat]{data/yzaverages.dat}.
+The output is written every  \var{it1d}th time steps. 
+
 See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
-
-We can also output in \file{print.in} the associated mean square value
-of the horizontal field, but this requires that in \file{xyaver.in} the
-quantities \code{bxmz} and \code{bymz} are set.
-If this is not the case, a corresponding warning message will be written
-on the command line.
 
 In \code{idl} such $xy$-averages can be read using the procedure
 \file{pc_read_xyaver}.
 
 
-\subsubsection{Other planar averages}
-\label{S-ver-averages}
+\subsubsection{Two-dimensional output averaged in one dimension}
+\label{S-2d-averages}
 
-There is the possibility to output also $xz$- and $yz$- averages.
-This is done by averaging first in the $z$-direction only, so
-the result (which is available on the root processor) depends on $x$
-and $y$. From these planes we calculate then (on the root processor)
-the $xz$- and $yz$-averages.
-The energies of the so defined mean magnetic fields
-are referred to as \var{bmy} and \var{bmx}, respectively,
-the energies of the so defined mean velocity fields
-are referred to as \var{umy}, \var{umx}, and \var{umz}.
-(The last letter indicates the direction on which the averaged
-quantity still depends.)
+There is the possibility to output one-dimensional averages.
+The result then depends on the remaining two dimensions.
+The averages are listed in the files  \file{yaver.in}, \file{zaver.in},
+and  \file{phiaver.in} where the first letter indicates the averaging 
+direction. The output is then stored to the files
+\file[yaverages.dat]{data/yaverages.dat},
+\file[zaverages.dat]{data/zaverages.dat}, and  
+\file[phiaverages.dat]{data/phiaverages.dat}.
 
-{\it Disadvantage}: one needs to set the file \file{zaver.in} with
-the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
-rather big file \file[zaverages.dat]{data/zaverages.dat}.
+See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
 
+{\it Disadvantage}: The files,
+e.g. \file[zaverages.dat]{data/zaverages.dat}, can be rather big because
+each average is just append to the file.
 
 \subsubsection{Azimuthal averages}
 \label{S-phi-averages}
@@ -6384,7 +6383,7 @@ in the code, and we were only now adding it, we would need to do the following
 If, instead of a mean value, you want a new maximum quantity, you need to
 replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 
-Sect.~\ref{S-hor-averages} describes how to output horizontal averages
+Sect.~\ref{S-1d-averages} describes how to output horizontal averages
 of the magnetic and velocity fields. New such averages can be added to
 the code by using the existing averaging procedures \code{calc\_bmz()}
 or \code{calc\_jmz()} as examples.
@@ -10367,6 +10366,10 @@ the latest set of parameters, you need to look at the code.
   \var{it1} [$10$]
                & write diagnostic output every \var{it1} time steps
                  (see Sect.~\ref{diagnostic-IO}). \\
+  \var{it1d} [$it1$]
+               & write averages every \var{it1d} time steps
+                 (see Sect.~\ref{S-1d-averages}). \var{it1d} has to be
+                 greater than or equal to \var{it1}.\\
   \var{cdt} [$0.4$]
                & Courant coefficient for advective time step; see
                  \S\ref{time-step}. \\
