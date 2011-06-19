@@ -279,10 +279,14 @@ module Shock
 !  Shock profile
 !
         case ('shock')
-          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,ishock)
-          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock)
-          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
-          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
+          slices%yz= f(ix_loc,m1:m2 ,n1:n2  ,ishock)
+          slices%xz= f(l1:l2 ,iy_loc,n1:n2  ,ishock)
+          slices%xy= f(l1:l2 ,m1:m2 ,iz_loc ,ishock)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock)
+          if (lwrite_slice_xy3) &
+              slices%xy3=f(l1:l2,m1:m2,iz3_loc,ishock)
+          if (lwrite_slice_xy4) &
+              slices%xy4=f(l1:l2,m1:m2,iz4_loc,ishock)
           slices%ready=.true.
 !
       endselect
