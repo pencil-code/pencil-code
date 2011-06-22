@@ -43,6 +43,7 @@ module Sub
   public :: der_step
   public :: der6_step
   public :: u_dot_grad, h_dot_grad
+  public :: u_dot_grad_alt
   public :: nou_dot_grad_scl
   public :: u_dot_grad_mat
   public :: del2, del2v, del2v_etc
@@ -136,6 +137,11 @@ module Sub
   interface u_dot_grad
     module procedure u_dot_grad_scl
     module procedure u_dot_grad_vec
+  endinterface
+!
+  interface u_dot_grad_alt
+    module procedure u_dot_grad_scl_alt
+    module procedure u_dot_grad_vec_alt
   endinterface
 !
   interface h_dot_grad
@@ -2348,6 +2354,66 @@ module Sub
 !
     endsubroutine u_dot_grad_vec
 !***********************************************************************
+    subroutine u_dot_grad_vec_alt(f,k,gradf,uu,ugradf,iadvec,ladd)
+!
+!  u.gradu
+!
+!  21-feb-07/axel+dhruba: added spherical coordinates
+!   7-mar-07/wlad: added cylindrical coordinates
+!  24-jun-08/MR: ladd added for incremental work
+!
+      intent(in) :: f,k,gradf,uu,iadvec
+      intent(out) :: ugradf
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3) :: gradf
+      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx) :: tmp
+      integer :: j,k,iadvec
+      logical, optional :: ladd
+      logical :: ladd1, upwind1
+!
+      if (k<1 .or. k>mfarray) then
+        call fatal_error('u_dot_grad_vec','variable index is out of bounds')
+        return
+      endif
+!
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
+!
+      do j=1,3
+        call u_dot_grad_scl_alt(f,k+j-1,gradf(:,j,:),uu,tmp,iadvec)
+        if (ladd1) then
+          ugradf(:,j)=ugradf(:,j)+tmp
+        else
+          ugradf(:,j)=tmp
+        endif
+!
+      enddo
+!
+!  Adjustments for spherical coordinate system.
+!  The following now works for general u.gradA.
+!
+      if (lspherical_coords) then
+        ff=f(l1:l2,m,n,k:k+2)
+        ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)*ff(:,2)+uu(:,3)*ff(:,3))
+        ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,2)*ff(:,1)-uu(:,3)*ff(:,3)*cotth(m))
+        ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,3)*ff(:,1)+uu(:,3)*ff(:,2)*cotth(m))
+      endif
+!
+!  The following now works for general u.gradA.
+!
+      if (lcylindrical_coords) then
+        ff=f(l1:l2,m,n,k:k+2)
+        ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
+      endif
+!
+    endsubroutine u_dot_grad_vec_alt
+!***********************************************************************
     subroutine u_dot_grad_mat(f,k,gradM,uu,ugradM,upwind)
 !
 !  Computes  u.grad(M)
@@ -2465,6 +2531,132 @@ module Sub
       endif; endif
 !
     endsubroutine u_dot_grad_scl
+!***********************************************************************
+    subroutine u_dot_grad_scl_alt(f,k,gradf,uu,ugradf,iadvec,ladd)
+!
+!  Do advection-type term u.grad f_k.
+!  Assumes gradf to be known, but takes f and k as arguments to be able
+!  to calculate upwind correction.
+!
+!  28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
+!  29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
+!  28-Sep-2009/MR: ladd added for incremental work
+!  22-Jun-2011/dhruba: made this alternative version which also incorporated the
+! kurganov-tadmore scheme.
+!
+      use Deriv, only: der6
+!
+      logical :: ladd1
+!
+      intent(in) :: f,k,gradf,uu,iadvec,ladd
+      intent(out) :: ugradf
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: uu,gradf
+      real, dimension (nx) :: ugradf, del6f, udelf
+      integer :: k,iadvec
+! iadvec=0 normal scheme
+! iadvec=1 upwinding
+! iadvec=2 Kurganov-Tadmor (KT)
+      logical, optional :: ladd
+!
+      if (present(ladd)) then
+        ladd1=ladd
+      else
+        ladd1=.false.
+      endif
+!
+      select case (iadvec)
+      case (0)
+        call dot_mn(uu,gradf,ugradf,ladd1)
+      case (1)
+        call dot_mn(uu,gradf,ugradf,ladd1)
+!
+!  x-direction.
+!
+        call der6(f,k,del6f,1,UPWIND=.true.)
+        ugradf=ugradf-abs(uu(:,1))*del6f
+!
+!  y-direction.
+!
+        call der6(f,k,del6f,2,UPWIND=.true.)
+        if (lcartesian_coords) then
+          ugradf=ugradf-abs(uu(:,2))*del6f
+        else
+          if (lcylindrical_coords) &
+              ugradf=ugradf-rcyl_mn1*abs(uu(:,2))*del6f
+          if (lspherical_coords) &
+              ugradf=ugradf-r1_mn*abs(uu(:,2))*del6f
+        endif
+!
+!  z-direction.
+!
+        call der6(f,k,del6f,3,UPWIND=.true.)
+        if ((lcartesian_coords).or.(lcylindrical_coords)) then
+          ugradf=ugradf-abs(uu(:,3))*del6f
+        else
+          if (lspherical_coords) &
+              ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
+        endif
+!
+      case (2)
+!
+! x, y and z directions respectively
+!
+        call u_grad_kurganov_tadmore(f,k,udelf,1)
+        ugradf=udelf
+        call u_grad_kurganov_tadmore(f,k,udelf,2)
+        ugradf=ugradf+udelf
+        call u_grad_kurganov_tadmore(f,k,udelf,3)
+        ugradf=ugradf+udelf
+!
+      case default
+        if (lroot) print*, 'sub:u_dot_grad: iadvec must be 0,1 or 2, iadvec=', &
+              iadvec
+          call fatal_error('u_dot_grad_scl','')
+        endselect
+!
+!
+    endsubroutine u_dot_grad_scl_alt
+!***********************************************************************
+    subroutine u_grad_kurganov_tadmore(f,k,udelf,j)
+!
+      use Deriv, only: der2_minmod
+!
+      intent(in) :: f,k,j
+      intent(out) :: udelf
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,dimension(nx) :: udelf
+      real, dimension (nx) :: vel,velpj,velmj,amhalf,aphalf,delfj,delfjp1,delfjm1
+      integer :: k,j
+      integer :: ix,iix
+!
+
+      vel=f(l1:l2,m,n,iuu+j-1)
+      call der2_minmod(f,k,delfj,delfjp1,delfjm1,j)
+      select case(j)
+      case(1)
+        do ix=l1,l2
+          iix=ix-nghost
+          velpj(iix) = f(ix+1,m,n,iux)
+          velmj(iix) = f(ix-1,m,n,iux)
+        enddo
+      case(2)
+        velpj = f(l1:l2,m+1,n,iuy)
+        velmj = f(l1:l2,m-1,n,iuy) 
+      case(3)
+        velpj = f(l1:l2,m,n+1,iuz)
+        velmj = f(l1:l2,m,n-1,iuz) 
+      case default
+        call fatal_error('sub:u_grad_kurganov_tadmore:','wrong component')
+      endselect
+      aphalf = abs(vel+velpj)/2.
+      amhalf = abs(vel+velmj)/2.
+      udelf = (aphalf-vel)*(delfjp1+delfj)/2. + & 
+          (amhalf-vel)*(delfjm1+delfj)/2.
+!
+    endsubroutine u_grad_kurganov_tadmore
 !***********************************************************************
     subroutine nou_dot_grad_scl(gradf,uu,ugradf,del6u,upwind,ladd)
 !

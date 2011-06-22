@@ -67,6 +67,7 @@ module Dustdensity
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
+  character (len=labellen) :: advec_ddensity='normal'
   logical :: ludstickmax=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
@@ -78,6 +79,7 @@ module Dustdensity
   logical :: latm_chemistry=.false.
   logical :: lresetuniform_dustdensity=.false.
   logical :: lnoaerosol=.false., lnocondens_term=.false.
+  integer :: iadvec_ddensity=0
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, nd00, mdave0, Hnd, &
@@ -87,14 +89,15 @@ module Dustdensity
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
       r0, delta, delta0, lmdvar, lmice, ldcore, d0, &
-      dsize0_min, dsize0_max, r0_core, Ntot, lnocondens_term, BB0
+      dsize0_min, dsize0_max, r0_core, Ntot, lnocondens_term, BB0,&
+      advec_ddensity
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
-      lnocondens_term
+      lnocondens_term,advec_ddensity
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
@@ -244,6 +247,24 @@ module Dustdensity
             'resetting dust density to uniform value=',nd_reuni
         f(:,:,:,ind) = f(:,:,:,ind) + nd_reuni
       endif
+!
+! choosing the advection scheme
+!
+      if(lupw_ndmdmi) advec_ddensity='upwind'
+
+      select case(advec_ddensity)
+      case('normal')
+        if (lroot) print*, 'advec_ddensity: plain vanila scheme'
+        iadvec_ddensity=0
+      case('upwind')
+        if (lroot) print*, 'advec_ddensity: using upwinding'
+        iadvec_ddensity=1
+      case('kurganov-tadmore')
+        if (lroot) print*, 'advec_ddensity: using kurganov-tadmore scheme'
+        iadvec_ddensity=2
+      case default
+        call fatal_error('dustdensity:initialize_dustdensity','no such advection')
+      endselect
 !
 !  Special coagulation equation test cases require initialization of kernel.
 !
@@ -1075,14 +1096,18 @@ module Dustdensity
         if (lpencil(i_glnnd2)) call dot2_mn(p%glnnd(:,:,k),p%glnnd2(:,k))
 ! udgnd
         if (lpencil(i_udgnd)) then
-          call u_dot_grad(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),tmp, &
-                           UPWIND=lupw_ndmdmi)
+!          call u_dot_grad(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),tmp, &
+!                           UPWIND=lupw_ndmdmi)
+          call u_dot_grad_alt(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),tmp,&
+              iadvec_ddensity)
           p%udgnd(:,k)=tmp
         endif
 ! udglnnd
         if (lpencil(i_udglnnd)) then
-          call u_dot_grad(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp, &
-                           UPWIND=lupw_ndmdmi)
+!          call u_dot_grad(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp, &
+!                           UPWIND=lupw_ndmdmi)
+          call u_dot_grad_alt(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp,& 
+              iadvec_ddensity)
           p%udglnnd(:,k)=tmp
         endif
 ! md
@@ -1137,14 +1162,18 @@ module Dustdensity
         endif
 ! udgmd
         if (lpencil(i_udgmd)) then
-          call u_dot_grad(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp, &
-                           UPWIND=lupw_ndmdmi)
+!          call u_dot_grad(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp, &
+!                           UPWIND=lupw_ndmdmi)
+          call u_dot_grad_alt(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp,& 
+              iadvec_ddensity)
           p%udgmd(:,k)=tmp
         endif
 ! udgmi
         if (lpencil(i_udgmi)) then
-          call u_dot_grad(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp, &
-                           UPWIND=lupw_ndmdmi)
+!          call u_dot_grad(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp, &
+!                           UPWIND=lupw_ndmdmi)
+          call u_dot_grad_alt(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp,& 
+              iadvec_ddensity)
           p%udgmi(:,k)=tmp
         endif
 ! sdglnnd

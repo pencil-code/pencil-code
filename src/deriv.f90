@@ -23,6 +23,7 @@ module Deriv
   public :: der_upwind1st
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
+  public :: der2_minmod
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
 !
@@ -842,6 +843,87 @@ module Deriv
       endif
 !
     endsubroutine der6
+!***********************************************************************
+    subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
+!
+! calculates gradient of a scalar along the direction j but
+! get for the derivatives at the point i-1,i,i+1
+!
+      intent(in) :: f,k,j
+      intent(out) :: delfk,delfkp1,delfkm1
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: delfk,delfkp1,delfkm1,fac
+      real, dimension (nx,-1:1) :: delf
+      real, dimension (0:nx+1) :: delfx
+      integer :: j,k
+      integer :: i,ii,ix
+      real :: tmp1,tmp2,tmp3
+ 
+! three cases for three components
+      select case (k)
+        case(1)
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=f(i,m,n,j)-f(i-1,m,n,j)
+            tmp2=(f(i+1,m,n,j)-f(i-1,m,n,j))/4.
+            tmp3=f(i+1,m,n,j)-f(i,m,n,j)
+            delfx(ix) = minmod(tmp1,tmp2,tmp3)
+          enddo
+          do i=1,nx;do ii=-1,1
+            delf(i,ii) = delfx(i+ii)
+          enddo;enddo
+          fac = dx_1(l1:l2)
+! y-component
+        case(2)
+          do i=l1,l2
+            ix=i-nghost
+            do ii=-1,1
+              tmp1=f(i,m+ii,n,j)-f(i,m+ii-1,n,j)
+              tmp2=(f(i,m+ii+1,n,j)-f(i,m+ii-1,n,j))/4.
+              tmp3=f(i,m+ii+1,n,j)-f(i,m+ii,n,j)
+              delf(ix,ii) = minmod(tmp1,tmp2,tmp3)*dy_1(i)
+            enddo
+          enddo
+          fac = dy_1(l1:l2)
+          if (lspherical_coords) fac = fac*r1_mn
+          if (lcylindrical_coords) fac = fac*rcyl_mn1
+! z-component
+        case(3)
+          do i=l1,l2
+            ix=i-nghost
+            do ii=-1,1
+              tmp1=f(i,m,n+ii,j)-f(i,m,n+ii-1,j)
+              tmp2=(f(i,m,n+ii+1,j)-f(i,m,n+ii-1,j))/4.
+              tmp3=f(i,m,n+ii+1,j)-f(i,m,n+ii,j)
+              delf(ix,ii) = minmod(tmp1,tmp2,tmp3)
+            enddo
+          enddo
+          fac = dz_1(l1:l2)
+          if (lspherical_coords) fac = fac*r1_mn*sin1th(m)
+        case default
+          call fatal_error('deriv:der2_minmod','wrong component')
+        endselect
+        delfkm1(:) = delf(:,-1)*fac
+        delfk(:) = delf(:,0)*fac
+        delfkp1(:) = delf(:,1)*fac
+!     
+    endsubroutine der2_minmod
+!***********************************************************************
+    real function minmod(a,b,c)
+      real :: a,b,c
+      real :: minmod
+!
+      if ( &
+        ((a.gt.0) .and. (b.gt.0) .and. (c.gt.0))) then
+        minmod=max(a,b,c)
+      elseif ( &
+        ((a.lt.0) .and. (b.lt.0) .and. (c.lt.0))) then
+        minmod=min(a,b,c)
+      else
+        minmod=0.
+      endif
+    endfunction minmod
 !***********************************************************************
     subroutine der6_other(f,df,j,ignoredx,upwind)
 !
