@@ -912,7 +912,6 @@ module Deriv
 !***********************************************************************
     real function minmod(a,b,c)
       real :: a,b,c
-      real :: minmod
 !
       if ( &
         ((a.gt.0) .and. (b.gt.0) .and. (c.gt.0))) then
