@@ -2371,7 +2371,7 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: j,k,iadvec
       logical, optional :: ladd
-      logical :: ladd1, upwind1
+      logical :: ladd1
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_vec','variable index is out of bounds')
@@ -2632,7 +2632,6 @@ module Sub
       integer :: k,j
       integer :: ix,iix
 !
-
       vel=f(l1:l2,m,n,iuu+j-1)
       call der2_minmod(f,k,delfj,delfjp1,delfjm1,j)
       select case(j)
@@ -2644,16 +2643,16 @@ module Sub
         enddo
       case(2)
         velpj = f(l1:l2,m+1,n,iuy)
-        velmj = f(l1:l2,m-1,n,iuy) 
+        velmj = f(l1:l2,m-1,n,iuy)
       case(3)
         velpj = f(l1:l2,m,n+1,iuz)
-        velmj = f(l1:l2,m,n-1,iuz) 
+        velmj = f(l1:l2,m,n-1,iuz)
       case default
         call fatal_error('sub:u_grad_kurganov_tadmore:','wrong component')
       endselect
       aphalf = abs(vel+velpj)/2.
       amhalf = abs(vel+velmj)/2.
-      udelf = (aphalf-vel)*(delfjp1+delfj)/2. + & 
+      udelf = (aphalf-vel)*(delfjp1+delfj)/2. + &
           (amhalf-vel)*(delfjm1+delfj)/2.
 !
     endsubroutine u_grad_kurganov_tadmore
