@@ -445,6 +445,13 @@ module Forcing
          profx_ampl=1.; profx_hel=1.
          profy_ampl=1.; profy_hel=1.
          do n=1,mz
+            profz_hel(n)=sin(pi*z(n)/Lz)
+         enddo
+!
+      elseif (iforce_profile=='gal-wind2') then
+         profx_ampl=1.; profx_hel=1.
+         profy_ampl=1.; profy_hel=1.
+         do n=1,mz
             profz_hel(n)=sin(2.*pi*z(n)/Lz)
          enddo
 !
