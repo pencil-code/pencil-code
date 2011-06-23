@@ -744,14 +744,14 @@ module Testscalar
         if (idiag_gam33 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
         if (idiag_gam33z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33z)
 !
-        if (idiag_kapcPERP /=0) call   sum_mn_name  (-4*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*ktestscalar,idiag_kapcPERP)
-        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*ktestscalar,idiag_kapcPERPz)
+        if (idiag_gamc    /=0) call   sum_mn_name  (-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_gamc)
+        if (idiag_gamcz   /=0) call xysum_mn_name_z(-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_gamcz)
 !
-        if (idiag_kapcPARA /=0) call   sum_mn_name  (-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2))*ktestscalar,idiag_kapcPARA)
-        if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2))*ktestscalar,idiag_kapcPARAz)
+        if (idiag_kapcPARA /=0) call   sum_mn_name  (-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_kapcPARA)
+        if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_kapcPARAz)
 !
-        if (idiag_gamc    /=0) call   sum_mn_name  (-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gamc)
-        if (idiag_gamcz   /=0) call xysum_mn_name_z(-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gamcz)
+        if (idiag_kapcPERP /=0) call   sum_mn_name  (-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kapcPERP)
+        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kapcPERPz)
 !
 !  Extract values at one point.
 !
@@ -1062,13 +1062,9 @@ module Testscalar
 !  set G0test for each of the 2+2 cases
 !
       select case (jtest)
-      case (1); C0test=+camp*ktestscalar1*sx*sy(m)*sz(n); G0test(:,1)=+camp*cx*sy(m)*sz(n); G0test(:,2)=+camp*sx*cy(m)*sz(n); G0test(:,3)=camp*sx*sy(m)*cz(n)
-      case (2); C0test=-camp*ktestscalar1*sx*sy(m)*cz(n); G0test(:,1)=-camp*cx*sy(m)*cz(n); G0test(:,2)=-camp*sx*cy(m)*cz(n); G0test(:,3)=camp*sx*sy(m)*sz(n)
-      case (3); C0test=+camp*ktestscalar1*sx(:); G0test(:,1)=camp*cx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case (4); C0test=-camp*ktestscalar1*cx(:); G0test(:,1)=camp*sx(:); G0test(:,2)=0.; G0test(:,3)=0.
-      case (5); C0test=+camp*ktestscalar1*sy(m); G0test(:,1)=0.; G0test(:,2)=camp*cy(m); G0test(:,3)=0.
-      case (6); C0test=-camp*ktestscalar1*cy(m); G0test(:,1)=0.; G0test(:,2)=camp*sy(m); G0test(:,3)=0.
-      case default; C0test(:)=0.; G0test(:,:)=0.
+      case (1); C0test=camp*sx*sy(m)*cz(n); G0test(:,1)=camp*cx*sy(m)*xz(n); G0test(:,2)=camp*sx*cy(m)*cz(n); G0test(:,3)=+camp*sx*sy(m)*ktestscalar*sz(n)
+      case (2); C0test=camp*sx*sy(m)*sz(n); G0test(:,1)=camp*cx*sy(m)*sz(n); G0test(:,2)=camp*sx*cy(m)*sz(n); G0test(:,3)=-camp*sx*sy(m)*ktestscalar*cz(n)
+      case default; call fatal_error("set_ggtest_G1_G2","jtest outside range")
       endselect
 !
     endsubroutine set_ggtest_G1_G2
