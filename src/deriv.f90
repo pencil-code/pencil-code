@@ -35,7 +35,7 @@ module Deriv
 !debug  integer, parameter :: icount_derij = 6         !DERCOUNT
 !debug  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
 !debug  integer, parameter :: icount_der_other = 8     !DERCOUNT
-
+!
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
     module procedure der_other  ! derivative of another field
@@ -50,14 +50,14 @@ module Deriv
     module procedure derij_main   ! derivative of an 'mvar' variable
     module procedure derij_other  ! derivative of another field
   endinterface
-
+!
   interface  der_onesided_4_slice                ! Overload the der function
     module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
     module procedure  der_onesided_4_slice_main_pt
     module procedure  der_onesided_4_slice_other ! derivative of another field
     module procedure  der_onesided_4_slice_other_pt
   endinterface
-
+!
   contains
 !
 !***********************************************************************
@@ -859,7 +859,7 @@ module Deriv
       integer :: j,k
       integer :: i,ii,ix
       real :: tmp1,tmp2,tmp3
- 
+
 ! three cases for three components
       select case (k)
         case(1)
@@ -885,7 +885,7 @@ module Deriv
               delf(ix,ii) = minmod(tmp1,tmp2,tmp3)*dy_1(i)
             enddo
           enddo
-          fac = dy_1(l1:l2)
+          fac = dy_1(m)
           if (lspherical_coords) fac = fac*r1_mn
           if (lcylindrical_coords) fac = fac*rcyl_mn1
 ! z-component
@@ -899,7 +899,7 @@ module Deriv
               delf(ix,ii) = minmod(tmp1,tmp2,tmp3)
             enddo
           enddo
-          fac = dz_1(l1:l2)
+          fac = dz_1(n)
           if (lspherical_coords) fac = fac*r1_mn*sin1th(m)
         case default
           call fatal_error('deriv:der2_minmod','wrong component')
@@ -907,7 +907,7 @@ module Deriv
         delfkm1(:) = delf(:,-1)*fac
         delfk(:) = delf(:,0)*fac
         delfkp1(:) = delf(:,1)*fac
-!     
+!
     endsubroutine der2_minmod
 !***********************************************************************
     real function minmod(a,b,c)
