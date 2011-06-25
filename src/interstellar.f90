@@ -152,7 +152,7 @@ module Interstellar
 !
 !  SNI per (x,y)-area explosion rate
 !
-  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56 
+  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
   real :: SNI_area_rate=impossible, SNII_area_rate=impossible
 !
 !  SNII rate=5.e-12 mass(H1+HII)/solar_mass
@@ -161,7 +161,7 @@ module Interstellar
 !  Mannucci et al A&A 433, 807-814 (2005)
 !
   double precision, parameter :: SNII_mass_rate_cgs=1.584434515D-19
-  double precision, parameter :: SNI_mass_rate_cgs=1.489368444D-21 
+  double precision, parameter :: SNI_mass_rate_cgs=1.489368444D-21
   real :: SNII_mass_rate, SNI_mass_rate
   logical :: lSN_mass_rate=.false.
 !
@@ -1021,16 +1021,16 @@ module Interstellar
 !  Shock profile
 !
         case ('ism_cool')
-          slices%yz=f(slices%ix,m1:m2    ,n1:n2     ,icooling)
-          slices%xz=f(l1:l2    ,slices%iy,n1:n2     ,icooling)
-          slices%xy=f(l1:l2    ,m1:m2    ,slices%iz ,icooling)
-          slices%xy2=f(l1:l2   ,m1:m2    ,slices%iz2,icooling)
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,icooling)
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,icooling)
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling)
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
           slices%ready = .true.
         case ('ism_cool2')
-          slices%yz=f(slices%ix,m1:m2    ,n1:n2     ,icooling2)
-          slices%xz=f(l1:l2    ,slices%iy,n1:n2     ,icooling2)
-          slices%xy=f(l1:l2    ,m1:m2    ,slices%iz ,icooling2)
-          slices%xy2=f(l1:l2   ,m1:m2    ,slices%iz2,icooling2)
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,icooling2)
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,icooling2)
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling2)
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling2)
           slices%ready = .true.
 !
       endselect
@@ -1357,14 +1357,14 @@ module Interstellar
           'hydrostatic thermal equilibrium density and entropy profiles'
 !
       do n=1,mz
-        if (lthermal_hse) then 
+        if (lthermal_hse) then
           logrho = log(rho0ts)+(g_A*g_B*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
               log(T0hs/(g_A*g_B)* &
-              (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D))) 
+              (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)))
         else
           logrho = log(rho0ts)-0.015*(- &
               g_A*g_B+ &
-              g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D) 
+              g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
         endif
         logrho=max(logrho,-80.0)
         zrho(n)=exp(logrho)
@@ -1392,7 +1392,7 @@ module Interstellar
 !            initss='thermal-hs' in entropy.f90
 !            heating_select='thermal-hs' in interstellar.f90
 !  Using here a similar method to O. Gressel 2008 (PhD) lthermal_hse=T
-!  or similar to Joung & Mac Low Apj 653 Dec 2006 without hse 
+!  or similar to Joung & Mac Low Apj 653 Dec 2006 without hse
 !
 !  22-mar-10/fred:
 !  adapted from galactic-hs,ferriere-hs
@@ -1444,7 +1444,7 @@ module Interstellar
       if (lthermal_hse) then
         lam_loop: do j=1,ncool
           if (lncoolT(j) >= lncoolT(j+1)) exit lam_loop
-          where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1)) 
+          where (lncoolT(j)<=lnTT.and.lnTT<lncoolT(j+1))
             lambda=lambda+exp(lncoolH(j)+lnTT*coolB(j))
           endwhere
         enddo lam_loop
@@ -1572,7 +1572,7 @@ module Interstellar
 !
       if (lheatcool_shock_cutoff) then
         call dot2(p%gshock,gsh2)
-! 
+!
         damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1))
 !
         cool=cool*damp_profile
@@ -1601,7 +1601,7 @@ module Interstellar
       if (ldiagnos) then
         if (idiag_Hmax/=0) then
           netheat=heatcool
-          where (heatcool<0.0) netheat=0.0 
+          where (heatcool<0.0) netheat=0.0
           call max_mn_name(netheat/p%ee,idiag_Hmax)
         endif
         if (idiag_taucmin/=0) then
@@ -1622,7 +1622,7 @@ module Interstellar
       endif
 !
 !  Limit timestep by the cooling time (having subtracted any heating)
-!  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee) 
+!  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
@@ -1779,7 +1779,7 @@ module Interstellar
           else
 !
 !  Avoid sites with dense mass shown to excessively cool remnants, given the
-!  high thermal conductivity we are forced to adopt. 
+!  high thermal conductivity we are forced to adopt.
 !
             if (SNRs(iSNR)%site%rho > rho_SN_max) then
               cycle
@@ -1860,7 +1860,7 @@ module Interstellar
           else
 !
 !  Avoid sites with dense mass shown to excessively cool remnants, given the
-!  high thermal conductivity we are forced to adopt. 
+!  high thermal conductivity we are forced to adopt.
 !
             if (SNRs(iSNR)%site%rho > rho_SN_max) then
               cycle
@@ -1996,7 +1996,7 @@ module Interstellar
         if (lroot.and.ip<20) print*, &
             'set_interval: expected interval for SNII  =',t_interval
       endif
-!        
+!
     endsubroutine set_interval
 !*****************************************************************************
     subroutine check_SNII(f,l_SNI)
@@ -2027,10 +2027,10 @@ module Interstellar
       if (l_SNI) return         ! Only do if no SNI this step.
 !
       if (lSNII_gaussian) then  ! Skip location by mass.
-        call check_SNIIb(f,l_SNI) 
+        call check_SNIIb(f,l_SNI)
         return
       endif
-      
+
       iSNR=get_free_SNR()
 !
 !  Determine and sum all cells comprising dense cooler clouds where type II
@@ -2048,7 +2048,7 @@ module Interstellar
             rho(1:nx)=f(l1:l2,m,n,irho)
             call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss)&
                 ,yH=yH,lnTT=lnTT)
-          else 
+          else
             rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
             call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss)&
                 ,yH=yH,lnTT=lnTT)
@@ -2694,10 +2694,10 @@ module Interstellar
       SNR%rhom=rhom
 !
 !  Rescale injection radius by mass if required. Iterate a few times to
-!  improve match of mass to radius. 
+!  improve match of mass to radius.
 !
       if (lSN_scale_rad) then
-        do i=1,9       
+        do i=1,9
           SNR%radius=(solar_mass/SNR%rhom*pi_1*N_mass)**(1.0/3.0)
           call get_properties(f,SNR,rhom,ekintot)
           SNR%rhom=rhom
@@ -2976,7 +2976,7 @@ module Interstellar
         if (ldensity_nolog) then
           lnrho=log(f(l1:l2,m,n,irho))
           rho_old=exp(lnrho)
-        else          
+        else
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
         endif
@@ -3616,7 +3616,7 @@ module Interstellar
 !
         if (ldensity_nolog) then
           lnrho_old=log(f(l1:l2,m,n,irho))
-        else  
+        else
           lnrho_old=f(l1:l2,m,n,ilnrho)
         endif
         if (cavity_profile=="gaussian3log") then
@@ -3999,23 +3999,23 @@ module Interstellar
       if (lroot.and.ip<45) print*,'addmassflux: bflux after mpi sum =', bflux
       if (bflux>0.d0) then
 !
-!  Multiply mass flux by area element and timestep to determine lost mass. 
+!  Multiply mass flux by area element and timestep to determine lost mass.
 !  Add unused flux mass from previous timesteps.
 !
         bmass=bflux*dt*dx*dy+boldmass
 !
 !  Determine multiplier required to restore mass to level before boundary
-!  losses. addrate (default=1.0) can be increased to raise mass levels if 
+!  losses. addrate (default=1.0) can be increased to raise mass levels if
 !  required.
 !
         add_ratio=(bmass*addrate+oldmass)/oldmass
-!         
+!
         if (lroot.and.ip<45) print*, &
             'addmassflux: bmass, add_ratio, timestep =', &
             bmass, add_ratio, dt
 !
-!  Add mass proportionally to the existing density throughout the 
-!  volume to replace that lost through boundary. 
+!  Add mass proportionally to the existing density throughout the
+!  volume to replace that lost through boundary.
 !  add_ratio needs to be large enough for single precision to record small
 !  changes, so accumulate small mass losses in boldmass until large enough.
 !
@@ -4028,7 +4028,7 @@ module Interstellar
                 dble(f(l1:l2,m1:m2,n1:n2,ilnrho))+log(add_ratio)
           endif
 !
-!  For debugging purposes newmass can be calculated and compared to 
+!  For debugging purposes newmass can be calculated and compared to
 !  bmass+oldmass, which should be equal.
 !
           if (ldensity_nolog) then
