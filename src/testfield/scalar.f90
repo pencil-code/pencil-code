@@ -175,7 +175,7 @@ module Testscalar
 !  These values are used in this form in start, but later overwritten.
 !
       icctest=nvar+1
-      icctestpq=icctest+(njtestscalar-1)
+      icctestpq=icctest+njtestscalar-1
       ntestscalar=mtestscalar
       nvar=nvar+ntestscalar
 !

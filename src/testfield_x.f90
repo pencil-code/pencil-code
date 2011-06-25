@@ -185,8 +185,6 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaxtestpq=iaatest+3*(njtest-1)
-      iaztestpq=iaxtestpq+2
       ntestfield=mtestfield
       nvar=nvar+ntestfield
 !
@@ -197,9 +195,10 @@ module Testfield
 !
 !  Put variable names in array
 !
-      do j=iaatest,iaztestpq
+      do j=iaatest,nvar
         varname(j) = 'aatest'
       enddo
+      iaztestpq=nvar
 !
 !  identify version number
 !
@@ -1268,8 +1267,6 @@ module Testfield
         write(3,*) 'idiag_E30z=',idiag_E30z
         write(3,*) 'idiag_EBpq=',idiag_EBpq
         write(3,*) 'iaatest=',iaatest
-        write(3,*) 'iaxtestpq=',iaxtestpq
-        write(3,*) 'iaztestpq=',iaztestpq
         write(3,*) 'ntestfield=',ntestfield
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy

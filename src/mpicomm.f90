@@ -6343,7 +6343,9 @@ module Mpicomm
 !
                         do i=iproca,iproce
 !
-                          tag = nprocxy*(iz+1)*iy + nprocxy*iz + i-iproca               ! overflow possible for large ncpuxy, nz, nxgrid
+!  overflow possible for large ncpuxy, nz, nxgrid (comment by Anders)
+!
+                          tag = nprocxy*(iz+1)*iy + nprocxy*iz + i-iproca
 !
                           if (lroot) then
                             if (lcomplex) then

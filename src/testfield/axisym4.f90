@@ -145,8 +145,6 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaxtestpq=iaatest+2*(njtest-1)
-      iaztestpq=iaxtestpq+2
       ntestfield=mtestfield
       nvar=nvar+ntestfield
 !
@@ -157,9 +155,10 @@ module Testfield
 !
 !  Put variable names in array
 !
-      do j=iaatest,iaztestpq
+      do j=iaatest,nvar
         varname(j) = 'aatest'
       enddo
+      iaztestpq=nvar
 !
 !  Identify version number.
 !
@@ -944,7 +943,7 @@ module Testfield
             enddo
           enddo
 !
-!  update counter, but only when we are on the last substep
+!  Update counter, but only when we are on the last substep.
 !
           if (ltestfield_taver) then
             if (llast) then
@@ -954,7 +953,8 @@ module Testfield
         endif
       enddo
 !
-!  do communication for array of size nz*nprocz*3*njtest
+!  Do communication for array of size nz*nprocz*3*njtest.
+!  The factor 3 is because of the 3 components of each vector field.
 !
       if (nprocy>1) then
         call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtest/))
@@ -1246,8 +1246,6 @@ module Testfield
 !
       if (lwr) then
         write(3,*) 'iaatest=',iaatest
-        write(3,*) 'iaxtestpq=',iaxtestpq
-        write(3,*) 'iaztestpq=',iaztestpq
         write(3,*) 'ntestfield=',ntestfield
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy

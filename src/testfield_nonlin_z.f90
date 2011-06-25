@@ -50,7 +50,7 @@ module Testfield
   real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.
-  integer :: iuxtest=0,iuytest=0,iuztest=0,iuxtestpq=0,iuztestpq=0
+  integer :: iuxtest=0,iuytest=0,iuztest=0,iuztestpq=0
   integer :: iu0xtest=0,iu0ztest=0
   integer, dimension (njtest) :: nuxb=0
   integer :: iE0=0
@@ -233,8 +233,7 @@ module Testfield
       iaxtest=iaatest
       iaytest=iaatest+1
       iaztest=iaatest+2
-      iaxtestpq=iaatest+3*(njtest-1)
-      iaztestpq=iaxtestpq+2
+      iaztestpq=iaatest+3*njtest-1
 !
 !  Allocate mtestfield slots; the first half is used for aatest
 !  and the second for uutest.
@@ -243,8 +242,7 @@ module Testfield
       iuxtest=iuutest
       iuytest=iuutest+1
       iuztest=iuutest+2
-      iuxtestpq=iuutest+3*(njtest-1)
-      iuztestpq=iuxtestpq+2
+      iuztestpq=iuutest+3*njtest-1
 !
 !  set ntestfield and nvar
 !

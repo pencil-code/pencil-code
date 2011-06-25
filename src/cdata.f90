@@ -247,8 +247,8 @@ module Cdata
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ispx=0,ispy=0,ispz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
-  integer :: iaatest=0,iaxtestpq=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
-  integer :: iuutest=0,iuxtestpq=0,iuztestpq=0,ihhtestpq=0
+  integer :: iaatest=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
+  integer :: iuutest=0,iuztestpq=0,ihhtestpq=0
   integer :: ispitzerx=0,ispitzery=0,ispitzerz=0,ispitzer=0
   integer :: ntestscalar=0,ntestfield=0,ntestflow=0
   integer :: icctest=0,icctestpq=0,iug=0

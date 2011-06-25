@@ -315,7 +315,7 @@ module Shear
 !  Loop through all the dax/dt equations and add -S*ay contribution.
 !
       if (ltestfield) then
-        do j=iaatest,iaxtestpq,3
+        do j=iaatest,iaztestpq,3
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
         enddo
         if (iuutest/=0) then
