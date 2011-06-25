@@ -396,7 +396,6 @@ module Magnetic_meanfield
       real, dimension (nx,3) :: Bk_Bki, tmp_jxb,exa_meanfield
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact,qp_c
-      integer :: j
 !
       intent(inout) :: f,p
 !
@@ -442,7 +441,6 @@ module Magnetic_meanfield
             meanfield_qp_func=(qp_x0**2+qp_c)/(p%b2*B2renorm+qp_c)
             meanfield_qp_der=-meanfield_qp_func/(p%b2*B2renorm+qp_c)
           endif
-
 !
 !  Add -(1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !
