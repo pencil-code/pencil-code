@@ -42,7 +42,7 @@ module Shock
   namelist /shock_run_pars/ &
       ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,&
       div_threshold,lrewrite_shock_boundary
-! 
+!
   integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
   integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
 !
@@ -295,10 +295,14 @@ module Shock
 !  Shock profile
 !
         case ('shock')
-          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,ishock)
-          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock)
-          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
-          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
+          slices%yz= f(ix_loc,m1:m2 ,n1:n2  ,ishock)
+          slices%xz= f(l1:l2 ,iy_loc,n1:n2  ,ishock)
+          slices%xy= f(l1:l2 ,m1:m2 ,iz_loc ,ishock)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock)
+          if (lwrite_slice_xy3) &
+              slices%xy3=f(l1:l2,m1:m2,iz3_loc,ishock)
+          if (lwrite_slice_xy4) &
+              slices%xy4=f(l1:l2,m1:m2,iz4_loc,ishock)
           slices%ready=.true.
 !
       endselect
@@ -408,7 +412,7 @@ module Shock
           call boundconds_y(f,iuy,iuy)
           call boundconds_z(f,iuz,iuz)
         endif
-! The following will calculate div u for any coordinate system. 
+! The following will calculate div u for any coordinate system.
         call div(f,iuu,penc)
         f(l1:l2,m,n,ishock) = max(0.0,-penc)
 !
@@ -534,7 +538,7 @@ module Shock
 !
 !  Scale by dxmax**2
 !
-        if (.not.lrewrite_shock_boundary) then 
+        if (.not.lrewrite_shock_boundary) then
           f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)*dxmax**2
         else
           f(:,:,:,ishock) = tmp*dxmax**2
