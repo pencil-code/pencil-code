@@ -32,7 +32,7 @@ module Radiation
   use Sub, only: keep_compiler_quiet
 !
   implicit none
-
+!
   include 'radiation.h'
 !
   type Qbound !Qbc
@@ -99,7 +99,7 @@ module Radiation
   logical :: lintrinsic=.true., lcommunicate=.true., lrevision=.true.
   logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
-  logical :: lcheck_tau_division=.false. 
+  logical :: lcheck_tau_division=.false.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -330,12 +330,12 @@ module Radiation
     endsubroutine initialize_radiation
 !***********************************************************************
     subroutine calc_angle_weights
-! 
+!
 !  This subroutine calculates the weights needed for the discrete version
 !  of the angular integration of the radiative transfer equation. By now
 !  the code was using only constant weights, which just works for very special
 !  cases. Using spherical harmonics just works for some special cases as well,
-!  but in a slightly broader range. 
+!  but in a slightly broader range.
 !
 !  18-may-07/wlad: coded
 !
@@ -459,7 +459,7 @@ module Radiation
             if (lintrinsic) call Qintrinsic(f)
 !
             if (lcommunicate) then
-              if (lperiodic_ray) then 
+              if (lperiodic_ray) then
                 call Qperiodic
               else
                 call Qpointers
@@ -968,7 +968,7 @@ module Radiation
 !
       use Mpicomm, only: radboundary_zx_periodic_ray
       use IO, only: output
-
+!
       real, dimension(ny,nz) :: Qrad_yz,tau_yz,emtau1_yz
       real, dimension(nx,nz) :: Qrad_zx,tau_zx !,emtau1_zx
       real, dimension(nx,nz) :: Qrad_tot_zx,tau_tot_zx,emtau1_tot_zx
@@ -1222,9 +1222,9 @@ module Radiation
       if (bc_ray_z=='c') then
         if (nrad<0) then
           Irad_xy=arad*TT_top**4*(1-exp(tau_top/mu(idir)))
-        elseif (nrad>0) then 
+        elseif (nrad>0) then
           Irad_xy=arad*TT_bot**4*(1-exp(tau_bot/mu(idir)))
-        else 
+        else
           call fatal_error('radboundary_xy_set','nrad=0 should not happen')
           Irad_xy=impossible
         endif
@@ -1354,7 +1354,7 @@ module Radiation
 !
       use Diagnostics
       use Sub
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1378,7 +1378,7 @@ module Radiation
           call sum_mn_name(f(l1:l2,m,n,iFradz),idiag_Fradzm)
         endif
       endif
-!      
+!
       if (l1davgfirst) then
         if (idiag_Fradzmz/=0) then
            call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_Fradzmz)
@@ -1538,7 +1538,7 @@ module Radiation
           endif
         enddo; enddo
 !
-      case ('Tsquare') !! Morfill et al. 1985 
+      case ('Tsquare') !! Morfill et al. 1985
         kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
         kappa0=kappa0_cgs!!*unit_density*unit_length
         do n=n1-radz,n2+radz
@@ -1557,7 +1557,7 @@ module Radiation
           f(:,m,n,ikapparho)=kappa0*(exp(lnrho)**2)*(exp(lnTT))**(-3.5)
         enddo
         enddo
-!        
+!
       case ('dust-infrared')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -1568,7 +1568,7 @@ module Radiation
             elseif (exp(lnTT(i))>=200) then
               k1=0.861353*lnTT(i)-4.56372
               tmp(i)=exp(k1)
-            else 
+            else
               k2=-5.22826*lnTT(i)+27.7010
               tmp(i)=exp(k2)
             endif
@@ -1576,7 +1576,7 @@ module Radiation
           f(:,m,n,ikapparho)=exp(lnrho)*tmp
         enddo
         enddo
-!        
+!
       case ('blob')
         if (lfirst) then
           f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
@@ -1596,8 +1596,8 @@ module Radiation
         endif
 !
       case ('rad_ionization') !! as in Miao et al. 2006
-      ! TODO: The code still needs to be able to calculate the right 
-      ! ionization fraction for this. This does not work right without it, 
+      ! TODO: The code still needs to be able to calculate the right
+      ! ionization fraction for this. This does not work right without it,
       ! but does no harm either to anyone else. - mvaisala
         do n= n1-radz, n2+radz
         do m= m1-rady, m2+rady
@@ -2016,16 +2016,16 @@ module Radiation
 !  Heating rate
 !
         case ('Qrad')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,iQrad)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iQrad)
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iQrad)
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iQrad)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iQrad)
           slices%ready=.true.
 !
 !  Mean intensity
 !
         case ('Jrad')
-          !J = S + Q/(4pi) 
+          !J = S + Q/(4pi)
           !slices%yz=.25*pi_1*f(ix_loc,m1:m2,n1:n2,iQrad)+Srad(ix_loc,m1:m2,n1:n2)
           !slices%xz=.25*pi_1*f(l1:l2,iy_loc,n1:n2,iQrad)+Srad(l1:l2,iy_loc,n1:n2)
           !slices%xy=.25*pi_1*f(l1:l2,m1:m2,iz_loc,iQrad)+Srad(l1:l2,m1:m2,iz_loc)
@@ -2048,19 +2048,19 @@ module Radiation
 ! Source function
 !
         case ('Srad')
-          slices%yz=Srad(ix_loc,m1:m2,n1:n2)
-          slices%xz=Srad(l1:l2,iy_loc,n1:n2)
-          slices%xy=Srad(l1:l2,m1:m2,iz_loc)
-          slices%xy2=Srad(l1:l2,m1:m2,iz2_loc)
+          slices%yz =Srad(ix_loc,m1:m2 ,n1:n2)
+          slices%xz =Srad(l1:l2 ,iy_loc,n1:n2)
+          slices%xy =Srad(l1:l2 ,m1:m2 ,iz_loc)
+          slices%xy2=Srad(l1:l2 ,m1:m2 ,iz2_loc)
           slices%ready=.true.
 !
 !  Opacity
 !
         case ('kapparho')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,ikapparho)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,ikapparho)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,ikapparho)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ikapparho)
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2,  ikapparho)
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ikapparho)
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ikapparho)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ikapparho)
           slices%ready=.true.
 !
 !  Radiative Flux
@@ -2070,10 +2070,10 @@ module Radiation
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,iFradx-1+slices%index)
-            slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,iFradx-1+slices%index)
-            slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,iFradx-1+slices%index)
-            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iFradx-1+slices%index)
+            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iFradx-1+slices%index)
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iFradx-1+slices%index)
+            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iFradx-1+slices%index)
+            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iFradx-1+slices%index)
             if (slices%index<=3) slices%ready=.true.
           endif
 !
@@ -2098,7 +2098,7 @@ module Radiation
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
       real :: fact
       integer :: j,k
-
+!
       intent(inout) :: f
       intent(in) :: p
 !
@@ -2166,11 +2166,11 @@ module Radiation
 !--                   real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad))
 !--       diffus_chi1=real(sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad)
 !--       diffus_chi=max(diffus_chi,diffus_chi1)
-
+!
           dt1_rad=opt_thin*sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad_thin
           dt1_max=max(dt1_max,dt1_rad)
           diffus_chi=max(diffus_chi,opt_thick*gamma*chi_rad*dxyz_2/cdtrad_thick)
-
+!
 !--      endif
         endif
       endif
