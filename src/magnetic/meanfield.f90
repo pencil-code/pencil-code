@@ -560,6 +560,12 @@ module Magnetic_meanfield
           meanfield_getat_tmp(:,2)=etat_x*detat_y(m)*etat_z(n)
           meanfield_getat_tmp(:,3)=etat_x*etat_y(m)*detat_z(n)
 !
+!  correction for spherical symmetry
+!
+          if (lspherical_coords) then
+            meanfield_getat_tmp(:,2)=r1_mn*meanfield_getat_tmp(:,2)
+          endif
+!
 !  Magnetic etat quenching (contribution to pumping currently ignored)
 !
           if (meanfield_etaB/=0.0) then

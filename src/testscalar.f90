@@ -773,7 +773,8 @@ module Testscalar
 ! 
 !  26-nov-08/axel: adapted from testfield_z.f90
 ! 
-      use Cdata, only: icctest, lwrite_slice_xy3, lwrite_slice_xy4
+      use Cdata, only: icctest, lwrite_slice_xy3, lwrite_slice_xy4, &
+        ix_loc, iy_loc, iz_loc, iz2_loc, iz3_loc, iz4_loc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices

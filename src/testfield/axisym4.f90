@@ -46,7 +46,7 @@ module Testfield
 
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
-  real, dimension(2) :: zaver_range=(/-max_real,max_real/)
+  real, dimension(2) :: testfield_zaver_range=(/-max_real,max_real/)
   real :: taainit=0.,daainit=0.,taainit_previous=0.
   logical :: reinitialize_aatest=.false.
   logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
@@ -62,7 +62,7 @@ module Testfield
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
-       B_ext,zaver_range,zextent,initaatest, &
+       B_ext,testfield_zaver_range,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
        phasex_aatest,phasez_aatest, &
        luxb_as_aux,ljxb_as_aux
@@ -78,7 +78,7 @@ module Testfield
   logical :: lforcing_cont_aatest=.false.
   logical :: ltestfield_artifric=.false.
   namelist /testfield_run_pars/ &
-       B_ext,zaver_range, &
+       B_ext,testfield_zaver_range, &
        reinitialize_aatest,zextent,lsoca,lsoca_jxb, &
        lset_bbtest2,etatest,etatest1,itestfield, &
        ktestfield,kxtestfield,kytestfield, &
@@ -245,11 +245,11 @@ module Testfield
       s2z=s**2
       csz=c*s
 !
-!  Compute mask for z-averaging where z is in zaver_range.
+!  Compute mask for z-averaging where z is in testfield_zaver_range.
 !  Normalize such that the average over the full domain
 !  gives still unity.
 !
-      where (z>=zaver_range(1) .and. z<=zaver_range(2))
+      where (z>=testfield_zaver_range(1) .and. z<=testfield_zaver_range(2))
         zmask=1.
       elsewhere
         zmask=0.

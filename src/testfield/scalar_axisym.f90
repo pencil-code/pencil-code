@@ -28,7 +28,7 @@ module Testscalar
 !
   real, dimension(nx) :: cx,sx
   real, dimension(my) :: cy,sy
-  real, dimension(mz) :: cz,sz
+  real, dimension(mz) :: cz,sz,zmask
   integer, parameter :: njtestscalar=2
 !
   character (len=labellen), dimension(ninit) :: initcctest='nothing'
@@ -37,6 +37,7 @@ module Testscalar
   real, dimension (ninit) :: amplcctest=0.
 
   ! input parameters
+  real, dimension(2) :: testscalar_zaver_range=(/-max_real,max_real/)
   real, dimension (nx) :: ccc
   real :: tccinit=0.,dccinit=0.,tccinit_previous=0.
   logical :: reinitialize_cctest=.false.
@@ -55,7 +56,7 @@ module Testscalar
   real :: camp=1.,camp1=1.
 !
   namelist /testscalar_init_pars/ &
-       zextent,initcctest, &
+       testscalar_zaver_range,zextent,initcctest, &
        amplcctest,kx_cctest,ky_cctest,kz_cctest, &
        phasex_cctest,phasez_cctest, &
        lug_as_aux
@@ -69,6 +70,7 @@ module Testscalar
   logical :: ltestscalar_newy=.false.
   logical :: ltestscalar_per_unitvolume=.false.
   namelist /testscalar_run_pars/ &
+       testscalar_zaver_range, &
        reinitialize_cctest,zextent,lsoca_ug, &
        lset_cctest2,kappatest,kappatest1,itestscalar, &
        kxtestscalar,kytestscalar,ktestscalar, &
@@ -80,9 +82,13 @@ module Testscalar
        rescale_cctest
 
   ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_muc1=0       ! DIAG_DOC: $\mu^{(c1)}$
+  integer :: idiag_muc2=0       ! DIAG_DOC: $\mu^{(c2)}$
   integer :: idiag_gamc=0       ! DIAG_DOC: $\gamma^{(c)}$
-  integer :: idiag_kapcPERP=0   ! DIAG_DOC: $\kappa_\perp$
+  integer :: idiag_kapcPERP1=0  ! DIAG_DOC: $\kappa_\perp^{(1)}$
+  integer :: idiag_kapcPERP2=0  ! DIAG_DOC: $\kappa_\perp^{(2)}$
   integer :: idiag_kapcPARA=0   ! DIAG_DOC: $\kappa_\parallel$
+  integer :: idiag_mucz=0       ! DIAG_DOC: $\mu^{(c)}(z,t)$
   integer :: idiag_gamcz=0      ! DIAG_DOC: $\gamma^{(c)}(z,t)$
   integer :: idiag_kapcPERPz=0  ! DIAG_DOC: $\kappa_\perp(z,t)$
   integer :: idiag_kapcPARAz=0  ! DIAG_DOC: $\kappa_\parallel(z,t)$
@@ -279,8 +285,16 @@ module Testscalar
       cz=cos(ktestscalar_effective*ztestscalar)
       sz=sin(ktestscalar_effective*ztestscalar)
 !
-!  Optionally, one can determine the phase in the actual field
-!  and modify the following calculations in testscalar_after_boundary.
+!  Compute mask for z-averaging where z is in testfield_zaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      where (z>=testscalar_zaver_range(1) .and. z<=testscalar_zaver_range(2))
+        zmask=1.
+      elsewhere
+        zmask=0.
+      endwhere
+      zmask=zmask*nz/sum(zmask)
 !
 !  debug output
 !
@@ -294,6 +308,7 @@ module Testscalar
         print*,'z0=',z0
         print*,'cz=',cz
         print*,'sz=',sz
+        print*,'zmask=',zmask
       endif
 !
 !  Also calculate its inverse, but only if different from zero
@@ -744,14 +759,23 @@ module Testscalar
         if (idiag_gam33 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
         if (idiag_gam33z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33z)
 !
-        if (idiag_gamc    /=0) call   sum_mn_name  (-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_gamc)
+        if (idiag_muc1   /=0) call   sum_mn_name  (+4*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*zmask(n),idiag_muc1)
+        if (idiag_muc2   /=0) call   sum_mn_name  (-4*cx*sy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2))*zmask(n),idiag_muc2)
+        if (idiag_mucz   /=0) call xysum_mn_name_z(+2*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)) &
+                                                   -2*cx*sy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_mucz)
+!
+        if (idiag_gamc    /=0) call   sum_mn_name  (-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2))*zmask(n),idiag_gamc)
         if (idiag_gamcz   /=0) call xysum_mn_name_z(-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_gamcz)
 !
-        if (idiag_kapcPARA /=0) call   sum_mn_name  (-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_kapcPARA)
-        if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_kapcPARAz)
+        if (idiag_kapcPARA /=0) call   sum_mn_name  (-4*sx*sy(m)*(+sz(n)*Fipq(:,3,i1) &
+                                                                  -cz(n)*Fipq(:,3,i2))*ktestscalar1*zmask(n),idiag_kapcPARA)
+        if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(+sz(n)*Fipq(:,3,i1) &
+                                                                  -cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_kapcPARAz)
 !
-        if (idiag_kapcPERP /=0) call   sum_mn_name  (-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kapcPERP)
-        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)),idiag_kapcPERPz)
+        if (idiag_kapcPERP1/=0) call   sum_mn_name  (-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*zmask(n),idiag_kapcPERP1)
+        if (idiag_kapcPERP2/=0) call   sum_mn_name  (-4*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2))*zmask(n),idiag_kapcPERP2)
+        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-2*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)) &
+                                                     -2*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kapcPERPz)
 !
 !  Extract values at one point.
 !
@@ -1062,9 +1086,16 @@ module Testscalar
 !  set G0test for each of the 2+2 cases
 !
       select case (jtest)
-      case (1); C0test=camp*sx*sy(m)*cz(n); G0test(:,1)=camp*cx*sy(m)*xz(n); G0test(:,2)=camp*sx*cy(m)*cz(n); G0test(:,3)=+camp*sx*sy(m)*ktestscalar*sz(n)
-      case (2); C0test=camp*sx*sy(m)*sz(n); G0test(:,1)=camp*cx*sy(m)*sz(n); G0test(:,2)=camp*sx*cy(m)*sz(n); G0test(:,3)=-camp*sx*sy(m)*ktestscalar*cz(n)
-      case default; call fatal_error("set_ggtest_G1_G2","jtest outside range")
+      case (1); C0test=camp*sx*sy(m)*cz(n)
+        G0test(:,1)=camp*cx*sy(m)*cz(n)
+        G0test(:,2)=camp*sx*cy(m)*cz(n)
+        G0test(:,3)=+camp*sx*sy(m)*ktestscalar*sz(n)
+      case (2); C0test=camp*sx*sy(m)*sz(n)
+        G0test(:,1)=camp*cx*sy(m)*sz(n)
+        G0test(:,2)=camp*sx*cy(m)*sz(n)
+        G0test(:,3)=-camp*sx*sy(m)*ktestscalar*cz(n)
+      case default
+        call fatal_error("set_ggtest_G1_G2","jtest outside range")
       endselect
 !
     endsubroutine set_ggtest_G1_G2
@@ -1123,8 +1154,9 @@ module Testscalar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_gamc=0; idiag_kapcPERP=0; idiag_kapcPARA=0
-        idiag_gamcz=0; idiag_kapcPERPz=0; idiag_kapcPARAz=0
+        idiag_muc1=0; idiag_muc2=0; idiag_gamc=0
+        idiag_kapcPERP1=0; idiag_kapcPERP2=0; idiag_kapcPARA=0
+        idiag_mucz=0; idiag_gamcz=0; idiag_kapcPERPz=0; idiag_kapcPARAz=0
         idiag_F11z=0; idiag_F21z=0; idiag_F31z=0
         idiag_F12z=0; idiag_F22z=0; idiag_F32z=0
         idiag_kap11=0; idiag_kap21=0; idiag_kap31=0
@@ -1147,8 +1179,11 @@ module Testscalar
 !  check for those quantities that we want to evaluate online
 ! 
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'muc1',idiag_muc1)
+        call parse_name(iname,cname(iname),cform(iname),'muc2',idiag_muc2)
         call parse_name(iname,cname(iname),cform(iname),'gamc',idiag_gamc)
-        call parse_name(iname,cname(iname),cform(iname),'kapcPERP',idiag_kapcPERP)
+        call parse_name(iname,cname(iname),cform(iname),'kapcPERP1',idiag_kapcPERP1)
+        call parse_name(iname,cname(iname),cform(iname),'kapcPERP2',idiag_kapcPERP2)
         call parse_name(iname,cname(iname),cform(iname),'kapcPARA',idiag_kapcPARA)
         call parse_name(iname,cname(iname),cform(iname),'kap11',idiag_kap11)
         call parse_name(iname,cname(iname),cform(iname),'kap21',idiag_kap21)
@@ -1189,6 +1224,7 @@ module Testscalar
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'mucz',idiag_mucz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gamcz',idiag_gamcz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapcPERPz',idiag_kapcPERPz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'kapcPARAz',idiag_kapcPARAz)
