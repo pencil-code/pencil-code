@@ -23,7 +23,7 @@ module Special
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper3_spi=0.,tau_inv_spitzer=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
-  real :: tau_inv_top=0.,chi_spi=0.
+  real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=huge1
@@ -55,7 +55,7 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
-      eighth_moment,mark,hyper3_diffrho,hyper3_spi,chi_spi
+      eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,chi_spi
 !
 ! variables for print.in
 !
@@ -249,19 +249,21 @@ module Special
 !
 !  Initialization for the non-fourier heat transprot
 !
-      Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
-          unit_length*unit_temperature**(3.5)
+      if (ltemperature.and. (.not. ltemperature_nolog)) then
+        Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
+            unit_length*unit_temperature**(3.5)
 !
-      f(:,:,:,ispitzerx:ispitzerz)=0.
-      do i=1,my
-        do j=n1,n2
+        f(:,:,:,ispitzerx:ispitzerz)=0.
+        do i=1,my
+          do j=n1,n2
 !
-          glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
+            glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
 !
-          f(:,i,j,ispitzerz) = - Kspitzer_para * &
-              exp(3.5*f(:,i,j,ilnTT))*glnT
+            f(:,i,j,ispitzerz) = - Kspitzer_para * &
+                exp(3.5*f(:,i,j,ilnTT))*glnT
+          enddo
         enddo
-      enddo
+      endif
 !
     endsubroutine init_special
 !***********************************************************************
@@ -488,7 +490,7 @@ module Special
             hc = hc + tmp
           enddo
           hc = hyper3_chi*hc
-
+!
           df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + hc
 !
 !  due to ignoredx hyper3_chi has [1/s]
@@ -737,14 +739,15 @@ module Special
       if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
+      if (tau_inv_newton_mark /= 0.) call calc_newton_mark(f,df,p)
 !
 ! WARNING this is temporary
       if (coronae_fix) then
-        where (f(l1:l2,m,n,ilnrho) < log(1e-13/unit_density) )
-          f(l1:l2,m,n,ilnrho) = log(1e-13/unit_density)
-        endwhere
+!        where (f(l1:l2,m,n,ilnrho) < log(1e-13/unit_density) )
+!          f(l1:l2,m,n,ilnrho) = log(1e-13/unit_density)
+!        endwhere
         if (ipz == nprocz-1) &
-            f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2,ilnTT))/(16.*nx*ny)
+            f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2-3,ilnTT))/(14.*nx*ny)
       endif
 !
       if (hyper3_chi /= 0.) then
@@ -893,8 +896,8 @@ module Special
       call tensor_diffusion(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
           GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
-      if (coronae_fix .and. llast_proc_z) &
-          thdiff = thdiff*(1.-cubic_step(1.*n,n2-12.,9.))
+!      if (coronae_fix .and. llast_proc_z) &
+!          thdiff = thdiff*(1.-cubic_step(1.*n,n2-12.,9.))
 !
 !  Add to energy equation.
       if (ltemperature) then
@@ -1564,6 +1567,61 @@ module Special
       endif
 !
     endsubroutine calc_heat_cool_newton
+!***********************************************************************
+    subroutine calc_newton_mark(f,df,p)
+!
+!  newton cooling dT/dt = -1/tau * (T-T0)
+!               dlnT/dt = 1/tau *(1-T0/T-1)
+!      where
+!        tau = (rho0/rho)^alpha
+!
+!  13-sep-10/bing: coded
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: lnrho0
+      use Sub, only: cubic_step
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: newton,tau_inv_tmp
+!
+      if (headtt) print*,'special_calc_entropy: newton cooling', &
+          tau_inv_newton_mark
+!
+!  Get reference temperature
+!
+      if (ipz == 0)  then
+        newton = exp(f(l1:l2,m,n1,ilnTT)-p%lnTT)-1.
+!
+        tau_inv_tmp = 1.-cubic_step(1.*n,cubic_newton,cubic_newton/2.)
+!
+        tau_inv_tmp = tau_inv_tmp * tau_inv_newton_mark
+!
+        newton  = newton * tau_inv_tmp
+!
+!  Add newton cooling term to entropy
+!
+        if  (ltemperature .and. (.not. ltemperature_nolog)) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+        else
+          call fatal_error('calc_heat_cool_newton','only for ltemperature')
+        endif
+!
+        if (lfirst.and.ldt) then
+          dt1_max=max(dt1_max,tau_inv_tmp/cdts)
+          if (ldiagnos.and.idiag_dtnewt /= 0.) then
+            itype_name(idiag_dtnewt)=ilabel_max_dt
+            call max_mn_name(tau_inv_tmp,idiag_dtnewt,l_dt=.true.)
+          endif
+        endif
+!
+      else
+        newton = 0.
+      endif
+!
+    endsubroutine calc_newton_mark
 !***********************************************************************
     subroutine mag_time_bound(f)
 !
@@ -2931,7 +2989,7 @@ module Special
 !***********************************************************************
     subroutine mark_boundary(f)
 !
-      use Sub, only: notanumber
+      use Sub, only: notanumber, cubic_step
       use General, only: chn, safe_character_assign
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
@@ -2943,7 +3001,7 @@ module Special
       integer :: frame,unit=1,lend=0,ierr=0,i,j
       real :: delta_t=0.
       logical :: init_left=.true.
-      real, dimension(nx,ny,4,8) :: left,right=0.
+      real, dimension(nx,ny,4,8) :: left,right=0.,inte
       real, dimension(nx,ny) :: tmp
 !
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
@@ -3008,51 +3066,26 @@ module Special
         close(unit)
       endif
 !
-! Interpolate data
+! Linear interpolate data
 !
-!      write (*,*) minval(),maxval()
-!      write (*,*)       shape(left),shape(right)
-!      write (*,*) minval(left(:,:,:,1)),maxval(left(:,:,:,1)),'LE ,ux'
-!      write (*,*) minval(right(:,:,:,1)),maxval(right(:,:,:,1)),'RI ,ux'
-!      write (*,*) minval(left(:,:,:,2)),maxval(left(:,:,:,2)),'LE ,uy'
-!      write (*,*) minval(right(:,:,:,2)),maxval(right(:,:,:,2)),'RI ,uy'
-!      write (*,*) minval(left(:,:,:,3)),maxval(left(:,:,:,3)),'LE ,uz'
-!      write (*,*) minval(right(:,:,:,3)),maxval(right(:,:,:,3)),'RI ,uz'
-!      write (*,*) minval(left(:,:,:,5)),maxval(left(:,:,:,5)),'LE ,lnTT'
-!      write (*,*) minval(right(:,:,:,5)),maxval(right(:,:,:,5)),'RI ,lnTT'
-!      stop
+!      inte = (t*unit_time - (tl+delta_t))*(right-left)/(tr-tl)+left
+!
+! Use cubic step to interpolate the data.
+!
+!
+      inte = cubic_step(t*unit_time-tl,0.5*(tr-tl),0.5*(tr-tl))*(right-left) +left
       do i=1,4
-        f(l1:l2,m1:m2,n1+1-i,iux) = ((t*unit_time - (tl+delta_t)) *  &
-            (right(:,:,n1+1-i,1) - left(:,:,n1+1-i,1)) / (tr - tl) + left(:,:,n1+1-i,1)) / &
-            unit_velocity
+        f(l1:l2,m1:m2,n1+1-i,iux) = inte(:,:,n1+1-i,1) / unit_velocity
+        f(l1:l2,m1:m2,n1+1-i,iuy) = inte(:,:,n1+1-i,2) / unit_velocity
+        f(l1:l2,m1:m2,n1+1-i,iuz) = inte(:,:,n1+1-i,3) / unit_velocity
 !
-        f(l1:l2,m1:m2,n1+1-i,iuy) = ((t*unit_time - (tl+delta_t)) *  &
-            (right(:,:,n1+1-i,2) - left(:,:,n1+1-i,2)) / (tr - tl) + left(:,:,n1+1-i,2)) / &
-            unit_velocity
+        f(l1:l2,m1:m2,n1+1-i,ilnrho) = inte(:,:,n1+1-i,4) - alog(unit_density)
 !
-        f(l1:l2,m1:m2,n1+1-i,iuz) = ((t*unit_time - (tl+delta_t)) *  &
-            (right(:,:,n1+1-i,3) - left(:,:,n1+1-i,3)) / (tr - tl) + left(:,:,n1+1-i,3)) / &
-            unit_velocity
+        f(l1:l2,m1:m2,n1+1-i,ilnTT) = inte(:,:,n1+1-i,5) - alog(unit_temperature)
 !
-        f(l1:l2,m1:m2,n1+1-i,ilnrho) = ((t*unit_time - (tl+delta_t)) *  &
-            (right(:,:,n1+1-i,4) - left(:,:,n1+1-i,4)) / (tr - tl) + left(:,:,n1+1-i,4)) - &
-            alog(unit_density)
-!
-        f(l1:l2,m1:m2,n1+1-i,ilnTT) = ((t*unit_time - (tl+delta_t)) *  &
-            (right(:,:,n1+1-i,5) - left(:,:,n1+1-i,5)) / (tr - tl) + left(:,:,n1+1-i,5)) - &
-            alog(unit_temperature)
-!
-        f(l1:l2,m1:m2,n1+1-i,iax) = ((t*unit_time - (tl+delta_t)) *  &
-            (right(:,:,n1+1-i,6) - left(:,:,n1+1-i,6)) / (tr - tl) + left(:,:,n1+1-i,6)) / &
-            unit_magnetic*unit_length
-!
-        f(l1:l2,m1:m2,n1+1-i,iay) = ((t*unit_time - (tl+delta_t)) *  &
-            (right(:,:,n1+1-i,7) - left(:,:,n1+1-i,7)) / (tr - tl) + left(:,:,n1+1-i,7)) / &
-            unit_magnetic*unit_length
-!
-        f(l1:l2,m1:m2,n1+1-i,iaz) = 0. !(t*unit_time - (tl+delta_t)) *  &
- !        (right(:,:,n1+1-i,8) - left(:,:,n1+1-i,8)) / (tr - tl) + left(:,:,n1+1-i,8) / &
- !           unit_magnetic*unit_length
+        f(l1:l2,m1:m2,n1+1-i,iax) = inte(:,:,n1+1-i,6) / unit_magnetic*unit_length
+        f(l1:l2,m1:m2,n1+1-i,iay) = inte(:,:,n1+1-i,7) / unit_magnetic*unit_length
+        f(l1:l2,m1:m2,n1+1-i,iaz) = 0.
       enddo
 !
     endsubroutine mark_boundary
