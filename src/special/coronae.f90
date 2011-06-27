@@ -36,7 +36,8 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
-  logical :: eighth_moment=.false.,mark=.false.
+  logical :: mark=.false.
+  real :: eighth_moment=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -242,8 +243,8 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (mx) ::  glnT
-      integer :: i,j
+!      real, dimension (mx) ::  glnT
+!      integer :: i,j
 !
       intent(inout) :: f
 !
@@ -254,15 +255,16 @@ module Special
             unit_length*unit_temperature**(3.5)
 !
         f(:,:,:,ispitzerx:ispitzerz)=0.
-        do i=1,my
-          do j=n1,n2
+ !       do i=1,my
+ !         do j=n1,n2
+ ! !
+ !           glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
+ ! !
+ !          f(:,i,j,ispitzerz) = - Kspitzer_para * &
+ !               exp(3.5*f(:,i,j,ilnTT))*glnT
+ !        enddo
+ !       enddo
 !
-            glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
-!
-            f(:,i,j,ispitzerz) = - Kspitzer_para * &
-                exp(3.5*f(:,i,j,ilnTT))*glnT
-          enddo
-        enddo
       endif
 !
     endsubroutine init_special
@@ -300,7 +302,7 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-      if (eighth_moment) then
+      if (eighth_moment /= 0.) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
         lpenc_requested(i_cp1)=.true.
@@ -473,6 +475,7 @@ module Special
         b2_1=1./max(tini,p%b2)
 !
         call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
+!        call multsv(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho),p%glnTT,K1)
 !
         call dot(K1,p%bb,tmp)
         call multsv(b2_1*tmp,p%bb,spitzer_vec)
@@ -486,8 +489,11 @@ module Special
 !
 ! add diffusion to heat conduction vector
 !
-         call der2(f,ispitzerz,tmp,3)
-         df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + chi_spi*tmp
+        if (chi_spi /= 0.) then
+          call der2(f,ispitzerz,tmp,3)
+          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + chi_spi*tmp
+          if (lfirst.and.ldt) diffus_chi=diffus_chi+chi_spi*dxyz_2
+        endif
 !
 ! Add hyper diffusion to heat conduction vector
 !
@@ -501,21 +507,20 @@ module Special
 !
           df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + hc
 !
-!  due to ignoredx hyper3_chi has [1/s]
-!
-         if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + hyper3_spi
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/cdts)
        endif
 !
+       call div(f,ispitzer,rhs)
 !
-!  Limit by saturation heat flux
+!       call dot(p%glnTT+p%glnrho,q,tmp)
+!       rhs = rhs +tmp
+!       rhs = f(l1:l2,m,n,ipsitzer
 !
-        call div(f,ispitzer,rhs)
+       rhs = rhs * exp(-p%lnrho-p%lnTT)
 !
-        rhs = rhs *exp(-p%lnTT-p%lnrho)
+       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
 !
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
-!
-        if (lvideo) then
+       if (lvideo) then
 !
 ! slices
           spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
@@ -533,11 +538,11 @@ module Special
 !
 ! Eighth moment approximation
 !
-      if (eighth_moment) then
+      if (eighth_moment /= 0.) then
 !
         b2_1=1./max(tini,p%b2)
 !
-        coeff = 0.872*5./2.*(k_B/m_e)*(k_B/m_p)
+        coeff = 0.872*5./2.*(k_B/m_e)*(k_B/m_p)*eighth_moment
         call multsv(coeff*exp(2.0*p%lnTT+p%lnrho),p%glnTT,K1)
 !
         call dot(K1,p%bb,tmp)
@@ -545,7 +550,7 @@ module Special
 !
         q = f(l1:l2,m,n,ispitzerx:ispitzerz)
 !
-        nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)
+        nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)*eighth_moment
 !
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) &
@@ -556,13 +561,11 @@ module Special
 !
         call div(f,ispitzer,div_spitzer)
 !
-        rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_spitzer
+        rhs = exp(-p%lnrho-p%lnTT)*div_spitzer
 !
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
 !
         if (lvideo) then
-!
-          rhs = -nu_coll
 !
 ! slices
           spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
