@@ -321,6 +321,14 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
+      if (Kc /= 0.) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+!
       if (Kpara /= 0.) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
@@ -826,11 +834,11 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2,gKc
+      real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
       real, dimension (nx) :: thdiff,chi_spitzer
       real, dimension (nx) :: vKpara,vKperp,tmp
       real, dimension (nx) :: glnT2_1,glnT2,b2,b2_1
-      real, dimension (nx) :: chi_c, K_c
+      real, dimension (nx) :: chi_clight, K_clight
 !
       integer :: i,j
 !
@@ -877,16 +885,19 @@ module Special
       tmpv=p%glnrho-tmpv2
       call multsv_mn(vKperp,tmpv,gvKperp)
 !
+!  Limit the heat flux by the speed of light
+!  Kc should be on the order of unity or smaler
+!
       if (Kc /= 0.) then
-        chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
-        K_c = chi_c*exp(p%lnrho+p%lnTT)/(p%cp1*gamma)
-        call multsv_mn(K_c,p%glnrho+p%glnTT,gKc)
-        where (chi_spitzer > chi_c)
-          chi_spitzer = chi_c
-          vKpara = K_c
-          gvKpara(:,1) = gKc(:,1)
-          gvKpara(:,2) = gKc(:,2)
-          gvKpara(:,3) = gKc(:,3)
+        chi_clight = Kc*c_light/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
+        K_clight = chi_clight*exp(p%lnrho)/(p%cp1*gamma)
+!
+        where (chi_spitzer > chi_clight)
+          chi_spitzer = chi_clight
+          vKpara = K_clight
+          gvKpara(:,1) = K_clight*p%glnrho(:,1)
+          gvKpara(:,2) = K_clight*p%glnrho(:,2)
+          gvKpara(:,3) = K_clight*p%glnrho(:,3)
         endwhere
       endif
 !
