@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  subroutines in the chosen set of physics modules.  
+!  subroutines in the chosen set of physics modules.
 !
 module Equ
 !
@@ -115,7 +115,7 @@ module Equ
       if (l1davgfirst) t1ddiagnos =t ! (1-D averages are for THIS time)
       if (l2davgfirst) t2davgfirst=t ! (2-D averages are for THIS time)
 !
-!  Grid spacing. For non equidistant grid or non-cartesian coordinates 
+!  Grid spacing. For non equidistant grid or non-cartesian coordinates
 !  the grid spacing is calculated in the (m,n) loop below.
 !
       if (lcartesian_coords .and. all(lequidist)) then
@@ -157,7 +157,7 @@ module Equ
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
 !  this to be done.
 !
-      if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)      
+      if (crash_file_dtmin_factor > 0.0) call output_crash_files(f)
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
@@ -176,8 +176,8 @@ module Equ
       call calc_selfpotential(f)
 !
 !  Remove mean emf in the radial direction if desired.
-!  Useful as a simple way to remove the large scale 
-!  contribution from uphi x Bz from global disk simulations. 
+!  Useful as a simple way to remove the large scale
+!  contribution from uphi x Bz from global disk simulations.
 !  (This is only done if lremove_mean_emf=T,
 !  to be set in magnetic_run_pars).
 !
@@ -253,7 +253,7 @@ module Equ
       endif
 !
 !  For sixth order momentum-conserving, symmetric hyperviscosity with positive
-!  definite heating rate we need to precalculate the viscosity term. The 
+!  definite heating rate we need to precalculate the viscosity term. The
 !  restivitity term for sixth order hyperresistivity with positive definite
 !  heating rate must also be precalculated.
 !
@@ -307,7 +307,7 @@ module Equ
 !
       call timing('pde','before calc_lhydro_pars')
 !DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to
-! hydro_after_boundary etc. 
+! hydro_after_boundary etc.
 !AB: yes, we should rename these step by step
       if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
@@ -340,11 +340,11 @@ module Equ
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
 !
-!  Store the velocity part of df array in a temporary array 
+!  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
 !
         call timing('pde','before lanelastic',mnloop=.true.)
-        if (lanelastic) then 
+        if (lanelastic) then
           df_iuu_pencil(1:nx,1:3) = df(l1:l2,m,n,iuu:iuu+2)
           df(l1:l2,m,n,iuu:iuu+2)=0.0
         endif
@@ -374,7 +374,7 @@ module Equ
             if (leos) advec_cs2=0.0
           endif
           if (lenergy) then
-            diffus_chi=0.0; diffus_chi3=0.0; advec_hypermesh_ss=0.0 
+            diffus_chi=0.0; diffus_chi3=0.0; advec_hypermesh_ss=0.0
           endif
           if (lmagnetic) then
             advec_va2=0.0; advec_hall=0.0; advec_hypermesh_aa=0.0
@@ -449,6 +449,11 @@ module Equ
               dline_1(:,2)=dy_1(m)
               dline_1(:,3)=dz_1(n)
             endif
+            dxmax_pencil = 0.
+            if (nxgrid /= 1) dxmax_pencil=1./dx_1(l1:l2)
+            if (nygrid /= 1) dxmax_pencil=max(1./dy_1(m),dxmax_pencil)
+            if (nzgrid /= 1) dxmax_pencil=max(1./dz_1(n),dxmax_pencil)
+!
             dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
             dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
             dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
@@ -473,7 +478,7 @@ module Equ
         if ((l2davgfirst.and.lwrite_phiaverages )  .or. &
             (l1dphiavg  .and.lwrite_phizaverages))  &
             call calc_phiavg_profile(p)
-!            
+!
 !  Calculate pencils for the pencil_case.
 !  Note: some no-modules (e.g. nohydro) also calculate some pencils,
 !  so it would be wrong to check for lhydro etc in such cases.
@@ -528,7 +533,7 @@ module Equ
 !
         if (llorenz_gauge) call dlorenz_gauge_dt(f,df,p)
 !
-!  Polymer evolution 
+!  Polymer evolution
 !
         if (lpolymer) call dpoly_dt(f,df,p)
 !
@@ -807,7 +812,7 @@ module Equ
 !debug   endif
 !
 !  Fill in the rhs of the poisson equation and restore the df(:,:,:,iuu) array
-!  for anelastic case 
+!  for anelastic case
 !
         if (lanelastic) then
           call calc_pencils_density(f,p)
@@ -831,7 +836,7 @@ module Equ
       if (lanelastic) call anelastic_after_mn(f, p, df, mass_per_proc)
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
-! 
+!
       if (lsolid_cells) call dsolid_dt_integrate
 !
 !  Calculate the gradient of the potential if there is room allocated in the
@@ -1037,12 +1042,12 @@ module Equ
 !
       enddo
 !
-!  Boundary treatment of the df-array. 
+!  Boundary treatment of the df-array.
 !
 !  This is a way to impose (time-
 !  dependent) boundary conditions by solving a so-called characteristic
-!  form of the fluid equations on the boundaries, as opposed to setting 
-!  actual values of the variables in the f-array. The method is called 
+!  form of the fluid equations on the boundaries, as opposed to setting
+!  actual values of the variables in the f-array. The method is called
 !  Navier-Stokes characteristic boundary conditions (NSCBC).
 !
 !  The treatment should be done after the y-z-loop, but before the Runge-
@@ -1167,7 +1172,7 @@ module Equ
 !
 !  Next crash index, cycling from 0-9 to avoid excessive writing of
 !  snapshots to the hard disc.
-!        
+!
         icrash=icrash+1
         icrash=mod(icrash,10)
       endif
