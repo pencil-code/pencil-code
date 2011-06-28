@@ -76,6 +76,7 @@ module Viscosity
   logical :: lvisc_snr_damp=.false.
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
+  logical :: lvisc_spitzer=.false.
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
   logical :: llambda_effect=.false.
@@ -174,6 +175,7 @@ module Viscosity
       lvisc_smag_simplified=.false.
       lvisc_smag_cross_simplified=.false.
       lvisc_snr_damp=.false.
+      lvisc_spitzer=.false.
 !
       do i=1,nvisc_max
         select case (ivisc(i))
@@ -289,6 +291,10 @@ module Viscosity
         case ('nu-mixture')
           if (lroot) print*,'viscous force: nu is calculated for a mixture'
           lvisc_mixture=.true.
+        case ('nu-spitzer')
+          if (lroot) print*,'viscous force: nu is calculated for a mixture'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_spitzer=.true.
         case ('none')
           ! do nothing
         case ('')
@@ -305,7 +311,7 @@ module Viscosity
       if (lrun) then
         if ( (lvisc_simplified.or.lvisc_rho_nu_const.or.&
              lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or.&
-             lvisc_nu_therm.or.lvisc_mu_therm) &
+             lvisc_nu_therm.or.lvisc_mu_therm.or.lvisc_spitzer) &
             .and.nu==0.0) &
             call warning('initialize_viscosity', &
             'Viscosity coefficient nu is zero!')
@@ -597,20 +603,21 @@ module Viscosity
           (lvisc_simplified .or. lvisc_rho_nu_const .or. &
            lvisc_sqrtrho_nu_const .or. lvisc_nu_therm .or.&
            lvisc_nu_const .or. lvisc_nu_shock .or. &
-           lvisc_nu_prof .or. lvisc_nu_profx .or. &
+           lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
            lvisc_nut_from_magnetic .or. lvisc_mu_therm))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const.or.lvisc_sqrtrho_nu_const.or. &
           lvisc_nu_const.or.lvisc_nu_therm.or.&
-          lvisc_nu_prof.or.lvisc_nu_profx.or. &
+          lvisc_nu_prof.or.lvisc_nu_profx.or.lvisc_spitzer .or. &
           lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_therm) then
         if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
       if (lthermal_energy.and.lviscosity_heat) lpenc_requested(i_rho)=.true.
-      if ((lentropy.or.ltemperature).and.(lvisc_nu_therm.or.lvisc_mu_therm))&
+      if ((lentropy.or.ltemperature).and. &
+          (lvisc_nu_therm.or.lvisc_mu_therm.or.lvisc_spitzer)) &
           lpenc_requested(i_lnTT)=.true.
       if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_graddivu)=.true.
@@ -630,7 +637,7 @@ module Viscosity
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. &
           lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
-          lvisc_nu_prof .or. lvisc_nu_profx .or. &
+          lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nut_from_magnetic .or. lvisc_nu_therm .or. lvisc_mu_therm) &
           lpenc_requested(i_del2u)=.true.
@@ -652,13 +659,15 @@ module Viscosity
           lvisc_hyper3_rho_nu_const_aniso .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_hyper3_rho_nu_const_symm .or. &
-          lvisc_hyper3_mu_const_strict .or. lvisc_mu_therm) &
+          lvisc_hyper3_mu_const_strict .or. lvisc_mu_therm .or. &
+          lvisc_spitzer) &
           lpenc_requested(i_rho1)=.true.
 !
       if (lvisc_nu_const .or. lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
-          lvisc_nut_from_magnetic.or.lvisc_nu_therm .or. lvisc_mu_therm) &
+          lvisc_nut_from_magnetic.or.lvisc_nu_therm .or.  &
+          lvisc_mu_therm .or. lvisc_spitzer) &
           lpenc_requested(i_sglnrho)=.true.
       if (lvisc_nu_const .and. lmagfield_nu) lpenc_requested(i_b2)=.true.
       if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
@@ -708,7 +717,9 @@ module Viscosity
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
       endif
-      if ((idiag_meshRemax/=0.or.idiag_dtnu/=0).and.lvisc_nu_shock) lpenc_diagnos(i_shock)=.true.
+      if ((idiag_meshRemax/=0.or.idiag_dtnu/=0).and.lvisc_nu_shock) then
+        lpenc_diagnos(i_shock)=.true.
+      endif
       if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
       if (idiag_fviscmz/=0) then
         lpenc_diagnos(i_rho)=.true.
@@ -816,6 +827,21 @@ module Viscosity
 !  -- the correct expression for rho*nu=const
 !
         muTT=nu*p%rho1*sqrt(exp(p%lnTT))
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i) + &
+              muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))&
+              + 2*muTT*p%sglnrho(:,i)
+        enddo
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+muTT
+      endif
+!
+      if (lvisc_spitzer) then
+!
+!  viscous force: nu*TT^2.5/rho*(del2u+graddivu/3+2S.glnrho)
+!  -- the correct expression for rho*nu=const
+!
+        muTT=nu*p%rho1*exp(2.5*p%lnTT)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
               muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))&
