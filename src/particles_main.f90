@@ -1260,42 +1260,42 @@ module Particles_main
 !  Particle number density
 !
         case ('np')
-          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,inp)
-          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,inp)
-          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,inp)
-          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,inp)
+          slices%yz= f(ix_loc,m1:m2 ,n1:n2  ,inp)
+          slices%xz= f(l1:l2 ,iy_loc,n1:n2  ,inp)
+          slices%xy= f(l1:l2 ,m1:m2 ,iz_loc ,inp)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,inp)
           slices%ready = .true.
 !
 !  Particle mass density
 !
         case ('rhop')
           if (irhop/=0) then
-            slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,irhop)
-            slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,irhop)
-            slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,irhop)
-            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,irhop)
+            slices%yz= f(ix_loc,m1:m2 ,n1:n2  ,irhop)
+            slices%xz= f(l1:l2 ,iy_loc,n1:n2  ,irhop)
+            slices%xy= f(l1:l2 ,m1:m2 ,iz_loc ,irhop)
+            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,irhop)
             slices%ready = .true.
           else
-            if (lcartesian_coords.and.(all(lequidist))) then 
-              slices%yz= rhop_swarm*f(slices%ix,m1:m2    ,n1:n2     ,inp)
-              slices%xz= rhop_swarm*f(l1:l2    ,slices%iy,n1:n2     ,inp)
-              slices%xy= rhop_swarm*f(l1:l2    ,m1:m2    ,slices%iz ,inp)
-              slices%xy2=rhop_swarm*f(l1:l2    ,m1:m2    ,slices%iz2,inp)
+            if (lcartesian_coords.and.(all(lequidist))) then
+              slices%yz= rhop_swarm*f(ix_loc,m1:m2 ,n1:n2   ,inp)
+              slices%xz= rhop_swarm*f(l1:l2 ,iy_loc,n1:n2  ,inp)
+              slices%xy= rhop_swarm*f(l1:l2 ,m1:m2 ,iz_loc ,inp)
+              slices%xy2=rhop_swarm*f(l1:l2 ,m1:m2 ,iz2_loc,inp)
             else
               do m=m1,m2 ; do n=n1,n2
-                call get_rhopswarm(mp_swarm,slices%ix,m,n,rhop_swarm_pt)
-                slices%yz(m,n) =  rhop_swarm_pt*f(slices%ix,m,n,inp)
+                call get_rhopswarm(mp_swarm,ix_loc,m,n,rhop_swarm_pt)
+                slices%yz(m,n) =  rhop_swarm_pt*f(ix_loc,m,n,inp)
               enddo;enddo
               do l=l1,l2 ; do n=n1,n2
-                call get_rhopswarm(mp_swarm,l,slices%iy,n,rhop_swarm_pt)
-                slices%xz(l,n) =  rhop_swarm_pt*f(l,slices%iy,n,inp)
+                call get_rhopswarm(mp_swarm,l,iy_loc,n,rhop_swarm_pt)
+                slices%xz(l,n) =  rhop_swarm_pt*f(l,iy_loc,n,inp)
               enddo;enddo
               do l=l1,l2 ; do m=m1,m2
-                call get_rhopswarm(mp_swarm,l,m,slices%iz ,rhop_swarm_pt)
-                slices%xy(l,m) =  rhop_swarm_pt*f(l,m,slices%iz,inp)
+                call get_rhopswarm(mp_swarm,l,m,iz_loc ,rhop_swarm_pt)
+                slices%xy(l,m) =  rhop_swarm_pt*f(l,m,iz_loc,inp)
 !
-                call get_rhopswarm(mp_swarm,l,m,slices%iz2,rhop_swarm_pt)
-                slices%xy2(l,m) = rhop_swarm_pt*f(l,m,slices%iz2,inp)
+                call get_rhopswarm(mp_swarm,l,m,iz2_loc,rhop_swarm_pt)
+                slices%xy2(l,m) = rhop_swarm_pt*f(l,m,iz2_loc,inp)
               enddo;enddo
             endif
             slices%ready = .true.
