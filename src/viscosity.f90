@@ -810,9 +810,8 @@ module Viscosity
       if (lvisc_sqrtrho_nu_const) then
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
-!  -- the correct expression for rho*nu=const
 !
-        murho1=nu*sqrt(p%rho1)  !(=mu/rho)
+        murho1=nu*sqrt(p%rho1)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
               murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
@@ -824,7 +823,6 @@ module Viscosity
       if (lvisc_mu_therm) then
 !
 !  viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3+2S.glnrho)
-!  -- the correct expression for rho*nu=const
 !
         muTT=nu*p%rho1*sqrt(exp(p%lnTT))
         do i=1,3
@@ -839,7 +837,6 @@ module Viscosity
       if (lvisc_spitzer) then
 !
 !  viscous force: nu*TT^2.5/rho*(del2u+graddivu/3+2S.glnrho)
-!  -- the correct expression for rho*nu=const
 !
         muTT=nu*p%rho1*exp(2.5*p%lnTT)
         do i=1,3
@@ -1516,7 +1513,7 @@ module Viscosity
         if (idiag_dtnu/=0) &
             call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
         if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
-        if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax/p%diffus_total,idiag_meshRemax)
+        if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
         if (idiag_Reshock/=0) then
           if (any(p%shock>0.)) then
             max_loc = maxloc(p%shock)
