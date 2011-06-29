@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
 !    nu_total = nu + nu_shock*dx^2*smooth(max5(-(div u))))
@@ -9,7 +9,7 @@
 !  boundary, unexpected things may happen, so you should monitor the
 !  behavior on the boundaries in this case.
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -23,17 +23,17 @@
 ! PENCILS PROVIDED shock; gshock(3); shock_perp; gshock_perp(3)
 !
 !***************************************************************
-
+!
 module Shock
-
+!
   use Cparam
   use Cdata
   use Messages
-
+!
   implicit none
-
+!
   include 'shock.h'
-
+!
   logical :: lshock_first=.true.,lshock_max5=.false., lshock_max3_interp=.false.
   logical :: lwith_extreme_div=.false.
   logical :: ldivu_perp=.false.
@@ -43,16 +43,16 @@ module Shock
   logical :: lforce_periodic_shockviscosity=.false.
   real :: div_threshold=0., div_scaling=1.
   real, dimension (3,3,3) :: smooth_factor
-
+!
   ! input parameters
   !namelist /viscosity_init_pars/ dummy
-
+!
   ! run parameters
   namelist /shock_run_pars/ &
       lshock_first, lshock_max5, div_threshold, div_scaling, &
       lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
       lshock_max3_interp, ldivu_perp, lforce_periodic_shockviscosity
-
+!
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
   integer :: idiag_shockmax_perp=0
@@ -81,7 +81,7 @@ module Shock
   endinterface
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_shock()
 !
@@ -108,7 +108,7 @@ module Shock
 !  20-nov-02/tony: coded
 !
        use CData
-
+!
        real, dimension (mx,my,mz,mfarray) :: f
        logical, intent(in) :: lstarting
 !
@@ -163,7 +163,7 @@ module Shock
             print*, '                  shock viscosity)'
             print*, 'initialize_shock: bcz=', bcz
             print*, 'initialize_shock: to suppress this error,'
-            print*, '                  set lforce_periodic_shockviscosity=T in  &shock_run_pars' 
+            print*, '                  set lforce_periodic_shockviscosity=T in  &shock_run_pars'
           endif
           call fatal_error('initialize_shock','')
         endif
@@ -224,9 +224,9 @@ module Shock
 !***********************************************************************
     subroutine write_shock_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=shock_run_pars)
-
+!
     endsubroutine write_shock_run_pars
 !*******************************************************************
     subroutine rprint_shock(lreset,lwrite)
@@ -293,17 +293,17 @@ module Shock
 !  Shock profile
 !
         case ('shock')
-          slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,ishock)
-          slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,ishock)
-          slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
-          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ishock)
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ishock)
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ishock)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock)
           slices%ready=.true.
 !
         case ('shock_perp')
-          slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,ishock_perp)
-          slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,ishock_perp)
-          slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,ishock_perp)
-          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock_perp)
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ishock_perp)
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ishock_perp)
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ishock_perp)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ishock_perp)
           slices%ready=.true.
 !
       endselect
@@ -320,7 +320,7 @@ module Shock
 !
       if (idiag_shockmax/=0) lpenc_diagnos(i_shock)=.true.
       if (idiag_shockmax_perp/=0) lpenc_diagnos(i_shock_perp)=.true.
-
+!
     endsubroutine pencil_criteria_shock
 !***********************************************************************
     subroutine pencil_interdep_shock(lpencil_in)
@@ -366,7 +366,7 @@ module Shock
       if (ldiagnos.and.idiag_shockmax/=0) then
         call max_mn_name(p%shock,idiag_shockmax)
       endif
-
+!
       if (ldiagnos.and.idiag_shockmax_perp/=0) then
         call max_mn_name(p%shock_perp,idiag_shockmax_perp)
       endif
@@ -418,9 +418,9 @@ module Shock
      else
        call shock_max3(f(:,:,:,ishock),tmp)
      endif
-
+!
 ! Save test data and scale to match the maximum expected result of smoothing
-
+!
      call shock_smooth(tmp,f(:,:,:,ishock))
 !
 !  scale with dxmin**2
@@ -472,7 +472,7 @@ module Shock
 !FIX ME
 !! CALCULATE shock in REAL boundary locations... and neighbours!
 !!!
-
+!
          do n=n1,n2; do m=m1,m2
            f(l1:l2,m,n,ishock)=max(f(l1:l2,m,n,ishock),0.)
          enddo; enddo
@@ -532,34 +532,28 @@ module Shock
 !
           call boundconds_x(f,iux,iuz)
           call initiate_isendrcv_bdry(f,iux,iuz)
-
 !
 !  Initialize to zero
 !
           f(:,:,:,ishock)=0.
-
 !
 !  Calculate shock profile in the internal region
 !
           call calc_shock_profile_internal(f,ishock,tmp,lperp=.false.)
-
 !
 !  End communication of uu ghost zones and set global boundary conditions.
 !
           call finalize_isendrcv_bdry(f,iux,iuz)
           call boundconds_y(f,iux,iuz)
           call boundconds_z(f,iux,iuz)
-
 !
 !  Calculate shock profile in the external region
 !
           call calc_shock_profile_external(f,ishock,tmp,lperp=.false.)
-
 !
 !  Scale with dxmin**2.
 !
           f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
-
 !
 !  Calculate `perpendicular' shock profile
 !  (both in the internal and the external region)
@@ -570,24 +564,23 @@ module Shock
             call calc_shock_profile_external(f,ishock_perp,tmp,lperp=.true.)
             f(:,:,:,ishock_perp) = f(:,:,:,ishock_perp) * dxmin**2
           endif
-
+!
         endif
-
+!
       endif
-
+!
     endsubroutine calc_shock_profile
 !***********************************************************************
     subroutine calc_shock_profile_internal(f,j,tmp,lperp)
-
+!
       use Interstellar, only: calc_snr_unshock
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, dimension (mx,my,mz), intent (inout) :: tmp
       logical, intent (in) :: lperp
-
+!
       real, dimension (mx) :: penc
-
 !
 !  Divu over internal region
 !
@@ -599,7 +592,6 @@ module Shock
         endif
         f(:,m,n,j)=max(0.,-penc)
       enddo; enddo
-
 !
 !  Max3 over internal region
 !
@@ -616,7 +608,6 @@ module Shock
           tmp(:,m,n)=penc
         enddo; enddo
       endif
-
 !
 !  Smooth over internal region
 !
@@ -624,20 +615,19 @@ module Shock
         call shock_smooth(tmp,penc)
         f(:,m,n,j)=penc
       enddo; enddo
-
+!
     endsubroutine calc_shock_profile_internal
 !***********************************************************************
     subroutine calc_shock_profile_external(f,j,tmp,lperp)
-
+!
       use Interstellar, only: calc_snr_unshock
-
+!
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, dimension (mx,my,mz), intent (inout) :: tmp
       logical, intent (in) :: lperp
-
+!
       real, dimension (mx) :: penc
-
 !
 !  Divu over external region
 !
@@ -677,7 +667,6 @@ module Shock
           f(:,m,n,j)=max(0.,-penc)
         enddo
       enddo
-
 !
 !  Max over external region
 !
@@ -732,7 +721,6 @@ module Shock
           enddo
         enddo
       endif
-
 !
 !  Smooth over external region
 !
@@ -756,7 +744,7 @@ module Shock
           f(:,m,n,j)=penc
         enddo
       enddo
-
+!
     endsubroutine calc_shock_profile_external
 !***********************************************************************
 !Utility routines - poss need moving elsewhere
@@ -903,7 +891,6 @@ module Shock
       endif
 !
     endsubroutine shock_max5
-
 !***********************************************************************
 !Utility routines - poss need moving elsewhere
     subroutine shock_max3_farray(f,maxf)
@@ -974,7 +961,6 @@ module Shock
       endif
 !
     endsubroutine shock_max3_farray
-
 !***********************************************************************
 !Utility routines - poss need moving elsewhere
     subroutine shock_max3_pencil(f,j,maxf)
@@ -990,7 +976,7 @@ module Shock
       real, dimension (mx) :: maxf
       integer :: j
       integer :: ii,jj,kk
-
+!
       maxf=f(:,m,n,j)
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
         do kk=-1,1
@@ -1078,7 +1064,7 @@ module Shock
             (/ 3,3,3 /))
       integer :: j
       integer :: ii,jj,kk
-
+!
       maxf=0.
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
         tmp_penc=f(:,m,n,j)
@@ -1111,7 +1097,7 @@ module Shock
       real, dimension (mx) :: maxf
       integer :: j
       integer :: ii,jj,kk
-
+!
       maxf=f(:,m,n,j)
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
         do kk=-2,2
@@ -1186,11 +1172,11 @@ module Shock
          if (mx>=3) then
             smoothf(1     ,:,:) = 0.25 * (3.*f(1     ,:,:) +  &
                                              f(2     ,:,:))
-
+!
             smoothf(2:mx-1,:,:) = 0.25 * (   f(1:mx-2,:,:) + &
                                           2.*f(2:mx-1,:,:) + &
                                              f(3:mx  ,:,:))
-
+!
             smoothf(mx    ,:,:) = 0.25 * (   f(mx-1  ,:,:) + &
                                           3.*f(mx    ,:,:))
          else
@@ -1206,11 +1192,11 @@ module Shock
          if (my>=3) then
             tmp(:,1     ,:) = 0.25 * (3.*smoothf(:,1     ,:) +  &
                                          smoothf(:,2     ,:))
-
+!
             tmp(:,2:my-1,:) = 0.25 * (   smoothf(:,1:my-2,:) + &
                                       2.*smoothf(:,2:my-1,:) + &
                                          smoothf(:,3:my  ,:))
-
+!
             tmp(:,my    ,:) = 0.25 * (   smoothf(:,my-1  ,:) + &
                                       3.*smoothf(:,my    ,:))
          else
@@ -1226,11 +1212,11 @@ module Shock
          if (mz>=3) then
             smoothf(:,:,1     ) = 0.25 * (3.*tmp(:,:,1     ) +  &
                                              tmp(:,:,2     ))
-
+!
             smoothf(:,:,2:mz-1) = 0.25 * (   tmp(:,:,1:mz-2) + &
                                           2.*tmp(:,:,2:mz-1) + &
                                              tmp(:,:,3:mz  ))
-
+!
             smoothf(:,:,mz    ) = 0.25 * (   tmp(:,:,mz-1  ) + &
                                           3.*tmp(:,:,mz    ))
          else
@@ -1239,7 +1225,7 @@ module Shock
       else
          smoothf=tmp
       endif
-
+!
     endsubroutine shock_smooth_farray
 !***********************************************************************
     subroutine shock_smooth_pencil(f,smoothf)
@@ -1334,7 +1320,7 @@ module Shock
                               - 4.*f(mx-1,:,:,iux) &
                               +    f(mx-2,:,:,iux))*fac
       endif
-
+!
       if (nygrid/=1) then
          fac=1./(2.*dy)
          df(:,1     ,:) = df(:,1     ,:) &
@@ -1348,7 +1334,7 @@ module Shock
                              - 4.*f(:,my-1,:,iuy) &
                              +    f(:,my-2,:,iuy))*fac
       endif
-
+!
       if (nzgrid/=1) then
          fac=1./(2.*dz)
          df(:,:,1     ) = df(:,:,1     ) &
@@ -1377,21 +1363,21 @@ module Shock
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: df
       real :: fac
-
+!
       df=0.
-
+!
       if (nxgrid/=1) then
          fac=1./(2.*dx)
          df(l1-2:l2+2) = df(l1-2:l2+2) + fac*( f(l1-1:l2+3,m  ,n  ,iux) &
                                              - f(l1-3:l2+1,m  ,n  ,iux) )
       endif
-
+!
       if (nygrid/=1) then
          fac=1./(2.*dy)
          df(l1-2:l2+2) = df(l1-2:l2+2) + fac*( f(l1-2:l2+2,m+1,n  ,iuy) &
                                              - f(l1-2:l2+2,m-1,n  ,iuy) )
       endif
-
+!
       if (nzgrid/=1) then
          fac=1./(2.*dz)
          df(l1-2:l2+2) = df(l1-2:l2+2) + fac*( f(l1-2:l2+2,m  ,n+1,iuz) &
@@ -1408,10 +1394,10 @@ module Shock
 !
       use Cdata
       use Magnetic, only: bb_unitvec_shock
-
+!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx), intent (out) :: df
-
+!
       real :: fac
       real, dimension (mx,3) :: bb_hat,duu
 !
@@ -1433,7 +1419,7 @@ module Shock
                 - bb_hat(l1-2:l2+2,1)*bb_hat(l1-2:l2+2,2) *duu(l1-2:l2+2,2) &
                 - bb_hat(l1-2:l2+2,1)*bb_hat(l1-2:l2+2,3) *duu(l1-2:l2+2,3)
       endif
-
+!
       if (nygrid/=1) then
          duu(l1-2:l2+2,:) = (f(l1-2:l2+2,m+1,n  ,iux:iuz) &
                             -f(l1-2:l2+2,m-1,n  ,iux:iuz))/(2*dy)
@@ -1442,7 +1428,7 @@ module Shock
                 - bb_hat(l1-2:l2+2,2)*bb_hat(l1-2:l2+2,3) *duu(l1-2:l2+2,3) &
                 - bb_hat(l1-2:l2+2,2)*bb_hat(l1-2:l2+2,1) *duu(l1-2:l2+2,1)
       endif
-
+!
       if (nzgrid/=1) then
          duu(l1-2:l2+2,:) = (f(l1-2:l2+2,m  ,n+1,iux:iuz) &
                             -f(l1-2:l2+2,m  ,n-1,iux:iuz))/(2*dz)
@@ -1451,7 +1437,7 @@ module Shock
                 - bb_hat(l1-2:l2+2,3)*bb_hat(l1-2:l2+2,1) *duu(l1-2:l2+2,1) &
                 - bb_hat(l1-2:l2+2,3)*bb_hat(l1-2:l2+2,2) *duu(l1-2:l2+2,2)
       endif
-
+!
     endsubroutine shock_divu_perp_pencil
 !***********************************************************************
     subroutine shock_smooth_cube_diamond7(f,df)
@@ -1502,14 +1488,14 @@ module Shock
                      + f(i-2, j, k+1 , iuz) - f(i-2, j, k+1 , iux)  &
                      + f(i-1, j, k+2 , iuz) - f(i-1, j, k+2 , iux)  &
                     ) * fac
-
+!
           fac = (1./16.) / dx
           cube    = (  sum(f(i-2:i+2, j, k-2    , iuz)) &
                      - sum(f(i-2:i+2, j, k+2    , iuz)) &
                      + sum(f(i-2    , j, k-2:k+2, iux)) &
                      - sum(f(i+2    , j, k-2:k+2, iux)) &
                     ) * fac
-
+!
           if (lwith_extreme_div) then
             if ((diamond < 0.) .and. (diamond > -div_threshold)) then
               diamond=0.
@@ -1798,7 +1784,7 @@ module Shock
       use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
-
+!
       if (nprocy==1.and.lperi(2)) then
         f(:,m1:m1i,:,ishock)  = f(:,m1:m1i,:,ishock) + f(:,m2+1:my,:,ishock)
 !        f(:,m2+1:my,:,ishock) = f(:,m1:m1i,:,ishock)
@@ -1825,4 +1811,5 @@ module Shock
       endif
 !
     endsubroutine bcshock_per_z
+!***********************************************************************
 endmodule Shock
