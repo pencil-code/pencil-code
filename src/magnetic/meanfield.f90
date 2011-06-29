@@ -397,6 +397,7 @@ module Magnetic_meanfield
 !  28-jul-10/axel: adapted from magnetic
 !
       use Sub
+      use General, only: bessj
       use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -414,6 +415,7 @@ module Magnetic_meanfield
       real, dimension (nx,3) :: Bk_Bki, tmp_jxb,exa_meanfield
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact,qp_c
+      integer :: l
 !
       intent(inout) :: f,p
 !
@@ -497,6 +499,7 @@ module Magnetic_meanfield
         case ('z/H'); alpha_tmp=z(n)/xyz1(3)
         case ('z/H_0'); alpha_tmp=z(n)/xyz1(3); if (z(n)==xyz1(3)) alpha_tmp=0.
         case ('y/H'); alpha_tmp=y(m)/xyz1(3)
+        case ('J0x'); do l=l1,l2; alpha_tmp(l-l1+1)=bessj(0,k1bessel0*x(l)); enddo
         case ('cosy'); alpha_tmp=cos(y(m))
         case ('surface_x*cosy'); alpha_tmp=0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
         case ('surface_x2*cosy'); alpha_tmp=0.25 &
