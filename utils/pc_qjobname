@@ -15,7 +15,7 @@ $host = `hostname`;
 #
 # Go through list of hosts to use proper method.
 #
-if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/){
+if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/){  # PBS
   
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
@@ -28,6 +28,12 @@ if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/){
     $a =~ s/\s//g;
     $a =~ /PBS_O_WORKDIR=(.*),/;
     $a = $1;
+    if ($1 =~ /^\s*$/){
+      $a = `qstat -f $job`;
+      $a =~ s/\s//g;
+      $a =~ /PBS_O_WORKDIR=(.*),/;
+      $a =~ /PBS_O_WORKDIR=(.*)etime/;
+      $a = $1;}
     $a =~ s/$ENV{'HOME'}/\~/g;
     print "$job : $a\n";
     }
