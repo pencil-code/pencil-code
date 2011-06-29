@@ -4130,10 +4130,10 @@ module Sub
       if (NO_WARN) then
         call error('keep_compiler_quiet_sl', &
             'The world is a disk, and we never got here...')
-        print*,                  v1%ix
-        if (present(v2)) print*, v2%ix
-        if (present(v3)) print*, v3%ix
-        if (present(v4)) print*, v4%ix
+        print*,                  v1%index
+        if (present(v2)) print*, v2%index
+        if (present(v3)) print*, v3%index
+        if (present(v4)) print*, v4%index
       endif
 !
     endsubroutine keep_compiler_quiet_sl
