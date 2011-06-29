@@ -782,13 +782,19 @@ module Testfield
           if (idiag_alpPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*sz(n)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERPz)
           if (idiag_alpPARAz/=0) call xysum_mn_name_z(-8*sx*sy(m)*sz(n)* Eipq(:,3,1)             ,idiag_alpPARAz)
 !
-          if (idiag_muz     /=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_muz     )
-          if (idiag_betPERPz/=0) call xysum_mn_name_z(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_betPERPz)
-          if (idiag_betPARAz/=0) call xysum_mn_name_z(+8*sx*                             ky1*cy(m)*sz(n)*Eipq(:,3,2) ,idiag_betPARAz)
+          if (idiag_muz     /=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)), &
+            idiag_muz     )
+          if (idiag_betPERPz/=0) call xysum_mn_name_z(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)), &
+            idiag_betPERPz)
+          if (idiag_betPARAz/=0) call xysum_mn_name_z(+8*sx*                             ky1*cy(m)*sz(n)*Eipq(:,3,2) , &
+            idiag_betPARAz)
 !
-          if (idiag_delz    /=0) call xysum_mn_name_z(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_delz    )
-          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERPz)
-          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARAz)
+          if (idiag_delz    /=0) call xysum_mn_name_z(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)), &
+            idiag_delz    )
+          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)), &
+            idiag_kapPERPz)
+          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             , &
+            idiag_kapPARAz)
 !
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
