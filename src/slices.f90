@@ -101,12 +101,6 @@ module Slices
       logical :: lslices_legacy=.true.
       integer :: inamev
 !
-      slices%ix =ix_loc
-      slices%iy =iy_loc
-      slices%iz =iz_loc
-      slices%iz2=iz2_loc
-      slices%iz3=iz3_loc
-      slices%iz4=iz4_loc
       slices%index=0
 !
 !  Loop over slices.
@@ -163,43 +157,43 @@ module Slices
           if (slices%index==0) then    ! If this wasn't a multi slice...
             if (associated(slices%yz)) &
               call wslice(path//trim(slices%name)//'.yz',slices%yz, &
-                                                     x(slices%ix),ny,nz)
+                                                     x(ix_loc),ny,nz)
             if (associated(slices%xz)) &
               call wslice(path//trim(slices%name)//'.xz',slices%xz, &
-                                                     y(slices%iy),nx,nz)
+                                                     y(iy_loc),nx,nz)
             if (associated(slices%xy)) &
               call wslice(path//trim(slices%name)//'.xy',slices%xy, &
-                                                     z(slices%iz),nx,ny)
+                                                     z(iz_loc),nx,ny)
             if (associated(slices%xy2)) &
               call wslice(path//trim(slices%name)//'.xy2',slices%xy2, &
-                                                     z(slices%iz2),nx,ny)
+                                                     z(iz2_loc),nx,ny)
             if (associated(slices%xy3).and.lwrite_slice_xy3) &
               call wslice(path//trim(slices%name)//'.xy3',slices%xy3, &
-                                                     z(slices%iz3),nx,ny)
+                                                     z(iz3_loc),nx,ny)
             if (associated(slices%xy4).and.lwrite_slice_xy4) &
               call wslice(path//trim(slices%name)//'.xy4',slices%xy4, &
-                                                     z(slices%iz4),nx,ny)
+                                                     z(iz4_loc),nx,ny)
             inamev=inamev+1
           else
             call chn(slices%index, sindex)
             if (associated(slices%yz)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.yz', &
-                                       slices%yz, x(slices%ix),ny,nz)
+                                       slices%yz, x(ix_loc),ny,nz)
             if (associated(slices%xz)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xz', &
-                                       slices%xz, y(slices%iy),nx,nz)
+                                       slices%xz, y(iy_loc),nx,nz)
             if (associated(slices%xy)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy', &
-                                       slices%xy, z(slices%iz),nx,ny)
+                                       slices%xy, z(iz_loc),nx,ny)
             if (associated(slices%xy2)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy2', &
-                                       slices%xy2, z(slices%iz2),nx,ny)
+                                       slices%xy2, z(iz2_loc),nx,ny)
             if (associated(slices%xy3).and.lwrite_slice_xy3) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy3', &
-                                       slices%xy3, z(slices%iz3),nx,ny)
+                                       slices%xy3, z(iz3_loc),nx,ny)
             if (associated(slices%xy4).and.lwrite_slice_xy4) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.xy4', &
-                                       slices%xy4, z(slices%iz4),nx,ny)
+                                       slices%xy4, z(iz4_loc),nx,ny)
           endif
         else
           if (slices%index==0) then    ! If this wasn't a multi slice...

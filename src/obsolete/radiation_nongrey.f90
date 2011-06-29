@@ -2092,10 +2092,10 @@ module Radiation
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =abs(f(slices%ix,m1:m2    ,n1:n2     ,iFradx-1+slices%index))
-            slices%xz =abs(f(l1:l2    ,slices%iy,n1:n2     ,iFradx-1+slices%index))
-            slices%xy =abs(f(l1:l2    ,m1:m2    ,slices%iz ,iFradx-1+slices%index))
-            slices%xy2=abs(f(l1:l2    ,m1:m2    ,slices%iz2,iFradx-1+slices%index))
+            slices%yz =abs(f(ix_loc,m1:m2 ,n1:n2  ,iFradx-1+slices%index))
+            slices%xz =abs(f(l1:l2 ,iy_loc,n1:n2  ,iFradx-1+slices%index))
+            slices%xy =abs(f(l1:l2 ,m1:m2 ,iz_loc ,iFradx-1+slices%index))
+            slices%xy2=abs(f(l1:l2 ,m1:m2 ,iz2_loc,iFradx-1+slices%index))
             if (slices%index<=3) slices%ready = .true.
           endif
 !
