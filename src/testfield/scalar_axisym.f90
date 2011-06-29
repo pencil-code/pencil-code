@@ -19,6 +19,7 @@ module Testscalar
 !
   use Cparam
   use Messages
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -35,7 +36,7 @@ module Testscalar
   real, dimension (ninit) :: kx_cctest=1.,ky_cctest=1.,kz_cctest=1.
   real, dimension (ninit) :: phasex_cctest=0.,phasez_cctest=0.
   real, dimension (ninit) :: amplcctest=0.
-
+!
   ! input parameters
   real, dimension(2) :: testscalar_zaver_range=(/-max_real,max_real/)
   real, dimension (nx) :: ccc
@@ -60,7 +61,7 @@ module Testscalar
        amplcctest,kx_cctest,ky_cctest,kz_cctest, &
        phasex_cctest,phasez_cctest, &
        lug_as_aux
-
+!
   ! run parameters
   real :: kappatest=0.,kappatest1=0.
   real, dimension(njtestscalar) :: rescale_cctest=0.
@@ -80,7 +81,7 @@ module Testscalar
        lug_as_aux,lignore_ugtestm, &
        dccinit,linit_cctest,camp, &
        rescale_cctest
-
+!
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_muc1=0       ! DIAG_DOC: $\mu^{(c1)}$
   integer :: idiag_muc2=0       ! DIAG_DOC: $\mu^{(c2)}$
@@ -158,9 +159,9 @@ module Testscalar
   real, dimension (mz,mtestscalar) :: ugtestm
   real, dimension (nx,mtestscalar) :: ugtestmx
   real, dimension (my,mtestscalar) :: ugtestmy
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_testscalar()
 !
@@ -419,25 +420,22 @@ module Testscalar
       use InitialCondition, only: initial_condition_cctest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: cc
-      real, dimension (nx) :: b2,fact
-      real :: beq2
       integer :: j
 !
       do j=1,ninit
-
+!
       select case (initcctest(j))
-
+!
       case ('zero'); f(:,:,:,icctest:icctest+ntestscalar-1)=0.
       case ('nothing'); !(do nothing)
-
+!
       case default
         !
         !  Catch unknown values
         !
         if (lroot) print*, 'init_cctest: check initcctest: ', trim(initcctest(j))
         call stop_it("")
-
+!
       endselect
       enddo
 !
@@ -476,46 +474,48 @@ module Testscalar
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      call keep_compiler_quiet(lpencil_in)
+!
     endsubroutine pencil_interdep_testscalar
 !***********************************************************************
     subroutine read_testscalar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=testscalar_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=testscalar_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_testscalar_init_pars
 !***********************************************************************
     subroutine write_testscalar_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=testscalar_init_pars)
-
+!
     endsubroutine write_testscalar_init_pars
 !***********************************************************************
     subroutine read_testscalar_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=testscalar_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=testscalar_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_testscalar_run_pars
 !***********************************************************************
     subroutine write_testscalar_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=testscalar_run_pars)
-
+!
     endsubroutine write_testscalar_run_pars
 !***********************************************************************
     subroutine dcctest_dt(f,df,p)
@@ -539,14 +539,14 @@ module Testscalar
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
-      real, dimension (nx) :: cc,cctest,C0test,del2ctest,ug
+!
+      real, dimension (nx) :: cctest,C0test,del2ctest,ug
       real, dimension (nx,3) :: ggtest, G0test=0.,uctest
       real, dimension (nx) :: ugtest,dctest,dugtest
       real, dimension (nx,3,njtestscalar) :: Fipq,Gipq,Hipq
       real, dimension (nx,njtestscalar) :: cpq
       real, dimension (nx,3) :: uufluct
-      integer :: jcctest,jtest,jfnamez,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
+      integer :: jcctest,jtest,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
       logical,save :: ltest_ug=.false.
 !
       intent(in)     :: f,p
@@ -802,18 +802,19 @@ module Testscalar
     endsubroutine dcctest_dt
 !***********************************************************************
     subroutine get_slices_testscalar(f,slices)
-! 
+!
 !  Write slices for animation of magnetic variables.
-! 
+!
 !  26-nov-08/axel: adapted from testfield_z.f90
-! 
-      use Cdata, only: icctest, lwrite_slice_xy3, lwrite_slice_xy4
+!
+      use Cdata, only: icctest, lwrite_slice_xy3, lwrite_slice_xy4, &
+          ix_loc, iy_loc, iz_loc, iz2_loc, iz3_loc, iz4_loc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-! 
+!
 !  Loop over slices
-! 
+!
       select case (trim(slices%name))
 !
 !  Testfield slice
@@ -823,14 +824,14 @@ module Testscalar
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,icctest-1+slices%index)
-            slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,icctest-1+slices%index)
-            slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,icctest-1+slices%index)
-            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,icctest-1+slices%index)
+            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,icctest-1+slices%index)
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,icctest-1+slices%index)
+            slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,icctest-1+slices%index)
+            slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,icctest-1+slices%index)
             if (lwrite_slice_xy3) &
-                 slices%xy3=f(l1:l2,m1:m2,slices%iz3,icctest-1+slices%index)
+                 slices%xy3=f(l1:l2,m1:m2,iz3_loc,icctest-1+slices%index)
             if (lwrite_slice_xy4) &
-                 slices%xy4=f(l1:l2,m1:m2,slices%iz4,icctest-1+slices%index)
+                 slices%xy4=f(l1:l2,m1:m2,iz4_loc,icctest-1+slices%index)
             if (slices%index<=6) slices%ready=.true.
           endif
       endselect
@@ -852,7 +853,6 @@ module Testscalar
       use Mpicomm, only: mpireduce_sum, mpibcast_real, mpibcast_real_arr
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: c,s
 !
       real, dimension (nx,nprocy,nprocz,njtestscalar) :: ugtestmx1=0.,ugtestmx1_tmp=0.
       real, dimension (ny,nprocy,njtestscalar) :: ugtestmy1=0.,ugtestmy1_tmp=0.
@@ -860,7 +860,7 @@ module Testscalar
 !
       real, dimension (nx) :: cctest,ugtest
       real, dimension (nx,3) :: ggtest
-      integer :: jcctest,jtest,j,jug,jpy,jpz
+      integer :: jcctest,jtest,jpy,jpz
       integer :: nxy=nxgrid*nygrid,nyz=nygrid*nzgrid,nxz=nxgrid*nzgrid
       logical :: headtt_save
       real :: fac_xy,fac_yz,fac_xz
@@ -1143,7 +1143,7 @@ module Testscalar
       use Cdata
       use Diagnostics
 !
-      integer :: iname,inamez,inamexz
+      integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1177,7 +1177,7 @@ module Testscalar
       endif
 !
 !  check for those quantities that we want to evaluate online
-! 
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'muc1',idiag_muc1)
         call parse_name(iname,cname(iname),cform(iname),'muc2',idiag_muc2)
