@@ -87,7 +87,6 @@ module Magnetic
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3
-  real, dimension(3) :: u0_advec=0.
   real, dimension(nx,3) :: uxbb
   real, dimension(nx) :: eta_BB
   real, target :: zmode=1.0 !(temporary)
@@ -162,10 +161,9 @@ module Magnetic
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
-  logical :: lconst_advection=.false.
 !
   namelist /magnetic_init_pars/ &
-      B_ext, J_ext, u0_advec, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
+      B_ext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
       RFPradB, RFPradJ, &
       by_left, by_right, bz_left, bz_right, &
       relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
@@ -221,7 +219,7 @@ module Magnetic
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
-      B_ext, J_ext, J_ext_quench, omega_Bz_ext, u0_advec, nu_ni, &
+      B_ext, J_ext, J_ext_quench, omega_Bz_ext, nu_ni, &
       hall_term, &
       eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
@@ -1008,14 +1006,6 @@ module Magnetic
       if (lua_as_aux ) call register_report_aux('ua',iua)
 !
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
-!
-!  Check if constant background advection needs to be turned on.
-!
-      if (any(u0_advec /= 0.)) then
-        lconst_advection=.true.
-        if (lroot) print*, 'initialize_magnetic: constant background advection = ', u0_advec
-        if (lupw_aa) call fatal_error('initialize_magnetic', 'upwind version of constant background advection is not implemented')
-      endif
 !
 !  Initialize individual modules, but need to do this only if
 !  lmagn_mf is true.

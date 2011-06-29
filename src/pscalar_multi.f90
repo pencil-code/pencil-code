@@ -25,16 +25,15 @@ module Pscalar
 !
 !  Init parameters
 !
-  real, dimension(3) :: u0_advec = 0.
   logical :: lper_unit_volume = .false.
 !
-  namelist /pscalar_init_pars/ u0_advec, lper_unit_volume
+  namelist /pscalar_init_pars/ lper_unit_volume
 !
 !  Run parameters
 !
   real :: diffcc_shock = 0.
 !
-  namelist /pscalar_run_pars/ u0_advec, diffcc_shock
+  namelist /pscalar_run_pars/ diffcc_shock
 !
 !  Diagnostic variables
 !
@@ -43,7 +42,6 @@ module Pscalar
 !
 !  Module specific variables
 !
-  logical :: lconst_advection = .false.
   logical :: lshock_diffusion = .false.
 !
 !  Dummy variables needed by other modules
@@ -86,13 +84,6 @@ module Pscalar
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
-!
-!  Check if there exists constant background advection.
-!
-      if (any(u0_advec /= 0.)) then
-        lconst_advection = .true.
-        if (lroot) print*, 'initialize_pscalar: constant background advection = ', u0_advec
-      endif
 !
 !  Shock Diffusion
 !

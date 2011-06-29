@@ -61,7 +61,6 @@ module Hydro
 !
 !  Init parameters.
 !
-  real, dimension (3) :: u0_advec=0.
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: relhel_uu=1.,urandi=0.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
@@ -94,7 +93,6 @@ module Hydro
   logical, target :: lcentrifugal_force=.false.
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
-  logical :: lconst_advection=.false.
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
@@ -110,7 +108,7 @@ module Hydro
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
-      relhel_uu, u0_advec, coefuu, &
+      relhel_uu, coefuu, &
       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, &
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, initpower, cutoff, u_out_kep, &
@@ -161,7 +159,7 @@ module Hydro
   namelist /hydro_run_pars/ &
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
       wdamp, tau_damp_ruxm, tau_damp_ruym, tau_damp_ruzm, tau_diffrot1, &
-      u0_advec, inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
+      inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
       xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, ampl_wind, &
       lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
@@ -630,13 +628,6 @@ module Hydro
         ladvection_velocity=.false.
         if (lroot) print*, &
              'initialize_hydro: fargo used. turned off advection of velocity'
-      endif
-!
-!  Turn on constant background advection if instructed.
-!
-      if (any(u0_advec/=0.0)) then
-        lconst_advection=.true.
-        if (lroot) print*, 'initialize_hydro: constant background advection = ', u0_advec
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so

@@ -42,7 +42,6 @@ module Density
   real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
-  real, dimension (3) :: u0_advec=0.
   real :: lnrho_const=0.0, rho_const=1.0
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
@@ -79,7 +78,6 @@ module Density
   logical :: lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
   logical :: lffree =.false.
-  logical :: lconst_advection=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -90,7 +88,7 @@ module Density
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
-      rho_const, cs2bot, cs2top, u0_advec, radius_lnrho, eps_planet, xblob, yblob, &
+      rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, yblob, &
       zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, mpoly, &
       strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
@@ -102,7 +100,7 @@ module Density
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
-      cs2bot, cs2top, u0_advec, &
+      cs2bot, cs2top, &
       lupw_lnrho, lupw_rho, idiff, lmass_source, mass_source_profile, &
       mass_source_Mdot,  mass_source_sigma, mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
@@ -220,13 +218,6 @@ module Density
         lcontinuity_gas=.false.
         if (lroot) print*,&
              'initialize_density: fargo used, turned off continuity equation'
-      endif
-!
-!  Check if there exists constant background advection.
-!
-      if (any(u0_advec /= 0.)) then
-        lconst_advection=.true.
-        if (lroot) print*, 'initialize_density: constant background advection = ', u0_advec
       endif
 !
 !  Initialize mass diffusion.
