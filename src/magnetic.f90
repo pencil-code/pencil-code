@@ -967,7 +967,7 @@ module Magnetic
 !
 !  Share lweyl_gauge
 !
-      if (lspecial) then
+      if (lspecial.or.lmagn_mf) then
         call put_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
         if (ierr/=0) call fatal_error('initialize_magnetic',&
             'there was a problem when sharing lweyl_gauge')

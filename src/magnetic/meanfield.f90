@@ -30,6 +30,7 @@ module Magnetic_meanfield
 !  array for inputting alpha profile
 !
   real, dimension (mx,my) :: alpha_input
+  logical, pointer :: lweyl_gauge
 !
 ! Parameters
 !
@@ -50,7 +51,7 @@ module Magnetic_meanfield
   real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
   real :: meanfield_kf=1.0, meanfield_etaB=0.0
-  logical :: lOmega_effect=.false.
+  logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
 !
@@ -89,7 +90,7 @@ module Magnetic_meanfield
       meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
-      lOmega_effect, Omega_profile, Omega_ampl, &
+      lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
       Omega_rmax,Omega_rwidth
@@ -196,28 +197,30 @@ module Magnetic_meanfield
           detat_z=0.
         case ('exp(z/H)')
           etat_x=1.
-          etat_y=1.
-          etat_z=meanfield_etat*exp(z/meanfield_etat_height)
+          etat_y=meanfield_etat
+          etat_z=exp(z/meanfield_etat_height)
+          detat_x=0.
+          detat_y=0.
           detat_z=etat_z/meanfield_etat_height
-        case ('surface_x1*cosy'); etat_x=0.5 &
+        case ('surface_x1'); etat_x=0.5 &
           *(1.+erfunc((x(l1:l2)-x_surface2)/meanfield_etat_width))
-          etat_y=cos(y)
-          etat_z=meanfield_etat
+          etat_y=meanfield_etat
+          etat_z=1.
           detat_x=1./(meanfield_etat_width*sqrtpi) &
             *exp(-((x(l1:l2)-x_surface2)/meanfield_etat_width)**2)
-          detat_y=-sin(y)
+          detat_y=0.
           detat_z=0.
-        case ('surface_x2*cosy'); etat_x=0.25 &
+        case ('surface_x2'); etat_x=0.25 &
           *(1.-erfunc((x(l1:l2)-x_surface)/meanfield_etat_width)) &
           *(1.+erfunc((x(l1:l2)-x_surface2)/meanfield_etat_width))
-          etat_y=cos(y)
-          etat_z=meanfield_etat
+          etat_y=meanfield_etat
+          etat_z=1.
           detat_x=.5/(meanfield_etat_width*sqrtpi)*( &
              exp(-((x(l1:l2)-x_surface)/meanfield_etat_width)**2) &
             *(1.+erfunc((x(l1:l2)-x_surface2)/meanfield_etat_width)) &
             +(1.+erfunc((x(l1:l2)-x_surface)/meanfield_etat_width)) &
             *exp(-((x(l1:l2)-x_surface2)/meanfield_etat_width)**2))
-          detat_y=-sin(y)
+          detat_y=0.
           detat_z=0.
         case default;
           call inevitably_fatal_error('initialize_magnetic', &
@@ -235,6 +238,21 @@ module Magnetic_meanfield
           enddo
           print*
         endif
+      endif
+!
+!  Initialize module variables which are parameter dependent
+!  wave speed of gauge potential
+!
+      if (.not.lstarting) then
+        call get_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
+        if (ierr/=0) &
+            call fatal_error("initialize_special: ", "cannot get lweyl_gauge")
+        if (lroot) print*,'initialize_magn_mf: lweyl_gauge=',lweyl_gauge
+!       if (.not.lweyl_gauge) then
+!         call get_shared_variable('eta',eta,ierr)
+!         if (ierr/=0) &
+!             call fatal_error("initialize_special: ", "cannot get shared eta")
+!       endif
       endif
 !
 !  initialize secondary mean-field modules
@@ -540,6 +558,20 @@ module Magnetic_meanfield
             alpha_total=alpha_total/(1.+alpha_quenching*p%b2)
         call multsv_mn(alpha_total,p%bb,p%mf_EMF)
 !
+!  Optionally, run the alpha-Omega approximation, i.e. apply
+!  alpha effect only to the toroidal component. Since p%mf_EMF
+!  was initialized only in the previous line, we can just set
+!  the r and theta components to zero (in spherical coordinates).
+!
+        if (lalpha_Omega_approx) then
+          if (lspherical_coords) then
+            p%mf_EMF(:,1:2)=0.
+          else
+            call fatal_error("calc_pencils_magn_mf: ", &
+              "lalpha_Omega_approx not implemented for this case")
+          endif
+        endif
+!
 !  Add possible delta x J effect and turbulent diffusion to EMF.
 !
         if (ldelta_profile) then
@@ -558,7 +590,8 @@ module Magnetic_meanfield
           meanfield_getat_tmp(:,2)=etat_x*detat_y(m)*etat_z(n)
           meanfield_getat_tmp(:,3)=etat_x*etat_y(m)*detat_z(n)
 !
-!  correction for spherical symmetry
+!  1/r correction for spherical symmetry (assuming axisymmetric profiles,
+!  i.e.  meanfield_getat_tmp(:,3)=0.)
 !
           if (lspherical_coords) then
             meanfield_getat_tmp(:,2)=r1_mn*meanfield_getat_tmp(:,2)
@@ -582,14 +615,14 @@ module Magnetic_meanfield
 !  Apply diffusion term: simple in Weyl gauge, which is not the default!
 !  In diffusive gauge, add (divA) grad(etat) term.
 !
-!         if (lweyl_gauge) then
-!           call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
-!         else
+          if (lweyl_gauge) then
+            call multsv_mn_add(-meanfield_etat_tmp,p%jj,p%mf_EMF)
+          else
             call multsv_mn_add(meanfield_etat_tmp,p%del2a,p%mf_EMF)
             call multsv_mn_add(p%diva,meanfield_getat_tmp,p%mf_EMF)
-!         endif
+          endif
 !
-!  Allow for possibility of variable etat.
+!  Allow for possibility of variable etat from the f-array.
 !
           if (ietat/=0) then
             call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
