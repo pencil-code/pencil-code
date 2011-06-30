@@ -285,12 +285,12 @@ program pc_downscale
 !
         ! downscale x coordinates:
         do px = 1, nrx
-          rx(px) = sum (x(nghost+(px-1)*reduce+1:nghost+px*reduce)) / reduce**2.0
+          rx(px) = sum (x(nghost+(px-1)*reduce+1:nghost+px*reduce)) / reduce
         enddo
 !
         ! downscale y coordinates:
         do py = 1, nry
-          ry(py) = sum (y(nghost+(py-1)*reduce+1:nghost+py*reduce)) / reduce**2.0
+          ry(py) = sum (y(nghost+(py-1)*reduce+1:nghost+py*reduce)) / reduce
         enddo
 !
       enddo
