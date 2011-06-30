@@ -1799,7 +1799,7 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
-pre_and_post_processing/pc_downscale.o: $(basics)
+pre_and_post_processing/pc_downscale.o: $(run) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_downscale.x: pre_and_post_processing/pc_downscale.o
 	$(LD) $(LDFLAGS) pre_and_post_processing/pc_downscale.o $(run) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_downscale.x
 #
