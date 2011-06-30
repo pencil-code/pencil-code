@@ -67,7 +67,7 @@ module Hydro
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
-  real :: rp
+  real :: rp,gamma_dg11=0.4
   integer :: kinflow_ck_ell=0.
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -82,7 +82,7 @@ module Hydro
       lrandom_location,lwrite_random_location,location_fixed,dtforce, &
       radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
-      eps_kinflow,omega_kinflow,ampl_kinflow, rp
+      eps_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -1011,6 +1011,19 @@ module Hydro
         p%der6u(:,1)=wind_amp*der6_uprof
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
+
+      case ('circ_cartesian_rho1') 
+        if (headtt) print*,'circulation with 1/rho dependency'
+        if (lpencil(i_uu)) then
+          rho_prof=(1./x(l1:l2)-0.97)**1.5
+          p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)/rho_prof
+          p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))/rho_prof
+          p%uu(:,3)=0.
+        endif
+        p%divu=0.
+        p%der6u(:,1)=wind_amp*der6_uprof
+        p%der6u(:,2)= 0.
+        p%der6u(:,3)= 0.
 !
 !  meridional circulation; psi=.5*(x-x0)*(x-x1)*(y-y0)*(y-y1), so
 !  ux=+dpsi/dy=+(x-x0)*(x-x1)*y
@@ -1050,7 +1063,7 @@ module Hydro
           psi1=sin(pi*(x(l1:l2)-rp)/(1.-rp))
           psi2=1.-exp(-1.*x(l1:l2)*y(m)**2.0000001)
           psi3=1.-exp(4.*x(l1:l2)*(y(m)-0.5*pi))
-          psi4=exp(-(x(l1:l2)-ro)**2/0.4**2)
+          psi4=exp(-(x(l1:l2)-ro)**2/gamma_dg11**2)
           p%uu(:,1)=-(psi1*psi3*psi4*exp(-1.*x(l1:l2)*y(m)**2.0000001) &
                *(1.*2.0000001*x(l1:l2)*y(m)**(2.0000001-1)) &
                +psi1*psi2*psi4*(-4.*x(l1:l2)*exp(4.*x(l1:l2)*(y(m)-0.5*pi)))) &
@@ -1058,7 +1071,7 @@ module Hydro
           p%uu(:,2)=(cos(pi*(x(l1:l2)-rp)/(1.-rp))*pi/(1.-rp)*psi2*psi3*psi4 &
                -exp(-1.*x(l1:l2)*y(m)**2.0000001)*(-1.*y(m)**2.0000001)*psi1*psi3*psi4 &
                -exp(4.*x(l1:l2)*(y(m)-0.5*pi))*(4.*(y(m)-0.5*pi))*psi1*psi2*psi4 &
-               -2.*(x(l1:l2)-ro)*psi1*psi2*psi3*psi4/0.4**2)/(sin(y(m))*x(l1:l2)*rho_prof)
+               -2.*(x(l1:l2)-ro)*psi1*psi2*psi3*psi4/gamma_dg11**2)/(sin(y(m))*x(l1:l2)*rho_prof)
           p%uu(:,3)=0.
         endif
         p%divu=0.
