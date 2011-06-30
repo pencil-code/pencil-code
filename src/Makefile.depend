@@ -213,3 +213,5 @@ $(LSODE_FC_OBJ): $(LSODE_FC_SRC) $(CDATA_OBJ) $(CHEMISTRY_OBJ)
 #
 $(POLYMER_OBJ): $(POLYMER_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(INITCOND_OBJ)
 #
+pre_and_post_processing/pc_downscale.o: pre_and_post_processing/pc_downscale.f90 $(run) $(LD_MPI) $(LD_FOURIER)
+#

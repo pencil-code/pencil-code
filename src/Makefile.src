@@ -1799,7 +1799,11 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
-TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
+pre_and_post_processing/pc_downscale.o: $(basics)
+pre_and_post_processing/pc_downscale.x: pre_and_post_processing/pc_downscale.o
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_downscale.o $(run) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_downscale.x
+#
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 pre_and_post_processing/pc_downscale.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 # 
 #  Symbolic targets
@@ -1823,7 +1827,7 @@ depend dep:
 	    '  rm src/Makefile.depend; pc_setupsrc' \
 	    '*********************************************'
 	rm -f Makefile.depend
-	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
+	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 pre_and_post_processing/pc_downscale.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 # 
 #  Help us finding out what compiler, MPI library, etc we have and give
 #  recommendations
@@ -1909,7 +1913,7 @@ nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 # 
 EXECUTABLES=start.x run.x \
-	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
+	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x pre_and_post_processing/pc_downscale.x
 # 
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
