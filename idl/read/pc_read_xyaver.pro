@@ -16,6 +16,23 @@ default, varfile, 'xyaverages.dat'
 default, monotone, 0
 default, quiet, 0
 ;;
+;;  Check if averages exist
+;; 
+spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
+infile = datatopdir+'/xyaver.in'
+dummy=file_search(infile, COUNT=countfile)
+if (countfile eq 0) then begin
+   print,infile + ' not found'
+   return
+endif else begin
+   filename=datadir+'/'+varfile 
+   dummy=file_search(filename, COUNT=countfile)
+   if (countfile eq 0) then begin
+      print,filename+' not found'
+      return
+   endif
+endelse
+;;
 ;;  Get necessary dimensions.
 ;;
 if (not keyword_set(nz)) then begin
@@ -34,15 +51,14 @@ endelse
 ;;
 ;;  Read variables from xyaver.in
 ;;
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/xyaver.in', varnames
+spawn, 'cat '+infile, varnames
 if (not quiet) then print, 'Preparing to read xy-averages ', $
     arraytostring(varnames,quote="'",/noleader)
 nvar=n_elements(varnames)
 ;;
 ;;  Define arrays to put data in.
 ;;
-spawn, 'wc -l '+datadir+'/'+varfile, nlines
+spawn, 'wc -l '+filename, nlines
 nlines=long(nlines[0])
 nit=nlines/(1L+nvar*nz/8L)
 ;
@@ -63,7 +79,6 @@ tt =fltarr(nit)*one
 ;;  Prepare for read
 ;;
 get_lun, file
-filename=datadir+'/'+varfile 
 if (not quiet) then print, 'Reading ', filename
 dummy=file_search(filename, COUNT=countfile)
 if (not countfile gt 0) then begin
