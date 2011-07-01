@@ -65,6 +65,11 @@ semiauto-conf:
 	$(MAKE) -s cleanall
 	@(cd src; $(MAKE) -s FROM_PARENT=src/ semiauto-conf)
 
+# Compile (only on request) tool for downscaling data cubes
+pc_downscale: Makefile_inc
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src pre_and_post_processing/pc_downscale.x )
+
 # Create Makefile.inc, but need this to be a `phony' target (i.e. not a
 # filename as target), so this file is always written.
 # Don't know whether .PHONY declaration is portable, so we just slightly

@@ -415,6 +415,9 @@ MAGNETIC_MEANFIELD_DEMFDT_SRC=$(MAGNETIC_MEANFIELD_DEMFDT).f90
 MPICOMM_OBJ=$(MPICOMM_FIX).o
 MPICOMM_SRC=$(MPICOMM_FIX).f90
 #
+NOMPICOMM_OBJ=nompicomm.o
+NOMPICOMM_SRC=nompicomm.f90
+#
 NEUTRALDENSITY_OBJ=$(NEUTRALDENSITY).o
 NEUTRALDENSITY_SRC=$(NEUTRALDENSITY).f90
 #
@@ -510,6 +513,9 @@ SOLID_CELLS_SRC=$(SOLID_CELLS).f90
 #
 SPECIAL_OBJ=$(SPECIAL).o
 SPECIAL_SRC=$(SPECIAL).f90
+#
+NOSPECIAL_OBJ=nospecial.o
+NOSPECIAL_SRC=nospecial.f90
 #
 STRUCT_FUNC_OBJ=$(STRUCT_FUNC).o
 STRUCT_FUNC_SRC=$(STRUCT_FUNC).f90
@@ -1759,7 +1765,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical= $(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ)
+technical=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ)
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -1799,11 +1805,13 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
-pre_and_post_processing/pc_downscale.o: $(run) $(LD_FOURIER) Makefile.local
+physics_nospecial=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(DENSITY_OBJ) $(DUSTDENSITY_OBJ) $(DUSTVELOCITY_OBJ) $(ENTROPY_OBJ) $(EOS_OBJ) $(FORCING_OBJ) $(GRAVITY_OBJ) $(HYDRO_OBJ) $(HYPERRESI_STRICT_OBJ) $(HYPERVISC_STRICT_OBJ) $(IMPLICIT_PHYSICS_OBJ) $(INTERSTELLAR_OBJ) $(LORENZ_GAUGE_OBJ) $(NEUTRALDENSITY_OBJ) $(NEUTRALVELOCITY_OBJ) $(POISSON_OBJ) $(POLYMER_OBJ) $(PSCALAR_OBJ) $(RADIATION_OBJ) $(SELFGRAVITY_OBJ) $(SHEAR_OBJ) $(SHOCK_OBJ) $(NOSPECIAL_OBJ) $(TESTFIELD_OBJ) $(TESTFLOW_OBJ) $(TESTSCALAR_OBJ) $(VISCOSITY_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a
+technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ)
+pre_and_post_processing/pc_downscale.o: pre_and_post_processing/pc_downscale.f90 $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_downscale.x: pre_and_post_processing/pc_downscale.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_downscale.o $(run) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_downscale.x
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_downscale.o $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_downscale.x
 #
-TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 pre_and_post_processing/pc_downscale.f90
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 # 
 #  Symbolic targets
@@ -1827,7 +1835,7 @@ depend dep:
 	    '  rm src/Makefile.depend; pc_setupsrc' \
 	    '*********************************************'
 	rm -f Makefile.depend
-	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 pre_and_post_processing/pc_downscale.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
+	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 # 
 #  Help us finding out what compiler, MPI library, etc we have and give
 #  recommendations
@@ -1913,7 +1921,7 @@ nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 # 
 EXECUTABLES=start.x run.x \
-	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x #pre_and_post_processing/pc_downscale.x
+	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 # 
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
