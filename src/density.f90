@@ -125,15 +125,25 @@ module Density
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
   integer :: idiag_rhomphi=0    ! PHIAVG_DOC: $\left<\varrho\right>_\varphi$
   integer :: idiag_dtd=0        ! DIAG_DOC:
-  integer :: idiag_rhomz=0      ! DIAG_DOC: $\left<\varrho\right>_{xy}$
-  integer :: idiag_rhomy=0      ! DIAG_DOC:
-  integer :: idiag_rhomx=0      ! DIAG_DOC:
-  integer :: idiag_rhomxy=0     ! DIAG_DOC:
-  integer :: idiag_rhomxz=0     ! DIAG_DOC:
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_grhomax=0    ! DIAG_DOC: $\max (|\nabla \varrho|)$
+!
+! xy averaged diagnostics given in xyaver.in
+  integer :: idiag_rhomz=0      ! XYAVG_DOC: $\left<\varrho\right>_{xy}$
+!
+! xz averaged diagnostics given in xzaver.in
+  integer :: idiag_rhomy=0      ! XZAVG_DOC: $\left<\varrho\right>_{xz}$
+!
+! yz averaged diagnostics given in yzaver.in
+  integer :: idiag_rhomx=0      ! YZAVG_DOC: $\left<\varrho\right>_{yz}$
+!
+! y averaged diagnostics given in yaver.in
+  integer :: idiag_rhomxz=0     ! YAVG_DOC: $\left<\varrho\right>_{y}$
+!
+! z averaged diagnostics given in zaver.in
+  integer :: idiag_rhomxy=0     ! ZAVG_DOC: $\left<\varrho\right>_{z}$
 !
   contains
 !***********************************************************************
@@ -2213,7 +2223,7 @@ module Density
           dlnrhodt=mass_source_Mdot*fprofile
         case('bumpx')
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
-          fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm  
+          fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm
           dlnrhodt=mass_source_Mdot*fprofile
         case('const' )
           dlnrhodt=-mass_source_tau1*(f(l1:l2,m,n,ilnrho)-lnrho0)
