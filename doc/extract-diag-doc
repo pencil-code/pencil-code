@@ -125,6 +125,20 @@ my $yzavg_doc = Pencil::DocExtractor->new(
     debug   => $debug
 );
 
+my $yavg_doc = Pencil::DocExtractor->new(
+    marker  => qr/!\s*YAVG_DOC:/,
+    prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
+    verbose => $verbose,
+    debug   => $debug
+);
+
+my $zavg_doc = Pencil::DocExtractor->new(
+    marker  => qr/!\s*ZAVG_DOC:/,
+    prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
+    verbose => $verbose,
+    debug   => $debug
+);
+
 my $bc_doc   = Pencil::DocExtractor->new(
     prefix  => qr/case\s*\(['"](.*)['"]\)/,
     verbose => $verbose,
@@ -140,6 +154,8 @@ foreach my $file (@$src_files_ref) {
     $xyavg_doc->parse($file);
     $xzavg_doc->parse($file);
     $yzavg_doc->parse($file);
+    $yavg_doc->parse($file);
+    $zavg_doc->parse($file);
     $bcx_doc->parse($file);
     $bcy_doc->parse($file);
     $bcz_doc->parse($file);
@@ -164,6 +180,14 @@ $xzavg_doc->write_to_file({ file          => 'inlinedoc-xzavg.tex',
 $yzavg_doc->write_to_file({ file          => 'inlinedoc-yzavg.tex',
                             sort_files    => 1,
                             print_empty   => 0,
+                           });
+$yavg_doc->write_to_file({ file          => 'inlinedoc-yavg.tex',
+                            sort_files   => 1,
+                            print_empty  => 0,
+                           });
+$zavg_doc->write_to_file({ file          => 'inlinedoc-zavg.tex',
+                            sort_files   => 1,
+                            print_empty  => 0,
                            });
 $bcx_doc->write_to_file({ file          => 'inlinedoc-bcx.tex',
                           sort_files    => 1,

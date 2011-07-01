@@ -232,38 +232,9 @@ module Hydro
                                 ! DIAG_DOC:   \times\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>_z$ \quad($xy$-averaged
                                 ! DIAG_DOC:   mean emf)
-  integer :: idiag_uxmxy=0      ! DIAG_DOC: $\left< u_x \right>_{z}$
-  integer :: idiag_uymxy=0      ! DIAG_DOC: $\left< u_y \right>_{z}$
-  integer :: idiag_uzmxy=0      ! DIAG_DOC: $\left< u_z \right>_{z}$
-  integer :: idiag_oxmxy=0      ! DIAG_DOC: $\left< \omega_x \right>_{z}$
-  integer :: idiag_oymxy=0      ! DIAG_DOC: $\left< \omega_y \right>_{z}$
-  integer :: idiag_ozmxy=0      ! DIAG_DOC: $\left< \omega_z \right>_{z}$
-  integer :: idiag_pvzmxy=0     ! DIAG_DOC: $\left< (\omega_z + 2\Omega)/\varrho \right>_{z}$
-                                ! DIAG_DOC: \quad(z component of potential vorticity)
-  integer :: idiag_ruxmxy=0     ! DIAG_DOC: $\left< \rho u_x \right>_{z}$
-  integer :: idiag_ruymxy=0     ! DIAG_DOC: $\left< \rho u_y \right>_{z}$
-  integer :: idiag_ruzmxy=0     ! DIAG_DOC: $\left< \rho u_z \right>_{z}$
-  integer :: idiag_ux2mxy=0     ! DIAG_DOC: $\left< u_x^2 \right>_{z}$
-  integer :: idiag_uy2mxy=0     ! DIAG_DOC: $\left< u_y^2 \right>_{z}$
-  integer :: idiag_uz2mxy=0     ! DIAG_DOC: $\left< u_z^2 \right>_{z}$
-  integer :: idiag_rux2mxy=0    ! DIAG_DOC: $\left< \rho u_x^2 \right>_{z}$
-  integer :: idiag_ruy2mxy=0    ! DIAG_DOC: $\left< \rho u_y^2 \right>_{z}$
-  integer :: idiag_ruz2mxy=0    ! DIAG_DOC: $\left< \rho u_z^2 \right>_{z}$
-  integer :: idiag_ruxuymxy=0   ! DIAG_DOC: $\left< \rho u_x u_y \right>_{z}$
-  integer :: idiag_ruxuzmxy=0   ! DIAG_DOC: $\left< \rho u_x u_z \right>_{z}$
-  integer :: idiag_ruyuzmxy=0   ! DIAG_DOC: $\left< \rho u_y u_z \right>_{z}$
   integer :: idiag_rux2m=0      ! DIAG_DOC: $\left<\rho u_x^2\right>$
   integer :: idiag_ruy2m=0      ! DIAG_DOC: $\left<\rho u_y^2\right>$
   integer :: idiag_ruz2m=0      ! DIAG_DOC: $\left<\rho u_z^2\right>$
-  integer :: idiag_uxmxz=0      ! DIAG_DOC: $\left< u_x \right>_{y}$
-  integer :: idiag_uymxz=0      ! DIAG_DOC: $\left< u_y \right>_{y}$
-  integer :: idiag_uzmxz=0      ! DIAG_DOC: $\left< u_z \right>_{y}$
-  integer :: idiag_ux2mxz=0     ! DIAG_DOC: $\left< u_x^2 \right>_{y}$
-  integer :: idiag_uy2mxz=0     ! DIAG_DOC: $\left< u_y^2 \right>_{y}$
-  integer :: idiag_uz2mxz=0     ! DIAG_DOC: $\left< u_z^2 \right>_{y}$
-  integer :: idiag_uxuymxz=0    ! DIAG_DOC: $\left< u_x u_y \right>_{y}$
-  integer :: idiag_uxuzmxz=0    ! DIAG_DOC: $\left< u_x u_z \right>_{y}$
-  integer :: idiag_uyuzmxz=0    ! DIAG_DOC: $\left< u_y u_z \right>_{y}$
   integer :: idiag_divum=0      ! DIAG_DOC: $\left<{\rm div}\uv)\right>$
   integer :: idiag_divu2m=0     ! DIAG_DOC: $\left<({\rm div}\uv)^2\right>$
   integer :: idiag_u3u21m=0     ! DIAG_DOC: $\left<u_3 u_{2,1}\right>$
@@ -351,10 +322,6 @@ module Hydro
   integer :: idiag_ormr=0       ! DIAG_DOC:
   integer :: idiag_opmr=0       ! DIAG_DOC:
   integer :: idiag_ozmr=0       ! DIAG_DOC:
-  integer :: idiag_oumxy=0      ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC: \cdot\uv\right>_{z}$
-  integer :: idiag_oumxz=0      ! DIAG_DOC: $\left<\boldsymbol{\omega}
-                                ! DIAG_DOC: \cdot\uv\right>_{y}$
   integer :: idiag_uguxm=0      ! DIAG_DOC:
   integer :: idiag_uguym=0      ! DIAG_DOC:
   integer :: idiag_uguzm=0      ! DIAG_DOC:
@@ -370,7 +337,6 @@ module Hydro
   integer :: idiag_ekin=0       ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2\right>$
   integer :: idiag_ekintot=0    ! DIAG_DOC: $\int_V{1\over2}\varrho\uv^2\, dV$
   integer :: idiag_totangmom=0  ! DIAG_DOC:
-  integer :: idiag_fkinxmxy=0   ! DIAG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$
   integer :: idiag_uxglnrym=0   ! DIAG_DOC: $\left<u_x\partial_y\ln\varrho\right>$
   integer :: idiag_uyglnrxm=0   ! DIAG_DOC: $\left<u_y\partial_x\ln\varrho\right>$
   integer :: idiag_uzdivum=0    ! DIAG_DOC: $\left<u_z\nabla\cdot\uv\right>$
@@ -437,7 +403,7 @@ module Hydro
 !
   integer :: idiag_uxmy=0       ! XZAVG_DOC: $\left< u_x \right>_{xz}$
   integer :: idiag_uymy=0       ! XZAVG_DOC: $\left< u_y \right>_{xz}$
-  integer :: idiag_uzmy=0       ! XZAVG_DOC: $\left< u_z \right>_{xz}$  
+  integer :: idiag_uzmy=0       ! XZAVG_DOC: $\left< u_z \right>_{xz}$
   integer :: idiag_ux2my=0      ! XZAVG_DOC:
   integer :: idiag_uy2my=0      ! XZAVG_DOC:
   integer :: idiag_uz2my=0      ! XZAVG_DOC:
@@ -454,7 +420,7 @@ module Hydro
 !
   integer :: idiag_uxmx=0       ! YZAVG_DOC: $\left< u_x \right>_{yz}$
   integer :: idiag_uymx=0       ! YZAVG_DOC: $\left< u_y \right>_{yz}$
-  integer :: idiag_uzmx=0       ! YZAVG_DOC: $\left< u_z \right>_{yz}$  
+  integer :: idiag_uzmx=0       ! YZAVG_DOC: $\left< u_z \right>_{yz}$
   integer :: idiag_ux2mx=0      ! YZAVG_DOC: $\left<u_x^2\right>_{yz}$
   integer :: idiag_uy2mx=0      ! YZAVG_DOC: $\left<u_y^2\right>_{yz}$
   integer :: idiag_uz2mx=0      ! YZAVG_DOC: $\left<u_z^2\right>_{yz}$
@@ -469,6 +435,48 @@ module Hydro
   integer :: idiag_uguxmx=0     ! YZAVG_DOC:
   integer :: idiag_uguymx=0     ! YZAVG_DOC:
   integer :: idiag_uguzmx=0     ! YZAVG_DOC:
+!
+! y averaged diagnostics given in yaver.in
+!
+  integer :: idiag_uxmxz=0      ! YAVG_DOC: $\left< u_x \right>_{y}$
+  integer :: idiag_uymxz=0      ! YAVG_DOC: $\left< u_y \right>_{y}$
+  integer :: idiag_uzmxz=0      ! YAVG_DOC: $\left< u_z \right>_{y}$
+  integer :: idiag_ux2mxz=0     ! YAVG_DOC: $\left< u_x^2 \right>_{y}$
+  integer :: idiag_uy2mxz=0     ! YAVG_DOC: $\left< u_y^2 \right>_{y}$
+  integer :: idiag_uz2mxz=0     ! YAVG_DOC: $\left< u_z^2 \right>_{y}$
+  integer :: idiag_uxuymxz=0    ! YAVG_DOC: $\left< u_x u_y \right>_{y}$
+  integer :: idiag_uxuzmxz=0    ! YAVG_DOC: $\left< u_x u_z \right>_{y}$
+  integer :: idiag_uyuzmxz=0    ! YAVG_DOC: $\left< u_y u_z \right>_{y}$
+  integer :: idiag_oumxz=0      ! YAVG_DOC: $\left<\boldsymbol{\omega}
+                                ! YAVG_DOC: \cdot\uv\right>_{y}$
+!
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_uxmxy=0      ! ZAVG_DOC: $\left< u_x \right>_{z}$
+  integer :: idiag_uymxy=0      ! ZAVG_DOC: $\left< u_y \right>_{z}$
+  integer :: idiag_uzmxy=0      ! ZAVG_DOC: $\left< u_z \right>_{z}$
+  integer :: idiag_oxmxy=0      ! ZAVG_DOC: $\left< \omega_x \right>_{z}$
+  integer :: idiag_oymxy=0      ! ZAVG_DOC: $\left< \omega_y \right>_{z}$
+  integer :: idiag_ozmxy=0      ! ZAVG_DOC: $\left< \omega_z \right>_{z}$
+  integer :: idiag_oumxy=0      ! ZAVG_DOC: $\left<\boldsymbol{\omega}
+                                ! ZAVG_DOC: \cdot\uv\right>_{z}$
+  integer :: idiag_pvzmxy=0     ! ZAVG_DOC: $\left< (\omega_z+2\Omega)/\varrho
+                                ! ZAVG_DOC: \right>_{z}$ \quad(z component of
+                                ! ZAVG_DOC: potential vorticity)
+  integer :: idiag_ruxmxy=0     ! ZAVG_DOC: $\left< \rho u_x \right>_{z}$
+  integer :: idiag_ruymxy=0     ! ZAVG_DOC: $\left< \rho u_y \right>_{z}$
+  integer :: idiag_ruzmxy=0     ! ZAVG_DOC: $\left< \rho u_z \right>_{z}$
+  integer :: idiag_ux2mxy=0     ! ZAVG_DOC: $\left< u_x^2 \right>_{z}$
+  integer :: idiag_uy2mxy=0     ! ZAVG_DOC: $\left< u_y^2 \right>_{z}$
+  integer :: idiag_uz2mxy=0     ! ZAVG_DOC: $\left< u_z^2 \right>_{z}$
+  integer :: idiag_rux2mxy=0    ! ZAVG_DOC: $\left< \rho u_x^2 \right>_{z}$
+  integer :: idiag_ruy2mxy=0    ! ZAVG_DOC: $\left< \rho u_y^2 \right>_{z}$
+  integer :: idiag_ruz2mxy=0    ! ZAVG_DOC: $\left< \rho u_z^2 \right>_{z}$
+  integer :: idiag_ruxuymxy=0   ! ZAVG_DOC: $\left< \rho u_x u_y \right>_{z}$
+  integer :: idiag_ruxuzmxy=0   ! ZAVG_DOC: $\left< \rho u_x u_z \right>_{z}$
+  integer :: idiag_ruyuzmxy=0   ! ZAVG_DOC: $\left< \rho u_y u_z \right>_{z}$
+  integer :: idiag_fkinxmxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
+                                ! ZAVG_DOC: u_x\right>_{z}$
 !
   contains
 !***********************************************************************
@@ -2285,7 +2293,8 @@ module Hydro
         if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo(:,2),idiag_oymxy)
         if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo(:,3),idiag_ozmxy)
         if (idiag_oumxy/=0) call zsum_mn_name_xy(p%ou,idiag_oumxy)
-        if (idiag_pvzmxy/=0) call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)
+        if (idiag_pvzmxy/=0) &
+            call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
         if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
         if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,3),idiag_ruzmxy)
@@ -3280,16 +3289,16 @@ module Hydro
 !
     endsubroutine output_persistent_hydro
 !***********************************************************************
-    subroutine read_hydro_init_pars(unit,iostat) 
-!    
-      integer, intent(in) :: unit 
-      integer, intent(inout), optional :: iostat 
-!      
-      if (present(iostat)) then 
-        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat) 
-      else 
-        read(unit,NML=hydro_init_pars,ERR=99) 
-      endif 
+    subroutine read_hydro_init_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=hydro_init_pars,ERR=99)
+      endif
 !
 99    return
 !
@@ -3303,16 +3312,16 @@ module Hydro
 !
     endsubroutine write_hydro_init_pars
 !***********************************************************************
-    subroutine read_hydro_run_pars(unit,iostat) 
-!    
-      integer, intent(in) :: unit 
-      integer, intent(inout), optional :: iostat 
-!      
-      if (present(iostat)) then 
-        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat) 
-      else 
-        read(unit,NML=hydro_run_pars,ERR=99) 
-      endif 
+    subroutine read_hydro_run_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=hydro_run_pars,ERR=99)
+      endif
 !
 99    return
 !

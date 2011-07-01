@@ -29,7 +29,6 @@
 %%   testfield_nonlin_z.f90
 %%   nolorenz_gauge.f90
 %%   magnetic_axisym.f90
-%%   testscalar.f90
 %%   testfield_meri.f90
 
 % ---------------------------------------------------------------- %
@@ -103,38 +102,9 @@
                     \times\left<\Bv\right>_{xy}
                     \right>_z$ \quad($xy$-averaged
                     mean emf) \\
-  \var{uxmxy}     & $\left< u_x \right>_{z}$ \\
-  \var{uymxy}     & $\left< u_y \right>_{z}$ \\
-  \var{uzmxy}     & $\left< u_z \right>_{z}$ \\
-  \var{oxmxy}     & $\left< \omega_x \right>_{z}$ \\
-  \var{oymxy}     & $\left< \omega_y \right>_{z}$ \\
-  \var{ozmxy}     & $\left< \omega_z \right>_{z}$ \\
-  \var{pvzmxy}    & $\left< (\omega_z + 2\Omega)/\varrho \right>_{z}$
-                    \quad(z component of potential vorticity) \\
-  \var{ruxmxy}    & $\left< \rho u_x \right>_{z}$ \\
-  \var{ruymxy}    & $\left< \rho u_y \right>_{z}$ \\
-  \var{ruzmxy}    & $\left< \rho u_z \right>_{z}$ \\
-  \var{ux2mxy}    & $\left< u_x^2 \right>_{z}$ \\
-  \var{uy2mxy}    & $\left< u_y^2 \right>_{z}$ \\
-  \var{uz2mxy}    & $\left< u_z^2 \right>_{z}$ \\
-  \var{rux2mxy}   & $\left< \rho u_x^2 \right>_{z}$ \\
-  \var{ruy2mxy}   & $\left< \rho u_y^2 \right>_{z}$ \\
-  \var{ruz2mxy}   & $\left< \rho u_z^2 \right>_{z}$ \\
-  \var{ruxuymxy}  & $\left< \rho u_x u_y \right>_{z}$ \\
-  \var{ruxuzmxy}  & $\left< \rho u_x u_z \right>_{z}$ \\
-  \var{ruyuzmxy}  & $\left< \rho u_y u_z \right>_{z}$ \\
   \var{rux2m}     & $\left<\rho u_x^2\right>$ \\
   \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
   \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
-  \var{uxmxz}     & $\left< u_x \right>_{y}$ \\
-  \var{uymxz}     & $\left< u_y \right>_{y}$ \\
-  \var{uzmxz}     & $\left< u_z \right>_{y}$ \\
-  \var{ux2mxz}    & $\left< u_x^2 \right>_{y}$ \\
-  \var{uy2mxz}    & $\left< u_y^2 \right>_{y}$ \\
-  \var{uz2mxz}    & $\left< u_z^2 \right>_{y}$ \\
-  \var{uxuymxz}   & $\left< u_x u_y \right>_{y}$ \\
-  \var{uxuzmxz}   & $\left< u_x u_z \right>_{y}$ \\
-  \var{uyuzmxz}   & $\left< u_y u_z \right>_{y}$ \\
   \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
   \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
   \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
@@ -190,17 +160,12 @@
   \var{pvzm}      & $\left<\omega_z + 2\Omega/\varrho\right>$
                     \quad(z component of potential vorticity) \\
   \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
-  \var{oumxy}     & $\left<\boldsymbol{\omega}
-                    \cdot\uv\right>_{z}$ \\
-  \var{oumxz}     & $\left<\boldsymbol{\omega}
-                    \cdot\uv\right>_{y}$ \\
   \var{Marms}     & $\left<\uv^2/\cs^2\right>$
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
                     \quad(maximum Mach number) \\
   \var{ekin}      & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot}   & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
-  \var{fkinxmxy}  & $\left<{1\over2}\varrho\uv^2 u_x\right>_{z}$ \\
   \var{uxglnrym}  & $\left<u_x\partial_y\ln\varrho\right>$ \\
   \var{uyglnrxm}  & $\left<u_y\partial_x\ln\varrho\right>$ \\
   \var{uzdivum}   & $\left<u_z\nabla\cdot\uv\right>$ \\
@@ -1214,67 +1179,6 @@
   \var{aphi2m}    & $\left<A_\phi^2\right>$ \\
   \var{bphi2m}    & $\left<B_\phi^2\right>$ \\
   \var{bpol2m}    & $\left<B_p^2\right>$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{testscalar.f90}} \\
-\midrule
-  \var{gam11}     & $\gamma_{1}^{(1)}$ \\
-  \var{gam12}     & $\gamma_{2}^{(1)}$ \\
-  \var{gam13}     & $\gamma_{3}^{(1)}$ \\
-  \var{gam21}     & $\gamma_{1}^{(2)}$ \\
-  \var{gam22}     & $\gamma_{2}^{(2)}$ \\
-  \var{gam23}     & $\gamma_{3}^{(2)}$ \\
-  \var{gam31}     & $\gamma_{1}^{(3)}$ \\
-  \var{gam32}     & $\gamma_{2}^{(3)}$ \\
-  \var{gam33}     & $\gamma_{3}^{(3)}$ \\
-  \var{kap11}     & $\kappa_{11}$ \\
-  \var{kap21}     & $\kappa_{21}$ \\
-  \var{kap31}     & $\kappa_{31}$ \\
-  \var{kap12}     & $\kappa_{12}$ \\
-  \var{kap22}     & $\kappa_{22}$ \\
-  \var{kap32}     & $\kappa_{32}$ \\
-  \var{kap13}     & $\kappa_{13}$ \\
-  \var{kap23}     & $\kappa_{23}$ \\
-  \var{kap33}     & $\kappa_{33}$ \\
-  \var{gam11z}    & $\gamma_{1}^{(1)}(z,t)$ \\
-  \var{gam12z}    & $\gamma_{2}^{(1)}(z,t)$ \\
-  \var{gam13z}    & $\gamma_{3}^{(1)}(z,t)$ \\
-  \var{gam21z}    & $\gamma_{1}^{(2)}(z,t)$ \\
-  \var{gam22z}    & $\gamma_{2}^{(2)}(z,t)$ \\
-  \var{gam23z}    & $\gamma_{3}^{(2)}(z,t)$ \\
-  \var{gam31z}    & $\gamma_{1}^{(3)}(z,t)$ \\
-  \var{gam32z}    & $\gamma_{2}^{(3)}(z,t)$ \\
-  \var{gam33z}    & $\gamma_{3}^{(3)}(z,t)$ \\
-  \var{kap11z}    & $\kappa_{11}(z,t)$ \\
-  \var{kap21z}    & $\kappa_{21}(z,t)$ \\
-  \var{kap31z}    & $\kappa_{31}(z,t)$ \\
-  \var{kap12z}    & $\kappa_{12}(z,t)$ \\
-  \var{kap22z}    & $\kappa_{22}(z,t)$ \\
-  \var{kap32z}    & $\kappa_{32}(z,t)$ \\
-  \var{kap13z}    & $\kappa_{13}(z,t)$ \\
-  \var{kap23z}    & $\kappa_{23}(z,t)$ \\
-  \var{kap33z}    & $\kappa_{33}(z,t)$ \\
-  \var{mgam33}    & $\tilde\gamma_{33}$ \\
-  \var{mkap33}    & $\tilde\kappa_{33}$ \\
-  \var{ngam33}    & $\hat\gamma_{33}$ \\
-  \var{nkap33}    & $\hat\kappa_{33}$ \\
-  \var{c1rms}     & $\left<c_{1}^2\right>^{1/2}$ \\
-  \var{c2rms}     & $\left<c_{2}^2\right>^{1/2}$ \\
-  \var{c3rms}     & $\left<c_{3}^2\right>^{1/2}$ \\
-  \var{c4rms}     & $\left<c_{4}^2\right>^{1/2}$ \\
-  \var{c5rms}     & $\left<c_{5}^2\right>^{1/2}$ \\
-  \var{c6rms}     & $\left<c_{6}^2\right>^{1/2}$ \\
-  \var{c1pt}      & $c^{1}$ \\
-  \var{c2pt}      & $c^{2}$ \\
-  \var{c3pt}      & $c^{3}$ \\
-  \var{c4pt}      & $c^{4}$ \\
-  \var{c5pt}      & $c^{5}$ \\
-  \var{c6pt}      & $c^{6}$ \\
-  \var{F11z}      & ${\cal F}_1^{1}$ \\
-  \var{F21z}      & ${\cal F}_2^{1}$ \\
-  \var{F31z}      & ${\cal F}_3^{1}$ \\
-  \var{F12z}      & ${\cal F}_1^{2}$ \\
-  \var{F22z}      & ${\cal F}_2^{2}$ \\
-  \var{F32z}      & ${\cal F}_3^{2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_meri.f90}} \\
 \midrule
