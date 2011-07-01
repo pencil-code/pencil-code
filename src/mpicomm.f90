@@ -423,7 +423,6 @@ module Mpicomm
       lfirst_proc_xyz = lfirst_proc_x .and. lfirst_proc_y .and. lfirst_proc_z
 !
 !  Set up flags for trailing processors in each possible direction and plane
-!  One processor should not be leading and trailing at the same time
 !
       llast_proc_x = (ipx == nprocx-1)
       llast_proc_y = (ipy == nprocy-1)
