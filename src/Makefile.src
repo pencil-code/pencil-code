@@ -1913,7 +1913,7 @@ nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 # 
 EXECUTABLES=start.x run.x \
-	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x pre_and_post_processing/pc_downscale.x
+	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x #pre_and_post_processing/pc_downscale.x
 # 
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
