@@ -286,7 +286,7 @@ module Testfield
 !  avoid dividing by zero
 !
       bampz1=1.
-      where (abs(bampz)<=(.1*dz))
+      where (abs(bampz)>=(.1*dz))
         bampz1=1./bampz
       endwhere
 !
