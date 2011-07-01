@@ -2412,7 +2412,8 @@ plane.
 The output frequency of these video snapshots is set by the parameter
 \var{dvid} (in code time units).
 
-When output to video files is activated (by some settings in \file{run.in}
+When output to video files is activated by some settings in
+\file{run.in} (see example below)
 and the existence of \file{video.in}, slices are written for four planes:
 \begin{enumerate}
 \item $x$-$z$ plane ($y$ index \var{iy}; file suffix \code{.xz})
@@ -2433,7 +2434,7 @@ valid choices are listed in \S~\ref{S-video.in-params}.
 
 The \name{slice files} are written in each processor directory
 \file{data/proc*/} and have a file name indicating the individual variable
-(e.\,g.~\file{slice_ux.yz} for a slice of $u_x$ in the $y$-$z$ plane).
+(e.\,g.~\file{slice_uu1.yz} for a slice of $u_x$ in the $y$-$z$ plane).
 Before visualizing slices one normally wants to combine the sub-slices
 written by each processor into one global slice (for each plane and
 variable).
@@ -2447,8 +2448,9 @@ To read all sub-slices demanded in \file{video.in} at once use
 \file{src/read_all_videofiles.x}. This program doesn't expect any
 user input and can thus be submitted in computing queues.
 
-For visualization of slices, you can use the \name{IDL} routine
-\file{rvid_box}, which allows the flag \option{/png} for writing
+For visualization of slices, you can use the \name{IDL} routines
+\file{rvid_box.pro}, \file{rvid_plane.pro}, or \file{rvid_line.pro} which
+allows the flag \option{/png} for writing
 \name{PNG} images that can then be combined into an \name{MPEG} movie
 using \name{mpeg_encode}.
 Based on \file{rvid_box}, you can write your own video routines in
@@ -2470,10 +2472,11 @@ following:
   divu
   \end{Verbatim}
 
-\item Edit \file{run.in} and in the namelist \name{run_pars} set
-  \var{dvid} and \var{slice_position} to
-  reasonable values, say
+\item Edit the namelist \name{run_pars} in the file \file{run.in}.
+  Request slices by setting \var{write_slices} and set \var{dvid} and
+  \var{slice_position} to reasonable values, say
   \begin{Verbatim}
+  lwrite_slices=T
   dvid=0.05
   slice_position='m'
   \end{Verbatim}
@@ -2488,15 +2491,15 @@ following:
   those scattered across \file{data/proc*/}:
   \begin{alltt}
   \prompt{unix> } src/read_videofiles.x
-    enter name of variable (lnrho, ux, ..., bz):  \emph{ss}
+    enter name of variable (lnrho, uu1, ..., bb3):  \emph{ss}
   \prompt{unix> } src/read_videofiles.x
-    enter name of variable (lnrho, ux, ..., bz):  \emph{bz} \
+    enter name of variable (lnrho, uu1, ..., bb3):  \emph{bb3} \
   \end{alltt}
 
 \item Start \name{IDL} and run \file{rvid_box}:
   \begin{alltt}
   \prompt{unix> } idl
-  \prompt{IDL> } rvid_box,'bz'
+  \prompt{IDL> } rvid_box,'bb3'
   \prompt{IDL> } rvid_box,'ss',min=-0.3,max=2. \
   \end{alltt}
   etc.
@@ -2536,12 +2539,12 @@ for a $y$-$z$ slice):
 There is the possibility to output two-dimensional averages.
 The result then depends on the remaining dimension.
 The averages are listed in the files  \file{xyaver.in}, \file{xzaver.in},
-and  \file{yzaver.in} where the first letters indicate the averaging 
+and  \file{yzaver.in} where the first letters indicate the averaging
 directions. The output is then stored to the files
 \file[xyaverages.dat]{data/xyaverages.dat},
-\file[xzaverages.dat]{data/xzaverages.dat}, and  
+\file[xzaverages.dat]{data/xzaverages.dat}, and
 \file[yzaverages.dat]{data/yzaverages.dat}.
-The output is written every  \var{it1d}th time steps. 
+The output is written every  \var{it1d}th time steps.
 
 See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
 
@@ -2555,10 +2558,10 @@ In \code{idl} such $xy$-averages can be read using the procedure
 There is the possibility to output one-dimensional averages.
 The result then depends on the remaining two dimensions.
 The averages are listed in the files  \file{yaver.in}, \file{zaver.in},
-and  \file{phiaver.in} where the first letter indicates the averaging 
+and  \file{phiaver.in} where the first letter indicates the averaging
 direction. The output is then stored to the files
 \file[yaverages.dat]{data/yaverages.dat},
-\file[zaverages.dat]{data/zaverages.dat}, and  
+\file[zaverages.dat]{data/zaverages.dat}, and
 \file[phiaverages.dat]{data/phiaverages.dat}.
 
 See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
@@ -3723,10 +3726,10 @@ For some examples on how to use these routines, see Sect.~\ref{S-GDL}.
 \subsubsection{Python}
 \label{Python}
 
-Pencil also supports visualization using \name{python}. A number of scripts 
-for such are placed in the subfolder \file{\$PENCIL_HOME/python}. A 
-README file placed under that subfolder contains the information 
-needed to read Pencil output data into python. 
+Pencil also supports visualization using \name{python}. A number of scripts
+for such are placed in the subfolder \file{\$PENCIL_HOME/python}. A
+README file placed under that subfolder contains the information
+needed to read Pencil output data into python.
 
 To start rapidly under Python:
 
@@ -6083,7 +6086,7 @@ your needs.
 % ---------------------------------------------------------------------- %
 
 The Pencil Code check ins occur regularly all the time.
-By the Pencil Code User Meeting 2010 we have arrived at a revision 
+By the Pencil Code User Meeting 2010 we have arrived at a revision
 number of 15,000.
 The increase of the revision number with time is depicted in
 Figure~\ref{CheckIns}.
@@ -6620,35 +6623,35 @@ gives you a good overview of which files you need to edit or add.
 \subsection{Adding your initial conditions: the InitialCondition module}
 \index{InitialCondition module}
 
-Although the code has many initial conditions implemented, we 
-now {\it discourage} such practice. We aim to eventually removed 
-most of them. The recommended course of action is to make use of 
-the InitialCondition module. 
+Although the code has many initial conditions implemented, we
+now {\it discourage} such practice. We aim to eventually removed
+most of them. The recommended course of action is to make use of
+the InitialCondition module.
 
-InitialCondition works pretty much like the Special module. To implement your 
-own custom initial conditions, create a \file{initial\_condition} directory in 
-your run directory, and copy the file \file{noinitialcondition.f90} from the 
-src/ to it, with a new, descriptive, name.   
+InitialCondition works pretty much like the Special module. To implement your
+own custom initial conditions, create a \file{initial\_condition} directory in
+your run directory, and copy the file \file{noinitialcondition.f90} from the
+src/ to it, with a new, descriptive, name.
 
-The first thing to do in your new module is to change the 
+The first thing to do in your new module is to change the
 linitialcondition=.false. header to say linitialcondition=.true.
 
-This file has hooks to implement a custom initial condition to 
-most variables. After implementing your initial condition, 
-add INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90, 
-which ``myinitialcondition'' is the name you gave to the file. 
-Add also ``initial\_condition\_pars'' to the start.in file, just 
-below ``init\_pars''. This is 
-a namelist, which you can use to add whichever quantity your 
-initial condition need defined, or passed. You must also un-comment the 
-relevant lines in the subroutines of namelist that read and write the 
-namelist since, for compiling reasons, these subroutines in 
-\file{noinitialcondition.f90} are dummies. The lines are easily identifiable 
-in the code. 
+This file has hooks to implement a custom initial condition to
+most variables. After implementing your initial condition,
+add INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90,
+which ``myinitialcondition'' is the name you gave to the file.
+Add also ``initial\_condition\_pars'' to the start.in file, just
+below ``init\_pars''. This is
+a namelist, which you can use to add whichever quantity your
+initial condition need defined, or passed. You must also un-comment the
+relevant lines in the subroutines of namelist that read and write the
+namelist since, for compiling reasons, these subroutines in
+\file{noinitialcondition.f90} are dummies. The lines are easily identifiable
+in the code.
 
-Check e.g. the samples \file{2d-tests/baroclinic}, 
-\file{2d-tests/spherical\_viscous\_ring}, or \file{interlocked-fluxrings}, 
-for examples of how the module is used. 
+Check e.g. the samples \file{2d-tests/baroclinic},
+\file{2d-tests/spherical\_viscous\_ring}, or \file{interlocked-fluxrings},
+for examples of how the module is used.
 
 % ====================================================================== %
 
@@ -7296,7 +7299,7 @@ some form of capitalization for readability.
 
 In general all Fortran code including keywords, variable names etc. are
 written in lowercase.
-Some of the coding standard has already been discussed in 
+Some of the coding standard has already been discussed in
 Sect.~\ref{ProgrammingStyle}.
 Here we discuss and amplify some remaining matters.
 
@@ -10011,8 +10014,8 @@ double precision, $\varepsilon\approx10^{-15}$.
                  discussion of where and how to set these. \\
   \var{pretend_lnTT} [\code{F}]
                 & \index{pretend_lnTT}
-		selects $\ln T$ as fundamental thermodynamic variable
-		in the entropy module \\
+                selects $\ln T$ as fundamental thermodynamic variable
+                in the entropy module \\
                  \\
 %
 \midrule
@@ -10804,7 +10807,7 @@ that are documented.
 {List of parameters for \file{video.in}}\
 \label{S-video.in-params}
 
-The following table lists all (at the time of writing, March 2004)
+The following table lists all (at the time of writing, \today)
 possible inputs to the file \file{video.in}.
 
 % ---------------------------------------------------------------------- %
@@ -10889,7 +10892,7 @@ possible inputs to the file \file{video.in}.
                 writes \file[]{jb.\{xz,yz,xy,xy2\}}  \\
   \var{beta}   & inverse plasma beta $\Bv^2/(2\mu_0p)$;
                 writes \file[]{beta.\{xz,yz,xy,xy2\}}  \\
-  \var{Poynting} & Poynting vector  $\eta \jv \times \Bv 
+  \var{Poynting} & Poynting vector  $\eta \jv \times \Bv
                      -(\uv\times\Bv)\times\Bv/\mu_0$;
                 writes \file[]{Poynting[xyz].\{xz,yz,xy,xy2\}}  \\
   \var{ab}    & magnetic helicity density $\Av\cdot\Bv$;
@@ -10947,7 +10950,7 @@ This list is not complete and maybe outdated.
 \label{S-yzaver.in-params}
 
 The following table lists possible inputs to the file \file{yzaver.in}.
-This list is not complete and maybe outdated. 
+This list is not complete and maybe outdated.
 % ---------------------------------------------------------------------- %
 \input{inlinedoc-yzavg.tex}
 % ---------------------------------------------------------------------- %
@@ -10957,7 +10960,7 @@ This list is not complete and maybe outdated.
 \label{S-yaver.in-params}
 
 The following table lists possible inputs to the file \file{yaver.in}.
-This list is not complete and maybe outdated. 
+This list is not complete and maybe outdated.
 % ---------------------------------------------------------------------- %
 \input{inlinedoc-yavg.tex}
 % ---------------------------------------------------------------------- %
@@ -10967,7 +10970,7 @@ This list is not complete and maybe outdated.
 \label{S-zaver.in-params}
 
 The following table lists possible inputs to the file \file{zaver.in}.
-This list is not complete and maybe outdated. 
+This list is not complete and maybe outdated.
 % ---------------------------------------------------------------------- %
 \input{inlinedoc-zavg.tex}
 % ---------------------------------------------------------------------- %
