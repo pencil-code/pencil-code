@@ -2211,7 +2211,7 @@ module Mpicomm
       real, dimension(nxgrid,nygrid) :: recvbuf
       integer                        :: lpz
 !
-      recvbuf = sendbuf
+      recvbuf(:,1:ny) = sendbuf
 !
       if (NO_WARN) print*,lpz
 !
@@ -2227,7 +2227,7 @@ module Mpicomm
       integer, optional,          intent(in)  :: lproc
       integer,                    intent(in)  :: n1
 !
-      recvbuf = sendbuf
+      recvbuf(:,1:nz) = sendbuf
 !
       if (NO_WARN) print*,n1,present(lproc)
 !
