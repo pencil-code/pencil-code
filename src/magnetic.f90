@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED jij(3,3); sj; ss12; d6ab
 ! PENCILS PROVIDED etava; etaj; etaj2; etajrho
 ! PENCILS PROVIDED cosjb; jparallel; jperp
-! PENCILS PROVIDED cosub
+! PENCILS PROVIDED cosub; bunit(3)
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp
 !
@@ -1818,6 +1818,11 @@ module Magnetic
         lpencil_in(i_pp)=.true.
       endif
 !
+      if (lpencil_in(i_bunit)) then
+        lpencil_in(i_bb)=.true.
+        lpencil_in(i_b2)=.true.
+      endif
+!
       if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
       if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
 !
@@ -2006,6 +2011,19 @@ module Magnetic
         if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
       else
         if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
+      endif
+! bunit
+      if (lpencil(i_bunit)) then
+        quench = max(tini,sqrt(p%b2))
+        if (luse_Bext_in_b2) then
+          p%bunit(:,1) = p%bb(:,1)/quench
+          p%bunit(:,2) = p%bb(:,2)/quench
+          p%bunit(:,3) = p%bb(:,3)/quench
+        else
+          p%bunit(:,1) = p%bbb(:,1)/quench
+          p%bunit(:,2) = p%bbb(:,2)/quench
+          p%bunit(:,3) = p%bbb(:,3)/quench          
+        endif
       endif
 ! ab
       if (lpencil(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)
