@@ -336,6 +336,7 @@ module Special
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -354,7 +355,9 @@ module Special
 !
       if (hcond_grad /= 0.) then
         lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
         lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -383,6 +386,7 @@ module Special
       if (hcond1/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -856,7 +860,7 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
-      real, dimension (nx,3) :: bunit,hhh
+      real, dimension (nx,3) :: hhh
       real, dimension (nx) :: thdiff,chi_spitzer
       real, dimension (nx) :: vKpara,vKperp,tmp
       real, dimension (nx) :: glnT2_1,glnT2,b2_1
@@ -926,7 +930,7 @@ module Special
 !  Calculate diffusion term.
 !
       thdiff = 0.
-      call tensor_diffusion(p,p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
+      call tensor_diffusion(p,p%glnTT,p%hlnTT,vKperp,vKpara,thdiff,&
           GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
 !      if (coronae_fix .and. llast_proc_z) &
@@ -972,16 +976,14 @@ module Special
         call dot_mn(p%glnTT,p%bb,tmp)
         call multsv_mn(2.5*b2_1*tmp,p%bb,tmpv)
 !
-        call multsv_mn(sqrt(b2_1),p%bb,bunit)
-!
         do i=1,3
           hhh(:,i)=0.
           do j=1,3
             tmp(:)=0.
             do k=1,3
-              tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
+              tmp(:)=tmp(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
             enddo
-            hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
+            hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmp(:))
           enddo
         enddo
         call multsv_mn(sqrt(b2_1),hhh,tmpv2)
@@ -1001,10 +1003,10 @@ module Special
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine tensor_diffusion(p,gecr,ecr_ij,bij,bb, &
+    subroutine tensor_diffusion(p,gecr,ecr_ij, &
         vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
 !
-      use Sub, only: dot2_mn, dot, dot_mn, multsv_mn, multmv_mn
+      use Sub, only: dot2_mn, dot_mn, multsv_mn, multmv_mn
 !
 !  Calculates tensor diffusion with variable tensor (or constant tensor).
 !  Calculates parts common to both variable and constant tensor first.
@@ -1028,8 +1030,8 @@ module Special
 !
 !  06-jan-10/bing: copied from sub.f90
 !
-      real, dimension (nx,3,3) :: ecr_ij,bij
-      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
+      real, dimension (nx,3,3) :: ecr_ij
+      real, dimension (nx,3) :: gecr,hhh,gvKperp1,gvKpara1,tmpv
       real, dimension (nx) :: b_1,del2ecr,gecr2,vKperp,vKpara
       real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
       integer :: i,j,k
@@ -1037,14 +1039,11 @@ module Special
       real, optional, dimension (nx,3) :: gvKperp,gvKpara
       type (pencil_case), intent(in) :: p
 !
-      intent(in) :: bb,bij,gecr,ecr_ij,vKperp,vKpara,llog
+      intent(in) :: gecr,ecr_ij,vKperp,vKpara,llog
       intent(in) :: gvKperp,gvKpara
       intent(out) :: rhs
 !
-!  Calculate unit vector of bb.
-!
       b_1=1./max(tini,sqrt(p%b2))
-      call multsv_mn(b_1,bb,bunit)
 !
 !  Calculate first H_i.
 !
@@ -1055,9 +1054,9 @@ module Special
         do j=1,3
           tmpj(:)=0.
           do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*bij(:,k,j)
+            tmpj(:)=tmpj(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
           enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
+          hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmpj(:))
         enddo
       enddo
       call multsv_mn(b_1,hhh,tmpv)
@@ -1074,15 +1073,15 @@ module Special
 !
 !  Dot Hessian matrix of ecr with bi*bj, and add into tmp.
 !
-      call multmv_mn(ecr_ij,bunit,hhh)
-      call dot_mn(hhh,bunit,tmpj)
+      call multmv_mn(ecr_ij,p%bunit,hhh)
+      call dot_mn(hhh,p%bunit,tmpj)
       tmp = tmp+tmpj
 !
 !  Calculate (Gi*ni)^2 needed for lnecr form; also add into tmp.
 !
       gecr2=0.
       if (present(llog)) then
-        call dot_mn(gecr,bunit,tmpi)
+        call dot_mn(gecr,p%bunit,tmpi)
         tmp=tmp+tmpi**2
 !
 !  Calculate gecr2 - needed for lnecr form.
@@ -1103,8 +1102,8 @@ module Special
 !
 !  Nonuniform conductivities, add terms into tmpj.
 !
-      call dot(bunit,gvKpara1-gvKperp1,tmpi)
-      call dot(bunit,gecr,tmpk)
+      call dot_mn(p%bunit,gvKpara1-gvKperp1,tmpi)
+      call dot_mn(p%bunit,gecr,tmpk)
       tmpj = tmpj+tmpi*tmpk
 !
 !  Calculate rhs.
@@ -1129,7 +1128,7 @@ module Special
 !
       real, dimension (nx) :: glnT2
       real, dimension (nx) :: tmp,rhs,chi
-      real, dimension (nx,3) :: bunit,hhh,tmpv,gflux
+      real, dimension (nx,3) :: hhh,tmpv,gflux
       real, dimension (nx) :: hhh2,quenchfactor
       real, dimension (nx) :: b_1
       real, dimension (nx) :: tmpj
@@ -1138,10 +1137,7 @@ module Special
       intent(in) :: p
       intent(out) :: df
 !
-!  calculate unit vector of bb
-!
       b_1=1./max(tini,sqrt(p%b2))
-      call multsv(b_1,p%bb,bunit)
 !
 !  calculate first H_i
 !
@@ -1150,9 +1146,9 @@ module Special
         do j=1,3
           tmpj(:)=0.
           do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+            tmpj(:)=tmpj(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
           enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+          hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmpj(:))
         enddo
       enddo
       call multsv(b_1,hhh,tmpv)
@@ -1172,8 +1168,8 @@ module Special
 !
 !  dot Hessian matrix of lnTT with bi*bj, and add into tmp
 !
-      call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,tmpj)
+      call multmv(p%hlnTT,p%bunit,tmpv)
+      call dot(tmpv,p%bunit,tmpj)
       tmp = tmp+tmpj
 !
       call dot2(p%glnTT,glnT2)
@@ -1191,8 +1187,8 @@ module Special
 !
       gflux  = gflux +tmpv
 !
-      call dot(gflux,bunit,rhs)
-      call dot(p%glnTT,bunit,tmpj)
+      call dot(gflux,p%bunit,rhs)
+      call dot(p%glnTT,p%bunit,tmpj)
       rhs = rhs*tmpj
 !
       chi = glnT2*hcond_grad*p%cp1
@@ -3162,7 +3158,7 @@ module Special
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: bunit,hhh,tmpv
+      real, dimension (nx,3) :: hhh,tmpv
       real, dimension (nx) :: hhh2,quenchfactor
       real, dimension (nx) :: b_1
       real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix
@@ -3175,10 +3171,7 @@ module Special
 !
 !  Define chi= K_0/rho
 !
-!  calculate unit vector of bb
-!
       b_1=1./max(tini,sqrt(p%b2))
-      call multsv(b_1,p%bb,bunit)
 !
 !  calculate first H_i
 !
@@ -3187,9 +3180,9 @@ module Special
         do j=1,3
           tmpj(:)=0.
           do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+            tmpj(:)=tmpj(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
           enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+          hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmpj(:))
         enddo
       enddo
       call multsv(b_1,hhh,tmpv)
@@ -3209,15 +3202,15 @@ module Special
 !
 !  dot Hessian matrix of lnTT with bi*bj, and add into tmp
 !
-      call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,tmpj)
+      call multmv(p%hlnTT,p%bunit,tmpv)
+      call dot(tmpv,p%bunit,tmpj)
       tmp = tmp+tmpj
 !
 !  calculate (Grad lnTT * bunit)^2 needed for lnecr form; also add into tmp
 !
-      call dot(p%glnTT,bunit,tmpi)
+      call dot(p%glnTT,p%bunit,tmpi)
 !
-      call dot(p%glnrho,bunit,tmpj)
+      call dot(p%glnrho,p%bunit,tmpj)
       tmp=tmp+(tmpj+tmpi)*tmpi
 !
 !  calculate rhs
