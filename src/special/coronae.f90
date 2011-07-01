@@ -37,7 +37,7 @@ module Special
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
   logical :: mark=.false.
-  real :: eighth_moment=0.
+  real :: eighth_moment=0.,hcond1=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -47,7 +47,7 @@ module Special
   real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
-      heat_par_exp3,u_amplifier,twist_u0,rmin,rmax, &
+      heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1, &
       Kpara,Kperp,Kc,init_time2,twisttype,centerx,centery,centerz, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
@@ -65,6 +65,7 @@ module Special
                               ! DIAG_DOC:   \quad(time step relative to time
                               ! DIAG_DOC:   step based on heat conductivity;
                               ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
   integer :: idiag_dtrad=0    ! DIAG_DOC: radiative loss from RTV
   integer :: idiag_dtnewt=0
   integer :: idiag_dtgran=0
@@ -334,6 +335,7 @@ module Special
       if (Kpara /= 0.) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -378,6 +380,18 @@ module Special
         lpenc_requested(i_bb)=.true.
       endif
 !
+      if (hcond1/=0.0) then
+        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -401,8 +415,9 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtchi2=0.
-        idiag_dtrad=0.
+        idiag_dtspitzer=0
+        idiag_dtchi2=0
+        idiag_dtrad=0
         idiag_dtnewt=0
         idiag_dtgran=0
       endif
@@ -410,6 +425,7 @@ module Special
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
@@ -419,6 +435,7 @@ module Special
 !  write column where which variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_dtspitzer=',idiag_dtspitzer
         write(3,*) 'i_dtchi2=',idiag_dtchi2
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'i_dtnewt=',idiag_dtnewt
@@ -602,14 +619,14 @@ module Special
           slices%ready=.false.
         else
           slices%index=slices%index+1
-          slices%yz =f(slices%ix,m1:m2    ,n1:n2     ,ispitzerx-1+slices%index)
-          slices%xz =f(l1:l2    ,slices%iy,n1:n2     ,ispitzerx-1+slices%index)
-          slices%xy =f(l1:l2    ,m1:m2    ,slices%iz ,ispitzerx-1+slices%index)
-          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ispitzerx-1+slices%index)
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ispitzerx-1+slices%index)
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ispitzerx-1+slices%index)
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ispitzerx-1+slices%index)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ispitzerx-1+slices%index)
           if (lwrite_slice_xy3) &
-              slices%xy3=f(l1:l2,m1:m2,slices%iz3,ispitzerx-1+slices%index)
+              slices%xy3=f(l1:l2,m1:m2,iz3_loc,ispitzerx-1+slices%index)
           if (lwrite_slice_xy4) &
-              slices%xy4=f(l1:l2,m1:m2,slices%iz4,ispitzerx-1+slices%index)
+              slices%xy4=f(l1:l2,m1:m2,iz4_loc,ispitzerx-1+slices%index)
           if (slices%index<=3) slices%ready=.true.
         endif
 !
@@ -747,6 +764,7 @@ module Special
       if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
+      if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
       if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
@@ -832,23 +850,24 @@ module Special
 !
       use Diagnostics,     only : max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot2_mn, multsv_mn, cubic_step
+      use Sub, only: dot2_mn, multsv_mn, cubic_step, dot_mn
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
+      real, dimension (nx,3) :: bunit,hhh
       real, dimension (nx) :: thdiff,chi_spitzer
       real, dimension (nx) :: vKpara,vKperp,tmp
-      real, dimension (nx) :: glnT2_1,glnT2,b2,b2_1
+      real, dimension (nx) :: glnT2_1,glnT2,b2_1
       real, dimension (nx) :: chi_clight, K_clight
+      real, dimension (nx,3) :: u_advec
 !
-      integer :: i,j
+      integer :: i,j,k
 !
 !  Calculate variable diffusion coefficients along pencils.
 !
-      call dot2_mn(p%bb,b2)
-      b2_1=1./max(tini,b2)
+      b2_1=1./max(tini,p%b2)
 !
       vKpara = Kpara * exp(p%lnTT*3.5)
       vKperp = Kperp * b2_1*exp(2.*p%lnrho+0.5*p%lnTT)
@@ -907,7 +926,7 @@ module Special
 !  Calculate diffusion term.
 !
       thdiff = 0.
-      call tensor_diffusion(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
+      call tensor_diffusion(p,p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,&
           GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
 !      if (coronae_fix .and. llast_proc_z) &
@@ -945,14 +964,44 @@ module Special
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi_spitzer*dxyz_2
-        if (ldiagnos.and.idiag_dtchi2 /= 0.) then
+        if (ldiagnos.and.idiag_dtspitzer /= 0.) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
+!
+!  Right now only valid for Kperp =0
+        call dot_mn(p%glnTT,p%bb,tmp)
+        call multsv_mn(2.5*b2_1*tmp,p%bb,tmpv)
+!
+        call multsv_mn(sqrt(b2_1),p%bb,bunit)
+!
+        do i=1,3
+          hhh(:,i)=0.
+          do j=1,3
+            tmp(:)=0.
+            do k=1,3
+              tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
+            enddo
+            hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
+          enddo
+        enddo
+        call multsv_mn(sqrt(b2_1),hhh,tmpv2)
+!
+        call dot_mn(tmpv+tmpv2,p%glnTT,tmp)
+!
+        tmp = tmp*Kpara*exp(2.5*p%lnTT-p%lnrho)*gamma*p%cp1*glnT2_1
+!
+        call multsv_mn(tmp,p%glnTT,u_advec)
+!
+        advec_uu = abs(u_advec(:,1))*dx_1(l1:l2) + &
+                   abs(u_advec(:,2))*dy_1(m)     + &
+                   abs(u_advec(:,3))*dz_1(n)
+!
+        if (idiag_dtspitzer/=0) call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine tensor_diffusion(gecr,ecr_ij,bij,bb, &
+    subroutine tensor_diffusion(p,gecr,ecr_ij,bij,bb, &
         vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
 !
       use Sub, only: dot2_mn, dot, dot_mn, multsv_mn, multmv_mn
@@ -981,11 +1030,12 @@ module Special
 !
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1,tmpv
-      real, dimension (nx) :: abs_b,b1,del2ecr,gecr2,vKperp,vKpara
+      real, dimension (nx) :: b_1,del2ecr,gecr2,vKperp,vKpara
       real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
       integer :: i,j,k
       logical, optional :: llog
       real, optional, dimension (nx,3) :: gvKperp,gvKpara
+      type (pencil_case), intent(in) :: p
 !
       intent(in) :: bb,bij,gecr,ecr_ij,vKperp,vKpara,llog
       intent(in) :: gvKperp,gvKpara
@@ -993,9 +1043,8 @@ module Special
 !
 !  Calculate unit vector of bb.
 !
-      call dot2_mn(bb,abs_b,FAST_SQRT=.true.)
-      b1=1./max(tini,abs_b)
-      call multsv_mn(b1,bb,bunit)
+      b_1=1./max(tini,sqrt(p%b2))
+      call multsv_mn(b_1,bb,bunit)
 !
 !  Calculate first H_i.
 !
@@ -1011,7 +1060,7 @@ module Special
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv_mn(b1,hhh,tmpv)
+      call multsv_mn(b_1,hhh,tmpv)
 !
 !  Limit the length of H such that dxmin*H < 1, so we also multiply
 !  by 1/sqrt(1.+dxmin^2*H^2).
@@ -1082,7 +1131,7 @@ module Special
       real, dimension (nx) :: tmp,rhs,chi
       real, dimension (nx,3) :: bunit,hhh,tmpv,gflux
       real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: abs_b,b1
+      real, dimension (nx) :: b_1
       real, dimension (nx) :: tmpj
       integer :: i,j,k
 !
@@ -1091,9 +1140,8 @@ module Special
 !
 !  calculate unit vector of bb
 !
-      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
-      b1=1./max(tini,abs_b)
-      call multsv(b1,p%bb,bunit)
+      b_1=1./max(tini,sqrt(p%b2))
+      call multsv(b_1,p%bb,bunit)
 !
 !  calculate first H_i
 !
@@ -1107,7 +1155,7 @@ module Special
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv(b1,hhh,tmpv)
+      call multsv(b_1,hhh,tmpv)
 !
 !  calculate abs(h) for limiting H vector
 !
@@ -1213,7 +1261,7 @@ module Special
             p%glnTT(:,3)*p%hlnTT(:,3,i))
       enddo
 !
-      chi_grad = glnTT2*hcond_grad_iso*gamma*p%cp1
+      chi_grad =  K_grad * gamma*p%cp1
 !
       if (Kc /= 0.) then
         chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
@@ -3103,6 +3151,96 @@ module Special
       enddo
 !
     endsubroutine mark_boundary
+!***********************************************************************
+    subroutine calc_heatcond_constchi(df,p)
+!
+! L = Div( K rho b*(b*Grad(T))
+!
+      use Diagnostics,     only : max_mn_name
+      use Sub,             only : dot2,dot,multsv,multmv
+      use EquationOfState, only : gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: bunit,hhh,tmpv
+      real, dimension (nx) :: hhh2,quenchfactor
+      real, dimension (nx) :: b_1
+      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix
+      integer :: i,j,k
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+      if (headtt) print*,'special/calc_heatcond_chiconst',hcond1
+!
+!  Define chi= K_0/rho
+!
+!  calculate unit vector of bb
+!
+      b_1=1./max(tini,sqrt(p%b2))
+      call multsv(b_1,p%bb,bunit)
+!
+!  calculate first H_i
+!
+      do i=1,3
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:)=0.
+          do k=1,3
+            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+        enddo
+      enddo
+      call multsv(b_1,hhh,tmpv)
+!
+!  calculate abs(h) for limiting H vector
+!
+      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
+!
+!  limit the length of H
+!
+      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      call multsv(quenchfactor,tmpv,hhh)
+!
+!  dot H with Grad lnTT
+!
+      call dot(hhh,p%glnTT,tmp)
+!
+!  dot Hessian matrix of lnTT with bi*bj, and add into tmp
+!
+      call multmv(p%hlnTT,bunit,tmpv)
+      call dot(tmpv,bunit,tmpj)
+      tmp = tmp+tmpj
+!
+!  calculate (Grad lnTT * bunit)^2 needed for lnecr form; also add into tmp
+!
+      call dot(p%glnTT,bunit,tmpi)
+!
+      call dot(p%glnrho,bunit,tmpj)
+      tmp=tmp+(tmpj+tmpi)*tmpi
+!
+!  calculate rhs
+!
+      chix = hcond1
+!
+      rhs = gamma*chix*tmp
+!
+      if ((.not. llast_proc_z) .or. (n < n2-3)) &
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
+!
+!      if (itsub == 3 .and. ip == 118) &
+!          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        advec_cs2=max(advec_cs2,maxval(chix*dxyz_2))
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_constchi
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
