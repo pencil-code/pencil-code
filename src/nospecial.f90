@@ -570,14 +570,4 @@ module Special
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
-!
-!********************************************************************
-!************        DO NOT DELETE THE FOLLOWING       **************
-!********************************************************************
-!**  This is an automatically generated include file that creates  **
-!**  copies dummy routines from nospecial.f90 for any Special      **
-!**  routines not implemented in this file                         **
-!**                                                                **
-    include 'special_dummies.inc'
-!********************************************************************
 endmodule Special
