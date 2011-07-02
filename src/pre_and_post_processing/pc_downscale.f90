@@ -270,9 +270,9 @@ program pc_downscale
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
   t_sp = t
   if (lshear) then
-    write(lun_output) t_sp,rx,ry,z,dx/reduce,dy/reduce,dz,deltay
+    write(lun_output) t_sp,rx,ry,z,dx*reduce,dy*reduce,dz,deltay
   else
-    write(lun_output) t_sp,rx,ry,z,dx/reduce,dy/reduce,dz
+    write(lun_output) t_sp,rx,ry,z,dx*reduce,dy*reduce,dz
   endif
   close(lun_output)
 !
