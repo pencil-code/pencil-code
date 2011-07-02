@@ -39,23 +39,23 @@ module Timestep
 !  Coefficients for up to order 3.
 !
       if (itorder==1) then
-        alpha_ts=(/ 0., 0., 0. /)
-        beta_ts =(/ 1., 0., 0. /)
+        alpha_ts=(/ 0.0, 0.0, 0.0 /)
+        beta_ts =(/ 1.0, 0.0, 0.0 /)
       elseif (itorder==2) then
-        alpha_ts=(/ 0., -1./2., 0. /)
-        beta_ts=(/ 1./2.,  1.,  0. /)
+        alpha_ts=(/   0.0, -1/2.0, 0.0 /)
+        beta_ts =(/ 1/2.0,    1.0, 0.0 /)
       elseif (itorder==3) then
-        !alpha_ts=(/0., -2./3., -1./)
-        !beta_ts=(/1./3., 1., 1./2./)
+        !alpha_ts=(/   0.0, -2/3.0, -1.0   /)
+        !beta_ts =(/ 1/3.0,    1.0,  1/2.0 /)
         !  use coefficients of Williamson (1980)
-        alpha_ts=(/  0. ,  -5./9., -153./128. /)
-        beta_ts=(/ 1./3., 15./16.,    8./15.  /)
+        alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
+        beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
       else
         if (lroot) print*,'Not implemented: itorder=',itorder
         call mpifinalize
       endif
 !
-!  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
+!  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !
       if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
@@ -65,8 +65,8 @@ module Timestep
         lfirst=(itsub==1)
         llast=(itsub==itorder)
         if (lfirst) then
-          df=0.
-          ds=0.
+          df=0.0
+          ds=0.0
         else
           df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
           ds=alpha_ts(itsub)*ds
@@ -80,23 +80,23 @@ module Timestep
 !
         call pde(f,df,p)
 !
-        ds=ds+1.
+        ds=ds+1.0
 !
 !  If we are in the first time substep we need to calculate timestep dt.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
         if (lfirst.and.ldt) then
           dt1_local=maxval(dt1_max(1:nx))
-          !Timestep growth limiter
+          ! Timestep growth limiter
           if (real(ddt) > 0.) dt1_local=max(dt1_local(1),dt1_last)
           call mpireduce_max(dt1_local,dt1,1)
           if (lroot) dt=1.0/dt1(1)
-          !Timestep growth limiter
+          ! Timestep growth limiter
           if (ddt/=0.) dt1_last=dt1_local(1)/ddt
           call mpibcast_real(dt,1)
         endif
 !
-!  Calculate dt_beta_ts (e.g. for t=t+dt_beta_ts(itsub)*ds or for Dustdensity)
+!  Calculate dt_beta_ts.
 !
         if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*, 'rk_2n: iproc, dt=', iproc, dt  !(all have same dt?)
