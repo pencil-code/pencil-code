@@ -23,7 +23,7 @@ program pc_downscale
 !
   real, dimension (mx,my,mz,mfarray) :: f
 !!!  real, dimension (mx,my,mz,mvar) :: df
-  integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost
+  integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost, nrz=nzgrid+2*nghost
   real, dimension (nrx,nry,mz,mfarray) :: rf
   real, dimension (nrx) :: rx
   real, dimension (nry) :: ry
@@ -228,8 +228,8 @@ program pc_downscale
           do pz = 1, mz
             do py = 0, ny-1, reduce
               do px = 0, nx-1, reduce
-                rf(nghost+(px+ipx*nx)/reduce+1,nghost+(py+ipy*ny)/reduce+1,pz,pa) = &
-                    sum (f(nghost+px+1:nghost+px+reduce,nghost+py+1:nghost+py+reduce,pz,pa)) * inv_reduce_2
+                rf(nghost+1+(px+ipx*nx)/reduce,nghost+1+(py+ipy*ny)/reduce,pz,pa) = &
+                    sum (f(nghost+1+px:nghost+px+reduce,nghost+1+py:nghost+py+reduce,pz,pa)) * inv_reduce_2
               enddo
             enddo
           enddo
@@ -237,29 +237,29 @@ program pc_downscale
 !
         ! downscale x coordinates:
         do px = 0, nx-1, reduce
-          rx(nghost+(px+ipx*nx)/reduce+1) = sum (x(nghost+px+1:nghost+px+reduce)) / reduce
+          rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) / reduce
         enddo
 !
         ! downscale y coordinates:
         do py = 0, ny-1, reduce
-          ry(nghost+(py+ipy*ny)/reduce+1) = sum (y(nghost+py+1:nghost+py+reduce)) / reduce
+          ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) / reduce
         enddo
 !
       enddo
     enddo
 !
     ! communicate ghost cells along the y direction:
-    rf(nghost+1:mx-nghost,1:nghost,:,:) = rf(nghost+1:mx-nghost,my-2*nghost+1:my-nghost,:,:)
-    rf(nghost+1:mx-nghost,nghost+1:2*nghost,:,:) = rf(nghost+1:mx-nghost,my-nghost+1:my,:,:)
+    rf(nghost+1:nrx-nghost,           1:nghost,  :,:) = rf(nghost+1:nrx-nghost,nry-2*nghost+1:nry-nghost,:,:)
+    rf(nghost+1:nrx-nghost,nry-nghost+1:nry,     :,:) = rf(nghost+1:nrx-nghost,      nghost+1:2*nghost,  :,:)
     ! communicate ghost cells along the x direction:
-    rf(1:nghost,:,:,:) = rf(mx-2*nghost+1:mx-nghost,:,:,:)
-    rf(nghost+1:2*nghost,:,:,:) = rf(mx-nghost+1:mx,:,:,:)
+    rf(           1:nghost,:,:,:) = rf(nrx-2*nghost+1:nrx-nghost,:,:,:)
+    rf(nrx-nghost+1:nrx,   :,:,:) = rf(      nghost+1:2*nghost,  :,:,:)
 !
     ! write xy-layer:
     open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',access='direct',recl=nrx*nry*bytes)
     do pa = 1, mfarray
       do pz = 1, mz
-        write(lun_output,rec=ipz*(mz-nghost)+pa*mz) rf(:,:,pz,pa)
+        write(lun_output,rec=pz+ipz*nz+(pa-1)*nrz) rf(:,:,pz,pa)
       enddo
     enddo
     close(lun_output)
@@ -270,9 +270,9 @@ program pc_downscale
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
   t_sp = t
   if (lshear) then
-    write(lun_output) t_sp,rx,ry,z,dx,dy,dz,deltay
+    write(lun_output) t_sp,rx,ry,z,dx/reduce,dy/reduce,dz,deltay
   else
-    write(lun_output) t_sp,rx,ry,z,dx,dy,dz
+    write(lun_output) t_sp,rx,ry,z,dx/reduce,dy/reduce,dz
   endif
   close(lun_output)
 !
