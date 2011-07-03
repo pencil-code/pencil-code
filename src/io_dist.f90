@@ -33,7 +33,8 @@ module Io
     module procedure output_pencil_scal
   endinterface
 !
-  ! define unique logical unit number for output calls
+  ! define unique logical unit number for input and output calls
+  integer :: lun_input=88
   integer :: lun_output=91
 !
   !
@@ -134,18 +135,18 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (lserial_io) call start_serialize()
-      open(1,FILE=file,FORM='unformatted')
+      open(lun_input,FILE=file,FORM='unformatted')
       if (ip<=8) print*,'input: open, mx,my,mz,nv=',mx,my,mz,nv
-      read(1) a
+      read(lun_input) a
       if (ip<=8) print*,'input: read ',file
       if (mode==1) then
 !
 !  check whether we want to read deltay from snapshot
 !
         if (lshear) then
-          read(1) t_sp,x,y,z,dx,dy,dz,deltay
+          read(lun_input) t_sp,x,y,z,dx,dy,dz,deltay
         else
-          read(1) t_sp,x,y,z,dx,dy,dz
+          read(lun_input) t_sp,x,y,z,dx,dy,dz
         endif
         t = t_sp
 !
@@ -155,7 +156,7 @@ contains
 !
       endif
 !
-      close(1)
+      close(lun_input)
       if (lserial_io) call end_serialize()
 !
     endsubroutine input
@@ -298,10 +299,10 @@ contains
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = t
-      open(1,FILE=file,FORM='unformatted')
-      write(1) a(l1:l2,m1:m2,n1:n2,:)
-      write(1) t_sp,x,y,z,dx,dy,dz,deltay
-      close(1)
+      open(lun_output,FILE=file,FORM='unformatted')
+      write(lun_output) a(l1:l2,m1:m2,n1:n2,:)
+      write(lun_output) t_sp,x,y,z,dx,dy,dz,deltay
+      close(lun_output)
 !
     endsubroutine outpus
 !***********************************************************************
@@ -319,16 +320,16 @@ contains
       character (len=fnlen) :: dir,fpart
 !
       call parse_filename(filename,dir,fpart)
-      open(1,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
-      write(1,'(A)') trim(fpart)
-      close(1)
+      open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
+      write(lun_output,'(A)') trim(fpart)
+      close(lun_output)
 !
       if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
-          open(1,FILE=trim(datadir)//'/move-me.list',POSITION='append')
-            write(1,'(A)') trim(fpart)
-          close(1)
+          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append')
+            write(lun_output,'(A)') trim(fpart)
+          close(lun_output)
         endif
       endif
 !
@@ -346,20 +347,19 @@ contains
 !
       character (len=*) :: file
       integer :: ierr
-      integer :: unit=1
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = t
-      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
       if (ierr /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?")
-      write(unit) t_sp,x,y,z,dx,dy,dz
-      write(unit) dx,dy,dz
-      write(unit) Lx,Ly,Lz
-      write(unit) dx_1,dy_1,dz_1
-      write(unit) dx_tilde,dy_tilde,dz_tilde
-      close(unit)
+      write(lun_output) t_sp,x,y,z,dx,dy,dz
+      write(lun_output) dx,dy,dz
+      write(lun_output) Lx,Ly,Lz
+      write(lun_output) dx_1,dy_1,dz_1
+      write(lun_output) dx_tilde,dy_tilde,dz_tilde
+      close(lun_output)
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -377,21 +377,20 @@ contains
       character (len=*) :: file
 !
       integer :: ierr
-      integer :: unit=1
       real :: t_sp   ! t in single precision for backwards compatibility
 !
 !  if xiprim etc is not written, just ignore it
 !
-      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=ierr)
       if (ierr /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
           " -- is data/ visible from all nodes?")
-      read(unit) t_sp,x,y,z,dx,dy,dz
-      read(unit) dx,dy,dz
-      read(unit,IOSTAT=ierr) Lx,Ly,Lz
-      read(unit,end=990) dx_1,dy_1,dz_1
-      read(unit) dx_tilde,dy_tilde,dz_tilde
-990   close(unit)
+      read(lun_input) t_sp,x,y,z,dx,dy,dz
+      read(lun_input) dx,dy,dz
+      read(lun_input,IOSTAT=ierr) Lx,Ly,Lz
+      read(lun_input,end=990) dx_1,dy_1,dz_1
+      read(lun_input) dx_tilde,dy_tilde,dz_tilde
+990   close(lun_input)
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
@@ -443,16 +442,15 @@ contains
 !
       character (len=*) :: file
       integer :: ierr
-      integer :: unit=20
 !
-      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
       if (ierr /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?")
-      write(unit) procx_bounds
-      write(unit) procy_bounds
-      write(unit) procz_bounds
-      close(unit)
+      write(lun_output) procx_bounds
+      write(lun_output) procy_bounds
+      write(lun_output) procz_bounds
+      close(lun_output)
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -466,13 +464,11 @@ contains
 !
       character (len=*) :: file
 !
-      integer :: unit=1
-!
-      open(unit,FILE=file,FORM='unformatted')
-      read(unit) procx_bounds
-      read(unit) procy_bounds
-      read(unit) procz_bounds
-      close(unit)
+      open(lun_input,FILE=file,FORM='unformatted')
+      read(lun_input) procx_bounds
+      read(lun_input) procy_bounds
+      read(lun_input) procz_bounds
+      close(lun_input)
 !
     endsubroutine rproc_bounds
 !***********************************************************************

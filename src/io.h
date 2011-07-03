@@ -2,7 +2,7 @@
 
   private
 
-  public :: lun_output
+  public :: lun_input,lun_output
   public :: register_io
   public :: output_pencil
   public :: input, output

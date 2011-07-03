@@ -36,7 +36,8 @@ module Io
     module procedure output_pencil_scal
   endinterface
 !
-  ! define unique logical unit number for output calls
+  ! define unique logical unit number for input and output calls
+  integer :: lun_input=88
   integer :: lun_output=91
 !
   !
@@ -619,9 +620,9 @@ contains
 !
       if (lroot) then
         call parse_filename(filename,dir,fpart)
-        open(1,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
-        write(1,'(A)') trim(fpart)
-        close(1)
+        open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
+        write(lun_output,'(A)') trim(fpart)
+        close(lun_output)
       endif
 !
     endsubroutine log_filename_to_file
@@ -642,9 +643,9 @@ contains
 ! write dx,dy,dz to their own file
 !
       if (lroot) then
-        open(1,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
-        write(1) dx,dy,dz
-        close(1)
+        open(lun_output,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
+        write(lun_output) dx,dy,dz
+        close(lun_output)
       endif
 !
       call keep_compiler_quiet(file)
@@ -670,9 +671,9 @@ contains
 !  procs may obtain different results at machine precision, which causes
 !  nasty communication failures with shearing sheets.
 !
-      open(1,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
-      read(1) dx,dy,dz
-      close(1)
+      open(lun_input,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
+      read(lun_input) dx,dy,dz
+      close(lun_input)
 !
 !  reconstruct ghost values
 !
@@ -719,16 +720,15 @@ contains
 !
       character (len=*) :: file
       integer :: ierr
-      integer :: unit=20
 !
       if (lroot) then
-        open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+        open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
         if (ierr /= 0) call stop_it( &
             "Cannot open " // trim(file) // " (or similar) for writing" // &
             " -- is data/ visible from all nodes?")
-        write(unit) procy_bounds
-        write(unit) procz_bounds
-        close(unit)
+        write(lun_output) procy_bounds
+        write(lun_output) procz_bounds
+        close(lun_output)
       endif
 !
     endsubroutine wproc_bounds
@@ -744,15 +744,14 @@ contains
 !
       character (len=*) :: file
       integer :: ierr
-      integer :: unit=1
 !
-      open(unit,FILE=file,FORM='unformatted',IOSTAT=ierr)
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=ierr)
       if (ierr /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
           " -- is data/ visible from all nodes?")
-      read(unit) procy_bounds
-      read(unit) procz_bounds
-      close(unit)
+      read(lun_input) procy_bounds
+      read(lun_input) procz_bounds
+      close(lun_input)
 !
     endsubroutine rproc_bounds
 !***********************************************************************
@@ -767,16 +766,15 @@ contains
       character (len=*) :: file
 !
       integer :: ierr
-      integer :: unit=1
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = tau
       if (lroot) then
-        open(unit,FILE=file,IOSTAT=ierr)
+        open(lun_output,FILE=file,IOSTAT=ierr)
         if (ierr /= 0) call stop_it( &
             "Cannot open " // trim(file) // " for writing")
-        write(unit,*) t_sp
-        close(unit)
+        write(lun_output,*) t_sp
+        close(lun_output)
       endif
 !
     endsubroutine wtime
@@ -792,14 +790,13 @@ contains
       character (len=*) :: file
 !
       integer :: ierr
-      integer :: unit=1
       real:: t_sp   ! t in single precision for backwards compatibility
 !
-      open(unit,FILE=file,IOSTAT=ierr)
+      open(lun_input,FILE=file,IOSTAT=ierr)
       if (ierr /= 0) call stop_it( &
           "Cannot open " // trim(file) // " for reading")
-      read(unit,*) t_sp
-      close(unit)
+      read(lun_input,*) t_sp
+      close(lun_input)
       tau = t_sp
 !
     endsubroutine rtime
