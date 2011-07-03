@@ -219,3 +219,5 @@ $(POLYMER_OBJ): $(POLYMER_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(INITCON
 #
 pre_and_post_processing/pc_downscale.o: $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
 #
+pre_and_post_processing/pc_distribute.o: $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
+#
