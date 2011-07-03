@@ -87,12 +87,14 @@ module Snapshot
 !  Write snapshot without label (typically, var.dat). For dvar.dat we need to
 !  make sure that ghost zones are not set on df!
 !
-        if (present(noghost)) then
-          if (.not. noghost) call update_ghosts(a)
-        else
-          call update_ghosts(a)
+        if (msnap==mfarray) then
+          if (present(noghost)) then
+            if (.not. noghost) call update_ghosts(a)
+          else
+            call update_ghosts(a)
+          endif
+          call update_auxiliaries(a) ! Not if e.g. dvar.dat.
         endif
-        if (msnap==mfarray) call update_auxiliaries(a) ! Not if e.g. dvar.dat.
         if (present(noghost)) then
           if (.not. noghost) call update_ghosts(a)
         else
