@@ -415,6 +415,11 @@ contains
       dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
 !
+!  Fill pencil with maximum gridspacing. Will be overwritten
+!  during the mn loop in the non equiditant case
+!
+      dxmax_pencil(:) = dxmax
+!
 !  debug output
 !
       if (ip<=4.and.lroot) then

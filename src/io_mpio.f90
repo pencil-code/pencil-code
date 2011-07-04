@@ -697,6 +697,11 @@ contains
       dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
 !
+!  Fill pencil with maximum gridspacing. Will be overwritten
+!  during the mn loop in the non equiditant case
+!
+      dxmax_pencil(:) = dxmax      
+!
 !  inherit Lx, Ly, Lz from start, and assume uniform mesh
 !
       Lx=dx*nx*nprocx
