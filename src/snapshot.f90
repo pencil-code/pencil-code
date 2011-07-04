@@ -263,6 +263,7 @@ module Snapshot
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')
         if (ab_spec)  call powerhel(f,'mag')
+        if (azbz_spec)call powerhel(f,'mgz')
         if (ub_spec)  call powerhel(f,'u.b')
         if (EP_spec)  call powerhel(f,'bEP')
         if (ro_spec)  call powerscl(f,'ro')
