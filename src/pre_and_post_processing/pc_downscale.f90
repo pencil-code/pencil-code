@@ -28,7 +28,7 @@ program pc_downscale
   real, dimension (nrx) :: rx
   real, dimension (nry) :: ry
 !!!  type (pencil_case) :: p
-  integer :: mvar_in, bytes, px, py, pz, pa
+  integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos
   real, parameter :: inv_reduce_2 = 1.0 / reduce**2.0
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -137,6 +137,8 @@ program pc_downscale
   do ipz = 0, nprocz-1
 !
     rf = huge(1.0)
+    rx = huge(1.0)
+    ry = huge(1.0)
 !
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
@@ -251,14 +253,23 @@ program pc_downscale
     ! communicate ghost cells along the y direction:
     rf(nghost+1:nrx-nghost,           1:nghost,  :,:) = rf(nghost+1:nrx-nghost,nry-2*nghost+1:nry-nghost,:,:)
     rf(nghost+1:nrx-nghost,nry-nghost+1:nry,     :,:) = rf(nghost+1:nrx-nghost,      nghost+1:2*nghost,  :,:)
+    ry(           1:nghost) = ry(nry-2*nghost+1:nry-nghost)
+    ry(nry-nghost+1:nry   ) = ry(      nghost+1:2*nghost  )
+!
     ! communicate ghost cells along the x direction:
     rf(           1:nghost,:,:,:) = rf(nrx-2*nghost+1:nrx-nghost,:,:,:)
     rf(nrx-nghost+1:nrx,   :,:,:) = rf(      nghost+1:2*nghost,  :,:,:)
+    rx(           1:nghost) = rx(nrx-2*nghost+1:nrx-nghost)
+    rx(nrx-nghost+1:nrx   ) = rx(      nghost+1:2*nghost  )
 !
     ! write xy-layer:
     open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',access='direct',recl=nrx*nry*bytes)
     do pa = 1, mfarray
-      do pz = 1, mz
+      start_pos = nghost + 1
+      end_pos = nz
+      if (ipz == 0) start_pos = 1
+      if (ipz == nprocz-1) end_pos = mz
+      do pz = start_pos, end_pos
         write(lun_output,rec=pz+ipz*nz+(pa-1)*nrz) rf(:,:,pz,pa)
       enddo
     enddo
@@ -276,7 +287,7 @@ program pc_downscale
   endif
   close(lun_output)
 !
-  print*, 'Writing final snapshot at time t =', t
+  print*, 'Writing snapshot for time t =', t
 !
 !  Free any allocated memory.
 !
