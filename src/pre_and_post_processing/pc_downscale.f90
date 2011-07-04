@@ -227,7 +227,11 @@ program pc_downscale
 !
         ! downscale f:
         do pa = 1, mfarray
-          do pz = 1, mz
+          start_pos = nghost + 1
+          end_pos = nz
+          if (ipz == 0) start_pos = 1
+          if (ipz == nprocz-1) end_pos = mz
+          do pz = start_pos, end_pos
             do py = 0, ny-1, reduce
               do px = 0, nx-1, reduce
                 rf(nghost+1+(px+ipx*nx)/reduce,nghost+1+(py+ipy*ny)/reduce,pz,pa) = &
