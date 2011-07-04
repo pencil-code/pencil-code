@@ -65,7 +65,10 @@ semiauto-conf:
 	$(MAKE) -s cleanall
 	@(cd src; $(MAKE) -s FROM_PARENT=src/ semiauto-conf)
 
-# Compile (only on request) tools for downscaling and distributing data cubes
+# Compile (only on request) tools for collecting, downscaling, and distributing data cubes
+pc_collect: Makefile_inc
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src pre_and_post_processing/pc_collect.x )
 pc_downscale: Makefile_inc
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src pre_and_post_processing/pc_downscale.x )
