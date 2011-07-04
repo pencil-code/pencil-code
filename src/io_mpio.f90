@@ -1,20 +1,20 @@
 ! $Id$
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!   io_mpi-io.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!
+!!!   io_mpio.f90   !!!
+!!!!!!!!!!!!!!!!!!!!!!!
 !
-!!!  Parallel IO via MPI2 (i.e. all process write to the same file, like
-!!!  data/allprocs/var.dat)
-!!!
-!!!  19-sep-02/wolf: started
-!!!
-!!!  The file format written by output() (and used, e.g. in var.dat)
-!!!  consists of the followinig Fortran records:
-!!!    1. data(nx,ny,nz,nvar)
-!!!    2. t(1)
-!!!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
-!!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
+!  Parallel IO via MPI2 (i.e. all process write to the same file, like
+!  data/allprocs/var.dat)
+!
+!  19-sep-02/wolf: started
+!
+!  The file format written by output() (and used, e.g. in var.dat)
+!  consists of the followinig Fortran records:
+!    1. data(mx,my,mz,nvar)
+!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
+!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
+!  for one vector field, 8 for var.dat in the case of MHD with entropy.
 !
 module Io
 !
