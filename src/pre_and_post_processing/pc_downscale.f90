@@ -257,14 +257,14 @@ program pc_downscale
     ! communicate ghost cells along the y direction:
     rf(nghost+1:nrx-nghost,           1:nghost,  :,:) = rf(nghost+1:nrx-nghost,nry-2*nghost+1:nry-nghost,:,:)
     rf(nghost+1:nrx-nghost,nry-nghost+1:nry,     :,:) = rf(nghost+1:nrx-nghost,      nghost+1:2*nghost,  :,:)
-    ry(           1:nghost) = ry(nry-2*nghost+1:nry-nghost)
-    ry(nry-nghost+1:nry   ) = ry(      nghost+1:2*nghost  )
+    ry(           1:nghost) = ry(nry-2*nghost+1:nry-nghost) - Lxyz(2)
+    ry(nry-nghost+1:nry   ) = ry(      nghost+1:2*nghost  ) + Lxyz(2)
 !
     ! communicate ghost cells along the x direction:
     rf(           1:nghost,:,:,:) = rf(nrx-2*nghost+1:nrx-nghost,:,:,:)
     rf(nrx-nghost+1:nrx,   :,:,:) = rf(      nghost+1:2*nghost,  :,:,:)
-    rx(           1:nghost) = rx(nrx-2*nghost+1:nrx-nghost)
-    rx(nrx-nghost+1:nrx   ) = rx(      nghost+1:2*nghost  )
+    rx(           1:nghost) = rx(nrx-2*nghost+1:nrx-nghost) - Lxyz(1)
+    rx(nrx-nghost+1:nrx   ) = rx(      nghost+1:2*nghost  ) + Lxyz(1)
 !
     ! write xy-layer:
     open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',access='direct',recl=nrx*nry*bytes)
