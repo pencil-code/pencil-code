@@ -5,7 +5,10 @@
 %% Source files:
 %%   hydro.f90
 %%   density.f90
+%%   entropy.f90
 %%   magnetic.f90
+%%   temperature_idealgas.f90
+%%   thermal_energy.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -30,6 +33,11 @@
 \midrule
   \var{rhomxz}    & $\left<\varrho\right>_{y}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
+\midrule
+  \var{TTmxz}     & $\left< T \right>_{y}$ \\
+  \var{ssmxz}     & $\left< s \right>_{y}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
   \var{b2mxz}     & $\left< \Bv^2 \right>_{y}$ \\
@@ -48,6 +56,14 @@
   \var{Exmxz}     & $\left<{\cal E}_x\right>_{y}$ \\
   \var{Eymxz}     & $\left<{\cal E}_y\right>_{y}$ \\
   \var{Ezmxz}     & $\left<{\cal E}_z\right>_{y}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
+\midrule
+  \var{TTmxz}     & $\left<T\right>_{y}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{thermal_energy.f90}} \\
+\midrule
+  \var{TTmxz}     & $\left<T\right>_{y}$ \\
 %
 \bottomrule
 \end{longtable}

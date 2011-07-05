@@ -86,9 +86,9 @@ module Entropy
       hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, &
       rcool, wcool, cool
 !
-!  Diagnostic variables for print.in 
-! (needs to be consistent with reset list below) 
-! 
+!  Diagnostic variables for print.in
+! (needs to be consistent with reset list below)
+!
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_gTmax=0    ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -114,10 +114,8 @@ module Entropy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-  integer :: idiag_TTmxy=0      ! DIAG_DOC:
-  integer :: idiag_TTmxz=0      ! DIAG_DOC:
 !
-! xy averaged diagnostics given in xyaver.in 
+! xy averaged diagnostics given in xyaver.in
 !
   integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left<p\right>_{xy}$
   integer :: idiag_ppuzmz=0     ! XYAVG_DOC:
@@ -128,12 +126,12 @@ module Entropy
   integer :: idiag_ethuymz=0    ! XYAVG_DOC:
   integer :: idiag_ethuzmz=0    ! XYAVG_DOC:
 !
-! xz averaged diagnostics given in xzaver.in 
+! xz averaged diagnostics given in xzaver.in
 !
   integer :: idiag_ppmy=0       ! XZAVG_DOC: $\left<p\right>_{xz}$
   integer :: idiag_TTmy=0       ! XZAVG_DOC: $\left<T\right>_{xz}$
 !
-! yz averaged diagnostics given in yzaver.in 
+! yz averaged diagnostics given in yzaver.in
 !
   integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left<p\right>_{yz}$
   integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left<T\right>_{yz}$
@@ -144,6 +142,14 @@ module Entropy
   real, dimension(nx,nz) :: pp_xz
   real, dimension(ny,nz) :: pp_yz
   real, dimension(nx,ny) :: pp_xy,pp_xy2,pp_xy3,pp_xy4
+!
+! y averaged diagnostics given in yaver.in
+!
+  integer :: idiag_TTmxz=0      ! YAVG_DOC: $\left<T\right>_{y}$
+!
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_TTmxy=0      ! ZAVG_DOC: $\left<T\right>_{z}$
 !
   contains
 !***********************************************************************

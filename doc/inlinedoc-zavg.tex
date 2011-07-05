@@ -5,7 +5,10 @@
 %% Source files:
 %%   hydro.f90
 %%   density.f90
+%%   entropy.f90
 %%   magnetic.f90
+%%   temperature_idealgas.f90
+%%   thermal_energy.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -44,6 +47,30 @@
 \midrule
   \var{rhomxy}    & $\left<\varrho\right>_{z}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
+\midrule
+  \var{TTmxy}     & $\left< T \right>_{z}$ \\
+  \var{ssmxy}     & $\left< s \right>_{z}$ \\
+  \var{uxTTmxy}   & $\left< u_x T \right>_{z}$ \\
+  \var{uyTTmxy}   & $\left< u_y T \right>_{z}$ \\
+  \var{uzTTmxy}   & $\left< u_z T \right>_{z}$ \\
+  \var{fconvxy}   & $\left<\varrho u_x T \right>_{z}$ \\
+  \var{fconvyxy}  & $\left<\varrho u_y T \right>_{z}$ \\
+  \var{fconvzxy}  & $\left<\varrho u_z T \right>_{z}$ \\
+  \var{fradxy_Kprof} & $F_{\rm rad}$ ($z$-averaged, from Kprof) \\
+  \var{fradxy_kramers} & $F_{\rm rad}$ ($z$-averaged,
+                    from Kramers' opacity) \\
+  \var{fturbxy}   & $\left<\varrho T \chi_t \nabla_x
+                    s\right>_{z}$ \\
+  \var{fturbrxy}  & $\left<\varrho T \chi_{ri} \nabla_i
+                    s\right>_{z}$ \quad(radial part
+                    of anisotropic turbulent heat flux) \\
+  \var{fturbthxy} & $\left<\varrho T \chi_{\theta i}
+                    \nabla_i s\right>_{z}$ \quad
+                    (latitudinal part of anisotropic
+                    turbulent heat flux) \\
+  \var{dcoolxy}   & surface cooling flux \\
+\midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
   \var{bxmxy}     & $\left< B_x \right>_{z}$ \\
@@ -66,6 +93,14 @@
   \var{examxy1}   & $\left< \Ev\times\Av \right>_{z}|_x$ \\
   \var{examxy2}   & $\left< \Ev\times\Av \right>_{z}|_y$ \\
   \var{examxy3}   & $\left< \Ev\times\Av \right>_{z}|_z$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
+\midrule
+  \var{TTmxy}     & $\left<T\right>_{z}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{thermal_energy.f90}} \\
+\midrule
+  \var{TTmxy}     & $\left<T\right>_{z}$ \\
 %
 \bottomrule
 \end{longtable}

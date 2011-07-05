@@ -353,18 +353,18 @@ module Hydro
 !
 ! xy averaged diagnostics given in xyaver.in
 !
-  integer :: idiag_u2mz=0       ! XYAVG_DOC: $\left< \Uv^2 \right>_{xy}$
+  integer :: idiag_u2mz=0       ! XYAVG_DOC: $\left< \uv^2 \right>_{xy}$
   integer :: idiag_o2mz=0       ! XYAVG_DOC: $\left< \Wv^2 \right>_{xy}$
   integer :: idiag_divu2mz=0    ! XYAVG_DOC: $\left<(\nabla\cdot\uv)^2\right>_{xy}$
   integer :: idiag_curlru2mz=0  ! XYAVG_DOC: $\left<(\nabla\times\varrho\Uv)^2 \right>_{xy}$
   integer :: idiag_divru2mz=0   ! XYAVG_DOC: $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$
-  integer :: idiag_fmasszmz=0   ! XYAVG_DOC:
+  integer :: idiag_fmasszmz=0   ! XYAVG_DOC: $\left< \varrho u_z \right>_{xy}$
   integer :: idiag_fkinzmz=0    ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$
   integer :: idiag_uxmz=0       ! XYAVG_DOC: $\left< u_x \right>_{xy}$
                                 ! XYAVG_DOC:   \quad(horiz. averaged $x$
                                 ! XYAVG_DOC:   velocity)
-  integer :: idiag_uymz=0       ! XYAVG_DOC:
-  integer :: idiag_uzmz=0       ! XYAVG_DOC:
+  integer :: idiag_uymz=0       ! XYAVG_DOC: $\left< u_y \right>_{xy}$
+  integer :: idiag_uzmz=0       ! XYAVG_DOC: $\left< u_z \right>_{xy}$
   integer :: idiag_divumz=0     ! XYAVG_DOC: $\left< {\rm div}\uv \right>_{xy}$
   integer :: idiag_uzdivumz=0   ! XYAVG_DOC: $\left< u_z{\rm div}\uv \right>_{xy}$
   integer :: idiag_oxmz=0       ! XYAVG_DOC: $\left< \omega_x \right>_{xy}$
@@ -379,14 +379,14 @@ module Hydro
   integer :: idiag_uxuymz=0     ! XYAVG_DOC: $\left<u_x u_y\right>_{xy}$
   integer :: idiag_uxuzmz=0     ! XYAVG_DOC: $\left<u_x u_z\right>_{xy}$
   integer :: idiag_uyuzmz=0     ! XYAVG_DOC: $\left<u_y u_z\right>_{xy}$
-  integer :: idiag_ruxuymz=0    ! XYAVG_DOC:
+  integer :: idiag_ruxuymz=0    ! XYAVG_DOC: 
   integer :: idiag_oxuxxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
   integer :: idiag_oyuxymz=0    ! XYAVG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
   integer :: idiag_oxuyxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
   integer :: idiag_oyuyymz=0    ! XYAVG_DOC: $\left<\omega_y u_{y,y}\right>_{xy}$
   integer :: idiag_oxuzxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{z,x}\right>_{xy}$
   integer :: idiag_oyuzymz=0    ! XYAVG_DOC: $\left<\omega_y u_{z,y}\right>_{xy}$
-  integer :: idiag_ekinmz=0     ! XYAVG_DOC:
+  integer :: idiag_ekinmz=0     ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2\right>_{xy}$
   integer :: idiag_oumz=0       ! XYAVG_DOC: $\left<\boldsymbol{\omega}
                                 ! XYAVG_DOC: \cdot\uv\right>_{xy}$
   integer :: idiag_uguxmz=0     ! XYAVG_DOC:

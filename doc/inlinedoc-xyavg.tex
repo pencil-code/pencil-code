@@ -17,15 +17,18 @@
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
-  \var{u2mz}      & $\left< \Uv^2 \right>_{xy}$ \\
+  \var{u2mz}      & $\left< \uv^2 \right>_{xy}$ \\
   \var{o2mz}      & $\left< \Wv^2 \right>_{xy}$ \\
   \var{divu2mz}   & $\left<(\nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{curlru2mz} & $\left<(\nabla\times\varrho\Uv)^2 \right>_{xy}$ \\
   \var{divru2mz}  & $\left<(\nabla\cdot\varrho\uv)^2\right>_{xy}$ \\
+  \var{fmasszmz}  & $\left< \varrho u_z \right>_{xy}$ \\
   \var{fkinzmz}   & $\left<{1\over2}\varrho\uv^2 u_z\right>_{xy}$ \\
   \var{uxmz}      & $\left< u_x \right>_{xy}$
                     \quad(horiz. averaged $x$
                     velocity) \\
+  \var{uymz}      & $\left< u_y \right>_{xy}$ \\
+  \var{uzmz}      & $\left< u_z \right>_{xy}$ \\
   \var{divumz}    & $\left< {\rm div}\uv \right>_{xy}$ \\
   \var{uzdivumz}  & $\left< u_z{\rm div}\uv \right>_{xy}$ \\
   \var{oxmz}      & $\left< \omega_x \right>_{xy}$ \\
@@ -46,6 +49,7 @@
   \var{oyuyymz}   & $\left<\omega_y u_{y,y}\right>_{xy}$ \\
   \var{oxuzxmz}   & $\left<\omega_x u_{z,x}\right>_{xy}$ \\
   \var{oyuzymz}   & $\left<\omega_y u_{z,y}\right>_{xy}$ \\
+  \var{ekinmz}    & $\left<{1\over2}\varrho\uv^2\right>_{xy}$ \\
   \var{oumz}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{xy}$ \\
 \midrule

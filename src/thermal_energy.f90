@@ -53,8 +53,6 @@ module Entropy
                               ! DIAG_DOC: \quad(mean internal energy)
   integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right>$
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left<T\right>$
-  integer :: idiag_TTmxy=0
-  integer :: idiag_TTmxz=0
   integer :: idiag_pdivum=0
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
@@ -74,6 +72,14 @@ module Entropy
 !
   integer :: idiag_ppmx=0     ! YZAVG_DOC: $\left<p\right>_{yz}$
   integer :: idiag_TTmx=0     ! YZAVG_DOC: $\left<T\right>_{yz}$
+!
+! y averaged diagnostics given in yaver.in
+!
+  integer :: idiag_TTmxz=0    ! YAVG_DOC: $\left<T\right>_{y}$
+!
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_TTmxy=0    ! ZAVG_DOC: $\left<T\right>_{z}$
 !
 ! variables for slices given in video.in
 !

@@ -204,32 +204,9 @@ module Entropy
   integer :: idiag_gsrms=0      ! DIAG_DOC: $(\nabla s)_{\rm rms}$
   integer :: idiag_gTxgsrms=0   ! DIAG_DOC: $(\nabla T\times\nabla s)_{\rm rms}$
   integer :: idiag_fconvm=0     ! DIAG_DOC: $\left<\varrho u_z T \right>$
-  integer :: idiag_fconvxy=0    ! DIAG_DOC: $\left<\varrho u_x T \right>_{z}$
-  integer :: idiag_fconvyxy=0   ! DIAG_DOC: $\left<\varrho u_y T \right>_{z}$
-  integer :: idiag_fconvzxy=0   ! DIAG_DOC: $\left<\varrho u_z T \right>_{z}$
-  integer :: idiag_dcoolxy=0    ! DIAG_DOC: surface cooling flux
-  integer :: idiag_fradxy_Kprof=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged, from Kprof)
-  integer :: idiag_fradxy_kramers=0 ! DIAG_DOC: $F_{\rm rad}$ ($xy$-averaged,
-                                    ! DIAG_DOC: from Kramers' opacity)
-  integer :: idiag_fturbxy=0    ! DIAG_DOC: $\left<\varrho T \chi_t \nabla_x
-                                ! DIAG_DOC: s\right>_{z}$
-  integer :: idiag_fturbrxy=0   ! DIAG_DOC: $\left<\varrho T \chi_{ri} \nabla_i
-                                ! DIAG_DOC: s\right>_{z}$ \quad(radial part
-                                ! DIAG_DOC: of anisotropic turbulent heat flux)
-  integer :: idiag_fturbthxy=0  ! DIAG_DOC: $\left<\varrho T \chi_{\theta i}
-                                ! DIAG_DOC: \nabla_i s\right>_{z}$ \quad
-                                ! DIAG_DOC: (latitudinal part of anisotropic
-                                ! DIAG_DOC: turbulent heat flux)
   integer :: idiag_TTp=0        ! DIAG_DOC:
   integer :: idiag_ssmr=0       ! DIAG_DOC:
-  integer :: idiag_TTmxy=0      ! DIAG_DOC:
-  integer :: idiag_TTmxz=0      ! DIAG_DOC:
   integer :: idiag_TTmr=0       ! DIAG_DOC:
-  integer :: idiag_uxTTmxy=0    ! DIAG_DOC: $\left< u_x T \right>_{z}$
-  integer :: idiag_uyTTmxy=0    ! DIAG_DOC: $\left< u_y T \right>_{z}$
-  integer :: idiag_uzTTmxy=0    ! DIAG_DOC: $\left< u_z T \right>_{z}$
-  integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
-  integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
 !
@@ -263,6 +240,35 @@ module Entropy
   integer :: idiag_ssmx=0       ! YZAVG_DOC: $\left< s \right>_{yz}$
   integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left< p \right>_{yz}$
   integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left< T \right>_{yz}$
+!
+! y averaged diagnostics given in yaver.in
+!
+  integer :: idiag_TTmxz=0     ! YAVG_DOC: $\left< T \right>_{y}$
+  integer :: idiag_ssmxz=0     ! YAVG_DOC: $\left< s \right>_{y}$
+!
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_TTmxy=0     ! ZAVG_DOC: $\left< T \right>_{z}$
+  integer :: idiag_ssmxy=0     ! ZAVG_DOC: $\left< s \right>_{z}$
+  integer :: idiag_uxTTmxy=0   ! ZAVG_DOC: $\left< u_x T \right>_{z}$
+  integer :: idiag_uyTTmxy=0   ! ZAVG_DOC: $\left< u_y T \right>_{z}$
+  integer :: idiag_uzTTmxy=0   ! ZAVG_DOC: $\left< u_z T \right>_{z}$
+  integer :: idiag_fconvxy=0   ! ZAVG_DOC: $\left<\varrho u_x T \right>_{z}$
+  integer :: idiag_fconvyxy=0  ! ZAVG_DOC: $\left<\varrho u_y T \right>_{z}$
+  integer :: idiag_fconvzxy=0  ! ZAVG_DOC: $\left<\varrho u_z T \right>_{z}$
+  integer :: idiag_fradxy_Kprof=0 ! ZAVG_DOC: $F_{\rm rad}$ ($z$-averaged, from Kprof)
+  integer :: idiag_fradxy_kramers=0 ! ZAVG_DOC: $F_{\rm rad}$ ($z$-averaged,
+                                    ! ZAVG_DOC: from Kramers' opacity)
+  integer :: idiag_fturbxy=0   ! ZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
+                               ! ZAVG_DOC: s\right>_{z}$
+  integer :: idiag_fturbrxy=0  ! ZAVG_DOC: $\left<\varrho T \chi_{ri} \nabla_i
+                               ! ZAVG_DOC: s\right>_{z}$ \quad(radial part
+                               ! ZAVG_DOC: of anisotropic turbulent heat flux)
+  integer :: idiag_fturbthxy=0 ! ZAVG_DOC: $\left<\varrho T \chi_{\theta i}
+                               ! ZAVG_DOC: \nabla_i s\right>_{z}$ \quad
+                               ! ZAVG_DOC: (latitudinal part of anisotropic
+                               ! ZAVG_DOC: turbulent heat flux)
+  integer :: idiag_dcoolxy=0   ! ZAVG_DOC: surface cooling flux
 !  
   contains
 !***********************************************************************
