@@ -419,36 +419,6 @@ module Magnetic
   integer :: idiag_bx2m=0       ! DIAG_DOC: $\left< B_x^2 \right>$
   integer :: idiag_by2m=0       ! DIAG_DOC: $\left< B_y^2 \right>$
   integer :: idiag_bz2m=0       ! DIAG_DOC: $\left< B_z^2 \right>$
-  integer :: idiag_jxmxy=0      ! DIAG_DOC: $\left< J_x \right>_{z}$
-  integer :: idiag_jymxy=0      ! DIAG_DOC: $\left< J_y \right>_{z}$
-  integer :: idiag_jzmxy=0      ! DIAG_DOC: $\left< J_z \right>_{z}$
-  integer :: idiag_axmxy=0      ! DIAG_DOC: $\left< A_x \right>_{z}$
-  integer :: idiag_aymxy=0      ! DIAG_DOC: $\left< A_y \right>_{z}$
-  integer :: idiag_azmxy=0      ! DIAG_DOC: $\left< A_z \right>_{z}$
-  integer :: idiag_b2mxz=0      ! DIAG_DOC: $\left< \Bv^2 \right>_{y}$
-  integer :: idiag_axmxz=0      ! DIAG_DOC: $\left< A_x \right>_{y}$
-  integer :: idiag_aymxz=0      ! DIAG_DOC: $\left< A_y \right>_{y}$
-  integer :: idiag_azmxz=0      ! DIAG_DOC: $\left< A_z \right>_{y}$
-  integer :: idiag_bxmxz=0      ! DIAG_DOC: $\left< B_x \right>_{y}$
-  integer :: idiag_bymxz=0      ! DIAG_DOC: $\left< B_y \right>_{y}$
-  integer :: idiag_bzmxz=0      ! DIAG_DOC: $\left< B_z \right>_{y}$
-  integer :: idiag_bx2mxz=0     ! DIAG_DOC: $\left< B_x^2 \right>_{y}$
-  integer :: idiag_by2mxz=0     ! DIAG_DOC: $\left< B_y^2 \right>_{y}$
-  integer :: idiag_bz2mxz=0     ! DIAG_DOC: $\left< B_z^2 \right>_{y}$
-  integer :: idiag_bx2mxy=0     ! DIAG_DOC: $\left< B_x^2 \right>_{z}$
-  integer :: idiag_by2mxy=0     ! DIAG_DOC: $\left< B_y^2 \right>_{z}$
-  integer :: idiag_bz2mxy=0     ! DIAG_DOC: $\left< B_z^2 \right>_{z}$
-  integer :: idiag_bxbymxy=0    ! DIAG_DOC: $\left< B_x B_y \right>_{z}$
-  integer :: idiag_bxbzmxy=0    ! DIAG_DOC: $\left< B_x B_z \right>_{z}$
-  integer :: idiag_bybzmxy=0    ! DIAG_DOC: $\left< B_y B_z \right>_{z}$
-  integer :: idiag_bxbymxz=0    ! DIAG_DOC: $\left< B_x B_y \right>_{y}$
-  integer :: idiag_bxbzmxz=0    ! DIAG_DOC: $\left< B_x B_z \right>_{y}$
-  integer :: idiag_bybzmxz=0    ! DIAG_DOC: $\left< B_y B_z \right>_{y}$
-  integer :: idiag_jbmxy=0      ! DIAG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
-  integer :: idiag_abmxy=0      ! DIAG_DOC: $\left< \Av\cdot\Bv \right>_{z}$
-  integer :: idiag_examxy1=0    ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
-  integer :: idiag_examxy2=0    ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_y$
-  integer :: idiag_examxy3=0    ! DIAG_DOC: $\left< \Ev\times\Av \right>_{z}|_z$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_oxuxbm=0     ! DIAG_DOC:
@@ -530,15 +500,9 @@ module Magnetic
   integer :: idiag_hjperpm=0    ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of $J_{\rm hyper}$ perpendicular to B
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
-  integer :: idiag_Exmxz=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{y}$
-  integer :: idiag_Eymxz=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{y}$
-  integer :: idiag_Ezmxz=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{y}$
   integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
   integer :: idiag_Eymxy=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{z}$
   integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$
-  integer :: idiag_bxmxy=0      ! DIAG_DOC: $\left< B_x \right>_{z}$
-  integer :: idiag_bymxy=0      ! DIAG_DOC: $\left< B_y \right>_{z}$
-  integer :: idiag_bzmxy=0      ! DIAG_DOC: $\left< B_z \right>_{z}$
 !
 ! phi averaged diagnostics given in phiaver.in
 !
@@ -648,6 +612,48 @@ module Magnetic
   integer :: idiag_jxbrxmx=0    ! YZAVG_DOC:
   integer :: idiag_jxbrymx=0    ! YZAVG_DOC:
   integer :: idiag_jxbrzmx=0    ! YZAVG_DOC:
+!
+! y averaged diagnostics given in yaver.in
+!
+  integer :: idiag_b2mxz=0      ! YAVG_DOC: $\left< \Bv^2 \right>_{y}$
+  integer :: idiag_axmxz=0      ! YAVG_DOC: $\left< A_x \right>_{y}$
+  integer :: idiag_aymxz=0      ! YAVG_DOC: $\left< A_y \right>_{y}$
+  integer :: idiag_azmxz=0      ! YAVG_DOC: $\left< A_z \right>_{y}$
+  integer :: idiag_bxmxz=0      ! YAVG_DOC: $\left< B_x \right>_{y}$
+  integer :: idiag_bymxz=0      ! YAVG_DOC: $\left< B_y \right>_{y}$
+  integer :: idiag_bzmxz=0      ! YAVG_DOC: $\left< B_z \right>_{y}$
+  integer :: idiag_bx2mxz=0     ! YAVG_DOC: $\left< B_x^2 \right>_{y}$
+  integer :: idiag_by2mxz=0     ! YAVG_DOC: $\left< B_y^2 \right>_{y}$
+  integer :: idiag_bz2mxz=0     ! YAVG_DOC: $\left< B_z^2 \right>_{y}$
+  integer :: idiag_bxbymxz=0    ! YAVG_DOC: $\left< B_x B_y \right>_{y}$
+  integer :: idiag_bxbzmxz=0    ! YAVG_DOC: $\left< B_x B_z \right>_{y}$
+  integer :: idiag_bybzmxz=0    ! YAVG_DOC: $\left< B_y B_z \right>_{y}$
+  integer :: idiag_Exmxz=0      ! YAVG_DOC: $\left<{\cal E}_x\right>_{y}$
+  integer :: idiag_Eymxz=0      ! YAVG_DOC: $\left<{\cal E}_y\right>_{y}$
+  integer :: idiag_Ezmxz=0      ! YAVG_DOC: $\left<{\cal E}_z\right>_{y}$
+!
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_bxmxy=0      ! ZAVG_DOC: $\left< B_x \right>_{z}$
+  integer :: idiag_bymxy=0      ! ZAVG_DOC: $\left< B_y \right>_{z}$
+  integer :: idiag_bzmxy=0      ! ZAVG_DOC: $\left< B_z \right>_{z}$
+  integer :: idiag_jxmxy=0      ! ZAVG_DOC: $\left< J_x \right>_{z}$
+  integer :: idiag_jymxy=0      ! ZAVG_DOC: $\left< J_y \right>_{z}$
+  integer :: idiag_jzmxy=0      ! ZAVG_DOC: $\left< J_z \right>_{z}$
+  integer :: idiag_axmxy=0      ! ZAVG_DOC: $\left< A_x \right>_{z}$
+  integer :: idiag_aymxy=0      ! ZAVG_DOC: $\left< A_y \right>_{z}$
+  integer :: idiag_azmxy=0      ! ZAVG_DOC: $\left< A_z \right>_{z}$
+  integer :: idiag_bx2mxy=0     ! ZAVG_DOC: $\left< B_x^2 \right>_{z}$
+  integer :: idiag_by2mxy=0     ! ZAVG_DOC: $\left< B_y^2 \right>_{z}$
+  integer :: idiag_bz2mxy=0     ! ZAVG_DOC: $\left< B_z^2 \right>_{z}$
+  integer :: idiag_bxbymxy=0    ! ZAVG_DOC: $\left< B_x B_y \right>_{z}$
+  integer :: idiag_bxbzmxy=0    ! ZAVG_DOC: $\left< B_x B_z \right>_{z}$
+  integer :: idiag_bybzmxy=0    ! ZAVG_DOC: $\left< B_y B_z \right>_{z}$
+  integer :: idiag_jbmxy=0      ! ZAVG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
+  integer :: idiag_abmxy=0      ! ZAVG_DOC: $\left< \Av\cdot\Bv \right>_{z}$
+  integer :: idiag_examxy1=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
+  integer :: idiag_examxy2=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_y$
+  integer :: idiag_examxy3=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_z$
 !
   contains
 !***********************************************************************
