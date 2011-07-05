@@ -291,6 +291,12 @@ module Testfield
         enddo
       endif
 !
+!  set lrescaling_testfield=T if linit_aatest=T
+!
+      if (linit_aatest) then
+        lrescaling_testfield=.true.
+      endif
+!
 !  Register an extra aux slot for uxb if requested (so uxb is written
 !  to snapshots and can be easily analyzed later). For this to work you
 !  must reserve enough auxiliary workspace by setting, for example,
