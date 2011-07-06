@@ -162,7 +162,16 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LD_MPI=-Nscampi #(neolith)
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(neolith)
 ##LIBMPISUFFIX=_#(neolith)
-
+##
+## Lindgren - CrayXE6 - (Stockholm)                
+## 1516 24-nodes per cabinet 2.1GHz Opterons                      
+##                                                                        
+#FC=ftn #(emil*)
+#FC_SLOPPY = $(FC) #(emil*)
+#F90=$(FC) #(emil*)
+#CC=cc #(emil*)
+#FFLAGS=-O3 #(emil*) 
+#CFLAGS=-DFUNDERSC=1 -O3 #(emil*)
 ## SunOS:
 #FC=pghpf #(Lomond)
 #FFLAGS= -Msmp -O4  #(Lomond)
