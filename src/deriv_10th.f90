@@ -22,6 +22,7 @@ module Deriv
   public :: der_upwind1st, der_z, der2_z
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
+  public :: der2_minmod
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4, der2_coef5
 !
@@ -1720,5 +1721,23 @@ module Deriv
       df2=f(n1:n2)
 !
     endsubroutine der2_z
+!***********************************************************************
+    subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
+!
+!  Dummy routine
+!
+      intent(in) :: f,k,j
+      intent(out) :: delfk,delfkp1,delfkm1
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: delfk,delfkp1,delfkm1
+      integer :: j,k
+!
+      call fatal_error('der2_minmod','Not implemented for deriv_10th')
+!
+!  Fill with dummy values to keep compiler quiet
+      delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
+!
+    endsubroutine der2_minmod
 !***********************************************************************
 endmodule Deriv

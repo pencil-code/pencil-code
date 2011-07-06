@@ -23,6 +23,7 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der_z, der2_z
+  public :: der2_minmod
 !
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -1703,5 +1704,23 @@ module Deriv
           call fatal_error('der2_z','not implemented for spherical coords')
 !
     endsubroutine der2_z
+!***********************************************************************
+    subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
+!
+!  Dummy routine
+!
+      intent(in) :: f,k,j
+      intent(out) :: delfk,delfkp1,delfkm1
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: delfk,delfkp1,delfkm1
+      integer :: j,k
+!
+      call fatal_error('der2_minmod','Not implemented for deriv_2nd')
+!
+!  Fill with dummy values to keep compiler quiet
+      delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
+!
+    endsubroutine der2_minmod
 !***********************************************************************
 endmodule Deriv
