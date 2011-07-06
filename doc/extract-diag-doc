@@ -52,11 +52,13 @@ BEGIN {
 # Temporarily: give useful diagnostics if the useful-diagnostics mdule
 # cannot be found...
 # use Pencil::Diagnostics;
+
+#Sven: test if Util.pm exists otherwise you get an error $@
 eval 'use Pencil::Util';
 if ($@) {
     die "You need to run\n  (cd \$PENCIL_HOME; cvs up -dA lib)\n$@\n";
 }
-
+#Sven: test if DocExtractor.pm exists
 Pencil::Util::use_pencil_perl_module('Pencil::DocExtractor')
   or die;
 
@@ -144,6 +146,14 @@ my $bc_doc   = Pencil::DocExtractor->new(
     verbose => $verbose,
     debug   => $debug
 );
+
+my $mod_doc = Pencil::DocExtractor->new(
+    marker  => qr/!\s*MOD_DOC:/,
+    prefix  => qr/(?:)([a-zA-Z0-9_]+)/,
+    verbose => $verbose,
+    debug   => $debug
+);
+
 my $bcx_doc = $bc_doc->new(marker  => qr/!\s*BCX_DOC:/);
 my $bcy_doc = $bc_doc->new(marker  => qr/!\s*BCY_DOC:/);
 my $bcz_doc = $bc_doc->new(marker  => qr/!\s*BCZ_DOC:/);
@@ -159,6 +169,7 @@ foreach my $file (@$src_files_ref) {
     $bcx_doc->parse($file);
     $bcy_doc->parse($file);
     $bcz_doc->parse($file);
+    $mod_doc->parse($file);
 }
 
 $diag_doc->write_to_file({ file          => 'inlinedoc-diag.tex',
@@ -205,6 +216,10 @@ $bcz_doc->write_to_file({ file          => 'inlinedoc-bcz.tex',
                           descr_width   => '0.8\textwidth',
                         });
 
+$mod_doc->write_mod_to_file({ file       => 'inlinedoc-mod.tex',
+                            sort_files   => 1,
+                            print_empty  => 0,
+                           });
 # ---------------------------------------------------------------------- #
 sub get_src_files {
 # Construct list of .f90 source files

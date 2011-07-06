@@ -1,5 +1,7 @@
 ! $Id$
 !
+! MOD_DOC: no variable $\uv$: useful for kinematic dynamo runs. 
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module

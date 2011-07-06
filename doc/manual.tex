@@ -9767,109 +9767,112 @@ of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
 
 \section{Switchable modules}
   \label{Tab-modules}
-%(AB: this is no longer a table, so I treat it as section)
-%(AB: but acroread somehow still doesn't bring me to the right place)
 
-The table below lists the available physics and technical
-modules
-[Note: this is most likely very outdated and should probably be automated]
+\input{inlinedoc-mod.tex}
 
-% ---------------------------------------------------------------------- %
-%\begin{table}
-\begin{center}
-  \begin{small}
-%  \caption{%
-%    Switchable modules as of September 2002.
-%  }
-% \label{Tab-modules}
-%  \begin{tabular}{lp{0.6\textwidth}}
-  \begin{longtable}{lp{0.6\textwidth}}
-    \toprule
-    \file{hydro.f90}      & Hydrodynamics: add variable $\uv$ with equation of
-                            motion; \\
-    \file{nohydro.f90}    & no variable $\uv$: useful for kinematic dynamo
-                            runs. \\
-    \midrule
-    \file{density.f90}    & Add variable $\ln\rho$ with continuity
-                            equation; \\
-    \file{nodensity.f90}  & no variable $\ln\rho$: useful for Burgers'
-                            equation. \\
-    \midrule
-    \file{entropy.f90}    & Add variable $s$ with entropy equation (energy
-                            equation); \\
-    \file{noentropy.f90}  & no variable $s$: isothermal hydrodynamics. \\
-    \midrule
-    \file{magnetic.f90}   & Add variable $\Av$ (magnetic vector potential) with
-                            induction equation; \\
-    \file{nomagnetic.f90} & no variable $\Av$: nonmagnetic hydrodynamics. \\
-    \midrule
-    \file{pscalar.f90}    & Add variable $\ln c$ (concentration) with
-                            advection-diffusion equation for transport of a
-                            passive scalar; \\
-    \file{nopscalar.f90}  & no passive scalar, no variable $\ln c$. \\
-    \midrule
-    \file{radiation_ray.f90} & Radiation transfer along rays.\\
-    \file{noradiation.f90}& No radiative transfer. \\
-    \midrule
-    \file{viscosity.f90} & Constant dynamic or kinematic fluid viscosity. \\
-    \file{noviscosity.f90} & No constant fluid viscosity.\\
-    \midrule
-    \file{shock.f90} & Variable shock
-                            viscosity (conserves energy) based upon
-                            local strength of a shock.
-                            The shock profile is calculated from the
-                            velocity field.
-                            \emph{Still experimental and not fully tested. } \\
-    \file{noshock.f90} & No shock viscosity.\\
-    \midrule
-    \file{forcing.f90}    & Add a forcing function to rhs of equation of motion
-                            (typically helical forcing) for forced turbulence
-                            calculations; \\
-    \file{noforcing.f90}  & no forcing. \\
-    \midrule
-    \file{shear.f90}      & Shearing-box boundary conditions; \\
-    \file{noshear.f90}    & no shearing box. \\
-    \midrule
-    \file{gravity_simple.f90}  & Constant x, y or z gravity in equation of motion; \\
-    \file{grav_r.f90}     & radially symmetric gravity; \\
-    \file{nogravity.f90}     & no gravity. \\
-    \midrule
-    \file{fft.f}          & Singleton (1968) FFT routine: needed for magnetic
-                            potential-field boundary condition; \\
-    \file{nofft.f90}      & no FFT: no need to bother about compiler warnings if
-                            you don't need this boundary condition. \\
-    \midrule
-    \file{io_dist.f90}    & Distributed input/output: each processor writes to
-                            its own directory. \\
-    \file{io_mpio.f90}    & Parallel input/output through \name{MPI-IO}.
-                            \emph{Still experimental}. \\
-    \midrule
-    \file{mpicomm.f90}    & Use \name{MPI} for communication on multiprocessor
-                            machines; \\
-    \file{nompicomm.f90}  & no parallelization: convenient for testing and
-                            smaller production runs on desktop or notebook
-                            computers. \\
-    \midrule
-    \file{debug_c.c}      & Use I/O routines that allow to write auxiliary
-                            variables to a file (nontrivial in a {\sc Pencil Code});
-                            requires C compiler to be set up correctly and maybe
-                            requires appropriate compiler flags
-                            (\code{-DFUNDERSCORE}) for correctly interfacing C
-                            with Fortran (and may still not work in some
-                            cases); \\
-    \file{nodebug.f90}    & don't use these debugging routines, avoiding any
-                            C-Fortran interoperability problems. \\
-    \bottomrule
-  \end{longtable}
-%  \end{tabular}
-  \end{small}
-\end{center}
-%\end{table}
-% ---------------------------------------------------------------------- %
+% %(AB: this is no longer a table, so I treat it as section)
+% %(AB: but acroread somehow still doesn't bring me to the right place)
+
+% The table below lists the available physics and technical
+% modules
+% [Note: this is most likely very outdated and should probably be automated]
+
+% % ---------------------------------------------------------------------- %
+% %\begin{table}
+% \begin{center}
+%   \begin{small}
+% %  \caption{%
+% %    Switchable modules as of September 2002.
+% %  }
+% % \label{Tab-modules}
+% %  \begin{tabular}{lp{0.6\textwidth}}
+%   \begin{longtable}{lp{0.6\textwidth}}
+%     \toprule
+%     \file{hydro.f90}      & Hydrodynamics: add variable $\uv$ with equation of
+%                             motion; \\
+%     \file{nohydro.f90}    & no variable $\uv$: useful for kinematic dynamo
+%                             runs. \\
+%     \midrule
+%     \file{density.f90}    & Add variable $\ln\rho$ with continuity
+%                             equation; \\
+%     \file{nodensity.f90}  & no variable $\ln\rho$: useful for Burgers'
+%                             equation. \\
+%     \midrule
+%     \file{entropy.f90}    & Add variable $s$ with entropy equation (energy
+%                             equation); \\
+%     \file{noentropy.f90}  & no variable $s$: isothermal hydrodynamics. \\
+%     \midrule
+%     \file{magnetic.f90}   & Add variable $\Av$ (magnetic vector potential) with
+%                             induction equation; \\
+%     \file{nomagnetic.f90} & no variable $\Av$: nonmagnetic hydrodynamics. \\
+%     \midrule
+%     \file{pscalar.f90}    & Add variable $\ln c$ (concentration) with
+%                             advection-diffusion equation for transport of a
+%                             passive scalar; \\
+%     \file{nopscalar.f90}  & no passive scalar, no variable $\ln c$. \\
+%     \midrule
+%     \file{radiation_ray.f90} & Radiation transfer along rays.\\
+%     \file{noradiation.f90}& No radiative transfer. \\
+%     \midrule
+%     \file{viscosity.f90} & Constant dynamic or kinematic fluid viscosity. \\
+%     \file{noviscosity.f90} & No constant fluid viscosity.\\
+%     \midrule
+%     \file{shock.f90} & Variable shock
+%                             viscosity (conserves energy) based upon
+%                             local strength of a shock.
+%                             The shock profile is calculated from the
+%                             velocity field.
+%                             \emph{Still experimental and not fully tested. } \\
+%     \file{noshock.f90} & No shock viscosity.\\
+%     \midrule
+%     \file{forcing.f90}    & Add a forcing function to rhs of equation of motion
+%                             (typically helical forcing) for forced turbulence
+%                             calculations; \\
+%     \file{noforcing.f90}  & no forcing. \\
+%     \midrule
+%     \file{shear.f90}      & Shearing-box boundary conditions; \\
+%     \file{noshear.f90}    & no shearing box. \\
+%     \midrule
+%     \file{gravity_simple.f90}  & Constant x, y or z gravity in equation of motion; \\
+%     \file{grav_r.f90}     & radially symmetric gravity; \\
+%     \file{nogravity.f90}     & no gravity. \\
+%     \midrule
+%     \file{fft.f}          & Singleton (1968) FFT routine: needed for magnetic
+%                             potential-field boundary condition; \\
+%     \file{nofft.f90}      & no FFT: no need to bother about compiler warnings if
+%                             you don't need this boundary condition. \\
+%     \midrule
+%     \file{io_dist.f90}    & Distributed input/output: each processor writes to
+%                             its own directory. \\
+%     \file{io_mpio.f90}    & Parallel input/output through \name{MPI-IO}.
+%                             \emph{Still experimental}. \\
+%     \midrule
+%     \file{mpicomm.f90}    & Use \name{MPI} for communication on multiprocessor
+%                             machines; \\
+%     \file{nompicomm.f90}  & no parallelization: convenient for testing and
+%                             smaller production runs on desktop or notebook
+%                             computers. \\
+%     \midrule
+%     \file{debug_c.c}      & Use I/O routines that allow to write auxiliary
+%                             variables to a file (nontrivial in a {\sc Pencil Code});
+%                             requires C compiler to be set up correctly and maybe
+%                             requires appropriate compiler flags
+%                             (\code{-DFUNDERSCORE}) for correctly interfacing C
+%                             with Fortran (and may still not work in some
+%                             cases); \\
+%     \file{nodebug.f90}    & don't use these debugging routines, avoiding any
+%                             C-Fortran interoperability problems. \\
+%     \bottomrule
+%   \end{longtable}
+% %  \end{tabular}
+%   \end{small}
+% \end{center}
+% %\end{table}
+% % ---------------------------------------------------------------------- %
 
 
 
-% ====================================================================== %
+% % ====================================================================== %
 
 \section{Startup and run-time parameters}
 \label{S-all-parameters}

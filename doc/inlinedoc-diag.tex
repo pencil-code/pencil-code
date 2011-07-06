@@ -11,7 +11,6 @@
 %%   pscalar.f90
 %%   testfield_compress_z.f90
 %%   temperature_idealgas.f90
-%%   testfield_x.f90
 %%   testflow_z.f90
 %%   viscosity.f90
 %%   thermal_energy.f90
@@ -587,72 +586,6 @@
                     \quad(time step relative to time
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
-\midrule
-  \multicolumn{2}{c}{Module \file{testfield_x.f90}} \\
-\midrule
-  \var{alp11}     & $\alpha_{11}$ \\
-  \var{alp21}     & $\alpha_{21}$ \\
-  \var{alp31}     & $\alpha_{31}$ \\
-  \var{alp12}     & $\alpha_{12}$ \\
-  \var{alp22}     & $\alpha_{22}$ \\
-  \var{alp32}     & $\alpha_{32}$ \\
-  \var{eta11}     & $\eta_{11}k$ \\
-  \var{eta21}     & $\eta_{21}k$ \\
-  \var{eta12}     & $\eta_{12}k$ \\
-  \var{eta22}     & $\eta_{22}k$ \\
-  \var{alp11cc}   & $\alpha_{11}\cos^2 kx$ \\
-  \var{alp21sc}   & $\alpha_{21}\sin kx\cos kx$ \\
-  \var{alp12cs}   & $\alpha_{12}\cos kx\sin kx$ \\
-  \var{alp22ss}   & $\alpha_{22}\sin^2 kx$ \\
-  \var{eta11cc}   & $\eta_{11}\cos^2 kx$ \\
-  \var{eta21sc}   & $\eta_{21}\sin kx\cos kx$ \\
-  \var{eta12cs}   & $\eta_{12}\cos kx\sin kx$ \\
-  \var{eta22ss}   & $\eta_{22}\sin^2 kx$ \\
-  \var{alp11x}    & $\alpha_{11}x$ \\
-  \var{alp21x}    & $\alpha_{21}x$ \\
-  \var{alp12x}    & $\alpha_{12}x$ \\
-  \var{alp22x}    & $\alpha_{22}x$ \\
-  \var{eta11x}    & $\eta_{11}kx$ \\
-  \var{eta21x}    & $\eta_{21}kx$ \\
-  \var{eta12x}    & $\eta_{12}kx$ \\
-  \var{eta22x}    & $\eta_{22}kx$ \\
-  \var{alp11x2}   & $\alpha_{11}x^2$ \\
-  \var{alp21x2}   & $\alpha_{21}x^2$ \\
-  \var{alp12x2}   & $\alpha_{12}x^2$ \\
-  \var{alp22x2}   & $\alpha_{22}x^2$ \\
-  \var{eta11x2}   & $\eta_{11}kx^2$ \\
-  \var{eta21x2}   & $\eta_{21}kx^2$ \\
-  \var{eta12x2}   & $\eta_{12}kx^2$ \\
-  \var{eta22x2}   & $\eta_{22}kx^2$ \\
-  \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
-  \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
-  \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
-  \var{b22rms}    & $\left<b_{22}^2\right>^{1/2}$ \\
-  \var{b0rms}     & $\left<b_{0}^2\right>^{1/2}$ \\
-  \var{E11rms}    & $\left<{\cal E}_{11}^2\right>^{1/2}$ \\
-  \var{E21rms}    & $\left<{\cal E}_{21}^2\right>^{1/2}$ \\
-  \var{E12rms}    & $\left<{\cal E}_{12}^2\right>^{1/2}$ \\
-  \var{E22rms}    & $\left<{\cal E}_{22}^2\right>^{1/2}$ \\
-  \var{E0rms}     & $\left<{\cal E}_{0}^2\right>^{1/2}$ \\
-  \var{E111z}     & ${\cal E}_1^{11}$ \\
-  \var{E211z}     & ${\cal E}_2^{11}$ \\
-  \var{E311z}     & ${\cal E}_3^{11}$ \\
-  \var{E121z}     & ${\cal E}_1^{21}$ \\
-  \var{E221z}     & ${\cal E}_2^{21}$ \\
-  \var{E321z}     & ${\cal E}_3^{21}$ \\
-  \var{E112z}     & ${\cal E}_1^{12}$ \\
-  \var{E212z}     & ${\cal E}_2^{12}$ \\
-  \var{E312z}     & ${\cal E}_3^{12}$ \\
-  \var{E122z}     & ${\cal E}_1^{22}$ \\
-  \var{E222z}     & ${\cal E}_2^{22}$ \\
-  \var{E322z}     & ${\cal E}_3^{22}$ \\
-  \var{E10z}      & ${\cal E}_1^{0}$ \\
-  \var{E20z}      & ${\cal E}_2^{0}$ \\
-  \var{E30z}      & ${\cal E}_3^{0}$ \\
-  \var{EBpq}      & ${\cal E}\cdot\Bv^{pq}$ \\
-  \var{bx0mz}     & $\left<b_{x}\right>_{xy}$ \\
-  \var{by0mz}     & $\left<b_{y}\right>_{xy}$ \\
-  \var{bz0mz}     & $\left<b_{z}\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testflow_z.f90}} \\
 \midrule

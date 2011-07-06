@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  This module takes care of most of the things related to velocity.
-!  Pressure, for example, is added in the energy (entropy) module.
+! MOD_DOC: This module takes care of most of the things related to velocity. 
+! MOD_DOC: Pressure, for example, is added in the energy (entropy) module.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
