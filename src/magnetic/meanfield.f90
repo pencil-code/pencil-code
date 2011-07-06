@@ -60,7 +60,8 @@ module Magnetic_meanfield
 !
 ! Run parameters
 !
-  real :: alpha_rmax=0.0, alpha_width=0.0, meanfield_etat_width=0.0
+  real :: alpha_rmax=0.0, alpha_width=0.0, alpha_width2=0.0
+  real :: meanfield_etat_width=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
@@ -77,7 +78,8 @@ module Magnetic_meanfield
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
-      alpha_eps, alpha_width, lmeanfield_noalpm, alpha_profile, &
+      alpha_eps, alpha_width, alpha_width2, &
+      lmeanfield_noalpm, alpha_profile, &
       x_surface, x_surface2, z_surface, &
       qp_d, qp_x0, qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
@@ -405,7 +407,7 @@ module Magnetic_meanfield
 !
       real, dimension (nx) :: alpha_total
       real, dimension (nx) :: meanfield_etat_tmp
-      real, dimension (nx) :: alpha_tmp, delta_tmp
+      real, dimension (nx) :: alpha_tmp, delta_tmp, kf_tmp
       real, dimension (nx) :: EMF_prof
       real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
@@ -504,7 +506,11 @@ module Magnetic_meanfield
         case ('surface_x*cosy'); alpha_tmp=0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
         case ('surface_x2*cosy'); alpha_tmp=0.25 &
           *(1.-erfunc((x(l1:l2)-x_surface)/alpha_width)) &
-          *(1.+erfunc((x(l1:l2)-x_surface2)/alpha_width))*cos(y(m))
+          *(1.+erfunc((x(l1:l2)-x_surface2)/alpha_width2))*cos(y(m))
+        case ('sqrt_surface_x2*cosy')
+          kf_tmp=meanfield_kf/max(x_surface-x(l1:l2),tini)
+          alpha_tmp=sqrt(kf_tmp)*exp(-(alpha_width*kf_tmp)**2) &
+            *.5*(1.+erfunc((x(l1:l2)-x_surface2)/alpha_width2))*cos(y(m))
         case ('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case ('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
         case ('stepy'); alpha_tmp=-tanh((y(m)-yequator)/alpha_gap_step)
