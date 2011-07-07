@@ -133,6 +133,10 @@ program pc_downscale
     cdtvDim=cdtv/max(dimensionality,1)
   endif
 !
+  gz = huge(1.0)
+!
+  open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),status='replace',access='direct',recl=nrx*nry*bytes)
+!
 ! Loop over processors
 !
   do ipz = 0, nprocz-1
@@ -271,7 +275,6 @@ program pc_downscale
     rx(nrx-nghost+1:nrx   ) = rx(      nghost+1:2*nghost  ) + Lxyz(1)
 !
     ! write xy-layer:
-    open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',access='direct',recl=nrx*nry*bytes)
     do pa = 1, mfarray
       start_pos = nghost + 1
       end_pos = nz
@@ -281,11 +284,10 @@ program pc_downscale
         write(lun_output,rec=pz+ipz*nz+(pa-1)*ngz) rf(:,:,pz,pa)
       enddo
     enddo
-    close(lun_output)
-!
   enddo
 !
   ! write additional data:
+  close(lun_output)
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
   t_sp = t
   if (lshear) then
