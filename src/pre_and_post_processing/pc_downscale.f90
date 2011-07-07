@@ -277,9 +277,9 @@ program pc_downscale
     ! write xy-layer:
     do pa = 1, mfarray
       start_pos = nghost + 1
-      end_pos = nz
-      if (ipz == 0) start_pos = 1
-      if (ipz == nprocz-1) end_pos = mz
+      end_pos = nghost + nz
+      if (lfirst_proc_z) start_pos = 1
+      if (llast_proc_z) end_pos = mz
       do pz = start_pos, end_pos
         write(lun_output,rec=pz+ipz*nz+(pa-1)*ngz) rf(:,:,pz,pa)
       enddo
