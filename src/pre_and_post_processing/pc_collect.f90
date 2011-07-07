@@ -24,6 +24,7 @@ program pc_collect
   real, dimension (ngx,ngy,mz,mfarray) :: gf
   real, dimension (ngx) :: gx
   real, dimension (ngy) :: gy
+  real, dimension (ngz) :: gz
   integer :: mvar_in, bytes, pz, pa, start_pos, end_pos
   real :: t_sp   ! t in single precision for backwards compatibility
 !
