@@ -127,7 +127,7 @@ program pc_distribute
     gf = huge(1.0)
 !
     ! read xy-layer:
-    open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),FORM='unformatted',access='direct',recl=ngx*ngy*bytes)
+    open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),access='direct',recl=ngx*ngy*bytes)
     do pa = 1, mfarray
       do pz = 1, mz
         read(lun_input,rec=pz+ipz*nz+(pa-1)*nz) gf(:,:,pz,pa)
@@ -136,7 +136,7 @@ program pc_distribute
     close(lun_input)
 !
     ! read time:
-    open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),FORM='unformatted',access='direct',recl=bytes)
+    open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),access='direct',recl=bytes)
     read(lun_input,rec=(nxgrid+2*nghost)*(nygrid+2*nghost)*(nzgrid+2*nghost)*mfarray + 1) t_sp
     close(lun_input)
 !
@@ -212,18 +212,16 @@ program pc_distribute
         call choose_pencils()
 !
         ! distribute gf to f:
-        f = gf(ipx*nx+1:ipx*nx+mx,ipy*ny+1:ipy*ny+my,:,:)
+        f = gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:)
 !
         ! write data:
-write (*,*) 'DIR:', directory_snap, iproc, ipx, ipy, ipz
         call wsnap(trim(directory_snap)//'/'//trim(filename),f,mfarray)
 !
       enddo
     enddo
-!
   enddo
 !
-  print*, 'Writing snapshot for time t =', t
+  print *, 'Writing snapshot for time t =', t
 !
 !  Free any allocated memory.
 !
