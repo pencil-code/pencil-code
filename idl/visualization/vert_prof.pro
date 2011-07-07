@@ -39,6 +39,7 @@ pro vert_prof, data, coord=coord, title=title, log=log
 	data_max = max (data)
 
 	plot, prof_mean, coord, xlog=log, xs=2, ys=1, xrange=[data_min, data_max], yrange=[2*coord[0]-coord[1], 2*coord[num_coord_z-1]-coord[num_coord_z-2]], title=title
+	oplot, prof_mean, coord, psym=3, color=200
 	oplot, prof_min, coord, linestyle=2
 	oplot, prof_max, coord, linestyle=2
 end
