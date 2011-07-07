@@ -23,10 +23,11 @@ program pc_downscale
 !
   real, dimension (mx,my,mz,mfarray) :: f
 !!!  real, dimension (mx,my,mz,mvar) :: df
-  integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost, nrz=nzgrid+2*nghost
+  integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost, ngz=nzgrid+2*nghost
   real, dimension (nrx,nry,mz,mfarray) :: rf
   real, dimension (nrx) :: rx
   real, dimension (nry) :: ry
+  real, dimension (ngz) :: gz
 !!!  type (pencil_case) :: p
   integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos
   real, parameter :: inv_reduce_2 = 1.0 / reduce**2.0
@@ -254,6 +255,9 @@ program pc_downscale
       enddo
     enddo
 !
+    ! collect z coordinates:
+    gz(1+ipz*nz:mz+ipz*nz) = z
+!
     ! communicate ghost cells along the y direction:
     rf(nghost+1:nrx-nghost,           1:nghost,  :,:) = rf(nghost+1:nrx-nghost,nry-2*nghost+1:nry-nghost,:,:)
     rf(nghost+1:nrx-nghost,nry-nghost+1:nry,     :,:) = rf(nghost+1:nrx-nghost,      nghost+1:2*nghost,  :,:)
@@ -274,7 +278,7 @@ program pc_downscale
       if (ipz == 0) start_pos = 1
       if (ipz == nprocz-1) end_pos = mz
       do pz = start_pos, end_pos
-        write(lun_output,rec=pz+ipz*nz+(pa-1)*nrz) rf(:,:,pz,pa)
+        write(lun_output,rec=pz+ipz*nz+(pa-1)*ngz) rf(:,:,pz,pa)
       enddo
     enddo
     close(lun_output)
@@ -285,9 +289,9 @@ program pc_downscale
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
   t_sp = t
   if (lshear) then
-    write(lun_output) t_sp,rx,ry,z,dx*reduce,dy*reduce,dz,deltay
+    write(lun_output) t_sp,rx,ry,gz,dx*reduce,dy*reduce,dz,deltay
   else
-    write(lun_output) t_sp,rx,ry,z,dx*reduce,dy*reduce,dz
+    write(lun_output) t_sp,rx,ry,gz,dx*reduce,dy*reduce,dz
   endif
   close(lun_output)
 !

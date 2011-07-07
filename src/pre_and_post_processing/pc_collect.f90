@@ -216,16 +216,19 @@ program pc_collect
         call choose_pencils()
 !
         ! collect f in gf:
-        gf(1+ipx*nx:(ipx+1)*nx+2*nghost,1+ipy*ny:(ipy+1)*ny+2*nghost,1+ipz*nz:(ipz+1)*nz+2*nghost,:) = f
+        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,1+ipz*nz:mz+ipz*nz,:) = f
 !
         ! collect x coordinates:
-        gx(1+ipx*nx:(ipx+1)*nx+2*nghost) = x
+        gx(1+ipx*nx:mx+ipx*nx) = x
 !
         ! collect y coordinates:
-        gy(1+ipy*ny:(ipy+1)*ny+2*nghost) = y
+        gy(1+ipy*ny:my+ipy*ny) = y
 !
       enddo
     enddo
+!
+    ! collect z coordinates:
+    gz(1+ipz*nz:mz+ipz*nz) = z
 !
     ! write xy-layer:
     open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',access='direct',recl=ngx*ngy*bytes)
@@ -246,9 +249,9 @@ program pc_collect
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
   t_sp = t
   if (lshear) then
-    write(lun_output) t_sp,gx,gy,z,dx,dy,dz,deltay
+    write(lun_output) t_sp,gx,gy,gz,dx,dy,dz,deltay
   else
-    write(lun_output) t_sp,gx,gy,z,dx,dy,dz
+    write(lun_output) t_sp,gx,gy,gz,dx,dy,dz
   endif
   close(lun_output)
 !
