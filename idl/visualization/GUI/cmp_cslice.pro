@@ -12,21 +12,25 @@
 ; Simple interface to cmp_cslice_cache without caching mechanism
 pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
-
 	resolve_routine, "pc_gui_companion", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 	; DEFAULT SETTINGS:
 	min_size = 128
+
+	; setup cube dimensions
+	dims = size (sets.(0))
+	dimensionality = dims[0]
+	num_x = dims[1]
+	if (dimensionality ge 2) then num_y = dims[2] else num_y = 1
+	if (dimensionality ge 3) then num_z = dims[3] else num_z = 1
 
 	set_names = tag_names (sets)
 	num_names = n_elements (set_names)
 
 	exe_1 = "varsets = { "
 	exe_2 = "set = { "
-	for i=0, num_names-1 do begin
-		if ((size (sets.(i)))[0] ne 3) then continue
-		exe_1 += set_names[i]+":sets."+set_names[i]+", "
+	for i = 0, num_names-1 do begin
+		exe_1 += set_names[i]+":reform(sets."+set_names[i]+","+strtrim(num_x,2)+","+strtrim(num_y,2)+","+strtrim(num_z,2)+"), "
 		exe_2 += set_names[i]+":'"+set_names[i]+"', "
 	end
 	exe_1 = strmid (exe_1, 0, strlen (exe_1)-2)
@@ -48,6 +52,11 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 
 	varfiles = { title:"N/A", loaded:1, number:0, precalc_done:1 }
 
+	; setup coordinates, if necessary
+	if (n_elements (coords) eq 0) then begin
+		coords = { x:findgen(num_x), y:findgen(num_y), z:findgen(num_z), nx:num_x, ny:num_y, nz:num_z, l1:0, l2:num_x-1, m1:0, m2:num_y-1, n1:0, n2:num_z-1 }
+	end
+
 	; setup a scaling factor to have a minimum size, if necessary
 	default, scaling, 1
 	dims = (size (varsets.(0)))[1:size (varsets.(0), /n_dimensions)]
@@ -56,16 +65,7 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 	end
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
 
-	; setup limits, if necessary
-	if (n_elements (limits) eq 0) then begin
-		dims = size (varsets.(0))
-		num_x = dims[1]
-		num_y = dims[2]
-		num_z = dims[3]
-		limits = reform (lindgen (dims[1], dims[2], dims[3]), num_x, num_y, num_z)
-	end
-
-	cmp_cslice_cache, set, limits, units=units, coords=coords, scaling=scaling
+	cmp_cslice_cache, set, set_content=varsets, set_files=varfiles, limits=limits, units=units, coords=coords, scaling=scaling
 
 	return
 end
