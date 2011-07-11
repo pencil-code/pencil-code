@@ -6,8 +6,8 @@
 pro pc_read_global,                                                  $
     object=object, varfile=varfile_, variables=variables, tags=tags, $
     validate_variables=validate_variables, trimall=trimall,          $
-    nameobject=nameobject,                                           $
-    dim=dim, param=param, datadir=datadir, proc=proc,                $
+    nameobject=nameobject, allprocs=allprocs,                        $
+    dim=dim, grid=grid, param=param, datadir=datadir, proc=proc,     $
     stats=stats, nostats=nostats, quiet=quiet, help=help,            $
     swap_endian=swap_endian, varcontent=varcontent,                  $
     scalar=scalar, run2D=run2D
@@ -55,11 +55,15 @@ COMPILE_OPT IDL2,HIDDEN
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.
 ;
-  pc_read_grid, dim=dim, datadir=datadir, param=param, proc=proc, /quiet,swap_endian=swap_endian
+  if (allprocs or (n_elements(grid) eq 1)) then begin
+    procgrid=grid
+  endif else begin
+    pc_read_grid, obj=procgrid, dim=dim, datadir=datadir, param=param, proc=proc, swap_endian=swap_endian, /quiet
+  endelse
 ;
-; Read problem dimensions (global)...
+; Read dimensions (global)...
 ;
-  if (n_elements(proc) eq 1) then begin
+  if (allprocs or (n_elements(proc) eq 1)) then begin
     procdim=dim
   endif else begin
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
@@ -90,7 +94,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Number of processors over which to loop.
 ;
-  if (n_elements(proc) eq 1) then begin
+  if (allprocs or (n_elements(proc) eq 1)) then begin
     nprocs=1
   endif else begin
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
@@ -168,8 +172,10 @@ COMPILE_OPT IDL2,HIDDEN
 ; Loop over processors
 ;
   for i=0,nprocs-1 do begin
-    if (n_elements(proc) eq 1) then begin
-      ; Build the full path and filename
+    ; Build the full path and filename
+    if (allprocs) then begin
+      filename=datadir+'/allprocs/'+varfile
+    endif else if (n_elements(proc) eq 1) then begin
       filename=datadir+'/proc'+str(proc)+'/'+varfile
     endif else begin
       filename=datadir+'/proc'+str(i)+'/'+varfile
@@ -177,6 +183,7 @@ COMPILE_OPT IDL2,HIDDEN
           print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
           strtrim(str(nprocs)), ' (', $
           strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
+      ; Read processor box dimensions
       pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
     endelse
 ;
