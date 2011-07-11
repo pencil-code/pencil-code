@@ -129,9 +129,11 @@ default, pc_gui_loaded, 0
 
 if (not pc_gui_loaded) then BEGIN
 
+	allprocs = 1
 	procdir = datadir+"/allprocs/"
 	file_struct = file_info (procdir+varfile)
 	if (file_struct.exists eq 0) then begin
+		allprocs = 0
 		procdir = datadir+"/proc0/"
 		file_struct = file_info (procdir+varfile)
 		if (file_struct.exists eq 0) then begin
@@ -300,21 +302,22 @@ if (not pc_gui_loaded) then BEGIN
 	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir, param, run_param
 
 	; Precalculate initial timestep
-	precalc, 0, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent
+	precalc, 0, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, num_selected, varfile=snapshots[skipping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, time=time_start
+		precalc, num_selected, varfile=snapshots[skipping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
 		if (skipping ge 1) then show_timeseries, ts, tags, units, start_time=time_start
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
-			precalc, 1, varfile=snapshots[skipping + (num_selected-1)*stepping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, time=time_end
+			pos_last = skipping + (num_selected-1)*stepping
+			precalc, 1, varfile=snapshots[pos_last], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
 			if (ignore_end ge 1) then show_timeseries, ts, tags, units, start_time=time_start, end_time=time_end
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
 					; Precalculate selected timesteps
 					pos = skipping + (i-1)*stepping
-					precalc, num_selected+1-i, varfile=snapshots[pos], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent
+					precalc, num_selected+1-i, varfile=snapshots[pos], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 				end
 			end
 		end
@@ -330,7 +333,7 @@ default, scaling, fix (256.0 / max ([coords.nx, coords.ny, coords.nz]))
 if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
 
-cmp_cslice_cache, quantities, limits, scaling=scaling, coords=coords, overplots=overplot_quantities
+cmp_cslice_cache, quantities, limits=limits, scaling=scaling, coords=coords, overplots=overplot_quantities
 
 window, 0, xsize=8, ysize=8, retain=2
 !P.MULTI = [0, 1, 1]

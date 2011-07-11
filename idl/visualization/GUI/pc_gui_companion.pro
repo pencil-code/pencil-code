@@ -32,7 +32,7 @@ end
 
 
 ; Precalculates a data set and loads data, if necessary
-pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid, param=par, run_param=run_par, varcontent=varcontent, show_aver=show_aver, time=time
+pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, show_aver=show_aver, time=time
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
@@ -51,9 +51,9 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid,
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
 			if (i eq 0) then begin
-				pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, /nostats
+				pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, /nostats
 			endif else begin
-				pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, /quiet
+				pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, /quiet
 			endelse
 			sources = tag_names (vars)
 			precalc_data, number, vars
@@ -182,13 +182,17 @@ pro precalc_data, i, vars
 			varsets[i].rho_mag = congrid (dot2 (bb[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)
 		end
 		mu0_SI = 4.0 * !Pi * 1.e-7
-		if (any (strcmp (tags, 'j', /fold_case))) then begin
-			; Current density
-			varsets[i].j = sqrt (sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp))) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-		end
 		if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
 			; Ohming heating rate
 			varsets[i].HR_ohm = run_param.eta * mu0_SI * sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * (unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length)^2
+		end
+		if (any (strcmp (tags, 'j', /fold_case))) then begin
+			; Current density
+			if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
+				varsets[i].j = sqrt (varsets[i].HR_ohm / (run_param.eta * mu0_SI))
+			end else begin
+				varsets[i].j = sqrt (sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp))) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+			end
 		end
 	end
 
@@ -318,14 +322,17 @@ pro show_timeseries, ts, tags, unit, start_time=start_time, end_time=end_time
 		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			u_max = ts.umax * unit.velocity / unit.default_velocity
-			plot, ts.t, u_max, title = 'u_max(t){-w} u^2*m{.-b} u_rms{.r} ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
-			if (any (strcmp (tags, 'u2m', /fold_case))) then begin
-				u2m = ts.u2m * unit.velocity / unit.default_velocity
-				oplot, ts.t, u2m, linestyle=3, color=115100200
-			end
+			u_title = 'u_max(t){-w}'
+			if (any (strcmp (tags, 'urms', /fold_case))) then begin
+				u_title += ' u_rms{.r}'
+			end else if (any (strcmp (tags, 'u2m', /fold_case))) then u_title += ' <u^2>^0.5{.-b}'
+			plot, ts.t, u_max, title = u_title+' ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
 			if (any (strcmp (tags, 'urms', /fold_case))) then begin
 				urms = ts.urms * unit.velocity / unit.default_velocity
 				oplot, ts.t, urms, linestyle=1, color=200
+			end else if (any (strcmp (tags, 'u2m', /fold_case))) then begin
+				u2m = sqrt (ts.u2m) * unit.velocity / unit.default_velocity
+				oplot, ts.t, u2m, linestyle=3, color=115100200
 			end
 		end
 		if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin

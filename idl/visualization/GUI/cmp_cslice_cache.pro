@@ -403,7 +403,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	num_over_z = n_elements (field_z_indices)
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		ii = (reform (cube[px,*,*], num_y, num_z) > val_min) < val_max
+		ii = reform ((cube[px,*,*] > val_min) < val_max, num_y, num_z)
 		if ((bin_y ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic=0)
 		val_range = get_range (ii)
 		wset, wimg_yz
@@ -433,7 +433,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	end
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		ii = (reform (cube[*, py, *], num_x, num_z) > val_min) < val_max
+		ii = reform ((cube[*, py, *] > val_min) < val_max, num_x, num_z)
 		if ((bin_x ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), cubic=0)
 		val_range = get_range (ii)
 		wset, wimg_xz
@@ -463,7 +463,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	end
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		ii = (reform (cube[*, *, pz], num_x, num_y) > val_min) < val_max
+		ii = reform ((cube[*, *, pz] > val_min) < val_max, num_x, num_y)
 		if ((bin_x ne 1) or (bin_y ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), cubic=0)
 		val_range = get_range (ii)
 		wset, wimg_xy
@@ -499,13 +499,14 @@ pro draw_averages, number
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	tags = tag_names (varsets[number])
 
 	if (tags eq ['cube']) then begin
 		window, 13, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 1, 1]
-		vert_prof, varsets[number].cube[cut], coord=coord.z, title = 'horizontal averages'
+		vert_prof, reform (varsets[number].cube[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averages'
 	end else begin
 		window, 13, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 2, 2]
@@ -516,32 +517,32 @@ pro draw_averages, number
 		num_subplots = 0
 		if (any (strcmp (tags, 'ln_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, exp (varsets[number].ln_rho[cut]), coord=coord.z, title = 'density ['+unit.default_density_str+']', log=1
+			vert_prof, reform (exp (varsets[number].ln_rho[cut]), num_x, num_y, num_z), coord=coord.z, title = 'density ['+unit.default_density_str+']', log=1
 		end else if (any (strcmp (tags, 'log_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, 10.0^(varsets[number].log_rho[cut]), coord=coord.z, title = 'density ['+unit.default_density_str+']', log=1
+			vert_prof, reform (10.0^(varsets[number].log_rho[cut]), num_x, num_y, num_z), coord=coord.z, title = 'density ['+unit.default_density_str+']', log=1
 		end else if (any (strcmp (tags, 'rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].rho[cut], coord=coord.z, title = 'density ['+unit.default_density_str+']'
+			vert_prof, reform (varsets[number].rho[cut], num_x, num_y, num_z), coord=coord.z, title = 'density ['+unit.default_density_str+']'
 		end
 		if (any (strcmp (tags, 'u_z', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].u_z[cut], coord=coord.z, title = 'vertical velocity ['+unit.default_velocity_str+']'
+			vert_prof, reform (varsets[number].u_z[cut], num_x, num_y, num_z), coord=coord.z, title = 'vertical velocity ['+unit.default_velocity_str+']'
 		end else if (any (strcmp (tags, 'u_abs', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].u_abs[cut], coord=coord.z, title = 'absolute velocity ['+unit.default_velocity_str+']'
-		end
-		if (any (strcmp (tags, 'rho_u_z', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, varsets[number].rho_u_z[cut], coord=coord.z, title = 'vertical impulse density ['+unit.default_density_str+' * '+unit.default_velocity_str+']'
+			vert_prof, reform (varsets[number].u_abs[cut], num_x, num_y, num_z), coord=coord.z, title = 'absolute velocity ['+unit.default_velocity_str+']'
 		end
 		if (any (strcmp (tags, 'Temp', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].Temp[cut], coord=coord.z, title = 'temperature [K]', log=1
+			vert_prof, reform (varsets[number].Temp[cut], num_x, num_y, num_z), coord=coord.z, title = 'temperature [K]', log=1
 		end
 		if (any (strcmp (tags, 'j', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
-			vert_prof, varsets[number].j[cut], coord=coord.z, title = 'current density', log=1
+			vert_prof, reform (varsets[number].j[cut], num_x, num_y, num_z), coord=coord.z, title = 'current density', log=1
+		end
+		if (any (strcmp (tags, 'rho_u_z', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			vert_prof, reform (varsets[number].rho_u_z[cut], num_x, num_y, num_z), coord=coord.z, title = 'vertical impulse density ['+unit.default_density_str+' * '+unit.default_velocity_str+']'
 		end
 		!P.CHARSIZE = normal_charsize
 	end
@@ -584,14 +585,23 @@ pro prepare_cube, cube_index
 	; get selected cube from set
 	if (cube_index ge 0) then selected_cube = cube_index
 	tag = set.(selected_cube)
-	res = execute ("cube = reform (varsets[selected_snapshot]."+tag+"[cut], num_x, num_y, num_z)")
+	res = execute ("dims = size (varsets[selected_snapshot]."+tag+")")
+	if (not res) then begin
+		print, "Could not determine dimension of selected dataset!"
+		stop
+	end
+	cube_num_x = dims[1]
+	if (dimensionality ge 2) then cube_num_y = dims[2] else cube_num_y = 1
+	if (dimensionality ge 3) then cube_num_z = dims[3] else cube_num_z = 1
+	if ((cube_num_x ne num_x) or (cube_num_y ne num_y) or (cube_num_z ne num_z)) then tag += "[cut]"
+	res = execute ("cube = reform (varsets[selected_snapshot]."+tag+", num_x, num_y, num_z)")
 	if (not res) then begin
 		print, "Could not select dataset!"
 		stop
 	end
 
 	; substract horizontal averages
-	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= mean (cube [*,*,z])
+	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= reform (mean (cube [*,*,z]), num_x, num_y)
 
 	if (frozen) then begin
 		; find intermediate minimum and maximum values
@@ -623,11 +633,6 @@ pro prepare_cube, cube_index
 		val_min = pos_b[selected_cube,sub_aver]
 		val_max = pos_t[selected_cube,sub_aver]
 	end
-
-	; determine dimesions
-	num_x = (size (cube))[1]
-	num_y = (size (cube))[2]
-	num_z = (size (cube))[3]
 
 	; setup crosshairs parameters
 	af_x = (round (num_x * af_fraction) > af_minimum) < af_maximum
@@ -777,7 +782,7 @@ end
 
 
 ; Sophisticated interface with caching of VAR-files
-pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=scaling, overplots=overplots
+pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, limits=limits, units=units, coords=coords, scaling=scaling, overplots=overplots
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
@@ -802,6 +807,8 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 
 
 	set = set_names
+	if (n_elements (set_content) ge 1) then varsets = set_content
+	if (n_elements (set_files) ge 1) then varfiles = set_files
 	if (n_elements (overplots) eq 0) then overplots = {none:'none'} $
 	else begin
 		if (not any (strlowcase (tag_names (overplots)) eq 'none')) then begin
@@ -820,40 +827,29 @@ pro cmp_cslice_cache, set_names, limits, units=units, coords=coords, scaling=sca
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
 	if (n_elements (coords) ge 1) then coord = coords
 
+	; setup dimensions
+	dims = size (varsets[0].(0))
+	dimensionality = dims[0]
+	num_x = dims[1]
+	if (dimensionality ge 2) then num_y = dims[2] else num_y = 1
+	if (dimensionality ge 3) then num_z = dims[3] else num_z = 1
+
 	; setup limits, if necessary
 	if (n_elements (limits) eq 0) then begin
-		if (n_elements (coord) eq 0) then begin
-			print, "Please either provide the limits parameter or the coordinate system."
-			stop
-		end
-		dims = size (varsets.(0))
-		nghost_x = (dims[1] - (size (coords.x))[1]) / 2
-		nghost_y = (dims[2] - (size (coords.y))[1]) / 2
-		nghost_z = (dims[3] - (size (coords.z))[1]) / 2
-		num_x = dims[1] - 2*nghost_x
-		num_y = dims[2] - 2*nghost_y
-		num_z = dims[3] - 2*nghost_z
+		nghost_x = (dims[1] - num_x) / 2
+		if (dimensionality ge 2) then nghost_y = (dims[2] - num_y) / 2 else nghost_y = 0
+		if (dimensionality ge 3) then nghost_z = (dims[3] - num_z) / 2 else nghost_z = 0
 		limits = reform (nghost_x+spread(indgen(num_x),[1,2],[num_y,num_z]) + dims[1]*(nghost_y+spread(indgen(num_y),[0,2],[num_x,num_z])) + dims[1]*dims[2]*(nghost_z+spread(indgen(num_z),[0,1],[num_x,num_y])), num_x, num_y, num_z)
-	end else begin
-		dims = size (limits)
-		default, num_x, dims[1]
-		default, num_y, dims[2]
-		default, num_z, dims[3]
 	end
 
-	cut = reform (limits, (size (limits))[1], (size (limits))[2], (size (limits))[3])
+	cut = reform (limits, num_x, num_y, num_z)
 
 	; setup coordinate system, if necessary
 	if (n_elements (coord) eq 0) then begin
 		print, "WARNING: setting the pixel size to default length."
-		if ((n_elements (num_x) eq 0) or (n_elements (num_y) eq 0) or (n_elements (num_z) eq 0)) then begin
-			print, "Please either provide the limits parameter or set up num_x, num_y, and num_z."
-			stop
-		end
-		dims = size (varsets.(0))
 		nghost_x = (dims[1] - num_x) / 2
-		nghost_y = (dims[2] - num_y) / 2
-		nghost_z = (dims[3] - num_z) / 2
+		if (dimensionality ge 2) then nghost_y = (dims[2] - num_y) / 2 else nghost_y = 0
+		if (dimensionality ge 3) then nghost_z = (dims[3] - num_z) / 2 else nghost_z = 0
 		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, nx:num_x, ny:num_y, nz:num_z, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1 }
 	end
 
