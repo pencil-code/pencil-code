@@ -11,7 +11,7 @@
 ;;
 pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     datadir=datadir, proc=proc, print=print, quiet=quiet, help=help, $
-    swap_endian=swap_endian
+    swap_endian=swap_endian, allprocs=allprocs
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
@@ -46,6 +46,14 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
+; Check if allprocs keyword is set.
+;
+if (keyword_set(allprocs)) then begin
+  if (n_elements(proc) ne 0) then message, 'pc_read_grid: /allproc and proc cannot be both set.'
+endif else begin
+  allprocs = 0
+endelse
+;
 ; Get necessary dimensions.
 ;
 if (n_elements(dim) eq 0) then  $
@@ -53,7 +61,11 @@ if (n_elements(dim) eq 0) then  $
 if (n_elements(param) eq 0) then  $
     pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
 
-ncpus=dim.nprocx*dim.nprocy*dim.nprocz
+if (allprocs) then begin
+  ncpus=1
+endif else begin
+  ncpus=dim.nprocx*dim.nprocy*dim.nprocz
+endelse
 ;
 ; Set mx,my,mz in common block for derivative routines
 ;
@@ -85,10 +97,13 @@ get_lun, file
 
 for i=0,ncpus-1 do begin
   ; Build the full path and filename
-  if n_elements(proc) ne 0 then begin
-    filename=datadir+'/proc'+str(proc)+'/grid.dat'   ; Read processor box dimensions
+  if (allprocs) then begin
+    filename=datadir+'/allprocs/grid.dat'
+  endif else if (n_elements(proc) ne 0) then begin
+    filename=datadir+'/proc'+str(proc)+'/grid.dat'
   endif else begin
-    filename=datadir+'/proc'+str(i)+'/grid.dat'   ; Read processor box dimensions
+    filename=datadir+'/proc'+str(i)+'/grid.dat'
+    ; Read processor box dimensions
     pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET 
     xloc=fltarr(procdim.mx)*one  
     yloc=fltarr(procdim.my)*one 
@@ -150,7 +165,7 @@ for i=0,ncpus-1 do begin
 
   openr,file,filename,/F77,SWAP_ENDIAN=SWAP_ENDIAN
     
-  if (n_elements(proc) ne 0) then begin
+  if (allprocs or (n_elements(proc) ne 0)) then begin
     readu,file, t,x,y,z
     readu,file, dx,dy,dz
     found_Lxyz=0
