@@ -15,7 +15,7 @@
 pro emissivity_event, event
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel
 
 	WIDGET_CONTROL, WIDGET_INFO(event.top, /CHILD)
 
@@ -33,7 +33,9 @@ pro emissivity_event, event
 	end
 	'HORIZ':  begin
 		sub_horiz = event.select
+		WIDGET_CONTROL, em_sel, SENSITIVE = 0
 		precalc_emissivity
+		WIDGET_CONTROL, em_sel, SENSITIVE = 1
 		DRAW_IMAGES = 1
 	end
 	'VAL_B': begin
@@ -57,7 +59,11 @@ pro emissivity_event, event
 	'EMIS': begin
 		last = selected_emissivity
 		selected_emissivity = event.index
-		if (last ne selected_emissivity) then precalc_emissivity
+		if (last ne selected_emissivity) then begin
+			WIDGET_CONTROL, em_sel, SENSITIVE = 0
+			precalc_emissivity
+			WIDGET_CONTROL, em_sel, SENSITIVE = 1
+		end
 		DRAW_IMAGES = 1
 	end
 	'QUIT': begin
@@ -87,12 +93,12 @@ pro precalc_emissivity
 	T_0 = parameter[selected_emissivity].T_ex
 	dT = parameter[selected_emissivity].delta_T
 
-;	for iy = 0, num_x-1 do em_x = em_x * 10^(rho_0 - ((varsets[selected_snapshot].log_rho[cut])[*,iy,cut_z:num_z-1] > rho_0)) + em[*,iy,cut_z:num_z-1]
-;	for ix = 0, num_y-1 do em_y = em_y * 10^(rho_0 - ((varsets[selected_snapshot].log_rho[cut])[ix,*,cut_z:num_z-1] > rho_0)) + em[ix,*,cut_z:num_z-1]
-;	for iz = cut_z, num_z-1 do em_z = em_z * 10^(rho_0 - ((varsets[selected_snapshot].log_rho[cut])[*,*,iz] > rho_0)) + em[*,*,iz]
-
+	; Cosine contribution function:
 ;	em = (1 - cos (((1 - ((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) > 0) * !PI)) * 10^((varsets[selected_snapshot].log_rho[cut]) * 2)
-	em = ((1 - ((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) > 0) * 10^((varsets[selected_snapshot].log_rho[cut]) * 2)
+	; Quadratic-cutoff contribution function:
+;	em = ((1 - ((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) > 0) * 10^((varsets[selected_snapshot].log_rho[cut]) * 2)
+	; Gaussian contribution function:
+	em = exp (-((alog10 (varsets[selected_snapshot].temp[cut]) - T_0) / dT)^2) * 10^((varsets[selected_snapshot].log_rho[cut]) * 2)
 
 	em_x = total (em, 1)
 	em_y = total (em, 2)
@@ -129,14 +135,22 @@ pro plot_emissivity
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
+	plot_em_x = em_x
+	plot_em_y = em_y
+
+	if (cut_z ge 1) then begin
+		plot_em_x[*,0:cut_z-1] = 0.5 * (emin + emax)
+		plot_em_y[*,0:cut_z-1] = 0.5 * (emin + emax)
+	endif
+
 	wset, wem_x
-	tvscl, (em_x[*,cut_z:*] > emin) < emax, 0, cut_z
+	tvscl, (alog10 (plot_em_x > emin) < emax)
 
 	wset, wem_y
-	tvscl, (em_y[*,cut_z:*] > emin) < emax, 0, cut_z
+	tvscl, (alog10 (plot_em_y > emin) < emax)
 
 	wset, wem_z
-	tvscl, (em_z > emin) < emax
+	tvscl, (alog10 (em_z > emin) < emax)
 end
 
 
@@ -144,7 +158,7 @@ end
 pro emissivity, sets, limits, scaling=scaling
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	; Emissivities for different ions (values with only one decimal digit are UNVERIFIED)
@@ -171,23 +185,25 @@ pro emissivity, sets, limits, scaling=scaling
 	cut_z = 0
 	emin = -30.0
 	emax =  10.0
-	sl_min = -22.0
+	sl_min = -24.0
 	sl_max = -18.0
 	sub_horiz = 0
 	aver_z = 10
 
-	em = fltarr (num_x,num_y,num_z)
-	em_x = fltarr (num_y,num_z)
-	em_y = fltarr (num_x,num_z)
-	em_z = fltarr (num_x,num_y)
+	em = dblarr (num_x,num_y,num_z)
+	em_x = dblarr (num_y,num_z)
+	em_y = dblarr (num_x,num_z)
+	em_z = dblarr (num_x,num_y)
 
 	MOTHER	= WIDGET_BASE (title='emissivitiy')
 	BASE    = WIDGET_BASE (MOTHER, /col)
 	TOP     = WIDGET_BASE (base, /row)
 	col     = WIDGET_BASE (top, /col)
+	tmp     = WIDGET_LABEL (col, value='Plot starts at z-layer:', frame=0)
+	col     = WIDGET_BASE (top, /col)
 	tmp     = WIDGET_SLIDER (col, uvalue='CUT_Z', value=cut_z, min=0, max=num_z-1, xsize=num_z*bin_z, /drag)
 	col     = WIDGET_BASE (top, /col)
-	emis    = WIDGET_DROPLIST (col, value=(parameter[*].title), uvalue='EMIS', EVENT_PRO=emissivity_event, title='ion')
+	em_sel  = WIDGET_DROPLIST (col, value=(parameter[*].title), uvalue='EMIS', EVENT_PRO=emissivity_event, title='Ion:', SENSITIVE = 0)
 	col     = WIDGET_BASE (top, /col)
 	b_sub   = CW_BGROUP (col, 'normalise averages', /nonexcl, uvalue='HORIZ', set_value=sub_horiz)
 	col     = WIDGET_BASE (top, /col)
@@ -202,10 +218,10 @@ pro emissivity, sets, limits, scaling=scaling
 	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Z', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wem_z   = !d.window
-	TOP2    = WIDGET_BASE (base, /col)
+	bcot    = WIDGET_BASE (base, /row)
 
-	val_b   = CW_FSLIDER (TOP2, uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=(2*num_x*bin_x+num_y*bin_y)>max([num_x,num_y,num_z]) )
-	val_t   = CW_FSLIDER (TOP2, uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=(2*num_x*bin_x+num_y*bin_y)>max([num_x,num_y,num_z]) )
+	val_b   = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=0.5*(num_x*bin_x+num_y*bin_y)>max([num_x,num_y]) )
+	val_t   = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=0.5*(num_x*bin_x+num_y*bin_y)>max([num_x,num_y]) )
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
@@ -219,6 +235,7 @@ pro emissivity, sets, limits, scaling=scaling
 
 	precalc_emissivity
 	plot_emissivity
+	WIDGET_CONTROL, em_sel, SENSITIVE = 1
 
 	return
 end
