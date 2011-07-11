@@ -80,7 +80,7 @@ pro pc_read_var,                                                  $
     datadir=datadir, proc=proc, additional=additional,            $
     nxrange=nxrange, nyrange=nyrange, nzrange=nzrange,            $
     stats=stats, nostats=nostats, quiet=quiet, help=help,         $
-    swap_endian=swap_endian, varcontent=varcontent,               $
+    swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
     exit_status=exit_status
@@ -108,20 +108,22 @@ COMPILE_OPT IDL2,HIDDEN
   default, validate_variables, 1
   if (arg_present(exit_status)) then exit_status=0
 ;
-; Check if allprocs keyword is set.
-;
-  if (keyword_set(allprocs)) then begin
-    if (n_elements(proc) ne 0) then message, 'pc_read_var: /allproc and proc cannot be both set.'
-  endif else begin
-    allprocs = 0
-  endelse
-;
 ; If no meaningful parameters are given show some help!
 ;
   if (keyword_set(help)) then begin
     doc_library, 'pc_read_var'
     return
   endif
+;
+; Check if allprocs and/or f77 keyword is set.
+;
+  if (keyword_set(allprocs)) then begin
+    if (n_elements(proc) ne 0) then message, 'pc_read_var: /allproc and proc cannot be both set.'
+    if (not keyword_set(f77)) then f77=0
+  endif else begin
+    allprocs = 0
+  endelse
+  default, f77, 1
 ;
 ; Default data directory.
 ;
@@ -168,15 +170,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;  
   coord_system=param.coord_system
 ;
-; Read the grid. Calling pc_read_grid also makes sure any derivative stuff is
-; correctly set in the common block.
+; Read dimensions (global)...
 ;
-  pc_read_grid, object=grid, dim=dim, proc=proc, datadir=datadir, $
-      param=param, swap_endian=swap_endian, /quiet
-;
-; Read problem dimensions (global)...
-;
-  if (n_elements(proc) eq 1 or allprocs) then begin
+  if ((n_elements(proc) eq 1) or allprocs) then begin
     procdim=dim
   endif else begin
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
@@ -283,9 +279,15 @@ COMPILE_OPT IDL2,HIDDEN
   default, global, 0
   if (global) then begin
     pc_read_global, obj=gg, proc=proc, $
-        param=param, dim=dim, datadir=datadir, swap_endian=swap_endian, /quiet
+        param=param, dim=dim, datadir=datadir, swap_endian=swap_endian, allprocs=allprocs, /quiet
     global_names=tag_names(gg)
   endif
+;
+; Read the grid. Calling pc_read_grid also makes sure any derivative stuff is
+; correctly set in the common block.
+;
+  pc_read_grid, object=grid, dim=dim, proc=proc, datadir=datadir, $
+      param=param, swap_endian=swap_endian, allprocs=allprocs, /quiet
 ;
 ; Apply "magic" variable transformations for derived quantities.
 ;
@@ -434,7 +436,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Open a varfile and read some data!
 ;
     close, file
-    openr, file, filename, /f77, swap_endian=swap_endian
+    openr, file, filename, f77=f77, swap_endian=swap_endian
     if (not keyword_set(associate)) then begin
       if (execute('readu,file'+res) ne 1) then $
           message, 'Error reading: ' + 'readu,' + str(file) + res
@@ -443,6 +445,11 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
 ;
     if (nprocs eq 1) then begin
+      if (f77 eq 0) then begin
+        close, file
+        openr, file, filename, /f77, swap_endian=swap_endian
+        point_lun, file, long64(dim.mx*dim.my)*long64(dim.mz*(dim.mvar+dim.maux)*8)
+      endif
       if (param.lshear) then begin
         readu, file, t, x, y, z, dx, dy, dz, deltay
       endif else begin
