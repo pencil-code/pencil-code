@@ -22,7 +22,8 @@ pro vert_prof, data, coord=coord, title=title, log=log
 
 	num_z = (size (data))[3]
 	if (n_elements (coord) eq 0) then coord = findgen (num_z)
-	num_coord_z = (size (coord))[3]
+	num_coord_z = size (coord, /n_elements)
+	coord = reform (coord, num_coord_z)
 	start_z = (num_z - num_coord_z) / 2
 
 	prof_mean = dblarr (num_z)
@@ -38,7 +39,12 @@ pro vert_prof, data, coord=coord, title=title, log=log
 	data_min = min (data)
 	data_max = max (data)
 
-	plot, prof_mean, coord, xlog=log, xs=2, ys=1, xrange=[data_min, data_max], yrange=[2*coord[0]-coord[1], 2*coord[num_coord_z-1]-coord[num_coord_z-2]], title=title
+	if (num_coord_z le 1) then begin
+		yrange = [coord[0]-1, coord[0]+1]
+	end else begin
+		yrange = [2*coord[0]-coord[1], 2*coord[num_coord_z-1]-coord[num_coord_z-2]]
+	end
+	plot, prof_mean, coord, xlog=log, xs=2, ys=1, xrange=[data_min, data_max], yrange=yrange, title=title
 	oplot, prof_mean, coord, psym=3, color=200
 	oplot, prof_min, coord, linestyle=2
 	oplot, prof_max, coord, linestyle=2
