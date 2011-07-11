@@ -29,6 +29,9 @@ pro emissivity_event, event
 	'CUT_Z':  begin
 		WIDGET_CONTROL, event.id, GET_VALUE = idx
 		cut_z = idx
+		WIDGET_CONTROL, em_sel, SENSITIVE = 0
+		em_z = total (em[*,*,cut_z:*], 3)
+		WIDGET_CONTROL, em_sel, SENSITIVE = 1
 		DRAW_IMAGES = 1
 	end
 	'HORIZ':  begin
@@ -144,13 +147,13 @@ pro plot_emissivity
 	endif
 
 	wset, wem_x
-	tvscl, (alog10 (plot_em_x > emin) < emax)
+	tvscl, alog10 ((plot_em_x > emin) < emax)
 
 	wset, wem_y
-	tvscl, (alog10 (plot_em_y > emin) < emax)
+	tvscl, alog10 ((plot_em_y > emin) < emax)
 
 	wset, wem_z
-	tvscl, (alog10 (em_z > emin) < emax)
+	tvscl, alog10 ((em_z > emin) < emax)
 end
 
 
