@@ -674,8 +674,11 @@ pro prepare_overplot
 	end
 
 	size_field_x = size (field_x[cut])
+	size_field_x[size (field_x[cut], /n_dimensions)+1:*] = 1
 	size_field_y = size (field_y[cut])
+	size_field_y[size (field_x[cut], /n_dimensions)+1:*] = 1
 	size_field_z = size (field_z[cut])
+	size_field_z[size (field_x[cut], /n_dimensions)+1:*] = 1
 	field_x = reform (field_x[cut], size_field_x[1], size_field_x[2], size_field_x[3])
 	field_y = reform (field_y[cut], size_field_y[1], size_field_y[2], size_field_y[3])
 	field_z = reform (field_z[cut], size_field_z[1], size_field_z[2], size_field_z[3])
