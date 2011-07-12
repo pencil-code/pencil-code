@@ -276,9 +276,9 @@ module Slices
         if (mod(nprocz,2)==0) then; iz_loc=n1; else; iz_loc=(n1+n2)/2; endif
         iz2_loc=n2
 !
-! xy2 is top layer as default.
-! Please set iz2 in run.in to select a different layer
-! where nghsost <= iz2 <= mzgrid-nghost
+!  xy2 is top layer as default.
+!  Please set iz2 in run.in to select a different layer
+!  where nghost <= iz2 <= mzgrid-nghost
 !
         lwrite_slice_xy2=llast_proc_z
         lwrite_slice_xy=(ipz==nprocz/2)
