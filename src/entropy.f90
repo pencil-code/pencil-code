@@ -471,9 +471,9 @@ module Entropy
 !  Define hcond0 from the given value of Fbot.
 !
             if (bcz1(iss)=='c1') then
-              hcond0=gamma_m1/gamma*(mpoly0+1.)*Fbot
+              hcond0=-gamma_m1/gamma*(mpoly0+1.)*Fbot/gravz
               Kbot=hcond0
-              FbotKbot=gamma/gamma_m1/(mpoly0+1.)
+              FbotKbot=-gravz*gamma/gamma_m1/(mpoly0+1.)
               if (lroot) print*, &
                    'initialize_entropy: Calculated hcond0 = ', hcond0
             endif
