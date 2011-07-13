@@ -34,16 +34,24 @@ module Magnetic_meanfield_demfdt
 !
   character (len=labellen), dimension(ninit) :: initemf='nothing'
   real, dimension (ninit) :: amplemf=0.
-  real :: tau_emf=0., tau1_emf=0., eta_emf=0.
+  real :: tau_emf=0., tau1_emf=0., eta_emf_over_etat=0.
+  real, dimension(:), pointer :: etat_x, kf_x, kf_x1
+  real, dimension(:), pointer :: etat_y, kf_y
+  real, dimension(:), pointer :: etat_z, kf_z
+  logical, pointer :: lweyl_gauge
 !
   namelist /magn_mf_demfdt_init_pars/ &
-      tau_emf, tau1_emf, eta_emf, &
+      tau_emf, tau1_emf, eta_emf_over_etat, &
       initemf
 !
 ! Run parameters
 !
+  real, dimension(nx) :: eta_emf_x
+  real, dimension(my) :: eta_emf_y
+  real, dimension(mz) :: eta_emf_z
+!
   namelist /magn_mf_demfdt_run_pars/ &
-      tau_emf, tau1_emf, eta_emf
+      tau_emf, tau1_emf, eta_emf_over_etat
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 ! 
@@ -91,11 +99,11 @@ module Magnetic_meanfield_demfdt
 !
       use BorderProfiles, only: request_border_driving
       use FArrayManager
-      use SharedVariables, only: put_shared_variable,get_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      integer :: i,ierr
+      integer :: i,ierr,l
 !
 !  Precalculate tau1_emf if tau_emf is given instead
 !
@@ -104,7 +112,30 @@ module Magnetic_meanfield_demfdt
       endif
       if (lroot) print*,'initialize_magn_mf_demfdt: tau1_emf=',tau1_emf
 !
-      call keep_compiler_quiet(lstarting)
+!  adopt eta_emf profiles by rescaling etat
+!
+      if (.not.lstarting) then
+        call get_shared_variable('kf_x',kf_x,ierr)
+        call get_shared_variable('kf_y',kf_y,ierr)
+        call get_shared_variable('kf_z',kf_z,ierr)
+        call get_shared_variable('kf_x1',kf_x1,ierr)
+        call get_shared_variable('etat_x',etat_x,ierr)
+        call get_shared_variable('etat_y',etat_y,ierr)
+        call get_shared_variable('etat_z',etat_z,ierr)
+        eta_emf_x=etat_x*eta_emf_over_etat
+        eta_emf_y=etat_y*eta_emf_over_etat
+        eta_emf_z=etat_z*eta_emf_over_etat
+!
+!  debug output (currently only on root processor)
+!
+        if (lroot) then
+          print*
+          print*,'x, kf_x, kf_x1'
+          do l=1,nx
+            write(*,'(1p,3e11.3)') x(l1-1+l),kf_x(l),kf_x1(l)
+          enddo
+        endif
+      endif
 !
     endsubroutine initialize_magn_mf_demfdt
 !***********************************************************************
@@ -176,9 +207,10 @@ module Magnetic_meanfield_demfdt
 !***********************************************************************
     subroutine demf_dt_meanfield(f,df,p)
 !
-!  Solve dEMF/dt = EMF_old/tau + eta_emf*del2(EMF)
+!  Solve dEMF/dt = EMF_old/tau + eta_emf*del2(EMF) - EMF/tau
 !
 !   6-jan-11/axel: coded
+!   6-jul-11/axel: added calculation of eta profile
 !
       use Diagnostics
       use Sub
@@ -187,9 +219,11 @@ module Magnetic_meanfield_demfdt
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: emf, del2emf
+      real, dimension (nx) :: eta_emf_tmp, tau1_emf_tmp
+      real, dimension (nx,3) :: emf, del2emf, delta_emf
       real, dimension (nx,3) :: graddivemf
       real, dimension (nx,3,3) :: emfij,demfij
+      integer :: j,jvar
 !
       intent(inout)  :: f,p
       intent(inout)  :: df
@@ -201,16 +235,25 @@ module Magnetic_meanfield_demfdt
 !  First part (without spatial diffusion): dEMF/dt = (alp*B-etat*J-EMF)/tau.
 !  Note that the first part, alp*B-etat*J, is here obtained as p%mf_EMF.
 !
+      tau1_emf_tmp=tau1_emf*kf_x**1.5
       emf=f(l1:l2,m,n,iemfx:iemfz)
-      df(l1:l2,m,n,iemfx:iemfz)=df(l1:l2,m,n,iemfx:iemfz)+tau1_emf*(p%mf_EMF-emf)
+      delta_emf=p%mf_EMF-emf
+      do j=1,3
+        jvar=iemfx-1+j
+        df(l1:l2,m,n,jvar)=df(l1:l2,m,n,jvar)+tau1_emf_tmp*delta_emf(:,j)
+      enddo
 !
 !  Spatial diffusion part, if eta_emf/=0.
 !
-      if (eta_emf/=0.) then
+      if (eta_emf_over_etat/=0.) then
+        eta_emf_tmp=eta_emf_x*eta_emf_y(m)*eta_emf_z(n)
 !--     call del2v(f,iemf,del2emf)
         call gij(f,iemf,emfij,1)
         call gij_etc(f,iemf,emf,emfij,demfij,del2emf,graddivemf)
-        df(l1:l2,m,n,iemfx:iemfz)=df(l1:l2,m,n,iemfx:iemfz)+eta_emf*del2emf
+        do j=1,3
+          jvar=iemfx-1+j
+          df(l1:l2,m,n,jvar)=df(l1:l2,m,n,jvar)+eta_emf_tmp*del2emf(:,j)
+        enddo
       endif
 !
 !  Apply EMF to dA/dt (was turned off in meanfield.f90 because lmagn_mf_demfdt=T

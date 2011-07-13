@@ -6094,6 +6094,7 @@ module Magnetic
            geta_x(:,3) = 0.
 !
 !  Single step function
+!  Note that eta_x increases with increasing x when eta_width is negative (!)
 !
         case ('step')
 !

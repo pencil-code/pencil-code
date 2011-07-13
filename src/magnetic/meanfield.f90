@@ -32,11 +32,16 @@ module Magnetic_meanfield
   real, dimension (mx,my) :: alpha_input
   logical, pointer :: lweyl_gauge
 !
+  real, dimension (nx) :: kf_x, kf_x1
+  real, dimension (my) :: kf_y
+  real, dimension (mz) :: kf_z
+!
 ! Parameters
 !
-  character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
+  character (len=labellen) :: meanfield_kf_profile='const'
   character (len=labellen) :: meanfield_etat_profile='const'
   character (len=labellen) :: meanfield_Beq_profile='const',qp_model='atan'
+  character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
 !
 ! Input parameters
@@ -50,7 +55,7 @@ module Magnetic_meanfield
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
-  real :: meanfield_kf=1.0, meanfield_etaB=0.0
+  real :: meanfield_etaB=0.0
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
@@ -62,6 +67,7 @@ module Magnetic_meanfield
 !
   real :: alpha_rmax=0.0, alpha_width=0.0, alpha_width2=0.0
   real :: meanfield_etat_width=0.0
+  real :: meanfield_kf=1.0, meanfield_kf_width=0.0, meanfield_kf_width2=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
@@ -85,11 +91,13 @@ module Magnetic_meanfield
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_etat_width, &
+      meanfield_kf, meanfield_kf_profile, &
+      meanfield_kf_width, meanfield_kf_width2, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_qs, meanfield_qp, meanfield_qe, meanfield_Beq, &
-      meanfield_Bs, meanfield_Bp, meanfield_Be, meanfield_kf, &
+      meanfield_Bs, meanfield_Bp, meanfield_Be, &
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
@@ -142,6 +150,7 @@ module Magnetic_meanfield
       use SharedVariables, only: put_shared_variable,get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
       logical :: lstarting
       integer :: ierr
 !
@@ -188,6 +197,30 @@ module Magnetic_meanfield
 !  Compute etat profile and share with other routines.
 !  Here we also set the etat_i and getat_i profiles.
 !
+      if (meanfield_kf/=0.0) then
+        select case (meanfield_kf_profile)
+        case ('const')
+          kf_x1=1./meanfield_kf
+          kf_x=meanfield_kf
+          kf_y=1.
+          kf_z=1.
+        case ('sqrt_surface_x1')
+          prof_tmp=.5*(1.+erfunc((x(l1:l2)-x_surface2)/meanfield_kf_width2))
+          kf_x1_tmp=max(1.-x(l1:l2)/x_surface,tini)/meanfield_kf
+          kf_x1=prof_tmp*kf_x1_tmp
+          kf_x_tmp=1./kf_x1_tmp
+          kf_x=prof_tmp*kf_x_tmp*exp(-(meanfield_kf_width*kf_x_tmp)**2)
+          kf_y=1.
+          kf_z=1.
+        case default;
+          call inevitably_fatal_error('initialize_magnetic', &
+          'no such meanfield_kf_profile profile')
+        endselect
+      endif
+!
+!  Compute etat profile and share with other routines.
+!  Here we also set the etat_i and getat_i profiles.
+!
       if (meanfield_etat/=0.0) then
         select case (meanfield_etat_profile)
         case ('const')
@@ -222,6 +255,15 @@ module Magnetic_meanfield
             *(1.+erfunc((x(l1:l2)-x_surface2)/meanfield_etat_width)) &
             +(1.+erfunc((x(l1:l2)-x_surface)/meanfield_etat_width)) &
             *exp(-((x(l1:l2)-x_surface2)/meanfield_etat_width)**2))
+          detat_y=0.
+          detat_z=0.
+        case ('sqrt_surface_x1')
+          etat_x=sqrt(kf_x1)
+          etat_y=meanfield_etat
+          etat_z=1.
+          if (ip<=6) print*,'etat(sqrt_surface_x1)=',etat_x
+          detat_x=1./(meanfield_etat_width*sqrtpi) &
+            *exp(-((x(l1:l2)-x_surface2)/meanfield_etat_width)**2)
           detat_y=0.
           detat_z=0.
         case default;
@@ -259,7 +301,18 @@ module Magnetic_meanfield
 !
 !  initialize secondary mean-field modules
 !
-      if (lmagn_mf_demfdt) call initialize_magn_mf_demfdt(f,lstarting)
+      if (lmagn_mf_demfdt) then
+        call put_shared_variable('kf_x',kf_x,ierr)
+        call put_shared_variable('kf_y',kf_y,ierr)
+        call put_shared_variable('kf_z',kf_z,ierr)
+        call put_shared_variable('kf_x1',kf_x1,ierr)
+        call put_shared_variable('etat_x',etat_x,ierr)
+        call put_shared_variable('etat_y',etat_y,ierr)
+        call put_shared_variable('etat_z',etat_z,ierr)
+        if (ierr/=0) call fatal_error('initialize_magnetic',&
+            'there was a problem when sharing etat_xyz')
+        call initialize_magn_mf_demfdt(f,lstarting)
+      endif
 !
     endsubroutine initialize_magn_mf
 !***********************************************************************
@@ -407,7 +460,7 @@ module Magnetic_meanfield
 !
       real, dimension (nx) :: alpha_total
       real, dimension (nx) :: meanfield_etat_tmp
-      real, dimension (nx) :: alpha_tmp, delta_tmp, kf_tmp
+      real, dimension (nx) :: alpha_tmp, alpha_quenching_tmp, delta_tmp
       real, dimension (nx) :: EMF_prof
       real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
@@ -508,9 +561,9 @@ module Magnetic_meanfield
           *(1.-erfunc((x(l1:l2)-x_surface)/alpha_width)) &
           *(1.+erfunc((x(l1:l2)-x_surface2)/alpha_width2))*cos(y(m))
         case ('sqrt_surface_x2*cosy')
-          kf_tmp=meanfield_kf/max(x_surface-x(l1:l2),tini)
-          alpha_tmp=sqrt(kf_tmp)*exp(-(alpha_width*kf_tmp)**2) &
-            *.5*(1.+erfunc((x(l1:l2)-x_surface2)/alpha_width2))*cos(y(m))
+          !alpha_tmp=sqrt(kf_x)*cos(y(m))
+          alpha_tmp=kf_x1*cos(y(m))
+          if (ip<=6.and.m==m1) print*,'alpha(sqrt_surface_x2)=',alpha_tmp
         case ('y*(1+eps*sinx)'); alpha_tmp=y(m)*(1.+alpha_eps*sin(kx*x(l1:l2)))
         case ('step-nhemi'); alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)
         case ('stepy'); alpha_tmp=-tanh((y(m)-yequator)/alpha_gap_step)
@@ -563,8 +616,11 @@ module Magnetic_meanfield
 !  Initialize EMF with alpha_total*bb.
 !  Here we initialize p%mf_EMF.
 !
-        if (alpha_quenching/=0.0) &
-            alpha_total=alpha_total/(1.+alpha_quenching*p%b2)
+        if (alpha_quenching/=0.0) then
+          !alpha_quenching_tmp=alpha_quenching
+          alpha_quenching_tmp=alpha_quenching*sqrt(kf_x)
+          alpha_total=alpha_total/(1.+alpha_quenching_tmp*p%b2)
+        endif
         call multsv_mn(alpha_total,p%bb,p%mf_EMF)
 !
 !  Optionally, run the alpha-Omega approximation, i.e. apply
