@@ -401,6 +401,9 @@ module Boundcond
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
             if (ip_ok) then
               select case (bc12(j))
+              case ('0')
+                ! BCY_DOC: zero value in ghost zones, free value on boundary
+                call bc_zero_y(f,topbot,j)
               case ('p')
                 ! BCY_DOC: periodic
                 call bc_per_y(f,topbot,j)
@@ -5184,6 +5187,37 @@ module Boundcond
       endselect
 !
     endsubroutine bc_zero_x
+!***********************************************************************
+    subroutine bc_zero_y(f,topbot,j)
+!
+!  Zero value in the ghost zones.
+!
+!  13-jul-2011/Tijmen: adapted from bc_zero_x
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+      integer :: j
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        f(:,1:m1-1,:,j)=0.0
+!
+!  Top boundary.
+!
+      case ('top')
+        f(:,m2+1:my,:,j)=0.0
+!
+!  Default.
+!
+      case default
+        print*, "bc_zero_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_zero_y
 !***********************************************************************
     subroutine bc_zero_z(f,topbot,j)
 !
