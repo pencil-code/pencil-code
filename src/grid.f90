@@ -587,6 +587,24 @@ module Grid
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
           endif
 !
+        case ('sinh2')
+!
+          a = coeff_grid(3) / nzgrid
+          if (lperi(3)) xi3 = xi3 + .5
+          xi3star = find_star(a*xi3lo, a*xi3up, z0, z0+Lz, xyz_star(3), grid_func(3)) / a
+          call grid_profile(a*(xi3  -xi3star), grid_func(3), g3, g3der1, g3der2)
+          call grid_profile(a*(xi3lo-xi3star), grid_func(3), g3lo)
+          call grid_profile(a*(xi3up-xi3star), grid_func(3), g3up)
+!
+          z = z0 + Lz * (g3 - g3lo) / (g3up - g3lo)
+          zprim  = Lz * (g3der1*a   ) / (g3up - g3lo)
+          zprim2 = Lz * (g3der2*a**2) / (g3up - g3lo)
+!
+          if (lparticles .or. lsolid_cells) then
+            call grid_profile(a*(xi3proc-xi3star), grid_func(3), g3proc)
+            g3proc = z0 + Lz * (g3proc - g3lo) / (g3up - g3lo)
+          endif
+!
         case ('cos','tanh')
           ! Approximately equidistant at the boundaries, linear in the middle
           a=pi*dz/trans_width(3)
@@ -1354,7 +1372,7 @@ module Grid
         if (present(gder1)) gder1=1.0
         if (present(gder2)) gder2=0.0
 !
-      case ('sinh')
+      case ('sinh', 'sinh2')
         g=sinh(xi)
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
