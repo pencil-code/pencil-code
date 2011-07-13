@@ -30,7 +30,7 @@ module Special
   integer, parameter :: max_gran_levels=3
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
-  real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.
+  real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.,Kc=0.
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.,b_tau=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
@@ -69,7 +69,7 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
-       tdownr,allpr,heatexp,heatamp,Ksat,diffrho_hyper3, &
+       tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz, &
        b_tau,Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
@@ -595,6 +595,20 @@ module Special
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_rho1)=.true.
+      endif
+!
+      if (Ksat /= 0.) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+!
+      if (Kc /= 0.) then
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT)=.true.
       endif
 !
       if (idiag_dtchi2/=0.0) then
@@ -1613,6 +1627,7 @@ module Special
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
       real, dimension (nx) :: chi_1,chi_2,rhs
+      real, dimension (nx) :: chi_clight
       real :: Ksatb,Kpara,expo
       integer :: i,j,k
       type (pencil_case) :: p
@@ -1661,7 +1676,9 @@ module Special
 !
       call dot2(p%glnTT,glnTT2)
 !
-      if (Ksat/=0.) then
+!  Limit heat condcution coefficient due to maximum available energy
+!
+      if (Ksat /=0. ) then
         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
         chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
 !
@@ -1670,6 +1687,20 @@ module Special
           gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
           gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,glnTT2)
           chi_1 =  chi_2
+        endwhere
+      endif
+!
+!  Limit heat conduction coefficient due to diffusion
+!  speed smaller than speed of light
+!
+      if (Kc /= 0.) then
+        chi_clight = Kc*c_light/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
+!
+        where (chi_1 > chi_clight)
+          chi_1 = chi_clight
+          gKp(:,1) = p%glnrho(:,1)+p%glnTT(:,1)
+          gKp(:,2) = p%glnrho(:,2)+p%glnTT(:,2)
+          gKp(:,3) = p%glnrho(:,3)+p%glnTT(:,3)
         endwhere
       endif
 !
