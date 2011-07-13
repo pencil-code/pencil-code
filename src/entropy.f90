@@ -5698,9 +5698,15 @@ endsubroutine get_gravz_chit
 !  --> we impose Mtot=1 in r=(0,r_ext)
 !
     i_ext=minloc(abs(r-r_ext))
-    rhobot=sum(exp(lnrho(2:i_ext(1)-1))*r(2:i_ext(1)-1)**2)+ &
-      0.5*exp(lnrho(i_ext(1)))*r(i_ext(1))**2
-    rhobot=rhobot*4.*pi*dr
+    if (nzgrid == 1) then
+      rhobot=sum(exp(lnrho(2:i_ext(1)-1))*r(2:i_ext(1)-1))+ &
+        0.5*exp(lnrho(i_ext(1)))*r(i_ext(1))
+      rhobot=rhobot*2.*pi*dr
+    else
+      rhobot=sum(exp(lnrho(2:i_ext(1)-1))*r(2:i_ext(1)-1)**2)+ &
+        0.5*exp(lnrho(i_ext(1)))*r(i_ext(1))**2
+      rhobot=rhobot*4.*pi*dr
+    endif
     print*, 'total mass=', rhobot
 !
     endsubroutine strat_heat
