@@ -35,6 +35,10 @@ module Hydro
   real, dimension (mz,3) :: uumzg=0.,guumz=0.
   real, dimension (mx,my,3) :: uumxy=0.
 !
+  real, dimension(nx) :: profx_kinflow1=1., profx_kinflow2=1., profx_kinflow3=1.
+  real, dimension(my) :: profy_kinflow1=1., profy_kinflow2=1., profy_kinflow3=1.
+  real, dimension(mz) :: profz_kinflow1=1., profz_kinflow2=1., profz_kinflow3=1.
+!
   real :: u_out_kep=0.0
   real :: tphase_kinflow=-1.,phase1=0., phase2=0., tsforce=0.
   real ::  dtforce=impossible
@@ -62,8 +66,8 @@ module Hydro
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
   real :: cx_uukin=0., cy_uukin=0., cz_uukin=0.
   real :: phasez_uukin=0.
-  real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.,&
-          uphi_step_width=0.
+  real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.
+  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   real :: gcs_rzero=0.,gcs_psizero=0.
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., omega_kinflow=0., ampl_kinflow=1.
@@ -80,7 +84,8 @@ module Hydro
       cx_uukin,cy_uukin,cz_uukin, &
       phasez_uukin, &
       lrandom_location,lwrite_random_location,location_fixed,dtforce, &
-      radial_shear,uphi_at_rzero,uphi_rmax,uphi_step_width,gcs_rzero, &
+      radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
+      uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11
 !
@@ -133,18 +138,43 @@ module Hydro
 !  24-nov-02/tony: coded
 !
       use FArrayManager
+      use Sub, only: erfunc
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      kinflow=kinematic_flow
-      if (kinflow=='KS') then
+!  Compute preparatory functions needed to assemble
+!  different flow profiles later on in pencil_case.
+!
+      select case (kinematic_flow)
+!
+!  Spoke-like differential rotation profile.
+!  The minus sign is needed for equatorward acceleration.
+!
+      case ('spoke-like')
+        profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rmax)/uphi_step_width)))
+        profy_kinflow1=-1.5*(5.*cos(y)**2-1.)
+        profz_kinflow1=+1.
+      case ('spoke-like-NSSL')
+        profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
+        profx_kinflow2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_kinflow3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_kinflow2=(x(l1:l2)-uphi_rbot)*profx_kinflow1*profx_kinflow2  !(redefined)
+        profy_kinflow1=-1.5*(5.*cos(y)**2-1.)
+        profy_kinflow2=-1.0*(4.*cos(y)**2-3.)
+        profy_kinflow3=-1.0
+        profz_kinflow1=+1.
+      case ('KS')
         call periodic_KS_setup(-5./3.) !Kolmogorov spec. periodic KS
         !call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.) !old form
         !call random_isotropic_KS_setup_test !Test KS model code with 3 specific modes.
-        elseif (kinflow=='ck') then
-          call init_ck
-      endif
+      case ('ck')
+        call init_ck
+      case default;
+        if(lroot) print*,'no preparatory profile needed'
+      end select
+!
+! kinflows end here
 !
 !  Register an extra aux slot for uu if requested (so uu is written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -942,6 +972,34 @@ module Hydro
           local_Omega=fac*exp(-((x(l1:l2)-xyz1(1))/gcs_rzero)**2- &
               ((pi/2-y(m))/gcs_psizero**2))
           p%uu(:,3)= local_Omega*x(l1:l2)*sinth(m)
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Spoke-like differential rotation profile
+!
+      case ('spoke-like') 
+        if (headtt) print*,'spoke-like ',ampl_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          local_Omega=ampl_kinflow*profx_kinflow1*profy_kinflow1(m)
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=local_Omega*x(l1:l2)*sinth(m)
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Spoke-like differential rotation profile with near-surface shear layer
+!
+      case ('spoke-like-NSSL') 
+        if (headtt) print*,'spoke-like-NSSL',ampl_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          local_Omega=ampl_kinflow*profx_kinflow1*profy_kinflow1(m) &
+                     +ampl_kinflow*profx_kinflow2*profy_kinflow2(m) &
+                     +ampl_kinflow*profx_kinflow3*profy_kinflow3(m)
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=local_Omega*x(l1:l2)*sinth(m)
         endif
         if (lpencil(i_divu)) p%divu=0.
 !
