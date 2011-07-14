@@ -470,7 +470,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: b2_1
+      real, dimension(nx) :: b2_1,qsat,qabs
       real, dimension(nx) :: div_spitzer,rhs
       real, dimension(nx,3) :: K1
       real, dimension(nx,3) :: spitzer_vec
@@ -493,7 +493,7 @@ module Special
 !
       if (tau_inv_spitzer /= 0.) then
 !
-        b2_1=1./max(tini,p%b2)
+        b2_1=1./(p%b2+tini)
 !
         call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
 !        call multsv(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho),p%glnTT,K1)
@@ -501,7 +501,18 @@ module Special
         call dot(K1,p%bb,tmp)
         call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
+!  Limit the heat flux
+!
         q = f(l1:l2,m,n,ispitzerx:ispitzerz)
+!
+        call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
+        qsat = 0.01*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
+!
+        where (qabs > qsat)
+          spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
+          spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
+          spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
+        endwhere
 !
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
@@ -524,9 +535,8 @@ module Special
             call der6(f,ispitzerz,tmp,i,IGNOREDX=.true.)
             hc = hc + tmp
           enddo
-          hc = hyper3_chi*hc
 !
-          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + hc
+          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper3_chi*hc
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/cdts)
        endif
@@ -561,7 +571,7 @@ module Special
 !
       if (eighth_moment /= 0.) then
 !
-        b2_1=1./max(tini,p%b2)
+        b2_1=1./(p%b2+tini)
 !
         coeff = 0.872*5./2.*(k_B/m_e)*(k_B/m_p)*eighth_moment
         call multsv(coeff*exp(2.0*p%lnTT+p%lnrho),p%glnTT,K1)
@@ -569,6 +579,7 @@ module Special
         call dot(K1,p%bb,tmp)
         call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
+        
         q = f(l1:l2,m,n,ispitzerx:ispitzerz)
 !
         nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)*eighth_moment
@@ -871,7 +882,7 @@ module Special
 !
 !  Calculate variable diffusion coefficients along pencils.
 !
-      b2_1=1./max(tini,p%b2)
+      b2_1=1./(p%b2+tini)
 !
       vKpara = Kpara * exp(p%lnTT*3.5)
       vKperp = Kperp * b2_1*exp(2.*p%lnrho+0.5*p%lnTT)
@@ -881,7 +892,7 @@ module Special
 !  where K0=vKpara and K1=vKperp.
 !
       call dot2_mn(p%glnTT,glnT2)
-      glnT2_1=1./max(tini,glnT2)
+      glnT2_1=1./(glnT2+tini)
 !
       chi_spitzer=0.
       do i=1,3
@@ -1043,7 +1054,7 @@ module Special
       intent(in) :: gvKperp,gvKpara
       intent(out) :: rhs
 !
-      b_1=1./max(tini,sqrt(p%b2))
+      b_1=1./(sqrt(p%b2)+tini)
 !
 !  Calculate first H_i.
 !
@@ -1137,7 +1148,7 @@ module Special
       intent(in) :: p
       intent(out) :: df
 !
-      b_1=1./max(tini,sqrt(p%b2))
+      b_1=1./(sqrt(p%b2)+tini)
 !
 !  calculate first H_i
 !
@@ -2834,7 +2845,7 @@ module Special
         pp=gamma_inv*cs20*exp(lnrho0)
       endif
 !
-      beta =  pp/max(tini,B2)*2.*mu0
+      beta =  pp/(B2+tini)*2.*mu0
 !
 !  quench velocities to one percent of the granule velocities
       do i=1,ny
@@ -3131,15 +3142,16 @@ module Special
 ! Use cubic step to interpolate the data.
 !
 !
-      inte = cubic_step(t*unit_time-tl,0.5*(tr-tl),0.5*(tr-tl))*(right-left) +left
+      inte = cubic_step(real(t*unit_time)-tl,0.5*(tr-tl),0.5*(tr-tl))* &
+          (right-left) +left
       do i=1,4
         f(l1:l2,m1:m2,n1+1-i,iux) = inte(:,:,n1+1-i,1) / unit_velocity
         f(l1:l2,m1:m2,n1+1-i,iuy) = inte(:,:,n1+1-i,2) / unit_velocity
         f(l1:l2,m1:m2,n1+1-i,iuz) = inte(:,:,n1+1-i,3) / unit_velocity
 !
-        f(l1:l2,m1:m2,n1+1-i,ilnrho) = inte(:,:,n1+1-i,4) - alog(unit_density)
+        f(l1:l2,m1:m2,n1+1-i,ilnrho) = inte(:,:,n1+1-i,4) - log(unit_density)
 !
-        f(l1:l2,m1:m2,n1+1-i,ilnTT) = inte(:,:,n1+1-i,5) - alog(unit_temperature)
+        f(l1:l2,m1:m2,n1+1-i,ilnTT) = inte(:,:,n1+1-i,5) - log(unit_temperature)
 !
         f(l1:l2,m1:m2,n1+1-i,iax) = inte(:,:,n1+1-i,6) / unit_magnetic*unit_length
         f(l1:l2,m1:m2,n1+1-i,iay) = inte(:,:,n1+1-i,7) / unit_magnetic*unit_length
@@ -3171,7 +3183,7 @@ module Special
 !
 !  Define chi= K_0/rho
 !
-      b_1=1./max(tini,sqrt(p%b2))
+      b_1=1./(sqrt(p%b2)+tini)
 !
 !  calculate first H_i
 !
