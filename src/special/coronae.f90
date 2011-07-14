@@ -579,7 +579,6 @@ module Special
         call dot(K1,p%bb,tmp)
         call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
-        
         q = f(l1:l2,m,n,ispitzerx:ispitzerz)
 !
         nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)*eighth_moment
@@ -776,7 +775,8 @@ module Special
 !
       real, dimension (nx) :: hc,tmp
 !
-      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
+!      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
+      if (Kpara /= 0.) call calc_heatcond_tensor(df,p)
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
@@ -898,14 +898,14 @@ module Special
       do i=1,3
         do j=1,3
           tmp =       p%glnTT(:,i)*glnT2_1*p%glnTT(:,j)
-          tmp = tmp * p%bb(:,i)*b2_1*p%bb(:,j)
+          tmp = tmp * p%bunit(:,i)*p%bunit(:,j)
           tmp = tmp * (vKpara-vKperp)
           chi_spitzer=chi_spitzer+ tmp
           if (i == j) chi_spitzer=chi_spitzer+ &
               vKperp*glnT2_1*p%glnTT(:,i)*p%glnTT(:,j)
         enddo
       enddo
-      chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1
+      chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1*gamma
 !
 !  Calculate gradient of variable diffusion coefficients.
 !
@@ -926,7 +926,7 @@ module Special
 !  Kc should be on the order of unity or smaler
 !
       if (Kc /= 0.) then
-        chi_clight = Kc*c_light/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
+        chi_clight = Kc*c_light*dxmin_pencil
         K_clight = chi_clight*exp(p%lnrho)/(p%cp1*gamma)
 !
         where (chi_spitzer > chi_clight)
@@ -941,7 +941,7 @@ module Special
 !  Calculate diffusion term.
 !
       thdiff = 0.
-      call tensor_diffusion(p,p%glnTT,p%hlnTT,vKperp,vKpara,thdiff,&
+      call tensor_diffusion(p,vKperp,vKpara,thdiff, &
           GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
 !      if (coronae_fix .and. llast_proc_z) &
@@ -978,7 +978,7 @@ module Special
       endif
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi_spitzer*dxyz_2
+        diffus_chi=diffus_chi+chi_spitzer*dxyz_2
         if (ldiagnos.and.idiag_dtspitzer /= 0.) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
@@ -1001,21 +1001,20 @@ module Special
 !
         call dot_mn(tmpv+tmpv2,p%glnTT,tmp)
 !
-        tmp = tmp*Kpara*exp(2.5*p%lnTT-p%lnrho)*gamma*p%cp1*glnT2_1
+        tmp = tmp*chi_spitzer*glnT2_1
 !
         call multsv_mn(tmp,p%glnTT,u_advec)
 !
-        advec_uu = abs(u_advec(:,1))*dx_1(l1:l2) + &
+        tmp = abs(u_advec(:,1))*dx_1(l1:l2) + &
                    abs(u_advec(:,2))*dy_1(m)     + &
                    abs(u_advec(:,3))*dz_1(n)
 !
-        if (idiag_dtspitzer/=0) call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
+        if (idiag_dtspitzer/=0) call max_mn_name(tmp/cdt,idiag_dtspitzer,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine tensor_diffusion(p,gecr,ecr_ij, &
-        vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
+    subroutine tensor_diffusion(p,vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
 !
       use Sub, only: dot2_mn, dot_mn, multsv_mn, multmv_mn
 !
@@ -1041,8 +1040,7 @@ module Special
 !
 !  06-jan-10/bing: copied from sub.f90
 !
-      real, dimension (nx,3,3) :: ecr_ij
-      real, dimension (nx,3) :: gecr,hhh,gvKperp1,gvKpara1,tmpv
+      real, dimension (nx,3) :: hhh,gvKperp1,gvKpara1,tmpv
       real, dimension (nx) :: b_1,del2ecr,gecr2,vKperp,vKpara
       real, dimension (nx) :: hhh2,quenchfactor,rhs,tmp,tmpi,tmpj,tmpk
       integer :: i,j,k
@@ -1050,7 +1048,7 @@ module Special
       real, optional, dimension (nx,3) :: gvKperp,gvKpara
       type (pencil_case), intent(in) :: p
 !
-      intent(in) :: gecr,ecr_ij,vKperp,vKpara,llog
+      intent(in) :: vKperp,vKpara,llog
       intent(in) :: gvKperp,gvKpara
       intent(out) :: rhs
 !
@@ -1060,7 +1058,7 @@ module Special
 !
       del2ecr=0.
       do i=1,3
-        del2ecr=del2ecr+ecr_ij(:,i,i)
+        del2ecr=del2ecr+p%hlnTT(:,i,i)
         hhh(:,i)=0.
         do j=1,3
           tmpj(:)=0.
@@ -1080,11 +1078,11 @@ module Special
       call dot2_mn(tmpv,hhh2,FAST_SQRT=.true.)
       quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
       call multsv_mn(quenchfactor,tmpv,hhh)
-      call dot_mn(hhh,gecr,tmp)
+      call dot_mn(hhh,p%glnTT,tmp)
 !
 !  Dot Hessian matrix of ecr with bi*bj, and add into tmp.
 !
-      call multmv_mn(ecr_ij,p%bunit,hhh)
+      call multmv_mn(p%hlnTT,p%bunit,hhh)
       call dot_mn(hhh,p%bunit,tmpj)
       tmp = tmp+tmpj
 !
@@ -1092,12 +1090,12 @@ module Special
 !
       gecr2=0.
       if (present(llog)) then
-        call dot_mn(gecr,p%bunit,tmpi)
+        call dot_mn(p%glnTT,p%bunit,tmpi)
         tmp=tmp+tmpi**2
 !
 !  Calculate gecr2 - needed for lnecr form.
 !
-        call dot2_mn(gecr,gecr2)
+        call dot2_mn(p%glnTT,gecr2)
       endif
 !
 !  If variable tensor, add extra terms and add result into decr/dt.
@@ -1109,12 +1107,12 @@ module Special
 !
 !  Put d_i ecr d_i vKperp into tmpj.
 !
-      call dot_mn(gvKperp1,gecr,tmpj)
+      call dot_mn(gvKperp1,p%glnTT,tmpj)
 !
 !  Nonuniform conductivities, add terms into tmpj.
 !
       call dot_mn(p%bunit,gvKpara1-gvKperp1,tmpi)
-      call dot_mn(p%bunit,gecr,tmpk)
+      call dot_mn(p%bunit,p%glnTT,tmpk)
       tmpj = tmpj+tmpi*tmpk
 !
 !  Calculate rhs.
@@ -1123,6 +1121,124 @@ module Special
 !
     endsubroutine tensor_diffusion
 !**********************************************************************
+    subroutine calc_heatcond_tensor(df,p)
+!
+!    anisotropic heat conduction with T^5/2
+!    Div K T Grad ln T
+!      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
+!
+      use Diagnostics,     only : max_mn_name
+      use Sub,             only : dot2,dot,multsv,multmv
+      use EquationOfState, only : gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: hhh,tmpv,gKp
+      real, dimension (nx) :: tmpj,hhh2,quenchfactor
+      real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
+      real, dimension (nx) :: chi_spitzer,rhs
+      real, dimension (nx) :: chi_clight
+      integer :: i,j,k
+      type (pencil_case) :: p
+!
+!  calculate unit vector of bb
+!
+      call dot2(p%bb,bbb,PRECISE_SQRT=.true.)
+      b1=1./(tini+bbb)
+!
+!  calculate H_i
+!
+      do i=1,3
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:)=0.
+          do k=1,3
+            tmpj(:)=tmpj(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmpj(:))
+        enddo
+      enddo
+      call multsv(b1,hhh,tmpv)
+!
+!  calculate abs(h) limiting
+!
+      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
+!
+!  limit the length of h
+!
+      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      call multsv(quenchfactor,tmpv,hhh)
+!
+      call dot(hhh,p%glnTT,rhs)
+!
+      chi_spitzer =  Kpara * p%rho1 * exp(2.5*p%lnTT) * p%cp1 * gamma
+!
+      tmpv(:,:)=0.
+      do i=1,3
+        do j=1,3
+          tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
+        enddo
+      enddo
+!
+      gKp = 3.5 * p%glnTT
+!
+      call dot2(p%glnTT,glnTT2)
+!
+!  Limit heat condcution coefficient due to maximum available energy
+!
+!       if (Ksat /=0. ) then
+!         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
+!         chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
+! !
+!         where (chi_spitzer > chi_2)
+!           gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
+!           gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
+!           gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,glnTT2)
+!           chi_spitzer =  chi_2
+!         endwhere
+!       endif
+!
+!  Limit heat conduction coefficient due to diffusion
+!  speed smaller than speed of light
+!
+      if (Kc /= 0.) then
+        chi_clight = Kc*c_light * dxmin_pencil
+!
+        where (chi_spitzer > chi_clight)
+          chi_spitzer = chi_clight
+          gKp(:,1) = p%glnrho(:,1)+p%glnTT(:,1)
+          gKp(:,2) = p%glnrho(:,2)+p%glnTT(:,2)
+          gKp(:,3) = p%glnrho(:,3)+p%glnTT(:,3)
+        endwhere
+      endif
+!
+      call dot(p%bunit,gKp,tmpj)
+      call dot(p%bunit,p%glnTT,tmpk)
+      rhs = rhs + tmpj*tmpk
+!
+      call multmv(p%hlnTT,p%bunit,tmpv)
+      call dot(tmpv,p%bunit,tmpj)
+      rhs = rhs + tmpj
+!
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + chi_spitzer * rhs
+!
+!  for timestep extension multiply with the
+!  cosine between grad T and bunit
+!
+      call dot(p%bb,p%glnTT,cosbgT)
+      call dot2(p%bb,b2)
+!
+      cosbgT=cosbgT/sqrt(glnTT2*b2 + tini)
+!
+      if (lfirst.and.ldt) then
+        chi_spitzer=chi_spitzer * cosbgT**2.
+        diffus_chi=diffus_chi + chi_spitzer*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_tensor
+!***********************************************************************
     subroutine calc_heatcond_glnTT(df,p)
 !
 !  L = Div( Grad(lnT)^2  rho b*(b*Grad(T)))
