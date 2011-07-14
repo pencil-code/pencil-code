@@ -1,0 +1,23 @@
+                         passing_allocatable
+                        ---------------------
+
+1. Symptoms:
+
+  When passing a chunk of an allocatable 4D array to a 
+  subroutine, the subroutine will get the array starting 
+  from the beginning, instead of just the desired chunk.
+
+  Strangely enough, it only appears for 4D arrays.
+
+2. Diagnostic:
+
+   Intel compiler bug. Fixed in version 12.0.4.191.
+
+5. Solution:
+
+   Switch to a compiler that works.
+
+6. Original date:
+
+   Wed 14 Jul 2011
+
