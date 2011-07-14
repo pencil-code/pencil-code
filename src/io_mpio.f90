@@ -700,7 +700,8 @@ contains
 !  Fill pencil with maximum gridspacing. Will be overwritten
 !  during the mn loop in the non equiditant case
 !
-      dxmax_pencil(:) = dxmax      
+      dxmax_pencil(:) = dxmax
+      dxmin_pencil(:) = dxmin
 !
 !  inherit Lx, Ly, Lz from start, and assume uniform mesh
 !

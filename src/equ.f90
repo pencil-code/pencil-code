@@ -453,6 +453,10 @@ module Equ
             if (nxgrid /= 1) dxmax_pencil=1./dx_1(l1:l2)
             if (nygrid /= 1) dxmax_pencil=max(1./dy_1(m),dxmax_pencil)
             if (nzgrid /= 1) dxmax_pencil=max(1./dz_1(n),dxmax_pencil)
+            dxmin_pencil = 0.
+            if (nxgrid /= 1) dxmin_pencil=1./dx_1(l1:l2)
+            if (nygrid /= 1) dxmin_pencil=min(1./dy_1(m),dxmin_pencil)
+            if (nzgrid /= 1) dxmin_pencil=min(1./dz_1(n),dxmin_pencil)
 !
             dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
             dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4

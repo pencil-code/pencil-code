@@ -419,6 +419,7 @@ contains
 !  during the mn loop in the non equiditant case
 !
       dxmax_pencil(:) = dxmax
+      dxmin_pencil(:) = dxmin
 !
 !  debug output
 !
