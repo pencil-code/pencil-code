@@ -601,7 +601,7 @@ pro prepare_cube, cube_index
 	end
 
 	; substract horizontal averages
-	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= reform (mean (cube [*,*,z]), num_x, num_y)
+	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= mean (cube [*,*,z])
 
 	if (frozen) then begin
 		; find intermediate minimum and maximum values
