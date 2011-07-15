@@ -221,7 +221,7 @@ program pc_collect
         call choose_pencils()
 !
         ! collect f in gf:
-        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,1+ipz*nz:mz+ipz*nz,:) = f
+        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,1:mz,:) = f
 !
         ! collect x coordinates:
         gx(1+ipx*nx:mx+ipx*nx) = x
