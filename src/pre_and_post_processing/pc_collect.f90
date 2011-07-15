@@ -221,7 +221,7 @@ program pc_collect
         call choose_pencils()
 !
         ! collect f in gf:
-        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,1:mz,:) = f
+        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f
 !
         ! collect x coordinates:
         gx(1+ipx*nx:mx+ipx*nx) = x
@@ -273,7 +273,7 @@ program pc_collect
   write(lun_output) gdx_tilde,gdy_tilde,gdz_tilde
   close(lun_output)
 !
-  print*, 'Writing snapshot for time t =', t
+  print *, 'Writing snapshot for time t =', t
 !
 !  Free any allocated memory.
 !
