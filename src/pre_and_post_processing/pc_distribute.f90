@@ -215,7 +215,7 @@ program pc_distribute
         f = gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:)
 !
         ! write data:
-        call wsnap(trim(directory_snap)//'/'//trim(filename),f,mfarray)
+        call wsnap(trim(directory_snap)//'/'//trim(filename),f,mfarray,enum=.false.,noghost=.true.)
 !
       enddo
     enddo
