@@ -22,9 +22,9 @@ program pc_collect
   real, dimension (mx,my,mz,mfarray) :: f
   integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
   real, dimension (ngx,ngy,mz,mfarray) :: gf
-  real, dimension (ngx) :: gx
-  real, dimension (ngy) :: gy
-  real, dimension (ngz) :: gz
+  real, dimension (ngx) :: gx, gdx_1, gdx_tilde
+  real, dimension (ngy) :: gy, gdy_1, gdy_tilde
+  real, dimension (ngz) :: gz, gdz_1, gdz_tilde
   integer :: mvar_in, bytes, pz, pa, start_pos, end_pos
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -225,15 +225,21 @@ program pc_collect
 !
         ! collect x coordinates:
         gx(1+ipx*nx:mx+ipx*nx) = x
+        gdx_1(1+ipx*nx:mx+ipx*nx) = dx_1
+        gdx_tilde(1+ipx*nx:mx+ipx*nx) = dx_tilde
 !
         ! collect y coordinates:
         gy(1+ipy*ny:my+ipy*ny) = y
+        gdy_1(1+ipy*ny:my+ipy*ny) = dy_1
+        gdy_tilde(1+ipy*ny:my+ipy*ny) = dy_tilde
 !
       enddo
     enddo
 !
     ! collect z coordinates:
     gz(1+ipz*nz:mz+ipz*nz) = z
+    gdz_1(1+ipz*nz:mz+ipz*nz) = dz_1
+    gdz_tilde(1+ipz*nz:mz+ipz*nz) = dz_tilde
 !
     ! write xy-layer:
     do pa = 1, mfarray
@@ -256,6 +262,15 @@ program pc_collect
   else
     write(lun_output) t_sp,gx,gy,gz,dx,dy,dz
   endif
+  close(lun_output)
+!
+  ! write global grid:
+  open(lun_output,FILE=trim(directory_out)//'/grid.dat',FORM='unformatted')
+  write(lun_output) t_sp,gx,gy,gz,dx,dy,dz
+  write(lun_output) dx,dy,dz
+  write(lun_output) Lx,Ly,Lz
+  write(lun_output) gdx_1,gdy_1,gdz_1
+  write(lun_output) gdx_tilde,gdy_tilde,gdz_tilde
   close(lun_output)
 !
   print*, 'Writing snapshot for time t =', t

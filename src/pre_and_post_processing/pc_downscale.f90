@@ -19,15 +19,15 @@ program pc_downscale
 !
   integer, parameter :: reduce=2
   character (len=80) :: filename
-  character (len=*), parameter :: directory_out = 'data/allprocs'
+  character (len=*), parameter :: directory_out = 'data/reduced'
 !
   real, dimension (mx,my,mz,mfarray) :: f
 !!!  real, dimension (mx,my,mz,mvar) :: df
   integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost, ngz=nzgrid+2*nghost
   real, dimension (nrx,nry,mz,mfarray) :: rf
-  real, dimension (nrx) :: rx
-  real, dimension (nry) :: ry
-  real, dimension (ngz) :: gz
+  real, dimension (nrx) :: rx, rdx_1, rdx_tilde
+  real, dimension (nry) :: ry, rdy_1, rdy_tilde
+  real, dimension (ngz) :: gz, gdz_1, gdz_tilde
 !!!  type (pencil_case) :: p
   integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos
   real, parameter :: inv_reduce_2 = 1.0 / reduce**2.0
@@ -249,11 +249,15 @@ program pc_downscale
         ! downscale x coordinates:
         do px = 0, nx-1, reduce
           rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) / reduce
+          rdx_1(nghost+1+(px+ipx*nx)/reduce) = 1.0 / sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
+          rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
         enddo
 !
         ! downscale y coordinates:
         do py = 0, ny-1, reduce
           ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) / reduce
+          rdy_1(nghost+1+(py+ipy*ny)/reduce) = 1.0 / sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
+          rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
         enddo
 !
       enddo
@@ -261,18 +265,28 @@ program pc_downscale
 !
     ! collect z coordinates:
     gz(1+ipz*nz:mz+ipz*nz) = z
+    gdz_1(1+ipz*nz:mz+ipz*nz) = dz_1
+    gdz_tilde(1+ipz*nz:mz+ipz*nz) = dz_tilde
 !
     ! communicate ghost cells along the y direction:
     rf(nghost+1:nrx-nghost,           1:nghost,  :,:) = rf(nghost+1:nrx-nghost,nry-2*nghost+1:nry-nghost,:,:)
     rf(nghost+1:nrx-nghost,nry-nghost+1:nry,     :,:) = rf(nghost+1:nrx-nghost,      nghost+1:2*nghost,  :,:)
     ry(           1:nghost) = ry(nry-2*nghost+1:nry-nghost) - Lxyz(2)
     ry(nry-nghost+1:nry   ) = ry(      nghost+1:2*nghost  ) + Lxyz(2)
+    rdy_1(           1:nghost) = rdy_1(nry-2*nghost+1:nry-nghost)
+    rdy_1(nry-nghost+1:nry   ) = rdy_1(      nghost+1:2*nghost  )
+    rdy_tilde(           1:nghost) = rdy_tilde(nry-2*nghost+1:nry-nghost)
+    rdy_tilde(nry-nghost+1:nry   ) = rdy_tilde(      nghost+1:2*nghost  )
 !
     ! communicate ghost cells along the x direction:
     rf(           1:nghost,:,:,:) = rf(nrx-2*nghost+1:nrx-nghost,:,:,:)
     rf(nrx-nghost+1:nrx,   :,:,:) = rf(      nghost+1:2*nghost,  :,:,:)
     rx(           1:nghost) = rx(nrx-2*nghost+1:nrx-nghost) - Lxyz(1)
     rx(nrx-nghost+1:nrx   ) = rx(      nghost+1:2*nghost  ) + Lxyz(1)
+    rdx_1(           1:nghost) = rdx_1(nrx-2*nghost+1:nrx-nghost)
+    rdx_1(nrx-nghost+1:nrx   ) = rdx_1(      nghost+1:2*nghost  )
+    rdx_tilde(           1:nghost) = rdx_tilde(nrx-2*nghost+1:nrx-nghost)
+    rdx_tilde(nrx-nghost+1:nrx   ) = rdx_tilde(      nghost+1:2*nghost  )
 !
     ! write xy-layer:
     do pa = 1, mfarray
@@ -295,6 +309,15 @@ program pc_downscale
   else
     write(lun_output) t_sp,rx,ry,gz,dx*reduce,dy*reduce,dz
   endif
+  close(lun_output)
+!
+  ! write global grid:
+  open(lun_output,FILE=trim(directory_out)//'/grid.dat',FORM='unformatted')
+  write(lun_output) t_sp,rx,ry,gz,dx*reduce,dy*reduce,dz
+  write(lun_output) dx*reduce,dy*reduce,dz
+  write(lun_output) Lx,Ly,Lz
+  write(lun_output) rdx_1,rdy_1,gdz_1
+  write(lun_output) rdx_tilde,rdy_tilde,gdz_tilde
   close(lun_output)
 !
   print*, 'Writing snapshot for time t =', t
