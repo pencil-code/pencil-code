@@ -253,7 +253,7 @@ module Testfield
       elsewhere
         zmask=0.
       endwhere
-      zmask=zmask*nz/sum(zmask)
+      zmask=zmask*nz/sum(zmask(n1:n2))
 !
 !  debug output
 !
