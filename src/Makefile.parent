@@ -66,15 +66,15 @@ semiauto-conf:
 	@(cd src; $(MAKE) -s FROM_PARENT=src/ semiauto-conf)
 
 # Compile (only on request) tools for collecting, downscaling, and distributing data cubes
-pc_collect: Makefile_inc
+pc_collect:
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src pre_and_post_processing/pc_collect.x )
-pc_downscale: Makefile_inc
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src Makefile pre_and_post_processing/pc_collect.x )
+pc_downscale:
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src pre_and_post_processing/pc_downscale.x )
-pc_distribute: Makefile_inc
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src Makefile pre_and_post_processing/pc_downscale.x )
+pc_distribute:
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src pre_and_post_processing/pc_distribute.x )
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src Makefile pre_and_post_processing/pc_distribute.x )
 
 # Create Makefile.inc, but need this to be a `phony' target (i.e. not a
 # filename as target), so this file is always written.

@@ -217,9 +217,9 @@ $(LSODE_FC_OBJ): $(LSODE_FC_SRC) $(CDATA_OBJ) $(CHEMISTRY_OBJ)
 #
 $(POLYMER_OBJ): $(POLYMER_SRC) $(CDATA_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(INITCOND_OBJ)
 #
-pre_and_post_processing/pc_collect.o: $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
+pre_and_post_processing/pc_collect.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
 #
-pre_and_post_processing/pc_downscale.o: $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
+pre_and_post_processing/pc_downscale.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
 #
-pre_and_post_processing/pc_distribute.o: $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
+pre_and_post_processing/pc_distribute.o: $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER)
 #

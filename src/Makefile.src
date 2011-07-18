@@ -1805,17 +1805,16 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
-physics_nospecial=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(DENSITY_OBJ) $(DUSTDENSITY_OBJ) $(DUSTVELOCITY_OBJ) $(ENTROPY_OBJ) $(EOS_OBJ) $(FORCING_OBJ) $(GRAVITY_OBJ) $(HYDRO_OBJ) $(HYPERRESI_STRICT_OBJ) $(HYPERVISC_STRICT_OBJ) $(IMPLICIT_PHYSICS_OBJ) $(INTERSTELLAR_OBJ) $(LORENZ_GAUGE_OBJ) $(NEUTRALDENSITY_OBJ) $(NEUTRALVELOCITY_OBJ) $(POISSON_OBJ) $(POLYMER_OBJ) $(PSCALAR_OBJ) $(RADIATION_OBJ) $(SELFGRAVITY_OBJ) $(SHEAR_OBJ) $(SHOCK_OBJ) $(NOSPECIAL_OBJ) $(TESTFIELD_OBJ) $(TESTFLOW_OBJ) $(TESTSCALAR_OBJ) $(VISCOSITY_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a
 technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) $(SYSCALLS)_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ)
-pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
+pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_collect.o $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x
-pre_and_post_processing/pc_downscale.o: pre_and_post_processing/pc_downscale.f90 $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x
+pre_and_post_processing/pc_downscale.o: pre_and_post_processing/pc_downscale.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_downscale.x: pre_and_post_processing/pc_downscale.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_downscale.o $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_downscale.x
-pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_downscale.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_downscale.x
+pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_distribute.x: pre_and_post_processing/pc_distribute.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute.o $(physics_nospecial) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
