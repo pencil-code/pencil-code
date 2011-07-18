@@ -99,6 +99,9 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !   
+!  Make it possible to switch the algorithm off while still 
+!  having this file compiled, for debug purposes.
+!
       if (.not.lfargo_advection) then
         if (lroot) then
           print*,""
@@ -108,7 +111,7 @@ module Special
           print*,"want to use the fargo algorithm"
           print*,""
         endif
-        call fatal_error("initialize_special","")
+        call warning("initialize_special","")
       endif
 !
 !  Not implemented for other than cylindrical coordinates
@@ -422,12 +425,14 @@ endsubroutine read_special_run_pars
 !    
 !  Modified continuity equation
 !
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
-             uuadvec_grho   - p%rho*p%divu
-      else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
-             uuadvec_glnrho - p%divu
+      if (lfargo_advection) then 
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
+               uuadvec_grho   - p%rho*p%divu
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
+               uuadvec_glnrho - p%divu
+        endif
       endif
 !
       call keep_compiler_quiet(f)
@@ -451,15 +456,17 @@ endsubroutine read_special_run_pars
 !
 !  Modified momentum equation
 !
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-uuadvec_guu
+      if (lfargo_advection) then 
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-uuadvec_guu
 !
 !  The lines below are not symmetric. This is on purpose, to better 
 !  highlight that fargo advects the azimuthal coordinate ONLY!!
 !
-      if (lfirst.and.ldt) then 
-        advec_uu=abs(p%uu(:,1))  *dx_1(l1:l2)+ &
-                 abs(uu_residual)*dy_1(  m  )*rcyl_mn1+ &
-                 abs(p%uu(:,3))  *dz_1(  n  )
+        if (lfirst.and.ldt) then 
+          advec_uu=abs(p%uu(:,1))  *dx_1(l1:l2)+ &
+                   abs(uu_residual)*dy_1(  m  )*rcyl_mn1+ &
+                   abs(p%uu(:,3))  *dz_1(  n  )
+        endif
       endif
 !
       call keep_compiler_quiet(f)
@@ -482,7 +489,8 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_gaa
+      if (lfargo_advection) & 
+           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_gaa
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -505,7 +513,8 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-uuadvec_gss
+      if (lfargo_advection) & 
+           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-uuadvec_gss
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -576,7 +585,7 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_sub
 !
-      if (llast) then 
+      if (lfargo_advection.and.llast) then 
         if (lfargoadvection_as_shift) then
           call fourier_shift_fargo(f)
         else
