@@ -109,14 +109,14 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (n_elements(variables) ne 0) then begin
     if (keyword_set(additional)) then begin
-      filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+      filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
       variables=[filevars,variables]
       if (n_elements(tags) ne 0) then begin
         tags=[filevars,tags]
       endif
     endif
   endif else begin
-    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
   endelse
 ;
 ; Default tags are set equal to the variables.

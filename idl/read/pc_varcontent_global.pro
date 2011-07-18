@@ -214,16 +214,9 @@ if (iglobal_gg gt 0) then begin
   varcontent[iglobal_gg].skip       = 2
 endif
 ;
-;  Zero out default definition in case it has been set by mistake.
+;  Remove empty entry at position 0:
 ;
-varcontent[0].variable = 'UNKNOWN'
-varcontent[0].idlvar   = 'UNKNOWN'
-varcontent[0].idlinit  = '0.0'
-varcontent[0].skip     = 0
-; Maybe this should be changed to:
-; varcontent=varcontent[1:*]
-; which would make unnecessary the hardcoded removing of the first entry
-; in some other IDL scripts. (Bourdin.KIS)
+varcontent=varcontent[1:*]
 ;
 return, varcontent
 ;

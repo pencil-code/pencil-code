@@ -132,14 +132,16 @@ varcontent[0].idlvar      = 'UNKNOWN'
 varcontent[0].idlinit     = '0.'
 varcontent[0].skip        = 0
 ;
+varcontent = varcontent[1:*]
+;
 ;  Put variable names in array
 ;
-variables = (varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+variables = (varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
 ;
 ;  Define arrays from contents of varcontent
 ;
 totalvars = mpvar
-for iv=1L,totalvars do begin
+for iv=0L,totalvars-1L do begin
   if (varcontent[iv].variable eq 'UNKNOWN') then $
       message, 'Unknown variable at position ' + str(iv) $
       + ' needs declaring in pc_read_pvar.pro', /INF

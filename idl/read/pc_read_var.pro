@@ -234,18 +234,18 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
       param=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
-  totalvars=(size(varcontent))[1]-1
+  totalvars=(size(varcontent))[1]
 ;
   if (n_elements(variables) ne 0) then begin
     if (keyword_set(additional)) then begin
-      filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+      filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
       variables=[filevars,variables]
       if (n_elements(tags) ne 0) then begin
         tags=[filevars,tags]
       endif
     endif
   endif else begin
-    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)
   endelse
 ;
 ; Shortcut for getting magnetic field bb.
@@ -304,7 +304,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   res=''
   content=''
-  for iv=1L,totalvars do begin
+  for iv=0L,totalvars-1L do begin
     if (nprocs eq 1) then begin
       res=res+','+varcontent[iv].idlvar
     endif else begin
@@ -468,7 +468,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Loop over variables.
 ;
-      for iv=1L,totalvars do begin
+      for iv=0L,totalvars-1L do begin
         if (varcontent[iv].variable eq 'UNKNOWN') then continue
 ;
 ; For 2-D run with lwrite_2d=T we only need to read 2-D data.
@@ -524,7 +524,7 @@ COMPILE_OPT IDL2,HIDDEN
     undefine,xloc
     undefine,yloc
     undefine,zloc
-    for iv=1L,totalvars do begin
+    for iv=0L,totalvars-1L do begin
       undefine, varcontent[iv].idlvarloc
     endfor
   endif
