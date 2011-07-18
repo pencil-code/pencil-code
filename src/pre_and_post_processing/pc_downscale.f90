@@ -22,13 +22,11 @@ program pc_downscale
   character (len=*), parameter :: directory_out = 'data/reduced'
 !
   real, dimension (mx,my,mz,mfarray) :: f
-!!!  real, dimension (mx,my,mz,mvar) :: df
   integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost, ngz=nzgrid+2*nghost
   real, dimension (:,:,:,:), allocatable :: rf
   real, dimension (nrx) :: rx, rdx_1, rdx_tilde
   real, dimension (nry) :: ry, rdy_1, rdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
-!!!  type (pencil_case) :: p
   integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos, alloc_err
   real, parameter :: inv_reduce_2 = 1.0 / reduce**2.0
   real :: t_sp   ! t in single precision for backwards compatibility
@@ -50,9 +48,6 @@ program pc_downscale
   ulcorn = 0
 !
   inquire (IOLENGTH=bytes) 1.0
-!
-  allocate (rf (nrx,nry,mz,mfarray), stat=alloc_err)
-  if (alloc_err /= 0) call fatal_error ('pc_downscale', 'Failed to allocate memory for rf.', .true.)
 !
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
@@ -117,6 +112,9 @@ program pc_downscale
   else
     mvar_in=mvar
   endif
+!
+  allocate (rf (nrx,nry,mz,mvar_io), stat=alloc_err)
+  if (alloc_err /= 0) call fatal_error ('pc_downscale', 'Failed to allocate memory for rf.', .true.)
 !
 !  Print resolution and dimension of the simulation.
 !
@@ -226,7 +224,9 @@ program pc_downscale
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+        lpencil_check_at_work = .true.
         call initialize_modules(f,LSTARTING=.true.)
+        lpencil_check_at_work = .false.
 !
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc.
@@ -234,7 +234,7 @@ program pc_downscale
         call choose_pencils()
 !
         ! downscale f:
-        do pa = 1, mfarray
+        do pa = 1, mvar_io
           start_pos = nghost + 1
           end_pos = nghost + nz
           if (lfirst_proc_z) start_pos = 1
@@ -292,7 +292,7 @@ program pc_downscale
     rdx_tilde(nrx-nghost+1:nrx   ) = rdx_tilde(      nghost+1:2*nghost  )
 !
     ! write xy-layer:
-    do pa = 1, mfarray
+    do pa = 1, mvar_io
       start_pos = nghost + 1
       end_pos = nghost + nz
       if (lfirst_proc_z) start_pos = 1

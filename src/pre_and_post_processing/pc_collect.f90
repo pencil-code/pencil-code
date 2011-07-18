@@ -46,9 +46,6 @@ program pc_collect
 !
   inquire (IOLENGTH=bytes) 1.0
 !
-  allocate (gf (ngx,ngy,mz,mfarray), stat=alloc_err)
-  if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gf.', .true.)
-!
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
 !
@@ -108,6 +105,9 @@ program pc_collect
     mvar_in=mvar
   endif
 !
+  allocate (gf (ngx,ngy,mz,mvar_io), stat=alloc_err)
+  if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gf.', .true.)
+!
 !  Print resolution and dimension of the simulation.
 !
   if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
@@ -134,6 +134,7 @@ program pc_collect
 !
   do ipz = 0, nprocz-1
 !
+    f = huge(1.0)
     gf = huge(1.0)
     gx = huge(1.0)
     gy = huge(1.0)
@@ -216,7 +217,9 @@ program pc_collect
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+        lpencil_check_at_work = .true.
         call initialize_modules(f,LSTARTING=.true.)
+        lpencil_check_at_work = .false.
 !
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc.
@@ -224,7 +227,7 @@ program pc_collect
         call choose_pencils()
 !
         ! collect f in gf:
-        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f
+        gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f(:,:,:,1:mvar_io)
 !
         ! collect x coordinates:
         gx(1+ipx*nx:mx+ipx*nx) = x
@@ -245,7 +248,7 @@ program pc_collect
     gdz_tilde(1+ipz*nz:mz+ipz*nz) = dz_tilde
 !
     ! write xy-layer:
-    do pa = 1, mfarray
+    do pa = 1, mvar_io
       start_pos = nghost + 1
       end_pos = nghost + nz
       if (lfirst_proc_z) start_pos = 1
