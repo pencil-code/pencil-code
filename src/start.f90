@@ -483,7 +483,7 @@ program start
     if (lparticles) &
         call write_snapshot_particles(directory_snap,f,ENUM=.false.,snapnum=0)
 !
-    call wsnap(trim(directory_snap)//'/VAR0',f, &
+    call wsnap(trim(directory_snap)//'/VAR0',f(:,:,:,1:mvar_io), &
         mvar_io,ENUM=.false.,FLIST='varN.list')
   endif
 !
@@ -496,10 +496,12 @@ program start
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
         call write_snapshot_particles(directory_snap,f,ENUM=.false.)
-    call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
+    call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io),mvar_io, &
+        ENUM=.false.)
     call wtime(trim(directory)//'/time.dat',t)
   elseif (lmodify) then
-    call wsnap(trim(directory_snap)//'/'//modify_filename,f,mvar_io,ENUM=.false.)
+    call wsnap(trim(directory_snap)//'/'//modify_filename,f(:,:,:,1:mvar_io), &
+        mvar_io,ENUM=.false.)
   endif
   call wdim(trim(directory)//'/dim.dat')
 !

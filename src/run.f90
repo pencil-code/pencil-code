@@ -633,7 +633,7 @@ program run
     if (lparticles) &
         call write_snapshot_particles(directory_snap,f,ENUM=.true.)
 !
-    call wsnap(trim(directory_snap)//'/VAR',f, &
+    call wsnap(trim(directory_snap)//'/VAR',f(:,:,:,1:mvar_io), &
         mvar_io,ENUM=.true.,FLIST='varN.list')
     call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
          FLIST='tavgN.list')
@@ -650,8 +650,8 @@ program run
         if (lparticles) &
             call write_snapshot_particles(directory_snap,f,ENUM=.false.)
 !
-        call wsnap(trim(directory_snap)//'/var.dat', &
-                   f,mvar_io,ENUM=.false.,noghost=noghost_for_isave)
+        call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io), &
+                   mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
                             ENUM=.false.)
         call wtime(trim(directory)//'/time.dat',t)
@@ -728,22 +728,25 @@ program run
       if (lparticles) &
           call write_snapshot_particles(directory_snap,f,ENUM=.false.)
 !
-      call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
+      call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io),mvar_io, &
+          ENUM=.false.)
       call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
 !
 !  dvar is written for analysis and debugging purposes only.
 !
       if (ip<=11 .or. lwrite_dvar) then
-        call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false., &
-            noghost=.true.)
+        call wsnap(trim(directory)//'/dvar.dat',df(:,:,:,1:mvar),mvar, &
+            ENUM=.false.,noghost=.true.)
         call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
       endif
 !
 !  Write crash files before exiting if we haven't written var.dat already
 !
     else
-      call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)
-      if (ip<=11) call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
+      call wsnap(trim(directory_snap)//'/crash.dat',f(:,:,:,1:mvar_io), &
+          mvar_io,ENUM=.false.)
+      if (ip<=11) call wsnap(trim(directory)//'/dcrash.dat',df(:,:,:,1:mvar), &
+          mvar,ENUM=.false.)
     endif
   endif
 !
