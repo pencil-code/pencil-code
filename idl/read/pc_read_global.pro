@@ -26,6 +26,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   default, validate_variables, 1
   default, trimall, 0
+  default, allprocs, 0
 ;
 ; Default data directory
 ;
