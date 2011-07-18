@@ -183,15 +183,16 @@ module Special
           call fatal_error ('solar_corona', &
               "Please select decaying of Newton Cooling using 'allp' or 'nc_lnrho_num_magn'.")
 !
-! Define and initialize the processors that are computing the granulation:
+      if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
+!
+      if (lpencil_check_at_work) return
 !
       if (lgranulation) then
+        ! Define and initialize the processors that are computing the granulation
         lgran_proc = ((.not. lgran_parallel) .and. lroot) .or. &
             (lgran_parallel .and. (iproc >= nprocxy) .and. (iproc < nprocxy+nglevel))
         if (lroot .or. lgran_proc) call set_gran_params()
       endif
-!
-      if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
 !
       ! Setup initial magnetic field for the bottom layer
       if (lfirst_proc_z .and. (bmdi /= 0.0)) then
@@ -1103,9 +1104,9 @@ module Special
       character (len=*), intent(in) :: times_dat, field_dat
       real, dimension(nx,ny,n1,3), intent(inout) :: A
       real, intent(inout) :: time_l, time_r
+!
       real, dimension(:,:,:,:), allocatable :: A_l, A_r
       logical, save :: lfirst_call=.true.
-!
       real :: time
       integer :: pos_l, pos_r, alloc_err_sum
 !
