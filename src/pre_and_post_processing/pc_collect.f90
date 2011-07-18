@@ -21,11 +21,11 @@ program pc_collect
 !
   real, dimension (mx,my,mz,mfarray) :: f
   integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
-  real, dimension (ngx,ngy,mz,mfarray) :: gf
+  real, dimension (:,:,:,:), allocatable :: gf
   real, dimension (ngx) :: gx, gdx_1, gdx_tilde
   real, dimension (ngy) :: gy, gdy_1, gdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
-  integer :: mvar_in, bytes, pz, pa, start_pos, end_pos
+  integer :: mvar_in, bytes, pz, pa, start_pos, end_pos, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lrun=.true.
@@ -45,6 +45,9 @@ program pc_collect
   ulcorn = 0
 !
   inquire (IOLENGTH=bytes) 1.0
+!
+  allocate (gf (ngx,ngy,mz,mfarray), stat=alloc_err)
+  if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gf.', .true.)
 !
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
