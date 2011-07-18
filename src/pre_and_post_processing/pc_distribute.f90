@@ -20,9 +20,13 @@ program pc_distribute
   character (len=*), parameter :: directory_in = 'data/allprocs'
 !
   real, dimension (mx,my,mz,mfarray) :: f
-  integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost
-  real, dimension (ngx,ngy,mz,mfarray) :: gf
-  integer :: mvar_in, bytes, pz, pa
+  integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
+  real, dimension (:,:,:,:), allocatable :: gf
+  real, dimension (ngx) :: gx
+  real, dimension (ngy) :: gy
+  real, dimension (ngz) :: gz
+  real :: dummy_dx, dummy_dy, dummy_dz
+  integer :: mvar_in, bytes, pz, pa, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lrun=.true.
@@ -40,6 +44,8 @@ program pc_distribute
   lucorn = 0
   uucorn = 0
   ulcorn = 0
+!
+  deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
 !
   inquire (IOLENGTH=bytes) 1.0
 !
@@ -102,6 +108,9 @@ program pc_distribute
     mvar_in=mvar
   endif
 !
+  allocate (gf (ngx,ngy,mz,mvar_io), stat=alloc_err)
+  if (alloc_err /= 0) call fatal_error ('pc_distribute', 'Failed to allocate memory for gf.', .true.)
+!
 !  Print resolution and dimension of the simulation.
 !
   if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
@@ -124,21 +133,23 @@ program pc_distribute
 !
   do ipz = 0, nprocz-1
 !
+    f = huge(1.0)
     gf = huge(1.0)
 !
     ! read xy-layer:
     open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),access='direct',recl=ngx*ngy*bytes)
-    do pa = 1, mfarray
+    do pa = 1, mvar_io
       do pz = 1, mz
-        read(lun_input,rec=pz+ipz*nz+(pa-1)*nz) gf(:,:,pz,pa)
+        read(lun_input,rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
       enddo
     enddo
     close(lun_input)
 !
     ! read time:
-    open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),access='direct',recl=bytes)
-    read(lun_input,rec=(nxgrid+2*nghost)*(nygrid+2*nghost)*(nzgrid+2*nghost)*mfarray + 1) t_sp
+    open(lun_input,FILE=trim(directory_in)//'/grid.dat',FORM='unformatted')
+    read(lun_input) t_sp,gx,gy,gz,dummy_dx,dummy_dy,dummy_dz
     close(lun_input)
+    t = t_sp
 !
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
@@ -204,7 +215,9 @@ program pc_distribute
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+        lpencil_check_at_work = .true.
         call initialize_modules(f,LSTARTING=.true.)
+        lpencil_check_at_work = .false.
 !
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc.
@@ -212,10 +225,13 @@ program pc_distribute
         call choose_pencils()
 !
         ! distribute gf to f:
-        f = gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:)
+        f(:,:,:,1:mvar_io) = gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:)
+        x = gx(1+ipx*nx:mx+ipx*nx)
+        y = gy(1+ipy*ny:my+ipy*ny)
+        z = gz(1+ipz*nz:mz+ipz*nz)
 !
         ! write data:
-        call wsnap(trim(directory_snap)//'/'//trim(filename),f,mfarray,enum=.false.,noghost=.true.)
+        call wsnap(trim(directory_snap)//'/'//trim(filename),f,mvar_io,enum=.false.,noghost=.true.)
 !
       enddo
     enddo
