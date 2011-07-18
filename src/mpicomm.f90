@@ -2586,6 +2586,7 @@ module Mpicomm
 !  Get global OR of stop_flag and distribute it, so all processors agree
 !  on whether to call stop_it():
 !
+      call mpibarrier()
       call MPI_ALLREDUCE(stop_flag,global_stop_flag,1,MPI_LOGICAL, &
                          MPI_LOR,MPI_COMM_WORLD,mpierr)
       call MPI_ALLREDUCE(stop_flag,identical_stop_flag,1,MPI_LOGICAL, &

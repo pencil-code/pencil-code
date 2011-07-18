@@ -4224,9 +4224,9 @@ module Boundcond
        intent (inout) :: f
 !
        if (lroot .and. .not. file_exists(vel_times_dat)) &
-           call stop_it_if_any(.true.,'uu_driver: Could not find file "'//trim(vel_times_dat)//'"')
+           call fatal_error('uu_driver', 'Could not find file "'//trim(vel_times_dat)//'"', .true.)
        if (lroot .and. .not. file_exists(vel_field_dat)) &
-           call stop_it_if_any(.true.,'uu_driver: Could not find file "'//trim(vel_field_dat)//'"')
+           call fatal_error('uu_driver', 'Could not find file "'//trim(vel_field_dat)//'"', .true.)
 !
        ierr = 0
        stat = 0
@@ -4249,8 +4249,8 @@ module Boundcond
        allocate(bb2(nx,ny),stat=stat);         ierr = max(stat,ierr)
        allocate(tmp(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
 !
-       if (ierr>0) call stop_it_if_any(.true.,'uu_driver: '// &
-           'Could not allocate memory for all variable, please check')
+       if (ierr>0) call fatal_error('uu_driver', &
+           'Could not allocate memory for all variable, please check', .true.)
 !
        if (present(quenching)) then
          quench = quenching
