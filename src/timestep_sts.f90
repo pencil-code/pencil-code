@@ -1,4 +1,4 @@
-! $Id: timestep_sts.f90 16498 2011-03-14 12:25:47Z gustavo $
+! $Id$
 ! Experimental module to implement super_time_stepping 
 ! for diffusive terms (Alexiades, V., Amiez, G., & 
 ! Gremaud, P. 1996, Commun. Num. Meth. Eng.,  12, 31)
