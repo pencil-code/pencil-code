@@ -1,4 +1,4 @@
-! $Id: noinitial_condition.f90 15726 2010-12-22 20:34:26Z ccyang@ucolick.org $
+! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -54,7 +54,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-         "$Id: noinitial_condition.f90 15726 2010-12-22 20:34:26Z ccyang@ucolick.org $")
+         "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

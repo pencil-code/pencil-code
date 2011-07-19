@@ -1,4 +1,4 @@
-! $Id: aerosol_init.f90 14802 2010-08-09 22:15:10Z dhruba.mitra $
+! $Id$
 !
 !  This module provide a way for users to specify custom initial
 !  conditions.
@@ -71,7 +71,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-         "$Id: noinitial_condition.f90 14802 2010-08-09 22:15:10Z dhruba.mitra $")
+         "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

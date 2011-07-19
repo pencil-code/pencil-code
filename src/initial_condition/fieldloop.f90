@@ -1,4 +1,4 @@
-! $Id: centrifugal_balance.f90 14898 2010-08-20 10:08:32Z wladimir.lyra $
+! $Id$
 !
 !  This module provide a way for users to specify custom initial
 !  conditions.
@@ -95,7 +95,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-         "$Id: centrifugal_balance.f90 14898 2010-08-20 10:08:32Z wladimir.lyra $")
+         "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

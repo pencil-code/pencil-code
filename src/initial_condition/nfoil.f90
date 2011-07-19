@@ -49,7 +49,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: mhs_equilibrium.f90 10874 2009-05-17 16:34:17Z wdobler $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

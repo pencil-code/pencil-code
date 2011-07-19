@@ -1,4 +1,4 @@
-! $Id: baroclinic_init.f90,v 1.4 2009-09-24 09:08:03 wlyra Exp $
+! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -37,7 +37,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-           "$Id: baroclinic_init.f90,v 1.4 2009-09-24 09:08:03 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

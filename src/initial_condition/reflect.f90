@@ -1,4 +1,4 @@
-! $Id: reflect.f90,v 1.1 2011-04-04 12:03:22 piyali Exp $
+! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -38,7 +38,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       if (lroot) call svn_id( &
-           "$Id: reflect.f90,v 1.1 2011-04-04 12:03:22 piyali Exp $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

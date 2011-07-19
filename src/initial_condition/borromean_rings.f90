@@ -44,7 +44,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: borromean_rings.f90,v 1.2 2010-11-11 15:16:32 iomsn Exp $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

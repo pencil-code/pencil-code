@@ -49,7 +49,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: iucaa_logo.f90,v 1.2 2011-01-17 18:28:58 iomsn Exp $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
