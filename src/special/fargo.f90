@@ -102,7 +102,7 @@ module Special
 !  Make it possible to switch the algorithm off while still 
 !  having this file compiled, for debug purposes.
 !
-      if (.not.lfargo_advection) then
+      if ((.not.lstarting).and.(.not.lfargo_advection)) then
         if (lroot) then
           print*,""
           print*,"Switch"
@@ -116,7 +116,7 @@ module Special
 !
 !  Not implemented for other than cylindrical coordinates
 !
-      if (coord_system/='cylindric') then
+      if (lfargo_advection.and.coord_system/='cylindric') then
         if (lroot) then
           print*,""
           print*,"Fargo advection is only implemented for"
@@ -131,8 +131,9 @@ module Special
 !
 !  Not implemented for the energy equation either
 !
-      if (pretend_lnTT.or.ltemperature) call stop_it("fargo advection not "//&
-          "implemented for the temperature equation")
+      if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
+           call fatal_error("initialize_special","fargo advection not "//&
+           "implemented for the temperature equation")
 !
 !  Stuff that is only calculated once
 !
