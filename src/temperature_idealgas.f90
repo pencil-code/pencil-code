@@ -1541,7 +1541,7 @@ module Entropy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
-        fpresxmz=0; fpresymz=0; fpreszmz=0;
+        idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0;
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
