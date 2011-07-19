@@ -126,7 +126,7 @@ module Entropy
   integer :: idiag_ethuymz=0    ! XYAVG_DOC:
   integer :: idiag_ethuzmz=0    ! XYAVG_DOC:
   integer :: idiag_fpresxmz=0   ! XYAVG_DOC: $\left<(\nabla p)_x\right>_{xy}$
-  integer :: idiag_fpresxmz=0   ! XYAVG_DOC: $\left<(\nabla p)_y\right>_{xy}$
+  integer :: idiag_fpresymz=0   ! XYAVG_DOC: $\left<(\nabla p)_y\right>_{xy}$
   integer :: idiag_fpreszmz=0   ! XYAVG_DOC: $\left<(\nabla p)_z\right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
