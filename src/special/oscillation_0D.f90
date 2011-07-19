@@ -1,4 +1,4 @@
-! $Id: nospecial.f90 10347 2009-02-08 13:23:41Z ajohan@strw.leidenuniv.nl $
+! $Id$
 !
 !  Solve for a set of two ODEs, used to test time step
 !
@@ -60,7 +60,7 @@ module Special
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: nospecial.f90 10347 2009-02-08 13:23:41Z ajohan@strw.leidenuniv.nl $")
+           "$Id$")
 !
       call farray_register_pde('ispecial',ispecial,vector=2)
 !

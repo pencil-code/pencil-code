@@ -1,5 +1,5 @@
 
-! $Id: symbreak $
+! $Id$
 !
 !  Solve for a set of two ODEs, used to test time step
 !
@@ -65,7 +65,7 @@ module Special
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: symbreak.f90 $")
+           "$Id$")
 !
 !      call farray_register_pde('spec_3vec',ispecial,vector=3)
       call farray_register_pde('spec_4vec',ispecial,vector=4)

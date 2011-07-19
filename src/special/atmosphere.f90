@@ -1,4 +1,4 @@
-! $Id: atmosphere.f90 12795 2010-04-14 17:03:07 ajohan@strw.leidenuniv.nl $
+! $Id$
 !
 !  This module incorporates all the modules used for Natalia's
 !  aerosol simulations 
@@ -136,7 +136,7 @@ module Special
 !  identify CVS/SVN version information:
 !
       if (lroot) call svn_id( &
-           "$Id: atmosphere.f90 12795 2010-01-03 14:03:57Z ajohan@strw.leidenuniv.nl $")
+           "$Id$")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

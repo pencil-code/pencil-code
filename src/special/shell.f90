@@ -1,4 +1,4 @@
-! $Id: nospecial.f90 13879 2010-05-13 15:28:09Z sven.bingert $
+! $Id$
 !
 ! Runs a shell model (only GOY implemented) for turbulence
 ! Copied from Dhruba's code
@@ -105,7 +105,7 @@ module Special
 !  6-oct-03/tony: coded
 !
       if (lroot) call svn_id( &
-           "$Id: nospecial.f90 13879 2010-05-13 15:28:09Z sven.bingert $")
+           "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************

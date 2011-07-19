@@ -1,4 +1,4 @@
-! $Id: baroclinic_run.f90,v 1.5 2009-08-29 02:21:37 wlyra Exp $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -96,7 +96,7 @@ module Special
       use Cdata
 !
       if (lroot) call svn_id( &
-           "$Id: baroclinic_run.f90,v 1.5 2009-08-29 02:21:37 wlyra Exp $")
+           "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************

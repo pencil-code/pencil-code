@@ -94,7 +94,7 @@ module Special
       use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-           "$Id: dust_resistivity.f90,v 1.2 2010-06-18 21:35:54 wlyra Exp $")
+           "$Id$")
 !
 !!      call farray_register_pde('special',ispecial)
       call farray_register_auxiliary('eta',ieta)

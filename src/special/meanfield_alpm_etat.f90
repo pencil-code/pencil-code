@@ -1,4 +1,4 @@
-! $Id: meanfield_alpm.f90 10874 2009-05-17 16:34:17Z wdobler $
+! $Id$
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -81,7 +81,7 @@ module Special
 !  Identify version number.
 !
       if (lroot) call svn_id( &
-          "$Id: meanfield_alpm.f90 10874 2009-05-17 16:34:17Z wdobler $")
+          "$Id$")
 !
 !  Writing files for use with IDL
 !
