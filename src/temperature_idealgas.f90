@@ -125,6 +125,9 @@ module Entropy
   integer :: idiag_ethuxmz=0    ! XYAVG_DOC:
   integer :: idiag_ethuymz=0    ! XYAVG_DOC:
   integer :: idiag_ethuzmz=0    ! XYAVG_DOC:
+  integer :: idiag_fpresxmz=0   ! XYAVG_DOC: $\left<(\nabla p)_x\right>_{xy}$
+  integer :: idiag_fpresxmz=0   ! XYAVG_DOC: $\left<(\nabla p)_y\right>_{xy}$
+  integer :: idiag_fpreszmz=0   ! XYAVG_DOC: $\left<(\nabla p)_z\right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -711,6 +714,9 @@ module Entropy
         lpenc_diagnos(i_rho1)=.true.
         lpenc_diagnos(i_cv1) =.true.
       endif
+      if (idiag_fpresxmz/=0 .or. idiag_fpresymz/=0 .or. &
+          idiag_fpreszmz/=0) lpenc_requested(i_fpres)=.true.
+
 !
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
 !
@@ -975,6 +981,9 @@ module Entropy
         if (idiag_ethuzmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3), &
             idiag_ethuzmz)
       endif
+      if (idiag_fpresxmz/=0)  call xysum_mn_name_z(p%fpres(:,1),idiag_fpresxmz)
+      if (idiag_fpresymz/=0)  call xysum_mn_name_z(p%fpres(:,2),idiag_fpresymz)
+      if (idiag_fpreszmz/=0)  call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
 !
 !  2-D averages.
 !
@@ -1532,6 +1541,7 @@ module Entropy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
+        fpresxmz=0; fpresymz=0; fpreszmz=0;
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1583,6 +1593,12 @@ module Entropy
             idiag_ethuymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethuzmz', &
             idiag_ethuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fpresxmz', &
+            idiag_fpresxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fpresymz', &
+            idiag_fpresymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fpreszmz', &
+            idiag_fpreszmz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
