@@ -448,7 +448,8 @@ COMPILE_OPT IDL2,HIDDEN
       if (f77 eq 0) then begin
         close, file
         openr, file, filename, /f77, swap_endian=swap_endian
-        point_lun, file, long64(dim.mx*dim.my)*long64(dim.mz*(dim.mvar+dim.maux)*8)
+        if (precision eq 'D') then bytes=8 else bytes=4
+        point_lun, file, long64(dim.mx*dim.my)*long64(dim.mz*dim.mvar*bytes)
       endif
       if (param.lshear) then begin
         readu, file, t, x, y, z, dx, dy, dz, deltay
