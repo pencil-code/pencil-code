@@ -183,13 +183,13 @@ pro precalc_data, i, vars
 		end
 		mu0_SI = 4.0 * !Pi * 1.e-7
 		if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
-			; Ohming heating rate
-			varsets[i].HR_ohm = run_param.eta * mu0_SI * sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * (unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length)^2
+			; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
+			varsets[i].HR_ohm = run_param.eta * param.mu0 * sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * unit.density * unit.velocity^3 / unit.length
 		end
 		if (any (strcmp (tags, 'j', /fold_case))) then begin
-			; Current density
+			; Current density [A / m^2]
 			if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
-				varsets[i].j = sqrt (varsets[i].HR_ohm / (run_param.eta * mu0_SI))
+				varsets[i].j = sqrt (varsets[i].HR_ohm / (run_param.eta * mu0_SI * unit.velocity * unit.length))
 			end else begin
 				varsets[i].j = sqrt (sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp))) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
 			end
