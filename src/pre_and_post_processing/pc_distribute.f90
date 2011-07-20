@@ -231,7 +231,7 @@ program pc_distribute
         z = gz(1+ipz*nz:mz+ipz*nz)
 !
         ! write data:
-        call wsnap(trim(directory_snap)//'/'//trim(filename),f,mvar_io,enum=.false.,noghost=.true.)
+        call wsnap(trim(directory_snap)//'/'//trim(filename),f(:,:,:,1:mvar_io),mvar_io,enum=.false.,noghost=.true.)
 !
       enddo
     enddo
