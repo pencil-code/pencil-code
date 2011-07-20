@@ -355,7 +355,7 @@ z=z[dim.n1:dim.n2]
 ;  Put data into sensibly named arrays.
 ;
 for iv=0L,mpvar-1L do begin
-  res=varcontent[iv].idlvar+'=array[*,iv-1:iv-1+varcontent[iv].skip]'
+  res=varcontent[iv].idlvar+'=array[*,iv:iv+varcontent[iv].skip]'
   if (execute(res,0) ne 1) then $
     message, 'Error putting data into '+varcontent[iv].idlvar+' array'
   iv=iv+varcontent[iv].skip
