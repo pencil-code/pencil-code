@@ -140,7 +140,11 @@ program pc_downscale
 !
 ! Loop over processors
 !
+  write (*,*) "IPZ-layer:"
+!
   do ipz = 0, nprocz-1
+!
+    write (*,*) ipz+1, " of ", nprocz
 !
     rf = huge(1.0)
     rx = huge(1.0)

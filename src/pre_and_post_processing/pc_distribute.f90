@@ -131,7 +131,11 @@ program pc_distribute
 !
 ! Loop over processors
 !
+  write (*,*) "IPZ-layer:"
+!
   do ipz = 0, nprocz-1
+!
+    write (*,*) ipz+1, " of ", nprocz
 !
     f = huge(1.0)
     gf = huge(1.0)
