@@ -127,11 +127,6 @@ varcontent[irhopswarm].variable = 'Particle mass density (rhopswarm)'
 varcontent[irhopswarm].idlvar   = 'rhopswarm'
 varcontent[irhopswarm].idlinit  = INIT_SCALAR
 ;
-varcontent[0].variable    = 'UNKNOWN'
-varcontent[0].idlvar      = 'UNKNOWN'
-varcontent[0].idlinit     = '0.'
-varcontent[0].skip        = 0
-;
 varcontent = varcontent[1:*]
 ;
 ;  Put variable names in array
@@ -359,7 +354,7 @@ z=z[dim.n1:dim.n2]
 ;
 ;  Put data into sensibly named arrays.
 ;
-for iv=1L,mpvar do begin
+for iv=0L,mpvar-1L do begin
   res=varcontent[iv].idlvar+'=array[*,iv-1:iv-1+varcontent[iv].skip]'
   if (execute(res,0) ne 1) then $
     message, 'Error putting data into '+varcontent[iv].idlvar+' array'
