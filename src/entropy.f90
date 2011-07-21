@@ -977,9 +977,6 @@ module Entropy
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
           case ('mixinglength')
              call mixinglength(mixinglength_flux,f)
-             if (ampl_ss/=0.0) &
-                 call blob(ampl_ss,f,iss,radius_ss, &
-                 center1_x,center1_y,center1_z)
              hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma_inv/gravz
              print*,'init_ss : Fbot, hcond0=', Fbot, hcond0
           case ('sedov')
@@ -1540,13 +1537,13 @@ module Entropy
 !  Redefine rho0 and lnrho0 as we don't have rho0=1 at the top.
 !  (important for eoscalc!)
 !  Put density and entropy into f-array.
-!  Write the initial stratification in data/proc*/stratMLT.dat.
+!  Write the initial stratification in data/proc*/zprof_stratMLT.dat.
 !
       rho0=rhotop
       lnrho0=log(rhotop)
       print*,'new rho0 and lnrho0=',rho0,lnrho0
 !
-      call safe_character_assign(wfile,trim(directory)//'/stratMLT.dat')
+      call safe_character_assign(wfile,trim(directory)//'/zprof_stratMLT.dat')
       open(11+ipz,file=wfile,status='unknown')
       do n=1,nz
         iz=n+ipz*nz
