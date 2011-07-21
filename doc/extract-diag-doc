@@ -210,7 +210,7 @@ $bcz_doc->write_to_file({ file          => 'inlinedoc-bcz.tex',
                           descr_width   => '0.8\textwidth',
                         });
 
-$mod_doc->write_mod_to_file({ file       => 'inlinedoc-mod.tex',
+$mod_doc->write_mod_to_file({ file       => 'inlinedoc-modules.tex',
                             sort_files   => 1,
                             print_empty  => 0,
                            });
