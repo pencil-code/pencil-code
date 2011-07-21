@@ -233,8 +233,11 @@ sub get_src_files {
         print STDERR  "\$srcdir = <$srcdir>\n" if ($debug);
 
         @src_files = <$srcdir/*.f90 $srcdir/*/*.f90>;
-         # exclude files under src/obsolete/
+         # Exclude files under src/obsolete/:
         @src_files = grep !m{src/obsolete/}, @src_files;
+        # Sort alphabetically (but DocExtractor with sort_files => 1 will
+        # do its own sorting later):
+        @src_files = sort @src_files;
         $all_src = 1;
     }
 
