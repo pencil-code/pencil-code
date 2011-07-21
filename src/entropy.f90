@@ -4272,32 +4272,34 @@ module Entropy
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
 !
-!  Add heat near bottom.
+!  Add heat near bottom (we start by default from heat=0.0)
 !
 !  Heating profile, normalised, so volume integral = 1.
+!  Note: only the 3-D version is coded (Lx *and* Ly /= 0)
 !
-      prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
-           /(sqrt(pi/2.)*wheat*Lx*Ly)
-      heat = luminosity*prof
+      if (luminosity/=0.) then
+        prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
+             /(sqrt(pi/2.)*wheat*Lx*Ly)
+        heat = luminosity*prof
 !
 !  Smoothly switch on heating if required.
 !
-      if ((ttransient>0) .and. (t<ttransient)) then
-         heat = heat * t*(2*ttransient-t)/ttransient**2
+        if ((ttransient>0) .and. (t<ttransient)) then
+           heat = heat * t*(2*ttransient-t)/ttransient**2
+        endif
       endif
 !
 !  Allow for different cooling profile functions.
 !  The gaussian default is rather broad and disturbs the entire interior.
 !
-      if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool=', &
-          cooling_profile, z2, wcool
+      if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool,cs2cool=',cooling_profile, z2, wcool, cs2cool
       select case (cooling_profile)
       case ('gaussian')
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
       case ('step')
         prof = step(spread(z(n),1,nx),z2,wcool)
       case ('cubic_step')
-         prof = cubic_step(spread(z(n),1,nx),z2,wcool)
+        prof = cubic_step(spread(z(n),1,nx),z2,wcool)
 !
 !  Cooling with a profile linear in z (unstable).
 !
