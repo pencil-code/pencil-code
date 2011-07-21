@@ -6,8 +6,8 @@
 &init_pars
   cvsid='$Id$',
   ip=14,                         ! debugging parameter
-  xyz0  = -2., -0.5, -2.,        ! first corner of box
-  xyz1  =  2.,  0.5,  1.2,       ! second corner of box
+  xyz0  = -2., 0.,-2.,           ! first corner of box
+  xyz1  =  2., 0., 1.2,          ! second corner of box
   lperi =  T ,   T ,   F,        ! periodic direction?
   bcz   = 's','s','a','a2','c1:cT',
   lwrite_ic = T,                 ! write the initial setup in VAR0
@@ -26,7 +26,7 @@
   z1=0., z2=1., zref=1.2
 /
 &entropy_init_pars
-  initss='mixinglength', widthss=0.05, mixinglength_flux=1e-2,
+  initss(1)='mixinglength', widthss=0.05, mixinglength_flux=1e-2,
   mpoly0=0., mpoly1=3., mpoly2=-0.9,
-  ampl_ss=-0.5, radius_ss=0.2, center1_z=0.5
+  initss(2)='blob', ampl_ss=-0.5, radius_ss=0.2, center1_z=0.5
 /
