@@ -34,8 +34,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -v, --version   Print version number
 #   -V, --verbose   Be verbose
 
-# Copyright (C) 2006  Wolfgang Dobler
-#
 # This program is free software; you can redistribute it and/or modify it
 # under the same conditions as Perl or under the GPL versions 2 or later.
 
@@ -49,16 +47,12 @@ BEGIN {
     }
 }
 
-# Temporarily: give useful diagnostics if the useful-diagnostics mdule
-# cannot be found...
-# use Pencil::Diagnostics;
-
-#Sven: test if Util.pm exists otherwise you get an error $@
+# Try to load the relevant Perl modules and issue a helpful message if
+# this fails.
 eval 'use Pencil::Util';
-if ($@) {
+if ($@) {                       # Pencil::Util not found
     die "You need to run\n  (cd \$PENCIL_HOME; cvs up -dA lib)\n$@\n";
 }
-#Sven: test if DocExtractor.pm exists
 Pencil::Util::use_pencil_perl_module('Pencil::DocExtractor')
   or die;
 
@@ -148,7 +142,7 @@ my $bc_doc   = Pencil::DocExtractor->new(
 );
 
 my $mod_doc = Pencil::DocExtractor->new(
-    marker  => qr/!\s*MOD_DOC:/,
+    marker  => qr/!\s*MODULE_DOC:/,
     prefix  => qr/(?:)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug

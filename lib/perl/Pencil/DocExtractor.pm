@@ -115,11 +115,11 @@ sub parse {
 sub write_mod_to_file {
 #
 #   $doc->write_mod_to_file(file)
-#   $doc->write_mod_to_file(file          => 'filename',
-#                       sort_files    => 1/0,
-#                       print_empty   => 0/1,
-#                       descr_width   => '0.7\textwidth',
-#                       selfcontained => 0/1)
+#   $doc->write_mod_to_file(file      => 'filename',
+#                           sort_files    => 1/0,
+#                           print_empty   => 0/1,
+#                           descr_width   => '0.7\textwidth',
+#                           selfcontained => 0/1)
 #
 # Write LaTeX {longtable} environment of docstrings to given file.
 # Just a convenience wrapper around longtable().
