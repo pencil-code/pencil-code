@@ -25,16 +25,12 @@ class read_zprof:
         """
 
         if (dim==None): dim=read_dim()
-        if (varname.find('once')==-1):
-            nz_tot=dim.nzgrid
-        else:
-            nz_tot=dim.mzgrid
-        nz=nz_tot/dim.nprocz
-        self.z=zeros(nz_tot,'f')
+        nz=dim.nzgrid/dim.nprocz
+        self.z=zeros(nz*dim.nprocz,'f')
         if nfield>1:
-            self.prof=zeros((nfield,nz_tot),'f')
+            self.prof=zeros((nfield,dim.nzgrid),'f')
         else:
-            self.prof=zeros(nz_tot,'f')
+            self.prof=zeros(dim.nzgrid,'f')
 #
 #  loop over all processors and records in file
 #
@@ -43,6 +39,10 @@ class read_zprof:
             procname='/proc'+str(iprocz)
             filename=datadir+procname+'/zprof_'+varname+'.dat'
             file=open(filename,'r')
+#  when reading a zprof_once_X file, the first dim.nghostz gridpoints are
+#  not saved
+            if (varname.find('once')!=-1):
+                for i in range(dim.nghostz): st=file.readline()
             for i in range(nz):
                 st=file.readline()
                 data=asarray(st.split()).astype('f')
