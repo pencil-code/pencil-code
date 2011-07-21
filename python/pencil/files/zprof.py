@@ -25,12 +25,16 @@ class read_zprof:
         """
 
         if (dim==None): dim=read_dim()
-        nz=dim.nzgrid/dim.nprocz
-        self.z=zeros(dim.nzgrid,'f')
-        if nfield>1:
-            self.prof=zeros((nfield,dim.nzgrid),'f')
+        if (varname.find('once')==-1):
+            nz_tot=dim.nzgrid
         else:
-            self.prof=zeros(dim.nzgrid,'f')
+            nz_tot=dim.mzgrid
+        nz=nz_tot/dim.nprocz
+        self.z=zeros(nz_tot,'f')
+        if nfield>1:
+            self.prof=zeros((nfield,nz_tot),'f')
+        else:
+            self.prof=zeros(nz_tot,'f')
 #
 #  loop over all processors and records in file
 #
