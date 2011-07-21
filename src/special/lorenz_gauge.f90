@@ -46,11 +46,11 @@ module Special
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_phim=0       ! DIAG_DOC: $\left<\phi\right>
-  integer :: idiag_phipt=0      ! DIAG_DOC: $\phi(x1,y1,z1)>
-  integer :: idiag_phip2=0      ! DIAG_DOC: $\phi(x2,y2,z2)>
-  integer :: idiag_phibzm=0     ! DIAG_DOC: $\left<\phi B_z\right>
-  integer :: idiag_phibzmz=0    ! DIAG_DOC: $\left<\phi B_z\right>_{xy}
+  integer :: idiag_phim=0       ! DIAG_DOC: $\left<\phi\right>$
+  integer :: idiag_phipt=0      ! DIAG_DOC: $\phi(x1,y1,z1)$
+  integer :: idiag_phip2=0      ! DIAG_DOC: $\phi(x2,y2,z2)$
+  integer :: idiag_phibzm=0     ! DIAG_DOC: $\left<\phi B_z\right>$
+  integer :: idiag_phibzmz=0    ! DIAG_DOC: $\left<\phi B_z\right>_{xy}$
 !
   contains
 
