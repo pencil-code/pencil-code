@@ -454,7 +454,7 @@ module Magnetic
   integer :: idiag_phibmz=0     ! DIAG_DOC: $\left<\phi\Bv\right>|_z$
   integer :: idiag_uxjm=0       ! DIAG_DOC:
   integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>$
-  integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv\right>$
+  integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)\right>$
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
   integer :: idiag_jxbrym=0     ! DIAG_DOC:
   integer :: idiag_jxbrzm=0     ! DIAG_DOC:
