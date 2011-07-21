@@ -203,9 +203,7 @@ sub longtable {
 
     # Sort file names in pre-defined order
     if ($sort) {
-        @files = sort { compare_modulenames_for_sorting($a)
-                          <=> compare_modulenames_for_sorting($b)
-                      } @files;
+        @files = sort { smart_compare($a, $b) } @files;
     }
 
     my $text  = header(\@files, $args{selfcontained}, $args{descr_width});
@@ -269,9 +267,7 @@ sub module_table {
 
     # Sort file names in pre-defined order
     if ($sort) {
-        @files = sort { compare_modulenames_for_sorting($a)
-                          <=> compare_modulenames_for_sorting($b)
-                      } @files;
+        @files = sort { smart_compare($a, $b) } @files;
     }
 
     my $text  = mod_header(\@files, $args{selfcontained}, $args{descr_width});
@@ -574,9 +570,25 @@ my $selfcontained = shift;
 
 # ---------------------------------------------------------------------- #
 
-sub compare_modulenames_for_sorting {
-# Comparison function that makes sure we get interesting modules (as
-# defined by the author of this script) before more boring ones
+sub smart_compare {
+#
+# Comparison function that puts interesting modules first and sorts
+# everybody else in alphabetic order.
+#
+    my ($a, $b) = @_;
+
+    return
+      compare_modulenames($a) <=> compare_modulenames($b)
+        || $a cmp $b;
+}
+
+# ---------------------------------------------------------------------- #
+
+sub compare_modulenames {
+#
+# Score interesting modules (as defined by the author of this script)
+# higher than boring ones.
+#
     my $module = shift;
 
     (my $short = $module) =~ s/\.f90$//; # remove suffix
