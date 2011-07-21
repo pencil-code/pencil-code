@@ -251,10 +251,9 @@ module Solid_Cells
 !
 !  28-nov-2008/nils: coded
 !
-      use Cdata
-      use Sub
       use Initcond
       use InitialCondition, only: initial_condition_solid_cells
+      use Sub, only: gaunoise
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: a2,rr2, wall_smoothing,rr2_low,rr2_high,shiftx,shifty
@@ -639,8 +638,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  okt-2009/kragset: updated to include multiple objects
 !  nov-2010/kragset: updated to include spheres
 !
-    use viscosity, only: getnu
-    use Sub, only: dot2, dot
+    use Sub, only: dot
+    use Viscosity, only: getnu
 !
     real, dimension (mx,my,mz,mfarray), intent(in):: f
     real, dimension (mx,my,mz,mvar), intent(in)   :: df
@@ -825,8 +824,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  okt-2009/kragset: updated to include multiple objects
 !  nov-2010/kragset: updated to include spheres
 !
-    use mpicomm
-    use general
+    use General, only: safe_character_append
+    use Mpicomm, only: mpireduce_sum, mpireduce_sum_int
 !
     real    :: rhosum_all, c_dragx_all(nobjects), c_dragy_all(nobjects)
     real    :: c_dragz_all(nobjects), Nusselt_all(nobjects)
@@ -917,10 +916,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !   mar-2009/kragset: coded
 !   nov-2010/kragset: generalized to include drag in z-direction
 !
-!
-    use cdata
-    use sub
-    use diagnostics
+    use Diagnostics, only: parse_name
+    use Sub
 !
     integer :: iname
     logical :: lreset,lwr
@@ -971,7 +968,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mvar) :: f_tmp
       integer :: i,j,k,idir,xind,yind,zind,iobj
-
+!
       real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
       real :: xmirror, ymirror, zmirror, dr
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
@@ -2937,8 +2934,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  mar-2009/kragset: coded
 !
-      use Cdata
-!
 !  Request p and sij-pencils here
 !  Request rho-pencil
       lpenc_requested(i_pp)=.true.
@@ -2953,17 +2948,18 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Deallocate the variables allocated in solid_cells
 !
-!  7-oct-2010/dhruba: aped from hydro_kinematic
+!  7-oct-2010/dhruba: adeped from hydro_kinematic
+!  21-jul-2011/bing: fixed, only deallocate variable if allocted
 !
       print*, 'Deallocating some solid_cells variables ...'
-      deallocate(fpnearestgrid)
-      deallocate(c_dragx)
-      deallocate(c_dragy)
-      deallocate(c_dragz)
-      deallocate(c_dragx_p)
-      deallocate(c_dragy_p)
-      deallocate(c_dragz_p)
-      deallocate(Nusselt)
+      if (allocated(fpnearestgrid)) deallocate(fpnearestgrid)
+      if (allocated(c_dragx)) deallocate(c_dragx)
+      if (allocated(c_dragy)) deallocate(c_dragy)
+      if (allocated(c_dragz)) deallocate(c_dragz)
+      if (allocated(c_dragx_p)) deallocate(c_dragx_p)
+      if (allocated(c_dragy_p)) deallocate(c_dragy_p)
+      if (allocated(c_dragz_p)) deallocate(c_dragz_p)
+      if (allocated(Nusselt)) deallocate(Nusselt)
       print*, '..Done.'
 !
     endsubroutine solid_cells_clean_up
