@@ -102,18 +102,19 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
-      beta_dPdr_dust, np_swarm, mpmat, rhop_swarm, eps_dtog, nu_epicycle, &
-      rp_int, rp_ext, gravx_profile, gravz_profile, gravr_profile, gravx, &
-      gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, eps1, lmigration_redo, &
-      ldragforce_equi_global_eps, coeff, kx_vvp, ky_vvp, kz_vvp, amplvvp, &
-      kx_xxp, ky_xxp, kz_xxp, amplxxp, kx_vpx, kx_vpy, kx_vpz, ky_vpx, &
-      ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, phase_vpx, phase_vpy, &
-      phase_vpz, lcoldstart_amplitude_correction, lparticlemesh_cic, &
-      lparticlemesh_tsc, linterpolate_spline, tstart_dragforce_par, &
-      tstart_grav_par, taucool, lcollisional_cooling_taucool, &
-      lcollisional_cooling_rms, lcollisional_cooling_twobody, tausp_species, &
-      tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
+      beta_dPdr_dust, np_swarm, mp_swarm, mpmat, rhop_swarm, eps_dtog, &
+      nu_epicycle, rp_int, rp_ext, gravx_profile, gravz_profile, &
+      gravr_profile, gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, &
+      eps1, lmigration_redo, ldragforce_equi_global_eps, coeff, kx_vvp, &
+      ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, kx_vpx, &
+      kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
+      phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
+      lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
+      tstart_dragforce_par, tstart_grav_par, taucool, &
+      lcollisional_cooling_taucool, lcollisional_cooling_rms, &
+      lcollisional_cooling_twobody, tausp_species, tau_coll_min, &
+      ltau_coll_min_courant, coeff_restitution, tstart_collisional_cooling, &
+      tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcollisional_dragforce_cooling, ldragforce_heat, &
       lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
