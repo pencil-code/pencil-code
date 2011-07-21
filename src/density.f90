@@ -93,22 +93,23 @@ module Density
       strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
-      lisothermal_fixed_Hrho, &
-      density_floor, lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
-      lnrho_z_shift, powerlr, zoverh, hoverr, lffree, ffree_profile, &
-      rzero_ffree,wffree,rho_top,rho_bottom,r0_rho,invgrav_ampl,rnoise_int,rnoise_ext
+      lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
+      lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
+      lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
+      r0_rho, invgrav_ampl, rnoise_int, rnoise_ext
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
-      cs2bot, cs2top, &
-      lupw_lnrho, lupw_rho, idiff, lmass_source, mass_source_profile, &
-      mass_source_Mdot,  mass_source_sigma, mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
-      damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
-      lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
-      lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
-      ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
-      lcalc_glnrhomean, ldensity_profile_masscons,&
-      lffree,ffree_profile,rzero_ffree,wffree,mass_source_tau1
+      cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, lmass_source, &
+      mass_source_profile, mass_source_Mdot,  mass_source_sigma, &
+      mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
+      damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, &
+      lfreeze_lnrhoext, lnrho_const, lcontinuity_gas, borderlnrho, &
+      diffrho_hyper3_aniso, lfreeze_lnrhosqu, density_floor, &
+      lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
+      lcheck_negative_density, lmassdiff_fix, lcalc_glnrhomean, &
+      ldensity_profile_masscons, lffree, ffree_profile, rzero_ffree, wffree, &
+      mass_source_tau1
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1654,67 +1655,68 @@ module Density
 !
 !  Continuity equation.
 !
-      if (lcontinuity_gas) then
-        if (lweno_transport) then
-          if (ldensity_nolog) then
-            df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%transprho
-          else
-            call fatal_error('dlnrho_dt','can not do WENO transport for '// &
-                'logarithmic density!')
-          endif
+      if (lcontinuity_gas .and. .not. lweno_transport .and. &
+          .not. lffree .and. ieos_profile=='nothing') then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho   - p%rho*p%divu
         else
-          if (ieos_profile=='nothing') then
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+        endif
+      endif
 !
-!  If we are solving the fore-free equation in parts of our domain.
+!  WENO transport.
 !
-            if (lffree) then
-              if (ldensity_nolog) then
-                df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-                  - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-                   *(p%ugrho + p%rho*p%divu)
-                if (ldensity_profile_masscons) &
-                  df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-                   -dprofx_ffree   *p%rho*p%uu(:,1) &
-                   -dprofy_ffree(m)*p%rho*p%uu(:,2) &
-                   -dprofz_ffree(n)*p%rho*p%uu(:,3)
-              else
-                df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-                  - profx_ffree*profy_ffree(m)*profz_ffree(n) &
-                  *(p%uglnrho + p%divu)
-                if (ldensity_profile_masscons) &
-                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                   -dprofx_ffree   *p%uu(:,1) &
-                   -dprofy_ffree(m)*p%uu(:,2) &
-                   -dprofz_ffree(n)*p%uu(:,3)
-              endif
-            else
-              if (ldensity_nolog) then
-                df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho   - p%rho*p%divu
-              else
-                df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
-              endif
-            endif
+      if (lcontinuity_gas .and. lweno_transport) then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%transprho
+        else
+          call fatal_error('dlnrho_dt','can not do WENO transport for '// &
+              'logarithmic density!')
+        endif
+      endif
 !
 !  Choice of vertical profile in front of density evolution.
 !  Default is off. This is useful to simulate outer halo regions.
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default.
 !
-          elseif (ieos_profile=='surface_z') then
-            if (ldensity_nolog) then
-              df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
-                 - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-               if (ldensity_profile_masscons) &
-                 df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
-                  -dprofz_eos(n)*p%rho*p%uu(:,3)
-            else
-              df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
-                  - profz_eos(n)*(p%uglnrho + p%divu)
-              if (ldensity_profile_masscons) &
-                    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                    -dprofz_eos(n)*p%uu(:,3)
-            endif
-          endif
+     if (lcontinuity_gas .and. ieos_profile=='surface_z') then
+       if (ldensity_nolog) then
+         df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   &
+             - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+         if (ldensity_profile_masscons) &
+             df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+             -dprofz_eos(n)*p%rho*p%uu(:,3)
+       else
+         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+             - profz_eos(n)*(p%uglnrho + p%divu)
+         if (ldensity_profile_masscons) &
+             df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+             -dprofz_eos(n)*p%uu(:,3)
+       endif
+     endif
+!
+!  If we are solving the fore-free equation in parts of our domain.
+!
+      if (lcontinuity_gas .and. lffree) then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho) &
+              - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+              *(p%ugrho + p%rho*p%divu)
+          if (ldensity_profile_masscons) &
+              df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho) &
+              -dprofx_ffree   *p%rho*p%uu(:,1) &
+              -dprofy_ffree(m)*p%rho*p%uu(:,2) &
+              -dprofz_ffree(n)*p%rho*p%uu(:,3)
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+              - profx_ffree*profy_ffree(m)*profz_ffree(n) &
+              *(p%uglnrho + p%divu)
+          if (ldensity_profile_masscons) &
+              df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+              -dprofx_ffree   *p%uu(:,1) &
+              -dprofy_ffree(m)*p%uu(:,2) &
+              -dprofz_ffree(n)*p%uu(:,3)
         endif
       endif
 !
