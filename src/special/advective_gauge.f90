@@ -49,13 +49,13 @@ module Special
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_Lamm=0       ! DIAG_DOC: $\left<\Lam\right>$
-  integer :: idiag_Lampt=0      ! DIAG_DOC: $\Lam(x1,y1,z1)>$
-  integer :: idiag_Lamp2=0      ! DIAG_DOC: $\Lam(x2,y2,z2)>$
-  integer :: idiag_Lamrms=0     ! DIAG_DOC: $\left<\Lam^2\right>^{1/2}$
-  integer :: idiag_Lambzm=0     ! DIAG_DOC: $\left<\Lam B_z\right>$
-  integer :: idiag_Lambzmz=0    ! DIAG_DOC: $\left<\Lam B_z\right>_{xy}$
-  integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\Lam\Bv\right>$
+  integer :: idiag_Lamm=0       ! DIAG_DOC: $\left<\Lambda\right>$
+  integer :: idiag_Lampt=0      ! DIAG_DOC: $\Lambda(x1,y1,z1)$
+  integer :: idiag_Lamp2=0      ! DIAG_DOC: $\Lambda(x2,y2,z2)$
+  integer :: idiag_Lamrms=0     ! DIAG_DOC: $\left<\Lambda^2\right>^{1/2}$
+  integer :: idiag_Lambzm=0     ! DIAG_DOC: $\left<\Lambda B_z\right>$
+  integer :: idiag_Lambzmz=0    ! DIAG_DOC: $\left<\Lambda B_z\right>_{xy}$
+  integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\Lambda\Bv\right>$
   integer :: idiag_apbrms=0     ! DIAG_DOC: $\left<(\Av'\Bv)^2\right>^{1/2}$
   integer :: idiag_jxarms=0     ! DIAG_DOC: $\left<(\Jv\times\Av)^2\right>^{1/2}$
   integer :: idiag_jxaprms=0    ! DIAG_DOC: $\left<(\Jv\times\Av')^2\right>^{1/2}$
@@ -64,7 +64,7 @@ module Special
   integer :: idiag_divabrms=0   ! DIAG_DOC: $\left<[(\nabla\cdot\Av)\Bv]^2\right>^{1/2}$
   integer :: idiag_divapbrms=0  ! DIAG_DOC: $\left<[(\nabla\cdot\Av')\Bv]^2\right>^{1/2}$
   integer :: idiag_d2Lambrms=0  ! DIAG_DOC: $\left<[(\nabla^2\Lambda)\Bv]^2\right>^{1/2}$
-  integer :: idiag_d2Lamrms=0   ! DIAG_DOC: $\left<[\nabla^2\Lambda)^2\right>^{1/2}$
+  integer :: idiag_d2Lamrms=0   ! DIAG_DOC: $\left<[\nabla^2\Lambda]^2\right>^{1/2}$
 !
   contains
 
