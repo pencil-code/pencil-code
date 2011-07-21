@@ -1719,26 +1719,28 @@ module Hydro
 !
 !  Advection term.
 !
-      if (ladvection_velocity) then
-        if (lweno_transport) then
-          do j=1,3
-            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j) &
-                - p%transpurho(:,j)*p%rho1 + p%uu(:,j)*p%rho1*p%transprho
-          enddo
-        else
+      if (ladvection_velocity .and. .not. lweno_transport .and. &
+          .not. lno_meridional_flow) then
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+      endif
+!
+!  WENO transport.
+!
+      if (ladvection_velocity .and. lweno_transport) then
+        do j=1,3
+          df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j) &
+              - p%transpurho(:,j)*p%rho1 + p%uu(:,j)*p%rho1*p%transprho
+        enddo
+      endif
 !
 !  No meridional flow : turn off the meridional flow (in spherical)
 !  useful for debugging.
 !
 !  18-Mar-2010/AJ: this should probably go in a special module.
 !
-          if (lno_meridional_flow) then
-            f(l1:l2,m,n,iux:iuy)=0.0
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
-          else
-            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-          endif
-        endif
+      if (ladvection_velocity .and. lno_meridional_flow) then
+        f(l1:l2,m,n,iux:iuy)=0.0
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
       endif
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)

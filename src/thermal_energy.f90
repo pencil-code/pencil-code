@@ -315,11 +315,12 @@ module Entropy
 !
 !  Add energy transport term.
 !
-      if (lweno_transport) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%transpeth
-      else
+      if (.not. lweno_transport) then
         call dot(p%uu,p%geth,ugeth)
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%eth*p%divu - ugeth
+      endif
+      if (lweno_transport) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%transpeth
       endif
 !
 !  Add P*dV work.
