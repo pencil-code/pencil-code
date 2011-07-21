@@ -232,7 +232,9 @@ sub get_src_files {
         }
         print STDERR  "\$srcdir = <$srcdir>\n" if ($debug);
 
-        @src_files = <$srcdir/*.f90>;
+        @src_files = <$srcdir/*.f90 $srcdir/*/*.f90>;
+         # exclude files under src/obsolete/
+        @src_files = grep !m{src/obsolete/}, @src_files;
         $all_src = 1;
     }
 
