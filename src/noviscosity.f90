@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED shock; gshock(3); fvisc(3); visc_heat
+! PENCILS PROVIDED fvisc(3); visc_heat
 !
 !***************************************************************
 module Viscosity
@@ -129,10 +129,8 @@ module Viscosity
       intent(in) :: f
       intent(inout) :: p
 !
-!  define shock, gshock, visc_heat
+!  define visc_heat
 !
-      if (lpencil(i_shock)) p%shock=0.0
-      if (lpencil(i_gshock)) p%gshock=0.0
       if (lpencil(i_fvisc)) p%fvisc=0.0
       if (lpencil(i_visc_heat)) p%visc_heat=0.0
 !
