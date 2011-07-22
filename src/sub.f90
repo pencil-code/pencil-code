@@ -3864,8 +3864,6 @@ module Sub
 !
       logical :: notanumber_4
       real, dimension(:,:,:,:) :: f
-      real, dimension(:,:,:,:), allocatable :: g
-      integer :: stat
 !
       notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
 !
