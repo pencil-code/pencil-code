@@ -96,7 +96,7 @@ module Cdata
   real :: dt=0.0
   real :: cdt=0.4, cdts=1.0, cdtr=1.0, cdtc=1.0,cdt_poly=1.0
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
-  real :: cdtvDim, eps_rkf=1e-8, eps_stiff=1e-6
+  real :: eps_rkf=1e-8, eps_stiff=1e-6
   real :: ddt=0.0
   real :: dt1_last=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37

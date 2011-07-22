@@ -320,7 +320,9 @@ module Viscosity
 !  set viscous time step
 !
       if (ldiagnos.and.idiag_dtnu/=0) then
-        call max_mn_name(spread(nu,1,nx)/dxmin**2/cdtvDim,idiag_dtnu,l_dt=.true.)
+! Note: cdtvDim is no longer used
+!        call max_mn_name(spread(nu,1,nx)/dxmin**2/cdtvDim,idiag_dtnu,l_dt=.true.)
+        call max_mn_name(spread(nu,1,nx)/dxmin**2,idiag_dtnu,l_dt=.true.)
       endif
 !
       if (NO_WARN) print*,divu  !(keep compiler quiet)

@@ -156,17 +156,6 @@ program run
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-!  Check if we want to divide cdtv by dimensionality.
-!  (old_cdtv defaults to .false.)
-!  [This is obsolete now that we calculate the time step in a different
-!   manner -- could somebody please adjust visc_var and remove cdtvDim?]
-!
-  if (old_cdtv) then
-    cdtvDim=cdtv
-  else
-    cdtvDim=cdtv/max(dimensionality,1)
-  endif
-!
 !  Set up directory names `directory' and `directory_snap'.
 !
   call directory_names()

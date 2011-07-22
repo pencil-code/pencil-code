@@ -64,7 +64,7 @@ module Cdata
   double precision :: t
   real :: dt=0.0
   real :: cdt=0.4,cdts=1.,cdtr=1.,cdtc=1.,cdtv=0.25
-  real :: cdtvDim, eps_rkf=1e-8, eps_stiff=1e-6
+  real :: eps_rkf=1e-8, eps_stiff=1e-6
   real :: ddt=0.
   real :: dt1_last=0.
   real :: dtmin=1.0e-6,dtmax=1.0e37
