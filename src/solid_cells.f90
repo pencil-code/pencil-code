@@ -251,9 +251,8 @@ module Solid_Cells
 !
 !  28-nov-2008/nils: coded
 !
-      use Initcond
+      use Initcond, only: gaunoise
       use InitialCondition, only: initial_condition_solid_cells
-      use Sub, only: gaunoise
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: a2,rr2, wall_smoothing,rr2_low,rr2_high,shiftx,shifty
