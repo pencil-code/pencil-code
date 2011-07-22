@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED bb(3); bij(3,3); jxbr(3); ss12; b2; uxb(3)
-! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3)
+! PENCILS PROVIDED aa(3) ; diva; del2a(3); aij(3,3), bunit(3)
 !
 !***************************************************************
 module Magnetic
@@ -125,6 +125,7 @@ module Magnetic
 !
       if (lpencil(i_aa)) p%aa=0.0
       if (lpencil(i_bb)) p%bb=0.0
+      if (lpencil(i_bunit)) p%bunit=0.0
       if (lpencil(i_b2)) p%b2=0.0
       if (lpencil(i_jxbr)) p%jxbr=0.0
       if (lpencil(i_bij)) p%bij=0.0
