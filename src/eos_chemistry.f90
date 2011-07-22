@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnTT;  glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED TT_2; TT_3; TT_4; pp; del2pp; mu1; gmu1(3)
+! PENCILS PROVIDED pp; del2pp; mu1; gmu1(3)
 ! PENCILS PROVIDED rho1gpp(3); glnpp(3); del2lnTT
 !
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
@@ -424,9 +424,6 @@ module EquationOfState
       lpenc_requested(i_TT1)=.true.
       if (.not. ldustdensity) then
         lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_TT_2)=.true.
-        lpenc_requested(i_TT_3)=.true.
-        lpenc_requested(i_TT_4)=.true.
       endif
       lpenc_requested(i_del2lnTT)=.true.
 
@@ -463,9 +460,6 @@ module EquationOfState
 !         if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
         endif
 !
-       if (lpencil_in(i_TT_2))   lpencil_in(i_TT)=.true.
-       if (lpencil_in(i_TT_3))   lpencil_in(i_TT_2)=.true.
-       if (lpencil_in(i_TT_4))   lpencil_in(i_TT_2)=.true.
        if (lpencil_in(i_TT1))    lpencil_in(i_TT)=.true.
 !
        if (lpencil_in(i_pp))  then
@@ -525,11 +519,7 @@ module EquationOfState
          endif
        endif
 !
-       if (lpencil(i_TT_2)) p%TT_2=p%TT*p%TT
-       if (lpencil(i_TT_3)) p%TT_3=p%TT_2*p%TT
-       if (lpencil(i_TT_4)) p%TT_4=p%TT_2*p%TT_2
-
-       if (lpencil(i_TT1)) p%TT1=1./p%TT!
+       if (lpencil(i_TT1)) p%TT1=1./p%TT
 
         if (minval(p%TT)==0.) then
           call fatal_error('calc_pencils_eos','p%TT=0!')

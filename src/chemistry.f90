@@ -772,9 +772,6 @@ module Chemistry
 !
          if (lpencil_in(i_H0_RT).or.lpencil_in(i_S0_R))  then
             lpencil_in(i_TT)=.true.
-            lpencil_in(i_TT_2)=.true.
-            lpencil_in(i_TT_3)=.true.
-            lpencil_in(i_TT_4)=.true.
             lpencil_in(i_TT1)=.true.
          endif
          if (lpencil_in(i_S0_R)) then
@@ -783,9 +780,6 @@ module Chemistry
          if (lpencil_in(i_DYDt_reac))  then
             lpencil_in(i_TT)=.true.
             lpencil_in(i_TT1)=.true.
-            lpencil_in(i_TT_2)=.true.
-            lpencil_in(i_TT_3)=.true.
-            lpencil_in(i_TT_4)=.true.
             lpencil_in(i_lnTT)=.true.
             lpencil_in(i_H0_RT)=.true.
             lpencil_in(i_mu1)=.true.
@@ -827,7 +821,7 @@ module Chemistry
       integer :: k,i
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5,ii6=6,ii7=7
       real :: T_low,T_up, T_mid
-      real, dimension(nx) :: T_loc
+      real, dimension(nx) :: T_loc,TT_2,TT_3,TT_4
 !
       logical :: ldiffusion2
       ldiffusion2=ldiffusion .and. (.not.lchemonly)
@@ -884,6 +878,10 @@ module Chemistry
         if (lpencil(i_cp)) p%cp = cp_full(l1:l2,m,n)
 !
         if (lpencil(i_cp1)) p%cp1 = 1./p%cp
+
+       TT_2=p%TT*p%TT
+       TT_3=TT_2*p%TT
+       TT_4=TT_2*TT_2
 !
 !  Viscosity of a mixture
 !
@@ -924,16 +922,16 @@ module Chemistry
               where (T_loc <= T_mid)
                 p%H0_RT(:,k)=species_constants(k,iaa2(ii1)) &
                     +species_constants(k,iaa2(ii2))*T_loc/2 &
-                    +species_constants(k,iaa2(ii3))*p%TT_2/3 &
-                    +species_constants(k,iaa2(ii4))*p%TT_3/4 &
-                    +species_constants(k,iaa2(ii5))*p%TT_4/5 &
+                    +species_constants(k,iaa2(ii3))*TT_2/3 &
+                    +species_constants(k,iaa2(ii4))*TT_3/4 &
+                    +species_constants(k,iaa2(ii5))*TT_4/5 &
                     +species_constants(k,iaa2(ii6))/T_loc
               elsewhere
                 p%H0_RT(:,k)=species_constants(k,iaa1(ii1)) &
                     +species_constants(k,iaa1(ii2))*T_loc/2 &
-                    +species_constants(k,iaa1(ii3))*p%TT_2/3 &
-                    +species_constants(k,iaa1(ii4))*p%TT_3/4 &
-                    +species_constants(k,iaa1(ii5))*p%TT_4/5 &
+                    +species_constants(k,iaa1(ii3))*TT_2/3 &
+                    +species_constants(k,iaa1(ii4))*TT_3/4 &
+                    +species_constants(k,iaa1(ii5))*TT_4/5 &
                     +species_constants(k,iaa1(ii6))/T_loc
               endwhere
             enddo
@@ -987,16 +985,16 @@ module Chemistry
               where(T_loc <= T_mid .and. T_low <= T_loc)
                 p%S0_R(:,k)=species_constants(k,iaa2(ii1))*p%lnTT &
                   +species_constants(k,iaa2(ii2))*T_loc &
-                  +species_constants(k,iaa2(ii3))*p%TT_2/2 &
-                  +species_constants(k,iaa2(ii4))*p%TT_3/3 &
-                  +species_constants(k,iaa2(ii5))*p%TT_4/4 &
+                  +species_constants(k,iaa2(ii3))*TT_2/2 &
+                  +species_constants(k,iaa2(ii4))*TT_3/3 &
+                  +species_constants(k,iaa2(ii5))*TT_4/4 &
                   +species_constants(k,iaa2(ii7))
               elsewhere (T_mid <= T_loc .and. T_loc <= T_up)
                 p%S0_R(:,k)=species_constants(k,iaa1(ii1))*p%lnTT &
                   +species_constants(k,iaa1(ii2))*T_loc &
-                  +species_constants(k,iaa1(ii3))*p%TT_2/2 &
-                  +species_constants(k,iaa1(ii4))*p%TT_3/3 &
-                  +species_constants(k,iaa1(ii5))*p%TT_4/4 &
+                  +species_constants(k,iaa1(ii3))*TT_2/2 &
+                  +species_constants(k,iaa1(ii4))*TT_3/3 &
+                  +species_constants(k,iaa1(ii5))*TT_4/4 &
                   +species_constants(k,iaa1(ii7))
                endwhere
              enddo
