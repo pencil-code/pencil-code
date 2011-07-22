@@ -14,8 +14,8 @@
 ! PENCILS PROVIDED nu; gradnu(3); rho;
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3); lambda1
-! PENCILS PROVIDED Diff_penc_add(nchemspec), H0_RT(nchemspec), hhk_full(nchemspec)
-! PENCILS PROVIDED ghhk(3,nchemspec), S0_R(nchemspec), glnpp(3); cs2
+! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
+! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
 !
 ! PENCILS PROVIDED glnpp(3); del2pp; mu1; mukmu1(nchemspec); gmu1(3); glnmu(3)
 ! PENCILS PROVIDED pp; gTT(3); ccondens; ppwater
@@ -1087,7 +1087,7 @@ module Chemistry
 !
 !  Full diffusion coefficient case
 !
-         else 
+         else
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=Diff_full_add(l1:l2,m,n,k)
            enddo
