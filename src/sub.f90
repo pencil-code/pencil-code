@@ -3787,102 +3787,78 @@ module Sub
 !***********************************************************************
     function notanumber_0(f)
 !
-!  Check for denormalised floats (in fact NaN or -Inf, Inf).
-!  The test used here should work on all architectures even if
-!  optimisation is high (something like `if (any(f /= f+1))' would be
-!  optimised away).
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
 !  Version for scalars
 !
-!  20-Nov-03/tobi: adapted
+!  22-Jul-11/sven+philippe: coded
 !
       logical :: notanumber_0
-      real :: f,g
+      real :: f
 !
-      g=f
-      notanumber_0 = &
-          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
 !
     endfunction notanumber_0
 !***********************************************************************
     function notanumber_1(f)
 !
-!  Check for denormalised floats (in fact NaN or -Inf, Inf).
-!  The test used here should work on all architectures even if
-!  optimisation is high (something like `if (any(f /= f+1))' would be
-!  optimised away).
-!  Version for 1d arrays.
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 1-d arrays
 !
-!  24-jan-02/wolf: coded
+!  22-Jul-11/sven+philippe: coded
 !
       logical :: notanumber_1
       real, dimension(:) :: f
-      real, dimension(size(f,1)) :: g
 !
-      g=f
-      notanumber_1 = any&
-          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
 !
     endfunction notanumber_1
 !***********************************************************************
     function notanumber_2(f)
 !
-!  Check for denormalised floats (in fact NaN or -Inf, Inf).
-!  The test used here should work on all architectures even if
-!  optimisation is high (something like `if (any(f /= f+1))' would be
-!  optimised away).
-!  Version for 2d arrays.
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 2-d arrays
 !
-!  1-may-02/wolf: coded
+!  22-Jul-11/sven+philippe: coded
 !
       logical :: notanumber_2
       real, dimension(:,:) :: f
-      real, dimension(size(f,1),size(f,2)) :: g
 !
-      g=f
-      notanumber_2 = any&
-          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
 !
     endfunction notanumber_2
 !***********************************************************************
     function notanumber_3(f)
 !
-!  Check for denormalised floats (in fact NaN or -Inf, Inf).
-!  The test used here should work on all architectures even if
-!  optimisation is high (something like `if (any(f /= f+1))' would be
-!  optimised away).
-!  Version for 3d arrays.
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 3-d arrays
 !
-!  24-jan-02/wolf: coded
+!  22-Jul-11/sven+philippe: coded
 !
       use Mpicomm, only: stop_it_if_any
 !
       logical :: notanumber_3
       real, dimension(:,:,:) :: f
-      real, dimension(:,:,:), allocatable :: g
-      integer :: stat
 !
-      allocate(g(size(f,1),size(f,2),size(f,3)),stat=stat)
-!
-      call stop_it_if_any((stat>0),'notanumber_3: '// &
-          'Could not allocate memory for variables, please check')
-!
-      g=f
-      notanumber_3 = any&
-          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
-!
-      if (allocated(g)) deallocate(g)
+      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
 !
     endfunction notanumber_3
 !***********************************************************************
     function notanumber_4(f)
 !
-!  Check for denormalised floats (in fact NaN or -Inf, Inf).
-!  The test used here should work on all architectures even if
-!  optimisation is high (something like `if (any(f /= f+1))' would be
-!  optimised away).
-!  Version for 4d arrays.
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 4-d arrays
 !
-!  24-jan-02/wolf: coded
+!  22-Jul-11/sven+philippe: coded
 !
       use Mpicomm, only: stop_it_if_any
 !
@@ -3891,16 +3867,7 @@ module Sub
       real, dimension(:,:,:,:), allocatable :: g
       integer :: stat
 !
-      allocate(g(size(f,1),size(f,2),size(f,3),size(f,4)),stat=stat)
-!
-      call stop_it_if_any((stat>0),'notanumber_4: '// &
-          'Could not allocate memory for variables, please check')
-!
-      g=f
-      notanumber_4 = any&
-          ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
-!
-      if (allocated(g)) deallocate(g)
+      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
 !
     endfunction notanumber_4
 !***********************************************************************
