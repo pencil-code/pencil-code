@@ -1,16 +1,19 @@
+#!/usr/bin/perl
 #!/bin/sh
 #  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
 # Run the right perl version:
-if [ -x /usr/local/bin/perl ]; then
-  perl=/usr/local/bin/perl
-elif [ -x /usr/bin/perl ]; then
-  perl=/usr/bin/perl
-else
-  perl=`which perl| sed 's/.*aliased to *//'`
-fi
+#@@@
+# if [ -x /usr/local/bin/perl ]; then
+#   perl=/usr/local/bin/perl
+# elif [ -x /usr/bin/perl ]; then
+#   perl=/usr/bin/perl
+# else
+#   perl=`which perl| sed 's/.*aliased to *//'`
+# fi
 
-exec $perl -x -S $0 "$@";     # -x: start from the following line
+# exec $perl -x -S $0 "$@";     # -x: start from the following line
+#@@@
 #======================================================================#
 #! /Good_Path/perl -w
 # line 17
@@ -93,6 +96,7 @@ my $pscalar_string='1';
 my ($maux,$maux_com,$mvar,$mglobal,$mscratch,$mpvar,$ndustspec,$nchemspec,$npscalar,$mvar_per_dust,$mvar_per_chem) = (0) x 11;
 my @pencil_names=();
 my @pencil_sizes=();
+my %pencil_file_map;
 my @cparam_lines;
 (my $cmdname = $0) =~ s{.*/}{};
 #
@@ -193,14 +197,25 @@ file: foreach my $infile (@ARGV) {
         foreach my $pencil_name_used (@pencil_names){
           if ($pencil_name eq $pencil_name_used) {$pencil_already_used=1;}
         }
+        push @{$pencil_file_map{$pencil_name}}, $infile;
         if ($pencil_already_used eq 0) {
-          push (@pencil_names,$pencil_name);
-          push (@pencil_sizes,$pencil_size);
+          push @pencil_names, $pencil_name;
+          push @pencil_sizes, $pencil_size;
         }
       }
     }
   }
 }
+
+# Warn about ambiguous pencil definitions.
+# THIS WILL SOON BECOME A FATAL ERROR.
+while (my ($name, $files_ref) = each %pencil_file_map) {
+  my @files = @{$files_ref};
+  if (@files > 1) {
+    print "### ¡¡¡WARNING!!! ###: $name multiply declared: in @files\n";
+  }
+}
+
 #
 # Calculate the total number of pencils.
 #
@@ -226,7 +241,6 @@ if ($ndustspec >= 1) {
   }
 }
 
-
 #
 # More processing of chemistry information.
 #
@@ -234,12 +248,14 @@ if ($ndustspec >= 1) {
 if ($nchemspec >= 1) {
   $mvar = $mvar + $nchemspec - 1;
 }
+
 #
 # More processing of passive scalars information.
 #
 if ($npscalar >= 1) {
   $mvar = $mvar + $npscalar - 1;
 }
+
 #
 # Write to cparam.inc, cparam_pencils.inc and pencil_init.inc.
 #
