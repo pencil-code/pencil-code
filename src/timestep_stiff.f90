@@ -1,17 +1,17 @@
 ! $Id$
 ! adapted from timestep_rkf, and from numerical recipe stiff algorithm
-
+!
 module Timestep
-
+!
   use Cparam
   use Cdata
-
+!
   implicit none
-
+!
   private
-
+!
   public :: rk_2n, border_profiles
-
+!
   ! Parameters for adaptive time stepping
   integer, parameter :: maxtry = 40
   real, parameter :: safety           = 0.9
@@ -61,7 +61,7 @@ module Timestep
 !  real, parameter :: e2       =-3.07363448539
 !  real, parameter :: e3       =0.873280801802
 !  real, parameter :: e4       =1.282612945268
-
+!
 !
 !  border_prof_[x-z] could be of size n[x-z], but having the same
 !  length as f() (in the given dimension) gives somehow more natural code.
@@ -69,9 +69,9 @@ module Timestep
   real, dimension(mx) :: border_prof_x=1.0
   real, dimension(my) :: border_prof_y=1.0
   real, dimension(mz) :: border_prof_z=1.0
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine rk_2n(f,df,p)
 !
@@ -89,30 +89,30 @@ module Timestep
       type (pencil_case) :: p
       real :: ds
       real, dimension(1) :: dt1, dt1_local
-
+!
       real :: errmax, tnew
       real :: dt_temp, dt_next, dt_did
       integer :: j,i
       logical :: dtnotok
       integer :: l
-
+!
       ldt=.false.
       dtnotok=.true.
-
+!
       if (itorder/=4) &
         call fatal_error('rk_2n','itorder must be 4 for stiff solver')
-
+!
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
 !
 !      if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
-
+!
       if (linterstellar.or.lshear.or.lparticles) &
             call fatal_error("rk_2n", &
                    "Shear, interstellar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
-
+!
       lfirst=.true.
       do i=1,maxtry
 !        print*,"i=",i,"   trying dt=",dt
@@ -140,7 +140,7 @@ module Timestep
       enddo
       if (dtnotok) call fatal_error("timestep_stiff","exceeded maxtry")
 !      print*,"errmax, errcon", errmax,errcon
-
+!
       if (errmax > errcon) then
         ! Increase the time step
         dt_next = safety*dt*(errmax**dt_increase)
@@ -148,10 +148,10 @@ module Timestep
         ! But not by more than a factor of grow
         dt_next = grow*dt
       endif
-
+!
       ! Time step that was actually performed
       dt_did = dt
-
+!
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
       ! Increase time
       t = t+dt
@@ -174,7 +174,7 @@ module Timestep
       use Equ
       use Sub, only: ludcmp, lubksb
       use Chemistry, only: jacobn
-
+!
       intent(inout) :: f
       intent(out)   :: df, p, errmax
       real, dimension (mx,my,mz,mvar) :: f
@@ -193,7 +193,7 @@ module Timestep
       real :: errmax, errmaxs
       integer :: i,j,l,lll
       integer :: i1
-
+!
       df=0.
       errmax=0.
       k=0.
@@ -232,16 +232,16 @@ module Timestep
 !          print*,"/"
 !        enddo
 !      enddo; enddo; enddo
-
+!
       call pde(f, k(:,:,:,:,1), p)
-
+!
       do j=1,mvar; do n=n1,n2; do m=m1,m2
 !      XppAut stiff scaling
 !        fscal(l1:l2,m,n,j) = max(1.0,abs(f(l1:l2,m,n,j)))
 !      Numerical Recipe scaling
         fscal(l1:l2,m,n,j) = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-8!tiny(0.)
       enddo; enddo; enddo
-
+!
 !      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),1)
@@ -255,9 +255,9 @@ module Timestep
         k(l1:l2,m,n,ichemspec(j),1)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo
-
+!
       lfirst=.false.
-
+!
       tmp = f + a21*k(:,:,:,:,1)
       call pde(tmp, k(:,:,:,:,2), p)
 !      print*,"before:"
@@ -274,7 +274,7 @@ module Timestep
         k(l1:l2,m,n,ichemspec(j),2)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo
-
+!
       tmp = f + a31*k(:,:,:,:,1) + a32*k(:,:,:,:,2)
       call pde(tmp, k(:,:,:,:,3), p)
       k(:,:,:,:,4)=k(:,:,:,:,3)
@@ -293,7 +293,7 @@ module Timestep
         k(l1:l2,m,n,ichemspec(j),3)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo
-
+!
 !      print*,"before:"
       do j=1,nchemspec; do n=n1,n2; do m=m1,m2
         ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),4)+&
@@ -310,19 +310,19 @@ module Timestep
         k(l1:l2,m,n,ichemspec(j),4)=ktemp(l1:l2,m,n,j)
 !        print*,ktemp(l1:l2,m,n,j)
       enddo; enddo; enddo
-
+!
       errmaxs=0.
-
+!
       do j=1,mvar
 !        print*,"j=",j
         do n=n1,n2; do m=m1,m2
-
+!
           err = e1*k(l1:l2,m,n,j,1) + e2*k(l1:l2,m,n,j,2) + &
               e3*k(l1:l2,m,n,j,3) + e4*k(l1:l2,m,n,j,4)
-
+!
           df(l1:l2,m,n,j) = b1*k(l1:l2,m,n,j,1) + b2*k(l1:l2,m,n,j,2) + &
               b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4)
-
+!
 !          print*,df(l1:l2,m,n,j)," (",err,")"
           ! Get the maximum error over the whole field
           !
@@ -368,7 +368,7 @@ module Timestep
       errmaxs=errmaxs/eps_stiff
       !
       call mpiallreduce_max(errmaxs,errmax)
-
+!
     endsubroutine stiff
 !***********************************************************************
     subroutine border_profiles()
@@ -379,7 +379,7 @@ module Timestep
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
       use Cdata
-
+!
       real, dimension(nx) :: xi
       real, dimension(ny) :: eta
       real, dimension(nz) :: zeta
@@ -388,14 +388,14 @@ module Timestep
 !  x-direction
 !
       border_prof_x(l1:l2)=1
-
+!
       if ((border_frac_x(1)>0) .and. (.not. lperi(1))) then
         border_width=border_frac_x(1)*Lxyz(1)/2
         lborder=xyz0(1)+border_width
         xi=1-max(lborder-x(l1:l2),0.0)/border_width
         border_prof_x(l1:l2)=min(border_prof_x(l1:l2),xi**2*(3-2*xi))
       endif
-
+!
       if ((border_frac_x(2)>0) .and. (.not. lperi(1))) then
         border_width=border_frac_x(2)*Lxyz(1)/2
         uborder=xyz1(1)-border_width
@@ -406,14 +406,14 @@ module Timestep
 !  y-direction
 !
       border_prof_y(m1:m2)=1
-
+!
       if ((border_frac_y(1)>0) .and. (.not. lperi(2))) then
         border_width=border_frac_y(1)*Lxyz(2)/2
         lborder=xyz0(2)+border_width
         eta=1-max(lborder-y(m1:m2),0.0)/border_width
         border_prof_y(m1:m2)=min(border_prof_y(m1:m2),eta**2*(3-2*eta))
       endif
-
+!
       if ((border_frac_y(2)>0) .and. (.not. lperi(2))) then
         border_width=border_frac_y(2)*Lxyz(2)/2
         uborder=xyz1(2)-border_width
@@ -424,14 +424,14 @@ module Timestep
 !  z-direction
 !
       border_prof_z(n1:n2)=1
-
+!
       if ((border_frac_z(1)>0) .and. (.not. lperi(3))) then
         border_width=border_frac_z(1)*Lxyz(3)/2
         lborder=xyz0(3)+border_width
         zeta=1-max(lborder-z(n1:n2),0.0)/border_width
         border_prof_z(n1:n2)=min(border_prof_z(n1:n2),zeta**2*(3-2*zeta))
       endif
-
+!
       if ((border_frac_z(2)>0) .and. (.not. lperi(3))) then
         border_width=border_frac_z(2)*Lxyz(3)/2
         uborder=xyz1(3)-border_width
@@ -440,7 +440,5 @@ module Timestep
       endif
 !
     endsubroutine border_profiles
-
-
-
+!***********************************************************************
 endmodule Timestep
