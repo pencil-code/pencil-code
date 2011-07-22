@@ -16,6 +16,7 @@
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
 ! PENCILS PROVIDED TTb; rhop; eth; geth(3); glneth(3); del2eth
+! PENCILS PROVIDED TT_2,TT_3,TT_4
 !
 !***************************************************************
 module EquationOfState
