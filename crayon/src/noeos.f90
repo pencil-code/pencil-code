@@ -11,7 +11,6 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; cp
-! PENCILS PROVIDED TT_2; TT_3; TT_4
 ! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT
 ! PENCILS PROVIDED glnmumol(3); ppvap; csvap2
 !
