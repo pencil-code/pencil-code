@@ -3950,17 +3950,17 @@ module Chemistry
         open(file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
          write(file_id,*) 'STOICHIOMETRIC MATRIX'
 !
-         write(file_id,*),'Sijm'
+         write(file_id,*) 'Sijm'
          do i=1,nreactions
-          write(file_id,100),i,Sijm(:,i)
+          write(file_id,100) i,Sijm(:,i)
          enddo
-         write(file_id,*),'Sijp:'
+         write(file_id,*) 'Sijp:'
          do i=1,nreactions
-          write(file_id,100),i,Sijp(:,i)
+          write(file_id,100) i,Sijp(:,i)
          enddo
-         write(file_id,*),'stoichio='
+         write(file_id,*) 'stoichio='
          do i=1,nreactions
-          write(file_id,100),stoichio(:,i)
+          write(file_id,100) stoichio(:,i)
          enddo
         close(file_id)
       endif
@@ -5518,7 +5518,7 @@ module Chemistry
           StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
-          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), TT
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)') TT
           if (lroot) print*, ' Temperature, K   ', TT
 !
         elseif (tmp_string == 'P') then
@@ -5529,7 +5529,7 @@ module Chemistry
           StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
-          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), PP
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)') PP
           if (lroot) print*, ' Pressure, Pa   ', PP
 !
         elseif (tmp_string == 'V') then
@@ -5540,7 +5540,7 @@ module Chemistry
           StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
           StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
 !
-          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)'), velx
+          read (unit=ChemInpLine(StartInd:StopInd),fmt='(E14.7)') velx
           if (lroot) print*, ' Velocity, cm/s   ', velx
 !
         else
@@ -5554,7 +5554,7 @@ module Chemistry
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
             StartInd=verify(ChemInpLine(StopInd:),' ')+StopInd-1
             StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-            read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)'), YY_k
+            read (unit=ChemInpLine(StartInd:StopInd),fmt='(E15.8)') YY_k
             if (lroot) print*, ' volume fraction, %,    ', YY_k, &
                 species_constants(ind_chem,imass)
 !
