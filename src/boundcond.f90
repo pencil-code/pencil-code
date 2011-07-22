@@ -615,6 +615,9 @@ module Boundcond
               case ('s')
                 ! BCZ_DOC: symmetry
                 call bc_sym_z(f,+1,topbot,j)
+              case ('sf')
+                ! BCZ_DOC: symmetry with respect to interface
+                call bc_sf_z(f,+1,topbot,j)
               case ('s0d')
                 ! BCZ_DOC: symmetry, function value such that df/dz=0
                 call bc_symset0der_z(f,topbot,j)
@@ -627,6 +630,9 @@ module Boundcond
               case ('a2')
                 ! BCZ_DOC: antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
+              case ('af')
+                ! BCZ_DOC: antisymmetry with respect to interface
+                call bc_sf_z(f,-1,topbot,j)
               case ('a0d')
                 ! BCZ_DOC: antisymmetry with zero derivative
                 call bc_sym_z(f,+1,topbot,j,VAL=fbcz_zero)
@@ -1831,6 +1837,32 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_sf_z(f,sgn,topbot,j)
+!
+!  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!
+!    sgn = +1  -->  symmetric
+!    sgn = -1  -->  antisymmetric
+!
+!  14-feb-09/ccyang: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: sgn, j
+      character(3), intent(in) :: topbot
+!
+      integer :: i
+!
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        forall (i=1:nghost) f(:,:,n1-i,j) = real(sgn) * f(:,:,n1+i-1,j)
+      case('top')               ! top boundary
+        forall (i=1:nghost) f(:,:,n2+i,j) = real(sgn) * f(:,:,n2-i+1,j)
+      case default
+        print *, 'bc_sf_z: unknown input; topbot = ', topbot
+      endselect
+!
+    endsubroutine bc_sf_z
 !***********************************************************************
     subroutine bc_symset0der_z(f,topbot,j)
 !
