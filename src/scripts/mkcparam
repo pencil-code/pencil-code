@@ -109,8 +109,7 @@ die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 my $outfile = ($opts{o} || $opts{output} || "-");
 open(OUT, "> $outfile") or die "Can't open $outfile for writing";
 open(OUT_PENCIL, "> cparam_pencils.inc") or die "Can't open cparam_pencils.inc for writing";
-open(OUT_PENC_INIT, "> pencil_init.inc") or die "Can't open pencil_init.inc
- for writing";
+open(OUT_PENC_INIT, "> pencil_init.inc") or die "Can't open pencil_init.inc for writing";
 #
 # Cycle through files (later files will overwrite effect of earlier files)
 #
@@ -125,29 +124,29 @@ file: foreach my $infile (@ARGV) {
 #
 # Cycle through all lines up to first non-empty non-comment line in file
 #
-line: while (defined($line=<INPUT>)) {
-  next line if ($line =~ /^\s*$/); # ignore empty lines
-  last line if ($line !~ /^\s*!/); # done if non-comment line
-  extract_decl ($line, $mvar_decl    , \$mvar     );
-  extract_decl ($line, $maux_decl    , \$maux     );
-  extract_decl ($line, $mglobal_decl , \$mglobal  );
-  extract_decl ($line, $mscratch_decl, \$mscratch );
-  extract_decl ($line, $maux_com_decl, \$maux_com );
-  extract_decl ($line, $mpvar_decl   , \$mpvar    );
-  extract_decl ($line, $pscalar_decl , \$npscalar );
+  line: while (defined($line=<INPUT>)) {
+    next line if ($line =~ /^\s*$/); # ignore empty lines
+    last line if ($line !~ /^\s*!/); # done if non-comment line
+    extract_decl ($line, $mvar_decl    , \$mvar     );
+    extract_decl ($line, $maux_decl    , \$maux     );
+    extract_decl ($line, $mglobal_decl , \$mglobal  );
+    extract_decl ($line, $mscratch_decl, \$mscratch );
+    extract_decl ($line, $maux_com_decl, \$maux_com );
+    extract_decl ($line, $mpvar_decl   , \$mpvar    );
+    extract_decl ($line, $pscalar_decl , \$npscalar );
 #
 # Check for information about number of chemical and dust species
 # and discretization type
 #
-  if ($line=~ /$chem_decl/) {$chem_string=$1;}
-  if ($line=~ /$dust_decl/) {$dust_string=$1;}
-  if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
+    if ($line=~ /$chem_decl/) {$chem_string=$1;}
+    if ($line=~ /$dust_decl/) {$dust_string=$1;}
+    if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
 #
 # Extract provided pencils from file headers.
 #
-  if ($line=~ /$pencils_decl/) {
-    # my @pencils = split /\s*;\s*/, $2;
-    # foreach my $pencil (@pencils) {
+    if ($line=~ /$pencils_decl/) {
+      # my @pencils = split /\s*;\s*/, $2;
+      # foreach my $pencil (@pencils) {
       while ($line =~ s{
                            ^                          # anchor at start
                            (?:                        # group, don't capture
@@ -167,34 +166,36 @@ line: while (defined($line=<INPUT>)) {
                            )
                        }
                        {}x) {                         # delete everything matched
-      my $pencil=$1;
-      my $pencil_name=$pencil;
-      my $pencil_size=$pencil;
+        my $pencil=$1;
+        my $pencil_name=$pencil;
+        my $pencil_size=$pencil;
 #
 # Extract name and size of pencils.
 #
-      if ($pencil =~ /\(.*\)/) {
-        $pencil_size=~ s/^.*\((.*)\)/$1/g;
+        if ($pencil =~ /\(.*\)/) {
+          $pencil_size=~ s/^.*\((.*)\)/$1/g;
         } else {
-        $pencil_size='';
+          $pencil_size='';
         }
-      $pencil_name =~ s/\(.*\)//g;
+        $pencil_name =~ s/\(.*\)//g;
 #
 # Default pencil size is (nx).
 #
-      if ($pencil_size eq '') {
-        $pencil_size='(nx)'} else {
-        $pencil_size="(nx,$pencil_size)";}
+        if ($pencil_size eq '') {
+          $pencil_size='(nx)'
+        } else {
+          $pencil_size="(nx,$pencil_size)";
+        }
 #
 # Store pencil information in arrays.
 #
-      my $pencil_already_used=0;
-      foreach my $pencil_name_used (@pencil_names){
-        if ($pencil_name eq $pencil_name_used) {$pencil_already_used=1;}
+        my $pencil_already_used=0;
+        foreach my $pencil_name_used (@pencil_names){
+          if ($pencil_name eq $pencil_name_used) {$pencil_already_used=1;}
         }
-      if ($pencil_already_used eq 0) {
-        push (@pencil_names,$pencil_name);
-        push (@pencil_sizes,$pencil_size);
+        if ($pencil_already_used eq 0) {
+          push (@pencil_names,$pencil_name);
+          push (@pencil_sizes,$pencil_size);
         }
       }
     }
@@ -212,15 +213,18 @@ my $npencils=$#pencil_names+1;
 if ($ndustspec >= 1) {
   if ($mvar_per_dust > 1) {
     if ($mvar_per_dust == 2 || $mvar_per_dust == 5) {
-     $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust + 1; }
-    else {
+      $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust + 1;
+    } else {
       if ($mvar_per_dust == 9) {
-        $mvar = $mvar + ($ndustspec)*$mvar_per_dust -1; }
-      else {
-        $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust; } } }
-    
-  else {
-    $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust; } }
+        $mvar = $mvar + ($ndustspec)*$mvar_per_dust -1;
+      } else {
+        $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust;
+      }
+    }
+  } else {
+    $mvar = $mvar + ($ndustspec-1)*$mvar_per_dust;
+  }
+}
 
 
 #
@@ -228,12 +232,14 @@ if ($ndustspec >= 1) {
 #
 ($nchemspec,$mvar_per_chem) = split /\*/, $chem_string;
 if ($nchemspec >= 1) {
-  $mvar = $mvar + $nchemspec - 1; }
+  $mvar = $mvar + $nchemspec - 1;
+}
 #
 # More processing of passive scalars information.
 #
 if ($npscalar >= 1) {
-  $mvar = $mvar + $npscalar - 1; }
+  $mvar = $mvar + $npscalar - 1;
+}
 #
 # Write to cparam.inc, cparam_pencils.inc and pencil_init.inc.
 #
@@ -310,7 +316,7 @@ foreach $line (@cparam) {
   if ($line=~ 'nbricky')      {$nbricky=1;}
   if ($line=~ 'nbrickz')      {$nbrickz=1;}
   if ($line=~ 'nblockmax')    {$nblockmax=1;}
-  }
+}
 #
 # Write default values of undefined particle parameters to cparam.inc.
 #
@@ -418,8 +424,8 @@ sub extract_decl{
     my $counter_ref = shift;
 
     if ($line =~ /$regexp/) {
-	  $$counter_ref += $1;
-      }
+      $$counter_ref += $1;
+    }
 }
 #
 # ---------------------------------------------------------------------- #
