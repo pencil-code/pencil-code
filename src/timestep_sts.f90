@@ -131,7 +131,7 @@ module Timestep
 !
 !  Coefficients for up to order 3.
 !
-      if(lsuper_time_stepping) then
+      if (lsuper_time_stepping) then
 !         call stop_it ('You are ussing the UNTESTED module STS')
          call sts(f,df,p)
          return

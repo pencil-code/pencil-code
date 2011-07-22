@@ -171,7 +171,7 @@ module Hydro
       case ('ck')
         call init_ck
       case default;
-        if(lroot) print*,'no preparatory profile needed'
+        if (lroot) print*,'no preparatory profile needed'
       end select
 !
 ! kinflows end here

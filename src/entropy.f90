@@ -3818,17 +3818,17 @@ module Entropy
 ! We also write the z dependent profile of heatconduction and
 ! gradient-logarithm of heat conduction.
 !
-          if(lfirstcall_hcond.and.lfirstpoint) then
-            if(.not.lhcond_global) then
+          if (lfirstcall_hcond.and.lfirstpoint) then
+            if (.not.lhcond_global) then
               call get_gravz_heatcond()
               call write_zprof_once('hcond',hcond_zprof)
               call write_zprof_once('gloghcond',gradloghcond_zprof(:,3))
             endif
-            if(chi_t/=0.0) call get_gravz_chit()
+            if (chi_t/=0.0) call get_gravz_chit()
             lfirstcall_hcond=.false.
           endif
 !
-          if(lhcond_global) then
+          if (lhcond_global) then
             hcond=f(l1:l2,m,n,iglobal_hcond)
             glhc=f(l1:l2,m,n,iglobal_glhc:iglobal_glhc+2)
           else
@@ -3845,8 +3845,8 @@ module Entropy
           endif
 ! If not gravz, using or not hcond_global
         elseif (lgravx) then
-          if(lfirstcall_hcond.and.lfirstpoint) then
-            if(.not.lhcond_global) then
+          if (lfirstcall_hcond.and.lfirstpoint) then
+            if (.not.lhcond_global) then
                call get_gravx_heatcond()
             endif
             lfirstcall_hcond=.false.
@@ -5012,7 +5012,7 @@ module Entropy
       use Gravity, only: z1, z2
       use Sub, only: step,der_step
 !
-      if(.not.lmultilayer) call fatal_error('get_gravz_heatcond:',&
+      if (.not.lmultilayer) call fatal_error('get_gravz_heatcond:',&
            'dont call if you have only one layer')
 !
       hcond_zprof = 1. + (hcond1-1.)*step(z,z1,-widthss) &
@@ -5048,7 +5048,7 @@ module Entropy
       call get_shared_variable('xc',xc,ierr)
       if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
            "there was a problem when getting xc")
-      if(.not.lmultilayer) call fatal_error('get_gravx_heatcond:',&
+      if (.not.lmultilayer) call fatal_error('get_gravx_heatcond:',&
            'dont call if you have only one layer')
       call get_shared_variable('cv', cv, ierr)
       if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
@@ -5060,7 +5060,7 @@ module Entropy
       if (ierr/=0) call stop_it(" get_gravx_heatcond: "//&
            "there was a problem when getting gravx")
 !
-      if(.not.lmultilayer) call fatal_error('get_gravx_heatcond:',&
+      if (.not.lmultilayer) call fatal_error('get_gravx_heatcond:',&
            'dont call if you have only one layer')
 !
 ! Radial profile of the polytropic index
@@ -5176,7 +5176,7 @@ module Entropy
       use Gravity, only: z1, z2
       use Sub, only: step,der_step
 !
-      if(.not.lmultilayer) call fatal_error('get_gravz_chit:',&
+      if (.not.lmultilayer) call fatal_error('get_gravz_chit:',&
            'dont call if you have only one layer')
 !
       chit_zprof = 1 + (chit_prof1-1)*step(z,z1,-widthss) &

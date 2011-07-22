@@ -911,17 +911,19 @@ module Deriv
     endsubroutine der2_minmod
 !***********************************************************************
     real function minmod(a,b,c)
+!
+!  DOCUMENT ME!
+!
       real :: a,b,c
 !
-      if ( &
-        ((a.gt.0) .and. (b.gt.0) .and. (c.gt.0))) then
+      if (((a>0) .and. (b>0) .and. (c>0))) then
         minmod=max(a,b,c)
-      elseif ( &
-        ((a.lt.0) .and. (b.lt.0) .and. (c.lt.0))) then
+      elseif (((a<0) .and. (b<0) .and. (c<0))) then
         minmod=min(a,b,c)
       else
-        minmod=0.
+        minmod=0.0
       endif
+!
     endfunction minmod
 !***********************************************************************
     subroutine der6_other(f,df,j,ignoredx,upwind)

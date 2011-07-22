@@ -250,7 +250,7 @@ module Dustdensity
 !
 ! choosing the advection scheme
 !
-      if(lupw_ndmdmi) advec_ddensity='upwind'
+      if (lupw_ndmdmi) advec_ddensity='upwind'
 
       select case(advec_ddensity)
       case('normal')

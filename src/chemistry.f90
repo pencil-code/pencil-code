@@ -535,7 +535,7 @@ module Chemistry
 !  Reinitialize if required
 !
       if (reinitialize_chemistry) then
-        if(lroot) print*,'Reinitializing chemistry.'
+        if (lroot) print*,'Reinitializing chemistry.'
         call init_chemistry(f)
       endif
 !
@@ -4418,23 +4418,23 @@ module Chemistry
           prod1=1.
           prod2=1.
           do k=1,nchemspec
-            if(abs(Sijp(k,reac))==1) then
+            if (abs(Sijp(k,reac))==1) then
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))
-            else if(abs(Sijp(k,reac))==2) then
+            else if (abs(Sijp(k,reac))==2) then
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
                   *rho_cgs(:)/species_constants(k,imass))
-            else if(abs(Sijp(k,reac))>0) then
+            else if (abs(Sijp(k,reac))>0) then
               prod1=prod1*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))**Sijp(k,reac)
             endif
           enddo
           do k=1,nchemspec
-            if(abs(Sijm(k,reac))==1) then
+            if (abs(Sijm(k,reac))==1) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))
-            else if(abs(Sijm(k,reac))==2) then
+            else if (abs(Sijm(k,reac))==2) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
                   *rho_cgs(:)/species_constants(k,imass))
@@ -4446,7 +4446,7 @@ module Chemistry
 !
 !  Find forward rate constant for reaction 'reac'
 !
-          if(latmchem) then
+          if (latmchem) then
             if ((B_n(reac)==0.) .and. (alpha_n(reac)==0.)  &
                 .and. (E_an(reac)==0.)) then
               do i=1,nx
@@ -4614,7 +4614,7 @@ module Chemistry
       logical, save :: lfirsttime=.true.
       real, dimension (nx) :: activation_energy, pre_exp, term1, term2
 !
-      if (nreactions .ne. 1) &
+      if (nreactions /= 1) &
           call fatal_error('roux','nreactions should always be 1.')
 !
 !  Check that a global equivalence ratio is given at input
@@ -6231,7 +6231,7 @@ module Chemistry
 ! Read dimension of the array stored in the FlameMaster initial file
 !
       open(1,FILE=trim(file_name))
-      if(lroot) print*, 'Reading initial conditions in file ', trim(file_name)
+      if (lroot) print*, 'Reading initial conditions in file ', trim(file_name)
       do while (car10 /= 'FlameThick')
         read(1,*) car10
       enddo
@@ -6354,8 +6354,8 @@ module Chemistry
           enddo
         enddo
       enddo
-      if(.not. ldensity_nolog) f(:,:,:,iuz+1) = log(f(:,:,:,iuz+1))
-      if(.not. ltemperature_nolog) f(:,:,:,iuz+2) = log(f(:,:,:,iuz+2))
+      if (.not. ldensity_nolog) f(:,:,:,iuz+1) = log(f(:,:,:,iuz+1))
+      if (.not. ltemperature_nolog) f(:,:,:,iuz+2) = log(f(:,:,:,iuz+2))
 !
 !  Set the y and z velocities to zero in order to avoid random noise
 !

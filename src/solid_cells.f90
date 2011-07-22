@@ -605,9 +605,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           do ipoint=1,8
 !  Test if we are in a fluid cell, i.e.
 !  that forcepoints are outside robj.
-            if (dist_to_cent2(ipoint) .gt. robj**2 .and. inearest == 0) then
+            if (dist_to_cent2(ipoint) > robj**2 .and. inearest == 0) then
               inearest=ipoint
-            else if (dist_to_cent2(ipoint) .gt. robj**2) then
+            else if (dist_to_cent2(ipoint) > robj**2) then
               if (dist_to_fp2(ipoint) <= dist_to_fp2(inearest)) then
                 inearest=ipoint
               endif
@@ -1581,7 +1581,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  If "dir" for the first crossing is 1 then "gridplane" is the 'yz' plane
 !  and so on.....
 !
-        if (ngrids(dir) .gt. 1) then
+        if (ngrids(dir) > 1) then
           ndims=ndims+1
           do topbot_tmp=1,2
 !
@@ -2441,7 +2441,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  If form='sphere' we must also look in the z-direction
 !
-        if (form .ne. 'cylinder') then
+        if (form /= 'cylinder') then
         do i=l1,l2
         do j=m1,m2
 !
@@ -2545,7 +2545,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           do i=l1,l2
             do j=m1,m2
               do k=n1,n2
-                if ((ba(i,j,k,1).ne.0) .and. (ba(i,j,k,1).ne.10)) then
+                if ((ba(i,j,k,1)/=0) .and. (ba(i,j,k,1)/=10)) then
                   ba(i,j,k,3)=9
                 endif
               enddo
@@ -2728,7 +2728,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   call fatal_error('find_solid_cell_boundaries','No such form!')
                 endif
                 if (r_point > r_obj) then
-                  if ((ba(i,j,k,1) .ne. 0 ) .and. (ba(i,j,k,1) .ne. 10)) then
+                  if ((ba(i,j,k,1) /= 0 ) .and. (ba(i,j,k,1) /= 10)) then
                     print*,'i,j,k=',i,j,k
                     print*,'ba(i,j,k,1)=',ba(i,j,k,1)
                     print*,'r_point,r_obj=',r_point,r_obj

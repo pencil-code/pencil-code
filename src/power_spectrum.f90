@@ -519,7 +519,7 @@ module power_spectrum
        "$Id$")
   !
   l2nd = .false.
-  if (present(sp2)) l2nd = sp.ne.sp2
+  if (present(sp2)) l2nd = sp/=sp2
 !
   if (l2nd) lcomplex = .false.
 !

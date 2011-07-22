@@ -120,17 +120,17 @@ module Entropy
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
-        if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+        if (ierr/=0) call fatal_error('initialize_entropy:',& 
              'failed to get lffree from density')
         if (lffree) then
           call get_shared_variable('profx_ffree',profx_ffree,ierr)
-          if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+          if (ierr/=0) call fatal_error('initialize_entropy:',& 
                'failed to get profx_ffree from density')
           call get_shared_variable('profy_ffree',profy_ffree,ierr)
-          if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+          if (ierr/=0) call fatal_error('initialize_entropy:',& 
               'failed to get profy_ffree from density')
           call get_shared_variable('profz_ffree',profz_ffree,ierr)
-          if (ierr.ne.0) call fatal_error('initialize_entropy:',& 
+          if (ierr/=0) call fatal_error('initialize_entropy:',& 
              'failed to get profz_ffree from density')
         endif
       endif

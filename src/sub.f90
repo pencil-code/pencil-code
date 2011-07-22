@@ -1698,7 +1698,7 @@ module Sub
 !
       do i=1,3
         do j=1,i
-          if(i/=j) &
+          if (i/=j) &
             matrix_ut3x3(:,i,j) = matrix_ut3x3(:,j,i)
         enddo
       enddo

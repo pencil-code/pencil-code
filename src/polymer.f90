@@ -98,7 +98,7 @@ module Polymer
 ! give warning if polymeric backreaction is set true but polymer
 ! density, mu_poly is set to zero.
 !
-      if(lpolyback.and.(mu_poly.eq.0.)) &
+      if (lpolyback.and.(mu_poly==0.)) &
           call warning ('initialize_polymer','lpolyback=T but mu_poly=0!')
 !
     endsubroutine initialize_polymer
@@ -166,7 +166,7 @@ module Polymer
 !   All pencils that the Polymer module depends on are specified here.
 !
       lpenc_requested(i_poly)=.true.
-      if(tau_poly/=0) then
+      if (tau_poly/=0) then
         lpenc_requested(i_frC)=.true.
         lpenc_requested(i_fr)=.true.
       endif
@@ -189,7 +189,7 @@ module Polymer
 !
 !  If a diffusive term in the polymer equation is not included: (not default)
 !
-      if(eta_poly/=0) lpenc_requested(i_del2poly)=.true.
+      if (eta_poly/=0) lpenc_requested(i_del2poly)=.true.
 !
 !  Different pencils are chosen depending on different algorithms applied.
 !
@@ -207,7 +207,7 @@ module Polymer
 !
 ! Diagnostic pencils
 !
-      if(idiag_polytrm/=0) lpenc_requested(i_trp)=.true.
+      if (idiag_polytrm/=0) lpenc_requested(i_trp)=.true.
 !
     endsubroutine pencil_criteria_polymer
 !***********************************************************************

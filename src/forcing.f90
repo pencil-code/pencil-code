@@ -709,7 +709,7 @@ module Forcing
       do ik1=0,random2d_kmax
         do ik2 = 0, random2d_kmax
           modk = nint(sqrt ( float(ik1*ik1) + float (ik2*ik2) ))
-          if ( (modk.le.random2d_kmax).and.(modk.ge.random2d_kmin)) then
+          if ( (modk<=random2d_kmax).and.(modk>=random2d_kmin)) then
             if (.not.lonly_total) then
               random2d_kmodes(1,imode) = ik1
               random2d_kmodes(2,imode) = ik2

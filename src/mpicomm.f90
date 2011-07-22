@@ -6054,7 +6054,7 @@ module Mpicomm
 !
       integer :: unit
 !
-      if(lfake_parallel_io) then
+      if (lfake_parallel_io) then
         call fake_parallel_close(unit)
       else
          call true_parallel_close(unit)
