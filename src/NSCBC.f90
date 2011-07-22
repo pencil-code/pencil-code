@@ -1187,10 +1187,10 @@ include 'NSCBC.h'
 !
       real, dimension(:,:,:), intent(inout) :: YYi_full
       real, dimension(:), intent(in) :: YYi
+      integer, intent(in) :: imin,imax,jmin,jmax,igrid,jgrid,nchemspec,dir
       real, dimension(igrid,jgrid) :: zz
       real :: zz1, zz2, init_y1, init_y2
       real :: beta
-      integer, intent(in) :: imin,imax,jmin,jmax,igrid,jgrid,nchemspec,dir
 !
       real, dimension(igrid) :: dim
       integer :: i_CH4=0, i_O2=0, i_N2=0
