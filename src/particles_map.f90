@@ -266,23 +266,23 @@ module Particles_map
 !
 !  A few values that only need to be calculated once for equidistant grids.
 !
-      if (lequidist(1)) then 
-        if (lfirstcall) then 
+      if (lequidist(1)) then
+        if (lfirstcall) then
           dx1=1/dx; dx2=1/dx**2
         endif
       else
         dx1=dx_1(ix0); dx2=dx1**2
       endif
 !
-      if (lequidist(3)) then 
-        if (lfirstcall) then 
+      if (lequidist(3)) then
+        if (lfirstcall) then
           dz1=1/dz; dz2=1/dz**2
         endif
       else
         dz1=dz_1(iz0); dz2=dz1**2
       endif
 !
-      if (lequidist(1).and.lequidist(3)) then 
+      if (lequidist(1).and.lequidist(3)) then
         if (lfirstcall) then
           dx1dz1=1/(dx*dz)
           dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
@@ -502,7 +502,7 @@ module Particles_map
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
       if (lfirstcall) then
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
+        dx1=dx_1(l1); dy1=dy_1(m1); dz1=dz_1(n1)
         lfirstcall=.false.
       endif
 !
@@ -1192,7 +1192,7 @@ module Particles_map
 !
           do m=m1,m2 ; do n=n1,n2
             call get_rhopswarm(mp_swarm,m,n,rhop_swarm_mn)
-            where (f(l1:l2,m,n,irhop)/=0.0) 
+            where (f(l1:l2,m,n,irhop)/=0.0)
               f(l1:l2,m,n,iupx+ivp)=rhop_swarm_mn*&
               f(l1:l2,m,n,iupx+ivp)/f(l1:l2,m,n,irhop)
             endwhere
