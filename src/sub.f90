@@ -2141,25 +2141,35 @@ module Sub
 !
     endsubroutine del4
 !***********************************************************************
-    subroutine del6(f,k,del6f)
+    subroutine del6(f,k,del6f,ignoredx)
 !
 !  Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
 !  than del2^3) of a scalar for hyperdiffusion.
 !
 !  8-jul-02/wolf: coded
+!  22-jul-11/bing: added ignoredx
 !
       use Deriv, only: der6
 !
-      intent(in) :: f,k
+      intent(in) :: f,k,ignoredx
       intent(out) :: del6f
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
+      logical, optional :: ignoredx
+      logical :: ignore_dx
 !
-      call der6(f,k,d6fdx,1)
-      call der6(f,k,d6fdy,2)
-      call der6(f,k,d6fdz,3)
+      if (present(ignoredx)) then
+        ignore_dx = ignoredx
+      else
+        ignore_dx = .false.
+      endif
+!
+      call der6(f,k,d6fdx,1,ignore_dx)
+      call der6(f,k,d6fdy,2,ignore_dx)
+      call der6(f,k,d6fdz,3,ignore_dx)
+!
       del6f = d6fdx + d6fdy + d6fdz
 !
 !  Exit if this is requested for lspherical_coords run.
@@ -3537,7 +3547,7 @@ module Sub
       arg = min(arg,8.)         ! cosh^2(8) = 3e+27
       der_stepdown = -0.5/(width*cosh(arg)**2)
 !
-      endfunction der_stepdown
+    endfunction der_stepdown
 !***********************************************************************
     function cubic_step_pt(x,x0,width,shift)
 !
