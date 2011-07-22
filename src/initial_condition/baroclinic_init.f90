@@ -79,12 +79,12 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx,ny,nz) :: lump_of_sines
-      real :: Lx,Ly,Lz,d0,phase,xi,yi,zi,rhorms,nw1,fac
+      real :: Lx,Ly,Lz,d0,phase,xi,yi,zi,nw1,fac
       real :: fmeantmp_rho2,fmeantmp_rho
       real :: fmean_rho2,fmean_rho
       real :: unnormalized_rho_rms
       real :: normalization_factor
-      integer :: i,mm,nn,ll,nw,icount,mm1,ll1,nn1,itmp,irho
+      integer :: i,mm,nn,ll,mm1,ll1,nn1,itmp,irho
 !
       Lx=Lxyz(1) ; Ly=Lxyz(2) ; Lz=Lxyz(3)
 !
@@ -92,13 +92,13 @@ module InitialCondition
 !
       if (lroot) print*,'domain size=',Lx,Ly,Lz
 !
-!  save the original linear density 
+!  save the original linear density
 !  on the free spot of shock, which isn't set yet
 !
       if (lshock) then
         itmp=ishock
         f(l1:l2,m1:m2,n1:n2,itmp)=f(l1:l2,m1:m2,n1:n2,ilnrho)
-      else 
+      else
         if (lroot) then
           print*,'This is a baroclinic run. You expect '
           print*,'many vortices to form in this run, do you not?'
@@ -108,22 +108,22 @@ module InitialCondition
           print*,'NOT using shock viscosity. I recommend you to stop'
           print*,'and switch SHOCK=shock_highorder in src/Makefile.local'
         endif
-        call fatal_error("","")     
+        call fatal_error("","")
       endif
 !
 !  Work with LINEAR density. As this is start time, there is no confusion
-!  linear-log. All initial conditions are to be coded in log. We will 
+!  linear-log. All initial conditions are to be coded in log. We will
 !  construct the density here as linear, then pass to log
 !
       irho=ilnrho
 !
-!  Have to set it to something first, otherwise the sines 
+!  Have to set it to something first, otherwise the sines
 !  can lead to negative densities.
 !
       f(l1:l2,m1:m2,n1:n2,irho)=1.
       lump_of_sines=0.
-!      
-      if (lroot) then 
+!
+      if (lroot) then
         print*,'initial_condition_lnrho: Calculating the finite-amplitude '
         print*,'                         pertubations. It will loop the whole '
         print*,'                         grid for every mode. May take a '
@@ -146,13 +146,13 @@ module InitialCondition
         enddo;enddo;enddo !end grid loop
       enddo;enddo;enddo !end modes loop
 !
-!  Now construct the density and fill in the normalization 
+!  Now construct the density and fill in the normalization
 !  constants needed to get a rms equal to the input rho_rms.
 !
       fmeantmp_rho2=0.
       fmeantmp_rho=0.
       nw1=1./(nxgrid*nygrid*nzgrid*1.0)
-!      
+!
       do n=1,nz
         nn1=n+n1-1
         do m=1,ny
@@ -160,7 +160,7 @@ module InitialCondition
           do i=1,nx
             ll1=i+l1-1 ; xi=x(ll1)
 !
-            if (lgaussian_distributed_noise) then 
+            if (lgaussian_distributed_noise) then
               fac=exp(-(.5*(xi-xmid)/d0)**2)
             else
               fac=1
@@ -190,19 +190,19 @@ module InitialCondition
       f(l1:l2,m1:m2,n1:n2,irho)=1.+&
           normalization_factor*(f(l1:l2,m1:m2,n1:n2,irho)-1.)
 !
-      if (lroot) then 
+      if (lroot) then
         print*,'max density (linear): ',maxval(f(l1:l2,m1:m2,n1:n2,irho))
         print*,'min density (linear): ',minval(f(l1:l2,m1:m2,n1:n2,irho))
         print*,'rms density (linear): ',&
             unnormalized_rho_rms*normalization_factor
       endif
 !
-!  convert to log before finishing. 
+!  convert to log before finishing.
 !
       f(l1:l2,m1:m2,n1:n2,ilnrho)=&
           f(l1:l2,m1:m2,n1:n2,itmp)+log(f(l1:l2,m1:m2,n1:n2,irho))
 !
-!  keep the original stratification in the ishock slot since it 
+!  keep the original stratification in the ishock slot since it
 !  will be needed when setting the entropy
 !
     endsubroutine initial_condition_lnrho
@@ -214,7 +214,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use EquationOfState, only: gamma,gamma_m1,gamma_inv,cs20,rho0,lnrho0
-
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,rho
       real :: cp,cv,cp1,lnTT0,pp0,TT0
@@ -234,12 +234,12 @@ module InitialCondition
       do m=m1,m2;do n=n1,n2
 !
         if (nzgrid==1.or.&
-            (nzgrid/=1.and.lunstratified)) then  
+            (nzgrid/=1.and.lunstratified)) then
           !unstratified case, everything is fresh
           rho = f(l1:l2,m,n,ilnrho)
           TT=(pp0/((cp-cv)*rho))/TT0
         else
-          !stratified case, there's a previous 
+          !stratified case, there's a previous
           !density stratification, stored in ishock
           rho = f(l1:l2,m,n,ilnrho)/exp(f(l1:l2,m,n,ishock))
           TT=1/rho !now this is just the temperature perturbation
@@ -249,7 +249,7 @@ module InitialCondition
         lnrho=log(rho)
 !
 !  assumes cp=1
-!  
+!
         f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss) + &
             cv*(lnTT-gamma_m1*lnrho)
 !
@@ -279,7 +279,7 @@ module InitialCondition
     endsubroutine read_initial_condition_pars
 !***********************************************************************
     subroutine write_initial_condition_pars(unit)
-!     
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=initial_condition_pars)
