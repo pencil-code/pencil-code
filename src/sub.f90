@@ -49,7 +49,7 @@ module Sub
   public :: del2, del2v, del2v_etc
   public :: del2m3x3_sym
   public :: del4v, del4, del2vi_etc
-  public :: del6_nodx, del6v, del6, del6_other, del6fj, del6fjv
+  public :: del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub
