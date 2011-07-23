@@ -2111,7 +2111,7 @@ module Sub
 !
     endsubroutine g2ij
 !***********************************************************************
-    subroutine del4(f,k,del4f)
+    subroutine del4(f,k,del4f,ignoredx)
 !
 !  Calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
 !  than del2^3) of a scalar for hyperdiffusion.
@@ -2121,23 +2121,31 @@ module Sub
 !
       use Deriv, only: der4
 !
-      intent(in) :: f,k
+      intent(in) :: f,k,ignoredx
       intent(out) :: del4f
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: del4f,d4fdx,d4fdy,d4fdz
       integer :: k
+      logical, optional :: ignoredx
+      logical :: ignore_dx
 !
-      call der4(f,k,d4fdx,1)
-      call der4(f,k,d4fdy,2)
-      call der4(f,k,d4fdz,3)
-      del4f = d4fdx + d4fdy + d4fdz
+      if (present(ignoredx)) then
+        ignore_dx = ignoredx
+      else
+        ignore_dx = .false.
 !
 !  Exit if this is requested for non-cartesian runs.
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-          call fatal_error('del4', &
-          'not implemented for non-cartesian coordinates')
+        if (lcylindrical_coords.or.lspherical_coords) &
+            call fatal_error('del4', &
+            'not implemented for non-cartesian coordinates')
+      endif
+!
+      call der4(f,k,d4fdx,1,ignore_dx)
+      call der4(f,k,d4fdy,2,ignore_dx)
+      call der4(f,k,d4fdz,3,ignore_dx)
+      del4f = d4fdx + d4fdy + d4fdz
 !
     endsubroutine del4
 !***********************************************************************
