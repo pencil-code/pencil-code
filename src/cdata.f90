@@ -507,6 +507,7 @@ module Cdata
   real :: tborder=0.
   real :: fshift_int=-1.,fshift_ext=1.
   real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0
+  logical :: lborder_hyper_diff=.true.
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
