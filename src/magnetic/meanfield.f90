@@ -52,6 +52,7 @@ module Magnetic_meanfield
   real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
   real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0.
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
+  real :: alpha_rmin
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
@@ -87,6 +88,7 @@ module Magnetic_meanfield
       alpha_eps, alpha_width, alpha_width2, &
       lmeanfield_noalpm, alpha_profile, &
       x_surface, x_surface2, z_surface, &
+      alpha_rmin,&
       qp_d, qp_x0, qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
@@ -577,6 +579,7 @@ module Magnetic_meanfield
                 -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
                 +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step))
         case ('surface_z'); alpha_tmp=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
+        case ('above_x0'); alpha_tmp=0.5*(1.+erfunc(x-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
           if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
