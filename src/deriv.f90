@@ -795,7 +795,7 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=(1.0/60)
+            fac=1.
           else if (upwnd) then
             fac=(1.0/60)*dx_1(l1:l2)
           else
@@ -811,7 +811,7 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=(1.0/60)
+            fac=1.
           else if (upwnd) then
             fac=(1.0/60)*dy_1(m)
           else
@@ -827,7 +827,7 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=(1.0/60)
+            fac=1.
           else if (upwnd) then
             fac=(1.0/60)*dz_1(n)
           else
@@ -971,7 +971,7 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=(1.0/60)
+            fac=1.
           else if (upwnd) then
             fac=(1.0/60)*dx_1(l1:l2)
           else
@@ -987,7 +987,7 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=(1.0/60)
+            fac=1.
           else if (upwnd) then
             fac=(1.0/60)*dy_1(m)
           else
@@ -1003,7 +1003,7 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=(1.0/60)
+            fac=1.
           else if (upwnd) then
             fac=(1.0/60)*dz_1(n)
           else

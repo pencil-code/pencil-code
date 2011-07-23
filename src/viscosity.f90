@@ -1099,7 +1099,8 @@ module Viscosity
           ju=j+iuu-1
           do i=1,3
             call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-            p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3*pi4_1*tmp3*dline_1(:,i)**2
+            p%fvisc(:,j) = p%fvisc(:,j) + &
+                nu_hyper3*pi4_1/60.*tmp3*dline_1(:,i)**2
           enddo
           if (lpencil(i_visc_heat)) then
             if (headtt) then
@@ -1120,7 +1121,8 @@ module Viscosity
           ju=j+iuu-1
           do i=1,3
             call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-            p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*pi5_1*tmp3*dline_1(:,i)
+            p%fvisc(:,j) = p%fvisc(:,j) + &
+                nu_hyper3_mesh*pi5_1/60.*tmp3*dline_1(:,i)
           enddo
           if (lpencil(i_visc_heat)) then
             if (headtt) then

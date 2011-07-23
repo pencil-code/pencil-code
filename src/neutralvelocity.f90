@@ -798,7 +798,7 @@ module NeutralVelocity
              ju=jj+iuun-1
              do i=1,3
                call der6(f,ju,tmp,i,IGNOREDX=.true.)
-               fvisc(:,jj)=fvisc(:,jj)+nun_hyper3*pi4_1*tmp*dline_1(:,i)**2
+               fvisc(:,jj)=fvisc(:,jj)+nun_hyper3*pi4_1/60.*tmp*dline_1(:,i)**2
              enddo
              if (lfirst.and.ldt) &
                   diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxyz_2

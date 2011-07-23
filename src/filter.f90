@@ -125,7 +125,7 @@ module Filter
         endif
         do ivar=ivar1,ivar2
           call der6(f,ivar,tmp,idir,IGNOREDX=.true.)
-          df(l1:l2,m,n,ivar) = 1./64.*tmp
+          df(l1:l2,m,n,ivar) = 1./64./60.*tmp
         enddo
       enddo
 !

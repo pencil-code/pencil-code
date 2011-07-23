@@ -894,7 +894,7 @@ module Entropy
         do j=1,3
           call der6(f,ilnTT,tmp,j,IGNOREDX=.true.)
           if (.not.ltemperature_nolog) tmp=tmp*p%TT1
-          thdiff = thdiff + chi_hyper3_mesh*pi5_1*tmp*dline_1(:,j)
+          thdiff = thdiff + chi_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
         enddo
         if (lfirst.and.ldt) &
             advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
@@ -905,7 +905,7 @@ module Entropy
         do j=1,3
           call der6(f,ilnTT,tmp,j,IGNOREDX=.true.)
           if (.not.ltemperature_nolog) tmp=tmp*p%TT1
-          thdiff = thdiff + chi_hyper3*pi4_1*tmp*dline_1(:,j)**2
+          thdiff = thdiff + chi_hyper3*pi4_1/60.*tmp*dline_1(:,j)**2
         enddo
         if (lfirst.and.ldt) &
              diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxyz_2
