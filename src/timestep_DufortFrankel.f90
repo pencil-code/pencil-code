@@ -29,7 +29,7 @@ module Timestep
       use Cdata
       use Equ
       use Particles_main
-      use BorderProfiles
+      use BorderProfiles, only: border_quenching
       use Interstellar, only: calc_snr_damp_int
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
@@ -93,8 +93,8 @@ diffarr=1.
 !
 !  copy current f to fold_tmp, and set it to fold after it has been used
 !
-        do j=1,mvar; do n=n1,n2; 
-          if (lborder_profiles) call border_quenching(df,j)
+        do j=1,mvar; do n=n1,n2;
+          if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
           cdt1=.5*(1./dt+diffarr*d2o)
           cdt2=2./(1./dt-diffarr*d2o)
           fold_tmp=f(l1:l2,m,n,j)

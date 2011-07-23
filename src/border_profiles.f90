@@ -396,8 +396,8 @@ module BorderProfiles
 ! cint = 1-step_int , cext = step_ext
 ! pborder = cint+cext
 !
-      pborder = 1-cubic_step(rlim_mn,r_int_border,wborder_int,SHIFT=1.) + &
-           cubic_step(rlim_mn,r_ext_border,wborder_ext,SHIFT=-1.)
+     pborder = 1-cubic_step(rlim_mn,r_int_border,wborder_int,SHIFT=1.) + &
+          cubic_step(rlim_mn,r_ext_border,wborder_ext,SHIFT=-1.)
 !
     endsubroutine get_border
 !***********************************************************************
@@ -433,19 +433,35 @@ module BorderProfiles
 !
     endsubroutine get_drive_time
 !***********************************************************************
-    subroutine border_quenching(df,j)
+    subroutine border_quenching(f,df,j,dt_sub)
 !
+      use Sub, only: del6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: del6_fj,border_prof_pencil
+      real :: border_diff=0.01,dt_sub
       integer :: j
+!
+      intent(in) :: f,j
+      intent(inout) :: df
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
 !  border_frac_[xyz] is a 2-D array, separately for all three directions.
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
-      if (lborder_quenching) &
-          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
-          *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
+      if (lborder_quenching) then
+        border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
+!
+        df(l1:l2,m,n,j) = df(l1:l2,m,n,j) * border_prof_pencil
+!        
+        if (lborder_hyper_diff) then
+          call del6(f,j,del6_fj,IGNOREDX=.true.)
+          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+              border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
+        endif
+      endif
 !
     endsubroutine border_quenching
 !***********************************************************************

@@ -28,7 +28,7 @@ module Timestep
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
 !
-      use BorderProfiles
+      use BorderProfiles, only: border_quenching
       use Equ
       use Interstellar, only: calc_snr_damp_int
       use Mpicomm
@@ -47,7 +47,7 @@ module Timestep
       if (lroot .and. headt .and. llsode) print*, 'timestep_LSODE: '// &
           'Chemistry is solved using LSODE'
       if (lroot .and. headt .and. lsplit_second) print*, 'timestep_LSODE: '// &
-          'Second order symmetric splitting procedure (Strang splitting)'  
+          'Second order symmetric splitting procedure (Strang splitting)'
 !
 !  First step of the splitting procedure: chemistry
 !  (only if second order symmetric splitting activated)
@@ -141,7 +141,7 @@ module Timestep
         do j=1,mvar; do n=n1,n2; do m=m1,m2
 !ajwm Note to self... Just how much overhead is there in calling
 !ajwm a sub this often...
-          if (lborder_profiles) call border_quenching(df,j)
+          if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !

@@ -1,6 +1,6 @@
 ! $Id$
-! Experimental module to implement super_time_stepping 
-! for diffusive terms (Alexiades, V., Amiez, G., & 
+! Experimental module to implement super_time_stepping
+! for diffusive terms (Alexiades, V., Amiez, G., &
 ! Gremaud, P. 1996, Commun. Num. Meth. Eng.,  12, 31)
 !
 module Timestep
@@ -19,7 +19,7 @@ module Timestep
     subroutine sts(f,df,p)
 !
 !  Temporal advance for a diffusion problem ussing STS,
-!  itorder plays the role of N in Alexiades paper and 
+!  itorder plays the role of N in Alexiades paper and
 !  can be 5, 10, ... , nu_sts is defined in run_pars and
 !  must have vales between 0 and 1 (default 0.1).
 !
@@ -56,14 +56,14 @@ module Timestep
         super_step=0
         call substeps(dt,tau_sts)
 !
-! Temporal loop over N substeps      
-      do itsub=1,itorder         
+! Temporal loop over N substeps
+      do itsub=1,itorder
         lfirst=(itsub==1)
         llast=(itsub==itorder)
 !
 !  Change df according to the chosen physics modules.
 !
-     call pde(f,df,p)  
+     call pde(f,df,p)
 !
 !  If we are in the first time substep we need to calculate timestep dt.
 !  Only do it on the root processor, then broadcast dt to all others.
@@ -102,7 +102,7 @@ module Timestep
          tau(it) = dtdiff / ((-1.+nu_sts)*cos(((2.*it-1.)*pi)/(2.*itorder)) &
               + 1. + nu_sts)
       enddo
-!      
+!
     endsubroutine substeps
 !***********************************************************************
     subroutine rk_2n(f,df,p)
@@ -211,7 +211,7 @@ module Timestep
         do j=1,mvar; do n=n1,n2; do m=m1,m2
 !ajwm Note to self... Just how much overhead is there in calling
 !ajwm a sub this often...
-          if (lborder_profiles) call border_quenching(df,j)
+          if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
@@ -235,6 +235,4 @@ module Timestep
 !
     endsubroutine rk_2n
 !***********************************************************************
-
-
 endmodule Timestep

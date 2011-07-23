@@ -112,7 +112,7 @@ module Timestep
         do j=1,mvar; do n=n1,n2; do m=m1,m2
 !ajwm Note to self... Just how much overhead is there in calling
 !ajwm a sub this often...
-          if (lborder_profiles) call border_quenching(df,j)
+          if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
