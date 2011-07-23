@@ -208,7 +208,7 @@ module Filter
         if (necessary(imn)) then
           call finalize_isendrcv_bdry(f)
         endif
-        call del6_nodx(f,ivar,tmp)
+        call del6(f,ivar,tmp,ignoredx=.true.)
 ! 1/64 would be fine for 1d runs, but in 3d we have higher wave numbers
 !        df(l1:l2,m,n,ivar) = 1./64.*tmp
         df(l1:l2,m,n,ivar) = 1./192.*tmp

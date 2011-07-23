@@ -2144,7 +2144,11 @@ module Sub
     subroutine del6(f,k,del6f,ignoredx)
 !
 !  Calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
-!  than del2^3) of a scalar for hyperdiffusion.
+!  than del2^3) of a scalar for hyperdiffusion. Using INGOREDX
+!  calculates something similar to del6, but ignoring the steps dx, dy, dz.
+!  Useful for Nyquist filtering, where you just want to remove the
+!  Nyquist frequency fully, while retaining the amplitude in small wave
+!  numbers.
 !
 !  8-jul-02/wolf: coded
 !  22-jul-11/bing: added ignoredx
@@ -2164,6 +2168,12 @@ module Sub
         ignore_dx = ignoredx
       else
         ignore_dx = .false.
+!
+!  Exit if this is requested for lspherical_coords run.
+!
+        if (lspherical_coords.or.lcylindrical_coords) &
+            call fatal_error('del6', &
+            'not implemented for non-cartesian coordinates')
       endif
 !
       call der6(f,k,d6fdx,1,ignore_dx)
@@ -2171,12 +2181,6 @@ module Sub
       call der6(f,k,d6fdz,3,ignore_dx)
 !
       del6f = d6fdx + d6fdy + d6fdz
-!
-!  Exit if this is requested for lspherical_coords run.
-!
-      if (lspherical_coords.or.lcylindrical_coords) &
-          call fatal_error('del6', &
-          'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6
 !***********************************************************************
@@ -2207,31 +2211,6 @@ module Sub
           'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6_other
-!***********************************************************************
-    subroutine del6_nodx(f,k,del6f)
-!
-!  Calculate something similar to del6, but ignoring the steps dx, dy, dz.
-!  Useful for Nyquist filetering, where you just want to remove the
-!  Nyquist frequency fully, while retaining the amplitude in small wave
-!  numbers.
-!
-!  8-jul-02/wolf: coded
-!
-      use Deriv, only: der6
-!
-      intent(in) :: f,k
-      intent(out) :: del6f
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
-      integer :: k
-!
-      call der6(f,k,d6fdx,1,IGNOREDX=.true.)
-      call der6(f,k,d6fdy,2,IGNOREDX=.true.)
-      call der6(f,k,d6fdz,3,IGNOREDX=.true.)
-      del6f = d6fdx + d6fdy + d6fdz
-!
-    endsubroutine del6_nodx
 !***********************************************************************
     subroutine del6fj(f,vec,k,del6f)
 !
