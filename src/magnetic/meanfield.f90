@@ -579,7 +579,7 @@ module Magnetic_meanfield
                 -step_scalar(alpha_cutoff_up,y(m),alpha_gap_step) &
                 +step_scalar(y(m),alpha_cutoff_down,alpha_gap_step))
         case ('surface_z'); alpha_tmp=0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
-        case ('above_x0'); alpha_tmp=0.5*(1.+erfunc(x-alpha_rmin)/alpha_width))
+        case ('above_x0'); alpha_tmp=0.5*(1.+erfunc((x-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
           if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
