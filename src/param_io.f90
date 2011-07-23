@@ -83,7 +83,8 @@ module Param_IO
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, &
       xyz_step, xi_step_frac, xi_step_width, dxi_fact, trans_width, &
       lcylinder_in_a_box, lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
-      lcylindrical_gravity, border_frac_x, border_frac_y, border_frac_z, &
+      lcylindrical_gravity, &
+      border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson
 !
