@@ -514,6 +514,8 @@ module Forcing
           lgentle=.true.
           if (lroot) print *, 'initialize_forcing: gentle forcing till t = ', tgentle
         endif
+      elseif (iforcing_cont=='(0,0,cosx)') then
+        cosx=cos(k1_ff*x)
       elseif (iforcing_cont=='J0_k1x') then
         do l=l1,l2
           profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
@@ -3903,6 +3905,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
                 -dfpara*ampl_ff*cosx(l1:l2)*siny(m)*sqrt21k1
           force(:,3)=+fpara*ampl_ff*cosx(l1:l2)*cosy(m)*sqrt2
 !
+!  f=(sinx,0,0)
+!
         case ('sinx')
           if (lgentle.and.t<tgentle) then
             fact=.5*ampl_ff*(1.-cos(pi*t/tgentle))
@@ -3912,6 +3916,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*sinx(l1:l2)
           force(:,2)=0.
           force(:,3)=0.
+!
+!  f=(0,0,cosx)
+!
+        case ('(0,0,cosx)')
+          force(:,1)=0.
+          force(:,2)=0.
+          force(:,3)=ampl_ff*cosx(l1:l2)
 !
         case ('TG')
           fact=2.*ampl_ff
