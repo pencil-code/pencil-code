@@ -152,7 +152,7 @@ module Hydro
 !  The minus sign is needed for equatorward acceleration.
 !
       case ('spoke-like')
-        profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rmax)/uphi_step_width)))
+        profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
         profy_kinflow1=-1.5*(5.*cos(y)**2-1.)
         profz_kinflow1=+1.
       case ('spoke-like-NSSL')
