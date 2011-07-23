@@ -112,15 +112,19 @@ module BorderProfiles
 !
     endsubroutine border_driving
 !***********************************************************************
-    subroutine border_quenching(df,j)
+    subroutine border_quenching(f,df,j,dt_sub)
 !
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real :: dt_sub
       integer :: j
 !
 !  Dummy routine
 !
+      call keep_compiler_quiet(dt_sub)
       call keep_compiler_quiet(j)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f)
 !
     endsubroutine border_quenching
 !***********************************************************************
