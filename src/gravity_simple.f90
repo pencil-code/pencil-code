@@ -474,7 +474,7 @@ module Gravity
 !  20-11-04/anders: coded
 !
       lpenc_requested(i_gg)=.true.
-      if (lanelastic) lpenc_requested(i_rhop)=.true.
+      if (lanelastic) lpenc_requested(i_rho_anel)=.true.
 !
       if (idiag_epot/=0 .or. idiag_epotmx/=0 .or. idiag_epotmy/=0 .or. &
           idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
@@ -560,12 +560,12 @@ module Gravity
         else if (lanelastic) then
 ! Now works for the linear anelastic formulation only
                 if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+ p%gg(:,1)*&
-                                p%rhop
+                                p%rho_anel
                 if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ p%gg(:,2)*&
-                                p%rhop
+                                p%rho_anel
                 if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gg(:,3)*&
                                  (-p%ss)
-!                                p%rhop
+!                                p%rho_anel
         else
           if (lxyzdependence) then
             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gg(:,1)*zdep(n)
