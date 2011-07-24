@@ -16,7 +16,7 @@
 #@@@
 #======================================================================#
 #! /Good_Path/perl -w
-# line 17
+## line 17
 #
 # Name    : mkcparam
 # Author  : wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -24,7 +24,7 @@
 # CVS     : $Id$
 #
 # Usage:
-#   mkcparam <file1> [<file2> [..]] [-o outfile]\n
+#   mkcparam [-b] <file1> [<file2> [..]] [-o outfile]\n
 #
 # Description:
 #   Checks the headers (everything before the first non-comment non-empty
@@ -85,20 +85,23 @@ my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $pencils_decl  = '^\s*!\s*PENCILS\s*PROVIDED\s*(.*)\s*$';
 my $cparam_decl   = '^\s*!\s*CPARAM\s*(.*?)\s*$';
 # ---------------------------------------------------------------------- #
-#
+
 use strict;
 use Getopt::Long;
-#
+
 my $line;
-my $dust_string='1*4';
-my $chem_string='1';
-my $pscalar_string='1';
-my ($maux,$maux_com,$mvar,$mglobal,$mscratch,$mpvar,$ndustspec,$nchemspec,$npscalar,$mvar_per_dust,$mvar_per_chem) = (0) x 11;
-my @pencil_names=();
-my @pencil_sizes=();
+my $dust_string = '1*4';
+my $chem_string = '1';
+my $pscalar_string = '1';
+my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar);
+my ($ndustspec, $nchemspec, $npscalar, $mvar_per_dust, $mvar_per_chem);
+my @pencil_names;
+my @pencil_sizes;
 my %pencil_file_map;
 my @cparam_lines;
 (my $cmdname = $0) =~ s{.*/}{};
+my @open_files;
+
 #
 # Process command line.
 #
@@ -110,24 +113,24 @@ GetOptions(\%opts,
 
 die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
-my $outfile = ($opts{o} || $opts{output} || "-");
-open(OUT, "> $outfile") or die "Can't open $outfile for writing";
-open(OUT_PENCIL, "> cparam_pencils.inc") or die "Can't open cparam_pencils.inc for writing";
-open(OUT_PENC_INIT, "> pencil_init.inc") or die "Can't open pencil_init.inc for writing";
+my $outfile  = ($opts{o} || $opts{output}   || "-");
+
+my $out = open_file($outfile);
+my $out_pencil = open_file("cparam_pencils.inc");
+my $out_penc_init = open_file("pencil_init.inc");
+
 #
 # Cycle through files (later files will overwrite effect of earlier files)
 #
 file: foreach my $infile (@ARGV) {
-#
-# Now extract `?VAR CONTRIBUTION' info from each file
-#
+  # Extract `?VAR CONTRIBUTION' info from each file
   unless (open(INPUT,"< $infile")) {
-  die "Can't open $infile for reading";
-  next file;
+    die "Can't open $infile for reading";
+    next file;
   }
-#
-# Cycle through all lines up to first non-empty non-comment line in file
-#
+
+  # Cycle through all lines up to first non-empty non-comment line in
+  # file:
   line: while (defined($line=<INPUT>)) {
     next line if ($line =~ /^\s*$/); # ignore empty lines
     last line if ($line !~ /^\s*!/); # done if non-comment line
@@ -138,16 +141,14 @@ file: foreach my $infile (@ARGV) {
     extract_decl ($line, $maux_com_decl, \$maux_com );
     extract_decl ($line, $mpvar_decl   , \$mpvar    );
     extract_decl ($line, $pscalar_decl , \$npscalar );
-#
-# Check for information about number of chemical and dust species
-# and discretization type
-#
+
+    # Check for information about number of chemical and dust species
+    # and discretization type:
     if ($line=~ /$chem_decl/) {$chem_string=$1;}
     if ($line=~ /$dust_decl/) {$dust_string=$1;}
     if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
-#
-# Extract provided pencils from file headers.
-#
+
+    # Extract provided pencils from file headers:
     if ($line=~ /$pencils_decl/) {
       # my @pencils = split /\s*;\s*/, $2;
       # foreach my $pencil (@pencils) {
@@ -173,26 +174,23 @@ file: foreach my $infile (@ARGV) {
         my $pencil=$1;
         my $pencil_name=$pencil;
         my $pencil_size=$pencil;
-#
-# Extract name and size of pencils.
-#
+
+        # Extract name and size of pencils:
         if ($pencil =~ /\(.*\)/) {
           $pencil_size=~ s/^.*\((.*)\)/$1/g;
         } else {
           $pencil_size='';
         }
         $pencil_name =~ s/\(.*\)//g;
-#
-# Default pencil size is (nx).
-#
+
+        # Default pencil size is (nx)
         if ($pencil_size eq '') {
           $pencil_size='(nx)'
         } else {
           $pencil_size="(nx,$pencil_size)";
         }
-#
-# Store pencil information in arrays.
-#
+
+        # Store pencil information in arrays:
         my $pencil_already_used=0;
         foreach my $pencil_name_used (@pencil_names){
           if ($pencil_name eq $pencil_name_used) {$pencil_already_used=1;}
@@ -216,15 +214,11 @@ while (my ($name, $files_ref) = each %pencil_file_map) {
   }
 }
 
-#
-# Calculate the total number of pencils.
-#
-my $npencils=$#pencil_names+1;
-#
-# More processing of dust information.
-#
-($ndustspec,$mvar_per_dust) = split /\*/, $dust_string;
+# Calculate the total number of pencils
+my $npencils = $#pencil_names+1;
 
+# More processing of dust information:
+($ndustspec, $mvar_per_dust) = split /\*/, $dust_string;
 if ($ndustspec >= 1) {
   if ($mvar_per_dust > 1) {
     if ($mvar_per_dust == 2 || $mvar_per_dust == 5) {
@@ -241,25 +235,23 @@ if ($ndustspec >= 1) {
   }
 }
 
-#
-# More processing of chemistry information.
-#
-($nchemspec,$mvar_per_chem) = split /\*/, $chem_string;
+# More processing of chemistry information:
+($nchemspec, $mvar_per_chem) = split /\*/, $chem_string;
 if ($nchemspec >= 1) {
   $mvar = $mvar + $nchemspec - 1;
 }
 
-#
-# More processing of passive scalars information.
-#
+# More processing of passive scalars information:
 if ($npscalar >= 1) {
   $mvar = $mvar + $npscalar - 1;
 }
 
+
 #
-# Write to cparam.inc, cparam_pencils.inc and pencil_init.inc.
+# cparam.inc
 #
-print OUT <<"EOF";
+
+print $out <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  cparam.inc
 !
@@ -270,45 +262,31 @@ print OUT <<"EOF";
 ! settings in Makefile.local
 !
 
-integer, parameter :: mvar=$mvar, maux=$maux
-integer, parameter :: maux_com=$maux_com
-integer, parameter :: mglobal=$mglobal
-integer, parameter :: mscratch=$mscratch
-integer, parameter :: mpvar=$mpvar
-integer, parameter :: ndustspec=$ndustspec
-integer, parameter :: nchemspec=$nchemspec
-integer, parameter :: npscalar=$npscalar
+integer, parameter :: mvar=${\($mvar+0)}, maux=${\($maux+0)}
+integer, parameter :: maux_com=${\($maux_com+0)}
+integer, parameter :: mglobal=${\($mglobal+0)}
+integer, parameter :: mscratch=${\($mscratch+0)}
+integer, parameter :: mpvar=${\($mpvar+0)}
+integer, parameter :: ndustspec=${\($ndustspec+0)}
+integer, parameter :: nchemspec=${\($nchemspec+0)}
+integer, parameter :: npscalar=${\($npscalar+0)}
 
 EOF
 
-print OUT_PENCIL <<"EOF";
-!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-!  cparam_pencils.inc
-!
-! This file was automatically generated by $cmdname, so think twice before
-! you modify it.
-!
-! It is included by cparam.f90 and defines the pencil_case data type and
-! sets some variables related to this.
-!
-
-EOF
-#
-# Set npar (number of particles) to one if particles are not used.
-#
+# Set npar (number of particles) to one if particles are not used:
 if ($mpvar == 0) {
-  print OUT "integer, parameter :: npar=1\n\n";
+  print $out "integer, parameter :: npar=1\n\n";
 } else {
-  print OUT "! npar should be declared and set in cparam.local\n\n";
+  print $out "! npar should be declared and set in cparam.local\n\n";
 }
+
 #
-# Read contents of cparam.local.
-#
-my @cparam='';
+# Read contents of cparam.local
 #
 open CPARAM, "cparam.local";
-  @cparam=<CPARAM>;
+my @cparam = <CPARAM>;
 close CPARAM;
+
 #
 # Find out which particle parameters are defined in cparam.local.
 #
@@ -333,74 +311,89 @@ foreach $line (@cparam) {
   if ($line=~ 'nbrickz')      {$nbrickz=1;}
   if ($line=~ 'nblockmax')    {$nblockmax=1;}
 }
-#
-# Write default values of undefined particle parameters to cparam.inc.
-#
-if ($mpar_loc eq 0)     {print OUT "integer, parameter :: mpar_loc=npar\n";}
-if ($npar_mig eq 0)     {print OUT "integer, parameter :: npar_mig=1\n";}
-if ($npar_species eq 0) {print OUT "integer, parameter :: npar_species=1\n";}
-if ($nspar eq 0)        {print OUT "integer, parameter :: nspar=1\n";}
-if ($npar_stalk eq 0)   {print OUT "integer, parameter :: npar_stalk=0\n";}
-if ($nbrickx eq 0)      {print OUT "integer, parameter :: nbrickx=1\n";}
-if ($nbricky eq 0)      {print OUT "integer, parameter :: nbricky=1\n";}
-if ($nbrickz eq 0)      {print OUT "integer, parameter :: nbrickz=1\n";}
-if ($nblockmax eq 0)    {print OUT "integer, parameter :: nblockmax=1\n";}
-#
+
+# Write default values of undefined particle parameters to cparam.inc:
+if ($mpar_loc eq 0)     {print $out "integer, parameter :: mpar_loc=npar\n";}
+if ($npar_mig eq 0)     {print $out "integer, parameter :: npar_mig=1\n";}
+if ($npar_species eq 0) {print $out "integer, parameter :: npar_species=1\n";}
+if ($nspar eq 0)        {print $out "integer, parameter :: nspar=1\n";}
+if ($npar_stalk eq 0)   {print $out "integer, parameter :: npar_stalk=0\n";}
+if ($nbrickx eq 0)      {print $out "integer, parameter :: nbrickx=1\n";}
+if ($nbricky eq 0)      {print $out "integer, parameter :: nbricky=1\n";}
+if ($nbrickz eq 0)      {print $out "integer, parameter :: nbrickz=1\n";}
+if ($nblockmax eq 0)    {print $out "integer, parameter :: nblockmax=1\n";}
+
 # Insert all CPARAM lines, extracted from the headers of the chosen physics
-# modules.
+# modules:
+print $out join("\n", @cparam_lines);
+
+
 #
-$,="\n";
-print OUT @cparam_lines;
+# cparam_pencils.inc
 #
-# Generate cparam_pencils.inc where the pencil case is defined and initialized.
-#
-print OUT_PENCIL <<"EOF";
+
+print $out_pencil <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+!  cparam_pencils.inc
+!
+! This file was automatically generated by $cmdname, so think twice before
+! you modify it.
+!
+! It is included by cparam.f90 and defines the pencil_case data type and
+! sets some variables related to this.
+!
+
+EOF
+
+# Generate cparam_pencils.inc where the pencil case is defined and
+# initialized:
+print $out_pencil <<"EOF";
 integer, parameter :: npencils=$npencils
 type pencil_case
 EOF
-#
-# Define pencils in pencil case.
-#
+
+# Define pencils in pencil case:
 my $i=0;
 foreach my $pencil_name (@pencil_names) {
-  print OUT_PENCIL "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
-  $i=$i+1;
+  print $out_pencil "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
+  $i = $i+1;
 }
-print OUT_PENCIL "endtype pencil_case\n\n";
-#
-# Define pencil indices.
-#
+print $out_pencil "endtype pencil_case\n\n";
+
+# Define pencil indices:
 $i=1;
 foreach my $pencil (@pencil_names) {
-  print OUT_PENCIL "integer :: i_$pencil=$i\n";
+  print $out_pencil "integer :: i_$pencil=$i\n";
   $i++;
 }
-#
-# Define pencil names.
-#
-print OUT_PENCIL "character (len=15), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
+
+# Define pencil names:
+print $out_pencil "character (len=15), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
 $i=0;
 foreach my $pencil (@pencil_names){
-  print OUT_PENCIL ", " if ($i != 0);
-  print OUT_PENCIL "'$pencil". " "x(14-length($pencil)) ."'";
-  print OUT_PENCIL "  &\n   " if (($i % 4) == 3);
+  print $out_pencil ", " if ($i != 0);
+  print $out_pencil "'$pencil". " "x(14-length($pencil)) ."'";
+  print $out_pencil "  &\n   " if (($i % 4) == 3);
   $i++;
 }
-print OUT_PENCIL " /)\n";
-#
+print $out_pencil " /)\n";
+
 # Define pencil logicals, used by the code to distinguish between needed
-# and not needed pencils.
+# and not needed pencils:
+print $out_pencil "logical, parameter, dimension(npencils):: lpenc_required  = .false.\n";
+print $out_pencil "logical,            dimension(npencils):: lpenc_diagnos   = .false.\n";
+print $out_pencil "logical,            dimension(npencils):: lpenc_diagnos2d = .false.\n";
+print $out_pencil "logical,            dimension(npencils):: lpenc_video     = .false.\n";
+print $out_pencil "logical,            dimension(npencils):: lpenc_requested = .false.\n";
+print $out_pencil "logical,            dimension(npencils):: lpencil         = .false. \n\n\n";
+
+
 #
-print OUT_PENCIL "logical, parameter, dimension(npencils):: lpenc_required  = .false.\n";
-print OUT_PENCIL "logical,            dimension(npencils):: lpenc_diagnos   = .false.\n";
-print OUT_PENCIL "logical,            dimension(npencils):: lpenc_diagnos2d = .false.\n";
-print OUT_PENCIL "logical,            dimension(npencils):: lpenc_video     = .false.\n";
-print OUT_PENCIL "logical,            dimension(npencils):: lpenc_requested = .false.\n";
-print OUT_PENCIL "logical,            dimension(npencils):: lpencil         = .false. \n\n\n";
+# pencil_init.inc
 #
-# Generate pencil_init.inc, for initializing the pencil case.
-#
-print OUT_PENC_INIT <<"EOF";
+
+# Generate pencil_init.inc, for initializing the pencil case:
+print $out_penc_init <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  pencil_init.inc
 !
@@ -416,21 +409,41 @@ subroutine initialize_pencils(p,penc0)
   real :: penc0
 
 EOF
+
 #
 foreach my $pencil (@pencil_names) {
-  print OUT_PENC_INIT "  p%$pencil = penc0\n";
+  print $out_penc_init "  p%$pencil = penc0\n";
 }
 #
-print OUT_PENC_INIT "\nendsubroutine initialize_pencils";
-#
-# Close the files.
-#
-close(OUT);
-close(OUT_PENCIL);
-close(OUT_PENC_INIT);
-#
+print $out_penc_init "\nendsubroutine initialize_pencils";
+
+close_files();
+
+
 # ---------------------------------------------------------------------- #
+sub open_file {
 #
+# Open a file for writing, backing it up if necessary, and register it.
+#
+    my ($file) = @_;
+
+    open(my $fh, "> $file") or die "Can't open $file for writing";
+    push @open_files, $fh;
+
+    return $fh;
+}
+
+# ---------------------------------------------------------------------- #
+sub close_files {
+#
+# Close all open file handles.
+#
+    foreach my $fh (@open_files) {
+        close $fh;
+    }
+}
+
+# ---------------------------------------------------------------------- #
 sub extract_decl{
 #
 # Extract declaration of contribution to mvar and similar
@@ -443,9 +456,8 @@ sub extract_decl{
       $$counter_ref += $1;
     }
 }
-#
+
 # ---------------------------------------------------------------------- #
-#
 sub usage {
 #
 # Extract description and usage information from this file's header.
