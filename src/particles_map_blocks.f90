@@ -673,9 +673,9 @@ module Particles_map
 !
 !  04-nov-09/anders: coded
 !
+      integer :: marray, ivar
       real, dimension (mx,my,mz,marray) :: a
       real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
-      integer :: marray, ivar
 !
       integer, dimension (2*nblockmax) :: ireq_array
       integer, dimension (MPI_STATUS_SIZE) :: stat
@@ -823,9 +823,9 @@ module Particles_map
 !
 !  04-nov-09/anders: coded
 !
+      integer :: marray, ivar
       real, dimension (mx,my,mz,marray) :: a
       real, dimension (mxb,myb,mzb,marray,0:nblockmax-1) :: ab
-      integer :: marray, ivar
       logical, optional :: nosum_opt
 !
       integer, dimension (2*nblockmax) :: ireq_array
