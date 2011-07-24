@@ -301,15 +301,15 @@ my $nbrickz=0;
 my $nblockmax=0;
 foreach $line (@cparam) {
   $line=substr($line, 0, index($line,"!"));# Ignore lines that are commented out
-  if ($line=~ 'mpar_loc')     {$mpar_loc=1;}
-  if ($line=~ 'npar_mig')     {$npar_mig=1;}
-  if ($line=~ 'npar_species') {$npar_species=1;}
-  if ($line=~ 'nspar')        {$nspar=1;}
-  if ($line=~ 'npar_stalk')   {$npar_stalk=1;}
-  if ($line=~ 'nbrickx')      {$nbrickx=1;}
-  if ($line=~ 'nbricky')      {$nbricky=1;}
-  if ($line=~ 'nbrickz')      {$nbrickz=1;}
-  if ($line=~ 'nblockmax')    {$nblockmax=1;}
+  $mpar_loc=1  if ($line=~ 'mpar_loc');
+  $npar_mig=1 if ($line=~ 'npar_mig');
+  $npar_species=1 if ($line=~ 'npar_species');
+  $nspar=1 if ($line=~ 'nspar');
+  $npar_stalk=1 if ($line=~ 'npar_stalk');
+  $nbrickx=1 if ($line=~ 'nbrickx');
+  $nbricky=1 if ($line=~ 'nbricky');
+  $nbrickz=1 if ($line=~ 'nbrickz');
+  $nblockmax=1 if ($line=~ 'nblockmax');
 }
 
 # Write default values of undefined particle parameters to cparam.inc:
