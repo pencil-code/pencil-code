@@ -372,7 +372,7 @@ print $out_pencil "character (len=15), parameter, dimension(npencils) :: pencil_
 $i=0;
 foreach my $pencil (@pencil_names){
   print $out_pencil ", " if ($i != 0);
-  print $out_pencil "'$pencil". " "x(14-length($pencil)) ."'";
+  print $out_pencil "'$pencil" . " " x (14-length($pencil)) . "'";
   print $out_pencil "  &\n   " if (($i % 4) == 3);
   $i++;
 }
