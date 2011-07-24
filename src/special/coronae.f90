@@ -19,7 +19,7 @@ module Special
 !
   implicit none
 !
-  real :: Kpara=0.,Kperp=0.,Kc=0.
+  real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper3_spi=0.,tau_inv_spitzer=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
@@ -47,7 +47,7 @@ module Special
   real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
 !
   namelist /special_run_pars/ &
-      heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1, &
+      heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1,Ksat, &
       Kpara,Kperp,Kc,init_time2,twisttype,centerx,centery,centerz, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
@@ -980,7 +980,7 @@ module Special
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+chi_spitzer*dxyz_2
         if (ldiagnos.and.idiag_dtspitzer /= 0.) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+          call max_mn_name(diffus_chi/cdtv,idiag_dtspitzer,l_dt=.true.)
         endif
 !
 !  Right now only valid for Kperp =0
@@ -1136,8 +1136,9 @@ module Special
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
       real, dimension (nx) :: chi_spitzer,rhs
-      real, dimension (nx) :: chi_clight
+      real, dimension (nx) :: chi_clight,chi_2
       integer :: i,j,k
+      real :: ksatb
       type (pencil_case) :: p
 !
 !  calculate unit vector of bb
@@ -1185,17 +1186,17 @@ module Special
 !
 !  Limit heat condcution coefficient due to maximum available energy
 !
-!       if (Ksat /=0. ) then
-!         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
-!         chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
-! !
-!         where (chi_spitzer > chi_2)
-!           gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
-!           gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
-!           gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,glnTT2)
-!           chi_spitzer =  chi_2
-!         endwhere
-!       endif
+      if (Ksat /=0. ) then
+        Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
+        chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
+!
+        where (chi_spitzer > chi_2)
+          gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
+          gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
+          gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,glnTT2)
+          chi_spitzer =  chi_2
+        endwhere
+      endif
 !
 !  Limit heat conduction coefficient due to diffusion
 !  speed smaller than speed of light
@@ -1232,8 +1233,8 @@ module Special
       if (lfirst.and.ldt) then
         chi_spitzer=chi_spitzer * cosbgT**2.
         diffus_chi=diffus_chi + chi_spitzer*dxyz_2
-        if (ldiagnos.and.idiag_dtchi2/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        if (ldiagnos.and.idiag_dtspitzer/=0) then
+          call max_mn_name(chi_spitzer*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
         endif
       endif
 !
@@ -1342,7 +1343,7 @@ module Special
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
         if (ldiagnos.and.idiag_dtchi2 /= 0.) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+          call max_mn_name(gamma*chi*dxyz_2/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
 !
