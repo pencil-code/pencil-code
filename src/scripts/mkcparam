@@ -47,6 +47,16 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #   Output is written as a Fortran program and supposed to end up in the
 #   local file src/cparam.inc .
 #
+# Options:
+#   -b, --backdate -- when set and any of the generated files looks
+#                     identical to the original file before mkcparam was
+#                     called, revert the timestamp to that of the
+#                     original. This avoids unnecessary recompilations.
+#   -o <file>,
+#   --output=<file> -- write cparam.inc output to the given file name.
+#                      This option does not make much sense any more,
+#                      since by now we write at least three files, so all
+#                      of them should just be hard-coded in this script. 
 # Example:
 #     mkcparam entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
 #
@@ -59,13 +69,12 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #
 #   12-oct-03/tony: Modified to use in-code declarations of f-array
 #                   contributions.
-#                   Fortran files should contain a block like the
-#                   following at the top to declare any contribution
-#                   they make to the f-array.
+#                   Fortran files should contain a block at the top to
+#                   declare any contribution they make to the f-array.
 #
 #   07-apr-05/tony: Added the ability to have 'communicated auxiliaries'
 #                   ie. variables which are not evolved (hence have no
-#                   part in the df array.  But which are updated at the
+#                   part in the df array), but which are updated at the
 #                   end of a timestep and communicated along with the mvar
 #                   variables in the f-array.
 #
