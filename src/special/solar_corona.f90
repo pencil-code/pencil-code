@@ -819,21 +819,16 @@ module Special
 !
 !  17-feb-10/bing: coded
 !
-      use Deriv, only: der6
+      use Sub, only: del6
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: fdiff,tmp
+      real, dimension (nx) :: fdiff
 !
       if (diffrho_hyper3/=0.0) then
         if (.not. ldensity_nolog) then
-          call der6(f,ilnrho,fdiff,1,IGNOREDX=.true.)
-          call der6(f,ilnrho,tmp,2,IGNOREDX=.true.)
-          fdiff=fdiff + tmp
-          call der6(f,ilnrho,tmp,3,IGNOREDX=.true.)
-          fdiff=fdiff + tmp
-          fdiff = diffrho_hyper3*fdiff
+          call del6(f,ilnrho,fdiff,IGNOREDX=.true.)
         else
           call fatal_error('special_calc_density', &
               'not yet implented for ldensity_nolog')
@@ -841,7 +836,7 @@ module Special
 !
 !        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
 !
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + diffrho_hyper3*fdiff
 !
         if (headtt) print*,'special_calc_density: diffrho_hyper3=', &
             diffrho_hyper3
@@ -865,23 +860,16 @@ module Special
 !  23-jun-08/bing: coded
 !  17-feb-10/bing: added hyperdiffusion for non-equidistant grid
 !
-      use Deriv, only: der6,der4
+      use Sub, only: del6, del4
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: hc,tmp
+      real, dimension (nx) :: hc
 !
       if (chi_hyper3/=0.0) then
-        hc(:) = 0.
-        call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
-        hc = hc + tmp
-        hc = chi_hyper3*hc
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+        call del6(f,ilnTT,hc,IGNOREDX=.true.)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper3*hc
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
@@ -890,14 +878,8 @@ module Special
       endif
 !
       if (chi_hyper2/=0.0) then
-        hc(:) = 0.
-        call der4(f,ilnTT,tmp,1,IGNOREDX=.true.)
-        hc =  hc - chi_hyper2*tmp
-        call der4(f,ilnTT,tmp,2,IGNOREDX=.true.)
-        hc =  hc - chi_hyper2*tmp
-        call der4(f,ilnTT,tmp,3,IGNOREDX=.true.)
-        hc =  hc - chi_hyper2*tmp
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+        call del4(f,ilnTT,hc,IGNOREDX=.true.)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper2*hc
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
