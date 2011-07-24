@@ -300,28 +300,28 @@ my $nbricky=0;
 my $nbrickz=0;
 my $nblockmax=0;
 foreach $line (@cparam) {
-  $line=substr($line, 0, index($line,"!"));# Ignore lines that are commented out
-  $mpar_loc=1  if ($line=~ 'mpar_loc');
-  $npar_mig=1 if ($line=~ 'npar_mig');
-  $npar_species=1 if ($line=~ 'npar_species');
-  $nspar=1 if ($line=~ 'nspar');
-  $npar_stalk=1 if ($line=~ 'npar_stalk');
-  $nbrickx=1 if ($line=~ 'nbrickx');
-  $nbricky=1 if ($line=~ 'nbricky');
-  $nbrickz=1 if ($line=~ 'nbrickz');
-  $nblockmax=1 if ($line=~ 'nblockmax');
+  $line=substr($line, 0, index($line,"!")); # ignore comment lines
+  $mpar_loc=1     if ($line =~ 'mpar_loc');
+  $npar_mig=1     if ($line =~ 'npar_mig');
+  $npar_species=1 if ($line =~ 'npar_species');
+  $nspar=1        if ($line =~ 'nspar');
+  $npar_stalk=1   if ($line =~ 'npar_stalk');
+  $nbrickx=1      if ($line =~ 'nbrickx');
+  $nbricky=1      if ($line =~ 'nbricky');
+  $nbrickz=1      if ($line =~ 'nbrickz');
+  $nblockmax=1    if ($line =~ 'nblockmax');
 }
 
 # Write default values of undefined particle parameters to cparam.inc:
-if ($mpar_loc eq 0)     {print $out "integer, parameter :: mpar_loc=npar\n";}
-if ($npar_mig eq 0)     {print $out "integer, parameter :: npar_mig=1\n";}
-if ($npar_species eq 0) {print $out "integer, parameter :: npar_species=1\n";}
-if ($nspar eq 0)        {print $out "integer, parameter :: nspar=1\n";}
-if ($npar_stalk eq 0)   {print $out "integer, parameter :: npar_stalk=0\n";}
-if ($nbrickx eq 0)      {print $out "integer, parameter :: nbrickx=1\n";}
-if ($nbricky eq 0)      {print $out "integer, parameter :: nbricky=1\n";}
-if ($nbrickz eq 0)      {print $out "integer, parameter :: nbrickz=1\n";}
-if ($nblockmax eq 0)    {print $out "integer, parameter :: nblockmax=1\n";}
+print $out "integer, parameter :: mpar_loc=npar\n"  if ($mpar_loc eq 0);
+print $out "integer, parameter :: npar_mig=1\n"     if ($npar_mig eq 0);
+print $out "integer, parameter :: npar_species=1\n" if ($npar_species eq 0);
+print $out "integer, parameter :: nspar=1\n"        if ($nspar eq 0);
+print $out "integer, parameter :: npar_stalk=0\n"   if ($npar_stalk eq 0);
+print $out "integer, parameter :: nbrickx=1\n"      if ($nbrickx eq 0);
+print $out "integer, parameter :: nbricky=1\n"      if ($nbricky eq 0);
+print $out "integer, parameter :: nbrickz=1\n"      if ($nbrickz eq 0);
+print $out "integer, parameter :: nblockmax=1\n"    if ($nblockmax eq 0);
 
 # Insert all CPARAM lines, extracted from the headers of the chosen physics
 # modules:
