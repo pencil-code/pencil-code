@@ -1848,20 +1848,20 @@ depend dep:
 semiauto-conf:
 	echo "Running semiauto-conf"
 	@scripts/semiauto-conf \
-	  FC="$(FC)" \
-	  FFLAGS="$(FFLAGS)" \
-	  FFLAGS_GENERAL="$(FFLAGS_GENERAL)" \
-	  FFLAGS_FOURIER="$(FFLAGS_FOURIER)" \
-	  F90FLAGS="$(F90FLAGS)" \
-	  CC="$(CC)" \
-	  CFLAGS="$(CFLAGS)" \
-	  CFLAGS_GENERAL="$(CFLAGS_GENERAL)" \
-	  CFLAGS_FOURIER="$(CFLAGS_FOURIER)" \
-	  LD="$(LD)" \
-	  LD_MPI="$(LD_MPI)" \
-	  LD_FLAGS="$(LD_FLAGS)" \
-	  LD_FOURIER="$(LD_FOURIER)" \
-	  LIBMPISUFFIX="$(LIBMPISUFFIX)"
+	    FC="$(FC)" \
+	    FFLAGS="$(FFLAGS)" \
+	    FFLAGS_GENERAL="$(FFLAGS_GENERAL)" \
+	    FFLAGS_FOURIER="$(FFLAGS_FOURIER)" \
+	    F90FLAGS="$(F90FLAGS)" \
+	    CC="$(CC)" \
+	    CFLAGS="$(CFLAGS)" \
+	    CFLAGS_GENERAL="$(CFLAGS_GENERAL)" \
+	    CFLAGS_FOURIER="$(CFLAGS_FOURIER)" \
+	    LD="$(LD)" \
+	    LD_MPI="$(LD_MPI)" \
+	    LD_FLAGS="$(LD_FLAGS)" \
+	    LD_FOURIER="$(LD_FOURIER)" \
+	    LIBMPISUFFIX="$(LIBMPISUFFIX)"
 # 
 #  Generate files for automated debugging and testing etc.
 #
@@ -1871,26 +1871,26 @@ stop_buildtime:
 	@echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
 buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
-	                       -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
-	                       -e "LD_FOURIER='$(LD_FOURIER)';FFLAGS_FOURIER='$(FFLAGS_FOURIER)';CFLAGS_FOURIER='$(CFLAGS_FOURIER)';" \
-	                       -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
-	                       -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
-	                       -e "FC='$(FC)';" \
-	                       -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';TESTPERTURB='$(TESTPERTURB)';" \
-	                       -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENTROPY='$(ENTROPY)';" \
-	                       -e "MAGNETIC='$(MAGNETIC)';MAGNETIC_MEANFIELD='$(MAGNETIC_MEANFIELD)';" \
-	                       -e "RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
-	                       -e "LORENZ_GAUGE='$(LORENZ_GAUGE)';" \
-	                       -e "POLYMER='$(POLYMER)';" \
-	                       -e "CHIRAL='$(CHIRAL)';CHEMISTRY='$(CHEMISTRY)';DUSTVELOCITY='$(DUSTVELOCITY)';DUSTDENSITY='$(DUSTDENSITY)';" \
-                               -e "NEUTRALVELOCITY='$(NEUTRALVELOCITY)';NEUTRALDENSITY='$(NEUTRALDENSITY)';" \
-	                       -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \
-	                       -e "EOS='$(EOS)';STRUCT_FUNC='$(STRUCT_FUNC)';SHOCK='$(SHOCK)';" \
-	                       -e "TESTSCALAR='$(TESTSCALAR)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
-	                       -e "TESTFIELD='$(TESTFIELD)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
-	                       -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
-	                       -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';INITIAL_CONDITION='$(INITIAL_CONDITION)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
-	                       -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" > .buildinfo
+	    -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
+	    -e "LD_FOURIER='$(LD_FOURIER)';FFLAGS_FOURIER='$(FFLAGS_FOURIER)';CFLAGS_FOURIER='$(CFLAGS_FOURIER)';" \
+	    -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
+	    -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
+	    -e "FC='$(FC)';" \
+	    -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';TESTPERTURB='$(TESTPERTURB)';" \
+	    -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENTROPY='$(ENTROPY)';" \
+	    -e "MAGNETIC='$(MAGNETIC)';MAGNETIC_MEANFIELD='$(MAGNETIC_MEANFIELD)';" \
+	    -e "RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
+	    -e "LORENZ_GAUGE='$(LORENZ_GAUGE)';" \
+	    -e "POLYMER='$(POLYMER)';" \
+	    -e "CHIRAL='$(CHIRAL)';CHEMISTRY='$(CHEMISTRY)';DUSTVELOCITY='$(DUSTVELOCITY)';DUSTDENSITY='$(DUSTDENSITY)';" \
+            -e "NEUTRALVELOCITY='$(NEUTRALVELOCITY)';NEUTRALDENSITY='$(NEUTRALDENSITY)';" \
+	    -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \
+	    -e "EOS='$(EOS)';STRUCT_FUNC='$(STRUCT_FUNC)';SHOCK='$(SHOCK)';" \
+	    -e "TESTSCALAR='$(TESTSCALAR)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
+	    -e "TESTFIELD='$(TESTFIELD)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
+	    -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
+	    -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';INITIAL_CONDITION='$(INITIAL_CONDITION)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
+	    -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" > .buildinfo
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam
 	scripts/mkcparam $(preprocess) -o cparam.inc
