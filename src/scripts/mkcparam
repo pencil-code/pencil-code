@@ -380,12 +380,16 @@ print $out_pencil " /)\n";
 
 # Define pencil logicals, used by the code to distinguish between needed
 # and not needed pencils:
-print $out_pencil "logical, parameter, dimension(npencils):: lpenc_required  = .false.\n";
-print $out_pencil "logical,            dimension(npencils):: lpenc_diagnos   = .false.\n";
-print $out_pencil "logical,            dimension(npencils):: lpenc_diagnos2d = .false.\n";
-print $out_pencil "logical,            dimension(npencils):: lpenc_video     = .false.\n";
-print $out_pencil "logical,            dimension(npencils):: lpenc_requested = .false.\n";
-print $out_pencil "logical,            dimension(npencils):: lpencil         = .false. \n\n\n";
+print $out_pencil <<"EOF";
+logical, parameter, dimension(npencils):: lpenc_required  = .false.
+logical,            dimension(npencils):: lpenc_diagnos   = .false.
+logical,            dimension(npencils):: lpenc_diagnos2d = .false.
+logical,            dimension(npencils):: lpenc_video     = .false.
+logical,            dimension(npencils):: lpenc_requested = .false.
+logical,            dimension(npencils):: lpencil         = .false.
+
+
+EOF
 
 
 #
