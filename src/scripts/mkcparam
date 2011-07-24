@@ -100,7 +100,7 @@ my @pencil_sizes;
 my %pencil_file_map;
 my @cparam_lines;
 (my $cmdname = $0) =~ s{.*/}{};
-my @open_files;
+my %open_files;
 
 #
 # Process command line.
@@ -109,11 +109,13 @@ my (%opts);	# Variables written by GetOptions
 GetOptions(\%opts,
 	   qw( -h   --help
 	       -o=s --output=s
+               -b   --backdate
                                ));
 
 die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
 my $outfile  = ($opts{o} || $opts{output}   || "-");
+my $backdate = ($opts{b} || $opts{backdate} || "");
 
 my $out = open_file($outfile);
 my $out_pencil = open_file("cparam_pencils.inc");
@@ -431,8 +433,12 @@ sub open_file {
 #
     my ($file) = @_;
 
+    if ($backdate) {
+        rename $file, backup_file($file);
+    }
+
     open(my $fh, "> $file") or die "Can't open $file for writing";
-    push @open_files, $fh;
+    $open_files{$file} = $fh;
 
     return $fh;
 }
@@ -441,16 +447,36 @@ sub open_file {
 sub close_files {
 #
 # Close all open file handles.
+# If appropriate, revert to older files to backdate the file.
+# Remove files that are no longer needed.
 #
-    foreach my $fh (@open_files) {
+    while (my ($filename, $fh) = each(%open_files)) {
         close $fh;
+        my $previous = backup_file($filename);
+        my $unchanged = (system('cmp', '-s', $previous, $filename) == 0);
+        if ($unchanged && $backdate) {
+            # backdate file by copying previous version
+            rename $previous, $filename;
+        } else {
+            unlink $previous;
+        }
     }
 }
 
 # ---------------------------------------------------------------------- #
-sub extract_decl{
+sub backup_file {
 #
-# Extract declaration of contribution to mvar and similar
+# Return filename for backup of given file
+#
+    my ($file) = @_;
+
+    return $file . '_previous';
+}
+
+# ---------------------------------------------------------------------- #
+sub extract_decl {
+#
+# Extract declaration of contribution to mvar and similar.
 #
     my $line = shift;
     my $regexp = shift;
