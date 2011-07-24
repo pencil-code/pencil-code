@@ -313,15 +313,15 @@ foreach $line (@cparam) {
 }
 
 # Write default values of undefined particle parameters to cparam.inc:
-print $out "integer, parameter :: mpar_loc=npar\n"  if ($mpar_loc eq 0);
-print $out "integer, parameter :: npar_mig=1\n"     if ($npar_mig eq 0);
-print $out "integer, parameter :: npar_species=1\n" if ($npar_species eq 0);
-print $out "integer, parameter :: nspar=1\n"        if ($nspar eq 0);
-print $out "integer, parameter :: npar_stalk=0\n"   if ($npar_stalk eq 0);
-print $out "integer, parameter :: nbrickx=1\n"      if ($nbrickx eq 0);
-print $out "integer, parameter :: nbricky=1\n"      if ($nbricky eq 0);
-print $out "integer, parameter :: nbrickz=1\n"      if ($nbrickz eq 0);
-print $out "integer, parameter :: nblockmax=1\n"    if ($nblockmax eq 0);
+print $out "integer, parameter :: mpar_loc=npar\n"  unless $mpar_loc;
+print $out "integer, parameter :: npar_mig=1\n"     unless $npar_mig;
+print $out "integer, parameter :: npar_species=1\n" unless $npar_species;
+print $out "integer, parameter :: nspar=1\n"        unless $nspar;
+print $out "integer, parameter :: npar_stalk=0\n"   unless $npar_stalk;
+print $out "integer, parameter :: nbrickx=1\n"      unless $nbrickx;
+print $out "integer, parameter :: nbricky=1\n"      unless $nbricky;
+print $out "integer, parameter :: nbrickz=1\n"      unless $nbrickz;
+print $out "integer, parameter :: nblockmax=1\n"    unless $nblockmax;
 
 # Insert all CPARAM lines, extracted from the headers of the chosen physics
 # modules:
