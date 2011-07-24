@@ -56,18 +56,19 @@ if [ -z $_sourceme ]; then	# called for the first time?
 
 #    #  Set Perl module path
 #    PERL5LIB="${PENCIL_HOME}/perl${PERL5LIB:+:$PERL5LIB}"
+#    export PERL5LIB
     #   Set PYTHONPATH
     if [ -z $PYTHONPATH ]; then
        PYTHONPATH="$PENCIL_HOME/python:$PWD/python"
-    else 
+    else
        PYTHONPATH="$PYTHONPATH:$PENCIL_HOME/python:$PWD/python"
     fi
     # Remember that sourceme has been successfully run
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
-    export PATH DXMACROS IDL_PATH PERL5LIB _sourceme 
-    
+    export PATH DXMACROS IDL_PATH PYTHONPATH _sourceme
+
   else
     if [ -n $PENCIL_HOME ]; then
       echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
