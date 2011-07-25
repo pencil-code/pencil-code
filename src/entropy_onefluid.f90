@@ -86,6 +86,8 @@ module Entropy
       if (lroot) call svn_id( &
           "$Id$")
 !
+!  logical variable lpressuregradient_gas shared with hydro modules
+!
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
 !
@@ -273,7 +275,7 @@ module Entropy
 !  select different initial conditions
 !
           select case (initss(j))
-
+!
             case ('zero', '0'); f(:,:,:,iss) = 0.
             case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
             case ('isothermal'); call isothermal_entropy(f,T0)
@@ -928,7 +930,7 @@ module Entropy
           call fatal_error('calc_heatcond','NaNs in thdiff')
         endif
       endif
-
+!
       if (headt .and. lfirst .and. ip<=9) then
         call output_pencil(trim(directory)//'/chi.dat',chix,1)
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)

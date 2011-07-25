@@ -8,10 +8,10 @@
 !  relations are modified (see Sect 9.3.6 of Brandenburg 2003, in
 !  "Computational aspects...", ed. Ferriz-Mas & Nunez, Taylor & Francis,
 !  or astro-ph/0109497.
-
+!
 !  This current implementation has temporarily been used to imitate
 !  a corona in solar context.
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -20,20 +20,20 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Entropy
-
+!
   use Cdata
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-
+!
   implicit none
-
+!
   real :: dummy,xss_corona,wss_corona,ss_corona
   real, dimension(nx) :: profxss,dprofxss
   character (len=labellen) :: iss_profile='nothing'
-
+!
   ! parameters necessary for consistency with other modules,
   ! but not directly used.
   real :: hcond0=0.,hcond1=impossible,chi=impossible
@@ -43,15 +43,15 @@ module Entropy
   logical :: lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
-
+!
   ! input parameters
   namelist /entropy_init_pars/ &
       initss, ss_const
-
+!
   ! run parameters
   namelist /entropy_run_pars/ &
       dummy
-
+!
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_ethm=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
@@ -64,10 +64,6 @@ module Entropy
 !  equation: iss, etc; increase nvar accordingly
 !
 !  6-nov-01/wolf: coded
-!
-      use Cdata
-      use Mpicomm
-      use Sub
 !
       lentropy = .true.
 !
@@ -87,7 +83,7 @@ module Entropy
       use Cdata
 !
       integer :: ierr
-
+!
   ! run parameters
   namelist /entropy_initialize_pars/ &
        iss_profile,xss_corona,wss_corona,ss_corona
@@ -112,7 +108,7 @@ module Entropy
         print*,'initialize_entropy: iss_profile=',iss_profile
         print*,'initialize_entropy: wss_corona,ss_corona=',xss_corona,wss_corona,ss_corona
       endif
-
+!
       return
 99    if (lroot) print*,'i/o error'
 !
@@ -131,10 +127,10 @@ module Entropy
 !
       do j=1,ninit
         select case (initss(j))
-
+!
           case ('zero', '0'); f(:,:,:,iss) = 0.
           case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-
+!
         endselect
       enddo
 !

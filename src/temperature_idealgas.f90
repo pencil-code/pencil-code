@@ -170,7 +170,8 @@ module Entropy
 !
       call farray_register_pde('lnTT',ilnTT)
 !
-!  logical variable lpressuregradient_gas shared with hydro/nohydro
+!  logical variable lpressuregradient_gas shared with hydro modules
+!
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
 !

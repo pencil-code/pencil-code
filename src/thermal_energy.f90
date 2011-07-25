@@ -32,6 +32,7 @@ module Entropy
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0, chi=0.0, chi_shock=0.0
   logical :: lviscosity_heat=.true.
+  logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
 !
 !  Input parameters.
@@ -96,8 +97,16 @@ module Entropy
 !  04-nov-10/anders+evghenii: adapted
 !
       use FArrayManager, only: farray_register_pde
+      use SharedVariables, only: get_shared_variable
+!
+      integer :: ierr
 !
       call farray_register_pde('eth',ieth)
+!
+!  logical variable lpressuregradient_gas shared with hydro modules
+!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
 !
 !  Identify version number.
 !
@@ -285,7 +294,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.0,ugeth,tmp
+      real, dimension (nx) :: Hmax=0.0,ugeth
 !
       intent(inout) :: f,p
       intent(out) :: df

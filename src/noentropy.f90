@@ -1,6 +1,7 @@
 ! $Id$
 !
-! Calculates pressure gradient term for polytropic equation of state.
+! MODULE_DOC: Calculates pressure gradient term for
+! MODULE_DOC: polytropic equation of state $p=\text{const}\rho^{\Gamma}$.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -62,8 +63,7 @@ module Entropy
 !
       integer :: ierr
 !
-!  Get the shared variable lpressuregradient_gas from Hydro module.
-!  Do this only if lhydro=T.
+!  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
@@ -120,17 +120,17 @@ module Entropy
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
-        if (ierr/=0) call fatal_error('initialize_entropy:',& 
+        if (ierr/=0) call fatal_error('initialize_entropy:',&
              'failed to get lffree from density')
         if (lffree) then
           call get_shared_variable('profx_ffree',profx_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_entropy:',& 
+          if (ierr/=0) call fatal_error('initialize_entropy:',&
                'failed to get profx_ffree from density')
           call get_shared_variable('profy_ffree',profy_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_entropy:',& 
+          if (ierr/=0) call fatal_error('initialize_entropy:',&
               'failed to get profy_ffree from density')
           call get_shared_variable('profz_ffree',profz_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_entropy:',& 
+          if (ierr/=0) call fatal_error('initialize_entropy:',&
              'failed to get profz_ffree from density')
         endif
       endif
