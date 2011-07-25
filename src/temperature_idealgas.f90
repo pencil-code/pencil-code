@@ -716,7 +716,6 @@ module Entropy
       endif
       if (idiag_fpresxmz/=0 .or. idiag_fpresymz/=0 .or. &
           idiag_fpreszmz/=0) lpenc_requested(i_fpres)=.true.
-
 !
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
 !
@@ -980,10 +979,10 @@ module Entropy
             idiag_ethuymz)
         if (idiag_ethuzmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3), &
             idiag_ethuzmz)
+        if (idiag_fpresxmz/=0) call xysum_mn_name_z(p%fpres(:,1),idiag_fpresxmz)
+        if (idiag_fpresymz/=0) call xysum_mn_name_z(p%fpres(:,2),idiag_fpresymz)
+        if (idiag_fpreszmz/=0) call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
       endif
-      if (idiag_fpresxmz/=0)  call xysum_mn_name_z(p%fpres(:,1),idiag_fpresxmz)
-      if (idiag_fpresymz/=0)  call xysum_mn_name_z(p%fpres(:,2),idiag_fpresymz)
-      if (idiag_fpreszmz/=0)  call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
 !
 !  2-D averages.
 !
@@ -1172,9 +1171,10 @@ module Entropy
 !  density, sigma=rho*2*H
 !
         if (nzgrid==1) then
-           tau = .5*kappa*p%rho
+          tau = .5*kappa*p%rho
         else
-           call fatal_error("calc_heat_cool","opacity not yet implemented for 3D")
+          call fatal_error("calc_heat_cool", &
+              "opacity not yet implemented for 3D")
         endif
 !
 !  Analytical gray description of Hubeny (1990)
