@@ -463,7 +463,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use EquationOfState, only: gamma
-      use Deriv, only: der6, der4, der2, der
+      use Deriv, only: der4, der2, der
       use Diagnostics,     only : max_mn_name
       use Sub
 !
@@ -530,12 +530,7 @@ module Special
 ! Add hyper diffusion to heat conduction vector
 !
         if (hyper3_spi /= 0.) then
-          hc(:) = 0.
-          do i=1,3
-            call der6(f,ispitzerz,tmp,i,IGNOREDX=.true.)
-            hc = hc + tmp
-          enddo
-!
+          call del6(f,ispitzerz,hc,IGNOREDX=.true.)
           df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper3_chi*hc
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/cdts)
@@ -767,13 +762,13 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-      use Deriv, only: der6
+      use Sub, only: del6
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc,tmp
+      real, dimension (nx) :: hc
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
       if (Kpara /= 0.) call calc_heatcond_tensor(df,p)
@@ -795,16 +790,9 @@ module Special
       endif
 !
       if (hyper3_chi /= 0.) then
-        hc(:) = 0.
-        call der6(f,ilnTT,tmp,1,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnTT,tmp,2,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnTT,tmp,3,IGNOREDX=.true.)
-        hc = hc + tmp
-        hc = hyper3_chi*hc
+        call del6(f,ilnTT,hc,IGNOREDX=.true.)
         if (ltemperature .and. (.not.ltemperature_nolog)) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hc
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_chi*hc
 !
 !  due to ignoredx hyper3_chi has [1/s]
 !
@@ -823,13 +811,13 @@ module Special
 !
 !  17-jun-11/bing: coded
 !
-      use Deriv, only: der6
+      use Sub, only: del6
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc,tmp
+      real, dimension (nx) :: hc
 !
       call keep_compiler_quiet(p)
 !
@@ -837,15 +825,8 @@ module Special
         if (ldensity_nolog.and.(ilnrho /= irho)) &
             call fatal_error('hyper3_diffrho special','please check')
 !
-        hc(:) = 0.
-        call der6(f,ilnrho,tmp,1,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnrho,tmp,2,IGNOREDX=.true.)
-        hc = hc + tmp
-        call der6(f,ilnrho,tmp,3,IGNOREDX=.true.)
-        hc = hc + tmp
-        hc = hyper3_diffrho*hc
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hc
+        call del6(f,ilnrho,hc,IGNOREDX=.true.)
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_diffrho*hc
 !
 !  due to ignoredx hyper3_diffrho has [1/s]
 !
