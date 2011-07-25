@@ -1979,6 +1979,8 @@ mpicomm_.f90: mpicomm.f90
 #
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
 	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+$(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
 	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
