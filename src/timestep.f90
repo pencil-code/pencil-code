@@ -1,4 +1,8 @@
 ! $Id$
+!
+! MODULE_DOC: Runge-Kutta time advance, accurate to order itorder.
+! MODULE_DOC: At the moment, itorder can be 1, 2, or 3.
+!
 module Timestep
 !
   use Cparam
@@ -13,9 +17,6 @@ module Timestep
   contains
 !***********************************************************************
     subroutine rk_2n(f,df,p)
-!
-!  Runge Kutta advance, accurate to order itorder.
-!  At the moment, itorder can be 1, 2, or 3.
 !
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
