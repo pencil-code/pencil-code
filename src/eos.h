@@ -1,7 +1,7 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 
   private
-                                                                                                       
+
   public :: eoscalc,pressure_gradient,temperature_gradient,get_cp1
   public :: temperature_laplacian,get_cv1
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee, ilnrho_TT
@@ -11,7 +11,7 @@
   public :: getmu, getmu_array
   public :: getdensity, gettemperature, getpressure
   public :: get_average_pressure
-                                                                                                       
+
   public :: register_eos
   public :: initialize_eos, units_eos
   public :: rprint_eos, get_slices_eos
@@ -20,7 +20,7 @@
   public :: read_Lewis
 
   public :: select_eos_variable
-                                                                                                       
+
   public :: pencil_criteria_eos, pencil_interdep_eos
   public :: calc_pencils_eos
 

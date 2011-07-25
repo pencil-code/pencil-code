@@ -1725,9 +1725,9 @@ module EquationOfState
 !
 !  boundary condition for entropy: adopt minimum value for entropy in ghost
 !  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
-!  or symmetric temperature to handle shock profiles. 
+!  or symmetric temperature to handle shock profiles.
 !  Effectively caps temperature in ghost zones while otherwise fluctuating
-!  with the outward flow. 
+!  with the outward flow.
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
@@ -1781,9 +1781,9 @@ module EquationOfState
 !
 !  boundary condition for entropy: adopt minimum value for entropy in ghost
 !  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
-!  or symmetric temperature to handle shock profiles. 
+!  or symmetric temperature to handle shock profiles.
 !  Effectively caps temperature in ghost zones while otherwise fluctuating
-!  with the outward flow. 
+!  with the outward flow.
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_y
 !
@@ -1838,9 +1838,9 @@ module EquationOfState
 !
 !  boundary condition for entropy: adopt minimum value for entropy in ghost
 !  zone, which satisfies either asymmetric temperature: vanishing 2nd deriv
-!  or symmetric temperature to handle shock profiles. 
+!  or symmetric temperature to handle shock profiles.
 !  Effectively caps temperature in ghost zones while otherwise fluctuating
-!  with the outward flow. 
+!  with the outward flow.
 !
 !  22-sep-2010/fred: adapted from bc_ss_stemp_z
 !
