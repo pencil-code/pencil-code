@@ -50,7 +50,6 @@ module Forcing
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
-  logical :: lforce_tprofile=.false.
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lwrite_gausspot_to_file_always=.false.
@@ -60,6 +59,7 @@ module Forcing
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
+  character (len=labellen) :: iforce_tprofile='nothing'
   real :: equator=0.
 ! For helical forcing in sphreical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
@@ -114,9 +114,8 @@ module Forcing
        lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
-       iforce_profile,lscale_kvector_tobox, &
-       force_direction, force_strength, &
-       lhelical_test,lforce_tprofile, &
+       iforce_profile, iforce_tprofile, lscale_kvector_tobox, &
+       force_direction, force_strength, lhelical_test, &
        lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
        ck_equator_gap,ck_gap_step,&
        lforcing_cont,iforcing_cont, &
@@ -2698,10 +2697,12 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
 !  Set forcing amplitude (same value for each location by default)
 !
-      if (lforce_tprofile=='sin^2')
+      if (iforce_tprofile=='nothing') then
+        force_tmp=force_ampl
+      elseif (iforce_tprofile=='sin^2') then
         force_tmp=force_ampl*sin(pi*(1.-t/tsforce))**2
       else
-        force_tmp=force_ampl
+        call  fatal_error('forcing_gaussianpot','iforce_tprofile not good')
       endif
 !
 !  Possibility of outputting data at each time step (for testing)
