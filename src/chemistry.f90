@@ -28,7 +28,7 @@ module Chemistry
   use Cparam
   use EquationOfState
   use Messages
-  use Mpicomm, only: stop_it
+  use Mpicomm, only: stop_it, inevitably_fatal_error
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -2196,6 +2196,8 @@ module Chemistry
 !  22-jun-10/julien: Added evaluation of diffusion coefficients using constant
 !                     Lewis numers Di = lambda/(rho*Cp*Lei)
 !  10-jan-11/julien: Modified for a resolution with LSODE
+!  26-jui-11/julien: Replaced fatal_error by inevitably_fatal_error to allow
+!                    proper exit when T_loc<T_low or T_loc>T_up
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) ::  tmp_sum,tmp_sum2, nu_dyn,nuk_nuj,Phi
@@ -2310,11 +2312,11 @@ module Chemistry
 !
 ! Check if the temperature are within bounds
 !
-                 if (maxval(T_loc)>T_up .or. minval(T_loc)<T_low) then
+		 if (maxval(T_loc)>T_up .or. minval(T_loc)<T_low) then
                    print*,'TT_full(:,j2,j3)=',T_loc
                    print*,'j2,j3=',j2,j3
-                   call fatal_error('calc_for_chem_mixture',&
-                       'TT_full(:,j2,j3) is outside range')
+                   call inevitably_fatal_error('calc_for_chem_mixture', &
+                       'TT_full(:,j2,j3) is outside range', .true.)
                  endif
 !
 ! Find cp and cv for the mixture for the full domain
@@ -2328,7 +2330,7 @@ module Chemistry
            enddo
            enddo
          endif
-!
+!	 
 !  All the transport properties are calculated only if we are not using LSODE
 !  to solve chemistry or during the transport substep
 !

@@ -107,6 +107,7 @@ module Messages
           write (*,*) trim(location) // ": " // trim(message)
         endif
 !
+        print*, 'fatal=', fatal
         if (ldie_onfatalerror .and. fatal) call die_immediately
         if (ldie_onfatalerror) call die_gracefully
 !
@@ -114,24 +115,31 @@ module Messages
 !
     endsubroutine fatal_error
 !***********************************************************************
-    subroutine inevitably_fatal_error(location,message)
+    subroutine inevitably_fatal_error(location,message,force)
 !
 !  A fatal error that doesn't care for llife_support
 !  Use (sparingly) in those cases where things should fail even during
 !  pencil_consistency_test
+!  07-26-2011: Julien\ Added forced exit if "force" is set to .true.
 !
       character(len=*) :: location
       character(len=*) :: message
 !
+      logical, optional :: force
+!
+      logical :: fatal = .false.
+!
+      if (present(force)) fatal=force
       errors=errors+1
 !
-      if (lroot .or. (ncpus<=16 .and. (message/=''))) then
+      if (lroot .or. (ncpus<=16 .and. (message/='')) .or. fatal) then
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
         write (*,*) trim(location) // ": " // trim(message)
       endif
 !
+      if (fatal) call die_immediately()
       call die_gracefully()
 !
     endsubroutine inevitably_fatal_error
