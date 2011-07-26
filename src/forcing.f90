@@ -50,8 +50,10 @@ module Forcing
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
+  logical :: lforce_tprofile=.false.
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
+  logical :: lwrite_gausspot_to_file_always=.false.
   logical :: lscale_kvector_fac=.false.
   logical :: lforce_peri=.false., lforce_cuty=.false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
@@ -106,14 +108,16 @@ module Forcing
        iforce,force,relhel,crosshel,height_ff,r_ff,rcyl_ff,width_ff,nexp_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff,location_fixed,lrandom_location,lwrite_gausspot_to_file, &
+       omega_ff,location_fixed,lrandom_location, &
+       lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox, &
        force_direction, force_strength, &
-       lhelical_test,lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
+       lhelical_test,lforce_tprofile, &
+       lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
        ck_equator_gap,ck_gap_step,&
        lforcing_cont,iforcing_cont, &
        lembed, k1_ff, ampl_ff, ampl1_ff, width_fcont, x1_fcont, x2_fcont, &
@@ -2634,7 +2638,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       use EquationOfState, only: cs0
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: force_ampl
+      real :: force_ampl, force_tmp
 !
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran
@@ -2692,6 +2696,23 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         if (ip<=6) print*,'forcing_gaussianpot: location=',location
       endif
 !
+!  Set forcing amplitude (same value for each location by default)
+!
+      if (lforce_tprofile=='sin^2')
+        force_tmp=force_ampl*sin(pi*(1.-t/tsforce))**2
+      else
+        force_tmp=force_ampl
+      endif
+!
+!  Possibility of outputting data at each time step (for testing)
+!
+      if (lroot .and. lwrite_gausspot_to_file_always) then
+        open(1,file=trim(datadir)//'/gaussian_pot_forcing_always.dat', &
+            status='unknown',position='append')
+        write(1,'(5f14.7)') t, location, force_tmp
+        close (1)
+      endif
+!
 !  Let explosion last dtforce_duration or, by default, until next explosion.
 !
       if ( (dtforce_duration<0.0) .or. &
@@ -2709,7 +2730,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  Also define width_ff21 = 1/width^2
 !
         width_ff21=1./width_ff**2
-        fact=2.*width_ff21*force_ampl*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
+        fact=2.*width_ff21*force_tmp*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
