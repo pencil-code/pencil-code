@@ -27,8 +27,8 @@ module Chemistry
   use Cdata
   use Cparam
   use EquationOfState
-  use Messages
-  use Mpicomm, only: stop_it, inevitably_fatal_error
+  use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error
+  use Mpicomm, only: stop_it
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -2312,7 +2312,7 @@ module Chemistry
 !
 ! Check if the temperature are within bounds
 !
-		 if (maxval(T_loc)>T_up .or. minval(T_loc)<T_low) then
+                 if (maxval(T_loc)>T_up .or. minval(T_loc)<T_low) then
                    print*,'TT_full(:,j2,j3)=',T_loc
                    print*,'j2,j3=',j2,j3
                    call inevitably_fatal_error('calc_for_chem_mixture', &
@@ -2330,7 +2330,7 @@ module Chemistry
            enddo
            enddo
          endif
-!	 
+!        
 !  All the transport properties are calculated only if we are not using LSODE
 !  to solve chemistry or during the transport substep
 !
