@@ -2700,7 +2700,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       if (iforce_tprofile=='nothing') then
         force_tmp=force_ampl
       elseif (iforce_tprofile=='sin^2') then
-        force_tmp=force_ampl*sin(pi*(1.-t/tsforce))**2
+        force_tmp=force_ampl*sin(pi*(tsforce-t)/dtforce)**2
       else
         call  fatal_error('forcing_gaussianpot','iforce_tprofile not good')
       endif
