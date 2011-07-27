@@ -570,10 +570,9 @@ module Special
       endif
 !
       if (hcond3/=0.0) then
-        lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_bij)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
 !
