@@ -718,7 +718,7 @@ module EquationOfState
       intent(inout) :: p
 !
       real, dimension(nx) :: tmp
-      integer :: i
+      integer :: i,j
 !
 !  Inverse cv and cp values.
 !
@@ -822,12 +822,12 @@ module EquationOfState
 !
       case (ilnrho_TT,irho_TT)
         if (lpencil(i_TT))   p%TT=f(l1:l2,m,n,ieosvar2)
-        if (lpencil(i_TT1))  p%TT1=1/f(l1:l2,m,n,ieosvar2)
+        if (lpencil(i_TT1).or.lpencil(i_hlnTT))  p%TT1=1/f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_lnTT).or.lpencil(i_ss).or.lpencil(i_ee)) &
             p%lnTT=log(f(l1:l2,m,n,ieosvar2))
         if (lpencil(i_cs2))  p%cs2=cp*gamma_m1*f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_gTT))  call grad(f,ieosvar2,p%gTT)
-        if (lpencil(i_glnTT)) then
+        if (lpencil(i_glnTT).or.lpencil(i_hlnTT)) then
           do i=1,3; p%glnTT(:,i)=p%gTT(:,i)*p%TT1; enddo
         endif
         if (lpencil(i_del2TT).or.lpencil(i_del2lnTT)) &
@@ -838,6 +838,12 @@ module EquationOfState
             tmp=tmp+p%glnTT(:,i)**2
           enddo
           p%del2lnTT=p%del2TT*p%TT1-tmp
+        endif
+        if (lpencil(i_hlnTT)) then
+          call g2ij(f,iTT,p%hlnTT)
+          do i=1,3; do j=1,3
+            p%hlnTT(:,i,j)=p%hlnTT(:,i,j)*p%TT1-p%glnTT(:,i)*p%glnTT(:,j)
+          enddo; enddo
         endif
         if (lpencil(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
         if (lpencil(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
