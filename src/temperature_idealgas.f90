@@ -734,7 +734,10 @@ module Entropy
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
-      if (lpencil_in(i_uglnTT)) lpencil_in(i_glnTT)=.true.
+      if (lpencil_in(i_uglnTT)) then
+        lpencil_in(i_glnTT)=.true.
+        lpencil_in(i_uu)=.true.
+      endif
       if (lpencil_in(i_ugTT))   lpencil_in(i_gTT)  =.true.
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
