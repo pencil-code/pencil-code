@@ -823,13 +823,15 @@ module EquationOfState
       case (ilnrho_TT,irho_TT)
         if (lpencil(i_TT))   p%TT=f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_TT1))  p%TT1=1/f(l1:l2,m,n,ieosvar2)
-        if (lpencil(i_lnTT)) p%lnTT=log(f(l1:l2,m,n,ieosvar2))
+        if (lpencil(i_lnTT).or.lpencil(i_ss).or.lpencil(i_ee)) &
+            p%lnTT=log(f(l1:l2,m,n,ieosvar2))
         if (lpencil(i_cs2))  p%cs2=cp*gamma_m1*f(l1:l2,m,n,ieosvar2)
         if (lpencil(i_gTT))  call grad(f,ieosvar2,p%gTT)
         if (lpencil(i_glnTT)) then
           do i=1,3; p%glnTT(:,i)=p%gTT(:,i)*p%TT1; enddo
         endif
-        if (lpencil(i_del2TT)) call del2(f,ieosvar2,p%del2TT)
+        if (lpencil(i_del2TT).or.lpencil(i_del2lnTT)) &
+            call del2(f,ieosvar2,p%del2TT)
         if (lpencil(i_del2lnTT)) then
           tmp=0.0
           do i=1,3
