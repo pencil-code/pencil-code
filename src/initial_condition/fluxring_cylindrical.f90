@@ -97,7 +97,7 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: argum,term1,term2,az
+      real, dimension (mx) :: argum,term1,term2,ax,ay,az
 !
 !  vector potential for the magnetic flux flux ring
 !
