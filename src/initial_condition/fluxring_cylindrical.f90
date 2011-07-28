@@ -25,10 +25,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: b0,s0,width,p0,eps=1.
+  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.
+
 !
   namelist /initial_condition_pars/ &
-      b0,s0,width,p0,eps
+      b0,s0,width,p0,eps,mphi,ampl,om
 !
   contains
 !***********************************************************************
@@ -111,6 +112,21 @@ module InitialCondition
         enddo
       enddo
 !
+!
+!   perturbation for the initial field
+!
+print*,'ampl=',ampl
+
+     do n=1,mz
+      do m=1,my
+        ax=ampl*x*cos(om*z(n))*sin(mphi*y(m))
+        az=ampl*x*cos(om*z(n))*cos(mphi*y(m))
+        f(:,m,n,iax)=f(:,m,n,iax)+ax
+        f(:,m,n,iaz)=f(:,m,n,iaz)+az
+       enddo
+     enddo
+
+
     endsubroutine initial_condition_aa
 !***********************************************************************
     subroutine read_initial_condition_pars(unit,iostat)
