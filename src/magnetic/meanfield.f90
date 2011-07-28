@@ -30,6 +30,7 @@ module Magnetic_meanfield
 !  array for inputting alpha profile
 !
   real, dimension (mx,my) :: alpha_input
+  real, pointer :: kf_alpm
   logical, pointer :: lweyl_gauge
 !
   real, dimension (nx) :: kf_x, kf_x1
@@ -149,7 +150,7 @@ module Magnetic_meanfield
 !  20-may-03/axel: reinitialize_aa added
 !
       use Sub, only: erfunc
-      use SharedVariables, only: put_shared_variable,get_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp
@@ -303,7 +304,7 @@ module Magnetic_meanfield
 !
 !  initialize secondary mean-field modules
 !
-      if (lmagn_mf_demfdt) then
+      if (lmagn_mf_demfdt.or.lalpm_alternate) then
         call put_shared_variable('kf_x',kf_x,ierr)
         call put_shared_variable('kf_y',kf_y,ierr)
         call put_shared_variable('kf_z',kf_z,ierr)
@@ -463,7 +464,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: alpha_total
       real, dimension (nx) :: meanfield_etat_tmp
       real, dimension (nx) :: alpha_tmp, alpha_quenching_tmp, delta_tmp
-      real, dimension (nx) :: EMF_prof
+      real, dimension (nx) :: kf_tmp, EMF_prof, alpm, prefact
       real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
@@ -602,6 +603,29 @@ module Magnetic_meanfield
             'delta_profile no such delta profile')
         endselect
 !
+!  Compute diffusion term.
+!  This sets the meanfield_etat_tmp term at each time step.
+!
+        if (meanfield_etat/=0.0) then
+          meanfield_etat_tmp=etat_x*etat_y(m)*etat_z(n)
+          meanfield_getat_tmp(:,1)=detat_x*etat_y(m)*etat_z(n)
+          meanfield_getat_tmp(:,2)=etat_x*detat_y(m)*etat_z(n)
+          meanfield_getat_tmp(:,3)=etat_x*etat_y(m)*detat_z(n)
+!
+!  1/r correction for spherical symmetry (assuming axisymmetric profiles,
+!  i.e.  meanfield_getat_tmp(:,3)=0.)
+!
+          if (lspherical_coords) then
+            meanfield_getat_tmp(:,2)=r1_mn*meanfield_getat_tmp(:,2)
+          endif
+!
+!  Magnetic etat quenching (contribution to pumping currently ignored)
+!
+          if (meanfield_etaB/=0.0) then
+            meanfield_etaB2=meanfield_etaB**2
+            meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
+          endif
+!
 !  Possibility of dynamical alpha.
 !  Here we initialize alpha_total.
 !
@@ -615,9 +639,27 @@ module Magnetic_meanfield
           alpha_total=alpha_effect*alpha_tmp
         endif
 !
+!  Possibility of dynamical alpha.
+!  Here we initialize alpha_total.
+!
+        if (lalpm_alternate.and..not.lmeanfield_noalpm) then
+          kf_tmp=kf_x*kf_y(m)*kf_z(n)
+          prefact=meanfield_etat_tmp*(kf_tmp/meanfield_Beq)**2
+          alpm=prefact*(f(l1:l2,m,n,ialpm)-p%ab)
+          if (lalpha_profile_total) then
+             alpha_total=(alpha_effect+alpm)*alpha_tmp
+           else
+             alpha_total=alpha_effect*alpha_tmp+alpm
+           endif
+        else
+          alpha_total=alpha_effect*alpha_tmp
+        endif
+!
 !  Possibility of conventional alpha quenching (rescales alpha_total).
 !  Initialize EMF with alpha_total*bb.
 !  Here we initialize p%mf_EMF.
+!  NOTE: the following with alpha_quenching*sqrt(kf_x) was a hardwired fix
+!  and should be improved using Beq.
 !
         if (alpha_quenching/=0.0) then
           !alpha_quenching_tmp=alpha_quenching
@@ -648,29 +690,6 @@ module Magnetic_meanfield
           p%mf_EMF(:,1)=p%mf_EMF(:,1)-delta_effect*delta_tmp*p%jj(:,2)
           p%mf_EMF(:,2)=p%mf_EMF(:,2)+delta_effect*delta_tmp*p%jj(:,1)
         endif
-!
-!  Compute diffusion term.
-!  This sets the meanfield_etat_tmp term at each time step.
-!
-        if (meanfield_etat/=0.0) then
-          meanfield_etat_tmp=etat_x*etat_y(m)*etat_z(n)
-          meanfield_getat_tmp(:,1)=detat_x*etat_y(m)*etat_z(n)
-          meanfield_getat_tmp(:,2)=etat_x*detat_y(m)*etat_z(n)
-          meanfield_getat_tmp(:,3)=etat_x*etat_y(m)*detat_z(n)
-!
-!  1/r correction for spherical symmetry (assuming axisymmetric profiles,
-!  i.e.  meanfield_getat_tmp(:,3)=0.)
-!
-          if (lspherical_coords) then
-            meanfield_getat_tmp(:,2)=r1_mn*meanfield_getat_tmp(:,2)
-          endif
-!
-!  Magnetic etat quenching (contribution to pumping currently ignored)
-!
-          if (meanfield_etaB/=0.0) then
-            meanfield_etaB2=meanfield_etaB**2
-            meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
-          endif
 !
 !  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
 !

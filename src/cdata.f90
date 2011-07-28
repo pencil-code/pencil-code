@@ -212,7 +212,7 @@ module Cdata
   logical :: llast_proc_xyz=.true.
   logical :: lnorth_pole=.false.,lsouth_pole=.false.
   logical :: lpscalar_nolog=.false.
-  logical :: lalpm=.false.
+  logical :: lalpm=.false., lalpm_alternate=.false.
   logical :: lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity_log=.false.,lmdvar=.false.,lmice=.false.,ldcore=.false.
   logical :: lneutraldensity_nolog=.false.
