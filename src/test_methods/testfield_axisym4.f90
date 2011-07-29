@@ -32,9 +32,9 @@ module Testfield
 !
 !  cosine and sine function for setting test fields and analysis
 !
-  real, dimension(nx) :: sx
+  real, dimension(nx) :: sx,cx
   real, dimension(my) :: sy,cy
-  real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz,kyBx1,kyBz1,zmask
+  real, dimension(mz) :: cz,sz,c2z,csz,s2z,c2kz,s2kz,kxBx1,kyBx1,kxBz1,kyBz1,zmask
   integer, parameter :: njtest=4
   real :: phase_testfield=.0
 !
@@ -54,7 +54,7 @@ module Testfield
   logical :: lignore_uxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='linear'
   real :: ktestfield=1., kxtestfield=1., kytestfield=1.
-  real :: ktestfield1=1., kytestfield1, ky1, kz1
+  real :: ktestfield1=1., kxtestfield1, kytestfield1, kx1, ky1, kz1
   real :: ztestfield_offset=0.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
   real :: delta_testfield_next=0., delta_testfield_time=0.
@@ -96,11 +96,15 @@ module Testfield
   integer :: idiag_alpPARA=0    ! DIAG_DOC: $\alpha_\perp$
   integer :: idiag_gam=0        ! DIAG_DOC: $\gamma$
   integer :: idiag_betPERP=0    ! DIAG_DOC: $\beta_\perp$
+  integer :: idiag_betPERP2=0   ! DIAG_DOC: $\beta_\perp^{(2)}$
   integer :: idiag_betPARA=0    ! DIAG_DOC: $\beta_\perp$
   integer :: idiag_del=0        ! DIAG_DOC: $\delta$
+  integer :: idiag_del2=0       ! DIAG_DOC: $\delta^{(2)}$
   integer :: idiag_kapPERP=0    ! DIAG_DOC: $\kappa_\perp$
+  integer :: idiag_kapPERP2=0   ! DIAG_DOC: $\kappa_\perp^{(2)}$
   integer :: idiag_kapPARA=0    ! DIAG_DOC: $\kappa_\perp$
   integer :: idiag_mu=0         ! DIAG_DOC: $\mu$
+  integer :: idiag_mu2=0        ! DIAG_DOC: $\mu^{(2)}$
   integer :: idiag_alpPERPz=0   ! DIAG_DOC: $\alpha_\perp(z)$
   integer :: idiag_alpPARAz=0   ! DIAG_DOC: $\alpha_\perp(z)$
   integer :: idiag_gamz=0       ! DIAG_DOC: $\gamma(z)$
@@ -230,6 +234,7 @@ module Testfield
 !  define sinkx
 !
       sx=sin(kxtestfield*x(l1:l2))
+      cx=cos(kxtestfield*x(l1:l2))
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
@@ -271,6 +276,18 @@ module Testfield
         ktestfield1=1./ktestfield_effective
       endif
       kz1=ktestfield1
+!
+!  Calculate inverse kxtestfield, but only if different from zero
+!  Introduce kxBz1 as abbreviation of 1/(kxtestfield*Btestz)
+!
+      if (kxtestfield==0) then
+        kxtestfield1=1.
+      else
+        kxtestfield1=1./kxtestfield
+      endif
+      kxBx1=kxtestfield1/(z(n)+ztestfield_offset)
+      kxBz1=kxtestfield1/(z(n)+ztestfield_offset)
+      kx1=kxtestfield1
 !
 !  Calculate inverse kytestfield, but only if different from zero
 !  Introduce kyBz1 as abbreviation of 1/(kytestfield*Btestz)
@@ -739,19 +756,35 @@ module Testfield
             -kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
             +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
             )*zmask(n),idiag_mu)
+          if (idiag_mu2    /=0) call sum_mn_name(+4*( &
+            -kz1*sx*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            -kx1*cx*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_mu2)
           if (idiag_betPERP/=0) call sum_mn_name(-2*sx*( &
             +kz1*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
             +ky1*cy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
             )*zmask(n),idiag_betPERP)
+          if (idiag_betPERP2/=0) call sum_mn_name(-2*( &
+            +kz1*sx*sy(m)*(-sz(n)*Eipq(:,2,1)+cz(n)*Eipq(:,2,2)) &
+            -kx1*cx*sy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
+            )*zmask(n),idiag_betPERP2)
 !
           if (idiag_del    /=0) call sum_mn_name(+2*sx*( &
             +kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
             -ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
             )*zmask(n),idiag_del)
+          if (idiag_del2   /=0) call sum_mn_name(+2*( &
+            +kz1*sx*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            +kx1*cx*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_del2)
           if (idiag_kapPERP/=0) call sum_mn_name(-4*sx*( &
             +kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
             +ky1*cy(m)*(+cz(n)*Eipq(:,2,3)+sz(n)*Eipq(:,2,4)) &
             )*zmask(n),idiag_kapPERP)
+          if (idiag_kapPERP2/=0) call sum_mn_name(-4*( &
+            +kz1*sx*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
+            +kx1*cx*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            )*zmask(n),idiag_kapPERP2)
 !
           if (idiag_betPARA/=0) call sum_mn_name(+4*sx* &
              ky1*cy(m)*(+cz(n)*Eipq(:,3,1)+sz(n)*Eipq(:,3,2)) &
@@ -1199,8 +1232,8 @@ module Testfield
 !
       if (lreset) then
         idiag_alpPERP=0; idiag_alpPARA=0; idiag_gam=0
-        idiag_betPERP=0; idiag_betPARA=0; idiag_del=0
-        idiag_kapPERP=0; idiag_kapPARA=0; idiag_mu=0
+        idiag_betPERP=0; idiag_betPERP2=0; idiag_betPARA=0; idiag_del=0; idiag_del2=0
+        idiag_kapPERP=0; idiag_kapPERP2=0; idiag_kapPARA=0; idiag_mu=0; idiag_mu2=0
         idiag_alpPERPz=0; idiag_alpPARAz=0; idiag_gamz=0
         idiag_betPERPz=0; idiag_betPARAz=0; idiag_delz=0
         idiag_kapPERPz=0; idiag_kapPARAz=0; idiag_muz=0
@@ -1215,11 +1248,15 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'alpPARA',idiag_alpPARA)
         call parse_name(iname,cname(iname),cform(iname),'gam',idiag_gam)
         call parse_name(iname,cname(iname),cform(iname),'betPERP',idiag_betPERP)
+        call parse_name(iname,cname(iname),cform(iname),'betPERP2',idiag_betPERP2)
         call parse_name(iname,cname(iname),cform(iname),'betPARA',idiag_betPARA)
         call parse_name(iname,cname(iname),cform(iname),'del',idiag_del)
+        call parse_name(iname,cname(iname),cform(iname),'del2',idiag_del2)
         call parse_name(iname,cname(iname),cform(iname),'kapPERP',idiag_kapPERP)
+        call parse_name(iname,cname(iname),cform(iname),'kapPERP2',idiag_kapPERP2)
         call parse_name(iname,cname(iname),cform(iname),'kapPARA',idiag_kapPARA)
         call parse_name(iname,cname(iname),cform(iname),'mu',idiag_mu)
+        call parse_name(iname,cname(iname),cform(iname),'mu2',idiag_mu2)
         call parse_name(iname,cname(iname),cform(iname),'bx1pt',idiag_bx1pt)
         call parse_name(iname,cname(iname),cform(iname),'bx2pt',idiag_bx2pt)
         call parse_name(iname,cname(iname),cform(iname),'bx3pt',idiag_bx3pt)
