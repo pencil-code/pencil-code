@@ -6638,12 +6638,13 @@ linitialcondition=.false. header to say linitialcondition=.true.
 
 This file has hooks to implement a custom initial condition to
 most variables. After implementing your initial condition,
-add INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90,
-which ``myinitialcondition'' is the name you gave to the file.
+add the line INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90 
+to your \file{src/Makefile.local} file. Here, ``myinitialcondition'' is the 
+name you gave to your initial condition file.
 Add also ``initial\_condition\_pars'' to the start.in file, just
 below ``init\_pars''. This is
 a namelist, which you can use to add whichever quantity your
-initial condition need defined, or passed. You must also un-comment the
+initial condition needs defined, or passed. You must also un-comment the
 relevant lines in the subroutines of namelist that read and write the
 namelist since, for compiling reasons, these subroutines in
 \file{noinitialcondition.f90} are dummies. The lines are easily identifiable
