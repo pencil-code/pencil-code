@@ -1061,21 +1061,21 @@ module Hydro
       case ('circ_cartesian') 
         if (headtt) print*,'just circulation'
         if (lpencil(i_uu)) then
-          p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
-          p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
+          p%uu(:,1)=+circ_amp*(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)
+          p%uu(:,2)=-circ_amp*x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))
           p%uu(:,3)=0.
         endif
         p%divu=0.
         p%der6u(:,1)=wind_amp*der6_uprof
         p%der6u(:,2)= 0.
         p%der6u(:,3)= 0.
-
+!
       case ('circ_cartesian_rho1') 
         if (headtt) print*,'circulation with 1/rho dependency'
         if (lpencil(i_uu)) then
-          rho_prof=(1./x(l1:l2)-0.97)**1.5
-          p%uu(:,1)=+(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)/rho_prof
-          p%uu(:,2)=-x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))/rho_prof
+          rho_prof(l1:l2)=(1.33333/(x(l1:l2)+1.13333)-0.97)**1.5
+          p%uu(:,1)=+circ_amp*(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))*y(m)/rho_prof(l1:l2)
+          p%uu(:,2)=-circ_amp*x(l1:l2)*(y(m)-xyz0(2))*(y(m)-xyz1(2))/rho_prof(l1:l2)
           p%uu(:,3)=0.
         endif
         p%divu=0.
