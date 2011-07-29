@@ -775,7 +775,7 @@ module Testfield
             )*zmask(n),idiag_del)
           if (idiag_del2   /=0) call sum_mn_name(+2*( &
             +kz1*sx*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &
-            +kx1*cx*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
+            -kx1*cx*sy(m)*(+cz(n)*Eipq(:,1,3)+sz(n)*Eipq(:,1,4)) &
             )*zmask(n),idiag_del2)
           if (idiag_kapPERP/=0) call sum_mn_name(-4*sx*( &
             +kz1*sy(m)*(-sz(n)*Eipq(:,1,1)+cz(n)*Eipq(:,1,2)) &

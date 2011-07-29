@@ -46,9 +46,9 @@ module Testscalar
   logical :: lug_as_aux=.false.,linit_cctest=.false.
   logical :: lignore_ugtestm=.false.
   character (len=labellen) :: itestscalar='G1-G2'
-  real :: ktestscalar=1., ktestscalar1=1.
-  real :: kxtestscalar=1., kxtestscalar1=1.
-  real :: kytestscalar=1., kytestscalar1=1.
+  real :: kxtestscalar=1., kxtestscalar1=1., kx1
+  real :: kytestscalar=1., kytestscalar1=1., ky1
+  real :: ktestscalar=1., ktestscalar1=1., kz1
   real :: lam_testscalar=0.,om_testscalar=0.,delta_testscalar=0.
   real :: delta_testscalar_next=0.
   integer, parameter :: mtestscalar=njtestscalar
@@ -320,6 +320,7 @@ module Testscalar
       else
         kxtestscalar1=1./kxtestscalar_effective
       endif
+      kx1=kxtestscalar1
 !
       if (ktestscalar==0) then
         ktestscalar1=1.
@@ -334,6 +335,7 @@ module Testscalar
       else
         kytestscalar1=1./kytestscalar_effective
       endif
+      ky1=kytestscalar1
 !
 !  finally kz (still called k)
 !
@@ -342,6 +344,7 @@ module Testscalar
       else
         ktestscalar1=1./ktestscalar_effective
       endif
+      kz1=ktestscalar1
 !
 !  calculate inverse testscalar amplitude (unless it is set to zero)
 !
@@ -759,23 +762,23 @@ module Testscalar
         if (idiag_gam33 /=0) call   sum_mn_name  (-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33)
         if (idiag_gam33z/=0) call xysum_mn_name_z(-(-sz(n)*Fipq(:,3,i1)+cz(n)*Fipq(:,3,i2))*ktestscalar,idiag_gam33z)
 !
-        if (idiag_muc1   /=0) call   sum_mn_name  (+4*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*zmask(n),idiag_muc1)
-        if (idiag_muc2   /=0) call   sum_mn_name  (-4*cx*sy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2))*zmask(n),idiag_muc2)
-        if (idiag_mucz   /=0) call xysum_mn_name_z(+2*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)) &
-                                                   -2*cx*sy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_mucz)
+        if (idiag_muc1   /=0) call   sum_mn_name  (+4*ky1*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*zmask(n),idiag_muc1)
+        if (idiag_muc2   /=0) call   sum_mn_name  (-4*kx1*cx*sy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2))*zmask(n),idiag_muc2)
+        if (idiag_mucz   /=0) call xysum_mn_name_z(+2*ky1*sx*cy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)) &
+                                                   -2*kx1*cx*sy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_mucz)
 !
         if (idiag_gamc    /=0) call   sum_mn_name  (-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2))*zmask(n),idiag_gamc)
         if (idiag_gamcz   /=0) call xysum_mn_name_z(-4*sx*sy(m)*(+cz(n)*Fipq(:,3,i1)+sz(n)*Fipq(:,3,i2)),idiag_gamcz)
 !
-        if (idiag_kapcPARA /=0) call   sum_mn_name  (-4*sx*sy(m)*(+sz(n)*Fipq(:,3,i1) &
-                                                                  -cz(n)*Fipq(:,3,i2))*ktestscalar1*zmask(n),idiag_kapcPARA)
-        if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*sx*sy(m)*(+sz(n)*Fipq(:,3,i1) &
-                                                                  -cz(n)*Fipq(:,3,i2))*ktestscalar1,idiag_kapcPARAz)
+        if (idiag_kapcPARA /=0) call   sum_mn_name  (-4*kz1*sx*sy(m)*(+sz(n)*Fipq(:,3,i1) &
+                                                                      -cz(n)*Fipq(:,3,i2))*zmask(n),idiag_kapcPARA)
+        if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*kz1*sx*sy(m)*(+sz(n)*Fipq(:,3,i1) &
+                                                                      -cz(n)*Fipq(:,3,i2)),idiag_kapcPARAz)
 !
-        if (idiag_kapcPERP1/=0) call   sum_mn_name  (-4*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*zmask(n),idiag_kapcPERP1)
-        if (idiag_kapcPERP2/=0) call   sum_mn_name  (-4*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2))*zmask(n),idiag_kapcPERP2)
-        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-2*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)) &
-                                                     -2*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kapcPERPz)
+        if (idiag_kapcPERP1/=0) call   sum_mn_name  (-4*kx1*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*zmask(n),idiag_kapcPERP1)
+        if (idiag_kapcPERP2/=0) call   sum_mn_name  (-4*ky1*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2))*zmask(n),idiag_kapcPERP2)
+        if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-2*kx1*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)) &
+                                                     -2*ky1*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kapcPERPz)
 !
 !  Extract values at one point.
 !
