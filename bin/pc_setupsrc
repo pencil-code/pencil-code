@@ -306,27 +306,27 @@ link_magnetic_files()
 }
 #
 #-----------------------------------------------------------------------------
-make_testfield_dir()
+make_test_methods_dir()
 {
 ## src subdirectory
-  [ -h $src/testfield ] && rm $src/testfield
-  if [ ! -d $src/testfield ]; then
-    echo "No testfield directory found: creating new one (`pwd`/src/testfield)."
-    mkdir $src/testfield
+  [ -h $src/test_methods ] && rm $src/test_methods
+  if [ ! -d $src/test_methods ]; then
+    echo "No test_methods directory found: creating new one (`pwd`/src/test_methods)."
+    mkdir $src/test_methods
   fi
 }
 #
-link_testfield_files()
+link_test_methods_files()
 {
 #
 #  LINK all *.* to local src directory
 #
-  echo "Linking files in '$src/testfield'."
+  echo "Linking files in '$src/test_methods'."
   old_dir="`pwd`"
-  cd $src/testfield
+  cd $src/test_methods
   n=0
   to_link=
-  for file in $srcdir/testfield/*.*
+  for file in $srcdir/test_methods/*.*
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
@@ -537,8 +537,8 @@ make_pre_and_post_processing_dir
 link_pre_and_post_processing_files
 make_magnetic_dir
 link_magnetic_files
-make_testfield_dir
-link_testfield_files
+make_test_methods_dir
+link_test_methods_files
 make_inactive_dir
 link_inactive_files
 make_experimental_dir
