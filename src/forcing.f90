@@ -29,7 +29,7 @@ module Forcing
   include 'record_types.h'
   include 'forcing.h'
 !
-  real :: force=0.,force2=0.
+  real :: force=0.,force2=0., force1_scl=0., force2_scl=0.
   real :: relhel=1.,height_ff=0.,r_ff=0.,rcyl_ff=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
@@ -54,7 +54,7 @@ module Forcing
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lwrite_gausspot_to_file_always=.false.
   logical :: lscale_kvector_fac=.false.
-  logical :: lforce_peri=.false., lforce_cuty=.false.
+  logical :: lforce_peri=.false., lforce_cuty=.false., lforcing2_same=.false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -106,7 +106,8 @@ module Forcing
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,relhel,crosshel,height_ff,r_ff,rcyl_ff,width_ff,nexp_ff, &
-       iforce2,force2,kfountain,fountain,tforce_stop,tforce_stop2, &
+       iforce2, force2, force1_scl, force2_scl, &
+       kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
@@ -123,7 +124,7 @@ module Forcing
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
-       lforce_peri,lforce_cuty, &
+       lforce_peri,lforce_cuty,lforcing2_same, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,& 
        z_bb,width_bb,eta_bb
 ! other variables (needs to be consistent with reset list below)
@@ -1124,29 +1125,39 @@ module Forcing
             do j=1,3
               if (extent(j)) then
 !
+!  Primary forcing function.
+!
                 forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
 !
-                forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
-                  *real(cmplx(0.,coef3(j)) &
-                  *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+!  Compute additional forcing function.
+!  It can optionally be the same. Alterantively, one has to set crosshel=1.
+!
+                if (lforcing2_same) then
+                  forcing_rhs2(:,j)=forcing_rhs(:,j)
+                else
+                  forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
+                    *real(cmplx(0.,coef3(j)) &
+                    *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+                endif
+!
+!  Choice of different possibilities.
 !
                 if (ifff/=0) then
-!
                   jf=j+ifff-1
                   j2f=j+i2fff-1
 !
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
                   else
-                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                    f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)*force1_scl
 !
-!  allow here for forcing both in u and in b=curla. In that case one sets
+!  Allow here for forcing both in u and in b=curla. In that case one sets
 !  lhydro_forcing=F, lmagnetic_forcing=F, lcrosshel_forcing=T
 !
                     if (lcrosshel_forcing) then
-                      f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)
+                      f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
                     endif
                   endif
 !
