@@ -2049,6 +2049,6 @@ include Makefile.library
 #
 #  Dependencies for regular files.
 #
-include Makefile.depend
+#include Makefile.depend
 
 # DO NOT DELETE

@@ -295,7 +295,7 @@ module Testscalar
       elsewhere
         zmask=0.
       endwhere
-      zmask=zmask*nz/sum(zmask(n1:n2))
+      zmask=zmask*Lxyz(3)/(testscalar_zaver_range(2)-testscalar_zaver_range(1))
 !
 !  debug output
 !
