@@ -2434,11 +2434,12 @@ module EquationOfState
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: chi_t
+      real, pointer :: chi_t,hcondzbot,hcondztop
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my) :: dsdz_xy,cs2_xy,rho_xy,TT_xy
+      real, dimension (mx,my) :: dsdz_xy,cs2_xy,rho_xy,TT_xy,dlnrhodz_xy
+      real :: fac
       integer :: i,ierr
 !
       if (ldebug) print*,'bc_ss_flux_turb: ENTER - cs20,cs0=',cs20,cs0
@@ -2451,6 +2452,12 @@ module EquationOfState
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
            "there was a problem when getting chi_t")
+      call get_shared_variable('hcondzbot',hcondzbot,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+           "there was a problem when getting hcondzbot")
+      call get_shared_variable('hcondztop',hcondztop,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+           "there was a problem when getting hcondztop")
 !
       select case (topbot)
 !
@@ -2460,14 +2467,19 @@ module EquationOfState
       case ('bot')
 !
 !  set ghost zones such that dsdz_xy obeys
-!  - chi_t rho T dsdz_xy = sigmaSBt*TT^4
+!  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
         cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
         rho_xy=exp(f(:,:,n1,ilnrho))
         TT_xy=cs2_xy/(gamma_m1*cp)
-        dsdz_xy=-sigmaSBt*TT_xy**3/(chi_t*rho_xy)
+        fac=(1./60)*dz_1(n1)
+        dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n1+1,ilnrho)-f(:,:,n1-1,ilnrho)) &
+                         -  9.0*(f(:,:,n1+2,ilnrho)-f(:,:,n1-2,ilnrho)) &
+                         +      (f(:,:,n1+3,ilnrho)-f(:,:,n1-3,ilnrho)))
+        dsdz_xy=-(sigmaSBt*TT_xy**3+hcondzbot*(gamma_m1)*dlnrhodz_xy)/ &
+            (chi_t*rho_xy+hcondzbot/cv)
 !
-!  enforce ds/dz = - sigmaSBt*T^3/(chi_t*rho)
+!  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
         do i=1,nghost
           f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+2*i*dz*dsdz_xy
@@ -2479,14 +2491,19 @@ module EquationOfState
       case ('top')
 !
 !  set ghost zones such that dsdz_xy obeys
-!  - chi_t rho T dsdz_xy = sigmaSBt*TT^4
+!  - chi_t rho T dsdz_xy - hcond gTT = sigmaSBt*TT^4
 !
         cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
         rho_xy=exp(f(:,:,n2,ilnrho))
         TT_xy=cs2_xy/(gamma_m1*cp)
-        dsdz_xy=-sigmaSBt*TT_xy**3/(chi_t*rho_xy)
+        fac=(1./60)*dz_1(n2)
+        dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
+                         -  9.0*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
+                         +      (f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho)))
+        dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*(gamma_m1)*dlnrhodz_xy)/ &
+            (chi_t*rho_xy+hcondztop/cv)
 !
-!  enforce ds/dz = - sigmaSBt*T^3/(chi_t*rho)
+!  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
         do i=1,nghost
           f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+2*i*dz*dsdz_xy
@@ -2559,7 +2576,7 @@ module EquationOfState
           dlnrhodx_yz=fac*(+ 45.0*(f(l1+1,:,:,ilnrho)-f(l1-1,:,:,ilnrho)) &
                            -  9.0*(f(l1+2,:,:,ilnrho)-f(l1-2,:,:,ilnrho)) &
                            +      (f(l1+3,:,:,ilnrho)-f(l1-3,:,:,ilnrho)))
-          dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
+           dsdx_yz=-(sigmaSBt*TT_yz**3+hcondxbot*(gamma_m1)*dlnrhodx_yz)/ &
               (chi_t*rho_yz+hcondxbot/cv)
 !
 !  enforce ds/dx = - (sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)

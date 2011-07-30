@@ -779,7 +779,7 @@ module Deriv
       if (present(upwind)) then
         if (.not. lequidist(j)) then
           call fatal_error('der6','upwind cannot be used with '//&
-              'non-equisdistant grid.')
+              'non-equidistant grid.')
         endif
         upwnd = upwind
       else
@@ -965,7 +965,7 @@ module Deriv
              'non equidistant grid')
         if (.not.lcartesian_coords) &
              call fatal_error('der6_other','in non-cartesian coordinates '//&
-             'just works if upwiding is used')
+             'just works if upwinding is used')
       endif
 !
       if (j==1) then

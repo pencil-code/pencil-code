@@ -52,6 +52,7 @@ module Entropy
   real, dimension(3) :: chi_hyper3_aniso=0.0
   real, target :: hcond0=impossible, hcond1=impossible
   real, target :: hcondxbot=impossible, hcondxtop=impossible
+  real, target :: hcondzbot=impossible, hcondztop=impossible
   real, target :: Fbot=impossible, FbotKbot=impossible
   real, target :: Ftop=impossible, FtopKtop=impossible
   real :: Kbot=impossible, Ktop=impossible
@@ -420,6 +421,7 @@ module Entropy
           endif
           if (hcond0*hcond1/=0.0) then
             FbotKbot=Fbot/(hcond0*hcond1)
+            hcondzbot=hcond0*hcond1
           else
             FbotKbot=0.0
           endif
@@ -437,6 +439,7 @@ module Entropy
           endif
           if (hcond0*hcond2/=0.0) then
             FtopKtop=Ftop/(hcond0*hcond2)
+            hcondztop=hcond0*hcond2
           else
             FtopKtop=0.0
           endif
@@ -797,6 +800,12 @@ module Entropy
       call put_shared_variable('hcondxtop',hcondxtop,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting hcondxtop')
+      call put_shared_variable('hcondzbot',hcondzbot,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcondzbot')
+      call put_shared_variable('hcondztop',hcondztop,ierr)
+      if (ierr/=0) call fatal_error('initialize_entropy', &
+          'there was a problem when putting hcondztop')
       call put_shared_variable('Fbot',Fbot,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting Fbot')
