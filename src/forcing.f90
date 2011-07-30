@@ -29,7 +29,7 @@ module Forcing
   include 'record_types.h'
   include 'forcing.h'
 !
-  real :: force=0.,force2=0., force1_scl=0., force2_scl=0.
+  real :: force=0.,force2=0., force1_scl=1., force2_scl=1.
   real :: relhel=1.,height_ff=0.,r_ff=0.,rcyl_ff=0.
   real :: fountain=1.,width_ff=.5,nexp_ff=1.
   real :: crosshel=0.
