@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1; cp1tilde
+! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cv1; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; cp; gTT(3)
 ! PENCILS PROVIDED yH; hss(3,3); hlnTT(3,3); del2ss; del6ss; del2lnTT
 ! PENCILS PROVIDED glnmumol(3); ppvap; csvap2; rho_anel
@@ -194,6 +194,10 @@ module EquationOfState
 !  Set default values.
 !
 ! SVEN: results should not depend on the values set here!!!
+! AXEL: yes, but magnetic has a problematic line
+! AXEL: "if (ltemperature) lpenc_requested(i_cv1)=.true."
+!
+      if (lpencil(i_cv1)) p%cv1=0.0
       if (lpencil(i_cp1)) p%cp1=0.0
       if (lpencil(i_cs2)) p%cs2=cs20
       if (lpencil(i_gTT)) p%gTT=0.0
