@@ -142,6 +142,17 @@ nx=dim.nx & ny=dim.ny & nz=dim.nz
 nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
 ncpus = dim.nprocx*dim.nprocy*dim.nprocz
 ;
+;  Consider non-equidistant grid
+;
+pc_read_param, obj=par, datadir=datadir, /quiet
+if not all(par.lequidist) then begin
+  massage = 1
+  pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
+  iix = spline(grid.x, findgen(nx), par.xyz0[0] + (findgen(nx) + .5) * (par.lxyz[0] / nx))
+  iiy = spline(grid.y, findgen(ny), par.xyz0[1] + (findgen(ny) + .5) * (par.lxyz[1] / ny))
+  iiz = spline(grid.z, findgen(nz), par.xyz0[2] + (findgen(nz) + .5) * (par.lxyz[2] / nz))
+endif else massage = 0
+;
 if (keyword_set(shell)) then begin
 ;
 ;  Need full grid to mask outside shell.
@@ -266,6 +277,13 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     readu, 2, xy, t, slice_zpos
     readu, 3, xz, t, slice_ypos
     readu, 4, yz, t, slice_xpos
+;
+    if massage then begin
+      xy  = bilinear(xy,  iix, iiy)
+      xy2 = bilinear(xy2, iix, iiy)
+      xz  = bilinear(xz,  iix, iiz)
+      yz  = bilinear(yz,  iiy, iiz)
+    endif
   endif else begin ; Read only time.
     dummy=zero
     readu, 1, xy2, t
