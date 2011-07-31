@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); cp1; gradcp(3);
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec)
 !
 !***************************************************************
 module Entropy
