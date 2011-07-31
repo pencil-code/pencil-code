@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
-! PENCILS PROVIDED ppsf(ndustspec); Ywater; mu1; udropav(3)
+! PENCILS PROVIDED ppsf(ndustspec); mu1; udropav(3)
 ! PENCILS PROVIDED glnrhod(3,ndustspec)
 !
 !***************************************************************
