@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
 !
 ! PENCILS PROVIDED glnpp(3); del2pp; mu1; mukmu1(nchemspec); gmu1(3); glnmu(3)
-! PENCILS PROVIDED pp; ccondens; ppwater
+! PENCILS PROVIDED ccondens; ppwater
 ! PENCILS PROVIDED Ywater
 !
 !***************************************************************

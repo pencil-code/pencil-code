@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
 ! PENCILS PROVIDED yH; ee; ss; delta; glnmumol(3); ppvap; csvap2; cs2
 ! PENCILS PROVIDED cp1tilde; cp; gamma_m1; gamma
-! PENCILS PROVIDED rho_anel
+! PENCILS PROVIDED rho_anel; gradcp(3)
 !
 !
 !***************************************************************
@@ -85,8 +85,8 @@ module EquationOfState
  real, dimension(nchemspec,18) :: species_constants
  real, dimension(nchemspec,7)     :: tran_data
  real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
-
-
+!
+!
 !NILS: Why do we spend a lot of memory allocating these variables here????
  real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full, rho_full, TT_full
 !
@@ -179,13 +179,13 @@ module EquationOfState
       else
        ll1=1; ll2=mx
       endif
-
+!
       if (nygrid==1) then
        mm1=m1; mm2=m2
       else
        mm1=1; mm2=my
       endif
-
+!
       if (nzgrid==1) then
        nn1=n1; nn2=n2
       else
@@ -427,13 +427,13 @@ module EquationOfState
         lpenc_requested(i_lnTT)=.true.
       endif
       lpenc_requested(i_del2lnTT)=.true.
-
+!
       if (ltemperature_nolog) then
         lpenc_requested(i_gTT)=.true.
       else
         lpenc_requested(i_glnTT)=.true.
       endif
-
+!
    !   if (lcheminp_eos) then
        lpenc_requested(i_glnpp)=.true.
        lpenc_requested(i_del2pp)=.true.
@@ -521,7 +521,7 @@ module EquationOfState
        endif
 !
        if (lpencil(i_TT1)) p%TT1=1./p%TT
-
+!
         if (minval(p%TT)==0.) then
           call fatal_error('calc_pencils_eos','p%TT=0!')
         endif
@@ -553,14 +553,13 @@ module EquationOfState
         if (lpencil(i_mu1)) then
           p%mu1=mu1_full(l1:l2,m,n)
         endif
-
+!
         if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
 !
 !
 !  Pressure
 !
         if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
-
 !
 !  Logarithmic pressure gradient
 !
@@ -584,7 +583,7 @@ module EquationOfState
        if (lpencil(i_del2pp)) then
          call del2(pp_full(:,:,:),p%del2pp)
        endif
-
+!
 !      endif
 !
     endsubroutine calc_pencils_eos
@@ -635,10 +634,10 @@ module EquationOfState
    endsubroutine getdensity
 !***********************************************************************
    subroutine gettemperature(f,TT_full_tmp)
-
+!
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz), intent(out) :: TT_full_tmp
-
+!
       if (ltemperature_nolog) then
         TT_full_tmp=f(:,:,:,ilnTT)
       else
@@ -649,7 +648,7 @@ module EquationOfState
    endsubroutine gettemperature
 !***********************************************************************
   subroutine getpressure(pp_full_tmp)
-
+!
      real, dimension (mx,my,mz), intent(out) :: pp_full_tmp
      integer :: j2,j3
 !
@@ -659,9 +658,9 @@ module EquationOfState
                    *rho_full(:,j2,j3)*TT_full(:,j2,j3)
        enddo
        enddo
-
+!
        pp_full=pp_full_tmp
-
+!
    endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
@@ -806,7 +805,7 @@ module EquationOfState
       else
         call not_implemented("eosperturb")
       endif
-
+!
      call fatal_error('eosperturb', &
         'This routine is not coded for eos_chemistry')
 !
@@ -901,7 +900,7 @@ module EquationOfState
 !
       real, intent(in)  :: lnTT
       real, intent(out) :: cs2
-
+!
       cs2=impossible
       call fatal_error('get_soundspeed', &
         'This routine is not coded for eos_chemistry')
@@ -992,7 +991,7 @@ module EquationOfState
 !
       call fatal_error('isothermal_lnrho_ss', &
         'This routine is not coded for eos_chemistry')
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(T0)
       call keep_compiler_quiet(rho0)
@@ -1203,7 +1202,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1248,7 +1247,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1265,7 +1264,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
 !
@@ -1330,7 +1329,7 @@ module EquationOfState
 !  05-feb-08/nils: coded
 !
       use Mpicomm, only: stop_it
-
+!
       character (len=*), intent(in) :: element_name
       real, intent(out) :: MolMass
 !
@@ -1383,8 +1382,6 @@ module EquationOfState
 !
 !  Check if the species was really found
 !
-
-
       if ((ind_glob==0)) then
         found_specie=.false.
      !  if (lroot) print*,' no species has been found  ',' species index= ', ind_glob,ind_chem,species_name
@@ -1405,9 +1402,8 @@ module EquationOfState
 !
 !  06-mar-08/nils: coded
 !
-
       use Mpicomm, only: stop_it
-
+!
       logical :: IsSpecie=.false., emptyfile
       integer :: k,file_id=123, StartInd, StopInd
       character (len=80) :: ChemInpLine
@@ -1474,7 +1470,6 @@ module EquationOfState
 !
 !  06-mar-08/nils: coded
 !
-
       character (len=*), intent(in) :: input_file
       integer :: file_id=123, ind_glob, ind_chem
       character (len=80) :: ChemInpLine
@@ -1487,9 +1482,9 @@ module EquationOfState
       character (len=10) :: specie_string,TemperatureNr_i
       real :: nne
       integer, dimension(7) :: iaa1,iaa2
-
+!
       integer :: imass=1, iTemp1=2,iTemp2=3,iTemp3=4
-
+!
       ind_chem=0
 !
 !  Initialize some index pointers
@@ -1499,7 +1494,6 @@ module EquationOfState
 !
       iaa2(1)=12;iaa2(2)=13;iaa2(3)=14;iaa2(4)=15
       iaa2(5)=16;iaa2(6)=17;iaa2(7)=18
-
 !
       open(file_id,file=input_file)
       dataloop2: do
@@ -1516,14 +1510,14 @@ module EquationOfState
           if (ChemInpLine(1:7) /= "THERMO") then
             StopInd=index(ChemInpLine,' ')
             specie_string=trim(ChemInpLine(1:StopInd-1))
-
+!
             call find_species_index(specie_string,ind_glob,ind_chem,&
                 found_specie)
 !
 ! What problems are in the case of  ind_chem=0?
 !
             if (ind_chem>0 .and. ind_chem<=nchemspec) then
-
+!
             if (found_specie) then
 !
 ! Find molar mass
@@ -1547,7 +1541,6 @@ module EquationOfState
                 endif
               enddo
               species_constants(ind_chem,imass)=sum(MolMass)
-
 !
 ! Find temperature-ranges for low and high temperature fitting
 !
@@ -1578,7 +1571,7 @@ module EquationOfState
               read (unit=ChemInpLine(1:75),fmt='(4E15.8)')  &
                   species_constants(ind_chem,iaa2(4):iaa2(7))
             endif
-
+!
           endif
           endif !(from ind_chem>0 query)
         endif
@@ -1586,7 +1579,6 @@ module EquationOfState
 1001  continue
       close(file_id)
 !
-
    endsubroutine read_thermodyn
 !***********************************************************************
     subroutine write_thermodyn()
@@ -1651,7 +1643,7 @@ module EquationOfState
 !  01-apr-08/natalia: coded
 !
      use Mpicomm, only: stop_it
-
+!
       logical :: emptyfile
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem
@@ -1659,7 +1651,6 @@ module EquationOfState
       character (len=10) :: specie_string
       integer :: VarNumber
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
-
 !
       emptyFile=.true.
 !
@@ -1725,7 +1716,7 @@ module EquationOfState
 !
 ! Stop if tran.dat is empty
 !
-
+!
 1000  if (emptyFile)  call stop_it('The input file tran.dat was empty!')
 !
       if (lroot) print*, 'the following species are found in tran.dat: end of the list:'
@@ -1741,7 +1732,7 @@ module EquationOfState
 !  21-jun-10/julien: coded
 !
      use Mpicomm, only: stop_it
-
+!
       logical :: emptyfile
       logical :: found_specie
       integer :: file_id=123, ind_glob, ind_chem, i
@@ -1771,7 +1762,7 @@ module EquationOfState
 !
 ! Stop if lewis.dat is empty
 !
-
+!
 1000  if (emptyFile)  call stop_it('End of the file!')
 !
       if (lroot) then
