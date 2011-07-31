@@ -832,8 +832,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     real    :: c_dragz_p_all(nobjects)
     integer :: irhocount_all,iobj
     real    :: norm, refrho0
-    character*100  :: numberstring
-    character*500 :: solid_cell_drag
+    character(len=100) :: numberstring
+    character(len=500) :: solid_cell_drag
 !
     if (ldiagnos) then
       if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 &

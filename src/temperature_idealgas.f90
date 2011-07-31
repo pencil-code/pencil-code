@@ -780,7 +780,7 @@ module Entropy
               (p%glnrho(:,j)+p%glnTT(:,j)-p%glnmumol(:,j))
         enddo
       endif
-! cond
+! tcond
       if (lpencil(i_tcond)) then
         if (lheatc_chiconst) then
           p%tcond=chi*p%rho/p%cp1

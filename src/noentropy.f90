@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; fpres(3)
+! PENCILS PROVIDED Ma2; fpres(3); tcond
 !
 !***************************************************************
 module Entropy
@@ -244,6 +244,12 @@ module Entropy
                 *profx_ffree*profy_ffree(m)*profz_ffree(n)
           endif
         enddo
+      endif
+!
+! tcond (dummy)
+!
+      if (lpencil(i_tcond)) then
+        p%tcond=0.
       endif
 !
       call keep_compiler_quiet(f)
