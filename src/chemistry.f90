@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
-! PENCILS PROVIDED nu; gradnu(3); rho;
+! PENCILS PROVIDED nu; gradnu(3);
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3); lambda1
 ! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
@@ -878,7 +878,7 @@ module Chemistry
         if (lpencil(i_cp)) p%cp = cp_full(l1:l2,m,n)
 !
         if (lpencil(i_cp1)) p%cp1 = 1./p%cp
-
+!
        TT_2=p%TT*p%TT
        TT_3=TT_2*p%TT
        TT_4=TT_2*TT_2
@@ -2330,7 +2330,7 @@ module Chemistry
            enddo
            enddo
          endif
-!        
+!
 !  All the transport properties are calculated only if we are not using LSODE
 !  to solve chemistry or during the transport substep
 !
