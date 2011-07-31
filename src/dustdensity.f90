@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
-! PENCILS PROVIDED ppsf(ndustspec); Ywater; pp; mu1; udropav(3)
+! PENCILS PROVIDED ppsf(ndustspec); Ywater; mu1; udropav(3)
 ! PENCILS PROVIDED glnrhod(3,ndustspec)
 !
 !***************************************************************
@@ -251,7 +251,7 @@ module Dustdensity
 ! choosing the advection scheme
 !
       if (lupw_ndmdmi) advec_ddensity='upwind'
-
+!
       select case(advec_ddensity)
       case('normal')
         if (lroot) print*, 'advec_ddensity: plain vanila scheme'
@@ -1106,7 +1106,7 @@ module Dustdensity
         if (lpencil(i_udglnnd)) then
 !          call u_dot_grad(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp, &
 !                           UPWIND=lupw_ndmdmi)
-          call u_dot_grad_alt(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp,& 
+          call u_dot_grad_alt(f,ind(k),p%glnnd(:,:,k),p%uud(:,:,k),tmp,&
               iadvec_ddensity)
           p%udglnnd(:,k)=tmp
         endif
@@ -1164,7 +1164,7 @@ module Dustdensity
         if (lpencil(i_udgmd)) then
 !          call u_dot_grad(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp, &
 !                           UPWIND=lupw_ndmdmi)
-          call u_dot_grad_alt(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp,& 
+          call u_dot_grad_alt(f,ind(k),p%gmd(:,:,k),p%uud(:,:,k),tmp,&
               iadvec_ddensity)
           p%udgmd(:,k)=tmp
         endif
@@ -1172,7 +1172,7 @@ module Dustdensity
         if (lpencil(i_udgmi)) then
 !          call u_dot_grad(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp, &
 !                           UPWIND=lupw_ndmdmi)
-          call u_dot_grad_alt(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp,& 
+          call u_dot_grad_alt(f,ind(k),p%gmi(:,:,k),p%uud(:,:,k),tmp,&
               iadvec_ddensity)
           p%udgmi(:,k)=tmp
         endif
@@ -1601,7 +1601,7 @@ module Dustdensity
             endif
           endif
 !
-! If 1d averages are calculated first  
+! If 1d averages are calculated first
 !
           if (l1davgfirst) then
             if (idiag_rhodmz(k)/=0) then
