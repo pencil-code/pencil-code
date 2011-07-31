@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cc; cc1; lncc; glncc(3); uglncc; del2lncc
-! PENCILS PROVIDED hlncc(3,3); udropav(3)
+! PENCILS PROVIDED hlncc(3,3)
 !
 !***************************************************************
 module Pscalar
@@ -279,7 +279,7 @@ module Pscalar
     subroutine dlncc_dt(f,df,p)
 !
 !  Passive scalar evolution.
-
+!
 !  Calculate dc/dt=-uu.glncc + pscaler_diff*[del2lncc + (glncc+glnrho).glncc]
 !
 !   6-jul-02/axel: coded
@@ -538,7 +538,7 @@ module Pscalar
           slices%ready=.true.
 !
       endselect
-!   
+!
     endsubroutine get_slices_pscalar
 !***********************************************************************
     subroutine calc_mpscalar
