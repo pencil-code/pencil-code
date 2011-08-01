@@ -144,6 +144,26 @@ endif else begin
     linsert_particles_continuously=param.linsert_particles_continuously
 endelse
 ;
+; Check if we hare using the old version, 'rhops', or the new one; 'rhopmat'.
+;
+res=tag_names(param)
+dims=size(res)
+ndims=dims[1]
+found=0
+target='RHOPS'
+for i=0,ndims-1 do begin
+    print,res[i],' ',target
+    if res[i] eq target then begin
+        found=1
+    endif
+end
+print,'found=',found
+if (found) then begin
+    material_density=param.rhops
+endif else begin
+    material_density=param.rhopmat
+end
+;
 ; Some things should be done only if we have read pvar.dat
 ;
 if (not nopvar) then begin
@@ -166,7 +186,8 @@ if (not nopvar) then begin
            objpvar=objpvar,irmv=irmv,trmv=trmv,xdir=xdir,radii_arr=npart,$
            savefile=savefile,removed=removed,oneradius=oneradius,radius=radius,$
            xpos=xpos,ypos=ypos,rmv_pos=removed_pos,$
-           on_cylinder_indices=on_cylinder_indices,r_i=r_i
+           on_cylinder_indices=on_cylinder_indices,r_i=r_i,$
+           material_density=material_density
     endif ; solid_object
     ;
     ;  Check how many particles have collided with a the walls
@@ -179,6 +200,7 @@ if (not nopvar) then begin
 endif ;nopvar=0 endif
 
 
+
 if (noviz eq 0) then begin
     if (nopvar and oneradius) then begin
         print,'npart_radii=',npart_radii
@@ -188,7 +210,7 @@ if (noviz eq 0) then begin
     if (oneradius) then begin
         if(solid_object) then begin
             diameter=2*param.ap0
-            tau_p=param.rhops*diameter^2/(18.0*param2.nu)
+            tau_p=material_density*diameter^2/(18.0*param2.nu)
             tau_f=radius[0]/param.init_uu
             Stokes=tau_p/tau_f
             print,'Only visualizing particles with Stokes no St=',Stokes[r_i]

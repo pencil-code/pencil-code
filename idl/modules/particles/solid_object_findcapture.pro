@@ -29,7 +29,8 @@ pro solid_object_findcapture,ncylinders=ncylinders,npart_radii=npart_radii,$
                              radii_arr=radii_arr,savefile=savefile,$
                              removed=removed,oneradius=oneradius,$
                              radius=radius,xpos=xpos,ypos=ypos,rmv_pos=rmv_pos,$
-                             on_cylinder_indices=on_cylinder_indices,r_i=r_i
+                             on_cylinder_indices=on_cylinder_indices,r_i=r_i,$
+                             material_density=material_density
 ;
 
 print_remove_data=0
@@ -51,7 +52,7 @@ cylinder_particle_deposition,ncylinders,npart_radii,startparam,objpvar,irmv,$
 ;       cylinder
 cylinder_capture_efficiency,ncylinders,linsert_particles_continuously,ts,$
   objpvar,startparam,runparam,init_uu,radius,radii_arr,xdir,npart_radii,$
-  solid_colls,front_colls,back_colls,savefile
+  solid_colls,front_colls,back_colls,savefile,material_density
 
 dims=size(irmv)
 if ((removed eq 1) and (dims[0] ne 0) ) then begin
@@ -198,7 +199,8 @@ END
 pro cylinder_capture_efficiency,ncylinders,linsert_particles_continuously,ts,$
                                 objpvar,startparam,runparam,init_uu,radius,$
                                 radii_arr,xdir,npart_radii,solid_colls,$
-                                front_colls,back_colls,savefile
+                                front_colls,back_colls,savefile,$
+                                material_density
 ; 
 ; Find how many particles have been inserted
 ;
@@ -220,7 +222,7 @@ for i=0,npart_radii-1 do begin
     diameter=2*startparam.ap0[i]
     Stokes_Cunningham=1+2*lambda/diameter*$
       (1.257+0.4*exp(-1.1*diameter/(2*lambda)))
-    tau_p=startparam.rhops*diameter^2/(18.0*runparam.nu)
+    tau_p=material_density*diameter^2/(18.0*runparam.nu)
     ;
     ; Assume that the radii of all cylinders are the same
     ;
