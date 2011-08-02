@@ -86,6 +86,7 @@ module Special
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+    integer :: idiag_dtspitzer  ! DIAG_DOC: Spitzer heat conduction time step
 !
 ! video slices
     real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
@@ -724,6 +725,7 @@ module Special
       if (lreset) then
         idiag_dtchi2=0.
         idiag_dtnewt=0.
+        idiag_dtspitzer=0.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -731,6 +733,7 @@ module Special
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
+        call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
       enddo
 !
 !  write column where which variable is stored
@@ -738,6 +741,7 @@ module Special
       if (lwr) then
         write(3,*) 'i_dtchi2=',idiag_dtchi2
         write(3,*) 'i_dtnewt=',idiag_dtnewt
+        write(3,*) 'i_dtspitzer=',idiag_dtspitzer
       endif
 !
     endsubroutine rprint_special
@@ -1713,8 +1717,8 @@ module Special
       if (lfirst.and.ldt) then
         chi_1=abs(cosbgT)*chi_1
         diffus_chi=diffus_chi+gamma*chi_1*dxyz_2
-        if (ldiagnos.and.idiag_dtchi2/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        if (ldiagnos.and.idiag_dtspitzer/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtspitzer,l_dt=.true.)
         endif
       endif
 !
@@ -1754,7 +1758,11 @@ module Special
 !      if (itsub == 3 .and. ip == 118) &
 !          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
+      if (.not.ltemperature_nolog) then
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
+      else
+        df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+ p%TT*K_iso * rhs
+      endif
 !
       if (lfirst.and.ldt) then
         chix=K_iso*p%TT*sqrt(tmpi)
