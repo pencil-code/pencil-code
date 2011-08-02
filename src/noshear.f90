@@ -180,21 +180,26 @@ module Shear
 !
     endsubroutine boundcond_shear
 !***********************************************************************
-    subroutine shear_variables(f,df,nvars,jstart)
+    subroutine shear_variables(f,df,nvars,jstart,jstep,shear1)
 !
 !  Dummy routine.
 !
 !  28-apr-11/wlad: coded
+!  02-aug-11/MR: added optionals jstep,shear1
 !
-      real, dimension(mx,my,mz,mfarray), intent(in)    :: f
-      real, dimension(mx,my,mz,mvar)   , intent(inout) :: df
-      integer,                           intent(in)    :: nvars, jstart 
+      real, dimension(mx,my,mz,mfarray), intent(in)           :: f
+      real, dimension(mx,my,mz,mvar)   , intent(inout)        :: df
+      integer,                           intent(in)           :: nvars, jstart
+      integer,                           intent(in), optional :: jstep 
+      logical,                           intent(in), optional :: shear1
 !
       df = df+0.
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(nvars,jstart)
+      if ( present(jstep)  ) call keep_compiler_quiet(jstep)
+      if ( present(shear1) ) call keep_compiler_quiet(shear1)
 !
     endsubroutine shear_variables
 !***********************************************************************
