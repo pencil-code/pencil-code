@@ -371,15 +371,15 @@ module Special
 !
         ! read vertical velocity profile for interpolation
         if (lread_prof_uu) &
-            call read_profile (uz_dat, uu_init_z, unit_velocity, .false.)
+            call read_profile (uz_dat, uu_init_z, real(unit_velocity), .false.)
 !
         ! read logarithmic density profile for interpolation
         if (lread_prof_lnrho) &
-            call read_profile (lnrho_dat, lnrho_init_z, unit_density, .true.)
+            call read_profile (lnrho_dat, lnrho_init_z, real(unit_density), .true.)
 !
         ! read logarithmic temperature profile
         if (lread_prof_lnTT) &
-            call read_profile (lnT_dat, lnTT_init_z, unit_temperature, .true.)
+            call read_profile (lnT_dat, lnTT_init_z, real(unit_temperature), .true.)
 !
       elseif (index (prof_type, 'internal_') == 1) then
         call warning ('read_profiles', "using internal profile '"//trim(prof_type)//"'.")
@@ -1015,7 +1015,7 @@ module Special
       if (last_time == t) then
         get_time_fade_fact = last_fade_fact
       else
-        get_time_fade_fact = cubic_step (real (t) * unit_time, init_time, init_time)
+        get_time_fade_fact = cubic_step (real (t*unit_time), init_time, init_time)
         last_time = t
         last_fade_fact = get_time_fade_fact
       endif
@@ -2614,7 +2614,7 @@ module Special
       call random_seed_wrapper(PUT=global_rstate)
 !
       if (lwrite_driver) then
-        if (lroot) call write_driver (t, Ux, Uy)
+        if (lroot) call write_driver (real(t), Ux, Uy)
         if (nzgrid == 1) then
           ! Stabilize 2D-runs
           f(:,:,:,iuz) = 0.0
