@@ -49,6 +49,8 @@ module Special
   integer :: idiag_dtchi2=0   ! DIAG_DOC: heatconduction
                                   ! DIAG DOC: in special module
   integer :: idiag_dtrad=0        ! DIAG_DOC: radiative loss from RTV
+  integer :: idiag_dtspitzer=0    ! DIAG_DOC: Spitzer heat conduction
+                                  ! DIAG_DOC: time step
   integer :: idiag_dtnewt=0
 !
 ! variables for video.in
@@ -238,6 +240,7 @@ module Special
         idiag_dtchi2=0.
         idiag_dtrad=0.
         idiag_dtnewt=0
+        idiag_dtspitzer=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -246,6 +249,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
+        call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
       enddo
 !
 !  write column where which variable is stored
@@ -254,6 +258,7 @@ module Special
         write(3,*) 'i_dtchi2=',idiag_dtchi2
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'i_dtnewt=',idiag_dtnewt
+        write(3,*) 'i_dtspitzer=',idiag_dtspitzer
       endif
 !
     endsubroutine rprint_special
@@ -315,7 +320,6 @@ module Special
           dt1_max=max(dt1_max,abs(rhs)/cdts)
           dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
           if (ldiagnos.and.idiag_dtrad /= 0.) then
-            itype_name(idiag_dtrad)=ilabel_max_dt
             call max_mn_name(rhs/cdts,idiag_dtrad,l_dt=.true.)
           endif
         endif
@@ -423,7 +427,7 @@ module Special
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: chi,glnTT2,rhs
+      real, dimension (nx) :: chi,glnTT2,rhs,u_spitzer
       real, dimension (nx) :: chi_sat,chi_c,gKc,gKpara,gKsat
       real, dimension (nx,3) :: tmpv2,tmpv
       real :: Ksatb,Kcb
@@ -488,8 +492,17 @@ module Special
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
-        if (ldiagnos.and.idiag_dtchi2/=0.) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+!
+        u_spitzer = 7./2.*gamma*chi*( &
+            abs(p%glnTT(:,1))*dx_1(l1:l2) + &
+            abs(p%glnTT(:,2))*dy_1(m)     + &
+            abs(p%glnTT(:,3))*dz_1(n))
+!
+        dt1_max=max(dt1_max,u_spitzer/cdt)
+!
+        if (ldiagnos.and.idiag_dtspitzer/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtspitzer,l_dt=.true.)
+          call max_mn_name(u_spitzer/cdt,idiag_dtspitzer,l_dt=.true.)
         endif
       endif
 !
@@ -629,7 +642,6 @@ module Special
     if (lfirst.and.ldt) then
       dt1_max=max(dt1_max,rtv_cool/cdts)
       if (ldiagnos.and.idiag_dtrad/=0) then
-!        itype_name(idiag_dtrad)=ilabel_max_dt
         call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
       endif
     endif
@@ -751,7 +763,6 @@ module Special
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,tau_inv_tmp/cdts)
         if (ldiagnos.and.idiag_dtnewt/=0.) then
-!          itype_name(idiag_dtnewt)=ilabel_max_dt
           call max_mn_name(tau_inv_tmp/cdts,idiag_dtnewt,l_dt=.true.)
         endif
       endif
@@ -955,7 +966,6 @@ module Special
 !
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
-!!          itype_name(idiag_dtnewt)=ilabel_max_dt
 !          call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
         endif
         dt1_max=max(dt1_max,rhs/cdts)
