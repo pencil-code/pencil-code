@@ -341,6 +341,7 @@ module Special
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
@@ -1214,9 +1215,24 @@ module Special
       if (lfirst.and.ldt) then
         chi_spitzer=chi_spitzer * cosbgT**2.
         diffus_chi=diffus_chi + chi_spitzer*dxyz_2
+!
+        u_spitzer = 3.5*chi_spitzer*( &
+            abs(p%glnTT(:,1))*dx_1(l1:l2) + &
+            abs(p%glnTT(:,2))*dy_1(m)     + &
+            abs(p%glnTT(:,3))*dz_1(n))
+        u_spitzer = u_spitzer + chi_spitzer*( &
+            abs(hhh(:,1))*dx_1(l1:l2) + &
+            abs(hhh(:,2))*dy_1(m)     + &
+            abs(hhh(:,3))*dz_1(n))
+        u_spitzer = u_spitzer * cosbgT
+!
+        dt1_max=max(dt1_max,u_spitzer/cdt)
+!
         if (ldiagnos.and.idiag_dtspitzer/=0) then
           call max_mn_name(chi_spitzer*dxyz_2/cdtv,idiag_dtspitzer,l_dt=.true.)
+          call max_mn_name(u_spitzer/cdt,idiag_dtspitzer,l_dt=.true.)
         endif
+!
       endif
 !
     endsubroutine calc_heatcond_tensor
