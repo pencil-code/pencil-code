@@ -1136,7 +1136,7 @@ module Viscosity
           endif
           if (lfirst.and.ldt) then
             if (ldynamical_diffusion) then
-              p%diffus_total3 = p%diffus_total3 + 32. * nu_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+              p%diffus_total3 = p%diffus_total3 + nu_hyper3_mesh
               advec_hypermesh_uu = 0.
             else
               advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
@@ -1503,7 +1503,11 @@ module Viscosity
       if (lfirst.and.ldt) then
         diffus_nu =p%diffus_total *dxyz_2
         diffus_nu2=p%diffus_total2*dxyz_4
-        if (.not. (ldynamical_diffusion .and. lvisc_hyper3_mesh)) diffus_nu3=p%diffus_total3*dxyz_6
+        if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
+          diffus_nu3 = p%diffus_total3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+        else
+          diffus_nu3=p%diffus_total3*dxyz_6
+        endif
       endif
 !
 !  Diagnostic output

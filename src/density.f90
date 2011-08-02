@@ -1793,8 +1793,7 @@ module Density
         enddo
         if (lfirst.and.ldt) then
           if (ldynamical_diffusion) then
-            diffus_diffrho3 = diffus_diffrho3 &
-                            + 32. * diffrho_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+            diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh
             advec_hypermesh_rho = 0.
           else
             advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
@@ -1897,7 +1896,11 @@ module Density
 !
       if (lfirst.and.ldt) then
         diffus_diffrho =diffus_diffrho *dxyz_2
-        if (.not. (ldynamical_diffusion .and. ldiff_hyper3_mesh)) diffus_diffrho3=diffus_diffrho3*dxyz_6
+        if (ldynamical_diffusion .and. ldiff_hyper3_mesh) then
+          diffus_diffrho3 = diffus_diffrho3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+        else
+          diffus_diffrho3=diffus_diffrho3*dxyz_6
+        endif
         if (headtt.or.ldebug) then
           print*,'dlnrho_dt: max(diffus_diffrho ) =', maxval(diffus_diffrho)
           print*,'dlnrho_dt: max(diffus_diffrho3) =', maxval(diffus_diffrho3)

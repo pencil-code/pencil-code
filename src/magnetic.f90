@@ -2474,7 +2474,7 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) then
           if (ldynamical_diffusion) then
-            diffus_eta3 = diffus_eta3 + 32. * eta_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+            diffus_eta3 = diffus_eta3 + eta_hyper3_mesh
             advec_hypermesh_aa = 0.
           else
             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
@@ -2672,7 +2672,11 @@ module Magnetic
       if (lfirst.and.ldt) then
         diffus_eta =diffus_eta *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
-        if (.not. (ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3=diffus_eta3*dxyz_6
+        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
+          diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+        else
+          diffus_eta3=diffus_eta3*dxyz_6
+        endif
         if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
 !
         if (headtt.or.ldebug) then
