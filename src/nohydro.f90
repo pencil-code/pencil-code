@@ -1004,5 +1004,17 @@ module Hydro
 !
     endsubroutine kinematic_random_phase
 !***********************************************************************
+    subroutine find_umax(f,umax)
+!
+!  Dummy subroutine
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(out) :: umax
+!
+      call keep_compiler_quiet(f)
+      umax = 0.
+!
+    endsubroutine find_umax
+!***********************************************************************
 endmodule Hydro
 

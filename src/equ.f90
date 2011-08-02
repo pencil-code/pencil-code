@@ -260,12 +260,10 @@ module Equ
       if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
       if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Dynamical diffusion coefficients
+!  Dynamical (hyper-)diffusion coefficients
 !
       if (lfirst .and. ldynamical_diffusion) then
-        call mpiallreduce_max(sqrt(maxval(f(l1:l2,m1:m2,n1:n2,iux)**2 &
-                                        + f(l1:l2,m1:m2,n1:n2,iuy)**2 &
-                                        + f(l1:l2,m1:m2,n1:n2,iuz)**2)), umax)
+        call find_umax(f,umax)
         if (lviscosity) call dynamical_viscosity(umax)
         if (ldensity) call dynamical_diffusion(umax)
         if (lmagnetic) call dynamical_resistivity(umax)

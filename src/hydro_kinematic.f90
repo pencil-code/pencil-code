@@ -2201,4 +2201,24 @@ module Hydro
 !
     endsubroutine kinematic_random_phase
 !***********************************************************************
+    subroutine find_umax(f,umax)
+!
+!  Find the absolute maximum of the velocity.
+!
+!  27-jul-2011/ccyang: coded
+!
+      use Mpicomm, only: mpiallreduce_max
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(out) :: umax
+!
+      real :: umax1
+!
+!  Find the maximum.
+!
+      umax1 = sqrt(maxval(f(l1:l2,m1:m2,n1:n2,iux)**2 + f(l1:l2,m1:m2,n1:n2,iuy)**2 + f(l1:l2,m1:m2,n1:n2,iuz)**2))
+      call mpiallreduce_max(umax1, umax)
+!
+    endsubroutine find_umax
+!***********************************************************************
 endmodule Hydro

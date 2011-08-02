@@ -16,6 +16,7 @@
   public :: traceless_strain, coriolis_cartesian
   public :: kinematic_random_phase
   public :: hydro_before_boundary
+  public :: find_umax
 !
 ! variables
   public :: uumz, guumz, lcalc_uumean, lupw_uu

@@ -2465,11 +2465,21 @@ module Magnetic
           ju=j+iaa-1
           do i=1,3
             call der6(f,ju,tmp1,i,IGNOREDX=.true.)
-            fres(:,j)=fres(:,j)+eta_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,i)
+            if (ldynamical_diffusion) then
+              fres(:,j) = fres(:,j) + eta_hyper3_mesh * tmp1 * dline_1(:,i)
+            else
+              fres(:,j)=fres(:,j)+eta_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,i)
+            endif
           enddo
         enddo
-        if (lfirst.and.ldt) &
-             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+        if (lfirst.and.ldt) then
+          if (ldynamical_diffusion) then
+            diffus_eta3 = diffus_eta3 + 32. * eta_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+            advec_hypermesh_aa = 0.
+          else
+            advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          endif
+        endif
       endif
 !
       if (lresi_hyper3_strict) then
@@ -2662,7 +2672,7 @@ module Magnetic
       if (lfirst.and.ldt) then
         diffus_eta =diffus_eta *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
-        diffus_eta3=diffus_eta3*dxyz_6
+        if (.not. (ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3=diffus_eta3*dxyz_6
         if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
 !
         if (headtt.or.ldebug) then
@@ -7112,22 +7122,14 @@ module Magnetic
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
-!  22-04-11/ccyang: coded
+!  27-jul-11/ccyang: coded
 !
       real, intent(in) :: umax
 !
-      logical :: lfirst1 = .true.
-      real, save :: c0
+!  Hyper-resistivity coefficient
 !
-!  Hyper-viscosity coefficient
-!
-      if (eta_hyper3 /= 0.) then
-        if (lfirst1) then
-          c0 = (dxmax / pi)**5 / re_mesh
-          lfirst1 = .false.
-        end if
-        eta_hyper3 = c0 * umax
-      end if
+      if (eta_hyper3 /= 0.) eta_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
+      if (eta_hyper3_mesh /= 0.) eta_hyper3_mesh = pi5_1 * umax / re_mesh
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

@@ -1121,8 +1121,12 @@ module Viscosity
           ju=j+iuu-1
           do i=1,3
             call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-            p%fvisc(:,j) = p%fvisc(:,j) + &
-                nu_hyper3_mesh*pi5_1/60.*tmp3*dline_1(:,i)
+            if (ldynamical_diffusion) then
+              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * tmp3 * dline_1(:,i)
+            else
+              p%fvisc(:,j) = p%fvisc(:,j) + &
+                  nu_hyper3_mesh*pi5_1/60.*tmp3*dline_1(:,i)
+            endif
           enddo
           if (lpencil(i_visc_heat)) then
             if (headtt) then
@@ -1130,8 +1134,14 @@ module Viscosity
                    'is not implemented for lvisc_hyper3_mesh')
             endif
           endif
-          if (lfirst.and.ldt) &
-               advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          if (lfirst.and.ldt) then
+            if (ldynamical_diffusion) then
+              p%diffus_total3 = p%diffus_total3 + 32. * nu_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+              advec_hypermesh_uu = 0.
+            else
+              advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+            endif
+          endif
         enddo
       endif
 !
@@ -1493,7 +1503,7 @@ module Viscosity
       if (lfirst.and.ldt) then
         diffus_nu =p%diffus_total *dxyz_2
         diffus_nu2=p%diffus_total2*dxyz_4
-        diffus_nu3=p%diffus_total3*dxyz_6
+        if (.not. (ldynamical_diffusion .and. lvisc_hyper3_mesh)) diffus_nu3=p%diffus_total3*dxyz_6
       endif
 !
 !  Diagnostic output
@@ -1643,22 +1653,14 @@ module Viscosity
 !
 !  Dynamically set viscosity coefficient given fixed mesh Reynolds number.
 !
-!  22-04-11/ccyang: coded
+!  27-jul-11/ccyang: coded
 !
       real, intent(in) :: umax
 !
-      logical :: lfirst1 = .true.
-      real, save :: c0
-!
 !  Hyper-viscosity coefficient
 !
-      if (nu_hyper3 /= 0.) then
-        if (lfirst1) then
-          c0 = (dxmax / pi)**5 / re_mesh
-          lfirst1 = .false.
-        endif
-        nu_hyper3 = c0 * umax
-      end if
+      if (nu_hyper3 /= 0.) nu_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
+      if (nu_hyper3_mesh /= 0.) nu_hyper3_mesh = pi5_1 * umax / re_mesh
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************
