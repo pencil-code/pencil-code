@@ -165,9 +165,19 @@ module Special
       !call farray_register_auxiliary('spec2aux',imdot,communicated=.true.)
       !call farray_register_auxiliary('specaux',itmid)
 !
-      call farray_register_pde('isigma',isigma)
-      call farray_register_auxiliary('imdot',imdot,communicated=.true.)
-      call farray_register_auxiliary('itmid',itmid)
+      call farray_register_pde('sigma',isigma)
+      call farray_register_auxiliary('mdot',imdot,communicated=.true.)
+      call farray_register_auxiliary('tmid',itmid)
+!
+! Write to read special variables with pc_varcontent
+!
+      if (lroot) then
+        open(4,file=trim(datadir)//'/index_special.pro',status='replace')
+        write(4,*) 'sigma ',isigma
+        write(4,*) 'mdot  ',imdot
+        write(4,*) 'tmid  ',itmid
+        close(4)
+      endif
 !
     endsubroutine register_special
 !***********************************************************************
@@ -178,6 +188,7 @@ module Special
 !  parameters, but before the time loop.
 !
 !  06-oct-03/tony: coded
+!  01-aug-11/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -232,7 +243,9 @@ module Special
     subroutine init_special(f)
 !
 !  initialise special condition; called from start.f90
+!
 !  06-oct-2003/tony: coded
+!  01-aug-11/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -275,6 +288,8 @@ module Special
 !  typical values are sigma_middle=1 (g/cm2) and sigma_floor=1e-4. 
 !  As such, the first table is linearly spaces, whereas the latter 
 !  is logarithmically spaced. 
+!
+!  01-aug-11/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: omega
@@ -326,8 +341,12 @@ module Special
         enddo
       enddo
 !
-      print*,'minmax temperature table 1',minval(tmid1_table),maxval(tmid1_table)
-      print*,'minmax temperature table 2',minval(tmid2_table),maxval(tmid2_table)
+      if (ldebug) then 
+        print*,'minmax temperature table 1',minval(tmid1_table),&
+                                            maxval(tmid1_table)
+        print*,'minmax temperature table 2',minval(tmid2_table),&
+                                            maxval(tmid2_table)
+      endif
 !
     endsubroutine precalc_temperatures
 !***********************************************************************
@@ -357,6 +376,7 @@ module Special
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  24-nov-04/tony: coded
+!  01-aug-11/wlad: adapted
 !
       use Sub, only: grad,del2
 !
@@ -399,6 +419,7 @@ module Special
 !  efficiency.
 !
 !  06-oct-03/tony: coded
+!  01-aug-11/wlad: adapted
 !
       use Diagnostics, only: sum_mn_name,max_mn_name,save_name
       !use Sub, only: identify_bcs
@@ -604,6 +625,8 @@ endsubroutine read_special_run_pars
 !  mass accretion rate, and vice-versa, as defined in 
 !  Papaloiozou & Terquem (1999, ApJ, 521, 823). 
 !
+!  01-aug-11/wlad: coded
+!
       real, dimension(nx) :: tmp
       real :: alpha_
 !
@@ -623,6 +646,8 @@ endsubroutine read_special_run_pars
     subroutine mdot_to_sigma(mdot,sigma)
 !
 !  Inverse of sigma_to_mdot.
+!
+!  01-aug-11/wlad: coded
 !
       real, dimension(nx), intent(in)  :: mdot
       real, dimension(nx), intent(out) :: sigma
@@ -660,6 +685,8 @@ endsubroutine read_special_run_pars
     subroutine sigma_to_mdot_mn(sigma,mdot)
 !
 !  Inverse of mdot_to_sigma.
+!
+!  01-aug-11/wlad: coded
 !
       real, dimension(nx), intent(in) :: sigma
       real, dimension(nx), intent(out)  :: mdot
@@ -699,6 +726,8 @@ endsubroutine read_special_run_pars
 !
 !  Inverse of mdot_to_sigma.
 !
+!  01-aug-11/wlad: coded
+!
       real, intent(in) :: sigma
       real, intent(out)  :: mdot
       real :: lgsigma,lgsigma1,lgsigma2,lgmdot
@@ -727,6 +756,14 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine get_wind
 !      
+!  Photo-evaporative wind profile. The one coded down here is for 
+!  external evaporation. Other profiles used are hollebach, for 
+!  central star evaporation wind, and the Owen wind for a "sophisticated" 
+!  profile that is borne out of hydrodynamical simulations and does not 
+!  have a sharp cutoff at the gravitational radius. 
+!
+!  01-aug-11/wlad: coded
+!
       real :: mwind,rmax,rg,den
       integer :: i      
 !
@@ -747,7 +784,9 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine get_tmid(sigma,temperature)
 !
-!  Interpolate to get temperatures. 
+!  Interpolate between the values of the look-up table to get temperatures. 
+!
+!  01-aug-11/wlad: coded
 !
       real, dimension(nx), intent(in) :: sigma
       real, dimension(nx), intent(out) :: temperature
@@ -759,6 +798,8 @@ endsubroutine read_special_run_pars
       real, save :: minlnsigma,maxlnsigma,dlnsig,dlnsig1
       logical, save :: lfirstcall=.true.
       integer :: i
+!
+!  Pre-calculate the parameters needed for the linear interpolation.
 !
       if (lfirstcall) then 
         minsigma=minval(sigma_table) ; maxsigma=maxval(sigma_table)
@@ -772,6 +813,14 @@ endsubroutine read_special_run_pars
 !
       do i=1,nx
 !
+!  Check which table brackets the density.
+!  Table 1: type: Linear 
+!           range: [sigma_middle,maxsigma], where maxsigma is the maximum
+!                                           density in the initial condition.
+!  
+!  Table 2: type: Log
+!           range [sigma_floor,sigma_middle]
+!
         sig=sigma(i)
 !
         if (sig.gt.maxsigma) then 
@@ -784,6 +833,8 @@ endsubroutine read_special_run_pars
           isig_up =  isig_do+1
           sdo = minsigma + (isig_do-1)*dsig
           sup = minsigma + (isig_up-1)*dsig
+!
+!  Linear interpolation.
 !
           temperature(i) = dsig1*(tmid1_table(isig_do,i)*(sup-sig)+&
                                   tmid1_table(isig_up,i)*(sig-sdo))
@@ -815,11 +866,28 @@ endsubroutine read_special_run_pars
 !********************************************************************
     subroutine calc_tmid(sigma,omega,mdot,temperature)
 !
-      real :: left,right,fl,fh
+! Subroutine to calculate the temperature, based on balance between 
+! heating and cooling. The equation solved is  
+!
+!    2*stbz*T^4 = tau_eff*(Sigma*nu*(q*Omega)^2) + 2*stbz*Tb^4
+!
+! where tau_eff is the effective optical depth, q=1.5 is the 
+! Keplerian shear, Tb is the background temperature, and stbz 
+! is the Stefan-Boltzmann constant. Because the effective optical
+! depth is a function of the opacity and opacity is in turn a 
+! non-trivial function of the temperature, the equation is solved 
+! via iterative root-finding. 
+!  
+!  01-aug-11/wlad: coded
+!
+      real :: left,right,phileft,phiright
       real :: x1,x2,sigma,omega,mdot
       integer :: j
       real, intent(inout) :: temperature
 !      
+! This subroutine, before calling the newton_raphson solver, 
+! is just to make sure that the root was bracketed. 
+!
       right=temperature
       left=temperature_background
 !
@@ -829,32 +897,65 @@ endsubroutine read_special_run_pars
              'bad initial condition for newton-raphson')
       endif
 !
-      call get_phi(x1,sigma,omega,mdot,fl)
-      call get_phi(x2,sigma,omega,mdot,fh)
+!  Phi is the LHS of the equation. When it is zero, the root 
+!  is found. To bracket the root, we make sure that the LHS 
+!  on the range boundaries have different signs. 
+!
+      call get_phi(x1,sigma,omega,mdot,phileft)
+      call get_phi(x2,sigma,omega,mdot,phiright)
 !
       do j=1,maxit 
 !
-        if (fl*fh.lt.0.) exit
-        if (abs(fl) .lt. abs(fh)) then 
+        if (phileft*phiright.lt.0.) exit
+!
+!  If the above is true, the root was bracketed and we exit 
+!  the loop. Else go either reducing x1 or increasing x2 to 
+!  bracket the root. Check which (x1 or x2) yields a solution
+!  further from zero. 
+!
+        if (abs(phileft) .lt. abs(phiright)) then 
+!
+!        x2./          phi(x1) < phi(x2)  
+!      x1 ./           Decrease x1 to bracket the root 
+!  -----------------
+!        /
+!       /
 !
           x1=min(x1 - 1.6*(x2-x1) , temperature_background)
-          call get_phi(x1,sigma,omega,mdot,fl)
+          call get_phi(x1,sigma,omega,mdot,phileft)
         else
+!
+!           /          abs(phi(x1)) > abs(phi(x2))  
+!          /           Increase x2 to bracket the root 
+!  -----------------
+!     x2./
+!   x1. /
+!
           x2=x2+1.6*(x2-x1)
-          call get_phi(x2,sigma,omega,mdot,fh)
+          call get_phi(x2,sigma,omega,mdot,phiright)
         endif
       enddo        
 !
+!  Loop was exited, root is bracketed. Start the 
+!  Newton-Raphson iterations. 
+!
       call newton_raphson(x1,x2,sigma,&
-           omega,mdot,fl,fh,temperature)
+           omega,mdot,phileft,phiright,temperature)
 !
     endsubroutine calc_tmid
 !***********************************************************************
     subroutine get_phi(temp,sigma,omega,mdot,phi,dphi,d2phi)
 !
+!  Phi is the LHS of the equation to solve. Calculating the 
+!  analytical first and second derivatives of Phi (with 
+!  respect to temperature) speeds up convergence of the 
+!  Newton-Raphson method. 
+!
+!  01-aug-11/wlad: coded
+!
       real :: temp,sigma,omega,mdot
       real :: kappa_cte,kappa,tau,tau1
-      real :: taueff,edot,tb1,tb2,temp1
+      real :: taueff,edot,temp1
       real :: phi,dtaudt,dtau2dt
       real :: a_exp,b_exp
       real, save :: stbz
@@ -867,41 +968,56 @@ endsubroutine read_special_run_pars
         lfirstcall=.false.
       endif
 !
-      call get_tau(temp,sigma,omega,&
+!  Get the opacity and calculate the effective optical depth.
+!
+      call calc_opacity(temp,sigma,omega,&
            kappa_cte,b_exp,a_exp,kappa)
 !
       tau  = .5*kappa*sigma
       tau1 = 1./tau
 !
+! The effective optical depth
+! 
+!      taueff = 3*tau/8 + sqrt(3)/4 + 1/(4*tau),
+!
+! handles both optically thin and thick regions. 
+
+!
       taueff = 0.375*tau + 0.43301270 + .25*tau1
 !
+! Phi is the left-hand-side of the equation to solve. 
+!
       edot=0.75*pi_1*mdot*omega**2
-      tb1=temp**(b_exp-1)
-      tb2=temp**(b_exp-2)
-!
-      temp1=1./temp
-!
       phi  = 2*stbz*(temp**4-temperature_background**4)-taueff*edot
 !
-      if (present(dphi)) then 
-        dtaudt=(b_exp-.5*a_exp)*tau*temp1
-        dphi  =  8*stbz*temp**3 - .25*edot*dtaudt*(1.5-tau1**2)
-      endif
+! First and second analytical derivatives of Phi, to speed 
+! up the iterations. 
 !
-      if (present(d2phi)) then 
-        dtau2dt=(b_exp-.5*a_exp)*(b_exp-.5*a_exp-1)*tau*temp1**2
-        d2phi = 24*stbz*temp**2 - .25*edot*dtau2dt*(1.5-tau1**2) + &
-             .5*edot*tau1**3*dtaudt**2
+      if (present(dphi).or.present(d2phi)) then
+        temp1=1./temp
+        
+        if (present(dphi)) then 
+          dtaudt=(b_exp-.5*a_exp)*tau*temp1
+          dphi  =  8*stbz*temp**3 - .25*edot*dtaudt*(1.5-tau1**2)
+        endif
+!
+        if (present(d2phi)) then 
+          dtau2dt=(b_exp-.5*a_exp)*(b_exp-.5*a_exp-1)*tau*temp1**2
+          d2phi = 24*stbz*temp**2 - .25*edot*dtau2dt*(1.5-tau1**2) + &
+               .5*edot*tau1**3*dtaudt**2
+        endif
       endif
 !
     endsubroutine get_phi
 !********************************************************************
     subroutine newton_raphson(left,right,sigma,omega,mdot,&
-         fl,fh,temperature)
+         phileft,phiright,temperature)
+!
+!  01-aug-11/wlad: coded
 !
       use Sub, only: notanumber
 !
-      real :: left,right,sigma,omega,mdot,fl,fh
+      real :: left,right,sigma,omega,mdot,phileft,phiright
       real :: x1,x2,out,xl,xh,rts,dxold,deltax
       real :: phi,dphi,d2phi,bla1,bla2
       real :: halley_factor,temp,a
@@ -910,15 +1026,17 @@ endsubroutine read_special_run_pars
 !
       x1=left ; x2=right
 !
-      if (fl .eq. 0.) then 
+      if (phileft .eq. 0.) then 
         out=x1 ; goto 999
       endif
 !
-      if (fh .eq. 0.) then 
+      if (phiright .eq. 0.) then 
         out=x2 ; goto 999
       endif
 !
-      if (fl .lt. 0.) then 
+! Orient the search so that phi(x1)<0
+!
+      if (phileft .lt. 0.) then 
         xl=x1 ; xh=x2
       else
         xh=x1 ; xl=x2
@@ -993,8 +1111,10 @@ endsubroutine read_special_run_pars
 !********************************************************************
     subroutine bisection(left,right,sigma,omega,mdot,temperature)
 !
+!  01-aug-11/wlad: coded
+!
       real :: left,right,midpoint,sigma,omega,mdot
-      real :: fleft,fmid
+      real :: phileft,phimid
       real, intent(out) :: temperature
       integer :: icount
 !
@@ -1004,12 +1124,12 @@ endsubroutine read_special_run_pars
 !
         midpoint=.5*(right+left)
 !
-        call get_phi(    left,sigma,omega,mdot,fleft) 
-        call get_phi(midpoint,sigma,omega,mdot,fmid)
+        call get_phi(    left,sigma,omega,mdot,phileft) 
+        call get_phi(midpoint,sigma,omega,mdot,phimid)
 !
 ! initialize the bisecting
 !
-        if (fleft*fmid .lt. 0) then
+        if (phileft*phimid .lt. 0) then
           right=midpoint
         else
           left=midpoint
@@ -1026,7 +1146,11 @@ endsubroutine read_special_run_pars
 !
     endsubroutine bisection
 !********************************************************************
-    subroutine get_tau(tt,sigma,omega,k,b,a,kk)
+    subroutine calc_opacity(tt,sigma,omega,k,b,a,kk)
+!
+!  Piece-wise opacities from Bell et al. 1997.
+!
+!  01-aug-11/wlad: coded
 !
       real :: tt,sigma,omega,k,a,b,kk,rho,H
       real :: logkk,logk
@@ -1075,14 +1199,14 @@ endsubroutine read_special_run_pars
         kk=k*rho**a*tt**b
       else 
         if (lroot) then 
-          print*,'get_tau: density ',sigma,' g/cm2'
-          print*,'get_tau: temperature ',TT,' K. Higher '//&
+          print*,'calc_opacity: density ',sigma,' g/cm2'
+          print*,'calc_opacity: temperature ',TT,' K. Higher '//&
                'than maximum allowed, ',T9
         endif
         call fatal_error("","")
       endif
 !
-    endsubroutine get_tau
+    endsubroutine calc_opacity
 !********************************************************************
 !
 !********************************************************************
