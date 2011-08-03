@@ -67,7 +67,7 @@ module Sub
   public :: read_line_from_file, remove_file, control_file_exists
   public :: noform
 !
-  public :: update_snaptime, read_snaptime, read_snaptime_root
+  public :: update_snaptime, read_snaptime, snaptime_read
   public :: inpui, outpui, inpup, outpup
   public :: parse_shell
   public :: date_time_string, get_radial_distance, power_law
@@ -3021,7 +3021,7 @@ module Sub
 !  either read or write tout and nout from or to the file.
 !
       if (lroot) then
-        call read_snaptime_root(file,tout,nout,dtout,t)
+        call snaptime_read(file,tout,nout,dtout,t)
         bcast_array(1)=tout
         bcast_array(2)=nout
       endif
@@ -3035,7 +3035,7 @@ module Sub
 !
     endsubroutine read_snaptime
 !***********************************************************************
-    subroutine read_snaptime_root(file,tout,nout,dtout,t)
+    subroutine snaptime_read(file,tout,nout,dtout,t)
 !
 !  Read in output time for next snapshot (or similar) from control file.
 !
@@ -3081,7 +3081,7 @@ module Sub
       endif
       close(lun)
 !
-    endsubroutine read_snaptime_root
+    endsubroutine snaptime_read
 !***********************************************************************
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
 !

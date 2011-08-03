@@ -778,7 +778,7 @@ module Snapshot
 !  Read the output time defined by dsnap.
 !
       call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
-      call read_snaptime_root(file,tsnap,nsnap,dsnap,t)
+      call snaptime_read(file,tsnap,nsnap,dsnap,t)
 !
 !  Adjust the time-step accordingly, so that the next timestepping
 !  lands the simulation at the precise time defined by dsnap. 
