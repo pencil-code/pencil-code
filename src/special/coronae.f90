@@ -1117,7 +1117,7 @@ module Special
       real, dimension (nx,3) :: hhh,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
-      real, dimension (nx) :: chi_spitzer,rhs
+      real, dimension (nx) :: chi_spitzer,rhs,u_spitzer
       real, dimension (nx) :: chi_clight,chi_2
       integer :: i,j,k
       real :: ksatb
