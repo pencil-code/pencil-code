@@ -3100,6 +3100,8 @@ module Sub
       real :: t_sp   ! t in single precision for backwards compatibility
       real :: tout,dtout
       integer :: lun,nout
+      logical, save :: lfirstcall=.true.
+      real, save :: delta_threshold
 !
 !  Use t_sp as a shorthand for either t or lg(t).
 !
@@ -3119,7 +3121,22 @@ module Sub
 !  make sure tt is always larger than tout.
 !  (otherwise slices are written just to catch up with tt.)
 !
-      if (t_sp >= tout) then
+!  WL: Add possibility that there should be a small threshold in this 
+!      comparison. Needed for outputing at the exact tsnap, otherwise
+!      a difference between tsp and tout to machine precision can be 
+!      interpreted as stating that the output is to be done at the next, 
+!      not the current, timestep. 
+! 
+      if (lfirstcall) then 
+        if (.not.loutput_varn_at_exact_tsnap) then 
+          delta_threshold=0.0
+        else
+          delta_threshold=dtmin
+        endif
+        lfirstcall=.false.
+      endif
+!
+      if (t_sp-tout >= delta_threshold) then
         tout=tout+abs(dtout)
         nout=nout+1
         lout=.true.
