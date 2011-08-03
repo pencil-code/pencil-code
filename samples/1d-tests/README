@@ -1,0 +1,13 @@
+Maintainer:
+    Wladimir Lyra <wlyra/amnh[dot]org>
+Added:
+    2011-aug-03
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    256x1x1 
+Comments:
+    Radiative evolutionary model of a 1D disk following the alpha 
+    viscosity formalism. An IDL version of this code was used for the 
+    runs published in Lyra et al. 2010, ApJ, 715, 68. 
+
