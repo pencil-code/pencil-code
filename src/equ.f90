@@ -421,6 +421,9 @@ module Equ
           if (lpolymer) then
             advec_poly=0.0; diffus_poly=0.0
           endif
+          if (lspecial) then 
+            diffus_special=0.0
+          endif
         endif
 !
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
@@ -706,6 +709,7 @@ module Equ
           if (lchemistry)       maxdiffus=max(maxdiffus,diffus_chem)
           if (lneutralvelocity) maxdiffus=max(maxdiffus,diffus_nun)
           if (lneutraldensity)  maxdiffus=max(maxdiffus,diffus_diffrhon)
+          if (lspecial)         maxdiffus=max(maxdiffus,diffus_special)
 !
           if (lviscosity)       maxdiffus2=max(maxdiffus2,diffus_nu2)
           if (lmagnetic)        maxdiffus2=max(maxdiffus2,diffus_eta2)
