@@ -67,7 +67,7 @@ module Sub
   public :: read_line_from_file, remove_file, control_file_exists
   public :: noform
 !
-  public :: update_snaptime, read_snaptime
+  public :: update_snaptime, read_snaptime, read_snaptime_root
   public :: inpui, outpui, inpup, outpup
   public :: parse_shell
   public :: date_time_string, get_radial_distance, power_law
@@ -3016,39 +3016,12 @@ module Sub
       integer :: lun
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
-      logical :: exist
 !
 !  Depending on whether or not file exists, we need to
 !  either read or write tout and nout from or to the file.
 !
       if (lroot) then
-        inquire(FILE=trim(file),EXIST=exist)
-        lun=1
-        open(lun,FILE=trim(file))
-        if (exist) then
-          read(lun,*) tout,nout
-        else
-!
-!  Special treatment when dtout is negative.
-!  Now tout and nout refer to the next snapshopt to be written.
-!
-          if (dtout < 0.) then
-            tout=log10(t)
-          else
-            !  make sure the tout is a good time
-            if (dtout /= 0.) then
-              tout = t - mod(t, dble(abs(dtout))) + dtout
-            else
-              call warning("read_snaptime", &
-                  "Am I writing snapshots every 0 time units? (check " // &
-                  trim(file) // ")" )
-              tout = t
-            endif
-          endif
-          nout=1
-          write(lun,*) tout,nout
-        endif
-        close(lun)
+        call read_snaptime_root(file,tout,nout,dtout,t)
         bcast_array(1)=tout
         bcast_array(2)=nout
       endif
@@ -3061,6 +3034,54 @@ module Sub
       nout=bcast_array(2)
 !
     endsubroutine read_snaptime
+!***********************************************************************
+    subroutine read_snaptime_root(file,tout,nout,dtout,t)
+!
+!  Read in output time for next snapshot (or similar) from control file.
+!
+!  03-aug-11/wlad: adapted from read_snaptime
+!
+      character (len=*) :: file
+      integer :: nout
+      real :: tout,dtout
+      double precision :: t
+      intent(in)  :: file, dtout, t
+      intent(out) :: tout, nout
+      integer :: lun
+      logical :: exist
+!
+!  Depending on whether or not file exists, we need to
+!  either read or write tout and nout from or to the file.
+!
+      inquire(FILE=trim(file),EXIST=exist)
+      lun=1
+      open(lun,FILE=trim(file))
+      if (exist) then
+        read(lun,*) tout,nout
+      else
+!
+!  Special treatment when dtout is negative.
+!  Now tout and nout refer to the next snapshopt to be written.
+!
+        if (dtout < 0.) then
+          tout=log10(t)
+        else
+          !  make sure the tout is a good time
+          if (dtout /= 0.) then
+            tout = t - mod(t, dble(abs(dtout))) + dtout
+          else
+            call warning("read_snaptime", &
+                 "Am I writing snapshots every 0 time units? (check " // &
+                 trim(file) // ")" )
+            tout = t
+          endif
+        endif
+        nout=1
+        write(lun,*) tout,nout
+      endif
+      close(lun)
+!
+    endsubroutine read_snaptime_root
 !***********************************************************************
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
 !
