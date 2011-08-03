@@ -158,7 +158,7 @@ module Cdata
   logical :: ltec=.false.
   logical :: lformat=.false.
   logical :: lread_less=.false.
-  logical :: loutput_varn_at_exact_dsnap=.false.
+  logical :: loutput_varn_at_exact_tsnap=.false.
 !
 !  Units (need to be in double precision).
 !
