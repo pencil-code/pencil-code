@@ -43,9 +43,9 @@ module Gravity
 !
   double precision, parameter :: g_B_cgs=6.172d20, g_D_cgs=3.086d21
   double precision :: g_B, g_D
-  real, dimension(mx) :: gravx_xpencil=0.0,potx_xpencil=0.0
-  real, dimension(my) :: gravy_ypencil=0.0,poty_ypencil=0.0
-  real, dimension(mz) :: gravz_zpencil=0.0,potz_zpencil=0.0
+  real, dimension(mx) :: gravx_xpencil=0.0, potx_xpencil=0.0
+  real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0
+  real, dimension(mz) :: gravz_zpencil=0.0, potz_zpencil=0.0
   real, dimension(mx) :: xdep=0.0
   real, dimension(mz) :: zdep=0.0
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
