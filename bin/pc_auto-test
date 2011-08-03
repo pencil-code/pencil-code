@@ -107,6 +107,7 @@ my %tests = (
                          2d-tests/field-loop-fargo
                          baroclinic
                          1d-tests/sedimentation-noneq-blocks
+                         1d-tests/alphadisk
                     )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
