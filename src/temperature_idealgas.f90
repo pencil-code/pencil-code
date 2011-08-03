@@ -69,22 +69,19 @@ module Entropy
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, &
-      lnTT_const, TT_const, center1_x, center1_y, &
-      center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, Tbump, Kmin, Kmax, &
-      hole_slope, hole_width, ltemperature_nolog, linitial_log, hcond0, &
-      luminosity, wheat
+      initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, lnTT_const, TT_const, &
+      center1_x, center1_y, center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, &
+      Tbump, Kmin, Kmax, hole_slope, hole_width, ltemperature_nolog, &
+      linitial_log, hcond0, luminosity, wheat
 !
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lupw_lnTT, ladvection_temperature, &
-      chi, iheatcond, chi_hyper3_mesh, &
+      lupw_lnTT, ladvection_temperature, chi, iheatcond, chi_hyper3_mesh, &
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
-      hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, &
-      rcool, wcool, cool
+      hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, cool
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)

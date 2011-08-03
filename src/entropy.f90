@@ -3354,7 +3354,7 @@ module Entropy
 !
       if (headtt) print*, 'calc_heatcond_hyper3: chi_hyper3=', chi_hyper3
 !
-      thdiff=0.
+      thdiff=0.0
       do j=1,3
         call der6(f,iss,tmp,j,IGNOREDX=.true.)
         thdiff = thdiff + chi_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)

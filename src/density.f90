@@ -1794,13 +1794,13 @@ module Density
         if (lfirst.and.ldt) then
           if (ldynamical_diffusion) then
             diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh
-            advec_hypermesh_rho = 0.
+            advec_hypermesh_rho = 0.0
           else
             advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           endif
         endif
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3_mesh=', &
-             diffrho_hyper3_mesh
+            diffrho_hyper3_mesh
       endif
 !
       if (ldiff_hyper3_aniso) then

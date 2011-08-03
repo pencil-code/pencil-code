@@ -218,32 +218,25 @@ module Magnetic
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
 !
   namelist /magnetic_run_pars/ &
-      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, &
-      B_ext, J_ext, J_ext_quench, omega_Bz_ext, nu_ni, &
-      hall_term, &
-      eta_hyper3_mesh, &
-      tau_aa_exterior, kx_aa, ky_aa, kz_aa, &
-      lcalc_aamean,lohmic_heat, &
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, J_ext, &
+      J_ext_quench, omega_Bz_ext, nu_ni, hall_term, eta_hyper3_mesh, &
+      tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
       ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
       lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
-      alphaSSm,eta_int, &
-      eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, eta_min, &
-      wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
+      alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
+      eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
-      lB_ext_pot, D_smag, brms_target, &
-      rescaling_fraction, &
-      lfreeze_aint, lfreeze_aext, sigma_ratio, zdep_profile, xdep_profile, &
-      eta_width, eta_z0, eta_z1, eta_x0, eta_x1, eta_spitzer, &
-      borderaa, eta_aniso_hyper3, lelectron_inertia, inertial_length, &
-      lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, lkinematic, &
-      lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
-      lneutralion_heat, lreset_aa, daareset, &
-      luse_Bext_in_b2, ampl_fcont_aa, &
-      lhalox, vcrit_anom, eta_jump,&
-      lrun_initaa,two_step_factor
+      lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
+      lfreeze_aext, sigma_ratio, zdep_profile, xdep_profile, eta_width, &
+      eta_z0, eta_z1, eta_x0, eta_x1, eta_spitzer, borderaa, &
+      eta_aniso_hyper3, lelectron_inertia, inertial_length, &
+      lbext_curvilinear, lbb_as_aux, ljj_as_aux, lremove_mean_emf, &
+      lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
+      lneutralion_heat, lreset_aa, daareset, luse_Bext_in_b2, ampl_fcont_aa, &
+      lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2475,7 +2468,7 @@ module Magnetic
         if (lfirst.and.ldt) then
           if (ldynamical_diffusion) then
             diffus_eta3 = diffus_eta3 + eta_hyper3_mesh
-            advec_hypermesh_aa = 0.
+            advec_hypermesh_aa = 0.0
           else
             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           endif

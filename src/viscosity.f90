@@ -87,8 +87,8 @@ module Viscosity
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
-      offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB,PrM_turb,&
-      roffset_lambda
+      offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
+      PrM_turb, roffset_lambda
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -1137,7 +1137,7 @@ module Viscosity
           if (lfirst.and.ldt) then
             if (ldynamical_diffusion) then
               p%diffus_total3 = p%diffus_total3 + nu_hyper3_mesh
-              advec_hypermesh_uu = 0.
+              advec_hypermesh_uu = 0.0
             else
               advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
             endif
@@ -1663,8 +1663,8 @@ module Viscosity
 !
 !  Hyper-viscosity coefficient
 !
-      if (nu_hyper3 /= 0.) nu_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (nu_hyper3_mesh /= 0.) nu_hyper3_mesh = pi5_1 * umax / re_mesh
+      if (nu_hyper3/=0.0) nu_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
+      if (nu_hyper3_mesh/=0.0) nu_hyper3_mesh = pi5_1 * umax / re_mesh
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************
