@@ -2975,7 +2975,7 @@ module Sub
     subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
         prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
 !
-!  Write dimension to file.
+!  Read dimension from file.
 !
 !  15-sep-09/nils: adapted from rdim
 !
