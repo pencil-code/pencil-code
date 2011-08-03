@@ -3403,7 +3403,6 @@ module Magnetic
         enddo
       endif
 !
-!
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
