@@ -752,8 +752,8 @@ module Entropy
         call farray_register_auxiliary('hcond',iglobal_hcond)
         call farray_register_auxiliary('glhc',iglobal_glhc,vector=3)
         if (coord_system=='spherical' .or. lconvection_gravx) then
+          call read_hcond(hcond,glhc)
           do q=n1,n2; do m=m1,m2
-            call read_hcond(hcond,glhc)
             f(l1:l2,m,q,iglobal_hcond)=hcond
             f(l1:l2,m,q,iglobal_glhc:iglobal_glhc+2)=glhc
           enddo; enddo
