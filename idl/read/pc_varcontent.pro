@@ -793,6 +793,28 @@ if ((param.lwrite_aux ne 0) and (not noaux)) then begin
   endif
 endif
 ;
+; Check if there is other var data written by the special module. 
+;
+file_special=datadir+'/index_special.pro'
+exist_specialvar=file_test(file_special)
+if (exist_specialvar eq 1) then begin
+  openr, 1, file_special
+  line=''
+  while (not eof(1)) do begin
+    readf, 1, line
+    str_tmp=strsplit(line," ",/extract)
+    str=str_tmp[0] & istr=fix(str_tmp[1])
+    if (istr gt 0) then begin
+      varcontent[istr].variable   = 'Special variable'
+      varcontent[istr].idlvar     = strtrim(str,2)
+      varcontent[istr].idlinit    = INIT_SCALAR
+      varcontent[istr].idlvarloc  = strtrim(str,2)+'_loc'
+      varcontent[istr].idlinitloc = INIT_SCALAR_LOC
+    endif
+  endwhile
+  close, 1
+endif
+;
 ;  Turn vector quantities into scalars if requested.
 ;
 if (keyword_set(scalar)) then begin
