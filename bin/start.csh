@@ -82,12 +82,14 @@ foreach dir ($procdirs $subdirs)
   set ddir = "$datadir/$dir"
   if (! -e $ddir) then
     mkdir $ddir
-  else
+  else if (! -e NOERASE) then
     # Clean up
-    # when used with lnowrite=T, for example, we don't want to remove var.dat:
-    set list = \
-        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice* $ddir/PVAR* $ddir/SPVAR* $ddir/varN.list`
-    if (! -e NOERASE) then
+    if ($dir == "allprocs") then
+      rm -f $ddir/VAR[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list >& /dev/null
+    else
+      rm -f $ddir/VAR[0-9]* $ddir/TAVG[0-9]* $ddir/*.info $ddir/slice* $ddir/PVAR[0-9]* $ddir/SPVAR[0-9]* $ddir/varN.list >& /dev/null
+      # in some cases var.dat needs to be conserved (eg. lnowrite=T)
+      set list = `/bin/ls $ddir/*.dat`
       foreach rmfile ($list)
         if ($rmfile != $ddir/var.dat) rm -f $rmfile >& /dev/null
       end
