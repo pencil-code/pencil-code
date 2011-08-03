@@ -368,13 +368,14 @@ module Entropy
 !
 !  Mesh hyper-diffusion
 !
-      if (chi_hyper3_mesh /= 0.) then
-        do j = 1, 3
+      if (chi_hyper3_mesh/=0.0) then
+        do j=1,3
           call der6(f, ieth, d6eth, j, IGNOREDX=.true.)
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_hyper3_mesh * d6eth * dline_1(:,j)
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + &
+              chi_hyper3_mesh * d6eth * dline_1(:,j)
         enddo
-        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 &
-                                          + chi_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
+        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper3_mesh* &
+            (abs(dline_1(:,1))+abs(dline_1(:,2))+abs(dline_1(:,3)))
       endif
 !
 !  Diagnostics.
