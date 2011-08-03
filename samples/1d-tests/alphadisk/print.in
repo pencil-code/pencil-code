@@ -1,0 +1,10 @@
+it(F10.0)
+t(E15.5)
+tmyr(E15.5)
+dt(E15.5)
+dtyear(E15.5)
+sigmamin(E15.5)
+sigmam(E15.5)
+sigmamax(E15.5)
+dtdiffus(E15.5)
+

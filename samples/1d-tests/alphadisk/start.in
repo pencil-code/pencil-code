@@ -1,0 +1,21 @@
+!                -*-f90-*-     (for Emacs)
+!
+! Kappa-mechanism in vertically stratified atmosphere
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.4 2009/02/02 10:44:01 dintrans Exp $',
+! 
+  ip    = 14,                  ! debugging parameter
+  xyz0  =  2d13,-1.,-1.,          ! first corner of box
+  xyz1  =  4d14, 0., 1.,          ! second corner of box
+  lperi = F , T , T,           ! periodic direction?
+  bcx   = 's','cop'
+  lwrite_ic=T,
+  lwrite_aux=T
+/
+&special_init_pars
+  mdot_input=1d-7
+  mwind_input=1d-8
+  alpha=1d-2
+/
