@@ -766,7 +766,7 @@ module Snapshot
 !
 !  03-aug-11/wlad: coded 
 !
-      use Sub, only: read_snaptime
+      use Sub, only: read_snaptime_root
       use General, only: safe_character_assign
 !
       real, intent(inout) :: dt_
@@ -778,7 +778,7 @@ module Snapshot
 !  Read the output time defined by dsnap.
 !
       call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
-      call read_snaptime(file,tsnap,nsnap,dsnap,t)
+      call read_snaptime_root(file,tsnap,nsnap,dsnap,t)
 !
 !  Adjust the time-step accordingly, so that the next timestepping
 !  lands the simulation at the precise time defined by dsnap. 
