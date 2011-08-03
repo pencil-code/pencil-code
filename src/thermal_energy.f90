@@ -30,7 +30,8 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: eth_left, eth_right, widtheth, eth_const=1.0, chi=0.0, chi_shock=0.0
+  real :: eth_left, eth_right, widtheth, eth_const=1.0
+  real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
   logical :: lviscosity_heat=.true.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
@@ -38,12 +39,12 @@ module Entropy
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initeth, eth_left, eth_right, widtheth, eth_const, chi, chi_shock
+      initeth, eth_left, eth_right, widtheth, eth_const, chi, chi_shock, chi_hyper3_mesh
 !
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lviscosity_heat, chi, chi_shock
+      lviscosity_heat, chi, chi_shock, chi_hyper3_mesh
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -283,12 +284,14 @@ module Entropy
 !    deth/dt + div(u*eth) = -P*div(u)
 !
 !  04-nov-10/anders+evghenii: coded
+!  02-aug-11/ccyang: add mesh hyper-diffusion
 !
       use Diagnostics
       use EquationOfState, only: gamma_m1
       use Special, only: special_calc_entropy
       use Sub, only: identify_bcs, dot, dot2
       use Viscosity, only: calc_viscous_heat
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -296,6 +299,8 @@ module Entropy
 !
       real, dimension (nx) :: Hmax=0.0,ugeth
       real, dimension(nx,3) :: uu
+      real, dimension(nx) :: d6eth
+      integer :: j
 !
       intent(inout) :: f,p
       intent(out) :: df
@@ -349,12 +354,27 @@ module Entropy
       if (chi/=0.0) then
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + &
             p%rho*p%cp*chi*p%del2TT+p%cp*chi*sum(p%grho*p%gTT,2)
+!#ccyang: time step condition diffus_chi should be present here.
       endif
+!
+!  Shock diffusion
 !
       if (chi_shock/=0.0) then
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock*p%cp*( &
             p%rho*p%shock*p%del2TT + p%shock*sum(p%grho*p%gTT,2) + &
             p%rho*sum(p%gshock*p%gTT,2))
+!#ccyang: time step condition diffus_chi should be present here.
+      endif
+!
+!  Mesh hyper-diffusion
+!
+      if (chi_hyper3_mesh /= 0.) then
+        do j = 1, 3
+          call der6(f, ieth, d6eth, j, IGNOREDX=.true.)
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_hyper3_mesh * d6eth * dline_1(:,j)
+        enddo
+        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 &
+                                          + chi_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
       endif
 !
 !  Diagnostics.
@@ -570,5 +590,19 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine fill_farray_pressure
+!***********************************************************************
+    subroutine dynamical_thermal_diffusion(umax)
+!
+!  Dynamically set thermal diffusion coefficient given fixed mesh Reynolds number.
+!
+!  02-aug-11/ccyang: coded
+!
+      real, intent(in) :: umax
+!
+!  Hyper-diffusion coefficient
+!
+      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh
+!
+    endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
 endmodule Entropy

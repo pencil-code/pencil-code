@@ -267,6 +267,7 @@ module Equ
         if (lviscosity) call dynamical_viscosity(umax)
         if (ldensity) call dynamical_diffusion(umax)
         if (lmagnetic) call dynamical_resistivity(umax)
+        if (lenergy) call dynamical_thermal_diffusion(umax)
       endif
 !
 !  For calculating the pressure gradient directly from the pressure (which is

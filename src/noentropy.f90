@@ -439,4 +439,14 @@ module Entropy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
+    subroutine dynamical_thermal_diffusion(umax)
+!
+!  Dummy subroutine
+!
+      real, intent(in) :: umax
+!
+      call keep_compiler_quiet(umax)
+!
+    endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
 endmodule Entropy
