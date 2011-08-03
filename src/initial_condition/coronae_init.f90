@@ -151,7 +151,7 @@ contains
 !
 !  04-sep-10/bing: coded
 !
-      use EquationOfState, only: get_cp1,gamma
+      use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
       use Syscalls, only: file_exists, file_size
@@ -362,6 +362,15 @@ contains
             f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,irho))  /(gamma*cp1)
           else
             f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,ilnrho))/(gamma*cp1)
+          endif
+        else if (lentropy) then
+          if (direction=='z') then
+            f(:,:,:,iss) = (log(gamma_m1/cs20)+spread(spread(profile_z,1,mx),2,my)- &
+                gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) /gamma
+          endif
+          if (direction=='x') then
+            f(:,:,:,iss) = (log(gamma_m1/cs20)+spread(spread(profile_x,2,my),3,mz)- &
+                gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) /gamma
           endif
         else
           call fatal_error('setup_vert_profiles', &
