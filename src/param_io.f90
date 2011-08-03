@@ -132,7 +132,8 @@ module Param_IO
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts,lsuper_time_stepping, lfargo_advection, &
-      ldynamical_diffusion, re_mesh, lconst_advection, u0_advec
+      ldynamical_diffusion, re_mesh, lconst_advection, u0_advec, &
+      loutput_varn_at_exact_dsnap
 !
   contains
 !***********************************************************************

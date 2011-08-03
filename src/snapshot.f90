@@ -17,6 +17,7 @@ module Snapshot
 !
   public :: rsnap, wsnap, powersnap
   public :: output_globals, input_globals
+  public :: shift_dt
 !
   contains
 !***********************************************************************
@@ -757,6 +758,37 @@ module Snapshot
       close(lun_output+2)
 !
     endsubroutine output_snap_tec
+!***********************************************************************
+    subroutine shift_dt(dt_)
 !
+!  Hack to make the code output the VARN files at EXACTLY the times 
+!  defined by dsnap, instead of slightly after it.
+!
+!  03-aug-11/wlad: coded 
+!
+      use Sub, only: read_snaptime
+      use General, only: safe_character_assign
+!
+      real, intent(inout) :: dt_
+      real :: tsnap
+      integer :: nsnap
+      logical :: lsnap
+      character (len=fnlen) :: file
+!
+!  Read the output time defined by dsnap.
+!
+      call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
+      call read_snaptime(file,tsnap,nsnap,dsnap,t)
+!
+!  Adjust the time-step accordingly, so that the next timestepping
+!  lands the simulation at the precise time defined by dsnap. 
+!
+      if (t+dt > tsnap) then 
+        dt_=tsnap-t
+      else
+        dt_=dt_
+      endif
+!
+    endsubroutine shift_dt
 !***********************************************************************
 endmodule Snapshot

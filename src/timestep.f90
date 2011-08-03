@@ -29,6 +29,7 @@ module Timestep
           particles_timestep_second
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
+      use Snapshot, only: shift_dt
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -92,6 +93,7 @@ module Timestep
           if (real(ddt) > 0.) dt1_local=max(dt1_local(1),dt1_last)
           call mpireduce_max(dt1_local,dt1,1)
           if (lroot) dt=1.0/dt1(1)
+          if (lroot.and.loutput_varn_at_exact_dsnap) call shift_dt(dt)
           ! Timestep growth limiter
           if (ddt/=0.) dt1_last=dt1_local(1)/ddt
           call mpibcast_real(dt,1)
