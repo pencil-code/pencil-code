@@ -5923,7 +5923,7 @@ module Mpicomm
 !  Test if file exists.
 !
       inquire(FILE=file,exist=exists)
-      if (.not. exists) call stop_it('parallel_open: file not found "'//trim(file)//'"')
+      if (.not. exists) call stop_it('fake_parallel_open: file not found "'//trim(file)//'"')
 !
 !  Open file.
 !
@@ -5962,12 +5962,12 @@ module Mpicomm
 !
         inquire(FILE=file,exist=exists)
         if (.not. exists) call stop_it_if_any(.true., &
-            'parallel_open: file not found "'//trim(file)//'"')
+            'true_parallel_open: file not found "'//trim(file)//'"')
         bytes=file_size(file)
         if (bytes < 0) call stop_it_if_any(.true., &
-            'parallel_open: could not determine file size "'//trim(file)//'"')
+            'true_parallel_open: could not determine file size "'//trim(file)//'"')
         if (bytes == 0) call stop_it_if_any(.true., &
-            'parallel_open: file is empty "'//trim(file)//'"')
+            'true_parallel_open: file is empty "'//trim(file)//'"')
       endif
 !
 !  Catch conditional errors of the MPI root rank.
@@ -5990,7 +5990,7 @@ module Mpicomm
         open(unit, FILE=file, FORM='unformatted', RECL=bytes, &
             ACCESS='direct', STATUS='old')
         read(unit, REC=1, IOSTAT=ierr) buffer
-        call stop_it_if_any((ierr<0),'parallel_open: error reading file "'// &
+        call stop_it_if_any((ierr<0),'true_parallel_open: error reading file "'// &
             trim(file)//'" into buffer')
         close(unit)
       else
@@ -6019,12 +6019,12 @@ module Mpicomm
 !      write(unit, REC=1) buffer
 !     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
       open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct', IOSTAT=ierr)
-      call stop_it_if_any((ierr/=0),'parallel_open: error opening temporary file "'//trim(file)//'"')
+      call stop_it_if_any((ierr/=0),'true_parallel_open: error opening temporary file "'//trim(file)//'"')
       do pos=1,bytes
         write (unit, '(A)', REC=pos) buffer(pos)
       enddo
       endfile(unit, iostat=ierr)
-      call stop_it_if_any((ierr<0),'parallel_open: error writing temporary file "'//trim(file)//'"')
+      call stop_it_if_any((ierr<0),'true_parallel_open: error writing temporary file "'//trim(file)//'"')
       close(unit)
       deallocate(buffer)
 !
