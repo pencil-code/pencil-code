@@ -766,7 +766,7 @@ module Snapshot
 !
 !  03-aug-11/wlad: coded 
 !
-      use Sub, only: read_snaptime_root
+      use Sub, only: snaptime_read
       use General, only: safe_character_assign
 !
       real, intent(inout) :: dt_
