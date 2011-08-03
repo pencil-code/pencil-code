@@ -783,7 +783,7 @@ module Snapshot
 !  Adjust the time-step accordingly, so that the next timestepping
 !  lands the simulation at the precise time defined by dsnap. 
 !
-      if (t+dt > tsnap) then 
+      if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then 
         dt_=tsnap-t
       else
         dt_=dt_
