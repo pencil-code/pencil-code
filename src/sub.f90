@@ -3095,7 +3095,7 @@ module Sub
       if (enum) call chn(nout,ch,'update_snaptime: '//trim(file))
 !
 !  Mark lout=.true. when time has exceeded the value of tout do while loop to
-!  make make sure tt is always larger than tout.
+!  make sure tt is always larger than tout.
 !  (otherwise slices are written just to catch up with tt.)
 !
       if (t_sp >= tout) then
