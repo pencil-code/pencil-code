@@ -775,8 +775,10 @@ module Testscalar
         if (idiag_kapcPARAz/=0) call xysum_mn_name_z(-4*kz1*sx*sy(m)*(+sz(n)*Fipq(:,3,i1) &
                                                                       -cz(n)*Fipq(:,3,i2)),idiag_kapcPARAz)
 !
-        if (idiag_kapcPERP1/=0) call   sum_mn_name  (-4*kx1*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2))*zmask(n),idiag_kapcPERP1)
-        if (idiag_kapcPERP2/=0) call   sum_mn_name  (-4*ky1*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2))*zmask(n),idiag_kapcPERP2)
+        if (idiag_kapcPERP1/=0) call   sum_mn_name  (-4*kx1*cx*sy(m)*(+cz(n)*Fipq(:,1,i1) &
+                                                                      +sz(n)*Fipq(:,1,i2))*zmask(n),idiag_kapcPERP1)
+        if (idiag_kapcPERP2/=0) call   sum_mn_name  (-4*ky1*sx*cy(m)*(+cz(n)*Fipq(:,2,i1) &
+                                                                      +sz(n)*Fipq(:,2,i2))*zmask(n),idiag_kapcPERP2)
         if (idiag_kapcPERPz/=0) call xysum_mn_name_z(-2*kx1*cx*sy(m)*(+cz(n)*Fipq(:,1,i1)+sz(n)*Fipq(:,1,i2)) &
                                                      -2*ky1*sx*cy(m)*(+cz(n)*Fipq(:,2,i1)+sz(n)*Fipq(:,2,i2)),idiag_kapcPERPz)
 !
