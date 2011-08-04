@@ -3013,7 +3013,6 @@ module Sub
       double precision :: t
       intent(in)  :: file, dtout, t
       intent(out) :: tout, nout
-      integer :: lun
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
 !
