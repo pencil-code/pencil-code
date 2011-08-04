@@ -1133,7 +1133,7 @@ module Forcing
                   *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
 !
-!  Compute additional forcing function.
+!  Compute additional forcing function (used for velocity if crosshel=1).
 !  It can optionally be the same. Alterantively, one has to set crosshel=1.
 !
                 if (lforcing2_same) then
