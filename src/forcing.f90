@@ -3768,7 +3768,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine hel_vec
 !***********************************************************************
-    subroutine fluxring_cylindrical(force)
+    subroutine calc_fluxring_cylindrical(force)
 !
 !   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
 !
@@ -3788,7 +3788,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       force(:,2)=0.
       force(:,3)=0.
 !
-    endsubroutine fluxring_cylindrical
+    endsubroutine calc_fluxring_cylindrical
 !***********************************************************************
     subroutine calc_lforcing_cont_pars(f)
 !
