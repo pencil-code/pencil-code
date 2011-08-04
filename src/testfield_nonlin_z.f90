@@ -107,7 +107,7 @@ module Testfield
   integer :: idiag_eta12=0      ! DIAG_DOC: $\eta_{12}k$
   integer :: idiag_eta22=0      ! DIAG_DOC: $\eta_{22}k$
   integer :: idiag_alpK=0       ! DIAG_DOC: $\alpha^K$
-  integer :: idiag_alpM=0       ! DIAG_DOC: $\alpha^K$
+  integer :: idiag_alpM=0       ! DIAG_DOC: $\alpha^M$
   integer :: idiag_alpMK=0      ! DIAG_DOC: $\alpha^{MK}$
   integer :: idiag_phi11=0      ! DIAG_DOC: $\phi_{11}$
   integer :: idiag_phi21=0      ! DIAG_DOC: $\phi_{21}$
