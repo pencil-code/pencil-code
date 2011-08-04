@@ -1089,16 +1089,17 @@ module Testscalar
       intent(out) :: C0test,G0test
 !
 !  set G0test for each of the 2+2 cases
+!  G means +gradC
 !
       select case (jtest)
       case (1); C0test=camp*sx*sy(m)*cz(n)
-        G0test(:,1)=camp*cx*sy(m)*cz(n)
-        G0test(:,2)=camp*sx*cy(m)*cz(n)
-        G0test(:,3)=+camp*sx*sy(m)*ktestscalar*sz(n)
+        G0test(:,1)=+camp*kxtestscalar*cx*sy(m)*cz(n)
+        G0test(:,2)=+camp*sx*kytestscalar*cy(m)*cz(n)
+        G0test(:,3)=-camp*sx*sy(m)*ktestscalar*sz(n)
       case (2); C0test=camp*sx*sy(m)*sz(n)
-        G0test(:,1)=camp*cx*sy(m)*sz(n)
-        G0test(:,2)=camp*sx*cy(m)*sz(n)
-        G0test(:,3)=-camp*sx*sy(m)*ktestscalar*cz(n)
+        G0test(:,1)=+camp*kxtestscalar*cx*sy(m)*sz(n)
+        G0test(:,2)=+camp*sx*kytestscalar*cy(m)*sz(n)
+        G0test(:,3)=+camp*sx*sy(m)*ktestscalar*cz(n)
       case default
         call fatal_error("set_ggtest_G1_G2","jtest outside range")
       endselect

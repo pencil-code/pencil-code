@@ -3778,7 +3778,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       real, dimension (nx,3), intent(out) :: force
       real, dimension (nx) :: argum,s
-      real ::  b0=1., s0=2., width=.2, p0=1., mphi=1.
+      real ::  b0=1., s0=2., width=.2, p0=1.
 !
 !  density for the magnetic flux flux ring
 !
