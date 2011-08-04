@@ -84,10 +84,10 @@ module InitialCondition
 !  ending at the top plane.
 !  NB: Currently this works only for one CPU. For multi CPU usage
 !  initialize on one CPU and do the remeshing.
+!  NB2: Works best with the same resolution (box_size_xyz/mesh_points_xyz) in all directions.
+!  This has to do with the curl operator I guess.
 !
 !  Created 2011-07-01 by Simon Candelaresi (Iomsn)
-!
-! TODO: implement different profiles
 !
         use Mpicomm, only: stop_it
         use Poisson
@@ -217,9 +217,11 @@ module InitialCondition
                     !  corrected further in the code.
                     do j = 1,n1
                         if (prof == 'gaussian') then
-                            f(j,m,n,iax:iaz) = tangent*ampl*exp(-width_tube*circle_radius**2)
+                            f(j,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
                         else if (prof == 'constant') then
                             f(j,m,n,iax:iaz) = tangent*ampl
+                        else
+                            write(*,*) "error: invalid magnetic field profile"
                         endif
                     enddo
                     circle_param = circle_param + delta_circle_param
@@ -255,7 +257,7 @@ module InitialCondition
                             !  Note that B is written in the f-array where A is stored. This is
                             !  corrected further in the code.
                             if (prof == 'gaussian') then
-                                f(l,m,n,iax:iaz) = tangent*ampl*exp(-width_tube*circle_radius**2)
+                                f(l,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
                             else if (prof == 'constant') then
                                 f(l,m,n,iax:iaz) = tangent*ampl
                             endif
@@ -264,6 +266,7 @@ module InitialCondition
                         circle_radius = circle_radius + delta_circle_radius
                     enddo            
                     tube_pos(3) = tube_pos(3) + delta_tube_param
+!                     tube_pos(3) = tube_pos(3) + z(l1+1) - z(l1)
                 enddo
                 if (idx .gt. word_len) exit
 
@@ -376,8 +379,8 @@ module InitialCondition
                                 !  corrected further in the code.
                         
                                 if (prof == 'gaussian') then
-                                    f(l,m,n,iax:iaz) = tangent*ampl*exp(-width_tube*circle_radius**2)
-                                else if (prof == 'gaussian') then
+                                    f(l,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
+                                else if (prof == 'constant') then
                                     f(l,m,n,iax:iaz) = tangent
                                 endif
                                 circle_param = circle_param + delta_circle_param
@@ -417,8 +420,8 @@ module InitialCondition
                     !  corrected further in the code.
                     do j = 1,n1
                         if (prof == 'gaussian') then
-                            f(j+n2,m,n,iax:iaz) = tangent*ampl*exp(-width_tube*circle_radius**2)
-                        else if (prof == 'gaussian') then
+                            f(j+n2,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
+                        else if (prof == 'constant') then
                             f(j+n2,m,n,iax:iaz) = tangent*ampl
                         endif
                     enddo
