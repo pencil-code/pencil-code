@@ -525,6 +525,8 @@ module Forcing
           profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
           profx_ampl1(l-l1+1)=ampl1_ff*bessj(1,k1bessel0*x(l))
         enddo
+      elseif (iforcing_cont=='fluxring_cylindrical') then
+XX
       endif
 !
     endsubroutine initialize_forcing
@@ -3766,6 +3768,28 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine hel_vec
 !***********************************************************************
+    subroutine fluxring_cylindrical(force)
+!
+!   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
+!
+      use General
+      use Sub
+      use EquationOfState, only: cs0
+!
+      real, dimension (nx,3), intent(out) :: force
+      real, dimension (mx) :: argum
+      real, dimension ::   b0=1., s0=2., width=.2, p0=1., mphi=1.
+!
+!  density for the magnetic flux flux ring
+!
+      argum=sqrt2*(x-s0)/width
+!
+      force(:,1)=2.*x*(b0/(width*s0))**2*exp(-argum**2)*(width**2-x**2+x*width)
+      force(:,2)=0.
+      force(:,3)=0.
+!
+    endsubroutine fluxring_cylindrical
+!***********************************************************************
     subroutine calc_lforcing_cont_pars(f)
 !
 !  precalculate parameters that are new at each timestep,
@@ -3978,6 +4002,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.0
           force(:,2)=profx_ampl1
           force(:,3)=profx_ampl
+!
+!  fluxring_cylindrical
+!
+        case('fluxring_cylindrical')
+          call calc_fluxring_cylindrical(force)
 !
         case default
           call stop_it('forcing: no continuous iforcing_cont specified')
