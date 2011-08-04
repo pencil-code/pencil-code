@@ -84,6 +84,7 @@ foreach dir ($procdirs $subdirs)
     mkdir $ddir
   else if (! -e NOERASE) then
     # Clean up
+    rm -f $datadir/../driver/pts_[1-9].dat $datadir/../driver/seed_[1-9].dat >& /dev/null
     if ($dir == "allprocs") then
       rm -f $ddir/VAR[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list >& /dev/null
     else
