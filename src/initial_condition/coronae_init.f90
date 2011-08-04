@@ -364,13 +364,14 @@ contains
             f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,ilnrho))/(gamma*cp1)
           endif
         else if (lentropy) then
+          if (leos) call get_cp1(cp1)
           if (direction=='z') then
-            f(:,:,:,iss) = (log(gamma_m1/cs20)+spread(spread(profile_z,1,mx),2,my)- &
-                gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) /gamma
+            f(:,:,:,iss) = (log(gamma_m1/cs20/cp1)+spread(spread(profile_z,1,mx),2,my)- &
+                gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) / cp1 /gamma
           endif
           if (direction=='x') then
-            f(:,:,:,iss) = (log(gamma_m1/cs20)+spread(spread(profile_x,2,my),3,mz)- &
-                gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) /gamma
+            f(:,:,:,iss) = (log(gamma_m1/cs20/cp1)+spread(spread(profile_x,2,my),3,mz)- &
+                gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) / cp1 /gamma
           endif
         else
           call fatal_error('setup_vert_profiles', &
