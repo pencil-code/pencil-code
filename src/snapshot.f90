@@ -303,7 +303,7 @@ module Snapshot
           if ( xy_specs(ispec)/='' ) then
 !
             ipos = index(xy_specs(ispec), '.'); sp1=''; sp2=''
-! 
+!
             if ( ipos==0 ) then
               call power_xy(f,trim(xy_specs(ispec)))
             else
@@ -761,10 +761,10 @@ module Snapshot
 !***********************************************************************
     subroutine shift_dt(dt_)
 !
-!  Hack to make the code output the VARN files at EXACTLY the times 
+!  Hack to make the code output the VARN files at EXACTLY the times
 !  defined by dsnap, instead of slightly after it.
 !
-!  03-aug-11/wlad: coded 
+!  03-aug-11/wlad: coded
 !
       use Sub, only: snaptime_read
       use General, only: safe_character_assign
@@ -772,7 +772,6 @@ module Snapshot
       real, intent(inout) :: dt_
       real :: tsnap
       integer :: nsnap
-      logical :: lsnap
       character (len=fnlen) :: file
 !
 !  Read the output time defined by dsnap.
@@ -781,9 +780,9 @@ module Snapshot
       call snaptime_read(file,tsnap,nsnap,dsnap,t)
 !
 !  Adjust the time-step accordingly, so that the next timestepping
-!  lands the simulation at the precise time defined by dsnap. 
+!  lands the simulation at the precise time defined by dsnap.
 !
-      if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then 
+      if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then
         dt_=tsnap-t
       else
         dt_=dt_
