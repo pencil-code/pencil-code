@@ -74,19 +74,20 @@ module Magnetic_meanfield
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
   real :: qp_d, qp_x0
+  real, dimension(3) :: alpha_aniso=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
   real, dimension(mz) :: etat_z, detat_z
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
-  logical :: lalpha_profile_total=.false.
+  logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
   logical :: ldelta_profile=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
-      alpha_eps, alpha_width, alpha_width2, &
+      alpha_eps, alpha_width, alpha_width2, alpha_aniso, &
       lmeanfield_noalpm, alpha_profile, &
       x_surface, x_surface2, z_surface, &
       alpha_rmin,&
@@ -165,6 +166,15 @@ module Magnetic_meanfield
         read(1) alpha_input
         close(1)
       endif
+!
+!  check
+!
+      if (any(alpha_aniso/=0.)) then
+        lalpha_aniso=.true.
+      else
+        lalpha_aniso=.false.
+      endif
+      if (lroot) print*,'lalpha_aniso=',lalpha_aniso
 !
 !  write profile (uncomment for debugging)
 !
@@ -473,7 +483,7 @@ module Magnetic_meanfield
       real, dimension (nx,3) :: Bk_Bki, tmp_jxb,exa_meanfield
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact,qp_c
-      integer :: l
+      integer :: j,l
 !
       intent(inout) :: f,p
 !
@@ -666,7 +676,16 @@ module Magnetic_meanfield
           alpha_quenching_tmp=alpha_quenching*sqrt(kf_x)
           alpha_total=alpha_total/(1.+alpha_quenching_tmp*p%b2)
         endif
-        call multsv_mn(alpha_total,p%bb,p%mf_EMF)
+!
+!  Apply alpha effect; allow for anisotropy
+!
+        if (lalpha_aniso) then
+          do j=1,3
+            p%mf_EMF(:,j)=alpha_total*alpha_aniso(j)*p%bb(:,j)
+          enddo
+        else
+          call multsv_mn(alpha_total,p%bb,p%mf_EMF)
+        endif
 !
 !  Optionally, run the alpha-Omega approximation, i.e. apply
 !  alpha effect only to the toroidal component. Since p%mf_EMF
