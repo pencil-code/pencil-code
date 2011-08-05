@@ -1202,7 +1202,14 @@ module Special
       call dot(tmpv,p%bunit,tmpj)
       rhs = rhs + tmpj
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + chi_spitzer * rhs
+      if (ltemperature .and. (.not.ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + chi_spitzer * rhs
+      else if (lentropy .and. (.not. pretend_lnTT)) then
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + chi_spitzer * rhs /p%cp1/gamma
+      else
+        call fatal_error('calc_heatcond_tensor', &
+            'not implemented for current set of thermodynamic variables')
+      endif
 !
 !  for timestep extension multiply with the
 !  cosine between grad T and bunit
@@ -1483,19 +1490,25 @@ module Special
 !
 !     add to the energy equation
 !
-      if (ltemperature) then
-        if (ltemperature_nolog) then
-          rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnrho)
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)-rtv_cool
-        else
-          rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
-        endif
+      if (ltemperature.and.ltemperature_nolog) then
+        rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnrho)
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)-rtv_cool
+!
+      else if (ltemperature.and.(.not.ltemperature_nolog)) then
+        rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
+!
       else if (lentropy.and.pretend_lnTT) then
         rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
+!
+      else if (lentropy.and. (.not.pretend_lnTT)) then
+        rtv_cool=rtv_cool*exp(-p%lnTT-p%lnrho)
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool
+!
       else if (lthermal_energy) then
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth)-rtv_cool
+!
       else
         call fatal_error('calc_heat_cool_RTV', &
             'not implemented for current set of thermodynamic variables')
