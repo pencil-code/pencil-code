@@ -1169,7 +1169,7 @@ module Particles_main
         if (dsnap_par>0.0) then
           call update_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t,lsnap_par,nsnap_par_ch)
           if (lsnap_par) then
-            snapname=trim(snapbase)//'_'//trim(nsnap_par_ch)
+            snapname=trim(snapbase)//'_'//nsnap_par_ch
             call particles_boundconds(f)
             call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) &
@@ -1183,7 +1183,7 @@ module Particles_main
         if (dsnap_par_minor>0.0) then
           call update_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t,lsnap_minor,nsnap_minor_ch)
           if (lsnap_minor) then
-            snapname=snapbase//trim(itoa(nsnap-1))//'.'//trim(nsnap_minor_ch)
+            snapname=trim(snapbase)//trim(itoa(nsnap-1))//'.'//nsnap_minor_ch
             call particles_boundconds(f)
             call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) &
@@ -1196,7 +1196,7 @@ module Particles_main
 !
         call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
         if (lsnap) then
-          snapname=snapbase//nsnap_ch
+          snapname=trim(snapbase)//nsnap_ch
           call particles_boundconds(f)
           call output_particles(snapname,fp,ipar)
           if (lparticles_blocks) &
