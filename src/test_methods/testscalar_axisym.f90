@@ -295,6 +295,8 @@ module Testscalar
       elsewhere
         zmask=0.
       endwhere
+      testscalar_zaver_range(1)=max(testscalar_zaver_range(1),xyz0(3))
+      testscalar_zaver_range(2)=min(testscalar_zaver_range(2),xyz1(3))
       zmask=zmask*Lxyz(3)/(testscalar_zaver_range(2)-testscalar_zaver_range(1))
 !
 !  debug output
@@ -312,8 +314,8 @@ module Testscalar
         print*,'zmask=',zmask
       endif
 !
-!  Also calculate its inverse, but only if different from zero
-!  first kx
+!  Also calculate its inverse, but only if different from zero.
+!  First kx:
 !
       if (kxtestscalar==0) then
         kxtestscalar1=1.
@@ -322,13 +324,7 @@ module Testscalar
       endif
       kx1=kxtestscalar1
 !
-      if (ktestscalar==0) then
-        ktestscalar1=1.
-      else
-        ktestscalar1=1./ktestscalar_effective
-      endif
-!
-!  next ky
+!  Next ky:
 !
       if (kytestscalar==0) then
         kytestscalar1=1.
@@ -337,7 +333,7 @@ module Testscalar
       endif
       ky1=kytestscalar1
 !
-!  finally kz (still called k)
+!  Finally kz (still called k):
 !
       if (ktestscalar==0) then
         ktestscalar1=1.
@@ -345,6 +341,10 @@ module Testscalar
         ktestscalar1=1./ktestscalar_effective
       endif
       kz1=ktestscalar1
+!
+!  Output 
+!
+      if (lroot) print*,'kx1,ky1,kz1=',kx1,ky1,kz1
 !
 !  calculate inverse testscalar amplitude (unless it is set to zero)
 !

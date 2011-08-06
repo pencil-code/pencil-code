@@ -226,15 +226,15 @@ module Testfield
       c2kz=cos(2*ztestfield)
       s2kz=sin(2*ztestfield)
 !
+!  define sinkx and coskx, called sx and cx
+!
+      sx=sin(kxtestfield*x(l1:l2))
+      cx=cos(kxtestfield*x(l1:l2))
+!
 !  define sinky and cosky, called sy and cy
 !
       sy=sin(kytestfield*y)
       cy=cos(kytestfield*y)
-!
-!  define sinkx
-!
-      sx=sin(kxtestfield*x(l1:l2))
-      cx=cos(kxtestfield*x(l1:l2))
 !
 !  calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of alpij and etaij. This is useful if there is a mean Beltrami field
@@ -258,6 +258,8 @@ module Testfield
       elsewhere
         zmask=0.
       endwhere
+      testfield_zaver_range(1)=max(testfield_zaver_range(1),xyz0(3))
+      testfield_zaver_range(2)=min(testfield_zaver_range(2),xyz1(3))
       zmask=zmask*Lxyz(3)/(testfield_zaver_range(2)-testfield_zaver_range(1))
 !
 !  debug output
