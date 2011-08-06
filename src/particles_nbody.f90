@@ -2366,7 +2366,7 @@ module Particles_nbody
       character (len=*) :: snapbase,flist
       character (len=fnlen) :: snapname, filename_diag
       logical :: enum,lsnap
-      character (len=5) :: nsnap_ch
+      character (len=intlen) :: nsnap_ch
       optional :: flist
 !          
       if (enum) then
@@ -2375,8 +2375,7 @@ module Particles_nbody
           call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
           ifirst=1
         endif
-        call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,&
-             lsnap,nsnap_ch,ENUM=.true.)
+        call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
         if (lsnap) then
           snapname=snapbase//nsnap_ch
 !

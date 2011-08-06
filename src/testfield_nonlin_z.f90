@@ -1431,8 +1431,7 @@ module Testfield
       use Magnetic, only: aamz,bbmz,jjmz,lcalc_aamean
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=130) :: file
-      character (len=5) :: ch='\_/^\'
+      character (len=fnlen) :: file
       logical :: ltestfield_out
       integer,save :: ifirst=0
       integer :: j,jtest,jaatest,juutest,jaa,juu
@@ -1492,8 +1491,7 @@ module Testfield
 !
 !  Update next time for rescaling
 !
-          call update_snaptime(file,taainit,naainit,daainit,t, &
-            ltestfield_out,ch,.false.)
+          call update_snaptime(file,taainit,naainit,daainit,t,ltestfield_out)
         endif
       endif
 !

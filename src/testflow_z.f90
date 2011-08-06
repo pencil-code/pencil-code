@@ -661,8 +661,7 @@ module Testflow
       integer :: iuxtest, iuytest, iuztest, ihhtest
 !
       character :: cjtest
-      character (len=5) :: ch
-      character (len=130) :: file
+      character (len=fnlen) :: file
 
       !if (ldiagnos .and. n==4.and.m==4) then
       !print*, 'uumz(1):', uumz(:,1)
@@ -1013,7 +1012,7 @@ module Testflow
 
           call init_uutest(f) !MR: isn't this meant???
           !!!call initialize_testflow(f,reinitialize_uutest)
-          call update_snaptime(file,tuuinit,nuuinit,duuinit,t,ltestflow_out,ch,.false.)
+          call update_snaptime(file,tuuinit,nuuinit,duuinit,t,ltestflow_out)
 !
         endif
       endif

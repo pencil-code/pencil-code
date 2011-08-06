@@ -1076,8 +1076,7 @@ module Testfield
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=130) :: file
-      character (len=5) :: ch='\_/^\'
+      character (len=fnlen) :: file
       logical :: ltestfield_out
       integer,save :: ifirst=0
       integer :: j,jtest
@@ -1111,8 +1110,7 @@ module Testfield
               enddo
             enddo
           enddo
-          call update_snaptime(file,taainit,naainit,daainit,t, &
-            ltestfield_out,ch,.false.)
+          call update_snaptime(file,taainit,naainit,daainit,t,ltestfield_out)
         endif
       endif
 !

@@ -1956,7 +1956,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
 !
-!  Calculate total maximum for each array element and return to root.
+!  Calculate total maximum for each array element and return to all processors.
 !
       real :: fmax_tmp,fmax
 !
@@ -1967,7 +1967,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
 !
-!  Calculate total maximum for each array element and return to root.
+!  Calculate total maximum for each array element and return to all processors.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax

@@ -998,8 +998,7 @@ module Testscalar
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=130) :: file
-      character (len=5) :: ch
+      character (len=fnlen) :: file
       logical :: ltestscalar_out
       integer,save :: ifirst=0
       integer :: j,jtest
@@ -1027,8 +1026,7 @@ module Testscalar
               f(l1:l2,m1:m2,n,j)=rescale_cctest(jtest)*f(l1:l2,m1:m2,n,j)
             enddo
           enddo
-          call update_snaptime(file,tccinit,nccinit,dccinit,t, &
-            ltestscalar_out,ch,.false.)
+          call update_snaptime(file,tccinit,nccinit,dccinit,t,ltestscalar_out)
         endif
       endif
 !

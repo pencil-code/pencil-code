@@ -510,7 +510,7 @@ module power_spectrum
 !
   character (len=80)  :: title
   character (len=10)  :: str, str1
-  character (len=128) :: filename
+  character (len=fnlen) :: filename
   logical             :: l2nd
   !
   !  identify version

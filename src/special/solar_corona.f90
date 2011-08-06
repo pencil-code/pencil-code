@@ -27,7 +27,7 @@ module Special
     module procedure add_interpolated_4D
   endinterface
 !
-  integer, parameter :: max_gran_levels=3
+  integer, parameter :: max_gran_levels=3 ! must be <= 9
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.,Kc=0.
@@ -2469,7 +2469,7 @@ module Special
 !
         points_rstate(:)=0.
 !
-        isnap = nint (t/dsnap)
+        isnap = ceiling (t/dsnap)
         tsnap_uu = (isnap+1) * dsnap
 !
       endif
@@ -2775,7 +2775,7 @@ module Special
 !
       integer :: ierr, pos, len
       logical :: ex
-      character(len=20) :: filename
+      character(len=fnlen) :: filename
       integer, parameter :: unit=10
       real, dimension(6) :: buffer
 !
@@ -2827,18 +2827,20 @@ module Special
 !
 ! 12-aug-10/bing: coded
 !
+      use General, only: itoa
+!
       integer, intent(in) :: level
       integer, optional, intent(in) :: issnap
 !
       integer :: pos, len
-      character(len=22) :: filename
+      character(len=fnlen) :: filename
       integer, parameter :: unit=10
       real, dimension(6) :: buffer
 !
       inquire (iolength=len) first%amp
 !
       if (present (issnap)) then
-        write (filename,'("driver/pts_",I1.1,"_",I3.3,".dat")') level, issnap
+        write (filename,'("driver/pts_",I1.1,"_",A)') level, trim (itoa (issnap))
       else
         write (filename,'("driver/pts_",I1.1,".dat")') level
       endif
@@ -2864,7 +2866,7 @@ module Special
 ! Save seed list for each level. Is needed if levels are spread over 3 procs.
 !
       if (present (issnap)) then
-        write (filename,'("driver/seed_",I1.1,"_",I3.3,".dat")') level, issnap
+        write (filename,'("driver/seed_",I1.1,"_",A)') level, trim (itoa (issnap))
       else
         write (filename,'("driver/seed_",I1.1,".dat")') level
       endif

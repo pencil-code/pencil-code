@@ -249,22 +249,19 @@ module Particles_main
 !***********************************************************************
     subroutine write_snapshot_particles(snap_directory,f,enum,snapnum)
 !
-      use General, only: chn
+      use General, only: itoa
 !
       character (len=*) :: snap_directory
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: enum
       integer, optional :: snapnum
 !
-      character (len=5) :: ch
-!
       if (present(snapnum)) then
-        call chn(snapnum,ch)
-        call particles_write_snapshot(trim(snap_directory)//'/PVAR'//ch,f, &
+        call particles_write_snapshot(trim(snap_directory)//'/PVAR'//itoa(snapnum),f, &
             enum=.false.)
 !
         if (lparticles_nbody) call particles_nbody_write_snapshot(&
-            trim(snap_directory)//'/SPVAR'//ch,enum=.false.)
+            trim(snap_directory)//'/SPVAR'//itoa(snapnum),enum=.false.)
 !
       elseif (enum) then
         call particles_write_snapshot(trim(snap_directory)//'/PVAR',f, &
@@ -1124,7 +1121,7 @@ module Particles_main
 !  04-oct-08/ccyang: use a separate log file for minor snapshots
 !  26-nov-08/ccyang: add independent sequence for particle snapshots
 !
-      use General
+      use General, only: itoa, safe_character_assign
       use Io
       use Particles_mpicomm, only: output_blocks
       use Sub
@@ -1141,7 +1138,7 @@ module Particles_main
       character (len=fnlen), save :: fmajor, fminor, fpar
       logical :: lsnap_minor=.false., lsnap_par=.false.
       character (len=fnlen) :: snapname
-      character (len=5) :: nsnap_ch,nsnap_minor_ch,nsnap_par_ch,nsnap_ch_last
+      character (len=intlen) :: nsnap_ch,nsnap_minor_ch,nsnap_par_ch
 !
       optional :: flist, nobound
 !
@@ -1170,7 +1167,7 @@ module Particles_main
 !  Output independent sequence of particle snapshots.
 !
         if (dsnap_par>0.0) then
-          call update_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t,lsnap_par,nsnap_par_ch,ENUM=.true.)
+          call update_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t,lsnap_par,nsnap_par_ch)
           if (lsnap_par) then
             snapname=trim(snapbase)//'_'//trim(nsnap_par_ch)
             call particles_boundconds(f)
@@ -1184,10 +1181,9 @@ module Particles_main
 !  Possible to output minor particle snapshots (e.g. for a movie).
 !
         if (dsnap_par_minor>0.0) then
-          call update_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t,lsnap_minor,nsnap_minor_ch,ENUM=.true.)
+          call update_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t,lsnap_minor,nsnap_minor_ch)
           if (lsnap_minor) then
-            call chn(nsnap-1,nsnap_ch_last,'')
-            snapname=snapbase//trim(nsnap_ch_last)//'.'//trim(nsnap_minor_ch)
+            snapname=snapbase//trim(itoa(nsnap-1))//'.'//trim(nsnap_minor_ch)
             call particles_boundconds(f)
             call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) &
@@ -1198,8 +1194,7 @@ module Particles_main
 !
 !  Regular data snapshots must come synchronized with the fluid snapshots.
 !
-        call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch, &
-            ENUM=.true.)
+        call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
         if (lsnap) then
           snapname=snapbase//nsnap_ch
           call particles_boundconds(f)

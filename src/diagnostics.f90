@@ -54,7 +54,7 @@ module Diagnostics
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   integer :: mnamer
-  character (len=5) :: ch2davg
+  character (len=intlen) :: ch2davg
 !
   contains
 !***********************************************************************
@@ -733,7 +733,7 @@ module Diagnostics
       real, save :: t2davg
       integer, save :: n2davg
       logical, save :: first=.true.
-      character (len=135) :: file
+      character (len=fnlen) :: file
 !
       file=trim(datadir)//'/t2davg.dat'
       if (first) then
@@ -743,7 +743,7 @@ module Diagnostics
 !
 !  This routine sets l2davg=T whenever its time to write 2D averages
 !
-      call update_snaptime(file,t2davg,n2davg,d2davg,t,l2davg,ch2davg,ENUM=.true.)
+      call update_snaptime(file,t2davg,n2davg,d2davg,t,l2davg,ch2davg)
 !
     endsubroutine write_2daverages_prepare
 !***********************************************************************

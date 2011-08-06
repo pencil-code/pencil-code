@@ -106,7 +106,7 @@ module Timeavg
       use Sub
       use IO
 !
-      character (len=5) :: ch
+      character (len=intlen) :: ch
       character (len=fnlen) :: file
       character (len=*) :: chsnap,flist
       logical :: lsnap,enum
@@ -131,7 +131,7 @@ module Timeavg
 !
 !  Check whether we want to output snapshot.
 !
-        call update_snaptime(file,tsnap,nsnap,tavg,t,lsnap,ch,ENUM=.true.)
+        call update_snaptime(file,tsnap,nsnap,tavg,t,lsnap,ch)
         if (lsnap) then
           call output(chsnap//ch,f_tavg,mtavg)
           if (present(flist)) call log_filename_to_file(chsnap//ch,flist)

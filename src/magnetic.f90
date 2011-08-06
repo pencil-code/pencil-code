@@ -3974,8 +3974,7 @@ module Magnetic
       use Sub, only: update_snaptime, read_snaptime
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=130) :: file
-      character (len=5) :: ch
+      character (len=fnlen) :: file
       logical :: lmagnetic_out
       integer,save :: ifirst=0
 !
@@ -3998,8 +3997,7 @@ module Magnetic
 !
         if (t >= taareset) then
           f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
-          call update_snaptime(file,taareset,naareset,daareset,t, &
-            lmagnetic_out,ch,.false.)
+          call update_snaptime(file,taareset,naareset,daareset,t,lmagnetic_out)
         endif
       endif
 !

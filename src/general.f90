@@ -23,7 +23,7 @@ module General
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
-  public :: chn, parser, write_full_columns
+  public :: chn, itoa, parser, write_full_columns
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
@@ -481,35 +481,37 @@ module General
 !
 !  Make a character out of a number.
 !  Take care of numbers that have less than 4 digits.
+!  Please use the more generic 'itoa' function instead, wherever possible.
 !
 !  30-sep-97/axel: coded
+!  05-aug-2011/Bourdin.KIS: now wraps around itoa
 !
-      character (len=5) :: ch
-      character (len=*), optional :: label
-      integer :: n
+      integer, intent(in) :: n
+      character (len=5), intent(out) :: ch
+      character (len=*), intent(in), optional :: label
 !
-      intent(in) :: n,label
-      intent(out) :: ch
-!
-      ch='     '
-      if (n<0) stop 'chn: lt1'
-      if (n<10) then
-        write(ch(1:1),'(i1)') n
-      elseif (n<100) then
-        write(ch(1:2),'(i2)') n
-      elseif (n<1000) then
-        write(ch(1:3),'(i3)') n
-      elseif (n<10000) then
-        write(ch(1:4),'(i4)') n
-      elseif (n<100000) then
-        write(ch(1:5),'(i5)') n
-      else
-        if (present(label)) print*, 'CHN: <', label, '>'
-        print*,'CHN: n=',n
-        stop "CHN: n too large"
+      if ((n > 99999) .or. (n < 0)) then
+        if (present (label)) print *, 'CHN: <', label, '>'
+        print *, 'CHN: n=', n
+        stop "CHN: maximum number of digits is 5, use itoa function instead."
       endif
 !
+      ch = trim (itoa (n))
+!
     endsubroutine chn
+!***********************************************************************
+    character (len=21) function itoa(n)
+!
+!  Convert integer to ASCII, similar to the C-stdlib 'itoa' function.
+!
+!  05-aug-2011/Bourdin.KIS: coded
+!
+      integer, intent(in) :: n
+!
+      write (itoa, '(I21)') n
+      itoa = adjustl (itoa)
+!
+    endfunction itoa
 !***********************************************************************
   character function intochar(i)
 !

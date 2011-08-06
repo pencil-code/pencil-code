@@ -44,16 +44,19 @@ module Cparam
   integer, parameter :: mreduce=6
   integer :: ip=14
 !
-!  Length of file names:
-!          - strings for boundary condition,
-!          - labels a la initss, initaa,
-!          - lines to be read in
-!          - date-and-time string
-!          - maximum width of a diagnostic column
+!  Name:          Maximum string length of a:
+!  --------------------------------------------
+!  fnlen          file name
+!  intlen         integer (64 bit plus sign)
+!  bclen          string for boundary condition
+!  labellen       label (eg. initss, initaa)
+!  linelen        line to be read in
+!  datelen        date-and-time string
+!  max_col_width  diagnostic column
+!  nscbc_len      ?
 !
-  integer, parameter :: fnlen=128,bclen=3,labellen=25,linelen=256,datelen=30
-  integer, parameter :: nscbc_len=24
-  integer, parameter :: max_col_width=30
+  integer, parameter :: fnlen=135,intlen=21,bclen=3,labellen=25,linelen=256
+  integer, parameter :: datelen=30,max_col_width=30,nscbc_len=24
 !
 !  Number of slots in initlnrho etc.
 !

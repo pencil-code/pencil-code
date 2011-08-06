@@ -687,7 +687,7 @@ module Special
       integer, intent(in) :: j
       integer :: i,stat 
       logical :: exist
-      character (len=130) :: file
+      character (len=fnlen) :: file
 !
 ! Read the size of the data to be found on the file.
 !

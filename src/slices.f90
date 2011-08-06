@@ -39,8 +39,7 @@ module Slices
 !
       integer, save :: ifirst=0
 !
-      character (len=5) :: ch
-      character (len=130) :: file
+      character (len=fnlen) :: file
 !
 !  Output vid-data in 'tvid' time intervals
 !
@@ -52,7 +51,7 @@ module Slices
 !
 !  This routine sets lvideo=T whenever its time to write a slice
 !
-      call update_snaptime(file,tvid,nvid,dvid,t,lvideo,ch,ENUM=.false.)
+      call update_snaptime(file,tvid,nvid,dvid,t,lvideo)
 !
 !  Save current time so that the time that is written out in wslice() is not
 !  from the next time step

@@ -3007,30 +3007,58 @@ module Sub
 !
       use Mpicomm, only: mpibcast_real
 !
-      character (len=*) :: file
-      integer :: nout
-      real :: tout,dtout
-      double precision :: t
-      intent(in)  :: file, dtout, t
-      intent(out) :: tout, nout
+      character (len=*), intent(in) :: file
+      real, intent(out) :: tout
+      integer, intent(out) :: nout
+      real, intent(in) :: dtout
+      double precision, intent(in) :: t
+!
+      integer, parameter :: lun = 31
+      logical :: exist
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
+!
+      if (lroot) then
 !
 !  Depending on whether or not file exists, we need to
 !  either read or write tout and nout from or to the file.
 !
-      if (lroot) then
-        call snaptime_read(file,tout,nout,dtout,t)
-        bcast_array(1)=tout
-        bcast_array(2)=nout
+        inquire(FILE=trim(file),EXIST=exist)
+        open(lun,FILE=trim(file))
+        if (exist) then
+          read(lun,*) tout,nout
+        else
+!
+!  Special treatment when dtout is negative.
+!  Now tout and nout refer to the next snapshopt to be written.
+!
+          if (dtout < 0.) then
+            tout=log10(t)
+          else
+            !  make sure the tout is a good time
+            if (dtout /= 0.) then
+              tout = t - mod(t, dble(abs(dtout))) + dtout
+            else
+              call warning("read_snaptime", &
+                   "Am I writing snapshots every 0 time units? (check " // &
+                   trim(file) // ")" )
+              tout = t
+            endif
+          endif
+          nout=1
+          write(lun,*) tout,nout
+        endif
+        close(lun)
+!
       endif
 !
-!  Broadcast tout and nout, botch into floating point array. Should be
-!  done with a special MPI datatype.
+!  Broadcast tout and nout in one go.
 !
+      bcast_array(1) = tout
+      bcast_array(2) = nout
       call mpibcast_real(bcast_array,nbcast_array)
-      tout=bcast_array(1)
-      nout=bcast_array(2)
+      tout = bcast_array(1)
+      nout = bcast_array(2)
 !
     endsubroutine read_snaptime
 !***********************************************************************
@@ -3082,7 +3110,7 @@ module Sub
 !
     endsubroutine snaptime_read
 !***********************************************************************
-    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
+    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch)
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
 !  file (e.g. tsnap.dat). Done by all processors.
@@ -3090,15 +3118,18 @@ module Sub
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !
-      use General, only: chn
+      use General, only: itoa
 !
-      character (len=*) :: file
-      character (len=5) :: ch
-      logical :: lout,enum
-      double precision :: t
+      character (len=*), intent(in) :: file
+      real, intent(inout) :: tout
+      integer, intent(inout) :: nout
+      real, intent(in) :: dtout
+      double precision, intent(in) :: t
+      logical, intent(out) :: lout
+      character (len=21), intent(out), optional :: ch
+!
+      integer, parameter :: lun = 31
       real :: t_sp   ! t in single precision for backwards compatibility
-      real :: tout,dtout
-      integer :: lun,nout
       logical, save :: lfirstcall=.true.
       real, save :: delta_threshold
 !
@@ -3110,11 +3141,9 @@ module Sub
         t_sp=t
       endif
 !
-!  If enum=.false. we don't want to generate a running file number (eg in wvid).
-!  If enum=.true. we do want to generate character from nout for file name do
-!  this before nout has been updated to new value.
+!  Generate a running file number, if requested.
 !
-      if (enum) call chn(nout,ch,'update_snaptime: '//trim(file))
+      if (present (ch)) ch = itoa (nout)
 !
 !  Mark lout=.true. when time has exceeded the value of tout do while loop to
 !  make sure tt is always larger than tout.
@@ -3145,7 +3174,6 @@ module Sub
 !  manually.
 !
         if (lroot) then
-          lun=1
           open(lun,FILE=trim(file))
           write(lun,*) tout,nout
           write(lun,*) 'This file is written automatically (routine'

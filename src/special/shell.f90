@@ -940,7 +940,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
      real, save :: tsnap, tsnap_goy
      character (len=fnlen), save :: fgoy
      character (len=fnlen) :: snapname
-     character (len=5) :: nsnap_ch
+     character (len=intlen) :: nsnap_ch
 !
      optional :: flist
 !
@@ -956,11 +956,11 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
             ifirst=1
          endif
 !
-         call update_snaptime(fgoy,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch, ENUM=.true.)
+         call update_snaptime(fgoy,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
        endif
 !
        if (lsnap) then
-         snapname=snapbase//nsnap_ch
+         snapname=trim(snapbase)//trim(nsnap_ch)
          call output_GOY(snapname)
          if (ip<=10 .and. lroot) &
              print*,'wsnap_GOY: written snapshot ', snapname

@@ -3308,8 +3308,8 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       integer, save :: ifirst=0
       integer, save :: nforce=0
       logical :: lforce
-      character (len=5) :: ch
-      character (len=135) :: file
+      character (len=intlen) :: ch
+      character (len=fnlen) :: file
 !
 !  identifier
 !
@@ -3325,7 +3325,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
 !  Check whether we want to do forcing at this time.
 !
-      call update_snaptime(file,tforce,nforce,dforce,t,lforce,ch,ENUM=.true.)
+      call update_snaptime(file,tforce,nforce,dforce,t,lforce,ch)
       if (lforce) then
         call blob(force,f,iss,radius_ff,0.,0.,.5)
       endif

@@ -24,7 +24,7 @@ module Timestep
       use BorderProfiles, only: border_quenching
       use Equ, only: pde
       use Interstellar, only: calc_snr_damp_int
-      use Mpicomm, only: mpifinalize, mpireduce_max,mpibcast_real
+      use Mpicomm, only: mpifinalize, mpiallreduce_max
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
       use Shear, only: advance_shear
@@ -35,7 +35,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: ds
-      real, dimension(1) :: dt1, dt1_local
+      real :: dt1,dt1_local
       integer :: j
 !
 !  Coefficients for up to order 3.
@@ -90,13 +90,12 @@ module Timestep
         if (lfirst.and.ldt) then
           dt1_local=maxval(dt1_max(1:nx))
           ! Timestep growth limiter
-          if (real(ddt) > 0.) dt1_local=max(dt1_local(1),dt1_last)
-          call mpireduce_max(dt1_local,dt1,1)
-          if (lroot) dt=1.0/dt1(1)
-          if (lroot.and.loutput_varn_at_exact_tsnap) call shift_dt(dt)
+          if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
+          call mpiallreduce_max(dt1_local,dt1)
+          dt=1.0/dt1
+          if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
           ! Timestep growth limiter
-          if (ddt/=0.) dt1_last=dt1_local(1)/ddt
-          call mpibcast_real(dt,1)
+          if (ddt/=0.) dt1_last=dt1_local/ddt
         endif
 !
 !  Calculate dt_beta_ts.

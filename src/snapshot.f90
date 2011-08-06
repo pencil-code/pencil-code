@@ -49,7 +49,7 @@ module Snapshot
       integer, save :: ifirst=0,nsnap
       logical :: lsnap
       character (len=fnlen) :: file
-      character (len=5) :: ch
+      character (len=21) :: ch
 !
       if (present(enum)) then
         enum_=enum
@@ -74,7 +74,7 @@ module Snapshot
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
-        call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,ENUM=.true.)
+        call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
         if (lsnap) then
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
@@ -213,14 +213,13 @@ module Snapshot
       logical, optional :: lwrite_only
 !
       real, dimension (:,:,:), allocatable :: b_vec
-      character (len=135) :: file
-      character (len=5) :: ch,sp1,sp2
+      character (len=fnlen) :: file
       logical :: lspec,llwrite_only=.false.,ldo_all
       integer, save :: ifirst=0,nspec
       real, save :: tspec
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
-      character (LEN=40) :: str
+      character (LEN=40) :: str,sp1,sp2
 !
 !  Allocate memory for b_vec at run time.
 !
@@ -250,7 +249,7 @@ module Snapshot
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
       if (ldo_all) &
-           call update_snaptime(file,tspec,nspec,dspec,t,lspec,ch,ENUM=.false.)
+           call update_snaptime(file,tspec,nspec,dspec,t,lspec)
       if (lspec.or.llwrite_only) then
         if (ldo_all)  call update_ghosts(f)
         if (vel_spec) call power(f,'u')
@@ -766,7 +765,7 @@ module Snapshot
 !
 !  03-aug-11/wlad: coded
 !
-      use Sub, only: snaptime_read
+      use Sub, only: read_snaptime
       use General, only: safe_character_assign
 !
       real, intent(inout) :: dt_
@@ -777,7 +776,7 @@ module Snapshot
 !  Read the output time defined by dsnap.
 !
       call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
-      call snaptime_read(file,tsnap,nsnap,dsnap,t)
+      call read_snaptime(file,tsnap,nsnap,dsnap,t)
 !
 !  Adjust the time-step accordingly, so that the next timestepping
 !  lands the simulation at the precise time defined by dsnap.
