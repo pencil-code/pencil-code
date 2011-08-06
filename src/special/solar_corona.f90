@@ -86,7 +86,7 @@ module Special
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-    integer :: idiag_dtspitzer  ! DIAG_DOC: Spitzer heat conduction time step
+    integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
 !
 ! video slices
     real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
