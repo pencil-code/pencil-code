@@ -49,7 +49,7 @@ module Snapshot
       integer, save :: ifirst=0,nsnap
       logical :: lsnap
       character (len=fnlen) :: file
-      character (len=21) :: ch
+      character (len=intlen) :: ch
 !
       if (present(enum)) then
         enum_=enum

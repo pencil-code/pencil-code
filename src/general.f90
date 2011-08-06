@@ -500,15 +500,16 @@ module General
 !
     endsubroutine chn
 !***********************************************************************
-    character (len=21) function itoa(n)
+    character (len=intlen) function itoa(n)
 !
 !  Convert integer to ASCII, similar to the C-stdlib 'itoa' function.
+!  If the length of an integer changes, please adapt 'intlen' accordingly.
 !
 !  05-aug-2011/Bourdin.KIS: coded
 !
       integer, intent(in) :: n
 !
-      write (itoa, '(I21)') n
+      write (itoa, '(I21)') n   ! (64 bit integer plus sign)
       itoa = adjustl (itoa)
 !
     endfunction itoa

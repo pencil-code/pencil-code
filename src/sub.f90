@@ -3078,7 +3078,7 @@ module Sub
       real, intent(in) :: dtout
       double precision, intent(in) :: t
       logical, intent(out) :: lout
-      character (len=21), intent(out), optional :: ch
+      character (len=intlen), intent(out), optional :: ch
 !
       integer, parameter :: lun = 31
       real :: t_sp   ! t in single precision for backwards compatibility
