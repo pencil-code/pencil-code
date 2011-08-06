@@ -145,6 +145,7 @@ module Entropy
 !
       use General, only: chn
       use Initcond, only: jump
+      use EquationOfState, only: rho0, cs20, gamma, gamma_m1
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -169,6 +170,13 @@ module Entropy
           case ('xjump'); call jump(f,ieth,eth_left,eth_right,widtheth,'x')
 !
           case ('const_eth'); f(:,:,:,ieth)=f(:,:,:,ieth)+eth_const
+!
+          case ('basic_state')
+            if (gamma_m1 /= 0.) then
+              f(:,:,:,ieth) = f(:,:,:,ieth) + rho0 * cs20 / (gamma * gamma_m1)
+            else
+              f(:,:,:,ieth) = f(:,:,:,ieth) + rho0 * cs20
+            endif
 !
           case default
 !
