@@ -263,7 +263,7 @@ module Pscalar
       if (lpencil(i_glncc)) call grad(f,ilncc,p%glncc)
 ! uglncc
       if (lpencil(i_uglncc)) then
-        if (ldustdrift) then
+        if (ldustdrift.and.ldustdensity) then
           call u_dot_grad(f,ilncc,p%glncc,p%udropav,p%uglncc,UPWIND=lupw_lncc)
         else
           call u_dot_grad(f,ilncc,p%glncc,p%uu,p%uglncc,UPWIND=lupw_lncc)
