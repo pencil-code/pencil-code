@@ -1275,7 +1275,7 @@ module EquationOfState
 !
     endsubroutine saha
 !***********************************************************************
-    subroutine get_soundspeed(lnTT,cs2)
+    subroutine get_soundspeed(TT,cs2)
 !
 !  Calculate sound speed for given temperature
 !
@@ -1283,12 +1283,12 @@ module EquationOfState
 !
       use Mpicomm
 !
-      real, intent(in)  :: lnTT
+      real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
       call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
 !
-      call keep_compiler_quiet(lnTT,cs2)
+      call keep_compiler_quiet(TT,cs2)
 !
     endsubroutine get_soundspeed
 !***********************************************************************

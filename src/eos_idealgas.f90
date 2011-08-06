@@ -1698,16 +1698,16 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine get_soundspeed(lnTT,cs2)
+    subroutine get_soundspeed(TT,cs2)
 !
 !  Calculate sound speed for given temperature
 !
 !  20-Oct-03/tobi: Coded
 !
-      real, intent(in)  :: lnTT
+      real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
-      cs2=gamma_m1*cp*exp(lnTT)
+      cs2=gamma_m1*cp*TT
 !
     endsubroutine get_soundspeed
 !***********************************************************************
@@ -1800,7 +1800,7 @@ module EquationOfState
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
 !
-      call get_soundspeed(log(T0),cs2bot)
+      call get_soundspeed(T0,cs2bot)
       cs2top=cs2bot
 !
     endsubroutine isothermal_entropy

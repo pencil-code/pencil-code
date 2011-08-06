@@ -892,20 +892,20 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine get_soundspeed(lnTT,cs2)
+    subroutine get_soundspeed(TT,cs2)
 !
 !  Calculate sound speed for given temperature
 !
 !  20-Oct-03/tobi: Coded
 !
-      real, intent(in)  :: lnTT
+      real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
       cs2=impossible
       call fatal_error('get_soundspeed', &
         'This routine is not coded for eos_chemistry')
 !
-      call keep_compiler_quiet(lnTT)
+      call keep_compiler_quiet(TT)
 !
     endsubroutine get_soundspeed
 !***********************************************************************

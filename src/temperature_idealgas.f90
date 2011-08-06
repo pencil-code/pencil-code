@@ -1888,7 +1888,7 @@ module Entropy
           'lumi','hcond'
         do i=nr,1,-1
           u=r(i)/sqrt(2.)/wheat
-          call get_soundspeed(log(temp(i)),cs2)
+          call get_soundspeed(temp(i),cs2)
           call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
           write(11,'(f6.3,6e12.3)') r(i),exp(lnrho(i)),ss,cs2,g(i), &
             lumi(i), hcond(i)

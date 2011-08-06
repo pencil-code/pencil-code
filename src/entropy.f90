@@ -550,8 +550,8 @@ module Entropy
 !
 !  Set up cooling parameters for spherical shell in terms of sound speeds
 !
-          call get_soundspeed(log(TT_ext),cs2_ext)
-          call get_soundspeed(log(TT_int),cs2_int)
+          call get_soundspeed(TT_ext,cs2_ext)
+          call get_soundspeed(TT_int,cs2_int)
           cs2cool=cs2_ext
           if (lroot) then
             print*,'initialize_entropy: g0,mpoly,beta1',g0,mpoly,beta1
@@ -5634,7 +5634,7 @@ endsubroutine get_gravz_chit
         open(unit=11,file=trim(directory)//'/setup.dat')
         write(11,'(a1,a5,5a14)') '#','r','rho','ss','cs2','grav','hcond'
         do i=nr,1,-1
-          call get_soundspeed(log(temp(i)),cs2)
+          call get_soundspeed(temp(i),cs2)
           call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
           write(11,'(f6.3,4e14.5,1pe14.5)') r(i),exp(lnrho(i)),ss, &
           cs2,g(i),hcond(i)

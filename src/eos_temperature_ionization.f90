@@ -822,19 +822,19 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine get_soundspeed(lnTT,cs2)
+    subroutine get_soundspeed(TT,cs2)
 !
 !  Calculate sound speed for given temperature
 !
 !  02-apr-04/tony: dummy coded
 !
-      real, intent(in)  :: lnTT
+      real, intent(in)  :: TT
       real, intent(out) :: cs2
 !
       call not_implemented('get_soundspeed')
       cs2=0.
 !
-      call keep_compiler_quiet(lnTT)
+      call keep_compiler_quiet(TT)
 !
     endsubroutine get_soundspeed
 !***********************************************************************
