@@ -1,0 +1,20 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/2d_methane_flame
+SVN Id:
+    $Id$
+Maintainer:
+    Julien Savre <juliensavre/gmail[cot]com>
+Added:
+    11-May-2011
+Status:
+    works since 11-May-2011
+Recommended resolution:
+    512x16
+Comments:
+  Added new test-case: premixed methane/air flame with simplified
+  diffusion coefficients and non unity Lewis numbers. The flame is
+  initialized via the file CH4_p01_0phi0_7000tu0300 obtained using a
+  laminar flame code. A turbulent velocity profile is imposed at the
+  inlet (from turbulent_box/data). The reduced chemical mechanism for
+  methane and the Lewis number file are provided.
+Reference:
