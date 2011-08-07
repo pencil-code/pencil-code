@@ -163,6 +163,7 @@ module Equ
 !
       call impose_density_floor(f)
       call impose_velocity_ceiling(f)
+      call impose_energy_floor(f)
 !
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.

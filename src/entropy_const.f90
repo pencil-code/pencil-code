@@ -273,5 +273,25 @@ module Entropy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
+    subroutine impose_energy_floor(f)
+!
+!  Dummy subroutine
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_energy_floor
+!***********************************************************************
+    subroutine dynamical_thermal_diffusion(umax)
+!
+!  Dummy subroutine
+!
+      real, intent(in) :: umax
+!
+      call keep_compiler_quiet(umax)
+!
+    endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
 endmodule Entropy
 

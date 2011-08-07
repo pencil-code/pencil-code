@@ -807,6 +807,16 @@ module Entropy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
+    subroutine impose_energy_floor(f)
+!
+!  Dummy subroutine; may not be necessary for lnTT
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_energy_floor
+!***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
 !  Dummy subroutine

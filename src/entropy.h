@@ -8,4 +8,5 @@
   public :: init_ss, dss_dt, calc_lentropy_pars
   public :: pencil_criteria_entropy, pencil_interdep_entropy
   public :: calc_pencils_entropy, fill_farray_pressure
+  public :: impose_energy_floor
   public :: dynamical_thermal_diffusion

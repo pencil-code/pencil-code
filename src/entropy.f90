@@ -30,6 +30,7 @@ module Entropy
 !
   include 'entropy.h'
 !
+  real :: entropy_floor = 0.
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, zcool=0.0, rcool=0.0, wcool=0.1
   real :: rcool1=0.0, rcool2=0.0, deltaT=0.0
@@ -157,7 +158,7 @@ module Entropy
       chit_aniso, chit_aniso_prof1, chit_aniso_prof2, &
       lchit_aniso_simplified, lconvection_gravx, &
       ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
-      nkramers, xbot_aniso, xtop_aniso
+      nkramers, xbot_aniso, xtop_aniso, entropy_floor
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -5913,6 +5914,19 @@ endsubroutine get_gravz_chit
       endif
 !
     endsubroutine fill_farray_pressure
+!***********************************************************************
+    subroutine impose_energy_floor(f)
+!
+!  Impose a floor in minimum entropy.  Note that entropy_floor is
+!  interpreted as minimum lnTT when pretend_lnTT is set true.
+!
+!  07-aug-11/ccyang: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      if (entropy_floor > 0.) where(f(:,:,:,iss) < entropy_floor) f(:,:,:,ieth) = entropy_floor
+!
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !

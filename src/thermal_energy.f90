@@ -32,6 +32,7 @@ module Entropy
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
   real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
+  real :: energy_floor = 0.
   logical :: lviscosity_heat=.true.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
@@ -44,7 +45,7 @@ module Entropy
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lviscosity_heat, chi, chi_shock, chi_hyper3_mesh
+      lviscosity_heat, chi, chi_shock, chi_hyper3_mesh, energy_floor
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -599,6 +600,18 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine fill_farray_pressure
+!***********************************************************************
+    subroutine impose_energy_floor(f)
+!
+!  Impose a floor in minimum thermal energy.
+!
+!  07-aug-11/ccyang: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      if (energy_floor > 0.) where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor
+!
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
