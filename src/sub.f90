@@ -3083,7 +3083,7 @@ module Sub
       integer, parameter :: lun = 31
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
-      real, save :: delta_threshold
+      real, save :: deltat_threshold
 !
 !  Use t_sp as a shorthand for either t or lg(t).
 !
@@ -3109,14 +3109,15 @@ module Sub
 ! 
       if (lfirstcall) then 
         if (.not.loutput_varn_at_exact_tsnap) then 
-          delta_threshold=0.0
+          deltat_threshold=0.0
         else
-          delta_threshold=dtmin
+          deltat_threshold=dtmin
         endif
         lfirstcall=.false.
       endif
 !
-      if (t_sp-tout >= delta_threshold) then
+      if (    (t_sp       >= tout)             .or. &
+          (abs(t_sp-tout) <  deltat_threshold)) then
         tout=tout+abs(dtout)
         nout=nout+1
         lout=.true.
