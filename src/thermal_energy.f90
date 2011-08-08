@@ -34,6 +34,7 @@ module Entropy
   real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
   real :: energy_floor = 0.
   logical :: lviscosity_heat=.true.
+  logical :: lcheck_negative_energy=.false.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
 !
@@ -45,7 +46,7 @@ module Entropy
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lviscosity_heat, chi, chi_shock, chi_hyper3_mesh, energy_floor
+      lviscosity_heat, chi, chi_shock, chi_hyper3_mesh, energy_floor, lcheck_negative_energy
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -603,11 +604,19 @@ module Entropy
 !***********************************************************************
     subroutine impose_energy_floor(f)
 !
-!  Impose a floor in minimum thermal energy.
+!  Trap any negative energy or impose a floor in minimum thermal energy.
 !
-!  07-aug-11/ccyang: coded
+!  08-aug-11/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray) :: f
+!
+!  Stop the code if negative energy exists.
+!
+      if (lcheck_negative_energy) then
+        if (any(f(:,:,:,ieth) <= 0.)) call fatal_error('impose_energy_floor', 'negative energy detected')
+      endif
+! 
+!  Impose the energy floor.
 !
       if (energy_floor > 0.) where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor
 !
