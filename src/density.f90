@@ -55,7 +55,7 @@ module Density
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: rzero_ffree=0.,wffree=0.
   real :: rho_top=1.,rho_bottom=1.
-  real :: rmax_mass_source
+  real :: rmax_mass_source=0.
   real :: r0_rho=impossible
   real :: invgrav_ampl = 0.0
   real :: rnoise_int=impossible,rnoise_ext=impossible
