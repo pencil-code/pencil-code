@@ -45,7 +45,7 @@ module Slices
 !
       file = trim(datadir)//'/tvid.dat'
       if (ifirst==0) then
-        call read_snaptime(trim(file),tvid,nvid,dvid,t)
+        call read_snaptime(file,tvid,nvid,dvid,t)
         ifirst=1
       endif
 !
