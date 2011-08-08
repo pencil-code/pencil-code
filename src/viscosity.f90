@@ -962,6 +962,9 @@ module Viscosity
         tmp4=nu*(nu_jump-1.)*(der_step(tmp3,xnu ,widthnu)- &
                               der_step(tmp3,xnu2,widthnu))
 !
+!  Initialize gradnu before calculating it, otherwise gfortran complains.
+!
+        gradnu=0.
         call get_gradnu(tmp4,lvisc_nu_profx,&
                              lvisc_nu_profr,p,gradnu)
 !  A routine for write_xprof should be written here
@@ -969,7 +972,6 @@ module Viscosity
         !gradnu(:,1) = nu*(nu_jump-1.)*der_step(tmp3,xnu,widthnu)
         !gradnu(:,2) = 0.
         !gradnu(:,3) = 0.
-        gradnu=0.
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         !tobi: The following only works with operator overloading for pencils
