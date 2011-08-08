@@ -645,14 +645,11 @@ module Magnetic_meanfield
            else
              alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
            endif
-        else
-          alpha_total=alpha_effect*alpha_tmp
-        endif
 !
 !  Possibility of dynamical alpha.
 !  Here we initialize alpha_total.
 !
-        if (lalpm_alternate.and..not.lmeanfield_noalpm) then
+        elseif (lalpm_alternate.and..not.lmeanfield_noalpm) then
           kf_tmp=kf_x*kf_y(m)*kf_z(n)
           prefact=meanfield_etat_tmp*(kf_tmp/meanfield_Beq)**2
           alpm=prefact*(f(l1:l2,m,n,ialpm)-p%ab)
