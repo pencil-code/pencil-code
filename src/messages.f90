@@ -107,7 +107,6 @@ module Messages
           write (*,*) trim(location) // ": " // trim(message)
         endif
 !
-        print*, 'fatal=', fatal
         if (ldie_onfatalerror .and. fatal) call die_immediately
         if (ldie_onfatalerror) call die_gracefully
 !
@@ -224,7 +223,7 @@ module Messages
       character (len=*) :: message,location
       integer, optional :: ip
 !
-      if (.not. llife_support) then
+      if (.not.llife_support) then
         if (lroot .or. (ncpus<=16 .and. (message/=''))) then
           call terminal_highlight_warning()
           write (*,'(A9)',ADVANCE='NO') "WARNING:"
