@@ -526,9 +526,11 @@ module Shock
           call mpiallreduce_max(a1, shock_max)
           if (shock_max > 0.) then
             if (shock_max == a1) then
-              a1 = sqrt((f(max_loc(1),max_loc(2),max_loc(3),iux) * xprim(max_loc(1)))**2 &
-                      + (f(max_loc(1),max_loc(2),max_loc(3),iuy) * yprim(max_loc(2)))**2 &
-                      + (f(max_loc(1),max_loc(2),max_loc(3),iuz) * zprim(max_loc(3)))**2) / (pi * re_mesh * shock_max)
+              a1 = 0
+              if (nxgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iux) * xprim(max_loc(1)))**2
+              if (nygrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuy) * yprim(max_loc(2)))**2
+              if (nzgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuz) * zprim(max_loc(3)))**2
+              a1 = sqrt(a1) / (pi * re_mesh * shock_max)
             else
               a1 = 0.
             endif
