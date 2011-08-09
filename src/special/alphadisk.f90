@@ -122,10 +122,14 @@ module Special
   real    :: alpha=1d-2                !
   integer :: nsigma_table=500          ! Resolution of look-up tables for the 
                                        !   solution of temperature.
+  real    :: tmid_table_buffer=0.01    ! Small buffer for temperature, so that
+                                       !   the temperature table has min and max
+                                       !   in a range slightly bigger than the 
+                                       !   simulation variable.
 !
   namelist /special_init_pars/ mdot_input,alpha,mwind_input,&
        temperature_background,temperature_precision,nsigma_table,&
-       sigma_middle,sigma_floor
+       sigma_middle,sigma_floor,tmid_table_buffer
 !
   namelist /special_run_pars/ lwind
 !
@@ -296,14 +300,22 @@ module Special
       real :: maxsigma,minsigma,dsig
       real :: maxlnsigma,minlnsigma,dlnsig
       real :: mdot_pt,temperature
+      real :: facmax,facmin
       integer :: i,j
+!
+!  Define buffer for the temperature range of the table, so that 
+!  the maximum temperature of the table is not exactly the maximum
+!  of the density distribution.
+!
+      facmax=1+tmid_table_buffer
+      facmin=1-tmid_table_buffer
 !
 !  First table, linear between sigma_middle and maxsigma
 !  sigma_middle is by default 1, and the maxsigma is the 
 !  maximum density present in the simulation. 
 !
-      maxsigma=maxval(f(l1:l2,m1:m2,n1:n2,isigma))
-      minsigma= sigma_middle
+      maxsigma=facmax*maxval(f(l1:l2,m1:m2,n1:n2,isigma)) + epsi
+      minsigma=facmin*sigma_middle
       dsig = (maxsigma-minsigma)/(nsigma_table-1)
       do i=1,nsigma_table
         sigma_table(i)= minsigma + (i-1)*dsig
@@ -314,8 +326,8 @@ module Special
 !  The second table is logarithmic between the density 
 !  floor and sigma_middle. 
 !
-      maxlnsigma= alog(sigma_middle)
-      minlnsigma= alog(sigma_floor)
+      maxlnsigma= alog(facmax*sigma_middle)
+      minlnsigma= alog(facmin*sigma_floor)
       dlnsig = (maxlnsigma-minlnsigma)/(nsigma_table-1)
       do i=1,nsigma_table
         lnsigma_table(i)= minlnsigma + (i-1)*dlnsig
@@ -383,7 +395,6 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: tmp_vec
       real, dimension (nx) :: tmp_scl
-      integer :: i
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -426,7 +437,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu,nu_cgs
+      real, dimension (nx) :: nu
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -477,6 +488,7 @@ module Special
         if (idiag_sigmamin/=0) call max_mn_name(-psigma,idiag_sigmamin,lneg=.true.)
       endif
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
