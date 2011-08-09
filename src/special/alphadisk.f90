@@ -89,7 +89,7 @@ module Special
 !
   implicit none
 !
-  include 'special.h'
+  include '../special.h'
 !
 !  Code constants
 !
@@ -1247,6 +1247,6 @@ endsubroutine read_special_run_pars
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'special_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
 endmodule Special
