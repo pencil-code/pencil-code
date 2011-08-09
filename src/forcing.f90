@@ -91,6 +91,7 @@ module Forcing
   real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
   real :: tgentle=0.
   real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
+  real :: fcont_ampl
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -126,7 +127,7 @@ module Forcing
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty,lforcing2_same, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,&
-       z_bb,width_bb,eta_bb
+       z_bb,width_bb,eta_bb,fcont_ampl
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -526,6 +527,7 @@ module Forcing
           profx_ampl1(l-l1+1)=ampl1_ff*bessj(1,k1bessel0*x(l))
         enddo
       elseif (iforcing_cont=='fluxring_cylindrical') then
+        if (lroot) print*,'forcing_cont: fluxring cylindrical'
         !nothing...
       endif
 !
@@ -3779,10 +3781,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  density for the magnetic flux flux ring
 !
       s=x(l1:l2)
-      argum=sqrt2*(s-s0)/width
-      force(:,1)=2.*s*(b0/(width*s0))**2*exp(-argum**2)*(width**2-s**2+s*width)
+      argum=(s-s0)/width
+      force(:,1)=2.*s*(b0/(width*s0))**2*exp(-2*argum**2)*(width**2-s**2+s*s0)
       force(:,2)=0.
       force(:,3)=0.
+      force = fcont_ampl*force
 !
     endsubroutine calc_fluxring_cylindrical
 !***********************************************************************
@@ -3834,6 +3837,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  24-mar-08/axel: adapted from density.f90
 !   6-feb-09/axel: added epsilon factor in ABC flow (eps_fcont=1. -> nocos)
 !
+      use Io, only: output_pencil
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -3845,6 +3850,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
         call forcing_cont(p%fcont)
+!DM remove this later
+          if((m.eq.m2/2).and.(n.eq.n2/2)) then
+            write(*,*) 'DM outputing force pencil,m,n',m,n
+            write(*,*)'fcont',p%fcont(:,1)
+            write(*,*)'x',x(l1:l2)
+          endif
 !
       endif
 !
@@ -3856,7 +3867,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 ! 9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u and u.grad u for Roberts geometry
 ! Note: It is not enough to set lforcing_cont = T in input parameters of forcing
-! one must also set lforcing_cont_uu = T in hydro for the continious is time
+! one must also set  lforcing_cont_uu = T in hydro for the continious is time
 ! forcing to be added to velocity.
 !
       use Sub, only: quintic_step, quintic_der_step
@@ -4030,6 +4041,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         if (idiag_rufm/=0) then
           call dot_mn(p%uu,p%fcont,uf)
           call sum_mn_name(p%rho*uf,idiag_rufm)
+
         endif
         if (lmagnetic) then
           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
