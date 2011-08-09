@@ -317,7 +317,7 @@ f_lop:  do iv=1,mvar
 !
       lpencil=(lpenc_diagnos.or.lpenc_requested)
       call pde(f_other,df,p)
-      fname_ref=fname
+      fname_ref=fname(1:nname)
 !
       if (lroot) &
           print*, 'pencil_consistency_check: checking diagnostics pencils'
