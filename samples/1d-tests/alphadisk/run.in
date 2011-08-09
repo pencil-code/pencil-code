@@ -8,6 +8,8 @@
   dsnap=3.7d12
   tmax=3.15688e+13
   dtmin=1e-10
+  lpencil_check=F
+  lpencil_check_small=F
 /
 &special_run_pars
    lwind=T
