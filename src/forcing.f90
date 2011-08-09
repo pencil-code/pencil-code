@@ -125,7 +125,7 @@ module Forcing
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty,lforcing2_same, &
-       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,& 
+       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,&
        z_bb,width_bb,eta_bb
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
@@ -420,7 +420,7 @@ module Forcing
         profy_ampl=1.
         profx_hel=1.
         do m=1,my
-          profy_hel(m)=cos(y(m)); 
+          profy_hel(m)=cos(y(m));
         enddo
         profz_ampl=1.; profz_hel=1.
 !
@@ -774,7 +774,7 @@ module Forcing
           read(9,*) (kkz(ik),ik=1,nk)
           close(9)
         else
-          call inevitably_fatal_error ('forcing_irro:', & 
+          call inevitably_fatal_error ('forcing_irro:', &
               'you must give an input k.dat file')
         endif
         extent(1)=nx/=1
@@ -893,7 +893,7 @@ module Forcing
           read(9,*) (kkz(ik),ik=1,nk)
           close(9)
         else
-          call inevitably_fatal_error ('forcing_hel:', & 
+          call inevitably_fatal_error ('forcing_hel:', &
               'you must give an input k.dat file')
         endif
         extent(1)=nx/=1
@@ -1310,7 +1310,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
           read(9,*) (kkz(ik),ik=1,nk)
           close(9)
         else
-          call inevitably_fatal_error ('forcing_hel_kprof:', & 
+          call inevitably_fatal_error ('forcing_hel_kprof:', &
               'you must give an input k.dat file')
         endif
         extent(1)=nx/=1
@@ -3772,13 +3772,9 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
 !
-      use General
-      use Sub
-      use EquationOfState, only: cs0
-!
       real, dimension (nx,3), intent(out) :: force
       real, dimension (nx) :: argum,s
-      real ::  b0=1., s0=2., width=.2, p0=1.
+      real ::  b0=1., s0=2., width=.2
 !
 !  density for the magnetic flux flux ring
 !
