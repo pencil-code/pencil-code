@@ -1108,7 +1108,7 @@ endsubroutine read_special_run_pars
           goto 999
         endif
 !
-        if (notanumber(rts)) then 
+        if (notanumber(rts) .or. (rts < 0.0)) then
           if (ldebug) then
             print*,'newton_raphson : NaN in temperature, sigma=',sigma
             print*,'will try bisection instead'
@@ -1199,6 +1199,9 @@ endsubroutine read_special_run_pars
 !
       kk=0
 !
+      if (tt < 0.0) then
+        call fatal_error("calc_opacity", "Negative temperature")
+      endif
       if (TT .le. T1) then 
         k=2d-4 ; a=0 ; b= 2.1  ; kk=k*tt**b
       else if ((TT .gt. T1) .and. (TT .le. T2)) then 
