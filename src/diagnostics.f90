@@ -224,7 +224,7 @@ module Diagnostics
 !   3-dec-10/dhruba+joern: coded
 !  10-jan-11/MR: modified
 !
-      use General, only: chn, safe_character_append, safe_character_prepend
+      use General, only: itoa, safe_character_append, safe_character_prepend
       use Sub    , only: noform
 !
       implicit none
@@ -234,8 +234,6 @@ module Diagnostics
       logical,save :: lfirst=.true.
       logical :: ldata
       character (len=640) :: fform,legend,sublegend,coorlegend,line
-      character (len=1), parameter :: comma=','
-      character (len=5) :: str
       character (len=6), parameter :: tform='(f10.4'
       integer, parameter :: ltform=10
       character (len=ltform) :: scoor
@@ -247,8 +245,7 @@ module Diagnostics
 !
       fform = tform//','
       if ( ncoords_sound>1 ) then
-        call chn(ncoords_sound,str)
-        call safe_character_append(fform, str//'(')
+        call safe_character_append(fform, trim(itoa(ncoords_sound))//'(')
       endif
 !
       if (lfirst) then
@@ -262,9 +259,7 @@ module Diagnostics
 !
           do icoor=1,ncoords_sound
 !
-            call chn(icoor,str)
-!
-            coorlegend(nleg+1:) = trim(adjustl(str))//' = '
+            coorlegend(nleg+1:) = trim(itoa(icoor))//' = '
             nleg = len_trim(coorlegend)+1
 !
             item = '('
@@ -314,7 +309,7 @@ module Diagnostics
             call safe_character_append(legend, item)
 !
           endif
-          call safe_character_append(fform, trim(cform_sound(iname))//comma)
+          call safe_character_append(fform, trim(cform_sound(iname))//',')
         endif
 !
       enddo
@@ -883,20 +878,17 @@ module Diagnostics
 !
 !   2-jan-03/wolf: adapted from write_zaverages
 !
-      use General, only: safe_character_assign,safe_character_append
+      use General, only: safe_character_append
+!
+      character (len=*) :: ch
 !
       integer :: i
-      character (len=5) :: ch
-      character (len=80) :: avgdir,sname,fname
       character (len=1024) :: labels
 !
 !  Write result; normalization is already done in phiaverages_rz.
 !
       if (lroot.and.nnamerz>0) then
-        call safe_character_assign(avgdir, trim(datadir)//'/averages')
-        call safe_character_assign(sname, 'PHIAVG'//trim(ch))
-        call safe_character_assign(fname, trim(avgdir)//'/'//trim(sname))
-        open(1,FILE=fname,FORM='unformatted')
+        open(1,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted')
         write(1) nrcyl,nzgrid,nnamerz,nprocz
         write(1) t2davgfirst,rcyl, &
                  z(n1)+(/(i*dz, i=0,nzgrid-1)/), &
@@ -916,8 +908,8 @@ module Diagnostics
 !
 !  Write file name to file list.
 !
-        open(1,FILE=trim(avgdir)//'/phiavg.files',POSITION='append')
-        write(1,'(A)') trim(sname)
+        open(1,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append')
+        write(1,'(A)') 'PHIAVG'//trim(ch)
         close(1)
 !
       endif
@@ -2009,7 +2001,7 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use General, only : chn
+      use General, only : itoa
       use Sub, only     : location_in_proc
 !
       integer, intent(in) :: nnamel
@@ -2023,7 +2015,6 @@ module Diagnostics
       real    :: xsound,ysound,zsound
       integer :: lsound,msound,nsound
       character (LEN=80) :: line
-      character (LEN=5) :: str
 !
 !  Allocate and initialize to zero. Setting it to zero is only
 !  necessary because of the pencil test, which doesn't compute these
@@ -2051,9 +2042,8 @@ module Diagnostics
           backspace unit
           read(unit,*) line
           if (line(1:1)/=comment_char .and. line(1:1)/='!') then
-            call chn(isound,str)
             print*, 'allocate_sound - Warning: unreadable data in line '// &
-                    trim(str)//' of '//trim(sound_coord_file)//' !'
+                    trim(itoa(isound))//' of '//trim(sound_coord_file)//' !'
           endif
           cycle
         endif
