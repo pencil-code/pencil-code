@@ -846,6 +846,22 @@ endsubroutine read_special_run_pars
           sdo = minsigma + (isig_do-1)*dsig
           sup = minsigma + (isig_up-1)*dsig
 !
+!  Break if array of bounds is detected. 
+!
+          if (isig_do < 1) then
+             print*,'get_tmid: isig_do is less than 1. That means the '
+             print*,'tabled-temperature array is out of bounds. Stop and check.'
+             print*,'sigma, isig_do, minsigma ',sig,isig_do,minsigma
+             call fatal_error("","")
+          endif
+!
+          if (isig_up > nsigma_table) then
+             print*,'get_tmid: isig_up is greater than nsigma_table. That means the '
+             print*,'tabled-temperature array is out of bounds. Stop and check.'
+             print*,'sigma, isig_up, maxsigma ',sig,isig_up,maxsigma
+             call fatal_error("","")
+          endif
+!
 !  Linear interpolation.
 !
           temperature(i) = dsig1*(tmid1_table(isig_do,i)*(sup-sig)+&
