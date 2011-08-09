@@ -8,7 +8,7 @@
 !   8-aug-03/axel: coded
 !
       use Cparam
-      use General, only: safe_character_assign,chn
+      use General, only: safe_character_assign,itoa
 !
       implicit none
 
@@ -18,9 +18,8 @@
       integer :: lun,lun2=9
       real :: t=0.,v1,v2,v3
 !
-      character (len=120) :: fullname=''
-      character (len=120) :: datadir='data',path=''
-      character (len=5) :: chproc=''
+      character (len=fnlen) :: fullname=''
+      character (len=fnlen) :: datadir='data',path=''
       character (len=1) :: field='b'
 !
 !  read name of the field (must coincide with file extension)
@@ -32,8 +31,7 @@
 !
       do iproc=0,ncpus-1
         lun=10+iproc
-        call chn(iproc,chproc,'read_vectorfiles')
-        call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+        call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
         call safe_character_assign(fullname,trim(path)//'/'//field//'vec.dat')
         open(lun,file=fullname,form='unformatted')
       enddo

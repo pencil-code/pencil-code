@@ -117,22 +117,20 @@ module Dustdensity
 !   4-jun-02/axel: adapted from hydro
 !
       use FArrayManager, only: farray_register_pde
-      use General, only: chn
+      use General, only: itoa
 !
       integer :: k, i, ind_tmp, imd_tmp, imi_tmp, dc_tmp
-      character (len=5) :: sdust
+      character (len=intlen) :: sdust
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
-        call chn(ndustspec,sdust)
-        write(3,*) 'ind=intarr('//trim(sdust)//')'
+        write(3,*) 'ind=intarr('//trim(itoa(ndustspec))//')'
         close(3)
       endif
       do k=1,ndustspec
-        call chn(k-1,sdust)
-        sdust='['//trim(sdust)//']'
+        sdust='['//trim(itoa(k-1))//']'
         if (ndustspec==1) sdust=''
         call farray_register_pde('nd'//sdust,ind_tmp)
         ind(k) = ind_tmp
@@ -143,13 +141,11 @@ module Dustdensity
       if (lmdvar) then
         if (lroot .and. ndustspec/=1) then
           open(3,file=trim(datadir)//'/index.pro', position='append')
-          call chn(ndustspec,sdust)
-          write(3,*) 'imd=intarr('//trim(sdust)//')'
+          write(3,*) 'imd=intarr('//trim(itoa(ndustspec))//')'
           close(3)
         endif
         do k=1,ndustspec
-          call chn(k-1,sdust)
-          sdust='['//trim(sdust)//']'
+          sdust='['//trim(itoa(k-1))//']'
           if (ndustspec==1) sdust=''
           call farray_register_pde('md'//sdust,imd_tmp)
           imd(k) = imd_tmp
@@ -161,13 +157,11 @@ module Dustdensity
       if (lmice) then
         if (lroot .and. ndustspec/=1) then
           open(3,file=trim(datadir)//'/index.pro', position='append')
-          call chn(ndustspec,sdust)
-          write(3,*) 'imi=intarr('//trim(sdust)//')'
+          write(3,*) 'imi=intarr('//trim(itoa(ndustspec))//')'
           close(3)
         endif
         do k=1,ndustspec
-          call chn(k-1,sdust)
-          sdust='['//trim(sdust)//']'
+          sdust='['//trim(itoa(k-1))//']'
           if (ndustspec==1) sdust=''
           call farray_register_pde('mi'//sdust,imi_tmp)
           imd(k) = imi_tmp
@@ -180,14 +174,12 @@ module Dustdensity
 !
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
-        call chn(ndustspec,sdust)
-        write(3,*) 'idc=intarr('//trim(sdust)//')'
+        write(3,*) 'idc=intarr('//trim(itoa(ndustspec))//')'
         close(3)
       endif
 !
       do k=1,ndustspec
-        call chn(k-1,sdust)
-        sdust='['//trim(sdust)//']'
+        sdust='['//trim(itoa(k-1))//']'
         if (ndustspec==1) sdust=''
         call farray_register_pde('dc'//sdust,dc_tmp,vector=ndustspec0)
         idc(k) = dc_tmp
@@ -2011,14 +2003,14 @@ module Dustdensity
 !   3-may-02/axel: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: chn
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamex, inamexy, k
       logical :: lwr
-      character (len=5) :: sdust, sdustspec
+      character (len=intlen) :: sdust
 !
 !  Write information to index.pro that should not be repeated for all species.
 !
@@ -2040,12 +2032,10 @@ module Dustdensity
         idiag_ndmz=0
       endif
 !
-      call chn(ndustspec,sdustspec)
-!
 !  Loop over dust species (for species-dependent diagnostics).
 !
       do k=1,ndustspec
-        call chn(k-1,sdust)
+        sdust=itoa(k-1)
         if (ndustspec == 1) sdust=''
 !
 !  iname runs through all possible names that may be listed in print.in

@@ -3186,14 +3186,14 @@ module Special
     subroutine mark_boundary(f)
 !
       use Sub, only: notanumber, cubic_step
-      use General, only: chn, safe_character_assign
+      use General, only: itoa, safe_character_assign
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
       real, save :: tl=0.,tr=0.
       character (len=*), parameter :: time_dat = 'boundlayer/times.dat'
-      character (len=27) :: data_dat
-      character (len=5) :: llabel,rlabel
+      character (len=fnlen) :: data_dat
+      character (len=intlen) :: llabel,rlabel
       integer :: frame,unit=1,lend=0,ierr=0,i,j
       real :: delta_t=0.
       logical :: init_left=.true.
@@ -3223,8 +3223,8 @@ module Special
             ! correct time step is reached
           endif
         enddo
-        call chn(10000+frame,rlabel)
-        call chn(10000+frame-1,llabel)
+        rlabel=itoa(10000+frame)
+        llabel=itoa(10000+frame-1)
         write (*,*) 'File numbers ',llabel,' and ',rlabel
         close (unit)
 !

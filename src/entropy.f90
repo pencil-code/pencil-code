@@ -108,7 +108,7 @@ module Entropy
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
-  character (len=5) :: iinit_str
+  character (len=intlen) :: iinit_str
   real, dimension (mz),   save :: hcond_zprof,chit_zprof
   real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
   real, dimension (mx),   save :: hcond_xprof,chit_xprof
@@ -918,7 +918,7 @@ module Entropy
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
                                 eosperturb
-      use General, only: chn
+      use General, only: itoa
       use Gravity
       use Initcond
       use InitialCondition, only: initial_condition_ss
@@ -947,7 +947,7 @@ module Entropy
         if (initss(j)=='nothing') cycle
 !
         lnothing=.false.
-        call chn(j,iinit_str)
+        iinit_str=itoa(j)
 !
 !  Select different initial conditions.
 !

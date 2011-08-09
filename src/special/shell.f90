@@ -121,8 +121,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting, kdat_exists
       integer :: ns, ierr, nk,nk2, ik, count
-      character (len=50) :: filename
-      character (len=5) :: ch
+      character (len=fnlen) :: filename
       real :: kav
       real, dimension(1) :: fran
       real, dimension(2000) :: kkx, kky, kkz
@@ -192,8 +191,7 @@ module Special
 !
 !  read in possible vectors
 !
-            call chn(int(kval(ns)),ch)
-            call safe_character_assign(filename,'k'//trim(ch)//'.dat')
+            call safe_character_assign(filename,'k'//trim(itoa(int(kval(ns))))//'.dat')
             inquire(FILE=filename, EXIST=kdat_exists)
             if (.not. kdat_exists) then              
               print*, 'k.dat file ',filename,' does not exist, exiting'
@@ -947,7 +945,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
      if (enum) then
 !
        if (present(snapnum)) then
-         call chn(snapnum,nsnap_ch)
+         nsnap_ch=itoa(snapnum)
          lsnap=.true.
        else
          if (ifirst==0) then
@@ -1112,15 +1110,13 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
 !***********************************************************************
     subroutine get_structure_filenames(filename,iord)
 !
-      use General, only: chn, safe_character_assign
+      use General, only: itoa, safe_character_assign
 !
       character (len=*) :: filename
-      character (len=5) :: ch
       integer :: iord
 !
-      call chn(iord,ch)
       call safe_character_assign(filename,trim(datadir)//&
-          '/t_structure_'//trim(ch)//'.dat')
+          '/t_structure_'//trim(itoa(iord))//'.dat')
 !
     endsubroutine get_structure_filenames
 !***********************************************************************

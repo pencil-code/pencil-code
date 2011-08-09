@@ -23,7 +23,7 @@ module General
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
-  public :: chn, itoa, parser, write_full_columns
+  public :: itoa, parser, write_full_columns
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
@@ -476,29 +476,6 @@ module General
       nr_ran=am*ior(iand(im,ieor(ix,iy)),1) ! Combine the two generators with
 !                                           ! masking to ensure nonzero value.
     endfunction nr_ran
-!***********************************************************************
-    subroutine chn(n,ch,label)
-!
-!  Make a character out of a number.
-!  Take care of numbers that have less than 4 digits.
-!  Please use the more generic 'itoa' function instead, wherever possible.
-!
-!  30-sep-97/axel: coded
-!  05-aug-2011/Bourdin.KIS: now wraps around itoa
-!
-      integer, intent(in) :: n
-      character (len=5), intent(out) :: ch
-      character (len=*), intent(in), optional :: label
-!
-      if ((n > 99999) .or. (n < 0)) then
-        if (present (label)) print *, 'CHN: <', label, '>'
-        print *, 'CHN: n=', n
-        stop "CHN: maximum number of digits is 5, use itoa function instead."
-      endif
-!
-      ch = trim (itoa (n))
-!
-    endsubroutine chn
 !***********************************************************************
     character (len=intlen) function itoa(n)
 !
@@ -1754,7 +1731,7 @@ module General
     character(LEN=*),     optional, intent(in)    :: fmt
 !
     integer          :: ncoll, nd, ia, ie, rest
-    character(LEN=5) :: str
+    character(LEN=intlen) :: str
     character(LEN=20):: fmtl, fmth
     logical          :: lcomplex
 !
@@ -1792,11 +1769,11 @@ module General
       fmth = fmtl
       if ( nd>unfilled ) then
         ie = range(1)+(unfilled-1)*range(3)
-        call chn(unfilled,str)
+        str=itoa(unfilled)
       else
         ie = range(2)
         if (nd<unfilled) fmth = trim(fmtl)//'$'
-        call chn(nd,str)
+        str=itoa(nd)
       endif
 !
       nd = nd-unfilled
@@ -1822,7 +1799,7 @@ module General
     ie = (nd-rest-1)*range(3) + ia
 !
     if ( rest<nd ) then
-      call chn(ncoll,str)
+      str=itoa(ncoll)
       if (lcomplex) then
         write(unit,'(1p,'//str//trim(fmtl)//')') buffer_cmplx(ia:ie:range(3))
       else
@@ -1832,7 +1809,7 @@ module General
 !
     if ( rest > 0 ) then
 !
-      call chn(rest,str)
+      str=itoa(rest)
       if (lcomplex) then
         write(unit,'(1p,'//str//trim(fmtl)//'$)') buffer_cmplx(ie+range(3):range(2):range(3))
       else

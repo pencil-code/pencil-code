@@ -50,12 +50,11 @@ module Special
   real :: Lx_in
   real :: Ly_in
   real :: Lz_in
-  character (len=60) :: turbfile
-  character(len=40) :: turb_inlet_dir='' 
+  character (len=fnlen) :: turbfile
+  character(len=fnlen) :: turb_inlet_dir='' 
   logical :: proc_at_inlet
   integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
-  character (len=120) :: directory_in
-  character (len=5) :: chproc_in
+  character (len=fnlen) :: directory_in
   real, dimension(2) :: radius=(/0.0182,0.0364/)
   real, dimension(2) :: momentum_thickness=(/0.014,0.0182/)
   real, dimension(2) :: jet_center=(/0.,0./)
@@ -680,7 +679,7 @@ module Special
 !
 !   19-jan-10/nils: coded
 !
-      use General, only: safe_character_assign, chn
+      use General, only: safe_character_assign, itoa
       use Sub, only : rdim
 !
       character (len=3), intent(in) :: topbot
@@ -771,9 +770,8 @@ module Special
 !
       if (proc_at_inlet) then
         print*,'datadir=',datadir
-        call chn(iproc_in,chproc_in)
         call safe_character_assign(directory_in,&
-            trim(turb_inlet_dir)//'/data/proc'//chproc_in)
+            trim(turb_inlet_dir)//'/data/proc'//itoa(iproc_in))
         print*,'directory_in=',directory_in
         call safe_character_assign(turbfile,&
             trim(directory_in)//'/var.dat')

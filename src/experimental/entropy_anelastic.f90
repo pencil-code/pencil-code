@@ -92,7 +92,7 @@ module Entropy
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
-  character (len=5) :: iinit_str
+  character (len=intstr) :: iinit_str
 !
 ! Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
 !
@@ -621,7 +621,7 @@ module Entropy
 !
       use Sub
       use Gravity
-      use General, only: chn
+      use General, only: itoa
       use Initcond
       use InitialCondition, only: initial_condition_ss
       use EquationOfState,  only: mpoly, isothtop, &
@@ -653,7 +653,7 @@ module Entropy
         if (initss(j)=='nothing') cycle
 !
         lnothing=.false.
-        call chn(j,iinit_str)
+        iinit_str=itoa(j)
 !
 !  select different initial conditions
 !

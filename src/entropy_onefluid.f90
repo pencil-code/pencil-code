@@ -49,7 +49,7 @@ module Entropy
   logical :: ladvection_entropy=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
-  character (len=5) :: iinit_str
+  character (len=intlen) :: iinit_str
 !
   namelist /entropy_init_pars/ &
       initss, grads0, ss_const, T0, kx_ss, beta_glnrho_global, &
@@ -250,7 +250,7 @@ module Entropy
 !
       use Sub
       use Gravity
-      use General, only: chn
+      use General, only: itoa
       use Initcond
       use InitialCondition, only: initial_condition_ss
       use EquationOfState,  only: mpoly, isothtop, &
@@ -270,7 +270,7 @@ module Entropy
         if (initss(j)/='nothing') then
 !
           lnothing=.false.
-          call chn(j,iinit_str)
+          iinit_str=itoa(j)
 !
 !  select different initial conditions
 !

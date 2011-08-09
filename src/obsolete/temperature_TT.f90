@@ -54,7 +54,7 @@ module Entropy
   integer :: iglobal_glhc=0
 
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
-  character (len=5) :: iinit_str
+  character (len=intlen) :: iinit_str
 
 ! Delete (or use) me asap!
   real :: hcond0=impossible, hcond1=1.,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
@@ -225,7 +225,7 @@ module Entropy
 !  07-nov-2001/wolf: coded 
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use General,  only: chn
+      use General,  only: itoa
       use Sub,      only: blob
       use Initcond, only: jump
       use InitialCondition, only: initial_condition_ss
@@ -239,8 +239,8 @@ module Entropy
         if (initlnTT(j)/='nothing') then
 !
           lnothing=.false.
-
-          call chn(j,iinit_str)
+!
+          iinit_str=itoa(j)
 !
 !  select different initial conditions
 !

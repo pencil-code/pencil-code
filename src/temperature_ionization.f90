@@ -44,7 +44,7 @@ module Entropy
   integer, parameter :: nheatc_max=3
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
-  character (len=5) :: iinit_str
+  character (len=intlen) :: iinit_str
 !
   ! Delete (or use) me asap!
   real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
@@ -242,7 +242,7 @@ module Entropy
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use General, only: chn
+      use General, only: itoa
       use Sub, only: blob
       use Initcond, only: jump, gaunoise
       use InitialCondition, only: initial_condition_ss
@@ -258,7 +258,7 @@ module Entropy
 !
           lnothing=.false.
 !
-          call chn(j,iinit_str)
+          iinit_str=itoa(j)
 !
 !  select different initial conditions
 !

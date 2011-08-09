@@ -501,11 +501,10 @@ module FArrayManager
 ! by internal or external analysis tools eg. IDL, OpenDX...
 !
       use Cdata, only: varname
-      use General, only: chn
+      use General, only: itoa
 !
       type (farray_contents_list), pointer :: item
       integer :: i
-      character (len=5) :: istr
 
 !
 !  Put variable name in array for
@@ -513,11 +512,10 @@ module FArrayManager
 !
       if (item%ncomponents>1) then
         do i=0,item%ncomponents-1
-          call chn(i+1,istr)
-          varname(item%ivar(1)%p+i) = item%varname//trim(istr)
+          varname(item%ivar(1)%p+i) = trim(item%varname)//trim(itoa(i+1))
         enddo
       else
-        varname(item%ivar(1)%p) = item%varname
+        varname(item%ivar(1)%p) = trim(item%varname)
       endif
 !
     endsubroutine save_analysis_info

@@ -1590,8 +1590,8 @@ module EquationOfState
 !
       use General
 !
-      character (len=20) :: input_file="./data/chem.out"
-      character (len=5) :: ispec
+      character (len=fnlen) :: input_file="./data/chem.out"
+      character (len=intlen) :: ispec
       integer :: file_id=123,k
       integer, dimension(7) :: iaa1,iaa2
       integer :: imass=1, iTemp1=2,iTemp3=4
@@ -1626,7 +1626,7 @@ module EquationOfState
         write (143,*) 'specname=strarr(',nchemspec,')'
         write (143,*) 'specmass=fltarr(',nchemspec,')'
         do k=1,nchemspec
-          call chn(k-1,ispec)
+          ispec=itoa(k-1)
           write (143,*) 'specname[',trim(ispec),']=',"'",&
               trim(varname(ichemspec(k))),"'"
           write (143,*) 'specmass[',trim(ispec),']=',species_constants(k,imass)

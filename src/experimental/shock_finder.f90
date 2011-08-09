@@ -149,7 +149,7 @@ subroutine make_calc_3d_int_j_ji(unitno)
   pjstr=""
   njstr=""
   do j=0,2
-    call chn(j,jstr)
+    jstr=itoa(j)
     if (j/=0) njstr='-'//trim(jstr)
     if (j/=0) pjstr='+'//trim(jstr)
     write(unitno,"(a)") "      do k=n1i,n2i"
@@ -160,7 +160,7 @@ subroutine make_calc_3d_int_j_ji(unitno)
     pistr=""
     nistr=""
     do i=0,2
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       call evaluate_integral(unitno,2,-i,3,-j,+3,-3,+3, &
@@ -204,7 +204,7 @@ subroutine make_calc_3d_int_k_ki(unitno)
   pkstr=""
   nkstr=""
   do k=0,2
-    call chn(k,kstr)
+    kstr=itoa(k)
     if (k/=0) nkstr='-'//trim(kstr)
     if (k/=0) pkstr='+'//trim(kstr)
     write(unitno,"(a)") "      do j=m1i,m2i"
@@ -215,7 +215,7 @@ subroutine make_calc_3d_int_k_ki(unitno)
     pistr=""
     nistr=""
     do i=0,2
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       call evaluate_integral(unitno,2,-i,3,-3,+3,-k,+3, &
@@ -262,8 +262,8 @@ subroutine make_calc_3d_int_kj_kji(unitno,k)
   njstr=""
 !  do k=0,2
   do j=0,2
-  call chn(k,kstr)
-  call chn(j,jstr)
+  kstr=itoa(k)
+  jstr=itoa(j)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   if (j/=0) njstr='-'//trim(jstr)
@@ -283,7 +283,7 @@ subroutine make_calc_3d_int_kj_kji(unitno,k)
     pistr=""
     nistr=""
     do i=0,2
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       call evaluate_integral(unitno,2,-i,3,-j,+3,-k,+3, &
@@ -354,7 +354,7 @@ subroutine make_calc_internalboundary(unitno)
   call evaluate_facefactors(unitno,0)
 ! Top/bottom
   do j=0,2
-  call chn(j,jstr)
+  jstr=itoa(j)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
   write(unitno,"(a)") "      do i=l1i+1,l2i-1"
@@ -368,7 +368,7 @@ subroutine make_calc_internalboundary(unitno)
   enddo
 ! Left/right
   do i=0,2
-  call chn(i,istr)
+  istr=itoa(i)
   if (i/=0) nistr='-'//trim(istr)
   if (i/=0) pistr='+'//trim(istr)
   write(unitno,"(a)") "      do j=m1i+1,m2i-1"
@@ -383,8 +383,8 @@ subroutine make_calc_internalboundary(unitno)
 ! Corners
   do j=0,2
   do i=0,2
-  call chn(i,istr)
-  call chn(j,jstr)
+  istr=itoa(i)
+  jstr=itoa(j)
   if (i/=0) nistr='-'//trim(istr)
   if (i/=0) pistr='+'//trim(istr)
   if (j/=0) njstr='-'//trim(jstr)
@@ -409,7 +409,7 @@ subroutine make_calc_internalboundary(unitno)
   call evaluate_facefactors(unitno,1)
 ! Top/bottom
   do k=0,2
-  call chn(k,kstr)
+  kstr=itoa(k)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   write(unitno,"(a)") "      do i=l1i+1,l2i-1"
@@ -423,7 +423,7 @@ subroutine make_calc_internalboundary(unitno)
   enddo
 ! Left/right
   do i=0,2
-  call chn(i,istr)
+  istr=itoa(i)
   if (i/=0) nistr='-'//trim(istr)
   if (i/=0) pistr='+'//trim(istr)
   write(unitno,"(a)") "      do k=n1i+1,n2i-1"
@@ -438,8 +438,8 @@ subroutine make_calc_internalboundary(unitno)
 ! Corners
   do k=0,2
   do i=0,2
-  call chn(i,istr)
-  call chn(k,kstr)
+  istr=itoa(i)
+  kstr=itoa(k)
   if (i/=0) nistr='-'//trim(istr)
   if (i/=0) pistr='+'//trim(istr)
   if (k/=0) nkstr='-'//trim(kstr)
@@ -464,7 +464,7 @@ subroutine make_calc_internalboundary(unitno)
   call evaluate_facefactors(unitno,2)
 ! Top/bottom
   do j=0,2
-  call chn(j,jstr)
+  jstr=itoa(j)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
   write(unitno,"(a)") "      do k=n1i+1,n2i-1"
@@ -478,7 +478,7 @@ subroutine make_calc_internalboundary(unitno)
   enddo
 ! Left/right
   do k=0,2
-  call chn(k,kstr)
+  kstr=itoa(k)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   write(unitno,"(a)") "      do j=m1i+1,m2i-1"
@@ -493,8 +493,8 @@ subroutine make_calc_internalboundary(unitno)
 ! Corners
   do k=0,2
   do j=0,2
-  call chn(k,kstr)
-  call chn(j,jstr)
+  kstr=itoa(k)
+  jstr=itoa(j)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   if (j/=0) njstr='-'//trim(jstr)
@@ -551,7 +551,7 @@ subroutine make_calc_3d_ext_j_ji(unitno)
   pjstr=""
   njstr=""
   do j=0,2
-    call chn(j,jstr)
+    jstr=itoa(j)
     if (j/=0) njstr='-'//trim(jstr)
     if (j/=0) pjstr='+'//trim(jstr)
     write(unitno,"(a)") "      do k=n1i,n2i"
@@ -562,7 +562,7 @@ subroutine make_calc_3d_ext_j_ji(unitno)
     pistr=""
     nistr=""
     do i=0,2
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       call evaluate_integral(unitno,2,-i,3,3-j,+3,-3,+3, &
@@ -620,7 +620,7 @@ subroutine make_calc_3d_ext_k_ki(unitno)
   pkstr=""
   nkstr=""
   do k=0,2
-    call chn(k,kstr)
+    kstr=itoa(k)
     if (k/=0) nkstr='-'//trim(kstr)
     if (k/=0) pkstr='+'//trim(kstr)
     write(unitno,"(a)") "      do j=m1i,m2i"
@@ -631,7 +631,7 @@ subroutine make_calc_3d_ext_k_ki(unitno)
     pistr=""
     nistr=""
     do i=0,2
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       call evaluate_integral(unitno,2,-i,3,-3,+3,3-k,+3, &
@@ -691,8 +691,8 @@ subroutine make_calc_3d_ext_kj_kji(unitno,k)
   njstr=""
 !  do k=0,2
   do j=0,2
-  call chn(k,kstr)
-  call chn(j,jstr)
+  kstr=itoa(k)
+  jstr=itoa(j)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   if (j/=0) njstr='-'//trim(jstr)
@@ -738,7 +738,7 @@ subroutine make_calc_3d_ext_kj_kji(unitno,k)
     pistr=""
     nistr=""
     do i=0,2
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       call evaluate_integral(unitno,2,-i,3,-j,+3,3-k,+3, &
@@ -946,7 +946,7 @@ subroutine make_calc_externalboundary(unitno)
   write(unitno,"(a)") "!  make_calc_externalboundary: ! Top/bottom"
     do j=0,2
   write(unitno,"(a,i2)") "!  make_calc_externalboundary: ! Top/bottom: j = ",j
-      call chn(j,jstr)
+      jstr=itoa(j)
       if (j/=0) njstr='-'//trim(jstr)
       if (j/=0) pjstr='+'//trim(jstr)
       write(unitno,"(a)") "      do i=l1i+1,l2i-1"
@@ -962,7 +962,7 @@ subroutine make_calc_externalboundary(unitno)
   write(unitno,"(a)") "!  make_calc_externalboundary: ! Left/right"
     do i=0,2
   write(unitno,"(a,i2)") "!  make_calc_externalboundary: ! Left/right: i = ",i
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       write(unitno,"(a)") "      do j=m1i+1,m2i-1"
@@ -979,8 +979,8 @@ subroutine make_calc_externalboundary(unitno)
   do j=0,2
   do i=0,2
   write(unitno,"(a,i2,a,i2)") "!  make_calc_externalboundary: ! Near Corners: j = ",j,", i = ",i
-  call chn(j,jstr)
-  call chn(i,istr)
+  jstr=itoa(j)
+  istr=itoa(i)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
   if (i/=0) nistr='-'//trim(istr)
@@ -1017,8 +1017,8 @@ subroutine make_calc_externalboundary(unitno)
     do j=0,2
     do i=0,2
   write(unitno,"(a,i2,a,i2)") "!  make_calc_externalboundary: ! Corners: j = ",j,", i = ",i
-      call chn(i,istr)
-      call chn(j,jstr)
+      istr=itoa(i)
+      jstr=itoa(j)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       if (j/=0) njstr='-'//trim(jstr)
@@ -1044,7 +1044,7 @@ subroutine make_calc_externalboundary(unitno)
     call evaluate_facefactors(unitno,1)
 ! Top/bottom
     do k=0,2
-      call chn(k,kstr)
+      kstr=itoa(k)
       if (k/=0) nkstr='-'//trim(kstr)
       if (k/=0) pkstr='+'//trim(kstr)
       write(unitno,"(a)") "      do i=l1i+1,l2i-1"
@@ -1058,7 +1058,7 @@ subroutine make_calc_externalboundary(unitno)
     enddo
 ! Left/right
     do i=0,2
-      call chn(i,istr)
+      istr=itoa(i)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       write(unitno,"(a)") "      do k=n1i+1,n2i-1"
@@ -1073,8 +1073,8 @@ subroutine make_calc_externalboundary(unitno)
 ! Near Corners
 !  do k=0,2
 !  do i=0,2
-!  call chn(k,kstr)
-!  call chn(i,istr)
+!  kstr=itoa(k)
+!  istr=itoa(i)
 !  if (k/=0) nkstr='-'//trim(kstr)
 !  if (k/=0) pkstr='+'//trim(kstr)
 !  if (i/=0) nistr='-'//trim(istr)
@@ -1093,8 +1093,8 @@ subroutine make_calc_externalboundary(unitno)
 ! Corners
     do k=0,2
     do i=0,2
-      call chn(i,istr)
-      call chn(k,kstr)
+      istr=itoa(i)
+      kstr=itoa(k)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       if (k/=0) nkstr='-'//trim(kstr)
@@ -1120,7 +1120,7 @@ subroutine make_calc_externalboundary(unitno)
     call evaluate_facefactors(unitno,2)
 ! Top/bottom
     do k=0,2
-      call chn(k,kstr)
+      kstr=itoa(k)
       if (k/=0) nkstr='-'//trim(kstr)
       if (k/=0) pkstr='+'//trim(kstr)
       write(unitno,"(a)") "      do j=m1i+1,m2i-1"
@@ -1134,7 +1134,7 @@ subroutine make_calc_externalboundary(unitno)
     enddo
 ! Left/right
     do j=0,2
-      call chn(j,jstr)
+      jstr=itoa(j)
       if (j/=0) njstr='-'//trim(jstr)
       if (j/=0) pjstr='+'//trim(jstr)
       write(unitno,"(a)") "      do k=n1i+1,n2i-1"
@@ -1149,8 +1149,8 @@ subroutine make_calc_externalboundary(unitno)
 ! Near Corners
   do k=0,2
   do j=0,2
-  call chn(k,kstr)
-  call chn(j,jstr)
+  kstr=itoa(k)
+  jstr=itoa(j)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   if (j/=0) njstr='-'//trim(jstr)
@@ -1177,8 +1177,8 @@ subroutine make_calc_externalboundary(unitno)
 ! Corners
     do k=0,2
     do j=0,2
-      call chn(k,kstr)
-      call chn(j,jstr)
+      kstr=itoa(k)
+      jstr=itoa(j)
       if (k/=0) nkstr='-'//trim(kstr)
       if (k/=0) pkstr='+'//trim(kstr)
       if (j/=0) njstr='-'//trim(jstr)
@@ -1425,35 +1425,3 @@ subroutine read_surfaceinfo
    enddo
 endsubroutine read_surfaceinfo
 !***********************************************************************
-    subroutine chn(n,ch)
-!
-      implicit none
-!
-!
-      character (len=4) :: ch
-      integer :: n
-!
-      intent(in) :: n
-!
-!  make a character out of a number
-!  take care of numbers that have less than 4 digits
-!  30-sep-97/axel: coded
-!
-      ch='    '
-      if (n<0) stop 'chn: lt1'
-      if (n<10) then
-        write(ch(1:1),'(i1)') n
-      elseif (n<100) then
-        write(ch(1:2),'(i2)') n
-      elseif (n<1000) then
-        write(ch(1:3),'(i3)') n
-      elseif (n<10000) then
-        write(ch(1:4),'(i4)') n
-      else
-        print*,'CHN: n=',n
-        stop "CHN: n too large"
-      endif
-!
-    endsubroutine chn
-
-!

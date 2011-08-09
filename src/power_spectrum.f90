@@ -485,7 +485,7 @@ module power_spectrum
 !
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                       mpimerge_1d, ipz, mpibarrier, mpigather_z
-   use General, only: chn, write_full_columns, get_range_no, write_by_ranges
+   use General, only: itoa, write_full_columns, get_range_no, write_by_ranges
 !
   implicit none
 !
@@ -509,7 +509,6 @@ module power_spectrum
   real                    :: prods
 !
   character (len=80)  :: title
-  character (len=10)  :: str, str1
   character (len=fnlen) :: filename
   logical             :: l2nd
   !
@@ -585,9 +584,7 @@ module power_spectrum
 !
     if ( lcomplex ) then
       if ( ncomp>1 ) then
-        str=''
-        call chn( ncomp, str )
-        title = trim(title)//' complex componentwise ('//trim(str)//') '
+        title = trim(title)//' complex componentwise ('//trim(itoa(ncomp))//') '
       else
         title = trim(title)//' complex '
       endif
@@ -702,23 +699,18 @@ module power_spectrum
     if ( firstout<n_spectra ) then
 !
       write(1,'(a)') title
-      str = ''; str1 = ''
 !
       nkx = get_range_no( kxrange )
       nky = get_range_no( kyrange )
 !
-      call chn( nkx, str )
-      call chn( nky, str1 )
-!
-      write(1,'(a)') 'Wavenumbers k_x ('//trim(str)//') and k_y ('//trim(str1)//'):'
+      write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
 !
       call write_by_ranges( 1, kx*2*pi/Lx, kxrange )
       call write_by_ranges( 1, ky*2*pi/Ly, kyrange )
 !
       if (lintegrate_shell) then
 !
-        call chn( nkl, str )
-        write(1,'(a)') 'Shell-wavenumbers k ('//trim(str)//'):'
+        write(1,'(a)') 'Shell-wavenumbers k ('//trim(itoa(nkl))//'):'
         write(1,'(1p,8e15.7)') kshell(1:nkl)
 !
       endif
@@ -728,8 +720,7 @@ module power_spectrum
 !
         npz = get_range_no( zrange )
 !
-        call chn( npz, str )
-        write(1,'(a)') 'z-positions ('//trim(str)//'):'
+        write(1,'(a)') 'z-positions ('//trim(itoa(npz))//'):'
         call write_by_ranges( 1, zgrid, zrange )
 !
       endif
@@ -1256,7 +1247,7 @@ module power_spectrum
     real, dimension(nk) :: spectrumx,spectrumx_sum
     real, dimension(nk) :: spectrumy,spectrumy_sum
     real, dimension(nk) :: spectrumz,spectrumz_sum
-    character (len=7) :: str
+    character (len=fnlen) :: suffix
 !
 !  identify version
 !
@@ -1388,19 +1379,19 @@ module power_spectrum
 !  because we have only taken the data for positive values of kx.
 !
     if (ivec==1) then
-      str='x_x.dat'
+      suffix='x_x.dat'
     elseif (ivec==2) then
-      str='y_x.dat'
+      suffix='y_x.dat'
     elseif (ivec==3) then
-      str='z_x.dat'
+      suffix='z_x.dat'
     else
-      str='_x.dat'
+      suffix='_x.dat'
     endif
 !  Append to diagnostics file
     if (iproc==root) then
       if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
-          'to ', trim(datadir)//'/power'//trim(sp)//trim(str)
-      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str), &
+          'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
+      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
           position='append')
       write(1,*) t
       write(1,'(1p,8e10.2)') spectrumx_sum/(nygrid*nzgrid)
@@ -1415,18 +1406,18 @@ module power_spectrum
 !
       if (lroot .and. nygrid/=1) then
         if (ivec==1) then
-          str='x_y.dat'
+          suffix='x_y.dat'
         elseif (ivec==2) then
-          str='y_y.dat'
+          suffix='y_y.dat'
         elseif (ivec==3) then
-          str='z_y.dat'
+          suffix='z_y.dat'
         else
-          str='_y.dat'
+          suffix='_y.dat'
         endif
 !  Append to diagnostics file
         if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
-            'to ', trim(datadir)//'/power'//trim(sp)//trim(str)
-        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str), &
+            'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
             position='append')
         write(1,*) t
         write(1,'(1p,8e10.2)') spectrumy_sum/(nxgrid*nzgrid)
@@ -1437,18 +1428,18 @@ module power_spectrum
 !
       if (lroot .and. nzgrid/=1) then
         if (ivec==1) then
-          str='x_z.dat'
+          suffix='x_z.dat'
         elseif (ivec==2) then
-          str='y_z.dat'
+          suffix='y_z.dat'
         elseif (ivec==3) then
-          str='z_z.dat'
+          suffix='z_z.dat'
         else
-          str='_z.dat'
+          suffix='_z.dat'
         endif
 !  Append to diagnostics file
         if (lroot.and.ip<10) print*,'Writing power spectra of variable', sp,  &
-            'to ', trim(datadir)//'/power'//trim(sp)//trim(str)
-        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str), &
+            'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
             position='append')
         write(1,*) t
         write(1,'(1p,8e10.2)') spectrumz_sum/(nxgrid*nygrid)

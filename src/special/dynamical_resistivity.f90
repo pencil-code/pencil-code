@@ -109,7 +109,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use General, only:chn
+      use General, only: itoa
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting,exist
@@ -117,8 +117,8 @@ module Special
       integer :: mtable,itable,irho,itemp,izet
       integer :: iitemp,iirho,iizet,stat
       real :: unit_eta_cgs,unit_eta1_cgs
-      character (len=120)  :: tablefile
-      character (len=5) :: sdust 
+      character (len=fnlen)  :: tablefile
+      character (len=intlen) :: sdust 
 !
 !  Work out the units
 !
@@ -138,7 +138,7 @@ module Special
 !
 !  Read the lookup table into a local 3D array. All processors should have it 
 !
-      call chn(nint(-log10(dust_to_gas)),sdust)
+      sdust=itoa(nint(-log10(dust_to_gas)))
       tablefile=trim('./table/table.eta.a0p1um.d2gmr1em'//trim(sdust)//&
            '.mgeps1em4.within2.dat')
       print*,'reading table ',tablefile

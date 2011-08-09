@@ -6246,10 +6246,8 @@ module Mpicomm
 !  22-nov-10/MR: coded
 !  06-apr-11/MR: optional parameters kxrange, kyrange, zrange for selective output added
 !
-      use General, only: chn, write_by_ranges_2d_cmplx, &
-                              write_by_ranges_2d_real, &
-                              write_by_ranges_1d_cmplx, &
-                              write_by_ranges_1d_real
+      use General, only: write_by_ranges_2d_cmplx, write_by_ranges_2d_real, &
+                         write_by_ranges_1d_cmplx, write_by_ranges_1d_real
 !
       real,    dimension(nxgrid,ny,nz),      intent(inout) :: sendbuf
       complex, dimension(nxgrid,ny,nz,ncomp),intent(inout) :: sendbuf_cmplx

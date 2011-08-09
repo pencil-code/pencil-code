@@ -46,7 +46,7 @@ module NeutralDensity
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
   character (len=labellen) :: borderlnrhon='nothing'
-  character (len=5) :: iinit_str
+  character (len=intlen) :: iinit_str
   integer :: iglobal_gg=0
   integer :: iglobal_rhon=0
 !
@@ -258,7 +258,7 @@ module NeutralDensity
 !
 !  28-feb-07/wlad: adapted
 !
-      use General, only: chn,complex_phase
+      use General, only: itoa,complex_phase
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
                           lnumerical_equilibrium
       use Selfgravity,only: rhs_poisson_const
@@ -294,7 +294,7 @@ module NeutralDensity
 
             lnothing=.false.
 
-            call chn(j,iinit_str)
+            iinit_str=itoa(j)
 
             select case (initlnrhon(j))
 !

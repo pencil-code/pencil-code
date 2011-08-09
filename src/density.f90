@@ -83,7 +83,7 @@ module Density
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'
   character (len=labellen) :: mass_source_profile='nothing'
-  character (len=5) :: iinit_str
+  character (len=intlen) :: iinit_str
   character (len=labellen) :: ffree_profile='none'
 !
   namelist /density_init_pars/ &
@@ -461,7 +461,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use General, only: chn,complex_phase
+      use General, only: itoa,complex_phase
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
       use IO
@@ -510,7 +510,7 @@ module Density
         if (initlnrho(j)=='nothing') cycle
         lnothing=.false.
 !
-        call chn(j,iinit_str)
+        iinit_str=itoa(j)
 !
         select case (initlnrho(j))
 !

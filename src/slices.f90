@@ -77,7 +77,7 @@ module Slices
       use Dustvelocity,    only: get_slices_dustvelocity
       use EquationOfState, only: get_slices_eos
       use Entropy,         only: get_slices_entropy
-      use General,         only: chn
+      use General,         only: itoa
       use Hydro,           only: get_slices_hydro
       use Interstellar,    only: get_slices_interstellar
       use Magnetic,        only: get_slices_magnetic
@@ -94,7 +94,7 @@ module Slices
       character(len=*) :: path
 !
       type (slice_data) :: slices
-      character(len=5) :: sindex
+      character(len=intlen) :: sindex
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
       logical :: lslices_legacy=.true.
@@ -174,7 +174,7 @@ module Slices
                                                      z(iz4_loc),nx,ny)
             inamev=inamev+1
           else
-            call chn(slices%index, sindex)
+            sindex=itoa(slices%index)
             if (associated(slices%yz)) &
               call wslice(path//trim(slices%name)//trim(sindex)//'.yz', &
                                        slices%yz, x(ix_loc),ny,nz)

@@ -63,7 +63,7 @@ module Entropy
   logical :: linitial_log=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
-  character (len=5) :: iinit_str
+  character (len=intlen) :: iinit_str
   logical :: lADI_mixed=.false.
 !
 !  Input parameters.
@@ -430,7 +430,7 @@ module Entropy
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use General,  only: chn
+      use General,  only: itoa
       use Sub,      only: blob
       use InitialCondition, only: initial_condition_ss
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, cs20, &
@@ -450,7 +450,7 @@ module Entropy
 !
           lnothing=.false.
 !
-          call chn(j,iinit_str)
+          iinit_str=itoa(j)
 !
 !  Select between various initial conditions.
 !

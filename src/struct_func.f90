@@ -22,7 +22,7 @@ module struct_func
   contains
 
 !***********************************************************************
-    subroutine structure(f,ivec,b_vec,variabl)
+    subroutine structure(f,ivec,b_vec,varlabel)
       !
       !  The following parameters may need to be readjusted:
       !  qmax should be set to the largest moment to be calculated
@@ -36,12 +36,16 @@ module struct_func
       use General
       use Mpicomm
       !
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivec
+      real, dimension (nx,ny,nz) :: b_vec
+      character (len=*) :: varlabel
+      !
       integer, parameter :: qmax=8+1 ! the extrta 1 is for unsigned 3. moment.
       integer, parameter :: imax=lb_nxgrid*2-2
       integer, parameter :: n_pdf=101
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:,:,:), allocatable :: flux_vec
-      real, dimension (nx,ny,nz) :: vect,b_vec
+      real, dimension (nx,ny,nz) :: vect
       real, dimension (imax,qmax,3) :: sf,sf_sum
       real, dimension (ny,nz,3) :: dvect_flux1,dvect_flux2
       real, dimension (ny,nz) :: dvect1,dvect2,sf3_flux1,sf3_flux2
@@ -49,43 +53,41 @@ module struct_func
       real, dimension(n_pdf) :: x_du
       integer, dimension (ny,nz) :: i_du1,i_du2
       integer :: l,q,direction,ll1,ll2,mtmp,ntmp
-      integer :: i,ivec,lb_ll,separation,exp1,exp2
+      integer :: i,lb_ll,separation,exp1,exp2
       integer(KIND=ikind8) :: ndiv
       real :: pdf_max,pdf_min,normalization,dx_du
-      character (len=5) :: var
-      character (len=*) :: variabl
-      character (len=20):: filetowrite
+      character (len=fnlen):: prefix
       logical :: llsf=.false., llpdf=.false.
       !
       !  Do structure functions
       !
       if (iproc==root.and.ip<9) print*,'Doing structure functions'
       !
-      if (variabl == 'u') then
+      if (varlabel == 'u') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
-        filetowrite='/sfu-'
+        prefix='/sfu-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl == 'b') then
+      elseif (varlabel == 'b') then
         vect(:,:,:)=b_vec(:,:,:)
-        filetowrite='/sfb-'
+        prefix='/sfb-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl == 'z1') then
+      elseif (varlabel == 'z1') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)+b_vec(:,:,:)
-        filetowrite='/sfz1-'
+        prefix='/sfz1-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl == 'z2') then
+      elseif (varlabel == 'z2') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
-        filetowrite='/sfz2-'
+        prefix='/sfz2-'
         sf=0.
         llsf=.true.
         llpdf=.false.
-      elseif (variabl == 'flux') then
+      elseif (varlabel == 'flux') then
         !
         ! Here we calculate the flux like structure functions of
         ! Politano & Pouquet (1998)
@@ -102,7 +104,7 @@ module struct_func
         n=ntmp
         vect(:,:,:)  = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
         flux_vec=f(l1:l2,m1:m2,n1:n2,iux:iuz)+flux_vec
-        filetowrite='/sfflux-'
+        prefix='/sfflux-'
         sf=0.
         llsf=.true.
         llpdf=.false.
@@ -111,9 +113,9 @@ module struct_func
       !  Setting some variables depending on wether we want to
       !  calculate pdf or structure functions.
       !
-      if (variabl == 'pdfu') then
+      if (varlabel == 'pdfu') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
-        filetowrite='/pdfu-'
+        prefix='/pdfu-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
         pdf_min=-pdf_max
         dx_du=(pdf_max-pdf_min)/n_pdf
@@ -123,9 +125,9 @@ module struct_func
         p_du=0.
         llpdf=.true.
         llsf=.false.
-      elseif (variabl == 'pdfb') then
+      elseif (varlabel == 'pdfb') then
         vect=b_vec
-        filetowrite='/pdfb-'
+        prefix='/pdfb-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
         pdf_min=-pdf_max
         dx_du=(pdf_max-pdf_min)/n_pdf
@@ -135,8 +137,8 @@ module struct_func
         p_du=0.
         llpdf=.true.
         llsf=.false.
-      elseif (variabl == 'pdfz1') then
-        filetowrite='/pdfz1-'
+      elseif (varlabel == 'pdfz1') then
+        prefix='/pdfz1-'
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)+b_vec(:,:,:)
         pdf_max= 1.  !(for the time being; assumes |u|<1)
         pdf_min=-pdf_max
@@ -147,9 +149,9 @@ module struct_func
         p_du=0.
         llpdf=.true.
         llsf=.false.
-      elseif (variabl == 'pdfz2') then
+      elseif (varlabel == 'pdfz2') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
-        filetowrite='/pdfz2-'
+        prefix='/pdfz2-'
         pdf_max= 1.  !(for the time being; assumes |u|<1)
         pdf_min=-pdf_max
         dx_du=(pdf_max-pdf_min)/n_pdf
@@ -175,7 +177,7 @@ module struct_func
             ll2=mod(l-separation+nx-1,nx)+1
             dvect1=vect(l,:,:)-vect(ll1,:,:)
             dvect2=vect(l,:,:)-vect(ll2,:,:)
-            if (variabl == 'flux') then
+            if (varlabel == 'flux') then
               dvect_flux1=flux_vec(l,:,:,:)-flux_vec(ll1,:,:,:)
               dvect_flux2=flux_vec(l,:,:,:)-flux_vec(ll2,:,:,:)
             endif
@@ -201,7 +203,7 @@ module struct_func
               !
               !  Calculates sf
               !
-              if (variabl == 'flux') then
+              if (varlabel == 'flux') then
                 sf3_flux1= &
                      abs(dvect1(:,:))* &
                      (dvect_flux1(:,:,1)**2 &
@@ -217,7 +219,7 @@ module struct_func
               ! Loop over all q values
               !
               do q=1,qmax-1
-                if (variabl == 'flux') then
+                if (varlabel == 'flux') then
                   sf(lb_ll,q,direction) &
                        =sf(lb_ll,q,direction) &
                        +sum(abs(sf3_flux1(:,:))**(q/3.)) &
@@ -231,7 +233,7 @@ module struct_func
               !
               ! Do unsigned third moment (store in last slot of array)
               !
-              if (variabl == 'flux') then
+              if (varlabel == 'flux') then
                 sf(lb_ll,qmax,direction) &
                      =sf(lb_ll,qmax,direction) &
                      +sum(sf3_flux1(:,:)) &
@@ -277,12 +279,11 @@ module struct_func
       !  Writing output file
       !
       if (iproc==root) then
-        call chn(ivec,var,'structure')
         if (llpdf) then
-          if (ip<10) print*,'Writing pdf of variable',var &
-               ,'to ',trim(datadir)//trim(filetowrite)//trim(var)//'.dat'
-          open(1,file=trim(datadir)//trim(filetowrite)//trim(var) &
-               //'.dat',position='append')
+          if (ip<10) print*,'Writing pdf of variable ',trim(itoa(ivec)), &
+               ' to ',trim(datadir)//trim(prefix)//trim(itoa(ivec))//'.dat'
+          open(1,file=trim(datadir)//trim(prefix)//trim(itoa(ivec))//'.dat', &
+               position='append')
           write(1,*) t,n_pdf
           write(1,'(1p,8e10.2)') p_du_sum(:,:,:)
           write(1,'(1p,8e10.2)') x_du
@@ -290,10 +291,11 @@ module struct_func
         endif
         !
         if (llsf) then
-          if (ip<10) print*,'Writing structure functions of variable',var &
-               ,'to ',trim(datadir)//trim(filetowrite)//trim(var)//'.dat'
-          open(1,file=trim(datadir)//trim(filetowrite)//trim(var) &
-               //'.dat',position='append')
+          if (ip<10) print*,'Writing structure functions of variable ',&
+               trim(itoa(ivec)), &
+               ' to ',trim(datadir)//trim(prefix)//trim(itoa(ivec))//'.dat'
+          open(1,file=trim(datadir)//trim(prefix)//trim(itoa(ivec))//'.dat', &
+               position='append')
           write(1,*) t,qmax
           write(1,'(1p,8e10.2)') sf_sum(:,:,:)
           close(1)

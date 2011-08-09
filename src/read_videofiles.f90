@@ -36,9 +36,8 @@
       real :: slice_xpos=0., slice_ypos=0., slice_zpos=0., slice_z2pos=0.
       real :: slice_z3pos=0., slice_z4pos=0.
 !
-      character (len=120) :: file='',fullname='',wfile='',directory=''
-      character (len=120) :: datadir='data',path='',cfield=''
-      character (len=5) :: chproc=''
+      character (len=fnlen) :: file='',fullname='',wfile='',directory=''
+      character (len=fnlen) :: datadir='data',path='',cfield=''
       character (len=20) :: field='lnrho'
 !
       logical :: exists, lwritten_something=.false.,lwrite=.true.
@@ -79,8 +78,7 @@
         do ipy=0,nprocy-1
           do ipz=0,nprocz-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'directory_names')
-            call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(directory, trim(datadir)//'/proc'//itoa(iproc))
 ! check for existence first
             inquire(FILE=trim(directory)//'/slice_position.dat',EXIST=exists)
             if (.not.exists) then
@@ -144,8 +142,7 @@
         do ipy=0,nprocy-1
           do ipx=0,nprocx-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'rvid_box: xy2 plane')
-            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.xy2')
             call safe_character_assign(fullname,trim(path)//trim(file))
             if (it<=itdebug) print*,trim(fullname)
@@ -179,8 +176,7 @@
         do ipy=0,nprocy-1
           do ipx=0,nprocx-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'rvid_box: xy-plane')
-            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
             call safe_character_assign(fullname,trim(path)//trim(file))
             if (it<=itdebug) print*,trim(fullname)
@@ -214,8 +210,7 @@
         do ipz=0,nprocz-1
           do ipx=0,nprocx-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'rvid_box: xz-plane')
-            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
             call safe_character_assign(fullname,trim(path)//trim(file))
             if (it<=itdebug) print*,trim(fullname)
@@ -249,8 +244,7 @@
         do ipz=0,nprocz-1
           do ipy=0,nprocy-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'rvid_box: yz-plane')
-            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
             call safe_character_assign(fullname,trim(path)//trim(file))
             if (it<=itdebug) print*,trim(fullname)
@@ -284,8 +278,7 @@
         do ipy=0,nprocy-1
           do ipx=0,nprocx-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'rvid_box: xy3-plane')
-            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.xy3')
             call safe_character_assign(fullname,trim(path)//trim(file))
             if (it<=itdebug) print*,trim(fullname)
@@ -319,8 +312,7 @@
         do ipy=0,nprocy-1
           do ipx=0,nprocx-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'rvid_box: xy4-plane')
-            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.xy4')
             call safe_character_assign(fullname,trim(path)//trim(file))
             if (it<=itdebug) print*,trim(fullname)

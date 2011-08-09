@@ -16,6 +16,7 @@
 !  for one vector field, 8 for var.dat in the case of MHD with entropy.
 module Io
 !
+  use Cparam, only: intlen
   use Messages
   use Sub, only: keep_compiler_quiet
 !
@@ -100,9 +101,9 @@ contains
 !
       use Cdata, only: datadir,directory,datadir_snap,directory_snap
       use Mpicomm, only: iproc
-      use General, only: chn, safe_character_assign
+      use General, only: itoa, safe_character_assign
 !
-      character (len=5) :: chproc=''
+      character (len=intlen) :: chproc
 !
 !  check whether directory_snap contains `/proc0' -- if so, revert to the
 !  default name.
@@ -114,7 +115,7 @@ contains
         datadir_snap = datadir
       endif
 !
-      call chn(iproc,chproc,'directory_names')
+      chproc=itoa(iproc)
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
       call safe_character_assign(directory_snap, &
                                             trim(datadir_snap)//'/proc'//chproc)

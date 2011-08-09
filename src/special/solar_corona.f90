@@ -468,12 +468,13 @@ module Special
 !
 !  15-sept-2010/Bourdin.KIS: coded
 !
+      use General, only: itoa
+!
       integer :: n_data
       real, dimension (n_data), intent(in) :: data, data_z
       real, dimension (mz), intent(out) :: profile
 !
       integer :: i, j, num_over, num_below
-      character (len=12) :: num
 !
 !
       ! linear interpolation of data
@@ -500,14 +501,12 @@ module Special
       enddo
 !
       if (lfirst_proc_xy .and. (num_below > 0)) then
-        write (num, *) num_below
         call warning ("interpolate_profile", &
-            "extrapolated "//trim (adjustl (num))//" grid points below bottom")
+            "extrapolated "//trim (itoa (num_below))//" grid points below bottom")
       endif
       if (lfirst_proc_xy .and. (num_over > 0)) then
-        write (num, *) num_over
         call warning ("interpolate_profile", &
-            "extrapolated "//trim (adjustl (num))//" grid points over top")
+            "extrapolated "//trim (itoa (num_over))//" grid points over top")
       endif
 !
     endsubroutine interpolate_profile

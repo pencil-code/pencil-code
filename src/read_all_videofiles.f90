@@ -33,9 +33,8 @@ program rvid_box
       real :: t
       real :: slice_pos=0.
 !
-      character (len=120) :: file='',fullname='',wfile='',directory=''
-      character (len=120) :: datadir='data',path='',cfield=''
-      character (len=5) :: chproc=''
+      character (len=fnlen) :: file='',fullname='',wfile='',directory=''
+      character (len=fnlen) :: datadir='data',path='',cfield=''
       character (len=20) :: field='lnrho',field2=''
 !
       logical :: exists,lfirst_slice=.true.
@@ -69,8 +68,7 @@ program rvid_box
         do ipy=0,nprocy-1
           do ipz=0,nprocz-1
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'directory_names')
-            call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(directory, trim(datadir)//'/proc'//itoa(iproc))
 !
 ! check for existence first
 !
@@ -165,8 +163,7 @@ program rvid_box
             ipx=0
             ipy=0
             iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-            call chn(iproc,chproc,'rvid_box: xy-plane')
-            call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+            call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
             call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
             call safe_character_assign(fullname,trim(path)//trim(file))
             !
@@ -197,8 +194,7 @@ program rvid_box
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-              call chn(iproc,chproc,'rvid_box: xy-plane')
-              call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+              call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
               call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
@@ -238,8 +234,7 @@ program rvid_box
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-              call chn(iproc,chproc,'rvid_box: xy2-plane')
-              call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+              call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
               call safe_character_assign(file,'/slice_'//trim(field)//'.xy2')
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
@@ -279,8 +274,7 @@ program rvid_box
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-              call chn(iproc,chproc,'rvid_box: xy3-plane')
-              call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+              call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
               call safe_character_assign(file,'/slice_'//trim(field)//'.xy3')
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
@@ -320,8 +314,7 @@ program rvid_box
           do ipy=0,nprocy-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-              call chn(iproc,chproc,'rvid_box: xy4-plane')
-              call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+              call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
               call safe_character_assign(file,'/slice_'//trim(field)//'.xy4')
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
@@ -361,8 +354,7 @@ program rvid_box
           do ipz=0,nprocz-1
             do ipx=0,nprocx-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-              call chn(iproc,chproc,'rvid_box: xz-plane')
-              call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+              call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
               call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
@@ -402,8 +394,7 @@ program rvid_box
           do ipy=0,nprocy-1
             do ipz=0,nprocz-1
               iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-              call chn(iproc,chproc,'rvid_box: yz-plane')
-              call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
+              call safe_character_assign(path,trim(datadir)//'/proc'//itoa(iproc))
               call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
               call safe_character_assign(fullname,trim(path)//trim(file))
               inquire(FILE=trim(fullname),EXIST=exists)
@@ -452,11 +443,9 @@ contains
     character(len=*), intent(in) :: slice        ! slice plane
     character(len=*), intent(out) :: fullname    ! the file name
 !
-    character(len=120) :: path, filename
-    character(len=5) :: chproc
+    character(len=fnlen) :: path, filename
 !
-    call chn(iproc, chproc)
-    call safe_character_assign(path, trim(datadir) // '/proc' // chproc)
+    call safe_character_assign(path, trim(datadir) // '/proc' // itoa(iproc))
     call safe_character_assign(filename, '/slice_' // trim(field) // '.' // trim(slice))
     call safe_character_assign(fullname, trim(path) // trim(filename))
 !
@@ -472,12 +461,7 @@ contains
     character(len=*), intent(out) :: string2
     integer, intent(in) :: k
 !
-!  Restricted to 5 digits due to the limitation of subroutine chn
-!
-    character(len=5) :: num
-!
-    call chn(k, num)
-    call safe_character_assign(string2, trim(string1) // trim(num))
+    call safe_character_assign(string2, trim(string1) // trim(itoa(k)))
 !
   endsubroutine append_number
 !***********************************************************************

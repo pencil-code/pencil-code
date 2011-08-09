@@ -1082,12 +1082,12 @@ module Interstellar
 !  Initialise some explosions etc.
 !  24-nov-2002/tony: coded
 !
-      use General, only: chn
+      use General, only: itoa
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       logical :: lnothing=.true.
-      character (len=5) :: iinit_str
+      character (len=intlen) :: iinit_str
       integer :: i,j,iSNR
 !
       intent(inout) :: f
@@ -1097,7 +1097,7 @@ module Interstellar
       if (initinterstellar(j)/='nothing') then
 !
       lnothing=.false.
-      call chn(j,iinit_str)
+      iinit_str=itoa(j)
 !
 !  Select different initial conditions
 !

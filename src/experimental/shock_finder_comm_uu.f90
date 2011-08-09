@@ -348,32 +348,3 @@ subroutine read_surfaceinfo
    enddo
 endsubroutine read_surfaceinfo
 !***********************************************************************
-    subroutine chn(n,ch)
-!
-      character (len=4) :: ch
-      integer :: n
-!
-      intent(in) :: n
-!
-!  make a character out of a number
-!  take care of numbers that have less than 4 digits
-!  30-sep-97/axel: coded
-!
-      ch='    '
-      if (n<0) stop 'chn: lt1'
-      if (n<10) then
-        write(ch(1:1),'(i1)') n
-      elseif (n<100) then
-        write(ch(1:2),'(i2)') n
-      elseif (n<1000) then
-        write(ch(1:3),'(i3)') n
-      elseif (n<10000) then
-        write(ch(1:4),'(i4)') n
-      else
-        print*,'CHN: n=',n
-        stop "CHN: n too large"
-      endif
-!
-    endsubroutine chn
-
-!

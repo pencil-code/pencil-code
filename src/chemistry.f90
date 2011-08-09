@@ -356,7 +356,7 @@ module Chemistry
       use FArrayManager
 !
       integer :: k, ichemspec_tmp
-      character (len=20) :: input_file='chem.inp'
+      character (len=fnlen) :: input_file='chem.inp'
 !
 !  Initialize some index pointers
 !
@@ -2211,7 +2211,7 @@ module Chemistry
 !
       logical,save :: lwrite=.true.
 !
-      character (len=20) :: output_file="./data/mix_quant.out"
+      character (len=fnlen) :: output_file="./data/mix_quant.out"
       integer :: file_id=123
       integer :: ii1=1,ii2=2,ii3=3,ii4=4,ii5=5
 !
@@ -2521,7 +2521,7 @@ module Chemistry
       character (len=80) :: chemicals=''
       ! Careful, limits the absolut size of the input matrix !!!
       character (len=15) :: file1='chemistry_m.dat',file2='chemistry_p.dat'
-!      character (len=20) :: input_file='chem.inp'
+!      character (len=fnlen) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dummy
       logical :: exist,exist1,exist2
@@ -3233,12 +3233,11 @@ module Chemistry
 !  13-aug-07/steveb: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: chn
+      use General, only: itoa
 !
       integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=5) :: schemspec,snd1
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -3293,8 +3292,6 @@ module Chemistry
         idiag_lambdam=0; idiag_num=0
 !
       endif
-!
-      call chn(nchemspec,schemspec)
 !
 !  check for those quantities that we want to evaluate online
 !
@@ -3465,9 +3462,8 @@ module Chemistry
 !
 !  Write chemistry index in short notation
 !
-      call chn(ichemspec(1),snd1)
       if (lwr) then
-        write(3,*) 'ichemspec=indgen('//trim(schemspec)//') + '//trim(snd1)
+        write(3,*) 'ichemspec=indgen('//trim(itoa(nchemspec))//') + '//trim(itoa(ichemspec(1)))
         write(3,*) 'nchemspec=',nchemspec
       endif
 !
@@ -3735,13 +3731,13 @@ module Chemistry
 !
 !  11-mar-08/nils: coded
 !
-      use General, only: chn
+      use General, only: itoa
 !
       integer :: reac,spec
       character (len=80) :: reac_string,product_string,output_string
-      character (len=5)  :: Sijp_string,Sijm_string
+      character (len=intlen)  :: Sijp_string,Sijm_string
       character (len=1)  :: separatorp,separatorm
-      character (len=20) :: input_file="./data/chem.out"
+      character (len=fnlen) :: input_file="./data/chem.out"
       integer :: file_id=123
 !
       open(file_id,file=input_file,POSITION='APPEND',FORM='FORMATTED')
@@ -3757,14 +3753,14 @@ module Chemistry
         do spec=1,nchemspec
           if (Sijp(spec,reac)>0) then
             Sijp_string=''
-            if (Sijp(spec,reac)>1) call chn(Sijp(spec,reac),Sijp_string)
+            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
             reac_string=trim(reac_string)//trim(separatorp)//&
                 trim(Sijp_string)//trim(varname(ichemspec(spec)))
             separatorp='+'
           endif
           if (Sijm(spec,reac)>0) then
             Sijm_string=''
-            if (Sijm(spec,reac)>1) call chn(Sijm(spec,reac),Sijm_string)
+            if (Sijm(spec,reac)>1) Sijm_string=itoa(Sijm(spec,reac))
             product_string=trim(product_string)//trim(separatorm)//&
                 trim(Sijm_string)//trim(varname(ichemspec(spec)))
             separatorm='+'
@@ -3817,10 +3813,10 @@ module Chemistry
 !  21-jul-10/julien: Reading lewis.dat file to collect constant Lewis numbers
 !                     for each species
 !
-      character (len=20) :: input_file='chem.inp'
+      character (len=fnlen) :: input_file='chem.inp'
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: stat,k,i
-      character (len=20) :: input_file2="./data/stoich.out"
+      character (len=fnlen) :: input_file2="./data/stoich.out"
       integer :: file_id=123
 !
 !
@@ -4375,7 +4371,7 @@ module Chemistry
       real  :: sum_tmp=0., ddd
       real  :: Rcal, Rcal1, lnRgas, l10, lnp_atm
       logical, save :: lwrite_first=.true.
-      character (len=20) :: input_file="./data/react.out"
+      character (len=fnlen) :: input_file="./data/react.out"
       integer :: file_id=123
       real :: B_n_0,alpha_n_0,E_an_0
       real, dimension (nx) :: kf_0,Pr,sum_sp

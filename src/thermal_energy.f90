@@ -145,7 +145,7 @@ module Entropy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
-      use General, only: chn
+      use General, only: itoa
       use Initcond, only: jump
       use EquationOfState, only: rho0, cs20, gamma, gamma_m1
 !
@@ -153,7 +153,7 @@ module Entropy
 !
       integer :: j
       logical :: lnothing=.true.
-      character (len=5) :: iinit_str
+      character (len=intlen) :: iinit_str
 !
       do j=1,ninit
 !
@@ -161,7 +161,7 @@ module Entropy
 !
           lnothing=.false.
 !
-          call chn(j,iinit_str)
+          iinit_str=itoa(j)
 !
 !  Select between various initial conditions.
 !

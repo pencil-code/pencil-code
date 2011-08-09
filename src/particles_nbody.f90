@@ -2426,14 +2426,14 @@ module Particles_nbody
 !  17-nov-05/anders+wlad: adapted
 !
       use Diagnostics
-      use General, only: chn
+      use General, only: itoa
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       integer :: iname,ks,j
       character :: str
-      character (len=5) :: sks
+      character (len=intlen) :: sks
 !
 !  Write information to index.pro
 !
@@ -2459,7 +2459,7 @@ module Particles_nbody
 !  Now check diagnostics for specific particles
 !
       do ks=1,nspar
-        call chn(ks,sks)
+        sks=itoa(ks)
         do j=1,3
           if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
           do iname=1,nname

@@ -41,8 +41,8 @@ include 'NSCBC.h'
   character(len=2*nscbc_len+1), dimension(3) :: nscbc_bc=''
   character(len=nscbc_len), dimension(3) :: nscbc_bc1,nscbc_bc2
   character (len=labellen), dimension(ninit) :: inlet_profile='nothing'
-  character(len=40) :: turb_inlet_dir=''
-  character(len=40) :: turb_inlet_file='var.dat'
+  character(len=fnlen) :: turb_inlet_dir=''
+  character(len=fnlen) :: turb_inlet_file='var.dat'
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   real :: transversal_damping=0.2, turb_profile_mag=1.0
   logical :: inlet_from_file=.false., jet_inlet=.false.
@@ -139,20 +139,19 @@ include 'NSCBC.h'
 !   7-jul-08/arne: coded.
 !
 !
-      use General, only: safe_character_assign, chn
+      use General, only: safe_character_assign, itoa
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       character (len=nscbc_len), dimension(3) :: bc12
       character (len=3) :: topbot
-      character (len=60) :: turbfile
+      character (len=fnlen) :: turbfile
       integer i,j,k,ip_ok,ip_test
       integer :: imin,imax,jmin,jmax,igrid,jgrid
       real, dimension(mcom) :: valx,valy,valz
       logical :: proc_at_inlet
       integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
-      character (len=120) :: directory_in
-      character (len=5) :: chproc_in
+      character (len=fnlen) :: directory_in
       real :: T_t,u_t
       real, dimension(nchemspec) :: YYk
 !
@@ -252,9 +251,8 @@ include 'NSCBC.h'
 !  Read data only if required, i.e. if we are at a processor handling inlets
 !
             if (proc_at_inlet) then
-              call chn(iproc_in,chproc_in)
               call safe_character_assign(directory_in,&
-                  trim(turb_inlet_dir)//'/data/proc'//chproc_in)
+                  trim(turb_inlet_dir)//'/data/proc'//itoa(iproc_in))
               call safe_character_assign(turbfile,&
                   trim(directory_in)//'/'//trim(turb_inlet_file))
               open(1,FILE=turbfile,FORM='unformatted')
@@ -847,7 +845,7 @@ include 'NSCBC.h'
       integer, intent(inout), optional :: iostat
       integer :: stat
       logical :: exist
-      character (len=500) :: file
+      character (len=fnlen) :: file
 !
 ! Define default for the inlet_profile for backward compatibility
 !

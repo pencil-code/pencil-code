@@ -110,23 +110,21 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use FArrayManager
-      use General, only: chn
+      use General, only: itoa
 !
       integer :: k, uud_tmp
-      character(len=5) :: sdust
+      character(len=intlen) :: sdust
 !
 !  Write dust index in short notation
 !
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
-        call chn(ndustspec,sdust)
-        write(3,*) 'iuud=intarr('//trim(sdust)//')'
+        write(3,*) 'iuud=intarr('//trim(itoa(ndustspec))//')'
         close(3)
       endif
 !
       do k=1,ndustspec
-        call chn(k-1,sdust)
-        sdust='['//trim(sdust)//']'
+        sdust='['//trim(itoa(k-1))//']'
         if (ndustspec==1) sdust=''
         call farray_register_pde('uud'//sdust,uud_tmp,vector=3)
         iuud(k) = uud_tmp
@@ -1321,14 +1319,14 @@ module Dustvelocity
 !   3-may-02/axel: coded
 !
       use Diagnostics
-      use General, only: chn
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamexy, k
       logical :: lwr
-      character (len=5) :: sdust
+      character (len=intlen) :: sdust
 !
 !  Write information to index.pro that should not be repeated for i.
 !
@@ -1362,7 +1360,7 @@ module Dustvelocity
 !
         if (lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
         do iname=1,nname
-          call chn(k,sdust)
+          sdust=itoa(k)
           if (ndustspec == 1) sdust=''
           call parse_name(iname,cname(iname),cform(iname), &
               'dtud'//trim(sdust),idiag_dtud(k))
