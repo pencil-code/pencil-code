@@ -54,8 +54,7 @@ if (quiet le 2) then print,'File '+varfile+' contains: ', content
 ;  Read startup parameters
 ;
 pfile = datatopdir+'/'+'param2.nml'
-dummy = file_search(pfile, COUNT=cpar)
-if (cpar gt 0) then begin
+if (file_test(pfile)) then begin
   print, 'Reading param2.nml..'
   spawn, '$PENCIL_HOME/bin/nl2idl -1 -m -M '+strtrim(maxtags,2) $
          + ' '+datatopdir+'/param2.nml', result

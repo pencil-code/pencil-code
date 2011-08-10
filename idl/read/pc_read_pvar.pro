@@ -37,13 +37,9 @@ pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, /quiet
 ;
-;  Check if file exists.
-;
-dummy=file_search('./data/param2.nml', COUNT=countfile)
-;
 ; Check if we are inserting particles continuously
 ;
-if (countfile gt 0) then begin
+if (file_test('./data/param2.nml')) then begin
   pc_read_param, object=param2, /param2, datadir=datadir, quiet=quiet
   linsert_particles_continuously=param2.linsert_particles_continuously
 endif else begin
@@ -172,8 +168,7 @@ for i=0,ncpus-1 do begin
 ;
 ;  Check if file exists.
 ;
-  dummy=file_search(filename, COUNT=countfile)
-  if (not countfile gt 0) then begin
+  if (not file_test(filename)) then begin
     print, 'ERROR: cannot find file '+ filename
     stop
   endif
@@ -229,8 +224,7 @@ for i=0,ncpus-1 do begin
   if (rmv) then begin
     filename1=datadir+'/proc'+strtrim(i,2)+'/rmv_ipar.dat'
     filename2=datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat'
-    file_exists=file_test(filename1)
-    if (file_exists) then begin
+    if (file_test(filename1)) then begin
 ;
 ;  Read indices and removal times of removed particles.
 ;

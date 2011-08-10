@@ -15,7 +15,7 @@
 ;;;      [...]
 ;;;    end
 ;;;  To do:
-;;;    - Manually scan the !path, because HELP, /SOURCE dows not show
+;;;    - Manually scan the !path, because HELP, /SOURCE does not show
 ;;;      routines that contain `compile_opt idl2, hidden' to avoid
 ;;;      compilation message
 
@@ -31,10 +31,10 @@ pro extract_help, name, $
   Np = n_elements(paths)
   for i=0L, Np-1 do begin
     fname = paths[i] + '/' + name + '.pro'
-    if ((file_search(fname))[0]) then begin
-      i = Np                    ; stop looping
+    if (file_test(fname)) then begin
+      i = Np                    ; found => stop looping
     endif else begin
-      fname = ''                ; at end of loop, clear fname
+      fname = ''                ; otherwise, clear fname
     endelse
   endfor
   ;

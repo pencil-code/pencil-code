@@ -114,8 +114,7 @@ filename=datadir+'/proc0/'+varfile
 ;
 ;  Check if file exists.
 ;
-dummy=file_search(filename, COUNT=countfile)
-if (not countfile gt 0) then begin
+if (not file_test(filename)) then begin
     print, 'ERROR: cannot find file '+ filename
     stop
 endif

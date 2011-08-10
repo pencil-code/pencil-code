@@ -14,11 +14,11 @@ FUNCTION inputs, file, DOUBLE=double, ONE=one,_EXTRA=extra
   if (keyword_set(double)) then ONE=1.D0
   ;
   field=fltarr(nx,ny,nz)*ONE
-  if ((file_search(file))[0] ne '') then begin
-    close,1
-    openr,1,file,/f77,_EXTRA=extra
-    readu,1,field
-    close,1
+  if (file_test(file)) then begin
+    openr,lun,file,/f77,/get_lun,_EXTRA=extra
+    readu,lun,field
+    close,lun
+    free_lun,lun
   endif else begin
     message,/informational,"No such file: '" + file + "'"
     field = field*!VALUES.F_NAN

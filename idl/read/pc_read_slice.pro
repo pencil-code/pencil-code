@@ -78,8 +78,7 @@ default,proc,0
 filename=datadir+'/proc'+str(proc)+'/grid.dat'   ; Read processor box dimensions
 
 ; Check for existance and read the data
-dummy=file_search(filename, COUNT=cgrid)
-if (cgrid gt 0) then begin
+if (file_test(filename)) then begin
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
 
   openr,file,filename

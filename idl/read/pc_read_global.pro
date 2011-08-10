@@ -190,8 +190,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check for existence and read the data.
 ;
-    dummy=file_search(filename, COUNT=countfile)
-    if (not countfile gt 0) then begin
+    if (not file_test(filename)) then begin
       message, 'ERROR: cannot find file '+ filename
     endif
 ;

@@ -107,7 +107,7 @@ function tavg_phiavg, range, $
 
     file = avgdir+'/'+phiavgfile
 
-    if (any(file_search(file) ne '')) then begin
+    if (any(file_test(file))) then begin
       t = read_phiavg(file,/TONLY)
       if ((t ge trange[0]) and (t le trange[1])) then begin
         ;; t in trange -> read data

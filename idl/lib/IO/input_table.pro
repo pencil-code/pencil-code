@@ -69,7 +69,7 @@ function input_table, filename, $
   if (n_elements(verb)   eq 0) then verb   = 0
 
   if (keyword_set(nofile_ok)) then begin
-    if (file_search(filename) eq '') then begin
+    if (not file_test(filename)) then begin
       message, /INFO, 'No such file: ' + filename
       if (double) then return, !values.d_nan else return, !values.f_nan
     endif

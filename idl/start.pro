@@ -118,16 +118,16 @@ t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
 gridfile=datadir+'/'+'grid.dat'
-dummy=file_search(gridfile, COUNT=cgrid)
 dummy2=zero
-if (cgrid gt 0) then begin
+if (file_test(gridfile)) then begin
   if (quiet le 2) then print, 'Reading grid.dat..'
-  openr,1, gridfile, /F77
-  readu,1, t,x,y,z
-  readu,1, dx,dy,dz
-  readu,1, dummy2,dummy2,dummy2 ; instead of Lx,Ly,Lz
-  point_lun,-1,pos              ; to read nonequidistant stuff below 
-  close,1
+  openr,lun, gridfile, /F77, /get_lun
+  readu,lun, t,x,y,z
+  readu,lun, dx,dy,dz
+  readu,lun, dummy2,dummy2,dummy2 ; instead of Lx,Ly,Lz
+  point_lun,-lun,pos              ; to read nonequidistant stuff below 
+  close,lun
+  free_lun,lun
 endif else begin
   if (quiet le 4) then print, 'Warning: cannot find file ', gridfile
 endelse
@@ -152,8 +152,7 @@ n1=nghostz & n2=mz-nghostz-1 & n12=n1+indgen(nz)
 ;  Read startup parameters
 ;
 pfile = datatopdir+'/param.nml'
-dummy = file_search(pfile, COUNT=cpar)
-if (cpar gt 0) then begin
+if (file_test(pfile)) then begin
   if (quiet le 2) then print, 'Reading param.nml..'
   spawn, 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done', /SH, result
   if (strlen(result[0])) le 0 then begin
@@ -220,11 +219,12 @@ if (cpar gt 0) then begin
   dx_1=fltarr(mx)*zero & dy_1=fltarr(my)*zero & dz_1=fltarr(mz)*zero
   dx_tilde=fltarr(mx)*zero& dy_tilde=fltarr(my)*zero& dz_tilde=fltarr(mz)*zero
   if (any(lequidist eq 0)) then begin
-    openr,1,gridfile,/F77
-    point_lun,1,pos
-    readu,1, dx_1,     dy_1,     dz_1
-    readu,1, dx_tilde, dy_tilde, dz_tilde
-    close,1
+    openr,lun,gridfile,/F77,/get_lun
+    point_lun,lun,pos
+    readu,lun, dx_1,     dy_1,     dz_1
+    readu,lun, dx_tilde, dy_tilde, dz_tilde
+    close,lun
+    free_lun,lun
   endif else begin
     ;
     ;  Ensure we don't use these values

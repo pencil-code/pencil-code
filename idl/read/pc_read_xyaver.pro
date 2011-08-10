@@ -20,14 +20,12 @@ default, quiet, 0
 ;; 
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 infile = datatopdir+'/xyaver.in'
-dummy=file_search(infile, COUNT=countfile)
-if (countfile eq 0) then begin
+if (file_test(infile)) then begin
    print,infile + ' not found'
    return
 endif else begin
    filename=datadir+'/'+varfile 
-   dummy=file_search(filename, COUNT=countfile)
-   if (countfile eq 0) then begin
+   if (file_test(filename)) then begin
       print,filename+' not found'
       return
    endif
@@ -80,8 +78,7 @@ tt =fltarr(nit)*one
 ;;
 get_lun, file
 if (not quiet) then print, 'Reading ', filename
-dummy=file_search(filename, COUNT=countfile)
-if (not countfile gt 0) then begin
+if (not file_test(filename)) then begin
   print, 'ERROR: cannot find file '+ filename
   stop
 endif

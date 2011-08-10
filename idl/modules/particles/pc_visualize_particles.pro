@@ -135,8 +135,7 @@ print,'npart_radii=',npart_radii
 ;
 ; Check if we are inserting particles continuously
 ;
-dummy=file_search('./data/param2.nml', COUNT=countfile)
-if (countfile gt 0) then begin
+if (file_test('./data/param2.nml')) then begin
     pc_read_param, object=param2,/param2
     linsert_particles_continuously=param2.linsert_particles_continuously
 endif else begin

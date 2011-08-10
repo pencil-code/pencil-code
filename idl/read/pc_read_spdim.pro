@@ -25,8 +25,7 @@ filename=datadir+'/spdim.dat'
 ;
 ; Check for existence and read the data
 ;
-dummy=file_search(filename, COUNT=found)
-if (found gt 0) then begin
+if (file_test(filename)) then begin
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
   openr,file,filename
   readf,file,nspar,mspvar

@@ -75,8 +75,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check for existence and read the data.
 ;
-  dummy = file_search(filename, count=found)
-  if (found gt 0) then begin
+  if (file_test(filename)) then begin
     if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
     tmpfile = './param.pro'
 ;

@@ -150,8 +150,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0) then begin
-    file_struct = file_info (datadir+'/param2.nml')
-    if (file_struct.exists) then begin
+    if (file_test(datadir+'/param2.nml')) then begin
       pc_read_param, object=par2, /param2, dim=dim, datadir=datadir, /quiet
     endif else begin
       print, 'Could not find '+datadir+'/param2.nml'
@@ -359,8 +358,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check for existence and read the data.
 ;
-    dummy=file_search(filename, count=countfile)
-    if (countfile lt 1) then begin
+    if (not file_test(filename)) then begin
       if (arg_present(exit_status)) then begin
         exit_status=1
         print, 'ERROR: cannot find file '+ filename

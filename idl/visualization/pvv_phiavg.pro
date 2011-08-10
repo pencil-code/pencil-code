@@ -125,7 +125,7 @@ pro pvv_phiavg, arg, $
       if (not found) then begin
         file = paths[i]+arg[0]
         filelist = filelist + file + ', '
-        if (any(file_search(file) ne '')) then found = 1
+        if (any(file_test(file))) then found = 1
       endif
     endfor
     if (not found) then message, "Couldn't open any file of "+filelist

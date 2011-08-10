@@ -27,12 +27,12 @@ mx=0L & my=0L & mz=0L & nvar=0L
 prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
 ;
-close,1
-openr,1,datadir+'/'+'dim.dat'
-readf,1,mx,my,mz,nvar
-readf,1,prec
-readf,1,nghostx,nghosty,nghostz
-close,1
+openr,lun,datadir+'/'+'dim.dat',/get_lun
+readf,lun,mx,my,mz,nvar
+readf,lun,prec
+readf,lun,nghostx,nghosty,nghostz
+close,lun
+free_lun,lun
 ;
 mw=mx*my*mz  ;(this must be calculated; its not in dim.dat)
 prec = (strtrim(prec,2))        ; drop leading zeros
@@ -56,15 +56,15 @@ print,'nname=',nname
 ;
 t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
-dx=zero &  dy=zero &  dz=zero & dxyz=zero
+dx=zero & dy=zero & dz=zero & dxyz=zero
 gridfile=datadir+'/'+'grid.dat'
-dummy=file_search(gridfile, COUNT=cgrid)
-if (cgrid gt 0) then begin
+if (file_test(gridfile)) then begin
   print, 'Reading grid.dat..'
-  openr,1, gridfile, /F77
-  readu,1, t,x,y,z
-  readu,1, dx,dy,dz
-  close,1
+  openr,lun, gridfile, /F77, /get_lun
+  readu,lun, t,x,y,z
+  readu,lun, dx,dy,dz
+  close,lun
+  free_lun,lun
 endif else begin
   print, 'Warning: cannot find file ', gridfile
 endelse

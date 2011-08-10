@@ -43,7 +43,7 @@ pro pphiavg, arg, QUIET=quiet, PMULTI=pmulti, CHARSIZE=charsize, $
       if (not found) then begin
         file = fnames[i]
         filelist = filelist + file + ', '
-        if (any(file_search(file) ne '')) then found = 1
+        if (any(file_test(file))) then found = 1
       endif
     endfor
     if (not found) then message, "Couldn't open any file of "+filelist
