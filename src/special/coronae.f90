@@ -772,7 +772,7 @@ module Special
       real, dimension (nx) :: hc
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
-      if (Kpara /= 0. .and. .not. lpencil_check_at_work) call calc_heatcond_tensor(df,p)
+      if (Kpara /= 0.) call calc_heatcond_tensor(df,p)
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
@@ -1466,7 +1466,7 @@ module Special
 !
       lnneni = 2.*(p%lnrho+61.4412 +log(real(unit_mass)))
 !
-      if (.not. lpencil_check_at_work) lnQ   = get_lnQ(lnTT_SI)
+      lnQ = get_lnQ(lnTT_SI)
 !
       rtv_cool = exp(lnQ-unit_lnQ+lnneni)
 !
@@ -1562,7 +1562,7 @@ module Special
       integer :: i,j=18
       logical :: notdone
 !
-      get_lnQ=-1000.
+      get_lnQ=-200.
 !
       do i=1,nx
 !
