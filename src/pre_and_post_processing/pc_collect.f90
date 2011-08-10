@@ -5,6 +5,7 @@
 program pc_collect
 !
   use Cdata
+  use Cparam, only: fnlen
   use Diagnostics
   use Filter
   use IO
@@ -16,7 +17,7 @@ program pc_collect
 !
   implicit none
 !
-  character (len=80) :: filename
+  character (len=fnlen) :: filename
   character (len=*), parameter :: directory_out = 'data/allprocs'
 !
   real, dimension (mx,my,mz,mfarray) :: f
@@ -25,6 +26,7 @@ program pc_collect
   real, dimension (ngx) :: gx, gdx_1, gdx_tilde
   real, dimension (ngy) :: gy, gdy_1, gdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
+  logical :: ex
   integer :: mvar_in, bytes, pz, pa, start_pos, end_pos, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -115,9 +117,13 @@ program pc_collect
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-  gz = huge(1.0)
-!
+  iproc = 0
+  call directory_names()
+  inquire (file=trim(directory_snap)//'/'//trim(filename), exist=ex)
+  if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_snap)//'/'//trim(filename), .true.)
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),status='replace',access='direct',recl=ngx*ngy*bytes)
+!
+  gz = huge(1.0)
 !
 ! Loop over processors
 !

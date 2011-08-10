@@ -5,6 +5,7 @@
 program pc_distribute
 !
   use Cdata
+  use Cparam, only: fnlen
   use Diagnostics
   use Filter
   use IO
@@ -16,7 +17,7 @@ program pc_distribute
 !
   implicit none
 !
-  character (len=80) :: filename
+  character (len=fnlen) :: filename
   character (len=*), parameter :: directory_in = 'data/allprocs'
 !
   real, dimension (mx,my,mz,mfarray) :: f
@@ -26,6 +27,7 @@ program pc_distribute
   real, dimension (ngy) :: gy
   real, dimension (ngz) :: gz
   real :: dummy_dx, dummy_dy, dummy_dz
+  logical :: ex
   integer :: mvar_in, bytes, pz, pa, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -118,6 +120,19 @@ program pc_distribute
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
+  inquire (file=trim(directory_in)//'/'//trim(filename), exist=ex)
+  if (.not. ex) call fatal_error ('pc_distribute', 'File not found: '//trim(directory_in)//'/'//trim(filename), .true.)
+  inquire (file=trim(directory_in)//'/grid.dat', exist=ex)
+  if (.not. ex) call fatal_error ('pc_distribute', 'File not found: '//trim(directory_in)//'/grid.dat', .true.)
+!
+  ! read time:
+  open(lun_input,FILE=trim(directory_in)//'/grid.dat',FORM='unformatted')
+  read(lun_input) t_sp,gx,gy,gz,dummy_dx,dummy_dy,dummy_dz
+  close(lun_input)
+  t = t_sp
+!
+  open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),access='direct',recl=ngx*ngy*bytes)
+!
 ! Loop over processors
 !
   write (*,*) "IPZ-layer:"
@@ -130,19 +145,11 @@ program pc_distribute
     gf = huge(1.0)
 !
     ! read xy-layer:
-    open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),access='direct',recl=ngx*ngy*bytes)
     do pa = 1, mvar_io
       do pz = 1, mz
         read(lun_input,rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
       enddo
     enddo
-    close(lun_input)
-!
-    ! read time:
-    open(lun_input,FILE=trim(directory_in)//'/grid.dat',FORM='unformatted')
-    read(lun_input) t_sp,gx,gy,gz,dummy_dx,dummy_dy,dummy_dz
-    close(lun_input)
-    t = t_sp
 !
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
@@ -230,6 +237,7 @@ program pc_distribute
     enddo
   enddo
 !
+  close(lun_input)
   print *, 'Writing snapshot for time t =', t
 !
 !  Free any allocated memory.

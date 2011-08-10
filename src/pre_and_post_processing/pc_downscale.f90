@@ -6,6 +6,7 @@
 program pc_downscale
 !
   use Cdata
+  use Cparam, only: fnlen
   use Diagnostics
   use Filter
   use IO
@@ -18,7 +19,7 @@ program pc_downscale
   implicit none
 !
   integer, parameter :: reduce=2
-  character (len=80) :: filename
+  character (len=fnlen) :: filename
   character (len=*), parameter :: directory_out = 'data/reduced'
 !
   real, dimension (mx,my,mz,mfarray) :: f
@@ -27,6 +28,7 @@ program pc_downscale
   real, dimension (nrx) :: rx, rdx_1, rdx_tilde
   real, dimension (nry) :: ry, rdy_1, rdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
+  logical :: ex
   integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos, alloc_err
   real, parameter :: inv_reduce_2 = 1.0 / reduce**2.0
   real :: t_sp   ! t in single precision for backwards compatibility
@@ -123,9 +125,13 @@ program pc_downscale
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-  gz = huge(1.0)
-!
+  iproc = 0
+  call directory_names()
+  inquire (file=trim(directory_snap)//'/'//trim(filename), exist=ex)
+  if (.not. ex) call fatal_error ('pc_downscale', 'File not found: '//trim(directory_snap)//'/'//trim(filename), .true.)
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),status='replace',access='direct',recl=nrx*nry*bytes)
+!
+  gz = huge(1.0)
 !
 ! Loop over processors
 !
