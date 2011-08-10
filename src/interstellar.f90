@@ -2676,7 +2676,7 @@ module Interstellar
       real, dimension(1) :: mmpi, mpi_tmp
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old, site_rho
       real, dimension(nx,3) :: uu
-      real :: maxlnTT, site_mass, maxTT
+      real :: maxlnTT, site_mass, maxTT=0.
       real :: radiusA, radiusB, t_interval_SN
       integer :: i
 !
