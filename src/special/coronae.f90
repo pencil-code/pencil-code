@@ -29,7 +29,7 @@ module Special
   real :: increase_vorticity=15.,Bavoid=huge1
   real :: Bz_flux=0.,quench=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
-  real :: dampuu=0.,wdampuu,pdampuu,init_time2=0.
+  real :: init_time2=0.
   real :: limiter_tensordiff=3
   real :: u_amplifier=1.
   integer :: twisttype=0,irefz=nghost+1
@@ -52,7 +52,7 @@ module Special
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
-      Bavoid,Bz_flux,init_time,init_width,quench,dampuu,wdampuu,pdampuu, &
+      Bavoid,Bz_flux,init_time,init_width,quench, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
@@ -772,7 +772,7 @@ module Special
       real, dimension (nx) :: hc
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
-      if (Kpara /= 0.) call calc_heatcond_tensor(df,p)
+      if (Kpara /= 0. .and. .not. lpencil_check_at_work) call calc_heatcond_tensor(df,p)
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
@@ -1153,7 +1153,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_spitzer =  Kpara * p%rho1 * exp(2.5*p%lnTT) * p%cp1 * gamma
+      chi_spitzer =  Kpara * p%cp1 * gamma * exp(2.5*p%lnTT-p%lnrho)
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -1466,7 +1466,7 @@ module Special
 !
       lnneni = 2.*(p%lnrho+61.4412 +log(real(unit_mass)))
 !
-      lnQ   = get_lnQ(lnTT_SI)
+      if (.not. lpencil_check_at_work) lnQ   = get_lnQ(lnTT_SI)
 !
       rtv_cool = exp(lnQ-unit_lnQ+lnneni)
 !
