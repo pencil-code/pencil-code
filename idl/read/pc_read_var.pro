@@ -22,8 +22,6 @@
 ;       proc: Specifies processor to get the data from. Default: ALL [integer]
 ;    varfile: Name of the var file. Default: 'var.dat'.              [string]
 ;       ivar: Number of the varfile, to be appended optionally.      [integer]
-;   tx,ty,tz: Target sizes of data cube for data reduction.          [integer]
-;             (Any non-default setting implies /trimall)
 ;
 ;     object: Optional structure in which to return the loaded data. [structure]
 ;  variables: Array of names of variables to read.                   [string(*)]
