@@ -527,9 +527,9 @@ module Shock
           if (shock_max > 0.) then
             if (shock_max == a1) then
               a1 = 0
-              if (nxgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iux) * xprim(max_loc(1)))**2
-              if (nygrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuy) * yprim(max_loc(2)))**2
-              if (nzgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuz) * zprim(max_loc(3)))**2
+              if (nxgrid > 1) a1 = a1 + ((f(max_loc(1),max_loc(2),max_loc(3),iux) + u0_advec(1)) * xprim(max_loc(1)))**2
+              if (nygrid > 1) a1 = a1 + ((f(max_loc(1),max_loc(2),max_loc(3),iuy) + u0_advec(2)) * yprim(max_loc(2)))**2
+              if (nzgrid > 1) a1 = a1 + ((f(max_loc(1),max_loc(2),max_loc(3),iuz) + u0_advec(3)) * zprim(max_loc(3)))**2
               a1 = sqrt(a1) / (pi * re_mesh * shock_max)
             else
               a1 = 0.
