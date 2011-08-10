@@ -131,18 +131,16 @@ if (not pc_gui_loaded) then BEGIN
 
 	allprocs = 1
 	procdir = datadir+"/allprocs/"
-	file_struct = file_info (procdir+varfile)
-	if (file_struct.exists eq 0) then begin
+	if (not file_test (procdir+varfile)) then begin
 		allprocs = 0
 		procdir = datadir+"/proc0/"
-		file_struct = file_info (procdir+varfile)
-		if (file_struct.exists eq 0) then begin
+		if (not file_test (procdir+varfile)) then begin
 			print, "No '"+varfile+"' file found."
 			stop
 		endif
 	endif
 
-	if ((file_info (procdir+crashfile)).exists) then begin
+	if (file_test (procdir+crashfile)) then begin
 		print, "A '"+crashfile+"' exists, do you want to load it instead of '"+varfile+"'?"
 		repeat begin
 			answer = "y"
@@ -170,16 +168,17 @@ if (not pc_gui_loaded) then BEGIN
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
 	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
 	correction = 1.0 - ghosts / double (dim.mxgrid*dim.mygrid*dim.mzgrid)
+	file_struct = file_info (procdir+varfile)
 	gb_per_file = (file_struct.size * subdomains * correction) / 1024. / 1024. / 1024.
 
-	snapfiles = file_search (procdir, "VAR*")
+	snapfiles = file_search (procdir, "VAR[0-9]*")
 	num_snapshots = n_elements (snapfiles)
-	for i = 0, num_snapshots - 1 do begin
-		snapfiles[i] = strmid (snapfiles[i], strpos (snapfiles[i], "VAR"))
+	for pos = 0, num_snapshots - 1 do begin
+		snapfiles[pos] = strmid (snapfiles[pos], strpos (snapfiles[pos], "VAR"))
 	end
 	snapshots = strarr (1)
-	for i = min (strlen (snapfiles)), max (strlen (snapfiles)) do begin
-		indices = where (strlen (snapfiles) eq i)
+	for len = min (strlen (snapfiles)), max (strlen (snapfiles)) do begin
+		indices = where (strlen (snapfiles) eq len)
 		if (n_elements (indices) eq 1) then if (indices eq -1) then continue
 		sub = snapfiles[indices]
 		reorder = sort (sub)
@@ -196,7 +195,7 @@ if (not pc_gui_loaded) then BEGIN
 		print, "There are > ", strtrim (num_snapshots, 2), " < snapshot files available."
 		print, "(This corresponds to ", strtrim (round (num_snapshots * gb_per_file * 10) / 10., 2), " GB.)"
 		if ((stepping eq 1) and (skipping eq 0)) then begin
-			print, "'"+datadir+"/.../"+varfile+"' will be read anyways."
+			print, "'"+procdir+varfile+"' will be read anyways."
 			print, "Do you want to load additional files into the cache?"
 			repeat begin
 				answer = "n"
@@ -258,7 +257,7 @@ if (not pc_gui_loaded) then BEGIN
 
 	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
 
-	if ((n_elements (dt) le 0) and (file_info (datadir+"/time_series.dat")).exists) then pc_read_ts, obj=ts, datadir=datadir, /quiet
+	if ((n_elements (dt) le 0) and file_test (datadir+"/time_series.dat")) then pc_read_ts, obj=ts, datadir=datadir, /quiet
 	show_timeseries, ts, tags, units
 
 
