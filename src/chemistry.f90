@@ -1041,7 +1041,7 @@ module Chemistry
        p%lambda=lambda_full(l1:l2,m,n)
        if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
       endif
-      if (lpencil(i_lambda1)) p%lambda1=1./p%lambda
+      if (lpencil(i_lambda1)) p%lambda1=1./max(tini,p%lambda)
       endif
 !
 ! Calculate the diffusion term and the corresponding pencil
