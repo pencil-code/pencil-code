@@ -2030,7 +2030,7 @@ module Interstellar
         call check_SNIIb(f,l_SNI)
         return
       endif
-
+!
       iSNR=get_free_SNR()
 !
 !  Determine and sum all cells comprising dense cooler clouds where type II
@@ -3225,8 +3225,8 @@ module Interstellar
 !*****************************************************************************
     subroutine calc_snr_damping_factor(f)
 !
+      use Sub, only: dot,dot2
       use Mpicomm
-      use Sub
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx,3) :: r_vec, uu
@@ -3341,9 +3341,6 @@ module Interstellar
 !*****************************************************************************
     subroutine calc_snr_damp_int(int_dt)
 !
-      use Sub, only: multsv, multsv_add
-      use EquationOfState, only: eoscalc, eosperturb
-!
       real :: int_dt
       integer :: i,iSNR
 !
@@ -3359,7 +3356,6 @@ module Interstellar
     subroutine calc_snr_damping_add_heat(f)
 !
       use Mpicomm
-      use Sub, only: multsv, multsv_add
       use EquationOfState, only: eoscalc, eosperturb
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
