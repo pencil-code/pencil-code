@@ -184,14 +184,14 @@ pro precalc_data, i, vars
 		mu0_SI = 4.0 * !Pi * 1.e-7
 		if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
 			; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
-			varsets[i].HR_ohm = run_param.eta * param.mu0 * sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * unit.density * unit.velocity^3 / unit.length
+			varsets[i].HR_ohm = run_param.eta * param.mu0 * congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp) * unit.density * unit.velocity^3 / unit.length
 		end
 		if (any (strcmp (tags, 'j', /fold_case))) then begin
 			; Current density [A / m^2]
 			if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
 				varsets[i].j = sqrt (varsets[i].HR_ohm / (run_param.eta * mu0_SI * unit.velocity * unit.length))
 			end else begin
-				varsets[i].j = sqrt (sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp))) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+				varsets[i].j = sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
 			end
 		end
 	end
@@ -313,11 +313,31 @@ pro show_timeseries, ts, tags, unit, start_time=start_time, end_time=end_time
 			oplot, ts.t, mass*mean (energy)/mean (mass), linestyle=1, color=200
 			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='mean energy [J]'
 			axis, yaxis=1, yrange=!Y.CRANGE*mean (energy)/mean (mass), /ys, ytitle='total mass ['+unit.default_mass_str+']'
+		end else if (any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			mass = ts.totmass * unit.mass / unit.default_mass
+			plot, ts.t, mass, title = 'Mass conservation', xrange=x_minmax, /xs, ys=8
 		end
-		if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		if (any (strcmp (tags, 'TTmax', /fold_case)) and any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
-			plot, ts.t, Temp_max, title = 'Temp_max(t) [K]', xrange=x_minmax, /xs, /yl
+			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
+			plot, ts.t, Temp_max, title = 'Maximum temperature [K] {-w} and average Ohmic heating rate [W/m^3] {.r}', xrange=x_minmax, /xs, /yl, ys=8
+			oplot, ts.t, HR_ohm*mean (Temp_max)/mean (HR_ohm), linestyle=1, color=200
+			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='Maximum temperature [K]'
+			axis, yaxis=1, yrange=!Y.CRANGE*mean (Temp_max)/mean (HR_ohm), /ys, ytitle='HR_ohm [W/m^3]'
+		end else if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			Temp_max = ts.TTmax * unit.temperature
+			plot, ts.t, Temp_max, title = 'Maximum temperature [K]', xrange=x_minmax, /xs, /yl
+		end else if (any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
+			j_abs = sqrt (ts.j2m) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+			plot, ts.t, HR_ohm, title = 'Ohmic heating rate [W/m^2] {-w} and mean current density [A/m^2] {.r}', xrange=x_minmax, /xs, /yl, ys=8
+			oplot, ts.t, j_abs*mean (HR_ohm)/mean (j_abs), linestyle=1, color=200
+			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='Ohmic heating rate [W/m^3]'
+			axis, yaxis=1, yrange=!Y.CRANGE*mean (HR_ohm)/mean (j_abs), /ys, ytitle='current density [A/m^2]'
 		end
 		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
