@@ -231,6 +231,7 @@ module Snapshot
 !
       if (present(lwrite_only)) llwrite_only=lwrite_only
       ldo_all=.not.llwrite_only
+      lspec=.true.
 !
 !  Output snapshot in 'tpower' time intervals.
 !  File keeps the information about time of last snapshot.
