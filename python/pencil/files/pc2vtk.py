@@ -34,7 +34,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb' , 'aa', 'TT', 'lnTT' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'TT', 'lnTT' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -119,15 +119,15 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         pass
     
     try:
-        index = variables.index('b2')
-        b2 = np.sqrt(pc.dot2(var.bb))
-        print 'writing b2'
-        fd.write('SCALARS b2 float\n')
+        index = variables.index('b_mag')
+        b_mag = np.sqrt(pc.dot2(var.bb))
+        print 'writing b_mag'
+        fd.write('SCALARS b_mag float\n')
         fd.write('LOOKUP_TABLE default\n')        
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
-                    fd.write(struct.pack(">f", b2[k,j,i]))
+                    fd.write(struct.pack(">f", b_mag[k,j,i]))
     except:
         pass
     
@@ -145,15 +145,15 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         pass
         
     try:
-        index = variables.index('j2')
-        j2 = np.sqrt(pc.dot2(var.jj))
-        print 'writing j2'
-        fd.write('SCALARS j2 float\n')
+        index = variables.index('j_mag')
+        j_mag = np.sqrt(pc.dot2(var.jj))
+        print 'writing j_mag'
+        fd.write('SCALARS j_mag float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
-                    fd.write(struct.pack(">f", j2[k,j,i]))
+                    fd.write(struct.pack(">f", j_mag[k,j,i]))
     except:
         pass
     
@@ -228,7 +228,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb' , 'aa', 'TT', 'lnTT' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'TT', 'lnTT' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -315,15 +315,15 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             pass
         
         try:
-            index = variables.index('b2')
-            b2 = np.sqrt(pc.dot2(var.bb))
-            print 'writing b2'
-            fd.write('SCALARS b2 float\n')
+            index = variables.index('b_mag')
+            b_mag = np.sqrt(pc.dot2(var.bb))
+            print 'writing b_mag'
+            fd.write('SCALARS b_mag float\n')
             fd.write('LOOKUP_TABLE default\n')        
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", b2[k,j,i]))
+                        fd.write(struct.pack(">f", b_mag[k,j,i]))
         except:
             pass
         
@@ -341,15 +341,15 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             pass
         
         try:
-            index = variables.index('j2')
-            j2 = np.sqrt(pc.dot2(var.jj))
-            print 'writing j2'
-            fd.write('SCALARS j2 float\n')
+            index = variables.index('j_mag')
+            j_mag = np.sqrt(pc.dot2(var.jj))
+            print 'writing j_mag'
+            fd.write('SCALARS j_mag float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
-                        fd.write(struct.pack(">f", j2[k,j,i]))
+                        fd.write(struct.pack(">f", j_mag[k,j,i]))
         except:
             pass
         
