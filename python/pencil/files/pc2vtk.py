@@ -119,6 +119,19 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         pass
     
     try:
+        index = variables.index('b2')
+        b2 = np.sqrt(pc.dot2(var.bb))
+        print 'writing b2'
+        fd.write('SCALARS b2 float\n')
+        fd.write('LOOKUP_TABLE default\n')        
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", b2[k,j,i]))
+    except:
+        pass
+    
+    try:
         index = variables.index('jj')
         print 'writing jj'
         fd.write('VECTORS jfield float\n')
@@ -131,6 +144,19 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     except:
         pass
         
+    try:
+        index = variables.index('j2')
+        j2 = np.sqrt(pc.dot2(var.jj))
+        print 'writing j2'
+        fd.write('SCALARS j2 float\n')
+        fd.write('LOOKUP_TABLE default\n')    
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", j2[k,j,i]))
+    except:
+        pass
+    
     try:
         index = variables.index('aa')
         print 'writing aa'
@@ -289,6 +315,19 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             pass
         
         try:
+            index = variables.index('b2')
+            b2 = np.sqrt(pc.dot2(var.bb))
+            print 'writing b2'
+            fd.write('SCALARS b2 float\n')
+            fd.write('LOOKUP_TABLE default\n')        
+            for k in range(dimz):
+                for j in range(dimy):
+                    for i in range(dimx):
+                        fd.write(struct.pack(">f", b2[k,j,i]))
+        except:
+            pass
+        
+        try:
             index = variables.index('jj')
             print 'writing jj'
             fd.write('VECTORS jfield float\n')
@@ -298,6 +337,19 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
                         fd.write(struct.pack(">f", var.jj[0,k,j,i]))
                         fd.write(struct.pack(">f", var.jj[1,k,j,i]))
                         fd.write(struct.pack(">f", var.jj[2,k,j,i]))
+        except:
+            pass
+        
+        try:
+            index = variables.index('j2')
+            j2 = np.sqrt(pc.dot2(var.jj))
+            print 'writing j2'
+            fd.write('SCALARS j2 float\n')
+            fd.write('LOOKUP_TABLE default\n')    
+            for k in range(dimz):
+                for j in range(dimy):
+                    for i in range(dimx):
+                        fd.write(struct.pack(">f", j2[k,j,i]))
         except:
             pass
         
