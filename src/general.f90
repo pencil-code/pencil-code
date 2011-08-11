@@ -17,7 +17,7 @@ module General
 !
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
-  public :: find_index_range
+  public :: find_index_range, find_index
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
   public :: besselj_nu_int,calc_complete_ellints
@@ -649,6 +649,36 @@ module General
 99    continue
 !
     endsubroutine find_index_range
+!***********************************************************************
+    pure integer function find_index(xa, x)
+!
+!  Returns the index i of the maximum element of the array xa such that
+!  xa(i) <= x.  The array xa must be monotonically increasing.
+!
+!  10-aug-11/ccyang: coded
+!
+      real, dimension(:), intent(in) :: xa
+      real, intent(in) :: x
+!
+      integer :: n, i
+!
+!  Scan the array elements and compare.
+!
+      n = size(xa)
+      if (x >= xa(n)) then
+        find_index = n
+      else if (n > 1) then
+        scan: do i = 2, n
+          if (x < xa(i)) then
+            find_index = i - 1
+            exit scan
+          endif
+        enddo scan
+      else
+        find_index = 1
+      endif
+!
+    endfunction find_index
 !***********************************************************************
     function spline_derivative(z,f)
 !
