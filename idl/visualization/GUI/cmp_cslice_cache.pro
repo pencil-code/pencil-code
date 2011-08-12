@@ -381,7 +381,7 @@ end
 pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
+	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
@@ -420,7 +420,8 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			if (overplot_contour eq 1) then begin
 				contour, reform (field_x_y[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_y_x[px,*,*], num_over_y, num_over_z), reform (field_z_x[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				vec_len = vector_length * max (abs ([field_y_x, field_z_x] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
+				velovect, reform (field_y_x[px,*,*], num_over_y, num_over_z), reform (field_z_x[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
@@ -450,7 +451,8 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			if (overplot_contour eq 1) then begin
 				contour, reform (field_y_x[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_x_y[*,py,*], num_over_x, num_over_z), reform (field_z_y[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				vec_len = vector_length * max (abs ([field_x_y, field_z_y] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
+				velovect, reform (field_x_y[*,py,*], num_over_x, num_over_z), reform (field_z_y[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
@@ -480,7 +482,8 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			if (overplot_contour eq 1) then begin
 				contour, reform (field_z_x[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end else begin
-				velovect, reform (field_x_z[*,*,pz], num_over_x, num_over_y), reform (field_y_z[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vector_length, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+				vec_len = vector_length * max (abs ([field_x_z, field_y_z] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
+				velovect, reform (field_x_z[*,*,pz], num_over_x, num_over_y), reform (field_y_z[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
@@ -648,7 +651,7 @@ pro prepare_overplot
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length, field_x_max, field_y_max, field_z_max
+	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
@@ -657,7 +660,7 @@ pro prepare_overplot
 	; distance of vector footpoint locations
 	vector_distance = 8
 	; maximum length of vectors
-	vector_length = vector_distance * 0.75
+	vector_length = vector_distance * sqrt (2)
 	; default plot routine: 0=velovect (1=contour)
 	overplot_contour = 0
 
@@ -699,11 +702,6 @@ pro prepare_overplot
 		field_x_indices = (findgen (num_x) + 0.25) / num_x
 		field_y_indices = (findgen (num_y) + 0.25) / num_y
 		field_z_indices = (findgen (num_z) + 0.25) / num_z
-
-		; setup maximum values of x, y, and z overplots
-		field_x_max = max (field_x)
-		field_y_max = max (field_y)
-		field_z_max = max (field_z)
 	end else begin
 		; setup vector field
 		field_x_y = congrid (field_x, num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
@@ -717,19 +715,6 @@ pro prepare_overplot
 		field_x_indices = (findgen (num_x*bin_x/vector_distance) + 0.5) / (num_x*bin_x/vector_distance)
 		field_y_indices = (findgen (num_y*bin_y/vector_distance) + 0.5) / (num_y*bin_y/vector_distance)
 		field_z_indices = (findgen (num_z*bin_z/vector_distance) + 0.5) / (num_z*bin_z/vector_distance)
-
-		; setup vector lengthes for x, y, and z overplots
-		field_x_max = max (field_x)
-		field_y_max = max (field_y)
-		field_z_max = max (field_z)
-
-		; normalize maximum value to 1.0
-;		field_x_y /= field_x_max
-;		field_x_z /= field_x_max
-;		field_y_x /= field_y_max
-;		field_y_z /= field_y_max
-;		field_z_x /= field_z_max
-;		field_z_y /= field_z_max
 	end
 
 	return

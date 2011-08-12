@@ -224,7 +224,7 @@ end
 
 
 ; Show timeseries analysis window
-pro show_timeseries, ts, tags, unit, start_time=start_time, end_time=end_time
+pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, end_time=end_time
 
 	if (n_elements (ts) gt 0) then begin
 

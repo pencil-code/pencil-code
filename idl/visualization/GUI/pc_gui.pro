@@ -254,11 +254,13 @@ if (not pc_gui_loaded) then BEGIN
 	pc_units, obj=unit, datadir=datadir
 	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
 	pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
+	pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
+	pc_read_param, obj=run_param, /param2, dim=dim, datadir=datadir, /quiet
 
 	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
 
 	if ((n_elements (dt) le 0) and file_test (datadir+"/time_series.dat")) then pc_read_ts, obj=ts, datadir=datadir, /quiet
-	show_timeseries, ts, tags, units
+	show_timeseries, ts, tags, units, param, run_param
 
 
 	print, "Allocating memory..."
@@ -296,8 +298,6 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
-	pc_read_param, obj=run_param, /param2, dim=dim, datadir=datadir, /quiet
 	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir, param, run_param
 
 	; Precalculate initial timestep
