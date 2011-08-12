@@ -18,7 +18,6 @@
 ! PENCILS PROVIDED uglnrho; ugrho
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3),transprho
-! PENCILS PROVIDED transprho
 ! PENCILS PROVIDED ekin
 ! PENCILS PROVIDED rho; rho1; lnrho
 !
@@ -178,6 +177,7 @@ module Density
       logical :: lstarting
       integer :: i,ierr
       logical :: lnothing
+      character (len=labellen) :: border_var
 !
 !  Set irho equal to ilnrho if we are considering non-logarithmic density.
 !
@@ -315,7 +315,8 @@ module Density
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      if (borderlnrho/='nothing') call request_border_driving()
+       border_var='initial-condition'
+      if (borderlnrho/='nothing') call request_border_driving( border_var)
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -1901,11 +1902,15 @@ module Density
       use Mpicomm, only: transp_xz, transp_zx
       use Sub,     only: max_mn
 !
+
+!      real, dimension(nzgrid,nxt), intent (out) :: b
+
+      integer, parameter :: nxt=nx/nprocz
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi, b1
-      real, dimension (nx,nz)    :: rhst, rhst2
-      real, dimension (nz)       :: a_tri, b_tri, c_tri
-      real, dimension (nz)       :: r_tri, u_tri
+      real, dimension (nzgrid,nxt)    :: rhst, rhst2
+      real, dimension (nzgrid)       :: a_tri, b_tri, c_tri
+      real, dimension (nzgrid)       :: r_tri, u_tri
       real    :: dz_2, dz_1, k2, aalpha, bbeta
       real, dimension (mx, my, mz)       :: Hp, dHp
       real, dimension (nx,3)       :: g
@@ -1995,5 +2000,19 @@ module Density
       call fourier_transform_xy(phi, b1, linv=.true.)
 !
     endsubroutine inverse_laplacian_z
+!***********************************************************************
+    subroutine dynamical_diffusion(umax)
+!
+!  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
+!
+!  27-jul-11/nils: coded
+!
+      real, intent(in) :: umax
+!
+      call keep_compiler_quiet(umax)
+      call fatal_error('dynamical_diffusion',&
+          'This subroutine is not yet implemented for the anelastic module.')
+!
+    endsubroutine dynamical_diffusion
 !***********************************************************************
 endmodule Density
