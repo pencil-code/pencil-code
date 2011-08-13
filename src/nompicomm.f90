@@ -1593,6 +1593,36 @@ module Mpicomm
 !
     endsubroutine collect_z_4D
 !***********************************************************************
+    subroutine globalize_z (in, out)
+!
+!  Globalizes local data to all processors in the z-direction.
+!  The local data is supposed to include the ghost cells.
+!  Inner ghost layers are cut away during the combination of the data.
+!
+!  13-aug-2011/Bourdin.KIS: coded
+!
+      real, dimension(mz), intent(in) :: in
+      real, dimension(nzgrid+2*nghost), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine globalize_z
+!***********************************************************************
+    subroutine localize_z (in, out)
+!
+!  Localizes global data on any processor.
+!  The global data is supposed to include the outer ghost layers.
+!  The returned data will include inner ghost layers.
+!
+!  13-aug-2011/Bourdin.KIS: coded
+!
+      real, dimension(nzgrid+2*nghost), intent(in) :: in
+      real, dimension(mz), intent(out) :: out
+!
+      out = in
+!
+    endsubroutine localize_z
+!***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out)
 !
 !  Distribute 2D data to several processors and reform into pencil shape.

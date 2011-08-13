@@ -4207,6 +4207,68 @@ module Mpicomm
 !
     endsubroutine collect_z_4D
 !***********************************************************************
+    subroutine globalize_z (in, out)
+!
+!  Globalizes local data to all processors in the z-direction.
+!  The local data is supposed to include the ghost cells.
+!  Inner ghost layers are cut away during the combination of the data.
+!
+!  13-aug-2011/Bourdin.KIS: coded
+!
+      real, dimension(mz), intent(in) :: in
+      real, dimension(nzgrid+2*nghost), intent(out) :: out
+!
+      integer :: pz, partner, alloc_err
+      integer, parameter :: ytag=119
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:), allocatable :: buffer
+!
+!
+      allocate (buffer(nz), stat=alloc_err)
+      if (alloc_err > 0) call stop_fatal ('collect_z_3D: not enough memory for buffer!', .true.)
+!
+      if (lfirst_proc_z) then
+        ! collect the data
+        do pz = 0, nprocz-1
+          partner = ipx + ipy*nprocx + pz*nprocxy
+          if (iproc == partner) then
+            ! data is local
+            out(1:mz) = in
+          else
+            ! receive from partner
+            call MPI_RECV (buffer, nz, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            out(pz*nz+2*nghost+1:pz*nz+mz) = buffer
+          endif
+        enddo
+      else
+        ! send to collector
+        buffer = in(2*nghost+1:mz)
+        call MPI_SEND (buffer, nz, MPI_REAL, ipx + ipy*nprocx, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+      ! broadcast globalized data
+      call mpibcast_real (out, nzgrid+2*nghost)
+!
+      deallocate (buffer)
+!
+    endsubroutine globalize_z
+!***********************************************************************
+    subroutine localize_z (in, out)
+!
+!  Localizes global data on any processor.
+!  The global data is supposed to include the outer ghost layers.
+!  The returned data will include inner ghost layers.
+!
+!  13-aug-2011/Bourdin.KIS: coded
+!
+      real, dimension(nzgrid+2*nghost), intent(in) :: in
+      real, dimension(mz), intent(out) :: out
+!
+      out = in(ipz*nz+1:ipz*nz+mz)
+!
+    endsubroutine localize_z
+!***********************************************************************
     subroutine distribute_to_pencil_xy_2D (in, out, broadcaster)
 !
 !  Distribute data to several processors and reform into pencil shape.
