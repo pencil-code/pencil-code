@@ -1602,7 +1602,7 @@ module Mpicomm
 !  13-aug-2011/Bourdin.KIS: coded
 !
       real, dimension(mz), intent(in) :: in
-      real, dimension(nzgrid+2*nghost), intent(out) :: out
+      real, dimension(mz), intent(out) :: out
 !
       out = in
 !
@@ -1616,7 +1616,7 @@ module Mpicomm
 !
 !  13-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension(nzgrid+2*nghost), intent(in) :: in
+      real, dimension(mz), intent(in) :: in
       real, dimension(mz), intent(out) :: out
 !
       out = in
