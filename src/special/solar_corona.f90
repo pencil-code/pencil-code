@@ -24,6 +24,7 @@ module Special
 !
   interface add_interpolated
     module procedure add_interpolated_2D
+    module procedure add_interpolated_3D
     module procedure add_interpolated_4D
   endinterface
 !
@@ -1362,6 +1363,30 @@ module Special
       endif
 !
     endsubroutine add_interpolated_2D
+!***********************************************************************
+    subroutine add_interpolated_3D (time, time_l, time_r, data_l, data_r, data)
+!
+!  Adds interpolated 2D data to a given field.
+!
+!  24-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: time, time_l, time_r
+      real, dimension(:,:,:), intent(in) :: data_l, data_r
+      real, dimension(:,:,:), intent(inout) :: data
+!
+      real :: factor
+!
+      if (time <= time_l) then
+        data = data + data_l
+      elseif (time >= time_r) then
+        data = data + data_r
+      else
+        ! Interpolate data
+        factor = (time - time_l) / (time_r - time_l)
+        data = data + data_l * (1.0 - factor) + data_r * factor
+      endif
+!
+    endsubroutine add_interpolated_3D
 !***********************************************************************
     subroutine add_interpolated_4D (time, time_l, time_r, data_l, data_r, data)
 !
