@@ -1577,20 +1577,33 @@ module Special
 !
 ! 08-feb-2011/Bourdin.KIS: coded
 !
+      use Mpicomm, only: globalize_z
+!
       real, dimension (nx), intent(in) :: lnrho
       real, dimension (nx), intent(out) :: lnTT_ref
 !
       integer :: px, z_ref
-      integer, parameter :: max_z = nzgrid + 2*nghost
       real :: pos, frac
+      integer, parameter :: mzgrid = nzgrid + 2*nghost
+      real, dimension(:), allocatable, save :: lnrho_global_z, lnTT_global_z
+      logical, save :: lfirst_call=.true.
+!
+      if (lfirst_call) then
+        allocate (lnrho_global_z(mzgrid), lnTT_global_z(mzgrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('find_ref_temp', &
+            'Could not allocate memory for lnrho_/lnTT_global_z', .true.)
+        call globalize_z (lnrho_init_z, lnrho_global_z)
+        call globalize_z (lnTT_init_z, lnTT_global_z)
+        lfirst_call = .false.
+      endif
 !
       do px = 1, nx
-        pos = interpol_tabulated (lnrho(px), lnrho_init_z)
+        pos = interpol_tabulated (lnrho(px), lnrho_global_z)
         z_ref = floor (pos)
         if (z_ref < 1) z_ref = 1
-        if (z_ref >= max_z) z_ref = max_z - 1
+        if (z_ref >= mzgrid) z_ref = mzgrid - 1
         frac = pos - z_ref
-        lnTT_ref(px) = lnTT_init_z(z_ref) * (1.0-frac) + lnTT_init_z(z_ref+1) * frac
+        lnTT_ref(px) = lnTT_global_z(z_ref) * (1.0-frac) + lnTT_global_z(z_ref+1) * frac
       enddo
 !
     endsubroutine find_ref_temp
