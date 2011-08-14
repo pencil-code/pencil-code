@@ -1602,9 +1602,9 @@ module Mpicomm
 !  13-aug-2011/Bourdin.KIS: coded
 !
       real, dimension(mz), intent(in) :: in
-      real, dimension(mz), intent(out) :: out
+      real, dimension(nzgrid+2*nghost), intent(out) :: out
 !
-      out = in
+      out(ipz*nz+1:ipz*nz+mz) = in
 !
     endsubroutine globalize_z
 !***********************************************************************
@@ -1616,10 +1616,10 @@ module Mpicomm
 !
 !  13-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension(mz), intent(in) :: in
+      real, dimension(nzgrid+2*nghost), intent(in) :: in
       real, dimension(mz), intent(out) :: out
 !
-      out = in
+      out = in(ipz*nz+1:ipz*nz+mz)
 !
     endsubroutine localize_z
 !***********************************************************************
