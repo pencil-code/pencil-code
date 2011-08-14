@@ -11,7 +11,7 @@ module Register
 !
   private
 !
-  public :: register_modules, initialize_modules, rprint_list
+  public :: register_modules, initialize_modules, finalize_modules, rprint_list
   public :: choose_pencils
 !
   contains
@@ -396,6 +396,22 @@ module Register
       call initialize_implicit_physics(f)
 !
     endsubroutine initialize_modules
+!***********************************************************************
+    subroutine finalize_modules(f,lstarting)
+!
+!  Call finalization routines, i.e. freeing allocated memory.
+!
+! 14-aug-2011/Bourdin.KIS: coded
+!
+      use Cdata
+      use Special,          only: finalize_special
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      logical :: lstarting
+!
+      call finalize_special(f,lstarting)
+!
+    endsubroutine finalize_modules
 !***********************************************************************
     subroutine units_general()
 !

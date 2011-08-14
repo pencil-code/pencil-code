@@ -1,7 +1,7 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
   private
 
-  public :: register_special, initialize_special
+  public :: register_special, initialize_special, finalize_special
   public :: read_special_init_pars, write_special_init_pars
   public :: read_special_run_pars,  write_special_run_pars
   public :: rprint_special

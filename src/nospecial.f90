@@ -12,6 +12,8 @@
 !    (pre parameter read)                          |
 !  Special variable initialization                 | initialize_special
 !    (post parameter read)                         |
+!  Special variable finalization                   | finalize_special
+!    (deallocation, etc.)                          |
 !                                                  |
 !  Special initial condition                       | init_special
 !   this is called last so may be used to modify   |
@@ -134,6 +136,21 @@ module Special
       endif
 !
     endsubroutine initialize_special
+!***********************************************************************
+    subroutine finalize_special(f,lstarting)
+!
+!  Called by start.f90 together with lstarting=.true.   and then
+!  called by run.f90   together with lstarting=.false.  before exiting.
+!
+!  14-aug-2011/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lstarting
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lstarting)
+!
+    endsubroutine finalize_special
 !***********************************************************************
     subroutine init_special(f)
 !

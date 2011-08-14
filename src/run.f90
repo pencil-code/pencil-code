@@ -768,6 +768,10 @@ program run
     print*
   endif
 !
+!  Gvie all modules the possibility to exit properly.
+!
+  call finalize_modules(f,.false.)
+!
 !  Stop MPI.
 !
   call mpifinalize

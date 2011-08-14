@@ -528,6 +528,12 @@ program start
 !
   call write_pencil_info()
 !
+!  Gvie all modules the possibility to exit properly.
+!
+  call finalize_modules(f,.true.)
+!
+!  Stop MPI.
+!
   call mpifinalize
 !
   if (lroot) print*

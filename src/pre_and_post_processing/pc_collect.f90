@@ -280,6 +280,10 @@ program pc_collect
 !
   print *, 'Writing snapshot for time t =', t
 !
+!  Gvie all modules the possibility to exit properly.
+!
+  call finalize_modules(f,.true.)
+!
 !  Free any allocated memory.
 !
   call fnames_clean_up()
