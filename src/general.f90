@@ -664,6 +664,7 @@ module General
 !
 !  Scan the array elements and compare.
 !
+      find_index = -1
       n = size(xa)
       if (x >= xa(n)) then
         find_index = n
