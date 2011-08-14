@@ -668,12 +668,12 @@ module General
       if (x >= xa(n)) then
         find_index = n
       else if (n > 1) then
-        scan: do i = 2, n
+        do i = 2, n
           if (x < xa(i)) then
             find_index = i - 1
-            exit scan
+            exit
           endif
-        enddo scan
+        enddo
       else
         find_index = 1
       endif
