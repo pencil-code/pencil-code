@@ -88,7 +88,7 @@ module Magnetic_meanfield
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
       alpha_eps, alpha_width, alpha_width2, alpha_aniso, &
-      lmeanfield_noalpm, alpha_profile, &
+      lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       x_surface, x_surface2, z_surface, &
       alpha_rmin,&
       qp_d, qp_x0, qp_model,&
@@ -568,6 +568,7 @@ module Magnetic_meanfield
         case ('z/H_0'); alpha_tmp=z(n)/xyz1(3); if (z(n)==xyz1(3)) alpha_tmp=0.
         case ('y/H'); alpha_tmp=y(m)/xyz1(3)
         case ('J0x'); do l=l1,l2; alpha_tmp(l-l1+1)=bessj(0,k1bessel0*x(l)); enddo
+        case ('J0x_2nd'); do l=l1,l2; alpha_tmp(l-l1+1)=bessj(0,k2bessel0*x(l)); enddo
         case ('cosy'); alpha_tmp=cos(y(m))
         case ('surface_x*cosy'); alpha_tmp=0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
         case ('surface_x2*cosy'); alpha_tmp=0.25 &

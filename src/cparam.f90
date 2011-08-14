@@ -111,8 +111,10 @@ module Cparam
   real, parameter :: four_pi_over_three=4.0/3.0*pi
 !
 !  first zeros of Bessel functions of order 0 and 1
+!  k2bessel0 is the second zero of Bessel function of order 0
 !
   real, parameter :: k1bessel0=2.4048255577, k1bessel1=3.8317060
+  real, parameter :: k2bessel0=5.5200781
 !
 !  Physical constants, taken from
 !  http://physics.nist.gov/cuu/Constants/index.html.
