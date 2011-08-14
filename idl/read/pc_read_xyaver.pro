@@ -21,14 +21,14 @@ default, quiet, 0
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 infile = datatopdir+'/xyaver.in'
 if (not file_test(infile)) then begin
-   print,infile + ' not found'
-   return
+  print,infile + ' not found'
+  return
 endif else begin
-   filename=datadir+'/'+varfile 
-   if (not file_test(filename)) then begin
-      print,filename+' not found'
-      return
-   endif
+  filename=datadir+'/'+varfile 
+  if (not file_test(filename)) then begin
+    print,filename+' not found'
+    return
+  endif
 endelse
 ;;
 ;;  Get necessary dimensions.
