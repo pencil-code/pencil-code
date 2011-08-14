@@ -20,12 +20,12 @@ default, quiet, 0
 ;; 
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 infile = datatopdir+'/xyaver.in'
-if (file_test(infile)) then begin
+if (not file_test(infile)) then begin
    print,infile + ' not found'
    return
 endif else begin
    filename=datadir+'/'+varfile 
-   if (file_test(filename)) then begin
+   if (not file_test(filename)) then begin
       print,filename+' not found'
       return
    endif
