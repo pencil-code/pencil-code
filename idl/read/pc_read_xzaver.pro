@@ -37,10 +37,9 @@ nvar=n_elements(varnames)
 get_lun, file
 filename=datadir+'/'+varfile
 if (not quiet) then print, 'Reading ', filename
-  if (not file_test(filename)) then begin
-    print, 'ERROR: cannot find file '+ filename
-    stop
-  endif
+if (not file_test(filename)) then begin
+  print, 'ERROR: cannot find file '+ filename
+  stop
 endif
 close, file
 openr, file, filename
