@@ -1,58 +1,49 @@
 ;;
 ;; $Id$
 ;;
-;;   Read xy-averages from file
+;;  Read xy-averages from file.
+;;
+;;  NOTE: Please always edit pc_read_xyaver, pc_read_xzaver and pc_read_yzaver
+;;  in symmetry!
 ;;
 pro pc_read_xyaver, object=object, varfile=varfile, datadir=datadir, $
-    nz=nz, double=double, monotone=monotone, quiet=quiet
+    monotone=monotone, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
 ;;  Default data directory.
 ;;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-default, double, 0
 default, varfile, 'xyaverages.dat'
 default, monotone, 0
 default, quiet, 0
 ;;
-;;  Check if averages exist
-;; 
-spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-infile = datatopdir+'/xyaver.in'
-if (not file_test(infile)) then begin
-  print,infile + ' not found'
-  return
-endif else begin
-  filename=datadir+'/'+varfile 
-  if (not file_test(filename)) then begin
-    print,filename+' not found'
-    return
-  endif
-endelse
-;;
 ;;  Get necessary dimensions.
 ;;
-if (not keyword_set(nz)) then begin
-  pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-  pc_set_precision, dim=dim, quiet=quiet
-  nz=dim.nz
-endif else begin
-  if (double) then begin
-    zero=0.0d
-    one=1.0d
-  endif else begin
-    zero=0.0
-    one=1.0
-  endelse
-endelse
+pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+pc_set_precision, dim=dim, quiet=quiet
+nz=dim.nz
 ;;
 ;;  Read variables from xyaver.in
 ;;
-spawn, 'cat '+infile, varnames
+spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
+spawn, 'cat '+datatopdir+'/xzaver.in', varnames
 if (not quiet) then print, 'Preparing to read xy-averages ', $
     arraytostring(varnames,quote="'",/noleader)
 nvar=n_elements(varnames)
+;;
+;;  Check for existence of data file.
+;;
+get_lun, file
+filename=datadir+'/'+varfile
+if (not quiet) then print, 'Reading ', filename
+  if (not file_test(filename)) then begin
+    print, 'ERROR: cannot find file '+ filename
+    stop
+  endif
+endif
+close, file
+openr, file, filename
 ;;
 ;;  Define arrays to put data in.
 ;;
@@ -73,17 +64,6 @@ for i=0,nvar-1 do begin
 endfor
 var=fltarr(nz*nvar)*one
 tt =fltarr(nit)*one
-;;
-;;  Prepare for read
-;;
-get_lun, file
-if (not quiet) then print, 'Reading ', filename
-if (not file_test(filename)) then begin
-  print, 'ERROR: cannot find file '+ filename
-  stop
-endif
-close, file
-openr, file, filename
 ;;
 ;;  Read xy-averages and put in arrays.
 ;;
@@ -118,12 +98,12 @@ pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
 ;;
 ;;  Put data in structure.
 ;;
-makeobject="object = CREATE_STRUCT(name=objectname,['t','z'," + $
-    arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
+makeobject="object = create_struct(name=objectname,['t','z'," + $
+    arraytostring(varnames,quote="'",/noleader) + "]," + $
     "tt[ii],grid.z,"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
 ;
 if (execute(makeobject) ne 1) then begin
-  message, 'ERROR Evaluating variables: ' + makeobject, /INFO
+  message, 'Error evaluating variables: ' + makeobject, /info
   undefine,object
 endif
 ;
