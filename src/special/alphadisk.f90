@@ -865,7 +865,7 @@ endsubroutine read_special_run_pars
           sdo = minsigma + (isig_do-1)*dsig
           sup = minsigma + (isig_up-1)*dsig
 !
-!  Break if array of bounds is detected.
+!  Break if array out of bounds is detected.
 !
           if (isig_do < 1) then
              print*,'get_tmid: isig_do is less than 1. That means the '
