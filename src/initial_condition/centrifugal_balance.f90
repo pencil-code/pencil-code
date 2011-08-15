@@ -82,11 +82,12 @@ module InitialCondition
 !
 !!  integer :: dummy
 !
-  real :: g0=1.,plaw=0.,ptlaw=1.
+  real :: g0=1.,density_power_law=0.,temperature_power_law=1., plasma_beta=25
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
   logical :: lcorrect_selfgravity=.false.
   real :: gravitational_const=0.
+  logical :: ladd_field=.true.
 !
 ! For the noise
 ! 
@@ -95,10 +96,10 @@ module InitialCondition
   logical :: llowk_noise=.false.,lgaussian_distributed_noise=.true.
   real :: xmid=1.5,rborder_int=0.,rborder_ext=0.,Lxn=1.
 !
-  namelist /initial_condition_pars/ g0,plaw,ptlaw,lexponential_smooth,&
+  namelist /initial_condition_pars/ g0,density_power_law,temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const,&
        xmodes,ymodes,zmodes,rho_rms,llowk_noise,xmid,&
-       lgaussian_distributed_noise,rborder_int,rborder_ext
+       lgaussian_distributed_noise,rborder_int,rborder_ext, plasma_beta, ladd_field
 !
   contains
 !***********************************************************************
@@ -259,7 +260,8 @@ module InitialCondition
 !
       if (lroot) print*,&
            'initial_condition_lnrho: locally isothermal approximation'
-      if (lroot) print*,'Radial stratification with power law=',plaw
+      if (lroot) print*,'Radial stratification with power law=',&
+           density_power_law
 !
       if (lenergy.and.llocal_iso) then
         if (lroot) then
@@ -285,7 +287,7 @@ module InitialCondition
                "no valid coordinate system")
         endif
 !
-        call power_law(cs20,rr,ptlaw,cs2,r_ref)
+        call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
 !
 !  Store cs2 in one of the free slots of the f-array
 !
@@ -336,9 +338,9 @@ module InitialCondition
           !that the smoothing is applied
           rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
           lnrhomid=log(rho0) &
-               + plaw*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
+               + density_power_law*log((1-exp( -((rr-rshift)/rmid)**2 ))/rr)
         else
-          lnrhomid=log(rho0)-.5*plaw*log((rr/r_ref)**2+rsmooth**2)
+          lnrhomid=log(rho0) -.5*density_power_law*log((rr/r_ref)**2+rsmooth**2)
         endif
 !
 !  Vertical stratification, if needed
@@ -365,7 +367,8 @@ module InitialCondition
               call stop_it("local_isothermal_density")
             endif
 !
-            tmp2=-tmp1*rr_sph - cs2*(plaw + ptlaw)/gamma
+            tmp2=-tmp1*rr_sph - &
+                 cs2*(density_power_law + temperature_power_law)/gamma
             lat=pi/2-y(m)
             strat=(tmp2*gamma/cs2) * log(cos(lat))
           else
@@ -402,7 +405,7 @@ module InitialCondition
 !
 !  Correct the velocities by this pressure gradient
 !
-      call correct_pressure_gradient(f,ics2,ptlaw)
+      call correct_pressure_gradient(f,ics2,temperature_power_law)
 !
 !  Correct the velocities for self-gravity
 !
@@ -416,9 +419,9 @@ module InitialCondition
 !
       if (llocal_iso) then
         call set_thermodynamical_quantities&
-             (f,ptlaw,ics2,iglobal_cs2,iglobal_glnTT)
+             (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
       else
-        call set_thermodynamical_quantities(f,ptlaw,ics2)
+        call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
 !
     endsubroutine initial_condition_lnrho
@@ -443,15 +446,24 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use EquationOfState, only: cs20
+!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: B0
 !
-!  SAMPLE IMPLEMENTATION
+!  Add force-free field
 !
-      call keep_compiler_quiet(f)
+      if (ladd_field) then 
+        B0 = 2*cs20/plasma_beta
+
+        do m=m1,m2 ; do n=n1,n2
+          f(l1:l2,m,n,iaz) = - B0 * log(x(l1:l2))
+        enddo;enddo
+      endif!
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
-    subroutine correct_pressure_gradient(f,ics2,ptlaw)
+    subroutine correct_pressure_gradient(f,ics2,temperature_power_law)
 !
 !  Correct for pressure gradient term in the centrifugal force.
 !  For now, it only works for flat (isothermal) or power-law
@@ -470,7 +482,7 @@ module InitialCondition
       real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
       integer                :: i,ics2
       logical                :: lheader
-      real :: ptlaw
+      real :: temperature_power_law
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
@@ -495,7 +507,7 @@ module InitialCondition
 !
         cs2=f(l1:l2,m,n,ics2);rr=rr_cyl
         if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
-        gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+        gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
 !
 !  Correct for cartesian or spherical
 !
@@ -704,7 +716,7 @@ module InitialCondition
     endsubroutine correct_for_selfgravity
 !***********************************************************************
     subroutine set_thermodynamical_quantities&
-         (f,ptlaw,ics2,iglobal_cs2,iglobal_glnTT)
+         (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
 !
 !  Subroutine that sets the thermodynamical quantities
 !   - static sound speed, temperature or entropy -
@@ -713,7 +725,7 @@ module InitialCondition
 !  isothermal approximation, the temperature gradient is
 !  stored as a static array, as the (analytical) derivative
 !  of an assumed power-law profile for the sound speed
-!  (hence the parameter ptlaw)
+!  (hence the parameter temperature_power_law)
 !
 !  05-jul-07/wlad: coded
 !  16-dec-08/wlad: moved pressure gradient correction to
@@ -729,11 +741,11 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
       real, dimension (nx) :: gslnTT
-      real :: cp1,ptlaw
+      real :: cp1,temperature_power_law
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
 !
-      intent(in)  :: ptlaw
+      intent(in)  :: temperature_power_law
       intent(out) :: f
 !
 !  Break if llocal_iso is used with entropy or temperature
@@ -766,7 +778,7 @@ module InitialCondition
         endif
       endif
 !
-      if (lroot) print*,'Temperature gradient with power law=',ptlaw
+      if (lroot) print*,'Temperature gradient with power law=',temperature_power_law
 !
 !  Get the pointers to the global arrays if needed
 !
@@ -790,7 +802,7 @@ module InitialCondition
           call get_radial_distance(rr_sph,rr_cyl);   rr=rr_cyl
           if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
 !
-          gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+          gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
 !
           if (lcartesian_coords) then
             f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl
