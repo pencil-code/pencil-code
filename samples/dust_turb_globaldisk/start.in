@@ -17,8 +17,8 @@
   random_gen='nr_f90'
 /
 &initial_condition_pars
-  ptlaw=2
-  plaw=0
+  temperature_power_law=2
+  density_power_law=0
 /
 &eos_init_pars
   cs0=0.1 

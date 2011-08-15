@@ -27,7 +27,7 @@
   initlnrho='globaldisc'
   lnrho_const=0.  
   ldensity_nolog=T
-  ptlaw=1,plaw=0.
+  temperature_power_law=1,density_power_law=0.
   lsoftened=T
 /
 &grav_init_pars

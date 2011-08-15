@@ -21,8 +21,8 @@
   lcylindrical_gravity=T
 /
 &initial_condition_pars
-  ptlaw=1
-  plaw=0
+  temperature_power_law=1
+  density_power_law=0
 /
 &eos_init_pars
   cs0=0.05 

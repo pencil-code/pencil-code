@@ -21,7 +21,7 @@
 &eos_init_pars
   cs0  = 0.05
   rho0 = 1.
-  ptlaw= 1.
+  temperature_power_law= 1.
   gamma= 1.
 /
 &hydro_init_pars
@@ -31,7 +31,7 @@
   initlnrho='local-isothermal'
   lnrho_const=0.  
   ldensity_nolog=T
-  plaw=1.5
+  density_power_law=1.5
   density_floor=-100
 /
 &grav_init_pars

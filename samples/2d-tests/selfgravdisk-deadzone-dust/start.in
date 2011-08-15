@@ -19,8 +19,8 @@
   seed0=1
 /
 &initial_condition_pars
-  ptlaw=1
-  plaw=0.5
+  temperature_power_law=1
+  density_power_law=0.5
   lcorrect_selfgravity=T
   gravitational_const=8.9e-4
 /
