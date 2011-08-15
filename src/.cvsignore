@@ -5,6 +5,7 @@ initial_condition
 pre_and_post_processing
 special
 testfield
+test_methods
 makefile Makefile
 magnetic
 *.d
