@@ -87,7 +87,14 @@ module InitialCondition
   real :: radial_percent_smooth=10.0,rshift=0.0
   logical :: lcorrect_selfgravity=.false.
   real :: gravitational_const=0.
+!
+! For the magnetic field
+!
   logical :: ladd_field=.true.
+  character (len=labellen) :: initcond_aa='plasma-beta'
+  real, dimension(3) :: B_ext=(/0.0,0.0,0.0/)
+  real :: rmode_mag=4.,zmode_mag=16.,amplbb=1.,
+  real :: rm_int=0.0,rm_ext=impossible
 !
 ! For the noise
 ! 
@@ -96,10 +103,13 @@ module InitialCondition
   logical :: llowk_noise=.false.,lgaussian_distributed_noise=.true.
   real :: xmid=1.5,rborder_int=0.,rborder_ext=0.,Lxn=1.
 !
-  namelist /initial_condition_pars/ g0,density_power_law,temperature_power_law,lexponential_smooth,&
-       radial_percent_smooth,rshift,lcorrect_selfgravity,gravitational_const,&
-       xmodes,ymodes,zmodes,rho_rms,llowk_noise,xmid,&
-       lgaussian_distributed_noise,rborder_int,rborder_ext, plasma_beta, ladd_field
+  namelist /initial_condition_pars/ g0,density_power_law,&
+       temperature_power_law,lexponential_smooth,&
+       radial_percent_smooth,rshift,lcorrect_selfgravity,&
+       gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
+       llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
+       rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
+       zmode_mag,rmode_mag,rm_int,rm_ext,amplbb
 !
   contains
 !***********************************************************************
@@ -245,7 +255,6 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use FArrayManager
-      use Mpicomm,         only: stop_it
       use Gravity,         only: potential,acceleration
       use Sub,             only: get_radial_distance,grad,power_law
       use EquationOfState, only: rho0
@@ -269,7 +278,7 @@ module InitialCondition
           print*,'but you are still using llocal_iso in start.in.'
           print*,'Use one or the other instead.'
         endif
-        call stop_it("")
+        call fatal_error("initial_condition_lnrho","")
       endif
 !
 !  Set the sound speed
@@ -283,7 +292,7 @@ module InitialCondition
         elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
           rr=rr_cyl
         else
-          call stop_it("initial_condition_lnrho: "//&
+          call fatal_error("initial_condition_lnrho",&
                "no valid coordinate system")
         endif
 !
@@ -364,7 +373,7 @@ module InitialCondition
             else
               print*,"both gravity and particles_nbody are switched off"
               print*,"there is no gravity to determine the stratification"
-              call stop_it("local_isothermal_density")
+              call fatal_error("local_isothermal_density","")
             endif
 !
             tmp2=-tmp1*rr_sph - &
@@ -389,7 +398,7 @@ module InitialCondition
             else
               print*,"both gravity and particles_nbody are switched off"
               print*,"there is no gravity to determine the stratification"
-              call stop_it("local_isothermal_density")
+              call fatal_error("local_isothermal_density","")
             endif
             strat=-(tmp1-tmp2)/cs2
             if (lenergy) strat=gamma*strat
@@ -447,20 +456,190 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use EquationOfState, only: cs20
+      use Gravity, only: qgshear,r0_pot
+      use General, only: tridag
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: B0
+      real :: amplbb, pblaw
+      real, dimension(nx) :: Aphi, rr, rrcyl
+      real, dimension(mx) :: a_tri,b_tri,c_tri,bz,rhs,aphi_mx
 !
-!  Add force-free field
+      real :: const,k1,kr
+      integer :: i
 !
-      if (ladd_field) then 
-        B0 = 2*cs20/plasma_beta
+      select case (initcond_aa)
+!
+!  Add force-free field of constant plasma beta. 
+!
+        case ('plasma-beta')
+          if (ladd_field) then 
+            amplbb = 2*cs20*rho0/plasma_beta
 
-        do m=m1,m2 ; do n=n1,n2
-          f(l1:l2,m,n,iaz) = - B0 * log(x(l1:l2))
-        enddo;enddo
-      endif!
+            do m=m1,m2 
+              do n=n1,n2
+                Aphi = -amplbb * log(x(l1:l2))
+
+                if (lspherical_coords) then 
+                  f(l1:l2,m,n,iaz) = Aphi
+                elseif (lcylindrical_coords) then
+                  f(l1:l2,m,n,iay) = Aphi
+                else
+                  print*,'case plasma-beta not coded for Cartesian '
+                  print*,'coordinates'
+                  call fatal_error("initial_condition_aa","")
+                endif
+              enddo
+            enddo
+          endif
 !
+!--------------------------------------------------------------
+!
+        case ('Alfven-zconst')
+!
+!  Radially variable field pointing in the z direction
+!  4 Balbus-Hawley wavelengths in the vertical direction
+!
+!  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
+!
+!  The smoothed case should be general, since it reduces
+!  to the non-smoothed for r0_pot=0.
+!
+!  B=C*(r2+r02)^-q ==> Aphi=C/(r*(2-q))*(r2+r02)^(1-q/2)
+!
+!  04-oct-06/wlad: coded
+!
+          if (lcartesian_coords) then
+            amplbb = Lxyz(3)/(2*zmode_mag*pi)
+            do n=n1,n2; do m=m1,m2
+              rr=sqrt(x(l1:l2)**2+y(m)**2)
+              Aphi=amplbb/(rr*(2-qgshear))*(rr**2+r0_pot**2)**(1-qgshear/2.)
+              f(l1:l2,m,n,iax) =  -Aphi*y(m)/rr
+              f(l1:l2,m,n,iay) =   Aphi*x(l1:l2)/rr
+            enddo; enddo
+          elseif (lcylindrical_coords) then
+            call fatal_error("initial_condition_aa","alfven_zconst: "//&
+                 "not implemented for cylindrical coordinates")
+          elseif (lspherical_coords) then
+            amplbb=Lxyz(2)/(2*zmode_mag*pi)
+            pblaw=1-qgshear!-plaw/2.
+            do n=n1,n2; do m=m1,m2
+              rr=x(l1:l2)
+              Aphi=-amplbb/(pblaw+2)*rr**(pblaw+1)*1
+              f(l1:l2,m,n,iax)=0.
+              f(l1:l2,m,n,iay)=0.
+              f(l1:l2,m,n,iaz)=Aphi/sin(y(m))
+            enddo; enddo
+!
+            call correct_lorentz_force(f,amplbb,pblaw)
+!
+          endif
+!
+!--------------------------------------------------------------
+!
+        case ('alfven_rz')
+!
+!  Alfven wave propagating on radial direction with
+!  field pointing to the z direction.
+!
+!  Bz = B0 cos(k r) ==> Aphi = B0/k sin(k r) + B0/(k2*r)*cos(k r)
+!
+!  04-oct-06/wlad: coded
+!
+          if (headtt) print*,'radial alfven wave propagating on z direction'
+          if (.not.lcylinder_in_a_box) &
+               call fatal_error("alfven_rz, this initial condition",&
+               "works only for embedded cylinders")
+!
+! Choose between cases. The non-smoothed case is singular 
+! in r=0 for the potential, thus can only be used if 
+! freezing is used with a non-zero r_int. The smoothed case
+! has a linear component that prevents singularities and a exponential 
+! that prevents the field from growing large in the outer disk
+!
+          do n=n1,n2; do m=m1,m2
+            rrcyl = max(sqrt(x(l1:l2)**2 + y(m)**2),tini)
+            if (r_int>0.) then
+              if (lroot .and. m==m1 .and. n==n1) then
+                print*,'freezing is being used, ok to use singular potentials'
+                print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
+              endif
+              kr = 2*pi*rmode_mag/(r_ext-r_int)
+              Aphi =  amplbb/kr * sin(kr*(rrcyl-r_int)) + &
+                   amplbb/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
+            else
+              if (lroot .and. m==m1 .and. n==n1) print*,'Softened magnetic field in the center'
+              if (rmode_mag < 5) call fatal_error("initial_condition_aa",&
+                   "put more wavelengths in the field")
+              kr = 2*pi*rmode_mag/r_ext
+              k1 = 1. !not tested for other values
+              const=amplbb*exp(1.)*k1/cos(kr/k1)
+              Aphi=const/kr*rrcyl*exp(-k1*rrcyl)*sin(kr*rrcyl)
+            endif
+!
+            f(l1:l2,m,n,iax) = Aphi * (-    y(m)/rrcyl)
+            f(l1:l2,m,n,iay) = Aphi * ( x(l1:l2)/rrcyl)
+!
+          enddo; enddo
+!
+!--------------------------------------------------------------
+!
+       case ("alfven_rphi")
+         do n=n1,n2; do m=m1,m2
+           kr = 2*pi*rmode_mag/(r_ext-r_int)
+           rrcyl = sqrt(x(l1:l2)**2 + y(m)**2)
+           f(l1:l2,m,n,iaz) =  -amplbb/kr*sin(kr*(rrcyl-r_int))
+         enddo; enddo
+!
+!-------------------------------------------------------------
+!
+       case ("sine-avoid-boundary")
+!
+! Sine field in cylindrical coordinates, used in Armitage 1998
+!
+!   Bz=B0/r * sin(kr*(r-r0))
+!
+! And 0 outside of the interval r0-rn
+! Code the field and find Aphi through solving the
+! tridiagonal system for
+!
+!  Bz= d/dr Aphi + Aphi/r
+!
+!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz
+!
+!  05-apr-08/wlad : coded
+!
+         if (.not.lcylindrical_coords) &
+              call fatal_error("initial_condition_aa",&
+              "this IC assumes cylindrical coordinates")
+!
+         do i=1,mx
+           if ((rcyl_mn(i)>=rm_int).and.(rcyl_mn(i)<=rm_ext)) then
+             bz(i)=amplbb/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-rm_int))
+           else
+             bz(i)=0.
+           endif
+         enddo
+!
+         a_tri=-1. ; b_tri=2*dx/x ; c_tri=1. ; rhs=bz*2*dx
+!
+         a_tri(1) =0.;c_tri(1 )=0.
+         a_tri(mx)=0.;c_tri(mx)=0.
+!
+         call tridag(a_tri,b_tri,c_tri,rhs,aphi_mx)
+!
+         do m=1,my; do n=1,mz
+           f(:,m,n,iay) = aphi_mx
+         enddo; enddo
+!
+        case default
+!
+!  Catch unknown values.
+!
+          call fatal_error('initcond_aa', &
+              'initcond_aa value "' // trim(initcond_aa) // '" not recognised')
+!
+        endselect
+
     endsubroutine initial_condition_aa
 !***********************************************************************
     subroutine correct_pressure_gradient(f,ics2,temperature_power_law)
@@ -473,7 +652,6 @@ module InitialCondition
 !  21-aug-07/wlad : coded
 !
       use FArrayManager
-      use Mpicomm,only: stop_it
       use Sub,    only: get_radial_distance,grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -543,7 +721,7 @@ module InitialCondition
                    'domain. The pressure gradient is too steep at ',&
                    'x,y,z=',x(i+nghost),y(m),z(n)
               print*,'the angular frequency here is',tmp2(i)
-              call stop_it("")
+              call fatal_error("","")
             endif
           endif
         enddo
@@ -607,7 +785,6 @@ module InitialCondition
 !
       use Sub,         only:get_radial_distance,grad
       use Poisson,     only:inverse_laplacian
-      use Mpicomm,     only:stop_it
       use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -630,7 +807,7 @@ module InitialCondition
           print*,"You want to correct for selfgravity but you "
           print*,"are using POISSON=nopoisson in src/Makefile.local. "
           print*,"Please use a poisson solver."
-          call stop_it("")
+          call fatal_error("correct_for_selfgravity","")
         endif
 !
 !  Poisson constant is 4piG, this has to be consistent with the 
@@ -694,7 +871,7 @@ module InitialCondition
                      'domain. The offending point is ',&
                      'x,y,z=',x(i+nghost),y(m),z(n)
                 print*,'the angular frequency here is ',tmp2(i)
-                call stop_it("")
+                call fatal_error("correct_for_selfgravity","")
               endif
             endif
           enddo
@@ -714,6 +891,112 @@ module InitialCondition
       endif ! if (lcorrect_selfgravity)
 !
     endsubroutine correct_for_selfgravity
+!***********************************************************************
+    subroutine correct_lorentz_force(f,const,pblaw)
+!
+!  Correct for the magnetic term in the centrifugal force. The
+!  pressure gradient was already corrected in the density and temperature
+!  modules
+!
+!  13-nov-08/wlad : coded
+!
+      use Sub,      only: get_radial_distance
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx)   :: rr_cyl,rr_sph,Btheta
+      real, dimension (mx)   :: tmp,uu2,va2,va2r
+      real, dimension (mx)   :: rho1,rho1_jxb
+      real                   :: const,pblaw
+      logical                :: lheader
+      integer                :: i
+!
+      if (lroot) print*,'Correcting magnetic terms on the '//&
+           'centrifugal force'
+!
+      if (.not.lspherical_coords) then
+        call fatal_error("correct_lorentz_force",&
+            "only implemented for spherical coordinates")
+        if ((B_ext(1)/=0).or.(B_ext(3)/=0)) then
+          call fatal_error("correct_lorentz_force",&
+              "only implemented for polar fields")
+        endif
+      endif
+!
+      do m=1,my
+        do n=1,mz
+!
+          call get_radial_distance(rr_sph,rr_cyl)
+!
+          lheader=((m==1).and.(n==1).and.lroot)
+!
+          !this field also has a magnetic pressure gradient
+          Btheta=const*rr_sph**pblaw/sin(y(m))
+!
+          rho1=1./f(:,m,n,ilnrho)
+!
+          uu2=f(:,m,n,iuz)**2
+          va2=rho1*(Btheta+B_ext(2))**2
+!
+          rho1_jxb=rho1
+!
+!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
+!
+          !if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+!
+!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
+!  set va2power_jxb to an integer value in order to specify the power
+!  of the limiting term,
+!
+          !if (va2max_jxb>0) then
+          !  rho1_jxb = rho1_jxb &
+          !      * (1+(va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          !endif
+          va2r=rho1_jxb*va2
+!
+!  The second term is the magnetic pressure gradient
+!
+ 
+          tmp=uu2+va2r*(1+2*pblaw/rr_sph)
+!
+!  The polar pressure should be
+!  -2*cot(theta)/rr * va2r, but I will ignore it
+!  for now. It feedbacks on the density,
+!  so the initial condition for density and field
+!  should be solved iteratively. But as uu>>va, I
+!  will just let the system relax to equilibrium in
+!  runtime.
+!
+!  Make sure the correction does not impede centrifugal equilibrium
+!
+          do i=1,nx
+            if (tmp(i)<0.) then
+              if (rr_sph(i) < r_int) then
+                !it's inside the frozen zone, so
+                !just set tmp to zero and emit a warning
+                tmp(i)=0.
+                if ((ip<=10).and.lheader) &
+                    call warning('correct_lorentz_force','Cannot '//&
+                    'have centrifugal equilibrium in the inner '//&
+                    'domain. The lorentz force is too strong.')
+              else
+                print*,'correct_lorentz_force: ',&
+                    'cannot have centrifugal equilibrium in the inner ',&
+                    'domain. The lorentz force is too strong at ',&
+                    'x,y,z=',x(i+nghost),y(m),z(n)
+                print*,'the angular frequency here is',tmp(i)
+                call fatal_error("","")
+              endif
+            endif
+          enddo
+!
+!  Correct the velocities
+!
+          f(:,m,n,iuz)= sqrt(tmp)
+!
+        enddo
+      enddo
+!
+    endsubroutine correct_lorentz_force
 !***********************************************************************
     subroutine set_thermodynamical_quantities&
          (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
