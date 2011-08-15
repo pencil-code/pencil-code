@@ -19,9 +19,14 @@ module Boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
 !
+  interface update_ghosts
+     module procedure update_ghosts_all 
+     module procedure update_ghosts_range
+  endinterface
+!
   contains
 !***********************************************************************
-    subroutine update_ghosts(a)
+    subroutine update_ghosts_all(a)
 !
 !  Update all ghost zones of a.
 !
@@ -35,7 +40,28 @@ module Boundcond
       call boundconds_y(a)
       call boundconds_z(a)
 !
-    endsubroutine update_ghosts
+    endsubroutine update_ghosts_all
+!***********************************************************************
+    subroutine update_ghosts_range(a,ivar1,ivar2_opt)
+!
+!  Update specific ghost zones of a.
+!
+!  11-aug-11/wlad: adapted from update_ghosts
+!
+      real, dimension (mx,my,mz,mfarray) :: a
+      integer  :: ivar1,ivar2
+      integer, optional :: ivar2_opt
+!
+      ivar2=ivar1
+      if (present(ivar2_opt)) ivar2=ivar2_opt
+!
+      call boundconds_x(a,ivar1,ivar2)
+      call initiate_isendrcv_bdry(a,ivar1,ivar2)
+      call finalize_isendrcv_bdry(a,ivar1,ivar2)
+      call boundconds_y(a,ivar1,ivar2)
+      call boundconds_z(a,ivar1,ivar2)
+!
+    endsubroutine update_ghosts_range
 !***********************************************************************
     subroutine boundconds(f,ivar1_opt,ivar2_opt)
 !
@@ -47,7 +73,6 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
-!
       integer :: ivar1, ivar2
 !
       ivar1=1; ivar2=mcom
