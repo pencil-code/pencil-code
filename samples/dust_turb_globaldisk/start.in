@@ -19,6 +19,7 @@
 &initial_condition_pars
   temperature_power_law=2
   density_power_law=0
+  initcond_aa='Alfven-zconst'
 /
 &eos_init_pars
   cs0=0.1 
@@ -38,8 +39,6 @@
   g0=1.
 /
 &magnetic_init_pars
-  initaa='Alfven-zconst'
-  zmode=16
 /
 &special_init_pars
 /
