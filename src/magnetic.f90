@@ -1044,7 +1044,7 @@ module Magnetic
       if (.not.lstarting) then
         if (lfargo_advection.and..not.ladvective_gauge) &
              call fatal_error('initialize_magnetic',&
-             'For fargo advecction you need the advective gauge. '//&
+             'For fargo advection you need the advective gauge. '//&
              'You may want to switch ladvection_gauge=T in magnetic_run_pars')
       endif
 !
