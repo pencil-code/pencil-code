@@ -4330,14 +4330,15 @@ The equation of motion is accordingly
 \end{eqnarray}
 Here $\Phi_{\rm grav}$ is the gravity potential,
 $\jv$ the electric current density, $\Bv$
-the magnetic flux density, $\nu$ is kinematic viscosity,
+the magnetic flux density, $\nu$ is kinematic viscosity, $\zeta$ describes a bulk
+viscosity, and
 \begin{equation} \label{Eq-S-traceless}
   {\mathsf S}_{ij} = \frac{1}{2}\left({\partial u_i\over\partial x_j}
                  + {\partial u_j\over\partial x_i}
                  -\frac{2}{3} \delta_{ij}\Div\uv\right)
 \end{equation}
-is the traceless rate-of-strain tensor and $\zeta$ describes some bulk
-viscosity.
+is the rate-of-shear tensor that is traceless, because it can be written as
+the generic rate-of-strain tensor minus its trace.
 
 The interpretation of the two viscosity terms varies greatly depending upon
 the Viscosity module used, and indeed on the parameters given to the module.
@@ -4390,9 +4391,8 @@ The equation solved is
 
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
 $\Heat$ and $\Cool$ are explicit heating and cooling terms,
-$K$ is the radiative (thermal) conductivity,
-$\Strain$ is the traceless rate-of-strain tensor and $\zeta$ describes
-some bulk viscosity.
+$K$ is the radiative (thermal) conductivity, $\zeta$ describes a
+bulk viscosity, and $\Strain$ is the rate-of-shear tensor that is traceless.
 
 In the entropy module we solve for the specific entropy, $s$.
 The heat conduction term on the right hand side can be written in the form
