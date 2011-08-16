@@ -563,7 +563,9 @@ module Special
         endif
       endif
 !
+! #########################################################
 ! Eighth moment approximation
+! #########################################################
 !
       if (eighth_moment /= 0.) then
 !
@@ -3201,7 +3203,7 @@ module Special
       real, dimension(nx,ny) :: tmp
 !
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
-      if (nprocx /= 1 .or. nprocy /= 1) call fatal_error('mark_boundary','works only for npx/y=1')
+      if (nprocx /= 1 .or. nprocy /= 1) call fatal_error('mark_boundary','works only for nprocx=nprocy=1')
 !
       inquire(IOLENGTH=lend) tl
       if (t .ge. tr) then
