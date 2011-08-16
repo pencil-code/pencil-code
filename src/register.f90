@@ -403,6 +403,7 @@ module Register
 !
 ! 14-aug-2011/Bourdin.KIS: coded
 !
+      use Boundcond,        only: finalize_boundcond
       use Cdata
       use Special,          only: finalize_special
 !
@@ -410,6 +411,7 @@ module Register
       logical :: lstarting
 !
       call finalize_special(f,lstarting)
+      call finalize_boundcond(f,lstarting)
 !
     endsubroutine finalize_modules
 !***********************************************************************

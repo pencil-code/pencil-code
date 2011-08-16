@@ -15,7 +15,7 @@ module Boundcond
 !
   private
 !
-  public :: update_ghosts
+  public :: update_ghosts, finalize_boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
 !
@@ -5990,7 +5990,24 @@ module Boundcond
 !
     endsubroutine bcz_hydrostatic_temp
 !***********************************************************************
-    subroutine bc_aa_pot_field_extrapol(f,topbot)
+    subroutine finalize_boundcond(f,lstarting)
+!
+!  Call finalization routines, i.e. freeing allocated memory.
+!
+! 15-aug-2011/Bourdin.KIS: adapted from finalize_modules
+!
+      use Sub, only: keep_compiler_quiet
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      logical :: lstarting
+!
+      call bc_aa_pot_field_extrapol(f,"all",.true.)
+!
+      call keep_compiler_quiet(lstarting)
+!
+    endsubroutine finalize_boundcond
+!***********************************************************************
+    subroutine bc_aa_pot_field_extrapol(f,topbot,lfinalize)
 !
 !  Potential field extrapolation in z-direction for the ghost cells.
 !
@@ -6000,11 +6017,20 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
+      logical, optional :: lfinalize
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact_top, exp_fact_bot
       integer, parameter :: bnx=nygrid, bny=nx/nprocy
       integer :: kx_start, stat, pos_z
       real :: delta_z, reduce_factor=1.
+!
+      if (present (lfinalize)) then
+        if (lfinalize) then
+          if (allocated (exp_fact_bot)) deallocate (exp_fact_bot)
+          if (allocated (exp_fact_top)) deallocate (exp_fact_top)
+          return
+        endif
+      endif
 !
       ! reduce_factor reduces the structure increase at the bottom boundary
       ! to help numerically resolving the strong gradients in the ghost cells.
