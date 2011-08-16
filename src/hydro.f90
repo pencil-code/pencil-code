@@ -2338,31 +2338,28 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine traceless_strain(uij,divu,sij,uu,ss)
+    subroutine traceless_strain(uij,divu,sij,uu,lss)
 !
 !  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
 !  and divergence divu within each pencil;
 !  curvilinear co-ordinates require optional velocity argument uu
 !
 !  16-oct-09/MR: carved out from calc_pencils_hydro
-!  10-apr-11/MR: optional parameter ss added, replaces use of global lshear_rateofstrain
+!  10-apr-11/MR: optional parameter lss added, replaces use of global lshear_rateofstrain
 !
     real, dimension (nx,3,3)         :: uij, sij
     real, dimension (nx)             :: divu
     real, dimension (nx,3), optional :: uu
-    logical, optional                :: ss
+    logical, optional                :: lss
 !
     integer :: i,j
-    logical :: ssl
+    logical :: lshear_ROS
 !
-    intent(in)  :: uij, divu, ss
+    intent(in)  :: uij, divu, lss
     intent(out) :: sij
 !
-    if ( .not.present(ss) ) then
-      ssl=.false.
-    else
-      ssl=ss
-    endif
+    lshear_ROS=.false.
+    if (present(lss)) lshear_ROS=lss
 !
 !  In-place operation is possible, i.e. uij and sij may refer to the same array.
 !
@@ -2400,7 +2397,7 @@ module Hydro
       sij(:,2,1)=sij(:,1,2)
     endif
 !
-    if (lshear .and. ssl) then
+    if (lshear .and. lshear_ROS) then
       sij(:,1,2)=sij(:,1,2)+Sshear
       sij(:,2,1)=sij(:,2,1)+Sshear
     endif
