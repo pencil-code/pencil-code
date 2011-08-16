@@ -32,11 +32,11 @@ module Special
 !
   real :: tdown=0.,allp=0.,Kgpara=0.,cool_RTV=0.,Kgpara2=0.,tdownr=0.,allpr=0.
   real :: lntt0=0.,wlntt=0.,bmdi=0.,hcond1=0.,heatexp=0.,heatamp=0.,Ksat=0.,Kc=0.
-  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.,b_tau=0.
+  real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.,b_tau=0.,flux_tau=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
   logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
-  logical :: luse_mag_field=.false.
+  logical :: luse_mag_field=.false.,lfixed_magnetogram=.true.
   logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
   logical :: lwrite_driver=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
@@ -48,7 +48,7 @@ module Special
   real :: swamp_diffrho=0.0, swamp_chi=0.0
   real :: lnrho_min=-max_real
 !
-  real, dimension(nx,ny,n1,3) :: A_init
+  real, dimension(nx,ny,2) :: A_init
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -72,14 +72,14 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz, &
-       b_tau,Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
+       b_tau,flux_tau,Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
        iheattype,dt_gran,cool_type,lwrite_driver, &
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
        lnc_density_depend, lnc_intrin_energy_depend, &
        swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
-       luse_mag_field, mag_time_offset, lnrho_min
+       mag_time_offset, lnrho_min
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
@@ -87,7 +87,9 @@ module Special
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
-    integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
+  integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
+  integer :: idiag_mag_flux=0 ! DIAG_DOC: Total vertical magnetic flux at
+                              ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
 !
 ! video slices
     real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
@@ -116,9 +118,10 @@ module Special
   type gran_list_start
     type (point), pointer :: first
   end type gran_list_start
+  type (gran_list_start), dimension(max_gran_levels) :: gran_list
 !
     integer :: xrange,yrange,pow
-    real :: ampl,dxdy2,ig,granr,pd,life_t,upd,avoid
+    real :: ampl,dxdy2,ig,granr,pd,life_t,avoid
     real, dimension(:,:), allocatable :: w,vx,vy
     real, dimension(:,:), allocatable :: Ux,Uy
     real, dimension(:,:), allocatable :: Ux_ext,Uy_ext
@@ -154,6 +157,8 @@ module Special
 ! run.f90 with lstarting=.false. and with lreloading indicating a RELOAD
 !
 !  06-oct-03/tony: coded
+!
+      use Mpicomm, only: parallel_file_exists
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -196,10 +201,7 @@ module Special
         if (lroot .or. lgran_proc) call set_gran_params()
       endif
 !
-      ! Setup initial magnetic field for the bottom layer
-      if (lfirst_proc_z .and. (bmdi /= 0.0)) then
-        call read_mag_field (1, mag_field_dat, A_init)
-      endif
+      lfixed_magnetogram = .not. parallel_file_exists (mag_times_dat)
 !
       call setup_profiles()
 !
@@ -253,6 +255,30 @@ module Special
       endif
 !
     endsubroutine init_special
+!***********************************************************************
+    subroutine finalize_special(f,lstarting)
+!
+!  Called by start.f90 together with lstarting=.true.   and then
+!  called by run.f90   together with lstarting=.false.  before exiting.
+!
+!  14-aug-2011/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical :: lstarting
+!
+      if (lgranulation .and. (lroot .or. lgran_proc)) then
+        call free_points ()
+        deallocate (Ux, Uy, w, vx, vy, avoid_gran)
+      endif
+      if (allocated (BB2)) deallocate (BB2)
+      if (allocated (Ux_ext)) deallocate (Ux_ext)
+      if (allocated (Uy_ext)) deallocate (Uy_ext)
+!
+      call special_before_boundary (f, .true.)
+!
+      call keep_compiler_quiet (lstarting)
+!
+    endsubroutine finalize_special
 !***********************************************************************
     subroutine setup_profiles()
 !
@@ -692,6 +718,21 @@ module Special
         endif
       endif
 !
+      ! Restoration half-time of initial magnetic field:
+      if (bmdi > 0.0) then
+        if (b_tau > 0.0) call fatal_error ('solar_corona/mag_driver', &
+            "Use either bmdi or b_tau, not both")
+        b_tau = bmdi
+      endif
+      ! Restoration half-time of initial total vertical flux:
+      if (flux_tau > 0.0) then
+        if (Bz_flux <= 0.0) call fatal_error ('solar_corona/mag_driver', &
+            "together with flux_tau, Bz_flux needs to be set and positive")
+      endif
+      luse_mag_field = (b_tau > 0.0) .or. (flux_tau > 0.0)
+      ! Bz_flux is the sum of the absolute vertical flux in SI units [T*m^2]
+      Bz_flux = Bz_flux / (unit_magnetic * unit_length**2)
+!
  99    return
 !
     endsubroutine read_special_run_pars
@@ -726,6 +767,7 @@ module Special
         idiag_dtchi2=0.
         idiag_dtnewt=0.
         idiag_dtspitzer=0.
+        idiag_mag_flux=0.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -734,6 +776,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
         call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
+        call parse_name(iname,cname(iname),cform(iname),'mag_flux',idiag_mag_flux)
       enddo
 !
 !  write column where which variable is stored
@@ -742,6 +785,7 @@ module Special
         write(3,*) 'i_dtchi2=',idiag_dtchi2
         write(3,*) 'i_dtnewt=',idiag_dtnewt
         write(3,*) 'i_dtspitzer=',idiag_dtspitzer
+        write(3,*) 'i_mag_flux=',idiag_mag_flux
       endif
 !
     endsubroutine rprint_special
@@ -903,7 +947,7 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
-    subroutine special_before_boundary(f)
+    subroutine special_before_boundary(f,lfinalize)
 !
 !   Possibility to modify the f array before the boundaries are
 !   communicated.
@@ -913,20 +957,24 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
+      use Diagnostics, only: save_name
+!
       real, dimension(mx,my,mz,mfarray) :: f
+      logical, optional :: lfinalize
 !
       real, save :: time_mag_l, time_mag_r
       real, dimension(:,:), allocatable, save :: BB2_local
-      real :: Bz_total_flux=0.0
+      real, save :: Bz_total_flux=0.0
 !
-! Push vector potential back to initial vertical magnetic field values:
-!
-      if (lfirst_proc_z .and. (bmdi /= 0.0)) then
-        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) &
-            * (1.-dt*bmdi) + A_init(:,:,n1,1:2) * dt*bmdi
-        if (bmdi*dt > 1) call fatal_error ('special before boundary', &
-            'bmdi*dt > 1', lfirst_proc_xy)
+      if (present (lfinalize)) then
+        if (lfinalize) then
+          if (allocated (BB2_local)) deallocate (BB2_local)
+          call update_mag_field (0.0, "", "", A_init, time_mag_l, time_mag_r, .true.)
+          return
+        endif
       endif
+!
+      if (lpencil_check_at_work) return
 !
 ! Read external velocity file. Has to be read before the granules are
 ! calculated.
@@ -943,7 +991,8 @@ module Special
       ! Prepare for footpoint quenching (lquench), flux conservation (Bz_flux),
       ! and the granulation computation (lgranulation and Bavoid).
       if ((lquench .and. lfirst_proc_z) .or. ((Bavoid > 0.) .and. lgran_proc) &
-          .or. (lgranulation .and. (Bavoid > 0.) .and. lfirst_proc_z)) then
+          .or. (lgranulation .and. (Bavoid > 0.) .and. lfirst_proc_z) &
+          .or. luse_mag_field) then
         if (lfirst_proc_z .and. .not. allocated (BB2_local)) then
           allocate (BB2_local(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
@@ -954,11 +1003,12 @@ module Special
       endif
 !
 ! Compute photospheric granulation.
-      if (lgranulation) then
-        if (.not. lpencil_check_at_work) call gran_driver(f, BB2_local)
-      endif
+      if (lgranulation) call gran_driver(f, BB2_local)
 !
       if (lmassflux) call get_wind_speed_offset(f)
+!
+      if (ldiagnos .and. (idiag_mag_flux /= 0)) &
+          call save_name (Bz_total_flux, idiag_mag_flux)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1077,7 +1127,7 @@ module Special
 !
     endsubroutine calc_swamp_temp
 !***********************************************************************
-    subroutine update_mag_field (time_offset, times_dat, field_dat, A, time_l, time_r)
+    subroutine update_mag_field (time_offset, times_dat, field_dat, A, time_l, time_r, lfinalize)
 !
 !  Check if an update of the vertical magnetic field is needed and load data.
 !  An interpolated vector field will be added to Ax and Ay.
@@ -1087,37 +1137,50 @@ module Special
 !
       real, intent(in) :: time_offset
       character (len=*), intent(in) :: times_dat, field_dat
-      real, dimension(nx,ny,n1,3), intent(inout) :: A
+      real, dimension(nx,ny,2), intent(inout) :: A
       real, intent(inout) :: time_l, time_r
+      logical, optional :: lfinalize
 !
-      real, dimension(:,:,:,:), allocatable :: A_l, A_r
+      real, dimension(:,:,:,:), allocatable, save :: A_l, A_r
       logical, save :: lfirst_call=.true.
       real :: time
-      integer :: pos_l, pos_r, alloc_err_sum
+      integer :: pos_l, pos_r
+!
+      if (present (lfinalize)) then
+        if (lfinalize) then
+          call read_mag_field (1, field_dat, A_l, .true.)
+          if (allocated (A_l)) deallocate (A_l, A_r)
+          return
+        endif
+      endif
+!
+      if (lfixed_magnetogram) then
+        ! Load first frame and use it as fixed magnetogram
+        time_l = -time_offset
+        time_r = huge (1.0)
+        call read_mag_field (1, field_dat, A_l)
+        A = A_l(:,:,1,:)
+        return
+      endif
 !
       time = t - time_offset
 !
       if (lfirst_call) then
-        if (.not. allocated(A_l)) allocate(A_l(nx,ny,n1,2),stat=alloc_err_sum)
-        if (.not. allocated(A_r)) allocate(A_r(nx,ny,n1,2),stat=alloc_err)
-        alloc_err_sum = abs(alloc_err_sum) + abs(alloc_err)
-        if (alloc_err_sum == 0) then
+        allocate (A_l(nx,ny,1,2), A_r(nx,ny,1,2), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('update_mag_field', &
+            'Could not allocate memory for A_l/r', .true.)
 ! Load previous (l) frame and store it in (r), will be shifted later
-          call find_frame (time, times_dat, 'l', pos_l, time_l)
-          if (pos_l == 0) then
+        call find_frame (time, times_dat, 'l', pos_l, time_l)
+        if (pos_l == 0) then
 ! The simulation started before the first frame of the time series
 ! start with a fixed magnetogram using the first frame
-            pos_l = 1
-            time_l = -time_offset
-          endif
-          call read_mag_field (pos_l, field_dat, A_r)
-! Make sure that the following (r) frame will get loaded:
-          time_r = time_l
-          lfirst_call=.false.
-        else
-          call fatal_error ('update_mag_field', &
-              'Could not allocate memory for A_l/r', .true.)
+          pos_l = 1
+          time_l = -time_offset
         endif
+        call read_mag_field (pos_l, field_dat, A_r)
+! Make sure that the following (r) frame will get loaded:
+        time_r = time_l
+        lfirst_call = .false.
       endif
 !
       if (time >= time_r) then
@@ -1131,11 +1194,11 @@ module Special
 !
       A = 0.0
 ! Store interpolated values to initial vector potential
-      call add_interpolated (time, time_l, time_r, A_l, A_r, A)
+      call add_interpolated (time, time_l, time_r, A_l(:,:,1,:), A_r(:,:,1,:), A)
 !
     endsubroutine update_mag_field
 !***********************************************************************
-    subroutine read_mag_field (frame, filename, A)
+    subroutine read_mag_field (frame, filename, A, lfinalize)
 !
 !  Reads a Bz-magnetogram at the given position in a time series file.
 !  The data is expected to be in Gauss units, not using F77 record markers.
@@ -1153,7 +1216,8 @@ module Special
 !
       integer, intent(in) :: frame
       character (len=*), intent(in) :: filename
-      real, dimension(nx,ny,n1,2), intent(out) :: A
+      real, dimension(nx,ny,1,2), intent(out) :: A
+      logical, optional :: lfinalize
 !
       integer, parameter :: bnx=nxgrid, bny=ny/nprocx ! data in pencil shape
       integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
@@ -1161,7 +1225,13 @@ module Special
       real, dimension(:,:,:), allocatable, save :: fact
       real, dimension(:,:), allocatable :: Bz
       integer :: py, partner, rec_len
-      real, parameter :: reduce_factor=0.25
+!
+      if (present (lfinalize)) then
+        if (lfinalize) then
+          if (allocated (fact)) deallocate (fact)
+          return
+        endif
+      endif
 !
       if (mod (nygrid, nprocxy) /= 0) call fatal_error ('read_mag_field', &
           'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
@@ -1189,15 +1259,15 @@ module Special
         call mpirecv_real (Bz, (/ bnx, bny /), ipz*nprocxy, Bz_tag+iproc)
       endif
 !
-      ! Convert Gauss to Tesla / SI to PENCIL units
+      ! Convert Gauss (from file) to Tesla and then to PENCIL units
       Bz = Bz * 1.e-4 / unit_magnetic
 !
       if (.not. allocated (fact)) then
         ! Setup exponential factor for bottom boundary
-        allocate (fact(enx,eny,n1), stat=alloc_err)
+        allocate (fact(enx,eny,1), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_mag_field', &
             'Could not allocate memory for fact', .true.)
-        call setup_extrapol_fact (z(1:n1), z(n1), fact, reduce_factor)
+        call setup_extrapol_fact (z(n1:n1), z(n1), fact)
       endif
 !
       call field_extrapol_z_parallel (Bz, A, fact)
@@ -1311,32 +1381,31 @@ module Special
 !
 ! 23-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(nx,ny,n1,3), intent(in) :: A
+      real, dimension(nx,ny,2), intent(in) :: A
       real, intent(in) :: Bz_total_flux
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real :: dA
+      if (dt * max (b_tau, flux_tau) > 1.0) &
+          call fatal_error ('solar_corona/mag_driver', &
+              "dt too large: dt * max (b_tau, flux_tau) > 1", lfirst_proc_xy)
 !
-      if (dt*b_tau > 1) call fatal_error ('solar_corona/mag_driver', &
-          'dt is to large: dt*b_tau > 1', lfirst_proc_xy)
-!
-      ! Set sum(|Bz|) to the given Bz_flux.
-      if (lfirst_proc_z) then
-        if (Bz_flux /= 0.0) then
-          if (nygrid == 1) then
-            dA = dx * unit_length
-          elseif (nxgrid == 1) then
-            dA = dy * unit_length
-          else
-            dA = dx*dy * unit_length**2
-          endif
+      if ((Bz_flux > 0.0) .and. (Bz_total_flux > 0.0)) then
+        ! Set sum(|Bz|) to the given sum of absolute vertical flux: Bz_flux
+        if (flux_tau > 0.0) then
+          ! Restore vertical flux with half-time flux_tau
           f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
-              Bz_flux / (Bz_total_flux * dA * unit_magnetic)
+              (1.0 + dt*flux_tau * (Bz_flux / Bz_total_flux - 1.0))
+        else
+          ! Restore vertical flux immediately
+          f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * &
+              Bz_flux / Bz_total_flux
         endif
       endif
 !
-      ! Push vector field back to desired direction.
-      f(l1:l2,m1:m2,1:n1,iax:iaz) = f(l1:l2,m1:m2,1:n1,iax:iaz) * (1.-dt*b_tau) + A * dt*b_tau
+      if (b_tau > 0.0) then
+        ! Push vector potential back to initial setup with half-time b_tau
+        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * (1.0 - dt*b_tau) + A * dt*b_tau
+      endif
 !
     endsubroutine mag_driver
 !***********************************************************************
@@ -1701,7 +1770,7 @@ module Special
 !
 !  Limit heat condcution coefficient due to maximum available energy
 !
-      if (Ksat /=0. ) then
+      if (Ksat /= 0.) then
         Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
         chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
 !
@@ -1830,7 +1899,7 @@ module Special
       intent(in) :: p
       intent(out) :: df
 !
-      if (headtt) print*,'special/calc_heatcond_chiconst',hcond1
+      if (headtt) print*,'solar_corona/calc_heatcond_chiconst',hcond1
 !
 !  Define chi= K_0/rho
 !
@@ -2556,6 +2625,7 @@ module Special
       real :: cp1=1.
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
+      integer, parameter :: tag_Ux=323,tag_Uy=324
 !
 ! Update velocity field only every dt_gran after the first iteration
       if ((t < next_time) .and. .not.(lfirst .and. (it == 1))) return
@@ -2580,15 +2650,15 @@ module Special
           Uy = 0.0
           do level = 1, nglevel
             partner = nprocxy + level - 1
-            call mpirecv_real (buffer, (/nxgrid,nygrid/), partner, partner)
+            call mpirecv_real (buffer, (/nxgrid,nygrid/), partner, tag_Ux)
             Ux = Ux + buffer
-            call mpirecv_real (buffer, (/nxgrid,nygrid/), partner, partner)
+            call mpirecv_real (buffer, (/nxgrid,nygrid/), partner, tag_Uy)
             Uy = Uy + buffer
           enddo
           deallocate (buffer)
         elseif (lgran_proc) then
-          call mpisend_real (Ux, (/nxgrid,nygrid/), 0, iproc)
-          call mpisend_real (Uy, (/nxgrid,nygrid/), 0, iproc)
+          call mpisend_real (Ux, (/nxgrid,nygrid/), 0, tag_Ux)
+          call mpisend_real (Uy, (/nxgrid,nygrid/), 0, tag_Uy)
         endif
       endif
 !
@@ -2668,7 +2738,6 @@ module Special
       real, parameter :: ldif=2.0
       real, dimension(max_gran_levels), save :: ampl_par, granr_par, life_t_par
       integer, dimension(max_gran_levels), save :: xrange_par, yrange_par
-      type (gran_list_start), dimension(max_gran_levels), save :: gran_list
       logical, save :: first_call=.true.
 !
       if (first_call) then
@@ -2877,7 +2946,7 @@ module Special
       inquire (iolength=len) first%amp
 !
       if (present (issnap)) then
-        write (filename,'("driver/pts_",I1.1,"_",A)') level, trim (itoa (issnap))
+        write (filename,'("driver/pts_",I1.1,"_",A)') level, itoa (issnap)
       else
         write (filename,'("driver/pts_",I1.1,".dat")') level
       endif
@@ -2903,7 +2972,7 @@ module Special
 ! Save seed list for each level. Is needed if levels are spread over 3 procs.
 !
       if (present (issnap)) then
-        write (filename,'("driver/seed_",I1.1,"_",A)') level, trim (itoa (issnap))
+        write (filename,'("driver/seed_",I1.1,"_",A)') level, itoa (issnap)
       else
         write (filename,'("driver/seed_",I1.1,".dat")') level
       endif
@@ -3221,6 +3290,30 @@ module Special
 !
     endsubroutine update_points
 !***********************************************************************
+    subroutine free_points
+!
+! Free list of points.
+!
+! 14-aug-2011/Bourdin.KIS: coded
+!
+      integer :: level
+!
+      do level = 1, nglevel
+        ! Only let those processors work that are needed
+        if (lgran_proc .and. (lroot .or. (iproc == (nprocxy-1+level)))) then
+          ! Restore list of granules
+          first => gran_list(level)%first
+          ! Free list of granules
+          current => first
+          do while (associated (current))
+            call del_point
+          enddo
+          nullify (gran_list(level)%first)
+        endif
+      enddo
+!
+    endsubroutine free_points
+!***********************************************************************
     subroutine set_BB2(f,BB2_local,Bz_total_flux)
 !
       use Mpicomm, only: collect_xy, sum_xy, mpisend_real, mpirecv_real
@@ -3231,7 +3324,7 @@ module Special
 !
       real, dimension(:,:), allocatable :: fac, bbx, bby, bbz
       integer :: partner, level
-      integer, parameter :: tag=555
+      integer, parameter :: BB2_tag=555
 !
       if (.not. allocated (BB2) .and. (lroot .or. lgran_proc)) then
         allocate (BB2(nxgrid,nygrid), stat=alloc_err)
@@ -3287,19 +3380,24 @@ module Special
 ! Compute |B| and collect as global BB2 on root processor.
 !
         BB2_local = bbx*bbx + bby*bby + bbz*bbz
-        deallocate (fac, bbx, bby, bbz)
         call collect_xy (BB2_local, BB2)
-        if (Bz_flux /= 0.0) call sum_xy (sum (abs (bbz)), Bz_total_flux)
+        call sum_xy (sum (abs (bbz)), Bz_total_flux)
+        if (nxgrid > 1) Bz_total_flux = Bz_total_flux * dx
+        if (nygrid > 1) Bz_total_flux = Bz_total_flux * dy
+        deallocate (fac, bbx, bby, bbz)
+      else
+        Bz_total_flux = 0.0
       endif
+!
       if (lgran_parallel) then
         ! Communicate BB2 to granulation computation processors.
         if (lroot) then
           do level = 1, nglevel
             partner = nprocxy + level - 1
-            call mpisend_real (BB2, (/nxgrid,nygrid/), partner, tag+partner)
+            call mpisend_real (BB2, (/nxgrid,nygrid/), partner, BB2_tag)
           enddo
         elseif (lgran_proc) then
-          call mpirecv_real (BB2, (/nxgrid,nygrid/), 0, tag+iproc)
+          call mpirecv_real (BB2, (/nxgrid,nygrid/), 0, BB2_tag)
         endif
       endif
 !
@@ -3344,11 +3442,11 @@ module Special
 !***********************************************************************
     subroutine read_ext_vel_field()
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real, distribute_xy
 !
       real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
       real, dimension (:,:), allocatable :: tmpl,tmpr
-      integer, parameter :: tag_x=321,tag_y=322
+      integer, parameter :: tag_Ux=321,tag_Uy=322
       integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
       integer :: lend=0,ierr,i,alloc_err,px,py
       real, save :: tl=0.,tr=0.,delta_t=0.
@@ -3371,8 +3469,7 @@ module Special
 !
       if ((t*unit_time<tl+delta_t) .or. (t*unit_time>=tr+delta_t)) then
 !
-        if (lroot) then
-!
+        if (lroot .or. lgran_proc) then
           if (.not. allocated (Ux_ext)) then
             allocate (Ux_ext(nxgrid,nygrid), Uy_ext(nxgrid,nygrid), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('read_ext_vel_field', &
@@ -3380,6 +3477,9 @@ module Special
             Ux_ext = 0.0
             Uy_ext = 0.0
           endif
+        endif
+!
+        if (lroot) then
 !
           inquire(IOLENGTH=lend) tl
           open (unit,file=vel_times_dat,form='unformatted',recl=lend,access='direct')
@@ -3435,27 +3535,26 @@ module Special
           endif
           Uy_ext = Uy_ext/unit_velocity
 !
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px == 0) .and. (py == 0)) cycle
-              Ux_ext_local = Ux_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-              Uy_ext_local = Uy_ext(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)
-              call mpisend_real (Ux_ext_local, (/ nx, ny /), px+py*nprocx, tag_x)
-              call mpisend_real (Uy_ext_local, (/ nx, ny /), px+py*nprocx, tag_y)
-            enddo
-          enddo
-!
-          Ux_ext_local = Ux_ext(1:nx,1:ny)
-          Uy_ext_local = Uy_ext(1:nx,1:ny)
-!
           close (unit)
-        else
-          if (lfirst_proc_z) then
-            call mpirecv_real (tl, 1, 0, tag_tl)
-            call mpirecv_real (tr, 1, 0, tag_tr)
-            call mpirecv_real (delta_t, 1, 0, tag_dt)
-            call mpirecv_real (Ux_ext_local, (/ nx, ny /), 0, tag_x)
-            call mpirecv_real (Uy_ext_local, (/ nx, ny /), 0, tag_y)
+        endif
+!
+        if (lfirst_proc_z) then
+          call mpirecv_real (tl, 1, 0, tag_tl)
+          call mpirecv_real (tr, 1, 0, tag_tr)
+          call mpirecv_real (delta_t, 1, 0, tag_dt)
+          call distribute_xy (Ux_ext, ux_ext_local)
+          call distribute_xy (Uy_ext, uy_ext_local)
+        endif
+!
+        if (lgran_parallel) then
+          if (lroot) then
+            do i=nprocxy, nprocxy+nglevel-1
+              call mpisend_real (Ux_ext, (/ nxgrid,nygrid /), i, tag_Ux)
+              call mpisend_real (Uy_ext, (/ nxgrid,nygrid /), i, tag_Uy)
+            enddo
+          elseif (lgran_proc) then
+            call mpirecv_real (Ux_ext, (/ nxgrid,nygrid /), 0, tag_Ux)
+            call mpirecv_real (Uy_ext, (/ nxgrid,nygrid /), 0, tag_Uy)
           endif
         endif
 !
