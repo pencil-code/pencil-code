@@ -52,7 +52,7 @@ nit=nlines/(1+nvar*ny/8)
 ;
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 ;
-;  Generate command name. Note that an empty line in the xyaver.in
+;  Generate command name. Note that an empty line in the xzaver.in
 ;  file will lead to problems. If this happened, you may want to replace
 ;  the empty line by a non-empty line rather than nothing, so you can
 ;  read the data with idl.

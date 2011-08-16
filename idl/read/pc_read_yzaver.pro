@@ -24,7 +24,7 @@ pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 pc_set_precision, dim=dim, quiet=quiet
 nx=dim.nx
 ;;
-;;  Read variables from xyaver.in
+;;  Read variables from yzaver.in
 ;;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 spawn, 'cat '+datatopdir+'/yzaver.in', varnames
@@ -52,7 +52,7 @@ nit=nlines/(1+nvar*nx/8)
 ;
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 ;
-;  Generate command name. Note that an empty line in the xyaver.in
+;  Generate command name. Note that an empty line in the yzaver.in
 ;  file will lead to problems. If this happened, you may want to replace
 ;  the empty line by a non-empty line rather than nothing, so you can
 ;  read the data with idl.
