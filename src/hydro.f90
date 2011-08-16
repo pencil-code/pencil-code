@@ -2364,12 +2364,11 @@ module Hydro
 !  In-place operation is possible, i.e. uij and sij may refer to the same array.
 !
     do j=1,3
-      sij(:,j,j)=uij(:,j,j)
+      sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
       do i=j+1,3
         sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
         sij(:,j,i)=sij(:,i,j)
       enddo
-      sij(:,j,j)=sij(:,j,j)-(1./3.)*divu
     enddo
 !
     if (lspherical_coords.or.lcylindrical_coords) then
