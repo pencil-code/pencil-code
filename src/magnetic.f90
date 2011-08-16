@@ -89,7 +89,6 @@ module Magnetic
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(nx,3) :: uxbb
   real, dimension(nx) :: eta_BB
-  real, target :: zmode=1.0 !(temporary)
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
@@ -103,7 +102,6 @@ module Magnetic
   real :: mu012=0.5 !(=1/2mu0)
   real :: rescale_aa=0.0
   real :: ampl_B0=0.0, D_smag=0.17, B_ext21, B_ext11
-  real :: rmode=1.0, rm_int=0.0, rm_ext=0.0
   real :: nu_ni=0.0, nu_ni1,hall_term=0.0
   real :: initpower_aa=0.0, cutoff_aa=0.0, brms_target=1.0
   real :: rescaling_fraction=1.0
@@ -156,7 +154,6 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lgauss=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
@@ -170,8 +167,8 @@ module Magnetic
       amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
-      lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
-      zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, ljxb_as_aux, &
+      lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, &
+      lcheck_positive_va2, lbb_as_aux, ljxb_as_aux, &
       ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
       lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
@@ -1011,12 +1008,6 @@ module Magnetic
 !
       if (lmagn_mf)  call initialize_magn_mf(f,lstarting)
 !
-      if (any(initaa=='Alfven-zconst')) then
-        call put_shared_variable('zmode',zmode,ierr)
-        if (ierr/=0) call fatal_error('initialize_magnetic',&
-             'there was a problem when sharing zmode')
-      endif
-!
       call put_shared_variable('lfrozen_bb_bot',lfrozen_bb_bot,ierr)
       if (ierr/=0) call fatal_error('initialize_magnetic',&
            'there was a problem when sharing lfrozen_bb_bot')
@@ -1272,12 +1263,8 @@ module Magnetic
         case ('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,kz_aa(j),mu0)
         case ('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,kx_aa(j),ky_aa(j))
         case ('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,kx_aa(j),kz_aa(j))
-        case ('Alfven-rphi'); call alfven_rphi(amplaa(j),f,rmode)
-        case ('Alfven-zconst'); call alfven_zconst(f)
-        case ('Alfven-rz'); call alfven_rz(amplaa(j),f,rmode)
         case ('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
         case ('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
-        case ('sine-bc'); call sine_avoid_boundary(amplaa(j),f,kx_aa(j),rm_int,rm_ext)
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
         case ('Ferriere-uniform-By'); call ferriere_uniform_y(amplaa(j),f,iaa)
@@ -4031,59 +4018,6 @@ module Magnetic
 !
     endsubroutine calc_tau_aa_exterior
 !***********************************************************************
-    subroutine sine_avoid_boundary(ampl,f,kr,r0,rn)
-!
-! Sine field in cylindrical coordinates, used in Armitage 1998
-!
-!   Bz=B0/r * sin(kr*(r-r0))
-!
-! And 0 outside of the interval r0-rn
-! Code the field and find Aphi through solving the
-! tridiagonal system for
-!
-!  Bz= d/dr Aphi + Aphi/r
-!
-!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz
-!
-!  05-apr-08/wlad : coded
-!
-      use General, only: tridag
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kr,r0,rn
-      integer :: i
-      real, dimension (mx) :: a_tri,b_tri,c_tri,rhs,aphi,bz
-!
-      if (.not.lcylindrical_coords) &
-           call stop_it("this IC assumes cylindrical coordinates")
-!
-      do i=1,mx
-        if ((rcyl_mn(i)>=r0).and.(rcyl_mn(i)<=rn)) then
-          bz(i)=ampl/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-r0))
-        else
-          bz(i)=0.
-        endif
-      enddo
-!
-      a_tri=-1.
-      b_tri=2*dx/x
-      c_tri=1.
-      rhs=bz*2*dx
-!
-      a_tri(1) =0.;c_tri(1 )=0.
-      a_tri(mx)=0.;c_tri(mx)=0.
-!
-      call tridag(a_tri,b_tri,c_tri,rhs,aphi)
-!
-      do m=1,my
-      do n=1,mz
-        f(:,m,n,iay) = aphi
-      enddo
-      enddo
-!
-    endsubroutine sine_avoid_boundary
-!***********************************************************************
     subroutine helflux(aa,uxb,jj)
 !
 !  magnetic helicity flux (preliminary)
@@ -5378,137 +5312,6 @@ module Magnetic
 !
     endsubroutine alfven_xz
 !***********************************************************************
-    subroutine alfven_rphi(B0,f,mode)
-!
-!  Alfven wave propagating on radial direction with
-!  field pointing to the phi direction.
-!
-!  Bphi = B0 cos(k r) ==> Az = -1/k B0 sin(k r)
-!
-!  04-oct-06/wlad: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real :: B0,mode
-!
-      real, dimension(nx) :: rrcyl
-      real :: kr
-!
-      do n=n1,n2; do m=m1,m2
-        kr = 2*pi*mode/(r_ext-r_int)
-        rrcyl = sqrt(x(l1:l2)**2 + y(m)**2)
-        f(l1:l2,m,n,iaz) =  -B0/kr*sin(kr*(rrcyl-r_int))
-      enddo; enddo
-!
-    endsubroutine alfven_rphi
-!***********************************************************************
-    subroutine alfven_zconst(f)
-!
-!  Radially variable field pointing in the z direction
-!  4 Balbus-Hawley wavelengths in the vertical direction
-!
-!  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
-!
-!  The smoothed case should be general, since it reduces
-!  to the non-smoothed for r0_pot=0.
-!
-!  B=C*(r2+r02)^-q ==> Aphi=C/(r*(2-q))*(r2+r02)^(1-q/2)
-!
-!  04-oct-06/wlad: coded
-!
-      use Gravity, only: qgshear,r0_pot
-      use SharedVariables
-      use Mpicomm, only: stop_it
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-!
-      real, dimension(nx) :: Aphi, rr
-      !real, pointer :: plaw
-      real :: B0,pblaw
-      !integer :: ierr
-!
-      if (lcartesian_coords) then
-        B0=Lxyz(3)/(2*zmode*pi)
-        do n=n1,n2; do m=m1,m2
-          rr=sqrt(x(l1:l2)**2+y(m)**2)
-          Aphi=B0/(rr*(2-qgshear))*(rr**2+r0_pot**2)**(1-qgshear/2.)
-          f(l1:l2,m,n,iax) =  -Aphi*y(m)/rr
-          f(l1:l2,m,n,iay) =   Aphi*x(l1:l2)/rr
-        enddo; enddo
-      elseif (lcylindrical_coords) then
-        call stop_it("alfven_zconst: "//&
-            "not implemented for cylindrical coordinates")
-      elseif (lspherical_coords) then
-        B0=Lxyz(2)/(2*zmode*pi)
-        !call get_shared_variable('plaw',plaw,ierr)
-        !if (ierr/=0) call stop_it("alfven_zconst: "//&
-        !    "there was a problem when getting plaw")
-        pblaw=1-qgshear!-plaw/2.
-        do n=n1,n2; do m=m1,m2
-          rr=x(l1:l2)
-          Aphi=-B0/(pblaw+2)*rr**(pblaw+1)*1
-          f(l1:l2,m,n,iax)=0.
-          f(l1:l2,m,n,iay)=0.
-          f(l1:l2,m,n,iaz)=Aphi/sin(y(m))
-        enddo; enddo
-!
-        call correct_lorentz_force(f,.true.,B0,pblaw)
-!
-      endif
-!
-    endsubroutine alfven_zconst
-!***********************************************************************
-    subroutine alfven_rz(B0,f,mode)
-!
-!  Alfven wave propagating on radial direction with
-!  field pointing to the z direction.
-!
-!  Bz = B0 cos(k r) ==> Aphi = B0/k sin(k r) + B0/(k2*r)*cos(k r)
-!
-!  04-oct-06/wlad: coded
-!
-      use Mpicomm, only: stop_it
-!
-      real :: B0,mode
-      real, dimension(mx,my,mz,mfarray) :: f
-!
-      real :: kr,k1,const
-      real, dimension(nx) :: rrcyl,Aphi
-!
-      if (headtt) print*,'radial alfven wave propagating on z direction'
-      if (.not.lcylinder_in_a_box) &
-           call stop_it("alfven_rz, this initial condition works only for embedded cylinders")
-!
-! Choose between cases. The non-smoothed case is singular in r=0 for the potential, thus
-! can only be used if freezing is used with a non-zero r_int. The smoothed case
-! has a linear component that prevents singularities and a exponential that prevents
-! the field from growing large in the outer disk
-!
-      do n=n1,n2; do m=m1,m2
-        rrcyl = max(sqrt(x(l1:l2)**2 + y(m)**2),tini)
-        if (r_int>0.) then
-           if (lroot .and. m==m1 .and. n==n1) then
-             print*,'freezing is being used, ok to use singular potentials'
-             print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
-           endif
-           kr = 2*pi*mode/(r_ext-r_int)
-           Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
-                B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
-        else
-           if (lroot .and. m==m1 .and. n==n1) print*,'Softened magnetic field in the center'
-           if (mode < 5) call stop_it("put more wavelengths in the field")
-           kr = 2*pi*mode/r_ext
-           k1 = 1. !not tested for other values
-           const=B0*exp(1.)*k1/cos(kr/k1)
-           Aphi=const/kr*rrcyl*exp(-k1*rrcyl)*sin(kr*rrcyl)
-        endif
-!
-        f(l1:l2,m,n,iax) = Aphi * (-    y(m)/rrcyl)
-        f(l1:l2,m,n,iay) = Aphi * ( x(l1:l2)/rrcyl)
-!
-      enddo; enddo
-!
-    endsubroutine alfven_rz
-!***********************************************************************
     subroutine alfvenz_rot(ampl,f,iuu,iaa,kz,O)
 !
 !  Alfven wave propagating in the z-direction (with Coriolis force)
@@ -6158,114 +5961,6 @@ module Magnetic
       endif
 !
     endsubroutine eta_xdep
-!***********************************************************************
-    subroutine correct_lorentz_force(f,lfield,const,pblaw)
-!
-!  Correct for the magnetic term in the centrifugal force. The
-!  pressure gradient was already corrected in the density and temperature
-!  modules
-!
-!  13-nov-08/wlad : coded
-!
-      use Sub,      only: get_radial_distance
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx)   :: rr_cyl,rr_sph,Btheta
-      real, dimension (mx)   :: tmp,uu2,va2,va2r
-      real, dimension (mx)   :: rho1,rho1_jxb
-      integer                :: i
-      logical                :: lheader
-      logical                :: lfield
-      real :: const,pblaw
-!
-      if (lroot) print*,'Correcting magnetic terms on the '//&
-           'centrifugal force'
-!
-      if (.not.lspherical_coords) then
-        call fatal_error("correct_lorentz_force",&
-            "only implemented for spherical coordinates")
-        if ((B_ext(1)/=0).or.(B_ext(3)/=0)) then
-          call fatal_error("correct_lorentz_force",&
-              "only implemented for polar fields")
-        endif
-      endif
-!
-      do m=1,my
-        do n=1,mz
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-!
-          lheader=((m==1).and.(n==1).and.lroot)
-!
-          !this field also has a magnetic pressure gradient
-          Btheta=const*rr_sph**pblaw/sin(y(m))
-!
-          rho1=1./f(:,m,n,ilnrho)
-!
-          uu2=f(:,m,n,iuz)**2
-          va2=rho1*(Btheta+B_ext(2))**2
-!
-          rho1_jxb=rho1
-!
-!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
-!
-          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-!
-!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
-!  set va2power_jxb to an integer value in order to specify the power
-!  of the limiting term,
-!
-          if (va2max_jxb>0) then
-            rho1_jxb = rho1_jxb &
-                * (1+(va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
-          endif
-          va2r=rho1_jxb*va2
-!
-          if (lfield) then
-            !second term is the magnetic pressure gradient
-            tmp=uu2+va2r*(1+2*pblaw/rr_sph)
-            !the polar pressure should be
-            !-2*cot(theta)/rr * va2r, but I will ignore it
-            ! for now. It feedbacks on the density,
-            ! so the initial condition for density and field
-            ! should be solved iteratively. But as uu>>va, I
-            ! will just let the system relax to equilibrium in
-            ! runtime.
-          else
-            tmp=uu2+va2r
-          endif
-!
-!  Make sure the correction does not impede centrifugal equilibrium
-!
-          do i=1,nx
-            if (tmp(i)<0.) then
-              if (rr_sph(i) < r_int) then
-                !it's inside the frozen zone, so
-                !just set tmp to zero and emit a warning
-                tmp(i)=0.
-                if ((ip<=10).and.lheader) &
-                    call warning('correct_lorentz_force','Cannot '//&
-                    'have centrifugal equilibrium in the inner '//&
-                    'domain. The lorentz force is too strong.')
-              else
-                print*,'correct_lorentz_force: ',&
-                    'cannot have centrifugal equilibrium in the inner ',&
-                    'domain. The lorentz force is too strong at ',&
-                    'x,y,z=',x(i+nghost),y(m),z(n)
-                print*,'the angular frequency here is',tmp(i)
-                call fatal_error("","")
-              endif
-            endif
-          enddo
-!
-!  Correct the velocities
-!
-          f(:,m,n,iuz)= sqrt(tmp)
-!
-        enddo
-      enddo
-!
-    endsubroutine correct_lorentz_force
 !***********************************************************************
     subroutine remove_mean_emf(f,df)
 !
