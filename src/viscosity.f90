@@ -1484,7 +1484,6 @@ module Viscosity
       real, dimension (nx) :: nu_smag
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
-      integer, dimension(1) :: max_loc
       integer :: i
 !
       intent (in) :: p
