@@ -27,7 +27,7 @@ nz=dim.nz
 ;;  Read variables from xyaver.in
 ;;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
-spawn, 'cat '+datatopdir+'/xzaver.in', varnames
+spawn, 'cat '+datatopdir+'/xyaver.in', varnames
 if (not quiet) then print, 'Preparing to read xy-averages ', $
     arraytostring(varnames,quote="'",/noleader)
 nvar=n_elements(varnames)
