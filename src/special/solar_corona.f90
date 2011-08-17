@@ -732,6 +732,8 @@ module Special
       luse_mag_field = (b_tau > 0.0) .or. (flux_tau > 0.0)
       ! Bz_flux is the sum of the absolute vertical flux in SI units [T*m^2]
       Bz_flux = Bz_flux / (unit_magnetic * unit_length**2)
+      ! In the 2D-case, units are [T*m] for backwards compatibility
+      if ((nxgrid == 1) .or. (nygrid == 1)) Bz_flux = Bz_flux * unit_length
 !
  99    return
 !
