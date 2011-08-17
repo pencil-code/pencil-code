@@ -1481,7 +1481,7 @@ module Viscosity
       use Sub, only: cross
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu_smag
+      real, dimension (nx) :: nu_smag,Reshock
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
       integer :: i
@@ -1532,7 +1532,11 @@ module Viscosity
         if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
         if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
         if (idiag_Reshock/=0) then
-          call max_mn_name(dxmax_pencil*sqrt(p%u2)/(nu_shock*p%shock+tini),idiag_Reshock)
+          Reshock(:) = 0.
+          where (abs(p%shock) > tini)
+            Reshock = dxmax_pencil*sqrt(p%u2)/(nu_shock*p%shock)
+          endwhere
+          call max_mn_name(Reshock,idiag_Reshock)
         endif
         if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
