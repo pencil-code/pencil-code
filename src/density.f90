@@ -1491,9 +1491,6 @@ module Density
       intent(inout) :: f,p
 ! rho
       p%rho=f(l1:l2,m,n,irho)
-      if (lcheck_negative_density .and. any(p%rho<=0.0)) &
-          call fatal_error_local('calc_pencils_density', &
-          'negative density detected')
 ! rho1
       if (lpencil(i_rho1)) p%rho1=1.0/p%rho
 ! lnrho
@@ -2291,6 +2288,8 @@ module Density
       real, save :: density_floor_log
       logical, save :: lfirstcall=.true.
 !
+!  Impose the density floor.
+!
       if (density_floor>0.) then
         if (lfirstcall) then
           density_floor_log=alog(density_floor)
@@ -2303,6 +2302,13 @@ module Density
           where (f(:,:,:,ilnrho)<density_floor_log) &
               f(:,:,:,ilnrho)=density_floor_log
         endif
+      endif
+!
+!  Trap any negative density if no density floor is set.
+!
+      if (lcheck_negative_density .and. ldensity_nolog) then
+        if (any(f(:,:,:,irho) <= 0.)) &
+          call fatal_error_local('impose_density_floor', 'negative density detected')
       endif
 !
     endsubroutine impose_density_floor
