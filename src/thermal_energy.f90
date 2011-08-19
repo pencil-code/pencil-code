@@ -31,7 +31,7 @@ module Entropy
   include 'entropy.h'
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
-  real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
+  real :: chi=0.0, chi_shock=0.0, chi_shock_gradTT=0., chi_hyper3_mesh=0.
   real :: energy_floor = 0.
   logical :: lviscosity_heat=.true.
   logical :: lcheck_negative_energy=.false.
@@ -41,12 +41,14 @@ module Entropy
 !  Input parameters.
 !
   namelist /entropy_init_pars/ &
-      initeth, eth_left, eth_right, widtheth, eth_const, chi, chi_shock, chi_hyper3_mesh
+      initeth, eth_left, eth_right, widtheth, eth_const
 !
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lviscosity_heat, chi, chi_shock, chi_hyper3_mesh, energy_floor, lcheck_negative_energy
+      lviscosity_heat, &
+      chi, chi_shock, chi_shock_gradTT, chi_hyper3_mesh, &
+      energy_floor, lcheck_negative_energy
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -218,7 +220,13 @@ module Entropy
         lpenc_requested(i_grho)=.true.
         lpenc_requested(i_gTT)=.true.
       endif
-      if (chi_shock/=0.0) then
+      if (chi_shock /= 0.) then
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_geth)=.true.
+        lpenc_requested(i_del2eth)=.true.
+      endif
+      if (chi_shock_gradTT/=0.0) then
         lpenc_requested(i_cp)=.true.
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_shock)=.true.
@@ -297,7 +305,7 @@ module Entropy
 !  02-aug-11/ccyang: add mesh hyper-diffusion
 !
       use Diagnostics
-      use EquationOfState, only: gamma_m1
+      use EquationOfState, only: gamma
       use Special, only: special_calc_entropy
       use Sub, only: identify_bcs, dot, dot2
       use Viscosity, only: calc_viscous_heat
@@ -362,18 +370,21 @@ module Entropy
 !  Thermal energy diffusion.
 !
       if (chi/=0.0) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + &
-            p%rho*p%cp*chi*p%del2TT+p%cp*chi*sum(p%grho*p%gTT,2)
-!#ccyang: time step condition diffus_chi should be present here.
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi * p%cp * (p%rho*p%del2TT + sum(p%grho*p%gTT, 2))
+        if (lfirst .and. ldt) diffus_chi = diffus_chi + gamma*chi*dxyz_2
       endif
 !
 !  Shock diffusion
 !
-      if (chi_shock/=0.0) then
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock*p%cp*( &
-            p%rho*p%shock*p%del2TT + p%shock*sum(p%grho*p%gTT,2) + &
-            p%rho*sum(p%gshock*p%gTT,2))
-!#ccyang: time step condition diffus_chi should be present here.
+      if (chi_shock /= 0.) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock * (p%shock*p%del2eth + sum(p%gshock*p%geth, 2))
+        if (lfirst .and. ldt) diffus_chi = diffus_chi + chi_shock*p%shock*dxyz_2
+      endif
+!
+      if (chi_shock_gradTT/=0.0) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi_shock_gradTT * p%cp * ( &
+            p%shock * (p%rho*p%del2TT + sum(p%grho*p%gTT, 2)) + p%rho * sum(p%gshock*p%gTT, 2))
+        if (lfirst .and. ldt) diffus_chi = diffus_chi + gamma*chi_shock_gradTT*p%shock*dxyz_2
       endif
 !
 !  Mesh hyper-diffusion
