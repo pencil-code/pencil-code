@@ -4829,7 +4829,7 @@ module Hydro
 !
 !  Find the absolute maximum of the velocity.
 !
-!  27-jul-2011/ccyang: coded
+!  19-aug-2011/ccyang: coded
 !
       use Mpicomm, only: mpiallreduce_max
 !
@@ -4840,9 +4840,9 @@ module Hydro
 !
 !  Find the maximum.
 !
-      umax1 = sqrt(maxval((f(l1:l2,m1:m2,n1:n2,iux) + u0_advec(1))**2 &
-                        + (f(l1:l2,m1:m2,n1:n2,iuy) + u0_advec(2))**2 &
-                        + (f(l1:l2,m1:m2,n1:n2,iuz) + u0_advec(3))**2))
+      umax1 = sqrt(maxval(f(l1:l2,m1:m2,n1:n2,iux)**2 &
+                        + f(l1:l2,m1:m2,n1:n2,iuy)**2 &
+                        + f(l1:l2,m1:m2,n1:n2,iuz)**2))
       call mpiallreduce_max(umax1, umax)
 !
     endsubroutine find_umax
