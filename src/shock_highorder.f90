@@ -36,12 +36,13 @@ module Shock
   integer :: ishock_max=1
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
+  logical :: lfix_Re_mesh=.false.
   real    :: div_threshold=0.
   logical :: lrewrite_shock_boundary=.false.
 !
   namelist /shock_run_pars/ &
       ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,&
-      div_threshold,lrewrite_shock_boundary
+      div_threshold,lrewrite_shock_boundary,lfix_Re_mesh
 !
   integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
   integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
@@ -518,7 +519,7 @@ module Shock
 !
 !  Scale given a fixed mesh Reynolds number or
 !
-      if (ldynamical_diffusion) then
+      if (lfix_Re_mesh) then
         if (headtt) print *, 'Shock: fix mesh Reynolds number at ', re_mesh
         if (lfirst) then
           max_loc = (/ l1-1, m1-1, n1-1 /) + maxloc(tmp(l1:l2,m1:m2,n1:n2))
@@ -530,7 +531,7 @@ module Shock
               if (nxgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iux) * xprim(max_loc(1)))**2
               if (nygrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuy) * yprim(max_loc(2)))**2
               if (nzgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuz) * zprim(max_loc(3)))**2
-              a1 = sqrt(a1) / (pi * re_mesh * shock_max)
+              a1 = sqrt(a1) / (pi * shock_max)
             else
               a1 = 0.
             endif
