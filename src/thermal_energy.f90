@@ -54,15 +54,14 @@ module Entropy
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
-  integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
-                              ! DIAG_DOC:  \left< c_v T \right>$
-                              ! DIAG_DOC: \quad(mean internal energy)
   integer :: idiag_ppm=0      ! DIAG_DOC: $\left< p \right>$
   integer :: idiag_TTm=0      ! DIAG_DOC: $\left<T\right>$
   integer :: idiag_pdivum=0
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
                               ! DIAG_DOC: \quad(mean thermal energy)
+  integer :: idiag_ethmin=0   ! DIAG_DOC: $\mathrm{min} e_\text{th}$
+  integer :: idiag_ethmax=0   ! DIAG_DOC: $\mathrm{max} e_\text{th}$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -238,7 +237,7 @@ module Entropy
 !
 !  Diagnostic pencils.
 !
-      if (idiag_ethm/=0) lpenc_diagnos(i_eth)=.true.
+      if (idiag_ethm/=0 .or. idiag_ethmin/=0 .or. idiag_ethmax/=0) lpenc_diagnos(i_eth)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_pdivum/=0) then
         lpenc_diagnos(i_pp)=.true.
@@ -406,6 +405,8 @@ module Entropy
         if (idiag_TTmax/=0)  call max_mn_name(p%TT,idiag_TTmax)
         if (idiag_TTmin/=0)  call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
         if (idiag_ethm/=0)   call sum_mn_name(p%eth,idiag_ethm)
+        if (idiag_ethmin/=0) call max_mn_name(-p%eth,idiag_ethmin,lneg=.true.)
+        if (idiag_ethmax/=0) call max_mn_name(p%eth,idiag_ethmax)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
       endif
 !
@@ -525,7 +526,8 @@ module Entropy
 !
       if (lreset) then
         idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
-        idiag_ethm=0; idiag_pdivum=0; idiag_eem=0; idiag_ppm=0
+        idiag_ethm=0; idiag_ethmin=0; idiag_ethmax=0
+        idiag_pdivum=0; idiag_ppm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -535,7 +537,8 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
-        call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
+        call parse_name(iname,cname(iname),cform(iname),'ethmin',idiag_ethmin)
+        call parse_name(iname,cname(iname),cform(iname),'ethmax',idiag_ethmax)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
       enddo
