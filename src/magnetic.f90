@@ -74,6 +74,11 @@ module Magnetic
   integer, parameter :: nresi_max=4
 !
   real, dimension (ninit) :: amplaa=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
+  real, dimension (ninit) :: ampl_ax=0.0, ampl_ay=0.0, ampl_az=0.0
+  real, dimension (ninit) :: kx_ax=0.0, kx_ay=0.0, kx_az=0.0
+  real, dimension (ninit) :: ky_ax=0.0, ky_ay=0.0, ky_az=0.0
+  real, dimension (ninit) :: kz_ax=0.0, kz_ay=0.0, kz_az=0.0
+  real, dimension (ninit) :: phase_ax=0.0, phase_ay=0.0, phase_az=0.0
   real, dimension (ninit) :: amplaaJ=0.0, amplaaB=0.0, RFPrad=1.0
 !
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
@@ -161,19 +166,19 @@ module Magnetic
 !
   namelist /magnetic_init_pars/ &
       B_ext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
-      RFPradB, RFPradJ, &
-      by_left, by_right, bz_left, bz_right, &
-      relhel_aa, initaa, amplaa, kx_aa, ky_aa, kz_aa, &
-      amplaaJ, amplaaB, RFPrad, radRFP, &
+      RFPradB, RFPradJ, by_left, by_right, bz_left, bz_right, relhel_aa, &
+      initaa, amplaa, kx_aa, ky_aa, kz_aa, amplaaJ, amplaaB, RFPrad, radRFP, &
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
-      lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, &
-      lcheck_positive_va2, lbb_as_aux, ljxb_as_aux, &
-      ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, lua_as_aux, &
-      lneutralion_heat, center1_x, center1_y, center1_z, &
-      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump,&
-      lpress_equil_alt,rnoise_int,rnoise_ext,mix_factor,damp,two_step_factor, &
-      th_spot,non_ffree_factor,etaB
+      lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, rmode, &
+      zmode, rm_int, rm_ext, lgauss, lcheck_positive_va2, lbb_as_aux, &
+      ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
+      lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
+      fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
+      lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
+      two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
+      ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
+      phase_ax, phase_ay, phase_az
 !
 ! Run parameters
 !
@@ -1177,6 +1182,14 @@ module Magnetic
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
 !DM
         case ('strange'); call strange(amplaa(j),f,iaa)
+        case ('sinwave-phase')
+          call sinwave_phase(f,iax,ampl_ax(j),kx_ax(j),ky_ax(j),kz_ax(j),phase_ax(j))
+          call sinwave_phase(f,iay,ampl_ay(j),kx_ay(j),ky_ay(j),kz_ay(j),phase_ay(j))
+          call sinwave_phase(f,iaz,ampl_az(j),kx_az(j),ky_az(j),kz_az(j),phase_az(j))
+        case ('coswave-phase')
+          call coswave_phase(f,iax,ampl_ax(j),kx_ax(j),ky_ax(j),kz_ax(j),phase_ax(j))
+          call coswave_phase(f,iay,ampl_ay(j),kx_ay(j),ky_ay(j),kz_ay(j),phase_ay(j))
+          call coswave_phase(f,iaz,ampl_az(j),kx_az(j),ky_az(j),kz_az(j),phase_az(j))
         case ('sinwave-x'); call sinwave(amplaa(j),f,iaa,kx=kx_aa(j))
         case ('coswave-Ax-kx'); call coswave(amplaa(j),f,iax,kx=kx_aa(j))
         case ('coswave-Ax-ky'); call coswave(amplaa(j),f,iax,ky=ky_aa(j))
