@@ -678,13 +678,10 @@ module Special
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_init_pars,ERR=99)
-      endif
+      integer :: ierr
 !
- 99    return
+      read (unit, NML=special_init_pars, IOSTAT=iostat)
+      if (present (iostat)) iostat = ierr
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -701,11 +698,11 @@ module Special
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
+      integer :: ierr
+!
+      read (unit, NML=special_run_pars, IOSTAT=ierr)
+      if (present (iostat)) iostat = ierr
+      if (ierr /= 0) return
 !
       if (Kgpara2/=0.0) then
         if (K_iso/=0.0) then
@@ -730,12 +727,11 @@ module Special
             "together with flux_tau, Bz_flux needs to be set and positive")
       endif
       luse_mag_field = (b_tau > 0.0) .or. (flux_tau > 0.0)
-      ! Bz_flux is the sum of the absolute vertical flux in SI units [T*m^2]
+      ! Bz_flux is the sum of the absolute vertical flux provided in [T*m^2].
+      ! After reading Bz_flux, convert SI units (from file) to Pencil units:
       Bz_flux = Bz_flux / (unit_magnetic * unit_length**2)
-      ! In the 2D-case, units are [T*m] for backwards compatibility
+      ! In the 2D-case, units have to be [T*m] for backwards compatibility
       if ((nxgrid == 1) .or. (nygrid == 1)) Bz_flux = Bz_flux * unit_length
-!
- 99    return
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
