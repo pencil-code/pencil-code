@@ -680,7 +680,7 @@ module Special
 !
       integer :: ierr
 !
-      read (unit, NML=special_init_pars, IOSTAT=iostat)
+      read (unit, NML=special_init_pars, IOSTAT=ierr)
       if (present (iostat)) iostat = ierr
 !
     endsubroutine read_special_init_pars
