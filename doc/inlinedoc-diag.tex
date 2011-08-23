@@ -718,6 +718,7 @@
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
+  \var{mag_flux}  & Total vertical magnetic flux at \\
 \midrule
   \multicolumn{2}{c}{Module \file{solid_cells.f90}} \\
 \midrule
@@ -1004,7 +1005,7 @@
   \var{eta12}     & $\eta_{12}k$ \\
   \var{eta22}     & $\eta_{22}k$ \\
   \var{alpK}      & $\alpha^K$ \\
-  \var{alpM}      & $\alpha^K$ \\
+  \var{alpM}      & $\alpha^M$ \\
   \var{alpMK}     & $\alpha^{MK}$ \\
   \var{phi11}     & $\phi_{11}$ \\
   \var{phi21}     & $\phi_{21}$ \\
@@ -1461,14 +1462,16 @@
 \midrule
   \var{TTmax}     & $\max (T)$ \\
   \var{TTmin}     & $\min (T)$ \\
-  \var{eem}       & $\left< e \right> =
-                    \left< c_v T \right>$
-                    \quad(mean internal energy) \\
   \var{ppm}       & $\left< p \right>$ \\
   \var{TTm}       & $\left<T\right>$ \\
   \var{ethm}      & $\left< e_{\text{th}}\right> =
                     \left< c_v \rho T \right> $
                     \quad(mean thermal energy) \\
+  \var{ethmin}    & $\mathrm{min} e_\text{th}$ \\
+  \var{ethmax}    & $\mathrm{max} e_\text{th}$ \\
+  \var{eem}       & $\left< e \right> =
+                    \left< c_v T \right>$
+                    \quad(mean internal energy) \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule
