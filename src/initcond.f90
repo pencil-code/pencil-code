@@ -57,7 +57,7 @@ module Initcond
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
   public :: ferriere_uniform_x, ferriere_uniform_y
-  public :: rotblob
+  public :: rotblob, pre_stellar_cloud
 !
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -4892,4 +4892,184 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
 !
 endsubroutine rotblob
 !***********************************************************************
+subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
+                            cloud_mode, T_cloud_out_rel,xi_coeff, dens_coeff, &
+                            temp_coeff, temp_trans, temp_coeff_out)
+!
+!  Creates a isothermal or modified Bonnor-Ebert Sphere to be used as  
+!  a prestellar cloud. 
+!
+!  datafile: The file that includes the density and temp distribution
+!  BE_resolution: The resolution of isothemal BE-solutions
+!  mass_cloud: mass of the cloud in solar masses
+!
+!  13-jul-10/mvaisala: created 
+!
+      use EquationOfState, only: eoscalc,ilnrho_lnTT
+      !use Entropy, only: initss, T0
+!
+      integer :: jj, test, n, m, l, len_file 
+      integer, parameter :: BE_resolution = 2000 
+      logical :: exist !
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f 
+      real, dimension (BE_resolution) :: lnTT_file, lnrho_r, r_rho 
+      real :: tmp, var1, var2, var3 
+      real :: bigr, mass_cloud 
+      real :: x01 = 0.0, y01 = 0.0, z01 = 0.0 
+      real :: x_real, y_real, z_real, rr_box, counter 
+      real :: M_sun = 1.98892e30 ! kg (SI) 
+      real :: T_cloud, T_cloud_out_rel, lnrho, ss, lnTTpoint, xi_coeff
+      real :: lnTTpoint0, dens_coeff, temp_coeff, temp_coeff_out 
+      real :: x_wave, wavelength, QQQ, temp_trans, T_cloud_out_rel0 
+!
+      character (len=labellen) :: datafile, cloud_mode 
+!   
+      write (*,*) 'Solar mass:', M_sun
+      write (*,*) 'unit_mass:', unit_mass   
+      write (*,*) 'unit_temperature', unit_temperature
+      mass_cloud = (mass_cloud * M_sun) / unit_mass
+!
+      select case (cloud_mode) 
+
+         case ('read_modified')
+!
+! Read a radial density and temperature distribution from a file with a chosen
+! name. The file must be in the format:
+! 1st line: BIGR (cm)    BE_RESOLUTION (int)
+! others:   RADIUS (cm)  DENSITY (g/cm^3)  TEMPERATURE (K) 
+!
+           inquire(file=datafile, exist=exist)
+           if (exist) then
+             open(19, file=datafile)
+           else
+             call fatal_error('Bonnor-Ebert Sphere', 'No input file')
+           end if
+           read(19,*) var1, len_file
+           bigr = var1/unit_length
+           write (*,*) '(Modified BE-sphere) R = ', var1, 'cm =',& 
+                        bigr, 'pc_units'
+           do jj = 1, len_file
+             read(19,*) var1, var2, var3
+             r_rho(jj) = var1/unit_length
+             lnrho_r(jj) = log(var2/unit_density)
+             lnTT_file(jj) = log(var3/unit_temperature)
+           end do 
+
+           counter = 0
+           do n = n1,n2
+             do m = m1,m2
+               do l = l1,l2
+                 x_real = x(l) - x01
+                 y_real = y(m) - y01
+                 z_real = z(n) - z01
+                 rr_box = sqrt((x_real)**2+(y_real)**2+(z_real)**2)
+                 test = 0
+                 if (rr_box <= bigr) then
+                   do while (r_rho(test+1) <= rr_box)
+                      test = test + 1
+                   end do
+                   f(l,m,n,ilnrho) = lnrho_r(test)
+                   call eoscalc(ilnrho_lnTT, lnrho_r(test), lnTT_file(test),&
+                                ss=tmp)
+                   f(l,m,n,iss) = tmp
+                   counter = counter+1
+                 else 
+                   do while (r_rho(test+1) <= bigr)
+                      test = test + 1
+                   end do
+                   if (rr_box <= temp_trans*bigr) then
+                      x_wave = rr_box-bigr
+                      wavelength = 2.0*bigr*(temp_trans-1)
+                      QQQ = 0.5*(sin(2.0*pi*x_wave/wavelength - pi/2.0) + 1.0)
+                      T_cloud_out_rel0 = 1 + QQQ*(T_cloud_out_rel-1.0)
+                   else 
+                      T_cloud_out_rel0 = T_cloud_out_rel
+                   end if 
+                   f(l,m,n,ilnrho) = log(exp(lnrho_r(test))/T_cloud_out_rel0)
+                   lnTTpoint = log(exp(lnTT_file(test))*T_cloud_out_rel0*temp_coeff_out)
+                   call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), &
+                                lnTTpoint, ss=tmp)
+                   f(l,m,n,iss) = tmp
+                 end if
+               end do
+             end do
+           end do
+           write (*,*) 'Covers:', counter, '/', &
+                       (abs(n1-n2)*abs(m1-m2)*abs(l1-l2)), 'cells'
+
+         case ('read_isothermal')
+!
+! Read a radial density distribution from a file with a chosen
+! name. The file must be in the format:
+! 1st line: BIGR (cm)    BE_RESOLUTION (int)   TEMPERATURE (K)
+! others:   RADIUS (cm)  DENSITY (g/cm^3)
+!
+           inquire(file=datafile, exist=exist)
+           if (exist) then
+             open(19, file=datafile)
+           else
+             write (*,*) datafile
+             call fatal_error('Bonnor-Ebert Sphere', 'No input file')
+           end if
+           read(19,*) var1, len_file, var2
+           bigr = var1/unit_length
+           lnTTpoint0 = log(var2*temp_coeff/unit_temperature)            
+           write (*,*) '(Isothermal BE-sphere) R =', var1, 'cm =',& 
+                        bigr, 'pc_units, T =', var2, 'K'
+           do jj = 1, len_file
+             read(19,*) var1, var2
+             r_rho(jj) = var1/unit_length
+             lnrho_r(jj) = log(var2*dens_coeff/unit_density)
+           end do 
+           write (*,*) 'Temperature, lnTT = ', lnTTpoint0
+
+           counter = 0
+           do n = n1,n2
+             do m = m1,m2
+               do l = l1,l2
+                 lnTTpoint = lnTTpoint0
+                 x_real = x(l) - x01
+                 y_real = y(m) - y01
+                 z_real = z(n) - z01
+                 rr_box = sqrt((x_real)**2+(y_real)**2+(z_real)**2)
+                 test = 0
+                 if (rr_box <= bigr) then
+                   do while (r_rho(test+1) <= rr_box)
+                     test = test + 1
+                   end do
+                   f(l,m,n,ilnrho) = lnrho_r(test)
+                   call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), lnTTpoint, ss=tmp)
+                   f(l,m,n,iss) = tmp
+                   counter = counter+1
+                 else 
+                   do while (r_rho(test+1) <= bigr)
+                     test = test + 1
+                   end do
+                   if (rr_box <= temp_trans*bigr) then
+                      x_wave = rr_box-bigr
+                      wavelength = 2.0*bigr*(temp_trans-1)
+                      QQQ = 0.5*(sin(2.0*pi*x_wave/wavelength - pi/2.0) + 1.0)
+                      T_cloud_out_rel0 = 1 + QQQ*(T_cloud_out_rel-1.0)
+                   else 
+                      T_cloud_out_rel0 = T_cloud_out_rel
+                   end if 
+                   !WRITE (*,*) 'T_cloud_out_rel:', T_cloud_out_rel0
+                   f(l,m,n,ilnrho) = log(exp(lnrho_r(test))/T_cloud_out_rel0)
+                   lnTTpoint = log(exp(lnTTpoint0)*T_cloud_out_rel0*temp_coeff_out)
+                   call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), lnTTpoint, ss=tmp)
+                   f(l,m,n,iss) = tmp
+                 end if
+               end do
+             end do
+           end do
+           write (*,*) 'Covers:', counter, '/', &
+                       (abs(n1-n2)*abs(m1-m2)*abs(l1-l2)), 'cells'
+           write (*,*) (temp_trans*bigr-bigr), wavelength/2.0, 4.0*wavelength/2.0 
+
+         case default
+      end select
+
+endsubroutine pre_stellar_cloud
+!***********************************************************************
+
 endmodule Initcond
