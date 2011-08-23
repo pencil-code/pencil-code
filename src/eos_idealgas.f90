@@ -15,7 +15,7 @@
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); glneth(3); del2eth
+! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); del2eth
 !
 !***************************************************************
 module EquationOfState
@@ -668,6 +668,10 @@ module EquationOfState
           lpencil_in(i_rho1)=.true.
         endif
         if (lpencil_in(i_pp)) lpencil_in(i_eth)=.true.
+        if (lpencil_in(i_ee)) then
+          lpencil_in(i_rho1)=.true.
+          lpencil_in(i_eth)=.true.
+        endif
         if (lpencil_in(i_TT)) then
           lpencil_in(i_cv1)=.true.
           lpencil_in(i_rho1)=.true.
@@ -690,10 +694,6 @@ module EquationOfState
           lpencil_in(i_del2rho)=.true.
           lpencil_in(i_grho)=.true.
           lpencil_in(i_gTT)=.true.
-        endif
-        if (lpencil_in(i_glneth)) then
-          lpencil_in(i_geth)=.true.
-          lpencil_in(i_eth)=.true.
         endif
 !
       case default
@@ -977,6 +977,7 @@ module EquationOfState
         if (lpencil(i_del2eth)) call del2(f,ieth,p%del2eth)
         if (lpencil(i_cs2)) p%cs2=gamma*gamma_m1*p%eth*p%rho1
         if (lpencil(i_pp)) p%pp=gamma_m1*p%eth
+        if (lpencil(i_ee)) p%ee=p%rho1*p%eth
         if (lpencil(i_TT)) p%TT=p%cv1*p%rho1*p%eth
         if (lpencil(i_lnTT)) p%lnTT=alog(p%TT)
         if (lpencil(i_TT1)) p%TT1=1/p%TT

@@ -16,7 +16,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); transpeth; del2eth
+! PENCILS PROVIDED Ma2; fpres(3); transpeth
 !
 !***************************************************************
 module Entropy
@@ -289,8 +289,6 @@ module Entropy
 ! transpeth
       if (lpencil(i_transpeth)) &
           call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
-! del2eth
-      if (lpencil(i_del2eth)) call del2(f,ieth,p%del2eth)
 !
     endsubroutine calc_pencils_entropy
 !***********************************************************************
