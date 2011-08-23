@@ -60,6 +60,9 @@ module Density
   real :: invgrav_ampl = 0.0
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: mass_source_tau1=1.
+  real :: mass_cloud=0.0, T_cloud=0.0, T_cloud_out_rel=1.0, xi_coeff=1.0 
+  real :: temp_coeff=1.0, dens_coeff=1.0, temp_trans = 0.0
+  real :: temp_coeff_out = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -85,6 +88,7 @@ module Density
   character (len=labellen) :: mass_source_profile='nothing'
   character (len=intlen) :: iinit_str
   character (len=labellen) :: ffree_profile='none'
+  character (len=labellen) :: datafile='dens_temp.dat', cloud_mode='isothermal'
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -549,6 +553,9 @@ module Density
           ampllnrho(j), xblob, yblob, zblob
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
           call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob,yblob,zblob)
+        case ('pre-stellar'); call pre_stellar_cloud(f, datafile, mass_cloud, &
+                     T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, &
+                     dens_coeff, temp_coeff, temp_trans, temp_coeff_out)
         case ('isothermal'); call isothermal_density(f)
         case ('stratification'); call stratification(f,strati_type)
         case ('stratification-x'); call stratification_x(f,strati_type)
