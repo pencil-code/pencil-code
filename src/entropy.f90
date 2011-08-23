@@ -102,6 +102,7 @@ module Entropy
   logical :: lfpres_from_pressure=.false.
   logical :: lconvection_gravx=.false.
   logical :: ltau_cool_variable=.false.
+  logical :: lprestellar_cool_iso=.false.
   logical, save :: lfirstcall_hcond=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -135,7 +136,7 @@ module Entropy
       tau_cool_ss, &
       TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, &
       rho0ts, T0hs, lconvection_gravx, Fbot, hcond0_kramers, nkramers, &
-      alpha_MLT
+      alpha_MLT, lprestellar_cool_iso
 !
 !  Run parameters.
 !
@@ -158,7 +159,7 @@ module Entropy
       chit_aniso, chit_aniso_prof1, chit_aniso_prof2, &
       lchit_aniso_simplified, lconvection_gravx, &
       ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
-      nkramers, xbot_aniso, xtop_aniso, entropy_floor
+      nkramers, xbot_aniso, xtop_aniso, entropy_floor, lprestellar_cool_iso
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -2367,6 +2368,14 @@ module Entropy
       if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gTT)=.true.
       if (idiag_gsrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gss)=.true.
 !
+!  Cooling for cold core collapse
+!
+      if (lprestellar_cool_iso) then
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_rho)=.true.  
+        lpenc_requested(i_divu)=.true.      
+        lpenc_requested(i_pp)=.true.  
+      endif
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -2610,6 +2619,7 @@ module Entropy
           call calc_heat_cool(df,p,Hmax)
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
+      if (lprestellar_cool_iso) call calc_heat_cool_prestellar(df,p) 
 !
 !  Interstellar radiative cooling and UV heating.
 !
@@ -4726,6 +4736,37 @@ module Entropy
       endif
 !
     endsubroutine calc_tau_ss_exterior
+!***********************************************************************
+    subroutine calc_heat_cool_prestellar(df,p)
+!
+!  Removes the heating caused by the work done to the system. Use for the
+!  pre-stellar cloud simulations. 
+!
+!  12-nov-10/mvaisala: adapted from cacl_heat_cool
+!
+      use IO, only: output_pencil
+      use Sub, only: step, cubic_step, write_zprof
+      use EquationOfState, only: eoscalc,ilnrho_ss
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: pp
+      type (pencil_case) :: p
+!
+      intent(in) :: p
+      intent(out) :: df
+!
+!  Add heating/cooling to entropy equation.
+!
+      call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + 0.5*pp*p%divu
+!
+!  0.5 Because according to the virial theorem a collapsin cloud loses approximately 
+!  half of its internal energy to radiation.
+!
+      !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%pp*p%divu
+!
+    endsubroutine calc_heat_cool_prestellar
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
