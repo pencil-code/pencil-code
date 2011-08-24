@@ -2619,7 +2619,7 @@ module Entropy
           call calc_heat_cool(df,p,Hmax)
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
-      if (lprestellar_cool_iso) call calc_heat_cool_prestellar(df,p) 
+      if (lprestellar_cool_iso) call calc_heat_cool_prestellar(f,df,p) 
 !
 !  Interstellar radiative cooling and UV heating.
 !
@@ -4737,7 +4737,7 @@ module Entropy
 !
     endsubroutine calc_tau_ss_exterior
 !***********************************************************************
-    subroutine calc_heat_cool_prestellar(df,p)
+    subroutine calc_heat_cool_prestellar(f,df,p)
 !
 !  Removes the heating caused by the work done to the system. Use for the
 !  pre-stellar cloud simulations. 
