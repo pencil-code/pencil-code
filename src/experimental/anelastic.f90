@@ -385,6 +385,12 @@ module Density
 !
         select case (initlnrho(j))
 !
+        case ('nothing')
+          if (lroot) print*,'initialize anelastic: nothing'
+          f(1:mx,m,n,ipp)=rho0*cs20
+          f(1:mx,m,n,irho_b)=rho0
+          f(1:mx,m,n,irho)=rho0
+!
         case ('-ln(1+u2/2cs02)')
           f(:,:,:,ilnrho) = -alog(1. &
             +(f(:,:,:,iux)**2+f(:,:,:,iuy)**2+f(:,:,:,iuz)**2)/(2.*cs0**2))

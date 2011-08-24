@@ -49,6 +49,7 @@ module Forcing
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
+  logical :: lxycorr_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
@@ -114,6 +115,7 @@ module Forcing
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
+       lxycorr_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile, iforce_tprofile, lscale_kvector_tobox, &
@@ -1162,6 +1164,13 @@ module Forcing
 !
                     if (lcrosshel_forcing) then
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
+                    endif
+!
+!  Forcing with enhanced xy correlation.
+!
+                    if (lxycorr_forcing) then
+                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,2)*force2_scl
+                      if (j==2) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,1)*force2_scl
                     endif
                   endif
 !

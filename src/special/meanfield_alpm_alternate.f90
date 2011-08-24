@@ -74,7 +74,8 @@ module Special
 !
       use FArrayManager, only: farray_register_pde
 !
-!  register ialpm in the f-array and set lalpm=.false.
+!  Register ialpm in the f-array and set lalpm=.false., but set
+!  lalpm_alternate=.true., so that other modules know about this.
 !
       call farray_register_pde('alpm',ialpm)
       lalpm_alternate=.true.
@@ -85,7 +86,7 @@ module Special
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Writing files for use with IDL
+!  Writing files for use with IDL.
 !
       if (lroot) then
         if (maux == 0) then
@@ -113,7 +114,8 @@ module Special
       integer :: ierr,l
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
+!
+!  Get shared variables.
 !
       if (lmagn_mf) then
         if (lrun) then
@@ -128,8 +130,10 @@ module Special
         else
           call fatal_error('init_special','You must turn on magn_mf to use this module')
       endif
-! Also check the consistency between flux from Omega effect and inclusion
-! of Omega effect itself
+!
+!  Also check the consistency between flux from Omega effect and inclusion
+!  of Omega effect itself
+!
       if(lroot.and.(VC_Omega_ampl.ne.0).and.(.not.lflux_from_Omega)) &
           call warning('root:initialize_special', &
             'Omega effect included but flux is not')
@@ -160,7 +164,7 @@ module Special
 !***********************************************************************
     subroutine init_special(f)
 !
-!  initialise passive scalar field; called from start.f90
+!  Initialise slot in f array; called from start.f90
 !
 !   6-jul-2001/axel: coded
 !

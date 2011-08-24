@@ -114,7 +114,9 @@ module Magnetic_meanfield
 !
   integer :: idiag_qsm=0        ! DIAG_DOC: $\left<q_p(\overline{B})\right>$
   integer :: idiag_qpm=0        ! DIAG_DOC: $\left<q_p(\overline{B})\right>$
-  integer :: idiag_qem=0        ! DIAG_DOC: $\left<q_e(\overline{B})\right>$
+  integer :: idiag_qem=0        ! DIAG_DOC: $\left<q_e(\overline{B})\right>$,
+                                ! DIAG_DOC: in the paper referred to as
+                                ! DIAG_DOC: $\left<q_g(\overline{B})\right>$
   integer :: idiag_alpm=0       ! DIAG_DOC: $\left<\alpha\right>$
   integer :: idiag_etatm=0      ! DIAG_DOC: $\left<\eta_{\rm t}\right>$
   integer :: idiag_EMFmz1=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_x$
