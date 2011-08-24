@@ -1548,7 +1548,7 @@ module Hydro
 ! sij
       if (lpencil(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
 ! sij2
-      if (lpencil(i_sij2)) call multm2_mn(p%sij,p%sij2)
+      if (lpencil(i_sij2)) call multm2_sym_mn(p%sij,p%sij2)
 ! uij5
       if (lpencil(i_uij5)) call gij(f,iuu,p%uij5,5)
 ! oo (=curlu)
