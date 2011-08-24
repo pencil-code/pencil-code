@@ -49,7 +49,7 @@ module Forcing
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
-  logical :: lxycorr_forcing=.false.
+  logical :: lxxcorr_forcing=.false., lxycorr_forcing=.false.
   logical :: lhelical_test=.false.,lrandom_location=.true.
   logical :: lwrite_psi=.false.
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
@@ -115,7 +115,7 @@ module Forcing
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lhydro_forcing,lmagnetic_forcing,lcrosshel_forcing,ltestfield_forcing, &
-       lxycorr_forcing, &
+       lxxcorr_forcing, lxycorr_forcing, &
        ltestflow_forcing,jtest_aa0,jtest_uu0, &
        max_force,dtforce,dtforce_duration,old_forcing_evector, &
        iforce_profile, iforce_tprofile, lscale_kvector_tobox, &
@@ -132,6 +132,7 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
+  integer :: idiag_ruxfxm=0, idiag_ruxfym=0, idiag_ruyfxm=0, idiag_ruyfym=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 !
   contains
@@ -855,10 +856,12 @@ module Forcing
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: rho1,ff,uf,of,rho
+      real, dimension (nx) :: rho1,ff,ruf,uf,of,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
+      real, dimension (nx,3) :: force_all
       real, dimension (nx,3) :: fda,uu,oo,bb,fxb
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
@@ -1166,11 +1169,20 @@ module Forcing
                       f(l1:l2,m,n,j2f)=f(l1:l2,m,n,j2f)+forcing_rhs2(:,j)*force2_scl
                     endif
 !
+!  Forcing with enhanced xx correlation.
+!
+                    if (lxxcorr_forcing) then
+                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
+                        +forcing_rhs(:,1)*force2_scl
+                    endif
+!
 !  Forcing with enhanced xy correlation.
 !
                     if (lxycorr_forcing) then
-                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,2)*force2_scl
-                      if (j==2) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,1)*force2_scl
+                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
+                        +forcing_rhs(:,2)*force2_scl
+                      if (j==2) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
+                        +forcing_rhs(:,1)*force2_scl
                     endif
                   endif
 !
@@ -1192,6 +1204,21 @@ module Forcing
                 endif
               endif
             enddo
+!
+!  Sum up.
+!
+            if (lout) then
+              if (idiag_rufm/=0) then
+                rho=exp(f(l1:l2,m,n,ilnrho))
+                variable_rhs=f(l1:l2,m,n,iffx:iffz)
+                call multsv_mn(rho/dt,forcing_rhs,force_all)
+                call dot_mn(variable_rhs,force_all,ruf)
+                irufm=irufm+sum(ruf)
+              endif
+            endif
+!
+!  End of mn loop.
+!
           enddo
         enddo
       else
@@ -1223,36 +1250,22 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
         enddo
       endif
 !
-!  For printouts:
+!  For printouts
 !
       if (lout) then
         if (idiag_rufm/=0) then
-          uu=f(l1:l2,m,n,iux:iuz)
-          call dot(uu,forcing_rhs,uf)
-          call sum_mn_name(rho*uf,idiag_rufm)
-        endif
-        if (idiag_ufm/=0) then
-          uu=f(l1:l2,m,n,iux:iuz)
-          call dot(uu,forcing_rhs,uf)
-          call sum_mn_name(uf,idiag_ufm)
-        endif
-        if (idiag_ofm/=0) then
-          call curl(f,iuu,oo)
-          call dot(oo,forcing_rhs,of)
-          call sum_mn_name(of,idiag_ofm)
-        endif
-        if (idiag_ffm/=0) then
-          call dot2(forcing_rhs,ff)
-          call sum_mn_name(ff,idiag_ffm)
-        endif
-        if (lmagnetic) then
-          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
-            call curl(f,iaa,bb)
-            call cross(forcing_rhs,bb,fxb)
-            call sum_mn_name(fxb(:,1),idiag_fxbxm)
-            call sum_mn_name(fxb(:,2),idiag_fxbym)
-            call sum_mn_name(fxb(:,3),idiag_fxbzm)
-          endif
+          irufm=irufm/(nwgrid)
+!
+!  on different processors, irufm needs to be communicated
+!  to other processors
+!
+          fsum_tmp(1)=irufm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          irufm=fsum(1)
+          call mpibcast_real(irufm,1)
+!
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
         endif
       endif
 !
@@ -4170,6 +4183,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       if (lreset) then
         idiag_rufm=0; idiag_ufm=0; idiag_ofm=0; idiag_ffm=0
+        idiag_ruxfxm=0; idiag_ruxfym=0; idiag_ruyfxm=0; idiag_ruyfym=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
 !
@@ -4178,6 +4192,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
       if (lroot.and.ip<14) print*,'rprint_forcing: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
+        call parse_name(iname,cname(iname),cform(iname),'ruxfxm',idiag_ruxfxm)
+        call parse_name(iname,cname(iname),cform(iname),'ruxfym',idiag_ruxfym)
+        call parse_name(iname,cname(iname),cform(iname),'ruyfxm',idiag_ruyfxm)
+        call parse_name(iname,cname(iname),cform(iname),'ruyfym',idiag_ruyfym)
         call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)
         call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
         call parse_name(iname,cname(iname),cform(iname),'ffm',idiag_ffm)
