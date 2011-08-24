@@ -847,7 +847,7 @@ module Sub
       real, dimension (nx) :: b
       integer :: i,j
 !
-      b=0
+      b=0.0
       do i=1,3; do j=1,3
         b=b+a(:,i,j)**2
       enddo; enddo
