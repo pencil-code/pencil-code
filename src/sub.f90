@@ -60,7 +60,7 @@ module Sub
   public :: multsv, multsv_add, multsv_mn, multsv_mn_add
   public :: multvs, multvv_mat
   public :: multmm_sc
-  public :: multm2, multm2_mn
+  public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp
   public :: mult_matrix
 !
@@ -190,6 +190,10 @@ module Sub
 !
   interface multm2
     module procedure multm2_mn
+  endinterface
+!
+  interface multm2_sym
+    module procedure multm2_sym_mn
   endinterface
 !
   interface multmv_transp
@@ -853,6 +857,27 @@ module Sub
       enddo; enddo
 !
     endsubroutine multm2_mn
+!***********************************************************************
+    subroutine multm2_sym_mn(a,b)
+!
+!  Symmetric matrix squared, gives scalar.
+!
+!  24-aug-2011/Bourdin.KIS: adapted from multm2_mn
+!
+      real, dimension (nx,3,3), intent(in) :: a
+      real, dimension (nx), intent(out) :: b
+!
+      integer :: i, j
+!
+      b = a(:,1,1)**2
+      do i = 2, 3
+        b = b + a(:,i,i)**2
+        do j = 1, i-1
+          b = b + 2 * a(:,i,j)**2
+        enddo
+      enddo
+!
+    endsubroutine multm2_sym_mn
 !***********************************************************************
     subroutine multmv_mn(a,b,c,ladd)
 !
