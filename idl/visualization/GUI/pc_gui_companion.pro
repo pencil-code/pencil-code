@@ -243,7 +243,12 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 		plot, ts.dt, title = 'dt', /yl
 
 		tags = tag_names (ts)
-		x_minmax = minmax (ts.t > start_time)
+		if (any (strcmp (tags, 't', /fold_case))) then begin
+			time = ts.t
+		endif else begin
+			time = ts.it
+		endelse
+		x_minmax = minmax (time > start_time)
 		if (end_time > 0) then x_minmax = minmax (x_minmax < end_time)
 		y_minmax = minmax (ts.dt)
 		if (any (strcmp (tags, 'dtu', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtu])
@@ -256,46 +261,46 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 		if (any (strcmp (tags, 'dtchi2', /fold_case))) then y_minmax = minmax ([y_minmax, ts.dtchi2])
 		if (any (strcmp (tags, 'dtd', /fold_case)))    then y_minmax = minmax ([y_minmax, ts.dtd])
 
-		ts.t *= unit.time
+		time *= unit.time
 		ts.dt *= unit.time
 		x_minmax *= unit.time
 		y_minmax *= unit.time
 
-		plot, ts.t, ts.dt, title = 'dt(t) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} d{-l} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
+		plot, time, ts.dt, title = 'dt(t) u{-t} v{-p} nu{.v} b{.r} eta{-g} c{.y} chi{-.b} chi2{-.o} d{-l} [s]', xrange=x_minmax, /xs, yrange=y_minmax, /yl
 		if (any (strcmp (tags, 'dtu', /fold_case))) then begin
-			oplot, ts.t, ts.dtu*unit.time, linestyle=2, color=11061000
+			oplot, time, ts.dtu*unit.time, linestyle=2, color=11061000
 			print, "dtu   :", ts.dtu[0]
 		end
 		if (any (strcmp (tags, 'dtv', /fold_case))) then begin
-			oplot, ts.t, ts.dtv*unit.time, linestyle=2, color=128255200
+			oplot, time, ts.dtv*unit.time, linestyle=2, color=128255200
 			print, "dtv   :", ts.dtv[0]
 		end
 		if (any (strcmp (tags, 'dtnu', /fold_case))) then begin
-			oplot, ts.t, ts.dtnu*unit.time, linestyle=1, color=128000128
+			oplot, time, ts.dtnu*unit.time, linestyle=1, color=128000128
 			print, "dtnu  :", ts.dtnu[0]
 		end
 		if (any (strcmp (tags, 'dtb', /fold_case))) then begin
-			oplot, ts.t, ts.dtb*unit.time, linestyle=1, color=200
+			oplot, time, ts.dtb*unit.time, linestyle=1, color=200
 			print, "dtb   :", ts.dtb[0]
 		end
 		if (any (strcmp (tags, 'dteta', /fold_case))) then begin
-			oplot, ts.t, ts.dteta*unit.time, linestyle=2, color=220200200
+			oplot, time, ts.dteta*unit.time, linestyle=2, color=220200200
 			print, "dteta :", ts.dteta[0]
 		end
 		if (any (strcmp (tags, 'dtc', /fold_case))) then begin
-			oplot, ts.t, ts.dtc*unit.time, linestyle=1, color=61695
+			oplot, time, ts.dtc*unit.time, linestyle=1, color=61695
 			print, "dtc   :", ts.dtc[0]
 		end
 		if (any (strcmp (tags, 'dtchi', /fold_case))) then begin
-			oplot, ts.t, ts.dtchi*unit.time, linestyle=3, color=115100200
+			oplot, time, ts.dtchi*unit.time, linestyle=3, color=115100200
 			print, "dtchi :", ts.dtchi[0]
 		end
 		if (any (strcmp (tags, 'dtchi2', /fold_case))) then begin
-			oplot, ts.t, ts.dtchi2*unit.time, linestyle=3, color=41215
+			oplot, time, ts.dtchi2*unit.time, linestyle=3, color=41215
 			print, "dtchi2:", ts.dtchi2[0]
 		end
 		if (any (strcmp (tags, 'dtd', /fold_case))) then begin
-			oplot, ts.t, ts.dtd*unit.time, linestyle=2, color=16737000
+			oplot, time, ts.dtd*unit.time, linestyle=2, color=16737000
 			print, "dtc   :", ts.dtd[0]
 		end
 
@@ -309,33 +314,33 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			num_subplots += 1
 			mass = ts.totmass * unit.mass / unit.default_mass
 			energy = (ts.eem + ts.ekintot/ts.totmass) * unit.mass / unit.velocity^2
-			plot, ts.t, energy, linestyle=2, title = 'Mass {.r} and energy {-w} conservation', xrange=x_minmax, /xs, ys=8
-			oplot, ts.t, mass*mean (energy)/mean (mass), linestyle=1, color=200
+			plot, time, energy, linestyle=2, title = 'Mass {.r} and energy {-w} conservation', xrange=x_minmax, /xs, ys=8
+			oplot, time, mass*mean (energy)/mean (mass), linestyle=1, color=200
 			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='mean energy [J]'
 			axis, yaxis=1, yrange=!Y.CRANGE*mean (energy)/mean (mass), /ys, ytitle='total mass ['+unit.default_mass_str+']'
 		end else if (any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			mass = ts.totmass * unit.mass / unit.default_mass
-			plot, ts.t, mass, title = 'Mass conservation', xrange=x_minmax, /xs, ys=8
+			plot, time, mass, title = 'Mass conservation', xrange=x_minmax, /xs, ys=8
 		end
 		if (any (strcmp (tags, 'TTmax', /fold_case)) and any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
-			plot, ts.t, Temp_max, title = 'Maximum temperature [K] {-w} and average Ohmic heating rate [W/m^3] {.r}', xrange=x_minmax, /xs, /yl, ys=8
-			oplot, ts.t, HR_ohm*mean (Temp_max)/mean (HR_ohm), linestyle=1, color=200
+			plot, time, Temp_max, title = 'Maximum temperature [K] {-w} and average Ohmic heating rate [W/m^3] {.r}', xrange=x_minmax, /xs, /yl, ys=8
+			oplot, time, HR_ohm*mean (Temp_max)/mean (HR_ohm), linestyle=1, color=200
 			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='Maximum temperature [K]'
 			axis, yaxis=1, yrange=!Y.CRANGE*mean (Temp_max)/mean (HR_ohm), /ys, ytitle='HR_ohm [W/m^3]'
 		end else if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
-			plot, ts.t, Temp_max, title = 'Maximum temperature [K]', xrange=x_minmax, /xs, /yl
+			plot, time, Temp_max, title = 'Maximum temperature [K]', xrange=x_minmax, /xs, /yl
 		end else if (any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
 			j_abs = sqrt (ts.j2m) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-			plot, ts.t, HR_ohm, title = 'Ohmic heating rate [W/m^2] {-w} and mean current density [A/m^2] {.r}', xrange=x_minmax, /xs, /yl, ys=8
-			oplot, ts.t, j_abs*mean (HR_ohm)/mean (j_abs), linestyle=1, color=200
+			plot, time, HR_ohm, title = 'Ohmic heating rate [W/m^2] {-w} and mean current density [A/m^2] {.r}', xrange=x_minmax, /xs, /yl, ys=8
+			oplot, time, j_abs*mean (HR_ohm)/mean (j_abs), linestyle=1, color=200
 			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='Ohmic heating rate [W/m^3]'
 			axis, yaxis=1, yrange=!Y.CRANGE*mean (HR_ohm)/mean (j_abs), /ys, ytitle='current density [A/m^2]'
 		end
@@ -346,19 +351,19 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			if (any (strcmp (tags, 'urms', /fold_case))) then begin
 				u_title += ' u_rms{.r}'
 			end else if (any (strcmp (tags, 'u2m', /fold_case))) then u_title += ' <u^2>^0.5{.-b}'
-			plot, ts.t, u_max, title = u_title+' ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
+			plot, time, u_max, title = u_title+' ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
 			if (any (strcmp (tags, 'urms', /fold_case))) then begin
 				urms = ts.urms * unit.velocity / unit.default_velocity
-				oplot, ts.t, urms, linestyle=1, color=200
+				oplot, time, urms, linestyle=1, color=200
 			end else if (any (strcmp (tags, 'u2m', /fold_case))) then begin
 				u2m = sqrt (ts.u2m) * unit.velocity / unit.default_velocity
-				oplot, ts.t, u2m, linestyle=3, color=115100200
+				oplot, time, u2m, linestyle=3, color=115100200
 			end
 		end
 		if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			rho_min = ts.rhomin * unit.density / unit.default_density
-			plot, ts.t, rho_min, title = 'rho_min(t) ['+unit.default_density_str+']', xrange=x_minmax, /xs, /yl
+			plot, time, rho_min, title = 'rho_min(t) ['+unit.default_density_str+']', xrange=x_minmax, /xs, /yl
 		end
 	end
 end
