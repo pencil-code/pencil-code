@@ -717,8 +717,8 @@ module Special
 !
       ! Restoration half-time of initial magnetic field:
       if (bmdi > 0.0) then
-        if (b_tau > 0.0) call fatal_error ('solar_corona/mag_driver', &
-            "Use either bmdi or b_tau, not both")
+        if ((b_tau > 0.0) .and. (b_tau /= bmdi)) call fatal_error ( &
+            'solar_corona/mag_driver', "Use either bmdi or b_tau, not both")
         b_tau = bmdi
       endif
       ! Restoration half-time of initial total vertical flux:
