@@ -319,17 +319,6 @@ module Magnetic
 !
     endsubroutine output_persistent_magnetic
 !***********************************************************************
-    subroutine remove_mean_emf(f,df)
-!
-!  Dummy routine
-!
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
-      real, dimension (mx,my,mz,mvar), intent (inout) :: df
-!
-      call keep_compiler_quiet(f,df)
-!
-    endsubroutine remove_mean_emf
-!***********************************************************************
     subroutine dynamical_resistivity(umax)
 !
 !  dummy
