@@ -333,9 +333,18 @@ module Grid
           ! Grid distance increases as a power-law set by c=coeff_grid(1)
           ! i.e., grid distance increases as an inverse power-law
           ! d[x^c] = const ==> dx = const/x^(c-1)
+          if (lroot) then 
+            print*,"Constructing power-law grid. It will "
+            print*,"generate a grid of power law index "
+            print*,""
+            print*,"  d[x^c] = const ==> dx = const/x^(c-1)"
+            print*,""
+            print*,"where c is the value of coeff_grid"
+          endif
+!
           if (coeff_grid(1) == 0.) &
                call fatal_error('construct_grid:', 'Cannot create '//&
-               'a grid for a power-law of zero. Please check.')
+               'a grid for a power-law of zero. Use "log" instead.')
           c= coeff_grid(1)
           a= (xyz1(1)**c-xyz0(1)**c)/(xi1up-xi1lo)
           b= .5*(xi1up+xi1lo-(xyz1(1)**c+xyz0(1)**c)/a)
