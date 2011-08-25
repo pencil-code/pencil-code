@@ -176,14 +176,6 @@ module Equ
 !
       call calc_selfpotential(f)
 !
-!  Remove mean emf in the radial direction if desired.
-!  Useful as a simple way to remove the large scale
-!  contribution from uphi x Bz from global disk simulations.
-!  (This is only done if lremove_mean_emf=T,
-!  to be set in magnetic_run_pars).
-!
-      if (lmagnetic) call remove_mean_emf(f,df)
-!
 !  Check for dust grain mass interval overflows
 !  (should consider having possibility for all modules to fiddle with the
 !   f array before boundary conditions are sent)
