@@ -854,7 +854,7 @@ module Forcing
       use Mpicomm
       use Sub
 !
-      real :: phase,ffnorm,irufm
+      real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
@@ -1124,7 +1124,7 @@ module Forcing
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
       force_ampl=1.0
-      irufm=0
+      irufm=0; iruxfxm=0; iruxfym=0; iruyfxm=0; iruyfym=0
       if (rcyl_ff == 0) then       ! no radial profile
         do n=n1,n2
           do m=m1,m2
@@ -1208,12 +1208,34 @@ module Forcing
 !  Sum up.
 !
             if (lout) then
-              if (idiag_rufm/=0) then
-                rho=exp(f(l1:l2,m,n,ilnrho))
+              if (idiag_rufm/=0 .or. &
+                  idiag_ruxfxm/=0 .or. idiag_ruxfym/=0 .or. &
+                  idiag_ruyfxm/=0 .or. idiag_ruyfym/=0 ) then
+!
+!  Compute rhs and density.
+!
                 variable_rhs=f(l1:l2,m,n,iffx:iffz)
-                call multsv_mn(rho/dt,forcing_rhs,force_all)
-                call dot_mn(variable_rhs,force_all,ruf)
-                irufm=irufm+sum(ruf)
+                if (ldensity_nolog) then
+                  rho=f(l1:l2,m,n,irho)
+                else
+                  rho=exp(f(l1:l2,m,n,ilnrho))
+                endif
+!
+!  Evaluate the various choices.
+!
+                if (idiag_rufm/=0) then
+                  call multsv_mn(rho/dt,forcing_rhs,force_all)
+                  call dot_mn(variable_rhs,force_all,ruf)
+                  irufm=irufm+sum(ruf)
+                endif
+                if (idiag_ruxfxm/=0) iruxfxm=iruxfxm+sum( &
+                    rho*f(l1:l2,m,n,iux)*forcing_rhs(:,1))
+                if (idiag_ruxfym/=0) iruxfym=iruxfym+sum( &
+                    rho*f(l1:l2,m,n,iux)*forcing_rhs(:,2))
+                if (idiag_ruyfxm/=0) iruyfxm=iruyfxm+sum( &
+                    rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,1))
+                if (idiag_ruyfym/=0) iruyfym=iruyfym+sum( &
+                    rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,2))
               endif
             endif
 !
@@ -1251,21 +1273,49 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       endif
 !
 !  For printouts
+!  On different processors, irufm needs to be communicated
+!  to other processors.
 !
       if (lout) then
         if (idiag_rufm/=0) then
-          irufm=irufm/(nwgrid)
-!
-!  on different processors, irufm needs to be communicated
-!  to other processors
-!
           fsum_tmp(1)=irufm
           call mpireduce_sum(fsum_tmp,fsum,1)
           irufm=fsum(1)
           call mpibcast_real(irufm,1)
-!
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
+        endif
+        if (idiag_ruxfxm/=0) then
+          fsum_tmp(1)=iruxfxm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          iruxfxm=fsum(1)
+          call mpibcast_real(iruxfxm,1)
+          fname(idiag_ruxfxm)=iruxfxm
+          itype_name(idiag_ruxfxm)=ilabel_sum
+        endif
+        if (idiag_ruxfym/=0) then
+          fsum_tmp(1)=iruxfym
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          iruxfym=fsum(1)
+          call mpibcast_real(iruxfym,1)
+          fname(idiag_ruxfym)=iruxfym
+          itype_name(idiag_ruxfym)=ilabel_sum
+        endif
+        if (idiag_ruyfxm/=0) then
+          fsum_tmp(1)=iruyfxm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          iruyfxm=fsum(1)
+          call mpibcast_real(iruyfxm,1)
+          fname(idiag_ruyfxm)=iruyfxm
+          itype_name(idiag_ruyfxm)=ilabel_sum
+        endif
+        if (idiag_ruyfym/=0) then
+          fsum_tmp(1)=iruyfym
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          iruyfym=fsum(1)
+          call mpibcast_real(iruyfym,1)
+          fname(idiag_ruyfym)=iruyfym
+          itype_name(idiag_ruyfym)=ilabel_sum
         endif
       endif
 !
