@@ -337,6 +337,7 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			plot, time, Temp_max, title = 'Maximum temperature [K]', xrange=x_minmax, /xs, /yl
 		end else if (any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
+			mu0_SI = 4.0 * !Pi * 1.e-7
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
 			j_abs = sqrt (ts.j2m) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
 			plot, time, HR_ohm, title = 'Ohmic heating rate [W/m^2] {-w} and mean current density [A/m^2] {.r}', xrange=x_minmax, /xs, /yl, ys=8
