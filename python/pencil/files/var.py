@@ -18,7 +18,7 @@ import sys
 from param import read_param 
 from index import read_index
 from dim import read_dim 
-from pencil.math.derivatives import curl
+from pencil.math.derivatives import curl, curl2
 
 class read_var:
 # !!!  The file format written by output() (and used, e.g. in var.dat)
@@ -218,6 +218,12 @@ class read_var:
                 aa = f[index['ax']-1:index['az'],...]
                 self.bb = curl(aa,dx,dy,dz,run2D=param.lwrite_2d)
                 if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1, 
+                dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+            if ('jj' in magic):
+                # compute the electric current field before doing trimall
+                aa = f[index['ax']-1:index['az'],...]
+                self.jj = curl2(aa,dx,dy,dz)
+                if (trimall): self.jj=self.jj[:, dim.n1:dim.n2+1, 
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
                 # compute the vorticity field before doing trimall
