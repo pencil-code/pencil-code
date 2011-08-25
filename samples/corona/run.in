@@ -8,8 +8,9 @@
   cdt=0.4, cdtv=0.08, cdts=0.08, itorder=3
   dsnap=1.
   !
-  bcz = 's:a' ,'s:a' ,'a','set:a2','set:a2','pfe','nil','nil'
-  fbcz1 = 0.,0.,0.,16.796295,0.78135928
+  bcz      = 's:a', 's:a', 'a', 'set:a2', 'set:a2', 'pfe', 'nil', 'nil'
+  fbcz_bot =      ,      ,    ,         ,         ,  0.2 ,      ,
+  fbcz1    =      ,      ,    ,16.796295,0.78135928
 ! lpencil_check=T
 /
 &eos_run_pars
