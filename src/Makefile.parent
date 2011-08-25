@@ -69,9 +69,9 @@ semiauto-conf:
 pc_collect:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src Makefile pre_and_post_processing/pc_collect.x )
-pc_downscale:
+pc_reduce:
 	( cd src && \
-	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src Makefile pre_and_post_processing/pc_downscale.x )
+	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src Makefile pre_and_post_processing/pc_reduce.x )
 pc_distribute:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) -f Makefile.src Makefile pre_and_post_processing/pc_distribute.x )

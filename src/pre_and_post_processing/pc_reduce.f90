@@ -1,9 +1,9 @@
-! This is a very feature-limited tool to downscale a data cube in the
+! This is a very feature-limited tool to reduce a data cube in the
 ! horzontal directions (x and y), if these are periodic.
 !
 ! $Id$
 !***********************************************************************
-program pc_downscale
+program pc_reduce
 !
   use Cdata
   use Cparam, only: fnlen
@@ -30,7 +30,7 @@ program pc_downscale
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
   logical :: ex
   integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos, alloc_err
-  real, parameter :: inv_reduce_2 = 1.0 / reduce**2.0
+  real, parameter :: inv_reduce = 1.0 / reduce, inv_reduce_2 = 1.0 / reduce**2.0
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lrun=.true.
@@ -116,7 +116,7 @@ program pc_downscale
   endif
 !
   allocate (rf (nrx,nry,mz,mvar_io), stat=alloc_err)
-  if (alloc_err /= 0) call fatal_error ('pc_downscale', 'Failed to allocate memory for rf.', .true.)
+  if (alloc_err /= 0) call fatal_error ('pc_reduce', 'Failed to allocate memory for rf.', .true.)
 !
 !  Print resolution and dimension of the simulation.
 !
@@ -128,7 +128,7 @@ program pc_downscale
   iproc = 0
   call directory_names()
   inquire (file=trim(directory_snap)//'/'//trim(filename), exist=ex)
-  if (.not. ex) call fatal_error ('pc_downscale', 'File not found: '//trim(directory_snap)//'/'//trim(filename), .true.)
+  if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//trim(filename), .true.)
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),status='replace',access='direct',recl=nrx*nry*bytes)
 !
   gz = huge(1.0)
@@ -232,7 +232,7 @@ program pc_downscale
 !
         call choose_pencils()
 !
-        ! downscale f:
+        ! reduce f:
         do pa = 1, mvar_io
           start_pos = nghost + 1
           end_pos = nghost + nz
@@ -248,16 +248,16 @@ program pc_downscale
           enddo
         enddo
 !
-        ! downscale x coordinates:
+        ! reduce x coordinates:
         do px = 0, nx-1, reduce
-          rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) / reduce
+          rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) * inv_reduce
           rdx_1(nghost+1+(px+ipx*nx)/reduce) = 1.0 / sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
           rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
         enddo
 !
-        ! downscale y coordinates:
+        ! reduce y coordinates:
         do py = 0, ny-1, reduce
-          ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) / reduce
+          ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) * inv_reduce
           rdy_1(nghost+1+(py+ipy*ny)/reduce) = 1.0 / sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
           rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
         enddo
@@ -333,4 +333,4 @@ program pc_downscale
   call fnames_clean_up()
   call vnames_clean_up()
 !
-endprogram pc_downscale
+endprogram pc_reduce
