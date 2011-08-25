@@ -4917,7 +4917,7 @@ endsubroutine rotblob
       real :: x01 = 0.0, y01 = 0.0, z01 = 0.0
       real :: x_real, y_real, z_real, rr_box, counter
       real :: M_sun = 1.98892e30 ! kg (SI)
-      real :: T_cloud_out_rel, lnTTpoint
+      real :: T_cloud_out_rel, lnTTpoint, T_cloud, xi_coeff
       real :: lnTTpoint0, dens_coeff, temp_coeff, temp_coeff_out
       real :: x_wave, wavelength, QQQ, temp_trans, T_cloud_out_rel0
 !
