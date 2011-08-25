@@ -340,7 +340,7 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			mu0_SI = 4.0 * !Pi * 1.e-7
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
 			j_abs = sqrt (ts.j2m) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-			plot, time, HR_ohm, title = 'Ohmic heating rate [W/m^2] {-w} and mean current density [A/m^2] {.r}', xrange=x_minmax, /xs, /yl, ys=8
+			plot, time, HR_ohm, title = 'Ohmic heating rate [W/m^3] {-w} and mean current density [A/m^2] {.r}', xrange=x_minmax, /xs, /yl, ys=8
 			oplot, time, j_abs*mean (HR_ohm)/mean (j_abs), linestyle=1, color=200
 			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='Ohmic heating rate [W/m^3]'
 			axis, yaxis=1, yrange=!Y.CRANGE*mean (HR_ohm)/mean (j_abs), /ys, ytitle='current density [A/m^2]'
