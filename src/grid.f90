@@ -335,11 +335,11 @@ module Grid
           ! d[x^c] = const ==> dx = const/x^(c-1)
           if (lroot) then 
             print*,"Constructing power-law grid. It will "
-            print*,"generate a grid of power law index "
+            print*,"generate a grid obeying the constrain "
             print*,""
             print*,"  d[x^c] = const ==> dx = const/x^(c-1)"
             print*,""
-            print*,"where c is the value of coeff_grid"
+            print*,"where c is the value of coeff_grid."
           endif
 !
           if (coeff_grid(1) == 0.) &
