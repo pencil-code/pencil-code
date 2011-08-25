@@ -1505,10 +1505,10 @@ module Initcond
 !  set z-dependent Beltrami field
 !
       do ix=1,mx; do iy=1,my;do iz=1,mz
-        f(ix,iy,iz,i) = ampl*((1-nfactor)*sin(kz*z(iz)) & 
-            +nfactor*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) & 
+        f(ix,iy,iz,i) = ampl*((1-nfactor)*sin(kz*z(iz)) &
+            +nfactor*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
                 + sqrt(3.)*cos(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
-        f(ix,iy,iz,i+1) = ampl*((1-nfactor)*cos(kz*z(iz)) & 
+        f(ix,iy,iz,i+1) = ampl*((1-nfactor)*cos(kz*z(iz)) &
             - nfactor*(cos(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
               +sqrt(3.)*sin(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
       enddo;enddo;enddo
@@ -4892,51 +4892,50 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
 !
 endsubroutine rotblob
 !***********************************************************************
-subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
-                            cloud_mode, T_cloud_out_rel,xi_coeff, dens_coeff, &
-                            temp_coeff, temp_trans, temp_coeff_out)
+    subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
+        cloud_mode, T_cloud_out_rel,xi_coeff, dens_coeff, &
+        temp_coeff, temp_trans, temp_coeff_out)
 !
-!  Creates a isothermal or modified Bonnor-Ebert Sphere to be used as  
-!  a prestellar cloud. 
+!  Creates a isothermal or modified Bonnor-Ebert Sphere to be used as
+!  a prestellar cloud.
 !
 !  datafile: The file that includes the density and temp distribution
 !  BE_resolution: The resolution of isothemal BE-solutions
 !  mass_cloud: mass of the cloud in solar masses
 !
-!  13-jul-10/mvaisala: created 
+!  13-jul-10/mvaisala: created
 !
       use EquationOfState, only: eoscalc,ilnrho_lnTT
-      !use Entropy, only: initss, T0
 !
-      integer :: jj, test, n, m, l, len_file 
-      integer, parameter :: BE_resolution = 2000 
+      integer :: jj, test, n, m, l, len_file
+      integer, parameter :: BE_resolution = 2000
       logical :: exist !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f 
-      real, dimension (BE_resolution) :: lnTT_file, lnrho_r, r_rho 
-      real :: tmp, var1, var2, var3 
-      real :: bigr, mass_cloud 
-      real :: x01 = 0.0, y01 = 0.0, z01 = 0.0 
-      real :: x_real, y_real, z_real, rr_box, counter 
-      real :: M_sun = 1.98892e30 ! kg (SI) 
-      real :: T_cloud, T_cloud_out_rel, lnrho, ss, lnTTpoint, xi_coeff
-      real :: lnTTpoint0, dens_coeff, temp_coeff, temp_coeff_out 
-      real :: x_wave, wavelength, QQQ, temp_trans, T_cloud_out_rel0 
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (BE_resolution) :: lnTT_file, lnrho_r, r_rho
+      real :: tmp, var1, var2, var3
+      real :: bigr, mass_cloud
+      real :: x01 = 0.0, y01 = 0.0, z01 = 0.0
+      real :: x_real, y_real, z_real, rr_box, counter
+      real :: M_sun = 1.98892e30 ! kg (SI)
+      real :: T_cloud_out_rel, lnTTpoint
+      real :: lnTTpoint0, dens_coeff, temp_coeff, temp_coeff_out
+      real :: x_wave, wavelength, QQQ, temp_trans, T_cloud_out_rel0
 !
-      character (len=labellen) :: datafile, cloud_mode 
-!   
+      character (len=labellen) :: datafile, cloud_mode
+!
       write (*,*) 'Solar mass:', M_sun
-      write (*,*) 'unit_mass:', unit_mass   
+      write (*,*) 'unit_mass:', unit_mass
       write (*,*) 'unit_temperature', unit_temperature
       mass_cloud = (mass_cloud * M_sun) / unit_mass
 !
-      select case (cloud_mode) 
-
+      select case (cloud_mode)
+!
          case ('read_modified')
 !
 ! Read a radial density and temperature distribution from a file with a chosen
 ! name. The file must be in the format:
 ! 1st line: BIGR (cm)    BE_RESOLUTION (int)
-! others:   RADIUS (cm)  DENSITY (g/cm^3)  TEMPERATURE (K) 
+! others:   RADIUS (cm)  DENSITY (g/cm^3)  TEMPERATURE (K)
 !
            inquire(file=datafile, exist=exist)
            if (exist) then
@@ -4946,15 +4945,15 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
            end if
            read(19,*) var1, len_file
            bigr = var1/unit_length
-           write (*,*) '(Modified BE-sphere) R = ', var1, 'cm =',& 
+           write (*,*) '(Modified BE-sphere) R = ', var1, 'cm =',&
                         bigr, 'pc_units'
            do jj = 1, len_file
              read(19,*) var1, var2, var3
              r_rho(jj) = var1/unit_length
              lnrho_r(jj) = log(var2/unit_density)
              lnTT_file(jj) = log(var3/unit_temperature)
-           end do 
-
+           end do
+!
            counter = 0
            do n = n1,n2
              do m = m1,m2
@@ -4973,7 +4972,7 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
                                 ss=tmp)
                    f(l,m,n,iss) = tmp
                    counter = counter+1
-                 else 
+                 else
                    do while (r_rho(test+1) <= bigr)
                       test = test + 1
                    end do
@@ -4982,11 +4981,12 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
                       wavelength = 2.0*bigr*(temp_trans-1)
                       QQQ = 0.5*(sin(2.0*pi*x_wave/wavelength - pi/2.0) + 1.0)
                       T_cloud_out_rel0 = 1 + QQQ*(T_cloud_out_rel-1.0)
-                   else 
+                   else
                       T_cloud_out_rel0 = T_cloud_out_rel
-                   end if 
+                   end if
                    f(l,m,n,ilnrho) = log(exp(lnrho_r(test))/T_cloud_out_rel0)
-                   lnTTpoint = log(exp(lnTT_file(test))*T_cloud_out_rel0*temp_coeff_out)
+                   lnTTpoint = log(exp(lnTT_file(test))* &
+                       T_cloud_out_rel0*temp_coeff_out)
                    call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), &
                                 lnTTpoint, ss=tmp)
                    f(l,m,n,iss) = tmp
@@ -4996,7 +4996,7 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
            end do
            write (*,*) 'Covers:', counter, '/', &
                        (abs(n1-n2)*abs(m1-m2)*abs(l1-l2)), 'cells'
-
+!
          case ('read_isothermal')
 !
 ! Read a radial density distribution from a file with a chosen
@@ -5013,16 +5013,16 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
            end if
            read(19,*) var1, len_file, var2
            bigr = var1/unit_length
-           lnTTpoint0 = log(var2*temp_coeff/unit_temperature)            
-           write (*,*) '(Isothermal BE-sphere) R =', var1, 'cm =',& 
+           lnTTpoint0 = log(var2*temp_coeff/unit_temperature)
+           write (*,*) '(Isothermal BE-sphere) R =', var1, 'cm =',&
                         bigr, 'pc_units, T =', var2, 'K'
            do jj = 1, len_file
              read(19,*) var1, var2
              r_rho(jj) = var1/unit_length
              lnrho_r(jj) = log(var2*dens_coeff/unit_density)
-           end do 
+           end do
            write (*,*) 'Temperature, lnTT = ', lnTTpoint0
-
+!
            counter = 0
            do n = n1,n2
              do m = m1,m2
@@ -5041,7 +5041,7 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
                    call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), lnTTpoint, ss=tmp)
                    f(l,m,n,iss) = tmp
                    counter = counter+1
-                 else 
+                 else
                    do while (r_rho(test+1) <= bigr)
                      test = test + 1
                    end do
@@ -5050,12 +5050,13 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
                       wavelength = 2.0*bigr*(temp_trans-1)
                       QQQ = 0.5*(sin(2.0*pi*x_wave/wavelength - pi/2.0) + 1.0)
                       T_cloud_out_rel0 = 1 + QQQ*(T_cloud_out_rel-1.0)
-                   else 
+                   else
                       T_cloud_out_rel0 = T_cloud_out_rel
-                   end if 
+                   end if
                    !WRITE (*,*) 'T_cloud_out_rel:', T_cloud_out_rel0
                    f(l,m,n,ilnrho) = log(exp(lnrho_r(test))/T_cloud_out_rel0)
-                   lnTTpoint = log(exp(lnTTpoint0)*T_cloud_out_rel0*temp_coeff_out)
+                   lnTTpoint = log(exp(lnTTpoint0)* &
+                       T_cloud_out_rel0*temp_coeff_out)
                    call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), lnTTpoint, ss=tmp)
                    f(l,m,n,iss) = tmp
                  end if
@@ -5064,12 +5065,11 @@ subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
            end do
            write (*,*) 'Covers:', counter, '/', &
                        (abs(n1-n2)*abs(m1-m2)*abs(l1-l2)), 'cells'
-           write (*,*) (temp_trans*bigr-bigr), wavelength/2.0, 4.0*wavelength/2.0 
-
+           write (*,*) (temp_trans*bigr-bigr), wavelength/2.0, 4.0*wavelength/2.0
+!
          case default
       end select
-
-endsubroutine pre_stellar_cloud
+!
+    endsubroutine pre_stellar_cloud
 !***********************************************************************
-
 endmodule Initcond
