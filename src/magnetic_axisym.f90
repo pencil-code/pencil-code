@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; uxb(3)
 ! PENCILS PROVIDED b2; bij(3,3); del2a(3); graddiva(3); jj(3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
-! PENCILS PROVIDED uxj(3); beta; uga(3); djuidjbi; jo
+! PENCILS PROVIDED uxj(3); beta1; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; mf_EMF(3); mf_EMFdotB
@@ -53,12 +53,12 @@ module Magnetic
   real, target, dimension (ny,nz) :: b2_yz,jb_yz
   real, target, dimension (nx,nz) :: b2_xz,jb_xz
 !
-  real, target, dimension (nx,ny) :: beta_xy
-  real, target, dimension (nx,ny) :: beta_xy2
-  real, target, dimension (nx,ny) :: beta_xy3
-  real, target, dimension (nx,ny) :: beta_xy4
-  real, target, dimension (ny,nz) :: beta_yz
-  real, target, dimension (nx,nz) :: beta_xz
+  real, target, dimension (nx,ny) :: beta1_xy
+  real, target, dimension (nx,ny) :: beta1_xy2
+  real, target, dimension (nx,ny) :: beta1_xy3
+  real, target, dimension (nx,ny) :: beta1_xy4
+  real, target, dimension (ny,nz) :: beta1_yz
+  real, target, dimension (nx,nz) :: beta1_xz
 !
   real, dimension (mx,my) :: alpha_input
 !
@@ -876,7 +876,7 @@ module Magnetic
         lpencil_in(i_uu)=.true.
         lpencil_in(i_bb)=.true.
       endif
-      if (lpencil_in(i_beta)) then
+      if (lpencil_in(i_beta1)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_pp)=.true.
       endif
@@ -1255,8 +1255,8 @@ module Magnetic
       if (lpencil(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
 ! uxj
       if (lpencil(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
-! beta
-      if (lpencil(i_beta)) p%beta=0.5*p%b2/p%pp
+! beta1
+      if (lpencil(i_beta1)) p%beta1=0.5*p%b2/p%pp
 ! djuidjbi
       if (lpencil(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
 ! jo
@@ -1856,7 +1856,7 @@ module Magnetic
 !
 !  Plasma beta
 !
-       case ('beta')
+       case ('beta1')
           slices%yz =>jb_yz
           slices%xz =>jb_xz
           slices%xy =>jb_xy

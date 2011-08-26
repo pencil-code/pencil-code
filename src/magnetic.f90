@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3)
 ! PENCILS PROVIDED b2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
-! PENCILS PROVIDED uxj(3); beta; uga(3); djuidjbi; jo
+! PENCILS PROVIDED uxj(3); beta1; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; d6ab
@@ -57,12 +57,12 @@ module Magnetic
   real, target, dimension (ny,nz) :: b2_yz, jb_yz, j2_yz,  ab_yz
   real, target, dimension (nx,nz) :: b2_xz, jb_xz, j2_xz,  ab_xz
 !
-  real, target, dimension (nx,ny) :: beta_xy
-  real, target, dimension (nx,ny) :: beta_xy2
-  real, target, dimension (nx,ny) :: beta_xy3
-  real, target, dimension (nx,ny) :: beta_xy4
-  real, target, dimension (ny,nz) :: beta_yz
-  real, target, dimension (nx,nz) :: beta_xz
+  real, target, dimension (nx,ny) :: beta1_xy
+  real, target, dimension (nx,ny) :: beta1_xy2
+  real, target, dimension (nx,ny) :: beta1_xy3
+  real, target, dimension (nx,ny) :: beta1_xy4
+  real, target, dimension (ny,nz) :: beta1_yz
+  real, target, dimension (nx,nz) :: beta1_xz
 !
 !  xy-averaged field
 !
@@ -648,6 +648,7 @@ module Magnetic
   integer :: idiag_examxy1=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
   integer :: idiag_examxy2=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_y$
   integer :: idiag_examxy3=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_z$
+  integer :: idiag_beta1mxy=0   ! ZAVG_DOC: $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$
 !
   contains
 !***********************************************************************
@@ -1583,6 +1584,8 @@ module Magnetic
       if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
          ) lpenc_diagnos2d(i_aa)=.true.
 !
+      if (idiag_beta1mxy/=0) lpenc_diagnos2d(i_beta1)=.true.
+!
       if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0 &
            .or. idiag_abmxy/=0 &
       ) lpenc_diagnos(i_a2)=.true.
@@ -1620,7 +1623,7 @@ module Magnetic
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
       if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
-      if (idiag_beta1m/=0 .or. idiag_beta1max/=0) lpenc_diagnos(i_beta)=.true.
+      if (idiag_beta1m/=0 .or. idiag_beta1max/=0) lpenc_diagnos(i_beta1)=.true.
       if (idiag_bxmz/=0 .or. idiag_bymz/=0) lpenc_diagnos(i_bb)=.true.
       if (idiag_djuidjbim/=0) lpenc_diagnos(i_djuidjbi)=.true.
       if (idiag_b2divum/=0) lpenc_diagnos(i_divu)=.true.
@@ -1812,7 +1815,7 @@ module Magnetic
         lpencil_in(i_bb)=.true.
       endif
 !
-      if (lpencil_in(i_beta)) then
+      if (lpencil_in(i_beta1)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_pp)=.true.
       endif
@@ -2191,8 +2194,8 @@ module Magnetic
       if (lpencil(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
 ! uxj
       if (lpencil(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
-! beta
-      if (lpencil(i_beta)) p%beta=0.5*p%b2/p%pp
+! beta1
+      if (lpencil(i_beta1)) p%beta1=0.5*p%b2/p%pp
 ! djuidjbi
       if (lpencil(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
 ! jo
@@ -2914,8 +2917,8 @@ module Magnetic
 !  Calculate diagnostic quantities.
 !
       if (ldiagnos) then
-        if (idiag_beta1m/=0) call sum_mn_name(p%beta,idiag_beta1m)
-        if (idiag_beta1max/=0) call max_mn_name(p%beta,idiag_beta1max)
+        if (idiag_beta1m/=0) call sum_mn_name(p%beta1,idiag_beta1m)
+        if (idiag_beta1max/=0) call max_mn_name(p%beta1,idiag_beta1max)
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
@@ -3563,6 +3566,7 @@ module Magnetic
         if (idiag_examxy1/=0)  call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
         if (idiag_examxy2/=0)  call zsum_mn_name_xy(p%exa(:,2),idiag_examxy2)
         if (idiag_examxy3/=0)  call zsum_mn_name_xy(p%exa(:,3),idiag_examxy3)
+        if (idiag_beta1mxy/=0) call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
         if (idiag_bxbymxy/=0) &
             call zsum_mn_name_xy(p%bb(:,1)*p%bb(:,2),idiag_bxbymxy)
         if (idiag_bxbzmxy/=0) &
@@ -3649,12 +3653,12 @@ module Magnetic
         if (n==iz2_loc) jb_xy2(:,m-m1+1)=p%jb
         if (n==iz3_loc) jb_xy3(:,m-m1+1)=p%jb
         if (n==iz4_loc) jb_xy4(:,m-m1+1)=p%jb
-        beta_yz(m-m1+1,n-n1+1)=p%beta(ix_loc-l1+1)
-        if (m==iy_loc)  beta_xz(:,n-n1+1)=p%beta
-        if (n==iz_loc)  beta_xy(:,m-m1+1)=p%beta
-        if (n==iz2_loc) beta_xy2(:,m-m1+1)=p%beta
-        if (n==iz3_loc) beta_xy3(:,m-m1+1)=p%beta
-        if (n==iz4_loc) beta_xy4(:,m-m1+1)=p%beta
+        beta1_yz(m-m1+1,n-n1+1)=p%beta1(ix_loc-l1+1)
+        if (m==iy_loc)  beta1_xz(:,n-n1+1)=p%beta1
+        if (n==iz_loc)  beta1_xy(:,m-m1+1)=p%beta1
+        if (n==iz2_loc) beta1_xy2(:,m-m1+1)=p%beta1
+        if (n==iz3_loc) beta1_xy3(:,m-m1+1)=p%beta1
+        if (n==iz4_loc) beta1_xy4(:,m-m1+1)=p%beta1
         if (bthresh_per_brms/=0) call calc_bthresh
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
 !
@@ -4384,14 +4388,21 @@ module Magnetic
 !
 !  Plasma beta
 !
-       case ('beta')
-          slices%yz =>beta_yz
-          slices%xz =>beta_xz
-          slices%xy =>beta_xy
-          slices%xy2=>beta_xy2
-          if (lwrite_slice_xy3) slices%xy3=>beta_xy3
-          if (lwrite_slice_xy4) slices%xy4=>beta_xy4
+       case ('beta1')
+          slices%yz =>beta1_yz
+          slices%xz =>beta1_xz
+          slices%xy =>beta1_xy
+          slices%xy2=>beta1_xy2
+          if (lwrite_slice_xy3) slices%xy3=>beta1_xy3
+          if (lwrite_slice_xy4) slices%xy4=>beta1_xy4
           slices%ready=.true.
+!
+       case ('beta')
+         if (lroot) then 
+           print*,"The 'beta' slice was renamed to 'beta1'. Please "
+           print*,"update the label in your video.in file."
+         endif
+         call fatal_error("get_slices_magnetic","")
 !
 ! Poynting vector
 !
@@ -6161,7 +6172,7 @@ module Magnetic
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0; idiag_bxbymxy=0
         idiag_examxy1=0; idiag_examxy3=0; idiag_examxy2=0
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
-        idiag_Exmxy=0 ; idiag_Eymxy=0; idiag_Ezmxy=0;
+        idiag_Exmxy=0 ; idiag_Eymxy=0; idiag_Ezmxy=0; idiag_beta1mxy=0
         idiag_bybzmxz=0;
         idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0 ; idiag_jbmxy=0
         idiag_abmxy=0; idiag_b2mxz=0;
@@ -6597,6 +6608,7 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Exmxy',idiag_Exmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Eymxy',idiag_Eymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Ezmxy',idiag_Ezmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'beta1mxy',idiag_beta1mxy)
       enddo
 !
 !  Check for those quantities for which we want phi-averages.
