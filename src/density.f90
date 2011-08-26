@@ -557,7 +557,7 @@ module Density
           call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
           call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob,yblob,zblob)
         case ('pre-stellar'); call pre_stellar_cloud(f, datafile, mass_cloud, &
-                     T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, &
+                     cloud_mode, T_cloud_out_rel, &
                      dens_coeff, temp_coeff, temp_trans, temp_coeff_out)
         case ('isothermal'); call isothermal_density(f)
         case ('stratification'); call stratification(f,strati_type)

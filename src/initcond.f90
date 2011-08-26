@@ -4841,7 +4841,7 @@ module Initcond
 !
     endsubroutine ferriere_uniform_y
 !*****************************************************************************
-subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
+    subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
 !
 !  Rigid rotating sphere initial velocity
 !  with inclination  angle alpha.
@@ -4882,10 +4882,10 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
                 j = i+2
                 f(l,m,n,j) = vel_phi*cos(phi)*sin(incl_alpha)
                 if (x_real < 0.0) then
-                   j = i
-                   f(l,m,n,j) = -f(l,m,n,j)
-                   j = i+1
-                   f(l,m,n,j) = -f(l,m,n,j)
+                  j = i
+                  f(l,m,n,j) = -f(l,m,n,j)
+                  j = i+1
+                  f(l,m,n,j) = -f(l,m,n,j)
                 endif
               endif
             enddo
@@ -4893,10 +4893,10 @@ subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
         enddo
       endif
 !
-endsubroutine rotblob
+    endsubroutine rotblob
 !***********************************************************************
-    subroutine pre_stellar_cloud(f, datafile, mass_cloud, T_cloud, &
-        cloud_mode, T_cloud_out_rel,xi_coeff, dens_coeff, &
+    subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
+        cloud_mode, T_cloud_out_rel, dens_coeff, &
         temp_coeff, temp_trans, temp_coeff_out)
 !
 !  Creates a isothermal or modified Bonnor-Ebert Sphere to be used as
@@ -4920,7 +4920,7 @@ endsubroutine rotblob
       real :: x01 = 0.0, y01 = 0.0, z01 = 0.0
       real :: x_real, y_real, z_real, rr_box, counter
       real :: M_sun = 1.98892e30 ! kg (SI)
-      real :: T_cloud_out_rel, lnTTpoint, T_cloud, xi_coeff
+      real :: T_cloud_out_rel, lnTTpoint
       real :: lnTTpoint0, dens_coeff, temp_coeff, temp_coeff_out
       real :: x_wave, wavelength, QQQ, temp_trans, T_cloud_out_rel0
 !
