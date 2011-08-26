@@ -33,7 +33,7 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical :: ltrace_dust=.false.
-  real :: pdlaw,particles_insert_rate=0.,max_particle_insert_time=huge1
+  real :: pdlaw=0.,particles_insert_rate=0.,max_particle_insert_time=huge1
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: insertxxp='nothing'
   character (len=labellen) :: gravz_profile='zero'
