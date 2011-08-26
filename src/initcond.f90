@@ -4490,7 +4490,7 @@ module Initcond
 !  29-Mar-2011/Bourdin.KIS : coded, adapted parts from 'mdi_init'.
 !
       use Fourier, only: setup_extrapol_fact, field_extrapol_z_parallel
-      use Mpicomm, only: stop_it_if_any, mpisend_real, mpirecv_real
+      use Mpicomm, only: stop_it_if_any, mpisend_real, mpirecv_real, sum_xy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -4501,7 +4501,7 @@ module Initcond
       integer, parameter :: unit=11
       integer, parameter :: tag_xy=131, tag_z=132
       integer :: py, pz, partner
-      real :: Bz_flux
+      real :: Bz_flux, Bz_flux_local
       logical :: exists
       integer :: alloc_err, rec_len
       real, parameter :: reduce_factor=0.25
@@ -4568,15 +4568,18 @@ module Initcond
       ! Gauss to Tesla and SI to PENCIL units
       Bz = Bz * 1e-4 / unit_magnetic
 !
-      if (lroot) then
+      if (lfirst_proc_z) then
         if ((nxgrid==1).and.(nygrid/=1)) then
-          Bz_flux = sum(abs(Bz)) * dy * unit_magnetic*unit_length
+          Bz_flux_local = sum(abs(Bz)) * dy * unit_magnetic*unit_length
+          call sum_xy (Bz_flux_local, Bz_flux)
           write (*,*) 'Total vertical flux: sum(|Bz|)*dy [T*m] =', Bz_flux
         elseif ((nxgrid/=1).and.(nygrid==1)) then
-          Bz_flux = sum(abs(Bz)) * dx * unit_magnetic*unit_length
+          Bz_flux_local = sum(abs(Bz)) * dx * unit_magnetic*unit_length
+          call sum_xy (Bz_flux_local, Bz_flux)
           write (*,*) 'Total vertical flux: sum(|Bz|)*dx [T*m] =', Bz_flux
         elseif ((nxgrid/=1).and.(nygrid/=1)) then
-          Bz_flux = sum(abs(Bz)) * dx*dy * unit_magnetic*unit_length**2
+          Bz_flux_local = sum(abs(Bz)) * dx*dy * unit_magnetic*unit_length**2
+          call sum_xy (Bz_flux_local, Bz_flux)
           write (*,*) 'Total vertical flux: sum(|Bz|)*(dx*dy) [T*m^2] =', Bz_flux
         endif
       endif
