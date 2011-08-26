@@ -63,8 +63,12 @@ default, quantities, { $
 	currentdensity:'j', $
 	ohmic_heating_rate:'HR_ohm', $
 	magnetic_energy:'rho_mag', $
+	magnetic_field_x:'bx', $
+	magnetic_field_y:'by', $
 	magnetic_field_z:'bz', $
 	velocity:'u_abs', $
+	velocity_x:'u_x', $
+	velocity_y:'u_y', $
 	velocity_z:'u_z', $
 	logarithmic_density:'log_rho', $
 	impulse_density_z:'rho_u_z' }
@@ -140,14 +144,17 @@ if (not pc_gui_loaded) then BEGIN
 		endif
 	endif
 
-	if (file_test (procdir+crashfile)) then begin
-		print, "A '"+crashfile+"' exists, do you want to load it instead of '"+varfile+"'?"
+	default, addfile, crashfile
+	if (file_test (procdir+addfile)) then begin
+		print, "A '"+addfile+"' exists, do you want to load it instead of '"+varfile+"'? / as additional file?"
 		repeat begin
 			answer = "y"
-			read, answer, format="(A)", prompt="(Y)es / (N)o: "
-		end until (any (strcmp (answer, ['n', 'y'], /fold_case)))
-		if (strcmp (answer, 'y', /fold_case)) then varfile = crashfile
+			read, answer, format="(A)", prompt="(Y)es / (N)o / (A)dditional: "
+		end until (any (strcmp (answer, ['n', 'y', 'a'], /fold_case)))
+		if (strcmp (answer, 'y', /fold_case)) then varfile = addfile
+		if (not strcmp (answer, 'a', /fold_case)) then addfile = ""
 	end
+	if (addfile) then num_additional = 1 else num_additional = 0
 
 	if (n_elements (nghost) gt 0) then begin
 		nghost_x = nghost
@@ -298,25 +305,30 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	prepare_varset, num_selected+1, units, coords, varset, overplot, datadir, param, run_param
+	prepare_varset, 1+num_additional+num_selected, units, coords, varset, overplot, datadir, param, run_param
+
+	if (addfile) then begin
+		; Precalculate additional timestep
+		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+	end
 
 	; Precalculate initial timestep
-	precalc, 0, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+	precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, num_selected, varfile=snapshots[skipping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
+		precalc, num_selected+num_additional, varfile=snapshots[skipping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
 		if (skipping ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
 			pos_last = skipping + (num_selected-1)*stepping
-			precalc, 1, varfile=snapshots[pos_last], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
+			precalc, 1+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
 			if (ignore_end ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start, end_time=time_end
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
 					; Precalculate selected timesteps
 					pos = skipping + (i-1)*stepping
-					precalc, num_selected+1-i, varfile=snapshots[pos], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+					precalc, num_selected-i+1+num_additional, varfile=snapshots[pos], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 				end
 			end
 		end
