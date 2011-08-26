@@ -858,11 +858,11 @@ module Forcing
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: rho1,ff,ruf,uf,of,rho
+      real, dimension (nx) :: rho1,ruf,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: force_all
-      real, dimension (nx,3) :: fda,uu,oo,bb,fxb
+      real, dimension (nx,3) :: fda
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
