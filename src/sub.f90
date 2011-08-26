@@ -3469,8 +3469,8 @@ module Sub
 !
 !  Smooth unit step function centred at x0; implemented as tanh profile.
 !
-!   5-sep-08/dhruba: copied from step
-!   9-nov-10/axel: no need to have the tini here
+!   05-sep-08/dhruba: copied from step
+!   09-nov-10/axel: no need to have the tini here
 !
       real :: x
       real :: step_scalar
@@ -3486,14 +3486,16 @@ module Sub
     function step(x,x0,width)
 !
 !  Smooth unit step function centred at x0; implemented as tanh profile
-!
+!  
 !  23-jan-02/wolf: coded
+!  25-aug-11/wlad: no need to have the tini here either
 !
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: step
       real :: x0,width
 !
-      step = 0.5*(1+tanh((x-x0)/(width+tini)))
+      if (width==0) call fatal_error('step','width must not be zero')
+      step = 0.5*(1+tanh((x-x0)/width))
 !
     endfunction step
 !***********************************************************************
@@ -3512,7 +3514,8 @@ module Sub
 !  Some argument gymnastics to avoid `floating overflow' for large
 !  arguments.
 !
-      arg = abs((x-x0)/(width+tini))
+      if (width==0) call fatal_error('der_step','width must not be zero')
+      arg = abs((x-x0)/width)
       arg = min(arg,8.)         ! cosh^2(8) = 3e+27
       der_step = 0.5/(width*cosh(arg)**2)
 !
@@ -3529,16 +3532,18 @@ module Sub
 !
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: der6_step,arg,sechx,tanhx
-      real :: x0,width
+      real :: x0,width,width1
 !
 !  Some argument gymnastics to avoid `floating overflow' for large
 !  arguments.
 !
-      arg = abs((x-x0)/(width+tini))
+      if (width==0) call fatal_error('der6_step','width must not be zero')
+      width1=1./width
+      arg = abs((x-x0)*width1)
       tanhx=tanh(arg)
       arg = min(arg,8.)         ! cosh^2(8) = 3e+27
       sechx=1./cosh(arg)
-      der6_step = (1./(2*width**6))*(&
+      der6_step = (.5*width1**6)*(&
              -272.0*(sechx**6)*tanhx+416.0*(sechx**4)*(tanhx**3) &
              -32.0*(sechx**2)*(tanhx**5) )
 !
@@ -3554,7 +3559,8 @@ module Sub
       real, dimension(size(x,1)) :: stepdown
       real :: x0,width
 !
-      stepdown = -0.5*(1+tanh((x-x0)/(width+tini)))
+      if (width==0) call fatal_error('stepdown','width must not be zero')
+      stepdown = -0.5*(1+tanh((x-x0)/width))
 !
     endfunction stepdown
 !***********************************************************************
@@ -3573,7 +3579,8 @@ module Sub
 !  Some argument gymnastics to avoid `floating overflow' for large
 !  arguments.
 !
-      arg = abs((x-x0)/(width+tini))
+      if (width==0) call fatal_error('der_stepdown','width must not be zero')
+      arg = abs((x-x0)/width)
       arg = min(arg,8.)         ! cosh^2(8) = 3e+27
       der_stepdown = -0.5/(width*cosh(arg)**2)
 !
@@ -3598,8 +3605,9 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
+      if (width==0) call fatal_error('cubic_step_pt','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      xi = (x-x0)/(width+tini) - relshift
+      xi = (x-x0)/width - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
       cubic_step_pt = 0.5 + xi*(0.75-xi**2*0.25)
@@ -3619,8 +3627,9 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
+      if (width==0) call fatal_error('cubic_step_mn','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      xi = (x-x0)/(width+tini) - relshift
+      xi = (x-x0)/width - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
       cubic_step_mn = 0.5 + xi*(0.75-xi**2*0.25)
@@ -3640,8 +3649,9 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
+      if (width==0) call fatal_error('cubic_der_step_pt','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      width1 = 1./(width+tini)
+      width1 = 1./width
       xi = (x-x0)*width1 - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
@@ -3662,8 +3672,9 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
+      if (width==0) call fatal_error('cubic_der_step_mn','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      width1 = 1./(width+tini)
+      width1 = 1./width
       xi = (x-x0)*width1 - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
@@ -3689,8 +3700,9 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
+      if (width==0) call fatal_error('quintic_step_pt','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      xi = (x-x0)/(width+tini) - relshift
+      xi = (x-x0)/width - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
       quintic_step_pt = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
@@ -3711,8 +3723,9 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
+      if (width==0) call fatal_error('quintic_step_mn','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      xi = (x-x0)/(width+tini) - relshift
+      xi = (x-x0)/width - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
       quintic_step_mn = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
@@ -3733,8 +3746,9 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
+      if (width==0) call fatal_error('quintic_der_step_pt','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      width1 = 1./(width+tini)
+      width1 = 1./width
       xi = (x-x0)*width1 - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
@@ -3757,8 +3771,9 @@ module Sub
       real, optional :: shift
       real :: relshift,width1
 !
+      if (width==0) call fatal_error('quintic_der_step_mn','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      width1 = 1./(width+tini)
+      width1 = 1./width
       xi = (x-x0)*width1 - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
@@ -3785,8 +3800,9 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
+      if (width==0) call fatal_error('sine_step_pt','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      xi = (x-x0)/(width+tini) - relshift
+      xi = (x-x0)/width - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
       sine_step_pt = 0.5*(1+sin(0.5*pi*xi))
@@ -3807,8 +3823,9 @@ module Sub
       real, optional :: shift
       real :: relshift
 !
+      if (width==0) call fatal_error('sine_step_mn','width must not be zero')
       if (present(shift)) then; relshift=shift; else; relshift=0.0; endif
-      xi = (x-x0)/(width+tini) - relshift
+      xi = (x-x0)/width - relshift
       xi = max(xi,-1.0)
       xi = min(xi, 1.0)
       sine_step_mn = 0.5*(1+sin(0.5*pi*xi))
