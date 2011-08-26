@@ -4572,15 +4572,15 @@ module Initcond
         if ((nxgrid==1).and.(nygrid/=1)) then
           Bz_flux_local = sum(abs(Bz)) * dy * unit_magnetic*unit_length
           call sum_xy (Bz_flux_local, Bz_flux)
-          write (*,*) 'Total vertical flux: sum(|Bz|)*dy [T*m] =', Bz_flux
+          if (lroot) write (*,*) 'Total vertical flux: sum(|Bz|)*dy [T*m] =', Bz_flux
         elseif ((nxgrid/=1).and.(nygrid==1)) then
           Bz_flux_local = sum(abs(Bz)) * dx * unit_magnetic*unit_length
           call sum_xy (Bz_flux_local, Bz_flux)
-          write (*,*) 'Total vertical flux: sum(|Bz|)*dx [T*m] =', Bz_flux
+          if (lroot) write (*,*) 'Total vertical flux: sum(|Bz|)*dx [T*m] =', Bz_flux
         elseif ((nxgrid/=1).and.(nygrid/=1)) then
           Bz_flux_local = sum(abs(Bz)) * dx*dy * unit_magnetic*unit_length**2
           call sum_xy (Bz_flux_local, Bz_flux)
-          write (*,*) 'Total vertical flux: sum(|Bz|)*(dx*dy) [T*m^2] =', Bz_flux
+          if (lroot) write (*,*) 'Total vertical flux: sum(|Bz|)*(dx*dy) [T*m^2] =', Bz_flux
         endif
       endif
 !
