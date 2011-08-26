@@ -317,8 +317,26 @@ endif else begin
   nzg=nz
 endelse
 ;
-;  Define arrays to put data in.
-;  The user must supply the length of the time dimension (nit).
+;  Define arrays to put data in. The user may supply the length of
+;  the time dimension (nit). Otherwise nit will be read from the
+;  file data/t2davg.dat.
+;
+if (not keyword_set(nit)) then begin
+;
+;  Test if the file that stores the time and 
+;  number of 2d-averages, t2davg, exists.
+;
+   file_t2davg=datadir+'/t2davg.dat'
+   if (not file_test(file_t2davg)) then begin
+      print, 'ERROR: cannot find file '+ file_t2davg
+      stop
+   endif
+   openr,9,file_t2davg
+   dummy_real=0d0 & dummy_int=0
+   readf,9,dummy_real,dummy_int
+   close,9
+   nit=dummy_int-1
+endif
 ;
 if (nit gt 0) then begin
 ;
