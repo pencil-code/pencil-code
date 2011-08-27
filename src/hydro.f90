@@ -133,7 +133,7 @@ module Hydro
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
   real :: ekman_friction=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
-  real :: ampl_fcont_uu=1., k_diffrot=1.
+  real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -167,7 +167,7 @@ module Hydro
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       utop, ubot, omega_out, omega_in, lprecession, omega_precession, &
       alpha_precession, lshear_rateofstrain, &
-      lalways_use_gij_etc, &
+      lalways_use_gij_etc, amp_centforce, &
       lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
@@ -2911,7 +2911,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: c2,s2
+      real :: c2,s2,Om2
 !
 !  info about coriolis_spherical term
 !
@@ -2947,11 +2947,11 @@ module Hydro
       endif
 !
 !  Centrifugal force
-! The terms added is F_{centrifugal} = - \Omega X \Omega X r
+!  The term added is F_{centrifugal} = - \Omega X \Omega X r
 !
       if (lcentrifugal_force) then
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-x(l1:l2)*sinth(m)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-x(l1:l2)*sinth(m)*costh(m)
+        Om2=amp_centforce*Omega**2
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Om2*x(l1:l2)*sinth(m)
       endif
 !
     endsubroutine coriolis_spherical
