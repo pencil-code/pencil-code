@@ -73,6 +73,7 @@ module Entropy
   real, dimension(mx), target :: zrho
   real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0, alpha_MLT=0.0, xbot_aniso=0.0, xtop_aniso=0.0
+  real :: zz1=impossible, zz2=impossible
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
@@ -159,7 +160,8 @@ module Entropy
       chit_aniso, chit_aniso_prof1, chit_aniso_prof2, &
       lchit_aniso_simplified, lconvection_gravx, &
       ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
-      nkramers, xbot_aniso, xtop_aniso, entropy_floor, lprestellar_cool_iso
+      nkramers, xbot_aniso, xtop_aniso, entropy_floor, lprestellar_cool_iso, &
+      zz1, zz2
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -243,6 +245,7 @@ module Entropy
   integer :: idiag_ssmx=0       ! YZAVG_DOC: $\left< s \right>_{yz}$
   integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left< p \right>_{yz}$
   integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left< T \right>_{yz}$
+  integer :: idiag_uxTTmx=0     ! YZAVG_DOC: $\left< u_x T \right>_{yz}$
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -2349,7 +2352,7 @@ module Entropy
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
-          idiag_uzTTmz/=0 .or. idiag_TT2mz/=0) &
+          idiag_uzTTmz/=0 .or. idiag_TT2mz/=0 .or. idiag_uxTTmx/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0 .or. &
           idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0) &
@@ -2763,6 +2766,8 @@ module Entropy
         if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
         if (idiag_uxTTmz/=0) &
             call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
+        if (idiag_uxTTmx/=0) &
+            call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
         if (idiag_uyTTmz/=0) &
             call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
         if (idiag_uzTTmz/=0) &
@@ -4801,7 +4806,7 @@ module Entropy
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
-        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0;
+        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0;
         idiag_fradxy_Kprof=0; idiag_fconvxy=0;
         idiag_fradz_kramers=0; idiag_fradxy_kramers=0;
@@ -4850,6 +4855,7 @@ module Entropy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxTTmx',idiag_uxTTmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -5217,25 +5223,40 @@ module Entropy
 !***********************************************************************
     subroutine get_gravz_chit()
 !
-! Calculate z dependent chi_t and its gradient
-! and stores them in the arrays which are saved at the first time
-! step and used in all the next.
+!  Calculate z-dependent chi_t and its gradient and store them in 
+!  arrays which are saved at the first time step and used in all the next.
 !
 !  25-feb-2011/gustavo+dhruba: stolen from chit_profile below
 !
       use Gravity, only: z1, z2
       use Sub, only: step,der_step
 !
+      real :: zbot, ztop
+!
       if (.not.lmultilayer) call fatal_error('get_gravz_chit:',&
            'dont call if you have only one layer')
 !
-      chit_zprof = 1 + (chit_prof1-1)*step(z,z1,-widthss) &
-                        + (chit_prof2-1)*step(z,z2,widthss)
-      gradlogchit_zprof(:,1:2) = 0.
-      gradlogchit_zprof(:,3) = (chit_prof1-1)*der_step(z,z1,-widthss) &
-           + (chit_prof2-1)*der_step(z,z2,widthss)
+!  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
-endsubroutine get_gravz_chit
+      if (zz1 == impossible) then 
+          zbot=z1
+      else
+          zbot=zz1
+      endif
+!
+      if (zz2 == impossible) then 
+          ztop=z2
+      else
+          ztop=zz2
+      endif
+!
+      chit_zprof = 1 + (chit_prof1-1)*step(z,zbot,-widthss) &
+                     + (chit_prof2-1)*step(z,ztop,widthss)
+      gradlogchit_zprof(:,1:2) = 0.
+      gradlogchit_zprof(:,3) = (chit_prof1-1)*der_step(z,zbot,-widthss) &
+           + (chit_prof2-1)*der_step(z,ztop,widthss)
+!
+    endsubroutine get_gravz_chit
 !***********************************************************************
     subroutine chit_profile(chit_prof)
 !
