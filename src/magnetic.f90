@@ -2195,7 +2195,7 @@ module Magnetic
 ! uxj
       if (lpencil(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
 ! beta1
-      if (lpencil(i_beta1)) p%beta1=0.5*p%b2/p%pp
+      if (lpencil(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
 ! djuidjbi
       if (lpencil(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
 ! jo

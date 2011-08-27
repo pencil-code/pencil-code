@@ -1256,7 +1256,7 @@ module Magnetic
 ! uxj
       if (lpencil(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
 ! beta1
-      if (lpencil(i_beta1)) p%beta1=0.5*p%b2/p%pp
+      if (lpencil(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
 ! djuidjbi
       if (lpencil(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
 ! jo
@@ -1857,12 +1857,12 @@ module Magnetic
 !  Plasma beta
 !
        case ('beta1')
-          slices%yz =>jb_yz
-          slices%xz =>jb_xz
-          slices%xy =>jb_xy
-          slices%xy2=>jb_xy2
-          if (lwrite_slice_xy3) slices%xy3=>jb_xy3
-          if (lwrite_slice_xy4) slices%xy4=>jb_xy4
+          slices%yz =>beta1_yz
+          slices%xz =>beta1_xz
+          slices%xy =>beta1_xy
+          slices%xy2=>beta1_xy2
+          if (lwrite_slice_xy3) slices%xy3=>beta1_xy3
+          if (lwrite_slice_xy4) slices%xy4=>beta1_xy4
           slices%ready=.true.
 !
       endselect
