@@ -10,7 +10,7 @@ import struct
 
 def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
            variables = ['rho','uu','bb'], magic = ['vort','bb'],
-           destination = 'work.vtk', quiet = False):
+           destination = 'work', quiet = False):
     """
     Convert data from PencilCode format to vtk.
 
@@ -58,9 +58,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     dy = (np.max(grid.y) - np.min(grid.y))/(dimy)
     dz = (np.max(grid.z) - np.min(grid.z))/(dimz)
     
-    fd = open(destination, 'wb')
+    fd = open(destination + '.vtk', 'wb')
     fd.write('# vtk DataFile Version 2.0\n')
-    fd.write('density + magnetic field\n')
+    fd.write('VAR files\n')
     fd.write('BINARY\n')
     fd.write('DATASET STRUCTURED_POINTS\n')
     fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz))
@@ -201,7 +201,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
 
 def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
            variables = ['rho','uu','bb'], magic = ['vort','bb'],
-           destination = 'animation', quiet = False):
+           destination = 'animation', quiet = True):
     """
     Convert data from PencilCode format to vtk.
 
@@ -257,7 +257,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         fd = open(destination + str(i) + '.vtk', 'wb')
         fd.write('# vtk DataFile Version 2.0\n')
         fd.write('density + magnetic field\n')
-        fd.write('BINARY\n')
+        fd.write('BINARY\n')        
         fd.write('DATASET STRUCTURED_POINTS\n')
         fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz))
         fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]))
