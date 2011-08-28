@@ -3,7 +3,7 @@
 !  This module can replace the entropy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas
 !  with constant coefficients (no ionization) we have:
-!  (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
+!  (1-1/gamma) * cp*T = cs20 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
 !
 !  Note that to use lnTT as thermal variable, you may rather want to use
 !  entropy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
