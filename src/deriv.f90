@@ -846,7 +846,7 @@ module Deriv
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
-! calculates gradient of a scalar along the direction j but
+! Calculates gradient of a scalar along the direction j but
 ! get for the derivatives at the point i-1,i,i+1
 !
       intent(in) :: f,k,j
@@ -859,8 +859,7 @@ module Deriv
       integer :: j,k
       integer :: i,ii,ix
       real :: tmp1,tmp2,tmp3
-
-! three cases for three components
+! x-component
       select case (k)
         case(1)
           do i=l1-1,l2+1
@@ -1626,10 +1625,10 @@ module Deriv
       if (j == 1) then
         if (nxgrid /= 1) then
           do l=1,nx
-            if (uu(3+l,1) > 0.) then
-              df(l) = (f(3+l,m,n,k) - f(3+l-1,m,n,k))/dx
+            if (uu(l,1) > 0.) then
+              df(l) = (f(nghost+l  ,m,n,k) - f(nghost+l-1,m,n,k))/dx
             else
-              df(l) = (f(3+l+1,m,n,k) - f(3+l,m,n,k))/dx
+              df(l) = (f(nghost+l+1,m,n,k) - f(nghost+l  ,m,n,k))/dx
             endif
           enddo
         else
@@ -1640,9 +1639,9 @@ module Deriv
         if (nygrid /= 1) then
           do l=1,nx
             if (uu(l,2) > 0.) then
-              df(l) = (f(3+l,m,n,k) - f(3+l,m-1,n,k))/dy
+              df(l) = (f(nghost+l,m  ,n,k) - f(nghost+l,m-1,n,k))/dy
             else
-              df(l) = (f(3+l,m+1,n,k) - f(3+l,m,n,k))/dy
+              df(l) = (f(nghost+l,m+1,n,k) - f(nghost+l,m  ,n,k))/dy
             endif
           enddo
         else
@@ -1653,9 +1652,9 @@ module Deriv
         if (nzgrid /= 1) then
           do l=1,nx
             if (uu(l,3) > 0.) then
-              df(l) = (f(3+l,m,n,k) - f(3+l,m,n-1,k))/dz
+              df(l) = (f(nghost+l,m,n,k  ) - f(nghost+l,m,n-1,k))/dz
             else
-              df(l) = (f(3+l,m,n+1,k) - f(3+l,m,n,k))/dz
+              df(l) = (f(nghost+l,m,n+1,k) - f(nghost+l,m,n,k  ))/dz
             endif
           enddo
         else
