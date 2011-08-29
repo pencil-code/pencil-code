@@ -314,8 +314,7 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			num_subplots += 1
 			mass = ts.totmass * unit.mass / unit.default_mass
 			energy = (ts.eem + ts.ekintot/ts.totmass) * unit.mass / unit.velocity^2
-			plot, time, energy, title = 'Energy {w} and mass {.r} conservation', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ys=6, /noerase
-			axis, yaxis=0, yrange=!Y.CRANGE, /ys, ytitle='mean energy [J]'
+			plot, time, energy, title = 'Energy {w} and mass {.r} conservation', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='<E> [J]', ys=10, /noerase
 			plot, time, mass, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), ys=6, /noerase
 			axis, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='total mass ['+unit.default_mass_str+']'
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
@@ -328,12 +327,11 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
-			plot, time, Temp_max, title = 'Maximum temperature [K] {w} and average Ohmic heating rate [W/m^3] {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
-			axis, yaxis=0, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='Maximum temperature [K]'
+			plot, time, Temp_max, title = 'Maximum temperature {w} and mean Ohmic heating rate {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='maximum temperature [K]', /yl, ys=10, /noerase
 			plot, time, HR_ohm, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
-			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='HR_ohm [W/m^3]'
+			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='HR = <eta*mu0*j^2> [W/m^3]'
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
-		end else if (any (strcmp (tags, 'TTmax1', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		end else if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
 			plot, time, Temp_max, title = 'Maximum temperature [K]', xrange=x_minmax, /xs, /yl
@@ -342,10 +340,9 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			mu0_SI = 4.0 * !Pi * 1.e-7
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
 			j_abs = sqrt (ts.j2m) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-			plot, time, HR_ohm, title = 'Ohmic heating rate [W/m^3] {w} and mean current density [A/m^2] {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
-			axis, yaxis=0, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='Ohmic heating rate [W/m^3]'
+			plot, time, HR_ohm, title = 'Ohmic heating rate {w} and mean current density {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='HR = <eta*mu0*j^2> [W/m^3]', /yl, ys=10, /noerase
 			plot, time, j_abs, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
-			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='current density [A/m^2]'
+			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='sqrt(<j^2>) [A/m^2]'
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 		end
 		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
@@ -354,7 +351,9 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			u_title = 'u_max(t){w}'
 			if (any (strcmp (tags, 'urms', /fold_case))) then begin
 				u_title += ' u_rms{.r}'
-			end else if (any (strcmp (tags, 'u2m', /fold_case))) then u_title += ' <u^2>^0.5{.-b}'
+			end else if (any (strcmp (tags, 'u2m', /fold_case))) then begin
+				u_title += ' sqrt(<u^2>){.-b}'
+			end
 			plot, time, u_max, title = u_title+' ['+unit.default_velocity_str+']', xrange=x_minmax, /xs
 			if (any (strcmp (tags, 'urms', /fold_case))) then begin
 				urms = ts.urms * unit.velocity / unit.default_velocity
