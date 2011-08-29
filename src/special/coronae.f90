@@ -774,7 +774,7 @@ module Special
       real, dimension (nx) :: hc
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
-      if (Kpara /= 0.) call calc_heatcond_tensor(df,p)
+      if (Kpara /= 0.) call calc_heatcond_tensor(f,df,p)
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
@@ -784,13 +784,13 @@ module Special
       if (tau_inv_newton_mark /= 0.) call calc_newton_mark(f,df,p)
 !
 ! WARNING this is temporary
-      if (coronae_fix) then
+!      if (coronae_fix) then
 !        where (f(l1:l2,m,n,ilnrho) < log(1e-13/unit_density) )
 !          f(l1:l2,m,n,ilnrho) = log(1e-13/unit_density)
 !        endwhere
-        if (ipz == nprocz-1) &
-            f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2-3,ilnTT))/(14.*nx*ny)
-      endif
+!        if (ipz == nprocz-1) &
+!            f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2-3,ilnTT))/(14.*nx*ny)
+!      endif
 !
       if (hyper3_chi /= 0.) then
         call del6(f,ilnTT,hc,IGNOREDX=.true.)
@@ -1105,22 +1105,25 @@ module Special
 !
     endsubroutine tensor_diffusion
 !**********************************************************************
-    subroutine calc_heatcond_tensor(df,p)
+    subroutine calc_heatcond_tensor(f,df,p)
 !
 !    anisotropic heat conduction with T^5/2
 !    Div K T Grad ln T
 !      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
 !
+      use Deriv,           only : der_upwind1st
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
       use EquationOfState, only : gamma
 !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: hhh,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
       real, dimension (nx) :: chi_spitzer,rhs,u_spitzer
       real, dimension (nx) :: chi_clight,chi_2
+      real, dimension (nx,3) :: glnTT_upwind
       integer :: i,j,k
       real :: ksatb
       type (pencil_case) :: p
@@ -1164,7 +1167,10 @@ module Special
         enddo
       enddo
 !
-      gKp = 3.5 * p%glnTT
+      do i=1,3
+        call der_upwind1st(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+      enddo
+      gKp = 3.5*glnTT_upwind
 !
       call dot2(p%glnTT,glnTT2)
 !
@@ -1197,7 +1203,7 @@ module Special
       endif
 !
       call dot(p%bunit,gKp,tmpj)
-      call dot(p%bunit,p%glnTT,tmpk)
+      call dot(p%bunit,glnTT_upwind,tmpk)
       rhs = rhs + tmpj*tmpk
 !
       call multmv(p%hlnTT,p%bunit,tmpv)
@@ -1467,6 +1473,8 @@ module Special
 !  lnneni = 2*p%lnrho + log(1.17) - 2*log(1.34)-2.*log(real(m_p))
 !
       lnneni = 2.*(p%lnrho+61.4412 +log(real(unit_mass)))
+!      lnneni = (1.+cubic_step(z(n)*unit_length,4e6,1e6))* &
+!          (p%lnrho+61.4412 +log(real(unit_mass)))
 !
       lnQ = get_lnQ(lnTT_SI)
 !
@@ -3360,15 +3368,13 @@ module Special
 !
       rhs = gamma*chix*tmp
 !
-      if ((.not. llast_proc_z) .or. (n < n2-3)) &
-          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
 !
 !      if (itsub == 3 .and. ip == 118) &
 !          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
-        advec_cs2=max(advec_cs2,maxval(chix*dxyz_2))
         if (ldiagnos.and.idiag_dtchi2/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
