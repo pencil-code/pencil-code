@@ -1160,6 +1160,8 @@ module Diagnostics
     subroutine sum_name(a,iname)
 !
 !  Calculate the summation of a, which is supplied at each call.
+!  In subroutine 'diagnostic', the mean is calculated.
+!  TODO: rename 'ilabel_sum' as 'ilabel_mean'.
 !
 !  17-jun-09/ccyang: adapted from max_name
 !  03-sep-09/MR: corrected to real sum
@@ -1218,9 +1220,13 @@ module Diagnostics
 !***********************************************************************
     subroutine sum_mn_name(a,iname,lsqrt,lint,ipart)
 !
-!  successively calculate sum of a, which is supplied at each call.
+!  Successively calculate sum of a, which is supplied at each call.
+!  In subroutine 'diagnostic', the mean is calculated; if 'lint' is
+!  explicitly given and true, the integral is calculated, instead.
+!  With 'lsqrt=.true.', a square root is applied after building the mean.
 !  Start from zero if lfirstpoint=.true.
 !  TODO: for nonperiodic arrays we want to multiply boundary data by 1/2.
+!  TODO: rename 'ilabel_sum{_sqrt}' as 'ilabel_mean{_sqrt}'.
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
@@ -1228,6 +1234,7 @@ module Diagnostics
 !  20-jun-07/dhruba: adapted for spherical polar coordinate system
 !  30-aug-07/wlad: adapted for cylindrical coordinates
 !  22-mar-08/axel: added ladd option, to add to previous values
+!  29-aug-2011/Bourdin.KIS: added TODO and a comment about building the mean
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of
