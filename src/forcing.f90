@@ -132,7 +132,8 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
-  integer :: idiag_ruxfxm=0, idiag_ruxfym=0, idiag_ruyfxm=0, idiag_ruyfym=0
+  integer :: idiag_ruxfxm=0, idiag_ruyfym=0, idiag_ruzfzm=0
+  integer :: idiag_ruxfym=0, idiag_ruyfxm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 !
   contains
@@ -854,7 +855,7 @@ module Forcing
       use Mpicomm
       use Sub
 !
-      real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym
+      real :: phase,ffnorm,irufm,iruxfxm,iruxfym,iruyfxm,iruyfym,iruzfzm
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
@@ -1124,7 +1125,7 @@ module Forcing
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
       force_ampl=1.0
-      irufm=0; iruxfxm=0; iruxfym=0; iruyfxm=0; iruyfym=0
+      irufm=0; iruxfxm=0; iruxfym=0; iruyfxm=0; iruyfym=0; iruzfzm=0
       if (rcyl_ff == 0) then       ! no radial profile
         do n=n1,n2
           do m=m1,m2
@@ -1210,7 +1211,8 @@ module Forcing
             if (lout) then
               if (idiag_rufm/=0 .or. &
                   idiag_ruxfxm/=0 .or. idiag_ruxfym/=0 .or. &
-                  idiag_ruyfxm/=0 .or. idiag_ruyfym/=0 ) then
+                  idiag_ruyfxm/=0 .or. idiag_ruyfym/=0 .or. &
+                  idiag_ruzfzm/=0) then
 !
 !  Compute rhs and density.
 !
@@ -1236,6 +1238,8 @@ module Forcing
                     rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,1))
                 if (idiag_ruyfym/=0) iruyfym=iruyfym+sum( &
                     rho*f(l1:l2,m,n,iuy)*forcing_rhs(:,2))
+                if (idiag_ruzfzm/=0) iruzfzm=iruzfzm+sum( &
+                    rho*f(l1:l2,m,n,iuz)*forcing_rhs(:,3))
               endif
             endif
 !
@@ -1316,6 +1320,14 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
           call mpibcast_real(iruyfym,1)
           fname(idiag_ruyfym)=iruyfym
           itype_name(idiag_ruyfym)=ilabel_sum
+        endif
+        if (idiag_ruzfzm/=0) then
+          fsum_tmp(1)=iruzfzm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          iruzfzm=fsum(1)
+          call mpibcast_real(iruzfzm,1)
+          fname(idiag_ruzfzm)=iruzfzm
+          itype_name(idiag_ruzfzm)=ilabel_sum
         endif
       endif
 !
@@ -4233,7 +4245,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       if (lreset) then
         idiag_rufm=0; idiag_ufm=0; idiag_ofm=0; idiag_ffm=0
-        idiag_ruxfxm=0; idiag_ruxfym=0; idiag_ruyfxm=0; idiag_ruyfym=0
+        idiag_ruxfxm=0; idiag_ruyfym=0; idiag_ruzfzm=0
+        idiag_ruxfym=0; idiag_ruyfxm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
 !
@@ -4246,6 +4259,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         call parse_name(iname,cname(iname),cform(iname),'ruxfym',idiag_ruxfym)
         call parse_name(iname,cname(iname),cform(iname),'ruyfxm',idiag_ruyfxm)
         call parse_name(iname,cname(iname),cform(iname),'ruyfym',idiag_ruyfym)
+        call parse_name(iname,cname(iname),cform(iname),'ruzfzm',idiag_ruzfzm)
         call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)
         call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
         call parse_name(iname,cname(iname),cform(iname),'ffm',idiag_ffm)
