@@ -97,8 +97,8 @@ module Viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
-  integer :: idiag_visc_heatm=0 ! DIAG_DOC:
-  integer :: idiag_epsK=0  ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
+  integer :: idiag_visc_heatm=0 ! DIAG_DOC: Mean value of viscous heating
+  integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
                                 ! DIAG_DOC:   \delta x^2/\nu_{\rm max}]$
