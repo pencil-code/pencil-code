@@ -323,18 +323,43 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			mass = ts.totmass * unit.mass / unit.default_mass
 			plot, time, mass, title = 'Mass conservation', xrange=x_minmax, /xs
 		end
-		if (any (strcmp (tags, 'TTmax', /fold_case)) and any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		if (any (strcmp (tags, 'TTmax', /fold_case)) and any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
-			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
-			plot, time, Temp_max, title = 'Maximum temperature {w} and mean Ohmic heating rate {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='maximum temperature [K]', /yl, ys=10, /noerase
-			plot, time, HR_ohm, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
-			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='HR = <eta*mu0*j^2> [W/m^3]'
+			rho_min = ts.rhomin * unit.density / unit.default_density
+			plot, time, Temp_max, title = 'Maximum temperature {w} and minimum density {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='maximum temperature [K]', /yl, ys=10, /noerase
+			plot, time, rho_min, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
+			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='minimum density ['+unit.default_density_str+']'
+			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+		end else if (any (strcmp (tags, 'TTm', /fold_case)) and any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			Temp_mean = ts.TTm * unit.temperature
+			rho_min = ts.rhomin * unit.density / unit.default_density
+			plot, time, Temp_mean, title = 'Mean temperature {w} and minimum density {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='<T> [K]', /yl, ys=10, /noerase
+			plot, time, rho_min, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
+			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='minimum density ['+unit.default_density_str+']'
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 		end else if (any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
 			plot, time, Temp_max, title = 'Maximum temperature [K]', xrange=x_minmax, /xs, /yl
+		end else if (any (strcmp (tags, 'TTm', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			Temp_mean = ts.TTm * unit.temperature
+			plot, time, Temp_mean, title = 'Mean temperature [K]', xrange=x_minmax, /xs, /yl
+		end else if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			rho_min = ts.rhomin * unit.density / unit.default_density
+			plot, time, rho_min, title = 'rho_min(t) ['+unit.default_density_str+']', xrange=x_minmax, /xs, /yl
+		end
+		if (any (strcmp (tags, 'j2m', /fold_case)) and any (strcmp (tags, 'visc_heatm', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
+			visc_heat_mean = ts.visc_heatm * unit.density * unit.velocity^3 / unit.length
+			plot, time, HR_ohm, title = 'Ohmic heating rate {w} and viscous heating rate {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='HR = <eta*mu0*j^2> [W/m^3]', /yl, ys=10, /noerase
+			plot, time, visc_heat_mean, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
+			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='viscous heating [W/m^3]'
+			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 		end else if (any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			mu0_SI = 4.0 * !Pi * 1.e-7
@@ -344,6 +369,10 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			plot, time, j_abs, linestyle=1, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), /yl, ys=6, /noerase
 			axis, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='sqrt(<j^2>) [A/m^2]'
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+		end else if (any (strcmp (tags, 'visc_heatm', /fold_case)) and (num_subplots lt max_subplots)) then begin
+			num_subplots += 1
+			visc_heat_mean = ts.visc_heatm * unit.density * unit.velocity^3 / unit.length
+			plot, time, visc_heat_mean, title = 'Viscous heating rate', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), ytitle='viscous heating [W/m^3]', /yl
 		end
 		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
@@ -362,11 +391,6 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 				u2m = sqrt (ts.u2m) * unit.velocity / unit.default_velocity
 				oplot, time, u2m, linestyle=3, color=115100200
 			end
-		end
-		if (any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			rho_min = ts.rhomin * unit.density / unit.default_density
-			plot, time, rho_min, title = 'rho_min(t) ['+unit.default_density_str+']', xrange=x_minmax, /xs, /yl
 		end
 	end
 end
