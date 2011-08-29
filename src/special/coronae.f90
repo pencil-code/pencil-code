@@ -3274,13 +3274,14 @@ module Special
 !
 ! Linear interpolate data
 !
-!      inte = (t*unit_time - (tl+delta_t))*(right-left)/(tr-tl)+left
+      inte = (t*unit_time - (tl+delta_t))*(right-left)/(tr-tl)+left
 !
 ! Use cubic step to interpolate the data.
 !
 !
-      inte = cubic_step(real(t*unit_time)-tl,0.5*(tr-tl),0.5*(tr-tl))* &
-          (right-left) +left
+!      inte = cubic_step(real(t*unit_time)-tl,0.5*(tr-tl),0.5*(tr-tl))* &
+!          (right-left) +left
+
       do i=1,4
         f(l1:l2,m1:m2,n1+1-i,iux) = inte(:,:,n1+1-i,1) / unit_velocity
         f(l1:l2,m1:m2,n1+1-i,iuy) = inte(:,:,n1+1-i,2) / unit_velocity
