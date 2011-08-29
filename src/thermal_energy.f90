@@ -624,14 +624,26 @@ module Entropy
 !
 !  Trap any negative energy or impose a floor in minimum thermal energy.
 !
-!  08-aug-11/ccyang: coded
+!  29-aug-11/ccyang: coded
 !
       real, dimension(mx,my,mz,mfarray) :: f
+!
+      integer :: i, j, k
 !
 !  Stop the code if negative energy exists.
 !
       if (lcheck_negative_energy) then
-        if (any(f(:,:,:,ieth) <= 0.)) call fatal_error('impose_energy_floor', 'negative energy detected')
+        if (any(f(:,:,:,ieth) <= 0.)) then
+          do k = n1, n2
+            do j = m1, m2
+              do i = l1, l2
+                if (f(i,j,k,ieth) <= 0.) print 10, f(i,j,k,ieth), x(i), y(j), z(k)
+                10 format (1x, 'eth = ', es13.6, 'at x = ', es13.6, ', y = ', es13.6, 'z = ', es13.6)
+              enddo
+            enddo
+          enddo
+          call fatal_error('impose_energy_floor', 'negative energy detected')
+        endif
       endif
 ! 
 !  Impose the energy floor.

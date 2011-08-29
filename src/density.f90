@@ -2297,6 +2297,7 @@ module Density
 !
       real, save :: density_floor_log
       logical, save :: lfirstcall=.true.
+      integer :: i, j, k
 !
 !  Impose the density floor.
 !
@@ -2317,8 +2318,17 @@ module Density
 !  Trap any negative density if no density floor is set.
 !
       if (lcheck_negative_density .and. ldensity_nolog) then
-        if (any(f(:,:,:,irho) <= 0.)) &
+        if (any(f(l1:l2,m1:m2,n1:n2,irho) <= 0.)) then
+          do k = n1, n2
+            do j = m1, m2
+              do i = l1, l2
+                if (f(i,j,k,irho) <= 0.) print 10, f(i,j,k,irho), x(i), y(j), z(k)
+                10 format (1x, 'rho = ', es13.6, 'at x = ', es13.6, ', y = ', es13.6, 'z = ', es13.6)
+              enddo
+            enddo
+          enddo
           call fatal_error_local('impose_density_floor', 'negative density detected')
+        endif
       endif
 !
     endsubroutine impose_density_floor
