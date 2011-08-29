@@ -135,7 +135,8 @@ def zder2_6th(f,dz):
     dz2 = 1./(180.*dz**2.)
     dfdz = N.zeros_like(f)
     n1 = 3
-    n2 = f.shape[1]-3
+    n2 = f.shape[-3]-3
+    print f.shape[:]
     if (n2 > n1):
         dfdz[...,n1:n2,:,:] = dz2*(-490.*f[...,n1:n2,:,:]
                               +270.*(f[...,n1-1:n2-1,:,:]+f[...,n1+1:n2+1,:,:])
