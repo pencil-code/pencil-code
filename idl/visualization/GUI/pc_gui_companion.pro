@@ -236,6 +236,9 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 		if ((start_time > 0) and (end_time > 0)) then add_title = ' (showing only selected snapshots)'
 
 		default, charsize, 1.25
+		old_x_margin = !X.margin
+		!X.margin[0] += 3
+		x_margin_both = (!X.margin > max (old_x_margin))
 
 		window, 11, xsize=1000, ysize=400, title='timestep analysis'+add_title, retain=2
 		!P.MULTI = [0, 2, 1]
@@ -316,10 +319,10 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			num_subplots += 1
 			mass = ts.totmass * unit.mass / unit.default_mass
 			energy = (ts.eem + ts.ekintot/ts.totmass) * unit.mass / unit.velocity^2
-			plot, time, energy, title = 'Energy {w} and mass {r} conservation', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, ytitle='<E> [J]', ys=10, /noerase
-			plot, time, mass, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, ys=6, /noerase
+			plot, time, energy, title = 'Energy {w} and mass {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='<E> [J]', ys=10, /noerase
+			plot, time, mass, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 			axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='total mass ['+unit.default_mass_str+']'
-			plot, time, energy, linestyle=2, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, ys=6, /noerase
+			plot, time, energy, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 		end else if (any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
@@ -330,19 +333,19 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			num_subplots += 1
 			Temp_max = ts.TTmax * unit.temperature
 			rho_min = ts.rhomin * unit.density / unit.default_density
-			plot, time, Temp_max, title = 'Maximum temperature {w} and minimum density {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, ytitle='maximum temperature [K]', /yl, ys=10, /noerase
-			plot, time, rho_min, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, /yl, ys=6, /noerase
+			plot, time, Temp_max, title = 'Maximum temperature {w} and minimum density {.r}', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='maximum temperature [K]', /yl, ys=10, /noerase
+			plot, time, rho_min, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 			axis, xc=charsize, yc=charsize, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='minimum density ['+unit.default_density_str+']'
-			plot, time, Temp_max, linestyle=2, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, /yl, ys=6, /noerase
+			plot, time, Temp_max, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 		end else if (any (strcmp (tags, 'TTm', /fold_case)) and any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			Temp_mean = ts.TTm * unit.temperature
 			rho_min = ts.rhomin * unit.density / unit.default_density
-			plot, time, Temp_mean, title = 'Mean temperature {w} and minimum density {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, ytitle='<T> [K]', /yl, ys=10, /noerase
-			plot, time, rho_min, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, /yl, ys=6, /noerase
+			plot, time, Temp_mean, title = 'Mean temperature {w} and minimum density {.r}', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='<T> [K]', /yl, ys=10, /noerase
+			plot, time, rho_min, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 			axis, xc=charsize, yc=charsize, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='minimum density ['+unit.default_density_str+']'
-			plot, time, Temp_mean, linestyle=2, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, /yl, ys=6, /noerase
+			plot, time, Temp_mean, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 		end else if (any (strcmp (tags, 'TTm', /fold_case)) and any (strcmp (tags, 'TTmax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
@@ -378,15 +381,15 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			mu0_SI = 4.0 * !Pi * 1.e-7
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
 			j_abs = sqrt (ts.j2m) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-			plot, time, HR_ohm, title = 'Mean Ohmic heating rate {w} and mean current density {.r}', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, ytitle='HR = <eta*mu0*j^2> [W/m^3]', /yl, ys=10, /noerase
-			plot, time, j_abs, color=200, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, /yl, ys=6, /noerase
+			plot, time, HR_ohm, title = 'Mean Ohmic heating rate {w} and mean current density {.r}', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='HR = <eta*mu0*j^2> [W/m^3]', /yl, ys=10, /noerase
+			plot, time, j_abs, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 			axis, xc=charsize, yc=charsize, yaxis=1, yrange=10.^(!Y.CRANGE), /ys, /yl, ytitle='sqrt(<j^2>) [A/m^2]'
-			plot, time, HR_ohm, linestyle=2, xrange=x_minmax, xs=5, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, /yl, ys=6, /noerase
+			plot, time, HR_ohm, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, /yl, ys=6, /noerase
 			!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 		end else if (any (strcmp (tags, 'visc_heatm', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			visc_heat_mean = ts.visc_heatm * unit.density * unit.velocity^3 / unit.length
-			plot, time, visc_heat_mean, title = 'Mean viscous heating rate', xrange=x_minmax, /xs, xmargin=(!X.margin > max (!X.margin)), xc=charsize, yc=charsize, ytitle='heating rate [W/m^3]', /yl
+			plot, time, visc_heat_mean, title = 'Mean viscous heating rate', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='heating rate [W/m^3]', /yl
 		end
 		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
@@ -406,6 +409,7 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 				oplot, time, u2m, linestyle=3, color=115100200
 			end
 		end
+		!X.margin = old_x_margin
 	end
 end
 
