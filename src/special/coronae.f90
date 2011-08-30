@@ -21,9 +21,9 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
-  real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper3_spi=0.,tau_inv_spitzer=0.
+  real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper3_spi=0.,hyper3_eta=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
-  real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.
+  real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=huge1
@@ -532,7 +532,7 @@ module Special
 !
         if (hyper3_spi /= 0.) then
           call del6(f,ispitzerz,hc,IGNOREDX=.true.)
-          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper3_chi*hc
+          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper3_spi*hc
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/cdts)
        endif
@@ -837,6 +837,37 @@ module Special
       endif
 !
     endsubroutine special_calc_density
+!***********************************************************************
+    subroutine special_calc_magnetic(f,df,p)
+!
+! Additional terms to the right hand side of the
+! density equation
+!
+!  17-jun-11/bing: coded
+!
+      use Sub, only: del6
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: hc
+      integer :: i
+!
+      call keep_compiler_quiet(p)
+!
+      if (hyper3_diffrho /= 0.) then
+        do i=0,2
+          call del6(f,iax+i,hc,IGNOREDX=.true.)
+          df(l1:l2,m,n,iax+i) = df(l1:l2,m,n,iax+i) + hyper3_eta*hc
+        enddo
+!
+!  due to ignoredx hyper3_diffrho has [1/s]
+!
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_eta/cdts)
+      endif
+!
+    endsubroutine special_calc_magnetic
 !***********************************************************************
     subroutine calc_heatcond_spitzer(df,p)
 !
@@ -2620,7 +2651,7 @@ module Special
         endif
       enddo
 !
-!      if (.not.loverlapp.and. t*unit_time > 300) call remove_point
+! TODO  if (.not.loverlapp.and. t*unit_time > 300) call remove_point
 !
     endsubroutine draw_update
 !***********************************************************************
