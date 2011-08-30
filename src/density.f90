@@ -2323,7 +2323,7 @@ module Density
             do j = m1, m2
               do i = l1, l2
                 if (f(i,j,k,irho) <= 0.) print 10, f(i,j,k,irho), x(i), y(j), z(k)
-                10 format (1x, 'rho = ', es13.6, 'at x = ', es13.6, ', y = ', es13.6, 'z = ', es13.6)
+                10 format (1x, 'rho = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, 'z = ', es13.6)
               enddo
             enddo
           enddo

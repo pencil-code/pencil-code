@@ -638,7 +638,7 @@ module Entropy
             do j = m1, m2
               do i = l1, l2
                 if (f(i,j,k,ieth) <= 0.) print 10, f(i,j,k,ieth), x(i), y(j), z(k)
-                10 format (1x, 'eth = ', es13.6, 'at x = ', es13.6, ', y = ', es13.6, 'z = ', es13.6)
+                10 format (1x, 'eth = ', es13.6, ' at x = ', es13.6, ', y = ', es13.6, 'z = ', es13.6)
               enddo
             enddo
           enddo
