@@ -153,6 +153,8 @@ if (not pc_gui_loaded) then BEGIN
 		end until (any (strcmp (answer, ['n', 'y', 'a'], /fold_case)))
 		if (strcmp (answer, 'y', /fold_case)) then varfile = addfile
 		if (not strcmp (answer, 'a', /fold_case)) then addfile = ""
+	end else begin
+		addfile = ""
 	end
 	if (addfile) then num_additional = 1 else num_additional = 0
 
