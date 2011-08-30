@@ -389,7 +389,7 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 		end else if (any (strcmp (tags, 'visc_heatm', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			visc_heat_mean = ts.visc_heatm * unit.density * unit.velocity^3 / unit.length
-			plot, time, visc_heat_mean, title = 'Mean viscous heating rate', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='heating rate [W/m^3]', /yl
+			plot, time, visc_heat_mean, title = 'Mean viscous heating rate', xrange=x_minmax, /xs, xc=charsize, yc=charsize, ytitle='heating rate [W/m^3]', /yl
 		end
 		if (any (strcmp (tags, 'umax', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
