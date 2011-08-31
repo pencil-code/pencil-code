@@ -52,7 +52,7 @@ module Special
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
-      Bavoid,Bz_flux,init_time,init_width,quench, &
+      Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
