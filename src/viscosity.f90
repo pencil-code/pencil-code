@@ -110,12 +110,18 @@ module Viscosity
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbym=0  ! DIAG_DOC:
   integer :: idiag_nuD2uxbzm=0  ! DIAG_DOC:
-  integer :: idiag_fviscmz=0    ! DIAG_DOC: $\left<2\nu\varrho u_i
-                                ! DIAG_DOC: \mathcal{S}_{iz} \right>_{xy}$
-                                ! DIAG_DOC: ($z$-component of viscous flux)
-  integer :: idiag_fviscmxy=0   ! DIAG_DOC: $\left<2\nu\varrho u_i
-                                ! DIAG_DOC: \mathcal{S}_{ix} \right>_{z}$
-                                ! DIAG_DOC: ($x$-xomponent of viscous flux)
+!
+! xy averaged diagnostics given in xyaver.in written every it1d timestep
+!
+  integer :: idiag_fviscmz=0    ! XYAVG_DOC: $\left<2\nu\varrho u_i
+                                ! XYAVG_DOC: \mathcal{S}_{iz} \right>_{xy}$
+                                ! XYAVG_DOC: ($z$-component of viscous flux)
+!
+! z averaged diagnostics given in zaver.in
+!
+  integer :: idiag_fviscmxy=0   ! ZAVG_DOC: $\left<2\nu\varrho u_i
+                                ! ZAVG_DOC: \mathcal{S}_{ix} \right>_{z}$
+                                ! ZAVG_DOC: ($x$-xomponent of viscous flux)
 !
   contains
 !***********************************************************************

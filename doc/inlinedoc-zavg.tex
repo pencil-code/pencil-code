@@ -9,6 +9,7 @@
 %%   magnetic.f90
 %%   temperature_idealgas.f90
 %%   thermal_energy.f90
+%%   viscosity.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -93,6 +94,7 @@
   \var{examxy1}   & $\left< \Ev\times\Av \right>_{z}|_x$ \\
   \var{examxy2}   & $\left< \Ev\times\Av \right>_{z}|_y$ \\
   \var{examxy3}   & $\left< \Ev\times\Av \right>_{z}|_z$ \\
+  \var{beta1mxy}  & $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
 \midrule
@@ -101,6 +103,12 @@
   \multicolumn{2}{c}{Module \file{thermal_energy.f90}} \\
 \midrule
   \var{TTmxy}     & $\left<T\right>_{z}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
+\midrule
+  \var{fviscmxy}  & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{ix} \right>_{z}$
+                    ($x$-xomponent of viscous flux) \\
 %
 \bottomrule
 \end{longtable}

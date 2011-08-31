@@ -9,6 +9,7 @@
 %%   magnetic.f90
 %%   temperature_idealgas.f90
 %%   thermal_energy.f90
+%%   viscosity.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -140,6 +141,12 @@
 \midrule
   \var{ppmz}      & $\left<p\right>_{xy}$ \\
   \var{TTmz}      & $\left<T\right>_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
+\midrule
+  \var{fviscmz}   & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{iz} \right>_{xy}$
+                    ($z$-component of viscous flux) \\
 %
 \bottomrule
 \end{longtable}

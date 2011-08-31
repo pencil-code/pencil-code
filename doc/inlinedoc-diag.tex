@@ -12,9 +12,12 @@
 %%   1D_loop.f90
 %%   advective_gauge.f90
 %%   anelastic.f90
+%%   bla.f90
 %%   chemistry.f90
 %%   coronae.f90
+%%   coronae.f90_old.f90
 %%   entropy_anelastic.f90
+%%   from_scratch.f90
 %%   lorenz_gauge.f90
 %%   magnetic_axisym.f90
 %%   meanfield.f90
@@ -501,6 +504,29 @@
   \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
   \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{bla.f90}} \\
+\midrule
+  \var{fviscm}    & Mean value of viscous acceleration \\
+  \var{fviscmin}  & Min value of viscous acceleration \\
+  \var{fviscmax}  & Max value of viscous acceleration \\
+  \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
+  \var{nusmagmin} & Min value of Smagorinsky viscosity \\
+  \var{nusmagmax} & Max value of Smagorinsky viscosity \\
+  \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
+  \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
+                    \delta x^2/\nu_{\rm max}]$
+                    \quad(time step relative to
+                    viscous time step;
+                    see \S~\ref{time-step}) \\
+  \var{meshRemax} & Max mesh Reynolds number \\
+  \var{Reshock}   & Mesh Reynolds number at shock \\
+  \var{fviscmz}   & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{iz} \right>_{xy}$
+                    ($z$-component of viscous flux) \\
+  \var{fviscmxy}  & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{ix} \right>_{z}$
+                    ($x$-xomponent of viscous flux) \\
+\midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{Y1m}       & $\left<Y_1\right>$ \\
@@ -609,6 +635,15 @@
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{dtrad}     & radiative loss from RTV \\
 \midrule
+  \multicolumn{2}{c}{Module \file{coronae.f90_old.f90}} \\
+\midrule
+  \var{dtchi2}    & $\delta t / [c_{\delta t,{\rm v}}\,
+                    \delta x^2/\chi_{\rm max}]$
+                    \quad(time step relative to time
+                    step based on heat conductivity;
+                    see \S~\ref{time-step}) \\
+  \var{dtrad}     & radiative loss from RTV \\
+\midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule
   \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
@@ -641,6 +676,15 @@
   \var{ssmxy}     & $\left< s \right>_{z}$ \\
   \var{ssmxz}     & $\left< s \right>_{y}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{from_scratch.f90}} \\
+\midrule
+  \var{dtchi2}    & $\delta t / [c_{\delta t,{\rm v}}\,
+                    \delta x^2/\chi_{\rm max}]$
+                    \quad(time step relative to time
+                    step based on heat conductivity;
+                    see \S~\ref{time-step}) \\
+  \var{dtrad}     & radiative loss from RTV \\
+\midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
   \var{phim}      & $\left<\phi\right>$ \\
@@ -659,7 +703,9 @@
 \midrule
   \var{qsm}       & $\left<q_p(\overline{B})\right>$ \\
   \var{qpm}       & $\left<q_p(\overline{B})\right>$ \\
-  \var{qem}       & $\left<q_e(\overline{B})\right>$ \\
+  \var{qem}       & $\left<q_e(\overline{B})\right>$,
+                    in the paper referred to as
+                    $\left<q_g(\overline{B})\right>$ \\
   \var{alpm}      & $\left<\alpha\right>$ \\
   \var{etatm}     & $\left<\eta_{\rm t}\right>$ \\
   \var{EMFmz1}    & $\left<{\cal E}\right>_{xy}|_x$ \\
@@ -1481,6 +1527,7 @@
   \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
   \var{nusmagmin} & Min value of Smagorinsky viscosity \\
   \var{nusmagmax} & Max value of Smagorinsky viscosity \\
+  \var{visc_heatm} & Mean value of viscous heating \\
   \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
   \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
                     \delta x^2/\nu_{\rm max}]$
@@ -1489,12 +1536,6 @@
                     see \S~\ref{time-step}) \\
   \var{meshRemax} & Max mesh Reynolds number \\
   \var{Reshock}   & Mesh Reynolds number at shock \\
-  \var{fviscmz}   & $\left<2\nu\varrho u_i
-                    \mathcal{S}_{iz} \right>_{xy}$
-                    ($z$-component of viscous flux) \\
-  \var{fviscmxy}  & $\left<2\nu\varrho u_i
-                    \mathcal{S}_{ix} \right>_{z}$
-                    ($x$-xomponent of viscous flux) \\
 %
 \bottomrule
 \end{longtable}
