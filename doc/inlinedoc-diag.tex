@@ -12,7 +12,6 @@
 %%   1D_loop.f90
 %%   advective_gauge.f90
 %%   anelastic.f90
-%%   bla.f90
 %%   chemistry.f90
 %%   coronae.f90
 %%   coronae.f90_old.f90
@@ -503,29 +502,6 @@
   \var{divrhoum}  & $\left<\nabla\cdot(\varrho\uv)\right>$ \\
   \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
   \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{bla.f90}} \\
-\midrule
-  \var{fviscm}    & Mean value of viscous acceleration \\
-  \var{fviscmin}  & Min value of viscous acceleration \\
-  \var{fviscmax}  & Max value of viscous acceleration \\
-  \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
-  \var{nusmagmin} & Min value of Smagorinsky viscosity \\
-  \var{nusmagmax} & Max value of Smagorinsky viscosity \\
-  \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
-  \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
-                    \delta x^2/\nu_{\rm max}]$
-                    \quad(time step relative to
-                    viscous time step;
-                    see \S~\ref{time-step}) \\
-  \var{meshRemax} & Max mesh Reynolds number \\
-  \var{Reshock}   & Mesh Reynolds number at shock \\
-  \var{fviscmz}   & $\left<2\nu\varrho u_i
-                    \mathcal{S}_{iz} \right>_{xy}$
-                    ($z$-component of viscous flux) \\
-  \var{fviscmxy}  & $\left<2\nu\varrho u_i
-                    \mathcal{S}_{ix} \right>_{z}$
-                    ($x$-xomponent of viscous flux) \\
 \midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
