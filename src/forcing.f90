@@ -1176,15 +1176,6 @@ module Forcing
                       if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
                         +forcing_rhs(:,1)*force2_scl
                     endif
-!
-!  Forcing with enhanced xy correlation.
-!
-                    if (lxycorr_forcing) then
-                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
-                        +forcing_rhs(:,2)*force2_scl
-                      if (j==2) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
-                        +forcing_rhs(:,1)*force2_scl
-                    endif
                   endif
 !
                 endif
@@ -1202,6 +1193,26 @@ module Forcing
                 if (ltestflow_forcing) then
                   jf=j+iuutest-1+3*(jtest_uu0-1)
                   f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+                endif
+              endif
+            enddo
+!
+!  Forcing with enhanced xy correlation.
+!  Can only come outside the previous j loop.
+!
+            do j=1,3
+              if (extent(j)) then
+                if (ifff/=0) then
+                  jf=j+ifff-1
+                  j2f=j+i2fff-1
+                  if (.not.lhelical_test) then
+                    if (lxycorr_forcing) then
+                      if (j==1) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
+                        +forcing_rhs(:,2)*force2_scl
+                      if (j==2) f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf) &
+                        +forcing_rhs(:,1)*force2_scl
+                    endif
+                  endif
                 endif
               endif
             enddo
