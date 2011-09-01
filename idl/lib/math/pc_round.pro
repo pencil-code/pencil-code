@@ -15,7 +15,6 @@ if xabs gt 1. then begin
 endif else begin
   d0=xsgn*10.^(fix(alog10(.1*xabs)))
 endelse
-print,'d0=',d0
 ;
 ;  set default
 ;
