@@ -44,10 +44,12 @@ pro rvid_box, field, $
   shell=shell, centred=centred, r_int=r_int, r_ext=r_ext, colmpeg=colmpeg, $
   z_bot_twice=z_bot_twice, z_top_twice=z_top_twice, $
   z_topbot_swap=z_topbot_swap, xrot=xrot, zrot=zrot, zof=zof, $
-  magnify=magnify, zmagnify=zmagnify, xpos=xpos, zpos=zpos, xmax=xmax, ymax=ymax, $
+  magnify=magnify, zmagnify=zmagnify, xpos=xpos, zpos=zpos, $
+  xmax=xmax, ymax=ymax, $
   xlabel=xlabel, ylabel=ylabel, tlabel=tlabel, label=label, $
   size_label=size_label, $
   monotonous_scaling=monotonous_scaling, symmetric_scaling=symmetric_scaling, $
+  roundup=roundup, $
   nobottom=nobottom, oversaturate=oversaturate, cylinder=cylinder, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
@@ -322,6 +324,13 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     if (keyword_set(symmetric_scaling)) then begin
       amax=amax>abs(amin)
       amin=-amax
+    endif
+;
+;  possibility of rounding up the amax and amin value
+;
+    if (keyword_set(roundup)) then begin
+      amax=pc_round(amax)
+      amin=pc_round(amin)
     endif
 ;
 ;  If noborder is set.
