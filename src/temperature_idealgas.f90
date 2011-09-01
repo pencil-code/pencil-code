@@ -1821,7 +1821,7 @@ module Entropy
       r_max=sqrt(xyz1(1)**2+xyz1(2)**2+xyz1(3)**2)
       r(1)=0. ; lumi(1)=0. ; g(1)=0.
       do i=2,nr
-        r(i)=r_max*float(i-1)/(nr-1)
+        r(i)=r_max*real(i-1)/(nr-1)
         u=r(i)/sqrt(2.)/wheat
         lumi(i)=luminosity*(1.-exp(-u**2))
         g(i)=-lumi(i)/(2.*pi*r(i))*(mpoly0+1.)/hcond0*gamma_m1/gamma

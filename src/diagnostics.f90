@@ -1268,7 +1268,7 @@ module Diagnostics
 !  Set fraction if old and new stuff.
 !
         if (present(ipart)) then
-          ppart=1./float(ipart)
+          ppart=1./real(ipart)
           if (lfirstpoint) then
             qpart=1.-ppart
           else
