@@ -1724,9 +1724,9 @@ module Deriv
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
         endif
       endif
-    endsubroutine
+    endsubroutine der_onesided_4_slice_main
 !***********************************************************************
-  subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
+    subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
 !
 !  made using der_onesided_4_slice_main. One sided derivstive is calculated
 !  at one point (lll,mmm,nnn)
@@ -1781,9 +1781,9 @@ module Deriv
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
         endif
       endif
-    endsubroutine
+    endsubroutine der_onesided_4_slice_main_pt
 !***********************************************************************
-   subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
+    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
 !
 !   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
 !   Uses a one-sided 4th order stencil.
@@ -1843,12 +1843,13 @@ module Deriv
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
         endif
       endif
-    endsubroutine
-!***********************************************************************
-  subroutine der_onesided_4_slice_other_pt(f,sgn,df,lll,mmm,nnn,j)
 !
-!  made using der_onesided_4_slice_other. One sided derivstive is calculated
-!  at one point (lll,mmm,nnn)
+    endsubroutine der_onesided_4_slice_other
+!***********************************************************************
+    subroutine der_onesided_4_slice_other_pt(f,sgn,df,lll,mmm,nnn,j)
+!
+!  One sided derivative is calculated
+!  at one point (lll,mmm,nnn).
 !
 !  15-oct-09/Natalia: coded.
 !  15-oct-09/axel: changed file name to shorter version
@@ -1862,46 +1863,46 @@ module Deriv
       intent(out) :: df
 !
       if (j==1) then
-       pos=lll
+        pos=lll
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
           df = fac*(-sgn*25*f(pos,mmm,nnn)&
-                  +sgn*48*f(pos+sgn*1,mmm,nnn)&
-                  -sgn*36*f(pos+sgn*2,mmm,nnn)&
-                  +sgn*16*f(pos+sgn*3,mmm,nnn)&
-                  -sgn*3 *f(pos+sgn*4,mmm,nnn))
+                    +sgn*48*f(pos+sgn*1,mmm,nnn)&
+                    -sgn*36*f(pos+sgn*2,mmm,nnn)&
+                    +sgn*16*f(pos+sgn*3,mmm,nnn)&
+                    -sgn*3 *f(pos+sgn*4,mmm,nnn))
         else
           df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
+          if (ip<=5) print*, 'der_onesided_4_slice_other_pt: Degenerate case in x-direction'
         endif
       elseif (j==2) then
-       pos=mmm
+        pos=mmm
         if (nygrid/=1) then
           fac=1./12.*dy_1(pos)
           df = fac*(-sgn*25*(f(lll,pos,nnn)-f(lll,pos+sgn*1,nnn))&
-                  +sgn*23*(f(lll,pos+sgn*1,nnn)-f(lll,pos+sgn*2,nnn))&
-                  -sgn*13*(f(lll,pos+sgn*2,nnn)-f(lll,pos+sgn*3,nnn))&
-                  +sgn*3*(f(lll,pos+sgn*3,nnn)-f(lll,pos+sgn*4,nnn)))
+                    +sgn*23*(f(lll,pos+sgn*1,nnn)-f(lll,pos+sgn*2,nnn))&
+                    -sgn*13*(f(lll,pos+sgn*2,nnn)-f(lll,pos+sgn*3,nnn))&
+                    +sgn* 3*(f(lll,pos+sgn*3,nnn)-f(lll,pos+sgn*4,nnn)))
 !
         else
           df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
+          if (ip<=5) print*, 'der_onesided_4_slice_other_pt: Degenerate case in y-direction'
         endif
       elseif (j==3) then
-       pos=nnn
+        pos=nnn
         if (nzgrid/=1) then
           fac=1./12.*dz_1(pos)
           df = fac*(-sgn*25*f(lll,mmm,pos)&
-                  +sgn*48*f(lll,mmm,pos+sgn*1)&
-                  -sgn*36*f(lll,mmm,pos+sgn*2)&
-                  +sgn*16*f(lll,mmm,pos+sgn*3)&
-                  -sgn*3 *f(lll,mmm,pos+sgn*4))
+                    +sgn*48*f(lll,mmm,pos+sgn*1)&
+                    -sgn*36*f(lll,mmm,pos+sgn*2)&
+                    +sgn*16*f(lll,mmm,pos+sgn*3)&
+                    -sgn*3 *f(lll,mmm,pos+sgn*4))
 !
         else
           df=0.
-          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
+          if (ip<=5) print*, 'der_onesided_4_slice_other_pt: Degenerate case in z-direction'
         endif
       endif
-    endsubroutine
+    endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
 endmodule Deriv
