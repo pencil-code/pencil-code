@@ -17,9 +17,9 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
-
+!
   use Cdata
   use Cparam
   use Messages, only: svn_id, fatal_error
@@ -90,7 +90,7 @@ module Special
       minshell2, l_nogoy
 !
   namelist /special_run_pars/ &
-      lstructure, nord,time_step_type 
+      lstructure, nord,time_step_type
 !
 !! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -162,7 +162,7 @@ module Special
           cval(ns)=-kval(ns-2)/2.
         endif
       enddo
-!      
+!
       zforce= zone*f_amp
 !
 ! set minshell2
@@ -171,7 +171,7 @@ module Special
 !
 !  generate/allocate k/u vectors (if needed, and this is called by start)
 !
-
+!
       if (l_needspecialuu) then
         if ((maxshell .lt. 0) .or. (minshell .lt. 0)) then
           print*, 'Set maxshell and minshell if you want l_needspecialuu'
@@ -193,7 +193,7 @@ module Special
 !
             call safe_character_assign(filename,'k'//trim(itoa(int(kval(ns))))//'.dat')
             inquire(FILE=filename, EXIST=kdat_exists)
-            if (.not. kdat_exists) then              
+            if (.not. kdat_exists) then
               print*, 'k.dat file ',filename,' does not exist, exiting'
               call stop_it("")
             else
@@ -231,7 +231,7 @@ module Special
                   nk2=0
                 endif
                 nk2=nk2+1
-              enddo 
+              enddo
               call cross(kvec(count-1,ns,:),kvec(count,ns,:), uvec(count,ns,:))
               uvec(count,ns,:)=uvec(count,ns,:)/(sum(uvec(count,ns,:)**2))**(0.5)
             enddo
@@ -291,7 +291,7 @@ module Special
         uav=0
         eddy_time=0
 !
-! if we need real-space velocities, 
+! if we need real-space velocities,
 !
         if (l_needspecialuu .and. .not. l_quenched) vec_split0=vec_split
 !
@@ -432,13 +432,13 @@ module Special
         if (idiag_deltM/=0)     call max_name(deltmbase,idiag_deltM)
         if (idiag_uuGOY/=0) then
           if (l_altu) then
-            call save_name(sngl(umalt(maxshell)),idiag_uuGOY) 
+            call save_name(sngl(umalt(maxshell)),idiag_uuGOY)
           else
             call save_name(sngl(umod(maxshell)),idiag_uuGOY)
           endif
         endif
-        if (idiag_deltM/=0)     call max_name(deltmbase,idiag_deltM)       
-        if (idiag_eddy_time/=0) call save_name(sngl(eddy_time(minshell)),idiag_eddy_time)   
+        if (idiag_deltM/=0)     call max_name(deltmbase,idiag_deltM)
+        if (idiag_eddy_time/=0) call save_name(sngl(eddy_time(minshell)),idiag_eddy_time)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -839,7 +839,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       complex*16:: zt1,zt2,zt3,zgt
       integer :: ns
 !
-!!	  SHELL 1
+!!        SHELL 1
       zt1 = exfac(1)*zu(1)
       zt2 = aval(1)*zu(2)*zu(3) + zforce
       zgt = zi*dconjg(zt2)
@@ -847,7 +847,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       zu(1) = zt1 + exrat(1)*zt3
       umod(1)=zabs(zu(1))
       zgprev(1) = zgt
-!!	  SHELL 2
+!!        SHELL 2
       zt1 = exfac(2)*zu(2)
       zt2 = aval(2)*zu(3)*zu(4) + bval(2)*zu(1)*zu(3)
       zgt = zi*dconjg(zt2)
@@ -855,10 +855,10 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       zu(2) = zt1 + exrat(2)*zt3
       umod(2)=zabs(zu(2))
       zgprev(2) = zgt
-!!	  INNER (NSHELL-4) SHELLS
+!!        INNER (NSHELL-4) SHELLS
       do ns=3,nshell-2
         zt1 = exfac(ns)*zu(ns)
-        zt2 =  aval(ns)*zu(ns+1)*zu(ns+2) + & 
+        zt2 =  aval(ns)*zu(ns+1)*zu(ns+2) + &
                   bval(ns)*zu(ns-1)*zu(ns+1) + &
                   cval(ns)*zu(ns-1)*zu(ns-2)
         zgt = zi*dconjg(zt2)
@@ -867,7 +867,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
         umod(ns)=zabs(zu(ns))
         zgprev(ns) = zgt
       enddo
-!!	  (NSHELL-1)TH SHELL
+!!        (NSHELL-1)TH SHELL
       zt1 = exfac(nshell-1)*zu(nshell-1)
       zt2 = bval(nshell-1)*zu(nshell-2)*zu(nshell) + &
                cval(nshell-1)*zu(nshell-2)*zu(nshell-3)
@@ -876,7 +876,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       zu(nshell-1) = zt1 + exrat(nshell-1)*zt3
       umod(nshell-1)=zabs(zu(nshell-1))
       zgprev(nshell-1) = zgt
-!!	  LAST SHELL
+!!        LAST SHELL
       zt1 = exfac(nshell)*zu(nshell)
       zt2 = cval(nshell)*zu(nshell-1)*zu(nshell-2)
       zgt = zi*dconjg(zt2)
@@ -988,7 +988,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       call mpibcast_real(uav, nshell+1)
       if (l_needspecialuu) then
         call mpibcast_real(kvec, (/3,nshell,3/))
-        call mpibcast_real(uvec, (/3,nshell,3/)) 
+        call mpibcast_real(uvec, (/3,nshell,3/))
         call mpibcast_real(vec_split, (/nshell,3/))
         if (.not. l_quenched) call mpibcast_real(vec_split0, (/nshell,3/))
       endif
@@ -1136,7 +1136,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
         norm=sum(vec2**2)
         if (norm.gt.0.01) exit
       enddo
-      vec2=vec2/(norm**(0.5)) 
+      vec2=vec2/(norm**(0.5))
 !
     endsubroutine get_perp_vector
 !***********************************************************************
@@ -1189,7 +1189,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
           if (norm .gt. 0.01) exit
         enddo
 !
-        vec_array(ns,:)=uv/(norm**(0.5)) 
+        vec_array(ns,:)=uv/(norm**(0.5))
 !
       enddo
 !
@@ -1218,7 +1218,7 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
           uup=uup+vec_split(ns,count)*uvec(count,ns,:)*2**(0.5)*(&
               real(zu(ns))*cos(dot_product(xpos,kvec(count,ns,:)))-&
               aimag(zu(ns))*sin(dot_product(xpos,kvec(count,ns,:))))*&
-              umalt(ns)/umod(ns) 
+              umalt(ns)/umod(ns)
         enddo; else; do count=1,3
           uup=uup+vec_split(ns,count)*uvec(count,ns,:)*2**(0.5)*(&
               real(zu(ns))*cos(dot_product(xpos,kvec(count,ns,:)))-&
