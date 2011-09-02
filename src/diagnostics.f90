@@ -1316,7 +1316,7 @@ module Diagnostics
               fname(iname)=fname(iname)+sum(a_scaled)
             endif
           endif
-         endif
+        endif
 !
       endif
 !
@@ -1639,27 +1639,29 @@ module Diagnostics
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
 !
-      if (lfirstpoint) fnamez(:,:,iname)=0.0
+      if (iname/=0) then
+        if (lfirstpoint) fnamez(:,:,iname)=0.0
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
-      lmax=l2
-      n_nghost=n-nghost
-      if (lav_smallx)  lmax=ixav_max
-      if (.not.loutside_avg) then
-        if (lspherical_coords.or.lcylindrical_coords)then
-          do isum=l1,lmax
-            fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
-                                x(isum)*a(isum-nghost)
-          enddo
-        else
-         do isum=l1,lmax
-           fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
-                               a(isum-nghost)
-         enddo
+        lmax=l2
+        n_nghost=n-nghost
+        if (lav_smallx)  lmax=ixav_max
+        if (.not.loutside_avg) then
+          if (lspherical_coords.or.lcylindrical_coords)then
+            do isum=l1,lmax
+              fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
+                  x(isum)*a(isum-nghost)
+            enddo
+          else
+            do isum=l1,lmax
+              fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+ &
+                  a(isum-nghost)
+            enddo
+          endif
         endif
       endif
-!
+ !
     endsubroutine xysum_mn_name_z
 !***********************************************************************
     subroutine xzsum_mn_name_y(a,iname)
