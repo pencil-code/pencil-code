@@ -14,7 +14,7 @@
 
 !
       integer, parameter :: nt=999999,nvecmax=999999
-      integer :: iproc,ipx,ipy,ipz,it,ivec,l,m,n,mm,nn
+      integer :: iproc,ipy,ipz,it,ivec,l,m,n,mm,nn
       integer :: lun,lun2=9
       real :: t=0.,v1,v2,v3
 !
@@ -47,7 +47,6 @@
 !  position on the processor grid
 !  x is fastest direction, z slowest
 !
-          ipx = 0
           ipy = modulo(iproc, nprocy)
           ipz = iproc/(nprocy)
 !
