@@ -595,10 +595,8 @@ module Snapshot
       integer :: nv
       integer :: i, j, k
       real, dimension (mx,my,mz,nv) :: a
-      real :: t_sp
       character (len=*) :: file
 !
-      t_sp = t
       open(lun_output+1,FILE=file//'.form')
 !
       if (lwrite_2d) then
@@ -647,7 +645,7 @@ module Snapshot
 !
 !  28-june-10/julien: coded
 !
-      integer :: nv, nd
+      integer :: nv
       integer :: i, j, k, kk
       real, dimension (mx,my,mz,nv) :: a
       real, dimension (nx*ny*nz) :: xx, yy, zz
@@ -673,27 +671,24 @@ module Snapshot
 !
       write(lun_output+2,*) 'TITLE     = "output"'
       if (lwrite_2d) then
-      nd = 2
-      if (nx==1) then
-      write(lun_output+2,*) 'VARIABLES = "y"'
-      write(lun_output+2,*) '"z"'
-      elseif (ny==1) then
-      write(lun_output+2,*) 'VARIABLES = "x"'
-      write(lun_output+2,*) '"z"'
-      elseif (nz==1) then
-      write(lun_output+2,*) 'VARIABLES = "x"'
-      write(lun_output+2,*) '"y"'
-      endif
+        if (nx==1) then
+          write(lun_output+2,*) 'VARIABLES = "y"'
+          write(lun_output+2,*) '"z"'
+        elseif (ny==1) then
+          write(lun_output+2,*) 'VARIABLES = "x"'
+          write(lun_output+2,*) '"z"'
+        elseif (nz==1) then
+          write(lun_output+2,*) 'VARIABLES = "x"'
+          write(lun_output+2,*) '"y"'
+        endif
       else
-      if (ny==1.and.nz==1) then
-      write(lun_output+2,*) 'VARIABLES = "x"'
-      nd = 1
-      else
-      write(lun_output+2,*) 'VARIABLES = "x"'
-      write(lun_output+2,*) '"y"'
-      write(lun_output+2,*) '"z"'
-      nd = 3
-      endif
+        if (ny==1.and.nz==1) then
+          write(lun_output+2,*) 'VARIABLES = "x"'
+        else
+          write(lun_output+2,*) 'VARIABLES = "x"'
+          write(lun_output+2,*) '"y"'
+          write(lun_output+2,*) '"z"'
+        endif
       endif
       do i = 1, nv
         write(car,'(i2)') i
@@ -703,15 +698,15 @@ module Snapshot
 !
       write(lun_output+2,*) 'ZONE T="Zone"'
       if (lwrite_2d) then
-      if (nx==1) write(lun_output+2,*) ' I=1, J=',ny, ', K=',nz
-      if (ny==1) write(lun_output+2,*) ' I=',nx, ', J=1, K=',nz
-      if (nz==1) write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=1'
+        if (nx==1) write(lun_output+2,*) ' I=1, J=',ny, ', K=',nz
+        if (ny==1) write(lun_output+2,*) ' I=',nx, ', J=1, K=',nz
+        if (nz==1) write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=1'
       else
-      if (ny==1.and.nz==1) then
-      write(lun_output+2,*) ' I=',nx, ', J=  1, K=  1'
-      else
-      write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=',nz
-      endif
+        if (ny==1.and.nz==1) then
+          write(lun_output+2,*) ' I=',nx, ', J=  1, K=  1'
+        else
+          write(lun_output+2,*) ' I=',nx, ', J=',ny, ', K=',nz
+        endif
       endif
       write(lun_output+2,*) ' DATAPACKING=BLOCK'
 !
