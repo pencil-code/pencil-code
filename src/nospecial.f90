@@ -144,8 +144,8 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      logical, intent(in) :: lstarting
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
