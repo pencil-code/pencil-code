@@ -31,7 +31,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
   real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
-  real :: nu_hyper3_mesh=5.0, nu_shock=0.0
+  real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
@@ -88,7 +88,7 @@ module Viscosity
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
-      PrM_turb, roffset_lambda
+      PrM_turb, roffset_lambda, nu_spitzer
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
@@ -298,8 +298,8 @@ module Viscosity
           if (lroot) print*,'viscous force: nu is calculated for a mixture'
           lvisc_mixture=.true.
         case ('nu-spitzer')
-          if (lroot) print*,'viscous force: nu is calculated for a mixture'
-          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          if (lroot) print*,'viscous force: temperature dependent nu'
+          lpenc_requested(i_sij)=.true.
           lvisc_spitzer=.true.
         case ('none')
           ! do nothing
@@ -317,8 +317,7 @@ module Viscosity
       if (lrun) then
         if ( (lvisc_simplified.or.lvisc_rho_nu_const.or.&
              lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or.&
-             lvisc_nu_therm.or.lvisc_mu_therm.or.lvisc_spitzer) &
-            .and.nu==0.0) &
+             lvisc_nu_therm.or.lvisc_mu_therm).and.nu==0.0) &
             call warning('initialize_viscosity', &
             'Viscosity coefficient nu is zero!')
         if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
@@ -336,6 +335,9 @@ module Viscosity
         if (lvisc_hyper3_mesh.and.nu_hyper3_mesh==0.0) &
              call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3_mesh is zero!')
+        if (lvisc_spitzer.and.nu_spitzer==0.0) &
+             call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_spitzer is zero!')
         if ( (lvisc_hyper3_rho_nu_const_aniso.or.lvisc_hyper3_nu_const_aniso).and.&
              ((nu_aniso_hyper3(1)==0. .and. nxgrid/=1 ).or. &
               (nu_aniso_hyper3(2)==0. .and. nygrid/=1 ).or. &
@@ -844,7 +846,7 @@ module Viscosity
 !
 !  viscous force: nu*TT^2.5/rho*(del2u+graddivu/3+2S.glnrho)
 !
-        muTT=nu*p%rho1*exp(2.5*p%lnTT)
+        muTT=nu_spitzer*p%rho1*exp(2.5*p%lnTT)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
               muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))&
