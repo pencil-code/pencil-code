@@ -1616,9 +1616,6 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
-      if (.not. lequidist(j)) &
-          call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
-!
       if (lspherical_coords.or.lcylindrical_coords) &
           call fatal_error('der_upwind1st','NOT IMPLEMENTED for non-cartesian grid')
 !
@@ -1626,9 +1623,9 @@ module Deriv
         if (nxgrid /= 1) then
           do l=1,nx
             if (uu(l,1) > 0.) then
-              df(l) = (f(nghost+l  ,m,n,k) - f(nghost+l-1,m,n,k))/dx
+              df(l) = (f(nghost+l  ,m,n,k) - f(nghost+l-1,m,n,k))*dx_1(nghost+l)
             else
-              df(l) = (f(nghost+l+1,m,n,k) - f(nghost+l  ,m,n,k))/dx
+              df(l) = (f(nghost+l+1,m,n,k) - f(nghost+l  ,m,n,k))*dx_1(nghost+l)
             endif
           enddo
         else
@@ -1639,9 +1636,9 @@ module Deriv
         if (nygrid /= 1) then
           do l=1,nx
             if (uu(l,2) > 0.) then
-              df(l) = (f(nghost+l,m  ,n,k) - f(nghost+l,m-1,n,k))/dy
+              df(l) = (f(nghost+l,m  ,n,k) - f(nghost+l,m-1,n,k))*dy_1(m)
             else
-              df(l) = (f(nghost+l,m+1,n,k) - f(nghost+l,m  ,n,k))/dy
+              df(l) = (f(nghost+l,m+1,n,k) - f(nghost+l,m  ,n,k))*dy_1(m)
             endif
           enddo
         else
@@ -1652,9 +1649,9 @@ module Deriv
         if (nzgrid /= 1) then
           do l=1,nx
             if (uu(l,3) > 0.) then
-              df(l) = (f(nghost+l,m,n,k  ) - f(nghost+l,m,n-1,k))/dz
+              df(l) = (f(nghost+l,m,n,k  ) - f(nghost+l,m,n-1,k))*dz_1(n)
             else
-              df(l) = (f(nghost+l,m,n+1,k) - f(nghost+l,m,n,k  ))/dz
+              df(l) = (f(nghost+l,m,n+1,k) - f(nghost+l,m,n,k  ))*dz_1(n)
             endif
           enddo
         else
