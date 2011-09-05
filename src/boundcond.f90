@@ -20,7 +20,7 @@ module Boundcond
   public :: bc_per_x, bc_per_y, bc_per_z
 !
   interface update_ghosts
-     module procedure update_ghosts_all 
+     module procedure update_ghosts_all
      module procedure update_ghosts_range
   endinterface
 !
@@ -741,7 +741,7 @@ module Boundcond
                 ! BCZ_DOC:
                 if (j==iss) call bc_ss_stemp_z(f,topbot)
               case ('ctz')
-                ! BCZ_DOC: for interstellar runs copy T 
+                ! BCZ_DOC: for interstellar runs copy T
                 if (j==iss) call bc_ctz(f,topbot,iss)
               case ('cdz')
                 ! BCZ_DOC: for interstellar runs limit rho
@@ -2225,7 +2225,7 @@ module Boundcond
       real, pointer :: nu,Lambda_V0t,Lambda_V0b,Lambda_V1t,Lambda_V1b
       logical, pointer :: llambda_effect
       integer :: ierr,k
-      real :: lambda_exp,lambda_exp_sinth
+      real :: lambda_exp
 ! -------- Either case get the lambda variables first -----------
 !
       call get_shared_variable('nu',nu,ierr)
@@ -2258,7 +2258,6 @@ module Boundcond
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
             lambda_exp=-(Lambda_V0b+Lambda_V1b*sinth(iy)*sinth(iy))
-            lambda_exp_sinth=lambda_exp*sinth(iy)
             do k=1,nghost
                if (Omega==0) then
                  f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k)) &
@@ -2282,7 +2281,6 @@ module Boundcond
         if ((llambda_effect).and.(j==iuz)) then
           do iy=1,my
             lambda_exp=-(Lambda_V0t+Lambda_V1t*sinth(iy)*sinth(iy))
-            lambda_exp_sinth=lambda_exp*sinth(iy)
             do k=1,nghost
               if (Omega==0) then
                 f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k)) &
@@ -2457,7 +2455,7 @@ module Boundcond
                enddo
             else
               do ix=1,mx
-! DM+GG: temporally commented out  
+! DM+GG: temporally commented out
 !                somega=x(ix)*Omega*sinth(m1-k)*( &
 !                   exp(2*cos2thm_k*LH1(ix)/(4.*nu))&
 !                        -exp((cos2thmpk+cos2thm_k)*LH1(ix)/(4.*nu)) )
@@ -5695,11 +5693,11 @@ module Boundcond
 !
 !  Steady in/outflow boundary conditions.
 !
-!  Match ghost to outward velocity on boundary. Impose positive inward 
+!  Match ghost to outward velocity on boundary. Impose positive inward
 !  gradient in ghost zones for inflow on boundary.
 !
 !  06-nov-2010/fred: implemented
-!  14-mar-2011/fred: amended 
+!  14-mar-2011/fred: amended
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -5718,7 +5716,7 @@ module Boundcond
           else
             if (f(ix,iy,n1,j) > f(ix,iy,n1+1,j)) then
               f(ix,iy,n1-1,j)=0.5*(f(ix,iy,n1,j)    +f(ix,iy,n1+1,j))
-            else 
+            else
               f(ix,iy,n1-1,j)=2.0* f(ix,iy,n1,j)    -f(ix,iy,n1+1,j)
             endif
             do i=2,nghost
@@ -7092,7 +7090,7 @@ module Boundcond
         where (lnrho_<=0) lnrho_=tini
         lnrho_=log(lnrho_)
       endif
-
+!
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
@@ -7118,7 +7116,7 @@ module Boundcond
 !
 !  Set ghost values to diminishing amplitude of boundary value.
 !  Motivation density spikes in 'ism' runs leading to temp spikes that
-!  crash the code on outflows, but halo density much lower so 'cop' 
+!  crash the code on outflows, but halo density much lower so 'cop'
 !  induces mass inflows which are too high to be physically sustainable.
 !
 !  13-feb-11/fred: adapted from bc_ctz
