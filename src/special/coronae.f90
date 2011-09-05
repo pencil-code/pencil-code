@@ -136,7 +136,7 @@ module Special
 !
 !  10-sep-10/bing: coded
 !
-      use FArrayManager
+      use FArrayManager, only: farray_register_pde
 !
       call farray_register_pde('spitzer',ispitzer,vector=3)
       ispitzerx=ispitzer; ispitzery=ispitzer+1; ispitzerz=ispitzer+2
@@ -468,7 +468,7 @@ module Special
       use Diagnostics,     only : max_mn_name
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx) :: b2_1,qsat,qabs
@@ -1148,7 +1148,7 @@ module Special
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx,3) :: hhh,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
@@ -1157,7 +1157,7 @@ module Special
       real, dimension (nx,3) :: glnTT_upwind
       integer :: i,j,k
       real :: ksatb
-      type (pencil_case) :: p
+      type (pencil_case), intent(in) :: p
 !
 !  calculate unit vector of bb
 !
@@ -1199,7 +1199,7 @@ module Special
       enddo
 !
       do i=1,3
-        call der_upwind1st(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
       enddo
       gKp = 3.5*glnTT_upwind
 !
@@ -1815,7 +1815,6 @@ module Special
 !  13-sep-10/bing: coded
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: lnrho0
       use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -2581,6 +2580,8 @@ module Special
       integer :: xrange,yrange
       integer :: xpos,ypos
 !      logical :: loverlapp
+!
+! SVEN: ACHTUNG xrange ist integer aber xrange_arr ist ein Real
 !
       xrange=xrange_arr(level)
       yrange=yrange_arr(level)
@@ -3413,6 +3414,78 @@ module Special
       endif
 !
     endsubroutine calc_heatcond_constchi
+!***********************************************************************
+    subroutine der_upwind(f,uu,k,df,j)
+!
+!  High order upwind derivative of variable.
+!  Useful for advecting.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: uu
+      real, dimension (nx) :: df,fac
+      integer :: j,k,l
+!
+      intent(in)  :: f,uu,k,j
+      intent(out) :: df
+!
+      if (nghost /= 3) call fatal_error('der_upwind','only for nghost==3')
+      if (lspherical_coords.or.lcylindrical_coords) &
+          call fatal_error('der_upwind','NOT IMPLEMENTED for non-cartesian grid')
+!
+      if (j == 1) then
+        if (nxgrid /= 1) then
+          fac = 1./6.*dx_1(l1:l2)
+          do l=1,nx
+            if (uu(l,1) > 0.) then
+              df(l) = 11.*f(nghost+l  ,m,n,k)-18.*f(nghost+l-1,m,n,k) &
+                     + 9.*f(nghost+l-2,m,n,k)- 2.*f(nghost+l-3,m,n,k)
+            else
+              df(l) =  2.*f(nghost+l+3,m,n,k)- 9.*f(nghost+l+2,m,n,k) &
+                     +18.*f(nghost+l+1,m,n,k)-11.*f(nghost+l  ,m,n,k)
+            endif
+          enddo
+          df = fac*df
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind: Degenerate case in x-direction'
+        endif
+      elseif (j == 2) then
+        if (nygrid /= 1) then
+          fac = 1./6.*dy_1(m)
+          do l=1,nx
+            if (uu(l,2) > 0.) then
+              df(l) = 11.*f(nghost+l,m  ,n,k)-18.*f(nghost+l,m-1,n,k) &
+                     + 9.*f(nghost+l,m-2,n,k)- 2.*f(nghost+l,m-3,n,k)
+            else
+              df(l) =  2.*f(nghost+l,m+3,n,k)- 9.*f(nghost+l,m+2,n,k) &
+                     +18.*f(nghost+l,m+1,n,k)-11.*f(nghost+l,m  ,n,k)
+            endif
+          enddo
+          df = fac*df
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind: Degenerate case in y-direction'
+        endif
+      elseif (j == 3) then
+        if (nzgrid /= 1) then
+          fac = 1./6.*dz_1(n)
+          do l=1,nx
+            if (uu(l,3) > 0.) then
+              df(l) = 11.*f(nghost+l,m,n  ,k)-18.*f(nghost+l,m,n-1,k) &
+                     + 9.*f(nghost+l,m,n-2,k)- 2.*f(nghost+l,m,n-3,k)
+            else
+              df(l) =  2.*f(nghost+l,m,n+3,k)- 9.*f(nghost+l,m,n+2,k) &
+                     +18.*f(nghost+l,m,n+1,k)-11.*f(nghost+l,m,n  ,k)
+            endif
+          enddo
+          df = fac*df
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind: Degenerate case in z-direction'
+        endif
+      endif
+!
+    endsubroutine der_upwind
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
