@@ -53,7 +53,7 @@ module Hydro
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
-  real, dimension (mz) :: c2z,csz,s2z,cz,sz
+  real, dimension (mz) :: c2z,s2z,cz,sz
 !
 !  Precession matrices.
 !
@@ -558,7 +558,6 @@ module Hydro
       sz=s
       c2z=c**2
       s2z=s**2
-      csz=c*s
 !
 !  Rescale magnetic field by a factor reinitialize_aa.
 !
