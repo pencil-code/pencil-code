@@ -381,7 +381,7 @@ contains
 !
     endsubroutine setup_vert_profiles
 !***********************************************************************
-  subroutine hydrostatic_z(f)
+    subroutine hydrostatic_z(f)
 !
 !  Intialize the density for given temperprofile in vertical
 !  z direction by solving hydrostatic equilibrium.
@@ -391,106 +391,106 @@ contains
 !  Temperature given as function lnT(z) in SI units
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
-    use EquationOfState, only: gamma,cs2top,cs2bot
-    use Gravity, only: gravz
-    use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
-    use Syscalls, only: file_exists, file_size
+      use EquationOfState, only: gamma,cs2top,cs2bot
+      use Gravity, only: gravz
+      use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
+      use Syscalls, only: file_exists, file_size
 !
-    real, dimension (mx,my,mz,mfarray) :: f
-    real :: ztop,zbot
-    integer :: prof_nz
-    real, dimension(:), allocatable :: prof_lnTT,prof_z
-    real :: tmp_lnrho,tmp_lnT,tmpdT,tmp_z,dz_step,lnrho_0
-    integer :: i,lend,lend_b8,j,ierr,unit=1
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ztop,zbot
+      integer :: prof_nz
+      real, dimension(:), allocatable :: prof_lnTT,prof_z
+      real :: tmp_lnrho,tmp_lnT,tmpdT,tmp_z,dz_step,lnrho_0
+      integer :: i,lend,lend_b8,j,ierr,unit=1
 !
 ! file location settings
-    character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
+      character (len=*), parameter :: lnT_dat = 'prof_lnT.dat'
 !
-    inquire(IOLENGTH=lend) 1.0
-    inquire(IOLENGTH=lend_b8) 1.0d0
+      inquire(IOLENGTH=lend) 1.0
+      inquire(IOLENGTH=lend_b8) 1.0d0
 !
-    if (lentropy.or.ltemperature_nolog.or.lthermal_energy.or.ldensity_nolog) &
-        call fatal_error('hydrostatic','only implemented for ltemperature')
+      if (lentropy.or.ltemperature_nolog.or.lthermal_energy.or.ldensity_nolog) &
+          call fatal_error('hydrostatic','only implemented for ltemperature')
 !
-    lnrho_0 = log(rho_init)
+      lnrho_0 = log(rho_init)
 !
 ! read temperature profile for interpolation
 !
 ! file access is only done on the MPI root rank
-    if (lroot) then
-      if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
-          .true., 'setup_special: file not found: '//trim(lnT_dat))
+      if (lroot) then
+        if (.not. file_exists (lnT_dat)) call stop_it_if_any ( &
+            .true., 'setup_special: file not found: '//trim(lnT_dat))
 ! find out, how many data points our profile file has
-      prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
-    endif
+        prof_nz = (file_size (lnT_dat) - 2*2*4) / (lend*8/lend_b8 * 2)
+      endif
 !
-    call stop_it_if_any(.false.,'')
-    call mpibcast_int (prof_nz,1)
+      call stop_it_if_any(.false.,'')
+      call mpibcast_int (prof_nz,1)
 !
-    allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
-    if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
-        'Could not allocate memory for z coordinate or lnTT profile')
+      allocate (prof_z(prof_nz), prof_lnTT(prof_nz), stat=ierr)
+      if (ierr > 0) call stop_it_if_any (.true.,'setup_special: '// &
+          'Could not allocate memory for z coordinate or lnTT profile')
 !
-    if (lroot) then
-      open (unit,file=lnT_dat,form='unformatted',status='unknown', &
-          recl=lend*prof_nz)
-      read (unit,iostat=ierr) prof_lnTT
-      read (unit,iostat=ierr) prof_z
-      if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
-          'Error reading stratification file: "'//trim(lnT_dat)//'"')
-      close (unit)
-    endif
-    call stop_it_if_any(.false.,'')
+      if (lroot) then
+        open (unit,file=lnT_dat,form='unformatted',status='unknown', &
+            recl=lend*prof_nz)
+        read (unit,iostat=ierr) prof_lnTT
+        read (unit,iostat=ierr) prof_z
+        if (ierr /= 0) call stop_it_if_any(.true.,'setup_special: '// &
+            'Error reading stratification file: "'//trim(lnT_dat)//'"')
+        close (unit)
+      endif
+      call stop_it_if_any(.false.,'')
 !
-    call mpibcast_real (prof_lnTT,prof_nz)
-    call mpibcast_real (prof_z,prof_nz)
-    !
-    prof_z = prof_z*1.e6/unit_length
-    prof_lnTT = prof_lnTT - log(real(unit_temperature))
-    !
-    ! get step width
-    ! should be smaler than grid width and
-    ! data width
-    !
-    dz_step = min((prof_z(2)-prof_z(1)),minval(1./dz_1))
-    dz_step = dz_step/10.
-    !
-    do j=n1,n2
-      tmp_lnrho = lnrho_0
-      tmp_lnT = prof_lnTT(1)
-      tmp_z = prof_z(1)
-      !
-      ztop = xyz0(3)+Lxyz(3)
-      zbot = xyz0(3)
-      !
-      do while (tmp_z <= ztop)
+      call mpibcast_real (prof_lnTT,prof_nz)
+      call mpibcast_real (prof_z,prof_nz)
+!
+      prof_z = prof_z*1.e6/unit_length
+      prof_lnTT = prof_lnTT - log(real(unit_temperature))
+!
+! get step width
+! should be smaler than grid width and
+! data width
+!
+      dz_step = min((prof_z(2)-prof_z(1)),minval(1./dz_1))
+      dz_step = dz_step/10.
+!
+      do j=n1,n2
+        tmp_lnrho = lnrho_0
+        tmp_lnT = prof_lnTT(1)
+        tmp_z = prof_z(1)
+!
+        ztop = xyz0(3)+Lxyz(3)
+        zbot = xyz0(3)
+!
+        do while (tmp_z <= ztop)
 !
 !  Set sound speed at the boundaries.
-        if (abs(tmp_z-zbot) < dz_step) cs2bot = (gamma-1.)*exp(tmp_lnT)
-        if (abs(tmp_z-ztop) < dz_step) cs2top = (gamma-1.)*exp(tmp_lnT)
+          if (abs(tmp_z-zbot) < dz_step) cs2bot = (gamma-1.)*exp(tmp_lnT)
+          if (abs(tmp_z-ztop) < dz_step) cs2top = (gamma-1.)*exp(tmp_lnT)
 !
-        if (abs(tmp_z-z(j)) <= dz_step) then
-          f(:,:,j,ilnrho) = tmp_lnrho
-          f(:,:,j,ilnTT)  = tmp_lnT
-        endif
-!  new z coord
-        tmp_z = tmp_z + dz_step
-!  get T at new z
-        do i=1,prof_nz-1
-          if (tmp_z >= prof_z(i)  .and. tmp_z < prof_z(i+1) ) then
-            tmpdT = (prof_lnTT(i+1)-prof_lnTT(i))/(prof_z(i+1)-prof_z(i)) * &
-                (tmp_z-prof_z(i)) + prof_lnTT(i) -tmp_lnT
-            tmp_lnT = tmp_lnT + tmpdT
-          elseif (tmp_z >= prof_z(prof_nz)) then
-            tmpdT = prof_lnTT(prof_nz) - tmp_lnT
-            tmp_lnT = tmp_lnT + tmpdT
+          if (abs(tmp_z-z(j)) <= dz_step) then
+            f(:,:,j,ilnrho) = tmp_lnrho
+            f(:,:,j,ilnTT)  = tmp_lnT
           endif
+!  new z coord
+          tmp_z = tmp_z + dz_step
+!  get T at new z
+          do i=1,prof_nz-1
+            if (tmp_z >= prof_z(i)  .and. tmp_z < prof_z(i+1) ) then
+              tmpdT = (prof_lnTT(i+1)-prof_lnTT(i))/(prof_z(i+1)-prof_z(i)) * &
+                  (tmp_z-prof_z(i)) + prof_lnTT(i) -tmp_lnT
+              tmp_lnT = tmp_lnT + tmpdT
+            elseif (tmp_z >= prof_z(prof_nz)) then
+              tmpdT = prof_lnTT(prof_nz) - tmp_lnT
+              tmp_lnT = tmp_lnT + tmpdT
+            endif
+          enddo
+          tmp_lnrho=tmp_lnrho-tmpdT+gamma/(gamma-1.)*gravz*exp(-tmp_lnT)*dz_step
         enddo
-        tmp_lnrho=tmp_lnrho-tmpdT+gamma/(gamma-1.)*gravz*exp(-tmp_lnT)*dz_step
       enddo
-    enddo
 !
-  endsubroutine hydrostatic_z
+    endsubroutine hydrostatic_z
 !***********************************************************************
   subroutine hydrostatic_lnTT(f)
 !
@@ -498,7 +498,7 @@ contains
 ! temperature from the f-array.
 ! Integration is done using the trapezoidal rule.
 !
-    use EquationOfState, only: gamma,gamma_m1,get_cp1,lnrho0
+    use EquationOfState, only: gamma,gamma_m1,get_cp1
     use Gravity, only: gravz
     use Mpicomm, only: mpisend_real,mpirecv_real
 !
@@ -566,7 +566,7 @@ contains
 !  Temperature given as function lnT(z) in SI units
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
-    use EquationOfState, only: gamma,cs2top,cs2bot,get_cp1
+    use EquationOfState, only: gamma,get_cp1
     use Gravity, only: get_xgravity
     use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
     use Syscalls, only: file_exists, file_size
