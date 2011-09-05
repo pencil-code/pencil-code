@@ -63,7 +63,8 @@ module Equ
                        calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
           dsolid_dt,dsolid_dt_integrate
-      use Special
+      use Special, only: special_before_boundary, calc_lspecial_pars, &
+          calc_pencils_special, dspecial_dt
       use Sub
       use Testfield
       use Testflow
