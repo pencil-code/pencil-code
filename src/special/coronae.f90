@@ -21,7 +21,8 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
-  real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper3_spi=0.,hyper3_eta=0.
+  real :: hyper3_chi=0.,hyper3_diffrho=0.
+  real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
   real :: width_newton=0.,gauss_newton=0.
@@ -52,7 +53,7 @@ module Special
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
-      Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta, &
+      Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
@@ -807,6 +808,34 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+!  6-sep-11/bing: coded
+!
+      use Sub, only: del6
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: hc
+      integer :: i
+!
+      call keep_compiler_quiet(p)
+!
+      if (hyper3_nu /= 0.) then
+        do i=0,2 
+          call del6(f,iux+i,hc,IGNOREDX=.true.)
+          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_nu*hc
+        enddo
+!
+!  due to ignoredx hyper3_nu has [1/s]
+!
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/cdts)
+      endif
+!
+    endsubroutine special_calc_hydro
+!***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
 ! Additional terms to the right hand side of the
@@ -862,7 +891,7 @@ module Special
           df(l1:l2,m,n,iax+i) = df(l1:l2,m,n,iax+i) + hyper3_eta*hc
         enddo
 !
-!  due to ignoredx hyper3_diffrho has [1/s]
+!  due to ignoredx hyper3_eta has [1/s]
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_eta/cdts)
       endif
@@ -1199,7 +1228,7 @@ module Special
       enddo
 !
       do i=1,3
-        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+        call der_upwind1st(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
       enddo
       gKp = 3.5*glnTT_upwind
 !
