@@ -1446,6 +1446,8 @@ module Diagnostics
 !
       integer, save :: it_save=-1, itsub_save=-1
 !
+!  Only do something if iname is not zero.
+!
       if (iname/=0) then
 !
         if (it/=it_save .or. itsub/=itsub_save) then
@@ -1636,10 +1638,13 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname,n_nghost,isum,lmax
 !
+!  Only do something if iname is not zero.
+!
+      if (iname/=0) then
+!
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
 !
-      if (iname/=0) then
         if (lfirstpoint) fnamez(:,:,iname)=0.0
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
@@ -1661,7 +1666,7 @@ module Diagnostics
           endif
         endif
       endif
- !
+!
     endsubroutine xysum_mn_name_z
 !***********************************************************************
     subroutine xzsum_mn_name_y(a,iname)
@@ -1675,27 +1680,32 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname,m_nghost,isum,lmax
 !
+!  Only do something if iname is not zero.
+!
+      if (iname/=0) then
+!
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
 !
-      if (lfirstpoint) fnamey(:,:,iname)=0.0
+        if (lfirstpoint) fnamey(:,:,iname)=0.0
 !
 !  m starts with mghost+1=4, so the correct index is m-nghost.
 !
-      m_nghost=m-nghost
-      lmax=l2
-      if (lav_smallx) lmax=ixav_max
-      if (.not.loutside_avg) then
-        if (lspherical_coords.and.nxgrid>1)then
-          do isum=l1,lmax
-            fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
-                              x(isum)*sinth(m)*a(isum-nghost)
-          enddo
-        else ! also correct for cylindrical
-          do isum=l1,lmax
-            fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
-                              a(isum-nghost)
-          enddo
+        m_nghost=m-nghost
+        lmax=l2
+        if (lav_smallx) lmax=ixav_max
+        if (.not.loutside_avg) then
+          if (lspherical_coords.and.nxgrid>1)then
+            do isum=l1,lmax
+              fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
+                  x(isum)*sinth(m)*a(isum-nghost)
+            enddo
+          else ! also correct for cylindrical
+            do isum=l1,lmax
+              fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+ &
+                  a(isum-nghost)
+            enddo
+          endif
         endif
       endif
 !
@@ -1712,18 +1722,23 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname
 !
+!  Only do something if iname is not zero.
+!
+      if (iname/=0) then
+!
 !  Initialize to zero.
 !
-      if (lfirstpoint) fnamex(:,:,iname)=0.0
+        if (lfirstpoint) fnamex(:,:,iname)=0.0
 !
 !  Use different volume differentials for different coordinate systems.
 !
-      if (lspherical_coords) then
-        fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)**2*sinth(m)*a
-      elseif (lcylindrical_coords) then
-        fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)*a
-      else
-        fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+a
+        if (lspherical_coords) then
+          fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)**2*sinth(m)*a
+        elseif (lcylindrical_coords) then
+          fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+x(l1:l2)*a
+        else
+          fnamex(:,ipx+1,iname)=fnamex(:,ipx+1,iname)+a
+        endif
       endif
 !
     endsubroutine yzsum_mn_name_x
