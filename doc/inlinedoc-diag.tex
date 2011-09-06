@@ -14,9 +14,7 @@
 %%   anelastic.f90
 %%   chemistry.f90
 %%   coronae.f90
-%%   coronae.f90_old.f90
 %%   entropy_anelastic.f90
-%%   from_scratch.f90
 %%   lorenz_gauge.f90
 %%   magnetic_axisym.f90
 %%   meanfield.f90
@@ -611,15 +609,6 @@
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{dtrad}     & radiative loss from RTV \\
 \midrule
-  \multicolumn{2}{c}{Module \file{coronae.f90_old.f90}} \\
-\midrule
-  \var{dtchi2}    & $\delta t / [c_{\delta t,{\rm v}}\,
-                    \delta x^2/\chi_{\rm max}]$
-                    \quad(time step relative to time
-                    step based on heat conductivity;
-                    see \S~\ref{time-step}) \\
-  \var{dtrad}     & radiative loss from RTV \\
-\midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule
   \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
@@ -651,15 +640,6 @@
                     see \S~\ref{time-step}) \\
   \var{ssmxy}     & $\left< s \right>_{z}$ \\
   \var{ssmxz}     & $\left< s \right>_{y}$ \\
-\midrule
-  \multicolumn{2}{c}{Module \file{from_scratch.f90}} \\
-\midrule
-  \var{dtchi2}    & $\delta t / [c_{\delta t,{\rm v}}\,
-                    \delta x^2/\chi_{\rm max}]$
-                    \quad(time step relative to time
-                    step based on heat conductivity;
-                    see \S~\ref{time-step}) \\
-  \var{dtrad}     & radiative loss from RTV \\
 \midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
