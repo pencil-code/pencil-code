@@ -710,22 +710,22 @@ module Testfield
 !
 !  Same, but for z-dependent output (xy-averages)
 !
-          if (idiag_gamz    /=0) call xysum_mn_name_z(+2.*sx*sy(m)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gamz    )
-          if (idiag_alpPERPz/=0) call xysum_mn_name_z(-2.*sx*sy(m)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERPz)
-          if (idiag_alpPARAz/=0) call xysum_mn_name_z(-4.*sx*sy(m)* Eipq(:,3,1)             ,idiag_alpPARAz)
+          call xysum_mn_name_z(+2.*sx*sy(m)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gamz    )
+          call xysum_mn_name_z(-2.*sx*sy(m)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERPz)
+          call xysum_mn_name_z(-4.*sx*sy(m)* Eipq(:,3,1)             ,idiag_alpPARAz)
 !
-          if (idiag_muz     /=0) call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1))) &
+          call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1))) &
             +cx*bampz1(n)*Eipq(:,2,3)),idiag_muz     )
-          if (idiag_betPERPz/=0) call xysum_mn_name_z(-2.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1))) &
+          call xysum_mn_name_z(-2.*sy(m)*(sx*(Eipq(:,2,2)+.5*bampz(n)*(Eipq(:,1,1)-Eipq(:,2,1))) &
             -cx*bampz1(n)*Eipq(:,2,3)),idiag_betPERPz)
-          if (idiag_betPARAz/=0) call xysum_mn_name_z(+4.*cy(m)*                                                        &
+          call xysum_mn_name_z(+4.*cy(m)*                                                        &
              sx*bampz1(n)*Eipq(:,3,2) ,idiag_betPARAz)
 !
-          if (idiag_delz    /=0) call xysum_mn_name_z(+2.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1))) &
+          call xysum_mn_name_z(+2.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1))) &
             -cx*bampz1(n)*Eipq(:,1,3)),idiag_delz    )
-          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1))) &
+          call xysum_mn_name_z(-4.*sy(m)*(sx*(Eipq(:,1,2)-.5*bampz(n)*(Eipq(:,1,1)+Eipq(:,2,1))) &
             +cx*bampz1(n)*Eipq(:,1,3)),idiag_kapPERPz)
-          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-4.*sy(m)* sx*(Eipq(:,3,3)   -bampz(n)* Eipq(:,3,1)             ) &
+          call xysum_mn_name_z(-4.*sy(m)* sx*(Eipq(:,3,3)   -bampz(n)* Eipq(:,3,1)             ) &
                                       ,idiag_kapPARAz)
 !
 !  test fields linear in z, but mean field depends only on y
@@ -778,23 +778,17 @@ module Testfield
 !
 !  xy-averages next.
 !
-          if (idiag_gamz    /=0) call xysum_mn_name_z(+4*sx*sy(m)*sz(n)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gamz    )
-          if (idiag_alpPERPz/=0) call xysum_mn_name_z(-4*sx*sy(m)*sz(n)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERPz)
-          if (idiag_alpPARAz/=0) call xysum_mn_name_z(-8*sx*sy(m)*sz(n)* Eipq(:,3,1)             ,idiag_alpPARAz)
+          call xysum_mn_name_z(+4*sx*sy(m)*sz(n)*(Eipq(:,1,1)-Eipq(:,2,1)),idiag_gamz    )
+          call xysum_mn_name_z(-4*sx*sy(m)*sz(n)*(Eipq(:,1,1)+Eipq(:,2,1)),idiag_alpPERPz)
+          call xysum_mn_name_z(-8*sx*sy(m)*sz(n)* Eipq(:,3,1)             ,idiag_alpPARAz)
 !
-          if (idiag_muz     /=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)), &
-            idiag_muz     )
-          if (idiag_betPERPz/=0) call xysum_mn_name_z(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)), &
-            idiag_betPERPz)
-          if (idiag_betPARAz/=0) call xysum_mn_name_z(+8*sx*                             ky1*cy(m)*sz(n)*Eipq(:,3,2) , &
-            idiag_betPARAz)
+          call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)-ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_muz     )
+          call xysum_mn_name_z(-4*sx*(kz1*sy(m)*cz(n)*Eipq(:,2,2)+ky1*cy(m)*sz(n)*Eipq(:,1,3)),idiag_betPERPz)
+          call xysum_mn_name_z(+8*sx*                             ky1*cy(m)*sz(n)*Eipq(:,3,2) ,idiag_betPARAz)
 !
-          if (idiag_delz    /=0) call xysum_mn_name_z(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)), &
-            idiag_delz    )
-          if (idiag_kapPERPz/=0) call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)), &
-            idiag_kapPERPz)
-          if (idiag_kapPARAz/=0) call xysum_mn_name_z(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             , &
-            idiag_kapPARAz)
+          call xysum_mn_name_z(+4*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)-ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_delz    )
+          call xysum_mn_name_z(-8*sx*(kz1*sy(m)*cz(n)*Eipq(:,1,2)+ky1*cy(m)*sz(n)*Eipq(:,2,3)),idiag_kapPERPz)
+          call xysum_mn_name_z(-8*sx* kz1*sy(m)*cz(n)*Eipq(:,3,3)                             ,idiag_kapPARAz)
 !
         case default
           call fatal_error('daatest_dt','undefined itestfield value')
@@ -828,7 +822,7 @@ module Testfield
 !
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
-! 
+!
       if (lvideo.and.lfirst) then
         do j=1,3
           bb1_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
@@ -841,18 +835,18 @@ module Testfield
     endsubroutine daatest_dt
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
-! 
+!
 !  Write slices for animation of magnetic variables.
-! 
+!
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
-! 
+!
       use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-! 
+!
 !  Loop over slices
-! 
+!
       select case (trim(slices%name))
 !
 !  Magnetic field
@@ -1251,7 +1245,7 @@ module Testfield
       endif
 !
 !  check for those quantities that we want to evaluate online
-! 
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alpPERP',idiag_alpPERP)
         call parse_name(iname,cname(iname),cform(iname),'alpPARA',idiag_alpPARA)

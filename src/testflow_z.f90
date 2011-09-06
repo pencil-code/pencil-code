@@ -938,9 +938,9 @@ module Testflow
         diffus_nu=max(diffus_nu,nutest*dxyz_2)
       endif
 !
-      if (idiag_ux0mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,iuutest  ),idiag_ux0mz)!MR: only testflow # 0
-      if (idiag_uy0mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,iuutest+1),idiag_uy0mz)
-      if (idiag_uz0mz/=0) call xysum_mn_name_z(f(l1:l2,m,n,iuutest+2),idiag_uz0mz)
+      call xysum_mn_name_z(f(l1:l2,m,n,iuutest  ),idiag_ux0mz)!MR: only testflow # 0
+      call xysum_mn_name_z(f(l1:l2,m,n,iuutest+1),idiag_uy0mz)
+      call xysum_mn_name_z(f(l1:l2,m,n,iuutest+2),idiag_uz0mz)
 !
 !  rms values of small scales fields upq in response to the test fields Upq
 !  Obviously idiag_u0rms and idiag_u12rms cannot both be invoked!
@@ -1235,7 +1235,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
                 !!call multmv(uijtest,uutest,unltest)
                 call u_dot_grad(f,iuxtest,uijtest,uutest,unltest,UPWIND=ltestflow_upw_uu)       ! (u0.grad)(u0)
 
-                !!call dot_mn(uutest,ghtest,hnltest)                                            
+                !!call dot_mn(uutest,ghtest,hnltest)
                 if ( .not.lburgers_testflow ) &
                   call u_dot_grad(f,ihhtest,ghtest,uutest,hnltest,UPWIND=ltestflow_upw_lnrho)   ! u0.grad(h0)
 
@@ -1253,10 +1253,10 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
               if ( .not.lburgers_testflow ) then
 !
-                !!call dot_mn(uufluct,ghtest ,hnltest)                                        
+                !!call dot_mn(uufluct,ghtest ,hnltest)
                 call u_dot_grad(f,ihhtest,ghtest,uufluct,hnltest,ltestflow_upw_lnrho)         ! u.grad(htest)
 !
-                !!call dot_mn(uutest,gh0,hnltest,.true.)                                      
+                !!call dot_mn(uutest,gh0,hnltest,.true.)
                 call u_dot_grad(f,iuutest+3,gh0,uutest,hnltest,ltestflow_upw_lnrho,.true.)    ! utest.grad(h0)
 !
               endif

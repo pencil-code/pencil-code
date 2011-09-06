@@ -1049,27 +1049,27 @@ module Testfield
 !  so prevent this warning by writing i3=3 and i4=4
 !
       if (ldiagnos) then
-        if (idiag_bx0mz/=0) call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
-        if (idiag_by0mz/=0) call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
-        if (idiag_bz0mz/=0) call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
-        if (idiag_E111z/=0) call xysum_mn_name_z(Eipq(:,1,i1),idiag_E111z)
-        if (idiag_E211z/=0) call xysum_mn_name_z(Eipq(:,2,i1),idiag_E211z)
-        if (idiag_E311z/=0) call xysum_mn_name_z(Eipq(:,3,i1),idiag_E311z)
-        if (idiag_E121z/=0) call xysum_mn_name_z(Eipq(:,1,i2),idiag_E121z)
-        if (idiag_E221z/=0) call xysum_mn_name_z(Eipq(:,2,i2),idiag_E221z)
-        if (idiag_E321z/=0) call xysum_mn_name_z(Eipq(:,3,i2),idiag_E321z)
-        if (idiag_E112z/=0) call xysum_mn_name_z(Eipq(:,1,i3),idiag_E112z)
-        if (idiag_E212z/=0) call xysum_mn_name_z(Eipq(:,2,i3),idiag_E212z)
-        if (idiag_E312z/=0) call xysum_mn_name_z(Eipq(:,3,i3),idiag_E312z)
-        if (idiag_E122z/=0) call xysum_mn_name_z(Eipq(:,1,i4),idiag_E122z)
-        if (idiag_E222z/=0) call xysum_mn_name_z(Eipq(:,2,i4),idiag_E222z)
-        if (idiag_E322z/=0) call xysum_mn_name_z(Eipq(:,3,i4),idiag_E322z)
-        if (idiag_E10z/=0) call xysum_mn_name_z(Eipq(:,1,iE0),idiag_E10z)
-        if (idiag_E20z/=0) call xysum_mn_name_z(Eipq(:,2,iE0),idiag_E20z)
-        if (idiag_E30z/=0) call xysum_mn_name_z(Eipq(:,3,iE0),idiag_E30z)
-        if (idiag_M11z/=0) call xysum_mn_name_z(Mijpq(:,1,1,i1),idiag_M11z)
-        if (idiag_M22z/=0) call xysum_mn_name_z(Mijpq(:,2,2,i1),idiag_M22z)
-        if (idiag_M33z/=0) call xysum_mn_name_z(Mijpq(:,3,3,i1),idiag_M33z)
+        call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
+        call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
+        call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
+        call xysum_mn_name_z(Eipq(:,1,i1),idiag_E111z)
+        call xysum_mn_name_z(Eipq(:,2,i1),idiag_E211z)
+        call xysum_mn_name_z(Eipq(:,3,i1),idiag_E311z)
+        call xysum_mn_name_z(Eipq(:,1,i2),idiag_E121z)
+        call xysum_mn_name_z(Eipq(:,2,i2),idiag_E221z)
+        call xysum_mn_name_z(Eipq(:,3,i2),idiag_E321z)
+        call xysum_mn_name_z(Eipq(:,1,i3),idiag_E112z)
+        call xysum_mn_name_z(Eipq(:,2,i3),idiag_E212z)
+        call xysum_mn_name_z(Eipq(:,3,i3),idiag_E312z)
+        call xysum_mn_name_z(Eipq(:,1,i4),idiag_E122z)
+        call xysum_mn_name_z(Eipq(:,2,i4),idiag_E222z)
+        call xysum_mn_name_z(Eipq(:,3,i4),idiag_E322z)
+        call xysum_mn_name_z(Eipq(:,1,iE0),idiag_E10z)
+        call xysum_mn_name_z(Eipq(:,2,iE0),idiag_E20z)
+        call xysum_mn_name_z(Eipq(:,3,iE0),idiag_E30z)
+        call xysum_mn_name_z(Mijpq(:,1,1,i1),idiag_M11z)
+        call xysum_mn_name_z(Mijpq(:,2,2,i1),idiag_M22z)
+        call xysum_mn_name_z(Mijpq(:,3,3,i1),idiag_M33z)
 !
 !  averages of alpha and eta
 !
@@ -1305,7 +1305,7 @@ module Testfield
 !
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
-! 
+!
       if (lvideo.and.lfirst) then
         do j=1,3
           bb11_yz(m-m1+1,n-n1+1,j)=bpq(ix_loc-l1+1,j,1)
@@ -1318,18 +1318,18 @@ module Testfield
     endsubroutine daatest_dt
 !***********************************************************************
     subroutine get_slices_testfield(f,slices)
-! 
+!
 !  Write slices for animation of magnetic variables.
-! 
+!
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
-! 
+!
       use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-! 
+!
 !  Loop over slices
-! 
+!
       select case (trim(slices%name))
 !
 !  Magnetic field
@@ -1888,7 +1888,7 @@ module Testfield
       endif
 !
 !  check for those quantities that we want to evaluate online
-! 
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
         call parse_name(iname,cname(iname),cform(iname),'alp21',idiag_alp21)

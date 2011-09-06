@@ -416,10 +416,10 @@ module Entropy
       if (l1davgfirst) then
         if (idiag_ppmx/=0) call yzsum_mn_name_x(p%pp,idiag_ppmx)
         if (idiag_ppmy/=0) call xzsum_mn_name_y(p%pp,idiag_ppmy)
-        if (idiag_ppmz/=0) call xysum_mn_name_z(p%pp,idiag_ppmz)
+        call xysum_mn_name_z(p%pp,idiag_ppmz)
         if (idiag_TTmx/=0) call yzsum_mn_name_x(p%TT,idiag_TTmx)
         if (idiag_TTmy/=0) call xzsum_mn_name_y(p%TT,idiag_TTmy)
-        if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
+        call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
 !  2-D averages.
@@ -645,7 +645,7 @@ module Entropy
           call fatal_error('impose_energy_floor', 'negative energy detected')
         endif
       endif
-! 
+!
 !  Impose the energy floor.
 !
       if (energy_floor > 0.) where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor

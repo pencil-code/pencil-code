@@ -600,7 +600,7 @@ include 'NSCBC.h'
 !
 !  Julien: compared to the above relation that doesn't work, Rgas was multiplied
 !          by mu1 to respect the unities of L_2. There is actually a mistake
-!          in the reference paper of Yoo et al. (CTM 2006) from where the LODI 
+!          in the reference paper of Yoo et al. (CTM 2006) from where the LODI
 !          relations were copied.
 !          In addition, the relation for L_2 given by Yoo et al. was modified
 !          using different hypotheses.
@@ -634,15 +634,15 @@ include 'NSCBC.h'
 !
 !  Julien: If an input velocity file is employed with NSCBC boundary conditions, the
 !          LODI relations are modified to fix the fluctuating inlet velocity as prescribed
-!          in the data file with a fast relaxation time scale. 
+!          in the data file with a fast relaxation time scale.
 !
-          if (inlet_from_file) then 
+          if (inlet_from_file) then
             L_3 = nscbc_sigma_in*(u_tslice(dir2)-0.)*cs/Lxyz(dir1)
             L_3 = L_3 + nscbc_sigma_in*u_t*(fslice(:,:,dir2)-u_in(:,:,dir2))&
                 *ngrid/Lxyz(dir1)
             L_4 = nscbc_sigma_in*(u_tslice(dir3)-0.)*cs/Lxyz(dir1)
             L_4 = L_4 + nscbc_sigma_in*u_t*(fslice(:,:,dir3)-u_in(:,:,dir3))&
-                *ngrid/Lxyz(dir1)  
+                *ngrid/Lxyz(dir1)
             L_5 = nscbc_sigma_in*cs2*rho0*sgn*(u_tslice(dir1)-u_t)*(1-Mach**2)/Lxyz(dir1)
             L_5 = L_5 + nscbc_sigma_in*sgn*rho0*cs*(cs+u_t)* &
                 (fslice(:,:,dir1)-u_in(:,:,dir1))*ngrid/Lxyz(dir1)
@@ -665,7 +665,7 @@ include 'NSCBC.h'
         cs0_average=sum(cs)/ngridpoints
         KK=nscbc_sigma_out*(1.-Mach**2)*cs0_average/Lxyz(dir1)
 !
-        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)*(1-transversal_damping)  
+        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)*(1-transversal_damping)
         if (ilnTT > 0) then
           L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
         else
@@ -1134,7 +1134,7 @@ include 'NSCBC.h'
           iround=int(round)
           shift=round-iround
           grid_shift=shift*grid_points
-          uppergrid=l2_in-int(grid_shift) 
+          uppergrid=l2_in-int(grid_shift)
           lowergrid=uppergrid-1
           weight=grid_shift-int(grid_shift)
 !
@@ -1268,7 +1268,8 @@ include 'NSCBC.h'
 !
       end subroutine find_composition_at_inlet
 !***********************************************************************
-      subroutine turbulent_vel_x(u_turb,lowergrid,uppergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_x(u_turb,lowergrid,uppergrid,imin,imax, &
+          jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
@@ -1284,7 +1285,8 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_x
 !***********************************************************************
-      subroutine turbulent_vel_y(u_turb,lowergrid,uppergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_y(u_turb,lowergrid,uppergrid,imin,imax, &
+          jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
@@ -1300,7 +1302,8 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_y
 !***********************************************************************
-      subroutine turbulent_vel_z(u_turb,lowergrid,uppergrid,imin,imax,jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_z(u_turb,lowergrid,uppergrid,imin,imax, &
+          jmin,jmax,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !

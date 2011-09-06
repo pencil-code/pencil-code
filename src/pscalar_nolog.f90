@@ -92,7 +92,7 @@ module Pscalar
 !
   contains
 !***********************************************************************
-    subroutine register_pscalar() 
+    subroutine register_pscalar()
 !
 !  Initialise variables which should know that we solve for passive
 !  scalar: icc; increase nvar accordingly
@@ -493,7 +493,7 @@ module Pscalar
 !  Consider here the action of a mean friction term, -LLambda*Cbar.
 !  This can be used to compendate for the decay of a horizontally
 !  averaged mean concentration and allows thus the determination of
-!  the turbulent diffusivity under stationary conditions. Only those 
+!  the turbulent diffusivity under stationary conditions. Only those
 !  results are then comparable with the results of the test-field method.
 !
       if (lmean_friction_cc) then
@@ -567,12 +567,12 @@ module Pscalar
       endif
 !
       if (l1davgfirst) then
-        if (idiag_ccmz/=0)    call xysum_mn_name_z(p%cc,idiag_ccmz)
+        call xysum_mn_name_z(p%cc,idiag_ccmz)
         if (idiag_ccmy/=0)    call xzsum_mn_name_y(p%cc,idiag_ccmy)
         if (idiag_ccmx/=0)    call yzsum_mn_name_x(p%cc,idiag_ccmx)
-        if (idiag_uxcmz/=0)   call xysum_mn_name_z(p%uu(:,1)*p%cc,idiag_uxcmz)
-        if (idiag_uycmz/=0)   call xysum_mn_name_z(p%uu(:,2)*p%cc,idiag_uycmz)
-        if (idiag_uzcmz/=0)   call xysum_mn_name_z(p%uu(:,3)*p%cc,idiag_uzcmz)
+        call xysum_mn_name_z(p%uu(:,1)*p%cc,idiag_uxcmz)
+        call xysum_mn_name_z(p%uu(:,2)*p%cc,idiag_uycmz)
+        call xysum_mn_name_z(p%uu(:,3)*p%cc,idiag_uzcmz)
       endif
 !
       if (l2davgfirst) then
@@ -793,7 +793,7 @@ module Pscalar
           slices%ready=.true.
 !
       endselect
-!   
+!
     endsubroutine get_slices_pscalar
 !***********************************************************************
     subroutine calc_mpscalar

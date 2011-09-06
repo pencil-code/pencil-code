@@ -438,7 +438,7 @@ module Selfgravity
       if (l1davgfirst) then
         if (idiag_potselfmx/=0) call yzsum_mn_name_x(p%potself,idiag_potselfmx)
         if (idiag_potselfmy/=0) call xzsum_mn_name_y(p%potself,idiag_potselfmy)
-        if (idiag_potselfmz/=0) call xysum_mn_name_z(p%potself,idiag_potselfmz)
+        call xysum_mn_name_z(p%potself,idiag_potselfmz)
       endif
 !
 !  2-D averages.

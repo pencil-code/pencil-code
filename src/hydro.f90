@@ -379,7 +379,7 @@ module Hydro
   integer :: idiag_uxuymz=0     ! XYAVG_DOC: $\left<u_x u_y\right>_{xy}$
   integer :: idiag_uxuzmz=0     ! XYAVG_DOC: $\left<u_x u_z\right>_{xy}$
   integer :: idiag_uyuzmz=0     ! XYAVG_DOC: $\left<u_y u_z\right>_{xy}$
-  integer :: idiag_ruxuymz=0    ! XYAVG_DOC: 
+  integer :: idiag_ruxuymz=0    ! XYAVG_DOC:
   integer :: idiag_oxuxxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
   integer :: idiag_oyuxymz=0    ! XYAVG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
   integer :: idiag_oxuyxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
@@ -1994,15 +1994,13 @@ module Hydro
 !
 !  mean squared velocity and vorticity
 !
-        if (idiag_u2mz/=0)  call xysum_mn_name_z(p%u2,idiag_u2mz)
-        if (idiag_o2mz/=0)  call xysum_mn_name_z(p%o2,idiag_o2mz)
-        if (idiag_divu2mz/=0)  call xysum_mn_name_z(p%divu**2,idiag_divu2mz)
+        call xysum_mn_name_z(p%u2,idiag_u2mz)
+        call xysum_mn_name_z(p%o2,idiag_o2mz)
+        call xysum_mn_name_z(p%divu**2,idiag_divu2mz)
 !
 !  mean squared mass flux divergence
 !
-        if (idiag_divru2mz/=0) then
-          call xysum_mn_name_z((p%rho*p%divu+p%ugrho)**2,idiag_divru2mz)
-        endif
+        call xysum_mn_name_z((p%rho*p%divu+p%ugrho)**2,idiag_divru2mz)
 !
 !  mean squared curl of mass flux
 !
@@ -2162,30 +2160,28 @@ module Hydro
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst) then
-        if (idiag_fmasszmz/=0) &
-            call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmasszmz)
-        if (idiag_fkinzmz/=0)  &
-            call xysum_mn_name_z(p%ekin*p%uu(:,3),idiag_fkinzmz)
-        if (idiag_uxmz/=0)   call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
-        if (idiag_uymz/=0)   call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
-        if (idiag_uzmz/=0)   call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
-        if (idiag_divumz/=0) call xysum_mn_name_z(p%divu,idiag_divumz)
-        if (idiag_uzdivumz/=0) call xysum_mn_name_z(p%uu(:,3)*p%divu,idiag_uzdivumz)
-        if (idiag_oxmz/=0)   call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
-        if (idiag_oymz/=0)   call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
-        if (idiag_ozmz/=0)   call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
+        call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmasszmz)
+        call xysum_mn_name_z(p%ekin*p%uu(:,3),idiag_fkinzmz)
+        call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
+        call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
+        call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
+        call xysum_mn_name_z(p%divu,idiag_divumz)
+        call xysum_mn_name_z(p%uu(:,3)*p%divu,idiag_uzdivumz)
+        call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
+        call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
+        call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
         if (idiag_uxmy/=0)   call xzsum_mn_name_y(p%uu(:,1),idiag_uxmy)
         if (idiag_uymy/=0)   call xzsum_mn_name_y(p%uu(:,2),idiag_uymy)
         if (idiag_uzmy/=0)   call xzsum_mn_name_y(p%uu(:,3),idiag_uzmy)
         if (idiag_uxmx/=0)   call yzsum_mn_name_x(p%uu(:,1),idiag_uxmx)
         if (idiag_uymx/=0)   call yzsum_mn_name_x(p%uu(:,2),idiag_uymx)
         if (idiag_uzmx/=0)   call yzsum_mn_name_x(p%uu(:,3),idiag_uzmx)
-        if (idiag_ux2mz/=0)  call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
-        if (idiag_uy2mz/=0)  call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
-        if (idiag_uz2mz/=0)  call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
-        if (idiag_rux2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,1)**2,idiag_rux2mz)
-        if (idiag_ruy2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,2)**2,idiag_ruy2mz)
-        if (idiag_ruz2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2mz)
+        call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
+        call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
+        call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
+        call xysum_mn_name_z(p%rho*p%uu(:,1)**2,idiag_rux2mz)
+        call xysum_mn_name_z(p%rho*p%uu(:,2)**2,idiag_ruy2mz)
+        call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2mz)
         if (idiag_ux2my/=0)  call xzsum_mn_name_y(p%uu(:,1)**2,idiag_ux2my)
         if (idiag_uy2my/=0)  call xzsum_mn_name_y(p%uu(:,2)**2,idiag_uy2my)
         if (idiag_uz2my/=0)  call xzsum_mn_name_y(p%uu(:,3)**2,idiag_uz2my)
@@ -2195,41 +2191,41 @@ module Hydro
         if (idiag_ox2mx/=0)  call yzsum_mn_name_x(p%oo(:,1)**2,idiag_ox2mx)
         if (idiag_oy2mx/=0)  call yzsum_mn_name_x(p%oo(:,2)**2,idiag_oy2mx)
         if (idiag_oz2mx/=0)  call yzsum_mn_name_x(p%oo(:,3)**2,idiag_oz2mx)
-        if (idiag_uxuymz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
-        if (idiag_uxuzmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
-        if (idiag_uyuzmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
-        if (idiag_ruxuymz/=0) call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
-        if (idiag_oxuxxmz/=0) call xysum_mn_name_z(p%oo(:,1)*p%uij(:,1,1),idiag_oxuxxmz)
-        if (idiag_oyuxymz/=0) call xysum_mn_name_z(p%oo(:,2)*p%uij(:,1,2),idiag_oyuxymz)
-        if (idiag_oxuyxmz/=0) call xysum_mn_name_z(p%oo(:,1)*p%uij(:,2,1),idiag_oxuyxmz)
-        if (idiag_oyuyymz/=0) call xysum_mn_name_z(p%oo(:,2)*p%uij(:,2,2),idiag_oyuyymz)
-        if (idiag_oxuzxmz/=0) call xysum_mn_name_z(p%oo(:,1)*p%uij(:,3,1),idiag_oxuzxmz)
-        if (idiag_oyuzymz/=0) call xysum_mn_name_z(p%oo(:,2)*p%uij(:,3,2),idiag_oyuzymz)
+        call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
+        call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
+        call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
+        call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
+        call xysum_mn_name_z(p%oo(:,1)*p%uij(:,1,1),idiag_oxuxxmz)
+        call xysum_mn_name_z(p%oo(:,2)*p%uij(:,1,2),idiag_oyuxymz)
+        call xysum_mn_name_z(p%oo(:,1)*p%uij(:,2,1),idiag_oxuyxmz)
+        call xysum_mn_name_z(p%oo(:,2)*p%uij(:,2,2),idiag_oyuyymz)
+        call xysum_mn_name_z(p%oo(:,1)*p%uij(:,3,1),idiag_oxuzxmz)
+        call xysum_mn_name_z(p%oo(:,2)*p%uij(:,3,2),idiag_oyuzymz)
         if (idiag_uxuymy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
         if (idiag_uxuzmy/=0) call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
         if (idiag_uyuzmy/=0) call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
         if (idiag_uxuymx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
         if (idiag_uxuzmx/=0) call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
         if (idiag_uyuzmx/=0) call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
-        if (idiag_ekinmz/=0)  call xysum_mn_name_z(p%ekin,idiag_ekinmz)
+        call xysum_mn_name_z(p%ekin,idiag_ekinmz)
         if (idiag_oumx/=0)   call yzsum_mn_name_x(p%ou,idiag_oumx)
         if (idiag_oumy/=0)   call xzsum_mn_name_y(p%ou,idiag_oumy)
-        if (idiag_oumz/=0)   call xysum_mn_name_z(p%ou,idiag_oumz)
+        call xysum_mn_name_z(p%ou,idiag_oumz)
         if (idiag_uguxmx/=0) call yzsum_mn_name_x(p%ugu(:,1),idiag_uguxmx)
         if (idiag_uguymx/=0) call yzsum_mn_name_x(p%ugu(:,2),idiag_uguymx)
         if (idiag_uguzmx/=0) call yzsum_mn_name_x(p%ugu(:,3),idiag_uguzmx)
         if (idiag_uguxmy/=0) call xzsum_mn_name_y(p%ugu(:,1),idiag_uguxmy)
         if (idiag_uguymy/=0) call xzsum_mn_name_y(p%ugu(:,2),idiag_uguymy)
         if (idiag_uguzmy/=0) call xzsum_mn_name_y(p%ugu(:,3),idiag_uguzmy)
-        if (idiag_uguxmz/=0) call xysum_mn_name_z(p%ugu(:,1),idiag_uguxmz)
-        if (idiag_uguymz/=0) call xysum_mn_name_z(p%ugu(:,2),idiag_uguymz)
-        if (idiag_uguzmz/=0) call xysum_mn_name_z(p%ugu(:,3),idiag_uguzmz)
-        if (idiag_u3u21mz/=0) call xysum_mn_name_z(p%u3u21,idiag_u3u21mz)
-        if (idiag_u1u32mz/=0) call xysum_mn_name_z(p%u1u32,idiag_u1u32mz)
-        if (idiag_u2u13mz/=0) call xysum_mn_name_z(p%u2u13,idiag_u2u13mz)
-        if (idiag_u2u31mz/=0) call xysum_mn_name_z(p%u2u31,idiag_u2u31mz)
-        if (idiag_u3u12mz/=0) call xysum_mn_name_z(p%u3u12,idiag_u3u12mz)
-        if (idiag_u1u23mz/=0) call xysum_mn_name_z(p%u1u23,idiag_u1u23mz)
+        call xysum_mn_name_z(p%ugu(:,1),idiag_uguxmz)
+        call xysum_mn_name_z(p%ugu(:,2),idiag_uguymz)
+        call xysum_mn_name_z(p%ugu(:,3),idiag_uguzmz)
+        call xysum_mn_name_z(p%u3u21,idiag_u3u21mz)
+        call xysum_mn_name_z(p%u1u32,idiag_u1u32mz)
+        call xysum_mn_name_z(p%u2u13,idiag_u2u13mz)
+        call xysum_mn_name_z(p%u2u31,idiag_u2u31mz)
+        call xysum_mn_name_z(p%u3u12,idiag_u3u12mz)
+        call xysum_mn_name_z(p%u1u23,idiag_u1u23mz)
 !  phi-z averages
         if (idiag_u2mr/=0)   call phizsum_mn_name_r(p%u2,idiag_u2mr)
         if (idiag_urmr/=0) &

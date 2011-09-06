@@ -342,7 +342,7 @@ module Particles
         endif
         if (rhop_swarm==0.0) &
             rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
-        if (mp_swarm==0.0) & 
+        if (mp_swarm==0.0) &
             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
@@ -1971,7 +1971,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_rhop) .and. irhop==0) then 
+      if (lpencil_in(i_rhop) .and. irhop==0) then
         lpencil_in(i_np)=.true.
         lpencil_in(i_rhop_swarm)=.true.
       endif
@@ -2360,7 +2360,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
           else
-            if (lcartesian_coords.and.(all(lequidist))) then 
+            if (lcartesian_coords.and.(all(lequidist))) then
               call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
                    sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
             else
@@ -2942,13 +2942,13 @@ k_loop:   do while (.not. (k>npar_loc))
       if (l1davgfirst) then
         if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
         if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
-        if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
+        call xysum_mn_name_z(p%np,idiag_npmz)
         if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
         if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
-        if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        call xysum_mn_name_z(p%rhop,idiag_rhopmz)
         if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
-        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
+        call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif
 !
@@ -3111,7 +3111,7 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo; enddo; enddo
           if (ipar(k)/=1 .and. rp<rsinkparticle_1) then
             if (lparticles_mass) then
-              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm) 
+              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm)
               momp_swarm_removed = momp_swarm_removed + &
                   fp(k,ivpx:ivpz)*fp(k,irhopswarm)
 !              if (lshear) then
@@ -3741,7 +3741,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !
           do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1) 
+            ix0=ineargrid(k,1)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
             if (lcollisional_heat .or. ldiagnos) then
@@ -4055,9 +4055,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,IVIS=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then 
+      elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
-      elseif (ivis=='sqrtrho-nu-const') then 
+      elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
       else
         call fatal_error('calc_pencil_rep','No such ivis!')
@@ -4129,9 +4129,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then 
+      elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then 
+      elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k))
       else
         call fatal_error('calc_pencil_rep','No such ivis!')
@@ -4189,9 +4189,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then 
+      elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then 
+      elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k))
       else
         call fatal_error('calc_pencil_rep','No such ivis!')

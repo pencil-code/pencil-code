@@ -43,8 +43,8 @@ module Lorenz_gauge
   namelist /lorenz_gauge_run_pars/ &
     cphi,etaphi
 !
-! Declare any index variables necessary for main or 
-! 
+! Declare any index variables necessary for main or
+!
    integer :: iphi=0
 !
 ! other variables (needs to be consistent with reset list below)
@@ -152,7 +152,7 @@ module Lorenz_gauge
     subroutine calc_pencils_lorenz_gauge(f,p)
 !
 ! Calculates pencils of the lorenz gauge
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -239,7 +239,7 @@ module Lorenz_gauge
       endif
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
-        if (idiag_phibzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_phibzmz)
+        call xysum_mn_name_z(p%bb(:,3),idiag_phibzmz)
       endif
 !
     endsubroutine dlorenz_gauge_dt
@@ -368,4 +368,3 @@ module Lorenz_gauge
     endsubroutine get_slices_lorenz_gauge
 !***********************************************************************
 endmodule Lorenz_gauge
-

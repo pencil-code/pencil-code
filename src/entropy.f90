@@ -2375,9 +2375,9 @@ module Entropy
 !
       if (lprestellar_cool_iso) then
         lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_rho)=.true.  
-        lpenc_requested(i_divu)=.true.      
-        lpenc_requested(i_pp)=.true.  
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_pp)=.true.
       endif
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -2622,7 +2622,7 @@ module Entropy
           call calc_heat_cool(df,p,Hmax)
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
-      if (lprestellar_cool_iso) call calc_heat_cool_prestellar(f,df,p) 
+      if (lprestellar_cool_iso) call calc_heat_cool_prestellar(f,df,p)
 !
 !  Interstellar radiative cooling and UV heating.
 !
@@ -2749,29 +2749,25 @@ module Entropy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
-        if (idiag_fconvz/=0) &
-            call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
+        call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         if (idiag_ssmx/=0)  call yzsum_mn_name_x(p%ss,idiag_ssmx)
         if (idiag_ssmy/=0)  call xzsum_mn_name_y(p%ss,idiag_ssmy)
-        if (idiag_ssmz/=0)  call xysum_mn_name_z(p%ss,idiag_ssmz)
+        call xysum_mn_name_z(p%ss,idiag_ssmz)
         if (idiag_ppmx/=0)  call yzsum_mn_name_x(p%pp,idiag_ppmx)
         if (idiag_ppmy/=0)  call xzsum_mn_name_y(p%pp,idiag_ppmy)
-        if (idiag_ppmz/=0)  call xysum_mn_name_z(p%pp,idiag_ppmz)
+        call xysum_mn_name_z(p%pp,idiag_ppmz)
         if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
         if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
-        if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
-        if (idiag_TT2mz/=0)  call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
+        call xysum_mn_name_z(p%TT,idiag_TTmz)
+        call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
         if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
         if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
-        if (idiag_uxTTmz/=0) &
-            call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
+        call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
         if (idiag_uxTTmx/=0) &
             call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
-        if (idiag_uyTTmz/=0) &
-            call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
-        if (idiag_uzTTmz/=0) &
-            call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
+        call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
+        call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
       endif
 !
 !  2-D averages.
@@ -3740,7 +3736,7 @@ module Entropy
 !  Write radiative flux array.
 !
       if (l1davgfirst) then
-        if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-chix*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_kramers)
+        call xysum_mn_name_z(-chix*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_kramers)
       endif
 !
 !  2d-averages
@@ -3935,8 +3931,8 @@ module Entropy
 !  Write radiative flux array.
 !
       if (l1davgfirst) then
-        if (idiag_fradz_Kprof/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
-        if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
+        call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
 !
 !  2d-averages
@@ -4341,7 +4337,7 @@ module Entropy
 !  Write divergence of cooling flux.
 !
       if (l1davgfirst) then
-        if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
+        call xysum_mn_name_z(heat,idiag_dcoolz)
       endif
 !
     endsubroutine get_heat_cool_gravz
@@ -4745,7 +4741,7 @@ module Entropy
     subroutine calc_heat_cool_prestellar(f,df,p)
 !
 !  Removes the heating caused by the work done to the system. Use for the
-!  pre-stellar cloud simulations. 
+!  pre-stellar cloud simulations.
 !
 !  12-nov-10/mvaisala: adapted from cacl_heat_cool
 !
@@ -4766,7 +4762,7 @@ module Entropy
       call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + 0.5*pp*p%divu
 !
-!  0.5 Because according to the virial theorem a collapsin cloud loses approximately 
+!  0.5 Because according to the virial theorem a collapsin cloud loses approximately
 !  half of its internal energy to radiation.
 !
       !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%pp*p%divu
@@ -5223,7 +5219,7 @@ module Entropy
 !***********************************************************************
     subroutine get_gravz_chit()
 !
-!  Calculate z-dependent chi_t and its gradient and store them in 
+!  Calculate z-dependent chi_t and its gradient and store them in
 !  arrays which are saved at the first time step and used in all the next.
 !
 !  25-feb-2011/gustavo+dhruba: stolen from chit_profile below
@@ -5238,13 +5234,13 @@ module Entropy
 !
 !  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
-      if (zz1 == impossible) then 
+      if (zz1 == impossible) then
           zbot=z1
       else
           zbot=zz1
       endif
 !
-      if (zz2 == impossible) then 
+      if (zz2 == impossible) then
           ztop=z2
       else
           ztop=zz2

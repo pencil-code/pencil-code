@@ -117,7 +117,7 @@ module Particles
         endif
         if (rhop_swarm==0.0) &
              rhop_swarm = eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
-        if (mp_swarm==0.0) & 
+        if (mp_swarm==0.0) &
              mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
@@ -314,9 +314,9 @@ module Particles
           if (.not.(lcartesian_coords.and.(all(lequidist)))) &
                call fatal_error("init_particles","dragforce_equilibrium " //&
                "initial condition not implemented for polar or " //&
-               "non-equidistant grids")               
+               "non-equidistant grids")
 !  Calculate average dust-to-gas ratio in box.
-          
+
           if (ldensity_nolog) then
             eps = rhop_swarm*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
                 sum(f(l1:l2,m1:m2,n1:n2,irho))
@@ -412,7 +412,7 @@ module Particles
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_rhop) .and. irhop==0) then 
+      if (lpencil_in(i_rhop) .and. irhop==0) then
         lpencil_in(i_np)=.true.
         lpencil_in(i_rhop_swarm)=.true.
       endif
@@ -614,9 +614,9 @@ module Particles
         if (idiag_npmx/=0)   call yzsum_mn_name_x(p%np,idiag_npmx)
         if (idiag_rhopmx/=0) call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
         if (idiag_epspmx/=0) call yzsum_mn_name_x(p%epsp,idiag_epspmx)
-        if (idiag_npmz/=0)   call xysum_mn_name_z(p%np,idiag_npmz)
-        if (idiag_rhopmz/=0) call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_epspmz/=0) call xysum_mn_name_z(p%epsp,idiag_epspmz)
+        call xysum_mn_name_z(p%np,idiag_npmz)
+        call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        call xysum_mn_name_z(p%epsp,idiag_epspmz)
       endif
 !
       if (lfirstcall) lfirstcall=.false.

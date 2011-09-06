@@ -60,7 +60,7 @@ module Density
   real :: invgrav_ampl = 0.0
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: mass_source_tau1=1.
-  real :: mass_cloud=0.0, T_cloud=0.0, T_cloud_out_rel=1.0, xi_coeff=1.0 
+  real :: mass_cloud=0.0, T_cloud=0.0, T_cloud_out_rel=1.0, xi_coeff=1.0
   real :: temp_coeff=1.0, dens_coeff=1.0, temp_trans = 0.0
   real :: temp_coeff_out = 1.0
   complex :: coeflnrho=0.0
@@ -1933,7 +1933,7 @@ module Density
 !
       if (l1davgfirst) then
         if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
-        if (idiag_rhomz/=0)    call xysum_mn_name_z(p%rho,idiag_rhomz)
+        call xysum_mn_name_z(p%rho,idiag_rhomz)
         if (idiag_rhomx/=0)    call yzsum_mn_name_x(p%rho,idiag_rhomx)
         if (idiag_rhomy/=0)    call xzsum_mn_name_y(p%rho,idiag_rhomy)
       endif

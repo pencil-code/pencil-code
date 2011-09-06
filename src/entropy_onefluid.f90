@@ -596,11 +596,11 @@ module Entropy
 !  idiag_fradz is done in the calc_headcond routine
 !
      if (l1davgfirst) then
-        if (idiag_fconvz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
-        if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
+        call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        call xysum_mn_name_z(p%ss,idiag_ssmz)
         if (idiag_ssmy/=0) call xzsum_mn_name_y(p%ss,idiag_ssmy)
         if (idiag_ssmx/=0) call yzsum_mn_name_x(p%ss,idiag_ssmx)
-        if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
+        call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
     endsubroutine dss_dt
@@ -887,8 +887,8 @@ module Entropy
 !  Write radiative flux array
 !
       if (l1davgfirst) then
-        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond*p%TT*glnT(:,3),idiag_fradz)
-        if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        call xysum_mn_name_z(-hcond*p%TT*glnT(:,3),idiag_fradz)
+        call xysum_mn_name_z(-chi_t*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
 !
 !  "turbulent" entropy diffusion

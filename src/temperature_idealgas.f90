@@ -739,7 +739,7 @@ module Entropy
         lpencil_in(i_gTT)  =.true.
         lpencil_in(i_uu)=.true.
       endif
-!      
+!
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
@@ -970,23 +970,20 @@ module Entropy
       if (l1davgfirst) then
         if (idiag_ppmx/=0)  call yzsum_mn_name_x(p%pp,idiag_ppmx)
         if (idiag_ppmy/=0)  call xzsum_mn_name_y(p%pp,idiag_ppmy)
-        if (idiag_ppmz/=0)  call xysum_mn_name_z(p%pp,idiag_ppmz)
+        call xysum_mn_name_z(p%pp,idiag_ppmz)
         if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
         if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
-        if (idiag_TTmz/=0)  call xysum_mn_name_z(p%TT,idiag_TTmz)
-        if (idiag_ppuzmz/=0)  call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
-        if (idiag_ethmz/=0)   call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
+        call xysum_mn_name_z(p%TT,idiag_TTmz)
+        call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
+        call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
         if (idiag_ethuxmx/=0) call yzsum_mn_name_x(p%rho*p%ee*p%uu(:,1), &
             idiag_ethuxmx)
-        if (idiag_ethuxmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1), &
-            idiag_ethuxmz)
-        if (idiag_ethuymz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2), &
-            idiag_ethuymz)
-        if (idiag_ethuzmz/=0) call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3), &
-            idiag_ethuzmz)
-        if (idiag_fpresxmz/=0) call xysum_mn_name_z(p%fpres(:,1),idiag_fpresxmz)
-        if (idiag_fpresymz/=0) call xysum_mn_name_z(p%fpres(:,2),idiag_fpresymz)
-        if (idiag_fpreszmz/=0) call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
+        call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1),idiag_ethuxmz)
+        call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2),idiag_ethuymz)
+        call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3),idiag_ethuzmz)
+        call xysum_mn_name_z(p%fpres(:,1),idiag_fpresxmz)
+        call xysum_mn_name_z(p%fpres(:,2),idiag_fpresymz)
+        call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
       endif
 !
 !  2-D averages.

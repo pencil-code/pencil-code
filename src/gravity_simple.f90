@@ -83,7 +83,7 @@ module Gravity
       ss_bot, ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
-      lboussinesq, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, & 
+      lboussinesq, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const
 !
   namelist /grav_run_pars/ &
@@ -603,9 +603,8 @@ module Gravity
       if (l1davgfirst) then
         if (idiag_epotmx/=0) call yzsum_mn_name_x(p%epot,idiag_epotmx)
         if (idiag_epotmy/=0) call xzsum_mn_name_y(p%epot,idiag_epotmy)
-        if (idiag_epotmz/=0) call xysum_mn_name_z(p%epot,idiag_epotmz)
-        if (idiag_epotuzmz/=0) call xysum_mn_name_z(p%epot*p%uu(:,3), &
-            idiag_epotuzmz)
+        call xysum_mn_name_z(p%epot,idiag_epotmz)
+        call xysum_mn_name_z(p%epot*p%uu(:,3),idiag_epotuzmz)
       endif
 !
       call keep_compiler_quiet(f)
@@ -947,7 +946,7 @@ module Gravity
     endsubroutine compute_gravity_star
 !***********************************************************************
     subroutine get_xgravity(xgrav)
-!      
+!
 !  Used from the initial conditions
 !
 !  04-oct-10/bing: coded

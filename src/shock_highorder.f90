@@ -364,7 +364,7 @@ module Shock
       if (l1davgfirst) then
         if (idiag_shockmx/=0)  call yzsum_mn_name_x(p%shock,idiag_shockmx)
         if (idiag_shockmy/=0)  call xzsum_mn_name_y(p%shock,idiag_shockmy)
-        if (idiag_shockmz/=0)  call xysum_mn_name_z(p%shock,idiag_shockmz)
+        call xysum_mn_name_z(p%shock,idiag_shockmz)
       endif
 !
     endsubroutine calc_pencils_shock
