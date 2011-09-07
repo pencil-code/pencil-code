@@ -34,6 +34,7 @@ module Entropy
   real :: chi=0.0, chi_shock=0.0, chi_shock_gradTT=0., chi_hyper3_mesh=0.
   real :: energy_floor = 0.
   logical :: lviscosity_heat=.true.
+  logical :: lupw_eth=.false.
   logical :: lcheck_negative_energy=.false.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
@@ -46,7 +47,7 @@ module Entropy
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
-      lviscosity_heat, &
+      lviscosity_heat, lupw_eth, &
       chi, chi_shock, chi_shock_gradTT, chi_hyper3_mesh, &
       energy_floor, lcheck_negative_energy
 !
@@ -308,7 +309,7 @@ module Entropy
       use Diagnostics
       use EquationOfState, only: gamma
       use Special, only: special_calc_entropy
-      use Sub, only: identify_bcs, dot, dot2
+      use Sub, only: identify_bcs, u_dot_grad
       use Viscosity, only: calc_viscous_heat
       use Deriv, only: der6
 !
@@ -349,15 +350,14 @@ module Entropy
 !
 !  Add energy transport term.
 !
-      if (.not. lweno_transport) then
-        uu = p%uu
-        if (lconst_advection) uu = uu + spread(u0_advec,1,nx)
-        call dot(uu,p%geth,ugeth)
-        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%eth*p%divu - ugeth
-      endif
       if (lweno_transport) then
         if (lconst_advection) call fatal_error('dss_dt', 'constant background advection is not implemented with WENO transport.')
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%transpeth
+      else
+        uu = p%uu
+        if (lconst_advection) uu = uu + spread(u0_advec,1,nx)
+        call u_dot_grad(f, ieth, p%geth, uu, ugeth, UPWIND=lupw_eth)
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%eth*p%divu - ugeth
       endif
 !
 !  Add P*dV work.
