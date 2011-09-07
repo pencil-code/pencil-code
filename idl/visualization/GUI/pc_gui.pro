@@ -175,7 +175,9 @@ if (not pc_gui_loaded) then BEGIN
 	disp_size_z = round ((dim.mz - 2*dim.nghostz) / data_reduction[2]) > 1
 
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
-	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
+	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + $
+                 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + $
+                 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
 	correction = 1.0 - ghosts / double (dim.mxgrid*dim.mygrid*dim.mzgrid)
 	file_struct = file_info (procdir+varfile)
 	gb_per_file = (file_struct.size * subdomains * correction) / 1024. / 1024. / 1024.
