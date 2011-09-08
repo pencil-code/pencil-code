@@ -968,16 +968,15 @@ module Entropy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        if (idiag_ppmx/=0)  call yzsum_mn_name_x(p%pp,idiag_ppmx)
-        if (idiag_ppmy/=0)  call xzsum_mn_name_y(p%pp,idiag_ppmy)
+        call yzsum_mn_name_x(p%pp,idiag_ppmx)
+        call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
-        if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
-        if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
+        call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        call xzsum_mn_name_y(p%TT,idiag_TTmy)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
         call xysum_mn_name_z(p%pp*p%uu(:,3),idiag_ppuzmz)
         call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
-        if (idiag_ethuxmx/=0) call yzsum_mn_name_x(p%rho*p%ee*p%uu(:,1), &
-            idiag_ethuxmx)
+        call yzsum_mn_name_x(p%rho*p%ee*p%uu(:,1),idiag_ethuxmx)
         call xysum_mn_name_z(p%rho*p%ee*p%uu(:,1),idiag_ethuxmz)
         call xysum_mn_name_z(p%rho*p%ee*p%uu(:,2),idiag_ethuymz)
         call xysum_mn_name_z(p%rho*p%ee*p%uu(:,3),idiag_ethuzmz)

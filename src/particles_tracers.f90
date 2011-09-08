@@ -611,9 +611,9 @@ module Particles
       endif
 !
       if (l1davgfirst) then
-        if (idiag_npmx/=0)   call yzsum_mn_name_x(p%np,idiag_npmx)
-        if (idiag_rhopmx/=0) call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
-        if (idiag_epspmx/=0) call yzsum_mn_name_x(p%epsp,idiag_epspmx)
+        call yzsum_mn_name_x(p%np,idiag_npmx)
+        call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
+        call yzsum_mn_name_x(p%epsp,idiag_epspmx)
         call xysum_mn_name_z(p%np,idiag_npmz)
         call xysum_mn_name_z(p%rhop,idiag_rhopmz)
         call xysum_mn_name_z(p%epsp,idiag_epspmz)

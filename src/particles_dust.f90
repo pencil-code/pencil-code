@@ -2940,14 +2940,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-        if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
-        if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
+        call yzsum_mn_name_x(p%np,idiag_npmx)
+        call xzsum_mn_name_y(p%np,idiag_npmy)
         call xysum_mn_name_z(p%np,idiag_npmz)
-        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
-        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
+        call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
+        call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
         call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
-        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
+        call yzsum_mn_name_x(p%epsp,idiag_epspmx)
+        call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif

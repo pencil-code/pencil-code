@@ -568,8 +568,8 @@ module Pscalar
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(p%cc,idiag_ccmz)
-        if (idiag_ccmy/=0)    call xzsum_mn_name_y(p%cc,idiag_ccmy)
-        if (idiag_ccmx/=0)    call yzsum_mn_name_x(p%cc,idiag_ccmx)
+        call xzsum_mn_name_y(p%cc,idiag_ccmy)
+        call yzsum_mn_name_x(p%cc,idiag_ccmx)
         call xysum_mn_name_z(p%uu(:,1)*p%cc,idiag_uxcmz)
         call xysum_mn_name_z(p%uu(:,2)*p%cc,idiag_uycmz)
         call xysum_mn_name_z(p%uu(:,3)*p%cc,idiag_uzcmz)

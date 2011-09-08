@@ -2751,23 +2751,22 @@ module Entropy
       if (l1davgfirst) then
         call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
         call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
-        if (idiag_ssmx/=0)  call yzsum_mn_name_x(p%ss,idiag_ssmx)
-        if (idiag_ssmy/=0)  call xzsum_mn_name_y(p%ss,idiag_ssmy)
+        call yzsum_mn_name_x(p%ss,idiag_ssmx)
+        call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
-        if (idiag_ppmx/=0)  call yzsum_mn_name_x(p%pp,idiag_ppmx)
-        if (idiag_ppmy/=0)  call xzsum_mn_name_y(p%pp,idiag_ppmy)
+        call yzsum_mn_name_x(p%pp,idiag_ppmx)
+        call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
-        if (idiag_TTmx/=0)  call yzsum_mn_name_x(p%TT,idiag_TTmx)
-        if (idiag_TTmy/=0)  call xzsum_mn_name_y(p%TT,idiag_TTmy)
+        call yzsum_mn_name_x(p%TT,idiag_TTmx)
+        call xzsum_mn_name_y(p%TT,idiag_TTmy)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
         call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
-        if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
-        if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
         call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
-        if (idiag_uxTTmx/=0) &
-            call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
+        call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
         call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTTmz)
         call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTTmz)
+        if (idiag_ssmr/=0)  call phizsum_mn_name_r(p%ss,idiag_ssmr)
+        if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
       endif
 !
 !  2-D averages.

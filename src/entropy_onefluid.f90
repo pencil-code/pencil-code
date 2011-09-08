@@ -598,8 +598,8 @@ module Entropy
      if (l1davgfirst) then
         call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
-        if (idiag_ssmy/=0) call xzsum_mn_name_y(p%ss,idiag_ssmy)
-        if (idiag_ssmx/=0) call yzsum_mn_name_x(p%ss,idiag_ssmx)
+        call xzsum_mn_name_y(p%ss,idiag_ssmy)
+        call yzsum_mn_name_x(p%ss,idiag_ssmx)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !

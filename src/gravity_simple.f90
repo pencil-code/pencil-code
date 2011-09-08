@@ -601,8 +601,8 @@ module Gravity
 !  Gravity 1-D diagnostics.
 !
       if (l1davgfirst) then
-        if (idiag_epotmx/=0) call yzsum_mn_name_x(p%epot,idiag_epotmx)
-        if (idiag_epotmy/=0) call xzsum_mn_name_y(p%epot,idiag_epotmy)
+        call yzsum_mn_name_x(p%epot,idiag_epotmx)
+        call xzsum_mn_name_y(p%epot,idiag_epotmy)
         call xysum_mn_name_z(p%epot,idiag_epotmz)
         call xysum_mn_name_z(p%epot*p%uu(:,3),idiag_epotuzmz)
       endif

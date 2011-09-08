@@ -784,8 +784,8 @@ module NeutralDensity
       if (l1davgfirst) then
          if (idiag_rhonmr/=0)    call phizsum_mn_name_r(p%rhon,idiag_rhonmr)
          call xysum_mn_name_z(p%rhon,idiag_rhonmz)
-         if (idiag_rhonmx/=0)    call yzsum_mn_name_x(p%rhon,idiag_rhonmx)
-         if (idiag_rhonmy/=0)    call xzsum_mn_name_y(p%rhon,idiag_rhonmy)
+         call yzsum_mn_name_x(p%rhon,idiag_rhonmx)
+         call xzsum_mn_name_y(p%rhon,idiag_rhonmy)
       endif
 !
 !  Calculate density diagnostics
