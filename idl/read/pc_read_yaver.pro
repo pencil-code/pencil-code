@@ -404,7 +404,7 @@ if (iplot eq -1) then begin
       readu, filelun, t
       if (it eq 0) then t0=t
 ;
-;  Read full data, close and free_lun after endwhile.
+;  Read full data, close and free lun after endwhile.
 ;
       if ( (t ge tmin) and (it mod njump eq 0) ) then begin
         readu, filelun, array_local

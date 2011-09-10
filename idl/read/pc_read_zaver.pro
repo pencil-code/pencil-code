@@ -411,7 +411,7 @@ if (iplot eq -1) then begin
       readu, filelun, t
       if (it eq 0) then t0=t
 ;
-;  Read full data.
+;  Read full data, close and free lun after endwhile.
 ;
       if ( (t ge tmin) and (it mod njump eq 0) ) then begin
         readu, filelun, array_local
@@ -424,6 +424,7 @@ if (iplot eq -1) then begin
       endelse
       it=it+1
     endwhile
+    close, filelun
     free_lun, filelun
 ;
   endfor
@@ -574,10 +575,11 @@ endif else begin
 ;
   endwhile
 ;
-;  Close files.
+;  Close files and free luns.
 ;
   for ip=0,n_elements(filename)-1 do begin
     close, filelun[ip]
+    free_lun, filelun[ip]
   endfor
 endelse
 ;
