@@ -37,12 +37,12 @@ module Shock
   logical :: lgaussian_smooth=.false.
   logical :: lforce_periodic_shockviscosity=.false.
   logical :: lfix_Re_mesh=.false.
-  real    :: div_threshold=0.
-  logical :: lrewrite_shock_boundary=.false.
+  real    :: div_threshold=0.0
+  logical :: lrewrite_shock_boundary=.true.
 !
   namelist /shock_run_pars/ &
-      ishock_max,lgaussian_smooth,lforce_periodic_shockviscosity,&
-      div_threshold,lrewrite_shock_boundary,lfix_Re_mesh
+      ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
+      div_threshold, lrewrite_shock_boundary, lfix_Re_mesh
 !
   integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
   integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
@@ -517,7 +517,7 @@ module Shock
 !
       enddo
 !
-!  Scale given a fixed mesh Reynolds number or
+!  Scale given a fixed mesh Reynolds number.
 !
       if (lfix_Re_mesh) then
         if (headtt) print *, 'Shock: fix mesh Reynolds number at ', re_mesh
@@ -541,7 +541,12 @@ module Shock
         f(:,:,:,ishock) = a * tmp
       else
 !
-!  Scale by dxmax**2
+!  Scale by dxmax**2.
+!
+!  The shearing boundary conditions have a bug that can cause nonsensical
+!  numbers in the corners (bug #61). We can overwrite this bug by defining the
+!  shock viscosity in the ghost zones too. THIS WOULD NOT BE BE NECESSARY
+!  IF THE BUG IN THE SHEARING BOUNDARY CONDITIONS WOULD BE FIXED.
 !
         if (.not.lrewrite_shock_boundary) then
           f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)*dxmax**2
