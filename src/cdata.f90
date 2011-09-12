@@ -574,20 +574,38 @@ module Cdata
 ! to accomodate the following.
   real :: kinematic_phase=0.
 !
+!  Switch for Galilean-invariant advection for global disks (fargo). Used 
+!  in connection with special/fargo
+!
+  logical :: lfargo_advection=.false.
+!
+!  Switch for local isothermal approximation: a hardcoded time-invariant
+!  temperature gradient for global disks. 
+!
+  logical :: llocal_iso=.false.
+!
+!  Switch for using the full speed in less-than-3D simulations
+!  when the velocity in the non-existent direction dominates. 
+!
+  logical :: lisotropic_advection=.false.
+!
+!  Used together with entropy, turns iss into ilntt (i.e., entropy
+!  becomes log temperature). It does the same as using the 
+!  temperature_idealgas.f90 procedure, but draws on the more available
+!  functionality extant in entropy.f90.
+!
+  logical :: pretend_lnTT=.false.
+!
 !  Scrap yard. Please categorise these variables if you know what they do.
 !  Even better: move them to their relevant modules.
 !
   real :: ttransient=0.
   real :: b_ell=1., rbound=1.
   real :: grads0=0.   ! (1/c_p)ds/dz
-  logical :: lisotropic_advection=.false.
-  logical :: lfargo_advection=.false.
-  logical :: pretend_lnTT=.false.
   logical :: lmonolithic_io=.false.
   logical :: lrescaling_magnetic=.false.
   logical :: lrescaling_testscalar=.false.
   logical :: lrescaling_testfield=.false.
-  logical :: llocal_iso=.false.
 !
 !  Allow particles modules to do something special with f; like calculating
 !  the full vorticity field (see equ.f90:pde)
@@ -596,7 +614,8 @@ module Cdata
 !
 !  Dynamical diffusion coefficients with fixed mesh Reynolds number.
 !
-  logical :: ldynamical_diffusion=.false.
   real :: re_mesh=1.
+  logical :: ldynamical_diffusion=.false.
+!
 !***********************************************************************
 endmodule Cdata
