@@ -1,3 +1,5 @@
+# $Id: ts.py 13781 2011-05-04 06:25:24Z iomsn $
+#
 # Convert data from PencilCode format to vtk. Adopted from pc2vtk.pro.
 #
 # Author: Simon Candelaresi (iomsn@physto.se, iomsn1@googlemail.com).
@@ -49,11 +51,11 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
                     magic = magic, trimall = True, quiet = quiet)
                     
     grid = pc.read_grid(datadir = datadir, proc = proc, trim = True, quiet = True)
-
-    dim = np.size(var.lnrho)
+    
     dimx = len(grid.x)
     dimy = len(grid.y)
     dimz = len(grid.z)
+    dim = dimx * dimy * dimz
     dx = (np.max(grid.x) - np.min(grid.x))/(dimx)
     dy = (np.max(grid.y) - np.min(grid.y))/(dimy)
     dz = (np.max(grid.z) - np.min(grid.z))/(dimz)
@@ -66,7 +68,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz))
     fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]))
     fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz))
-    fd.write('POINT_DATA {0:9}\n'.format(np.size(var.lnrho)))
+    fd.write('POINT_DATA {0:9}\n'.format(dim))
     
     try:
         index = variables.index('rho')
@@ -245,11 +247,11 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
                         magic = magic, trimall = True, quiet = quiet)
                         
         grid = pc.read_grid(datadir = datadir, proc = proc, trim = True, quiet = True)
-
-        dim = np.size(var.lnrho)
+    
         dimx = len(grid.x)
         dimy = len(grid.y)
         dimz = len(grid.z)
+        dim = dimx * dimy * dimz
         dx = (np.max(grid.x) - np.min(grid.x))/(dimx)
         dy = (np.max(grid.y) - np.min(grid.y))/(dimy)
         dz = (np.max(grid.z) - np.min(grid.z))/(dimz)
@@ -262,7 +264,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz))
         fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]))
         fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz))
-        fd.write('POINT_DATA {0:9}\n'.format(np.size(var.lnrho)))
+        fd.write('POINT_DATA {0:9}\n'.format(dim))
         
         try:
             index = variables.index('rho')
