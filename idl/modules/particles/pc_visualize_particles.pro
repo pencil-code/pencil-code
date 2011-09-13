@@ -174,7 +174,8 @@ if (not nopvar) then begin
         npart[ipart_radii]=$
           n_elements(where(float(objpvar.a) eq float(param.ap0[ipart_radii])))
     end
-    print,'npart=',npart, param.ap0
+    print,'npart=    ',npart
+    print,'param.ap0=',param.ap0
     ;
     ;  Check how many particles have collided with a solid object
     ;
