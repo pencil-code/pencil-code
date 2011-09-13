@@ -211,7 +211,8 @@ if (linsert_particles_continuously) then begin
     dimsp=size(where(objpvar.a gt 0))
     npar_inserted=dimsp[1]
 endif else begin
-    npar_inserted=npar
+   pc_read_pdim, npar=npar
+   npar_inserted=npar
 endelse
 print,'Total number of inserted particles:',npar_inserted
 lambda=67e-9
