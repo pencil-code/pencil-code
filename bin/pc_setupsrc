@@ -469,9 +469,8 @@ prepare_for_compile()
   $srcdir/scripts/adapt-mkfile Makefile.src Makefile
   cd $old_dir
   hn=`hostname`
-  echo $hn
-  if ("$hn" = emil-login2.pdc.kth.se) then
-  touch FAKE_PARALLEL_IO
+  if [ "$hn" = emil-login2.pdc.kth.se ]; then
+      touch FAKE_PARALLEL_IO
   fi
 }
 #
