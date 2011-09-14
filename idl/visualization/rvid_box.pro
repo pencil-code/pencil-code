@@ -146,7 +146,7 @@ ncpus = dim.nprocx*dim.nprocy*dim.nprocz
 ;
 ;  Consider non-equidistant grid
 ;
-pc_read_param, obj=par, datadir=datadir, /quiet
+pc_read_param, obj=par, /quiet
 if not all(par.lequidist) then begin
   massage = 1
   pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
