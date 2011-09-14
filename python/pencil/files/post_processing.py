@@ -10,7 +10,6 @@
 
 import pencil as pc
 import numpy as np
-import struct
 
 def post_compute(variables = ['b2m'], datadir = 'data'):
     """
@@ -50,10 +49,10 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
     if (len(variables[0]) == 1):        
         variables = [variables]
         
-    # check if jj needs to be computed
+    # check if bb needs to be computed
     bb_flag = False
     # array containing the variables which depend on bb
-    b_dep = ['ab_int', 'jb_int', 'b1m', 'b2m', 'bm2', 'abm', 'abrms', 'jbm', 'brms']
+    b_dep = ['ab_int', 'jb_int', 'b1m', 'b2m', 'bm2', 'abm', 'abrms', 'jbm', 'brms', 'gffz']
     if (len(set(variables + b_dep)) < len(variables + b_dep)):
         bb_flag = True
         
@@ -64,27 +63,35 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
     if (len(set(variables + j_dep)) < len(variables + j_dep)):
         jj_flag = True
     
-    for var_file in var_list[:3]:
+    for var_file in var_list:
         # read the var file
         var = pc.read_var(varfile = var_file[:-1], datadir = datadir, quiet = True)
         # the output string which will be written in the destination file
         out_string = '{0:1.9e}  '.format(np.float64(var.t))
+        aa = var.aa[:,var.n1:var.n2,var.m1:var.m2,var.l1:var.l2]
         if bb_flag:
             bb = pc.curl(var.aa, var.dx, var.dy, var.dz)
+            bb = bb[:,var.n1:var.n2,var.m1:var.m2,var.l1:var.l2]
         if jj_flag:
             jj = pc.curl2(var.aa, var.dx, var.dy, var.dz)
+            jj = jj[:,var.n1:var.n2,var.m1:var.m2,var.l1:var.l2]
             
         for variable in variables:
             if variable == 'b2m':
                 b2m = (pc.dot2(bb)).mean()
-                out_string += '{0:1.9e}  '.format(b2m)
+                out_string += '{0:1.9e}  '.format(np.float64(b2m))
             elif variable == 'j2m':
                 j2m = (pc.dot2(jj)).mean()
-                out_string += '{0:1.9e}  '.format(j2m)
+                out_string += '{0:1.9e}  '.format(np.float64(j2m))
                 break
             elif variable == 'abm':
-                abm = (pc.dot(var.aa, bb)).mean
-                out_string += '{0:1.9e}  '.format(b2m)
+                abm = (pc.dot(var.aa, bb)).mean()
+                out_string += '{0:1.9e}  '.format(np.float64(abm))
+            # generalized flux function (see Yeates, Hornig 2011)
+            elif variable == 'gffz':
+                gffz = np.sum(pc.dot(aa, bb)*np.sqrt(pc.dot2(bb)) / \
+                       ((bb[2,:,:,:]) * np.mean(np.mean(np.sqrt(pc.dot2(bb)), axis = 2), axis = 1)))
+                out_string += '{0:1.9e}  '.format(np.float64(gffz))
                     
         fd.write(out_string+'\n')
             
@@ -92,33 +99,40 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
 
 
 
-#  Under Construction
+# This is an easy implementation for the read function. 
+# It simply uses the read_ts class.
 
-#def read_post(datadir = 'data'):
-    #"""
-    #Read the post processed diagnostic variables.
+def read_post(filename = 'post_evaluation.dat', datadir = 'data',
+                double = 0, quiet = 1, comment_char = '#'):
+    """
+    Read the post processed diagnostic variables.
 
-    #call signature::
+    call signature::
     
-      #read_post(datadir = 'data')
+      read_post(filename = 'post_evaluation.dat', datadir = 'data', double = 0, quiet = 0, comment_char = '#')
     
-    #Read the post processed diagnostic variables from 'data/post_evaluation.dat.
-    #Return an object with the variables.
+    Read the post processed diagnostic variables from 'data/post_evaluation.dat.
+    Return an object with the variables.
     
-    #Keyword arguments:
+    Keyword arguments:
+      
+      *filename*:
+        Name of the post evaluation file.
         
-      #*datadir*:
-        #Data directory.
+      *datadir*:
+        Name of the data directory.
         
-    #"""
+      *double*:
+        No use yet (see the read_ts options).
+        
+      *quiet*:
+        If True do not show how many lines are being read.
+        
+      *comment_char*:
+        The comment character.
+        
+    """
 
-    ## the class which contains the post processing data
-    #class post:
-        #def __init__(self):
-    ## open the destination file for writing
-    #fd = open(datadir + '/post_evaluation.dat', 'r')
-    
-    ## check 
-
-    #fd.close()
+    return pc.read_ts(filename = filename, datadir = datadir,
+                 double = double, quiet = quiet, print_std = 0, plot_data = False, comment_char = comment_char)
 
