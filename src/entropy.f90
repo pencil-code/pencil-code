@@ -246,6 +246,10 @@ module Entropy
   integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left< p \right>_{yz}$
   integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left< T \right>_{yz}$
   integer :: idiag_uxTTmx=0     ! YZAVG_DOC: $\left< u_x T \right>_{yz}$
+  integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}>_{yz}$
+  integer :: idiag_fturbmx=0    ! YZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
+                                ! YZAVG_DOC: s\right>_{yz}$ \quad(turbulent
+                                ! YZAVG_DOC: heat flux)
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -3931,7 +3935,9 @@ module Entropy
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
+        call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
         call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
       endif
 !
 !  2d-averages
@@ -4802,8 +4808,8 @@ module Entropy
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
         idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0;
-        idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0;
-        idiag_fradxy_Kprof=0; idiag_fconvxy=0;
+        idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
+        idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradz_kramers=0; idiag_fradxy_kramers=0;
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
         idiag_ufpresm=0; idiag_uduum=0
@@ -4851,6 +4857,8 @@ module Entropy
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxTTmx',idiag_uxTTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fradmx',idiag_fradmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fturbmx',idiag_fturbmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.

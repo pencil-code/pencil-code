@@ -117,6 +117,12 @@ module Viscosity
                                 ! XYAVG_DOC: \mathcal{S}_{iz} \right>_{xy}$
                                 ! XYAVG_DOC: ($z$-component of viscous flux)
 !
+! yz averaged diagnostics given in yzaver.in written every it1d timestep
+!
+  integer :: idiag_fviscmx=0    ! YZAVG_DOC: $\left<2\nu\varrho u_i
+                                ! YZAVG_DOC: \mathcal{S}_{ix} \right>_{yz}$
+                                ! YZAVG_DOC: ($x$-component of viscous flux)
+!
 ! z averaged diagnostics given in zaver.in
 !
   integer :: idiag_fviscmxy=0   ! ZAVG_DOC: $\left<2\nu\varrho u_i
@@ -547,7 +553,7 @@ module Viscosity
 !
       logical :: lreset
       logical, optional :: lwrite
-      integer :: iname,inamez,ixy
+      integer :: iname,inamex,inamez,ixy
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -556,7 +562,7 @@ module Viscosity
         idiag_dtnu=0; idiag_nu_LES=0; idiag_epsK=0; idiag_epsK_LES=0
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
-        idiag_fviscmz=0; idiag_fviscmxy=0
+        idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -583,6 +589,12 @@ module Viscosity
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscmz',idiag_fviscmz)
+      enddo
+!
+!  Check for those quantities for which we want yz-averages.
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'fviscmx',idiag_fviscmx)
       enddo
 !
 !  Check for those quantities for which we want z-averages
@@ -729,7 +741,7 @@ module Viscosity
         lpenc_diagnos(i_shock)=.true.
       endif
       if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
-      if (idiag_fviscmz/=0) then
+      if (idiag_fviscmz/=0.or.idiag_fviscmx/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij)=.true.
       endif
@@ -1485,7 +1497,7 @@ module Viscosity
 !   9-jul-04/nils: added Smagorinsky viscosity
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, xysum_mn_name_z, &
-          zsum_mn_name_xy, max_mn_name
+          yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name
       use Sub, only: cross
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1578,6 +1590,11 @@ module Viscosity
             p%uu(:,1)*p%sij(:,1,3)+ &
             p%uu(:,2)*p%sij(:,2,3)+ &
             p%uu(:,3)*p%sij(:,3,3)),idiag_fviscmz)
+        if (idiag_fviscmx/=0) &
+            call yzsum_mn_name_x(-2.*p%rho*nu*( &
+            p%uu(:,1)*p%sij(:,1,1)+ &
+            p%uu(:,2)*p%sij(:,2,1)+ &
+            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmx)
       endif
 !
 !  2D-averages.

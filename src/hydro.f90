@@ -435,6 +435,7 @@ module Hydro
   integer :: idiag_uguxmx=0     ! YZAVG_DOC:
   integer :: idiag_uguymx=0     ! YZAVG_DOC:
   integer :: idiag_uguzmx=0     ! YZAVG_DOC:
+  integer :: idiag_fkinxmx=0    ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$
 !
 ! y averaged diagnostics given in yaver.in
 !
@@ -1446,7 +1447,7 @@ module Hydro
         lpenc_diagnos(i_phiy)=.true.
       endif
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinzmz/=0 .or. &
-          idiag_ekinmz/=0) then
+          idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
       endif
       if (idiag_fkinxmxy/=0) then
@@ -2162,6 +2163,7 @@ module Hydro
       if (l1davgfirst) then
         call xysum_mn_name_z(p%rho*p%uu(:,3),idiag_fmasszmz)
         call xysum_mn_name_z(p%ekin*p%uu(:,3),idiag_fkinzmz)
+        call yzsum_mn_name_x(p%ekin*p%uu(:,1),idiag_fkinxmx)
         call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
         call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
         call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
@@ -3545,6 +3547,7 @@ module Hydro
         idiag_ekinmz=0
         idiag_fmasszmz=0
         idiag_fkinzmz=0
+        idiag_fkinxmx=0
         idiag_fkinxmxy=0
         idiag_ruxuym=0
         idiag_ruxuzm=0
@@ -3750,6 +3753,8 @@ module Hydro
             'uguymx',idiag_uguymx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex), &
             'uguzmx',idiag_uguzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'fkinxmx',idiag_fkinxmx)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
