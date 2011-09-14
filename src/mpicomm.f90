@@ -4746,7 +4746,7 @@ module Mpicomm
       if (size (in, 1) /= nz) &
           call stop_fatal ('remap_to_pencil_z_2D: first dimension of input must be nz', lfirst_proc_z)
       if (size (out, 2) /= nzgrid) &
-          call stop_fatal ('remap_to_pencil_z_3D: first dimension of output must be nzgrid', lfirst_proc_y)
+          call stop_fatal ('remap_to_pencil_z_2D: first dimension of output must be nzgrid', lfirst_proc_y)
       if (ina /= size (out, 2)) &
           call stop_fatal ('remap_to_pencil_z_2D: second dimension differs for input and output', lfirst_proc_z)
 !
