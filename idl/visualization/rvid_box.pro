@@ -102,18 +102,27 @@ default,norm,1.0
 default,swap_endian,0
 default,quiet_skip,1
 ;
-if (keyword_set(newwindow)) then window, xsize=xsize, ysize=ysize
 if (keyword_set(png_truecolor)) then png=1
+;
+; if png's are requested don't open a window
+;
+if (not keyword_set(png)) then begin
+  if (keyword_set(newwindow)) then begin
+    window, /free, xsize=xsize, ysize=ysize, title=title
+ endif
+endif
 ;
 first_print = 1
 ;
-; Construct location of slice_var.plane files 
+; Construct location of slice_var.plane files
 ;
 if (not keyword_set(datatopdir)) then datatopdir=pc_get_datadir()
-;  by default, look in data/, assuming we have run read_videofiles.x before:
 datadir=datatopdir
+;
+;  by default, look in data/, assuming we have run read_videofiles.x before:
+;
 if (n_elements(proc) le 0) then begin
-  pc_read_dim, obj=dim, datadir=datatopdir
+  pc_read_dim, obj=dim, datadir=datatopdir,/quiet
   if (dim.nprocx*dim.nprocy*dim.nprocz eq 1) then datadir=datatopdir+'/proc0'
 endif else begin
   datadir=datatopdir+'/'+proc
@@ -150,9 +159,9 @@ pc_read_param, obj=par, /quiet
 if not all(par.lequidist) then begin
   massage = 1
   pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
-  iix = spline(grid.x, findgen(nx), par.xyz0[0] + (findgen(nx) + .5) * (par.lxyz[0] / nx))
-  iiy = spline(grid.y, findgen(ny), par.xyz0[1] + (findgen(ny) + .5) * (par.lxyz[1] / ny))
-  iiz = spline(grid.z, findgen(nz), par.xyz0[2] + (findgen(nz) + .5) * (par.lxyz[2] / nz))
+  iix=spline(grid.x,findgen(nx),par.xyz0[0]+(findgen(nx)+.5)*(par.lxyz[0] / nx))
+  iiy=spline(grid.y,findgen(ny),par.xyz0[1]+(findgen(ny)+.5)*(par.lxyz[1] / ny))
+  iiz=spline(grid.z,findgen(nz),par.xyz0[2]+(findgen(nz)+.5)*(par.lxyz[2] / nz))
 endif else massage = 0
 ;
 if (keyword_set(shell)) then begin
@@ -298,15 +307,15 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  Perform preset mathematical operation on data before plotting.
 ;
-    if (keyword_set(sqroot)) then begin      
+    if (keyword_set(sqroot)) then begin
       xy2=sqrt(xy2) & xy=sqrt(xy) & xz=sqrt(xz) & yz=sqrt(yz)
     endif
 ;
-    if (keyword_set(exponential)) then begin      
+    if (keyword_set(exponential)) then begin
       xy2=exp(xy2) & xy=exp(xy) & xz=exp(xz) & yz=exp(yz)
     endif
 ;
-    if (keyword_set(logarithmic)) then begin      
+    if (keyword_set(logarithmic)) then begin
       xy2=alog(xy2) & xy=alog(xy) & xz=alog(xz) & yz=alog(yz)
     endif
 ;
@@ -361,16 +370,16 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       first_print=0
       print, islice, t, $
           min([min(xy2),min(xy),min(xz),min(yz)]), $
-          max([max(xy2),max(xy),max(xz),max(yz)]), format='(i9,3f13.7)'
+          max([max(xy2),max(xy),max(xz),max(yz)]), format='(i9,e12.4,2f13.7)'
     endif else begin
 ;
 ;  Plot normal box.
 ;
       if (not keyword_set(shell)) then begin
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
-            amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
-            xpos=xpos,magnify=magnify,zmagnify=zmagnify,nobottom=nobottom,norm=norm,$
-            xrot=xrot,zrot=zrot
+                     amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
+                     xpos=xpos,magnify=magnify,zmagnify=zmagnify, $
+                     nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
         if (keyword_set(nolabel)) then begin
           if (label ne '') then begin
             xyouts,xlabel,ylabel,label,col=1,siz=size_label,charthick=thlabel
@@ -389,7 +398,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       endif else begin
 ;
 ;  Comment me.
-;      
+;
         if (keyword_set(centred)) then begin
           zrr1=rrxy2 & zrr2=rrxy
           if (keyword_set(z_bot_twice)) then begin
@@ -442,8 +451,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         xx=!d.x_size & yy=!d.y_size
         aspect_ratio=1.*yy/xx
 ;  Length of the arrow.
-        length=0.1 
-        xlength=length & ylength=xlength/aspect_ratio 
+        length=0.1
+        xlength=length & ylength=xlength/aspect_ratio
 ;  Rotation angles. WL didn't figure out exactly the rotation law. This .7 is
 ;  an ugly hack that looks good for most angles.
         gamma=.7*xrot*!pi/180.
@@ -453,7 +462,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  x arrow
 ;
-        x1=x0+xlength*(cos(gamma)*cos(alpha)) 
+        x1=x0+xlength*(cos(gamma)*cos(alpha))
         y1=y0+ylength*(sin(gamma)*sin(alpha))
         angle=atan((y1-y0)/(x1-x0))
         if ((x1-x0 le 0)and(y1-y0 ge 0)) then angle=angle+!pi
@@ -550,11 +559,11 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         print, islice, t, $
             min([min(xy2),min(xy),min(xz),min(yz)])/norm, $
             max([max(xy2),max(xy),max(xz),max(yz)])/norm, $
-            amin, amax, format='(i9,5f13.7)'
+            amin, amax, format='(i9,e12.4,4f13.7)'
       endelse
 ;
 ;  Wait in case movie runs to fast.
-;      
+;
       wait, wait
 ;
 ;  Check whether file has been written.
