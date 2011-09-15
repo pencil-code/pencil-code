@@ -525,11 +525,15 @@ module Magnetic_meanfield
           meanfield_qp_der=2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
           if(qp_model=='rational') then
             B2renorm=1/Beq**2
-!           qp_d_fit=(130+50*magpra)/magpra/magrey**2
-!           qp_x0_fit=2.5*alog(1000./magpra)/magrey
-            qp_c=qp_d/4*(1-qp_x0**2/qp_d)**2  !qp_d is defined as a positive value
-            meanfield_qp_func=(qp_x0**2+qp_c)/(p%b2*B2renorm+qp_c)
-            meanfield_qp_der=-meanfield_qp_func/(p%b2*B2renorm+qp_c)
+!           rational fit where qp=(x0^2+c)/(x^2+c)
+!           qp_c=qp_d/4*(1-qp_x0**2/qp_d)**2  !qp_d is defined as a positive value
+!            meanfield_qp_func=(qp_x0**2+qp_c)/(p%b2*B2renorm+qp_c)
+!            meanfield_qp_der=-meanfield_qp_func/(p%b2*B2renorm+qp_c)
+!           new formalism with qp0 and bp instead of xc and d, derivative w respect to b2
+            meanfield_qp_func=meanfield_qp/(p%b2*B2renorm/meanfield_Bp**2+1)
+            meanfield_qp_der=-meanfield_qp_func**2/(-meanfield_qp*meanfield_Bp**2)
+
+
           endif
 !
 !  Add -(1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
