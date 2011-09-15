@@ -1,4 +1,4 @@
-pro rvid_line,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,min=amin,$
+pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   nrepeat=nrepeat,wait=wait,stride=stride,datadir=datadir,OLDFILE=OLDFILE,$
   test=test,proc=proc,exponential=exponential,map=map,tt=tt,noplot=noplot,$
   extension=extension, sqroot=sqroot, nocontour=nocontour,imgdir=imgdir, $
@@ -6,7 +6,8 @@ pro rvid_line,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   findmax=findmax, csection=csection,xrange=xrange, $
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
   log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
-  xstyle=xstyle,ystyle=ystyle,fluct=fluct
+  xstyle=xstyle,ystyle=ystyle,fluct=fluct,newwindow=newwindow, xsize=xsize, $
+  ysize=ysize,png_truecolor=png_truecolor
 ;
 ; $Id$
 ;
@@ -44,6 +45,16 @@ default, xgrid, 0
 default, ygrid, 0
 default, zgrid, 0
 default, psym, -2
+;
+if (keyword_set(png_truecolor)) then png=1
+;
+; if png's are requested don't open a window
+;
+if (not keyword_set(png)) then begin
+  if (keyword_set(newwindow)) then begin
+    window, /free, xsize=xsize, ysize=ysize, title=title
+ endif
+endif
 ;
 if (proc ge 0) then begin
   procstr=strtrim(string(proc))
@@ -126,10 +137,11 @@ if (keyword_set(global_scaling)) then begin
   close,1
   print,'Scale using global min, max: ', amin, amax
 endif
-;;
-;;
-;;
+;
+;
+;
 pc_read_grid, object=grid, /trim
+;
 if (xgrid) then begin
   xaxisscale=grid.x
 endif else if (ygrid) then begin
@@ -173,13 +185,13 @@ while (not eof(1)) do begin
   endif else if (extension eq 'yz') then begin
     axz=fltarr(ny,nz)*one
   endif
-
+;
   if (keyword_set(OLDFILE)) then begin ; For files without position
     readu,1,axz,t
   endif else begin
     readu,1,axz,t,slice_z2pos
   endelse
-
+;
   if (keyword_set(transp)) then axz=transpose(axz)
   default,csection,((size(axz))[2]+1)/2
   axz=reform(axz)
@@ -196,7 +208,7 @@ while (not eof(1)) do begin
     value=axz
     res=execute('axz='+func,1)
   endif
-
+;
   if (keyword_set(findmax)) then begin
     findshock,axz,xaxisscale,leftpnt=leftpnt,rightpnt=rightpnt
     if (it eq 0) then begin
@@ -207,7 +219,7 @@ while (not eof(1)) do begin
       max_right=[max_right, rightpnt]
     endelse
   endif
-
+;
   if (it eq 0) then tt=t else tt=[tt,t]
   if (it eq 0) then map=axz else map=[map,axz]
   it=it+1L
@@ -224,26 +236,26 @@ while (not eof(1)) do begin
                   xstyle=xstyle,ystyle=ystyle,xrange=xrange
           endif else begin
             plot, xaxisscale, axz, psym=psym, yrange=[amin,amax], _extra=_extra, $
-                  xstyle=xstyle,ystyle=ystyle,xrange=xrange 
+                  xstyle=xstyle,ystyle=ystyle,xrange=xrange
           endelse
         endif
         if (keyword_set(png)) then begin
           istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
           image = tvrd()
-;;
-;;  make background white, and write png file
-;;
+;
+;  make background white, and write png file
+;
 ;          bad=where(image eq 0) & image(bad)=255
           tvlct, red, green, blue, /GET
           imgname = imgdir+'/img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
           itpng=itpng+1 ;(counter)
-;;
+;
         endif else if (keyword_set(mpeg)) then begin
-;;
-;;  write directly mpeg file
-;;  for idl_5.5 and later this requires the mpeg license
-;;
+;
+;  write directly mpeg file
+;  for idl_5.5 and later this requires the mpeg license
+;
           image = tvrd(true=1)
           for irepeat=0,nrepeat do begin
             mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
@@ -251,18 +263,18 @@ while (not eof(1)) do begin
           end
           print,islice,itmpeg,t,min([axz]),max([axz])
         endif else begin
-;;
-;; default: output on the screen
-;;
+;
+; default: output on the screen
+;
           if (not keyword_set(noplot)) then print,islice,t,min([axz]),max([axz])
         endelse
         istride=0
         wait,wait
-;;
-;; check whether file has been written
-;;
+;
+; check whether file has been written
+;
         if (keyword_set(png)) then spawn,'ls -l '+imgname
-;;
+;
       endif else begin
         istride=istride+1
       endelse
@@ -284,7 +296,7 @@ endif
 ;
 nxz=n_elements(axz) & nt=it
 map=reform(map,nxz,nt)
-
+;
 if (not keyword_set(nocontour)) then begin
   if (keyword_set(against_time)) then begin
     contour, transpose(exp(map)), tt, xaxisscale, /fill, nlev=60,ys=1,xs=1
