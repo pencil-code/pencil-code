@@ -69,7 +69,7 @@ end
 pro pc_read_ts, $
     filename=filename, datadir=datadir, object=object, double=double, $ 
     print=print, quiet=quiet, help=help, verbose=verbose, $
-    n=n, it=it, t=t, dt=dt, dtc=dtc, urms=urms, $
+    n=n, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
     ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
     movingaverage=movingaverage, monotone=monotone, njump=njump
 COMPILE_OPT IDL2,HIDDEN
