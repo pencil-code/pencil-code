@@ -163,11 +163,10 @@ module InitialCondition
         
         distance_tubes = x_size / (n_strands+1)
       
-
-        !  clear the magnetic vector potential in the farray
-
-        f(l1:l2,m1:m2,n1:n2,iax:iaz) = 0.0      
-
+        
+        !  clear the magnetic field to zero
+        f(l1:l2,m1:m2,n1:n2,iax:iaz) = 0.0
+        
         !  set the coefficients for the rotation polynomial
         a(1) = steepnes
         a(2) = 0
@@ -194,7 +193,7 @@ module InitialCondition
             ! reset the strand_position vector
             strand_position = (/1,2,3,4,5,6,7,8,9/)
             
-            ! create a field in the ghost zones for numerical stability
+            ! create a field in the upper and lower ghost zones for numerical stability
             tangent = (/0,0,1/)
             !  loop which changes the circle's radius
             circle_radius = 0.
@@ -218,8 +217,10 @@ module InitialCondition
                     do j = 1,n1
                         if (prof == 'gaussian') then
                             f(j,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
+                            f(j+n2,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
                         else if (prof == 'constant') then
                             f(j,m,n,iax:iaz) = tangent*ampl
+                            f(j+n2,m,n,iax:iaz) = tangent*ampl
                         else
                             write(*,*) "error: invalid magnetic field profile"
                         endif
@@ -381,7 +382,7 @@ module InitialCondition
                                 if (prof == 'gaussian') then
                                     f(l,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
                                 else if (prof == 'constant') then
-                                    f(l,m,n,iax:iaz) = tangent
+                                    f(l,m,n,iax:iaz) = tangent*ampl
                                 endif
                                 circle_param = circle_param + delta_circle_param
                             enddo
@@ -397,38 +398,6 @@ module InitialCondition
                 idx = idx + 1
             enddo
             
-            ! create a field in the ghost zones for numerical stability
-            tangent = (/0,0,1/)
-            !  loop which changes the circle's radius
-            circle_radius = 0.
-            do
-                if (circle_radius .gt. width_tube/2.) exit
-                !  loop which goes around the circle
-                circle_param = 0.
-                do
-                    if (circle_param .gt. 2.*pi) exit
-                    circle_pos(1) = tube_pos(1) + circle_radius*cos(circle_param)
-                    circle_pos(2) = tube_pos(2) + circle_radius*sin(circle_param)
-
-                    !  Find the corresponding mesh point to this position.
-                    l = nint((circle_pos(1) - x(l1))/x_size * (l2-l1)) + l1
-                    m = nint((circle_pos(2) - y(m1))/y_size * (m2-m1)) + m1
-                    n = nint((circle_pos(3) - z(n1))/z_size * (n2-n1)) + n1
-
-                    !  Write the magnetic field B.
-                    !  Note that B is written in the f-array where A is stored. This is
-                    !  corrected further in the code.
-                    do j = 1,n1
-                        if (prof == 'gaussian') then
-                            f(j+n2,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
-                        else if (prof == 'constant') then
-                            f(j+n2,m,n,iax:iaz) = tangent*ampl
-                        endif
-                    enddo
-                    circle_param = circle_param + delta_circle_param
-                enddo
-                circle_radius = circle_radius + delta_circle_radius
-            enddo                        
         enddo
 
 !
