@@ -96,16 +96,12 @@ if (keyword_set(png_truecolor)) then png=1
 ; if png's are requested don't open a window
 ;
 if (not keyword_set(png)) then begin
-   if (keyword_set(newwindow)) then begin
-      window, /free, xsize=wsx, ysize=wsy, title=title
-   endif else window, xsize=wsx, ysize=wsy, title=title
+  if (keyword_set(newwindow)) then begin
+    window, /free, xsize=wsx, ysize=wsy, title=title
+  endif
 endif
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat.
-;
-mx=0L & my=0L & mz=0L & nvar=0L & prec=''
-nghostx=0L & nghosty=0L & nghostz=0L
-nprocx=0L & nprocy=0L & nprocz=0L
 ;
 pc_set_precision, datadir=datadir
 ;
