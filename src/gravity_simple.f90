@@ -148,6 +148,8 @@ module Gravity
 !  Possibility of specifying zref (if zinfty is not given).
 !  In that case we need to know cs20 and mpoly from the EOS module.
 !  We do this using shared variables.
+!  Normally we give zinfty, but if this is not the case, we set it to zero.
+!  zinfty has to be higher than the top of a polytropic atmosphere.
 !
       if (lcalc_zinfty) then
         if (zinfty==impossible) then
@@ -168,7 +170,7 @@ module Gravity
           endif
         endif
       else
-        zinfty=0.
+        if (zinfty==impossible) zinfty=0.
       endif
 !
 !  Different x-gravity profiles.
