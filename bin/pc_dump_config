@@ -1,0 +1,170 @@
+#!/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   pc_dump_config
+# Author: wd (wdobler [at] gmail [dot] com)
+# Date:   17-Sep-2011
+# SVN: $Id$
+# Description:
+#   Dump the configuration settings.
+# Usage:
+#   pc_dump_config
+#   -h, --help      This help.
+#   -f <files>,
+#       --config-files=<files>
+#                   Use the given <files> (a comma-separated list) as
+#                   configuration files, rather than trying to find a
+#                   config file base on a host ID.
+#   -H <id>
+#       --host-id=<id>
+#                   Use the given <id> as host ID.
+#   -q, --quiet     Be quiet.
+#   -v, --version   Print version number.
+#   pc_dump_configuration -f os/GNU_Linux,mpi/open-mpi
+#       Tell us what is included from the configuration files
+#       ${PENCIL_HOME}/config/os/GNU_Linux.conf and
+#       ${PENCIL_HOME}/config/mpi/open-mpi.conf .
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the same conditions as Perl or under the GNU General Public
+# License, version 3 or later.
+
+use strict;
+BEGIN {
+    # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
+    } else {
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
+    }
+}
+
+use Data::Dumper;
+use Pencil::Util;
+Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
+Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
+
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my (%opts);                     # Options hash for GetOptions
+
+## Process command line
+GetOptions(\%opts,
+           qw( -h   --help
+                    --debug
+               -f=s --config-files=s
+               -H=s --host-id=s
+               -q   --quiet
+               -v   --version )
+          ) or die "Aborting.\n";
+
+my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $config_files = ($opts{'f'} || $opts{'config-files'} || undef);
+my $host_id      = ($opts{'H'} || $opts{'host-id'}      || undef);
+my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
+my $fast         = (              $opts{'fast'}         || '');
+
+my @extra_make_args = @ARGV;
+
+my @config_files;
+mention($Pencil::ConfigFinder::debug);
+$Pencil::ConfigFinder::debug = 1 if ($debug);
+if (defined $config_files) {
+    my @files = split(",", $config_files);
+    @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
+} else {
+    my $config_file;
+    if (defined $host_id) {
+        $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
+    } else {
+        $config_file = Pencil::ConfigFinder::find_config_file()
+    }
+    die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
+    push @config_files, $config_file;
+    print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
+}
+
+die "No configuration file found\n" unless @config_files;
+my $parser = new Pencil::ConfigParser(@config_files);
+$parser->debug(1) if ($debug);
+
+my %config;
+
+$config{'makefile'} = $parser->get_makefile_params();
+$config{'runtime'} = $parser->get_runtime_params();
+$config{'environment'} = $parser->get_environment_params();
+
+print Data::Dumper->Dump([\%config], ['config']);
+
+# ---------------------------------------------------------------------- #
+sub mention {
+# Reference a variable without doing anything.
+# Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
+# once'' warning
+    my @args = @_;
+}
+# ---------------------------------------------------------------------- #
+sub printopts {
+# Print command line options
+    my ($optsref) = @_;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+        print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+        # Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    return $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub version {
+# Return CVS data and version info.
+    my $doll='\$';              # Need this to trick CVS
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Revision: 1.12 $';
+    my $date = '$Date: 2008/07/07 21:37:16 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+
+    return "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+
+# End of file build
