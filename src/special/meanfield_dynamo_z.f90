@@ -422,7 +422,6 @@ module Special
 !
       use Cdata
       use Sub
-      use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
