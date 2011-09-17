@@ -485,7 +485,7 @@ sub parse {
 
 sub nlists {
 #
-# Get number of namelist in group
+# Get number of namelists in group
 #
     my $self = shift();
     return $self->{NLISTS};
@@ -687,7 +687,7 @@ sub output {
 
 # ---------------------------------------------------------------------- #
 
-sub debug{
+sub debug {
 #
 #   $obj->debug(1)     # debugging on
 #   $obj->debug(0)     # debugging off

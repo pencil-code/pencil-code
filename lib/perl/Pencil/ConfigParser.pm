@@ -410,7 +410,7 @@ sub find_include_file {
 }
 # ---------------------------------------------------------------------- #
 
-sub parse_lines{
+sub parse_lines {
 #
 # Parse an arrayref of lines
 #   ['VAR1 = rhs1', 'VAR2 = rhs2a', 'VAR3 = rhs3', 'VAR2 += rhs2b', ...]

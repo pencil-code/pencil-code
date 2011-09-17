@@ -1231,7 +1231,7 @@ sub check_for_datadir {
     return $created_datadir;
 }
 # ---------------------------------------------------------------------- #
-sub time_diff{
+sub time_diff {
 # Return difference of times if both args are defined, undef otherwise
     my $t1 = shift;
     my $t2 = shift;
@@ -1243,7 +1243,7 @@ sub time_diff{
     }
 }
 # ---------------------------------------------------------------------- #
-sub s_to_hms{
+sub s_to_hms {
 # Convert no. of seconds to [ddd][hh:]mm:ss string
     my $secs  = shift;
     my $width = (shift || 0);

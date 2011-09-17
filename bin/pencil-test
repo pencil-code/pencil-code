@@ -333,7 +333,7 @@ sub usage {
     $_;
 }
 # ---------------------------------------------------------------------- #
-sub tag_stable_on_success{
+sub tag_stable_on_success {
 ## Put tag on files of auto-test succeeds
 ## [Most likely broken for SVN]
     my $result = (shift || '');
@@ -349,7 +349,7 @@ sub tag_stable_on_success{
     system($svncmd);
 }
 # ---------------------------------------------------------------------- #
-sub tag_breakage_on_error{
+sub tag_breakage_on_error {
 ## Put tag on files if auto-test breaks (only first break)
 ## [Most likely broken for SVN]
     my $result = (shift || '');
