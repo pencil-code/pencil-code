@@ -146,7 +146,6 @@ if ($clean) {
 my @config_files;
 mention($Pencil::ConfigFinder::debug);
 $Pencil::ConfigFinder::debug = 1 if ($debug);
-warn ("\$Pencil::ConfigFinder::debug = $Pencil::ConfigFinder::debug\n");
 if (defined $config_files) {
     my @files = split(",", $config_files);
     @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
