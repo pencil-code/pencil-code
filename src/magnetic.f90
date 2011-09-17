@@ -4474,10 +4474,8 @@ module Magnetic
 !
 !  Set the phase of the Beltrami forcing equal to the actual phase
 !  of the magnetic field (times forcing_continuous_aa_phasefact).
-!  Broadcast the result to other processors.
 !
       phase_beltrami=forcing_continuous_aa_phasefact*bmz_beltrami_phase
-      call mpibcast_real(phase_beltrami,1)
 !
 !  set amplitude to ampl_ff minus a correction term that is
 !  proportional to the actual field minus the target field strength,
