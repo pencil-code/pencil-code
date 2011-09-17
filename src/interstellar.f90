@@ -3494,7 +3494,7 @@ module Interstellar
 !
       tmp=-exp(rho_lowest)
       call mpireduce_max(tmp,rho_lowest)
-      call mpibcast_real(rho_lowest,2)
+      call mpibcast_real(rho_lowest,1)
 !
     endsubroutine get_lowest_rho
 !*****************************************************************************
