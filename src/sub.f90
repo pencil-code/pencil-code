@@ -3079,8 +3079,11 @@ module Sub
 !
 !  Broadcast tout and nout in one go.
 !
-      bcast_array(1) = tout
-      bcast_array(2) = nout
+      if (lroot) then
+        bcast_array(1) = tout
+        bcast_array(2) = nout
+      endif
+
       call mpibcast_real(bcast_array,nbcast_array)
       tout = bcast_array(1)
       nout = bcast_array(2)
