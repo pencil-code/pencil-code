@@ -376,15 +376,18 @@ $list_only = 1 if ($list_all);
 my $makeopts  = '';
 if ($makejobs) { $makeopts = "-j $makejobs"; }
 
-my @pc_run   = qw/pc_run/;
+my @pc_dump_config = qw/pc_dump_config/;
 my @pc_build = qw/pc_build/;
+my @pc_run   = qw/pc_run/;
 if ($config_files) {
-    push @pc_run,   "--config-files=$config_files";
-    push @pc_build, "--config-files=$config_files";
+    push @pc_dump_config, "--config-files=$config_files";
+    push @pc_build,       "--config-files=$config_files";
+    push @pc_run,         "--config-files=$config_files";
 }
 if ($host_id) {
-    push @pc_run,   "--host-id=$host_id";
-    push @pc_build, "--host-id=$host_id";
+    push @pc_dump_config, "--host-id=$host_id";
+    push @pc_build,       "--host-id=$host_id";
+    push @pc_run,         "--host-id=$host_id";
 }
 
 my $host = `hostname`;
@@ -1518,6 +1521,14 @@ END {
         # List maintainers of failed tests
         if ($list_maint && %failed) {
             print 'Maintainers of failed tests: ', get_maintainer_list(), "\n";
+        }
+
+        print "\n" . "-" x 70 . "\n";
+
+        # List config settings in case of a failure
+        if (%failed) {
+            print "The following configuration has been used:\n";
+            system(@pc_dump_config);
         }
 
     }
