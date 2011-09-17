@@ -33,7 +33,7 @@ my $os_name = get_os_name();
 
 my @config_path = (
             "$ENV{PENCIL_HOME}/config-local",
-            "$ENV{HOME}/.pencil/config-local",
+            "$ENV{HOME}/.pencil/config",
             "$ENV{PENCIL_HOME}/config"
            );
 
@@ -531,15 +531,18 @@ runnung an Ubuntu distribution of GNU/Linux.
 
 For each host ID, Pencil::ConfigFinder looks for a corresponding
 configuration file (see L</"Locating the config file"> below) in the
-following directories:
+following directories, in the order listed here:
 
 =over 4
 
 =item a.
-C<~/.pencil/config/computers>
+C<${PENCIL_HOME}/config-local>
 
 =item b.
-${PENCIL_HOME}/config/computers
+C<~/.pencil/config>
+
+=item c.
+C<${PENCIL_HOME}/config>
 
 =back
 
@@ -565,8 +568,8 @@ ${PENCIL_HOME}/config/os
 
 =back
 
+=item 2.
 
-=item 1.
 If still no configuration file for that host ID is found, the host ID
 `C<default>' is tried.
 
