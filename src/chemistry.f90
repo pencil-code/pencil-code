@@ -2782,6 +2782,8 @@ module Chemistry
       integer :: j,k,i
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10
       integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
+      integer :: iz1=1,iz2=2,iz3=3,iz4=4,iz5=5,iz6=6,iz7=7,iz8=8,iz9=9,iz10=10
+      integer :: iz11=11,iz12=12,iz13=13,iz14=14,iz15=15,iz16=16,iz17=17,iz18=18,iz19=19
 !
       intent(in) :: p,f
       intent(inout) :: df
@@ -3065,7 +3067,8 @@ module Chemistry
 !      allows the user to add output the positions and velocities
 !      of as many particle he/she wants.
 !  RP: Totally agree... I still have to expand manually these hard-coded
-!       Y1-Y9 and chemspec-chemspec9 when needed, but this is just work-around...
+!      Y1-Y9 and chemspec-chemspec9 when needed, but this is just work-around...
+!  AB: I also agree!
 !
         if (idiag_Y1m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1m)
         if (idiag_Y2m/=0) call sum_mn_name(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2m)
@@ -3158,25 +3161,49 @@ module Chemistry
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i1)),idiag_Y1mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i2)),idiag_Y2mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i3)),idiag_Y3mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i4)),idiag_Y4mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i5)),idiag_Y5mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i6)),idiag_Y6mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i7)),idiag_Y7mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i8)),idiag_Y8mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i9)),idiag_Y9mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i10)),idiag_Y10mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i11)),idiag_Y11mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i12)),idiag_Y12mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i13)),idiag_Y13mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i14)),idiag_Y14mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i15)),idiag_Y15mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i16)),idiag_Y16mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i17)),idiag_Y17mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i18)),idiag_Y18mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(i19)),idiag_Y19mz)
+!
+!  To prevent out of bounds errors in auto-test, reset the i2-i19 values.
+!
+        if (idiag_Y2mz==0)  iz2=1
+        if (idiag_Y3mz==0)  iz3=1
+        if (idiag_Y4mz==0)  iz4=1
+        if (idiag_Y5mz==0)  iz5=1
+        if (idiag_Y6mz==0)  iz6=1
+        if (idiag_Y7mz==0)  iz7=1
+        if (idiag_Y8mz==0)  iz8=1
+        if (idiag_Y9mz==0)  iz9=1
+        if (idiag_Y10mz==0) iz10=1
+        if (idiag_Y11mz==0) iz11=1
+        if (idiag_Y12mz==0) iz12=1
+        if (idiag_Y13mz==0) iz13=1
+        if (idiag_Y14mz==0) iz14=1
+        if (idiag_Y15mz==0) iz15=1
+        if (idiag_Y16mz==0) iz16=1
+        if (idiag_Y17mz==0) iz17=1
+        if (idiag_Y18mz==0) iz18=1
+        if (idiag_Y19mz==0) iz19=1
+!
+!  Now can start:
+!
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz1)),idiag_Y1mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz2)),idiag_Y2mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz3)),idiag_Y3mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz4)),idiag_Y4mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz5)),idiag_Y5mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz6)),idiag_Y6mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz7)),idiag_Y7mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz8)),idiag_Y8mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz9)),idiag_Y9mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz10)),idiag_Y10mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz11)),idiag_Y11mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz12)),idiag_Y12mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz13)),idiag_Y13mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz14)),idiag_Y14mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz15)),idiag_Y15mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz16)),idiag_Y16mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz17)),idiag_Y17mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz18)),idiag_Y18mz)
+        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz19)),idiag_Y19mz)
       endif
       call timing('dchemistry_dt','finished',mnloop=.true.)
 !
