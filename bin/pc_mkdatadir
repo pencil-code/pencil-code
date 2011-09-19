@@ -24,6 +24,9 @@ if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
 else if ($hn =~ fend*.dcsc.ku.dk) then
   set str='s/astro/gpfs1\/astro/g'
+else if (($hn =~ emil*) && ($USER =~ brandenb)) then
+  echo "special entry for Axel on Lindgren"
+  set str='s/emil\/pdc/nobackup\/b/g'
 else if (($hn =~ a07c01n08*) && ($USER =~ brandenb)) then
   echo "special entry for Axel"
   #set str='s/afs\/pdc.kth.se\/home\/b/scratch/g'
