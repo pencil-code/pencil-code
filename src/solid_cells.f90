@@ -92,7 +92,8 @@ module Solid_Cells
 !  nov-2010/kragset: updated allocations related to drag calculations
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer :: icyl,isph,i
+      integer :: icyl,isph,i,gridlim=5, iobj,iprocx,iprocy,iprocz
+      real :: xobj,yobj,zobj,xbound,ybound,zbound,robj
 !
 !  Define the geometry of the solid object.
 !  For more complex geometries (i.e. for objects different than cylinders,
@@ -146,8 +147,8 @@ module Solid_Cells
         sphere_temp(1)=impossible
       else
 !
-! Find number of lines of longitude and latitude such that nforcepoints=nlong*(nlat+1)
-! and nlat=nlong/2-1
+! Find number of lines of longitude and latitude such that 
+! nforcepoints=nlong*(nlat+1) and nlat=nlong/2-1
 !
         nlong=int(sqrt(2.*nforcepoints))
         nlat=int(.5*nlong)-1
@@ -164,6 +165,63 @@ module Solid_Cells
         cylinder_zpos(1)=impossible
         cylinder_temp(1)=impossible
       end if
+!
+! If the plane describing the interface between two processor sub-domains
+! happens to be inside the solid structure there might be problems. Check
+! that we are not in possible problems....
+! NILS: This test is not perfect yet...the code may still crash due to the
+! NILS: topology :-(
+!
+!!$      do iobj=1,nobjects
+!!$        xobj=objects(iobj)%x(1)
+!!$        yobj=objects(iobj)%x(2)
+!!$        zobj=objects(iobj)%x(3)
+!!$        robj=objects(iobj)%r
+!!$!        
+!!$        do iprocx=0,nprocx
+!!$          xbound=procx_bounds(iprocx)
+!!$          if ((xbound > xobj-robj) .and. (xbound < xobj-robj+gridlim*dx)) then
+!!$            print*,'iobj,xbound,xobj,robj=',iobj,xbound,xobj,robj
+!!$            call fatal_error('initialize_solid_cells',&
+!!$              'Processor boundaries are problematic in lower x!')
+!!$          endif
+!!$          if ((xbound < xobj+robj) .and. (xbound > xobj+robj-gridlim*dx)) then
+!!$            print*,'iobj,xbound,xobj,robj=',iobj,xbound,xobj,robj
+!!$            call fatal_error('initialize_solid_cells',&
+!!$              'Processor boundaries are problematic in upper x!')
+!!$          endif
+!!$        enddo
+!!$!
+!!$        do iprocy=0,nprocy
+!!$          ybound=procy_bounds(iprocy)
+!!$          if ((ybound > yobj-robj) .and. (ybound < yobj-robj+gridlim*dy)) then
+!!$            print*,'iobj,ybound,yobj,robj=',iobj,ybound,yobj,robj
+!!$            call fatal_error('initialize_solid_cells',&
+!!$                'Processor boundaries are problematic in lower y!')
+!!$          endif
+!!$          if ((ybound < yobj+robj) .and. (ybound > yobj+robj-gridlim*dy)) then
+!!$            print*,'iobj,ybound,yobj,robj=',iobj,ybound,yobj,robj
+!!$            call fatal_error('initialize_solid_cells',&
+!!$                'Processor boundaries are problematic in upper y!')
+!!$          endif
+!!$        enddo
+!!$!
+!!$        if (objects(iobj)%form== 'sphere') then
+!!$          do iprocz=0,nprocz
+!!$            zbound=procz_bounds(iprocz)
+!!$            if ((zbound > zobj-robj) .and. (zbound < zobj-robj+gridlim*dz)) then
+!!$              print*,'iobj,zbound,zobj,robj=',iobj,zbound,zobj,robj
+!!$              call fatal_error('initialize_solid_cells',&
+!!$                  'Processor boundaries are problematic in lower z!')
+!!$            endif
+!!$            if ((zbound < zobj+robj) .and. (zbound > zobj+robj-gridlim*dz)) then
+!!$              print*,'iobj,zbound,zobj,robj=',iobj,zbound,zobj,robj
+!!$              call fatal_error('initialize_solid_cells',&
+!!$                  'Processor boundaries are problematic in upper z!')
+!!$            endif
+!!$          enddo
+!!$        endif
+!!$      enddo
 !
 !  Prepare the solid geometry
 !
