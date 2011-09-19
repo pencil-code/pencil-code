@@ -1316,7 +1316,7 @@ module Particles_map
           'impossible without the Entropy (or temperature_idealgas) module!')
       endif
 !
-      if (interp%lrho .and. (.not.ldensity)) then
+      if (interp%lrho .and. (.not.ldensity) .and. (.not.lanelastic)) then
         call fatal_error('initialize_particles','interpolation of rho '// &
           'impossible without the Density module!')
       endif
@@ -1411,8 +1411,8 @@ module Particles_map
                  'sufficient memory for interp_rho'
           call fatal_error('interpolate_quantities','')
         endif
-        call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,interp_rho, &
-          interp%pol_rho)
+        call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,&
+            interp_rho,interp%pol_rho)
 !
         if (.not.ldensity_nolog) then
           interp_rho=exp(interp_rho)
