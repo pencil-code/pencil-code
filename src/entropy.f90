@@ -246,7 +246,7 @@ module Entropy
   integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left< p \right>_{yz}$
   integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left< T \right>_{yz}$
   integer :: idiag_uxTTmx=0     ! YZAVG_DOC: $\left< u_x T \right>_{yz}$
-  integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}>_{yz}$
+  integer :: idiag_fradmx=0     ! YZAVG_DOC: $\left<F_{\rm rad}\right>_{yz}$
   integer :: idiag_fturbmx=0    ! YZAVG_DOC: $\left<\varrho T \chi_t \nabla_x
                                 ! YZAVG_DOC: s\right>_{yz}$ \quad(turbulent
                                 ! YZAVG_DOC: heat flux)
