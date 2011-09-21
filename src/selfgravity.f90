@@ -45,13 +45,13 @@ module Selfgravity
 !  Run Parameters
 !
   logical :: ljeans_stiffening = .false.
-  integer :: njeans = 8
-  real :: gamma = 5. / 3.
+  integer :: nj_stiff = 8
+  real :: stiff_gamma = 5. / 3.
 !
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa, &
-      ljeans_stiffening, njeans, gamma
+      ljeans_stiffening, nj_stiff, stiff_gamma
 !
 !  Diagnostic Indices
 !
@@ -279,18 +279,18 @@ module Selfgravity
       if (ljeans_stiffening) then
         if (headtt) then
           print*, 'calc_pencils_selfgravity: stiffening is applied to the EOS with '
-          print*, 'calc_pencils_selfgravity: ', njeans, ' points per Jeans length and adiabatic index ', gamma
+          print*, 'calc_pencils_selfgravity: ', nj_stiff, ' points per Jeans length and adiabatic index ', stiff_gamma
         endif
         if (first) then
-          gm1 = gamma - 1.
+          gm1 = stiff_gamma - 1.
           if (dimensionality == 2) then
-            c = gravitational_const * real(njeans) * dxmax
+            c = gravitational_const * real(nj_stiff) * dxmax
           else
-            c = gravitational_const * (real(njeans) * dxmax)**2 / pi
+            c = gravitational_const * (real(nj_stiff) * dxmax)**2 / pi
           endif
           first = .false.
         endif
-        p%fpres = p%fpres * spread(1. + gamma * (c * p%rho / p%cs2)**gm1, 2, 3)
+        p%fpres = p%fpres * spread(1. + stiff_gamma * (c * p%rho / p%cs2)**gm1, 2, 3)
       endif
 !
     endsubroutine calc_pencils_selfgravity
