@@ -1422,9 +1422,7 @@ module Magnetic
 !  jj pencil always needed when in Weyl gauge
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
-          lweyl_gauge.or.lspherical_coords.or.lJ_ext) &
-!WL: but doesn't seem to be needed for the cylindrical case
-!AB: at least in spherical we must use Weyl (get wiggles otherwise), so need jj
+          lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux) &
           lpenc_requested(i_jj)=.true.
       if (.not.lweyl_gauge) &
           lpenc_requested(i_del2a)=.true.

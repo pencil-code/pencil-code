@@ -104,25 +104,25 @@ module Testfield
 !
 !  x-weighted averages
 !
-  integer :: idiag_alp11x=0      ! DIAG_DOC: $\alpha_{11}x$
-  integer :: idiag_alp21x=0      ! DIAG_DOC: $\alpha_{21}x$
-  integer :: idiag_alp12x=0      ! DIAG_DOC: $\alpha_{12}x$
-  integer :: idiag_alp22x=0      ! DIAG_DOC: $\alpha_{22}x$
-  integer :: idiag_eta11x=0      ! DIAG_DOC: $\eta_{11}kx$
-  integer :: idiag_eta21x=0      ! DIAG_DOC: $\eta_{21}kx$
-  integer :: idiag_eta12x=0      ! DIAG_DOC: $\eta_{12}kx$
-  integer :: idiag_eta22x=0      ! DIAG_DOC: $\eta_{22}kx$
+  integer :: idiag_alp11_x=0      ! DIAG_DOC: $\alpha_{11}x$
+  integer :: idiag_alp21_x=0      ! DIAG_DOC: $\alpha_{21}x$
+  integer :: idiag_alp12_x=0      ! DIAG_DOC: $\alpha_{12}x$
+  integer :: idiag_alp22_x=0      ! DIAG_DOC: $\alpha_{22}x$
+  integer :: idiag_eta11_x=0      ! DIAG_DOC: $\eta_{11}kx$
+  integer :: idiag_eta21_x=0      ! DIAG_DOC: $\eta_{21}kx$
+  integer :: idiag_eta12_x=0      ! DIAG_DOC: $\eta_{12}kx$
+  integer :: idiag_eta22_x=0      ! DIAG_DOC: $\eta_{22}kx$
 !
 !  x^2-weighted averages
 !
-  integer :: idiag_alp11x2=0      ! DIAG_DOC: $\alpha_{11}x^2$
-  integer :: idiag_alp21x2=0      ! DIAG_DOC: $\alpha_{21}x^2$
-  integer :: idiag_alp12x2=0      ! DIAG_DOC: $\alpha_{12}x^2$
-  integer :: idiag_alp22x2=0      ! DIAG_DOC: $\alpha_{22}x^2$
-  integer :: idiag_eta11x2=0      ! DIAG_DOC: $\eta_{11}kx^2$
-  integer :: idiag_eta21x2=0      ! DIAG_DOC: $\eta_{21}kx^2$
-  integer :: idiag_eta12x2=0      ! DIAG_DOC: $\eta_{12}kx^2$
-  integer :: idiag_eta22x2=0      ! DIAG_DOC: $\eta_{22}kx^2$
+  integer :: idiag_alp11_x2=0      ! DIAG_DOC: $\alpha_{11}x^2$
+  integer :: idiag_alp21_x2=0      ! DIAG_DOC: $\alpha_{21}x^2$
+  integer :: idiag_alp12_x2=0      ! DIAG_DOC: $\alpha_{12}x^2$
+  integer :: idiag_alp22_x2=0      ! DIAG_DOC: $\alpha_{22}x^2$
+  integer :: idiag_eta11_x2=0      ! DIAG_DOC: $\eta_{11}kx^2$
+  integer :: idiag_eta21_x2=0      ! DIAG_DOC: $\eta_{21}kx^2$
+  integer :: idiag_eta12_x2=0      ! DIAG_DOC: $\eta_{12}kx^2$
+  integer :: idiag_eta22_x2=0      ! DIAG_DOC: $\eta_{22}kx^2$
 !
 !  other quantities
 !
@@ -155,6 +155,14 @@ module Testfield
   integer :: idiag_bx0mz=0      ! DIAG_DOC: $\left<b_{x}\right>_{xy}$
   integer :: idiag_by0mz=0      ! DIAG_DOC: $\left<b_{y}\right>_{xy}$
   integer :: idiag_bz0mz=0      ! DIAG_DOC: $\left<b_{z}\right>_{xy}$
+  integer :: idiag_alp11x=0     ! DIAG_DOC: $\alpha_{11}(x,t)$
+  integer :: idiag_alp21x=0     ! DIAG_DOC: $\alpha_{21}(x,t)$
+  integer :: idiag_alp12x=0     ! DIAG_DOC: $\alpha_{12}(x,t)$
+  integer :: idiag_alp22x=0     ! DIAG_DOC: $\alpha_{22}(x,t)$
+  integer :: idiag_eta11x=0     ! DIAG_DOC: $\eta_{11}(x,t)$
+  integer :: idiag_eta21x=0     ! DIAG_DOC: $\eta_{21}(x,t)$
+  integer :: idiag_eta12x=0     ! DIAG_DOC: $\eta_{12}(x,t)$
+  integer :: idiag_eta22x=0     ! DIAG_DOC: $\eta_{22}(x,t)$
 !
 !  arrays for horizontally averaged uxb and jxb
 !
@@ -655,6 +663,14 @@ module Testfield
 !  so prevent this warning by writing i3=3 and i4=4
 !
       if (ldiagnos) then
+          call yzsum_mn_name_x(cx*Eipq(:,2,i1)+sx*Eipq(:,2,i2),idiag_alp11x)
+          call yzsum_mn_name_x(cx*Eipq(:,3,i1)+sx*Eipq(:,3,i2),idiag_alp21x)
+          call yzsum_mn_name_x(cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4),idiag_alp12x)
+          call yzsum_mn_name_x(cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4),idiag_alp22x)
+          call yzsum_mn_name_x(-(sx*Eipq(:,2,i3)-cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11x)
+          call yzsum_mn_name_x(+(sx*Eipq(:,2,i1)-cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12x)
+          call yzsum_mn_name_x(-(sx*Eipq(:,3,i3)-cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21x)
+          call yzsum_mn_name_x(+(sx*Eipq(:,3,i1)-cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22x)
         if (idiag_bx0mz/=0) call yzsum_mn_name_x(bpq(:,1,i3),idiag_bx0mz)
         if (idiag_by0mz/=0) call yzsum_mn_name_x(bpq(:,2,i3),idiag_by0mz)
         if (idiag_bz0mz/=0) call yzsum_mn_name_x(bpq(:,3,i3),idiag_bz0mz)
@@ -685,17 +701,17 @@ module Testfield
 !
 !  x-weighted averages alpha and eta
 !
-        if (idiag_alp11x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11x)
-        if (idiag_alp21x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21x)
-        if (idiag_eta11x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11x)
-        if (idiag_eta21x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21x)
+        if (idiag_alp11_x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11_x)
+        if (idiag_alp21_x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21_x)
+        if (idiag_eta11_x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11_x)
+        if (idiag_eta21_x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21_x)
 !
 !  x^2-weighted averages alpha and eta
 !
-        if (idiag_alp11x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11x2)
-        if (idiag_alp21x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21x2)
-        if (idiag_eta11x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11x2)
-        if (idiag_eta21x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21x2)
+        if (idiag_alp11_x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,2,1)+sx*Eipq(:,2,2)),idiag_alp11_x2)
+        if (idiag_alp21_x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,3,1)+sx*Eipq(:,3,2)),idiag_alp21_x2)
+        if (idiag_eta11_x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,2,i3)+cx*Eipq(:,2,i4))*ktestfield1,idiag_eta11_x2)
+        if (idiag_eta21_x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,3,i3)+cx*Eipq(:,3,i4))*ktestfield1,idiag_eta21_x2)
 !
 !  Projection of EMF from testfield against testfield itself
 !
@@ -721,14 +737,14 @@ module Testfield
           if (idiag_eta22/=0) call sum_mn_name(-(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22)
           if (idiag_eta12cs/=0) call sum_mn_name(-cx*sx*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12cs)
           if (idiag_eta22ss/=0) call sum_mn_name(-sx**2*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22ss)
-          if (idiag_alp12x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12x)
-          if (idiag_alp22x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22x)
-          if (idiag_eta12x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12x)
-          if (idiag_eta22x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22x)
-          if (idiag_alp12x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12x2)
-          if (idiag_alp22x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22x2)
-          if (idiag_eta12x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12x2)
-          if (idiag_eta22x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22x2)
+          if (idiag_alp12_x/=0) call sum_mn_name(xx*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12_x)
+          if (idiag_alp22_x/=0) call sum_mn_name(xx*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22_x)
+          if (idiag_eta12_x/=0) call sum_mn_name(xx*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12_x)
+          if (idiag_eta22_x/=0) call sum_mn_name(xx*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22_x)
+          if (idiag_alp12_x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,2,i3)+sx*Eipq(:,2,i4)),idiag_alp12_x2)
+          if (idiag_alp22_x2/=0) call sum_mn_name(x2*(+cx*Eipq(:,3,i3)+sx*Eipq(:,3,i4)),idiag_alp22_x2)
+          if (idiag_eta12_x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,2,i1)+cx*Eipq(:,2,i2))*ktestfield1,idiag_eta12_x2)
+          if (idiag_eta22_x2/=0) call sum_mn_name(x2*(-sx*Eipq(:,3,i1)+cx*Eipq(:,3,i2))*ktestfield1,idiag_eta22_x2)
         endif
 !
 !  rms values of small scales fields bpq in response to the test fields Bpq
@@ -1101,7 +1117,7 @@ module Testfield
       use Cdata
       use Diagnostics
 !
-      integer :: iname,inamez,inamexz
+      integer :: iname,inamex,inamez,inamexz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1115,6 +1131,8 @@ module Testfield
         idiag_bx0mz=0; idiag_by0mz=0; idiag_bz0mz=0
         idiag_E111z=0; idiag_E211z=0; idiag_E311z=0
         idiag_E121z=0; idiag_E221z=0; idiag_E321z=0
+        idiag_alp11x=0; idiag_alp21x=0; idiag_alp12x=0; idiag_alp22x=0;
+        idiag_eta11x=0; idiag_eta21x=0; idiag_eta12x=0; idiag_eta22x=0
         idiag_E10z=0; idiag_E20z=0; idiag_E30z=0; idiag_EBpq=0
         idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
         idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
@@ -1122,10 +1140,10 @@ module Testfield
         idiag_eta12=0; idiag_eta22=0
         idiag_alp11cc=0; idiag_alp21sc=0; idiag_alp12cs=0; idiag_alp22ss=0
         idiag_eta11cc=0; idiag_eta21sc=0; idiag_eta12cs=0; idiag_eta22ss=0
-        idiag_alp11x=0; idiag_alp21x=0; idiag_alp12x=0; idiag_alp22x=0
-        idiag_eta11x=0; idiag_eta21x=0; idiag_eta12x=0; idiag_eta22x=0
-        idiag_alp11x2=0; idiag_alp21x2=0; idiag_alp12x2=0; idiag_alp22x2=0
-        idiag_eta11x2=0; idiag_eta21x2=0; idiag_eta12x2=0; idiag_eta22x2=0
+        idiag_alp11_x=0; idiag_alp21_x=0; idiag_alp12_x=0; idiag_alp22_x=0
+        idiag_eta11_x=0; idiag_eta21_x=0; idiag_eta12_x=0; idiag_eta22_x=0
+        idiag_alp11_x2=0; idiag_alp21_x2=0; idiag_alp12_x2=0; idiag_alp22_x2=0
+        idiag_eta11_x2=0; idiag_eta21_x2=0; idiag_eta12_x2=0; idiag_eta22_x2=0
         idiag_b0rms=0; idiag_E0rms=0
         idiag_b11rms=0; idiag_b21rms=0; idiag_b12rms=0; idiag_b22rms=0
         idiag_E11rms=0; idiag_E21rms=0; idiag_E12rms=0; idiag_E22rms=0
@@ -1152,22 +1170,22 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'eta21sc',idiag_eta21sc)
         call parse_name(iname,cname(iname),cform(iname),'eta12cs',idiag_eta12cs)
         call parse_name(iname,cname(iname),cform(iname),'eta22ss',idiag_eta22ss)
-        call parse_name(iname,cname(iname),cform(iname),'alp11x',idiag_alp11x)
-        call parse_name(iname,cname(iname),cform(iname),'alp21x',idiag_alp21x)
-        call parse_name(iname,cname(iname),cform(iname),'alp12x',idiag_alp12x)
-        call parse_name(iname,cname(iname),cform(iname),'alp22x',idiag_alp22x)
-        call parse_name(iname,cname(iname),cform(iname),'eta11x',idiag_eta11x)
-        call parse_name(iname,cname(iname),cform(iname),'eta21x',idiag_eta21x)
-        call parse_name(iname,cname(iname),cform(iname),'eta12x',idiag_eta12x)
-        call parse_name(iname,cname(iname),cform(iname),'eta22x',idiag_eta22x)
-        call parse_name(iname,cname(iname),cform(iname),'alp11x2',idiag_alp11x2)
-        call parse_name(iname,cname(iname),cform(iname),'alp21x2',idiag_alp21x2)
-        call parse_name(iname,cname(iname),cform(iname),'alp12x2',idiag_alp12x2)
-        call parse_name(iname,cname(iname),cform(iname),'alp22x2',idiag_alp22x2)
-        call parse_name(iname,cname(iname),cform(iname),'eta11x2',idiag_eta11x2)
-        call parse_name(iname,cname(iname),cform(iname),'eta21x2',idiag_eta21x2)
-        call parse_name(iname,cname(iname),cform(iname),'eta12x2',idiag_eta12x2)
-        call parse_name(iname,cname(iname),cform(iname),'eta22x2',idiag_eta22x2)
+        call parse_name(iname,cname(iname),cform(iname),'alp11_x',idiag_alp11_x)
+        call parse_name(iname,cname(iname),cform(iname),'alp21_x',idiag_alp21_x)
+        call parse_name(iname,cname(iname),cform(iname),'alp12_x',idiag_alp12_x)
+        call parse_name(iname,cname(iname),cform(iname),'alp22_x',idiag_alp22_x)
+        call parse_name(iname,cname(iname),cform(iname),'eta11_x',idiag_eta11_x)
+        call parse_name(iname,cname(iname),cform(iname),'eta21_x',idiag_eta21_x)
+        call parse_name(iname,cname(iname),cform(iname),'eta12_x',idiag_eta12_x)
+        call parse_name(iname,cname(iname),cform(iname),'eta22_x',idiag_eta22_x)
+        call parse_name(iname,cname(iname),cform(iname),'alp11_x2',idiag_alp11_x2)
+        call parse_name(iname,cname(iname),cform(iname),'alp21_x2',idiag_alp21_x2)
+        call parse_name(iname,cname(iname),cform(iname),'alp12_x2',idiag_alp12_x2)
+        call parse_name(iname,cname(iname),cform(iname),'alp22_x2',idiag_alp22_x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta11_x2',idiag_eta11_x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta21_x2',idiag_eta21_x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta12_x2',idiag_eta12_x2)
+        call parse_name(iname,cname(iname),cform(iname),'eta22_x2',idiag_eta22_x2)
         call parse_name(iname,cname(iname),cform(iname),'b11rms',idiag_b11rms)
         call parse_name(iname,cname(iname),cform(iname),'b21rms',idiag_b21rms)
         call parse_name(iname,cname(iname),cform(iname),'b12rms',idiag_b12rms)
@@ -1179,6 +1197,19 @@ module Testfield
         call parse_name(iname,cname(iname),cform(iname),'E22rms',idiag_E22rms)
         call parse_name(iname,cname(iname),cform(iname),'E0rms',idiag_E0rms)
         call parse_name(iname,cname(iname),cform(iname),'EBpq',idiag_EBpq)
+      enddo
+!
+!  check for those quantities for which we want yz-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'alp11x',idiag_alp11x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'alp21x',idiag_alp21x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'alp12x',idiag_alp12x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'alp22x',idiag_alp22x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'eta11x',idiag_eta11x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'eta21x',idiag_eta21x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'eta12x',idiag_eta12x)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'eta22x',idiag_eta22x)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1207,69 +1238,6 @@ module Testfield
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_alp11=',idiag_alp11
-        write(3,*) 'idiag_alp21=',idiag_alp21
-        write(3,*) 'idiag_alp31=',idiag_alp31
-        write(3,*) 'idiag_alp12=',idiag_alp12
-        write(3,*) 'idiag_alp22=',idiag_alp22
-        write(3,*) 'idiag_alp32=',idiag_alp32
-        write(3,*) 'idiag_eta11=',idiag_eta11
-        write(3,*) 'idiag_eta21=',idiag_eta21
-        write(3,*) 'idiag_eta12=',idiag_eta12
-        write(3,*) 'idiag_eta22=',idiag_eta22
-        write(3,*) 'idiag_alp11cc=',idiag_alp11cc
-        write(3,*) 'idiag_alp21sc=',idiag_alp21sc
-        write(3,*) 'idiag_alp12cs=',idiag_alp12cs
-        write(3,*) 'idiag_alp22ss=',idiag_alp22ss
-        write(3,*) 'idiag_eta11cc=',idiag_eta11cc
-        write(3,*) 'idiag_eta21sc=',idiag_eta21sc
-        write(3,*) 'idiag_eta12cs=',idiag_eta12cs
-        write(3,*) 'idiag_eta22ss=',idiag_eta22ss
-        write(3,*) 'idiag_alp11x=',idiag_alp11x
-        write(3,*) 'idiag_alp21x=',idiag_alp21x
-        write(3,*) 'idiag_alp12x=',idiag_alp12x
-        write(3,*) 'idiag_alp22x=',idiag_alp22x
-        write(3,*) 'idiag_eta11x=',idiag_eta11x
-        write(3,*) 'idiag_eta21x=',idiag_eta21x
-        write(3,*) 'idiag_eta12x=',idiag_eta12x
-        write(3,*) 'idiag_eta22x=',idiag_eta22x
-        write(3,*) 'idiag_alp11x2=',idiag_alp11x2
-        write(3,*) 'idiag_alp21x2=',idiag_alp21x2
-        write(3,*) 'idiag_alp12x2=',idiag_alp12x2
-        write(3,*) 'idiag_alp22x2=',idiag_alp22x2
-        write(3,*) 'idiag_eta11x2=',idiag_eta11x2
-        write(3,*) 'idiag_eta21x2=',idiag_eta21x2
-        write(3,*) 'idiag_eta12x2=',idiag_eta12x2
-        write(3,*) 'idiag_eta22x2=',idiag_eta22x2
-        write(3,*) 'idiag_b11rms=',idiag_b11rms
-        write(3,*) 'idiag_b21rms=',idiag_b21rms
-        write(3,*) 'idiag_b12rms=',idiag_b12rms
-        write(3,*) 'idiag_b22rms=',idiag_b22rms
-        write(3,*) 'idiag_b0rms=',idiag_b0rms
-        write(3,*) 'idiag_E11rms=',idiag_E11rms
-        write(3,*) 'idiag_E21rms=',idiag_E21rms
-        write(3,*) 'idiag_E12rms=',idiag_E12rms
-        write(3,*) 'idiag_E22rms=',idiag_E22rms
-        write(3,*) 'idiag_E0rms=',idiag_E0rms
-        write(3,*) 'idiag_bx0mz=',idiag_bx0mz
-        write(3,*) 'idiag_by0mz=',idiag_by0mz
-        write(3,*) 'idiag_bz0mz=',idiag_bz0mz
-        write(3,*) 'idiag_E111z=',idiag_E111z
-        write(3,*) 'idiag_E211z=',idiag_E211z
-        write(3,*) 'idiag_E311z=',idiag_E311z
-        write(3,*) 'idiag_E121z=',idiag_E121z
-        write(3,*) 'idiag_E221z=',idiag_E221z
-        write(3,*) 'idiag_E321z=',idiag_E321z
-        write(3,*) 'idiag_E112z=',idiag_E112z
-        write(3,*) 'idiag_E212z=',idiag_E212z
-        write(3,*) 'idiag_E312z=',idiag_E312z
-        write(3,*) 'idiag_E122z=',idiag_E122z
-        write(3,*) 'idiag_E222z=',idiag_E222z
-        write(3,*) 'idiag_E322z=',idiag_E322z
-        write(3,*) 'idiag_E10z=',idiag_E10z
-        write(3,*) 'idiag_E20z=',idiag_E20z
-        write(3,*) 'idiag_E30z=',idiag_E30z
-        write(3,*) 'idiag_EBpq=',idiag_EBpq
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
         write(3,*) 'nnamez=',nnamez
