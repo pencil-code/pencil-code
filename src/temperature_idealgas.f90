@@ -112,7 +112,7 @@ module Entropy
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
 !
-! xy averaged diagnostics given in xyaver.in
+! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
   integer :: idiag_ppmz=0       ! XYAVG_DOC: $\left<p\right>_{xy}$
   integer :: idiag_ppuzmz=0     ! XYAVG_DOC:

@@ -5786,12 +5786,11 @@ module Magnetic
 !  12-jul-2005/joishi: coded
 !
       use General, only: erfcc
-      use Sub, only: step, der_step
+      use Sub, only: step, der_step, cubic_step, cubic_der_step
 !
       real, dimension(mz) :: eta_z,z2
       real, dimension(mz,3) :: geta_z
       character (len=labellen) :: zdep_profile
-!      integer :: i
 !
       intent(out) :: eta_z,geta_z
 !
@@ -5815,10 +5814,11 @@ module Magnetic
 ! its gradient:
            geta_z(:,1) = 0.
            geta_z(:,2) = 0.
-           geta_z(:,3) = -eta/(2.*eta_width) * ((tanh((z + eta_z0)/eta_width))**2. &
-             - (tanh((z - eta_z0)/eta_width))**2.)
+           geta_z(:,3) = -eta/(2.*eta_width) * &
+               ((tanh((z + eta_z0)/eta_width))**2. &
+               -(tanh((z - eta_z0)/eta_width))**2.)
 !
-!  Single step function
+!  Single tanh step function
 !
         case ('step')
 !
@@ -5831,6 +5831,18 @@ module Magnetic
            geta_z(:,1) = 0.
            geta_z(:,2) = 0.
            geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_width)
+!
+        case ('cubic_step')
+!
+!  Cubic-step profile
+!
+           if (eta_width == 0.) eta_width = 5.*dz
+           eta_z = eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_width)
+!
+! its gradient:
+           geta_z(:,1) = 0.
+           geta_z(:,2) = 0.
+           geta_z(:,3) = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_width)
 !
 !  Two-step function
 !

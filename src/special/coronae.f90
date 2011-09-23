@@ -3045,7 +3045,7 @@ module Special
 !
       beta =  pp/(B2+tini)*2.*mu0
 !
-!  quench velocities to one percent of the granule velocities
+!  quench velocities to some percentage of the granule velocities
       do i=1,ny
         q(:,i) = cubic_step(log10(beta(:,i)),0.,1.)*(1.-quench)+quench
       enddo
