@@ -928,9 +928,9 @@ module Testfield
 !  so prevent this warning by writing i3=3 and i4=4
 !
       if (ldiagnos) then
-        call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
-        call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
-        call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
+        if (iE0>0) call xysum_mn_name_z(bpq(:,1,iE0),idiag_bx0mz)
+        if (iE0>0) call xysum_mn_name_z(bpq(:,2,iE0),idiag_by0mz)
+        if (iE0>0) call xysum_mn_name_z(bpq(:,3,iE0),idiag_bz0mz)
         call xysum_mn_name_z(Eipq(:,1,i1),idiag_E111z)
         call xysum_mn_name_z(Eipq(:,2,i1),idiag_E211z)
         call xysum_mn_name_z(Eipq(:,3,i1),idiag_E311z)
@@ -943,9 +943,9 @@ module Testfield
         call xysum_mn_name_z(Eipq(:,1,i4),idiag_E122z)
         call xysum_mn_name_z(Eipq(:,2,i4),idiag_E222z)
         call xysum_mn_name_z(Eipq(:,3,i4),idiag_E322z)
-        call xysum_mn_name_z(Eipq(:,1,iE0),idiag_E10z)
-        call xysum_mn_name_z(Eipq(:,2,iE0),idiag_E20z)
-        call xysum_mn_name_z(Eipq(:,3,iE0),idiag_E30z)
+        if (iE0>0) call xysum_mn_name_z(Eipq(:,1,iE0),idiag_E10z)
+        if (iE0>0) call xysum_mn_name_z(Eipq(:,2,iE0),idiag_E20z)
+        if (iE0>0) call xysum_mn_name_z(Eipq(:,3,iE0),idiag_E30z)
         call xysum_mn_name_z(Mijpq(:,1,1,i1),idiag_M11z)
         call xysum_mn_name_z(Mijpq(:,2,2,i1),idiag_M22z)
         call xysum_mn_name_z(Mijpq(:,3,3,i1),idiag_M33z)
