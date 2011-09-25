@@ -96,24 +96,24 @@ pro precalc_data, i, vars
   ; Compute all desired quantities from available source data
   if (any (strcmp (sources, 'uu', /fold_case))) then begin
     if (any (strcmp (tags, 'u_abs', /fold_case))) then begin
-                                ; Absolute velocity
+      ; Absolute velocity
       varsets[i].u_abs = sqrt (congrid (dot2 (vars.uu[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * unit.velocity / unit.default_velocity
     end
     if (any (strcmp (tags, 'u_x', /fold_case))) then begin
-                                ; Velocity x-component
+      ; Velocity x-component
       varsets[i].u_x = congrid (vars.uu[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity
     end
     if (any (strcmp (tags, 'u_y', /fold_case))) then begin
-                                ; Velocity y-component
+      ; Velocity y-component
       varsets[i].u_y = congrid (vars.uu[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity
     end
     if (any (strcmp (tags, 'u_z', /fold_case))) then begin
-                                ; Velocity z-component
+      ; Velocity z-component
       varsets[i].u_z = congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity
     end
   end
   if (any (strcmp (tags, 'Temp', /fold_case))) then begin
-                                ; Temperature
+    ; Temperature
     if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
       varsets[i].Temp = exp (congrid (vars.lnTT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.temperature
     end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
@@ -121,21 +121,21 @@ pro precalc_data, i, vars
     end
   end
   if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
-                                ; Natural logarithmic density
+    ; Natural logarithmic density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
       varsets[i].ln_rho = alog (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
       varsets[i].ln_rho = alog (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
     end
   end else if (any (strcmp (tags, 'log_rho', /fold_case))) then begin
-                                ; Logarithmic density
+    ; Logarithmic density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
       varsets[i].log_rho = alog10 (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
       varsets[i].log_rho = alog10 (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
     end
   end else if (any (strcmp (tags, 'rho', /fold_case))) then begin
-                                ; Density
+    ; Density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
       varsets[i].rho = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
@@ -143,7 +143,7 @@ pro precalc_data, i, vars
     end
   end
   if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
-                                ; Vertical component of impulse density
+    ; Vertical component of impulse density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
       varsets[i].rho_u_z = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
@@ -152,42 +152,42 @@ pro precalc_data, i, vars
   end
   if (any (strcmp (sources, 'aa', /fold_case))) then begin
     if (any (strcmp (tags, 'Ax', /fold_case))) then begin
-                                ; Magnetic vector potential x-component
+      ; Magnetic vector potential x-component
       varsets[i].Ax = congrid (vars.aa[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.magnetic_field
     end
     if (any (strcmp (tags, 'Ay', /fold_case))) then begin
-                                ; Magnetic vector potential y-component
+      ; Magnetic vector potential y-component
       varsets[i].Ay = congrid (vars.aa[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.magnetic_field
     end
     if (any (strcmp (tags, 'Az', /fold_case))) then begin
-                                ; Magnetic vector potential z-component
+      ; Magnetic vector potential z-component
       varsets[i].Az = congrid (vars.aa[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.magnetic_field
     end
-                                ; Magnetic field
+    ; Magnetic field
     bb = curl (vars.aa) * unit.magnetic_field
     if (any (strcmp (tags, 'bx', /fold_case))) then begin
-                                ; Magnetic field x-component
+      ; Magnetic field x-component
       varsets[i].bx = congrid (reform (bb[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field
     end
     if (any (strcmp (tags, 'by', /fold_case))) then begin
-                                ; Magnetic field y-component
+      ; Magnetic field y-component
       varsets[i].by = congrid (reform (bb[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field
     end
     if (any (strcmp (tags, 'bz', /fold_case))) then begin
-                                ; Magnetic field z-component
+      ; Magnetic field z-component
       varsets[i].bz = congrid (reform (bb[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field
     end
     if (any (strcmp (tags, 'rho_mag', /fold_case))) then begin
-                                ; Magnetic energy density
+      ; Magnetic energy density
       varsets[i].rho_mag = congrid (dot2 (bb[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)
     end
     mu0_SI = 4.0 * !Pi * 1.e-7
     if (any (strcmp (tags, 'HR_ohm', /fold_case)) and any (tag_names (run_param) eq "ETA")) then begin
-                                ; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
+      ; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
       varsets[i].HR_ohm = run_param.eta * param.mu0 * congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*] / param.mu0), tx, ty, tz, /center, /interp) * unit.density * unit.velocity^3 / unit.length
     end
     if (any (strcmp (tags, 'j', /fold_case))) then begin
-                                ; Current density [A / m^2]
+      ; Current density [A / m^2]
       if (any (strcmp (tags, 'HR_ohm', /fold_case)) and any (tag_names (run_param) eq "ETA")) then begin
         varsets[i].j = sqrt (varsets[i].HR_ohm / (run_param.eta * mu0_SI * unit.velocity * unit.length))
       end else begin
@@ -199,7 +199,7 @@ pro precalc_data, i, vars
   over_tags = tag_names (oversets[i])
   if (any (strcmp (sources, 'uu', /fold_case))) then begin
     if (any (strcmp (over_tags, 'u', /fold_case))) then begin
-                                ; Velocity overplot
+      ; Velocity overplot
       oversets[i].u[*,*,*,0] = float (congrid (vars.uu[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
       oversets[i].u[*,*,*,1] = float (congrid (vars.uu[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
       oversets[i].u[*,*,*,2] = float (congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
@@ -207,14 +207,14 @@ pro precalc_data, i, vars
   end
   if (any (strcmp (sources, 'aa', /fold_case))) then begin
     if (any (strcmp (over_tags, 'b', /fold_case))) then begin
-                                ; Magnetic field overplot
+      ; Magnetic field overplot
       oversets[i].b[*,*,*,0] = float (congrid (bb[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
       oversets[i].b[*,*,*,1] = float (congrid (bb[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
       oversets[i].b[*,*,*,2] = float (congrid (bb[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
     end
     bb = 0
     if (any (strcmp (over_tags, 'a_contour', /fold_case))) then begin
-                                ; Magnetic field lines overplot
+      ; Magnetic field lines overplot
       oversets[i].a_contour[*,*,*,0] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.magnetic_field)
       oversets[i].a_contour[*,*,*,1] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.magnetic_field)
       oversets[i].a_contour[*,*,*,2] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.magnetic_field)
