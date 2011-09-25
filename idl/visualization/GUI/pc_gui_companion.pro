@@ -182,13 +182,13 @@ pro precalc_data, i, vars
       varsets[i].rho_mag = congrid (dot2 (bb[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)
     end
     mu0_SI = 4.0 * !Pi * 1.e-7
-    if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
+    if (any (strcmp (tags, 'HR_ohm', /fold_case)) and any (tag_names (run_param) eq "ETA")) then begin
                                 ; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
       varsets[i].HR_ohm = run_param.eta * param.mu0 * congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*] / param.mu0), tx, ty, tz, /center, /interp) * unit.density * unit.velocity^3 / unit.length
     end
     if (any (strcmp (tags, 'j', /fold_case))) then begin
                                 ; Current density [A / m^2]
-      if (any (strcmp (tags, 'HR_ohm', /fold_case))) then begin
+      if (any (strcmp (tags, 'HR_ohm', /fold_case)) and any (tag_names (run_param) eq "ETA")) then begin
         varsets[i].j = sqrt (varsets[i].HR_ohm / (run_param.eta * mu0_SI * unit.velocity * unit.length))
       end else begin
         varsets[i].j = sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*] / param.mu0), tx, ty, tz, /center, /interp)) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
@@ -368,7 +368,7 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			rho_min = ts.rhomin * unit.density / unit.default_density
 			plot, time, rho_min, title = 'rho_min(t) ['+unit.default_density_str+']', xrange=x_minmax, /xs, xc=charsize, yc=charsize, /yl
 		end
-		if (any (strcmp (tags, 'j2m', /fold_case)) and any (strcmp (tags, 'visc_heatm', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		if (any (strcmp (tags, 'j2m', /fold_case)) and any (strcmp (tags, 'visc_heatm', /fold_case)) and any (tag_names (run_param) eq "ETA") and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
 			visc_heat_mean = ts.visc_heatm * unit.density * unit.velocity^3 / unit.length
@@ -376,7 +376,7 @@ pro show_timeseries, ts, tags, unit, param, run_param, start_time=start_time, en
 			plot, time, HR_ohm, title = 'Mean Ohmic heating rate {w} and viscous heating rate {.r}', xrange=x_minmax, /xs, xc=charsize, yc=charsize, ytitle='heating rates [W/m^3]', yrange=yrange, /yl
 			oplot, time, visc_heat_mean, color=200
 			oplot, time, HR_ohm, linestyle=2
-		end else if (any (strcmp (tags, 'j2m', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		end else if (any (strcmp (tags, 'j2m', /fold_case)) and any (tag_names (run_param) eq "ETA") and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			mu0_SI = 4.0 * !Pi * 1.e-7
 			HR_ohm = run_param.eta * param.mu0 * ts.j2m * unit.density * unit.velocity^3 / unit.length
