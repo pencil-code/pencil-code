@@ -92,8 +92,10 @@ module Magnetic
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3
+  real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(nx,3) :: uxbb
   real, dimension(nx) :: eta_BB
+  real, dimension(nx) :: xmask_mag
   real :: radius=0.1, epsilonaa=0.01, widthaa=0.5, x0aa=0.0, z0aa=0.0
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1.
@@ -178,7 +180,7 @@ module Magnetic
       lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
-      phase_ax, phase_ay, phase_az
+      phase_ax, phase_ay, phase_az,magnetic_xaver_range
 !
 ! Run parameters
 !
@@ -494,7 +496,8 @@ module Magnetic
   integer :: idiag_hjperpm=0    ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of $J_{\rm hyper}$ perpendicular to B
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
-  integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
+  integer :: idiag_brmsx=0
+  Integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
   integer :: idiag_Eymxy=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{z}$
   integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$
 !
@@ -707,6 +710,25 @@ module Magnetic
       logical :: lstarting
       integer :: i,ierr
       real :: J_ext2
+!
+!  Compute mask for x-averaging where x is in magnetic_xaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      where (x(l1:l2)>=magnetic_xaver_range(1) .and. x(l1:l2)<=magnetic_xaver_range(2))
+        xmask_mag=1.
+      elsewhere
+        xmask_mag=0.
+      endwhere
+      magnetic_xaver_range(1)=max(magnetic_xaver_range(1),xyz0(1))
+      magnetic_xaver_range(2)=min(magnetic_xaver_range(2),xyz1(1))
+      xmask_mag=xmask_mag*Lxyz(1)/(magnetic_xaver_range(2)-magnetic_xaver_range(1))     
+!
+!  debug output
+!
+      if (lroot.and.ip<14) then
+        print*,'xmask_mag=',xmask_mag
+      endif
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
@@ -1659,6 +1681,7 @@ module Magnetic
       if (idiag_b2uzm/=0 .or. idiag_b2ruzm/=0 .or. &
           idiag_b1m/=0 .or. idiag_b2m/=0 .or. idiag_bm2/=0 .or. &
           idiag_brmsh/=0 .or. idiag_brmsn/=0 .or. idiag_brmss/=0 .or. &
+          idiag_brmsx/=0 .or.&
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
@@ -2967,6 +2990,7 @@ module Magnetic
           itype_name(idiag_brmsn)=ilabel_sum_sqrt
           itype_name(idiag_brmss)=ilabel_sum_sqrt
         endif
+        if (idiag_brmsx/=0) call sum_mn_name(p%b2*xmask_mag,idiag_brmsx,lsqrt=.true.)
         if (idiag_bmax/=0) call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
         if (idiag_bxmin/=0) call max_mn_name(-p%bb(:,1),idiag_bxmin,lneg=.true.)
         if (idiag_bymin/=0) call max_mn_name(-p%bb(:,2),idiag_bymin,lneg=.true.)
@@ -6210,6 +6234,7 @@ module Magnetic
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0; idiag_bmxy_rms=0
         idiag_brsphmphi=0; idiag_bthmphi=0; idiag_brmsh=0; idiag_brmsn=0
         idiag_brmss=0; idiag_etatotalmx=0; idiag_etatotalmz=0
+        idiag_brmsx=0
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
         idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
@@ -6270,6 +6295,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
         call parse_name(iname,cname(iname),cform(iname),'brmsn',idiag_brmsn)
         call parse_name(iname,cname(iname),cform(iname),'brmss',idiag_brmss)
+        call parse_name(iname,cname(iname),cform(iname),'brmsx',idiag_brmsx)
         call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
         call parse_name(iname,cname(iname),cform(iname),'bxmin',idiag_bxmin)
         call parse_name(iname,cname(iname),cform(iname),'bymin',idiag_bymin)
