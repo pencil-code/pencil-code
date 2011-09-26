@@ -1518,31 +1518,51 @@ module Sub
 !
       select case (i)
 !
+!  1-component
+!
       case (1)
         call der(f,k1+3,tmp1,2)
         call der(f,k1+2,tmp2,3)
-        g=tmp1-tmp2
-        if (lspherical_coords) g=tmp1-tmp2&
-              +f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
+!
+!  corrections for spherical coordinates
+!
+        if (lspherical_coords) then
+          g=tmp1-tmp2+f(l1:l2,m,n,k1+3)*r1_mn*cotth(m)
+        else
+          g=tmp1-tmp2
+        endif
+!
+!  2-component
 !
       case (2)
         call der(f,k1+1,tmp1,3)
         call der(f,k1+3,tmp2,1)
-        g=tmp1-tmp2
-        if (lspherical_coords) g=tmp1-tmp2&
-              -f(l1:l2,m,n,k1+3)*r1_mn
+!
+!  corrections for spherical coordinates
+!
+        if (lspherical_coords) then
+          g=tmp1-tmp2-f(l1:l2,m,n,k1+3)*r1_mn
+        else
+          g=tmp1-tmp2
+        endif
+!
+!  3-component
 !
       case (3)
         call der(f,k1+2,tmp1,1)
         call der(f,k1+1,tmp2,2)
-        g=tmp1-tmp2
-        if (lspherical_coords) g=tmp1-tmp2&
-              +f(l1:l2,m,n,k1+2)*r1_mn
+!
+!  corrections for spherical and cylindrical coordinates
+!
+        if (lspherical_coords) then
+          g=tmp1-tmp2+f(l1:l2,m,n,k1+2)*r1_mn
+        elseif (lcylindrical_coords) then
+          g=tmp1-tmp2+f(l1:l2,m,n,k1+2)*rcyl_mn1
+        else
+          g=tmp1-tmp2
+        endif
 !
       endselect
-!
-      if (lcylindrical_coords) call fatal_error('curli', &
-          'not implemented for cylindrical coordinates')
 !
     endsubroutine curli
 !***********************************************************************

@@ -169,7 +169,7 @@ module Magnetic_meanfield
         close(1)
       endif
 !
-!  check
+!  check for (simple-minded) anisotropy
 !
       if (any(alpha_aniso/=0.)) then
         lalpha_aniso=.true.
