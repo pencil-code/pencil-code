@@ -332,7 +332,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         
 
     # for real-time image display
-    if sloppy == False:
+    if (sloppy == False) or (movieFile):
         manager = plt.get_current_fig_manager()
         manager.show()
 
