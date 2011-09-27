@@ -36,7 +36,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'TT', 'lnTT' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'TT', 'lnTT', 'cc', 'lncc' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -70,6 +70,15 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz))
     fd.write('POINT_DATA {0:9}\n'.format(dim))
     
+    # this should correct for the case the user type only one variable
+    if (len(variables) > 0):
+        if (len(variables[0]) == 1):
+            variables = [variables]
+    # this should correct for the case the user type only one variable
+    if (len(magic) > 0):
+        if (len(magic[0]) == 1):
+            magic = [magic]
+            
     try:
         index = variables.index('rho')
         print 'writing rho'
@@ -195,6 +204,30 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
                     fd.write(struct.pack(">f", var.lnTT[k,j,i]))
     except:
         pass
+                    
+    try:
+        index = variables.index('cc')
+        print 'writing cc'
+        fd.write('SCALARS cc float\n')
+        fd.write('LOOKUP_TABLE default\n')    
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", var.cc[k,j,i]))
+    except:
+        pass
+
+    try:
+        index = variables.index('lncc')
+        print 'writing lncc'
+        fd.write('SCALARS lncc float\n')
+        fd.write('LOOKUP_TABLE default\n')    
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", var.lncc[k,j,i]))                    
+    except:
+        pass
     
     fd.close()
 
@@ -266,6 +299,15 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz))
         fd.write('POINT_DATA {0:9}\n'.format(dim))
         
+        # this should correct for the case the user type only one variable
+        if (len(variables) > 0):
+            if (len(variables[0]) == 1):
+                variables = [variables]
+        # this should correct for the case the user type only one variable
+        if (len(magic) > 0):
+            if (len(magic[0]) == 1):
+                magic = [magic]
+            
         try:
             index = variables.index('rho')
             print 'writing rho'
@@ -392,5 +434,29 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         except:
             pass
 
+        try:
+            index = variables.index('cc')
+            print 'writing cc'
+            fd.write('SCALARS cc float\n')
+            fd.write('LOOKUP_TABLE default\n')    
+            for k in range(dimz):
+                for j in range(dimy):
+                    for i in range(dimx):
+                        fd.write(struct.pack(">f", var.cc[k,j,i]))
+        except:
+            pass
+
+        try:
+            index = variables.index('lncc')
+            print 'writing lncc'
+            fd.write('SCALARS lncc float\n')
+            fd.write('LOOKUP_TABLE default\n')    
+            for k in range(dimz):
+                for j in range(dimy):
+                    for i in range(dimx):
+                        fd.write(struct.pack(">f", var.lncc[k,j,i]))                    
+        except:
+            
+        pass
         
         fd.close()
