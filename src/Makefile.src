@@ -1064,7 +1064,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ##  Simon's laptop
 ##
-#FC=/usr/bin/gfortran-4.3 #(iomsn-laptop)
+#FC=/usr/bin/gfortran-4.4 #(iomsn-laptop)
 #F77=$(FC) #(iomsn-laptop)
 #CC=gcc #(iomsn-laptop)
 #FFLAGS_SLOPPY=$(FFLAGS) -I/usr/lib/openmpi/include #(iomsn-laptop)
