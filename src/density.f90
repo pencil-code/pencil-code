@@ -42,6 +42,8 @@ module Density
   real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
+  real, dimension(nx) :: xmask_den
+  real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
@@ -101,7 +103,7 @@ module Density
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
-      T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, &
+      T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out
 
 !
@@ -122,6 +124,7 @@ module Density
 !
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
+  integer :: idiag_rhomxmask=0
   integer :: idiag_rho2m=0      ! DIAG_DOC:
   integer :: idiag_lnrho2m=0    ! DIAG_DOC:
   integer :: idiag_drho2m=0     ! DIAG_DOC:
@@ -236,6 +239,25 @@ module Density
         lcontinuity_gas=.false.
         if (lroot) print*,&
              'initialize_density: fargo used, turned off continuity equation'
+      endif
+!
+!  Compute mask for x-averaging where x is in density_xaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      where (x(l1:l2)>=density_xaver_range(1) .and. x(l1:l2)<=density_xaver_range(2))
+        xmask_den=1.
+      elsewhere
+        xmask_den=0.
+      endwhere
+      density_xaver_range(1)=max(density_xaver_range(1),xyz0(1))
+      density_xaver_range(2)=min(density_xaver_range(2),xyz1(1))
+      xmask_den=xmask_den*Lxyz(1)/(density_xaver_range(2)-density_xaver_range(1))
+!
+!  debug output
+!
+      if (lroot.and.ip<14) then
+        print*,'xmask_den=',xmask_den
       endif
 !
 !  Initialize mass diffusion.
@@ -1400,7 +1422,7 @@ module Density
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. &
-           idiag_drhom/=0) &
+           idiag_drhom/=0 .or. idiag_rhomxmask/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
@@ -1942,6 +1964,7 @@ module Density
 !
       if (ldiagnos) then
         if (idiag_rhom/=0)     call sum_mn_name(p%rho,idiag_rhom)
+        if (idiag_rhomxmask/=0)call sum_mn_name(p%rho*xmask_den,idiag_rhomxmask)
         if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
         if (idiag_mass/=0)     call integrate_mn_name(p%rho,idiag_mass)
         if (idiag_rhomin/=0) &
@@ -2409,6 +2432,7 @@ module Density
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0
         idiag_rhomxz=0; idiag_grhomax=0
+        idiag_rhomxmask=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -2416,6 +2440,7 @@ module Density
       if (lroot.and.ip<14) print*,'rprint_density: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhom',idiag_rhom)
+        call parse_name(iname,cname(iname),cform(iname),'rhomxmask',idiag_rhomxmask)
         call parse_name(iname,cname(iname),cform(iname),'rho2m',idiag_rho2m)
         call parse_name(iname,cname(iname),cform(iname),'drho2m',idiag_drho2m)
         call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
