@@ -456,7 +456,6 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
                     for i in range(dimx):
                         fd.write(struct.pack(">f", var.lncc[k,j,i]))                    
         except:
-            
-        pass
+            pass
         
         fd.close()
