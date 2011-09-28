@@ -1400,45 +1400,79 @@ module Particles_nbody
       real :: rr,w2,smap,hills
       integer :: ks,i
 !
-      if (.not.lcartesian_coords) &
-           call fatal_error('calc_torque','calc_torque not yet '//&
-           'implemented for curvilinear coordinates.')
+      real, dimension(nx) :: rr_mn,dist2,tmp,tempering
+      real :: rp,phip,phi,pcut
 !
       if (ks==istar) call fatal_error('calc_torque', &
           'Nonsense to calculate torques for the star')
+!
+      if (lcartesian_coords) then
+!
+        rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
+        w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
+        smap  = 1./(2./rr - w2)
+        hills = smap*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
+!
+        rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
+        torque = GNewton*pmass(ks)*p%rho*rpre*&
+             (dist**2 + r_smooth(ks)**2)**(-1.5)
+!
+        torqext=0.
+        torqint=0.
+!
+        do i=1,nx
+!
+!  Exclude material from inside the Roche Lobe. Compute internal
+!  and external torques. 
+!
+          if (dist(i)>=hills) then
+            if (p%rcyl_mn(i)>=rr) torqext(i) = torque(i)
+            if (p%rcyl_mn(i)<=rr) torqint(i) = torque(i)
+          endif
+!
+        enddo
+!
+        call sum_lim_mn_name(torqext,idiag_torqext(ks),p)
+        call sum_lim_mn_name(torqint,idiag_torqint(ks),p)
+!
+      else if (lcylindrical_coords) then
+        rp = fsp(ks,ixp)
+        hills = rp*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
+!
+        rr_mn = x(l1:l2)     ; phi  = y(m)
+        rp    = fsp(ks,ixp)  ; phip = fsp(ks,iyp)
+        dist2 = rr_mn**2 + rp**2 - 2*rr_mn*rp*cos(phi-phip) 
+        rpre  = rr_mn*rp*sin(phi-phip)
+        tmp   = -GNewton*pmass(ks)*p%rho*rpre*&
+             (dist2 + r_smooth(ks)**2)**(-1.5)*rr_mn
+!
+        pcut=0.8 !*hills
+        tempering = 1./(exp(-(sqrt(dist2)/hills - pcut)/(.1*pcut))+1.)
+!        
+        torque = tmp * tempering
 
-      rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
-      w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
-      smap  = 1./(2./rr - w2)
-      hills = smap*(pmass(ks)*pmass1(istar)/3.)**(1./3.)
+        torqext=0.
+        torqint=0.
 !
-      rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
-      torque = GNewton*pmass(ks)*p%rho*rpre*&
-           (dist**2 + r_smooth(ks)**2)**(-1.5)
+        do i=1,nx
 !
-      torqext=0.
-      torqint=0.
+!  Exclude material from inside the Roche Lobe. Compute internal
+!  and external torques. 
 !
-      do i=1,nx
+        !  if (dist2(i)>=hills**2) then
+            if (p%rcyl_mn(i)>=rp) torqext(i) = torque(i)
+            if (p%rcyl_mn(i)<=rp) torqint(i) = torque(i)
+        !  endif
 !
-!  Exclude material from inside the Roche Lobe
+        enddo
 !
-        if (dist(i)>=hills) then
-!
-!  External torque
-!
-          if (p%rcyl_mn(i)>=rr) torqext(i) = torque(i)
-!
-!  Internal torque
-!
-          if (p%rcyl_mn(i)<=rr) torqint(i) = torque(i)
-!
-        endif
-!
-      enddo
-!
-      call sum_lim_mn_name(torqext,idiag_torqext(ks),p)
-      call sum_lim_mn_name(torqint,idiag_torqint(ks),p)
+        call sum_mn_name(torqext,idiag_torqext(ks))
+        call sum_mn_name(torqint,idiag_torqint(ks))
+! 
+      else
+        call fatal_error('calc_torque','calc_torque not yet '//&
+             'implemented for spherical coordinates.')
+      endif
 !
     endsubroutine calc_torque
 !***********************************************************************
