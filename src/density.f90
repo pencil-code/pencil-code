@@ -252,7 +252,13 @@ module Density
       endwhere
       density_xaver_range(1)=max(density_xaver_range(1),xyz0(1))
       density_xaver_range(2)=min(density_xaver_range(2),xyz1(1))
-      xmask_den=xmask_den*Lxyz(1)/(density_xaver_range(2)-density_xaver_range(1))
+      if (lspherical_coords) then
+        xmask_den=xmask_den*(xyz1(1)**3-xyz0(1)**3)/(density_xaver_range(2)**3-density_xaver_range(1)**3)
+      elseif (lcylindrical_coords) then
+        xmask_den=xmask_den*(xyz1(1)**2-xyz0(1)**2)/(density_xaver_range(2)**2-density_xaver_range(1)**2)
+      else
+        xmask_den=xmask_den*Lxyz(1)/(density_xaver_range(2)-density_xaver_range(1))
+      endif
 !
 !  debug output
 !

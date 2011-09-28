@@ -722,7 +722,13 @@ module Magnetic
       endwhere
       magnetic_xaver_range(1)=max(magnetic_xaver_range(1),xyz0(1))
       magnetic_xaver_range(2)=min(magnetic_xaver_range(2),xyz1(1))
-      xmask_mag=xmask_mag*Lxyz(1)/(magnetic_xaver_range(2)-magnetic_xaver_range(1))     
+      if (lspherical_coords) then
+        xmask_mag=xmask_mag*(xyz1(1)**3-xyz0(1)**3)/(magnetic_xaver_range(2)**3-magnetic_xaver_range(1)**3)
+      elseif (lcylindrical_coords) then
+        xmask_mag=xmask_mag*(xyz1(1)**2-xyz0(1)**2)/(magnetic_xaver_range(2)**2-magnetic_xaver_range(1)**2)
+      else
+        xmask_mag=xmask_mag*Lxyz(1)/(magnetic_xaver_range(2)-magnetic_xaver_range(1))
+      endif
 !
 !  debug output
 !

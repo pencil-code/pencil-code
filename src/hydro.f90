@@ -672,7 +672,13 @@ module Hydro
       endwhere
       hydro_xaver_range(1)=max(hydro_xaver_range(1),xyz0(1))
       hydro_xaver_range(2)=min(hydro_xaver_range(2),xyz1(1))
-      xmask_hyd=xmask_hyd*Lxyz(1)/(hydro_xaver_range(2)-hydro_xaver_range(1))
+      if (lspherical_coords) then
+        xmask_hyd=xmask_hyd*(xyz1(1)**3-xyz0(1)**3)/(hydro_xaver_range(2)**3-hydro_xaver_range(1)**3)
+      elseif (lcylindrical_coords) then
+        xmask_hyd=xmask_hyd*(xyz1(1)**2-xyz0(1)**2)/(hydro_xaver_range(2)**2-hydro_xaver_range(1)**2)
+      Else
+        xmask_hyd=xmask_hyd*Lxyz(1)/(hydro_xaver_range(2)-hydro_xaver_range(1))
+      endif
 !
 !  debug output
 !
