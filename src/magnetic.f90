@@ -180,7 +180,7 @@ module Magnetic
       lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
-      phase_ax, phase_ay, phase_az,magnetic_xaver_range
+      phase_ax, phase_ay, phase_az, magnetic_xaver_range
 !
 ! Run parameters
 !
@@ -239,7 +239,8 @@ module Magnetic
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, luse_Bext_in_b2, ampl_fcont_aa, &
-      lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor
+      lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, & 
+      magnetic_xaver_range
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -496,7 +497,8 @@ module Magnetic
   integer :: idiag_hjperpm=0    ! DIAG_DOC: Mean value of the component
                                 ! DIAG_DOC: of $J_{\rm hyper}$ perpendicular to B
   integer :: idiag_brmsn=0,idiag_brmss=0,idiag_brmsh=0
-  integer :: idiag_brmsx=0
+  integer :: idiag_brmsx=0      ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$ for
+                                ! DIAG_DOC: the magnetic_xaver_range
   Integer :: idiag_Exmxy=0      ! DIAG_DOC: $\left<{\cal E}_x\right>_{z}$
   integer :: idiag_Eymxy=0      ! DIAG_DOC: $\left<{\cal E}_y\right>_{z}$
   integer :: idiag_Ezmxy=0      ! DIAG_DOC: $\left<{\cal E}_z\right>_{z}$

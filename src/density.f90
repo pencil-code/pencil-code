@@ -118,13 +118,14 @@ module Density
       lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
       lcheck_negative_density, lmassdiff_fix, lcalc_glnrhomean, &
       ldensity_profile_masscons, lffree, ffree_profile, rzero_ffree, wffree, &
-      mass_source_tau1
+      mass_source_tau1, density_xaver_range
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
-  integer :: idiag_rhomxmask=0
+  integer :: idiag_rhomxmask=0  ! DIAG_DOC: $\left<\varrho\right>$ for 
+                                ! DIAG_DOC: the density_xaver_range
   integer :: idiag_rho2m=0      ! DIAG_DOC:
   integer :: idiag_lnrho2m=0    ! DIAG_DOC:
   integer :: idiag_drho2m=0     ! DIAG_DOC:

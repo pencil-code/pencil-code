@@ -176,7 +176,7 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
-      lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx
+      lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, hydro_xaver_range
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -195,7 +195,8 @@ module Hydro
   integer :: idiag_uyp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
   integer :: idiag_uzp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
-  integer :: idiag_urmsx=0
+  integer :: idiag_urmsx=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
+                                ! DIAG_DOC: the hydro_xaver_range
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
   integer :: idiag_uzrmaxs=0    ! DIAG_DOC:
