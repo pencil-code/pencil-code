@@ -484,7 +484,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq, B2renorm
       real, dimension (nx,3) :: Bk_Bki, tmp_jxb,exa_meanfield
       real, dimension (nx,3) :: meanfield_getat_tmp
-      real :: kx,fact,qp_c
+      real :: kx,fact
       integer :: j,l
 !
       intent(inout) :: f,p

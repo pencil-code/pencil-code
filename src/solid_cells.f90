@@ -92,8 +92,9 @@ module Solid_Cells
 !  nov-2010/kragset: updated allocations related to drag calculations
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      integer :: icyl,isph,i,gridlim=5, iobj,iprocx,iprocy,iprocz
-      real :: xobj,yobj,zobj,xbound,ybound,zbound,robj
+      integer :: icyl,isph,i
+!      integer :: gridlim=5,iobj,iprocx,iprocy,iprocz
+!      real :: xobj,yobj,zobj,xbound,ybound,zbound,robj
 !
 !  Define the geometry of the solid object.
 !  For more complex geometries (i.e. for objects different than cylinders,
