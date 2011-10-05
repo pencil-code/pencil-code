@@ -1545,11 +1545,15 @@ module Magnetic
 !
       if (J_ext_quench/=0) lpenc_requested(i_b2)=.true.
 !
-!  Other necessary pencils.
+!  Pencils needed by thermodynamics.
 !
       if (lentropy .or. ltemperature .or. lhydro) lpenc_requested(i_rho1)=.true.
       if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
       if (ltemperature) lpenc_requested(i_cv1)=.true.
+      if (.not. lkinematic .and. lohmic_heat) then
+        lpenc_requested(i_j2)=.true.
+        if (lentropy .and. pretend_lnTT) lpenc_requested(i_cv1)=.true.
+      endif
 !
 !  Ambipolar diffusion.
 !
