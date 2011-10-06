@@ -200,6 +200,36 @@ pro cslice_event, event
 		pos_t[selected_cube,sub_aver] = val_max
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 	end
+	'JUMP_MIN': begin
+		pos_min = min (cube, location)
+		dims = size (cube, /dimensions)  
+		pos_min = array_indices (dims, location, /dimensions)
+		px = pos_min[0]
+		py = pos_min[1]
+		pz = pos_min[2]
+		WIDGET_CONTROL, sl_x, SET_VALUE = px
+		WIDGET_CONTROL, sl_y, SET_VALUE = py
+		WIDGET_CONTROL, sl_z, SET_VALUE = pz
+		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
+		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
+		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
+		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+	end
+	'JUMP_MAX': begin
+		pos_max = max (cube, location)
+		dims = size (cube, /dimensions)  
+		pos_max = array_indices (dims, location, /dimensions)
+		px = pos_max[0]
+		py = pos_max[1]
+		pz = pos_max[2]
+		WIDGET_CONTROL, sl_x, SET_VALUE = px
+		WIDGET_CONTROL, sl_y, SET_VALUE = py
+		WIDGET_CONTROL, sl_z, SET_VALUE = pz
+		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
+		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
+		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
+		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+	end
 	'FREEZE': begin
 		WIDGET_CONTROL, sl_min, SENSITIVE = 0
 		WIDGET_CONTROL, sl_max, SENSITIVE = 0
@@ -979,6 +1009,10 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	bcol    = WIDGET_BASE (bcot, /col)
 	min_max	= WIDGET_BUTTON (bcol, value='<= min SET max =>', uvalue='MIN_MAX', xsize=120)
 	range	= WIDGET_BUTTON (bcol, value='FREEZE RANGE', uvalue='FREEZE', xsize=120)
+	bsubrow = WIDGET_BASE (bcol, /row)
+	tmp	= WIDGET_LABEL (bsubrow, value='JUMP TO', frame=0)
+	jump_min= WIDGET_BUTTON (bsubrow, value='MIN', uvalue='JUMP_MIN')
+	jump_max= WIDGET_BUTTON (bsubrow, value='MAX', uvalue='JUMP_MAX')
 	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_max, xsize=sl_size)
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
