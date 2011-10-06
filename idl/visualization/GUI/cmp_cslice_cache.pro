@@ -403,105 +403,105 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
   num_over_z = n_elements (field_z_indices)
   
   if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-     ii = reform ((cube[px,*,*] > val_min) < val_max, num_y, num_z)
-     if ((bin_y ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic=0)
-     val_range = get_range (ii)
-     wset, wimg_yz
-     if (show_cross) then begin
-        if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[i:i+1, pz*bin_z+oz] = val_range
-        if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[i:i+1, pz*bin_z+oz] = val_range
-        if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[py*bin_y+oy, i:i+1] = val_range
-        if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[py*bin_y+oy, i:i+1] = val_range
-        if ((py le af_y) and (py ge num_y-1-af_y) and (pz le af_z) and (pz ge num_z-1-af_z)) then ii[0:1, 0] = val_range
-     end $
-     else if (abs_scale) then ii[0:1, 0] = val_range
-     tvscl, ii
-     if (selected_overplot gt 0) then begin
-        if (overplot_contour eq 1) then begin
-           if ((size(field_x_y))[2] gt 1 and (size(field_x_y))[3] gt 1) then begin
-              contour, reform (field_x_y[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
-           endif
-        end else begin
-           vec_len = vector_length * max (abs ([field_y_x, field_z_x] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
-           velovect, reform (field_y_x[px,*,*], num_over_y, num_over_z), reform (field_z_x[px,*,*], num_over_y, num_over_z), $
-                     field_y_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
-        end
-     end
-     if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
-        wset, wcut_y
-        plot, cube[px,*,pz], xrange=[0,num_y], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
-        oplot, cube[px,*,pz], psym=3, color=200
-        axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
-        axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
-     end
+    ii = reform ((cube[px,*,*] > val_min) < val_max, num_y, num_z)
+    if ((bin_y ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_y*bin_y), fix (num_z*bin_z), cubic=0)
+    val_range = get_range (ii)
+    wset, wimg_yz
+    if (show_cross) then begin
+      if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[i:i+1, pz*bin_z+oz] = val_range
+      if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[i:i+1, pz*bin_z+oz] = val_range
+      if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[py*bin_y+oy, i:i+1] = val_range
+      if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[py*bin_y+oy, i:i+1] = val_range
+      if ((py le af_y) and (py ge num_y-1-af_y) and (pz le af_z) and (pz ge num_z-1-af_z)) then ii[0:1, 0] = val_range
+    end $
+    else if (abs_scale) then ii[0:1, 0] = val_range
+    tvscl, ii
+    if (selected_overplot gt 0) then begin
+      if (overplot_contour eq 1) then begin
+        if ((size(field_x_y))[2] gt 1 and (size(field_x_y))[3] gt 1) then begin
+          contour, reform (field_x_y[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+        endif
+      end else begin
+        vec_len = vector_length * max (abs ([field_y_x, field_z_x] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
+        velovect, reform (field_y_x[px,*,*], num_over_y, num_over_z), reform (field_z_x[px,*,*], num_over_y, num_over_z), $
+          field_y_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+      end
+    end
+    if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
+      wset, wcut_y
+      plot, cube[px,*,pz], xrange=[0,num_y], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+      oplot, cube[px,*,pz], psym=3, color=200
+      axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
+      axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
+    end
   end
   
   if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-     ii = reform ((cube[*, py, *] > val_min) < val_max, num_x, num_z)
-     if ((bin_x ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), cubic=0)
-     val_range = get_range (ii)
-     wset, wimg_xz
-     if (show_cross) then begin
-        if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, pz*bin_z+oz] = val_range
-        if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, pz*bin_z+oz] = val_range
-        if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[px*bin_x+ox, i:i+1] = val_range
-        if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[px*bin_x+ox, i:i+1] = val_range
-        if ((px le af_x) and (px ge num_x-1-af_x) and (pz le af_z) and (pz ge num_z-1-af_z)) then ii[0:1, 0] = val_range
-     end $
-     else if (abs_scale) then ii[0:1, 0] = val_range
-     tvscl, ii
-     if (selected_overplot gt 0) then begin
-        if (overplot_contour eq 1) then begin
-           if ((size(field_x_y))[1] gt 1 and  (size(field_x_y))[3] gt 1) then begin
-              contour, reform (field_y_x[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
-           endif
-        end else begin
-           vec_len = vector_length * max (abs ([field_x_y, field_z_y] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
-           velovect, reform (field_x_y[*,py,*], num_over_x, num_over_z), reform (field_z_y[*,py,*], num_over_x, num_over_z), $
-                     field_x_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
-        end
-     end
-     if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
-        wset, wcut_x
-        plot, cube[*,py,pz], xrange=[0,num_x], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
-        oplot, cube[*,py,pz], psym=3, color=200
-        axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
-        axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
-     end
+    ii = reform ((cube[*, py, *] > val_min) < val_max, num_x, num_z)
+    if ((bin_x ne 1) or (bin_z ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_z*bin_z), cubic=0)
+    val_range = get_range (ii)
+    wset, wimg_xz
+    if (show_cross) then begin
+      if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, pz*bin_z+oz] = val_range
+      if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, pz*bin_z+oz] = val_range
+      if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do ii[px*bin_x+ox, i:i+1] = val_range
+      if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do ii[px*bin_x+ox, i:i+1] = val_range
+      if ((px le af_x) and (px ge num_x-1-af_x) and (pz le af_z) and (pz ge num_z-1-af_z)) then ii[0:1, 0] = val_range
+    end $
+    else if (abs_scale) then ii[0:1, 0] = val_range
+    tvscl, ii
+    if (selected_overplot gt 0) then begin
+      if (overplot_contour eq 1) then begin
+        if ((size(field_x_y))[1] gt 1 and  (size(field_x_y))[3] gt 1) then begin
+          contour, reform (field_y_x[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+        endif
+      end else begin
+        vec_len = vector_length * max (abs ([field_x_y, field_z_y] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
+        velovect, reform (field_x_y[*,py,*], num_over_x, num_over_z), reform (field_z_y[*,py,*], num_over_x, num_over_z), $
+          field_x_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+      end
+    end
+    if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
+      wset, wcut_x
+      plot, cube[*,py,pz], xrange=[0,num_x], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+      oplot, cube[*,py,pz], psym=3, color=200
+      axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
+      axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
+    end
   end
   
   if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-     ii = reform ((cube[*, *, pz] > val_min) < val_max, num_x, num_y)
-     if ((bin_x ne 1) or (bin_y ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), cubic=0)
-     val_range = get_range (ii)
-     wset, wimg_xy
-     if (show_cross) then begin
-        if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, py*bin_y+oy] = val_range
-        if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, py*bin_y+oy] = val_range
-        if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[px*bin_x+ox, i:i+1] = val_range
-        if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[px*bin_x+ox, i:i+1] = val_range
-        if ((px le af_x) and (px ge num_x-1-af_x) and (py le af_y) and (py ge num_y-1-af_y)) then ii[0:1, 0] = val_range
-     end $
-     else if (abs_scale) then ii[0:1, 0] = val_range
-     tvscl, ii
-     if (selected_overplot gt 0) then begin
-        if (overplot_contour eq 1) then begin
-           if ((size(field_x_y))[1] gt 1 and  (size(field_x_y))[2] gt 1) then begin
-              contour, reform (field_z_x[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
-           endif
-        end else begin
-           vec_len = vector_length * max (abs ([field_x_z, field_y_z] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
-           velovect, reform (field_x_z[*,*,pz], num_over_x, num_over_y), reform (field_y_z[*,*,pz], num_over_x, num_over_y), $
-                     field_x_indices, field_y_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
-        end
-     end
-     if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
-        wset, wcut_z
-        plot, cube[px,py,*], xrange=[0,num_z], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
-        oplot, cube[px,py,*], psym=3, color=200
-        axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
-        axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
-     end
+    ii = reform ((cube[*, *, pz] > val_min) < val_max, num_x, num_y)
+    if ((bin_x ne 1) or (bin_y ne 1)) then ii = congrid (ii, fix (num_x*bin_x), fix (num_y*bin_y), cubic=0)
+    val_range = get_range (ii)
+    wset, wimg_xy
+    if (show_cross) then begin
+      if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do ii[i:i+1, py*bin_y+oy] = val_range
+      if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do ii[i:i+1, py*bin_y+oy] = val_range
+      if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do ii[px*bin_x+ox, i:i+1] = val_range
+      if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do ii[px*bin_x+ox, i:i+1] = val_range
+      if ((px le af_x) and (px ge num_x-1-af_x) and (py le af_y) and (py ge num_y-1-af_y)) then ii[0:1, 0] = val_range
+    end $
+    else if (abs_scale) then ii[0:1, 0] = val_range
+    tvscl, ii
+    if (selected_overplot gt 0) then begin
+      if (overplot_contour eq 1) then begin
+        if ((size(field_x_y))[1] gt 1 and  (size(field_x_y))[2] gt 1) then begin
+          contour, reform (field_z_x[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+        endif
+      end else begin
+        vec_len = vector_length * max (abs ([field_x_z, field_y_z] - 0.5 * (val_min + val_max))) / (val_max - val_min) / 2.0
+        velovect, reform (field_x_z[*,*,pz], num_over_x, num_over_y), reform (field_y_z[*,*,pz], num_over_x, num_over_y), $
+          field_x_indices, field_y_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
+      end
+    end
+    if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
+      wset, wcut_z
+      plot, cube[px,py,*], xrange=[0,num_z], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+      oplot, cube[px,py,*], psym=3, color=200
+      axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
+      axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
+    end
   end
 end
 
