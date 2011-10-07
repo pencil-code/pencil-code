@@ -213,9 +213,14 @@ module Particles_collisions
             do while (k/=0)
               j=k
               if (ltauc_from_tauf) then
-                kspec=npar_species*(ipar(k)-1)/npar+1
-                tausp_k=tausp_species(kspec)
-                tausp1_k=tausp1_species(kspec)
+                if (lparticles_radius) then
+                  tausp_k=fp(k,iap)*rhopmat
+                  tausp1_k=1/tausp_k
+                else
+                  kspec=npar_species*(ipar(k)-1)/npar+1
+                  tausp_k=tausp_species(kspec)
+                  tausp1_k=tausp1_species(kspec)
+                endif
               endif
               npart_par=0
               ncoll_par=0
@@ -229,9 +234,14 @@ module Particles_collisions
                   endif
                 endif
                 if (ltauc_from_tauf) then
-                  jspec=npar_species*(ipar(j)-1)/npar+1
-                  tausp_j=tausp_species(jspec)
-                  tausp1_j=tausp1_species(jspec)
+                  if (lparticles_radius) then
+                    tausp_j=fp(j,iap)*rhopmat
+                    tausp1_j=1/tausp_j
+                  else
+                    jspec=npar_species*(ipar(j)-1)/npar+1
+                    tausp_j=tausp_species(jspec)
+                    tausp1_j=tausp1_species(jspec)
+                  endif
                 endif
 !
 !  Calculate the relative speed of particles j and k.
@@ -289,13 +299,13 @@ module Particles_collisions
 !                     tau_fric_j^2/(tau_fric_j+tau_fric_k)^2
 !
                   if (ltauc_from_tauf) then
-                    if (lparticles_radius.or.lparticles_number) then
-                      if (lroot) print*, 'particles_collisions_pencils: ', &
-                          'not implemented for variable particle radius '// &
-                          'or particle number'
-                      call fatal_error('particles_collisions_pencils','')
-                    endif
-                    if (npar_species>1) then
+                    if (lparticles_radius.and.lparticles_mass) then
+                      tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
+                          fp(j,irhopswarm)/rho0*(tausp_j+tausp_k)**2* &
+                          min(tausp1_j,tausp1_k)**2
+                      if (lsinkparticle_1 .and. (j==1 .or. k==1)) &
+                          tau_coll1=0.0
+                    elseif (npar_species>1) then
                       tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
                           rhop_swarm/rho0*(tausp_j+tausp_k)**2* &
                           min(tausp1_j,tausp1_k)**2
@@ -323,6 +333,7 @@ module Particles_collisions
                     prob=dt*tau_coll1
                     call random_number_wrapper(r)
                     if (r<=prob) then
+                      print*, it, itsub, j, k
                       call particle_collision(xpj,xpk,vpj,vpk,j,k)
                       if (lshear .and. lshear_in_vp) then
                         vpk(2)=vpk(2)+qshear*Omega*xpk(1)
