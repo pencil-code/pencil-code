@@ -46,10 +46,10 @@ module InitialCondition
   real :: rho_m_0 = 1.0, T_0 = 1.0
   real :: z_0, gamma
   integer :: passive_scalar = 0
-  real :: k_aa = 1., ampl = 1., asym_factor = 1.
+  real :: k_aa = 1., ampl = 1., asym_factor = 1., sigma_b = 1.
   
   namelist /initial_condition_pars/ &
-      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, gamma, passive_scalar, k_aa, ampl, asym_factor
+      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, gamma, passive_scalar, k_aa, ampl, asym_factor, sigma_b
 !       r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, z_0, T_0
 !
   contains
@@ -117,15 +117,17 @@ module InitialCondition
           if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
             f(l,m,n,ilnrho) = log_rho_b
             f(l,m,n,ilnTT) = log_T_b
-            f(l,m,n,ilncc) = 1.
+
+	    if (passive_scalar == 1) then
+	      f(l,m,n,ilncc) = 1.
+	    endif
             
-            ! should put this in the init_aa subroutine
-            f(l,m,n,iax) = ampl * (sin((y(m)-y_b)*k_aa/r_b) * cos((z(n)-z_b)*k_aa/r_b) &
-                                  + (y(m)-y_b-r_b)*(z(n)-z_b-r_b)/r_b*asym_factor)
-            f(l,m,n,iay) = ampl * (sin((z(n)-z_b)*k_aa/r_b) * cos((x(l)-x_b)*k_aa/r_b) &
-                                  + (z(n)-z_b-r_b)*(x(l)-x_b-r_b)/r_b*asym_factor.)
-            f(l,m,n,iaz) = ampl * (sin((x(l)-x_b)*k_aa/r_b) * cos((y(m)-y_b)*k_aa/r_b) &
-                                  + (x(l)-x_b-r_b)*(y(m)-y_b-r_b)/r_b*asym_factor)
+	    f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa/r_b) + sin((z(n)-z_b)*k_aa/r_b))
+	    f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa/r_b) + sin((x(l)-x_b)*k_aa/r_b))
+	    f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa/r_b) + sin((y(m)-y_b)*k_aa/r_b))
+	    f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
+	      (exp(-((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/sigma_b**2) - &
+	       exp(-(r_b**2)/sigma_b**2))
           else
             f(l,m,n,ilnrho) = log_rho_m_0 + log(1-(gamma-1)/gamma*z(n)/z_0) / (gamma-1)
             f(l,m,n,ilnTT) = log_T_0 + log(1-(gamma-1)/gamma*z(n)/z_0)
