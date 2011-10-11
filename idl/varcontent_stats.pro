@@ -9,7 +9,7 @@ if (quiet le 2) then begin
   print, '  var             minval         maxval          mean           rms'
   ;
   ;
-  for iv=1L,totalvars do begin
+  for iv=0L,totalvars-1 do begin
     if (varcontent[iv].variable eq 'UNKNOWN') then continue
     varname = varcontent[iv].idlvar
     if (varcontent[iv].skip eq 2) then begin
