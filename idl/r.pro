@@ -37,7 +37,7 @@ totalvars=(size(varcontent))[1]-1L
 ; Prepare for read
 res=''
 content=''
-for iv=0L,totalvars-1 do begin
+for iv=0L,totalvars do begin
   res     = res + ',' + varcontent[iv].idlvar
   content = content + ', ' + varcontent[iv].variable
   ; Initialise variable
