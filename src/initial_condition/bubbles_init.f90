@@ -125,9 +125,11 @@ module InitialCondition
 	    f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa/r_b) + sin((z(n)-z_b)*k_aa/r_b))
 	    f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa/r_b) + sin((x(l)-x_b)*k_aa/r_b))
 	    f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa/r_b) + sin((y(m)-y_b)*k_aa/r_b))
+! 	    f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
+! 	      (exp(-((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/sigma_b**2) - &
+! 	       exp(-(r_b**2)/sigma_b**2))
 	    f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
-	      (exp(-((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/sigma_b**2) - &
-	       exp(-(r_b**2)/sigma_b**2))
+	      (1-((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b**2)
           else
             f(l,m,n,ilnrho) = log_rho_m_0 + log(1-(gamma-1)/gamma*z(n)/z_0) / (gamma-1)
             f(l,m,n,ilnTT) = log_T_0 + log(1-(gamma-1)/gamma*z(n)/z_0)
