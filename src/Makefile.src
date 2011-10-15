@@ -1056,11 +1056,11 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## Ferlin using openmpi (ferlin)
 ##
-#FC=mpif90 #(a07c01n08.pdc.kth.se)
-#CC=mpicc #(a07c01n08.pdc.kth.se)
-#FFLAGS=-O3 -vec-report0 #(a07c01n08.pdc.kth.se)
-#LD_MPI= #(a07c01n08.pdc.kth.se)
-#FFLAGS_DOUBLE=-r8 #(a07c01n08.pdc.kth.se)
+#FC=mpif90 #(ferlin2.pdc.kth.se)
+#CC=mpicc #(ferlin2.pdc.kth.se)
+#FFLAGS=-O3 -vec-report0 #(ferlin2.pdc.kth.se)
+#LD_MPI= #(ferlin2.pdc.kth.se)
+#FFLAGS_DOUBLE=-r8 #(ferlin2.pdc.kth.se)
 ##
 ##  Simon's laptop
 ##
