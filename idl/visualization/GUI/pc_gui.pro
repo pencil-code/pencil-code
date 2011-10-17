@@ -71,6 +71,7 @@ default, quantities, { $
 	velocity_y:'u_y', $
 	velocity_z:'u_z', $
 	logarithmic_density:'log_rho', $
+	thermal_pressure:'P_therm', $
 	impulse_density_z:'rho_u_z' }
 
 
@@ -82,6 +83,7 @@ default, quantities, { $
 default, overplot_quantities, { $
 	magnetic_field:'b', $
 	fieldlines:'a_contour', $
+;	thermal_pressure_gradient:'grad_P_therm', $
 	velocities:'u' }
 
 

@@ -142,6 +142,20 @@ pro precalc_data, i, vars
       varsets[i].rho = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density
     end
   end
+  if (any (strcmp (tags, 'P', /fold_case))) then begin
+    ; Pressure
+    varsets[i].P = param.cp * (param.gamma - 1.0) / param.gamma
+    if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
+      varsets[i].P *= exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density
+    end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
+      varsets[i].P *= congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density
+    endif
+    if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
+      varsets[i].P *= exp (congrid (vars.lnTT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.temperature
+    end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
+      varsets[i].P *= congrid (vars.TT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.temperature
+    endif
+  end
   if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
     ; Vertical component of impulse density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
@@ -219,6 +233,19 @@ pro precalc_data, i, vars
       oversets[i].a_contour[*,*,*,1] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.magnetic_field)
       oversets[i].a_contour[*,*,*,2] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.magnetic_field)
     end
+  end
+  if (any (strcmp (over_tags, 'grad_P', /fold_case))) then begin
+    ; Gradient of pressure
+    grad_P_fact = param.cp * (param.gamma - 1.0) / param.gamma * unit.density*unit.temperature/unit.length
+    if (any (strcmp (sources, 'lnrho', /fold_case)) and any (strcmp (sources, 'lnTT', /fold_case))) then begin
+      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (exp (vars.lnrho)) * exp (vars.lnTT) + exp (vars.lnrho) * grad (exp (vars.lnTT)))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+    end else if (any (strcmp (sources, 'rho', /fold_case)) and any (strcmp (sources, 'lnTT', /fold_case))) then begin
+      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (vars.rho) * exp (vars.lnTT) + vars.rho * grad (exp (vars.lnTT)))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+    end else if (any (strcmp (sources, 'lnrho', /fold_case)) and any (strcmp (sources, 'TT', /fold_case))) then begin
+      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (exp (vars.lnrho)) * vars.TT + exp (vars.lnrho) * grad (vars.TT))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+    end else if (any (strcmp (sources, 'rho', /fold_case)) and any (strcmp (sources, 'TT', /fold_case))) then begin
+      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (vars.rho) * vars.TT + vars.rho * grad (vars.TT))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+    endif
   end
 end
 
