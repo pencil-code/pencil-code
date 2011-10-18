@@ -2629,6 +2629,13 @@ module Special
       real, save :: next_time = 0.0
       integer, parameter :: tag_Ux=323,tag_Uy=324
 !
+      if (lwrite_driver .and. (nzgrid == 1)) then
+        ! Stabilize 2D-runs
+        f(:,:,:,iuz) = 0.0
+        f(:,:,:,ilnTT) = lnTT_init_z(irefz)
+        f(:,:,:,ilnrho) = lnrho_init_z(irefz)
+      endif
+!
 ! Update velocity field only every dt_gran after the first iteration
       if ((t < next_time) .and. .not.(lfirst .and. (it == 1))) return
       next_time = t + dt_gran
@@ -2722,15 +2729,7 @@ module Special
       call random_seed_wrapper(GET=points_rstate)
       call random_seed_wrapper(PUT=global_rstate)
 !
-      if (lwrite_driver) then
-        if (lroot) call write_driver (real(t), Ux, Uy)
-        if (nzgrid == 1) then
-          ! Stabilize 2D-runs
-          f(:,:,:,iuz) = 0.0
-          f(:,:,:,ilnTT) = lnTT_init_z(irefz)
-          f(:,:,:,ilnrho) = lnrho_init_z(irefz)
-        endif
-      endif
+      if (lwrite_driver .and. lroot) call write_driver (real(t), Ux, Uy)
 !
     endsubroutine gran_driver
 !***********************************************************************
