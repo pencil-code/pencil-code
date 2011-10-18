@@ -168,6 +168,8 @@ module Special
       Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
           unit_length*unit_temperature**(3.5)
 !
+      write(*,'(A,E10.2)') 'Kspitzer_para=',Kspitzer_para
+!
       Kspitzer_perp = Kspitzer_perp_SI/ &
           (unit_velocity**3.*unit_magnetic**2.*unit_length)* &
           (unit_density*sqrt(unit_temperature))
@@ -806,6 +808,9 @@ module Special
         endif
       endif
 !
+!      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + 2e2*exp(-(t-0.5)**2.*1e4)* &
+!          exp(-(x(l1:l2)-10.)**2*2.)*exp(-(z(n)-2.5)**2*2.)
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
@@ -1173,17 +1178,17 @@ module Special
 !
       use Deriv,           only : der_upwind1st
       use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv
+      use Sub,             only : dot2,dot,multsv,multmv,unit_vector
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx,3) :: hhh,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
-      real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
+      real, dimension (nx) :: cosbgT,glnTT2,bbb,b1,tmpk
       real, dimension (nx) :: chi_spitzer,rhs,u_spitzer
       real, dimension (nx) :: chi_clight,chi_2
-      real, dimension (nx,3) :: glnTT_upwind
+      real, dimension (nx,3) :: glnTT_upwind,unit_glnTT
       integer :: i,j,k
       real :: ksatb
       type (pencil_case), intent(in) :: p
@@ -1282,13 +1287,11 @@ module Special
 !  for timestep extension multiply with the
 !  cosine between grad T and bunit
 !
-      call dot(p%bb,p%glnTT,cosbgT)
-      call dot2(p%bb,b2)
-!
-      cosbgT=cosbgT/sqrt(glnTT2*b2 + tini)
+      call unit_vector(p%glnTT,unit_glnTT)
+      call dot(p%bunit,unit_glnTT,cosbgT)
 !
       if (lfirst.and.ldt) then
-        chi_spitzer=chi_spitzer * cosbgT**2.
+        chi_spitzer=chi_spitzer*cosbgT**2.
         diffus_chi=diffus_chi + chi_spitzer*dxyz_2
 !
         u_spitzer = 3.5*chi_spitzer*( &
