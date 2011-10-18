@@ -137,11 +137,13 @@ if (not pc_gui_loaded) then BEGIN
 
 	allprocs = 1
 	procdir = datadir+"/allprocs/"
-	if (not file_test (procdir+varfile)) then begin
+	default, load_varfile, 1
+	if (load_varfile and not file_test (procdir+varfile)) then begin
 		allprocs = 0
 		procdir = datadir+"/proc0/"
 		if (not file_test (procdir+varfile)) then begin
 			print, "No '"+varfile+"' file found."
+			load_varfile = 0
 			stop
 		endif
 	endif
@@ -241,6 +243,21 @@ if (not pc_gui_loaded) then BEGIN
 						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (max_files, 2)+"): "
 					end until ((files_total ge 0) and (files_total le max_files))
 					if (files_total eq 0) then files_total = max_files
+					if (files_total lt max_files) then begin
+						print, "You selected to load less files than availabe."
+						addquestion = ""
+						if (num_additional gt 0) then addquestion = " and '"+addfile+"'"
+						print, "Do you want to skip reading of '"+varfile+"'"+addquestion+"?"
+						repeat begin
+							answer = "n"
+							read, answer, format="(A)", prompt="(Y)es / (N)o: "
+						end until (any (strcmp (answer, ['y', 'n'], /fold_case)))
+						if (strcmp (answer, 'y', /fold_case)) then begin
+							load_varfile = 0
+							addfile = ""
+							num_additional = 0
+						end
+					end
 				end
 				if (stepping eq 0) then begin
 					files_total = 1
@@ -311,7 +328,7 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	prepare_varset, 1+num_additional+num_selected, units, coords, varset, overplot, datadir, param, run_param
+	prepare_varset, load_varfile+num_additional+num_selected, units, coords, varset, overplot, datadir, param, run_param
 
 	time_add = 0.0
 	if (addfile) then begin
@@ -319,23 +336,26 @@ if (not pc_gui_loaded) then BEGIN
 		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_add
 	end
 
-	; Precalculate initial timestep
-	precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_var
+	time_var = 0.0
+	if (load_varfile) then begin
+		; Precalculate initial timestep
+		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_var
+	end
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, num_selected+num_additional, varfile=snapshots[skipping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
+		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
 		if (skipping ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
 			pos_last = skipping + (num_selected-1)*stepping
-			precalc, 1+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
+			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
 			if (ignore_end ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start, end_time=max ([time_end, time_var, time_add])
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
 					; Precalculate selected timesteps
 					pos = skipping + (i-1)*stepping
-					precalc, num_selected-i+1+num_additional, varfile=snapshots[pos], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+					precalc, load_varfile+num_additional+num_selected-i, varfile=snapshots[pos], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 				end
 			end
 		end
