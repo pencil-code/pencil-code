@@ -72,7 +72,7 @@ module Sub
   public :: parse_shell
   public :: date_time_string, get_radial_distance, power_law
 !
-  public :: max_for_dt
+  public :: max_for_dt,unit_vector
 !
   public :: write_dx_general, numeric_precision, wdim, rdim
   public :: write_zprof, remove_zprof, write_zprof_once
@@ -6022,5 +6022,50 @@ nameloop: do
       endif
 !
     endsubroutine register_report_aux
+!***********************************************************************
+    subroutine unit_vector(bb,bb_hat)
+!
+!  Compute the unit vector for any given vector bb.
+!  Tries to avoid division by zero.
+!  Taken from http://nuclear.llnl.gov/CNP/apt/apt/aptvunb.html.
+!
+!  18-oct-11/bing: copied from bb_unitvec_shock in magnetic.f90
+!     
+      real, dimension(nx,3) :: bb,bb_hat,bb2
+      real, dimension(nx) :: a2,aerr2,bb_len
+      integer :: j
+      real :: tol=sqrt(tini)
+!
+      intent(in) :: bb
+      intent(out) :: bb_hat     
+!
+!  Truncate small components to zero.
+!
+      bb2 = bb**2
+!
+      aerr2 = tol * max(sum(bb2,2),1.)
+!
+      do j=1,3
+        where (bb2(:,j) < aerr2)
+          bb_hat(:,j) = 0.
+        elsewhere
+          bb_hat(:,j) = bb(:,j)
+        endwhere
+      enddo
+!
+!  Get unit vector.
+!
+      bb_len = sqrt(sum(bb_hat**2,2))
+!
+      do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
+!
+!  Check if length is between 0. and 1.
+!
+      call dot2(bb_hat,a2)
+!
+      if (maxval(a2) > 1.+1e-6) &
+          call fatal_error('unit_vector:','has not the length 1')
+!
+    endsubroutine unit_vector
 !***********************************************************************
 endmodule Sub
