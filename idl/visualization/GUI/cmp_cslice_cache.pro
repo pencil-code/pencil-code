@@ -46,7 +46,7 @@ pro cslice_event, event
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range, jump_min, jump_max
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -350,6 +350,8 @@ pro cslice_event, event
 		WIDGET_CONTROL, range, SENSITIVE = 0
 		WIDGET_CONTROL, sl_min, SENSITIVE = 0
 		WIDGET_CONTROL, sl_max, SENSITIVE = 0
+		WIDGET_CONTROL, jump_min, SENSITIVE = 0
+		WIDGET_CONTROL, jump_max, SENSITIVE = 0
 		orig_frozen = frozen
 		frozen = 1
 		previous_snapshot = selected_snapshot
@@ -385,6 +387,8 @@ pro cslice_event, event
 			WIDGET_CONTROL, sl_min, SENSITIVE = 1
 			WIDGET_CONTROL, sl_max, SENSITIVE = 1
 		end
+		WIDGET_CONTROL, jump_min, SENSITIVE = 1
+		WIDGET_CONTROL, jump_max, SENSITIVE = 1
 
 		if (show_cuts) then begin
 			window, 0, xsize=8, ysize=8, retain=2
@@ -413,7 +417,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
   common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
   common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
   common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-  common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+  common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range, jump_min, jump_max
   common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
   
   ; stepping of crosshairs
@@ -614,7 +618,7 @@ pro prepare_cube, cube_index
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range, jump_min, jump_max
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; SETTINGS:
@@ -692,7 +696,7 @@ pro prepare_overplot
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range, jump_min, jump_max
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; SETTINGS:
@@ -766,7 +770,7 @@ pro reset_GUI
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range, jump_min, jump_max
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	selected_cube = 0
@@ -815,7 +819,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_abs, b_sub, b_cro, aver, vars, over, snap, prev, next, play, sl_min, sl_max, min_max, range, jump_min, jump_max
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
 	; DEFAULT SETTINGS:
@@ -1009,11 +1013,13 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	bcol    = WIDGET_BASE (bcot, /col)
 	min_max	= WIDGET_BUTTON (bcol, value='<= min SET max =>', uvalue='MIN_MAX', xsize=120)
 	range	= WIDGET_BUTTON (bcol, value='FREEZE RANGE', uvalue='FREEZE', xsize=120)
-	bsubrow = WIDGET_BASE (bcol, /row)
-	tmp	= WIDGET_LABEL (bsubrow, value='JUMP TO', frame=0)
+	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_max, xsize=sl_size)
+
+	bsubcol = WIDGET_BASE (bcot, /col)
+	tmp	= WIDGET_LABEL (bsubcol, value='Jump to:', frame=0)
+	bsubrow = WIDGET_BASE (bsubcol, /row)
 	jump_min= WIDGET_BUTTON (bsubrow, value='MIN', uvalue='JUMP_MIN')
 	jump_max= WIDGET_BUTTON (bsubrow, value='MAX', uvalue='JUMP_MAX')
-	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_max, xsize=sl_size)
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
