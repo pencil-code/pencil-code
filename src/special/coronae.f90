@@ -509,14 +509,16 @@ module Special
 !
         q = f(l1:l2,m,n,ispitzerx:ispitzerz)
 !
-        call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
-        qsat = 0.01*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
+        if (Ksat/=0.) then 
+          call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
+          qsat = 0.01*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
 !
-        where (qabs > qsat)
-          spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
-          spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
-          spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
-        endwhere
+          where (qabs > qsat)
+            spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
+            spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
+            spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
+          endwhere
+        endif
 !
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
@@ -1218,7 +1220,7 @@ module Special
 !
 !  limit the length of h
 !
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
       call multsv(quenchfactor,tmpv,hhh)
 !
       call dot(hhh,p%glnTT,rhs)
@@ -1233,7 +1235,7 @@ module Special
       enddo
 !
       do i=1,3
-        call der_upwind1st(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
       enddo
       gKp = 3.5*glnTT_upwind
 !
