@@ -290,10 +290,10 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     readu, 4, yz, t, slice_xpos
 ;
     if massage then begin
-      xy  = bilinear(xy,  iix, iiy)
-      xy2 = bilinear(xy2, iix, iiy)
-      xz  = bilinear(xz,  iix, iiz)
-      yz  = bilinear(yz,  iiy, iiz)
+      xy  = interpolate(xy,  iix, iiy, /grid)
+      xy2 = interpolate(xy2, iix, iiy, /grid)
+      xz  = interpolate(xz,  iix, iiz, /grid)
+      yz  = interpolate(yz,  iiy, iiz, /grid)
     endif
   endif else begin ; Read only time.
     dummy=zero
