@@ -134,8 +134,8 @@ module Radiation
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa
 !
   namelist /radiation_run_pars/ &
-      radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, TT_top, &
-      TT_bot, tau_top, tau_bot, source_function_type, opacity_type, nnu, &
+      radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
+      TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, nnu, &
       lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, kx_Srad, &
       ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
       kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
