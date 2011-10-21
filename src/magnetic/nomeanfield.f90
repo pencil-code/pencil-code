@@ -91,7 +91,8 @@ module Magnetic_meanfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(inout)  :: f,df,p
+      intent(in)  :: p
+      intent(inout)  :: f,df
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)

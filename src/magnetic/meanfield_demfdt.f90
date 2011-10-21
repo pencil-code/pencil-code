@@ -225,8 +225,8 @@ module Magnetic_meanfield_demfdt
       real, dimension (nx,3,3) :: emfij,demfij
       integer :: j,jvar
 !
-      intent(inout)  :: f,p
-      intent(inout)  :: df
+      intent(in)  :: p
+      intent(inout)  :: df,f
 !
 !  Identify module and boundary conditions.
 !

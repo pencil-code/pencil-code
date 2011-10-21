@@ -582,7 +582,7 @@ module Magnetic
   integer :: idiag_jxbrzmz=0    ! XYAVG_DOC:
   integer :: idiag_b2mz=0       ! XYAVG_DOC: $\left<\Bv^2\right>_{xy}$
   integer :: idiag_j2mz=0       ! XYAVG_DOC: $\left<\jv^2\right>_{xy}$
-  integer :: idiag_poynzmz=0    ! XYAVG_DOC: $Poynting flux in z direction$
+  integer :: idiag_poynzmz=0    ! XYAVG_DOC: Averaged poynting flux in z direction
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -2360,8 +2360,8 @@ module Magnetic
       integer :: isound,lspoint,mspoint,nspoint
       integer, parameter :: nxy=nxgrid*nygrid
 !
-      intent(inout)  :: f,p
-      intent(inout)  :: df
+      intent(in)  :: p
+      intent(inout)  :: f,df
 !
 !  Identify module and boundary conditions.
 !

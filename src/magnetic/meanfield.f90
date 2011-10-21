@@ -797,8 +797,8 @@ module Magnetic_meanfield
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(inout)  :: f,p
-      intent(inout)  :: df
+      intent(in)  :: p
+      intent(inout)  :: df,f
 !
 !  Identify module and boundary conditions.
 !
