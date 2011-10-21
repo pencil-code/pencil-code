@@ -386,7 +386,7 @@ module Shock
 !
       integer, dimension (3) :: max_loc
       real, dimension (mx,my,mz) :: tmp
-      real, dimension (nx) :: penc
+      real, dimension (nx) :: penc, penc1
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
@@ -517,29 +517,38 @@ module Shock
 !
       enddo
 !
+      fix_Re: if (lfix_Re_mesh) then
+!
 !  Scale given a fixed mesh Reynolds number.
 !
-      if (lfix_Re_mesh) then
-        if (headtt) print *, 'Shock: fix mesh Reynolds number at ', re_mesh
+        if (headtt) print *, 'Shock: fix mesh Reynolds number'
         if (lfirst) then
-          max_loc = (/ l1-1, m1-1, n1-1 /) + maxloc(tmp(l1:l2,m1:m2,n1:n2))
-          a1 = tmp(max_loc(1),max_loc(2),max_loc(3))
-          call mpiallreduce_max(a1, shock_max)
-          if (shock_max > 0.) then
-            if (shock_max == a1) then
-              a1 = 0
-              if (nxgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iux) * xprim(max_loc(1)))**2
-              if (nygrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuy) * yprim(max_loc(2)))**2
-              if (nzgrid > 1) a1 = a1 + (f(max_loc(1),max_loc(2),max_loc(3),iuz) * zprim(max_loc(3)))**2
-              a1 = sqrt(a1) / (pi * shock_max)
-            else
-              a1 = 0.
-            endif
-            call mpiallreduce_max(a1, a)
-          endif
+          call mpiallreduce_max(maxval(tmp(l1:l2,m1:m2,n1:n2)), shock_max)
+          a1 = 0.
+          do n = n1, n2
+            do m = m1, m2
+              penc = 0.
+              penc1 = 0.
+              if (nxgrid > 1) then
+                penc = penc + abs(f(l1:l2,m,n,iux) * dx_1(l1:l2))
+                penc1 = penc1 + dx_1(l1:l2)**2
+              endif
+              if (nygrid > 1) then
+                penc = penc + abs(f(l1:l2,m,n,iuy) * dy_1(m))
+                penc1 = penc1 + dy_1(m)**2
+              endif
+              if (nzgrid > 1) then
+                penc = penc + abs(f(l1:l2,m,n,iuz) * dz_1(n))
+                penc1 = penc1 + dz_1(n)**2
+              endif
+              a1 = max(a1, maxval(penc / penc1))
+            enddo
+          enddo
+          call mpiallreduce_max(a1, a)
+          a = a / (pi * shock_max)
         endif
         f(:,:,:,ishock) = a * tmp
-      else
+      else fix_Re
 !
 !  Scale by dxmax**2.
 !
@@ -553,7 +562,7 @@ module Shock
         else
           f(:,:,:,ishock) = tmp*dxmax**2
         endif
-      endif
+      endif fix_Re
 !
     endsubroutine calc_shock_profile
 !***********************************************************************
