@@ -1734,7 +1734,7 @@ module Hydro
       integer :: j
 !
       intent(in) :: p
-      intent(out) :: f,df
+      intent(inout) :: f,df
 !
 !  Identify module and boundary conditions.
 !
