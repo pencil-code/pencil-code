@@ -37,7 +37,7 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
-  logical :: mark=.false.
+  logical :: mark=.false.,ldensity_floor_c=.true.
   real :: eighth_moment=0.,hcond1=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -57,7 +57,8 @@ module Special
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
-      eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,chi_spi
+      eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
+      ldensity_floor_c,chi_spi
 !
 ! variables for print.in
 !
@@ -168,7 +169,7 @@ module Special
       Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
           unit_length*unit_temperature**(3.5)
 !
-      write(*,'(A,E10.2)') 'Kspitzer_para=',Kspitzer_para
+      write(*,'(A,ES10.2)') 'Kspitzer_para=',Kspitzer_para
 !
       Kspitzer_perp = Kspitzer_perp_SI/ &
           (unit_velocity**3.*unit_magnetic**2.*unit_length)* &
@@ -259,15 +260,15 @@ module Special
             unit_length*unit_temperature**(3.5)
 !
         f(:,:,:,ispitzerx:ispitzerz)=0.
- !       do i=1,my
- !         do j=n1,n2
- ! !
- !           glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
- ! !
- !          f(:,i,j,ispitzerz) = - Kspitzer_para * &
- !               exp(3.5*f(:,i,j,ilnTT))*glnT
- !        enddo
- !       enddo
+!         do i=1,my
+!           do j=n1,n2
+! !
+!             glnT = (f(:,i,j+1,ilnTT)-f(:,i,j-1,ilnTT))/(z(j+1)-z(j-1))
+!  !
+!             f(:,i,j,ispitzerz) = - Kspitzer_para * &
+!                 exp(3.5*f(:,i,j,ilnTT))*glnT
+!           enddo
+!         enddo
 !
       endif
 !
@@ -400,6 +401,8 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
+      if (ldensity_floor_c) lpenc_requested(i_b2)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -509,7 +512,7 @@ module Special
 !
         q = f(l1:l2,m,n,ispitzerx:ispitzerz)
 !
-        if (Ksat/=0.) then 
+        if (Ksat/=0.) then
           call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
           qsat = 0.01*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
 !
@@ -831,7 +834,7 @@ module Special
       call keep_compiler_quiet(p)
 !
       if (hyper3_nu /= 0.) then
-        do i=0,2 
+        do i=0,2
           call del6(f,iux+i,hc,IGNOREDX=.true.)
           df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) + hyper3_nu*hc
         enddo
@@ -850,15 +853,22 @@ module Special
 !
 !  17-jun-11/bing: coded
 !
-      use Sub, only: del6
+      use Sub, only: del6,dot2
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc
+      real, dimension (nx) :: hc,lnrho_floor
 !
       call keep_compiler_quiet(p)
+!
+      if (ldensity_floor_c) then
+        lnrho_floor = alog(p%b2/(0.5*c_light)**2/mu0/cdt)
+        where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
+          f(l1:l2,m,n,ilnrho) = lnrho_floor
+        endwhere
+      endif
 !
       if (hyper3_diffrho /= 0.) then
         if (ldensity_nolog.and.(ilnrho /= irho)) &
