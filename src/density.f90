@@ -1680,8 +1680,8 @@ module Density
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
       integer :: j
 !
-      intent(in)  :: f,p
-      intent(out) :: df
+      intent(in)  :: p
+      intent(inout) :: df,f
 !
 !  Identify module and boundary conditions.
 !
