@@ -100,7 +100,7 @@ module Magnetic_meanfield
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      meanfield_qs, meanfield_qp, meanfield_qe, meanfield_Beq, &
+      meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
