@@ -17,6 +17,7 @@ Sven Bingert,     bingert/mps.mpg.de,      +49-5556-979-358,  +491792126192, bin
 Philippe Bourdin, bourdin/mps.mpg.de,      +49-5556-979-408,  +49-5551-5895372, Bourdin.KIS
 Axel Brandenburg, brandenb/nordita.org,    +46 8 5537 8707,   +46 70 574 0650, brandenb, axelbrandenburg
 Simon Candelaresi, iomsn1/gmail.com        +46 8 5537 8277,   +46 737204349, iomsn, iomsn1
+Chi-kwan Chan,    ckch/nordita.org,        +46 8 5537 8573,   +46 727391600, , chanchikwan
 Piyali Chatterjee, mppiyali/gmail.com,     +46-8-5537-8375,   +46 738794457
 Fabio Del Sordo,  fabio/nordita.org        +46 8 5537 8277    +46 700629700, fadiesis, fabiodelsordo
 Boris Dintrans,   boris.dintrans/irap.omp.eu +33 5 6133 2811    +33 6 61 24 79 83, boris.dintrans, bdintrans
