@@ -277,6 +277,12 @@ module Special
 !
 !  Abbreviations. Note that, for now, f(l1:l2,m,n,ialpm)=h=total helicity
 !
+!!!!!! test
+      if (nprocx*nprocy*nprocz .ne. 1) call fatal_error("dspecial_dt: ", &
+          "averaging only for 1 processor")
+      f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)-sum(f(l1:l2,m,n1:n2,iay))/nx/nz
+      f(l1:l2,m,n,iaz)=f(l1:l2,m,n,iaz)-sum(f(l1:l2,m,n1:n2,iaz))/nx/nz
+!!!!!!      
       abf=f(l1:l2,m,n,ialpm)-p%ab
 !
 !  dynamical quenching equation
