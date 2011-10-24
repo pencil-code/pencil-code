@@ -3537,12 +3537,13 @@ module Special
           Uy_ext = Uy_ext/unit_velocity
 !
           close (unit)
-        endif
-!
-        if (lfirst_proc_z) then
+        elseif (lfirst_proc_z) then
           call mpirecv_real (tl, 1, 0, tag_tl)
           call mpirecv_real (tr, 1, 0, tag_tr)
           call mpirecv_real (delta_t, 1, 0, tag_dt)
+        endif
+!
+        if (lfirst_proc_z) then
           call distribute_xy (Ux_ext, ux_ext_local)
           call distribute_xy (Uy_ext, uy_ext_local)
         endif
