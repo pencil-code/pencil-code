@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id$',
   nt=10, it1=2, isave=100, itorder=3
-  random_gen='nr_f90'
+  random_gen='nr_f90', cdt=0.4
   save_lastsnap=F
   lpencil_check=T
 /
