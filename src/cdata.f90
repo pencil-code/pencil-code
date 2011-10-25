@@ -94,7 +94,7 @@ module Cdata
   real :: max_walltime=0.0  ! in seconds
   double precision :: t
   real :: dt=0.0
-  real :: cdt=0.4, cdts=1.0, cdtr=1.0, cdtc=1.0,cdt_poly=1.0
+  real :: cdt=0.9, cdts=1.0, cdtr=1.0, cdtc=1.0,cdt_poly=1.0
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: eps_rkf=1e-8, eps_stiff=1e-6
   real :: ddt=0.0
