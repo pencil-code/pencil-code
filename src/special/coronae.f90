@@ -37,7 +37,7 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
-  logical :: mark=.false.,ldensity_floor_c=.true.
+  logical :: mark=.false.,ldensity_floor_c=.false.
   real :: eighth_moment=0.,hcond1=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -91,7 +91,7 @@ module Special
   real, target, dimension (nx,ny) :: hgrad_xy,hgrad_xy2,hgrad_xy3,hgrad_xy4
   real, target, dimension (nx,nz) :: hgrad_xz
   real, target, dimension (ny,nz) :: hgrad_yz
-!!
+!
 !  variables for granulation driver
 !
   TYPE point
@@ -3359,17 +3359,32 @@ module Special
 !          (right-left) +left
 
       do i=1,4
-        f(l1:l2,m1:m2,n1+1-i,iux) = inte(:,:,n1+1-i,1) / unit_velocity
-        f(l1:l2,m1:m2,n1+1-i,iuy) = inte(:,:,n1+1-i,2) / unit_velocity
-        f(l1:l2,m1:m2,n1+1-i,iuz) = inte(:,:,n1+1-i,3) / unit_velocity
+        if (lhydro) then
+          if (nxgrid /= 1) then
+            f(l1:l2,m1:m2,n1+1-i,iux)=inte(:,:,n1+1-i,1)/unit_velocity
+          endif
+          if (nygrid /= 1) then
+            f(l1:l2,m1:m2,n1+1-i,iuy)=inte(:,:,n1+1-i,2)/unit_velocity
+          endif
+          f(l1:l2,m1:m2,n1+1-i,iuz)=inte(:,:,n1+1-i,3)/unit_velocity
+        endif
 !
-        f(l1:l2,m1:m2,n1+1-i,ilnrho) = inte(:,:,n1+1-i,4) - log(unit_density)
+        if (ldensity) &
+            f(l1:l2,m1:m2,n1+1-i,ilnrho)=inte(:,:,n1+1-i,4)-log(unit_density)
 !
-        f(l1:l2,m1:m2,n1+1-i,ilnTT) = inte(:,:,n1+1-i,5) - log(unit_temperature)
+        if (ltemperature .and. (.not. ltemperature_nolog)) then
+          f(l1:l2,m1:m2,n1+1-i,ilnTT)=inte(:,:,n1+1-i,5)-log(unit_temperature)
+        endif
 !
-        f(l1:l2,m1:m2,n1+1-i,iax) = inte(:,:,n1+1-i,6) / unit_magnetic*unit_length
-        f(l1:l2,m1:m2,n1+1-i,iay) = inte(:,:,n1+1-i,7) / unit_magnetic*unit_length
-        f(l1:l2,m1:m2,n1+1-i,iaz) = 0.
+        if (lmagnetic) then
+          if (nygrid /= 1) then
+            f(l1:l2,m1:m2,n1+1-i,iax)=inte(:,:,n1+1-i,6)/(unit_magnetic*unit_length)
+          endif
+          if (nxgrid /= 1) then
+            f(l1:l2,m1:m2,n1+1-i,iay)=inte(:,:,n1+1-i,7)/(unit_magnetic*unit_length)
+          endif
+          f(l1:l2,m1:m2,n1+1-i,iaz)=0.
+        endif
       enddo
 !
     endsubroutine mark_boundary
