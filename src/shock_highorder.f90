@@ -522,31 +522,35 @@ module Shock
 !  Scale given a fixed mesh Reynolds number.
 !
         if (headtt) print *, 'Shock: fix mesh Reynolds number'
-        if (lfirst) then
+        scale: if (lfirst) then
           call mpiallreduce_max(maxval(tmp(l1:l2,m1:m2,n1:n2)), shock_max)
-          a1 = 0.
-          do n = n1, n2
-            do m = m1, m2
-              penc = 0.
-              penc1 = 0.
-              if (nxgrid > 1) then
-                penc = penc + abs(f(l1:l2,m,n,iux) * dx_1(l1:l2))
-                penc1 = penc1 + dx_1(l1:l2)**2
-              endif
-              if (nygrid > 1) then
-                penc = penc + abs(f(l1:l2,m,n,iuy) * dy_1(m))
-                penc1 = penc1 + dy_1(m)**2
-              endif
-              if (nzgrid > 1) then
-                penc = penc + abs(f(l1:l2,m,n,iuz) * dz_1(n))
-                penc1 = penc1 + dz_1(n)**2
-              endif
-              a1 = max(a1, maxval(penc / penc1))
-            enddo
-          enddo
-          call mpiallreduce_max(a1, a)
-          a = a / (pi * shock_max)
-        endif
+          shock: if (shock_max > 0.) then
+            a1 = 0.
+            scan_z: do n = n1, n2
+              scan_y: do m = m1, m2
+                penc = 0.
+                penc1 = 0.
+                if (nxgrid > 1) then
+                  penc = penc + abs(f(l1:l2,m,n,iux) * dx_1(l1:l2))
+                  penc1 = penc1 + dx_1(l1:l2)**2
+                endif
+                if (nygrid > 1) then
+                  penc = penc + abs(f(l1:l2,m,n,iuy) * dy_1(m))
+                  penc1 = penc1 + dy_1(m)**2
+                endif
+                if (nzgrid > 1) then
+                  penc = penc + abs(f(l1:l2,m,n,iuz) * dz_1(n))
+                  penc1 = penc1 + dz_1(n)**2
+                endif
+                a1 = max(a1, maxval(penc / penc1))
+              enddo scan_y
+            enddo scan_z
+            call mpiallreduce_max(a1, a)
+            a = a / (pi * shock_max)
+          else shock
+            a = dxmax**2
+          endif shock
+        endif scale
         f(:,:,:,ishock) = a * tmp
       else fix_Re
 !
