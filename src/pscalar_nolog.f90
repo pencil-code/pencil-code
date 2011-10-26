@@ -374,7 +374,7 @@ module Pscalar
         uu = p%uu
         if (lconst_advection) uu = uu + spread(u0_advec, 1, nx)
         do i = 1, npscalar
-          call u_dot_grad(f,icc+i-1,p%gcc(:,:,i),p%uu,p%ugcc(:,i),UPWIND=lupw_cc)
+          call u_dot_grad(f,icc+i-1,p%gcc(:,:,i),uu,p%ugcc(:,i),UPWIND=lupw_cc)
         enddo
       endif
 ! gcc2
