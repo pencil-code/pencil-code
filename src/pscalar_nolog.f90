@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This modules solves the passive scalar advection equation
+!  This modules solves (multiple) passive scalar advection equation(s)
 !  Solves for c, not ln(c).
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -12,9 +12,12 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cc; cc1; gcc(3); ugcc; gcc2(3); gcc1(3);
-! PENCILS PROVIDED del2cc; hcc(3,3); del6cc; g5cc(3); g5ccglnrho
-!
+! PENCILS PROVIDED cc(npscalar); cc1(npscalar)
+! PENCILS PROVIDED gcc(3,npscalar); ugcc(npscalar)
+! PENCILS PROVIDED gcc2(npscalar); gcc1(npscalar)
+! PENCILS PROVIDED del2cc(npscalar); del6cc(npscalar)
+! PENCILS PROVIDED g5cc(3,npscalar); g5ccglnrho(npscalar)
+! PENCILS PROVIDED hcc(3,3,npscalar)
 !***************************************************************
 module Pscalar
 !
@@ -53,12 +56,14 @@ module Pscalar
 !  Run parameters.
 !
   real :: pscalar_diff=0.0, tensor_pscalar_diff=0.0, soret_diff=0.0
-  real :: pscalar_diff_hyper3=0.0, rhoccm=0.0, cc2m=0.0, gcc2m=0.0
+  real :: diffcc_shock = 0.
+  real :: pscalar_diff_hyper3=0.0
+  real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
   real :: pscalar_sink=0.0, Rpscalar_sink=0.5
   real :: lam_gradC=0.0, om_gradC=0.0, lambda_cc=0.0
   real :: scalaracc=0.0
   real :: LLambda_cc=0.0
-  logical :: lpscalar_sink, lgradC_profile=.false., lreactions=.false.
+  logical :: lpscalar_sink=.false., lgradC_profile=.false., lreactions=.false.
   logical :: lpscalar_diff_simple=.false.
   logical :: lpscalar_per_unitvolume=.false.
   logical :: lpscalar_per_unitvolume_diff=.false.
@@ -66,8 +71,9 @@ module Pscalar
   logical :: lmean_friction_cc=.false.
 !
   namelist /pscalar_run_pars/ &
-      pscalar_diff, nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
-      pscalar_diff_hyper3, reinitialize_lncc, reinitialize_cc, lpscalar_sink, &
+      nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
+      pscalar_diff, diffcc_shock, pscalar_diff_hyper3, &
+      reinitialize_lncc, reinitialize_cc, lpscalar_sink, &
       lmean_friction_cc, LLambda_cc, &
       lpscalar_diff_simple, &
       lpscalar_per_unitvolume, lpscalar_per_unitvolume_diff, &
@@ -103,7 +109,7 @@ module Pscalar
 !
       lpscalar_nolog = .true.
 !
-      call farray_register_pde('cc',icc)
+      call farray_register_pde('cc', icc, vector=npscalar)
       ilncc = 0                 ! needed for idl
 !
 !  Identify version number.
@@ -124,6 +130,10 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+!  Print the number of passive scalars.
+!
+      if (lroot) print*, 'Number of passive scalars = ', npscalar
+!
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
@@ -132,7 +142,10 @@ module Pscalar
         call init_lncc(f)
       endif
 !
+      if (lroot .and. diffcc_shock /= 0.) print*, 'initialize_pscalar: shock diffusion, diffcc_shock = ', diffcc_shock
+!
       if (lnotpassive) scalaracc=3./5./hoverr**2
+!
     endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc(f)
@@ -158,6 +171,13 @@ module Pscalar
       if (radius_lncc/=impossible) radius_cc=radius_lncc
       if (epsilon_lncc/=impossible) epsilon_cc=epsilon_lncc
       if (widthlncc/=impossible) widthcc=widthlncc
+!
+!  Warning for the case of multiple passive scalars.
+!
+      if (npscalar > 1 .and. .not. linitial_condition) then
+        call warning('init_lncc', 'only the first species is initialized.')
+        call warning('init_lncc', 'use initial_condition facility instead')
+      endif
 !
       select case (initcc)
         case ('nothing')
@@ -248,7 +268,7 @@ module Pscalar
         lpenc_requested(i_gcc)=.true.
       endif
       if (lnotpassive) lpenc_requested(i_cc)=.true.
-      if (lpscalar_sink) lpenc_requested(i_rho1)=.true.
+      if (lpscalar_sink) lpenc_requested(i_cc)=.true.
       if (pscalar_diff/=0.) then
         lpenc_requested(i_gcc)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -265,6 +285,12 @@ module Pscalar
       enddo
       if (pscalar_diff/=0.) lpenc_requested(i_del2cc)=.true.
       if (tensor_pscalar_diff/=0.) lpenc_requested(i_hcc)=.true.
+      if (diffcc_shock /= 0.) then
+        lpenc_requested(i_gcc) = .true.
+        lpenc_requested(i_del2cc) = .true.
+        lpenc_requested(i_shock) = .true.
+        lpenc_requested(i_gshock) = .true.
+      endif
       if (pscalar_diff_hyper3/=0.0) then
         lpenc_requested(i_del6cc)=.true.
         lpenc_requested(i_g5ccglnrho)=.true.
@@ -321,6 +347,7 @@ module Pscalar
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
+!  24-oct-11/ccyang: generalize to multiple scalars
 !
       use Sub
 !
@@ -329,30 +356,64 @@ module Pscalar
 !
       intent(in) :: f
       intent(inout) :: p
+!
+      real, dimension(nx,3) :: uu
+      integer :: i
 ! cc
-      if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc)
+      if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc:icc+npscalar-1)
 ! cc1
-      if (lpencil(i_cc1)) p%cc1=1/p%cc
+      if (lpencil(i_cc1)) p%cc1=1./p%cc
 ! gcc
-      if (lpencil(i_gcc)) call grad(f,icc,p%gcc)
+      if (lpencil(i_gcc)) then
+        do i = 1, npscalar
+          call grad(f,icc+i-1,p%gcc(:,:,i))
+        enddo
+      endif
 ! ugcc
-      if (lpencil(i_ugcc)) &
-          call u_dot_grad(f,icc,p%gcc,p%uu,p%ugcc,UPWIND=lupw_cc)
+      if (lpencil(i_ugcc)) then
+        uu = p%uu
+        if (lconst_advection) uu = uu + spread(u0_advec, 1, nx)
+        do i = 1, npscalar
+          call u_dot_grad(f,icc+i-1,p%gcc(:,:,i),p%uu,p%ugcc(:,i),UPWIND=lupw_cc)
+        enddo
+      endif
 ! gcc2
-      if (lpencil(i_gcc2)) call dot2_mn(p%gcc,p%gcc2)
+      if (lpencil(i_gcc2)) then
+        do i = 1, npscalar
+          call dot2_mn(p%gcc(:,:,i),p%gcc2(:,i))
+        enddo
+      endif
 ! gcc1
       if (lpencil(i_gcc1)) p%gcc1=sqrt(p%gcc2)
 ! del2cc
-      if (lpencil(i_del2cc)) call del2(f,icc,p%del2cc)
+      if (lpencil(i_del2cc)) then
+        do i = 1, npscalar
+          call del2(f,icc+i-1,p%del2cc(:,i))
+        enddo
+      endif
 ! hcc
-      if (lpencil(i_hcc)) call g2ij(f,icc,p%hcc)
+      if (lpencil(i_hcc)) then
+        do i = 1, npscalar
+          call g2ij(f,icc+i-1,p%hcc(:,:,:,i))
+        enddo
+      endif
 ! del6cc
-      if (lpencil(i_del6cc)) call del6(f,icc,p%del6cc)
+      if (lpencil(i_del6cc)) then
+        do i = 1, npscalar
+          call del6(f,icc+i-1,p%del6cc(:,i))
+        enddo
+      endif
 ! g5cc
-      if (lpencil(i_g5cc)) call grad5(f,icc,p%g5cc)
-! g5cc
+      if (lpencil(i_g5cc)) then
+        do i = 1, npscalar
+          call grad5(f,icc+i-1,p%g5cc(:,:,i))
+        enddo
+      endif
+! g5ccglnrho
       if (lpencil(i_g5ccglnrho)) then
-        call dot_mn(p%g5cc,p%glnrho,p%g5ccglnrho)
+        do i = 1, npscalar
+          call dot_mn(p%g5cc(:,:,i),p%glnrho,p%g5ccglnrho(:,i))
+        enddo
       endif
 !
     endsubroutine calc_pencils_pscalar
@@ -372,13 +433,17 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diff_op,diff_op2,bump,cc_xyaver
+      real, dimension (nx) :: diff_op,diff_op2,bump
+      real :: cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
-      integer :: j
+      integer :: j, k
       integer, parameter :: nxy=nxgrid*nygrid
 !
       intent(in)  :: f
       intent(out) :: df
+!
+      character(len=2) :: id
+      integer :: icc2
 !
 !  Identify module and boundary conditions.
 !
@@ -387,36 +452,39 @@ module Pscalar
       else
         if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
       endif
-      if (headtt) call identify_bcs('cc',icc)
+      if (headtt) then
+        do k = 1, npscalar
+          write(id,'(i0)') k
+          call identify_bcs('cc'//trim(id),icc+k-1)
+        enddo
+      endif
 !
 !  Gradient of passive scalar.
 !  Allow for possibility to turn off passive scalar
 !  without changing file size and recompiling everything.
 !
-      if (.not. nopscalar) then ! i.e. if (pscalar)
+      evolve: if (.not. nopscalar) then ! i.e. if (pscalar)
+        icc2=icc+npscalar-1
 !
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc) - p%ugcc
+        df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-p%ugcc
 !
 !  lpscalar_per_unitvolume
 !
-        if (lpscalar_per_unitvolume) then
-          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%cc*p%divu
-        endif
+        if (lpscalar_per_unitvolume) &
+          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-p%cc*spread(p%divu,2,npscalar)
 !
 !  Reaction term. Simple Fisher term for now.
 !
-        if (lreactions) then
-          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+lambda_cc*p%cc*(1.0-p%cc)
-        endif
+        if (lreactions) &
+          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)+lambda_cc*p%cc*(1.0-p%cc)
 !
 !  Passive scalar sink.
 !
         if (lpscalar_sink) then
-          bump=pscalar_sink* &
-              exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
-          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-bump*f(l1:l2,m,n,icc)
+          bump=pscalar_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
+          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-spread(bump,2,npscalar)*p%cc
         endif
 !
 !  Diffusion operator. If lpscalar_per_unitvolume is chosen, use
@@ -426,40 +494,52 @@ module Pscalar
 !
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
-          if (lpscalar_per_unitvolume) then
-            if (lpscalar_per_unitvolume_diff) then
-              call dot_mn(p%glnrho,p%gcc,diff_op)
-              diff_op=p%del2cc-diff_op-p%cc*p%del2lnrho
+          add_diff: do k = 1, npscalar
+            if (lpscalar_per_unitvolume) then
+              if (lpscalar_per_unitvolume_diff) then
+                call dot_mn(p%glnrho,p%gcc(:,:,k),diff_op)
+                diff_op=p%del2cc(:,k)-diff_op-p%cc(:,k)*p%del2lnrho
+              else
+                diff_op=p%del2cc(:,k)
+              endif
             else
-              diff_op=p%del2cc
+              if (lpscalar_diff_simple) then
+                diff_op=p%del2cc(:,k)
+              else
+                call dot_mn(p%glnrho,p%gcc(:,:,k),diff_op)
+                diff_op=diff_op+p%del2cc(:,k)
+              endif
             endif
-          else
-            if (lpscalar_diff_simple) then
-              diff_op=p%del2cc
-            else
-              call dot_mn(p%glnrho,p%gcc,diff_op)
-              diff_op=diff_op+p%del2cc
-            endif
-          endif
-          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+pscalar_diff*diff_op
+            df(l1:l2,m,n,icc+k-1)=df(l1:l2,m,n,icc+k-1)+pscalar_diff*diff_op
+          enddo add_diff
+        endif
+!
+!  Shock Diffusion
+!
+        if (diffcc_shock /= 0.) then
+          do k = 1, npscalar
+            call dot_mn(p%gshock, p%gcc(:,:,k), diff_op)
+            df(l1:l2,m,n,icc+k-1) = df(l1:l2,m,n,icc+k-1) + diffcc_shock * (p%shock * p%del2cc(:,k) + diff_op)
+          enddo
         endif
 !
 !  Hyperdiffusion operator.
 !
         if (pscalar_diff_hyper3/=0.) then
-          if (headtt) &
-              print*,'dlncc_dt: pscalar_diff_hyper3=', pscalar_diff_hyper3
-          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + &
-              pscalar_diff_hyper3*(p%del6cc+p%g5ccglnrho)
+          if (headtt) print*,'dlncc_dt: pscalar_diff_hyper3=', pscalar_diff_hyper3
+          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)+pscalar_diff_hyper3*(p%del6cc+p%g5ccglnrho)
         endif
 !
 !  Soret diffusion.
 !
         if (soret_diff/=0.) then
           if (headtt) print*,'dlncc_dt: soret_diff=',soret_diff
-          call dot2_mn(p%glnTT,diff_op2)
-          diff_op2=p%cc*(1.-p%cc)*p%TT*(diff_op2+p%del2lnTT)
-          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + soret_diff*diff_op2
+          call dot2_mn(p%glnTT,diff_op)
+          diff_op=p%TT*(diff_op+p%del2lnTT)
+          do k = 1, npscalar
+            diff_op2=p%cc(:,k)*(1.-p%cc(:,k))*diff_op
+            df(l1:l2,m,n,icc+k-1)=df(l1:l2,m,n,icc+k-1)+soret_diff*diff_op2
+          enddo
         endif
 !
 !  Time-dependent prefactor for the imposed passive scalar gradient.
@@ -480,15 +560,13 @@ module Pscalar
 !  This makes sense really only for periodic boundary conditions.
 !
         do j=1,3
-          if (gradC0(j)/=0.) then
-            df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-gradC0(j)*p%uu(:,j)*gradC_fact
-          endif
+          if (gradC0(j)/=0.) &
+            df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-spread(gradC0(j)*p%uu(:,j)*gradC_fact,2,npscalar)
         enddo
 !
 !  Tensor diffusion (but keep the isotropic one).
 !
-        if (tensor_pscalar_diff/=0.) &
-            call tensor_diff(df,p,tensor_pscalar_diff)
+        if (tensor_pscalar_diff/=0.) call tensor_diff(df,p,tensor_pscalar_diff)
 !
 !  Consider here the action of a mean friction term, -LLambda*Cbar.
 !  This can be used to compendate for the decay of a horizontally
@@ -496,14 +574,16 @@ module Pscalar
 !  the turbulent diffusivity under stationary conditions. Only those
 !  results are then comparable with the results of the test-field method.
 !
-      if (lmean_friction_cc) then
-        if (nprocx*nprocy==1) then
-          cc_xyaver=sum(f(l1:l2,m1:m2,n,icc))/nxy
-          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-LLambda_cc*cc_xyaver
-        else
-          call fatal_error('pscalar','lmean_friction works only for nprocxy=1')
+        if (lmean_friction_cc) then
+          if (nprocx*nprocy==1) then
+            do k = icc, icc2
+              cc_xyaver=sum(f(l1:l2,m1:m2,n,k))/nxy
+              df(l1:l2,m,n,k)=df(l1:l2,m,n,k)-LLambda_cc*cc_xyaver
+            enddo
+          else
+            call fatal_error('pscalar','lmean_friction works only for nprocxy=1')
+          endif
         endif
-      endif
 !
 !  For the timestep calculation, need maximum diffusion.
 !
@@ -516,74 +596,74 @@ module Pscalar
 !
         if (lspecial) call special_calc_pscalar(f,df,p)
 !
-      endif
+      endif evolve
 !
-!  Diagnostics.
+!  Diagnostics (only for the first passive scalar)
 !
 !  output for double and triple correlators (assume z-gradient of cc)
 !  <u_k u_j d_j c> = <u_k c uu.gradcc>
 !
       if (ldiagnos) then
         if (idiag_Qpsclm/=0)  call sum_mn_name(bump,idiag_Qpsclm)
-        if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc,idiag_Qrhoccm)
-        if (idiag_mcct/=0)    call integrate_mn_name(p%rho*p%cc,idiag_mcct)
-        if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
-        if (idiag_ccmax/=0)   call max_mn_name(p%cc,idiag_ccmax)
-        if (idiag_ccmin/=0)   call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
-        if (idiag_uxcm/=0)    call sum_mn_name(p%uu(:,1)*p%cc,idiag_uxcm)
-        if (idiag_uycm/=0)    call sum_mn_name(p%uu(:,2)*p%cc,idiag_uycm)
-        if (idiag_uzcm/=0)    call sum_mn_name(p%uu(:,3)*p%cc,idiag_uzcm)
+        if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc(:,1),idiag_Qrhoccm)
+        if (idiag_mcct/=0)    call integrate_mn_name(p%rho*p%cc(:,1),idiag_mcct)
+        if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc(:,1),idiag_rhoccm)
+        if (idiag_ccmax/=0)   call max_mn_name(p%cc(:,1),idiag_ccmax)
+        if (idiag_ccmin/=0)   call max_mn_name(-p%cc(:,1),idiag_ccmin,lneg=.true.)
+        if (idiag_uxcm/=0)    call sum_mn_name(p%uu(:,1)*p%cc(:,1),idiag_uxcm)
+        if (idiag_uycm/=0)    call sum_mn_name(p%uu(:,2)*p%cc(:,1),idiag_uycm)
+        if (idiag_uzcm/=0)    call sum_mn_name(p%uu(:,3)*p%cc(:,1),idiag_uzcm)
         if (lgradC_profile) then
-          if (idiag_ucm/=0)   call sum_mn_name(2.*cos(z(n))*p%uu(:,3)*p%cc,idiag_ucm)
+          if (idiag_ucm/=0)   call sum_mn_name(2.*cos(z(n))*p%uu(:,3)*p%cc(:,1),idiag_ucm)
         else
-          if (idiag_ucm/=0)   call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
+          if (idiag_ucm/=0)   call sum_mn_name(p%uu(:,3)*p%cc(:,1),idiag_ucm)
         endif
-        if (idiag_uudcm/=0)   call sum_mn_name(p%uu(:,3)*p%ugcc,idiag_uudcm)
-        if (idiag_Cz2m/=0)    call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
-        if (idiag_Cz4m/=0)    call sum_mn_name(p%rho*p%cc*z(n)**4,idiag_Cz4m)
+        if (idiag_uudcm/=0)   call sum_mn_name(p%uu(:,3)*p%ugcc(:,1),idiag_uudcm)
+        if (idiag_Cz2m/=0)    call sum_mn_name(p%rho*p%cc(:,1)*z(n)**2,idiag_Cz2m)
+        if (idiag_Cz4m/=0)    call sum_mn_name(p%rho*p%cc(:,1)*z(n)**4,idiag_Cz4m)
         if (idiag_Crmsm/=0) &
-            call sum_mn_name((p%rho*p%cc)**2,idiag_Crmsm,lsqrt=.true.)
-        if (idiag_cc1m/=0)    call sum_mn_name(p%cc1   ,idiag_cc1m)
-        if (idiag_cc2m/=0)    call sum_mn_name(p%cc1**2,idiag_cc2m)
-        if (idiag_cc3m/=0)    call sum_mn_name(p%cc1**3,idiag_cc3m)
-        if (idiag_cc4m/=0)    call sum_mn_name(p%cc1**4,idiag_cc4m)
-        if (idiag_cc5m/=0)    call sum_mn_name(p%cc1**5,idiag_cc5m)
-        if (idiag_cc6m/=0)    call sum_mn_name(p%cc1**6,idiag_cc6m)
-        if (idiag_cc7m/=0)    call sum_mn_name(p%cc1**7,idiag_cc7m)
-        if (idiag_cc8m/=0)    call sum_mn_name(p%cc1**8,idiag_cc8m)
-        if (idiag_cc9m/=0)    call sum_mn_name(p%cc1**9,idiag_cc9m)
-        if (idiag_cc10m/=0)   call sum_mn_name(p%cc1**10,idiag_cc10m)
-        if (idiag_gcc1m/=0)   call sum_mn_name(p%gcc1   ,idiag_gcc1m)
-        if (idiag_gcc2m/=0)   call sum_mn_name(p%gcc1**2,idiag_gcc2m)
-        if (idiag_gcc3m/=0)   call sum_mn_name(p%gcc1**3,idiag_gcc3m)
-        if (idiag_gcc4m/=0)   call sum_mn_name(p%gcc1**4,idiag_gcc4m)
-        if (idiag_gcc5m/=0)   call sum_mn_name(p%gcc1**5,idiag_gcc5m)
-        if (idiag_gcc6m/=0)   call sum_mn_name(p%gcc1**6,idiag_gcc6m)
-        if (idiag_gcc7m/=0)   call sum_mn_name(p%gcc1**7,idiag_gcc7m)
-        if (idiag_gcc8m/=0)   call sum_mn_name(p%gcc1**8,idiag_gcc8m)
-        if (idiag_gcc9m/=0)   call sum_mn_name(p%gcc1**9,idiag_gcc9m)
-        if (idiag_gcc10m/=0)  call sum_mn_name(p%gcc1**10,idiag_gcc10m)
-        if (idiag_ccglnrm/=0) call sum_mn_name(p%cc*p%glnrho(:,3),idiag_ccglnrm)
+            call sum_mn_name((p%rho*p%cc(:,1))**2,idiag_Crmsm,lsqrt=.true.)
+        if (idiag_cc1m/=0)    call sum_mn_name(p%cc1(:,1)   ,idiag_cc1m)
+        if (idiag_cc2m/=0)    call sum_mn_name(p%cc1(:,1)**2,idiag_cc2m)
+        if (idiag_cc3m/=0)    call sum_mn_name(p%cc1(:,1)**3,idiag_cc3m)
+        if (idiag_cc4m/=0)    call sum_mn_name(p%cc1(:,1)**4,idiag_cc4m)
+        if (idiag_cc5m/=0)    call sum_mn_name(p%cc1(:,1)**5,idiag_cc5m)
+        if (idiag_cc6m/=0)    call sum_mn_name(p%cc1(:,1)**6,idiag_cc6m)
+        if (idiag_cc7m/=0)    call sum_mn_name(p%cc1(:,1)**7,idiag_cc7m)
+        if (idiag_cc8m/=0)    call sum_mn_name(p%cc1(:,1)**8,idiag_cc8m)
+        if (idiag_cc9m/=0)    call sum_mn_name(p%cc1(:,1)**9,idiag_cc9m)
+        if (idiag_cc10m/=0)   call sum_mn_name(p%cc1(:,1)**10,idiag_cc10m)
+        if (idiag_gcc1m/=0)   call sum_mn_name(p%gcc1(:,1)   ,idiag_gcc1m)
+        if (idiag_gcc2m/=0)   call sum_mn_name(p%gcc1(:,1)**2,idiag_gcc2m)
+        if (idiag_gcc3m/=0)   call sum_mn_name(p%gcc1(:,1)**3,idiag_gcc3m)
+        if (idiag_gcc4m/=0)   call sum_mn_name(p%gcc1(:,1)**4,idiag_gcc4m)
+        if (idiag_gcc5m/=0)   call sum_mn_name(p%gcc1(:,1)**5,idiag_gcc5m)
+        if (idiag_gcc6m/=0)   call sum_mn_name(p%gcc1(:,1)**6,idiag_gcc6m)
+        if (idiag_gcc7m/=0)   call sum_mn_name(p%gcc1(:,1)**7,idiag_gcc7m)
+        if (idiag_gcc8m/=0)   call sum_mn_name(p%gcc1(:,1)**8,idiag_gcc8m)
+        if (idiag_gcc9m/=0)   call sum_mn_name(p%gcc1(:,1)**9,idiag_gcc9m)
+        if (idiag_gcc10m/=0)  call sum_mn_name(p%gcc1(:,1)**10,idiag_gcc10m)
+        if (idiag_ccglnrm/=0) call sum_mn_name(p%cc(:,1)*p%glnrho(:,3),idiag_ccglnrm)
       endif
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(p%cc,idiag_ccmz)
-        call xzsum_mn_name_y(p%cc,idiag_ccmy)
-        call yzsum_mn_name_x(p%cc,idiag_ccmx)
-        call xysum_mn_name_z(p%uu(:,1)*p%cc,idiag_uxcmz)
-        call xysum_mn_name_z(p%uu(:,2)*p%cc,idiag_uycmz)
-        call xysum_mn_name_z(p%uu(:,3)*p%cc,idiag_uzcmz)
+        call xysum_mn_name_z(p%cc(:,1),idiag_ccmz)
+        call xzsum_mn_name_y(p%cc(:,1),idiag_ccmy)
+        call yzsum_mn_name_x(p%cc(:,1),idiag_ccmx)
+        call xysum_mn_name_z(p%uu(:,1)*p%cc(:,1),idiag_uxcmz)
+        call xysum_mn_name_z(p%uu(:,2)*p%cc(:,1),idiag_uycmz)
+        call xysum_mn_name_z(p%uu(:,3)*p%cc(:,1),idiag_uzcmz)
       endif
 !
       if (l2davgfirst) then
-        if (idiag_ccmxy/=0)   call zsum_mn_name_xy(p%cc,idiag_ccmxy)
-        if (idiag_ccmxz/=0)   call ysum_mn_name_xz(p%cc,idiag_ccmxz)
+        if (idiag_ccmxy/=0)   call zsum_mn_name_xy(p%cc(:,1),idiag_ccmxy)
+        if (idiag_ccmxz/=0)   call ysum_mn_name_xz(p%cc(:,1),idiag_ccmxz)
       endif
 !
 ! AH: notpassive, an angular momentum+gravity workaround
       if (lnotpassive) then
         if (lhydro) then
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc &
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(p%cc(:,1) &
              +(-powerlr*hoverr**2+1.5*zoverh**2*hoverr**2)+ &
              (-1+3*powerlr*hoverr**2-4.5*zoverh**2*hoverr**2)*x(l1:l2))*scalaracc
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(-hoverr*zoverh &
@@ -762,9 +842,12 @@ module Pscalar
 !  Write slices for animation of pscalar variables.
 !
 !  26-jul-06/tony: coded
+!  31-jan-11/ccyang: generalized to multiple scalars
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      type(slice_data), intent(inout) :: slices
+!
+      integer :: icc1
 !
 !  Loop over slices.
 !
@@ -773,24 +856,38 @@ module Pscalar
 !  Passive scalar.
 !
         case ('cc')
-          slices%yz =f(ix_loc,m1:m2,n1:n2,icc)
-          slices%xz =f(l1:l2,iy_loc,n1:n2,icc)
-          slices%xy =f(l1:l2,m1:m2,iz_loc,icc)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,icc)
-          if (lwrite_slice_xy3) slices%xy3=f(l1:l2,m1:m2,iz3_loc,icc)
-          if (lwrite_slice_xy4) slices%xy4=f(l1:l2,m1:m2,iz4_loc,icc)
-          slices%ready=.true.
+          if (0 <= slices%index .and. slices%index < npscalar) then
+            icc1 = icc + slices%index
+            slices%index = slices%index + 1
+            slices%yz = f(ix_loc,m1:m2 ,n1:n2  ,icc1)
+            slices%xz = f(l1:l2 ,iy_loc,n1:n2  ,icc1)
+            slices%xy = f(l1:l2 ,m1:m2 ,iz_loc ,icc1)
+            slices%xy2= f(l1:l2 ,m1:m2 ,iz2_loc,icc1)
+            if (lwrite_slice_xy3) slices%xy3 = f(l1:l2,m1:m2,iz3_loc,icc1)
+            if (lwrite_slice_xy4) slices%xy4 = f(l1:l2,m1:m2,iz4_loc,icc1)
+            slices%ready = .true.
+          else
+            slices%ready = .false.
+          endif
 !
 !  Logarithmic passive scalar.
 !
         case ('lncc')
-          slices%yz =alog(f(ix_loc,m1:m2,n1:n2,icc))
-          slices%xz =alog(f(l1:l2,iy_loc,n1:n2,icc))
-          slices%xy =alog(f(l1:l2,m1:m2,iz_loc,icc))
-          slices%xy2=alog(f(l1:l2,m1:m2,iz2_loc,icc))
-          if (lwrite_slice_xy3) slices%xy3=alog(f(l1:l2,m1:m2,iz3_loc,icc))
-          if (lwrite_slice_xy4) slices%xy4=alog(f(l1:l2,m1:m2,iz4_loc,icc))
-          slices%ready=.true.
+          if (0 <= slices%index .and. slices%index < npscalar) then
+            icc1 = icc + slices%index
+            slices%index = slices%index + 1
+            slices%yz = alog(f(ix_loc,m1:m2 ,n1:n2  ,icc1))
+            slices%xz = alog(f(l1:l2 ,iy_loc,n1:n2  ,icc1))
+            slices%xy = alog(f(l1:l2 ,m1:m2 ,iz_loc ,icc1))
+            slices%xy2= alog(f(l1:l2 ,m1:m2 ,iz2_loc,icc1))
+            if (lwrite_slice_xy3) &
+                slices%xy3 = alog(f(l1:l2,m1:m2,iz3_loc,icc1))
+            if (lwrite_slice_xy4) &
+                slices%xy4 = alog(f(l1:l2,m1:m2,iz4_loc,icc1))
+            slices%ready = .true.
+          else
+            slices%ready = .false.
+          endif
 !
       endselect
 !
@@ -830,6 +927,7 @@ module Pscalar
 !  Reads file.
 !
 !  11-jul-02/axel: coded
+!  24-oct-11/ccyang: generalized to multiple scalars
 !
       use Sub
 !
@@ -839,7 +937,7 @@ module Pscalar
 !
       real, save, dimension (nx,ny,nz,3) :: bunit,hhh
       real, dimension (nx) :: tmp,scr
-      integer :: iy,iz,i,j
+      integer :: iy,iz,i,j,k
       logical, save :: first=.true.
 !
 !  read H and Bunit arrays and keep them in memory
@@ -855,23 +953,25 @@ module Pscalar
 !  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij
 !  for details, see tex/mhd/thcond/tensor_der.tex
 !
-      call dot_mn(bunit,p%gcc,scr)
-      call dot_mn(hhh,p%gcc,tmp)
-      tmp=tmp+scr**2
+      iy=m-m1+1
+      iz=n-n1+1
+      loop: do k = 1, npscalar
+        call dot_mn(bunit(:,iy,iz,:),p%gcc(:,:,k),scr)
+        call dot_mn(hhh(:,iy,iz,:),p%gcc(:,:,k),tmp)
+        tmp=tmp+scr**2
 !
 !  dot with bi*bj
 !
-      iy=m-m1+1
-      iz=n-n1+1
-      do j=1,3
-      do i=1,3
-        tmp=tmp+bunit(:,iy,iz,i)*bunit(:,iy,iz,j)*p%hcc(:,i,j)
-      enddo
-      enddo
+        do j=1,3
+        do i=1,3
+          tmp=tmp+bunit(:,iy,iz,i)*bunit(:,iy,iz,j)*p%hcc(:,i,j,k)
+        enddo
+        enddo
 !
 !  and add result to the dcc/dt equation
 !
-      df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+tensor_pscalar_diff*tmp
+        df(l1:l2,m,n,icc+k-1)=df(l1:l2,m,n,icc+k-1)+tensor_pscalar_diff*tmp
+      enddo loop
 !
       first=.false.
 !
