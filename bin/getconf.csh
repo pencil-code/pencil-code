@@ -22,7 +22,7 @@ endif
 setenv PENCIL_WORKDIR `pwd`
 newdir:
 # Prevent code from running twice (and removing files by accident)
-if (-e "LOCK") then
+if (-e "LOCK" || -e "data/LOCK") then
   echo ""
   echo "getconf.csh: found LOCK file"
   echo "(if it is left over from a crash, remove it by hand: rm LOCK)"

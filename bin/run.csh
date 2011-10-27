@@ -213,6 +213,7 @@ if (-e "NEWDIR") then
   if (-s "NEWDIR") then
     # Remove LOCK file before going to other directory
     if (-e "LOCK") rm -f LOCK
+    if (-e "data/LOCK") rm -f data/LOCK
     set olddir=$cwd
     cd `cat NEWDIR`
     rm $olddir/NEWDIR
@@ -230,6 +231,7 @@ if (-e "NEWDIR") then
   else
     rm -f NEWDIR
     if (-e "LOCK") rm -f LOCK
+    if (-e "data/LOCK") rm -f data/LOCK
     echo
     echo "====================================================================="
     echo "Rerunning in the *same* directory; current run status: $run_status"
@@ -255,6 +257,7 @@ endif
 
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
+if (-e "data/LOCK") rm -f data/LOCK
 
 # Detect error status flagged by code (for cases where this does not get
 # propagated to the mpirun status):

@@ -1,14 +1,10 @@
 #!/bin/sh
 #$Id$
 echo ""
-echo "==> The Pencil Code User Meeting 2009 will be 24-28 Aug in Heidelberg."
-echo "    Please register on:"
+echo "==> The Pencil Code User Meeting 2011 is currently in Toulouse; see"
 echo ""
-echo "       http://agenda.albanova.se/conferenceDisplay.py?confId=1190"
+echo "       http://pencilcode11.obs-mip.fr/index.html"
 echo ""
-echo "    For a link to the past meeting see:"
-echo "       http://www.strw.leidenuniv.nl/~ajohan/pencil2008/index.php"
-echo ""
-echo "    For a blog, see:"
+echo "    For an old blog of 2008; see:"
 echo "       http://pcum08.blogspot.com/"
 echo ""

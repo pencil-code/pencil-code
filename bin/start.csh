@@ -44,7 +44,8 @@ if (! -d "$datadir") then
   echo ">>  but that will most likely end up on your NFS file system and be"
   echo ">>  slow"
   echo
-  rm -f LOCK
+  if (-e "LOCK") rm -f LOCK
+  if (-e "data/LOCK") rm -f data/LOCK
   exit 0
 endif
 
@@ -156,6 +157,7 @@ endif
 
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
+if (-e "data/LOCK") rm -f data/LOCK
 
 # Detect error status flagged by code (for cases where this does not get
 # propagated to the mpirun status):
