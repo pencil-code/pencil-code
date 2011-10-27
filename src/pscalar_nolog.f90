@@ -730,6 +730,7 @@ module Pscalar
       logical :: lreset
       logical, optional :: lwrite
 !
+      character(len=80) :: fmt
       integer :: iname, inamez, inamey, inamex, inamexy, inamexz
       logical :: lwr
 !
@@ -832,7 +833,13 @@ module Pscalar
 !
       if (lwr) then
         write(3,*) 'ilncc=0'
-        write(3,*) 'icc=',icc
+        if (npscalar > 1) then
+          write(fmt,'(I2)') npscalar - 1
+          fmt = '(1X, A, ' // trim(fmt) // '(I2, A2), I2, A)'
+          write(3,fmt) 'icc = [', (i, ', ', i = icc, icc+npscalar-2), icc+npscalar-1, ']'
+        else
+          write(3,*) 'icc = ', icc
+        endif
       endif
 !
     endsubroutine rprint_pscalar
