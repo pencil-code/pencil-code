@@ -1,0 +1,17 @@
+#!/bin/sh
+
+#
+# $Id:$
+# Allow to search recursively a given string using grep
+# Usage: pc_grep string suffix
+# By default, suffix='*.f90'such that pc_grep 'eos.h' will search the
+# 'eos.h' string in all of f90 files
+#
+
+if [ $# -eq 1 ]; then
+    find . -name '*.f90' | xargs grep $1
+else
+    find . -name "$2" | xargs grep $1
+fi 
+
+
