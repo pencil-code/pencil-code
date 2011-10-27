@@ -59,10 +59,12 @@ class read_ts:
                                  axis=1)
                     keys = keys_new
             else:
-                row = N.array(map(float, re.split(" +", line.strip(" \n"))))
-                data[nlines, :] = row
-                nlines += 1
-    
+                try:
+                    row = N.array(map(float, re.split(" +", line.strip(" \n"))))
+                    data[nlines, :] = row
+                    nlines += 1
+                except ValueError:
+                    print "Invalid data on line %i. Skipping." % nlines
         #clean up data
         data = N.resize(data,(nlines,len(keys)))
     
