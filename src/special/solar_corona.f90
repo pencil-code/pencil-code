@@ -231,18 +231,26 @@ module Special
       endif
 !
       if (linit_lnrho) then
+        if (.not. ldensity) call fatal_error ('init_special', &
+            "linit_lnrho=T needs the density module")
         ! set initial density profile values
         do j = 1, mz
-          f(:,:,j,ilnrho) = lnrho_init_z(j)
+          if (ldensity .and. ldensity_nolog) then
+            f(:,:,j,irho) = exp (lnrho_init_z(j))
+          elseif (ldensity) then
+            f(:,:,j,ilnrho) = lnrho_init_z(j)
+          endif
         enddo
       endif
 !
       if (linit_lnTT) then
         if (pretend_lnTT) call fatal_error ('init_special', &
-            "linit_lnTT=T not implemented for pretend_lnTT=T", .true.)
+            "linit_lnTT=T not implemented for pretend_lnTT=T")
         ! set initial temperaure profile values
         do j = 1, mz
-          if (ltemperature) then
+          if (ltemperature .and. ltemperature_nolog) then
+            f(:,:,j,ilnTT) = exp (lnTT_init_z(j))
+          elseif (ltemperature) then
             f(:,:,j,ilnTT) = lnTT_init_z(j)
           elseif (lentropy) then
             f(:,:,j,iss) = (alog(gamma_m1/cs20)+lnTT_init_z(j)- &
