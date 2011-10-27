@@ -347,7 +347,7 @@ if (ie gt 0) then begin
 endif
 ;
 default, icc, 0
-if (icc gt 0) then begin
+if (icc[0] gt 0) then begin
   npscalar = n_elements(icc)
   if (npscalar gt 1) then begin
     for i = 0, npscalar - 1 do begin
@@ -595,7 +595,7 @@ endif
 ;
 default, ieth, 0
 if (ieth gt 0) then begin
-  varcontent[ieth].variable   = 'Thermal energy'
+  varcontent[ieth].variable   = 'Thermal energy (eth)'
   varcontent[ieth].idlvar     = 'eth'
   varcontent[ieth].idlinit    = INIT_SCALAR
   varcontent[ieth].idlvarloc  = 'eth_loc'
