@@ -937,8 +937,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3  &
-            + chi_hyper3
+        if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + chi_hyper3
       endif
 !
       if (chi_hyper2/=0.0) then
@@ -947,8 +946,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst.and.ldt) diffus_chi3=diffus_chi3 &
-            + chi_hyper2
+        if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + chi_hyper2
       endif
 !
       if (Kgpara/=0.0) call calc_heatcond_tensor(df,p,Kgpara,2.5)
