@@ -8,6 +8,12 @@
 # 'eos.h' string in all of f90 files
 #
 
+if [ $# -eq 0 ]; then
+  echo 'Usage: pc_grep string suffix'
+  echo 'By default, the string is searched recursively in all .f90 files'
+  exit
+fi
+
 if [ $# -eq 1 ]; then
     find . -name '*.f90' | xargs grep $1
 else
