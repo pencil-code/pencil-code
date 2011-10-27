@@ -165,6 +165,12 @@ module Special
 !
 ! Consistency checks:
 !
+      if ((bmdi /= 0.0) .and. luse_mag_field) &
+          call fatal_error ('solar_corona/mag_driver', &
+              'Please use either bmdi or luse_mag_field.')
+      if ((b_tau == 0.0) .and. luse_mag_field) &
+          call fatal_error ('solar_corona/mag_driver', &
+              'Please set b_tau when using luse_mag_field.')
       if (irefz > max (n1, nz)) &
           call fatal_error ('solar_corona', &
               'irefz must lie in the bottom layer of processors.')
@@ -203,6 +209,7 @@ module Special
 !
       lfixed_magnetogram = .not. parallel_file_exists (mag_times_dat)
 !
+      ! Setup atmosphere stratification for later use
       call setup_profiles()
 !
       call keep_compiler_quiet(f)
