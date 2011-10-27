@@ -734,6 +734,8 @@ module Pscalar
       integer :: iname, inamez, inamey, inamex, inamexy, inamexz
       logical :: lwr
 !
+      integer :: i
+!
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
