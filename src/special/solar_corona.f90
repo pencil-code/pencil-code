@@ -858,8 +858,8 @@ module Special
               tau_inv*(f(l1:l2,m,n,iuy)-uy_local(:,m-nghost))
         endif
 !
-        tmp(:) = tau_inv
         if (lfirst.and.ldt) then
+          tmp(:) = tau_inv
           if (ldiagnos.and.idiag_dtnewt/=0) then
             itype_name(idiag_dtnewt)=ilabel_max_dt
             call max_mn_name(tmp/cdts,idiag_dtnewt,l_dt=.true.)
