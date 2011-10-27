@@ -379,8 +379,8 @@ module Special
       lread_prof_lnTT  = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnTT') > 0)
 !
       if (prof_type=='lnrho_lnTT') then
-        allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), prof_z(nzgrid), stat=ierr)
-        if (ierr > 0) call fatal_error ('setup_profiles', &
+        allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), prof_z(nzgrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('setup_profiles', &
             'Could not allocate memory for stratification variables', .true.)
 !
         ! read stratification file only on the MPI root rank
@@ -468,8 +468,8 @@ module Special
       call mpibcast_int (n_data, 1)
 !
       ! allocate memory
-      allocate (data(n_data), data_z(n_data), stat=ierr)
-      if (ierr > 0) call fatal_error ('read_profile', &
+      allocate (data(n_data), data_z(n_data), stat=alloc_err)
+      if (alloc_err > 0) call fatal_error ('read_profile', &
           'Could not allocate memory for data and its z coordinate', .true.)
 !
       if (lroot) then
