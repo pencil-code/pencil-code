@@ -49,7 +49,6 @@ module Density
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,density_floor=-1.0
-  real :: mass_source_Mdot=0.,mass_source_sigma=0.
   real :: radial_percent_smooth=10.,rshift=0.0
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
@@ -60,7 +59,7 @@ module Density
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: init_average_density
   integer, parameter :: ndiff_max=4
-  logical :: lmass_source=.false.,lcontinuity_gas=.true.
+  logical :: lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
@@ -78,7 +77,6 @@ module Density
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'
-  character (len=labellen) :: mass_source_profile='cylindric'
   character (len=intlen) :: iinit_str
   complex :: coeflnrho=0.
 !
@@ -100,8 +98,7 @@ module Density
 !
   namelist /density_run_pars/ &
       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
-      cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,lmass_source,         &
-      mass_source_profile, mass_source_Mdot, mass_source_sigma,     &
+      cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,                      &
       lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
       lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
@@ -382,7 +379,6 @@ module Density
 !
         case ('const')
           if (lroot) print*,'initialize anelastic: const'
-          print*, 'ipp=', ipp, rho0, cs20
           do m=1,my
           do n=1,mz
             f(1:mx,m,n,ipp)=rho0*cs20
@@ -399,7 +395,7 @@ module Density
             +(f(:,:,:,iux)**2+f(:,:,:,iuy)**2+f(:,:,:,iuz)**2)/(2.*cs0**2))
 !
         case ('anelastic')
-!            f(l1:l2,m,n,ilnrho)=-0.1*z(n)
+!          f(l1:l2,m,n,ilnrho)=-0.1*z(n)
           do m=1,my
           do n=1,mz
             if (lanelastic_lin) then
@@ -409,10 +405,10 @@ module Density
                   print*, irho, ipp
               f(1:mx,m,n,irho)=rho0*exp(gamma*gravz*z(n)/cs20)
               f(1:mx,m,n,ipp)=f(1:mx,m,n,irho)*cs20
-              stop 'toto'
             endif
           enddo
           enddo
+!
         case ('polytropic_simple')
           if (lanelastic_lin) then
             call polytropic_simple(f)
@@ -428,7 +424,7 @@ module Density
           write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
                             //trim(iinit_str)//'): ',trim(initlnrho(j))
           call fatal_error('init_lnrho',errormsg)
- 
+! 
         endselect
 !
 !  if the ipp f-array exists (e.g. in anelastic problems), set it
@@ -778,11 +774,6 @@ module Density
            lpenc_requested(i_rho1)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
 !
-      if (lmass_source) then
-        if (mass_source_profile=='bump') lpenc_requested(i_r_mn)=.true.
-        if (mass_source_profile=='cylindric') lpenc_requested(i_rcyl_mn)=.true.
-      endif
-!
       if (lmassdiff_fix) lpenc_requested(i_rho1)=.true.
 !
       lpenc_diagnos2d(i_lnrho)=.true.
@@ -918,12 +909,6 @@ module Density
       if (headtt) call identify_bcs('rhs',irhs+1)
       if (headtt) call identify_bcs('rhs',irhs+2)
 !
-!
-!  Mass sources and sinks.
-!
-      if (lmass_source) call mass_source(f,df,p)
-!
-!
 !  Calculate density diagnostics
 !
       if (ldiagnos) then
@@ -945,8 +930,6 @@ module Density
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
-!
-
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
@@ -1058,298 +1041,6 @@ module Density
 !
     endsubroutine isothermal_density
 !***********************************************************************
-    subroutine correct_pressure_gradient(f,ics2,ptlaw)
-! 
-!  Correct for pressure gradient term in the centrifugal force.
-!  For now, it only works for flat (isothermal) or power-law 
-!  sound speed profiles, because the temperature gradient is 
-!  constructed analytically.
-!
-!  21-aug-07/wlad : coded
-!
-      use FArrayManager
-      use Mpicomm,only: stop_it
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: glnrho
-      real, dimension (nx)   :: rr,rr_cyl,rr_sph
-      real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
-      integer                :: i,ics2
-      logical                :: lheader
-      real                   :: cp1,ptlaw
-!
-      if (lroot) print*,'Correcting density gradient on the '//&
-           'centrifugal force'
-!
-      do m=m1,m2
-        do n=n1,n2
-          lheader=((m==m1).and.(n==n1).and.lroot)
-!
-!  Get the density gradient
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-          call grad(f,ilnrho,glnrho)
-          if (lcartesian_coords) then
-            gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
-            !!gs= gx*cos + gy*sin
-          else if (lcylindrical_coords) then 
-            gslnrho=glnrho(:,1)
-          else if (lspherical_coords) then 
-            gslnrho=glnrho(:,1)
-          endif
-!
-!  Get sound speed and calculate the temperature gradient
-!
-          cs2=f(l1:l2,m,n,ics2);rr=rr_cyl
-          if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
-          gslnTT=-ptlaw/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
-!
-!  Correct for cartesian or spherical
-!
-          corr=(gslnrho+gslnTT)*cs2
-          if (lenergy) corr=corr/gamma
-!
-          if (lcartesian_coords) then
-            tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-            tmp2=tmp1 + corr/rr_cyl
-          elseif (lcylindrical_coords) then
-            tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
-            tmp2=tmp1 + corr/rr_cyl
-          elseif (lspherical_coords) then
-            tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
-            tmp2=tmp1 + corr/rr_sph
-          endif
-!
-!  Make sure the correction does not impede centrifugal equilibrium
-!
-          do i=1,nx
-            if (tmp2(i)<0.) then
-              if (rr(i) < r_int) then
-                !it's inside the frozen zone, so 
-                !just set tmp2 to zero and emit a warning
-                tmp2(i)=0.
-                if ((ip<=10).and.lheader) &
-                     call warning('correct_density_gradient','Cannot '//&
-                     'have centrifugal equilibrium in the inner '//&
-                     'domain. The pressure gradient is too steep.')
-              else
-                print*,'correct_density_gradient: ',&
-                       'cannot have centrifugal equilibrium in the inner ',&
-                       'domain. The pressure gradient is too steep at ',&
-                       'x,y,z=',x(i+nghost),y(m),z(n)
-                print*,'the angular frequency here is',tmp2(i)
-                call stop_it("")
-              endif
-            endif
-          enddo
-!
-!  Correct the velocities
-!
-          if (lcartesian_coords) then
-            f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-          elseif (lcylindrical_coords) then
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-          elseif (lspherical_coords) then 
-            f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
-          endif
-        enddo
-      enddo
-!
-    endsubroutine correct_pressure_gradient
-!***********************************************************************
-    subroutine exponential_fall(f)
-!
-!  Exponentially falling radial density profile.
-!
-!  21-aug-07/wlad: coded 
-!
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl,arg
-      real :: rmid,fac
-      logical :: lheader
-!
-      if (lroot) print*,'setting exponential falling '//&
-           'density with e-fold=',r_ref
-!
-      fac=pi/2
-      do m=1,my
-        do n=1,mz
-          lheader=lroot.and.(m==1).and.(n==1)
-          call get_radial_distance(rr_sph,rr_cyl)
-          f(1:mx,m,n,ilnrho) = lnrho0 - rr_cyl/r_ref
-          if (lexponential_smooth) then 
-            rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-            arg=(rr_cyl-rshift)/rmid
-            f(1:mx,m,n,ilnrho) = f(1:mx,m,n,ilnrho)*&
-                 .5*(1+atan(arg)/fac)
-          endif
-        enddo
-      enddo
-!
-!  Add self-gravity's contribution to the centrifugal force
-!
-      call correct_for_selfgravity(f)
-!
-    endsubroutine exponential_fall
-!***********************************************************************
-    subroutine correct_for_selfgravity(f)
-!        
-!  Correct for the fluid's self-gravity in the 
-!  centrifugal force
-!
-!  03-dec-07/wlad: coded
-!
-      use Selfgravity, only:calc_selfpotential
-      use Boundcond,   only:update_ghosts
-      use Mpicomm,     only:stop_it
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-
-      real, dimension(nx,3) :: gpotself
-      real, dimension(nx) :: tmp1,tmp2
-      real, dimension(nx) :: gspotself,rr_cyl,rr_sph
-      logical :: lheader
-      integer :: i
-!
-!  Do nothing if self-gravity is not called
-!
-      if (lselfgravity) then
-!
-        if (lroot) print*,'Correcting for self-gravity on the '//&
-             'centrifugal force'
-!
-!  feed linear density into the poisson solver
-!
-        f(:,:,:,ilnrho) = exp(f(:,:,:,ilnrho))
-        call calc_selfpotential(f)
-        f(:,:,:,ilnrho) = alog(f(:,:,:,ilnrho))
-!
-!  update the boundaries for the self-potential
-!
-        call update_ghosts(f)
-!
-        do n=n1,n2
-          do m=m1,m2
-!
-            lheader=((m==m1).and.(n==n1).and.lroot)
-!
-!  Get the potential gradient
-!
-            call get_radial_distance(rr_sph,rr_cyl)
-            call grad(f,ipotself,gpotself)
-!
-!  correct the angular frequency phidot^2
-!
-            if (lcartesian_coords) then 
-              gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
-              tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-              tmp2=tmp1+gspotself/rr_cyl
-            elseif (lcylindrical_coords) then 
-              gspotself=gpotself(:,1)
-              tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
-              tmp2=tmp1+gspotself/rr_cyl
-            elseif (lspherical_coords) then
-              gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
-              tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
-              tmp2=tmp1 + gspotself/(rr_sph*sinth(m)**2)
-            endif
-!
-!  Catch negative values of phidot^2
-!
-            do i=1,nx
-              if (tmp2(i)<0.) then
-                if (rr_cyl(i) < r_int) then
-                  !it's inside the frozen zone, so
-                  !just set tmp2 to zero and emit a warning
-                  tmp2(i)=0.
-                  if ((ip<=10).and.lheader) &
-                       call warning('correct_for_selfgravity','Cannot '//&
-                       'have centrifugal equilibrium in the inner '//&
-                       'domain. Just warning...')
-                else
-                  print*,'correct_for_selfgravity: ',&
-                       'cannot have centrifugal equilibrium in the inner ',&
-                       'domain. The offending point is ',&
-                       'x,y,z=',x(i+nghost),y(m),z(n)
-                  print*,'the angular frequency here is ',tmp2(i)
-                  call stop_it("")
-                endif
-              endif
-            enddo
-! 
-!  Correct the velocities
-!
-            if (lcartesian_coords) then
-              f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-              f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-            elseif (lcylindrical_coords) then
-              f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-            elseif (lspherical_coords) then
-              f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
-            endif
-          enddo
-        enddo
-      endif ! if (lselfgravity)
-!
-    endsubroutine correct_for_selfgravity    
-!**********************************************************************
-    subroutine power_law_gaussian_disk(f)
-!
-!  power-law with gaussian z
-!
-!  18/04/08/steveb: coded
-!
-      use Gravity, only: g0
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl
-      logical :: lheader
-!
-      if (lroot) print*,'setting density gradient of power '//&
-          'law=',plaw
-!
-      do m=1,my
-        do n=1,mz
-          lheader=lroot.and.(m==1).and.(n==1)
-          call get_radial_distance(rr_sph,rr_cyl)
-          f(:,m,n,ilnrho) = & ! f(:,m,n,ilnrho) + &
-              lnrho_const+0.5*log(r_ref/rr_cyl) &
-              - z(n)**2.*g0/(2.*cs20*rr_cyl*3.)
-        enddo
-      enddo
-!
-      call impose_density_floor(f)
-!
-    endsubroutine power_law_gaussian_disk
-!**********************************************************************
-    subroutine power_law_disk(f)
-!
-!  Simple power-law disk. It sets only the density, whereas 
-!  local_isothermal sets the density and thermodynamical
-!  quantities
-!
-!  19-sep-07/wlad: coded
-!
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx) :: rr_sph,rr_cyl
-      logical :: lheader
-!
-      if (lroot) print*,'setting density gradient of power '//&
-           'law=',plaw
-!
-      do m=1,my
-        do n=1,mz
-          lheader=lroot.and.(m==1).and.(n==1)
-          call get_radial_distance(rr_sph,rr_cyl)
-          f(:,m,n,ilnrho)=log(rho0)-.5*plaw*log((rr_cyl/r_ref)**2+rsmooth**2)
-        enddo
-      enddo
-!
-    endsubroutine power_law_disk
-!**********************************************************************
     subroutine polytropic_simple(f)
 !
 !  Polytropic stratification (for lnrho and ss)
@@ -1479,87 +1170,6 @@ module Density
       endif
 !
     endsubroutine polytropic_simple
-!***********************************************************************
-    subroutine mass_source(f,df,p)
-!
-!  Add (isothermal) mass sources and sinks.
-!
-!  28-apr-2005/axel: coded
-!
-      use EquationOfState, only: gamma
-      use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      real, dimension(nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm
-!
-      if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
-!
-!  Choose between different possibilities.
-!
-      if (mass_source_profile=='exponential') then
-        dlnrhodt=mass_source_Mdot
-      elseif (mass_source_profile=='bump') then
-        fnorm=(2.*pi*mass_source_sigma**2)**1.5
-        fprofile=exp(-.5*(p%r_mn/mass_source_sigma)**2)/fnorm
-        dlnrhodt=mass_source_Mdot*fprofile
-      elseif (mass_source_profile=='cylindric') then
-!
-!  Cylindrical profile for inner cylinder.
-!
-        pdamp=1-step(p%rcyl_mn,r_int,wdamp) ! inner damping profile
-        fint=-damplnrho_int*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_int)
-!
-!  Cylindrical profile for outer cylinder.
-!
-        pdamp=step(p%rcyl_mn,r_ext,wdamp) ! outer damping profile
-        fext=-damplnrho_ext*pdamp*(f(l1:l2,m,n,ilnrho)-lnrho_ext)
-        dlnrhodt=fint+fext
-      endif
-!
-!  Add mass source.
-!
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+p%rho*dlnrhodt
-      else
-        df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+dlnrhodt
-      endif
-!
-!  Change entropy to keep temperature constant.
-!
-      if (lentropy) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(gamma_inv-1.0)*dlnrhodt
-!
-    endsubroutine mass_source
-!***********************************************************************
-    subroutine impose_density_floor(f)
-!
-!  Impose a minimum density by setting all lower densities to the minimum
-!  value (density_floor). Useful for debugging purposes.
-!
-!  13-aug-2007/anders: implemented.
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      real :: density_floor_log
-      logical, save :: lfirstcall=.true.
-!
-      if (density_floor>0.) then
-        if (lfirstcall) then
-          density_floor_log=alog(density_floor)
-          lfirstcall=.false.
-        endif
-!
-        if (ldensity_nolog) then
-          where (f(:,:,:,irho)<density_floor) f(:,:,:,irho)=density_floor
-        else
-          where (f(:,:,:,ilnrho)<density_floor_log) &
-              f(:,:,:,ilnrho)=density_floor_log
-        endif
-      endif
-!
-    endsubroutine impose_density_floor
 !***********************************************************************
     subroutine read_density_init_pars(unit,iostat)
 !
@@ -2026,5 +1636,13 @@ module Density
           'This subroutine is not yet implemented for the anelastic module.')
 !
     endsubroutine dynamical_diffusion
+!***********************************************************************
+    subroutine impose_density_floor(f)
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_density_floor
 !***********************************************************************
 endmodule Density
