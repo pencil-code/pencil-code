@@ -226,7 +226,6 @@ module Density
         lnothing=.true.
       enddo
 !
-!
       if (lfreeze_lnrhoint) lfreeze_varint(ilnrho)    = .true.
       if (lfreeze_lnrhoext) lfreeze_varext(ilnrho)    = .true.
       if (lfreeze_lnrhosqu) lfreeze_varsquare(ilnrho) = .true.
@@ -395,14 +394,12 @@ module Density
             +(f(:,:,:,iux)**2+f(:,:,:,iuy)**2+f(:,:,:,iuz)**2)/(2.*cs0**2))
 !
         case ('anelastic')
-!          f(l1:l2,m,n,ilnrho)=-0.1*z(n)
           do m=1,my
           do n=1,mz
             if (lanelastic_lin) then
               f(1:mx,m,n,ipp)=0.0
               f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
             else
-                  print*, irho, ipp
               f(1:mx,m,n,irho)=rho0*exp(gamma*gravz*z(n)/cs20)
               f(1:mx,m,n,ipp)=f(1:mx,m,n,irho)*cs20
             endif
@@ -467,244 +464,12 @@ module Density
     endsubroutine init_lnrho
 !**********************************************************************
     subroutine calc_ldensity_pars(f)
-
-!   31-aug-09/MR: adapted from calc_lhydro_pars
 !
-      use Mpicomm, only: mpiallreduce_sum
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
-
-      real :: fact
-      real, dimension(nx,3) :: gradlnrho
-      real, dimension(nz,3) :: temp
-
-      integer :: j,nxy=nxgrid*nygrid,nl,ml
-
-
+      call keep_compiler_quiet(f)
 !
-!  caclculate mean gradient of lnrho
-!
-      if (lcalc_glnrhomean) then
-
-        fact=1./nxy
-
-        do n=1,nz
-         
-          glnrhomz(n,:)=0.
-          
-          do m=1,ny
-            
-            call grad(f,ilnrho,gradlnrho)
-            do j=1,3
-
-               glnrhomz(n,j)=glnrhomz(n,j)+sum(gradlnrho(:,j))
-
-            enddo
-       
-          enddo
-
-          if (nprocy>1) then             
- 
-            call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=2)
-            glnrhomz = temp
-
-          endif
-
-          glnrhomz(n,:) = fact*glnrhomz(n,:)
-        enddo
-
-      endif
-
    endsubroutine calc_ldensity_pars
-
-!***********************************************************************
-    subroutine polytropic_lnrho_z( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint)
-!
-!  Implement a polytropic profile in ss above zbot. If this routine is
-!  called several times (for a piecewise polytropic atmosphere), on needs
-!  to call it from top to bottom.
-!
-!  zint    -- height of (previous) interface, where cs2int and lnrhoint
-!             are set
-!  zbot    -- z at bottom of layer
-!  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
-!             with new profile (for z<zblend)
-!  isoth   -- flag for isothermal stratification;
-!  lnrhoin -- value of lnrho at the interface, i.e. at the zint on entry,
-!             at the zbot on exit
-!  cs2int  -- same for cs2
-!
-      use Gravity, only: gravz
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: p
-      real, dimension (mz) :: stp
-      real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
-      integer :: isoth
-!
-      intent(in)    :: mpoly,zint,zbot,zblend,isoth
-      intent(out)   :: f
-      intent(inout) :: cs2int,lnrhoint
-!
-      stp = step(z,zblend,widthlnrho(1))
-      do n=n1,n2; do m=m1,m2
-! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
-        if (isoth/=0.0) then ! isothermal layer
-          beta1 = 0.0
-          tmp = gamma*gravz/cs2int*(z(n)-zint)
-        else
-          beta1 = gamma*gravz/(mpoly+1)
-          tmp = 1.0 + beta1*(z(n)-zint)/cs2int
-! Abort if args of log() are negative
-          if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_z', &
-                'Imaginary density values -- your z_inf is too low.')
-          endif
-          tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          tmp = lnrhoint + mpoly*log(tmp)
-        endif
-!
-! smoothly blend the old value (above zblend) and the new one (below
-! zblend) for the two regions:
-!
-        f(l1:l2,m,n,ilnrho) = stp(n)*f(l1:l2,m,n,ilnrho) + (1-stp(n))*tmp
-!
-      enddo; enddo
-!
-      if (isoth/=0.0) then
-        lnrhoint = lnrhoint + gamma*gravz/cs2int*(zbot-zint)
-      else
-        lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot-zint)/cs2int)
-      endif
-      cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
-!
-    endsubroutine polytropic_lnrho_z
-!***********************************************************************
-    subroutine polytropic_lnrho_disc( &
-         f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint)
-!
-!  Implement a polytropic profile in a disc. If this routine is
-!  called several times (for a piecewise polytropic atmosphere), on needs
-!  to call it from bottom (middle of disc) upwards.
-!
-!  zint    -- height of (previous) interface, where cs2int and lnrhoint
-!             are set
-!  zbot    -- z at top of layer (name analogous with polytropic_lnrho_z)
-!  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
-!             with new profile (for z<zblend)
-!  isoth   -- flag for isothermal stratification;
-!  lnrhoint -- value of lnrho at the interface, i.e. at the zint on entry,
-!             at the zbot on exit
-!  cs2int  -- same for cs2
-!
-!  24-jun-03/ulf:  coded
-!
-      use Gravity, only: gravz, nu_epicycle
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: stp
-      real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint,nu_epicycle2
-      integer :: isoth
-!
-      do n=n1,n2; do m=m1,m2
-! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
-        nu_epicycle2 = nu_epicycle**2
-        if (isoth/=0.0) then ! isothermal layer
-          beta1 = 0.0
-          tmp = gamma*gravz*nu_epicycle2/cs2int*(z(n)**2-zint**2)/2.
-        else
-          beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
-          tmp = 1.0 + beta1*(z(n)**2-zint**2)/cs2int/2.
-! Abort if args of log() are negative
-          if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_disc', &
-                'Imaginary density values -- your z_inf is too low.')
-          endif
-          tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          tmp = lnrhoint + mpoly*log(tmp)
-        endif
-!
-! smoothly blend the old value (above zblend) and the new one (below
-! zblend) for the two regions:
-!
-        stp = step(z,zblend,widthlnrho(1))
-        f(l1:l2,m,n,ilnrho) = stp(n)*f(l1:l2,m,n,ilnrho) + (1-stp(n))*tmp
-!
-      enddo; enddo
-!
-      if (isoth/=0.0) then
-        lnrhoint = lnrhoint + gamma*gravz*nu_epicycle2/cs2int* &
-                   (zbot**2-zint**2)/2.
-      else
-        lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
-      endif
-      cs2int = cs2int + beta1*(zbot**2-zint**2)/2.
-!
-    endsubroutine polytropic_lnrho_disc
-!***********************************************************************
-    subroutine shell_lnrho(f)
-!
-!  Initialize density based on specified radial profile in
-!  a spherical shell
-!
-!  22-oct-03/dave -- coded
-!  21-aug-08/dhruba -- added spherical coordinates
-!
-      use Gravity, only: g0,potential
-      use Mpicomm,only:stop_it
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: pot, r_mn
-      real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
-!
-      beta1=g0/(mpoly+1)*gamma/gamma_m1  ! gamma_m1/gamma=R_{*} (for cp=1)
-!
-      if (lspherical_coords) then
-!     densities at shell boundaries
-        lnrho_int=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1)-1.))
-        lnrho_ext=lnrho0
-!
-! always inside the fluid shell
-        do imn=1,ny*nz
-          n=nn(imn)
-          m=mm(imn)
-          f(l1:l2-1,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(x(l2)/x(l1:l2-1)-1.))
-          f(l2,m,n,ilnrho)=lnrho_ext
-        enddo
-!
-      elseif (lcylindrical_coords) then
-        call stop_it('shell_lnrho: this is not consistent with cylindrical coords')
-      else
-!     densities at shell boundaries
-        lnrho_int=lnrho0+mpoly*log(1+beta1*(r_ext/r_int-1.))
-        lnrho_ext=lnrho0
-!
-        do imn=1,ny*nz
-          n=nn(imn)
-          m=mm(imn)
-!
-          r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-!
-        ! in the fluid shell
-          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(r_ext/r_mn-1.))
-        ! outside the fluid shell
-            if (initlnrho(1)=='geo-kws') then
-              where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
-              where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
-            elseif (initlnrho(1)=='geo-kws-constant-T'.or.initlnrho(1)=='geo-benchmark') then
-              call potential(R=r_int,POT=pot_int)
-              call potential(R=r_ext,POT=pot_ext)
-              call potential(RMN=r_mn,POT=pot)
-! gamma/gamma_m1=1/R_{*} (for cp=1)
-              where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)*gamma/gamma_m1
-              where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)*gamma/gamma_m1
-            endif
-        enddo
-      endif
-!
-    endsubroutine shell_lnrho
 !***********************************************************************
     subroutine numerical_equilibrium(f)
 !
@@ -713,16 +478,14 @@ module Density
 !
 !    (1/rho) grad(P) = cs20 (rho/rho0)^(gamma-2) grad(rho)
 !
-      use IO
-
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: lnrho,cs2
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
       integer :: i,j,ilnrho
+!
       do m=m1,m2
       do n=n1,n2
-
         lnrho=f(l1:l2,m,n,ilnrho)
         cs2=cs20*exp(gamma_m1*(lnrho-lnrho0))
         call grad(f,ilnrho,glnrho)
@@ -730,10 +493,9 @@ module Density
           gg_mn(:,j)=cs2*glnrho(:,j)
         enddo
         f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)=gg_mn
-
       enddo
       enddo
-
+!
     endsubroutine numerical_equilibrium
 !***********************************************************************
     subroutine pencil_criteria_density()
@@ -853,6 +615,7 @@ module Density
       else 
         irhoxx=irho
       endif
+!
       p%rho=f(l1:l2,m,n,irhoxx)
       p%rho1=1./p%rho
       p%lnrho = log(p%rho)
