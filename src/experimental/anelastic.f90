@@ -179,17 +179,15 @@ module Density
       logical :: lnothing
       character (len=labellen) :: border_var
 !
-!  Set irho equal to ilnrho if we are considering non-logarithmic density.
+      call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
+      if (ierr/=0) call stop_it("lanelastic_lin: "//&
+        "there was a problem when sharing lanelastic_lin")
 !
-        call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
-        if (ierr/=0) call stop_it("lanelastic_lin: "//&
-             "there was a problem when sharing lanelastic_lin")
-
-        if (lanelastic_lin) then
-           call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
-        else
-           call farray_register_auxiliary('rho',irho,communicated=.true.)
-        endif
+      if (lanelastic_lin) then
+        call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
+      else
+        call farray_register_auxiliary('rho',irho,communicated=.true.)
+      endif
 !
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
