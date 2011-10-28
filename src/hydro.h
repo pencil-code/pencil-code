@@ -18,7 +18,8 @@
   public :: hydro_before_boundary
   public :: find_umax
 !
-! variables
+! WL: SHOULDN'T BE PUBLIC!
+!
   public :: uumz, guumz, lcalc_uumean, lupw_uu
   public :: uumxy, lcalc_uumeanxy
   public :: lforcing_cont_uu, ampl_fcont_uu
