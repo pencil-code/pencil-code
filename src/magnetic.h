@@ -26,10 +26,3 @@
   public :: idiag_axmz,idiag_aymz
   public :: idiag_bxmz,idiag_bymz
   public :: dynamical_resistivity
-
-!ajwm SHOULDN'T BE SHARED
-!
-! Used to get parameters into nohydro for kinematic dynamo simulations!
-!
-!AB: the following is hopefully not neccesary
-! public :: ABC_A, KZ_AA, ABC_C, KY_AA, ABC_B, KX_AA
