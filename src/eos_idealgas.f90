@@ -70,7 +70,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  logical :: lanelastic_lin=.true.,lanelastic_full=.false.
+  logical :: lanelastic_lin=.true.
   character (len=labellen) :: ieos_profile='nothing'
 !
   real, dimension(nchemspec,18) :: species_constants
@@ -81,14 +81,14 @@ module EquationOfState
 !
   namelist /eos_init_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
-      dcs2top_ini, sigmaSBt,lanelastic_lin,lanelastic_full
+      dcs2top_ini, sigmaSBt,lanelastic_lin
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
       dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt,&
-      lanelastic_lin,lanelastic_full
+      lanelastic_lin
 !
   contains
 !***********************************************************************
@@ -275,10 +275,6 @@ module EquationOfState
         call put_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
         if (ierr/=0) call stop_it("lanelastic_lin: "//&
              "there was a problem when sharing lanelastic_lin")
-!
-        call put_shared_variable('lanelastic_full',lanelastic_full,ierr)
-        if (ierr/=0) call stop_it("lanelastic_full: "//&
-             "there was a problem when sharing lanelastic_full")
       endif
 !
     endsubroutine initialize_eos
@@ -894,20 +890,19 @@ module EquationOfState
 !  Work out thermodynamic quantities for given pp and ss (anelastic case).
 !
       case (ipp_ss)
-        if (lanelastic_lin) then
-          p%pp=f(l1:l2,m,n,ipp)
-          p%ss=f(l1:l2,m,n,iss)
-          p%TTb=cs20*cp1*exp(gamma*f(l1:l2,m,n,iss_b)*cp1+gamma_m1*p%lnrho)/gamma_m1
-          p%cs2=cp*p%TTb*gamma_m1
-          p%TT1=1./p%TTb
-          p%rho_anel=(f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)- &
+        if (lanelastic) then
+          if (lanelastic_lin) then
+            p%pp=f(l1:l2,m,n,ipp)
+            p%ss=f(l1:l2,m,n,iss)
+            p%TTb=cs20*cp1*exp(gamma*f(l1:l2,m,n,iss_b)*cp1+gamma_m1*p%lnrho)/gamma_m1
+            p%cs2=cp*p%TTb*gamma_m1
+            p%TT1=1./p%TTb
+            p%rho_anel=(f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)- &
                  f(l1:l2,m,n,iss)*cp1)
-        elseif (lanelastic_full) then
-          call fatal_error('calc_pencils_eos', &
+          else
+            call fatal_error('calc_pencils_eos', &
               'Not implemented yet')
-        else
-          call fatal_error('calc_pencils_eos', &
-              'for input pair (pp,ss) anelastic must be used')
+          endif
         endif
         if (leos_isentropic) then
           if (lpencil(i_ss)) p%ss=0.0
@@ -934,11 +929,13 @@ module EquationOfState
           call fatal_error('calc_pencils_eos', &
               'isentropic not implemented for (pp,lnTT)')
         elseif (leos_isothermal) then
-        if (lanelastic_lin) then
-          p%pp=f(l1:l2,m,n,ipp)
-          p%rho_anel=f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
-        else if (lanelastic_full) then
-          p%pp=f(l1:l2,m,n,ipp)
+        if (lanelastic) then
+          if (lanelastic_lin) then
+            p%pp=f(l1:l2,m,n,ipp)
+            p%rho_anel=f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*cs20)
+          else  ! lanelastic_lin=F means the non-linearized anelastic approx.
+            p%pp=f(l1:l2,m,n,ipp)
+          endif
         else
           if (lpencil(i_cs2)) p%cs2=cs20
           if (lpencil(i_lnrho)) p%lnrho=log(p%pp/cs20)
@@ -1562,29 +1559,34 @@ module EquationOfState
         cs2_=cp*gamma_m1*TT_
 !
       case (ipp_cs2)
-        if (lanelastic_lin) then
-          lnrho_=log(var1)
-          TT_=exp(lnTT0)
-          pp_=exp(lnrho_)*cs20/gamma
-        elseif (lanelastic_full) then
-          if (leos_isothermal) then
-          pp_=var1
-          lnrho_=log(pp_*cs20)
-          TT_=exp(lnTT0)
+        if (lanelastic) then
+          if (lanelastic_lin) then
+            lnrho_=log(var1)
+            TT_=exp(lnTT0)
+            pp_=exp(lnrho_)*cs20/gamma
+          else
+            if (leos_isothermal) then
+              pp_=var1
+              lnrho_=log(pp_*cs20)
+              TT_=exp(lnTT0)
+            endif
           endif
-       endif
+        endif
+!
       case (ipp_ss)
-        if (lanelastic_lin) then
-          lnrho_=(var1)
-          ss_=var2
-          cs2_=exp(gamma*ss_*cp1+gamma_m1*(lnrho_-lnrho0))*cs20
-          TT_=cs2_/(gamma_m1*cp)
-        else if (lanelastic_full) then
-          pp_=var1
-          ss_=var2
-          cs2_=exp(ss_*cp1+gamma_inv*gamma_m1*log(pp_/pp0))*cs20
-          TT_=cs2_/(gamma_m1*cp)
-          lnrho_=log(gamma*pp_/cs2_)
+        if (lanelastic) then
+          if (lanelastic_lin) then
+            lnrho_=(var1)
+            ss_=var2
+            cs2_=exp(gamma*ss_*cp1+gamma_m1*(lnrho_-lnrho0))*cs20
+            TT_=cs2_/(gamma_m1*cp)
+          else
+            pp_=var1
+            ss_=var2
+            cs2_=exp(ss_*cp1+gamma_inv*gamma_m1*log(pp_/pp0))*cs20
+            TT_=cs2_/(gamma_m1*cp)
+            lnrho_=log(gamma*pp_/cs2_)
+          endif
         endif
       case default
         call not_implemented('eoscalc_point')

@@ -71,7 +71,7 @@ module Density
   logical :: lshare_plaw=.false.,lmassdiff_fix=.false.
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
-  logical, pointer :: lanelastic_lin,lanelastic_full
+  logical, pointer :: lanelastic_lin
 
 !
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
@@ -185,14 +185,11 @@ module Density
         if (ierr/=0) call stop_it("lanelastic_lin: "//&
              "there was a problem when sharing lanelastic_lin")
 
-        call get_shared_variable('lanelastic_full',lanelastic_full,ierr)
-        if (ierr/=0) call stop_it("lanelastic_full: "//&
-             "there was a problem when sharing lanelastic_full")
-
-        if (lanelastic_full) & 
-           call farray_register_auxiliary('rho',irho,communicated=.true.)
-        if (lanelastic_lin) &
+        if (lanelastic_lin) then
            call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
+        else
+           call farray_register_auxiliary('rho',irho,communicated=.true.)
+        endif
 !
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
@@ -385,11 +382,19 @@ module Density
 !
         select case (initlnrho(j))
 !
-        case ('nothing')
-          if (lroot) print*,'initialize anelastic: nothing'
-          f(1:mx,m,n,ipp)=rho0*cs20
-          f(1:mx,m,n,irho_b)=rho0
-          f(1:mx,m,n,irho)=rho0
+        case ('const')
+          if (lroot) print*,'initialize anelastic: const'
+          print*, 'ipp=', ipp, rho0, cs20
+          do m=1,my
+          do n=1,mz
+            f(1:mx,m,n,ipp)=rho0*cs20
+            if (lanelastic_lin) then
+              f(1:mx,m,n,irho_b)=rho0
+            else
+              f(1:mx,m,n,irho)=rho0
+            endif
+          enddo
+          enddo
 !
         case ('-ln(1+u2/2cs02)')
           f(:,:,:,ilnrho) = -alog(1. &
@@ -403,8 +408,10 @@ module Density
               f(1:mx,m,n,ipp)=0.0
               f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
             else
+                  print*, irho, ipp
               f(1:mx,m,n,irho)=rho0*exp(gamma*gravz*z(n)/cs20)
               f(1:mx,m,n,ipp)=f(1:mx,m,n,irho)*cs20
+              stop 'toto'
             endif
           enddo
           enddo
@@ -850,17 +857,18 @@ module Density
       intent(in) :: f
       intent(inout) :: p
       integer :: i, mm, nn, ierr,l, irhoxx
+!
       if (ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
       if (lanelastic_lin) then
         irhoxx=irho_b
       else 
         irhoxx=irho
       endif
-          p%rho=f(l1:l2,m,n,irhoxx)
-          p%rho1=1./p%rho
-          p%lnrho = log(p%rho)
+      p%rho=f(l1:l2,m,n,irhoxx)
+      p%rho1=1./p%rho
+      p%lnrho = log(p%rho)
 ! glnrho and grho
-        if (lpencil(i_grho)) call grad(f, irhoxx, p%grho)
+      if (lpencil(i_grho)) call grad(f, irhoxx, p%grho)
       if (lpencil(i_glnrho)) then 
         p%glnrho(:,1)=p%grho(:,1)*p%rho1
         p%glnrho(:,2)=p%grho(:,2)*p%rho1
@@ -869,10 +877,10 @@ module Density
 ! uglnrho
       if (lpencil(i_uglnrho)) call dot(p%uu,p%glnrho,p%uglnrho)
 ! ugrho
-       if (lpencil(i_ugrho)) then
-         call grad(f,irhoxx,p%grho)
-         call dot(p%uu,p%grho,p%ugrho)
-       endif
+      if (lpencil(i_ugrho)) then
+        call grad(f,irhoxx,p%grho)
+        call dot(p%uu,p%grho,p%ugrho)
+      endif
 ! sglnrho
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 !
@@ -1763,7 +1771,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (lanelastic_full) then
+      if (.not. lanelastic_lin) then
 !  Loop over slices
       
         select case (trim(slices%name))
@@ -1824,7 +1832,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,ny,nz) :: pold
+!      real, dimension (nx,ny,nz) :: pold
       type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
@@ -1842,7 +1850,7 @@ module Density
 !
 !  Find the divergence of rhs
 !
-      pold(1:nx,1:ny,1:nz)=f(l1:l2,m1:m2,n1:n2,ipp)
+!      pold(1:nx,1:ny,1:nz)=f(l1:l2,m1:m2,n1:n2,ipp)
       do m=m1,m2; do n=n1,n2
           call div(f,irhs,phi_rhs_pencil)
           f(l1:l2,m,n,ipp)=phi_rhs_pencil
@@ -1852,7 +1860,7 @@ module Density
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
-        if (lanelastic_full) then 
+        if (.not. lanelastic_lin) then 
           call get_average_density(mass_per_proc(1),average_density)
           call get_average_pressure(init_average_density,average_density,average_pressure)
           f(:,:,:,ipp)=f(:,:,:,ipp)+average_pressure
@@ -1882,7 +1890,7 @@ module Density
             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho)
           endif 
         enddo
-        if (lanelastic_full) then
+        if (.not. lanelastic_lin) then
           f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)*cs20
         endif
       enddo

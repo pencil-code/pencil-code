@@ -338,7 +338,7 @@ module Equ
 !
         call timing('pde','before lanelastic',mnloop=.true.)
         if (lanelastic) then
-          df_iuu_pencil(1:nx,1:3) = df(l1:l2,m,n,iuu:iuu+2)
+          df_iuu_pencil = df(l1:l2,m,n,iuu:iuu+2)
           df(l1:l2,m,n,iuu:iuu+2)=0.0
         endif
 !
