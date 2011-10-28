@@ -731,17 +731,16 @@ module Special
       endif
 !
       ! Restoration half-time of initial magnetic field:
-      if (bmdi > 0.0) then
-        if ((b_tau > 0.0) .and. (b_tau /= bmdi)) call fatal_error ( &
-            'solar_corona/mag_driver', "Use either bmdi or b_tau, not both")
-        b_tau = bmdi
+      if ((bmdi > 0.0) .and. (b_tau > 0.0) .and. (b_tau /= bmdi)) &
+          call fatal_error ('solar_corona/mag_driver', &
+              "Use either bmdi or b_tau, not both")
       endif
       ! Restoration half-time of initial total vertical flux:
       if (flux_tau > 0.0) then
         if (Bz_flux <= 0.0) call fatal_error ('solar_corona/mag_driver', &
             "together with flux_tau, Bz_flux needs to be set and positive")
       endif
-      luse_mag_field = (b_tau > 0.0) .or. (flux_tau > 0.0)
+      luse_mag_field = (b_tau > 0.0) .or. (bmdi > 0.0)
       ! Bz_flux is the sum of the absolute vertical flux provided in [T*m^2].
       ! After reading Bz_flux, convert SI units (from file) to Pencil units:
       Bz_flux = Bz_flux / (unit_magnetic * unit_length**2)
@@ -1400,9 +1399,9 @@ module Special
       real, intent(in) :: Bz_total_flux
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (dt * max (b_tau, flux_tau) > 1.0) &
+      if (dt * max (b_tau, bmdi, flux_tau) > 1.0) &
           call fatal_error ('solar_corona/mag_driver', &
-              "dt too large: dt * max (b_tau, flux_tau) > 1", lfirst_proc_xy)
+              "dt too large: dt * max (b_tau, bmdi, flux_tau) > 1", lfirst_proc_xy)
 !
       if ((Bz_flux > 0.0) .and. (Bz_total_flux > 0.0)) then
         ! Set sum(|Bz|) to the given sum of absolute vertical flux: Bz_flux
@@ -1420,6 +1419,9 @@ module Special
       if (b_tau > 0.0) then
         ! Push vector potential back to initial setup with half-time b_tau
         f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * (1.0 - dt*b_tau) + A * dt*b_tau
+      elseif (bmdi > 0.0) then
+        ! Push vector potential back to initial setup with half-time bmdi
+        f(l1:l2,m1:m2,n1,iax:iay) = f(l1:l2,m1:m2,n1,iax:iay) * (1.0 - dt*bmdi) + A * dt*bmdi
       endif
 !
     endsubroutine mag_driver
