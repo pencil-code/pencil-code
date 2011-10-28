@@ -165,36 +165,41 @@ module Special
 !
 ! Consistency checks:
 !
-      if ((bmdi /= 0.0) .and. luse_mag_field) &
+      ! Restoration half-time of initial magnetic field:
+      if ((bmdi > 0.0) .and. (b_tau > 0.0) .and. (b_tau /= bmdi)) &
           call fatal_error ('solar_corona/mag_driver', &
-              'Please use either bmdi or luse_mag_field.')
-      if ((b_tau == 0.0) .and. luse_mag_field) &
+              "Please use either 'b_tau' or 'bmdi', not both.")
+      if ((b_tau == 0.0) .and. (bmdi == 0.0) .and. luse_mag_field) &
           call fatal_error ('solar_corona/mag_driver', &
-              'Please set b_tau when using luse_mag_field.')
+              "With 'luse_mag_field', please set either 'b_tau' or 'bmdi'.")
       if (irefz > max (n1, nz)) &
           call fatal_error ('solar_corona', &
-              'irefz must lie in the bottom layer of processors.')
+              "'irefz' must lie in the bottom layer of processors.")
       if (((nglevel < 1) .or. (nglevel > max_gran_levels))) &
           call fatal_error ('solar_corona/gran_driver', &
-              'nglevel is invalid and/or larger than max_gran_levels.')
+              "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
       ! For only one granulation level, no parallelization is required.
       if (lgran_parallel .and. (nglevel == 1)) &
           call fatal_error ('solar_corona/gran_driver', &
-              'if nglevel is 1, lgran_parallel should be deactivated.')
+              "If 'nglevel' is 1, 'lgran_parallel' should be deactivated.")
       ! If not at least 3 procs above the ipz=0 plane are available,
       ! computing of granular velocities has to be done non-parallel.
       if (lgran_parallel .and. ((nprocz-1)*nprocxy < nglevel)) &
           call fatal_error ('solar_corona/gran_driver', &
-              'there are not enough processors to activate lgran_parallel.')
+              "There are not enough processors to activate 'lgran_parallel'.")
       if (lquench .and. (.not. lmagnetic)) &
           call fatal_error ('solar_corona', &
-              'quenching needs the magnetic module.')
+              "Quenching needs the magnetic module.")
       if ((Bavoid > 0.0) .and. (.not. lmagnetic)) &
           call fatal_error ('solar_corona', &
-              'Bavoid needs the magnetic module.')
+              "'Bavoid' needs the magnetic module.")
       if ((tdown > 0.0) .and. (allp == 0.0) .and. (nc_lnrho_num_magn == 0.0)) &
           call fatal_error ('solar_corona', &
               "Please select decaying of Newton Cooling using 'allp' or 'nc_lnrho_num_magn'.")
+      ! Restoration half-time of initial total vertical flux:
+      if ((flux_tau > 0.0) .and. (Bz_flux <= 0.0)) &
+          call fatal_error ('solar_corona/mag_driver', &
+              "Together with 'flux_tau', 'Bz_flux' needs to be set and positive.")
 !
       if ((.not. lreloading) .and. (.not. lstarting)) nano_seed = 0.
 !
@@ -730,16 +735,6 @@ module Special
         endif
       endif
 !
-      ! Restoration half-time of initial magnetic field:
-      if ((bmdi > 0.0) .and. (b_tau > 0.0) .and. (b_tau /= bmdi)) &
-          call fatal_error ('solar_corona/mag_driver', &
-              "Use either bmdi or b_tau, not both")
-      endif
-      ! Restoration half-time of initial total vertical flux:
-      if (flux_tau > 0.0) then
-        if (Bz_flux <= 0.0) call fatal_error ('solar_corona/mag_driver', &
-            "together with flux_tau, Bz_flux needs to be set and positive")
-      endif
       luse_mag_field = (b_tau > 0.0) .or. (bmdi > 0.0)
       ! Bz_flux is the sum of the absolute vertical flux provided in [T*m^2].
       ! After reading Bz_flux, convert SI units (from file) to Pencil units:
@@ -841,30 +836,14 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-      use Diagnostics, only: max_mn_name
-!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension(nx) :: tmp
 !
-      if (lgranulation .and. (.not. lpencil_check_at_work)) then
-        if (lfirst_proc_z .and. (n == irefz)) then
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - &
-              tau_inv*(f(l1:l2,m,n,iux)-ux_local(:,m-nghost))
-!
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - &
-              tau_inv*(f(l1:l2,m,n,iuy)-uy_local(:,m-nghost))
-        endif
-!
-        if (lfirst.and.ldt) then
-          tmp(:) = tau_inv
-          if (ldiagnos.and.idiag_dtnewt/=0) then
-            itype_name(idiag_dtnewt)=ilabel_max_dt
-            call max_mn_name(tmp/cdts,idiag_dtnewt,l_dt=.true.)
-          endif
-          dt1_max=max(dt1_max,tmp/cdts)
-        endif
+      if (lgranulation .or. luse_ext_vel_field) then
+        ! Apply driving of velocity field.
+        if ((n == irefz) .and. lfirst_proc_z .and. (.not. lpencil_check_at_work)) &
+            call vel_driver (Ux_local, Uy_local, f, df)
       endif
 !
       if (lmassflux) call force_solar_wind(df,p)
@@ -1388,6 +1367,35 @@ module Special
       endif
 !
     endsubroutine find_frame
+!***********************************************************************
+    subroutine vel_driver (Ux, Uy, f, df)
+!
+! Drive bottom boundary horizontal velocities with given velocity field.
+!
+! 22-jan-2011/Bourdin.KIS: coded
+!
+      use Diagnostics, only: max_mn_name
+!
+      real, dimension(nx,ny), intent(in) :: Ux, Uy
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+!
+      real, dimension(nx) :: tmp
+!
+      ! Push velocity field into the desired direction.
+      df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tau_inv * (f(l1:l2,m,n,iux) - Ux(:,m-nghost))
+      df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - Uy(:,m-nghost))
+!
+      if (lfirst .and. ldt) then
+        tmp(:) = tau_inv
+        if (ldiagnos .and. (idiag_dtnewt /= 0)) then
+          itype_name(idiag_dtnewt) = ilabel_max_dt
+          call max_mn_name (tmp/cdts, idiag_dtnewt, l_dt=.true.)
+        endif
+        dt1_max = max (dt1_max, tmp/cdts)
+      endif
+!
+    endsubroutine vel_driver
 !***********************************************************************
     subroutine mag_driver (A, Bz_total_flux, f)
 !
