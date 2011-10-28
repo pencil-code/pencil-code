@@ -6034,12 +6034,14 @@ nameloop: do
       real, dimension(nx,3) :: bb,bb_hat,bb2
       real, dimension(nx) :: a2,aerr2,bb_len
       integer :: j
-      real :: tol=sqrt(tini)
+      real :: tol
 !
       intent(in) :: bb
       intent(out) :: bb_hat     
 !
 !  Truncate small components to zero.
+!
+      tol=sqrt(tini)
 !
       bb2 = bb**2
 !
