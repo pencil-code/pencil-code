@@ -3424,6 +3424,7 @@ module Special
       integer :: i,j,itmp,jtmp
       integer :: il,ir,jl,jr
       integer :: ii,jj
+      real :: BB2_limit
 !
       avoid_gran = 0
       if (Bavoid <= 0.) return
@@ -3439,9 +3440,10 @@ module Special
         jtmp = nint(granr*(1-ig)/dy)
       endif
 !
+      BB2_limit = (Bavoid/unit_magnetic)**2
       do i=1,nxgrid
         do j=1,nygrid
-          if (BB2(i,j) > (Bavoid/unit_magnetic)**2) then
+          if (BB2(i,j) > BB2_limit) then
             il=max(1,i-itmp); ir=min(nxgrid,i+itmp)
             jl=max(1,j-jtmp); jr=min(nygrid,j+jtmp)
 !
