@@ -558,7 +558,7 @@ module Shock
 !
 !  The shearing boundary conditions have a bug that can cause nonsensical
 !  numbers in the corners (bug #61). We can overwrite this bug by defining the
-!  shock viscosity in the ghost zones too. THIS WOULD NOT BE BE NECESSARY
+!  shock viscosity in the ghost zones too. THIS WOULD NOT BE NECESSARY
 !  IF THE BUG IN THE SHEARING BOUNDARY CONDITIONS WOULD BE FIXED.
 !
         if (.not.lrewrite_shock_boundary) then
