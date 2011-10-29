@@ -43,7 +43,7 @@ module Special
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
-  real :: mag_time_offset=0.
+  real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
@@ -60,8 +60,11 @@ module Special
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
 ! file location settings
+  character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
+  character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
   character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
   character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
+  character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -79,7 +82,7 @@ module Special
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
        lnc_density_depend, lnc_intrin_energy_depend, &
        swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
-       mag_time_offset, lnrho_min, lnrho_min_tau
+       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
 !
     integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
     integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
@@ -130,8 +133,7 @@ module Special
     real, save :: tsnap_uu=0.,thresh
     integer, save :: isnap
     integer, save, dimension(mseed) :: points_rstate
-    real, dimension(nx,ny), save :: ux_local,uy_local
-    real, dimension(nx,ny), save :: ux_ext_local,uy_ext_local
+    real, dimension(nx,ny), save :: Ux_local,Uy_local
 !
     integer, save, dimension(mseed) :: nano_seed
     integer :: alloc_err
@@ -175,9 +177,6 @@ module Special
       if (irefz > max (n1, nz)) &
           call fatal_error ('solar_corona', &
               "'irefz' must lie in the bottom layer of processors.")
-      if (lgranulation .and. (luse_vel_field .or. luse_mag_vel_field)) &
-          call fatal_error ('solar_corona/gran_driver', &
-              "Combination with external velocity fields is not possible.")
       if (((nglevel < 1) .or. (nglevel > max_gran_levels))) &
           call fatal_error ('solar_corona/gran_driver', &
               "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
@@ -960,30 +959,34 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       logical, optional :: lfinalize
 !
-      real, save :: time_mag_l, time_mag_r
+      real, save :: time_vel_l, time_vel_r, time_mag_l, time_mag_r
+      real, dimension(:,:), allocatable, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
+      real, dimension(:,:), allocatable, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
+      real, dimension(:,:), allocatable, save :: gran_x, gran_y
       real, dimension(:,:), allocatable, save :: BB2_local
       real, save :: Bz_total_flux=0.0
 !
       if (present (lfinalize)) then
         if (lfinalize) then
           if (allocated (BB2_local)) deallocate (BB2_local)
+          if (allocated (vel_x_l)) deallocate (vel_x_l, vel_y_l, vel_x_r, vel_y_r)
+          if (allocated (mag_x_l)) deallocate (mag_x_l, mag_y_l, mag_x_r, mag_y_r)
+          if (allocated (gran_x)) deallocate (gran_x, gran_y)
           call update_mag_field (0.0, "", "", A_init, time_mag_l, time_mag_r, .true.)
           return
         endif
       endif
 !
+      Ux_local = 0.0
+      Uy_local = 0.0
+!
       if (lpencil_check_at_work) return
 !
-! Read external velocity file. Has to be read before the granules are
-! calculated.
-      if (luse_vel_field) call read_vel_field()
-!
+      ! External magnetic field driver
       if (luse_mag_field .and. lfirst_proc_z) then
-        ! External magnetic field
-        call update_mag_field(mag_time_offset, mag_times_dat, mag_field_dat, &
+        call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
             A_init, time_mag_l, time_mag_r)
-        ! Drive the magnetic field
-        call mag_driver(A_init, Bz_total_flux, f)
+        call mag_driver (A_init, Bz_total_flux, f)
       endif
 !
       ! Prepare for footpoint quenching (lquench), flux conservation (Bz_flux),
@@ -1000,8 +1003,27 @@ module Special
         call set_BB2 (f, BB2_local, Bz_total_flux)
       endif
 !
-! Compute photospheric granulation.
-      if (lgranulation) call gran_driver(f, BB2_local)
+      ! External horizontal velocity driver
+      if (luse_vel_field) then
+        call update_vel_field (vel_time_offset, vel_times_dat, vel_field_dat, &
+            time_vel_l, time_vel_r, vel_x_l, vel_y_l, vel_x_r, vel_y_r)
+        ! Quench the horizontal velocities
+        if (lquench .and. lfirst_proc_z) &
+            call vel_quench (BB2_local, Ux_local, Ux_local, f)
+      endif
+!
+      ! External magnetic field horizontal LCT velocities (no quenching)
+      if (luse_mag_vel_field) then
+        call update_vel_field (mag_time_offset, mag_times_dat, mag_vel_field_dat, &
+            time_mag_l, time_mag_r, mag_x_l, mag_y_l, mag_x_r, mag_y_r)
+      endif
+!
+      ! Compute photospheric granulation.
+      if (lgranulation) then
+        call gran_driver (f, BB2_local, gran_x, gran_y)
+        Ux_local = Ux_local + gran_x
+        Uy_local = Uy_local + gran_y
+      endif
 !
       if (lmassflux) call get_wind_speed_offset(f)
 !
@@ -1125,6 +1147,60 @@ module Special
 !
     endsubroutine calc_swamp_temp
 !***********************************************************************
+    subroutine update_vel_field (time_offset, times_dat, field_dat, time_l, time_r, Ux_l, Uy_l, Ux_r, Uy_r)
+!
+!  Check if an update of the velocity field is needed and load data from file.
+!  An interpolated velocity field will be added to Ux and Uy.
+!  The previous frame (l) and following frame (r) are updated.
+!
+!  18-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: time_offset
+      character (len=*), intent(in) :: times_dat, field_dat
+      real, intent(inout) :: time_l, time_r
+      real, dimension(:,:), allocatable, intent(inout) :: Ux_l, Uy_l, Ux_r, Uy_r
+!
+      real :: time
+      integer :: pos_l, pos_r
+!
+      time = t - time_offset
+!
+      if (.not. allocated (Ux_l)) then
+        allocate (Ux_l(nx,ny), Uy_l(nx,ny), Ux_r(nx,ny), Uy_r(nx,ny), stat=alloc_err)
+        if (alloc_err > 0) &
+            call fatal_error ('update_vel_field', 'Could not allocate memory for frames', .true.)
+!
+        ! Load previous (l) frame and store it in (r), will be shifted later
+        call find_frame (time, times_dat, 'l', pos_l, time_l)
+        if (pos_l == 0) then
+          ! The simulation started before the first frame of the time series
+          ! start from zero velocities
+          Ux_r = 0.0
+          Uy_r = 0.0
+          time_l = -time_offset
+        else
+          call read_vel_field (pos_l, field_dat, Ux_r, Uy_r)
+        endif
+        ! Make sure that the following (r) frame will get loaded:
+        time_r = time_l
+      endif
+!
+      if (time >= time_r) then
+        ! Shift data from following (r) to previous (l) frame
+        Ux_l = Ux_r
+        Uy_l = Uy_r
+        time_l = time_r
+        ! Read new following (r) frame
+        call find_frame (time, times_dat, 'r', pos_r, time_r)
+        call read_vel_field (pos_r, field_dat, Ux_r, Uy_r)
+      endif
+!
+      ! Add interpolated values to global velocity field
+      call add_interpolated (time, time_l, time_r, Ux_l, Ux_r, Ux_local)
+      call add_interpolated (time, time_l, time_r, Uy_l, Uy_r, Uy_local)
+!
+    endsubroutine update_vel_field
+!***********************************************************************
     subroutine update_mag_field (time_offset, times_dat, field_dat, A, time_l, time_r, lfinalize)
 !
 !  Check if an update of the vertical magnetic field is needed and load data.
@@ -1135,7 +1211,7 @@ module Special
 !
       real, intent(in) :: time_offset
       character (len=*), intent(in) :: times_dat, field_dat
-      real, dimension(nx,ny,2), intent(inout) :: A
+      real, dimension(nx,ny,2), intent(out) :: A
       real, intent(inout) :: time_l, time_r
       logical, optional :: lfinalize
 !
@@ -1200,11 +1276,51 @@ module Special
         call read_mag_field (pos_r, field_dat, A_r)
       endif
 !
-      A = 0.0
 ! Store interpolated values to initial vector potential
+      A = 0.0
       call add_interpolated (time, time_l, time_r, A_l(:,:,1,:), A_r(:,:,1,:), A)
 !
     endsubroutine update_mag_field
+!***********************************************************************
+    subroutine read_vel_field (frame, filename, Ux, Uy)
+!
+!  Reads velocity field data from a time series for a given frame position
+!  and distributes the results in the xy-plane.
+!  The data is expected to be in SI units, not using F77 record markers.
+!
+!  07-jan-2011/Bourdin.KIS: coded
+!
+      use Mpicomm, only: distribute_xy
+!
+      integer, intent(in) :: frame
+      character (len=*), intent(in) :: filename
+      real, dimension(nx,ny), intent(out) :: Ux, Uy
+!
+      integer, parameter :: unit=12
+      real, dimension(:,:), allocatable :: tmp_x, tmp_y
+      integer :: rec_len
+!
+      if (lfirst_proc_xy) then
+        allocate (tmp_x(nxgrid,nygrid), tmp_y(nxgrid,nygrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('read_vel_field', &
+            'Could not allocate memory for tmp variables.', .true.)
+!
+        ! Read 2D vector field from file
+        inquire (IOLENGTH=rec_len) unit_velocity
+        rec_len = rec_len * nxgrid * nygrid
+        open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
+        read (unit, rec=2*(frame-1)+1) tmp_x
+        read (unit, rec=2*(frame-1)+2) tmp_y
+      endif
+!
+     call distribute_xy (tmp_x, Ux)
+     call distribute_xy (tmp_y, Uy)
+     if (lfirst_proc_xy) deallocate (tmp_x, tmp_y)
+!
+      Ux = Ux / unit_velocity
+      Uy = Uy / unit_velocity
+!
+    endsubroutine read_vel_field
 !***********************************************************************
     subroutine read_mag_field (frame, filename, A, lfinalize)
 !
@@ -1382,6 +1498,62 @@ module Special
       endif
 !
     endsubroutine find_frame
+!***********************************************************************
+    subroutine vel_quench (BB2, Ux, Uy, f)
+!
+! Apply quenching to a given velocity field.
+!
+! 22-jan-2011/Bourdin.KIS: coded
+!
+      use EquationOfState, only: gamma_inv, get_cp1, gamma_m1, lnrho0, cs20
+      use Sub, only: cubic_step
+!
+      real, dimension(nx,ny), intent(in) :: BB2
+      real, dimension(nx,ny), intent(inout) :: Ux, Uy
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      real, dimension(nx,ny) :: pp_tmp, beta, quench
+      real :: cp1 = 1.0
+      integer :: py
+!
+      ! Compute pressure for footpoint quenching.
+      if (leos) call get_cp1(cp1)
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          pp_tmp = gamma_m1*gamma_inv/cp1*f(l1:l2,m1:m2,irefz,iTT)
+        else
+          pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
+        endif
+      elseif (lentropy .and. pretend_lnTT) then
+        pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
+      elseif (lthermal_energy .or. lentropy) then
+        call fatal_error('vel_quench', &
+            'quenching not implemented for lthermal_energy or lentropy', .true.)
+      else
+        pp_tmp = gamma_inv*cs20
+      endif
+      if (ldensity) then
+        if (ldensity_nolog) then
+          pp_tmp = pp_tmp*f(l1:l2,m1:m2,irefz,irho)
+        else
+          pp_tmp = pp_tmp*exp(f(l1:l2,m1:m2,irefz,ilnrho))
+        endif
+      else
+        pp_tmp = pp_tmp*exp(lnrho0)
+      endif
+!
+      ! Compute plasma beta.
+      beta = 2 * mu0 * pp_tmp / max (tini, BB2)
+!
+      ! Quench velocities to a fraction of the granule velocities.
+      do py = 1, ny
+        quench(:,py) = cubic_step (beta(:,py), q0, qw) * (1 - dq) + dq
+      enddo
+!
+      Ux = Ux * quench
+      Uy = Uy * quench
+!
+    endsubroutine vel_quench
 !***********************************************************************
     subroutine vel_driver (Ux, Uy, f, df)
 !
@@ -2625,6 +2797,10 @@ module Special
       alloc_err_sum = abs(alloc_err)
       if (.not. allocated (Uy)) allocate(Uy(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
+      if (.not. allocated (Ux_ext)) allocate(Ux_ext(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = alloc_err_sum + abs(alloc_err)
+      if (.not. allocated (Uy_ext)) allocate(Uy_ext(nxgrid,nygrid),stat=alloc_err)
+      alloc_err_sum = alloc_err_sum + abs(alloc_err)
       if (.not. allocated(w))  allocate (w(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
       if (.not. allocated(vx))  allocate (vx(nxgrid,nygrid),stat=alloc_err)
@@ -2639,7 +2815,7 @@ module Special
 !
     endsubroutine set_gran_params
 !***********************************************************************
-    subroutine gran_driver(f, BB2_local)
+    subroutine gran_driver(f, BB2_local, gran_x, gran_y)
 !
 ! This routine replaces the external computing of granular velocity
 ! pattern initially written by B. Gudiksen (2004)
@@ -2653,16 +2829,15 @@ module Special
 !
       use EquationOfState, only: gamma_inv,get_cp1,gamma_m1,lnrho0,cs20
       use General, only: random_seed_wrapper
-      use Mpicomm, only: mpisend_real, mpirecv_real, distribute_xy
+      use Mpicomm, only: mpisend_real, mpirecv_real, collect_xy, distribute_xy
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx,ny), intent(in) :: BB2_local
+      real, dimension(:,:), allocatable, intent(inout) :: gran_x, gran_y
 !
       real, dimension(:,:), allocatable :: buffer
-      integer :: i, level, partner
-      real, dimension(nx,ny) :: pp_tmp,beta,quench
-      real :: cp1=1.
+      integer :: level, partner
       integer, dimension(mseed) :: global_rstate
       real, save :: next_time = 0.0
       integer, parameter :: tag_Ux=323,tag_Uy=324
@@ -2683,9 +2858,33 @@ module Special
       call random_seed_wrapper(GET=global_rstate)
       call random_seed_wrapper(PUT=points_rstate)
 !
+      if (.not. allocated (gran_x)) then
+        allocate (gran_x(nx,ny), gran_y(nx,ny), stat=alloc_err)
+        if (alloc_err > 0) &
+            call fatal_error ('gran_driver', 'Could not allocate memory for gran_x/y', .true.)
+      endif
+!
+! Collect external horizontal velocity field, if necessary.
+      if (lfirst_proc_z .and. (luse_vel_field .or. luse_mag_vel_field)) then
+        call collect_xy (Ux_local, Ux_ext)
+        call collect_xy (Uy_local, Uy_ext)
+        if (lgran_parallel) then
+! In the parallel case, the root rank sends to the granulation processors.
+          if (lroot) then
+            do level = 1, nglevel
+              partner = nprocxy + level - 1
+              call mpisend_real (Ux_ext, (/nxgrid,nygrid/), partner, tag_Ux)
+              call mpisend_real (Uy_ext, (/nxgrid,nygrid/), partner, tag_Uy)
+            enddo
+          elseif (lgran_proc) then
+            call mpirecv_real (Ux_ext, (/nxgrid,nygrid/), 0, tag_Ux)
+            call mpirecv_real (Uy_ext, (/nxgrid,nygrid/), 0, tag_Uy)
+          endif
+        endif
+      endif
+!
 ! Compute granular velocities.
-      if (lgran_proc) &
-          call multi_gran_levels()
+      if (lgran_proc) call multi_gran_levels()
 !
 ! In the parallel case, the root rank sums up the levels.
       if (lgran_parallel) then
@@ -2714,54 +2913,13 @@ module Special
 !
 ! Distribute the results in the xy-plane.
       if (lfirst_proc_z) then
-        call distribute_xy (Ux, Ux_local)
-        call distribute_xy (Uy, Uy_local)
+        call distribute_xy (Ux, gran_x)
+        call distribute_xy (Uy, gran_y)
       endif
 !
-! For footpoint quenching compute pressure
-      if (lquench .and. lfirst_proc_z) then
-        if (leos) call get_cp1(cp1)
-        if (ltemperature) then
-          if (ltemperature_nolog) then
-            pp_tmp = gamma_m1*gamma_inv/cp1*f(l1:l2,m1:m2,irefz,iTT)
-          else
-            pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
-          endif
-        elseif (lentropy .and. pretend_lnTT) then
-          pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
-        elseif (lthermal_energy .or. lentropy) then
-          call fatal_error('gran_driver', &
-              'quenching not implemented for lthermal_energy or lentropy', .true.)
-        else
-          pp_tmp = gamma_inv*cs20
-        endif
-        if (ldensity) then
-          if (ldensity_nolog) then
-            pp_tmp = pp_tmp*f(l1:l2,m1:m2,irefz,irho)
-          else
-            pp_tmp = pp_tmp*exp(f(l1:l2,m1:m2,irefz,ilnrho))
-          endif
-        else
-          pp_tmp = pp_tmp*exp(lnrho0)
-        endif
-!
-        beta = pp_tmp/max(tini,BB2_local)*2*mu0
-!
-! Quench velocities to one percent of the granule velocities
-        do i=1,ny
-          quench(:,i) = cubic_step(beta(:,i),q0,qw)*(1.-dq)+dq
-        enddo
-!
-        ux_local = ux_local * quench
-        uy_local = uy_local * quench
-      endif
-!
-      if (luse_vel_field) then
-        ux_local = ux_local + ux_ext_local
-        uy_local = uy_local + uy_ext_local
-      endif
-!
-      if (lfirst_proc_z) f(:,:,irefz,iuz) = 0.
+! Quench the horizontal velocities.
+      if (lquench .and. lfirst_proc_z) &
+          call vel_quench (BB2_local, gran_x, gran_y, f)
 !
 ! Restore global seed and save seed list of the granulation
       call random_seed_wrapper(GET=points_rstate)
@@ -2862,7 +3020,7 @@ module Special
       Uy = Uy + vy
 !
       ! Evolve granule position by external velocity field, if necessary
-      if (luse_vel_field) call evolve_granules()
+      if (luse_vel_field .or. luse_mag_vel_field) call evolve_granules()
 !
       ! Save regular granule snapshots
       if (t >= tsnap_uu) then
@@ -3480,131 +3638,6 @@ module Special
       enddo
 !
     endsubroutine fill_avoid_gran
-!***********************************************************************
-    subroutine read_vel_field()
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real, distribute_xy
-!
-      real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
-      real, dimension (:,:), allocatable :: tmpl,tmpr
-      integer, parameter :: tag_Ux=321,tag_Uy=322
-      integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
-      integer :: lend=0,ierr,i,alloc_err,px,py
-      real, save :: tl=0.,tr=0.,delta_t=0.
-!
-      character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
-      character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
-      integer :: unit=1
-!
-      if (.not. allocated (uxl)) then
-        allocate (uxl(nx,ny), uxr(nx,ny), uyl(nx,ny), uyr(nx,ny), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_vel_field', &
-            'Could not allocate memory for velocity field variables', .true.)
-      endif
-!
-      allocate (tmpl(nxgrid,nygrid), tmpr(nxgrid,nygrid), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('read_vel_field', &
-          'Could not allocate memory for tmp variables, please check', .true.)
-!
-!  Read the time table
-!
-      if ((t*unit_time<tl+delta_t) .or. (t*unit_time>=tr+delta_t)) then
-!
-        if (lroot .or. lgran_proc) then
-          if (.not. allocated (Ux_ext)) then
-            allocate (Ux_ext(nxgrid,nygrid), Uy_ext(nxgrid,nygrid), stat=alloc_err)
-            if (alloc_err > 0) call fatal_error ('read_vel_field', &
-                'Could not allocate memory for U_ext', .true.)
-            Ux_ext = 0.0
-            Uy_ext = 0.0
-          endif
-        endif
-!
-        if (lroot) then
-!
-          inquire(IOLENGTH=lend) tl
-          open (unit,file=vel_times_dat,form='unformatted',recl=lend,access='direct')
-!
-          ierr = 0
-          i=0
-          do while (ierr == 0)
-            i=i+1
-            read (unit,rec=i,iostat=ierr) tl
-            read (unit,rec=i+1,iostat=ierr) tr
-            if (ierr /= 0) then
-              ! EOF is reached => read again
-              i=1
-              delta_t = t*unit_time
-              read (unit,rec=i,iostat=ierr) tl
-              read (unit,rec=i+1,iostat=ierr) tr
-              ierr=-1
-            else
-              ! test if correct time step is reached
-              if (t*unit_time>=tl+delta_t.and.t*unit_time<tr+delta_t) ierr=-1
-            endif
-          enddo
-          close (unit)
-!
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px == 0) .and. (py == 0)) cycle
-              call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
-              call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
-              call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
-            enddo
-          enddo
-!
-! Read velocity field
-!
-          open (unit,file=vel_field_dat,form='unformatted',recl=lend*nxgrid*nygrid,access='direct')
-!
-          read (unit,rec=2*i-1) tmpl
-          read (unit,rec=2*i+1) tmpr
-          if (tr /= tl) then
-            Ux_ext = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
-          else
-            Ux_ext = tmpr
-          endif
-          Ux_ext = Ux_ext/unit_velocity
-!
-          read (unit,rec=2*i)   tmpl
-          read (unit,rec=2*i+2) tmpr
-          if (tr /= tl) then
-            Uy_ext = (t*unit_time - (tl+delta_t)) * (tmpr - tmpl) / (tr - tl) + tmpl
-          else
-            Uy_ext = tmpr
-          endif
-          Uy_ext = Uy_ext/unit_velocity
-!
-          close (unit)
-        elseif (lfirst_proc_z) then
-          call mpirecv_real (tl, 1, 0, tag_tl)
-          call mpirecv_real (tr, 1, 0, tag_tr)
-          call mpirecv_real (delta_t, 1, 0, tag_dt)
-        endif
-!
-        if (lfirst_proc_z) then
-          call distribute_xy (Ux_ext, ux_ext_local)
-          call distribute_xy (Uy_ext, uy_ext_local)
-        endif
-!
-        if (lgran_parallel) then
-          if (lroot) then
-            do i=nprocxy, nprocxy+nglevel-1
-              call mpisend_real (Ux_ext, (/ nxgrid,nygrid /), i, tag_Ux)
-              call mpisend_real (Uy_ext, (/ nxgrid,nygrid /), i, tag_Uy)
-            enddo
-          elseif (lgran_proc) then
-            call mpirecv_real (Ux_ext, (/ nxgrid,nygrid /), 0, tag_Ux)
-            call mpirecv_real (Uy_ext, (/ nxgrid,nygrid /), 0, tag_Uy)
-          endif
-        endif
-!
-      endif
-!
-      deallocate (tmpl, tmpr)
-!
-    endsubroutine read_vel_field
 !***********************************************************************
     subroutine force_solar_wind(df,p)
 !
