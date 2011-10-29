@@ -35,10 +35,10 @@ module Special
   real :: diffrho_hyper3=0.,chi_hyper3=0.,chi_hyper2=0.,K_iso=0.,b_tau=0.,flux_tau=0.
   real :: Bavoid=0.,nvor=5.,tau_inv=1.,Bz_flux=0.,q0=1.,qw=1.,dq=0.1,dt_gran=0.
   logical :: lgranulation=.false.,lgran_proc=.false.,lgran_parallel=.false.
-  logical :: luse_ext_vel_field=.false.,lquench=.false.,lmassflux=.false.
-  logical :: luse_mag_field=.false.,lfixed_magnetogram=.true.
+  logical :: luse_vel_field=.false.,lquench=.false.,lmassflux=.false.
+  logical :: luse_mag_field=.false.,luse_mag_vel_field=.false.
+  logical :: luse_timedep_magnetogram=.false.,lwrite_driver=.false.
   logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
-  logical :: lwrite_driver=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
@@ -73,9 +73,9 @@ module Special
        tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz, &
        b_tau,flux_tau,Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
-       lquench,q0,qw,dq,massflux,luse_ext_vel_field,prof_type, &
+       lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
-       iheattype,dt_gran,cool_type,lwrite_driver, &
+       iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
        lnc_density_depend, lnc_intrin_energy_depend, &
        swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
@@ -175,6 +175,9 @@ module Special
       if (irefz > max (n1, nz)) &
           call fatal_error ('solar_corona', &
               "'irefz' must lie in the bottom layer of processors.")
+      if (lgranulation .and. (luse_vel_field .or. luse_mag_vel_field)) &
+          call fatal_error ('solar_corona/gran_driver', &
+              "Combination with external velocity fields is not possible.")
       if (((nglevel < 1) .or. (nglevel > max_gran_levels))) &
           call fatal_error ('solar_corona/gran_driver', &
               "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
@@ -205,14 +208,16 @@ module Special
 !
       if (lpencil_check_at_work) return
 !
+      if (luse_timedep_magnetogram .and. .not. parallel_file_exists (mag_times_dat)) &
+          call fatal_error ('solar_corona/mag_driver', &
+              "Could not find file '"//trim (mag_times_dat)//"'.")
+!
       if (lgranulation) then
         ! Define and initialize the processors that are computing the granulation
         lgran_proc = ((.not. lgran_parallel) .and. lroot) .or. &
             (lgran_parallel .and. (iproc >= nprocxy) .and. (iproc < nprocxy+nglevel))
         if (lroot .or. lgran_proc) call set_gran_params()
       endif
-!
-      lfixed_magnetogram = .not. parallel_file_exists (mag_times_dat)
 !
       ! Setup atmosphere stratification for later use
       call setup_profiles()
@@ -840,7 +845,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (lgranulation .or. luse_ext_vel_field) then
+      if (lgranulation .or. luse_vel_field) then
         ! Apply driving of velocity field.
         if ((n == irefz) .and. lfirst_proc_z .and. (.not. lpencil_check_at_work)) &
             call vel_driver (Ux_local, Uy_local, f, df)
@@ -951,6 +956,7 @@ module Special
 !   06-jul-06/tony: coded
 !
       use Diagnostics, only: save_name
+      use Mpicomm, only: mpibarrier
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical, optional :: lfinalize
@@ -971,7 +977,7 @@ module Special
 !
 ! Read external velocity file. Has to be read before the granules are
 ! calculated.
-      if (luse_ext_vel_field) call read_ext_vel_field()
+      if (luse_vel_field) call read_vel_field()
 !
       if (luse_mag_field .and. lfirst_proc_z) then
         ! External magnetic field
@@ -1139,29 +1145,39 @@ module Special
       real :: time
       integer :: pos_l, pos_r
 !
+      if (.not. allocated (A_l)) then
+        allocate (A_l(nx,ny,1,2), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('update_mag_field', &
+            'Could not allocate memory for A_l', .true.)
+      endif
+      if (.not. allocated (A_r) .and. luse_timedep_magnetogram) then
+        allocate (A_r(nx,ny,1,2), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('update_mag_field', &
+            'Could not allocate memory for A_r', .true.)
+      endif
+!
       if (present (lfinalize)) then
         if (lfinalize) then
           call read_mag_field (1, field_dat, A_l, .true.)
-          if (allocated (A_l)) deallocate (A_l, A_r)
+          if (allocated (A_l)) deallocate (A_l)
+          if (allocated (A_r)) deallocate (A_r)
           return
         endif
       endif
 !
-      if (lfixed_magnetogram) then
+      if (.not. luse_timedep_magnetogram) then
         ! Load first frame and use it as fixed magnetogram
         time_l = -time_offset
         time_r = huge (1.0)
         call read_mag_field (1, field_dat, A_l)
         A = A_l(:,:,1,:)
+        deallocate (A_l)
         return
       endif
 !
       time = t - time_offset
 !
       if (lfirst_call) then
-        allocate (A_l(nx,ny,1,2), A_r(nx,ny,1,2), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('update_mag_field', &
-            'Could not allocate memory for A_l/r', .true.)
 ! Load previous (l) frame and store it in (r), will be shifted later
         call find_frame (time, times_dat, 'l', pos_l, time_l)
         if (pos_l == 0) then
@@ -2741,7 +2757,7 @@ module Special
         uy_local = uy_local * quench
       endif
 !
-      if (luse_ext_vel_field) then
+      if (luse_vel_field) then
         ux_local = ux_local + ux_ext_local
         uy_local = uy_local + uy_ext_local
       endif
@@ -2847,7 +2863,7 @@ module Special
       Uy = Uy + vy
 !
       ! Evolve granule position by external velocity field, if necessary
-      if (luse_ext_vel_field) call evolve_granules()
+      if (luse_vel_field) call evolve_granules()
 !
       ! Save regular granule snapshots
       if (t >= tsnap_uu) then
@@ -3466,7 +3482,7 @@ module Special
 !
     endsubroutine fill_avoid_gran
 !***********************************************************************
-    subroutine read_ext_vel_field()
+    subroutine read_vel_field()
 !
       use Mpicomm, only: mpisend_real, mpirecv_real, distribute_xy
 !
@@ -3483,12 +3499,12 @@ module Special
 !
       if (.not. allocated (uxl)) then
         allocate (uxl(nx,ny), uxr(nx,ny), uyl(nx,ny), uyr(nx,ny), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('read_ext_vel_field', &
+        if (alloc_err > 0) call fatal_error ('read_vel_field', &
             'Could not allocate memory for velocity field variables', .true.)
       endif
 !
       allocate (tmpl(nxgrid,nygrid), tmpr(nxgrid,nygrid), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('read_ext_vel_field', &
+      if (alloc_err > 0) call fatal_error ('read_vel_field', &
           'Could not allocate memory for tmp variables, please check', .true.)
 !
 !  Read the time table
@@ -3498,7 +3514,7 @@ module Special
         if (lroot .or. lgran_proc) then
           if (.not. allocated (Ux_ext)) then
             allocate (Ux_ext(nxgrid,nygrid), Uy_ext(nxgrid,nygrid), stat=alloc_err)
-            if (alloc_err > 0) call fatal_error ('read_ext_vel_field', &
+            if (alloc_err > 0) call fatal_error ('read_vel_field', &
                 'Could not allocate memory for U_ext', .true.)
             Ux_ext = 0.0
             Uy_ext = 0.0
@@ -3589,7 +3605,7 @@ module Special
 !
       deallocate (tmpl, tmpr)
 !
-    endsubroutine read_ext_vel_field
+    endsubroutine read_vel_field
 !***********************************************************************
     subroutine force_solar_wind(df,p)
 !
