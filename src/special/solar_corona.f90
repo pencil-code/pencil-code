@@ -956,7 +956,6 @@ module Special
 !   06-jul-06/tony: coded
 !
       use Diagnostics, only: save_name
-      use Mpicomm, only: mpibarrier
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical, optional :: lfinalize
