@@ -1503,7 +1503,7 @@ module Special
 !
 ! Apply quenching to a given velocity field.
 !
-! 22-jan-2011/Bourdin.KIS: coded
+! 30-oct-2011/Bourdin.KIS: extracted from gran_driver
 !
       use EquationOfState, only: gamma_inv, get_cp1, gamma_m1, lnrho0, cs20
       use Sub, only: cubic_step
