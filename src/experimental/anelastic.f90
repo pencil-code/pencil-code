@@ -76,7 +76,6 @@ module Density
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
-  character (len=labellen) :: borderlnrho='nothing'
   character (len=intlen) :: iinit_str
   complex :: coeflnrho=0.
 !
@@ -101,7 +100,7 @@ module Density
       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,                      &
       lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
-      lnrho_const,plaw,lcontinuity_gas,borderlnrho,                 &
+      lnrho_const,plaw,lcontinuity_gas,                             &
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
       lcheck_negative_density,lmassdiff_fix,niter
@@ -163,18 +162,16 @@ module Density
 !  24-nov-02/tony: coded
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
-      use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
-      use FArrayManager
+      use FArrayManager, only: farray_register_auxiliary, farray_register_global
       use Gravity, only: lnumerical_equilibrium
-      use Mpicomm
-      use SharedVariables
+      use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
       integer :: i,ierr
       logical :: lnothing
-      character (len=labellen) :: border_var
 !
       call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
       if (ierr/=0) call stop_it("lanelastic_lin: "//&
@@ -302,12 +299,6 @@ module Density
         endif
         call fatal_error('initialize_density','')
       endif
-!
-!  Tell the BorderProfiles module if we intend to use border driving, so
-!  that the module can request the right pencils.
-!
-       border_var='initial-condition'
-      if (borderlnrho/='nothing') call request_border_driving( border_var)
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -696,61 +687,6 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
-    subroutine set_border_density(f,df,p)
-!
-!  Calculates the driving term for the border profile
-!  of the lnrho variable.
-!
-!  28-jul-06/wlad: coded
-!
-      use BorderProfiles,  only: border_driving,set_border_initcond
-      use Mpicomm,         only: stop_it
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target
-      type (pencil_case)  :: p
-!
-      select case (borderlnrho)
-!
-      case ('zero','0')
-        if (plaw/=0) call stop_it("borderlnrho: density is not flat but "//&
-             "you are calling zero border")
-        if (ldensity_nolog) then  
-          f_target=0.
-        else
-          f_target=1.
-        endif
-!
-      case ('constant')
-        if (plaw/=0) call stop_it("borderlnrho: density is not flat but "//&
-             "you are calling constant border")
-        if (ldensity_nolog) then 
-          f_target=rho_const
-        else
-          f_target=lnrho_const
-        endif
-!
-      case ('initial-condition')
-        call set_border_initcond(f,ilnrho,f_target)
-!
-      case ('nothing')
-        if (lroot.and.ip<=5) &
-            print*,"set_border_lnrho: borderlnrho='nothing'"
-!
-      case default
-        write(unit=errormsg,fmt=*) &
-             'set_border_lnrho: No such value for borderlnrho: ', &
-             trim(borderlnrho)
-        call fatal_error('set_border_lnrho',errormsg)
-      endselect
-!
-      if (borderlnrho/='nothing') then
-        call border_driving(f,df,p,f_target,ilnrho)
-      endif
-!
-    endsubroutine set_border_density
-!***********************************************************************
 !  Here comes a collection of different density stratification routines
 !***********************************************************************
     subroutine isothermal_density(f)
@@ -1117,19 +1053,23 @@ module Density
     endsubroutine rprint_density
 !***********************************************************************
     subroutine get_init_average_density(f,init_average_density)
+!
 !  10-dec-09/piyali: added to pass initial average density 
 !  equ.f90 
 !
     use Diagnostics, only: integrate_mn,get_average_density
+!
     real, dimension (mx,my,mz,mfarray):: f
     real, dimension(1) :: mass_per_proc
     real :: init_average_density
     intent(in):: f
-      do m=m1,m2; do n=n1,n2
-            call integrate_mn(exp(f(l1:l2,m,n,ilnrho)),mass_per_proc(1))
-      enddo;      enddo
-      call get_average_density(mass_per_proc(1),init_average_density)
 !
+    do m=m1,m2
+    do n=n1,n2
+      call integrate_mn(exp(f(l1:l2,m,n,ilnrho)),mass_per_proc(1))
+    enddo
+    enddo
+    call get_average_density(mass_per_proc(1),init_average_density)
 !
     endsubroutine get_init_average_density
 !***********************************************************************

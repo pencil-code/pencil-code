@@ -70,7 +70,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  logical :: lanelastic_lin=.true.
+  logical :: lanelastic_lin=.false.
   character (len=labellen) :: ieos_profile='nothing'
 !
   real, dimension(nchemspec,18) :: species_constants
@@ -81,13 +81,13 @@ module EquationOfState
 !
   namelist /eos_init_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
-      dcs2top_ini, sigmaSBt,lanelastic_lin
+      dcs2top_ini, sigmaSBt, lanelastic_lin
 !
 !  Run parameters.
 !
   namelist /eos_run_pars/ &
-      xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
-      dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt,&
+      xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini,           &
+      dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt, &
       lanelastic_lin
 !
   contains
