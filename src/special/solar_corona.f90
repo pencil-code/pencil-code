@@ -1168,8 +1168,8 @@ module Special
 !
       if (.not. allocated (Ux_l)) then
         allocate (Ux_l(nx,ny), Uy_l(nx,ny), Ux_r(nx,ny), Uy_r(nx,ny), stat=alloc_err)
-        if (alloc_err > 0) &
-            call fatal_error ('update_vel_field', 'Could not allocate memory for frames', .true.)
+        if (alloc_err > 0) call fatal_error ('update_vel_field', &
+            'Could not allocate memory for frames', .true.)
 !
         ! Load previous (l) frame and store it in (r), will be shifted later
         call find_frame (time, times_dat, 'l', pos_l, time_l)
