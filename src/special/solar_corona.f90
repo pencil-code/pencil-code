@@ -887,9 +887,10 @@ module Special
       if (swamp_diffrho > 0.0) call calc_swamp_density(df,p)
 !
       if (lnrho_min > -max_real) then
-        if (dt * lnrho_min_tau > 1.0) &
-            call fatal_error ('special_calc_density', &
-                "dt too large: dt * lnrho_min_tau > 1")
+        if (dt * lnrho_min_tau > 1.0) then
+          if (lroot) print *, "ERROR: dt=", dt, " lnrho_min_tau=", lnrho_min_tau
+          call fatal_error ('special_calc_density', "dt too large: dt * lnrho_min_tau > 1")
+        endif
         fdiff = lnrho_min - p%lnrho
         where (fdiff < 0.0) fdiff = 0.0
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
@@ -1594,9 +1595,11 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       if (max (b_tau, bmdi, flux_tau) > 0.0) then
-        if (dt * max (b_tau, bmdi, flux_tau) > 1.0) &
-            call fatal_error ('solar_corona/mag_driver', &
-                "dt too large: dt * max (b_tau, bmdi, flux_tau) > 1", lfirst_proc_xy)
+        if (dt * max (b_tau, bmdi, flux_tau) > 1.0) then
+          if (lroot) print *, "ERROR: dt:", dt, " *", max (b_tau, bmdi, flux_tau), " > 1"
+          call fatal_error ('solar_corona/mag_driver', &
+              "dt too large: dt * max (b_tau, bmdi, flux_tau) > 1", lfirst_proc_xy)
+        endif
       endif
 !
       if ((Bz_flux > 0.0) .and. (Bz_total_flux > 0.0)) then
