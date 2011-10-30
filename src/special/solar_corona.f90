@@ -959,7 +959,8 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       logical, optional :: lfinalize
 !
-      real, save :: time_vel_l, time_vel_r, time_mag_l, time_mag_r
+      real, save :: time_vel_l, time_vel_r
+      real, save :: time_mag_l, time_mag_r, time_mag_vel_l, time_mag_vel_r
       real, dimension(:,:), allocatable, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
       real, dimension(:,:), allocatable, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
       real, dimension(:,:), allocatable, save :: gran_x, gran_y
@@ -1015,7 +1016,7 @@ module Special
       ! External magnetic field horizontal LCT velocities (no quenching)
       if (luse_mag_vel_field) then
         call update_vel_field (mag_time_offset, mag_times_dat, mag_vel_field_dat, &
-            time_mag_l, time_mag_r, mag_x_l, mag_y_l, mag_x_r, mag_y_r)
+            time_mag_vel_l, time_mag_vel_r, mag_x_l, mag_y_l, mag_x_r, mag_y_r)
       endif
 !
       ! Compute photospheric granulation.
