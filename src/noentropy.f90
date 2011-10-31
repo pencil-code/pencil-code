@@ -106,7 +106,7 @@ module Entropy
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
 !  gradient dlnrho/dr = beta/H.
 !
-      if (maxval(abs(beta_glnrho_global))/=0.0) then
+      if (any(beta_glnrho_global /= 0.)) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
         if (lroot) print*, 'initialize_entropy: Global density gradient '// &
             'with beta_glnrho_global=', beta_glnrho_global
@@ -293,7 +293,7 @@ module Entropy
 !
 !  Add pressure force from global density gradient.
 !
-        if (maxval(abs(beta_glnrho_global))/=0.0) then
+        if (any(beta_glnrho_global /= 0.)) then
           if (headtt) print*, 'dss_dt: adding global pressure gradient force'
           do j=1,3
             df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
