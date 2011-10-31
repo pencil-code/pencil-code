@@ -257,10 +257,10 @@ if (iaatest gt 0) then begin
   varcontent[iaatest].variable   = 'Testfield vector potential (aatest)'
   varcontent[iaatest].idlvar     = 'aatest'
   ; This allows pc_read_var to read var.dat without giving initialising errors
-  varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,ntestfield)*one'
+  varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,'+str(ntestfield)+')*one'
   ;varcontent[iaatest].idlinit    = INIT_3VECTOR
   varcontent[iaatest].idlvarloc  = 'aatest_loc'
-  varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestfield)*one'
+  varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(ntestfield)+')*one'
   ;varcontent[iaatest].idlinitloc = INIT_3VECTOR_LOC
   varcontent[iaatest].skip       = ntestfield-1
 endif
@@ -282,9 +282,9 @@ default, ntestscalar, 0
 if ntestscalar ne 0 then print, '====> ntestscalar=', ntestscalar
   varcontent[icctest].variable   = 'Testflow (cctest)'
   varcontent[icctest].idlvar     = 'cctest'
-  varcontent[icctest].idlinit    = 'fltarr(mx,my,mz,ntestscalar)*one'
+  varcontent[icctest].idlinit    = 'fltarr(mx,my,mz,'+str(ntestscalar)+')*one'
   varcontent[icctest].idlvarloc  = 'cctest_loc'
-  varcontent[icctest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestscalar)*one'
+  varcontent[icctest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(ntestscalar)+')*one'
   varcontent[icctest].skip       = ntestscalar-1
 endif
 ;
