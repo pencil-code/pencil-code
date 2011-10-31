@@ -961,9 +961,9 @@ module Special
 !
       real, save :: time_vel_l, time_vel_r
       real, save :: time_mag_l, time_mag_r, time_mag_vel_l, time_mag_vel_r
-      real, dimension(:,:), allocatable, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
-      real, dimension(:,:), allocatable, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
-      real, dimension(:,:), allocatable, save :: gran_x, gran_y
+      real, dimension(:,:), pointer, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
+      real, dimension(:,:), pointer, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
+      real, dimension(:,:), pointer, save :: gran_x, gran_y
       real, dimension(:,:), allocatable, save :: BB2_local
       real, save :: Bz_total_flux=0.0
 !
@@ -1159,7 +1159,7 @@ module Special
       real, intent(in) :: time_offset
       character (len=*), intent(in) :: times_dat, field_dat
       real, intent(inout) :: time_l, time_r
-      real, dimension(:,:), allocatable, intent(inout) :: Ux_l, Uy_l, Ux_r, Uy_r
+      real, dimension(:,:), pointer :: Ux_l, Uy_l, Ux_r, Uy_r
 !
       real :: time
       integer :: pos_l, pos_r
@@ -2839,7 +2839,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx,ny), intent(in) :: BB2_local
-      real, dimension(:,:), allocatable, intent(inout) :: gran_x, gran_y
+      real, dimension(:,:), pointer :: gran_x, gran_y
 !
       real, dimension(:,:), allocatable :: buffer
       integer :: level, partner
