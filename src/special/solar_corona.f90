@@ -961,9 +961,9 @@ module Special
 !
       real, save :: time_vel_l, time_vel_r
       real, save :: time_mag_l, time_mag_r, time_mag_vel_l, time_mag_vel_r
-      real, dimension(:,:), pointer, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
-      real, dimension(:,:), pointer, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
-      real, dimension(:,:), pointer, save :: gran_x, gran_y
+      real, dimension(:,:), allocatable, save :: vel_x_l, vel_y_l, vel_x_r, vel_y_r
+      real, dimension(:,:), allocatable, save :: mag_x_l, mag_y_l, mag_x_r, mag_y_r
+      real, dimension(:,:), allocatable, save :: gran_x, gran_y
       real, dimension(:,:), allocatable, save :: BB2_local
       real, save :: Bz_total_flux=0.0
 !
@@ -1006,6 +1006,11 @@ module Special
 !
       ! External horizontal velocity driver
       if (luse_vel_field) then
+        if (.not. allocated (vel_x_l)) then
+          allocate (vel_x_l(nx,ny), vel_y_l(nx,ny), vel_x_r(nx,ny), vel_y_r(nx,ny), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('special_before_boundary', &
+              'Could not allocate memory for velocity frames', .true.)
+        endif
         call update_vel_field (vel_time_offset, vel_times_dat, vel_field_dat, &
             time_vel_l, time_vel_r, vel_x_l, vel_y_l, vel_x_r, vel_y_r)
         ! Quench the horizontal velocities
@@ -1015,12 +1020,22 @@ module Special
 !
       ! External magnetic field horizontal LCT velocities (no quenching)
       if (luse_mag_vel_field) then
+        if (.not. allocated (mag_x_l)) then
+          allocate (mag_x_l(nx,ny), mag_y_l(nx,ny), mag_x_r(nx,ny), mag_y_r(nx,ny), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('special_before_boundary', &
+              'Could not allocate memory for magnetic velocity frames', .true.)
+        endif
         call update_vel_field (mag_time_offset, mag_times_dat, mag_vel_field_dat, &
             time_mag_vel_l, time_mag_vel_r, mag_x_l, mag_y_l, mag_x_r, mag_y_r)
       endif
 !
       ! Compute photospheric granulation.
       if (lgranulation) then
+        if (.not. allocated (gran_x)) then
+          allocate (gran_x(nx,ny), gran_y(nx,ny), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('special_before_boundary', &
+              'Could not allocate memory for gran_x/y', .true.)
+        endif
         call gran_driver (f, BB2_local, gran_x, gran_y)
         Ux_local = Ux_local + gran_x
         Uy_local = Uy_local + gran_y
@@ -1159,18 +1174,15 @@ module Special
       real, intent(in) :: time_offset
       character (len=*), intent(in) :: times_dat, field_dat
       real, intent(inout) :: time_l, time_r
-      real, dimension(:,:), pointer :: Ux_l, Uy_l, Ux_r, Uy_r
+      real, dimension(nx,ny), intent(inout) :: Ux_l, Uy_l, Ux_r, Uy_r
 !
       real :: time
       integer :: pos_l, pos_r
+      logical, save :: lfirst_call=.true.
 !
       time = t - time_offset
 !
-      if (.not. allocated (Ux_l)) then
-        allocate (Ux_l(nx,ny), Uy_l(nx,ny), Ux_r(nx,ny), Uy_r(nx,ny), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('update_vel_field', &
-            'Could not allocate memory for frames', .true.)
-!
+      if (lfirst_call) then
         ! Load previous (l) frame and store it in (r), will be shifted later
         call find_frame (time, times_dat, 'l', pos_l, time_l)
         if (pos_l == 0) then
@@ -1184,6 +1196,7 @@ module Special
         endif
         ! Make sure that the following (r) frame will get loaded:
         time_r = time_l
+        lfirst_call = .false.
       endif
 !
       if (time >= time_r) then
@@ -2839,7 +2852,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx,ny), intent(in) :: BB2_local
-      real, dimension(:,:), pointer :: gran_x, gran_y
+      real, dimension(nx,ny), intent(out) :: gran_x, gran_y
 !
       real, dimension(:,:), allocatable :: buffer
       integer :: level, partner
@@ -2862,12 +2875,6 @@ module Special
 ! is done
       call random_seed_wrapper(GET=global_rstate)
       call random_seed_wrapper(PUT=points_rstate)
-!
-      if (.not. allocated (gran_x)) then
-        allocate (gran_x(nx,ny), gran_y(nx,ny), stat=alloc_err)
-        if (alloc_err > 0) &
-            call fatal_error ('gran_driver', 'Could not allocate memory for gran_x/y', .true.)
-      endif
 !
 ! Collect external horizontal velocity field, if necessary.
       if (lfirst_proc_z .and. (luse_vel_field .or. luse_mag_vel_field)) then
