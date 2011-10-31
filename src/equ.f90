@@ -834,7 +834,7 @@ module Equ
 !
 !  Finish the job for the anelastic approximation
 !
-      if (lanelastic) call anelastic_after_mn(f, p, df, mass_per_proc)
+      if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 !
