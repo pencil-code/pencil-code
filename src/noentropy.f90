@@ -161,6 +161,7 @@ module Entropy
       if (lhydro.and.lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
+      if (any(beta_glnrho_scaled /= 0.)) lpenc_requested(i_cs2)=.true.
 !
       if (idiag_ugradpm/=0) then
         lpenc_diagnos(i_rho)=.true.
