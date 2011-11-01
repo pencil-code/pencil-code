@@ -765,7 +765,7 @@ module Equ
 !  time step constraint from relaxation time of polymer
 !
           if (lpolymer) then
-            dt1_poly_relax = trelax_poly/cdt_poly
+            dt1_poly_relax = 1./(trelax_poly*cdt_poly)
             dt1_max = max(dt1_max,dt1_poly_relax)
           endif
 !

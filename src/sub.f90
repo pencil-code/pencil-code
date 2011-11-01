@@ -21,6 +21,7 @@ module Sub
   private
 !
   public :: step,step_scalar,stepdown,der_stepdown
+  public :: kronecker_delta
 !
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
 !
@@ -3424,6 +3425,23 @@ module Sub
       endif
 !
     endfunction levi_civita
+!***********************************************************************
+    function kronecker_delta(i,j)
+!
+!  Totally antisymmetric tensor.
+!
+!  28-oct-11/dhruba: coded
+!
+      real :: kronecker_delta
+      integer :: i,j
+!
+      if (i.eq.j)  then
+        kronecker_delta = 1.
+      else
+        kronecker_delta=0.
+      endif
+!
+    endfunction 
 !***********************************************************************
     function poly_1(coef, x)
 !

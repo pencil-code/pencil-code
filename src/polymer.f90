@@ -466,8 +466,8 @@ module Polymer
               CdotGradu(:,ipi,ipj)+CdotGraduT(:,ipi,ipj)
           if (tau_poly/=0.) &
             df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)- &
-                tau_poly1*(p%frC(:,ipi,ipj)-1.)
-          ipk=ipk+1
+                tau_poly1*(p%frC(:,ipi,ipj)-kronecker_delta(ipi,ipj))
+           ipk=ipk+1
         enddo
       enddo
 !
