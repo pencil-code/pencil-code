@@ -86,126 +86,121 @@ pro precalc_data, i, vars
   n1 = coord.n1
   n2 = coord.n2
   
-  ; Target size of local reduced data block
-  tx = coord.nx
-  ty = coord.ny
-  tz = coord.nz
-  
   tags = tag_names (varsets[i])
 
   ; Compute all desired quantities from available source data
   if (any (strcmp (sources, 'uu', /fold_case))) then begin
     if (any (strcmp (tags, 'u_abs', /fold_case))) then begin
       ; Absolute velocity
-      varsets[i].u_abs = sqrt (congrid (dot2 (vars.uu[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)) * unit.velocity / unit.default_velocity
+      varsets[i].u_abs = sqrt (dot2 (vars.uu[l1:l2,m1:m2,n1:n2,*])) * unit.velocity / unit.default_velocity
     end
     if (any (strcmp (tags, 'u_x', /fold_case))) then begin
       ; Velocity x-component
-      varsets[i].u_x = congrid (vars.uu[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity
+      varsets[i].u_x = vars.uu[l1:l2,m1:m2,n1:n2,0] * unit.velocity / unit.default_velocity
     end
     if (any (strcmp (tags, 'u_y', /fold_case))) then begin
       ; Velocity y-component
-      varsets[i].u_y = congrid (vars.uu[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity
+      varsets[i].u_y = vars.uu[l1:l2,m1:m2,n1:n2,1] * unit.velocity / unit.default_velocity
     end
     if (any (strcmp (tags, 'u_z', /fold_case))) then begin
       ; Velocity z-component
-      varsets[i].u_z = congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity
+      varsets[i].u_z = vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.velocity / unit.default_velocity
     end
   end
   if (any (strcmp (tags, 'Temp', /fold_case))) then begin
     ; Temperature
     if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
-      varsets[i].Temp = exp (congrid (vars.lnTT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.temperature
+      varsets[i].Temp = exp (vars.lnTT[l1:l2,m1:m2,n1:n2]) * unit.temperature
     end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
-      varsets[i].Temp = congrid (vars.TT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.temperature
+      varsets[i].Temp = vars.TT[l1:l2,m1:m2,n1:n2] * unit.temperature
     end
   end
   if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
     ; Natural logarithmic density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-      varsets[i].ln_rho = alog (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
+      varsets[i].ln_rho = alog (exp (vars.lnrho[l1:l2,m1:m2,n1:n2]) * unit.density / unit.default_density)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-      varsets[i].ln_rho = alog (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
+      varsets[i].ln_rho = alog (vars.rho[l1:l2,m1:m2,n1:n2] * unit.density / unit.default_density)
     end
   end else if (any (strcmp (tags, 'log_rho', /fold_case))) then begin
     ; Logarithmic density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-      varsets[i].log_rho = alog10 (exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density)
+      varsets[i].log_rho = alog10 (exp (vars.lnrho[l1:l2,m1:m2,n1:n2]) * unit.density / unit.default_density)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-      varsets[i].log_rho = alog10 (congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density)
+      varsets[i].log_rho = alog10 (vars.rho[l1:l2,m1:m2,n1:n2] * unit.density / unit.default_density)
     end
   end else if (any (strcmp (tags, 'rho', /fold_case))) then begin
     ; Density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-      varsets[i].rho = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density / unit.default_density
+      varsets[i].rho = exp (vars.lnrho[l1:l2,m1:m2,n1:n2]) * unit.density / unit.default_density
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-      varsets[i].rho = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density / unit.default_density
+      varsets[i].rho = vars.rho[l1:l2,m1:m2,n1:n2] * unit.density / unit.default_density
     end
   end
   if (any (strcmp (tags, 'P', /fold_case))) then begin
     ; Pressure
     varsets[i].P = param.cp * (param.gamma - 1.0) / param.gamma
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-      varsets[i].P *= exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.density
+      varsets[i].P *= exp (vars.lnrho[l1:l2,m1:m2,n1:n2]) * unit.density
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-      varsets[i].P *= congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.density
+      varsets[i].P *= vars.rho[l1:l2,m1:m2,n1:n2] * unit.density
     endif
     if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
-      varsets[i].P *= exp (congrid (vars.lnTT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * unit.temperature
+      varsets[i].P *= exp (vars.lnTT[l1:l2,m1:m2,n1:n2]) * unit.temperature
     end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
-      varsets[i].P *= congrid (vars.TT[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * unit.temperature
+      varsets[i].P *= vars.TT[l1:l2,m1:m2,n1:n2] * unit.temperature
     endif
   end
   if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
     ; Vertical component of impulse density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-      varsets[i].rho_u_z = exp (congrid (vars.lnrho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp)) * congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
+      varsets[i].rho_u_z = exp (vars.lnrho[l1:l2,m1:m2,n1:n2]) * vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-      varsets[i].rho_u_z = congrid (vars.rho[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp) * congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
+      varsets[i].rho_u_z = vars.rho[l1:l2,m1:m2,n1:n2] * vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
     endif
   end
   if (any (strcmp (sources, 'aa', /fold_case))) then begin
     if (any (strcmp (tags, 'Ax', /fold_case))) then begin
       ; Magnetic vector potential x-component
-      varsets[i].Ax = congrid (vars.aa[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.magnetic_field
+      varsets[i].Ax = vars.aa[l1:l2,m1:m2,n1:n2,0] * unit.magnetic_field
     end
     if (any (strcmp (tags, 'Ay', /fold_case))) then begin
       ; Magnetic vector potential y-component
-      varsets[i].Ay = congrid (vars.aa[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.magnetic_field
+      varsets[i].Ay = vars.aa[l1:l2,m1:m2,n1:n2,1] * unit.magnetic_field
     end
     if (any (strcmp (tags, 'Az', /fold_case))) then begin
       ; Magnetic vector potential z-component
-      varsets[i].Az = congrid (vars.aa[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.magnetic_field
+      varsets[i].Az = vars.aa[l1:l2,m1:m2,n1:n2,2] * unit.magnetic_field
     end
     ; Magnetic field
     bb = curl (vars.aa) * unit.magnetic_field
     if (any (strcmp (tags, 'bx', /fold_case))) then begin
       ; Magnetic field x-component
-      varsets[i].bx = congrid (reform (bb[l1:l2,m1:m2,n1:n2,0]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field
+      varsets[i].bx = reform (bb[l1:l2,m1:m2,n1:n2,0]) / unit.default_magnetic_field
     end
     if (any (strcmp (tags, 'by', /fold_case))) then begin
       ; Magnetic field y-component
-      varsets[i].by = congrid (reform (bb[l1:l2,m1:m2,n1:n2,1]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field
+      varsets[i].by = reform (bb[l1:l2,m1:m2,n1:n2,1]) / unit.default_magnetic_field
     end
     if (any (strcmp (tags, 'bz', /fold_case))) then begin
       ; Magnetic field z-component
-      varsets[i].bz = congrid (reform (bb[l1:l2,m1:m2,n1:n2,2]), tx, ty, tz, /center, /interp) / unit.default_magnetic_field
+      varsets[i].bz = reform (bb[l1:l2,m1:m2,n1:n2,2]) / unit.default_magnetic_field
     end
     if (any (strcmp (tags, 'rho_mag', /fold_case))) then begin
       ; Magnetic energy density
-      varsets[i].rho_mag = congrid (dot2 (bb[l1:l2,m1:m2,n1:n2,*]), tx, ty, tz, /center, /interp)
+      varsets[i].rho_mag = dot2 (bb[l1:l2,m1:m2,n1:n2,*])
     end
     mu0_SI = 4.0 * !Pi * 1.e-7
     if (any (strcmp (tags, 'HR_ohm', /fold_case)) and any (tag_names (run_param) eq "ETA")) then begin
       ; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
-      varsets[i].HR_ohm = run_param.eta * param.mu0 * congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*] / param.mu0), tx, ty, tz, /center, /interp) * unit.density * unit.velocity^3 / unit.length
+      varsets[i].HR_ohm = run_param.eta * param.mu0 * dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*] / param.mu0) * unit.density * unit.velocity^3 / unit.length
     end
     if (any (strcmp (tags, 'j', /fold_case))) then begin
       ; Current density [A / m^2]
       if (any (strcmp (tags, 'HR_ohm', /fold_case)) and any (tag_names (run_param) eq "ETA")) then begin
         varsets[i].j = sqrt (varsets[i].HR_ohm / (run_param.eta * mu0_SI * unit.velocity * unit.length))
       end else begin
-        varsets[i].j = sqrt (congrid (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*] / param.mu0), tx, ty, tz, /center, /interp)) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+        varsets[i].j = sqrt (dot2 ((curlcurl (vars.aa))[l1:l2,m1:m2,n1:n2,*] / param.mu0)) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
       end
     end
   end
@@ -214,37 +209,37 @@ pro precalc_data, i, vars
   if (any (strcmp (sources, 'uu', /fold_case))) then begin
     if (any (strcmp (over_tags, 'u', /fold_case))) then begin
       ; Velocity overplot
-      oversets[i].u[*,*,*,0] = float (congrid (vars.uu[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
-      oversets[i].u[*,*,*,1] = float (congrid (vars.uu[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
-      oversets[i].u[*,*,*,2] = float (congrid (vars.uu[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.velocity / unit.default_velocity)
+      oversets[i].u[*,*,*,0] = float (vars.uu[l1:l2,m1:m2,n1:n2,0] * unit.velocity / unit.default_velocity)
+      oversets[i].u[*,*,*,1] = float (vars.uu[l1:l2,m1:m2,n1:n2,1] * unit.velocity / unit.default_velocity)
+      oversets[i].u[*,*,*,2] = float (vars.uu[l1:l2,m1:m2,n1:n2,2] * unit.velocity / unit.default_velocity)
     end
   end
   if (any (strcmp (sources, 'aa', /fold_case))) then begin
     if (any (strcmp (over_tags, 'b', /fold_case))) then begin
       ; Magnetic field overplot
-      oversets[i].b[*,*,*,0] = float (congrid (bb[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
-      oversets[i].b[*,*,*,1] = float (congrid (bb[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
-      oversets[i].b[*,*,*,2] = float (congrid (bb[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) / unit.default_magnetic_field)
+      oversets[i].b[*,*,*,0] = float (bb[l1:l2,m1:m2,n1:n2,0] / unit.default_magnetic_field)
+      oversets[i].b[*,*,*,1] = float (bb[l1:l2,m1:m2,n1:n2,1] / unit.default_magnetic_field)
+      oversets[i].b[*,*,*,2] = float (bb[l1:l2,m1:m2,n1:n2,2] / unit.default_magnetic_field)
     end
     bb = 0
     if (any (strcmp (over_tags, 'a_contour', /fold_case))) then begin
       ; Magnetic field lines overplot
-      oversets[i].a_contour[*,*,*,0] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,0], tx, ty, tz, /center, /interp) * unit.magnetic_field)
-      oversets[i].a_contour[*,*,*,1] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,1], tx, ty, tz, /center, /interp) * unit.magnetic_field)
-      oversets[i].a_contour[*,*,*,2] = float (congrid (vars.aa[l1:l2,m1:m2,n1:n2,2], tx, ty, tz, /center, /interp) * unit.magnetic_field)
+      oversets[i].a_contour[*,*,*,0] = float (vars.aa[l1:l2,m1:m2,n1:n2,0] * unit.magnetic_field)
+      oversets[i].a_contour[*,*,*,1] = float (vars.aa[l1:l2,m1:m2,n1:n2,1] * unit.magnetic_field)
+      oversets[i].a_contour[*,*,*,2] = float (vars.aa[l1:l2,m1:m2,n1:n2,2] * unit.magnetic_field)
     end
   end
   if (any (strcmp (over_tags, 'grad_P', /fold_case))) then begin
     ; Gradient of pressure
     grad_P_fact = param.cp * (param.gamma - 1.0) / param.gamma * unit.density*unit.temperature/unit.length
     if (any (strcmp (sources, 'lnrho', /fold_case)) and any (strcmp (sources, 'lnTT', /fold_case))) then begin
-      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (exp (vars.lnrho)) * exp (vars.lnTT) + exp (vars.lnrho) * grad (exp (vars.lnTT)))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+      varsets[i].grad_P = float (grad_P_fact * (grad (exp (vars.lnrho)) * exp (vars.lnTT) + exp (vars.lnrho) * grad (exp (vars.lnTT)))[l1:l2,m1:m2,n1:n2])
     end else if (any (strcmp (sources, 'rho', /fold_case)) and any (strcmp (sources, 'lnTT', /fold_case))) then begin
-      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (vars.rho) * exp (vars.lnTT) + vars.rho * grad (exp (vars.lnTT)))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+      varsets[i].grad_P = float (grad_P_fact * (grad (vars.rho) * exp (vars.lnTT) + vars.rho * grad (exp (vars.lnTT)))[l1:l2,m1:m2,n1:n2])
     end else if (any (strcmp (sources, 'lnrho', /fold_case)) and any (strcmp (sources, 'TT', /fold_case))) then begin
-      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (exp (vars.lnrho)) * vars.TT + exp (vars.lnrho) * grad (vars.TT))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+      varsets[i].grad_P = float (grad_P_fact * (grad (exp (vars.lnrho)) * vars.TT + exp (vars.lnrho) * grad (vars.TT))[l1:l2,m1:m2,n1:n2])
     end else if (any (strcmp (sources, 'rho', /fold_case)) and any (strcmp (sources, 'TT', /fold_case))) then begin
-      varsets[i].grad_P = float (grad_P_fact * congrid ((grad (vars.rho) * vars.TT + vars.rho * grad (vars.TT))[l1:l2,m1:m2,n1:n2], tx, ty, tz, /center, /interp))
+      varsets[i].grad_P = float (grad_P_fact * (grad (vars.rho) * vars.TT + vars.rho * grad (vars.TT))[l1:l2,m1:m2,n1:n2])
     endif
   end
 end
