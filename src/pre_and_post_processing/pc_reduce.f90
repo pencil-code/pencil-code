@@ -30,7 +30,7 @@ program pc_reduce
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
   logical :: ex
   integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos, alloc_err
-  real, parameter :: inv_reduce = 1.0 / reduce, inv_reduce_2 = 1.0 / reduce**2.0
+  real, parameter :: inv_reduce = 1.0 / reduce, inv_reduce_2 = 1.0 / reduce**2
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lrun=.true.
