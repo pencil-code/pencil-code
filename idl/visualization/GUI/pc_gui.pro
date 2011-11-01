@@ -149,7 +149,7 @@ if (not pc_gui_loaded) then BEGIN
 	endif
 
 	default, addfile, crashfile
-	if (file_test (procdir+addfile)) then begin
+	if ((addfile ne varfile) and file_test (procdir+addfile)) then begin
 		print, "A '"+addfile+"' exists, do you want to load it instead of '"+varfile+"'? / as additional file?"
 		repeat begin
 			answer = "y"
