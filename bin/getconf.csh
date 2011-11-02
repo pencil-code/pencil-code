@@ -224,8 +224,8 @@ else if ($hn =~ *.kis.uni-freiburg.de) then
   echo "KIS machines - Freiburg"
   set mpirun = /opt/local/mpich/bin/mpirun
 
-else if (($hn =~ curie\d+) || ($hn =~ *.c-curie.tgcc.ccc.cea.fr)) then
-  echo "Curie cluster - France"
+else if (($hn =~ curie[0-9]+) || ($hn =~ *.c-curie.tgcc.ccc.cea.fr)) then
+  echo "Curie cluster - CEA France"
   set mpirun = ccc_mprun
 
 else if ($hn =~ hamlet) then
@@ -1540,6 +1540,8 @@ if ($mpi) then
     set npops = ''
   else if ("$mpirun" =~ *orterun*) then
     set npops = "-np $ncpus"
+  else if ("$mpirun" =~ *ccc_mprun*) then
+    set npops = "-n $ncpus"
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
   endif
