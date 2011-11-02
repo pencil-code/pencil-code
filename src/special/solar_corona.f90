@@ -41,6 +41,7 @@ module Special
   logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.,init_time_hcond=0.
+  real :: init_time_fade_start=0.0, init_time_hcond_fade_start=0.0
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
   real :: vel_time_offset=0.0, mag_time_offset=0.0
@@ -81,6 +82,7 @@ module Special
        iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
        lnc_density_depend, lnc_intrin_energy_depend, &
+       init_time_fade_start, init_time_hcond_fade_start, &
        swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
        vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
 !
@@ -1101,11 +1103,12 @@ module Special
       if (last_time == t) then
         get_time_fade_fact = last_fade_fact
       elseif (init_time > 0.0) then
-        get_time_fade_fact = cubic_step (real (t*unit_time), init_time, init_time)
+        get_time_fade_fact = cubic_step (real (t*unit_time) - init_time_fade_start, init_time, init_time)
         last_time = t
         last_fade_fact = get_time_fade_fact
       else
         get_time_fade_fact = 1.0
+        last_time = t
         last_fade_fact = get_time_fade_fact
       endif
 !
@@ -1128,11 +1131,12 @@ module Special
       if (last_time == t) then
         get_hcond_fade_fact = last_fade_fact
       elseif (init_time_hcond > 0.0) then
-        get_hcond_fade_fact = cubic_step (real (t*unit_time), init_time_hcond, init_time_hcond)
+        get_hcond_fade_fact = cubic_step (real (t*unit_time) - init_time_hcond_fade_start, init_time_hcond, init_time_hcond)
         last_time = t
         last_fade_fact = get_hcond_fade_fact
       else
         get_hcond_fade_fact = 1.0
+        last_time = t
         last_fade_fact = get_hcond_fade_fact
       endif
 !
