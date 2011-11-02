@@ -3428,7 +3428,7 @@ module Sub
 !***********************************************************************
     function kronecker_delta(i,j)
 !
-!  Totally antisymmetric tensor.
+!  \delta_{ij} = 1 if i==j, 0 otherwise
 !
 !  28-oct-11/dhruba: coded
 !
