@@ -74,8 +74,8 @@ module Special
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
-       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz, &
-       b_tau,flux_tau,Bavoid,nglevel,nvor,tau_inv,Bz_flux,init_time, &
+       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
+       b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time, &
        lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
        iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
@@ -1095,14 +1095,17 @@ module Special
 !
       real :: get_time_fade_fact
 !
-      real, save :: last_time = -1.0
+      real, save :: last_time = -max_real
       real, save :: last_fade_fact = 0.0
 !
       if (last_time == t) then
         get_time_fade_fact = last_fade_fact
-      else
+      elseif (init_time > 0.0) then
         get_time_fade_fact = cubic_step (real (t*unit_time), init_time, init_time)
         last_time = t
+        last_fade_fact = get_time_fade_fact
+      else
+        get_time_fade_fact = 1.0
         last_fade_fact = get_time_fade_fact
       endif
 !
