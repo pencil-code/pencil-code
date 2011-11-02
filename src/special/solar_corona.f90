@@ -40,7 +40,7 @@ module Special
   logical :: luse_timedep_magnetogram=.false.,lwrite_driver=.false.
   logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
-  real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.
+  real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.,init_time_hcond=0.
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
   real :: vel_time_offset=0.0, mag_time_offset=0.0
@@ -75,7 +75,7 @@ module Special
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
        tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
-       b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time, &
+       b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time,init_time_hcond, &
        lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
        lmassflux,hcond2,hcond3,heat_par_gauss,heat_par_exp,heat_par_exp2, &
        iheattype,dt_gran,cool_type,luse_timedep_magnetogram,lwrite_driver, &
@@ -1111,6 +1111,33 @@ module Special
 !
     endfunction get_time_fade_fact
 !***********************************************************************
+    function get_hcond_fade_fact()
+!
+!   Get time-dependant heat conduction fading factor
+!   for all init_time_hcond based processes.
+!
+!   09-jun-11/Bourdin.KIS: coded
+!
+      use Sub, only: cubic_step
+!
+      real :: get_hcond_fade_fact
+!
+      real, save :: last_time = -max_real
+      real, save :: last_fade_fact = 0.0
+!
+      if (last_time == t) then
+        get_hcond_fade_fact = last_fade_fact
+      elseif (init_time_hcond > 0.0) then
+        get_hcond_fade_fact = cubic_step (real (t*unit_time), init_time_hcond, init_time_hcond)
+        last_time = t
+        last_fade_fact = get_hcond_fade_fact
+      else
+        get_hcond_fade_fact = 1.0
+        last_fade_fact = get_hcond_fade_fact
+      endif
+!
+    endfunction get_hcond_fade_fact
+!***********************************************************************
     subroutine calc_swamp_density(df,p)
 !
 !   Additional hight-dependant density diffusion (swamp layer at top).
@@ -1988,7 +2015,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_time_fade_fact()
+      chi_1 =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -2184,7 +2211,7 @@ module Special
 !
 !  calculate rhs
 !
-      chix = hcond1 * get_time_fade_fact()
+      chix = hcond1 * get_hcond_fade_fact()
 !
       rhs = gamma*chix*tmp
 !
@@ -2292,7 +2319,7 @@ module Special
       rhs = hcond2*(rhs + glnT2*tmp)
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma*get_time_fade_fact()
+          rhs*gamma*get_hcond_fade_fact()
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chi*dxyz_2
