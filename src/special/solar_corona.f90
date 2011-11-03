@@ -1982,7 +1982,7 @@ module Special
       real, dimension (nx,3) :: hhh,bunit,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
-      real, dimension (nx) :: chi_1,chi_2,rhs
+      real, dimension (nx) :: chi_1,chi_2,rhs,fdiff
       real, dimension (nx) :: chi_clight
       real :: Ksatb,Kpara,expo
       integer :: i,j,k
@@ -2085,10 +2085,10 @@ module Special
       endwhere
 !
       if (lfirst.and.ldt) then
-        chi_1=abs(cosbgT)*chi_1
-        diffus_chi=diffus_chi+gamma*chi_1*dxyz_2
+        fdiff=gamma*abs(cosbgT)*chi_1*dxyz_2
+        diffus_chi=diffus_chi+fdiff
         if (ldiagnos.and.idiag_dtspitzer/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtspitzer,l_dt=.true.)
+          call max_mn_name(fdiff/cdtv,idiag_dtspitzer,l_dt=.true.)
         endif
       endif
 !
@@ -2107,7 +2107,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: tmpj,tmpi
-      real, dimension (nx) :: rhs,g2,chix
+      real, dimension (nx) :: rhs,g2,fdiff
       integer :: i,j
       type (pencil_case) :: p
 !
@@ -2135,10 +2135,10 @@ module Special
       endif
 !
       if (lfirst.and.ldt) then
-        chix=K_iso*p%TT*sqrt(tmpi)
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        fdiff=gamma*K_iso*p%TT*sqrt(tmpi)*dxyz_2
+        diffus_chi=diffus_chi+fdiff
         if (ldiagnos.and.idiag_dtchi2/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+          call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
 !
@@ -2157,7 +2157,7 @@ module Special
       real, dimension (nx,3) :: bunit,hhh,tmpv
       real, dimension (nx) :: hhh2,quenchfactor
       real, dimension (nx) :: abs_b,b1
-      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix
+      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix,fdiff
       integer :: i,j,k
 !
       intent(in) :: p
@@ -2226,10 +2226,12 @@ module Special
 !          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
-        advec_cs2=max(advec_cs2,maxval(chix*dxyz_2))
+        fdiff=chix*dxyz_2
+        advec_cs2=max(advec_cs2,maxval(fdiff))
+        fdiff=gamma*fdiff
+        diffus_chi=diffus_chi+fdiff
         if (ldiagnos.and.idiag_dtchi2/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+          call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
 !
@@ -2250,7 +2252,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx) :: glnT2
-      real, dimension (nx) :: tmp,rhs,chi
+      real, dimension (nx) :: tmp,rhs,chi,fdiff
       real, dimension (nx,3) :: bunit,hhh,tmpv,gflux
       real, dimension (nx) :: hhh2,quenchfactor
       real, dimension (nx) :: abs_b,b1
@@ -2326,9 +2328,10 @@ module Special
           rhs*gamma*get_hcond_fade_fact()
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        fdiff=gamma*chi*dxyz_2
+        diffus_chi=diffus_chi+fdiff
         if (ldiagnos.and.idiag_dtchi2/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+          call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
 !
@@ -2346,7 +2349,7 @@ module Special
       type (pencil_case) :: p
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: glnT2,glnT_glnr
-      real, dimension (nx) :: tmp,rhs,chi
+      real, dimension (nx) :: tmp,rhs,chi,fdiff
       integer :: i
 !
       intent(in) :: p
@@ -2369,9 +2372,10 @@ module Special
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs*gamma*hcond3
 !
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        fdiff=gamma*chi*dxyz_2
+        diffus_chi=diffus_chi+fdiff
         if (ldiagnos.and.idiag_dtchi2/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+          call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
 !
