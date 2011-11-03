@@ -86,6 +86,7 @@ module InitialCondition
           f(:,m,n,ilnrho)=f(:,m,n,ilnrho)+del_lnrho
         enddo
       enddo
+!!FFF
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
