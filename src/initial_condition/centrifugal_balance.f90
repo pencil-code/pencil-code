@@ -104,13 +104,17 @@ module InitialCondition
   logical :: llowk_noise=.false.,lgaussian_distributed_noise=.true.
   real :: xmid=1.5,rborder_int=0.,rborder_ext=0.,Lxn=1.
 !
+  real :: r0_pot=0.,qgshear=1.5
+  integer :: n_pot=10
+!
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,&
        gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
        llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
-       zmode_mag,rmode_mag,rm_int,rm_ext,amplbb,Bz_const
+       zmode_mag,rmode_mag,rm_int,rm_ext,amplbb,Bz_const, &
+       r0_pot,qgshear,n_pot
 !
   contains
 !***********************************************************************
@@ -154,7 +158,7 @@ module InitialCondition
 !  04-jul-07/wlad: generalized for any shear
 !  08-sep-07/wlad: moved here from initcond
 !
-      use Gravity, only: r0_pot,n_pot,acceleration,qgshear
+      use Gravity, only: acceleration
       use Sub,     only: get_radial_distance,power_law
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -457,7 +461,6 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use EquationOfState, only: cs20
-      use Gravity, only: qgshear,r0_pot
       use Sub, only: step_scalar, power_law
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
