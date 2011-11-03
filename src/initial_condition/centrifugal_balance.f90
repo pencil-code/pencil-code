@@ -95,6 +95,7 @@ module InitialCondition
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/)
   real :: rmode_mag=4.,zmode_mag=16.,amplbb=1.
   real :: rm_int=0.0,rm_ext=impossible
+  real :: Bz_const=8d-3
 !
 ! For the noise
 ! 
@@ -109,7 +110,7 @@ module InitialCondition
        gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
        llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
-       zmode_mag,rmode_mag,rm_int,rm_ext,amplbb
+       zmode_mag,rmode_mag,rm_int,rm_ext,amplbb,Bz_const
 !
   contains
 !***********************************************************************
@@ -457,12 +458,13 @@ module InitialCondition
 !
       use EquationOfState, only: cs20
       use Gravity, only: qgshear,r0_pot
-      use General, only: tridag
+      use Sub, only: step_scalar, power_law
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: amplbb, pblaw
       real, dimension(nx) :: Aphi, rr, rrcyl
-      real, dimension(mx) :: a_tri,b_tri,c_tri,bz,rhs,aphi_mx
+      real, dimension(mx) :: bz,aphi_mx,Breal,pp
+      character (len=labellen) :: intlabel
 !
       real :: const,k1,kr
       integer :: i
@@ -474,11 +476,11 @@ module InitialCondition
         case ('plasma-beta')
           if (ladd_field) then 
             amplbb = 2*cs20*rho0/plasma_beta
-
+!
             do m=m1,m2 
               do n=n1,n2
                 Aphi = -amplbb * log(x(l1:l2))
-
+!
                 if (lspherical_coords) then 
                   f(l1:l2,m,n,iaz) = Aphi
                 elseif (lcylindrical_coords) then
@@ -567,7 +569,8 @@ module InitialCondition
               Aphi =  amplbb/kr * sin(kr*(rrcyl-r_int)) + &
                    amplbb/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
             else
-              if (lroot .and. m==m1 .and. n==n1) print*,'Softened magnetic field in the center'
+              if (lroot .and. m==m1 .and. n==n1) &
+                   print*,'Softened magnetic field in the center'
               if (rmode_mag < 5) call fatal_error("initial_condition_aa",&
                    "put more wavelengths in the field")
               kr = 2*pi*rmode_mag/r_ext
@@ -584,6 +587,9 @@ module InitialCondition
 !--------------------------------------------------------------
 !
        case ("alfven_rphi")
+         if (.not.lcylinder_in_a_box) &
+              call fatal_error("alfven_rz, this initial condition",&
+              "works only for embedded cylinders")
          do n=n1,n2; do m=m1,m2
            kr = 2*pi*rmode_mag/(r_ext-r_int)
            rrcyl = sqrt(x(l1:l2)**2 + y(m)**2)
@@ -614,23 +620,38 @@ module InitialCondition
 !
          do i=1,mx
            if ((rcyl_mn(i)>=rm_int).and.(rcyl_mn(i)<=rm_ext)) then
+             kr = 2*pi*rmode_mag/(rm_ext-rm_int)
              bz(i)=amplbb/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-rm_int))
            else
              bz(i)=0.
            endif
          enddo
 !
-         a_tri=-1. ; b_tri=2*dx/x ; c_tri=1. ; rhs=bz*2*dx
-!
-         a_tri(1) =0.;c_tri(1 )=0.
-         a_tri(mx)=0.;c_tri(mx)=0.
-!
-         call tridag(a_tri,b_tri,c_tri,rhs,aphi_mx)
-!
+         intlabel=trim('tridag')
+         call integrate_field(bz,aphi_mx,intlabel)
          do m=1,my; do n=1,mz
            f(:,m,n,iay) = aphi_mx
-         enddo; enddo
+         enddo;enddo
 !
+!-------------------------------------------------------------
+!
+       case ("bz-const")
+!
+         Breal = bz_const
+         call set_field(f,Breal)
+!
+       case ("lambda_over_h_cte") 
+         if (zmode_mag==0) &
+              call fatal_error("initcond_aa","zmode_mag is zero")
+         call power_law(rho0*cs20,x,&
+              temperature_power_law+density_power_law,pp,r_ref)
+         Breal = sqrt(pp/gamma)/(zmode_mag*2*pi)
+         call set_field(f,Breal)
+!
+        case ('','nothing')
+!
+!  Do nothing
+!           
         case default
 !
 !  Catch unknown values.
@@ -639,8 +660,212 @@ module InitialCondition
               'initcond_aa value "' // trim(initcond_aa) // '" not recognised')
 !
         endselect
-
+!
+        !if (lspherical_coords) call correct_lorentz_numerical(f)
+!
     endsubroutine initial_condition_aa
+!***********************************************************************
+    subroutine set_field(f,Breal)
+!
+      use Sub, only: step_scalar
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: width
+      real, dimension(mx) :: bz,aphi_mx,Breal
+      integer :: i
+!
+      do i=1,mx
+!
+        width=5./dx_1(i)
+!
+        bz(i) = Breal(i) * &
+             (step_scalar(x(i),rm_int+width,width)-&
+              step_scalar(x(i),rm_ext-width,width))
+      enddo
+!
+      call integrate_field_parallel(bz*x,aphi_mx)
+!
+      do n=1,mz;do m=1,my
+        if (lcylindrical_coords) then 
+          f(:,m,n,iay) = aphi_mx/x 
+        elseif (lspherical_coords) then 
+          f(:,m,n,iaz) = sin(y(m))*aphi_mx/x 
+        else 
+          call fatal_error("initial_condition_aa",&
+               "bz-const not implemented for the chosen coordinated system")
+        endif
+      enddo;enddo
+!
+    endsubroutine set_field
+!***********************************************************************
+    subroutine correct_lorentz_numerical(f)
+!
+      use Sub, only: get_radial_distance,&
+                     gij,curl_mn,gij_etc,cross_mn,multsv_mn
+!
+      real, dimension (mx,my,mz,mfarray) :: f      
+      real, dimension (nx,3,3) :: aij,bij
+      real, dimension (nx,3) :: aa,bb,jj,jxb,jxbr
+      real, dimension (nx) :: rr_sph,rr_cyl,rho1
+      real, dimension (nx) :: fpres_magnetic
+!
+      do m=m1,m2
+        do n=n1,n2
+!
+          if (lmagnetic) then
+            aa=f(l1:l2,m,n,iax:iaz)         !aa
+            call gij(f,iaa,aij,1)           !aij
+            call curl_mn(aij,bb,aa)         !bb
+            call gij_etc(f,iaa,aa,aij,bij)  !bij
+            call curl_mn(bij,jj,bb)         !jj
+            call cross_mn(jj,bb,jxb)        !jxb
+            rho1=1./f(l1:l2,m,n,irho)       !1/rho
+            call multsv_mn(rho1,jxb,jxbr)   !jxb/rho
+            fpres_magnetic=-jxbr(:,2)
+          else
+            fpres_magnetic=0.
+          endif
+!         
+          call get_radial_distance(rr_sph,rr_cyl)
+!     
+! Not valid for all signs of the pressure gradient
+!
+          f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+&
+              sqrt(rr_sph*fpres_magnetic/cotth(m))
+!
+        enddo
+      enddo
+!
+    endsubroutine correct_lorentz_numerical
+!***********************************************************************
+    subroutine integrate_field_parallel(bz,aphi_mx)
+!
+      use FArrayManager, only: farray_use_global
+      use Sub, only: gij,curl_mn,get_radial_distance
+      use EquationOfState, only: cs20,rho0
+      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
+!
+      real, dimension(mx) :: aphi_mx,bz
+      real, dimension(0:nx) :: tmp2
+      integer :: i,ig,iprocx,iprocy,iserial_xy
+      real, dimension(nprocx*nprocy) :: procsum
+      real :: procsum_loc,tmpy,psum
+
+!
+      iserial_xy=ipx+nprocx*ipy+1
+      tmp2(0)=0.
+      do i=l1,l2
+        ig=i-l1+1
+        tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                bz(i-3)   +   bz(i+3)   +&
+             4*(bz(i-2)+bz(i)+bz(i+2))  +&
+             2*(bz(i-1)   +   bz(i+1)))/3.
+      enddo
+      procsum_loc=tmp2(nx)
+!
+      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc
+!
+      if (lroot) then 
+        procsum(1)=procsum_loc
+        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
+          iserial_xy=iprocx+nprocx*iprocy+1
+          if (iserial_xy/=1) then
+            call mpirecv_real(tmpy,1,iserial_xy-1,111)
+            procsum(iserial_xy)=tmpy
+          endif
+          if (ip<=9) print*,'recv',iserial_xy,procsum(iserial_xy)
+        enddo; enddo
+      else
+        call mpisend_real(procsum_loc,1,0,111)
+      endif
+!
+      call mpibcast_real(procsum,nprocx*nprocy)
+!
+      do n=n1,n2
+!
+        if (nprocx==1) then 
+          tmp2(0)=0.
+          do i=l1,l2
+            ig=i-l1+1
+            tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                    bz(i-3)   +   bz(i+3)   +&
+                 4*(bz(i-2)+bz(i)+bz(i+2))  +&
+                 2*(bz(i-1)   +   bz(i+1)))/3.
+          enddo
+        else
+          if (lfirst_proc_x) then 
+            tmp2(0)=0.
+            do i=l1,l2
+              ig=i-l1+1
+              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                   bz(i-3)   +   bz(i+3)   +&
+                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
+                   2*(bz(i-1)   +   bz(i+1)))/3.
+            enddo
+          else 
+            psum=0.
+            do iprocx=0,ipx-1
+              iserial_xy=iprocx+nprocx*ipy+1
+              psum=psum+procsum(iserial_xy)
+            enddo
+            tmp2(0)=psum
+            do i=l1,l2
+              ig=i-l1+1
+              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                   bz(i-3)   +   bz(i+3)   +&
+                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
+                   2*(bz(i-1)   +   bz(i+1)))/3.
+            enddo
+          endif
+        endif
+        aphi_mx(l1:l2)=tmp2(1:nx)
+        aphi_mx(1:l1-1) =0.;aphi_mx(l2+1:mx)=0.
+      enddo
+! 
+    endsubroutine integrate_field_parallel
+!***********************************************************************
+    subroutine integrate_field(bz,aphi_mx,integration_method)
+!
+      use General, only: tridag
+!
+      real, dimension(mx) :: a_tri,b_tri,c_tri,bz,rhs,aphi_mx
+      character (len=labellen) :: integration_method
+      integer :: i
+!
+      select case (integration_method)
+!
+      case ('tridag') 
+
+        a_tri=-1. ; b_tri=2/(x*dx_1) ; c_tri=1. ; rhs=bz*2/dx_1
+!
+        a_tri(1) =0.;c_tri(1 )=0.
+        a_tri(mx)=0.;c_tri(mx)=0.
+!
+        call tridag(a_tri,b_tri,c_tri,rhs,aphi_mx)
+!
+      case ('simpson')  
+!
+        aphi_mx(1:l1-1)=0.
+        do i=l1,l2
+          aphi_mx(i) = aphi_mx(i-1)+1./(6.*dx_1(i))*(&
+                  bz(i-3)   +   bz(i+3)   +&
+               4*(bz(i-2)+bz(i)+bz(i+2))  +&
+               2*(bz(i-1)   +   bz(i+1)))/3.
+          !aphi_mx(i) = aphi_mx(i-1)+dx/2.*(bz(i-1)+4*bz(i)+bz(i+1))/2.
+        enddo
+        !aphi_mx(1:l1-1)=0.; aphi_mx(l2+1:mx)=0.
+!
+      case default
+!
+!  Catch unknown values.
+!
+        call fatal_error('integrate_field', &
+             'integration_method "' // trim(integration_method) // '"'//&
+             ' not recognised')
+!
+      endselect
+!
+    endsubroutine integrate_field
 !***********************************************************************
     subroutine correct_pressure_gradient(f,ics2,temperature_power_law)
 !
@@ -1117,7 +1342,7 @@ module InitialCondition
 !
 !  Word of warning...
 !
-      if (llocal_iso) then
+      if (lroot.and.llocal_iso) then
         if (associated(iglobal_cs2)) then
           print*,"Max global cs2 = ",&
                maxval(f(l1:l2,m1:m2,n1:n2,iglobal_cs2))
