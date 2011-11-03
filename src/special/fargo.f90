@@ -167,31 +167,35 @@ module Special
 ! 
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_uu)=.true.
+      if (lfargo_advection) then
+
+        lpenc_requested(i_uu)=.true.
 !
 !  For continuity equation
 !
-      lpenc_requested(i_divu)=.true.
-      if (ldensity_nolog) then
-        lpenc_requested(i_grho)=.true.
-      else
-        lpenc_requested(i_glnrho)=.true.
-      endif
+        lpenc_requested(i_divu)=.true.
+        if (ldensity_nolog) then
+          lpenc_requested(i_grho)=.true.
+        else
+          lpenc_requested(i_glnrho)=.true.
+        endif
 !      
 !  For velocity advection
 !
-      lpenc_requested(i_uij)=.true.
+        lpenc_requested(i_uij)=.true.
 !
 !  For the induction equation
 !
-      if (lmagnetic) then 
-        lpenc_requested(i_aa)=.true.
-        lpenc_requested(i_aij)=.true.
-      endif
+        if (lmagnetic) then 
+          lpenc_requested(i_aa)=.true.
+          lpenc_requested(i_aij)=.true.
+        endif
 !
 !  For the entropy equation
 !
-      if (lentropy) lpenc_requested(i_gss)=.true.
+        if (lentropy) lpenc_requested(i_gss)=.true.
+!
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -205,25 +209,27 @@ module Special
       type (pencil_case) :: p
       integer :: j,nnghost
 !
-      nnghost=n-nghost
+      if (lfargo_advection) then
+!
+        nnghost=n-nghost
 !
 ! Advect by the relative velocity 
 !
-      uu_residual=p%uu(:,2)-uu_average(:,nnghost)
+        uu_residual=p%uu(:,2)-uu_average(:,nnghost)
 !
 ! Advect by the original radial and vertical, but residual azimuthal
 !
-      uu_advec(:,1)=p%uu(:,1)
-      uu_advec(:,2)=uu_residual
-      uu_advec(:,3)=p%uu(:,3)
+        uu_advec(:,1)=p%uu(:,1)
+        uu_advec(:,2)=uu_residual
+        uu_advec(:,3)=p%uu(:,3)
 !  
 !  For the continuity equation
 !   
-      if (ldensity_nolog) then
-        call h_dot_grad(uu_advec,p%grho,uuadvec_grho)
-      else
-        call h_dot_grad(uu_advec,p%glnrho,uuadvec_glnrho)
-      endif
+        if (ldensity_nolog) then
+          call h_dot_grad(uu_advec,p%grho,uuadvec_grho)
+        else
+          call h_dot_grad(uu_advec,p%glnrho,uuadvec_glnrho)
+        endif
 !
 !  For velocity advection
 !
@@ -250,34 +256,36 @@ module Special
 !   Although working (and more line-economically), the 
 !   piece of code below is more readable in my opinion. 
 !
-      do j=1,3
-        call h_dot_grad(uu_advec,p%uij(:,j,:),tmp)
-        tmp2(:,j)=tmp
-      enddo
-      tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
-      tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%uu(:,2)
+        do j=1,3
+          call h_dot_grad(uu_advec,p%uij(:,j,:),tmp)
+          tmp2(:,j)=tmp
+        enddo
+        tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
+        tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%uu(:,2)
 !
-      uuadvec_guu=tmp2
+        uuadvec_guu=tmp2
 !
 !  Advection of the magnetic potential
 !
-      if (lmagnetic) then
-        do j=1,3
-          call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
-          tmp2(:,j)=tmp
-        enddo
-        tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%aa(:,2)*p%uu(:,2)
-        tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%aa(:,1)*p%uu(:,2)
+        if (lmagnetic) then
+          do j=1,3
+            call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
+            tmp2(:,j)=tmp
+          enddo
+          tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%aa(:,2)*p%uu(:,2)
+          tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%aa(:,1)*p%uu(:,2)
 !
-        uuadvec_gaa=tmp2
-      endif
+          uuadvec_gaa=tmp2
+        endif
 !
 !  Advection of entropy
 !
-      if (lentropy) &
-           call h_dot_grad(uu_advec,p%gss,uuadvec_gss)
+        if (lentropy) &
+             call h_dot_grad(uu_advec,p%gss,uuadvec_gss)
 !      
-      call keep_compiler_quiet(f)
+        call keep_compiler_quiet(f)
+!
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -321,18 +329,22 @@ module Special
 !  But it also works fairly well this way, since uavg
 !  does not change all that much between subtimesteps.  
 !
-      if (ldiagnos) then 
-        if (idiag_nshift/=0) then
-          nnghost=n-nghost
-          phidot=uu_average(:,nnghost)*rcyl_mn1
-          nshift=phidot*dt*dy_1(m) 
-          call max_mn_name(nshift,idiag_nshift)
-        endif
-      endif
+      if (lfargo_advection) then
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
+        if (ldiagnos) then 
+          if (idiag_nshift/=0) then
+            nnghost=n-nghost
+            phidot=uu_average(:,nnghost)*rcyl_mn1
+            nshift=phidot*dt*dy_1(m) 
+            call max_mn_name(nshift,idiag_nshift)
+          endif
+        endif
+!
+        call keep_compiler_quiet(f)
+        call keep_compiler_quiet(df)
+        call keep_compiler_quiet(p)
+!
+      endif
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -390,19 +402,23 @@ endsubroutine read_special_run_pars
 !
 !  Write information to index.pro
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+      if (lfargo_advection) then
+
+        lwr = .false.
+        if (present(lwrite)) lwr=lwrite
 !
-      if (lreset) then 
-        idiag_nshift=0
-      endif
+        if (lreset) then 
+          idiag_nshift=0
+        endif
 !
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
-      enddo
+        do iname=1,nname
+          call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
+        enddo
 !
-      if (lwr) then
-        write(3,*) 'i_nshift=',idiag_nshift
+        if (lwr) then
+          write(3,*) 'i_nshift=',idiag_nshift
+        endif
+!
       endif
 !
     endsubroutine rprint_special
@@ -558,7 +574,7 @@ endsubroutine read_special_run_pars
 !
 !  Just needs to the calculated at the first sub-timestep
 !
-      if (lfirst) then
+      if (lfargo_advection.and.lfirst) then
 !
 !  Pre-calculate the average large scale speed of the flow
 !
@@ -586,10 +602,17 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_sub
 !
-      if (lfargo_advection.and.llast) then 
+      if (lfargo_advection) then 
         if (lfargoadvection_as_shift) then
-          call fourier_shift_fargo(f)
+          call fourier_shift_fargo(f,df,dt_sub)
         else
+          if (lroot) then
+            print*,'Fargo advection without Fourier shift'
+            print*,'is not functional yet. Advecting only'
+            print*,'at the last subtimestep was leading to'
+            print*,'errors. Rewrite.'
+            call fatal_error("special_after_timestep","")
+          endif
           call advect_fargo(f)
         endif
       endif
@@ -606,7 +629,7 @@ endsubroutine read_special_run_pars
 !
     endsubroutine special_after_timestep
 !***********************************************************************
-    subroutine fourier_shift_fargo(f)
+    subroutine fourier_shift_fargo(f,df,dt_)
 !
 !  Possibility to modify the f array after the evolution equations 
 !  are solved.
@@ -622,9 +645,11 @@ endsubroutine read_special_run_pars
       use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ny) :: a_re,a_im
       real, dimension (nx) :: phidot
       integer :: ivar,nnghost
+      real :: dt_
 !
 !  Pencil uses linear velocity. Fargo will shift based on 
 !  angular velocity. Get phidot from uphi. 
@@ -641,13 +666,22 @@ endsubroutine read_special_run_pars
 !  The transform is just a shift in y, so no need to compute 
 !  the x-transform either. 
 !
-          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt,lneed_im=.false.)
+          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
 !
 !  Inverse transform of the shifted array back into real space. 
 !  No need again for either imaginary part of x-transform. 
 !
           call fft_y_parallel(a_re,a_im,linv=.true.)
           f(l1:l2,m1:m2,n,ivar)=a_re
+!
+!  Also shift df, unless it is the last subtimestep. 
+!
+          if (.not.llast) then
+            a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
+            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+            call fft_y_parallel(a_re,a_im,linv=.true.)
+            df(l1:l2,m1:m2,n,ivar)=a_re
+          endif
 !
         enddo
       enddo
