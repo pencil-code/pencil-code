@@ -1374,6 +1374,7 @@ module Fourier
       if (lshear) call fatal_error ('fft_x_parallel_1D', 'Shearing is not implemented!', lfirst_proc_x)
 !
       call cffti (nxgrid, wsavex)
+
 !
       if (lforward) then
 !
@@ -1821,7 +1822,7 @@ module Fourier
         ! Transform y-direction.
         ay = cmplx (p_re, p_im)
         call cfftf (nygrid, ay, wsavey)
-        if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y))        
+        if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y))
         p_re = real (ay)
         p_im = aimag (ay)
 !
@@ -2194,7 +2195,7 @@ module Fourier
 !
     endsubroutine fft_y_parallel_4D
 !***********************************************************************
-    subroutine fft_z_parallel_1D(a_re,a_im,linv,lneed_im)
+    subroutine fft_z_parallel_1D(a_re,a_im,linv,lneed_im,shift_z)
 !
 !  Subroutine to do FFT of distributed 1D data in the z-direction.
 !  For z-parallelization the calculation will be done under
@@ -2209,16 +2210,21 @@ module Fourier
 !
       real, dimension (:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
+      real, optional :: shift_z
+      real :: dshift_z
 !
       real, dimension (:), allocatable :: p_re, p_im ! data in pencil shape
       integer :: stat
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshift
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshift = .false.
+      if (present (shift_z)) lshift = .true.
 !
 !
       if (size (a_re, 1) /= nz) &
@@ -2231,6 +2237,8 @@ module Fourier
       if (stat > 0) call fatal_error ('fft_z_parallel_1D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_z_parallel_1D', 'Shearing is not implemented!', lfirst_proc_z)
+!
+      if (lshift) dshift_z = shift_z
 !
       call cffti (nzgrid, wsavez)
 !
@@ -2249,6 +2257,7 @@ module Fourier
         ! Transform z-direction.
         az = cmplx (p_re, p_im)
         call cfftf (nzgrid, az, wsavez)
+        if (lshift) az = az * exp (cmplx (0,-kz_fft * dshift_z))
         p_re = real (az)
         p_im = aimag (az)
 !
@@ -2284,7 +2293,7 @@ module Fourier
 !
     endsubroutine fft_z_parallel_1D
 !***********************************************************************
-    subroutine fft_z_parallel_2D(a_re,a_im,linv,lneed_im)
+    subroutine fft_z_parallel_2D(a_re,a_im,linv,lneed_im,shift_z)
 !
 !  Subroutine to do FFT of distributed 2D data in the z-direction.
 !  The z-component is expected to be in the first dimension.
@@ -2300,18 +2309,23 @@ module Fourier
 !
       real, dimension (:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
+      real, dimension (:), optional :: shift_z
+      real, dimension (:), allocatable :: dshift_z
 !
       real, dimension (:,:), allocatable :: p_re, p_im   ! data in pencil shape
 !
       integer :: inz, ina ! size of the first and second dimension
       integer :: pos_a, stat
-      logical :: lforward, lcompute_im
+      logical :: lforward, lcompute_im, lshift
 !
       lforward = .true.
       if (present (linv)) lforward = .not. linv
 !
       lcompute_im = .true.
       if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshift = .false.
+      if (present (shift_z)) lshift = .true.
 !
 !
       inz = size (a_re, 1)
@@ -2329,6 +2343,13 @@ module Fourier
       if (stat > 0) call fatal_error ('fft_z_parallel_2D', 'Could not allocate memory for p', .true.)
 !
       if (lshear) call fatal_error ('fft_z_parallel_2D', 'Shearing is not implemented!', lfirst_proc_z)
+!
+      if (lshift) then 
+        allocate (dshift_z(ina), stat=stat)
+        if (stat > 0) call fatal_error ('fft_z_parallel_2D', &
+             'Could not allocate memory for shift', .true.)
+        dshift_z = shift_z
+      endif
 !
       call cffti (nzgrid, wsavez)
 !
@@ -2348,6 +2369,7 @@ module Fourier
         do pos_a = 1, ina
           az = cmplx (p_re(:,pos_a), p_im(:,pos_a))
           call cfftf (nzgrid, az, wsavez)
+          if (lshift) az = az * exp (cmplx (0,-kz_fft * dshift_z(pos_a)))
           p_re(:,pos_a) = real (az)
           p_im(:,pos_a) = aimag (az)
         enddo
