@@ -515,7 +515,7 @@ if (izeta gt 0) then begin
 endif
 ;
 default, ichemspec, 0
-if (ichemspec gt 0) then begin
+if (max(ichemspec) gt 0) then begin
   chemcount=n_elements(ichemspec)
   if (chemcount gt 0L) then begin
     for i=0,chemcount-1 do begin
