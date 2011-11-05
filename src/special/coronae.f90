@@ -169,7 +169,7 @@ module Special
       Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
           unit_length*unit_temperature**(3.5)
 !
-      write(*,'(A,ES10.2)') 'Kspitzer_para=',Kspitzer_para
+      if (lroot) write(*,'(A,ES10.2)') 'Kspitzer_para=',Kspitzer_para
 !
       Kspitzer_perp = Kspitzer_perp_SI/ &
           (unit_velocity**3.*unit_magnetic**2.*unit_length)* &
@@ -482,7 +482,7 @@ module Special
       real, dimension(nx,3) :: K1
       real, dimension(nx,3) :: spitzer_vec
       real, dimension(nx) :: tmp,dt_1_8th,nu_coll,hc
-      real, dimension(nx,3) :: q
+      real, dimension(nx,3) :: q,glnTT_upwind
       real :: coeff
       integer :: i
 !
@@ -502,7 +502,17 @@ module Special
 !
         b2_1=1./(p%b2+tini)
 !
-        call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
+        do i=1,3 
+          call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+        enddo
+        call dot2(p%glnTT,tmp)
+        where (sqrt(tmp) < 1e-5) 
+          glnTT_upwind(:,1) = p%glnTT(:,1)
+          glnTT_upwind(:,2) = p%glnTT(:,2)
+          glnTT_upwind(:,3) = p%glnTT(:,3)
+        endwhere
+!        
+        call multsv(Kspitzer_para*exp(3.5*p%lnTT),glnTT_upwind,K1)
 !        call multsv(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho),p%glnTT,K1)
 !
         call dot(K1,p%bb,tmp)
@@ -1536,7 +1546,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT
       real :: unit_lnQ
 !
       unit_lnQ=3*log(real(unit_velocity))+&
@@ -1551,7 +1561,8 @@ module Special
 !      lnneni = (1.+cubic_step(z(n)*unit_length,4e6,1e6))* &
 !          (p%lnrho+61.4412 +log(real(unit_mass)))
 !
-      lnQ = get_lnQ(lnTT_SI)
+      !lnQ = get_lnQ(lnTT_SI)
+      call getlnQ(lnTT_SI,lnQ,delta_lnTT)
 !
       rtv_cool = exp(lnQ-unit_lnQ+lnneni)
 !
@@ -1611,7 +1622,8 @@ module Special
       endif
 !
       if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,rtv_cool/cdts)
+!        dt1_max=max(dt1_max,rtv_cool/cdts)
+        dt1_max= abs(rtv_cool/max(tini,1.01*delta_lnTT))
         if (ldiagnos.and.idiag_dtrad /= 0.) then
           itype_name(idiag_dtrad)=ilabel_max_dt
           call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
@@ -1620,7 +1632,7 @@ module Special
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
-    function get_lnQ(lnTT)
+    subroutine getlnQ(lnTT,get_lnQ,delta_lnTT)
 !
 !  input: lnTT in SI units
 !  output: lnP  [p]= W * m^3
@@ -1642,12 +1654,13 @@ module Special
           , +250.66650 /)
 !
       real, dimension (nx), intent(in) :: lnTT
-      real, dimension (nx) :: get_lnQ
+      real, dimension (nx), intent(out) :: get_lnQ,delta_lnTT
       real :: slope,ordinate
       integer :: i,j=18
       logical :: notdone
 !
       get_lnQ=-200.
+      delta_lnTT = 100.
 !
       do i=1,nx
 !
@@ -1662,6 +1675,7 @@ module Special
             ordinate=intlnQ(j) - slope*intlnT(j)
 !
             get_lnQ(i) = slope*lnTT(i) + ordinate
+            delta_lnTT(i) = lnTT(i) - intlnT(j)
             notdone = .false.
           else
             j = j + sign(1.,lnTT(i)-intlnT(j))
@@ -1676,7 +1690,7 @@ module Special
         enddo
       enddo
 !
-    endfunction get_lnQ
+    endsubroutine getlnQ
 !***********************************************************************
     subroutine calc_artif_heating(df,p)
 !
