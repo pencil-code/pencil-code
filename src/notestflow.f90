@@ -25,6 +25,8 @@ module Testflow
   include 'testflow.h'
 !
   real :: dummy
+  logical :: lshear_as_param=.false.
+
   namelist /testflow_init_pars/ dummy
 !
   namelist /testflow_run_pars/ dummy
