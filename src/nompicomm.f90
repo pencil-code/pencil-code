@@ -1086,15 +1086,26 @@ module Mpicomm
 !
     endsubroutine die_immediately
 !***********************************************************************
-    subroutine stop_it(msg)
+    subroutine stop_it(msg,code)
 !
 !  Print message and stop.
 !
 !  6-nov-01/wolf: coded
+!  4-nov-11/MR: optional parameter for error code added
+!
+      use general, only: itoa
 !
       character (len=*) :: msg
+      integer, optional :: code
 !
-      if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
+      if (lroot) then
+        if (present(code)) then
+          write(0,'(A,A)') 'STOPPED: ', msg, '. CODE: '//trim(itoa(code))
+        else
+          write(0,'(A,A)') 'STOPPED: ', msg
+        endif
+      endif
+!
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
 !
