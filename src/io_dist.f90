@@ -14,6 +14,9 @@
 !    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
 !  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 !  for one vector field, 8 for var.dat in the case of MHD with entropy.
+!
+!  04-nov-11/MR: IOSTAT handling generally introduced
+!
 module Io
 !
   use Cparam, only: intlen
@@ -128,26 +131,36 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
-      use Mpicomm, only: start_serialize,end_serialize
+      use Mpicomm, only: start_serialize,end_serialize,stop_it
 !
       character (len=*) :: file
       integer :: nv,mode
       real, dimension (mx,my,mz,nv) :: a
       real :: t_sp   ! t in single precision for backwards compatibility
 !
+      integer :: iostat
+!
       if (lserial_io) call start_serialize()
-      open(lun_input,FILE=file,FORM='unformatted')
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading.", iostat)
+!
       if (ip<=8) print*,'input: open, mx,my,mz,nv=',mx,my,mz,nv
-      read(lun_input) a
+      read(lun_input,IOSTAT=iostat) a
+      if (iostat /= 0) call stop_it( "Cannot read a from "//trim(file), iostat)
+!
       if (ip<=8) print*,'input: read ',file
       if (mode==1) then
 !
 !  check whether we want to read deltay from snapshot
 !
         if (lshear) then
-          read(lun_input) t_sp,x,y,z,dx,dy,dz,deltay
+          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
+          if (iostat /= 0) call stop_it( &
+            "Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file), iostat)
         else
-          read(lun_input) t_sp,x,y,z,dx,dy,dz
+          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
+          if (iostat /= 0) call stop_it( &
+            "Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file), iostat)
         endif
         t = t_sp
 !
@@ -157,7 +170,9 @@ contains
 !
       endif
 !
-      close(lun_input)
+      close(lun_input,IOSTAT=iostat)
+      call outlog(iostat,'close',file)
+!
       if (lserial_io) call end_serialize()
 !
     endsubroutine input
@@ -177,19 +192,29 @@ contains
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
 !
+      integer :: iostat
+!
       t_sp = t
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-      open(lun_output,FILE=file,FORM='unformatted')
-      write(lun_output) a
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      call outlog(iostat,'open',file)
+!
+      write(lun_output,IOSTAT=iostat) a
+      call outlog(iostat,'write a')
+!
       if (lshear) then
-        write(lun_output) t_sp,x,y,z,dx,dy,dz,deltay
+        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
+        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')
       else
-        write(lun_output) t_sp,x,y,z,dx,dy,dz
+        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
+        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')
       endif
 !
-      close(lun_output)
+      close(lun_output,IOSTAT=iostat)
+      call outlog(iostat,'close')
+!
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_vect
@@ -209,19 +234,29 @@ contains
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
 !
+      integer :: iostat
+!
       t_sp = t
       if ((ip<=8) .and. lroot) print*,'output_scal'
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
       if (lserial_io) call start_serialize()
-      open(lun_output,FILE=file,FORM='unformatted')
-      write(lun_output) a
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      call outlog(iostat,'open',file)
+!
+      write(lun_output,IOSTAT=iostat) a
+      call outlog(iostat,'write a')
+!
       if (lshear) then
-        write(lun_output) t_sp,x,y,z,dx,dy,dz,deltay
+        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
+        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')
       else
-        write(lun_output) t_sp,x,y,z,dx,dy,dz
+        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
+        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')
       endif
 !
-      close(lun_output)
+      close(lun_output,IOSTAT=iostat)
+      call outlog(iostat,'close')
+!
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_scal
@@ -299,11 +334,20 @@ contains
       real, dimension (mx,my,mz,nv) :: a
       real :: t_sp   ! t in single precision for backwards compatibility
 !
+      integer :: iostat
+!
       t_sp = t
-      open(lun_output,FILE=file,FORM='unformatted')
-      write(lun_output) a(l1:l2,m1:m2,n1:n2,:)
-      write(lun_output) t_sp,x,y,z,dx,dy,dz,deltay
-      close(lun_output)
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      call outlog(iostat,'open',file)
+!
+      write(lun_output,IOSTAT=iostat) a(l1:l2,m1:m2,n1:n2,:)
+      call outlog(iostat,"write a")
+!
+      write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
+      call outlog(iostat,"write t_sp,x,y,z,dx,dy,dz,deltay")
+!
+      close(lun_output,IOSTAT=iostat)
+      call outlog(iostat,"close")
 !
     endsubroutine outpus
 !***********************************************************************
@@ -319,24 +363,36 @@ contains
 !
       character (len=*) :: filename,flist
       character (len=fnlen) :: dir,fpart
+      integer :: iostat
 !
       call parse_filename(filename,dir,fpart)
-      open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
-      write(lun_output,'(A)') trim(fpart)
-      close(lun_output)
+      open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
+      call outlog(iostat,"open",trim(dir)//'/'//trim(flist))
+!
+      write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
+      call outlog(iostat,"write fpart")
+!
+      close(lun_output,IOSTAT=iostat)
+      call outlog(iostat,"close")
 !
       if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
-          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append')
-            write(lun_output,'(A)') trim(fpart)
-          close(lun_output)
+          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=iostat)
+          call outlog(iostat,"open",trim(datadir)//'/move-me.list')
+!
+          write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
+          call outlog(iostat,"write fpart")
+
+          close(lun_output,IOSTAT=iostat)
+          call outlog(iostat,"close")
+
         endif
       endif
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid (file)
+    subroutine wgrid(file)
 !
 !  Write processor-local part of grid coordinates.
 !
@@ -347,20 +403,24 @@ contains
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      integer :: ierr
+      integer :: iostat
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = t
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
-      if (ierr /= 0) call stop_it( &
+
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?")
-      write(lun_output) t_sp,x,y,z,dx,dy,dz
-      write(lun_output) dx,dy,dz
-      write(lun_output) Lx,Ly,Lz
-      write(lun_output) dx_1,dy_1,dz_1
-      write(lun_output) dx_tilde,dy_tilde,dz_tilde
-      close(lun_output)
+          " -- is data/ visible from all nodes?", iostat)
+      write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
+      write(lun_output,IOSTAT=iostat) dx,dy,dz
+      write(lun_output,IOSTAT=iostat) Lx,Ly,Lz
+      write(lun_output,IOSTAT=iostat) dx_1,dy_1,dz_1
+      write(lun_output,IOSTAT=iostat) dx_tilde,dy_tilde,dz_tilde
+      if (iostat /= 0) call stop_it( &
+          "Cannot write "//trim(file)//" properly", iostat)
+      close(lun_output,IOSTAT=iostat)
+      call outlog(iostat,'close',file)
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -377,21 +437,33 @@ contains
 !
       character (len=*) :: file
 !
-      integer :: ierr
+      integer :: iostat, ierr
       real :: t_sp   ! t in single precision for backwards compatibility
 !
 !  if xiprim etc is not written, just ignore it
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=ierr)
-      if (ierr /= 0) call stop_it( &
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
-      read(lun_input) t_sp,x,y,z,dx,dy,dz
-      read(lun_input) dx,dy,dz
-      read(lun_input,IOSTAT=ierr) Lx,Ly,Lz
-      read(lun_input,end=990) dx_1,dy_1,dz_1
-      read(lun_input) dx_tilde,dy_tilde,dz_tilde
-990   close(lun_input)
+          " -- is data/ visible from all nodes?",iostat)
+!
+      read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
+      if (iostat/=0) call stop_it("Error when reading t_sp,x,y,z,dx,dy,dz from "//trim(file),iostat) 
+!
+      read(lun_input,IOSTAT=iostat) dx,dy,dz
+      if (iostat/=0) call stop_it("Error when reading dx,dy,dz from "//trim(file),iostat) 
+!
+      read(lun_input,IOSTAT=ierr) Lx,Ly,Lz     
+!      print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
+!
+      read(lun_input,end=990,IOSTAT=iostat) dx_1,dy_1,dz_1
+      call outlog(iostat,"read dx_1,dy_1,dz_1",file)
+!
+      read(lun_input,end=990,IOSTAT=iostat) dx_tilde,dy_tilde,dz_tilde
+      call outlog(iostat,"read dx_tilde,dy_tilde,dz_tilde")
+!
+990   close(lun_input,IOSTAT=iostat)
+      call outlog(iostat,'close')
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
@@ -402,7 +474,7 @@ contains
           print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
         else
           print*, 'rgrid: IOSTAT=', ierr
-          call stop_it("rgrid: I/O error")
+          call stop_it("rgrid: error when reading Lx,Ly,Lz from "//trim(file),ierr)
         endif
       endif
 !
@@ -448,16 +520,22 @@ contains
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      integer :: ierr
+      integer :: iostat
 !
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
-      if (ierr /= 0) call stop_it( &
-          "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?")
-      write(lun_output) procx_bounds
-      write(lun_output) procy_bounds
-      write(lun_output) procz_bounds
-      close(lun_output)
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      call outlog(iostat,'open',file)
+!
+      write(lun_output,IOSTAT=iostat) procx_bounds
+      call outlog(iostat,'write procx_bounds')
+!
+      write(lun_output,IOSTAT=iostat) procy_bounds
+      call outlog(iostat,'write procy_bounds')
+!
+      write(lun_output,IOSTAT=iostat) procz_bounds
+      call outlog(iostat,'write procz_bounds')
+!
+      close(lun_output,IOSTAT=iostat)
+      call outlog(iostat,'close' )
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -468,14 +546,26 @@ contains
 !   10-jul-08/kapelrud: coded
 !
       use Cdata, only: procx_bounds,procy_bounds,procz_bounds
+      use Mpicomm, only: stop_it
 !
       character (len=*) :: file
 !
-      open(lun_input,FILE=file,FORM='unformatted')
-      read(lun_input) procx_bounds
-      read(lun_input) procy_bounds
-      read(lun_input) procz_bounds
-      close(lun_input)
+      integer :: iostat
+!
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      if (iostat/=0) call stop_it("Cannot open "//trim(file)//" for reading",iostat) 
+!     
+      read(lun_input,IOSTAT=iostat) procx_bounds
+      if (iostat/=0) call stop_it("Error when reading procx_bounds from "//trim(file),iostat) 
+
+      read(lun_input,IOSTAT=iostat) procy_bounds
+      if (iostat/=0) call stop_it("Error when reading procy_bounds from "//trim(file),iostat) 
+
+      read(lun_input,IOSTAT=iostat) procz_bounds
+      if (iostat/=0) call stop_it("Error when reading procz_bounds from "//trim(file),iostat) 
+!
+      close(lun_input,IOSTAT=iostat)
+      call outlog(iostat,'close',file)
 !
     endsubroutine rproc_bounds
 !***********************************************************************
