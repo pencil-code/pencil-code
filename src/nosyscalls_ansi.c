@@ -67,4 +67,14 @@ void FTNIZE(is_nan_c)
 }
 
 /* ---------------------------------------------------------------------- */
+void FTNIZE(system_c) (char *command)
+/* Date:   04-Nov-2011
+   Author: MR (matthias.rheinhardt@helsinki.fi)
+   Description: Dummy stub for ANSI C function system.
+*/
+{
+  printf ("NoSysCalls: system_c is not available\n");
+}
+
+/* ---------------------------------------------------------------------- */
 
