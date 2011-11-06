@@ -83,24 +83,30 @@ dataloop: do
 !
 !  26-may-03/axel: adapted from output_vect
 !   6-apr-08/axel: added output_persistent_magnetic
+!   5-nov-11/MR: IOSTAT handling added
 !
       use Interstellar, only: output_persistent_interstellar
       use Forcing, only: output_persistent_forcing
       use General, only: output_persistent_general
       use Magnetic, only: output_persistent_magnetic
       use Hydro, only: output_persistent_hydro
+      use Messages, only: outlog
 !
       integer :: lun_output
 !
+      integer :: iostat
+!
       if ((ip<=8).and.lroot) print*,'output_persistent: '
 !
-      write(lun_output) id_block_PERSISTENT
+      write(lun_output,iostat=IOSTAT) id_block_PERSISTENT
+      call outlog(iostat,'write id_block_PERSISTENT')
       call output_persistent_general(lun_output)
       call output_persistent_interstellar(lun_output)
       call output_persistent_forcing(lun_output)
       call output_persistent_magnetic(lun_output)
       call output_persistent_hydro(lun_output)
-      write(lun_output) id_block_PERSISTENT
+      write(lun_output,iostat=IOSTAT) id_block_PERSISTENT
+      call outlog(iostat,'write id_block_PERSISTENT')
 !
     endsubroutine output_persistent
 !***********************************************************************
