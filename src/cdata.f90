@@ -520,6 +520,8 @@ module Cdata
 !  A buffer in which to construct an error message.
 !
   character (len=255) :: errormsg
+  character (len=255) :: mailaddress=''
+  logical             :: lstop_on_ioerror=.true.
 !
 !  Auxiliary variables.
 !
