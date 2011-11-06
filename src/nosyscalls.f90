@@ -198,6 +198,19 @@ module Syscalls
 !
     endfunction get_tmp_prefix
 !***********************************************************************
+    subroutine system(command)
+!
+!  dummy for system command.
+!
+!  3-nov-11/MR: coded
+!
+      character(len=*) :: command
+!
+      print *, 'system: Not available in the F95 standard, please use the syscalls module.'
+      stop
+!
+    endsubroutine system
+!***********************************************************************
     function is_nan_0D(value)
 !
 !  Determines if value is not a number (NaN).
