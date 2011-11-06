@@ -3961,6 +3961,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
     subroutine forcing_cont(force)
 !
 ! 9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u and u.grad u for Roberts geometry
+! 4-nov-11/MR:                                  now also compensates Coriolis force
+!
 ! Note: It is not enough to set lforcing_cont = T in input parameters of forcing
 ! one must also set  lforcing_cont_uu = T in hydro for the continious is time
 ! forcing to be added to velocity.
@@ -4044,6 +4046,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=-fact*ky*cosx(l1:l2)*siny(m) - fact2*ky*sinx(l1:l2)*cosx(l1:l2)
           force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
           force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
+
+          if ( Omega/=0. .and. theta==0. ) then              ! Obs, only implemented for rotation axis in z direction.
+            fact = 2.*ampl_ff*Omega
+            force(:,1)= force(:,1)-fact*kx*sinx(l1:l2)*cosy(m)
+            force(:,2)= force(:,2)-fact*ky*cosx(l1:l2)*siny(m)
+          endif
 !
         case ('RobertsFlow-zdep')
           if (headtt) print*,'z-dependent Roberts flow; eps_fcont=',eps_fcont
@@ -4220,8 +4228,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  memory, such as in the paper by Mee & Brandenburg (2006, MNRAS)
 !
 !  21-dec-05/tony: coded
+!   6-nov-11/MR: IOSTAT handling added
+!
+      use Messages, only: outlog
 !
       integer :: lun
+!
+      integer :: iostat
 !
       if (lroot) then
         if (tsforce>=0.) print*,'output_persistent_forcing: ', location, tsforce
@@ -4229,10 +4242,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !  write details
 !
-      write (lun) id_record_FORCING_LOCATION
-      write (lun) location
-      write (lun) id_record_FORCING_TSFORCE
-      write (lun) tsforce
+      write (lun,IOSTAT=iostat) id_record_FORCING_LOCATION
+      call outlog(iostat,'write id_record_FORCING_LOCATION')
+      write (lun,IOSTAT=iostat) location
+      call outlog(iostat,'write location')
+      write (lun,IOSTAT=iostat) id_record_FORCING_TSFORCE
+      call outlog(iostat,'write id_record_FORCING_TSFORCE')
+      write (lun,IOSTAT=iostat) tsforce
+      call outlog(iostat,'write tsforce')
 !
     endsubroutine output_persistent_forcing
 !***********************************************************************
