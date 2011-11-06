@@ -17,6 +17,7 @@ module Messages
   public :: fatal_error, inevitably_fatal_error, not_implemented
   public :: fatal_error_local, fatal_error_local_collect
   public :: life_support_on, life_support_off
+  public :: outlog
 !
   integer, public, parameter :: iterm_DEFAULT   = 0
   integer, public, parameter :: iterm_BRIGHT    = 1
@@ -545,5 +546,153 @@ module Messages
       endif
 !
     endsubroutine terminal_highlight_fatal_error
+!***********************************************************************
+  subroutine outlog(code,msg,file)
+!
+!  Creates log entries for I/O errors in ioerrors.log.
+!  Notifies user via e-mail if address mailaddress is given unless it
+!  stops program if lstop_on_ioerror is set.
+!
+!  code(IN): errorcode from IOSTAT
+!  msg (IN): describes failed action, starts with 'open', 'read', 'write' or 'close'
+!  file(IN): file with which operation failed,
+!            if omitted assumed to be the one saved in curfile
+!
+!  3-nov-11/MR: coded
+!
+    use Syscalls, only: system
+    use General, only: itoa,date_time_string
+!
+    integer,                     intent(IN) :: code
+    character (LEN=*),           intent(IN) :: msg
+    character (LEN=*), optional, intent(IN) :: file
+!
+    character (LEN=80), save :: curfile=''
+    integer :: unit=87, iostat
+    character (LEN=20) :: date, codestr, strarr(2)
+!
+    if (present(file)) curfile = file
+!
+    if (code == 0) return
+!
+    errormsg = 'ERROR'
+!
+    if ( msg(1:5)=='open '  .or. msg(1:5)=='read ' .or. &
+         msg(1:6)=='write ' .or. msg(1:6)=='close ' ) then
+!
+      errormsg = trim(errormsg)//' when '//msg(1:4)//'ing'
+      if ( msg(1:4)=='read' ) errormsg = trim(errormsg)//trim(msg(6:))//' from'
+      errormsg = trim(errormsg)//' file "'
+!
+    else
+      errormsg = trim(errormsg)//': file "'
+    endif
+!
+    codestr = itoa(code)
+    errormsg = trim(errormsg)//trim(curfile)//'". Code: '//trim(codestr)
+ 
+    if ( trim(mailaddress) == '' ) then
+      lstop_on_ioerror = .true.
+    else if (lroot) then 
+!    
+! scan of ioerrors.log to avoid multiple entries for the same file with same error code.
+! When user eliminates cause of error, (s)he should also remove the corresponding line(s) in ioerror.log.
+!
+           strarr(1) = trim(curfile)
+           strarr(2) = trim(codestr)
+!
+           if ( .not.scanfile('ioerrors.log',2,strarr,'all') ) then
+!
+             open(unit,file='ioerrors.log',position='append',iostat=IOSTAT)
+             if (iostat==0) then
+               call date_time_string(date)
+               write(unit,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
+               close(unit,iostat=IOSTAT)
+             endif
+!
+             call system( &
+              'echo '//trim(errormsg)//'| mail -s PencilCode Message '//trim(mailaddress) )
+!
+           endif
+!
+         endif
+!
+    if (lstop_on_ioerror) call stop_it('Stopped due to: '//trim(errormsg))
+!
+  endsubroutine outlog
+!***********************************************************************
+  logical function scanfile(file,nstr,strings,mode)
+!
+!  Scans a file for a line in which one or all strings in list strings occur.
+!  Returns on first hit.
+!
+!  3-nov-11/MR: coded
+!
+    character (LEN=*),                           intent(IN) :: file
+    integer,                                     intent(IN) :: nstr
+    character (LEN=*), dimension(nstr),          intent(IN) :: strings
+    character (LEN=3),                 optional, intent(IN) :: mode
+!
+    character (LEN=3) :: model
+    character (LEN=120) :: line
+    integer :: lun,i,count,iostat
+   
+    if ( .not.present(mode) ) then
+      model='any'
+    else
+      model=mode
+    endif
+!
+    scanfile = .false.
+    open(lun,file=file,ERR=99,IOSTAT=iostat) 
+!
+    do
+      read(lun,'(a)',ERR=97,END=98) line
+!
+      count=0
+      do i=1,nstr
+        if ( index(line,trim(strings(i)))/=0 ) then
+          if (mode=='any') then
+            scanfile = .true.
+            goto 98
+          else
+            count = count+1
+          endif
+        endif
+      enddo
+!
+      if ( count==nstr ) then
+        scanfile = .true.
+        goto 98 
+      endif 
+      
+97  enddo
+ 
+98  close(lun,ERR=99)
+99  continue
+
+  end function scanfile
+!***********************************************************************
+    subroutine input_array(file,a,dimx,dimy,dimz,dimv)
+!
+!  Generalized form of input, allows specifying dimension.
+!
+!  27-sep-03/axel: coded
+!  04-nov-11/MR: moved here from General
+!
+      character (len=*) :: file
+      integer :: dimx,dimy,dimz,dimv
+      real, dimension (dimx,dimy,dimz,dimv) :: a
+!
+      integer :: iostat
+!
+      open(1,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
+      read(1,IOSTAT=iostat) a
+      if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
+      close(1,IOSTAT=iostat)
+      if (iostat /= 0) call stop_it("Cannot close "//trim(file),iostat)
+!
+    endsubroutine input_array
 !***********************************************************************
 endmodule Messages
