@@ -10,6 +10,7 @@ module Syscalls
   external get_pid_c
   external get_env_var_c
   external is_nan_c
+  external system_c
 !
   interface is_nan
      module procedure is_nan_0D
@@ -179,6 +180,18 @@ module Syscalls
       write (get_tmp_prefix,'(A,A,I0,A)') trim(tmp_dir), '/pencil-', get_PID(), '-'
 !
     endfunction get_tmp_prefix
+!***********************************************************************
+    subroutine system(command)
+!
+!  launches system command.
+!
+!  3-nov-11/MR: coded
+!
+      character(len=*) :: command
+!
+      call system_c(trim(command)//char(0))
+!
+    endsubroutine system
 !***********************************************************************
     function is_nan_0D(value)
 !
