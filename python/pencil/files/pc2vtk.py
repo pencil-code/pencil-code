@@ -36,7 +36,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'TT', 'lnTT', 'cc', 'lncc' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -182,6 +182,19 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         pass
     
     try:
+        index = variables.index('ab')
+        ab = pc.dot(var.aa, var.bb)
+        print 'writing ab'
+        fd.write('SCALARS ab float\n')
+        fd.write('LOOKUP_TABLE default\n')    
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", ab[k,j,i]))
+    except:
+        pass
+    
+    try:
         index = variables.index('TT')
         print 'writing TT'
         fd.write('SCALARS TT float\n')
@@ -263,7 +276,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'TT', 'lnTT' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -407,6 +420,19 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
                         fd.write(struct.pack(">f", var.aa[0,k,j,i]))
                         fd.write(struct.pack(">f", var.aa[1,k,j,i]))
                         fd.write(struct.pack(">f", var.aa[2,k,j,i]))
+        except:
+            pass
+        
+        try:
+            index = variables.index('ab')
+            ab = pc.dot(var.aa, var.bb)
+            print 'writing ab'
+            fd.write('SCALARS ab float\n')
+            fd.write('LOOKUP_TABLE default\n')    
+            for k in range(dimz):
+                for j in range(dimy):
+                    for i in range(dimx):
+                        fd.write(struct.pack(">f", ab[k,j,i]))
         except:
             pass
         
