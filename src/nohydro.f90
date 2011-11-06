@@ -327,17 +327,19 @@ module Hydro
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
-    subroutine traceless_strain(uij,divu,sij,uu)
+    subroutine traceless_strain(uij,divu,sij,uu,lss)
 !
 !  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
 !  and divergence divu within each pencil;
 !  curvilinear co-ordinates require optional velocity argument uu
 !
 !  16-oct-09/MR: dummy
+!  04-nov-11/MR: optional parameter lss added
 !
     real, dimension (nx,3,3)         :: uij, sij
     real, dimension (nx)             :: divu
     real, dimension (nx,3), optional :: uu
+    logical,                optional :: lss
 !
     intent(in) :: uij, divu, sij
 !
@@ -345,6 +347,7 @@ module Hydro
     call keep_compiler_quiet(sij)
     call keep_compiler_quiet(divu)
     if (present(uu)) call keep_compiler_quiet(uu)
+    if (present(lss)) call keep_compiler_quiet(lss)
 !
     endsubroutine traceless_strain
 !***********************************************************************
