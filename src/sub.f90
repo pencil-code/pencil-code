@@ -71,7 +71,7 @@ module Sub
   public :: update_snaptime, read_snaptime
   public :: inpui, outpui, inpup, outpup
   public :: parse_shell
-  public :: date_time_string, get_radial_distance, power_law
+  public :: get_radial_distance, power_law
 !
   public :: max_for_dt,unit_vector
 !
@@ -2912,14 +2912,20 @@ module Sub
 !  Write snapshot file, always write mesh and time, could add other things.
 !
 !  11-apr-00/axel: adapted from output
+!  04-nov-11/MR: I/O error handling added
 !
       integer :: nv
       integer, dimension (nv) :: a
       character (len=*) :: file
 !
-      open(1,file=file,form='formatted')
-      write(1,*) a
-      close(1)
+      integer :: iostat
+!
+      open(1,file=file,form='formatted',IOSTAT=iostat)
+      call outlog(iostat,'open',file)
+      write(1,*,IOSTAT=iostat) a
+      call outlog(iostat,'write a')
+      close(1,IOSTAT=iostat)
+      call outlog(iostat,'close')
 !
     endsubroutine outpui
 !***********************************************************************
@@ -4585,7 +4591,7 @@ nameloop: do
 !  04-oct-02/wolf: coded
 !  08-oct-02/tony: use safe_character_assign() to detect string overflows
 !
-      use General, only: safe_character_append
+      use General, only: safe_character_append, date_time_string
 !
       real :: x00,y00,z00
       character (len=*) :: file
@@ -4773,58 +4779,6 @@ nameloop: do
       call remove_file(listfile)
 !
     endsubroutine remove_zprof
-!***********************************************************************
-    subroutine date_time_string(date)
-!
-!  Return current date and time as a string.
-!  Subroutine, because nested writes don't work on some machines, so
-!  calling a function like
-!    print*, date_time_string()
-!  may crash mysteriously.
-!
-!  4-oct-02/wolf: coded
-!
-      intent (out) :: date
-!
-      character (len=*) :: date
-      integer, dimension(8) :: values
-      character (len=3), dimension(12) :: month = &
-           (/ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', &
-              'jul', 'aug', 'sep', 'oct', 'nov', 'dec' /)
-!
-      if (len(date) < 20) &
-          call fatal_error('date_time_string','string arg too short')
-!
-      call date_and_time(VALUES=values)
-      write(date,'(I2.2,"-",A3,"-",I4.2," ",I2.2,":",I2.2,":",I2.2)') &
-           values(3), month(values(2)), values(1), &
-           values(5), values(6), values(7)
-!
-! TEMPORARY DEBUGGING STUFF
-! SOMETIMES THIS ROUTINE PRINTS '***' WHEN IT SHOULDN'T
-!
-      if (index(date,'*')>0) then
-        open(11,FILE='date_time_string.debug')
-        write(11,*) 'This file was generated because sub$date_time_string()'
-        write(11,*) 'produced a strange result. Please forwad this file to'
-        write(11,*) '  Wolfgang.Dobler@kis.uni-freiburg.de'
-        write(11,*)
-        write(11,*) 'date = <', date,'>'
-        write(11,*) 'values = ', values
-        write(11,*) 'i.e.'
-        write(11,*) 'values(1) = ', values(1)
-        write(11,*) 'values(2) = ', values(2)
-        write(11,*) 'values(3) = ', values(3)
-        write(11,*) 'values(4) = ', values(4)
-        write(11,*) 'values(5) = ', values(5)
-        write(11,*) 'values(6) = ', values(6)
-        write(11,*) 'values(7) = ', values(7)
-        close(11)
-      endif
-!
-!  END OF TEMPORARY DEBUGGING STUFF
-!
-    endsubroutine date_time_string
 !***********************************************************************
     subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
 !
@@ -5884,6 +5838,7 @@ nameloop: do
 !  No parallelization in x allowed here
 !
 !  08-dec-10/MR: coded
+!
       use mpicomm, only: mpireduce_sum
 !
       implicit none
