@@ -2553,7 +2553,7 @@ module Mpicomm
 !
     endsubroutine stop_fatal
 !***********************************************************************
-    subroutine stop_it(msg)
+    subroutine stop_it(msg,code)
 !
 !  Print message and stop.
 !  With at least some MPI implementations, this only stops if all
@@ -2561,10 +2561,20 @@ module Mpicomm
 !  or a few processors find some condition, use stop_it_if_any().
 !
 !  6-nov-01/wolf: coded
+!  4-nov-11/MR: optional parameter code added
 !
+      use general, only: itoa
+
       character (len=*) :: msg
+      integer, optional :: code
 !
-      if (lroot) write(*,'(A,A)') 'STOPPED: ', msg
+      if (lroot) then
+        if (present(code)) then
+          write(*,'(A,A)') 'STOPPED: ', msg, '. CODE: '//trim(itoa(code))
+        else
+          write(*,'(A,A)') 'STOPPED: ', msg
+        endif
+      endif
 !
       call die_gracefully()
 !
