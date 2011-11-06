@@ -27,6 +27,7 @@ module General
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
+  public :: date_time_string
 !
   include 'record_types.h'
 !
@@ -201,12 +202,18 @@ module General
 !  Writes seed to a snapshot.
 !
       use Cdata, only: seed,nseed
+      !!use Messages, only: outlog
 !
       integer :: lun
 !
+      integer :: iostat
+!
       call random_seed_wrapper(GET=seed)
-      write (lun) id_record_RANDOM_SEEDS
-      write (lun) seed(1:nseed)
+      write (lun,IOSTAT=iostat) id_record_RANDOM_SEEDS
+      !!call outlog(iostat,'write id_record_RANDOM_SEEDS')
+!
+      write (lun,IOSTAT=iostat) seed(1:nseed)
+      !!call outlog(iostat,'write seed')
 !
     endsubroutine output_persistent_general
 !***********************************************************************
@@ -586,22 +593,6 @@ module General
       call safe_character_assign(str1, trim(str1) // trim(str2) // trim(str3))
 !
     endsubroutine safe_character_append_3
-!***********************************************************************
-    subroutine input_array(file,a,dimx,dimy,dimz,dimv)
-!
-!  Generalized form of input, allows specifying dimension.
-!
-!  27-sep-03/axel: coded
-!
-      character (len=*) :: file
-      integer :: dimx,dimy,dimz,dimv
-      real, dimension (dimx,dimy,dimz,dimv) :: a
-!
-      open(1,FILE=file,FORM='unformatted')
-      read(1) a
-      close(1)
-!
-    endsubroutine input_array
 !***********************************************************************
     subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2)
 !
@@ -2093,5 +2084,60 @@ module General
     if ( unfilled > 0 ) write(unit,'(a)')
 !
   endsubroutine write_by_ranges_1d_real
+!***********************************************************************
+    subroutine date_time_string(date)
+!
+!  Return current date and time as a string.
+!  Subroutine, because nested writes don't work on some machines, so
+!  calling a function like
+!    print*, date_time_string()
+!  may crash mysteriously.
+!
+!  4-oct-02/wolf: coded
+!  4-nov-11/MR: moved from Sub to avoid circular dep's; crash due to too short parameter date avoided
+!
+      intent (out) :: date
+!
+      character (len=*) :: date
+      integer, dimension(8) :: values
+      character (len=3), dimension(12) :: month = &
+           (/ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', &
+              'jul', 'aug', 'sep', 'oct', 'nov', 'dec' /)
+      character*20 datel
+!
+      if (len(date) < 20) &
+          print*, 'date_time_string: WARNING -- string arg "date" too short'
+!
+      call date_and_time(VALUES=values)
+      write(datel,'(I2.2,"-",A3,"-",I4.2," ",I2.2,":",I2.2,":",I2.2)') &
+           values(3), month(values(2)), values(1), &
+           values(5), values(6), values(7)
+      date=datel
+!
+! TEMPORARY DEBUGGING STUFF
+! SOMETIMES THIS ROUTINE PRINTS '***' WHEN IT SHOULDN'T
+!
+      if (index(date,'*')>0) then
+        open(11,FILE='date_time_string.debug')
+        write(11,*) 'This file was generated because sub$date_time_string()'
+        write(11,*) 'produced a strange result. Please forwad this file to'
+        write(11,*) '  Wolfgang.Dobler@kis.uni-freiburg.de'
+        write(11,*)
+        write(11,*) 'date = <', datel,'>'
+        write(11,*) 'values = ', values
+        write(11,*) 'i.e.'
+        write(11,*) 'values(1) = ', values(1)
+        write(11,*) 'values(2) = ', values(2)
+        write(11,*) 'values(3) = ', values(3)
+        write(11,*) 'values(4) = ', values(4)
+        write(11,*) 'values(5) = ', values(5)
+        write(11,*) 'values(6) = ', values(6)
+        write(11,*) 'values(7) = ', values(7)
+        close(11)
+      endif
+!
+!  END OF TEMPORARY DEBUGGING STUFF
+!
+    endsubroutine date_time_string
 !***********************************************************************
 endmodule General
