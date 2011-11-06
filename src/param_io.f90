@@ -134,7 +134,8 @@ module Param_IO
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts,lsuper_time_stepping, lfargo_advection, &
       ldynamical_diffusion, re_mesh, lconst_advection, u0_advec, &
-      loutput_varn_at_exact_tsnap
+      loutput_varn_at_exact_tsnap, &
+      lstop_on_ioerror, mailaddress
 !
   contains
 !***********************************************************************
