@@ -9,6 +9,8 @@
 !
 !  19-sep-02/wolf: started
 !
+!  04-nov-11/MR: IOSTAT handling generally introduced
+!
 !  The file format written by output() (and used, e.g. in var.dat)
 !  consists of the followinig Fortran records:
 !    1. data(mx,my,mz,nvar)
@@ -457,6 +459,7 @@ contains
       write(1) a(l1:l2,m1:m2,n1:n2,:)
       write(1) t_sp,x,y,z,dx,dy,dz,deltay
       close(1)
+!
     endsubroutine outpus
 !***********************************************************************
     subroutine write_record_info(file, nv)
@@ -617,12 +620,20 @@ contains
 !
       character (len=*) :: filename,flist
       character (len=fnlen) :: dir,fpart
+      integer :: iostat
 !
       if (lroot) then
         call parse_filename(filename,dir,fpart)
-        open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
-        write(lun_output,'(A)') trim(fpart)
-        close(lun_output)
+!
+        open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
+        call outlog(iostat,'open',trim(dir)//'/'//trim(flist))
+!
+        write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
+        call outlog(iostat,'write fpart')
+!
+        close(lun_output,IOSTAT=iostat)
+        call outlog(iostat,'close')
+!
       endif
 !
     endsubroutine log_filename_to_file
@@ -635,6 +646,7 @@ contains
       use Cdata, only: directory,dx,dy,dz
 !
       character (len=*) :: file ! not used
+      integer :: iostat
 !
       call write_grid_data(trim(directory)//'/gridx.dat',nxgrid,nx,mx,ipx,x)
       call write_grid_data(trim(directory)//'/gridy.dat',nygrid,ny,my,ipy,y)
@@ -643,9 +655,14 @@ contains
 ! write dx,dy,dz to their own file
 !
       if (lroot) then
-        open(lun_output,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
-        write(lun_output) dx,dy,dz
-        close(lun_output)
+        open(lun_output,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted',IOSTAT=iostat)
+        call outlog(iostat,'open',trim(directory)//'/dxyz.dat')
+!
+        write(lun_output,IOSTAT=iostat) dx,dy,dz
+        call outlog(iostat,'write dx,dy,dz')
+!
+        close(lun_output,IOSTAT=iostat)
+        call outlog(iostat,'close')
       endif
 !
       call keep_compiler_quiet(file)
@@ -659,7 +676,7 @@ contains
 !
       use Cdata, only: directory,dx,dy,dz
 !
-      integer :: i
+      integer :: i,iostat
       character (len=*) :: file ! not used
 !
       call read_grid_data(trim(directory)//'/gridx.dat',nxgrid,nx,mx,ipx,x)
@@ -671,9 +688,14 @@ contains
 !  procs may obtain different results at machine precision, which causes
 !  nasty communication failures with shearing sheets.
 !
-      open(lun_input,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
-      read(lun_input) dx,dy,dz
-      close(lun_input)
+      open(lun_input,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it("Cannot open "//trim(directory)//'/dxyz.dat'//" for reading",iostat)
+!
+      read(lun_input,IOSTAT=iostat) dx,dy,dz
+      if (iostat /= 0) call stop_it("Cannot read dx,dy,dz from "//trim(directory)//'/dxyz.dat',iostat)
+!
+      close(lun_input,IOSTAT=iostat)
+      call outlog(iostat,'close',(directory)//'/dxyz.dat')
 !
 !  reconstruct ghost values
 !
@@ -725,16 +747,21 @@ contains
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      integer :: ierr
+      integer :: iostat
 !
       if (lroot) then
-        open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
-        if (ierr /= 0) call stop_it( &
-            "Cannot open " // trim(file) // " (or similar) for writing" // &
+        open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
+        if (iostat /= 0) call stop_it( &
+            "Cannot open "//trim(file)//" (or similar) for writing"// &
             " -- is data/ visible from all nodes?")
-        write(lun_output) procy_bounds
-        write(lun_output) procz_bounds
-        close(lun_output)
+!
+        write(lun_output,IOSTAT=iostat) procy_bounds
+        write(lun_output,IOSTAT=iostat) procz_bounds
+        if (iostat /= 0) call stop_it( &
+            "Cannot write proc_bounds properly into"//trim(file),iostat)
+!
+        close(lun_output,IOSTAT=iostat)
+        call outlog(iostat,'close',file)
       endif
 !
     endsubroutine wproc_bounds
@@ -749,15 +776,23 @@ contains
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      integer :: ierr
+      integer :: iostat
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=ierr)
-      if (ierr /= 0) call stop_it( &
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it( &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
-      read(lun_input) procy_bounds
-      read(lun_input) procz_bounds
-      close(lun_input)
+          " -- is data/ visible from all nodes?",iostat)
+!
+      read(lun_input,IOSTAT=iostat) procy_bounds
+      if (iostat /= 0) call stop_it( &
+          "Cannot read procy_bounds from"//trim(file),iostat)
+!
+      read(lun_input,IOSTAT=iostat) procz_bounds
+      if (iostat /= 0) call stop_it( &
+          "Cannot read procz_bounds from"//trim(file),iostat)
+!
+      close(lun_input,IOSTAT=iostat)
+      call outlog(iostat,'close',file)
 !
     endsubroutine rproc_bounds
 !***********************************************************************
@@ -771,16 +806,19 @@ contains
       double precision :: tau
       character (len=*) :: file
 !
-      integer :: ierr
+      integer :: iostat
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = tau
       if (lroot) then
-        open(lun_output,FILE=file,IOSTAT=ierr)
-        if (ierr /= 0) call stop_it( &
-            "Cannot open " // trim(file) // " for writing")
-        write(lun_output,*) t_sp
-        close(lun_output)
+        open(lun_output,FILE=file,IOSTAT=iostat)
+        call outlog(iostat,'open',file)
+!
+        write(lun_output,*,IOSTAT=iostat) t_sp
+        call outlog(iostat,'write t_sp')
+!
+        close(lun_output,IOSTAT=iostat)
+        call outlog(iostat,'close')
       endif
 !
     endsubroutine wtime
@@ -795,14 +833,19 @@ contains
       double precision :: tau
       character (len=*) :: file
 !
-      integer :: ierr
+      integer :: iostat
       real:: t_sp   ! t in single precision for backwards compatibility
 !
-      open(lun_input,FILE=file,IOSTAT=ierr)
-      if (ierr /= 0) call stop_it( &
-          "Cannot open " // trim(file) // " for reading")
-      read(lun_input,*) t_sp
-      close(lun_input)
+      open(lun_input,FILE=file,IOSTAT=iostat)
+      if (iostat /= 0) call stop_it( &
+          "Cannot open "//trim(file)//" for reading",iostat)
+!
+      read(lun_input,*,IOSTAT=iostat) t_sp
+      if (iostat /= 0) call stop_it( &
+          "Cannot read t_sp from "//trim(file),iostat)
+!
+      close(lun_input,IOSTAT=iostat)
+      call outlog(iostat,'close',file)
       tau = t_sp
 !
     endsubroutine rtime
