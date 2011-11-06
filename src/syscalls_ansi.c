@@ -95,4 +95,14 @@ void FTNIZE(is_nan_c)
 }
 
 /* ---------------------------------------------------------------------- */
+void FTNIZE(system_c) (char *command)
+/* Date:   04-Nov-2011
+   Author: MR (matthias.rheinhardt@helsinki.fi)
+   Description: function wrapper for ANSI C function system.
+*/
+{
+  int res=system(command);
+}
+
+/* ---------------------------------------------------------------------- */
 
