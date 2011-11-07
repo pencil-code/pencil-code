@@ -5,4 +5,4 @@
 !  This file is included by cparam.f90
 !
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
-integer, parameter :: nxgrid=32,nygrid=1,nzgrid=nxgrid
+integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid

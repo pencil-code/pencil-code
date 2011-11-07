@@ -13,5 +13,5 @@ gamma=1
 &density_init_pars
 /
 &polymer_init_pars
-initpoly='sphere',ini_radius=1e-2
+initpoly='sphere'
 /
