@@ -635,7 +635,7 @@ module Messages
 !
     character (LEN=3) :: model
     character (LEN=120) :: line
-    integer :: lun,i,count,iostat
+    integer :: lun=111,i,count,iostat
    
     if ( .not.present(mode) ) then
       model='any'
