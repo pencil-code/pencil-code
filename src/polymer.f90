@@ -416,7 +416,7 @@ module Polymer
 !
       call mult_matrix(p%poly,p%uij,CdotGradu)
       call transpose_mn(p%uij,uijT)
-      call mult_matrix(uijT,p%poly,,CdotGraduT)
+      call mult_matrix(uijT,p%poly,CdotGraduT)
 !
 !  Select which algorithm we are using.
 !
