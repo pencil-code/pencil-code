@@ -1623,7 +1623,7 @@ module Special
 !
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,rtv_cool/cdts)
-        dt1_max=max(dt1_max,abs(rtv_cool/max(tini,1.01*delta_lnTT)))
+        dt1_max=max(dt1_max,abs(rtv_cool/max(tini,delta_lnTT)))
         if (ldiagnos.and.idiag_dtrad /= 0.) then
           itype_name(idiag_dtrad)=ilabel_max_dt
           call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
@@ -1675,7 +1675,7 @@ module Special
             ordinate=intlnQ(j) - slope*intlnT(j)
 !
             get_lnQ(i) = slope*lnTT(i) + ordinate
-            delta_lnTT(i) = lnTT(i) - intlnT(j)
+            delta_lnTT(i) = intlnT(j+1) - intlnT(j)
             notdone = .false.
           else
             j = j + sign(1.,lnTT(i)-intlnT(j))
