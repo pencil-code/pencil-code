@@ -28,7 +28,7 @@ module Polymer
   include 'record_types.h'
   include 'polymer.h'
 !
-  real, dimension(nx,3,3) :: CdotGradu,CdotGraduT
+  real, dimension(nx,3,3) :: CdotGradu,GraduTdotC
 !
 !  Start parameters.
 !
@@ -412,11 +412,11 @@ module Polymer
         enddo
       endif
 !
-!  CdotGradu and CdotGraduT.
+!  CdotGradu and GraduTdotC.
 !
       call mult_matrix(p%poly,p%uij,CdotGradu)
       call transpose_mn(p%uij,uijT)
-      call mult_matrix(uijT,p%poly,CdotGraduT)
+      call mult_matrix(uijT,p%poly,GraduTdotC)
 !
 !  Select which algorithm we are using.
 !
@@ -462,7 +462,7 @@ module Polymer
       do ipi=1,3
         do ipj=ipi,3
           df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)+ &
-              CdotGradu(:,ipi,ipj)+CdotGraduT(:,ipi,ipj)
+              CdotGradu(:,ipi,ipj)+GraduTdotC(:,ipi,ipj)
           if (tau_poly/=0.) &
             df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)- &
                 tau_poly1*(p%frC(:,ipi,ipj)-kronecker_delta(ipi,ipj))
