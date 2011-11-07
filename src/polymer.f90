@@ -33,10 +33,9 @@ module Polymer
 !  Start parameters.
 !
   character (len=labellen), dimension(ninit) :: initpoly='nothing'
-  real :: ini_radius
 !
   namelist /polymer_init_pars/ &
-     initpoly,ini_radius
+     initpoly
 !
 !  Run parameters.
 !
@@ -121,12 +120,12 @@ module Polymer
           case('nothing'); if (lroot .and. j==1) print*,'init_poly: nothing'
           case('zero', '0'); f(:,:,:,ipoly:ipoly+5) = 0.
           case('sphere')
-            f(:,:,:,ip11) = ini_radius**2/3.
+            f(:,:,:,ip11) = 1.
             f(:,:,:,ip12) = 0.
             f(:,:,:,ip13) = 0.
-            f(:,:,:,ip22) = ini_radius**2/3.
+            f(:,:,:,ip22) = 1.
             f(:,:,:,ip23) = 0.
-            f(:,:,:,ip33) = ini_radius**2/3.
+            f(:,:,:,ip33) = 1.
           case default
 !
 !  Catch unknown values.
