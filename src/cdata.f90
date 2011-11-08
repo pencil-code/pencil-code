@@ -108,7 +108,7 @@ module Cdata
   logical :: lini_t_eq_zero=.false.
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud,advec_uun
-  real, dimension (nx) :: advec_poly, diffus_poly
+  real, dimension (nx) :: advec_poly, diffus_poly, diffus_eta_poly
   real, dimension (nx) :: advec_hypermesh_rho,advec_hypermesh_uu
   real, dimension (nx) :: advec_hypermesh_aa,advec_hypermesh_ss
   real, dimension (nx) :: diffus_nu,diffus_nu2,diffus_nu3
