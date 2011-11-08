@@ -373,6 +373,10 @@ module Equ
             advec_va2=0.0; advec_hall=0.0; advec_hypermesh_aa=0.0
             diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
           endif
+          if (lpolymer) then
+            advec_poly=0.0
+            diffus_eta_poly=0.0
+          endif
           if (ltestfield) then
             diffus_eta=0.0; diffus_eta3=0.0
           endif
@@ -413,7 +417,7 @@ module Equ
             advec_uun=0.0; advec_csn2=0.0; diffus_nun=0.0; diffus_nun3=0.0
           endif
           if (lpolymer) then
-            advec_poly=0.0; diffus_poly=0.0
+            advec_poly=0.0; diffus_eta_poly=0.0
           endif
           if (lspecial) then 
             diffus_special=0.0
@@ -693,6 +697,7 @@ module Equ
           if (ldensity)         maxdiffus=max(maxdiffus,diffus_diffrho)
           if (lenergy)          maxdiffus=max(maxdiffus,diffus_chi)
           if (lmagnetic)        maxdiffus=max(maxdiffus,diffus_eta)
+          if (lpolymer)        maxdiffus=max(maxdiffus,diffus_eta_poly)
           if (ltestfield)       maxdiffus=max(maxdiffus,diffus_eta)
           if (ltestscalar)      maxdiffus=max(maxdiffus,diffus_eta)
           if (lpscalar)         maxdiffus=max(maxdiffus,diffus_pscalar)

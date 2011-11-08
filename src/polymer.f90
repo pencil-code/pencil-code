@@ -434,14 +434,19 @@ module Polymer
 !
 !  polymer diffusion (sometime only for numerical stability)
 !
-      ipk=0
-      do ipi=1,3
-        do ipj=ipi,3
-          df(l1:l2,m,n,ipoly+ipk)= &
-              df(l1:l2,m,n,ipoly+ipk)-eta_poly*p%del2poly(:,ipi,ipj)
-          ipk=ipk+1
+      if(eta_poly.ne.0) then
+        ipk=0
+        do ipi=1,3
+          do ipj=ipi,3
+            df(l1:l2,m,n,ipoly+ipk)= &
+                df(l1:l2,m,n,ipoly+ipk)-eta_poly*p%del2poly(:,ipi,ipj)
+            ipk=ipk+1
+          enddo
         enddo
-      enddo
+! also set the limit to diffusive time scales. This is needed for only once as eta_poly
+! is constant. 
+        if (lfirst.and.ldt)  diffus_eta_poly=eta_poly*dxyz_2
+      endif
 !
     endsubroutine dpoly_dt
 !***********************************************************************
