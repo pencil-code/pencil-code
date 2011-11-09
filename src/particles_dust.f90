@@ -1254,6 +1254,8 @@ k_loop:   do while (.not. (k>npar_loc))
             if (lspherical_coords) call fatal_error('init_particles', &
                  'Keplerian particle initial condition: '// &
                  'not implemented for spherical coordinates')
+            if (lshear) call fatal_error("init_particles",&
+                 "Keplerian initial condition is for global disks, not shearing boxes")
           endif
           do k=1,npar_loc
             if (lcartesian_coords) then
