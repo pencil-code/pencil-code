@@ -3945,13 +3945,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         if (headtt .and. lroot) print*,'forcing: add continuous forcing'
         call forcing_cont(p%fcont)
-!DM remove this later
-          if((m.eq.m2/2).and.(n.eq.n2/2)) then
-            write(*,*) 'DM outputing force pencil,m,n',m,n
-            write(*,*)'fcont',p%fcont(:,1)
-            write(*,*)'x',x(l1:l2)
-          endif
-!
       endif
 !
       call keep_compiler_quiet(f)
