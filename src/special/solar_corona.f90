@@ -1422,13 +1422,13 @@ module Special
         do py=1, nprocxy-1
           partner = py + ipz*nprocxy
           read (unit, rec=py+(frame-1)*nprocxy+1) Bz
-          call mpisend_real (Bz, (/ bnx, bny /), partner, Bz_tag+partner)
+          call mpisend_real (Bz, (/ bnx, bny /), partner, Bz_tag)
         enddo
         read (unit, rec=(frame-1)*nprocxy+1) Bz
         close (unit)
       else
         ! Receive Bz field
-        call mpirecv_real (Bz, (/ bnx, bny /), ipz*nprocxy, Bz_tag+iproc)
+        call mpirecv_real (Bz, (/ bnx, bny /), ipz*nprocxy, Bz_tag)
       endif
 !
       ! Convert Gauss (from file) to Tesla and then to PENCIL units
@@ -1535,14 +1535,14 @@ module Special
           do py = 0, nprocy-1
             partner = px + py*nprocx + ipz*nprocxy
             if (partner == iproc) cycle
-            call mpisend_int (frame_pos, 1, partner, tag_pos+partner)
-            call mpisend_real (frame_time, 1, partner, tag_time+partner)
+            call mpisend_int (frame_pos, 1, partner, tag_pos)
+            call mpisend_real (frame_time, 1, partner, tag_time)
           enddo
         enddo
       else
         ! Receive results
-        call mpirecv_int (frame_pos, 1, ipz*nprocxy, tag_pos+iproc)
-        call mpirecv_real (frame_time, 1, ipz*nprocxy, tag_time+iproc)
+        call mpirecv_int (frame_pos, 1, ipz*nprocxy, tag_pos)
+        call mpirecv_real (frame_time, 1, ipz*nprocxy, tag_time)
       endif
 !
     endsubroutine find_frame
@@ -3714,6 +3714,7 @@ module Special
       real :: local_flux,local_mass
       real :: total_flux,total_mass
       real :: get_lf,get_lm
+      integer, parameter :: tag_f=111, tag_m=211, tag_u=311
 !
       local_flux=sum(exp(f(l1:l2,m1:m2,n2,ilnrho))*f(l1:l2,m1:m2,n2,iuz))
       local_mass=sum(exp(f(l1:l2,m1:m2,n2,ilnrho)))
@@ -3726,9 +3727,9 @@ module Special
         do i=0,nprocx-1
           do j=0,nprocy-1
             if ((i==0).and.(j==0)) cycle
-            ipt = i+nprocx*j+ipz*nprocx*nprocy
-            call mpirecv_real(get_lf,1,ipt,111+ipt)
-            call mpirecv_real(get_lm,1,ipt,211+ipt)
+            ipt = i+nprocx*j+ipz*nprocxy
+            call mpirecv_real(get_lf,1,ipt,tag_f)
+            call mpirecv_real(get_lm,1,ipt,tag_m)
             total_flux=total_flux+get_lf
             total_mass=total_mass+get_lm
           enddo
@@ -3742,8 +3743,8 @@ module Special
       else
         ! send to first processor at given height
         !
-        call mpisend_real(local_flux,1,ipz*nprocx*nprocy,111+iproc)
-        call mpisend_real(local_mass,1,ipz*nprocx*nprocy,211+iproc)
+        call mpisend_real(local_flux,1,ipz*nprocxy,tag_f)
+        call mpisend_real(local_mass,1,ipz*nprocxy,tag_m)
       endif
 !
 !  now distribute u_add
@@ -3752,12 +3753,12 @@ module Special
         do i=0,nprocx-1
           do j=0,nprocy-1
             if ((i==0).and.(j==0)) cycle
-            ipt = i+nprocx*j+ipz*nprocx*nprocy
-            call mpisend_real(u_add,1,ipt,311+ipt)
+            ipt = i+nprocx*j+ipz*nprocxy
+            call mpisend_real(u_add,1,ipt,tag_u)
           enddo
         enddo
       else
-        call mpirecv_real(u_add,1,ipz*nprocx*nprocy,311+iproc)
+        call mpirecv_real(u_add,1,ipz*nprocxy,tag_u)
       endif
 !
     endsubroutine get_wind_speed_offset
