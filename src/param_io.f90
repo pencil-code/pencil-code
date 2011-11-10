@@ -850,6 +850,7 @@ module Param_IO
 !
         call write_eos_run_pars(unit)
         call write_hydro_run_pars(unit)
+        call write_density_run_pars(unit)
         call write_forcing_run_pars(unit)
         call write_gravity_run_pars(unit)
         call write_selfgravity_run_pars(unit)
@@ -1193,7 +1194,9 @@ module Param_IO
 !
       if (lroot) then
         open(unit,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
+!
         write(unit,NML=run_pars)
+!
         call write_eos_run_pars(unit)
         call write_hydro_run_pars(unit)
         call write_density_run_pars(unit)
@@ -1203,6 +1206,7 @@ module Param_IO
         call write_poisson_run_pars(unit)
         call write_entropy_run_pars(unit)
         call write_magnetic_run_pars(unit)
+        call write_lorenz_gauge_run_pars(unit)
         call write_testscalar_run_pars(unit)
         call write_testfield_run_pars(unit)
         call write_testflow_run_pars(unit)
@@ -1224,8 +1228,10 @@ module Param_IO
         call write_shock_run_pars(unit)
         call write_solid_cells_run_pars(unit)
         call write_NSCBC_run_pars(unit)
+        call write_power_spectrum_runpars(unit)
         call write_polymer_run_pars(unit)
         call particles_wparam2(unit)
+!
         close(unit)
       endif
 !
