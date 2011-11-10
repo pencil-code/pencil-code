@@ -39,7 +39,7 @@ module Special
   logical :: luse_mag_field=.false.,luse_mag_vel_field=.false.
   logical :: luse_timedep_magnetogram=.false.,lwrite_driver=.false.
   logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
-  integer :: irefz=n1,nglevel=max_gran_levels,cool_type=2
+  integer :: irefz=n1,nglevel=max_gran_levels,cool_type=5
   real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.,init_time_hcond=0.
   real :: init_time_fade_start=0.0, init_time_hcond_fade_start=0.0
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
@@ -86,15 +86,17 @@ module Special
        swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
        vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
 !
-    integer :: idiag_dtnewt=0   ! DIAG_DOC: Radiative cooling time step
-    integer :: idiag_dtchi2=0   ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
-                                ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
-                                ! DIAG_DOC:   \quad(time step relative to time
-                                ! DIAG_DOC:   step based on heat conductivity;
-                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
+  integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
+  integer :: idiag_dtradloss=0 ! DIAG_DOC: Radiative losses time step
+  integer :: idiag_dtchi2=0    ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm v}}\,
+                               ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
+                               ! DIAG_DOC:   \quad(time step relative to time
+                               ! DIAG_DOC:   step based on heat conductivity;
+                               ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
-  integer :: idiag_mag_flux=0 ! DIAG_DOC: Total vertical magnetic flux at
-                              ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
+  integer :: idiag_mag_flux=0  ! DIAG_DOC: Total vertical magnetic flux at
+                               ! bottom boundary: mag_flux=sum(|Bz(n1)|)*(dx*dy)
 !
 ! video slices
     real, target, dimension (nx,ny) :: rtv_xy,rtv_xy2,rtv_xy3,rtv_xy4
@@ -777,8 +779,10 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_dtvel=0.
         idiag_dtchi2=0.
         idiag_dtnewt=0.
+        idiag_dtradloss=0.
         idiag_dtspitzer=0.
         idiag_mag_flux=0.
       endif
@@ -786,8 +790,10 @@ module Special
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtvel',idiag_dtvel)
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
+        call parse_name(iname,cname(iname),cform(iname),'dtradloss',idiag_dtradloss)
         call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
         call parse_name(iname,cname(iname),cform(iname),'mag_flux',idiag_mag_flux)
       enddo
@@ -795,8 +801,10 @@ module Special
 !  write column where which variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_dtvel=',idiag_dtvel
         write(3,*) 'i_dtchi2=',idiag_dtchi2
         write(3,*) 'i_dtnewt=',idiag_dtnewt
+        write(3,*) 'i_dtradloss=',idiag_dtradloss
         write(3,*) 'i_dtspitzer=',idiag_dtspitzer
         write(3,*) 'i_mag_flux=',idiag_mag_flux
       endif
@@ -1623,9 +1631,9 @@ module Special
 !
       if (lfirst .and. ldt) then
         tmp(:) = tau_inv
-        if (ldiagnos .and. (idiag_dtnewt /= 0)) then
-          itype_name(idiag_dtnewt) = ilabel_max_dt
-          call max_mn_name (tmp/cdts, idiag_dtnewt, l_dt=.true.)
+        if (ldiagnos .and. (idiag_dtvel /= 0)) then
+          itype_name(idiag_dtvel) = ilabel_max_dt
+          call max_mn_name (tmp/cdts, idiag_dtvel, l_dt=.true.)
         endif
         dt1_max = max (dt1_max, tmp/cdts)
       endif
@@ -2393,10 +2401,11 @@ module Special
       use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT,tmp
       real :: unit_lnQ
-      type (pencil_case) :: p
 !
       unit_lnQ=3*alog(real(unit_velocity))+&
           5*alog(real(unit_length))+alog(real(unit_density))
@@ -2408,7 +2417,7 @@ module Special
 !
       lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
 !
-      lnQ   = get_lnQ(lnTT_SI)
+      call get_lnQ(lnTT_SI, lnQ, delta_lnTT)
 !
       rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
       rtv_cool = gamma*p%cp1*exp(rtv_cool)
@@ -2437,11 +2446,12 @@ module Special
       endif
 !
       if (lfirst.and.ldt) then
-        if (ldiagnos.and.idiag_dtnewt/=0) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
-          call max_mn_name(rtv_cool/cdts,idiag_dtnewt,l_dt=.true.)
+        tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
+        if (ldiagnos.and.idiag_dtradloss/=0) then
+          itype_name(idiag_dtradloss)=ilabel_max_dt
+          call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
         endif
-        dt1_max=max(dt1_max,rtv_cool/cdts)
+        dt1_max=max(dt1_max,tmp)
       endif
 !
       logQ_yz(m-m1+1,n-n1+1)=lnQ(ix_loc-l1+1)*0.43429448
@@ -2453,44 +2463,47 @@ module Special
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
-    function get_lnQ(lnTT)
+    subroutine get_lnQ(lnTT,lnQ,delta_lnTT)
 !
 !  input: lnTT in SI units
 !  output: lnP  [p]=W/s * m^3
 !
+      real, dimension (nx), intent(in) :: lnTT
+      real, dimension (nx), intent(out) :: lnQ, delta_lnTT
+!
       real, parameter, dimension (37) :: intlnT = (/ &
-          8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
-          , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
-          , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
-          , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
-          , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
-          ,  15.6576,  69.0776 /)
+          8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086, &
+          9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
+          11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642, &
+          12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760, &
+          14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273, &
+          15.6576,  69.0776 /)
       real, parameter, dimension (37) :: intlnQ = (/ &
-          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650 &
-          , -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765 &
-          , -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776 &
-          , -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778 &
-          , -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196 &
-          , -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637 &
-          , -0.66650 /)
+          -93.9455, -91.1824, -88.5728, -86.1167, -83.8141, -81.6650, &
+          -80.5905, -80.0532, -80.1837, -80.2067, -80.1837, -79.9765, &
+          -79.6694, -79.2857, -79.0938, -79.1322, -79.4776, -79.4776, &
+          -79.3471, -79.2934, -79.5159, -79.6618, -79.4776, -79.3778, &
+          -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196, &
+          -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
+          -0.66650 /)
 !
       real, parameter, dimension (16) :: intlnT1 = (/ &
-          8.98008,    9.44060,    9.90112,    10.3616,    10.8221,    11.2827 &
-         ,11.5129,    11.8583,    12.4340,    12.8945,    13.3550,    13.8155 &
-         ,14.2760,    14.9668,    15.8878,    18.4207 /)
+          8.98008, 9.44060, 9.90112, 10.3616, 10.8221, 11.2827, &
+          11.5129, 11.8583, 12.4340, 12.8945, 13.3550, 13.8155, &
+          14.2760, 14.9668, 15.8878, 18.4207 /)
       real, parameter, dimension (16) :: intlnQ1 = (/ &
-          -83.9292,   -81.2275,   -80.0532,   -80.1837,   -79.6694,   -79.0938 &
-         ,-79.1322,   -79.4776,   -79.2934,   -79.6618,   -79.3778,   -79.5159 &
-         ,-80.1990,   -82.5093,   -82.1793,   -78.6717 /)
+          -83.9292, -81.2275, -80.0532, -80.1837, -79.6694, -79.0938, &
+          -79.1322, -79.4776, -79.2934, -79.6618, -79.3778, -79.5159, &
+          -80.1990, -82.5093, -82.1793, -78.6717 /)
 !
-      real, dimension(9) :: pars=(/2.12040e+00,3.88284e-01,2.02889e+00, &
-          3.35665e-01,6.34343e-01,1.94052e-01,2.54536e+00,7.28306e-01, &
-          -2.40088e+01/)
+      real, dimension(9) :: pars = (/ &
+          2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
+          1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
 !
-      real, dimension (nx) :: lnTT,get_lnQ
-      real, dimension (nx) :: slope,ordinate
-      real, dimension (nx) :: logT_SI,logQ
-      integer :: i
+      real, dimension (nx) :: slope, ordinate
+      real, dimension (nx) :: logT, logQ
+      integer :: i, px, z_ref
+      real :: pos, frac
 !
 !  select type for cooling fxunction
 !  1: 10 points interpolation
@@ -2498,87 +2511,107 @@ module Special
 !  3: four gaussian fit
 !  4: several fits
 !
-      get_lnQ=-1000.
-!
-      select case(cool_type)
-      case(1)
-        do i=1,15
-          where(lnTT >= intlnT1(i) .and. lnTT < intlnT1(i+1))
-            slope=(intlnQ1(i+1)-intlnQ1(i))/(intlnT1(i+1)-intlnT1(i))
+      select case (cool_type)
+      case (1)
+        lnQ = -max_real
+        do i = 1, 15
+          where ((lnTT >= intlnT1(i)) .and. (lnTT < intlnT1(i+1)))
+            slope = (intlnQ1(i+1)-intlnQ1(i)) / (intlnT1(i+1)-intlnT1(i))
             ordinate = intlnQ1(i) - slope*intlnT1(i)
-            get_lnQ = slope*lnTT + ordinate
+            lnQ = slope*lnTT + ordinate
           endwhere
         enddo
+        delta_lnTT = max_real
 !
-      case(2)
-        do i=1,36
-          where(lnTT >= intlnT(i) .and. lnTT < intlnT(i+1))
-            slope=(intlnQ(i+1)-intlnQ(i))/(intlnT(i+1)-intlnT(i))
+      case (2)
+        lnQ = -max_real
+        do i = 1, 36
+          where ((lnTT >= intlnT(i)) .and. (lnTT < intlnT(i+1)))
+            slope = (intlnQ(i+1)-intlnQ(i)) / (intlnT(i+1)-intlnT(i))
             ordinate = intlnQ(i) - slope*intlnT(i)
-            get_lnQ = slope*lnTT + ordinate
+            lnQ = slope*lnTT + ordinate
           endwhere
         enddo
+        delta_lnTT = max_real
 !
-      case(3)
-        call fatal_error('get_lnQ','this invokes epx() to often')
-        lnTT  = lnTT*alog10(exp(1.))
-        get_lnQ  = -1000.
+      case (3)
+        call fatal_error('get_lnQ','this invokes exp() too often')
+        logT = lnTT*alog10(exp(1.)) ! Pencil units
         !
-        get_lnQ = pars(1)*exp(-(lnTT-4.3)**2/pars(2)**2)  &
-            +pars(3)*exp(-(lnTT-4.9)**2/pars(4)**2)  &
-            +pars(5)*exp(-(lnTT-5.35)**2/pars(6)**2) &
-            +pars(7)*exp(-(lnTT-5.85)**2/pars(8)**2) &
-            +pars(9)
+        lnQ = pars(1)*exp(-(logT-4.3)**2/pars(2)**2) &
+            + pars(3)*exp(-(logT-4.9)**2/pars(4)**2) &
+            + pars(5)*exp(-(logT-5.35)**2/pars(6)**2) &
+            + pars(7)*exp(-(logT-5.85)**2/pars(8)**2) &
+            + pars(9)
         !
-        get_lnQ = get_lnQ * (20.*(-tanh((lnTT-3.7)*10.))+21)
-        get_lnQ = get_lnQ+(tanh((lnTT-6.9)*3.1)/2.+0.5)*3.
+        lnQ = lnQ * (20.*(-tanh((logT-3.7)*10.))+21)
+        lnQ = lnQ + (tanh((logT-6.9)*3.1)/2.+0.5)*3.
         !
-        get_lnQ = (get_lnQ +19.-32)*alog(10.)
+        lnQ = (lnQ+19.-32)*alog(10.)
+        delta_lnTT = max_real
 !
-      case(4)
-        logT_SI = lnTT*0.43429448+alog(real(unit_temperature))
-        where(logT_SI<=3.928)
-          logQ =  -7.155e1 + 9*logT_SI
-        elsewhere(logT_SI>3.93.and.logT_SI<=4.55)
+      case (4)
+        logT = lnTT*alog10(exp(1.)) + alog(real(unit_temperature)) ! SI units
+        where (logT <= 3.8)
+          logQ = -max_real
+        elsewhere ((logT > 3.8) .and. (logT <= 3.93))
+          logQ = -7.155e1 + 9*logT
+        elsewhere ((logT > 3.93) .and. (logT <= 4.55))
           logQ = +4.418916e+04 &
-              -5.157164e+04 * logT_SI &
-              +2.397242e+04 * logT_SI**2 &
-              -5.553551e+03 * logT_SI**3 &
-              +6.413137e+02 * logT_SI**4 &
-              -2.953721e+01 * logT_SI**5
-        elsewhere(logT_SI>4.55.and.logT_SI<=5.09)
+              -5.157164e+04 * logT &
+              +2.397242e+04 * logT**2 &
+              -5.553551e+03 * logT**3 &
+              +6.413137e+02 * logT**4 &
+              -2.953721e+01 * logT**5
+        elsewhere ((logT > 4.55) .and. (logT <= 5.09))
           logQ = +8.536577e+02 &
-              -5.697253e+02 * logT_SI &
-              +1.214799e+02 * logT_SI**2 &
-              -8.611106e+00 * logT_SI**3
-        elsewhere(logT_SI>5.09.and.logT_SI<=5.63)
+              -5.697253e+02 * logT &
+              +1.214799e+02 * logT**2 &
+              -8.611106e+00 * logT**3
+        elsewhere ((logT > 5.09) .and. (logT <= 5.63))
           logQ = +1.320434e+04 &
-              -7.653183e+03 * logT_SI &
-              +1.096594e+03 * logT_SI**2 &
-              +1.241795e+02 * logT_SI**3 &
-              -4.224446e+01 * logT_SI**4 &
-              +2.717678e+00 * logT_SI**5
-        elsewhere(logT_SI>5.63.and.logT_SI<=6.48)
+              -7.653183e+03 * logT &
+              +1.096594e+03 * logT**2 &
+              +1.241795e+02 * logT**3 &
+              -4.224446e+01 * logT**4 &
+              +2.717678e+00 * logT**5
+        elsewhere ((logT > 5.63) .and. (logT <= 6.48))
           logQ = -2.191224e+04 &
-              +1.976923e+04 * logT_SI &
-              -7.097135e+03 * logT_SI**2 &
-              +1.265907e+03 * logT_SI**3 &
-              -1.122293e+02 * logT_SI**4 &
-              +3.957364e+00 * logT_SI**5
-        elsewhere(logT_SI>6.48.and.logT_SI<=6.62)
+              +1.976923e+04 * logT &
+              -7.097135e+03 * logT**2 &
+              +1.265907e+03 * logT**3 &
+              -1.122293e+02 * logT**4 &
+              +3.957364e+00 * logT**5
+        elsewhere ((logT > 6.48) .and. (logT <= 6.62))
           logQ = +9.932921e+03 &
-              -4.519940e+03 * logT_SI &
-              +6.830451e+02 * logT_SI**2 &
-              -3.440259e+01 * logT_SI**3
-        elsewhere(logT_SI>6.62)
-          logQ = -3.991870e+01 + 6.169390e-01 * logT_SI
+              -4.519940e+03 * logT &
+              +6.830451e+02 * logT**2 &
+              -3.440259e+01 * logT**3
+        elsewhere (logT > 6.62)
+          logQ = -3.991870e+01 + 6.169390e-01 * logT
         endwhere
-        get_lnQ = (logQ+19.-32)*2.30259
+        lnQ = (logQ+19.-32)*alog(10.)
+        delta_lnTT = max_real
+!
+      case (5)
+        do px = 1, nx
+          pos = interpol_tabulated (lnTT(px), intlnT)
+          z_ref = floor (pos)
+          if (z_ref < 1) then
+            lnQ(px) = -max_real
+            cycle
+          endif
+          if (z_ref > 36) z_ref = 36
+          frac = pos - z_ref
+          lnQ(px) = intlnQ(z_ref) * (1.0-frac) + intlnQ(z_ref+1) * frac
+          delta_lnTT(px) = intlnT(z_ref+1) - intlnT(z_ref)
+        enddo
+!
       case default
         call fatal_error('get_lnQ','wrong type')
       endselect
 !
-    endfunction get_lnQ
+    endsubroutine get_lnQ
 !***********************************************************************
     subroutine calc_artif_heating(df,p)
 !
