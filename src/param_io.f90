@@ -538,7 +538,7 @@ module Param_IO
 !
     endsubroutine print_startpars
 !***********************************************************************
-    subroutine read_runpars(print,file,annotation)
+    subroutine read_runpars(file,annotation)
 !
 !  Read input parameters.
 !
@@ -552,7 +552,7 @@ module Param_IO
       use Mpicomm, only: parallel_open, parallel_close
       use Sub, only: parse_bc
 !
-      logical, optional :: print,file
+      logical, optional :: file
       character (len=*), optional :: annotation
 !
       integer :: ierr, unit=1
@@ -713,16 +713,6 @@ module Param_IO
 !  Set debug logical (easier to use than the combination of ip and lroot).
 !
       ldebug=lroot.and.(ip<7)
-!
-!  Give online feedback if called with the PRINT optional argument.
-!  Note: Some compiler's [like Compaq's] code crashes with the more
-!  compact `if (present(print) .and. print)'.
-!
-      if (present(print)) then
-        if (print) then
-          call print_runpars()
-        endif
-      endif
 !
 !  Write parameters to log file.
 !  [No longer used, since at the time when read_runpars() is called, t

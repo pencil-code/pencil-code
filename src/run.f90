@@ -458,7 +458,7 @@ program run
         if (lroot) write(*,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
         dt=0.0
-        call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
+        call read_runpars(FILE=.true.,ANNOTATION='Reloading')
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
