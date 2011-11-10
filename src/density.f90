@@ -1825,6 +1825,13 @@ module Density
             fdiff = fdiff + diffrho_hyper3_mesh * tmp * dline_1(:,j)
           else
             fdiff = fdiff + diffrho_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
+!AB: at the meeting in Toulouse we discussed that it should rather
+!AB: involve the actual time step dt, but its value is not known during
+!AB: the first execution of a 3rd order substep. I keep this comment,
+!AB: so we don't forget about this issue. A plauble thing to try is to
+!AB: check if dt==0, then leave fdiff unchanged (hoping that this is
+!AB: the default value when it hasn't been set yet).
+            !fdiff = fdiff + diffrho_hyper3_mesh*pi5_1/60.*tmp/dt
           endif
         enddo
         if (lfirst.and.ldt) then
