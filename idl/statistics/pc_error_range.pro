@@ -61,9 +61,10 @@ endif
 ;
 ;  Take square root with /sqr keyword (used for rms value).
 ;  In that case, the squared values are to be supplied.
+;  Prevent taking square roots of negative values and return 0 instead.
 ;
 if keyword_set(sqr) then begin
-  am=sqrt(am)
+  am=sqrt(am >  0.)
   err=.5*err/am
 endif
 ;
