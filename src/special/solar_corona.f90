@@ -1849,15 +1849,16 @@ module Special
       num = size (haystack, 1)
       if (num < 2) call fatal_error ('interpol_tabulated', "Too few tabulated values!", .true.)
       if (lower >= num) lower = num - 1
-      if (upper <= lower) upper = num
+      if ((upper <= lower) .or. (upper > num)) upper = num
 !
-      if (haystack (lower) > haystack (upper)) then
+      if (haystack(lower) > haystack(upper)) then
 !
 !  Descending array:
 !
         ! Search for lower limit, starting from last known position
         inc = 2
         do while ((lower > 1) .and. (needle > haystack(lower)))
+          upper = lower
           lower = lower - inc
           if (lower < 1) lower = 1
           inc = inc * 2
@@ -1866,15 +1867,16 @@ module Special
         ! Search for upper limit, starting from last known position
         inc = 2
         do while ((upper < num) .and. (needle < haystack(upper)))
+          lower = upper
           upper = upper + inc
           if (upper > num) upper = num
           inc = inc * 2
         enddo
 !
-        if (needle < haystack (upper)) then
+        if (needle < haystack(upper)) then
           ! Extrapolate needle value below range
           lower = num - 1
-        elseif (needle > haystack (lower)) then
+        elseif (needle > haystack(lower)) then
           ! Extrapolate needle value above range
           lower = 1
         else
@@ -1891,13 +1893,14 @@ module Special
         upper = lower + 1
         interpol_tabulated = lower + (haystack(lower) - needle) / (haystack(lower) - haystack(upper))
 !
-      elseif (haystack (lower) < haystack (upper)) then
+      elseif (haystack(lower) < haystack(upper)) then
 !
 !  Ascending array:
 !
         ! Search for lower limit, starting from last known position
         inc = 2
         do while ((lower > 1) .and. (needle < haystack(lower)))
+          upper = lower
           lower = lower - inc
           if (lower < 1) lower = 1
           inc = inc * 2
@@ -1906,15 +1909,16 @@ module Special
         ! Search for upper limit, starting from last known position
         inc = 2
         do while ((upper < num) .and. (needle > haystack(upper)))
+          lower = upper
           upper = upper + inc
           if (upper > num) upper = num
           inc = inc * 2
         enddo
 !
-        if (needle > haystack (upper)) then
+        if (needle > haystack(upper)) then
           ! Extrapolate needle value above range
           lower = num - 1
-        elseif (needle < haystack (lower)) then
+        elseif (needle < haystack(lower)) then
           ! Extrapolate needle value below range
           lower = 1
         else
