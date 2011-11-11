@@ -1,8 +1,11 @@
 ;$Id$
-pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot,accum=accum,col=col,li=li
+pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot,accum=accum, $
+  col=col,li=li,sqr=sqr
 ;
 ;  Calculate averages for each third of time series and use
 ;  maximum departure from full average as error estimate.
+;  With /sqr keyword take square root (used for rms value).
+;  In that case, the squared values are to be supplied.
 ;
 ;  Location:
 ;    pencil-code/idl/statistics/pc_error_range.pro
@@ -54,6 +57,14 @@ if keyword_set(oplot) then begin
       oplot,tt,(tt-tt+1.)*(am-err),li=1
     endif
   endelse
+endif
+;
+;  Take square root with /sqr keyword (used for rms value).
+;  In that case, the squared values are to be supplied.
+;
+if keyword_set(sqr) then begin
+  am=sqrt(am)
+  err=.5*err/am
 endif
 ;
 END
