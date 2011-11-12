@@ -1,10 +1,10 @@
 ;$Id$
 pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot,accum=accum, $
-  col=col,li=li,sqr=sqr
+  col=col,li=li,sqrt1=sqrt1
 ;
 ;  Calculate averages for each third of time series and use
 ;  maximum departure from full average as error estimate.
-;  With /sqr keyword take square root (used for rms value).
+;  With /sqrt1 keyword take square root (used for rms value).
 ;  In that case, the squared values are to be supplied.
 ;
 ;  Location:
@@ -59,11 +59,11 @@ if keyword_set(oplot) then begin
   endelse
 endif
 ;
-;  Take square root with /sqr keyword (used for rms value).
+;  Take square root with /sqrt1 keyword (used for rms value).
 ;  In that case, the squared values are to be supplied.
 ;  Prevent taking square roots of negative values and return 0 instead.
 ;
-if keyword_set(sqr) then begin
+if keyword_set(sqrt1) then begin
   am=sqrt(am >  0.)
   err=.5*err/am
 endif
