@@ -1488,8 +1488,8 @@ module Special
         chi_c = Kc*c_light*cdtv/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
         K_c = chi_c/(gamma*p%cp1)
 !
-! chi is always positiv
-        where (abs(chi_grad) > abs(chi_c))
+! chi_grad and chi_c are always positive
+        where (chi_grad > chi_c)
           chi_grad = chi_c
           K_grad = K_c
           gK_grad(:,1) = 0.
