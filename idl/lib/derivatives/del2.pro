@@ -21,7 +21,7 @@ function del2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   s=size(f)
 ;
-  if (s[0] ge 2 and  s[0] le 4) then begin
+  if ((s[0] ge 2) and (s[0] le 4)) then begin
 ;
     w=make_array(size=s)
     w=xder2(f)+yder2(f)+zder2(f)
