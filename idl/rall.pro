@@ -79,12 +79,12 @@ dx_tilde_loc=fltarr(mxloc)*zero & dy_tilde_loc=fltarr(myloc)*zero & dz_tilde_loc
 ;  Read data
 ;
 varcontent=pc_varcontent(QUIET=quiet)
-totalvars=(size(varcontent))[1]-1L
+totalvars=(size(varcontent))[1]
 
 ; Prepare for read
 readstring=''
 content=''
-for i=1L,totalvars do begin
+for i=0L,totalvars-1L do begin
   readstring = readstring + ',' + varcontent[i].idlvarloc
   content    = content + ', ' + varcontent[i].variable
   ; Initialise variable
@@ -196,7 +196,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   dy_tilde[i0y:i1y] = dy_tilde_loc[i0yloc:i1yloc]
   dz_tilde[i0z:i1z] = dz_tilde_loc[i0zloc:i1zloc]
 
-  for iv=1L,totalvars do begin
+  for iv=0L,totalvars-1L do begin
     if (varcontent[iv].variable eq 'UNKNOWN') then continue
     cmd =   varcontent[iv].idlvar $
           + "[i0x:i1x,i0y:i1y,i0z:i1z,*]=" $

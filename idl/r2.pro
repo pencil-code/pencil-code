@@ -27,11 +27,11 @@ default, varfile, 'var.dat'
 ;  Read data
 ;
 varcontent=pc_varcontent(QUIET=quiet)
-totalvars=(size(varcontent))[1]-1L
+totalvars=(size(varcontent))[1]
 ; Prepare for read
 res=''
 content=''
-for iv=1L,totalvars do begin
+for iv=0L,totalvars-1L do begin
   res     = res + ',' + varcontent[iv].idlvar
   content = content + ', ' + varcontent[iv].variable
   ; Initialise variable

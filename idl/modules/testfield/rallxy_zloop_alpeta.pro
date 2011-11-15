@@ -97,12 +97,12 @@ xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
 ;  Read data
 ;
 varcontent=pc_varcontent()
-totalvars=(size(varcontent))[1]-1L
+totalvars=(size(varcontent))[1]
 
 ; Prepare for read
 readstring=''
 content=''
-for i=1L,totalvars do begin
+for i=0L,totalvars-1L do begin
   readstring = readstring + ',' + varcontent[i].idlvarloc
   content    = content + ', ' + varcontent[i].variable
   ; Initialise variable
@@ -183,7 +183,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
       y[i0y:i1y] = yloc[i0yloc:i1yloc]
       z[i0z:i1z] = zloc[i0zloc:i1zloc]
 
-      for iv=1L,totalvars do begin
+      for iv=0L,totalvars-1L do begin
           cmd =   varcontent[iv].idlvar $
             + "[i0x:i1x,i0y:i1y,i0z:i1z,*]=" $
             + varcontent[iv].idlvarloc $

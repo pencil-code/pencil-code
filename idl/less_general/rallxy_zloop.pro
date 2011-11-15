@@ -100,12 +100,12 @@ xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
 ;  Read data
 ;
 varcontent=pc_varcontent()
-totalvars=(size(varcontent))[1]-1L
+totalvars=(size(varcontent))[1]
 
 ; Prepare for read
 readstring=''
 content=''
-for i=1L,totalvars do begin
+for i=0L,totalvars-1L do begin
   readstring = readstring + ',' + varcontent[i].idlvarloc
   content    = content + ', ' + varcontent[i].variable
   ; Initialise variable

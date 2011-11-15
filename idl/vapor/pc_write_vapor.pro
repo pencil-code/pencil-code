@@ -42,7 +42,7 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir, $
 
     default,varcontent,pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet,scalar=scalar)
  
-    filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+    filevars=varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar
     if n_elements(variables) ne 0 then begin
       if keyword_set(ADDITIONAL) then begin
         variables=[filevars,variables]
