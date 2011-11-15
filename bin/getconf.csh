@@ -1228,7 +1228,7 @@ else if ($hn =~ pn*) then
   rm -f run_big_stack.csh
   echo "#\!/bin/csh" >> run_big_stack.csh
   echo "" >> run_big_stack.csh
-  echo "limit stacksize 102400" >> run_big_stack.csh
+  echo "limit stacksize unlimited" >> run_big_stack.csh
   echo "./src/run.x" >> run_big_stack.csh
   chmod 755 run_big_stack.csh
   set run_x = $PBS_O_WORKDIR/run_big_stack.csh
