@@ -1994,8 +1994,7 @@ module Special
       real, dimension (nx,3) :: hhh,bunit,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
       real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
-      real, dimension (nx) :: chi_1,chi_2,rhs,fdiff
-      real, dimension (nx) :: chi_clight
+      real, dimension (nx) :: chi_spitzer,chi_sat,chi_clight,rhs,fdiff
       real :: Ksatb,Kpara,expo
       integer :: i,j,k
       type (pencil_case) :: p
@@ -2031,7 +2030,7 @@ module Special
 !
       call dot(hhh,p%glnTT,rhs)
 !
-      chi_1 =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
+      chi_spitzer =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -2044,28 +2043,28 @@ module Special
 !
       call dot2(p%glnTT,glnTT2)
 !
-!  Limit heat condcution coefficient due to maximum available energy
+!  Limit heat condcution to a fraction of the available internal energy (Ksat)
 !
       if (Ksat /= 0.) then
-        Ksatb = Ksat*7.28e7 /unit_velocity**3. * unit_temperature**1.5
-        chi_2 =  Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
+        Ksatb = Ksat * 7.28e7 / unit_velocity**3 * unit_temperature**1.5
+        chi_sat = Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
 !
-        where (chi_1 > chi_2)
+        where (chi_spitzer > chi_sat)
           gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
           gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
           gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,glnTT2)
-          chi_1 =  chi_2
+          chi_spitzer =  chi_sat
         endwhere
       endif
 !
-!  Limit heat conduction coefficient due to diffusion
-!  speed smaller than speed of light
+!  Limit heat conduction so that the diffusion speed
+!  is smaller than a given fraction of the speed of light (Kc*c_light)
 !
       if (Kc /= 0.) then
-        chi_clight = Kc*c_light/max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
+        chi_clight = Kc * c_light / max(dy_1(m),max(dz_1(n),dx_1(l1:l2)))
 !
-        where (chi_1 > chi_clight)
-          chi_1 = chi_clight
+        where (chi_spitzer > chi_clight)
+          chi_spitzer = chi_clight
           gKp(:,1) = p%glnrho(:,1)+p%glnTT(:,1)
           gKp(:,2) = p%glnrho(:,2)+p%glnTT(:,2)
           gKp(:,3) = p%glnrho(:,3)+p%glnTT(:,3)
@@ -2080,7 +2079,7 @@ module Special
       call dot(tmpv,bunit,tmpj)
       rhs = rhs + tmpj
 !
-      rhs = gamma*rhs*chi_1
+      rhs = gamma*rhs*chi_spitzer
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs
 !
@@ -2097,7 +2096,7 @@ module Special
       endwhere
 !
       if (lfirst.and.ldt) then
-        fdiff=gamma*abs(cosbgT)*chi_1*dxyz_2
+        fdiff=gamma*abs(cosbgT)*chi_spitzer*dxyz_2
         diffus_chi=diffus_chi+fdiff
         if (ldiagnos.and.idiag_dtspitzer/=0) then
           call max_mn_name(fdiff/cdtv,idiag_dtspitzer,l_dt=.true.)
