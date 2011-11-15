@@ -23,6 +23,7 @@ module InitialCondition
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
+
 !
   implicit none
 !
@@ -37,6 +38,7 @@ module InitialCondition
   ! T_0 = temperature of the medium at z = z_0
   ! gamma = adiabatic index
   ! passive_scalar = determines if a passive scalar at the bubble should be set
+  ! n_smooth = exponent of the smoothing function for the vector potential
   ! k_aa = wave vector of the initial magnetic vector potential in terms of the bubble radius
   ! ampl = amplitude of the initial magnetic vector potential
   
@@ -44,13 +46,12 @@ module InitialCondition
   real :: x_b = 0, y_b = 0, z_b = 0
   real :: rho_b = 0.1, T_b = 5.0
   real :: rho_m_0 = 1.0, T_0 = 1.0
-  real :: z_0, gamma
-  integer :: passive_scalar = 0
+  real :: z_0
+  integer :: passive_scalar = 0, n_smooth = 2
   real :: k_aa = 1., ampl = 1., asym_factor = 1., sigma_b = 1.
   
   namelist /initial_condition_pars/ &
-      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, gamma, passive_scalar, k_aa, ampl, asym_factor, sigma_b
-!       r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, z_0, T_0
+      r_b, x_b, y_b, z_b, rho_b, T_b, rho_m_0, T_0, z_0, passive_scalar, k_aa, ampl, asym_factor, sigma_b, n_smooth
 !
   contains
 !***********************************************************************
@@ -99,9 +100,13 @@ module InitialCondition
 !
 !  07-sep-11/simon: coded
 !
+      use SharedVariables
+      use EquationOfState
+      
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: l, m, n
       real :: log_rho_b, log_T_b, log_rho_m_0, log_T_0
+      real :: r, z_tilde, rho_ex, T_ex  ! working variables for smoothing
 !
     ! initialize the density of the medium and the bubble
     log_rho_b = log(rho_b)
@@ -115,24 +120,25 @@ module InitialCondition
         do l = l1, l2, 1
           ! check if this point lies in the bubble
           if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-            f(l,m,n,ilnrho) = log_rho_b
-            f(l,m,n,ilnTT) = log_T_b
-
-	    if (passive_scalar == 1) then
-	      f(l,m,n,ilncc) = 1.
-	    endif
+            ! reduce the shocks at the start of the simulation by reducing the
+            ! density and temperature gradient
+!             r = sqrt((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2)
+!             z_tilde = z_b - (z(n)-z_b)/r*r_b
             
-	    f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa/r_b) + sin((z(n)-z_b)*k_aa/r_b))
-	    f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa/r_b) + sin((x(l)-x_b)*k_aa/r_b))
-	    f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa/r_b) + sin((y(m)-y_b)*k_aa/r_b))
-! 	    f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
-! 	      (exp(-((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/sigma_b**2) - &
-! 	       exp(-(r_b**2)/sigma_b**2))
-	    f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
-	      (1-((x(l)-x_b)**2+(y(m)-y_b)**2+(z(n)-z_b)**2)/r_b**2)
+!             rho_ex = exp(log_rho_m_0 + log(1-(gamma-1)/gamma*z_tilde/z_0) / (gamma-1))
+!             f(l,m,n,ilnrho) = log(rho_b * (1 - (r/r_b)**2) + rho_ex*(r/r_b)**2)
+!             
+!             T_ex = exp(log_T_0 + log(1-(gamma-1)/gamma*z_tilde/z_0))
+!             f(l,m,n,ilnTT) = log(T_b * (1 - (r/r_b)**2) + T_ex*(r/r_b)**2)
+
+            f(l,m,n,ilnrho) = log_rho_b
+
+!             if (passive_scalar == 1) then
+!                 f(l,m,n,ilncc) = 1.
+!             endif
+            
           else
             f(l,m,n,ilnrho) = log_rho_m_0 + log(1-(gamma-1)/gamma*z(n)/z_0) / (gamma-1)
-            f(l,m,n,ilnTT) = log_T_0 + log(1-(gamma-1)/gamma*z(n)/z_0)
           endif
         enddo
       enddo
@@ -146,26 +152,29 @@ module InitialCondition
 !
 !  07-sep-11/simon: coded
 !
+      use SharedVariables
+      use EquationOfState
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       integer :: l, m, n
       real :: log_T_b, log_T_0
 !
     write(*,*) 'ini_bubble: aa'
-!     ! initialize the temperature of the medium and the bubble
-!     log_T_b = log(T_b)
-!     log_T_0 = log(T_0)
-!     do n = n1, n2, 1
-!       do m = m1, m2, 1
-!         do l = l1, l2, 1
-!           ! check if this point lies in the bubble
-!           if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
-!             f(l,m,n,ilnTT) = log_T_b
-!           else
-!             f(l,m,n,ilnTT) = log_T_0 + log(1-(gamma-1)/gamma*z(n)/z_0)
-!           endif
-!         enddo
-!       enddo
-!     enddo
+    ! initialize the temperature of the medium and the bubble
+    do n = n1, n2, 1
+      do m = m1, m2, 1
+        do l = l1, l2, 1
+          ! check if this point lies in the bubble
+          if (((x(l) - x_b)**2 + (y(m) - y_b)**2 + (z(n) - z_b)**2) .le. r_b**2) then
+            f(l,m,n,iax) = ampl * (cos((y(m)-y_b)*k_aa/r_b) + sin((z(n)-z_b)*k_aa/r_b))
+            f(l,m,n,iay) = ampl * (cos((z(n)-z_b)*k_aa/r_b) + sin((x(l)-x_b)*k_aa/r_b))
+            f(l,m,n,iaz) = ampl * (cos((x(l)-x_b)*k_aa/r_b) + sin((y(m)-y_b)*k_aa/r_b))
+            f(l,m,n,iax:iaz) = f(l,m,n,iax:iaz) * &
+                (1-((x(l)-x_b)**n_smooth+(y(m)-y_b)**n_smooth+(z(n)-z_b)**n_smooth)/r_b**n_smooth)
+          endif
+        enddo
+      enddo
+    enddo
 !      
     endsubroutine initial_condition_aa
 !***********************************************************************
@@ -175,6 +184,9 @@ module InitialCondition
 !
 !  07-sep-11/simon: coded
 !
+      use SharedVariables
+      use EquationOfState
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       integer :: l, m, n
       real :: log_T_b, log_T_0
@@ -197,7 +209,7 @@ module InitialCondition
 !      
     endsubroutine initial_condition_ss
 !***********************************************************************
-    subroutine initial_condition_cc(f)
+    subroutine initial_condition_lncc(f)
 !
 !  Initialize entropy.
 !
@@ -221,7 +233,7 @@ module InitialCondition
         enddo
     endif
 !      
-    endsubroutine initial_condition_cc
+    endsubroutine initial_condition_lncc
 !***********************************************************************
     subroutine read_initial_condition_pars(unit,iostat)
 !
