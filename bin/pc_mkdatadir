@@ -179,6 +179,8 @@ else if ($hn =~ kraken*) then # NICS Kraken cluster
   echo $hn
   set letter = `echo ~ | xargs dirname | xargs dirname | xargs basename`
   set str='s/nics\/'"$letter"'\/home/lustre\/scratch/g'
+else if ( ($hn =~ platon.int) && ($USER =~ ajohan) ) then # platon.lunarc.lu.se
+  set str='s/home/platon\/projects\/astro\/nobackup/g'
 else
 #
 #  Set the default to empty string (to make local data directory; see below).
