@@ -139,7 +139,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   close,file
   free_lun,file
-stop
 ;
 ; If requested print a summary (actually the default - unless being quiet).
 ;
