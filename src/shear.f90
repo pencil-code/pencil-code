@@ -452,18 +452,22 @@ module Shear
 !  from shear motion.
 !
       if (lshearadvection_as_shift) then
-        uy0=Sshear*(x(l1:l2)-x0_shear)
-        do ivar=1,mvar
-          tmp=f(l1:l2,m1:m2,n1:n2,ivar)
-          call fourier_shift_y(tmp,uy0*dt_shear)
-          f(l1:l2,m1:m2,n1:n2,ivar)=tmp
-        enddo
-        if (.not. llast) then
+        if (nprocx == 1) then 
+          uy0=Sshear*(x(l1:l2)-x0_shear)
           do ivar=1,mvar
-            tmp=df(l1:l2,m1:m2,n1:n2,ivar)
+            tmp=f(l1:l2,m1:m2,n1:n2,ivar)
             call fourier_shift_y(tmp,uy0*dt_shear)
-            df(l1:l2,m1:m2,n1:n2,ivar)=tmp
+            f(l1:l2,m1:m2,n1:n2,ivar)=tmp
           enddo
+          if (.not. llast) then
+            do ivar=1,mvar
+              tmp=df(l1:l2,m1:m2,n1:n2,ivar)
+              call fourier_shift_y(tmp,uy0*dt_shear)
+              df(l1:l2,m1:m2,n1:n2,ivar)=tmp
+            enddo
+          endif
+        else
+          call advect_shear_xparallel(f,df,uy0,dt_shear)
         endif
       endif
 !
@@ -479,6 +483,37 @@ module Shear
       endif
 !
     endsubroutine advance_shear
+!***********************************************************************
+    subroutine advect_shear_xparallel(f,df,uy0,dt_shear)
+!
+      use Fourier, only: fft_y_parallel
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real :: dt_shear
+!
+      real, dimension (nx,ny) :: a_re,a_im
+      real, dimension (nx) :: uy0
+      integer :: ivar
+!
+      do n=n1,n2
+        do ivar=1,mvar
+          a_re=f(l1:l2,m1:m2,n,ivar) ; a_im=0.
+          call fft_y_parallel(a_re,a_im,SHIFT_Y=uy0*dt_shear,lneed_im=.false.)
+          call fft_y_parallel(a_re,a_im,linv=.true.)
+          f(l1:l2,m1:m2,n,ivar)=a_re
+        enddo
+        if (.not.llast) then
+          do ivar=1,mvar
+            a_re=df(l1:l2,m1:m2,n,ivar) ; a_im=0.
+            call fft_y_parallel(a_re,a_im,SHIFT_Y=uy0*dt_shear,lneed_im=.false.)
+            call fft_y_parallel(a_re,a_im,linv=.true.)
+            df(l1:l2,m1:m2,n,ivar)=a_re
+          enddo
+        endif
+    enddo
+!
+    endsubroutine advect_shear_xparallel
 !***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
 !
