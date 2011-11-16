@@ -1993,7 +1993,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: hhh,bunit,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
-      real, dimension (nx) :: cosbgT,glnTT2,b2,bbb,b1,tmpk
+      real, dimension (nx) :: cosbgT,glnTT2,b2,b_abs,b_abs_1,tmpk
       real, dimension (nx) :: chi_spitzer,chi_sat,chi_clight,rhs,fdiff
       real :: Ksatb,Kpara,expo
       integer :: i,j,k
@@ -2001,11 +2001,11 @@ module Special
 !
 !  calculate unit vector of bb
 !
-      call dot2(p%bb,bbb,PRECISE_SQRT=.true.)
-      b1=1./max(tini,bbb)
-      call multsv(b1,p%bb,bunit)
+      call dot2(p%bb,b_abs,PRECISE_SQRT=.true.)
+      b_abs_1=1./max(tini,b_abs)
+      call multsv(b_abs_1,p%bb,bunit)
 !
-!  calculate H_i
+!  calculate H_i = Sum_jk ( (delta_ik - 2*bunit_i*bunit_k)*bunit_j * dB_k/dj / |B| )
 !
       do i=1,3
         hhh(:,i)=0.
@@ -2017,7 +2017,7 @@ module Special
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv(b1,hhh,tmpv)
+      call multsv(b_abs_1,hhh,tmpv)
 !
 !  calculate abs(h) limiting
 !
@@ -2167,7 +2167,7 @@ module Special
       type (pencil_case) :: p
       real, dimension (nx,3) :: bunit,hhh,tmpv
       real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: abs_b,b1
+      real, dimension (nx) :: b_abs,b_abs_1
       real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix,fdiff
       integer :: i,j,k
 !
@@ -2180,9 +2180,9 @@ module Special
 !
 !  calculate unit vector of bb
 !
-      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
-      b1=1./max(tini,abs_b)
-      call multsv(b1,p%bb,bunit)
+      call dot2(p%bb,b_abs,PRECISE_SQRT=.true.)
+      b_abs_1=1./max(tini,b_abs)
+      call multsv(b_abs_1,p%bb,bunit)
 !
 !  calculate first H_i
 !
@@ -2196,7 +2196,7 @@ module Special
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv(b1,hhh,tmpv)
+      call multsv(b_abs_1,hhh,tmpv)
 !
 !  calculate abs(h) for limiting H vector
 !
@@ -2266,7 +2266,7 @@ module Special
       real, dimension (nx) :: tmp,rhs,chi,fdiff
       real, dimension (nx,3) :: bunit,hhh,tmpv,gflux
       real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: abs_b,b1
+      real, dimension (nx) :: b_abs,b_abs_1
       real, dimension (nx) :: tmpj
       integer :: i,j,k
 !
@@ -2275,9 +2275,9 @@ module Special
 !
 !  calculate unit vector of bb
 !
-      call dot2(p%bb,abs_b,PRECISE_SQRT=.true.)
-      b1=1./max(tini,abs_b)
-      call multsv(b1,p%bb,bunit)
+      call dot2(p%bb,b_abs,PRECISE_SQRT=.true.)
+      b_abs_1=1./max(tini,b_abs)
+      call multsv(b_abs_1,p%bb,bunit)
 !
 !  calculate first H_i
 !
@@ -2291,7 +2291,7 @@ module Special
           hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv(b1,hhh,tmpv)
+      call multsv(b_abs_1,hhh,tmpv)
 !
 !  calculate abs(h) for limiting H vector
 !
