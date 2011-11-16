@@ -1929,7 +1929,7 @@ module Hydro
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
-        if (idiag_urms/=0)   call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
+        if (idiag_urms/=0) call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
         if (idiag_urmsh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%u2,idiag_urmsh)
           if (lequatorz) call sum_mn_name_halfz(p%u2,idiag_urmsh)
