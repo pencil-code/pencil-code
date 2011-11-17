@@ -49,7 +49,9 @@
   public :: parallel_open, parallel_close
   public :: parallel_file_exists
   public :: parallel_count_lines
-
+!
+  public :: report_clean_output
+!
 ! Radiation ray routines
   public :: radboundary_xy_recv, radboundary_xy_send
   public :: radboundary_zx_recv, radboundary_zx_send

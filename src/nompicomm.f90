@@ -2361,4 +2361,16 @@ module Mpicomm
 !
     endsubroutine mpimerge_1d
 !***********************************************************************
+  logical function report_clean_output(flag, file, message, sync)
+
+    logical,                       intent(IN)  :: flag
+    character (LEN=*),             intent(IN)  :: file
+    character (LEN=120),           intent(OUT) :: message
+    logical,             optional, intent(IN)  :: sync
+
+    message = ''
+    report_clean_output = .false.
+ 
+  end function report_clean_output
+!***********************************************************************
 endmodule Mpicomm

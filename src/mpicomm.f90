@@ -6579,5 +6579,75 @@ module Mpicomm
       endselect
 !
   endfunction mpigetcomm
+!************************************************************************
+   logical function report_clean_output( flag, file, message )
+!
+!  Generates error message for files (like snapshots) which are distributedly
+!  written. Message contains list of processors at which operation failed.
+!
+!  flag   (IN) : indicates failure of I/O operation at local processor
+!  file   (IN) : file on which operation was performed
+!  message(OUT): message fragment containing list of processors where operation failed
+!                (only relevant for root)
+!  return value: flag for 'synchronize!', only relevant for processors at which
+!                operation did *not* fail
+!
+!  14-nov-11/MR: coded
+!
+  use General, only: itoa,safe_character_append
+
+  logical,                       intent(IN) :: flag
+  character (LEN=*),             intent(IN) :: file
+  character (LEN=120),           intent(OUT):: message
+
+  integer :: mpierr, i, ia, ie, count
+  logical, dimension(:), allocatable:: flags
+
+  character (LEN=20)  :: str
+
+  if (lroot) allocate(flags(ncpus))
+
+  call MPI_GATHER(flag, 1, MPI_LOGICAL, flags, 1, MPI_LOGICAL, root, MPI_COMM_WORLD, mpierr)
+
+  report_clean_output = .false.
+  if (lroot) then
+!
+    count = 0
+    ia = -1; ie = 0
+    str = ''; message = ''
+!
+    if (lroot) then
+      do i=1,ncpus
+        if ( flags(i) ) then
+          if ( i==ia+1 )  then
+            ie = i
+            count = count+1
+          else
+            ia = i
+            if ( ie>0 ) then
+              str = '-'//trim(itoa(ie))//','
+              ie = 0
+            endif
+            call save_charater_append(message,trim(itoa(ia))//str)
+            str = ','
+          endif
+        endif
+      enddo
+    endif
+!
+    deallocate(flags)
+!
+    if (count>0) then
+      call save_charater_prepend(message,'"at '//trim(itoa(count))//' node(s): ')
+      report_clean_output = .true.
+    endif
+!
+  endif
+!
+  call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,flag,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for 'sychronization necessary'
+          
+  report_clean_output = flag
+!  
+  end function report_clean_output
 !**************************************************************************
 endmodule Mpicomm
