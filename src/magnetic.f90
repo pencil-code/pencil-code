@@ -3376,6 +3376,9 @@ module Magnetic
 !  current density components at one point (=pt).
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
+          if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
+          if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
+          if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
           if (idiag_jxpt/=0) call save_name(p%jj(lpoint-nghost,1),idiag_jxpt)
           if (idiag_jypt/=0) call save_name(p%jj(lpoint-nghost,2),idiag_jypt)
           if (idiag_jzpt/=0) call save_name(p%jj(lpoint-nghost,3),idiag_jzpt)

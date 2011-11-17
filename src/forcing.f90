@@ -55,7 +55,8 @@ module Forcing
   logical :: lscale_kvector_tobox=.false.,lwrite_gausspot_to_file=.false.
   logical :: lwrite_gausspot_to_file_always=.false.
   logical :: lscale_kvector_fac=.false.
-  logical :: lforce_peri=.false., lforce_cuty=.false., lforcing2_same=.false.
+  logical :: lforce_peri=.false., lforce_cuty=.false.
+  logical :: lforcing2_same=.false., lforcing2_curl=.false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -127,7 +128,7 @@ module Forcing
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
        lshearing_adjust_old,equator,&
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
-       lforce_peri,lforce_cuty,lforcing2_same, &
+       lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,&
        z_bb,width_bb,eta_bb,fcont_ampl
 ! other variables (needs to be consistent with reset list below)
@@ -1146,6 +1147,10 @@ module Forcing
 !
                 if (lforcing2_same) then
                   forcing_rhs2(:,j)=forcing_rhs(:,j)
+                elseif (lforcing2_curl) then
+                  forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
+                    *real(cmplx(coef3(j),-profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
+                    *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
                 else
                   forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                     *real(cmplx(0.,coef3(j)) &
