@@ -16,7 +16,6 @@ module General
   public :: parse_filename
 !
   public :: setup_mm_nn
-  public :: input_persistent_general, output_persistent_general
   public :: find_index_range, find_index
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
@@ -28,6 +27,7 @@ module General
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
   public :: date_time_string
+  public :: backskip
 !
   include 'record_types.h'
 !
@@ -178,44 +178,6 @@ module General
       endif
 !
     endsubroutine setup_mm_nn
-!***********************************************************************
-    subroutine input_persistent_general(id,lun,done)
-!
-!  Reads seed from a snapshot.
-!
-      use Cdata, only: seed,nseed
-!
-      integer :: id,lun
-      logical :: done
-!
-      call random_seed_wrapper(GET=seed)
-      if (id==id_record_RANDOM_SEEDS) then
-        read (lun) seed(1:nseed)
-        call random_seed_wrapper(PUT=seed)
-        done=.true.
-      endif
-!
-    endsubroutine input_persistent_general
-!***********************************************************************
-    subroutine output_persistent_general(lun)
-!
-!  Writes seed to a snapshot.
-!
-      use Cdata, only: seed,nseed
-      !!use Messages, only: outlog
-!
-      integer :: lun
-!
-      integer :: iostat
-!
-      call random_seed_wrapper(GET=seed)
-      write (lun,IOSTAT=iostat) id_record_RANDOM_SEEDS
-      !!call outlog(iostat,'write id_record_RANDOM_SEEDS')
-!
-      write (lun,IOSTAT=iostat) seed(1:nseed)
-      !!call outlog(iostat,'write seed')
-!
-    endsubroutine output_persistent_general
 !***********************************************************************
     subroutine random_number_wrapper_0(a)
 !
@@ -2139,5 +2101,34 @@ module General
 !  END OF TEMPORARY DEBUGGING STUFF
 !
     endsubroutine date_time_string
+!***********************************************************************
+    logical function backskip(unit,count)
+!
+! sets record pointer back by count positions
+!
+!  3-nov-11/MR: coded
+! 16-nov-11/MR: changed into logical function to signal I/O errors
+!
+    integer,           intent(IN) :: unit
+    integer, optional, intent(IN) :: count
+
+    integer :: i,n,iostat
+
+    if (present(count)) then
+      n=count
+    else
+      n=1
+    endif
+
+    backskip = .true.
+
+    do i=1,count
+      backspace(unit,IOSTAT=iostat)
+      if (iostat/=0) return
+    enddo
+
+    backskip = .false.
+
+    endfunction backskip
 !***********************************************************************
 endmodule General
