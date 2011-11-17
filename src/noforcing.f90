@@ -174,15 +174,19 @@ module Forcing
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************
-    subroutine output_persistent_forcing(lun)
+    logical function output_persistent_forcing(lun)
 !
 !  Writes out the time of the next SNI
+!
+!  16-nov-11/MR: changed into logical function
 !
       integer :: lun
 !
       call keep_compiler_quiet(lun)
 !
-    endsubroutine output_persistent_forcing
+      output_persistent_forcing = .false.
+
+    endfunction output_persistent_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !

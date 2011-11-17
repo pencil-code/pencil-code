@@ -3304,7 +3304,7 @@ module Hydro
 !
     endsubroutine input_persistent_hydro
 !***********************************************************************
-    subroutine output_persistent_hydro(lun)
+    logical function output_persistent_hydro(lun)
 !
 !  Dummy routine
 !
@@ -3312,7 +3312,9 @@ module Hydro
 !
       call keep_compiler_quiet(lun)
 !
-    endsubroutine output_persistent_hydro
+      output_persistent_hydro = .false.
+!
+    endfunction output_persistent_hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
 !

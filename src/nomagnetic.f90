@@ -309,15 +309,16 @@ module Magnetic
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
-    subroutine output_persistent_magnetic(lun)
+    logical function output_persistent_magnetic(lun)
 !
 !  Dummy routine
 !
       integer :: lun
 !
       call keep_compiler_quiet(lun)
+      output_persistent_magnetic = .false.
 !
-    endsubroutine output_persistent_magnetic
+    endfunction output_persistent_magnetic
 !***********************************************************************
     subroutine dynamical_resistivity(umax)
 !

@@ -61,15 +61,17 @@ module Interstellar
 !
     endsubroutine input_persistent_interstellar
 !***********************************************************************
-    subroutine output_persistent_interstellar(lun)
+    logical function output_persistent_interstellar(lun)
 !
 !  Writes out the time of the next SNI
 !
       integer :: lun
 !
       call keep_compiler_quiet(lun)
+
+      output_persistent_interstellar = .false.
 !
-    endsubroutine output_persistent_interstellar
+    endfunction output_persistent_interstellar
 !***********************************************************************
     subroutine rprint_interstellar(lreset,lwrite)
 !

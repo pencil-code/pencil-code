@@ -63,7 +63,7 @@ module Forcing
   character (len=labellen) :: iforce_profile='nothing'
   character (len=labellen) :: iforce_tprofile='nothing'
   real :: equator=0.
-! For helical forcing in sphreical polar coordinate system
+! For helical forcing in spherical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   real,allocatable,dimension(:,:) :: cklist
   logical :: lfastCK=.false.,lsamesign=.true.
@@ -4219,7 +4219,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************
-    subroutine output_persistent_forcing(lun)
+    logical function output_persistent_forcing(lun)
 !
 !  Writes out the time of the next SNI
 !  This is used, for example, for forcing functions with temporal
@@ -4227,6 +4227,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !  21-dec-05/tony: coded
 !   6-nov-11/MR: IOSTAT handling added
+!  16-nov-11/MR: changed into logical function to signal I/O errors
 !
       use Messages, only: outlog
 !
@@ -4240,16 +4241,20 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !  write details
 !
-      write (lun,IOSTAT=iostat) id_record_FORCING_LOCATION
-      call outlog(iostat,'write id_record_FORCING_LOCATION')
-      write (lun,IOSTAT=iostat) location
-      call outlog(iostat,'write location')
-      write (lun,IOSTAT=iostat) id_record_FORCING_TSFORCE
-      call outlog(iostat,'write id_record_FORCING_TSFORCE')
-      write (lun,IOSTAT=iostat) tsforce
-      call outlog(iostat,'write tsforce')
+      output_persistent_forcing = .true.
 !
-    endsubroutine output_persistent_forcing
+      write (lun,IOSTAT=iostat) id_record_FORCING_LOCATION
+      if (outlog(iostat,'write id_record_FORCING_LOCATION')) return
+      write (lun,IOSTAT=iostat) location
+      if (outlog(iostat,'write location')) return
+      write (lun,IOSTAT=iostat) id_record_FORCING_TSFORCE
+      if (outlog(iostat,'write id_record_FORCING_TSFORCE')) return
+      write (lun,IOSTAT=iostat) tsforce
+      if (outlog(iostat,'write tsforce')) return
+!
+      output_persistent_forcing = .false.
+
+    endfunction output_persistent_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !
