@@ -6628,7 +6628,7 @@ module Mpicomm
               str = '-'//trim(itoa(ie))//','
               ie = 0
             endif
-            call save_charater_append(message,trim(itoa(ia))//str)
+            call safe_charater_append(message,trim(itoa(ia))//str)
             str = ','
           endif
         endif
@@ -6638,7 +6638,7 @@ module Mpicomm
     deallocate(flags)
 !
     if (count>0) then
-      call save_charater_prepend(message,'"at '//trim(itoa(count))//' node(s): ')
+      call safe_charater_prepend(message,'"at '//trim(itoa(count))//' node(s): ')
       report_clean_output = .true.
     endif
 !
