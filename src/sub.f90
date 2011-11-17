@@ -2913,6 +2913,7 @@ module Sub
 !
 !  11-apr-00/axel: adapted from output
 !  04-nov-11/MR: I/O error handling added
+!  17-nov-11/MR: call of outlog changed
 !
       integer :: nv
       integer, dimension (nv) :: a
@@ -2921,11 +2922,13 @@ module Sub
       integer :: iostat
 !
       open(1,file=file,form='formatted',IOSTAT=iostat)
-      call outlog(iostat,'open',file)
+      if (outlog(iostat,'open',file)) return
+!
       write(1,*,IOSTAT=iostat) a
-      call outlog(iostat,'write a')
+      if (outlog(iostat,'write a')) return
+!
       close(1,IOSTAT=iostat)
-      call outlog(iostat,'close')
+      if (outlog(iostat,'close')) continue
 !
     endsubroutine outpui
 !***********************************************************************
