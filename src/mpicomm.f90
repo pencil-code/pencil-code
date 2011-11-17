@@ -6578,9 +6578,9 @@ module Mpicomm
           mpigetcomm=MPI_COMM_WORLD
       endselect
 !
-  endfunction mpigetcomm
+    endfunction mpigetcomm
 !************************************************************************
-   logical function report_clean_output( flag, file, message )
+    logical function report_clean_output( flag, file, message )
 !
 !  Generates error message for files (like snapshots) which are distributedly
 !  written. Message contains list of processors at which operation failed.
@@ -6589,65 +6589,64 @@ module Mpicomm
 !  file   (IN) : file on which operation was performed
 !  message(OUT): message fragment containing list of processors where operation failed
 !                (only relevant for root)
-!  return value: flag for 'synchronize!', only relevant for processors at which
-!                operation did *not* fail
+!  return value: flag for 'synchronize!', identical for all processors
 !
 !  14-nov-11/MR: coded
 !
-  use General, only: itoa,safe_character_append
-
-  logical,                       intent(IN) :: flag
-  character (LEN=*),             intent(IN) :: file
-  character (LEN=120),           intent(OUT):: message
-
-  integer :: mpierr, i, ia, ie, count
-  logical, dimension(:), allocatable:: flags
-
-  character (LEN=20)  :: str
-
-  if (lroot) allocate(flags(ncpus))
-
-  call MPI_GATHER(flag, 1, MPI_LOGICAL, flags, 1, MPI_LOGICAL, root, MPI_COMM_WORLD, mpierr)
-
-  report_clean_output = .false.
-  if (lroot) then
+      use General, only: itoa,safe_character_append,safe_character_prepend
 !
-    count = 0
-    ia = -1; ie = 0
-    str = ''; message = ''
+      logical,                       intent(IN) :: flag
+      character (LEN=*),             intent(IN) :: file
+      character (LEN=120),           intent(OUT):: message
 !
-    if (lroot) then
-      do i=1,ncpus
-        if ( flags(i) ) then
-          if ( i==ia+1 )  then
-            ie = i
-            count = count+1
-          else
-            ia = i
-            if ( ie>0 ) then
-              str = '-'//trim(itoa(ie))//','
-              ie = 0
+      integer :: mpierr, i, ia, ie, count
+      logical, dimension(:), allocatable:: flags
+!      
+      character (LEN=20)  :: str
+!      
+      if (lroot) allocate(flags(ncpus))
+!      
+      call MPI_GATHER(flag, 1, MPI_LOGICAL, flags, 1, MPI_LOGICAL, root, MPI_COMM_WORLD, mpierr)
+!      
+      report_clean_output = .false.
+      if (lroot) then
+!     
+        count = 0
+        ia = -1; ie = 0
+        str = ''; message = ''
+!     
+        if (lroot) then
+          do i=1,ncpus
+            if ( flags(i) ) then
+              if ( i==ia+1 )  then
+                ie = i
+                count = count+1
+              else
+                ia = i
+                if ( ie>0 ) then
+                  str = '-'//trim(itoa(ie))//','
+                  ie = 0
+                endif
+                call safe_character_append(message,trim(itoa(ia))//str)
+                str = ','
+              endif
             endif
-            call safe_character_append(message,trim(itoa(ia))//str)
-            str = ','
-          endif
+          enddo
         endif
-      enddo
-    endif
-!
-    deallocate(flags)
-!
-    if (count>0) then
-      call safe_character_prepend(message,'"at '//trim(itoa(count))//' node(s): ')
-      report_clean_output = .true.
-    endif
-!
-  endif
-!
-  call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,flag,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for 'sychronization necessary'
-          
-  report_clean_output = flag
+!     
+        deallocate(flags)
+!     
+        if (count>0) then
+          call safe_character_prepend(message,'"at '//trim(itoa(count))//' node(s): ')
+          report_clean_output = .true.
+        endif
+!     
+      endif
+!     
+      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,flag,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for 
+!                                                                                    ! 'sychronization necessary'
+      report_clean_output = flag
 !  
-  end function report_clean_output
+    end function report_clean_output
 !**************************************************************************
 endmodule Mpicomm
