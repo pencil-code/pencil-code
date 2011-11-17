@@ -92,6 +92,7 @@ module Pscalar
   integer :: idiag_cc9m=0, idiag_cc10m=0
   integer :: idiag_gcc1m=0, idiag_gcc2m=0, idiag_gcc3m=0, idiag_gcc4m=0
   integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
+  integer :: idiag_cugccm, idiag_ccugum
   integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0, idiag_ccglnrm=0
   integer :: idiag_uxcmz=0, idiag_uycmz=0, idiag_uzcmz=0
   integer :: idiag_ccmxy=0, idiag_ccmxz=0
@@ -302,7 +303,7 @@ module Pscalar
           lpenc_diagnos(i_rho)=.true.
       if (idiag_ucm/=0 .or. idiag_uudcm/=0 .or. idiag_uxcm/=0 .or. &
           idiag_uycm/=0 .or. idiag_uzcm/=0 ) lpenc_diagnos(i_uu)=.true.
-      if (idiag_uudcm/=0) lpenc_diagnos(i_ugcc)=.true.
+      if (idiag_uudcm/=0 .or. idiag_cugccm/=0) lpenc_diagnos(i_ugcc)=.true.
       if (idiag_cc1m/=0 .or. idiag_cc2m/=0 .or. idiag_cc3m/=0 .or. &
           idiag_cc4m/=0 .or. idiag_cc5m/=0 .or. idiag_cc6m/=0 .or. &
           idiag_cc7m/=0 .or. idiag_cc8m/=0 .or. idiag_cc9m/=0 .or. &
@@ -312,6 +313,7 @@ module Pscalar
           idiag_gcc7m/=0 .or. idiag_gcc8m/=0 .or. idiag_gcc9m/=0 .or. &
           idiag_gcc10m/=0) lpenc_diagnos(i_gcc1)=.true.
       if (idiag_ccglnrm/=0) lpenc_diagnos(i_glnrho)=.true.
+      if (idiag_ccugum/=0) lpenc_diagnos(i_ugu)=.true.
 !
       if (idiag_ccmxy/=0 .or. idiag_ccmxz/=0) lpenc_diagnos2d(i_cc)=.true.
 !
@@ -644,6 +646,8 @@ module Pscalar
         if (idiag_gcc9m/=0)   call sum_mn_name(p%gcc1(:,1)**9,idiag_gcc9m)
         if (idiag_gcc10m/=0)  call sum_mn_name(p%gcc1(:,1)**10,idiag_gcc10m)
         if (idiag_ccglnrm/=0) call sum_mn_name(p%cc(:,1)*p%glnrho(:,3),idiag_ccglnrm)
+        if (idiag_cugccm/=0) call sum_mn_name(p%cc(:,1)*p%ugcc(:,1),idiag_cugccm)
+        if (idiag_ccugum/=0) call sum_mn_name(p%cc(:,1)*p%ugu(:,3),idiag_ccugum)
       endif
 !
       if (l1davgfirst) then
@@ -753,7 +757,8 @@ module Pscalar
         idiag_cc6m=0; idiag_cc7m=0; idiag_cc8m=0; idiag_cc9m=0; idiag_cc10m=0
         idiag_gcc1m=0; idiag_gcc2m=0; idiag_gcc3m=0; idiag_gcc4m=0
         idiag_gcc5m=0; idiag_gcc6m=0; idiag_gcc7m=0; idiag_gcc8m=0
-        idiag_gcc9m=0; idiag_gcc10m=0; idiag_ccglnrm=0
+        idiag_gcc9m=0; idiag_gcc10m=0; idiag_ccglnrm=0; idiag_cugccm=0
+        idiag_ccugum=0
         idiag_ccmxy=0; idiag_ccmxz=0
       endif
 !
@@ -796,6 +801,8 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'gcc9m',idiag_gcc9m)
         call parse_name(iname,cname(iname),cform(iname),'gcc10m',idiag_gcc10m)
         call parse_name(iname,cname(iname),cform(iname),'ccglnrm',idiag_ccglnrm)
+        call parse_name(iname,cname(iname),cform(iname),'cugccm',idiag_cugccm)
+        call parse_name(iname,cname(iname),cform(iname),'ccugum',idiag_ccugum)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
