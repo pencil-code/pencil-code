@@ -4168,21 +4168,21 @@ module Magnetic
       
       if (.false.) then      ! ncpus>1) then    !experimental
 
-        if (iproc==root) then
-          write(intfile,NML=magnetic_init_pars)
-          len_intfile = len_trim(intfile)
-        endif
+!!        if (iproc==root) then
+!!          write(intfile,NML=magnetic_init_pars)
+!!          len_intfile = len_trim(intfile)
+!!        endif
 
-        call mpibcast_int(len_intfile,1)
-        call mpibcast_char(intfile,len_intfile)
+!!        call mpibcast_int(len_intfile,1)
+!!        call mpibcast_char(intfile,len_intfile)
 
-        if ( iproc/=root ) then
-          if (present(iostat)) then
-            read(intfile,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
-          else
-            read(intfile,NML=magnetic_init_pars,ERR=99)
-          endif
-        endif 
+!!        if ( iproc/=root ) then
+!!          if (present(iostat)) then
+!!            read(intfile,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
+!!          else
+!!            read(intfile,NML=magnetic_init_pars,ERR=99)
+!!          endif
+!!        endif 
 
       endif 
 !
