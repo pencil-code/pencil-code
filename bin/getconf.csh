@@ -1498,6 +1498,10 @@ else if ($hostname =~ mhdc) then
        set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
        echo "Finished  mhdc machine specific settings"
 ## --------------------------------------------
+
+else if ($hn =~ norosx52) then
+  echo "norosx52 pc, Stockholm"
+  set mpirun = /opt/local/bin/openmpirun
 endif
 
 ## ------------------------------
