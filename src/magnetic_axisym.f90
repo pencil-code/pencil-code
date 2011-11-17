@@ -2783,14 +2783,17 @@ module Magnetic
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
-    subroutine output_persistent_magnetic(lun)
+    logical function output_persistent_magnetic(lun)
 !
 !  Write the stored phase and amplitude for the
 !  correction of the Beltrami wave forcing
 !
 !   5-apr-08/axel: adapted from output_persistent_forcing
+!  16-nov-11/MR: changed into logical function to signal I/O errors, I/O error handling introduced
 !
       integer :: lun
+!
+      integer :: iostat
 !
       if (lroot.and.ip<14) then
         if (phase_beltrami>=0.) &
@@ -2800,12 +2803,20 @@ module Magnetic
 !
 !  write details
 !
-      write (lun) id_record_MAGNETIC_PHASE
-      write (lun) phase_beltrami
-      write (lun) id_record_MAGNETIC_AMPL
-      write (lun) ampl_beltrami
+      output_persistent_magnetic = .true.
 !
-    endsubroutine output_persistent_magnetic
+      write (lun,IOSTAT=iostat) id_record_MAGNETIC_PHASE
+      if (outlog(lun,'write id_record_MAGNETIC_PHASE')) return
+      write (lun,IOSTAT=iostat) phase_beltrami
+      if (outlog(lun,'write phase_beltrami')) return
+      write (lun,IOSTAT=iostat) id_record_MAGNETIC_AMPL
+      if (outlog(lun,'write id_record_MAGNETIC_AMPL')) return
+      write (lun,IOSTAT=iostat) ampl_beltrami
+      if (outlog(lun,'write ampl_beltrami')) return
+!
+      output_persistent_magnetic = .false.
+!
+    endfunction output_persistent_magnetic
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !

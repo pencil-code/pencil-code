@@ -219,6 +219,9 @@ module Magnetic
   character (len=labellen) :: xdep_profile='two-step'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
+
+  character (len=4096) :: intfile
+  integer              :: len_intfile
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, J_ext, &
@@ -4155,11 +4158,33 @@ module Magnetic
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat)) then
-        read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=magnetic_init_pars,ERR=99)
-      endif
+!      if ( iproc==root ) then
+        if (present(iostat)) then
+          read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
+        else
+          read(unit,NML=magnetic_init_pars,ERR=99)
+        endif
+!      endif
+      
+      if (.false.) then      ! ncpus>1) then    !experimental
+
+        if (iproc==root) then
+          write(intfile,NML=magnetic_init_pars)
+          len_intfile = len_trim(intfile)
+        endif
+
+        call mpibcast_int(len_intfile,1)
+        call mpibcast_char(intfile,len_intfile)
+
+        if ( iproc/=root ) then
+          if (present(iostat)) then
+            read(intfile,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
+          else
+            read(intfile,NML=magnetic_init_pars,ERR=99)
+          endif
+        endif 
+
+      endif 
 !
 !  read namelist for mean-field theory (if invoked)
 !
@@ -6126,14 +6151,19 @@ module Magnetic
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
-    subroutine output_persistent_magnetic(lun)
+    logical function output_persistent_magnetic(lun)
 !
 !  Write the stored phase and amplitude for the
 !  correction of the Beltrami wave forcing
 !
-!   5-apr-08/axel: adapted from output_persistent_forcing
+!    5-apr-08/axel: adapted from output_persistent_forcing
+!   16-nov-11/MR: IOSTAT handling added
+!
+      use Messages, only: outlog
 !
       integer :: lun
+!
+      integer :: iostat
 !
       if (lroot.and.ip<14.and.lforcing_cont_aa_local) then
         if (phase_beltrami>=0.0) print*, 'output_persistent_magnetic: ', &
@@ -6142,12 +6172,20 @@ module Magnetic
 !
 !  write details
 !
-      write (lun) id_record_MAGNETIC_PHASE
-      write (lun) phase_beltrami
-      write (lun) id_record_MAGNETIC_AMPL
-      write (lun) ampl_beltrami
+      output_persistent_magnetic = .true.
 !
-    endsubroutine output_persistent_magnetic
+      write (lun,IOSTAT=iostat) id_record_MAGNETIC_PHASE
+      if (outlog(iostat,'write id_record_MAGNETIC_PHASE')) return
+      write (lun,IOSTAT=iostat) phase_beltrami
+      if (outlog(iostat,'write phase_beltrami')) return
+      write (lun,IOSTAT=iostat) id_record_MAGNETIC_AMPL
+      if (outlog(iostat,'write id_record_MAGNETIC_AMPL')) return
+      write (lun,IOSTAT=iostat) ampl_beltrami
+      if (outlog(iostat,'write ampl_beltrami')) return
+!
+      output_persistent_magnetic = .false.
+!
+    endfunction output_persistent_magnetic
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !

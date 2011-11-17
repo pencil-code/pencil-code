@@ -919,28 +919,43 @@ module Interstellar
 !
     endsubroutine input_persistent_interstellar
 !*****************************************************************************
-    subroutine output_persistent_interstellar(lun)
+    logical function output_persistent_interstellar(lun)
 !
 !  Writes out the time of the next SNI
 !
-      integer :: lun, i, iSNR
+!  16-nov-11/MR: changed into logical function to signal I/O errors, I/O error handling introduced
+!
+      use Messages, only: outlog
+      integer :: lun, i, iSNR, iostat
+!
+      output_persistent_interstellar = .true.
 !
       if (lroot.and.lSNI.and.lSNII) &
           print*,'output_persistent_interstellar: ', t_next_SNI, t_next_SNII
-      write (lun) id_record_T_NEXT_SNI
-      write (lun) t_next_SNI, t_next_SNII
-      write (lun) id_record_ISM_SN_TOGGLE
-      write (lun) lSNI,lSNII
-      write (lun) id_record_BOLD_MASS
-      write (lun) boldmass
-      write (lun) id_record_ISM_SNRS
-      write (lun) nSNR
+      write (lun,IOSTAT=iostat) id_record_T_NEXT_SNI
+      if (outlog(iostat,'write id_record_T_NEXT_SNI')) return
+      write (lun,IOSTAT=iostat) t_next_SNI, t_next_SNII
+      if (outlog(iostat,'write t_next_SNI, t_next_SNII')) return
+      write (lun,IOSTAT=iostat) id_record_ISM_SN_TOGGLE
+      if (outlog(iostat,'write id_record_ISM_SN_TOGGLE')) return
+      write (lun,IOSTAT=iostat) lSNI,lSNII
+      if (outlog(iostat,'write lSNI,lSNII')) return
+      write (lun,IOSTAT=iostat) id_record_BOLD_MASS
+      if (outlog(iostat,'write id_record_BOLD_MASS')) return
+      write (lun,IOSTAT=iostat) boldmass
+      if (outlog(iostat,'write boldmass')) return
+      write (lun,IOSTAT=iostat) id_record_ISM_SNRS
+      if (outlog(iostat,'write id_record_ISM_SNRS')) return
+      write (lun,IOSTAT=iostat) nSNR
+      if (outlog(iostat,'write nSNR')) return
       do i=1,nSNR
         iSNR=SNR_index(i)
-        write (lun) SNRs(iSNR)
+        write (lun,IOSTAT=iostat) SNRs(iSNR)
+        if (outlog(iostat,'write SNRs(iSNR)')) return
       enddo
 !
-    endsubroutine output_persistent_interstellar
+    output_persistent_interstellar = .false.
+    endfunction output_persistent_interstellar
 !*****************************************************************************
     subroutine rprint_interstellar(lreset,lwrite)
 !
@@ -1038,6 +1053,7 @@ module Interstellar
     endsubroutine get_slices_interstellar
 !*****************************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -1051,6 +1067,7 @@ module Interstellar
     endsubroutine read_interstellar_init_pars
 !*****************************************************************************
     subroutine write_interstellar_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=interstellar_init_pars)
@@ -1058,6 +1075,7 @@ module Interstellar
     endsubroutine write_interstellar_init_pars
 !*****************************************************************************
     subroutine read_interstellar_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !

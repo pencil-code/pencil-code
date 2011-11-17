@@ -765,7 +765,7 @@ module Hydro
      enddo
 !
     endsubroutine random_isotropic_KS_setup_test
-
+!***********************************************************************
     subroutine input_persistent_hydro(id,lun,done)
 !
 !  Read in the stored time of the next random phase calculation
@@ -789,13 +789,15 @@ module Hydro
 !
     endsubroutine input_persistent_hydro
 !***********************************************************************
-    subroutine output_persistent_hydro(lun)
+    logical function output_persistent_hydro(lun)
 !
 !  Writes out the time of the next random phase calculation
 !
 !  12-apr-08/axel: adapted from output_persistent_forcing
 !
       integer :: lun
+!
+      integer :: iostat
 !
       if (lroot.and.ip<14) then
         if (tphase_kinflow>=0.) &
@@ -804,14 +806,24 @@ module Hydro
 !
 !  write details
 !
-      write (lun) id_record_NOHYDRO_TPHASE
-      write (lun) tphase_kinflow
-      write (lun) id_record_NOHYDRO_PHASE1
-      write (lun) phase1
-      write (lun) id_record_NOHYDRO_PHASE2
-      write (lun) phase2
+      output_persistent_hydro = .true.
+
+      write (lun,IOSTAT=iostat) id_record_NOHYDRO_TPHASE
+      if (outlog(iostat,'write id_record_NOHYDRO_TPHASE')) return
+      write (lun,IOSTAT=iostat) tphase_kinflow
+      if (outlog(iostat,'write tphase_kinflow')) return
+      write (lun,IOSTAT=iostat) id_record_NOHYDRO_PHASE1
+      if (outlog(iostat,'write id_record_NOHYDRO_TPHASE1')) return
+      write (lun,IOSTAT=iostat) phase1
+      if (outlog(iostat,'write phase1')) return
+      write (lun,IOSTAT=iostat) id_record_NOHYDRO_PHASE2
+      if (outlog(iostat,'write id_record_NOHYDRO_TPHASE2')) return
+      write (lun,IOSTAT=iostat) phase2
+      if (outlog(iostat,'write phase2')) return
 !
-    endsubroutine output_persistent_hydro
+      output_persistent_hydro = .false.
+!
+    endfunction output_persistent_hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
 !
