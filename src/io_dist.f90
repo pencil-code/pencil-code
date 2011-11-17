@@ -16,6 +16,7 @@
 !  for one vector field, 8 for var.dat in the case of MHD with entropy.
 !
 !  04-nov-11/MR: IOSTAT handling generally introduced
+!  16-nov-11/MR: calls to outlog adapted
 !
 module Io
 !
@@ -171,7 +172,7 @@ contains
       endif
 !
       close(lun_input,IOSTAT=iostat)
-      call outlog(iostat,'close',file)
+      if (outlog(iostat,'close',file)) continue
 !
       if (lserial_io) call end_serialize()
 !
@@ -198,24 +199,25 @@ contains
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
+!
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      call outlog(iostat,'open',file)
+      if (outlog(iostat,'open',file)) goto 99
 !
       write(lun_output,IOSTAT=iostat) a
-      call outlog(iostat,'write a')
+      if (outlog(iostat,'write a')) goto 99
 !
       if (lshear) then
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) goto 99
       else
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) goto 99
       endif
 !
       close(lun_output,IOSTAT=iostat)
-      call outlog(iostat,'close')
+      if (outlog(iostat,'close')) continue
 !
-      if (lserial_io) call end_serialize()
+99    if (lserial_io) call end_serialize()
 !
     endsubroutine output_vect
 !***********************************************************************
@@ -239,25 +241,27 @@ contains
       t_sp = t
       if ((ip<=8) .and. lroot) print*,'output_scal'
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
+!
       if (lserial_io) call start_serialize()
+!
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      call outlog(iostat,'open',file)
+      if (outlog(iostat,'open',file)) goto 99
 !
       write(lun_output,IOSTAT=iostat) a
-      call outlog(iostat,'write a')
+      if (outlog(iostat,'write a')) goto 99
 !
       if (lshear) then
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) goto 99
       else
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-        call outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) goto 99
       endif
 !
       close(lun_output,IOSTAT=iostat)
-      call outlog(iostat,'close')
+      if (outlog(iostat,'close')) continue
 !
-      if (lserial_io) call end_serialize()
+99    if (lserial_io) call end_serialize()
 !
     endsubroutine output_scal
 !***********************************************************************
@@ -338,16 +342,16 @@ contains
 !
       t_sp = t
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      call outlog(iostat,'open',file)
+      if (outlog(iostat,'open',file)) return
 !
       write(lun_output,IOSTAT=iostat) a(l1:l2,m1:m2,n1:n2,:)
-      call outlog(iostat,"write a")
+      if (outlog(iostat,"write a")) return
 !
       write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-      call outlog(iostat,"write t_sp,x,y,z,dx,dy,dz,deltay")
+      if (outlog(iostat,"write t_sp,x,y,z,dx,dy,dz,deltay")) return
 !
       close(lun_output,IOSTAT=iostat)
-      call outlog(iostat,"close")
+      if (outlog(iostat,"close")) return
 !
     endsubroutine outpus
 !***********************************************************************
@@ -367,25 +371,25 @@ contains
 !
       call parse_filename(filename,dir,fpart)
       open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
-      call outlog(iostat,"open",trim(dir)//'/'//trim(flist))
+      if (outlog(iostat,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) goto 99     ! file not distributed???, backskipping enabled 
 !
       write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
-      call outlog(iostat,"write fpart")
+      if (outlog(iostat,"write fpart")) goto 99
 !
       close(lun_output,IOSTAT=iostat)
-      call outlog(iostat,"close")
+      if (outlog(iostat,"close")) continue
 !
-      if (lcopysnapshots_exp) then
+99    if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
           open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=iostat)
-          call outlog(iostat,"open",trim(datadir)//'/move-me.list')
+          if (outlog(iostat,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return   ! file not distributed, backskipping enabled
 !
           write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
-          call outlog(iostat,"write fpart")
+          if (outlog(iostat,"write fpart")) return
 
           close(lun_output,IOSTAT=iostat)
-          call outlog(iostat,"close")
+          if (outlog(iostat,"close")) continue
 
         endif
       endif
@@ -420,7 +424,7 @@ contains
       if (iostat /= 0) call stop_it( &
           "Cannot write "//trim(file)//" properly", iostat)
       close(lun_output,IOSTAT=iostat)
-      call outlog(iostat,'close',file)
+      if (outlog(iostat,'close',file)) continue
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -457,13 +461,13 @@ contains
 !      print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
 !
       read(lun_input,end=990,IOSTAT=iostat) dx_1,dy_1,dz_1
-      call outlog(iostat,"read dx_1,dy_1,dz_1",file)
+      if (outlog(iostat,"read dx_1,dy_1,dz_1",file)) continue
 !
       read(lun_input,end=990,IOSTAT=iostat) dx_tilde,dy_tilde,dz_tilde
-      call outlog(iostat,"read dx_tilde,dy_tilde,dz_tilde")
+      if (outlog(iostat,"read dx_tilde,dy_tilde,dz_tilde")) continue
 !
 990   close(lun_input,IOSTAT=iostat)
-      call outlog(iostat,'close')
+      if (outlog(iostat,'close')) continue
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
@@ -523,19 +527,19 @@ contains
       integer :: iostat
 !
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      call outlog(iostat,'open',file)
+      if (outlog(iostat,'open',file)) return
 !
       write(lun_output,IOSTAT=iostat) procx_bounds
-      call outlog(iostat,'write procx_bounds')
+      if (outlog(iostat,'write procx_bounds')) return
 !
       write(lun_output,IOSTAT=iostat) procy_bounds
-      call outlog(iostat,'write procy_bounds')
+      if (outlog(iostat,'write procy_bounds')) return
 !
       write(lun_output,IOSTAT=iostat) procz_bounds
-      call outlog(iostat,'write procz_bounds')
+      if (outlog(iostat,'write procz_bounds')) return
 !
       close(lun_output,IOSTAT=iostat)
-      call outlog(iostat,'close' )
+      if (outlog(iostat,'close' )) continue
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -565,7 +569,7 @@ contains
       if (iostat/=0) call stop_it("Error when reading procz_bounds from "//trim(file),iostat) 
 !
       close(lun_input,IOSTAT=iostat)
-      call outlog(iostat,'close',file)
+      if (outlog(iostat,'close',file)) continue
 !
     endsubroutine rproc_bounds
 !***********************************************************************

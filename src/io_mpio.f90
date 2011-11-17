@@ -10,6 +10,7 @@
 !  19-sep-02/wolf: started
 !
 !  04-nov-11/MR: IOSTAT handling generally introduced
+!  16-nov-11/MR: calls to outlog adapted
 !
 !  The file format written by output() (and used, e.g. in var.dat)
 !  consists of the followinig Fortran records:
@@ -626,13 +627,13 @@ contains
         call parse_filename(filename,dir,fpart)
 !
         open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
-        call outlog(iostat,'open',trim(dir)//'/'//trim(flist))
+        if (outlog(iostat,'open',trim(dir)//'/'//trim(flist),dist=-lun_output)) return      ! file not distributed, backskipping enabled
 !
         write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
-        call outlog(iostat,'write fpart')
+        if (outlog(iostat,'write fpart')) return
 !
         close(lun_output,IOSTAT=iostat)
-        call outlog(iostat,'close')
+        if (outlog(iostat,'close')) continue
 !
       endif
 !
@@ -656,13 +657,13 @@ contains
 !
       if (lroot) then
         open(lun_output,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted',IOSTAT=iostat)
-        call outlog(iostat,'open',trim(directory)//'/dxyz.dat')
+        if (outlog(iostat,'open',trim(directory)//'/dxyz.dat')) return 
 !
         write(lun_output,IOSTAT=iostat) dx,dy,dz
-        call outlog(iostat,'write dx,dy,dz')
+        if (outlog(iostat,'write dx,dy,dz')) return
 !
         close(lun_output,IOSTAT=iostat)
-        call outlog(iostat,'close')
+        if (outlog(iostat,'close')) continue
       endif
 !
       call keep_compiler_quiet(file)
@@ -695,7 +696,7 @@ contains
       if (iostat /= 0) call stop_it("Cannot read dx,dy,dz from "//trim(directory)//'/dxyz.dat',iostat)
 !
       close(lun_input,IOSTAT=iostat)
-      call outlog(iostat,'close',(directory)//'/dxyz.dat')
+      if (outlog(iostat,'close',(directory)//'/dxyz.dat')) continue
 !
 !  reconstruct ghost values
 !
@@ -761,7 +762,7 @@ contains
             "Cannot write proc_bounds properly into"//trim(file),iostat)
 !
         close(lun_output,IOSTAT=iostat)
-        call outlog(iostat,'close',file)
+        if (outlog(iostat,'close',file)) continue
       endif
 !
     endsubroutine wproc_bounds
@@ -792,7 +793,7 @@ contains
           "Cannot read procz_bounds from"//trim(file),iostat)
 !
       close(lun_input,IOSTAT=iostat)
-      call outlog(iostat,'close',file)
+      if (outlog(iostat,'close',file)) continue
 !
     endsubroutine rproc_bounds
 !***********************************************************************
@@ -812,13 +813,13 @@ contains
       t_sp = tau
       if (lroot) then
         open(lun_output,FILE=file,IOSTAT=iostat)
-        call outlog(iostat,'open',file)
+        if (outlog(iostat,'open',file)) return
 !
         write(lun_output,*,IOSTAT=iostat) t_sp
-        call outlog(iostat,'write t_sp')
+        if (outlog(iostat,'write t_sp')) return
 !
         close(lun_output,IOSTAT=iostat)
-        call outlog(iostat,'close')
+        if (outlog(iostat,'close')) continue
       endif
 !
     endsubroutine wtime
@@ -845,7 +846,7 @@ contains
           "Cannot read t_sp from "//trim(file),iostat)
 !
       close(lun_input,IOSTAT=iostat)
-      call outlog(iostat,'close',file)
+      if (outlog(iostat,'close',file)) continue
       tau = t_sp
 !
     endsubroutine rtime
