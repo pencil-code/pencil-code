@@ -4,6 +4,8 @@
 !
 module Slices
 !
+! 16-nov-11/MR: I/O error handling generally introduced
+!
   use Cdata
   use Messages
   use Sub, only: xlocation, zlocation, update_snaptime, read_snaptime
@@ -69,6 +71,7 @@ module Slices
 !  13-nov-02/axel: added more fields, use wslice.
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !
+      use General,         only: itoa
       use Chemistry,       only: get_slices_chemistry
       use Chiral,          only: get_slices_chiral
       use Cosmicray,       only: get_slices_cosmicray
@@ -77,7 +80,6 @@ module Slices
       use Dustvelocity,    only: get_slices_dustvelocity
       use EquationOfState, only: get_slices_eos
       use Entropy,         only: get_slices_entropy
-      use General,         only: itoa
       use Hydro,           only: get_slices_hydro
       use Interstellar,    only: get_slices_interstellar
       use Magnetic,        only: get_slices_magnetic
@@ -98,7 +100,7 @@ module Slices
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
       logical :: lslices_legacy=.true.
-      integer :: inamev
+      integer :: inamev, iostat
 !
       slices%index=0
 !
@@ -106,6 +108,7 @@ module Slices
 !
       inamev=1
       do while (inamev <= nnamev)
+!
         slices%ready=.false.
         slices%xy=>slice_xy
         slices%xz=>slice_xz
@@ -198,13 +201,20 @@ module Slices
           if (slices%index==0) then    ! If this wasn't a multi slice...
             if (lfirstloop.and.lroot) then
               if (lnewfile) then
-                open(1,file='video.err')
+                open(1,file='video.err',iostat=IOSTAT)
                 lnewfile=.false.
               else
-                open(1,file='video.err',position='append')
+                open(1,file='video.err',position='append',iostat=IOSTAT)
               endif
-              write(1,*) 'unknown slice: ',trim(cnamev(inamev))
-              close(1)
+              if (outlog(iostat,'open','video.err',dist=-1)) goto 99       ! video.err is not distributed, backskipping enabled
+!
+              write(1,*,iostat=IOSTAT) 'unknown slice: ',trim(cnamev(inamev))
+              if (outlog(iostat,'write cnamev(inamev)')) goto 99
+!
+              close(1,iostat=IOSTAT)
+              if (outlog(iostat,'close')) continue
+!
+99            continue
             endif
           else
             slices%index=0
@@ -229,6 +239,7 @@ module Slices
       character (len=*) :: filename
       real, dimension (ndim1,ndim2) :: a
       real, intent(in) :: pos
+      integer :: iostat
 !
 !  check whether we want to write a slice on this processor
 !
@@ -241,9 +252,19 @@ module Slices
           (lwrite_slice_xy4.and.index(filename,'xy4')>0) .or. &
           (lwrite_slice_xz .and.index(filename,'xz' )>0) .or. &
           (lwrite_slice_yz .and.index(filename,'yz' )>0) ) then
-        open(1,file=filename,form='unformatted',position='append')
-        write(1) a,tslice,pos
-        close(1)
+!
+        open(1,file=filename,form='unformatted',position='append',IOSTAT=iostat)
+!
+!  files data/procN/slice*.* are distributed and will be synchronized on I/O error
+!  
+        if (outlog(iostat,'open',filename,dist=1)) return
+!
+        write(1,IOSTAT=iostat) a,tslice,pos
+        if (outlog(iostat,'write a,tslice,pos')) return
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
       endif
 !
     endsubroutine wslice
@@ -259,6 +280,8 @@ module Slices
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
+      integer :: iostat
+
       if (slice_position=='p' .or. slice_position=='S') then
         ix_loc=l1; iy_loc=m1; iz_loc=n1; iz2_loc=n2
         lwrite_slice_xy2=llast_proc_z
@@ -439,24 +462,51 @@ module Slices
 !  write slice position to a file (for convenient post-processing)
 !
       if (lroot) then
-        open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown')
-        write(1,'(a)') slice_position
-        close(1)
+!
+        open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(datadir)//'/slice_position.dat')) goto 98
+!
+        write(1,'(a)',IOSTAT=iostat) slice_position
+        if (outlog(iostat,'write slice_position')) goto 98
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
+98      continue
       endif
 !
-     open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown')
-     write(1,'(l5,i5)') lwrite_slice_xy,iz_loc
-     write(1,'(l5,i5)') lwrite_slice_xy2,iz2_loc
-     write(1,'(l5,i5)') lwrite_slice_xy3,iz3_loc
-     write(1,'(l5,i5)') lwrite_slice_xy4,iz4_loc
-     write(1,'(l5,i5)') lwrite_slice_xz,iy_loc
-     write(1,'(l5,i5)') lwrite_slice_yz,ix_loc
-     close(1)
+     open(1,file=trim(directory)//'/slice_position.dat',STATUS='unknown',IOSTAT=iostat)
+!       
+!  file 'data/procN/slice_position.dat' is distributed, but will not be synchronized
+!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary
+!       
+     if (outlog(iostat,'open',trim(directory)//'/slice_position.dat')) goto 99
+!
+     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy,iz_loc
+     if (outlog(iostat,'write lwrite_slice_xy,iz_loc')) goto 99
+!
+     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy2,iz2_loc
+     if (outlog(iostat,'write lwrite_slice_xy2,iz2_loc')) goto 99
+!
+     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy3,iz3_loc
+     if (outlog(iostat,'write lwrite_slice_xy3,iz3_loc')) goto 99
+!
+     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xy4,iz4_loc
+     if (outlog(iostat,'write lwrite_slice_xy4,iz4_loc')) goto 99
+!
+     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_xz,iy_loc
+     if (outlog(iostat,'write lwrite_slice_xz,iy_loc')) goto 99
+!
+     write(1,'(l5,i5)',IOSTAT=iostat) lwrite_slice_yz,ix_loc
+     if (outlog(iostat,'write lwrite_slice_yz,ix_loc')) goto 99
+!
+     close(1,IOSTAT=iostat)
+     if (outlog(iostat,'close')) continue
 !
 !  make sure ix_loc,iy_loc,iz_loc,iz2_loc,iz3_loc,iz4_loc
 !  are not outside the boundaries
 !
-       ix_loc=min( ix_loc,l2) ;  iy_loc=min( iy_loc,m2)
+99     ix_loc=min( ix_loc,l2) ;  iy_loc=min( iy_loc,m2)
        ix_loc=max( ix_loc,l1) ;  iy_loc=max( iy_loc,m1)
        iz_loc=min( iz_loc,n2) ; iz2_loc=min(iz2_loc,n2)
        iz_loc=max( iz_loc,n1) ; iz2_loc=max(iz2_loc,n1)

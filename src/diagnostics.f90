@@ -11,6 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
+  use Messages, only: outlog
 !
   implicit none
 !
@@ -115,7 +116,7 @@ module Diagnostics
       logical,save :: first=.true.
       character (len=640) :: fform,legend,line
       character (len=1), parameter :: comma=','
-      integer :: iname
+      integer :: iname, iostat
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
 !  timestep (=dt) is to be written, it is known only after rk_2n, so the best
@@ -162,28 +163,45 @@ module Diagnostics
 !  Write legend to extra file (might want to do only once after each lreset)
 !
         if (first) then
-          open(1,file=trim(datadir)//'/legend.dat')
-          write(1,'(" ",A)') trim(legend)
-          close(1)
+!
+          open(1,file=trim(datadir)//'/legend.dat',IOSTAT=iostat)
+          if (outlog(iostat,'open',trim(datadir)//'/legend.dat')) goto 91
+!
+          write(1,'(" ",A)',IOSTAT=iostat)trim(legend)
+          if (outlog(iostat,'write legend')) goto 91
+!
+          close(1,IOSTAT=iostat)
+          if (outlog(iostat,'close')) continue
+!
+91        continue
         endif
 !
 !  Put output line into a string.
 !
         if (ldebug) write(*,*) 'bef. writing prints'
-        write(line,trim(fform)) fname(1:nname)
+        write(line,trim(fform))fname(1:nname)
 !
         call clean_line(line)
 !
 !  Append to diagnostics file.
 !
-        open(1,file=trim(datadir)//'/time_series.dat',position='append')
-        if (first) write(1,"('"//comment_char//"',a)") trim(legend)
-        write(1,'(a)') trim(line)
-        close(1)
+        open(1,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(datadir)//'/time_series.dat',dist=-1)) goto 92    ! file not distributed, backskipping enabled 
+!
+        if (first) then
+          write(1,"('"//comment_char//"',a)",IOSTAT=iostat) trim(legend)
+          if (outlog(iostat,'write legend')) goto 92
+        endif
+
+        write(1,'(a)',IOSTAT=iostat) trim(line)
+        if (outlog(iostat,'write line')) goto 92
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
 !
 !  Write to stdout.
 !
-        write(*,'(a)') trim(line)
+92       write(*,'(a)') trim(line)
 !        call flush() ! has to wait until F2003
 !
       endif                     ! (lroot)
@@ -239,7 +257,7 @@ module Diagnostics
       character (len=ltform) :: scoor
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
-      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j
+      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j,iostat
 !
 !  Produce the format.
 !
@@ -270,7 +288,7 @@ module Diagnostics
               case (3); coor=z(sound_coords_list(icoor,3))
               case default
               end select
-              write(scoor,tform//')') coor
+              write(scoor,tform//')')coor
               call safe_character_append(item,trim(adjustl(scoor))//',')
             enddo
             coorlegend(nleg+1:) = item(1:len_trim(item)-1)//'),   '
@@ -323,28 +341,44 @@ module Diagnostics
               j=1,ncoords_sound), i=1,nname_sound)
                  !(1:nname_sound,1:ncoords_sound)
         else
-          write(line,tform//')') tout
+          write(line,tform//')')tout
         endif
 !
         call clean_line(line)
 !
 !  Append to diagnostics file.
 !
-        open(1,file=trim(directory)//'/sound.dat',position='append')
+        open(1,file=trim(directory)//'/sound.dat',position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(directory)//'/sound.dat',dist=1)) goto 99      ! file distributed (???), backskipping enabled
+!
         if (lfirst) then
 !
-          write(1,'(a)') trim(legend)
+          write(1,'(a)',IOSTAT=iostat) trim(legend)
+          if (outlog(iostat,'write legend')) goto 99
+!
           if (dimensionality>0) then
-            write(1,'(a)') trim(coorlegend)
-            if ( ncoords_sound>1 ) write(1,'(a)') trim(sublegend)
-            write(1,'(a)') comment_char//repeat('-',len_trim(legend)-1)
+!
+            write(1,'(a)',IOSTAT=iostat) trim(coorlegend)
+            if (outlog(iostat,'write coorlegend')) goto 99
+!
+            if ( ncoords_sound>1 ) then
+              write(1,'(a)',IOSTAT=iostat) trim(sublegend)
+              if (outlog(iostat,'write sublegend')) goto 99
+            endif
+!
+            write(1,'(a)',IOSTAT=iostat) comment_char//repeat('-',len_trim(legend)-1)
+            if (outlog(iostat,'write comment')) goto 99
+!
           endif
         endif
 !
-        write(1,'(a)') trim(line)
-        close(1)
+        write(1,'(a)',IOSTAT=iostat) trim(line)
+        if (outlog(iostat,'write line')) goto 99
 !
-      if (ldebug) write(*,*) 'exit prints'
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
+99    if (ldebug) write(*,*) 'exit prints'
       lfirst = .false.
 !
       fname_sound(1:nname_sound,1:ncoords_sound)=0.0
@@ -766,11 +800,22 @@ module Diagnostics
 !
 !   6-jun-02/axel: coded
 !
+      integer :: iostat
+!
       if (lroot.and.nnamez>0) then
-        open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamez(:,:,1:nnamez)
-        close(1)
+!
+        open(1,file=trim(datadir)//'/xyaverages.dat',position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(datadir)//'/xyaverages.dat',dist=-1)) return            ! file not distributed, backskipping enabled
+!
+        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
+        if (outlog(iostat,'write t1ddiagnos')) return
+
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamez(:,:,1:nnamez)
+        if (outlog(iostat,'write fnamez')) return
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
       endif
 !
     endsubroutine write_xyaverages
@@ -782,11 +827,22 @@ module Diagnostics
 !
 !  12-oct-05/anders: adapted from write_xyaverages
 !
+      integer :: iostat
+
       if (lroot.and.nnamey>0) then
-        open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamey(:,:,1:nnamey)
-        close(1)
+!
+        open(1,file=trim(datadir)//'/xzaverages.dat',position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(datadir)//'/xzaverages.dat',dist=-1)) return          ! file not distributed, backskipping enabled
+!
+        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
+        if (outlog(iostat,'write t1ddiagnos')) return
+!
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamey(:,:,1:nnamey)
+        if (outlog(iostat,'write fnamey')) return
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
       endif
 !
     endsubroutine write_xzaverages
@@ -798,11 +854,22 @@ module Diagnostics
 !
 !   2-oct-05/anders: adapted from write_xyaverages
 !
+      integer :: iostat
+!
       if (lroot.and.nnamex>0) then
-        open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamex(:,:,1:nnamex)
-        close(1)
+!
+        open(1,file=trim(datadir)//'/yzaverages.dat',position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(datadir)//'/yzaverages.dat',dist=-1)) return          ! file not distributed, backskipping enabled
+!
+        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
+        if (outlog(iostat,'write t1ddiagnos')) return
+!
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamex(:,:,1:nnamex)
+        if (outlog(iostat,'write fnamex')) return
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
       endif
 !
     endsubroutine write_yzaverages
@@ -820,12 +887,27 @@ module Diagnostics
 !
 !  29-jan-07/wlad: adapted from write_yzaverages
 !
+      integer :: iostat
+!
       if (lroot.and.nnamer>0) then
-        open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
-        if (it==1) write(1,'(1p,8e14.5e3)') rcyl
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamer(:,1:nnamer)
-        close(1)
+
+        open(1,file=trim(datadir)//'/phizaverages.dat',position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(directory_snap)//'/phizaverages.dat',dist=-1)) return          ! file not distributed, backskipping enabled
+!                                                                                         
+        if (it==1) then
+          write(1,'(1p,8e14.5e3)',IOSTAT=iostat) rcyl
+          if (outlog(iostat,'write rcyl')) return
+        endif
+!
+        write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
+        if (outlog(iostat,'write t1ddiagnos')) return
+
+        write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamer(:,1:nnamer)
+        if (outlog(iostat,'write fnamer')) return
+
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
       endif
 !
     endsubroutine write_phizaverages
@@ -836,12 +918,22 @@ module Diagnostics
 !
 !   7-jun-05/axel: adapted from write_zaverages
 !
+      integer :: iostat
+!
       if (lfirst_proc_y.and.nnamexz>0) then
         open(1, file=trim(directory_snap)//'/yaverages.dat', &
-            form='unformatted', position='append')
-        write(1) t2davgfirst
-        write(1) fnamexz(:,:,1:nnamexz)
-        close(1)
+            form='unformatted', position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(directory_snap)//'/yaverages.dat',dist=1)) return         ! file distributed, backskipping enabled
+!
+        write(1,IOSTAT=iostat) t2davgfirst
+        if (outlog(iostat,'write t2davgfirst')) return
+!
+        write(1,IOSTAT=iostat) fnamexz(:,:,1:nnamexz)
+        if (outlog(iostat,'write fnamexz')) return
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
       endif
 !
     endsubroutine write_yaverages
@@ -852,12 +944,22 @@ module Diagnostics
 !
 !  19-jun-02/axel: adapted from write_xyaverages
 !
+      integer :: iostat
+!
       if (lfirst_proc_z.and.nnamexy>0) then
         open(1, file=trim(directory_snap)//'/zaverages.dat', &
-            form='unformatted', position='append')
-        write(1) t2davgfirst
-        write(1) fnamexy(:,:,1:nnamexy)
-        close(1)
+            form='unformatted', position='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(directory_snap)//'/zaverages.dat',dist=1)) return    ! file distributed, backskipping enabled
+!
+        write(1,IOSTAT=iostat) t2davgfirst
+        if (outlog(iostat,'write t2davgfirst')) return
+!
+        write(1,IOSTAT=iostat) fnamexy(:,:,1:nnamexy)
+        if (outlog(iostat,'write fnamexy')) return
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+!
       endif
 !
     endsubroutine write_zaverages
@@ -882,20 +984,28 @@ module Diagnostics
 !
       character (len=*) :: ch
 !
-      integer :: i
+      integer :: i,iostat
       character (len=1024) :: labels
 !
 !  Write result; normalization is already done in phiaverages_rz.
 !
       if (lroot.and.nnamerz>0) then
-        open(1,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted')
-        write(1) nrcyl,nzgrid,nnamerz,nprocz
-        write(1) t2davgfirst,rcyl, &
+        open(1,FILE=trim(datadir)//'/averages/PHIAVG'//trim(ch),FORM='unformatted',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(datadir)//'/averages/PHIAVG'//trim(ch))) goto 93
+!
+        write(1,IOSTAT=iostat) nrcyl,nzgrid,nnamerz,nprocz
+        if (outlog(iostat,'write nrcyl etc.')) goto 93
+!
+        write(1,IOSTAT=iostat) t2davgfirst,rcyl, &
                  z(n1)+(/(i*dz, i=0,nzgrid-1)/), &
                  drcyl,dz
+        if (outlog(iostat,'write t2davgfirst etc.')) goto 93
+!
         !ngrs: use pack to explicitly order the array before writing
         !     (write was messing up on copson without this...)
-        write(1) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
+!
+        write(1,IOSTAT=iostat) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
+        if (outlog(iostat,'write fnamerz')) goto 93
 !
 !  Write labels at the end of file.
 !
@@ -903,14 +1013,22 @@ module Diagnostics
         do i=2,nnamerz
           call safe_character_append(labels,",",trim(cnamerz(i)))
         enddo
-        write(1) len(labels),labels
-        close(1)
+        write(1,IOSTAT=iostat) len(labels),labels
+        if (outlog(iostat,'write labels')) goto 93
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
 !
 !  Write file name to file list.
 !
-        open(1,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append')
-        write(1,'(A)') 'PHIAVG'//trim(ch)
-        close(1)
+93      open(1,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append',IOSTAT=iostat)
+        if (outlog(iostat,'open',trim(datadir)//'/averages/phiavg.files',dist=-1)) return        ! file not distributed, backskipping enabled  
+
+        write(1,'(A)',IOSTAT=iostat)'PHIAVG'//trim(ch)
+        if (outlog(iostat,'write "PHIAVG"')) return
+!
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
 !
       endif
 !
