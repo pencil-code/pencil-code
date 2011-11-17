@@ -547,79 +547,183 @@ module Messages
 !
     endsubroutine terminal_highlight_fatal_error
 !***********************************************************************
-  subroutine outlog(code,msg,file)
+  logical function outlog(code,msg,file,dist)
 !
 !  Creates log entries for I/O errors in ioerrors.log.
-!  Notifies user via e-mail if address mailaddress is given unless it
+!  Notifies user via e-mail if address mailaddress is given.
 !  stops program if lstop_on_ioerror is set.
+!  reverts incompletely written files to a defined state, in particular
+!  distributed files in data/procN/ -> all sub-files in a coherent state
 !
 !  code(IN): errorcode from IOSTAT
 !  msg (IN): describes failed action, starts with 'open', 'read', 'write' or 'close'
-!  file(IN): file with which operation failed,
+!            for 'read' and 'write': should contain the name of the relevant variable(s) 
+!  file(IN): file at which operation failed, 
 !            if omitted assumed to be the one saved in curfile
-!
-!  3-nov-11/MR: coded
+!            usually set by the call with msg='open'
+!  dist(IN): indicator for distributed files (>0) and need of synchronization of file states across nodes
+!            or simple backskipping (<0);|dist| = logical unit number
+!            only considered in calls with msg='open'
+!                           
+!  3-nov-11/MR: coded;
+! 16-nov-11/MR: modified; experimental version which always stops program on I/O error
 !
     use Syscalls, only: system
-    use General, only: itoa,date_time_string
+    use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip
+    use Mpicomm, only: report_clean_output
 !
     integer,                     intent(IN) :: code
     character (LEN=*),           intent(IN) :: msg
     character (LEN=*), optional, intent(IN) :: file
+    integer,           optional, intent(IN) :: dist
 !
     character (LEN=80), save :: curfile=''
-    integer :: unit=87, iostat
+    integer,            save :: curdist=0, curback=0             ! default: file not distributed, no backskipping
+!
+    integer :: unit=90, iostat, ind
     character (LEN=20) :: date, codestr, strarr(2)
+    character (LEN=40) :: submsg
+    character (LEN=80) :: filename
+    logical :: lopen, lclose, lread, lwrite, lsync
+!
+    outlog = .false.
+!    goto 99                                                     ! experimental! Don't remove comment.
+    if (code/=0) then
+      outlog = .true.
+      call stop_it('due to I/O error')
+    endif
+
+    return
+
+99  lopen  = msg(1:4)=='open'
+    lread  = msg(1:5)=='read '
+    lwrite = msg(1:6)=='write '
+    lclose = msg(1:5)=='close'
 !
     if (present(file)) curfile = file
 !
-    if (code == 0) return
+    if (lopen) then
 !
-    errormsg = 'ERROR'
+      if (present(dist)) then
+        curdist = dist
+      else
+        curdist = 0
+      endif
 !
-    if ( msg(1:5)=='open '  .or. msg(1:5)=='read ' .or. &
-         msg(1:6)=='write ' .or. msg(1:6)=='close ' ) then
+      curback = 0                                      ! counter for successfully read records set back  
 !
-      errormsg = trim(errormsg)//' when '//msg(1:4)//'ing'
-      if ( msg(1:4)=='read' ) errormsg = trim(errormsg)//trim(msg(6:))//' from'
-      errormsg = trim(errormsg)//' file "'
+    endif
+
+    if (lwrite.and.code==0) curback = curback+1        ! number of succesfully written records after open
 !
-    else
-      errormsg = trim(errormsg)//': file "'
+    if ( lroot ) then
+      errormsg = ''; submsg = 'File'
     endif
 !
-    codestr = itoa(code)
-    errormsg = trim(errormsg)//trim(curfile)//'". Code: '//trim(codestr)
- 
-    if ( trim(mailaddress) == '' ) then
-      lstop_on_ioerror = .true.
-    else if (lroot) then 
+    if (curdist/=0) then                                       ! backskipping enabled 
+
+      if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose) ) then      
+                                                               ! write/close on distributed file failed (somewhere)
+        lsync = report_clean_output( code/=0, curfile, errormsg ) 
+        if (lsync) then                                        ! synchronization necessary as at least 
+                                                               ! one processor failed in writing
+          if (lserial_io) then                                 ! no backskipping, needs to be checked
+            submsg = 'File not synchronized (lserial_io=T)!'
+          else
+!
+            if (lclose.and.code==0) open(curdist,file=curfile,position='append') ! re-open successfully written and closed files
+
+            if ( backskip(curdist,curback) ) then                                ! try to set back file pointer by curback records
+              if (lroot) submsg = trim(submsg)//' not synchronized!' 
+            else
+              if (lroot) submsg = trim(submsg)//' synchronized.'
+            endif  
+!
+            close(curdist,IOSTAT=iostat)               ! try to close file
+            if (iostat/=0) call safe_character_append(submsg,'. File not closed!')
+!
+          endif
+!
+        endif
+!
+      else if ( curdist<0 .and. code/=0 ) then         ! undistributed file, operation failed
+!
+        lsync = .false.
+        if (lwrite.or.lclose) then 
+!
+          if ( backskip(abs(curdist),curback) ) submsg = trim(submsg)//' pointer not set back!'
+!
+          close(abs(curdist),IOSTAT=iostat)            ! try to close file
+          if (iostat/=0) call safe_character_append(submsg,'. File not closed!')
+!
+        endif
+!
+      endif
+    endif
+!
+    if ( lroot ) then
+!
+      if ( code==0 .and. .not.lsync ) return
+!
+      call safe_character_prepend( errormsg, 'ERROR ' )
+!
+      if ( lopen.or.lread.or.lwrite.or.lclose ) then
+!
+        call safe_character_append(errormsg,' when '//msg(1:4)//'ing ')
+        if ( lread .or. lwrite ) then
+          call safe_character_append(errormsg,trim(msg(6:)))
+          if (lread) then
+            call safe_character_append(errormsg,' from')
+          else
+            call safe_character_append(errormsg,' to')
+          endif
+        endif
+        call safe_character_append(errormsg,' file "')
+!
+      else
+        call safe_character_append(errormsg,': file "')
+      endif
+!
+      filename = curfile
+      if ( ncpus>1 .and. curdist>=0 ) then         ! for synchronized file replace 'procN' by 'proc*'
+        ind = index(curfile,'proc')+4
+        filename(ind:ind) = '*'
+      endif
+
+      codestr = itoa(code)
+      call safe_character_append(errormsg,trim(filename)//'". Code: '//trim(codestr))
+      if ( submsg/='' ) call safe_character_append(errormsg,'. '//trim(submsg))
 !    
 ! scan of ioerrors.log to avoid multiple entries for the same file with same error code.
-! When user eliminates cause of error, (s)he should also remove the corresponding line(s) in ioerror.log.
+! When user eliminates cause of error, (s)he should also remove the corresponding line(s) in ioerrors.log.
 !
-           strarr(1) = trim(curfile)
-           strarr(2) = trim(codestr)
+      strarr(1) = filename
+      strarr(2) = codestr
 !
-           if ( .not.scanfile('ioerrors.log',2,strarr,'all') ) then
+      if ( .not.scanfile('ioerrors.log',2,strarr,'all') ) then
 !
-             open(unit,file='ioerrors.log',position='append',iostat=IOSTAT)
-             if (iostat==0) then
-               call date_time_string(date)
-               write(unit,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
-               close(unit,iostat=IOSTAT)
-             endif
+        open(unit,file='ioerrors.log',position='append',iostat=IOSTAT)
+
+        if (iostat==0) then
+          call date_time_string(date)
+          write(unit,'(a)',IOSTAT=iostat) date//' '//trim(errormsg)
+          close(unit,IOSTAT=iostat)
+        endif
+
+        if (iostat/=0) write(*,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
 !
-             call system( &
-              'echo '//trim(errormsg)//'| mail -s PencilCode Message '//trim(mailaddress) )
+        if ( index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
+          call system( &
+               'echo '//trim(errormsg)//'| mail -s PencilCode Message '//trim(mailaddress) )
+      endif
+    endif
 !
-           endif
+    if (code/=0) then
+      outlog = .true.
+      if (lstop_on_ioerror) call stop_it('due to '//trim(errormsg))     ! stop on error if requested by user
+    endif
 !
-         endif
-!
-    if (lstop_on_ioerror) call stop_it('Stopped due to: '//trim(errormsg))
-!
-  endsubroutine outlog
+  end function outlog
 !***********************************************************************
   logical function scanfile(file,nstr,strings,mode)
 !
@@ -635,7 +739,7 @@ module Messages
 !
     character (LEN=3) :: model
     character (LEN=120) :: line
-    integer :: lun=111,i,count,iostat
+    integer :: lun=90,i,count,iostat
    
     if ( .not.present(mode) ) then
       model='any'
@@ -644,6 +748,7 @@ module Messages
     endif
 !
     scanfile = .false.
+
     open(lun,file=file,ERR=99,IOSTAT=iostat) 
 !
     do
