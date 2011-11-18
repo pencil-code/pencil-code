@@ -29,6 +29,7 @@ module Polymer
   include 'polymer.h'
 !
   real, dimension(nx,3,3) :: CdotGradu,GraduTdotC
+  real :: frmax_local
 !
 !  Start parameters.
 !
@@ -53,6 +54,7 @@ module Polymer
 ! Diagnostic variables
 !
   integer :: idiag_polytrm=0     ! DIAG_DOC: $\left\langle Tr[C_{ij}]\right\rangle$
+  integer :: idiag_frmax=0       ! DIAG_DOC: $\max(f(r))$
 !
   contains
 !***********************************************************************
@@ -281,11 +283,7 @@ module Polymer
       endselect
 !
       if (ldiagnos) call polymer_diagnostic(f,p)
-!
-! Time step constaint
-!
-      trelax_poly=tau_poly
-!
+
     endsubroutine calc_pencils_polymer
 !***********************************************************************
     subroutine calc_pencils_fene_p(f,p)
@@ -356,12 +354,15 @@ module Polymer
 !  Most basic pencils should come first, as others may depend on them.
 !
       use Diagnostics, only: sum_mn_name
+      use Sub, only: max_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
-!
+!   Always calculate the maximum value of fr 
+      call  max_mn(p%fr,frmax_local)
+      if (idiag_frmax/=0 ) fname(idiag_frmax) =  frmax_local
       if (idiag_polytrm/=0)   call sum_mn_name(p%trp,idiag_polytrm)
 !
     endsubroutine polymer_diagnostic
@@ -443,6 +444,11 @@ module Polymer
             ipk=ipk+1
           enddo
         enddo
+!
+! Time step constaint
+!
+      trelax_poly=tau_poly/frmax_local
+!
 ! also set the limit to diffusive time scales. This is needed for only once as eta_poly
 ! is constant. 
         if (lfirst.and.ldt)  diffus_eta_poly=eta_poly*dxyz_2
@@ -586,6 +592,7 @@ module Polymer
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'polytrm',idiag_polytrm)
+        call parse_name(iname,cname(iname),cform(iname),'frmax',idiag_frmax)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
