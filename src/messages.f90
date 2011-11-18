@@ -580,18 +580,19 @@ module Messages
     character (LEN=*), optional, intent(IN) :: file
     integer,           optional, intent(IN) :: dist
 !
-    character (LEN=80), save :: curfile=''
-    integer,            save :: curdist=0, curback=0             ! default: file not distributed, no backskipping
+    character (LEN=fnlen), save :: curfile=''
+    ! default: file not distributed, no backskipping
+    integer, save :: curdist=0, curback=0
 !
     integer :: unit=90, iostat, ind
-    character (LEN=20) :: date, codestr, strarr(2)
-    character (LEN=40) :: submsg
-    character (LEN=80) :: filename
+    character (LEN=fnlen) :: date, strarr(2), submsg, filename
+    character (LEN=intlen) :: codestr
     logical :: lopen, lclose, lread, lwrite, lsync
 !
     outlog = .false.
 
-    if (.true.) then                                                     ! experimental! Don't set .false.
+    ! experimental! Don't set .false.
+    if (.true.) then
       if (code/=0) then
         outlog = .true.
         call stop_it('due to I/O error')
