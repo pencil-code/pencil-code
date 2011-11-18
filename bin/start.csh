@@ -106,6 +106,7 @@ if (! -e NOERASE) then
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
         $datadir/averages/* >& /dev/null
   if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
+  rm -f ioerrors.log >& /dev/null
 endif
 
 # If local_binary is used, copy executable to $SCRATCH_DIR of master node
