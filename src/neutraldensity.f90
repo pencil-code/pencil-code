@@ -722,7 +722,7 @@ module NeutralDensity
         do j=1,3
           call der6(f,ilnrhon,tmp,j,IGNOREDX=.true.)
           if (.not.lneutraldensity_nolog) tmp=tmp*p%rhon1
-          fdiff = fdiff + diffrhon_hyper3*pi4_1/60.*tmp*dline_1(:,j)**2
+          fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
         enddo
         if (lfirst.and.ldt) &
              diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1/dxyz_4

@@ -2486,7 +2486,7 @@ module Magnetic
           ju=j+iaa-1
           do i=1,3
             call der6(f,ju,tmp1,i,IGNOREDX=.true.)
-            fres(:,j)=fres(:,j)+eta_hyper3*pi4_1/60.*tmp1*dline_1(:,i)**2
+            fres(:,j)=fres(:,j)+eta_hyper3*pi4_1*tmp1*dline_1(:,i)**2
           enddo
         enddo
         if (lfirst.and.ldt) &

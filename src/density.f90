@@ -1798,7 +1798,7 @@ module Density
         do j=1,3
           call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
           if (.not.ldensity_nolog) tmp=tmp*p%rho1
-          fdiff = fdiff + diffrho_hyper3*pi4_1/60.*tmp*dline_1(:,j)**2
+          fdiff = fdiff + diffrho_hyper3*pi4_1*tmp*dline_1(:,j)**2
 !AB: wouldn't the following line make more sense?
 !AB: But then the meaning of diffrho_hyper3 changes, so we
 !AB: should not just add it to the previous diffus_diffrho3.
