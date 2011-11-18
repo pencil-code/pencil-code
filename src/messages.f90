@@ -564,7 +564,10 @@ module Messages
 !  dist(IN): indicator for distributed files (>0) and need of synchronization of file states across nodes
 !            or simple backskipping (<0);|dist| = logical unit number
 !            only considered in calls with msg='open'
-!                           
+!  return value: flag for 'I/O error has occurred'. If so execution should jump immediately after the 'close'
+!                statement ending the present group of I/O operations as outlog closes (tries to close) the file.
+!                It is in the responsibility of the programmer that by this jump no relevant statements are missed.
+!                          
 !  3-nov-11/MR: coded;
 ! 16-nov-11/MR: modified; experimental version which always stops program on I/O error
 !
@@ -587,15 +590,16 @@ module Messages
     logical :: lopen, lclose, lread, lwrite, lsync
 !
     outlog = .false.
-!    goto 99                                                     ! experimental! Don't remove comment.
-    if (code/=0) then
-      outlog = .true.
-      call stop_it('due to I/O error')
+
+    if (.true.) then                                                     ! experimental! Don't set .false.
+      if (code/=0) then
+        outlog = .true.
+        call stop_it('due to I/O error')
+      endif
+      return
     endif
 
-    return
-
-99  lopen  = msg(1:4)=='open'
+    lopen  = msg(1:4)=='open'
     lread  = msg(1:5)=='read '
     lwrite = msg(1:6)=='write '
     lclose = msg(1:5)=='close'
@@ -624,11 +628,12 @@ module Messages
 
       if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose) ) then      
                                                                ! write/close on distributed file failed (somewhere)
-        lsync = report_clean_output( code/=0, curfile, errormsg ) 
+        lsync = report_clean_output(code/=0, curfile, errormsg) 
         if (lsync) then                                        ! synchronization necessary as at least 
                                                                ! one processor failed in writing
           if (lserial_io) then                                 ! no backskipping, needs to be checked
-            submsg = 'File not synchronized (lserial_io=T)!'
+            submsg = ' not synchronized (lserial_io=T)!'
+            lsync = .false.                                    ! should file be closed???
           else
 !
             if (lclose.and.code==0) open(curdist,file=curfile,position='append') ! re-open successfully written and closed files
@@ -718,7 +723,7 @@ module Messages
       endif
     endif
 !
-    if (code/=0) then
+    if (code/=0.or.lsync) then
       outlog = .true.
       if (lstop_on_ioerror) call stop_it('due to '//trim(errormsg))     ! stop on error if requested by user
     endif
