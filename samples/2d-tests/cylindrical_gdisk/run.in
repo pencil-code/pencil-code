@@ -16,13 +16,15 @@
 &hydro_run_pars
 /
 &density_run_pars
-  lupw_rho=T
+  !lupw_rho=T
+  idiff='hyper3-cyl'
+  diffrho_hyper3=1e-3
 /
 &grav_run_pars
 /
 &viscosity_run_pars
-  ivisc='nu-const'
-  nu=1e-5
+  ivisc='hyper3-cyl'
+  nu_hyper3=1e-3
   !!radially varying viscosity nu(r)=nu/r^pnlaw
   !ivisc='power-law'
   !pnlaw=-0.5
