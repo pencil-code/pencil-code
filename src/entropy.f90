@@ -3377,7 +3377,7 @@ module Entropy
       thdiff=0.0
       do j=1,3
         call der6(f,iss,tmp,j,IGNOREDX=.true.)
-        thdiff = thdiff + chi_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
+        thdiff = thdiff + chi_hyper3_mesh*pi5_1*tmp*dline_1(:,j)
       enddo
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff

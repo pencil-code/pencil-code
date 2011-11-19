@@ -1147,7 +1147,7 @@ module Viscosity
               p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * tmp3 * dline_1(:,i)
             else
               p%fvisc(:,j) = p%fvisc(:,j) + &
-                  nu_hyper3_mesh*pi5_1/60.*tmp3*dline_1(:,i)
+                  nu_hyper3_mesh*pi5_1*tmp3*dline_1(:,i)
             endif
           enddo
           if (lpencil(i_visc_heat)) then
