@@ -2501,7 +2501,7 @@ module Magnetic
             if (ldynamical_diffusion) then
               fres(:,j) = fres(:,j) + eta_hyper3_mesh * tmp1 * dline_1(:,i)
             else
-              fres(:,j)=fres(:,j)+eta_hyper3_mesh*pi5_1*tmp1*dline_1(:,i)
+              fres(:,j)=fres(:,j)+eta_hyper3_mesh*pi5_1/60.*tmp1*dline_1(:,i)
             endif
           enddo
         enddo
