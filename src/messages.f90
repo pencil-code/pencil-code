@@ -619,7 +619,7 @@ module Messages
     logical :: lopen, lclose, lread, lwrite, lsync
 !
     outlog = .false.
-
+!
     ! experimental! Don't set .false.
     if (.true.) then
       if (code/=0) then
@@ -628,7 +628,7 @@ module Messages
       endif
       return
     endif
-
+!
     lopen  = mode(1:4)=='open'
     lread  = mode(1:5)=='read '
     lwrite = mode(1:6)=='write '
@@ -647,7 +647,7 @@ module Messages
       curback = 0                                      ! counter for successfully read records set back  
 !
     endif
-
+!
     if (lwrite.and.code==0) curback = curback+1        ! number of succesfully written records after open
 !
     if ( lroot ) then
@@ -657,9 +657,9 @@ module Messages
     lsync = .false.
 !
     if (curdist/=0) then                                       ! backskipping enabled 
-
+!
       if ( ncpus==1 .and. curdist>0 ) curdist = -curdist
-
+!
       if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose) ) then      
                                                                ! write/close on distributed file failed (somewhere)
         lsync = report_clean_output(code/=0, errormsg) 
@@ -672,7 +672,7 @@ module Messages
           else
 !
             if (lclose.and.code==0) open(curdist,file=curfile,position='append') ! re-open successfully written and closed files
-
+!
             if ( backskip(curdist,curback) ) then                                ! try to set back file pointer by curback records
               if (lroot) submsg = trim(submsg)//' not synchronized!' 
             else
@@ -729,7 +729,7 @@ module Messages
         ind = index(curfile,'proc')+4
         filename(ind:ind) = '*'
       endif
-
+!
       codestr = itoa(code)
       call safe_character_append(errormsg,trim(filename)//'". Code: '//trim(codestr))
       if ( submsg/='File' ) call safe_character_append(errormsg,'. '//trim(submsg))
@@ -744,13 +744,13 @@ module Messages
       if ( .not.scanfile('ioerrors.log',2,strarr,'all') ) then
 !
         open(unit,file='ioerrors.log',position='append',iostat=IOSTAT)
-
+!
         if (iostat==0) then
           call date_time_string(date)
           write(unit,'(a)',IOSTAT=iostat) date//' '//trim(errormsg)
           close(unit,IOSTAT=iostat)
         endif
-
+!
         if (iostat/=0) write(*,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
 !
         if ( index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
@@ -789,7 +789,7 @@ module Messages
     endif
 !
     scanfile = .false.
-
+!
     open(lun,file=file,ERR=99,IOSTAT=iostat) 
 !
     do
@@ -816,7 +816,7 @@ module Messages
  
 98  close(lun,ERR=99)
 99  continue
-
+!
   end function scanfile
 !***********************************************************************
     subroutine input_array(file,a,dimx,dimy,dimz,dimv)
