@@ -185,13 +185,13 @@ module Diagnostics
 !  Append to diagnostics file.
 !
         open(1,file=trim(datadir)//'/time_series.dat',position='append',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(datadir)//'/time_series.dat',dist=-1)) goto 92    ! file not distributed, backskipping enabled 
+        if (outlog(iostat,'open',trim(datadir)//'/time_series.dat',dist=-1)) goto 92    ! file not distributed, backskipping enabled
 !
         if (first) then
           write(1,"('"//comment_char//"',a)",IOSTAT=iostat) trim(legend)
           if (outlog(iostat,'write legend')) goto 92
         endif
-
+!
         write(1,'(a)',IOSTAT=iostat) trim(line)
         if (outlog(iostat,'write line')) goto 92
 !
@@ -808,7 +808,7 @@ module Diagnostics
 !
         write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
         if (outlog(iostat,'write t1ddiagnos')) return
-
+!
         write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamez(:,:,1:nnamez)
         if (outlog(iostat,'write fnamez')) return
 !
@@ -827,7 +827,7 @@ module Diagnostics
 !  12-oct-05/anders: adapted from write_xyaverages
 !
       integer :: iostat
-
+!
       if (lroot.and.nnamey>0) then
 !
         open(1,file=trim(datadir)//'/xzaverages.dat',position='append',IOSTAT=iostat)
@@ -889,10 +889,10 @@ module Diagnostics
       integer :: iostat
 !
       if (lroot.and.nnamer>0) then
-
+!
         open(1,file=trim(datadir)//'/phizaverages.dat',position='append',IOSTAT=iostat)
         if (outlog(iostat,'open',trim(directory_snap)//'/phizaverages.dat',dist=-1)) return          ! file not distributed, backskipping enabled
-!                                                                                         
+!
         if (it==1) then
           write(1,'(1p,8e14.5e3)',IOSTAT=iostat) rcyl
           if (outlog(iostat,'write rcyl')) return
@@ -900,10 +900,10 @@ module Diagnostics
 !
         write(1,'(1pe12.5)',IOSTAT=iostat) t1ddiagnos
         if (outlog(iostat,'write t1ddiagnos')) return
-
+!
         write(1,'(1p,8e14.5e3)',IOSTAT=iostat) fnamer(:,1:nnamer)
         if (outlog(iostat,'write fnamer')) return
-
+!
         close(1,IOSTAT=iostat)
         if (outlog(iostat,'close')) continue
 !
@@ -1021,8 +1021,8 @@ module Diagnostics
 !  Write file name to file list.
 !
 93      open(1,FILE=trim(datadir)//'/averages/phiavg.files',POSITION='append',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(datadir)//'/averages/phiavg.files',dist=-1)) return        ! file not distributed, backskipping enabled  
-
+        if (outlog(iostat,'open',trim(datadir)//'/averages/phiavg.files',dist=-1)) return        ! file not distributed, backskipping enabled
+!
         write(1,'(A)',IOSTAT=iostat)'PHIAVG'//trim(ch)
         if (outlog(iostat,'write "PHIAVG"')) return
 !
