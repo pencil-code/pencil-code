@@ -271,17 +271,22 @@ module Messages
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
       integer :: if0,if1,iv0,iv1,iy0,iy1,it0,it1,ia0,ia1,iat
       integer :: wf=18, wv=7, wd=19 ! width of individual fields
-      integer :: wd1=0
+      integer :: wd1=0, dist, iostat
       logical, save :: lfirstcall=.true.
+      logical :: writ
 !
 !  Write string to screen and to 'svnid.dat' file.
 !
+      writ = .true.
       if (lfirstcall) then
-        open(1, file=trim(datadir)//'/svnid.dat', status='replace')
+        open(1, file=trim(datadir)//'/svnid.dat', status='replace',IOSTAT=iostat)
+        dist=0
         lfirstcall=.false.
       else
-        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append')
+        open(1, file=trim(datadir)//'/svnid.dat', status='old', position='append',IOSTAT=iostat)
+        dist=-1
       endif
+      if (outlog(iostat,'open',trim(datadir)//'/svnid.dat',dist=dist)) writ=.false.
 !
 !  Construct format
 !  Need to set explicit format below, to avoid problems when the
@@ -342,11 +347,14 @@ module Messages
             date(1:wd), &
             trim(author)
 !
-        write(1,fmt) "SVN: ", &
-            trim(filename), &
-            revision(1:wv), &
-            date(1:wd), &
-            trim(author)
+        if (writ) then
+          write(1,fmt,IOSTAT=iostat) "SVN: ", &
+              trim(filename), &
+              revision(1:wv), &
+              date(1:wd), &
+              trim(author)
+          if (outlog(iostat,'write filename, revision etc.')) return
+        endif
       else                      ! not a SVN line; maybe `[No ID given]'
         wd1 = min(wd, len(svnid))
         write(*,fmt) "SVN: ", &
@@ -354,16 +362,22 @@ module Messages
             '', &
             '', &
             svnid(1:wd1)
-        write(1,fmt) "SVN: ", &
-            '-------', &
-            '', &
-            '', &
-            svnid(1:wd1)
+        if (writ) then
+          write(1,fmt,IOSTAT=iostat) "SVN: ", &
+              '-------', &
+              '', &
+              '', &
+              svnid(1:wd1)
+          if (outlog(iostat,'write svnid')) return
+        endif
       endif
       !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
       !write(*,'(A)') '         1         2         3         4         5'
 !
-      close(1)
+      if (writ) then
+        close(1,IOSTAT=iostat)
+        if (outlog(iostat,'close')) continue
+      endif
 !
     endsubroutine svn_id
 !***********************************************************************
@@ -379,7 +393,8 @@ module Messages
       double precision, save :: time_initial
       character(len=*), optional :: instruct
       logical, optional :: mnloop
-      integer :: mul_fac
+      integer :: mul_fac,iostat
+      logical, save :: opened=.true.
 !
 !  work on the timing only when it==it_timing
 !
@@ -390,7 +405,8 @@ module Messages
 !
           if (present(instruct)) then
             if (trim(instruct)=='initialize') then
-              open(lun,file=trim(datadir)//'/timing.dat', status='replace')
+              open(lun,file=trim(datadir)//'/timing.dat', status='replace',IOSTAT=iostat)
+              if (outlog(iostat,'open',trim(datadir)//'/timing.dat')) opened=.false.
               time_initial=mpiwtime()
             endif
           endif
@@ -405,14 +421,24 @@ module Messages
               else
                 mul_fac=1
               endif
-              write (lun,*) time,mul_fac,trim(location)//": "//trim(message)
+              if (.not.opened) then
+                open(lun,file=trim(datadir)//'/timing.dat',position='append',IOSTAT=iostat)
+                opened = .not.(outlog(iostat,'open',trim(datadir)//'/timing.dat'))
+              endif
+              if (opened) then
+                write(lun,*,IOSTAT=iostat) time,mul_fac,trim(location)//": "//trim(message)
+                if (outlog(iostat,'write time,mul_fac etc.')) opened=.false.
+              endif
             endif
           endif
 !
 !  finalize
 !
           if (present(instruct)) then
-            if (trim(instruct)=='finalize') close(lun)
+            if (trim(instruct)=='finalize' .and. opened) then
+              close(lun,IOSTAT=iostat)
+              if (outlog(iostat,'close')) continue
+            endif
           endif
 !
         endif
@@ -547,7 +573,7 @@ module Messages
 !
     endsubroutine terminal_highlight_fatal_error
 !***********************************************************************
-  logical function outlog(code,msg,file,dist)
+  logical function outlog(code,mode,file,dist,msg)
 !
 !  Creates log entries for I/O errors in ioerrors.log.
 !  Notifies user via e-mail if address mailaddress is given.
@@ -556,14 +582,16 @@ module Messages
 !  distributed files in data/procN/ -> all sub-files in a coherent state
 !
 !  code(IN): errorcode from IOSTAT
-!  msg (IN): describes failed action, starts with 'open', 'read', 'write' or 'close'
+!  mode(IN): describes failed action, starts with 'open', 'read', 'write' or 'close'
 !            for 'read' and 'write': should contain the name of the relevant variable(s) 
 !  file(IN): file at which operation failed, 
 !            if omitted assumed to be the one saved in curfile
-!            usually set by the call with msg='open'
+!            usually set by the call with mode='open'
 !  dist(IN): indicator for distributed files (>0) and need of synchronization of file states across nodes
 !            or simple backskipping (<0);|dist| = logical unit number
-!            only considered in calls with msg='open'
+!            only considered in calls with mode='open'
+!  msg(IN) : additional message text
+!
 !  return value: flag for 'I/O error has occurred'. If so execution should jump immediately after the 'close'
 !                statement ending the present group of I/O operations as outlog closes (tries to close) the file.
 !                It is in the responsibility of the programmer that by this jump no relevant statements are missed.
@@ -576,8 +604,8 @@ module Messages
     use Mpicomm, only: report_clean_output
 !
     integer,                     intent(IN) :: code
-    character (LEN=*),           intent(IN) :: msg
-    character (LEN=*), optional, intent(IN) :: file
+    character (LEN=*),           intent(IN) :: mode
+    character (LEN=*), optional, intent(IN) :: file,msg
     integer,           optional, intent(IN) :: dist
 !
     character (LEN=fnlen), save :: curfile=''
@@ -585,8 +613,9 @@ module Messages
     integer, save :: curdist=0, curback=0
 !
     integer :: unit=90, iostat, ind
-    character (LEN=fnlen) :: date, strarr(2), submsg, filename
-    character (LEN=intlen) :: codestr
+    character (LEN=intlen) :: date, codestr
+    character (LEN=fnlen), dimension(2) :: strarr
+    character (LEN=fnlen) :: filename, submsg
     logical :: lopen, lclose, lread, lwrite, lsync
 !
     outlog = .false.
@@ -600,10 +629,10 @@ module Messages
       return
     endif
 
-    lopen  = msg(1:4)=='open'
-    lread  = msg(1:5)=='read '
-    lwrite = msg(1:6)=='write '
-    lclose = msg(1:5)=='close'
+    lopen  = mode(1:4)=='open'
+    lread  = mode(1:5)=='read '
+    lwrite = mode(1:6)=='write '
+    lclose = mode(1:5)=='close'
 !
     if (present(file)) curfile = file
 !
@@ -625,16 +654,21 @@ module Messages
       errormsg = ''; submsg = 'File'
     endif
 !
+    lsync = .false.
+!
     if (curdist/=0) then                                       ! backskipping enabled 
+
+      if ( ncpus==1 .and. curdist>0 ) curdist = -curdist
 
       if ( ncpus>1 .and. curdist>0 .and. (lwrite.or.lclose) ) then      
                                                                ! write/close on distributed file failed (somewhere)
-        lsync = report_clean_output(code/=0, curfile, errormsg) 
+        lsync = report_clean_output(code/=0, errormsg) 
         if (lsync) then                                        ! synchronization necessary as at least 
                                                                ! one processor failed in writing
           if (lserial_io) then                                 ! no backskipping, needs to be checked
             submsg = ' not synchronized (lserial_io=T)!'
-            lsync = .false.                                    ! should file be closed???
+            lsync = .false.                                    ! should file be closed??? Is return value then correct?
+                                                               ! better to stop immediately?
           else
 !
             if (lclose.and.code==0) open(curdist,file=curfile,position='append') ! re-open successfully written and closed files
@@ -675,9 +709,9 @@ module Messages
 !
       if ( lopen.or.lread.or.lwrite.or.lclose ) then
 !
-        call safe_character_append(errormsg,' when '//msg(1:4)//'ing ')
+        call safe_character_append(errormsg,' when '//mode(1:4)//'ing ')
         if ( lread .or. lwrite ) then
-          call safe_character_append(errormsg,trim(msg(6:)))
+          call safe_character_append(errormsg,trim(mode(6:)))
           if (lread) then
             call safe_character_append(errormsg,' from')
           else
@@ -698,7 +732,8 @@ module Messages
 
       codestr = itoa(code)
       call safe_character_append(errormsg,trim(filename)//'". Code: '//trim(codestr))
-      if ( submsg/='' ) call safe_character_append(errormsg,'. '//trim(submsg))
+      if ( submsg/='File' ) call safe_character_append(errormsg,'. '//trim(submsg))
+      if ( present(msg) ) call safe_character_append(errormsg,'. '//trim(msg))
 !    
 ! scan of ioerrors.log to avoid multiple entries for the same file with same error code.
 ! When user eliminates cause of error, (s)he should also remove the corresponding line(s) in ioerrors.log.
@@ -744,7 +779,7 @@ module Messages
     character (LEN=3),                 optional, intent(IN) :: mode
 !
     character (LEN=3) :: model
-    character (LEN=120) :: line
+    character (LEN=fnlen) :: line
     integer :: lun=90,i,count,iostat
    
     if ( .not.present(mode) ) then
@@ -774,7 +809,7 @@ module Messages
 !
       if ( count==nstr ) then
         scanfile = .true.
-        goto 98 
+        exit 
       endif 
       
 97  enddo
@@ -802,7 +837,7 @@ module Messages
       read(1,IOSTAT=iostat) a
       if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
       close(1,IOSTAT=iostat)
-      if (iostat /= 0) call stop_it("Cannot close "//trim(file),iostat)
+      if (outlog(iostat,'close',file)) continue
 !
     endsubroutine input_array
 !***********************************************************************
