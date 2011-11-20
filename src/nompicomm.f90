@@ -1543,7 +1543,7 @@ module Mpicomm
     subroutine distribute_z_3D (in, out, source_proc)
 !
 !  This routine divides a large array of 3D data on the source processor
-!  and distributes it to all processors in the z-direction. 
+!  and distributes it to all processors in the z-direction.
 !
 !  09-mar-2011/Bourdin.KIS: coded
 !
@@ -1560,7 +1560,7 @@ module Mpicomm
     subroutine distribute_z_4D (out, in, source_proc)
 !
 !  This routine divides a large array of 4D data on the source processor
-!  and distributes it to all processors in the z-direction. 
+!  and distributes it to all processors in the z-direction.
 !
 !  09-mar-2011/Bourdin.KIS: coded
 !
@@ -2285,11 +2285,11 @@ module Mpicomm
       implicit none
 !
       real,    dimension(nxgrid,nygrid,nzgrid),          intent(in) :: sendbuf
-      complex, dimension(nxgrid,nygrid,nzgrid,ncomp),    intent(in) :: sendbuf_cmplx   
+      complex, dimension(nxgrid,nygrid,nzgrid,ncomp),    intent(in) :: sendbuf_cmplx
       integer,                                           intent(in) :: unit, ncomp
       logical,                                 optional, intent(in) :: ltransp
       integer, dimension(3,*),                 optional, intent(in) :: kxrange, kyrange,zrange
-   
+!
       integer :: k,kl,ncompl,ic
       logical :: ltrans, lcomplex
       integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
@@ -2330,7 +2330,7 @@ module Mpicomm
       endif
 !
       do ic=1,ncompl
-        do k=1,10 
+        do k=1,10
           if ( zrangel(1,k) > 0 ) then
             do kl=zrangel(1,k),zrangel(2,k),zrangel(3,k)
               if ( lcomplex ) then
@@ -2362,15 +2362,17 @@ module Mpicomm
     endsubroutine mpimerge_1d
 !***********************************************************************
   logical function report_clean_output(flag, file, message, sync)
-
+!
     logical,                       intent(IN)  :: flag
     character (LEN=*),             intent(IN)  :: file
     character (LEN=120),           intent(OUT) :: message
     logical,             optional, intent(IN)  :: sync
-
+!
     message = ''
     report_clean_output = .false.
- 
+!
+    if (NO_WARN) print*,flag,file,sync
+!
   end function report_clean_output
 !***********************************************************************
 endmodule Mpicomm
