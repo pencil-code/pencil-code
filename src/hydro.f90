@@ -99,6 +99,7 @@ module Hydro
   real :: incl_alpha = 0.0, rot_rr = 0.0
   real :: xsphere = 0.0, ysphere = 0.0, zsphere = 0.0
   real :: amp_meri_circ = 0.0
+  real :: max_uu = 0.
 ! The following is useful to debug the forcing - Dhruba
   real :: outest
   real :: ampl_Omega=0.0
@@ -119,7 +120,7 @@ module Hydro
       luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
-      rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range
+      rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu
 !
 !  Run parameters.
 !
@@ -804,6 +805,12 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case ('const_uu','const-uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
+        case('parabola_x')
+          do ix=l1,l2;do iy=m1,m2;do iz=n1,n2
+            f(ix,iy,iz,iuu)=0
+            f(ix,iy,iz,iuu+1)=max_uu*(1-(x(ix)/x(l1))**2)
+            f(ix,iy,iz,iuu+2)=0
+          enddo;enddo;enddo
         case ('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu)
         case ('ortho')
           do ix=l1,l2;do iy=m1,m2;do iz=n1,n2

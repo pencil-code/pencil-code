@@ -29,7 +29,7 @@ module Polymer
   include 'polymer.h'
 !
   real, dimension(nx,3,3) :: CdotGradu,GraduTdotC
-  real :: frmax_local
+  real :: frmax_local = 1.
 !
 !  Start parameters.
 !
@@ -445,13 +445,16 @@ module Polymer
           enddo
         enddo
 !
-! Time step constaint
+! Time step constraint from polymer diffusivity
 !
-      trelax_poly=tau_poly/frmax_local
-!
-! also set the limit to diffusive time scales. This is needed for only once as eta_poly
-! is constant. 
         if (lfirst.and.ldt)  diffus_eta_poly=eta_poly*dxyz_2
+      endif
+!
+! Time step constrant from relaxation time of polymer
+      if (lfirst.and.ldt) trelax_poly=tau_poly/frmax_local
+      if (headtt.or.ldebug) then
+        print*, 'dpoly_dt: max(diffus_eta_poly) =', maxval(diffus_eta_poly)
+        print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
       endif
 !
     endsubroutine dpoly_dt
