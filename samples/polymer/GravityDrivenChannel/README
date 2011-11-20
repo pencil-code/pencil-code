@@ -1,0 +1,14 @@
+Directory:
+    ${PENCIL_HOME}/samples/polymer
+SVN Id:
+Maintainer:
+    Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
+Added:
+    20-Nov-2011
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+   This is a two dimensional gravity driven channel flow at Re = 100. 
+There exists an exact steady solution of the viscoelastic problem in this
+case. The sample is to test this solution for FENE-P potential. 
+The case is yet under investigation. 
