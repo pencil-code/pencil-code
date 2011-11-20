@@ -6580,13 +6580,12 @@ module Mpicomm
 !
     endfunction mpigetcomm
 !************************************************************************
-    logical function report_clean_output( flag, file, message )
+    logical function report_clean_output( flag, message )
 !
 !  Generates error message for files (like snapshots) which are distributedly
 !  written. Message contains list of processors at which operation failed.
 !
 !  flag   (IN) : indicates failure of I/O operation at local processor
-!  file   (IN) : file on which operation was performed
 !  message(OUT): message fragment containing list of processors where operation failed
 !                (only relevant for root)
 !  return value: flag for 'synchronize!', identical for all processors
@@ -6595,14 +6594,13 @@ module Mpicomm
 !
       use General, only: itoa,safe_character_append,safe_character_prepend
 !
-      logical,                       intent(IN) :: flag
-      character (LEN=*),             intent(IN) :: file
-      character (LEN=120),           intent(OUT):: message
+      logical,               intent(IN) :: flag
+      character (LEN=fnlen), intent(OUT):: message
 !
       integer :: mpierr, i, ia, ie, count
       logical, dimension(:), allocatable:: flags
 !
-      character (LEN=20)  :: str
+      character (LEN=intlen)  :: str
 !
       if (lroot) allocate(flags(ncpus))
 !
@@ -6642,11 +6640,9 @@ module Mpicomm
         endif
 !
       endif
-!
-      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,flag,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for
+!     
+      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for
 !                                                                                    ! 'sychronization necessary'
-      report_clean_output = flag
-!
     end function report_clean_output
 !**************************************************************************
 endmodule Mpicomm
