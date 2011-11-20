@@ -11,7 +11,6 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
-  use Messages, only: outlog
 !
   implicit none
 !
