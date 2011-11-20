@@ -1,0 +1,8 @@
+it(F9.0)
+t(F13.6)
+dt(E20.10)
+urms(F17.10)
+umax(F17.10)
+rhom(F17.10)
+polytrm(E22.10)
+frmax(E22.10)

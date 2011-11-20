@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+
+&init_pars
+  ip = 14
+  xyz0 = -0.1, 0.0, -1.,
+  xyz1 = 0.1, 0.4, 1.,
+  lperi=F,T,T
+  bcx = 'a','a','a','s','s','s','s','s','s','s'
+/
+&eos_init_pars
+  cs0=20
+  cp=1.0
+/
+&hydro_init_pars
+inituu='parabola_x'
+max_uu=0.5
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_lnrho'
+  lnrho_const=0.0
+/
+&grav_init_pars
+gravy_profile='const',gravy=0.001
+/
+&polymer_init_pars
+initpoly='sphere'
+/
