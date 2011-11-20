@@ -1,5 +1,5 @@
 ! $Id$
-!!
+!
 !  This module takes care of MPI communication.
 !
 !  Data layout for each processor (`-' marks ghost points, `+' real
@@ -2564,7 +2564,7 @@ module Mpicomm
 !  4-nov-11/MR: optional parameter code added
 !
       use general, only: itoa
-
+!
       character (len=*) :: msg
       integer, optional :: code
 !
@@ -6601,20 +6601,20 @@ module Mpicomm
 !
       integer :: mpierr, i, ia, ie, count
       logical, dimension(:), allocatable:: flags
-!      
+!
       character (LEN=20)  :: str
-!      
+!
       if (lroot) allocate(flags(ncpus))
-!      
+!
       call MPI_GATHER(flag, 1, MPI_LOGICAL, flags, 1, MPI_LOGICAL, root, MPI_COMM_WORLD, mpierr)
-!      
+!
       report_clean_output = .false.
       if (lroot) then
-!     
+!
         count = 0
         ia = -1; ie = 0
         str = ''; message = ''
-!     
+!
         if (lroot) then
           do i=1,ncpus
             if ( flags(i) ) then
@@ -6633,20 +6633,20 @@ module Mpicomm
             endif
           enddo
         endif
-!     
+!
         deallocate(flags)
-!     
+!
         if (count>0) then
           call safe_character_prepend(message,'"at '//trim(itoa(count))//' node(s): ')
           report_clean_output = .true.
         endif
-!     
+!
       endif
-!     
-      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,flag,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for 
+!
+      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,flag,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for
 !                                                                                    ! 'sychronization necessary'
       report_clean_output = flag
-!  
+!
     end function report_clean_output
 !**************************************************************************
 endmodule Mpicomm
