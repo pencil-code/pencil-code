@@ -77,6 +77,8 @@
   \var{uyp2}      & $u_x(x_2,y_2,z_2,t)$ \\
   \var{uzp2}      & $u_x(x_2,y_2,z_2,t)$ \\
   \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
+  \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
+                    the hydro_xaver_range \\
   \var{umax}      & $\max(|\uv|)$ \\
   \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
   \var{uxmin}     & $\min(|u_x|)$ \\
@@ -194,6 +196,8 @@
 \midrule
   \var{rhom}      & $\left<\varrho\right>$
                     \quad(mean density) \\
+  \var{rhomxmask} & $\left<\varrho\right>$ for
+                    the density_xaver_range \\
   \var{rhomin}    & $\min(\rho)$ \\
   \var{rhomax}    & $\max(\rho)$ \\
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
@@ -455,7 +459,9 @@
                     of $J_{\rm hyper}$ parallel to B \\
   \var{hjperpm}   & Mean value of the component
                     of $J_{\rm hyper}$ perpendicular to B \\
-  \var{Exmxy}     & $\left<{\cal E}_x\right>_{z}$ \\
+  \var{brmsx}     & $\left<\Bv^2\right>^{1/2}$ for
+                    the magnetic_xaver_range
+                    $\left<{\cal E}_x\right>_{z}$ \\
   \var{Eymxy}     & $\left<{\cal E}_y\right>_{z}$ \\
   \var{Ezmxy}     & $\left<{\cal E}_z\right>_{z}$ \\
 \midrule
@@ -701,6 +707,7 @@
   \multicolumn{2}{c}{Module \file{polymer.f90}} \\
 \midrule
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
+  \var{frmax}     & $\max(f(r))$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{shear.f90}} \\
 \midrule
@@ -713,7 +720,9 @@
 \midrule
   \multicolumn{2}{c}{Module \file{solar_corona.f90}} \\
 \midrule
+  \var{dtvel}     & Velocity driver time step \\
   \var{dtnewt}    & Radiative cooling time step \\
+  \var{dtradloss} & Radiative losses time step \\
   \var{dtchi2}    & $\delta t / [c_{\delta t,{\rm v}}\,
                     \delta x^2/\chi_{\rm max}]$
                     \quad(time step relative to time
@@ -1125,22 +1134,22 @@
   \var{eta21sc}   & $\eta_{21}\sin kx\cos kx$ \\
   \var{eta12cs}   & $\eta_{12}\cos kx\sin kx$ \\
   \var{eta22ss}   & $\eta_{22}\sin^2 kx$ \\
-  \var{alp11x}    & $\alpha_{11}x$ \\
-  \var{alp21x}    & $\alpha_{21}x$ \\
-  \var{alp12x}    & $\alpha_{12}x$ \\
-  \var{alp22x}    & $\alpha_{22}x$ \\
-  \var{eta11x}    & $\eta_{11}kx$ \\
-  \var{eta21x}    & $\eta_{21}kx$ \\
-  \var{eta12x}    & $\eta_{12}kx$ \\
-  \var{eta22x}    & $\eta_{22}kx$ \\
-  \var{alp11x2}   & $\alpha_{11}x^2$ \\
-  \var{alp21x2}   & $\alpha_{21}x^2$ \\
-  \var{alp12x2}   & $\alpha_{12}x^2$ \\
-  \var{alp22x2}   & $\alpha_{22}x^2$ \\
-  \var{eta11x2}   & $\eta_{11}kx^2$ \\
-  \var{eta21x2}   & $\eta_{21}kx^2$ \\
-  \var{eta12x2}   & $\eta_{12}kx^2$ \\
-  \var{eta22x2}   & $\eta_{22}kx^2$ \\
+  \var{alp11_x}   & $\alpha_{11}x$ \\
+  \var{alp21_x}   & $\alpha_{21}x$ \\
+  \var{alp12_x}   & $\alpha_{12}x$ \\
+  \var{alp22_x}   & $\alpha_{22}x$ \\
+  \var{eta11_x}   & $\eta_{11}kx$ \\
+  \var{eta21_x}   & $\eta_{21}kx$ \\
+  \var{eta12_x}   & $\eta_{12}kx$ \\
+  \var{eta22_x}   & $\eta_{22}kx$ \\
+  \var{alp11_x2}  & $\alpha_{11}x^2$ \\
+  \var{alp21_x2}  & $\alpha_{21}x^2$ \\
+  \var{alp12_x2}  & $\alpha_{12}x^2$ \\
+  \var{alp22_x2}  & $\alpha_{22}x^2$ \\
+  \var{eta11_x2}  & $\eta_{11}kx^2$ \\
+  \var{eta21_x2}  & $\eta_{21}kx^2$ \\
+  \var{eta12_x2}  & $\eta_{12}kx^2$ \\
+  \var{eta22_x2}  & $\eta_{22}kx^2$ \\
   \var{b11rms}    & $\left<b_{11}^2\right>^{1/2}$ \\
   \var{b21rms}    & $\left<b_{21}^2\right>^{1/2}$ \\
   \var{b12rms}    & $\left<b_{12}^2\right>^{1/2}$ \\
@@ -1170,6 +1179,14 @@
   \var{bx0mz}     & $\left<b_{x}\right>_{xy}$ \\
   \var{by0mz}     & $\left<b_{y}\right>_{xy}$ \\
   \var{bz0mz}     & $\left<b_{z}\right>_{xy}$ \\
+  \var{alp11x}    & $\alpha_{11}(x,t)$ \\
+  \var{alp21x}    & $\alpha_{21}(x,t)$ \\
+  \var{alp12x}    & $\alpha_{12}(x,t)$ \\
+  \var{alp22x}    & $\alpha_{22}(x,t)$ \\
+  \var{eta11x}    & $\eta_{11}(x,t)$ \\
+  \var{eta21x}    & $\eta_{21}(x,t)$ \\
+  \var{eta12x}    & $\eta_{12}(x,t)$ \\
+  \var{eta22x}    & $\eta_{22}(x,t)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_xz.f90}} \\
 \midrule
