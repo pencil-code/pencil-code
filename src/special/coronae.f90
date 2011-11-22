@@ -552,7 +552,7 @@ module Special
           call del6(f,ispitzerz,hc,IGNOREDX=.true.)
           df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper3_spi*hc
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/cdts)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/0.01)
        endif
 !
        call div(f,ispitzer,rhs)
@@ -817,7 +817,7 @@ module Special
 !
 !  due to ignoredx hyper3_chi has [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/cdts)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
         else
           call fatal_error('hyper3_chi special','only for ltemperature')
         endif
@@ -851,7 +851,7 @@ module Special
 !
 !  due to ignoredx hyper3_nu has [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/cdts)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/0.01)
       endif
 !
     endsubroutine special_calc_hydro
@@ -889,7 +889,7 @@ module Special
 !
 !  due to ignoredx hyper3_diffrho has [1/s]
 !
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/cdts)
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/0.01)
       endif
 !
     endsubroutine special_calc_density
@@ -920,7 +920,7 @@ module Special
 !
 !  due to ignoredx hyper3_eta has [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_eta/cdts)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_eta/0.01)
       endif
 !
     endsubroutine special_calc_magnetic
