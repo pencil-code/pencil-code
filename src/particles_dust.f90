@@ -456,6 +456,14 @@ module Particles
         call fatal_error('initialize_particles','')
       endif
 !
+!  Fatal error if sink particle radius is zero or negative.
+!
+      if (lsinkparticle_1 .and. rsinkparticle_1<=0.0) then
+        if (lroot) print*, 'initialize_particles: sink particle radius is '// &
+            'zero or negative: ', rsinkparticle_1
+        call fatal_error('initialize_particles','')
+      endif
+!
 !  Set up interpolation logicals. These logicals can be OR'ed with some logical
 !  in the other particle modules' initialization subroutines to enable
 !  interpolation based on some condition local to that module.
