@@ -600,6 +600,7 @@ module Magnetic_meanfield
         case ('above_x0'); alpha_tmp=0.5*(1.+erfunc((x-alpha_rmin)/alpha_width))
         case ('z/H+surface_z'); alpha_tmp=(z(n)/z_surface)*0.5*(1.-erfunc((z(n)-z_surface)/alpha_width))
           if (headtt) print*,'alpha_profile=z/H+surface_z: z_surface,alpha_width=',z_surface,alpha_width
+        case ('z/H*erfunc(H-z)'); alpha_tmp=z(n)/xyz1(3)*erfunc((xyz1(3)-abs(z(n)))/alpha_width)
         case ('read'); alpha_tmp=alpha_input(l1:l2,m)
         case ('nothing');
           call inevitably_fatal_error('calc_pencils_magnetic', &
