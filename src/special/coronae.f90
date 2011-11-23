@@ -19,7 +19,7 @@ module Special
 !
   implicit none
 !
-  real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.
+  real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.,Kiso=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.,hyper3_diffrho=0.
   real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.
@@ -58,7 +58,7 @@ module Special
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
-      ldensity_floor_c,chi_spi
+      ldensity_floor_c,chi_spi,Kiso
 !
 ! variables for print.in
 !
@@ -350,6 +350,14 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
+      if (Kiso /= 0.) then
+        lpenc_requested(i_del2lnTT)=.true.
+        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_lnrho)=.true.
+      endif
+!
       if (hcond_grad_iso /= 0.) then
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
@@ -502,16 +510,16 @@ module Special
 !
         b2_1=1./(p%b2+tini)
 !
-        do i=1,3 
+        do i=1,3
           call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
         enddo
         call dot2(p%glnTT,tmp)
-        where (sqrt(tmp) < 1e-5) 
+        where (sqrt(tmp) < 1e-5)
           glnTT_upwind(:,1) = p%glnTT(:,1)
           glnTT_upwind(:,2) = p%glnTT(:,2)
           glnTT_upwind(:,3) = p%glnTT(:,3)
         endwhere
-!        
+!
         call multsv(Kspitzer_para*exp(3.5*p%lnTT),glnTT_upwind,K1)
 !        call multsv(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho),p%glnTT,K1)
 !
@@ -792,6 +800,7 @@ module Special
       real, dimension (nx) :: hc
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
+      if (Kiso /= 0.) call calc_heatcond_spitzer_iso(df,p)
       if (Kpara /= 0.) call calc_heatcond_tensor(f,df,p)
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
@@ -870,8 +879,6 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc,lnrho_floor
-!
-      call keep_compiler_quiet(p)
 !
       if (ldensity_floor_c) then
         lnrho_floor = alog(p%b2/(0.5*c_light)**2/mu0/cdt)
@@ -1085,6 +1092,67 @@ module Special
 !
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
+    subroutine calc_heatcond_spitzer_iso(df,p)
+!
+!  Calculates heat conduction parallel and perpendicular (isotropic)
+!  to magnetic field lines.
+!
+!  See: Solar MHD; Priest 1982
+!
+!  04-sep-10/bing: coded
+!
+      use Diagnostics,     only : max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot2_mn, multsv_mn, cubic_step, dot_mn
+!
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: thdiff,chi_spitzer
+      real, dimension (nx) :: glnT2
+!
+      call dot2_mn(p%glnTT,glnT2)
+!
+      chi_spitzer = Kiso*exp(2.5*p%lnTT-p%lnrho)*p%cp1*gamma
+!
+      thdiff = chi_spitzer * (3.5*glnT2 + p%del2lnTT)
+!
+!  Add to energy equation.
+      if (ltemperature) then
+        if (ltemperature_nolog) then
+          call fatal_error('spitzer_iso','only for ltemperature')
+        else
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
+        endif
+      else if (lentropy.and.pretend_lnTT) then
+        call fatal_error('spitzer_iso','only for ltemperature')
+      else if (lthermal_energy) then
+        call fatal_error('spitzer_iso','only for ltemperature')
+      else
+        call fatal_error('calc_heatcond_spitzer', &
+            'not implemented for current set of thermodynamic variables')
+      endif
+!
+      if (lvideo) then
+!
+! slices
+        spitzer_yz(m-m1+1,n-n1+1)=thdiff(ix_loc-l1+1)
+        if (m == iy_loc)  spitzer_xz(:,n-n1+1)= thdiff
+        if (n == iz_loc)  spitzer_xy(:,m-m1+1)= thdiff
+        if (n == iz2_loc) spitzer_xy2(:,m-m1+1)= thdiff
+        if (n == iz3_loc) spitzer_xy3(:,m-m1+1)= thdiff
+        if (n == iz4_loc) spitzer_xy4(:,m-m1+1)= thdiff
+      endif
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+chi_spitzer*dxyz_2
+        if (ldiagnos.and.idiag_dtspitzer /= 0.) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtspitzer,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_spitzer_iso
+!***********************************************************************
     subroutine tensor_diffusion(p,vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
 !
       use Sub, only: dot2_mn, dot_mn, multsv_mn, multmv_mn
@@ -1147,7 +1215,7 @@ module Special
 !
 !     call dot2_mn(tmpv,hhh2,PRECISE_SQRT=.true.)
       call dot2_mn(tmpv,hhh2,FAST_SQRT=.true.)
-      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
+      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax_pencil)
       call multsv_mn(quenchfactor,tmpv,hhh)
       call dot_mn(hhh,p%glnTT,tmp)
 !
@@ -1240,7 +1308,7 @@ module Special
 !
 !  limit the length of h
 !
-      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax)
+      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmax_pencil)
       call multsv(quenchfactor,tmpv,hhh)
 !
       call dot(hhh,p%glnTT,rhs)
@@ -1384,7 +1452,7 @@ module Special
 !
 !  limit the length of H
 !
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      quenchfactor=1./max(1.,3.*hhh2*dxmax_pencil)
       call multsv(quenchfactor,tmpv,hhh)
 !
 !  dot H with Grad lnTT
@@ -3371,7 +3439,7 @@ module Special
 !
 !      inte = cubic_step(real(t*unit_time)-tl,0.5*(tr-tl),0.5*(tr-tl))* &
 !          (right-left) +left
-
+!
       do i=1,4
         if (lhydro) then
           if (nxgrid /= 1) then
@@ -3448,7 +3516,7 @@ module Special
 !
 !  limit the length of H
 !
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
+      quenchfactor=1./max(1.,3.*hhh2*dxmax_pencil)
       call multsv(quenchfactor,tmpv,hhh)
 !
 !  dot H with Grad lnTT
