@@ -476,7 +476,7 @@ module Particles
         interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or.lparticles_spin
       endif
       interp%loo=.false.
-      interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0)).or.lentropy
+      interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate
 !
 !  Determine interpolation policies:
