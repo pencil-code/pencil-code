@@ -1028,7 +1028,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer :: i,j,k,idir,xind,yind,zind,iobj
 !
       real :: z_obj, y_obj, x_obj, r_obj, r_new, r_point, sin_theta, cos_theta
-      real :: xmirror, ymirror, zmirror, dr
+      real :: xmirror, ymirror, zmirror, dr, mirror_temperature
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
       integer :: lower_k, upper_k, ndims
       logical :: bax, bay, baz, lnew_interpolation_method
@@ -1231,6 +1231,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   lnew_interpolation_method)
               f(i,j,k,1:mvar)=f_tmp
             else
+!
+!  Set zero velocity at the solid surface
+!
               call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
                   lnew_interpolation_method)
@@ -1243,17 +1246,35 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
                   lnew_interpolation_method)
               f(i,j,k,iuz)=-phi(1)
-              if (ilnrho>0) then
-                call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
-                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                    zmirror,ndims,lnew_interpolation_method)
-                f(i,j,k,ilnrho)=phi(1)
-              endif
+!
+!  Set constant temperature, equal to the solid temperature, at the solid surface
+!
               if (ilnTT>0) then
                 call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
                     lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
                     zmirror,ndims,lnew_interpolation_method)
                 f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
+                mirror_temperature=phi(1)
+              endif
+!
+!  Set pressure gradient to zero at the solid surface
+!
+              if (ilnrho>0) then
+                call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
+                    lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
+                    zmirror,ndims,lnew_interpolation_method)
+                f(i,j,k,ilnrho)=phi(1)
+                if (ilnTT>0 .or. iTT>0) then
+                  if (ltemperature_nolog) then
+                    f(i,j,k,ilnrho) = phi(1)&
+                        *mirror_temperature/f(i,j,k,ilnTT)
+                  else
+                    f(i,j,k,ilnrho) = phi(1)&
+                        *exp(mirror_temperature-f(i,j,k,ilnTT))
+                  endif
+                else
+                  f(i,j,k,ilnrho) = phi(1)
+                endif
               endif
             endif
           endif
@@ -1290,10 +1311,31 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
               if (xind/=0 .and. yind/=0 .and. zind/=0) then
                 iobj=ba_shift(i,j,k,4)
+!
+!  Set zero velocity at the solid surface
+!
                 f(i,j,k,iux:iuz)=-f(xind,yind,zind,iux:iuz)
-                if (ilnrho>0) f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
+!
+!  Set constant temperature, equal to the solid temperature, at the solid surface
+!
                 if (ilnTT>0) f(i,j,k,ilnTT) = &
                     2*objects(iobj)%T-f(xind,yind,zind,ilnTT)
+!
+!  Set pressure gradient to zero at the solid surface
+!
+                if (ilnrho>0 .or. irho>0) then
+                  if (ilnTT>0 .or. iTT>0) then
+                    if (ltemperature_nolog) then
+                      f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)&
+                          *f(xind,yind,zind,ilnTT)/f(i,j,k,ilnTT)
+                    else
+                      f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)&
+                          *exp(f(xind,yind,zind,ilnTT)-f(i,j,k,ilnTT))
+                    endif
+                  else
+                    f(i,j,k,ilnrho) = f(xind,yind,zind,ilnrho)
+                  endif
+                endif
               endif
             endif
           enddo
