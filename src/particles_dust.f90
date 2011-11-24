@@ -476,7 +476,7 @@ module Particles
         interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or.lparticles_spin
       endif
       interp%loo=.false.
-      interp%lTT=lbrownian_forces.and.(brownian_T0==0.0)
+      interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0)).or.lentropy
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate
 !
 !  Determine interpolation policies:
@@ -4073,6 +4073,13 @@ k_loop:   do while (.not. (k>npar_loc))
         nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
       elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
+      elseif (ivis=='sqrtrho-nu-const') then
+        nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
+      elseif (ivis=='nu-therm') then
+        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
+      elseif (ivis=='mu-therm') then
+        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
+            /interp_rho(k1_imn(imn):k2_imn(imn))
       else
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
@@ -4147,6 +4154,11 @@ k_loop:   do while (.not. (k>npar_loc))
         nu=nu_/interp_rho(k)
       elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k))
+      elseif (ivis=='nu-therm') then
+        nu=nu_*sqrt(interp_TT(k))
+      elseif (ivis=='mu-therm') then
+        nu=nu_*sqrt(interp_TT(k))&
+            /interp_rho(k)
       else
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
@@ -4207,6 +4219,11 @@ k_loop:   do while (.not. (k>npar_loc))
         nu=nu_/interp_rho(k)
       elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k))
+      elseif (ivis=='nu-therm') then
+        nu=nu_*sqrt(interp_TT(k))
+      elseif (ivis=='mu-therm') then
+        nu=nu_*sqrt(interp_TT(k))&
+            /interp_rho(k)
       else
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
