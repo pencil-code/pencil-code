@@ -2463,7 +2463,9 @@ module Sub
 !  where M is a second rank matrix.
 !
 !  07-aug-10/dhruba: coded
+! 24-nov-11/dhruba: added upwinding 
 !
+      use Deriv, only: der6
       intent(in) :: gradM,f,k
       intent(out) :: ugradM
 !
@@ -2471,22 +2473,62 @@ module Sub
       real, dimension (nx,3,3,3) :: gradM
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: ugradM
+      real, dimension (nx) :: del6f
       integer :: k
       logical :: lupwind1=.false.
       logical, optional :: upwind
+      integer :: ipi,ipj,ipk
 !
       if (k<1 .or. k>mfarray) then
         call fatal_error('u_dot_grad_mat','variable index is out of bounds')
         return
       endif
 !
+      call vec_dot_3tensor(uu,gradM,ugradM)
+!
 !  Test if Upwind is used.
 !
       if (present(upwind)) lupwind1=upwind
-      if (lupwind1) then
-        call inevitably_fatal_error('u_dot_grad_mat','upwinding not implemented')
-      else
-        call vec_dot_3tensor(uu,gradM,ugradM)
+      if(lupwind1) then
+!
+! The same operation needs to be done to each element
+! of the matrix ugradM. We assume below that this matrix
+! is symmetric. Otherwise the following should be written. 
+!
+        ipk=0
+        do ipi=1,3
+          do ipj=ipi,3
+!
+! x direction
+!
+            call der6(f,k+ipk,del6f,1,UPWIND=.true.)
+            ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-abs(uu(:,1))*del6f
+!
+! y direction
+!
+            call der6(f,k+ipk,del6f,2,UPWIND=.true.)
+            if (lcartesian_coords) then
+              ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-abs(uu(:,2))*del6f
+            else
+              if (lcylindrical_coords) &
+                  ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-rcyl_mn1*abs(uu(:,2))*del6f
+              if (lspherical_coords) &
+                  ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-r1_mn*abs(uu(:,2))*del6f
+            endif
+!
+!z direction
+!
+            call der6(f,k+ipk,del6f,3,UPWIND=.true.)
+            if ((lcartesian_coords).or.(lcylindrical_coords)) then
+              ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-abs(uu(:,3))*del6f
+            else
+              if (lspherical_coords) &
+                  ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
+            endif
+            ipk=ipk+1
+          enddo
+        enddo
+        call symmetrise3x3_ut2lt(ugradM)
       endif
 !
 !  Spherical and cylindrical coordinates are not
@@ -2499,8 +2541,6 @@ module Sub
       if (lcylindrical_coords) then
         call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')
       endif
-!
-      call keep_compiler_quiet(f)
 !
    endsubroutine u_dot_grad_mat
 !***********************************************************************
