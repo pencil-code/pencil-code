@@ -625,16 +625,17 @@ include 'NSCBC.h'
               -(T_5+sgn*rho0*cs*T_2)
           if (ichemspec(1)>0) then
             do k = 1, nchemspec
-              L_k(:,:,k)=nscbc_sigma_in*(fslice(:,:,ichemspec(k))-YYk_full(:,:,k)) &
-                  *cs/Lxyz(dir1)
+              L_k(:,:,k)=nscbc_sigma_in*(fslice(:,:,ichemspec(k))&
+                  -YYk_full(:,:,k))*cs/Lxyz(dir1)
             enddo
           else
             L_k=0.
           endif
 !
-!  Julien: If an input velocity file is employed with NSCBC boundary conditions, the
-!          LODI relations are modified to fix the fluctuating inlet velocity as prescribed
-!          in the data file with a fast relaxation time scale.
+!  Julien: If an input velocity file is employed with NSCBC boundary conditions, 
+!          the LODI relations are modified to fix the fluctuating inlet 
+!          velocity as prescribed in the data file with a fast relaxation 
+!          time scale.
 !
           if (inlet_from_file) then
             L_3 = nscbc_sigma_in*(u_tslice(dir2)-0.)*cs/Lxyz(dir1)
@@ -643,7 +644,8 @@ include 'NSCBC.h'
             L_4 = nscbc_sigma_in*(u_tslice(dir3)-0.)*cs/Lxyz(dir1)
             L_4 = L_4 + nscbc_sigma_in*u_t*(fslice(:,:,dir3)-u_in(:,:,dir3))&
                 *ngrid/Lxyz(dir1)
-            L_5 = nscbc_sigma_in*cs2*rho0*sgn*(u_tslice(dir1)-u_t)*(1-Mach**2)/Lxyz(dir1)
+            L_5 = nscbc_sigma_in*cs2*rho0*sgn*(u_tslice(dir1)-u_t)&
+                *(1-Mach**2)/Lxyz(dir1)
             L_5 = L_5 + nscbc_sigma_in*sgn*rho0*cs*(cs+u_t)* &
                 (fslice(:,:,dir1)-u_in(:,:,dir1))*ngrid/Lxyz(dir1)
           endif
@@ -712,7 +714,7 @@ include 'NSCBC.h'
       sum_Lk=0.
       if (ichemspec(1)>0) then
         do k = 1,nchemspec
-          sum_Lk = sum_Lk + (rho0*cs2)/(species_constants(k,imass)*mu1)*L_k(:,:,k)
+          sum_Lk = sum_Lk +(rho0*cs2)/(species_constants(k,imass)*mu1)*L_k(:,:,k)
         enddo
       endif
       if (ilnTT>0) &
