@@ -4110,7 +4110,7 @@ module Hydro
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
           if (lfirst_proc_xz) then
-            call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=2)
+            call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
           endif
           umx=sqrt(sum(umx2)/nxgrid)
         endif
