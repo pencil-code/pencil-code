@@ -7108,6 +7108,7 @@ where \code{nw=nx*ny*nz}.
  128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc6& 9-sep-02 & AB \\
  256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
  256 & Akka  &0.0113& $512^3$ & magn/noentro & 16x16  & 12-jun-11 & AB \\
+ 512 & Akka  &0.0081& $512^3$ & magn/noentro & 16x32  & 10-sep-11 & AB \\
  512 &Neolith&0.0073& $256^3$ & magn/noentro &        & 20-nov-09 & AB \\
     \bottomrule
   \end{longtable}
@@ -8646,6 +8647,31 @@ of the velocity or magnetic potential), we can write
   = -\sum_{q}^{} {\chi_q^{(3)} \frac{\partial{}^6}{\partial{x_q^6}}\psi}.
 \end{equation}
 
+\subsection{Hyperviscosity in Burgers shock}
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {BurgersShock}
+  \caption{Left: Burgers shock from \cmd{teach/PencilCode/material/BurgersShock}
+  (in the teaching material) with $-20\leq x\leq 20$, $n_x=64$ mesh points,
+  $u_x=\mp1$ on the two ends, $\nu=0.4$ and either $\nu_3=0$ (solid line)
+  or $\nu_3=0.05$ (dashed line).
+  Right: similar to the left hand side, but with $\nu=0$ and
+  $\nu_3=0.05$ (dashed line), compared with the case
+  $\nu=0.4$ and $\nu_3=0$ (solid line).
+  }
+  \label{Fig-BurgersShock}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+Hyperviscosity has the unfortunate property of introducing
+(numerically stable) wiggles, even if one just adds a little bit
+of hyperviscosity to a run with normal viscosity;
+see left hand side of Fig.~\ref{Fig-BurgersShock}.
+Running with just hyperviscosity give strong wiggles.
 
 % ====================================================================== %
 
