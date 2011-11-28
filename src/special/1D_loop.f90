@@ -26,7 +26,7 @@ module Special
   real :: exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.
   real :: tau_inv_newton=0.,exp_newton=0.
   real :: tanh_newton=0.,cubic_newton=0.
-  real :: width_newton=0.,width_RTV=0.
+  real :: width_newton=0.,width_RTV=0.,hyper3_chi=0.
   real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
   real :: hcond_grad_iso=0.
   real :: tau_inv_spitzer=0.
@@ -42,7 +42,7 @@ module Special
       width_newton,tanh_newton,cubic_newton,Kchrom, &
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
       exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc, &
-      tau_inv_spitzer
+      tau_inv_spitzer,hyper3_chi
 !
 ! variables for print.in
 !
@@ -399,9 +399,13 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Sub, only: del6
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx) :: hc
 !
       if (hcond_grad_iso/=0.) call calc_heatcond_glnTT_iso(df,p)
       if (Kpara/=0.) call calc_heatcond_spitzer(f,df,p)
@@ -410,7 +414,18 @@ module Special
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
       if (Kchrom/=0.) call calc_heatcond_kchrom(df,p)
 !
-      call keep_compiler_quiet(f)
+      if (hyper3_chi /= 0.) then
+        call del6(f,ilnTT,hc,IGNOREDX=.true.)
+        if (ltemperature .and. (.not.ltemperature_nolog)) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_chi*hc
+!
+!  due to ignoredx hyper3_chi has [1/s]
+!
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+        else
+          call fatal_error('hyper3_chi special','only for ltemperature')
+        endif
+      endif
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -443,7 +458,7 @@ module Special
       call dot2(glnTT_upwind,glnTT2_upwind)
       call dot2(p%glnTT,glnTT2)
 !
-      gKpara = 3.5 * glnTT2_upwind
+      gKpara = 3.5 * glnTT2 !_upwind
 !
       if (Ksat /= 0.) then
         Ksatb = Ksat*7.28d7 /unit_velocity**3. * unit_temperature**1.5
