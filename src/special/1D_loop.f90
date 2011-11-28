@@ -404,7 +404,7 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       if (hcond_grad_iso/=0.) call calc_heatcond_glnTT_iso(df,p)
-      if (Kpara/=0.) call calc_heatcond_spitzer(df,p)
+      if (Kpara/=0.) call calc_heatcond_spitzer(f,df,p)
       if (cool_RTV/=0.) call calc_heat_cool_RTV(df,p)
       if (tau_inv_newton/=0.) call calc_heat_cool_newton(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
@@ -414,7 +414,7 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
-    subroutine calc_heatcond_spitzer(df,p)
+    subroutine calc_heatcond_spitzer(f,df,p)
 !
 !  Computes Spitzer heat conduction along the 1D loop
 !  rhs = Div K T^2.5 Grad(T)
@@ -425,20 +425,25 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: dot2,dot
 !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: chi,glnTT2,rhs,u_spitzer
-      real, dimension (nx) :: chi_sat,chi_c,gKc,gKpara,gKsat
-      real, dimension (nx,3) :: tmpv2,tmpv
+      real, dimension (nx) :: chi_sat,chi_c,gKc,gKpara,gKsat,glnTT2_upwind
+      real, dimension (nx,3) :: tmpv2,tmpv,glnTT_upwind
       real :: Ksatb,Kcb
       integer :: i,j
 !
       chi=Kpara*exp(p%lnTT*2.5-p%lnrho)* &
           cubic_step(real(t),init_time,init_time)*p%cp1
 !
+      do i=1,3
+        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+      enddo
+      call dot2(glnTT_upwind,glnTT2_upwind)
       call dot2(p%glnTT,glnTT2)
 !
-      gKpara = 3.5 * glnTT2
+      gKpara = 3.5 * glnTT2_upwind
 !
       if (Ksat /= 0.) then
         Ksatb = Ksat*7.28d7 /unit_velocity**3. * unit_temperature**1.5
@@ -590,7 +595,7 @@ module Special
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
 !
-    real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
+    real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT
     real :: unit_lnQ
 !
     unit_lnQ=3*alog(real(unit_velocity))+&
@@ -603,7 +608,8 @@ module Special
 !
     lnneni = 2.*(p%lnrho+61.4412 +alog(real(unit_mass)))
 !
-    lnQ   = get_lnQ(lnTT_SI)
+    !lnQ   = get_lnQ(lnTT_SI)
+    call getlnQ(lnTT_SI,lnQ,delta_lnTT)
 !
     rtv_cool = lnQ-unit_lnQ+lnneni-p%lnTT-p%lnrho
     rtv_cool = gamma*p%cp1*exp(rtv_cool)
@@ -641,8 +647,11 @@ module Special
 !
     if (lfirst.and.ldt) then
       dt1_max=max(dt1_max,rtv_cool/cdts)
+      dt1_max=max(dt1_max,abs(rtv_cool/max(tini,delta_lnTT)))
       if (ldiagnos.and.idiag_dtrad/=0) then
+        itype_name(idiag_dtrad)=ilabel_max_dt
         call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
+        call max_mn_name(abs(rtv_cool/max(tini,delta_lnTT)),idiag_dtrad,l_dt=.true.)
       endif
     endif
 !
@@ -657,61 +666,63 @@ module Special
 !
   endsubroutine calc_heat_cool_RTV
 !***********************************************************************
-    function get_lnQ(lnTT)
+  subroutine getlnQ(lnTT,get_lnQ,delta_lnTT)
 !
 !  input: lnTT in SI units
 !  output: lnP  [p]= W * m^3
 !
-      real, parameter, dimension (36) :: intlnT = (/ &
-          8.98008,  9.09521, 9.21034, 9.44060,  9.67086, 9.90112, &
-          10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
-          11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340,&
-          12.6642, 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, &
-          14.0458, 14.2760, 14.5063, 14.6214, 14.7365, 14.8517, &
-          14.9668, 15.1971, 15.4273, 15.6576, 15.8878, 16.1181 /)
-      real, parameter, dimension (36) :: intlnQ = (/ &
-          -83.9292, -82.8931, -82.4172, -81.2275, -80.5291, -80.0532, &
-          -80.1837, -80.2067, -80.1837, -79.9765, -79.6694, -79.2857,&
-          -79.0938, -79.1322, -79.4776, -79.4776, -79.3471, -79.2934,&
-          -79.5159, -79.6618, -79.4776, -79.3778, -79.4008, -79.5159,&
-          -79.7462, -80.1990, -80.9052, -81.3196, -81.9874, -82.2023,&
-          -82.5093, -82.5477, -82.4172, -82.2637, -82.1793 , -82.2023 /)
+    real, parameter, dimension (36) :: intlnT = (/ &
+        8.98008,  9.09521, 9.21034, 9.44060,  9.67086, 9.90112, &
+        10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
+        11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340,&
+        12.6642, 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, &
+        14.0458, 14.2760, 14.5063, 14.6214, 14.7365, 14.8517, &
+        14.9668, 15.1971, 15.4273, 15.6576, 15.8878, 16.1181 /)
+    real, parameter, dimension (36) :: intlnQ = (/ &
+        -83.9292, -82.8931, -82.4172, -81.2275, -80.5291, -80.0532, &
+        -80.1837, -80.2067, -80.1837, -79.9765, -79.6694, -79.2857,&
+        -79.0938, -79.1322, -79.4776, -79.4776, -79.3471, -79.2934,&
+        -79.5159, -79.6618, -79.4776, -79.3778, -79.4008, -79.5159,&
+        -79.7462, -80.1990, -80.9052, -81.3196, -81.9874, -82.2023,&
+        -82.5093, -82.5477, -82.4172, -82.2637, -82.1793 , -82.2023 /)
 !
-      real, dimension (nx), intent(in) :: lnTT
-      real, dimension (nx) :: get_lnQ
-      real :: slope,ordinate
-      integer :: i,j=18
-      logical :: notdone
+    real, dimension (nx), intent(in) :: lnTT
+    real, dimension (nx), intent (out) :: get_lnQ,delta_lnTT
+    real :: slope,ordinate
+    integer :: i,j=18
+    logical :: notdone
 !
-      get_lnQ=-1000.
+    get_lnQ=-1000.
+    delta_lnTT = 100.
 !
-      do i=1,nx
-        notdone=.true.
+    do i=1,nx
+      notdone=.true.
 !
-        do while (notdone)
+      do while (notdone)
 !
-          if (lnTT(i) >= intlnT(j) .and. lnTT(i) < intlnT(j+1)) then
+        if (lnTT(i) >= intlnT(j) .and. lnTT(i) < intlnT(j+1)) then
 !
 ! define slope and ordinate for linear interpolation
 !
-            slope=(intlnQ(j+1)-intlnQ(j))/(intlnT(j+1)-intlnT(j))
-            ordinate=intlnQ(j) - slope*intlnT(j)
+          slope=(intlnQ(j+1)-intlnQ(j))/(intlnT(j+1)-intlnT(j))
+          ordinate=intlnQ(j) - slope*intlnT(j)
 !
-            get_lnQ(i) = slope*lnTT(i) + ordinate
-            notdone = .false.
-          else
-            j = j + sign(1.,lnTT(i)-intlnT(j))
-            if (j <= 0) then
-              j=1
-              notdone=.false.
-            elseif (j >= 37) then
-              call fatal_error('get_lnQ','lnTT to large')
-            endif
+          get_lnQ(i) = slope*lnTT(i) + ordinate
+          delta_lnTT(i) = intlnT(j+1) - intlnT(j)
+          notdone = .false.
+        else
+          j = j + sign(1.,lnTT(i)-intlnT(j))
+          if (j <= 0) then
+            j=1
+            notdone=.false.
+          elseif (j >= 37) then
+            call fatal_error('get_lnQ','lnTT to large')
           endif
-        enddo
+        endif
       enddo
+    enddo
 !
-    endfunction get_lnQ
+  endsubroutine getlnQ
 !***********************************************************************
     subroutine calc_heat_cool_newton(df,p)
 !
@@ -1019,6 +1030,78 @@ module Special
       endif
 !
     endsubroutine calc_heatcond_glnTT_iso
+!***********************************************************************
+    subroutine der_upwind(f,uu,k,df,j)
+!
+!  High order upwind derivative of variable.
+!  Useful for advecting.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: uu
+      real, dimension (nx) :: df,fac
+      integer :: j,k,l
+!
+      intent(in)  :: f,uu,k,j
+      intent(out) :: df
+!
+      if (nghost /= 3) call fatal_error('der_upwind','only for nghost==3')
+      if (lspherical_coords.or.lcylindrical_coords) &
+          call fatal_error('der_upwind','NOT IMPLEMENTED for non-cartesian grid')
+!
+      if (j == 1) then
+        if (nxgrid /= 1) then
+          fac = 1./6.*dx_1(l1:l2)
+          do l=1,nx
+            if (uu(l,1) > 0.) then
+              df(l) = 11.*f(nghost+l  ,m,n,k)-18.*f(nghost+l-1,m,n,k) &
+                     + 9.*f(nghost+l-2,m,n,k)- 2.*f(nghost+l-3,m,n,k)
+            else
+              df(l) =  2.*f(nghost+l+3,m,n,k)- 9.*f(nghost+l+2,m,n,k) &
+                     +18.*f(nghost+l+1,m,n,k)-11.*f(nghost+l  ,m,n,k)
+            endif
+          enddo
+          df = fac*df
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind: Degenerate case in x-direction'
+        endif
+      elseif (j == 2) then
+        if (nygrid /= 1) then
+          fac = 1./6.*dy_1(m)
+          do l=1,nx
+            if (uu(l,2) > 0.) then
+              df(l) = 11.*f(nghost+l,m  ,n,k)-18.*f(nghost+l,m-1,n,k) &
+                     + 9.*f(nghost+l,m-2,n,k)- 2.*f(nghost+l,m-3,n,k)
+            else
+              df(l) =  2.*f(nghost+l,m+3,n,k)- 9.*f(nghost+l,m+2,n,k) &
+                     +18.*f(nghost+l,m+1,n,k)-11.*f(nghost+l,m  ,n,k)
+            endif
+          enddo
+          df = fac*df
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind: Degenerate case in y-direction'
+        endif
+      elseif (j == 3) then
+        if (nzgrid /= 1) then
+          fac = 1./6.*dz_1(n)
+          do l=1,nx
+            if (uu(l,3) > 0.) then
+              df(l) = 11.*f(nghost+l,m,n  ,k)-18.*f(nghost+l,m,n-1,k) &
+                     + 9.*f(nghost+l,m,n-2,k)- 2.*f(nghost+l,m,n-3,k)
+            else
+              df(l) =  2.*f(nghost+l,m,n+3,k)- 9.*f(nghost+l,m,n+2,k) &
+                     +18.*f(nghost+l,m,n+1,k)-11.*f(nghost+l,m,n  ,k)
+            endif
+          enddo
+          df = fac*df
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind: Degenerate case in z-direction'
+        endif
+      endif
+!
+    endsubroutine der_upwind
 !***********************************************************************
 !
 !********************************************************************
