@@ -4109,7 +4109,7 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lfirst_proc_xz) then
+          if (lfirst_proc_yz) then
             call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
           endif
           umx=sqrt(sum(umx2)/nxgrid)
@@ -4137,9 +4137,9 @@ module Hydro
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
           if (lfirst_proc_xz) then
-            call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,nx,idir=2)
+            call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
           endif
-          umy=sqrt(sum(umy2)/nxgrid)
+          umy=sqrt(sum(umy2)/nygrid)
         endif
         call save_name(umy,idiag_umy)
       endif
