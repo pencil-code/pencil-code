@@ -45,7 +45,8 @@ module Special
       width_newton,tanh_newton,cubic_newton,Kchrom, &
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
       exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc, &
-      tau_inv_spitzer,hyper3_chi
+      tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
+      bullets_t0,bullets_dt,bullets_h0
 !
 ! variables for print.in
 !
@@ -200,7 +201,7 @@ module Special
         lpenc_requested(i_lnrho)=.true.
       endif
 !
-      if (tau_inv_newton/=0.) then
+      if ((tau_inv_newton/=0.).or.(bullets_h0/=0.)) then
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_lnrho)=.true.
       endif
