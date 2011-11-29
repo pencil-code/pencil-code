@@ -471,7 +471,7 @@ contains
         if (ltemperature_nolog) then
           TT_var = TT / unit_temperature
         else
-          TT_var = alog(TT / unit_temperature)
+          TT_var = alog(TT /real(unit_temperature))
         endif
       else
         TT_var = impossible
