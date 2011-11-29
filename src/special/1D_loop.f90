@@ -30,6 +30,9 @@ module Special
   real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
   real :: hcond_grad_iso=0.
   real :: tau_inv_spitzer=0.
+  real :: bullets_x0=0.,bullets_dx=0.
+  real :: bullets_t0=0.,bullets_dt=0.
+  real :: bullets_h0=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -413,6 +416,7 @@ module Special
       if (tau_inv_newton/=0.) call calc_heat_cool_newton(df,p)
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
       if (Kchrom/=0.) call calc_heatcond_kchrom(df,p)
+      if (bullets_h0/=0.) call calc_bullets_heating(df,p)
 !
       if (hyper3_chi /= 0.) then
         call del6(f,ilnTT,hc,IGNOREDX=.true.)
@@ -1118,7 +1122,20 @@ module Special
 !
     endsubroutine der_upwind
 !***********************************************************************
+    subroutine calc_bullets_heating(df,p)
 !
+      use EquationOfState, only : gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + bullets_h0* &
+          exp( - ((x(l1:l2)-bullets_x0)/bullets_dx)**2.)* &
+          exp( - ((t       -bullets_t0)/bullets_dt)**2.)* &
+          p%cp1*gamma*exp(-p%lnrho -p%lnTT)
+!
+    endsubroutine calc_bullets_heating
+!***********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
