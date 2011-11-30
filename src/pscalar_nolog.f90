@@ -96,6 +96,7 @@ module Pscalar
   integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0, idiag_ccglnrm=0
   integer :: idiag_uxcmz=0, idiag_uycmz=0, idiag_uzcmz=0
   integer :: idiag_ccmxy=0, idiag_ccmxz=0
+  integer :: idiag_cluz_uzlcm=0, idiag_gcguzm=0
 !
   contains
 !***********************************************************************
@@ -298,22 +299,37 @@ module Pscalar
       endif
 !
       lpenc_diagnos(i_cc)=.true.
+!
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
           idiag_Qrhoccm/=0 .or. idiag_Qpsclm/=0) &
           lpenc_diagnos(i_rho)=.true.
+!
       if (idiag_ucm/=0 .or. idiag_uudcm/=0 .or. idiag_uxcm/=0 .or. &
-          idiag_uycm/=0 .or. idiag_uzcm/=0 ) lpenc_diagnos(i_uu)=.true.
+          idiag_uycm/=0 .or. idiag_uzcm/=0 .or. idiag_cluz_uzlcm/=0 ) &
+          lpenc_diagnos(i_uu)=.true.
+!
       if (idiag_uudcm/=0 .or. idiag_cugccm/=0) lpenc_diagnos(i_ugcc)=.true.
+!
       if (idiag_cc1m/=0 .or. idiag_cc2m/=0 .or. idiag_cc3m/=0 .or. &
           idiag_cc4m/=0 .or. idiag_cc5m/=0 .or. idiag_cc6m/=0 .or. &
           idiag_cc7m/=0 .or. idiag_cc8m/=0 .or. idiag_cc9m/=0 .or. &
           idiag_cc10m/=0) lpenc_diagnos(i_cc1)=.true.
+!
       if (idiag_gcc1m/=0 .or. idiag_gcc2m/=0 .or. idiag_gcc3m/=0 .or. &
           idiag_gcc4m/=0 .or. idiag_gcc5m/=0 .or. idiag_gcc6m/=0 .or. &
           idiag_gcc7m/=0 .or. idiag_gcc8m/=0 .or. idiag_gcc9m/=0 .or. &
           idiag_gcc10m/=0) lpenc_diagnos(i_gcc1)=.true.
+!
       if (idiag_ccglnrm/=0) lpenc_diagnos(i_glnrho)=.true.
       if (idiag_ccugum/=0) lpenc_diagnos(i_ugu)=.true.
+      if (idiag_gcguzm/=0) then
+       lpenc_diagnos(i_uij)=.true.
+       lpenc_diagnos(i_gcc)=.true.
+      endif 
+      if (idiag_cluz_uzlcm/=0) then
+        lpenc_diagnos(i_del2u)=.true.
+        lpenc_diagnos(i_del2cc)=.true.
+      endif
 !
       if (idiag_ccmxy/=0 .or. idiag_ccmxz/=0) lpenc_diagnos2d(i_cc)=.true.
 !
@@ -435,7 +451,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diff_op,diff_op2,bump
+      real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
       real :: cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
@@ -646,8 +662,15 @@ module Pscalar
         if (idiag_gcc9m/=0)   call sum_mn_name(p%gcc1(:,1)**9,idiag_gcc9m)
         if (idiag_gcc10m/=0)  call sum_mn_name(p%gcc1(:,1)**10,idiag_gcc10m)
         if (idiag_ccglnrm/=0) call sum_mn_name(p%cc(:,1)*p%glnrho(:,3),idiag_ccglnrm)
-        if (idiag_cugccm/=0) call sum_mn_name(p%cc(:,1)*p%ugcc(:,1),idiag_cugccm)
-        if (idiag_ccugum/=0) call sum_mn_name(p%cc(:,1)*p%ugu(:,3),idiag_ccugum)
+        if (idiag_cugccm/=0)  call sum_mn_name(p%cc(:,1)*p%ugcc(:,1),idiag_cugccm)
+        if (idiag_ccugum/=0)  call sum_mn_name(p%cc(:,1)*p%ugu(:,3),idiag_ccugum)
+        if (idiag_gcguzm/=0)  then
+          call dot_mn(p%gcc(:,:,1),p%uij(:,3,:),gcgu)
+          call sum_mn_name(gcgu,idiag_gcguzm)
+        endif
+        if (idiag_cluz_uzlcm/=0) &
+          call sum_mn_name(p%cc(:,1)*p%del2u(:,3)-p%uu(:,3)*p%del2cc(:,1),idiag_cluz_uzlcm)
+!
       endif
 !
       if (l1davgfirst) then
@@ -758,7 +781,7 @@ module Pscalar
         idiag_gcc1m=0; idiag_gcc2m=0; idiag_gcc3m=0; idiag_gcc4m=0
         idiag_gcc5m=0; idiag_gcc6m=0; idiag_gcc7m=0; idiag_gcc8m=0
         idiag_gcc9m=0; idiag_gcc10m=0; idiag_ccglnrm=0; idiag_cugccm=0
-        idiag_ccugum=0
+        idiag_ccugum=0; idiag_cluz_uzlcm=0; idiag_gcguzm=0
         idiag_ccmxy=0; idiag_ccmxz=0
       endif
 !
@@ -803,6 +826,8 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'ccglnrm',idiag_ccglnrm)
         call parse_name(iname,cname(iname),cform(iname),'cugccm',idiag_cugccm)
         call parse_name(iname,cname(iname),cform(iname),'ccugum',idiag_ccugum)
+        call parse_name(iname,cname(iname),cform(iname),'gcguzm',idiag_gcguzm)
+        call parse_name(iname,cname(iname),cform(iname),'cluz-uzlcm',idiag_cluz_uzlcm)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
