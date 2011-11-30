@@ -240,11 +240,13 @@ module Special
       use Sub
       use Diagnostics
       use SharedVariables, only : get_shared_variable
+      use Mpicomm, only : mpireduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: abf,alpm,ugalpm,divflux,del2alpm,alpm_divu
+      real, dimension (nx) :: temp_sum
       double precision :: dtalpm_double
       type (pencil_case) :: p
       integer :: modulot
@@ -277,12 +279,6 @@ module Special
 !
 !  Abbreviations. Note that, for now, f(l1:l2,m,n,ialpm)=h=total helicity
 !
-!!!!!! test
-      if (nprocx*nprocy*nprocz .ne. 1) call fatal_error("dspecial_dt: ", &
-          "averaging only for 1 processor")
-      f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)-sum(f(l1:l2,m,n1:n2,iay))/nx/nz
-      f(l1:l2,m,n,iaz)=f(l1:l2,m,n,iaz)-sum(f(l1:l2,m,n1:n2,iaz))/nx/nz
-!!!!!!      
       abf=f(l1:l2,m,n,ialpm)-p%ab
 !
 !  dynamical quenching equation
@@ -322,7 +318,7 @@ module Special
 !  diagnostics for 1-D averages
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
-        if (idiag_alpmmz/=0) call xysum_mn_name_z(alpm(:),idiag_alpmmz)
+        if (idiag_alpmmz/=0) call xysum_mn_name_z(abf(:),idiag_alpmmz)
         if (idiag_galpmmz3/=0) then
           call grad(f,ialpm,galpm)
           call xysum_mn_name_z(galpm(:,3),idiag_galpmmz3)
@@ -478,7 +474,7 @@ module Special
 !***********************************************************************
     subroutine calc_lspecial_pars(f)
 !
-!  dummy routine
+!  Dummy routine.
 !
 !  15-jan-08/axel: coded
 !
@@ -683,17 +679,31 @@ module Special
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
+!  Removes the volume average of A (physically unconstrained)
+!  as it messes with the magnetic helicity.
+!  Not convinced whether it should go before or after
+!  boundary conditions are applied.
 !
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
+!  29-Nov-11/AHubbard
 !
-!   06-jul-06/tony: coded
+      use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
+      intent(inout) :: f
+      real, dimension(nx, ny, nz) :: temp
+      real :: temp_sum
 !
-      call keep_compiler_quiet(f)
+      call mpiallreduce_sum(f(l1:l2,m1:m2,n1:n2,iax),temp,(/nx,ny,nz/))
+      temp_sum=sum(temp)/nxgrid/nygrid/nzgrid
+      f(:,:,:,iax)=f(:,:,:,iax)-temp_sum
+!
+      call mpiallreduce_sum(f(l1:l2,m1:m2,n1:n2,iay),temp,(/nx,ny,nz/))
+      temp_sum=sum(temp)/nxgrid/nygrid/nzgrid
+      f(:,:,:,iay)=f(:,:,:,iay)-temp_sum
+!
+      call mpiallreduce_sum(f(l1:l2,m1:m2,n1:n2,iaz),temp,(/nx,ny,nz/))
+      temp_sum=sum(temp)/nxgrid/nygrid/nzgrid
+      f(:,:,:,iaz)=f(:,:,:,iaz)-temp_sum
 !
     endsubroutine special_before_boundary
 !***********************************************************************
