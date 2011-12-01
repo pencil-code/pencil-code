@@ -32,7 +32,7 @@ module Special
   real :: tau_inv_spitzer=0.
   real :: bullets_x0=0.,bullets_dx=0.
   real :: bullets_t0=0.,bullets_dt=0.
-  real :: bullets_h0=0.
+  real :: bullets_h0=0.,hyper3_diffrho=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -46,7 +46,7 @@ module Special
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
       exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc, &
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
-      bullets_t0,bullets_dt,bullets_h0
+      bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho
 !
 ! variables for print.in
 !
@@ -434,6 +434,32 @@ module Special
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
+    subroutine special_calc_density(f,df,p)
+!
+      use Sub, only: del6
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p      
+!      
+      real, dimension (nx) :: hc
+!
+      if (hyper3_diffrho /= 0.) then
+        if (ldensity_nolog.and.(ilnrho /= irho)) &
+            call fatal_error('hyper3_diffrho special','please check')
+!
+        call del6(f,ilnrho,hc,IGNOREDX=.true.)
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + hyper3_diffrho*hc
+!
+!  due to ignoredx hyper3_diffrho has [1/s]
+!
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_diffrho/0.01)
+      endif
+!
+      call keep_compiler_quiet(p)
+!
+    endsubroutine special_calc_density
+!***********************************************************************
     subroutine calc_heatcond_spitzer(f,df,p)
 !
 !  Computes Spitzer heat conduction along the 1D loop
@@ -802,7 +828,7 @@ module Special
 !***********************************************************************
     subroutine calc_artif_heating(df,p)
 !
-!  Subroutine to calculate intrisic heating.
+!  Subroutine to calculate intrinsic heating.
 !  Activated by setting iheattype = exp, exp2 and/or gauss
 !  Maximum of 3 different possibible heating types
 !  Also set the heating parameters for the chosen heating functions.
