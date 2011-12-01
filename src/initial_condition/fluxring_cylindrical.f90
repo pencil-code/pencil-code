@@ -25,7 +25,7 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1,b1=0.
+  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.
 
 !
   namelist /initial_condition_pars/ &
