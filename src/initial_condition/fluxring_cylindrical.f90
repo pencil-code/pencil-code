@@ -29,7 +29,7 @@ module InitialCondition
 
 !
   namelist /initial_condition_pars/ &
-      b0,s0,width,p0,eps,mphi,ampl,om
+      b0,s0,width,p0,eps,mphi,ampl,om,b1
 !
   contains
 !***********************************************************************
