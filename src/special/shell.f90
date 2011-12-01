@@ -51,12 +51,12 @@ module Special
 !
   logical :: lstructure=.true.                                !output structure functions
   integer :: nord=1                                           !order of structure function output
-  logical :: l_altu=.false.
+  logical :: l_altu=.false.                                  !removes a 3cycle from the GOY model
 !
 ! real-space parameters
 !
   logical :: l_needspecialuu=.false.                          !Need real-space velocity
-  logical :: l_quenched=.true.                                !NOT update real-space velocity vectors
+  logical :: l_quenched=.true., l_qphase=.true.                                !NOT update real-space velocity vectors
   logical :: l_nogoy=.false.
 !
 ! runtime variables
@@ -72,8 +72,9 @@ module Special
 !
 ! real-space variables
 !
-  real, allocatable, dimension(:,:,:) :: kvec, uvec      !to generate real-space velocities
-  real, allocatable, dimension(:,:)   :: vec_split, vec_split0
+  real, allocatable, dimension(:,:,:) :: kvec, uvec, uvec_split   !to generate real-space velocities
+  real, allocatable, dimension(:,:)   :: vec_split, vec_split0, phase_time
+  real                                :: twopi, del_xx1
 !
   character (len=labellen) :: time_step_type='nothing'        !Shell contribution to time-step
   integer :: minshell=-1, maxshell=-1, minshell2=-1           !bounds of physically relevant
@@ -85,7 +86,7 @@ module Special
 !
   namelist /special_init_pars/ &
       nshell, visc, f_amp, lambda, deltG, k_amp, u_amp,&
-      l_needspecialuu, l_altu, l_quenched, stability_output,&
+      l_needspecialuu, l_altu, l_quenched, l_qphase, stability_output,&
       nstability1, nstability2, nstability3, minshell, maxshell,&
       minshell2, l_nogoy
 !
@@ -120,11 +121,11 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting, kdat_exists
-      integer :: ns, ierr, nk,nk2, ik, count
+      integer :: ns, ierr, nk,nk2, ik, count, cc_count
       character (len=fnlen) :: filename
-      real :: kav
+      real :: kav, twopid
       real, dimension(1) :: fran
-      real, dimension(2000) :: kkx, kky, kkz
+      real, dimension(4000) :: kkx, kky, kkz
 !
 ! allocate arrays (init_special calls initialize_special)
 !
@@ -171,7 +172,6 @@ module Special
 !
 !  generate/allocate k/u vectors (if needed, and this is called by start)
 !
-!
       if (l_needspecialuu) then
         if ((maxshell .lt. 0) .or. (minshell .lt. 0)) then
           print*, 'Set maxshell and minshell if you want l_needspecialuu'
@@ -181,9 +181,9 @@ module Special
 !  prep k/u vectors
 !
           if (.not. allocated(kvec)) then
-            allocate(kvec(3,nshell,3),uvec(3,nshell,3), vec_split(nshell,3))
-            if (.not. l_quenched) &
-                allocate(vec_split0(nshell,3))
+            allocate(kvec(3,nshell,3),uvec(3,nshell,3), vec_split(nshell,3),uvec_split(3,nshell,3))
+            if (.not. l_quenched) allocate(vec_split0(nshell,3))
+            allocate(phase_time(nshell,3))
           endif
           if (i_starting_local .eq. 1) then; do ns=maxshell, minshell2
 !
@@ -199,7 +199,7 @@ module Special
             else
               open(9,file=filename,status='old')
               read(9,*) nk,kav
-              if (nk>2000) then
+              if (nk>4000) then
                 print*,'too many kvectors (shell.f90)'
                 call mpifinalize
               endif
@@ -246,7 +246,7 @@ module Special
 !
       if (.not. lstarting) then
         call GOY_read_snapshot(trim(directory_snap)//'/goyvar.dat')
-        umod=abs(zu); if (l_altu)  call calc_altu(); call calc_eddy_time()
+        call calc_eddy_time()
         call GOY_write_snapshot(trim(directory_snap)//'/GOYVAR',ENUM=.true., &
             FLIST='goyvarN.list',snapnum=0)
         call GOY_write_snapshot(trim(directory_snap)//'/goyvar.dat',ENUM=.false.)
@@ -294,6 +294,7 @@ module Special
 ! if we need real-space velocities,
 !
         if (l_needspecialuu .and. .not. l_quenched) vec_split0=vec_split
+        if (l_needspecialuu) phase_time=0
 !
         call write_structure(tstarting=0.)
 !
@@ -323,6 +324,7 @@ module Special
         do while (count .lt. nstability3)
           call GOY_advance_timestep()
           if (.not. l_quenched) call update_vec(vec_split,sngl(deltG))
+          if (.not. l_qphase) call update_phase(phase_time, sngl(deltG))
           count=count+1
           if (mod(count, stability_output)==0) then
             print*, 'stabilizing, count=',count
@@ -700,7 +702,6 @@ module Special
         call get_shared_variable('turnover_call',turnover_call,ierr)
         call get_shared_variable('turnover_shared',turnover_shared,ierr)
         first_call=.false.
-print*,'special_calc_particles, shared variable,iproc=',iproc
       endif
 !
       if (vel_call) then
@@ -772,8 +773,8 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real :: dt_                  !dt_ passed by timestep
-      integer :: count, advances   !number of GOY timesteps to call
+      real :: dt_                          !dt_ passed by timestep
+      integer :: count, advances,ns, trip  !number of GOY timesteps to call
       logical, dimension(nshell) :: shell
       logical :: update_vecs
 !
@@ -800,20 +801,29 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
         do advances=1,count
           if (.not. l_nogoy) &
               call GOY_advance_timestep()
-          if (.not. l_quenched) then
-            call update_vec(vec_split, sngl(deltG))
-          endif
+          if (.not. l_quenched) call update_vec(vec_split, sngl(deltG))
+          if (.not. l_qphase) call update_phase(phase_time, sngl(deltG))
         enddo
       endif
 !
       call mpibcast_cmplx_arr(zu,nshell)
       call mpibcast_cmplx_arr(zgprev,nshell)
-      umod=zabs(zu)
-      if (l_altu) call calc_altu()
+      umod=zabs(zu); if (l_altu) call calc_altu()
       call calc_eddy_time()
       if (l_needspecialuu) then
         call mpibcast_real(vec_split, (/nshell,3/))
         if (.not. l_quenched) call mpibcast_real(vec_split0, (/nshell,3/))
+        if (.not. l_qphase) call mpibcast_real(phase_time, (/nshell,3/))
+        do ns=maxshell, minshell2
+          do trip=1,3
+            if (l_altu) then
+              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2*&
+                                    umalt(ns)/umod(ns)
+            else
+              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2
+            endif
+          enddo
+        enddo
       endif
 !
 !  Ancillary stuff
@@ -980,10 +990,12 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
 !
       character (len=*) :: filename
       real :: t_goy
+      integer :: ns, trip
 !
       if (lroot) call input_GOY(filename,t_goy)
 !
       call mpibcast_cmplx_arr(zu,nshell)
+      umod=abs(zu); if (l_altu) call calc_altu()
       call mpibcast_cmplx_arr(zgprev,nshell)
       call mpibcast_real(uav, nshell+1)
       if (l_needspecialuu) then
@@ -991,8 +1003,18 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
         call mpibcast_real(uvec, (/3,nshell,3/))
         call mpibcast_real(vec_split, (/nshell,3/))
         if (.not. l_quenched) call mpibcast_real(vec_split0, (/nshell,3/))
+        if (.not. l_qphase) call mpibcast_real(phase_time, (/nshell,3/))
+        do ns=maxshell, minshell2
+          do trip=1,3
+            if (l_altu) then
+              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2*&
+                                    umalt(ns)/umod(ns)
+            else
+              uvec_split(trip,ns,:)=vec_split(ns,trip)*uvec(trip, ns,:)*sqrt2
+            endif
+          enddo
+        enddo
       endif
-      umod=abs(zu)
 !
     endsubroutine rsnap_GOY
 !***********************************************************************
@@ -1005,7 +1027,11 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       if (lroot) then
         t_goy=t
         open(lun_output,FILE=filename,FORM='unformatted')
-        if (l_needspecialuu .and. .not. l_quenched) then
+        if (l_needspecialuu .and. .not. l_quenched .and. .not. l_qphase) then
+          write(lun_output) t_goy,zu, zgprev, kvec, uvec, uav, vec_split, vec_split0, phase_time
+        elseif (l_needspecialuu .and. .not. l_qphase) then
+          write(lun_output) t_goy,zu, zgprev, kvec, uvec, uav, vec_split, phase_time
+        elseif (l_needspecialuu .and. .not. l_quenched) then
           write(lun_output) t_goy,zu, zgprev, kvec, uvec, uav, vec_split, vec_split0
         else if (l_needspecialuu) then
           write(lun_output) t_goy,zu, zgprev, kvec, uvec, uav, vec_split
@@ -1027,7 +1053,11 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
 !
       if (lroot) then
         open(lun_input,FILE=filename,FORM='unformatted')
-        if (l_needspecialuu .and. .not. l_quenched) then
+        if (l_needspecialuu .and. .not. l_quenched .and. .not. l_qphase) then
+          read(lun_input)   t_goy,zu, zgprev, kvec, uvec, uav, vec_split, vec_split0, phase_time
+        elseif (l_needspecialuu .and. .not. l_qphase) then
+          read(lun_input)   t_goy,zu, zgprev, kvec, uvec, uav, vec_split, phase_time
+        elseif (l_needspecialuu .and. .not. l_quenched) then
           read(lun_input)   t_goy,zu, zgprev, kvec, uvec, uav, vec_split, vec_split0
         else if (l_needspecialuu) then
           read(lun_input)   t_goy,zu, zgprev, kvec, uvec, uav, vec_split
@@ -1100,7 +1130,11 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
           endif
           sf(iord,ns)=sftemp
         enddo
-        phase(ns)=real(zu(ns))/umod(ns)
+        if (.not. l_qphase) then
+          phase(:)=phase_time(:,1)
+        else
+          phase(ns)=real(zu(ns))/umod(ns)
+        endif
         if (.not. l_quenched) then
           vecdot(ns)=dot_product(vec_split0(ns,:),vec_split(ns,:))
         endif
@@ -1181,7 +1215,6 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
 !
 ! scale a for random walk (|a| = pi sqrt(dt_/eddy_time))
 !
-          scale=pi*((dt_/eddy_time(ns))**(0.5))
           a=a*scale
 !
           uv=uv+a
@@ -1195,6 +1228,34 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
 !
     endsubroutine update_vec
 !***********************************************************************
+    subroutine update_phase(phase_time, dt_)
+!
+!  update phase
+!
+      use General, only: random_number_wrapper
+!
+      real,dimension(nshell,3) :: phase_time
+      real :: dt_
+!
+      integer :: ns
+      real, dimension(3) :: a
+      real :: scale
+!
+      do ns=maxshell,minshell2
+!
+        call random_number_wrapper(a)
+        a=4*(a-(/0.5,0.5,0.5/))
+!
+! scale a for random walk (|a| = pi sqrt(dt_/eddy_time))
+!
+        scale=pi*((dt_/eddy_time(ns))**(0.5))
+        a=a*scale
+!
+        phase_time(ns,:)=phase_time(ns,:)+a
+      enddo
+!
+    endsubroutine update_phase
+!***********************************************************************
     subroutine calc_gas_velocity(xpos, uup, shell1,shell2)
 !
 ! provide velocity at point xpos
@@ -1202,7 +1263,8 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       real, dimension(3) :: xpos, uup
       integer, optional :: shell1, shell2
 !
-      integer :: ns, nstart, nend, count
+      integer :: ns, nstart, nend, ccount
+      real :: vc, vs, dotp
 !
       uup=0
       if (present(shell1)) then; nstart=shell1; else; nstart=maxshell;  endif
@@ -1214,15 +1276,17 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       endif
 !
       do ns=nstart,nend
-        if (l_altu) then; do count=1,3
-          uup=uup+vec_split(ns,count)*uvec(count,ns,:)*2**(0.5)*(&
-              real(zu(ns))*cos(dot_product(xpos,kvec(count,ns,:)))-&
-              aimag(zu(ns))*sin(dot_product(xpos,kvec(count,ns,:))))*&
+        if (l_altu) then; do ccount=1,3
+          dotp=dot_product(xpos,kvec(ccount,ns,:))
+          uup=uup+uvec_split(ccount,ns,:)*(&
+               real(zu(ns))*cos(dotp+phase_time(ns,ccount))-&
+              aimag(zu(ns))*sin(dotp)+phase_time(ns,ccount))*&
               umalt(ns)/umod(ns)
-        enddo; else; do count=1,3
-          uup=uup+vec_split(ns,count)*uvec(count,ns,:)*2**(0.5)*(&
-              real(zu(ns))*cos(dot_product(xpos,kvec(count,ns,:)))-&
-              aimag(zu(ns))*sin(dot_product(xpos,kvec(count,ns,:))))
+        enddo; else; do ccount=1,3
+          dotp=dot_product(xpos,kvec(ccount,ns,:))
+          uup=uup+uvec_split(ccount,ns,:)*(&
+               real(zu(ns))*cos(dotp+phase_time(ns,ccount))-&
+              aimag(zu(ns))*sin(dotp+phase_time(ns,ccount)))
         enddo; endif
       enddo
 !
@@ -1278,7 +1342,9 @@ print*,'special_calc_particles, shared variable,iproc=',iproc
       deallocate(kval,aval,bval, exfac, exrat)
       deallocate(cval,ksquare, umod, eddy_time, zgprev)
       if (l_needspecialuu) then
-        deallocate(kvec,uvec)
+        deallocate(kvec,uvec,uvec_split,vec_split)
+        if (.not. l_qphase) deallocate(phase_time)
+        if (.not. l_quenched) deallocate(vec_split0)
       endif
       if (l_altu) deallocate(umalt)
 !
