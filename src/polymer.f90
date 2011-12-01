@@ -28,7 +28,7 @@ module Polymer
   include 'record_types.h'
   include 'polymer.h'
 !
-  real, dimension(nx,3,3) :: CdotGradu,GraduTdotC
+  real, dimension(nx,3,3) :: GraduDotC,CDotGraduT
   real :: frmax_local = 1.
 !
 !  Start parameters.
@@ -97,9 +97,11 @@ module Polymer
       endif
 !
 ! give warning if polymeric backreaction is set true but polymer
-! density, mu_poly is set to zero.
+! density, mu_poly is set to zero. 
+! The warning is given only by the root processor but not when we are running
+! start. 
 !
-      if (lpolyback.and.(mu_poly==0.)) &
+      if ((lroot).and.lpolyback.and.(mu_poly==0.).and.(.not.lstart)) &
           call warning ('initialize_polymer','lpolyback=T but mu_poly=0!')
 !
     endsubroutine initialize_polymer
@@ -196,7 +198,7 @@ module Polymer
 !
       select case(poly_algo)
         case('simple')
-          write(*,*) 'poly_algo:no more pencils needed now'
+          if(lroot) print*, 'poly_algo:no more pencils needed now'
         case('cholesky')
           call fatal_error('pencil_criteria_polymer', &
               'poly_algo: cholesky decomposition is not implemented yet')
@@ -249,6 +251,7 @@ module Polymer
       integer :: ipi,ipj,ipk
 !
       intent(inout) :: f,p
+!
 ! poly
       if (lpencil(i_poly)) then
         ipk=0
@@ -413,11 +416,11 @@ module Polymer
         enddo
       endif
 !
-!  CdotGradu and GraduTdotC.
+!  GraduDotC and CDotGraduT . 
 !
-      call mult_matrix(p%poly,p%uij,CdotGradu)
+      call mult_matrix(p%uij,p%poly,GraduDotC)
       call transpose_mn(p%uij,uijT)
-      call mult_matrix(uijT,p%poly,GraduTdotC)
+      call mult_matrix(p%poly,uijT,CDotGraduT)
 !
 !  Select which algorithm we are using.
 !
@@ -476,7 +479,7 @@ module Polymer
       do ipi=1,3
         do ipj=ipi,3
           df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)+ &
-              CdotGradu(:,ipi,ipj)+GraduTdotC(:,ipi,ipj)
+              GraduDotC(:,ipi,ipj)+CDotGraduT(:,ipi,ipj)
           if (tau_poly/=0.) &
             df(l1:l2,m,n,ipoly+ipk)=df(l1:l2,m,n,ipoly+ipk)- &
                 tau_poly1*(p%frC(:,ipi,ipj)-kronecker_delta(ipi,ipj))
