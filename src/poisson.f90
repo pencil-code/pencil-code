@@ -53,11 +53,6 @@ module Poisson
         endif
       endif
 !
-      if (nprocx/=1.and.nzgrid/=1) then
-        if (lroot) print*, 'inverse_laplacian_fft: fourier transforms in x-parallel are still restricted to the 2D case.'
-        call fatal_error('inverse_laplacian_fft','')
-      endif
-!
 !  Limit the wavenumber to the maximum circular region that is always available
 !  in k-space. The radial wavenumber kx changes with time due to shear as
 !
@@ -124,7 +119,7 @@ module Poisson
           call fatal_error("inverse_laplacian","")
         endif
         !call inverse_laplacian_expandgrid(phi)
-      else if (nxgrid/=nzgrid .and. (nxgrid/=1 .and. nzgrid/=1)) then
+      else if (nprocx==1.and.nxgrid/=nzgrid.and.(nxgrid/=1 .and. nzgrid/=1)) then
         call inverse_laplacian_fft_z(phi)
       else
         call inverse_laplacian_fft(phi)
@@ -158,14 +153,19 @@ module Poisson
 !
 !  Forward transform (to k-space).
 !
-      if (nprocx==1) then 
+      if (nprocx==1.and.(nxgrid==nygrid).and.(nxgrid==nzgrid)) then
         if (lshear) then
           call fourier_transform_shear(phi,b1)
         else
           call fourier_transform(phi,b1)
         endif
-      else 
-        call fft_xy_parallel(phi,b1)
+      else
+        if (nxgrid==nzgrid) then
+          call fft_xyz_parallel(phi,b1)
+        else
+          call fatal_error("inverse_laplacian_fft",&
+               "not yet coded for the general case nxgrid/=nzgrid")
+        endif
       endif
 !
 !  Solve Poisson equation.
@@ -237,14 +237,14 @@ module Poisson
 !
 !  Inverse transform (to real space).
 !
-      if (nprocx==1) then 
+      if (nprocx==1.and.(nxgrid==nygrid).and.(nxgrid==nzgrid)) then
         if (lshear) then
           call fourier_transform_shear(phi,b1,linv=.true.)
         else
           call fourier_transform(phi,b1,linv=.true.)
         endif
       else
-        call fft_xy_parallel(phi,b1,linv=.true.)
+        call fft_xyz_parallel(phi,b1,linv=.true.)
       endif
 !
     endsubroutine inverse_laplacian_fft
@@ -361,10 +361,11 @@ module Poisson
 !
       real, dimension(nx,ny,nz), intent(inout) :: phi
 !
-      real, dimension(nx,ny,nz) :: phii
+      real, dimension(nx,ny,nz) :: b1
+      real, dimension(nx,ny) :: phiz,b1z
 !
       integer, parameter :: nxt = nx / nprocz
-      real, dimension(nzgrid,nxt) :: phirt, phiit
+      real, dimension(nzgrid,nxt) :: phirt, b1t
 !
       logical :: l1st = .true.
       real, save, dimension(4*nzgrid+15) :: wsave
@@ -388,12 +389,21 @@ module Poisson
 !
 !  Forward transform in xy
 !
-      phii = 0.
-      if (lshear) then
-        call fourier_transform_shear_xy(phi, phii)
+      b1 = 0.
+      if (nprocx==1) then 
+        if (nxgrid==nygrid) then 
+          if (lshear) then
+            call fourier_transform_shear_xy(phi, b1)
+          else
+            call fourier_transform_xy(phi, b1)
+            !#ccyang: Note that x and y are swapped in fourier_transform_xy.
+          endif
+        else
+          call fft_xy_parallel(phi,b1)
+        endif
       else
-        call fourier_transform_xy(phi, phii)
-!#ccyang: Note that x and y are swapped in fourier_transform_xy.
+        call fatal_error("inverse_laplacian_fft_z",&
+             "Does not work for x-parallelization")
       endif
 !
 !  Convolution in z
@@ -402,7 +412,7 @@ module Poisson
       do iy = 1, ny
 !
         call transp_xz(phi(:,iy,:),  phirt)
-        call transp_xz(phii(:,iy,:), phiit)
+        call transp_xz(b1(:,iy,:), b1t)
 !
         if (lshear) then
           ky2 = ky_fft(iky0+iy)**2
@@ -419,7 +429,7 @@ module Poisson
             kx2 = ky_fft(ikx0+ix)**2
           end if
 !
-          cz = cmplx(phirt(:,ix), phiit(:,ix))
+          cz = cmplx(phirt(:,ix), b1t(:,ix))
           call cfftf (nzgrid, cz, wsave)
           where (kx2 /= 0. .or. ky2 /= 0. .or. kz2 /= 0)
             cz = -cz / (kx2 + ky2 + kz2) / nzgrid
@@ -429,21 +439,31 @@ module Poisson
           call cfftb (nzgrid, cz, wsave)
 !
           phirt(:,ix) = real(cz)
-          phiit(:,ix) = aimag(cz)
+          b1t(:,ix) = aimag(cz)
 !
         end do
 !
         call transp_zx(phirt, phi(:,iy,:))
-        call transp_zx(phiit, phii(:,iy,:))
+        call transp_zx(b1t, b1(:,iy,:))
 !
       end do
 !
 !  Inverse transform in xy
 !
-      if (lshear) then
-        call fourier_transform_shear_xy(phi,phii,linv=.true.)
+      if (nprocx==1) then 
+        if (nxgrid==nygrid) then 
+          if (lshear) then
+            call fourier_transform_shear_xy(phi,b1,linv=.true.)
+          else
+            call fourier_transform_xy(phi,b1,linv=.true.)
+            !#ccyang: Note that x and y are swapped in fourier_transform_xy.
+          endif
+        else
+          call fft_xy_parallel(phi,b1,linv=.true.)
+        endif
       else
-        call fourier_transform_xy(phi,phii,linv=.true.)
+        call fatal_error("inverse_laplacian_fft_z",&
+             "Does not work for x-parallelization")
       endif
 !
       return
@@ -463,11 +483,11 @@ module Poisson
 !
       real, dimension(nx,ny,nz) :: phi
 !
-      real, dimension(nx,ny,nz) :: phii
+      real, dimension(nx,ny,nz) :: b1
 !
       integer, parameter :: nzg2 = 2 * nzgrid
       integer, parameter :: nxt = nx / nprocz
-      real, dimension(nzgrid,nxt) :: phirt, phiit
+      real, dimension(nzgrid,nxt) :: phirt, b1t
 !
       logical, save :: l1st = .true.
       real, save, dimension(4*nzg2+15) :: wsave
@@ -494,11 +514,11 @@ module Poisson
 !
 !  Forward transform in xy
 !
-      phii = 0.
+      b1 = 0.
       if (lshear) then
-        call fourier_transform_shear_xy(phi, phii)
+        call fourier_transform_shear_xy(phi, b1)
       else
-        call fourier_transform_xy(phi, phii)
+        call fourier_transform_xy(phi, b1)
 !#ccyang: Note that x and y are swapped in fourier_transform_xy.
       endif
 !
@@ -507,7 +527,7 @@ module Poisson
       if (lshear) a0 = deltay / Lx
       do iy = 1, ny
         call transp_xz(phi(:,iy,:),  phirt)
-        call transp_xz(phii(:,iy,:), phiit)
+        call transp_xz(b1(:,iy,:), b1t)
         if (lshear) then
           ky2 = ky_fft(iky0+iy)**2
           a1  = a0 * ky_fft(iky0+iy)
@@ -521,7 +541,7 @@ module Poisson
             kx2 = ky_fft(ikx0+ix)**2
           end if
           if (kx2 /= 0. .or. ky2 /= 0.) then
-            cz(1:nzgrid) = (/cmplx(phirt(:,ix), phiit(:,ix))/)
+            cz(1:nzgrid) = (/cmplx(phirt(:,ix), b1t(:,ix))/)
             cz(nzgrid+1:nzg2) = 0.
             call cfftf (nzg2, cz, wsave)
             cz = -cz / (kx2 + ky2 + kz2) / nzg2
@@ -529,23 +549,23 @@ module Poisson
           else
             cz = 0.
             do iz = 1, nzgrid; do iz1 = 1, nzgrid
-              cz(iz) = cz(iz) + cmplx(phirt(iz1,ix), phiit(iz1,ix)) * &
+              cz(iz) = cz(iz) + cmplx(phirt(iz1,ix), b1t(iz1,ix)) * &
                                 abs(iz - iz1) * dz2h
             end do; end do
           end if
           phirt(:,ix) = real(cz(1:nzgrid))
-          phiit(:,ix) = aimag(cz(1:nzgrid))
+          b1t(:,ix) = aimag(cz(1:nzgrid))
         end do
         call transp_zx(phirt, phi(:,iy,:))
-        call transp_zx(phiit, phii(:,iy,:))
+        call transp_zx(b1t, b1(:,iy,:))
       end do
 !
 !  Inverse transform in xy
 !
       if (lshear) then
-        call fourier_transform_shear_xy(phi,phii,linv=.true.)
+        call fourier_transform_shear_xy(phi,b1,linv=.true.)
       else
-        call fourier_transform_xy(phi,phii,linv=.true.)
+        call fourier_transform_xy(phi,b1,linv=.true.)
       endif
 !
       return
