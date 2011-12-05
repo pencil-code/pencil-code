@@ -37,6 +37,8 @@ module Poisson
   namelist /poisson_run_pars/ &
       lsemispectral, kmax, lrazor_thin, lklimit_shear, lexpand_grid, lisoz
 !
+  logical :: luse_fourier_transform
+!
   contains
 !***********************************************************************
     subroutine initialize_poisson()
@@ -73,6 +75,10 @@ module Poisson
 !  parallellogram. The circle has radius kmax=kNy/sqrt(2). See Gammie (2001).
 !
       if (lklimit_shear) kmax = kx_ny/sqrt(2.0)
+!
+!  Dimensionality
+!
+      call decide_fourier_routine()
 !
     endsubroutine initialize_poisson
 !***********************************************************************
@@ -119,7 +125,7 @@ module Poisson
           call fatal_error("inverse_laplacian","")
         endif
         !call inverse_laplacian_expandgrid(phi)
-      else if (nprocx==1.and.nxgrid/=nzgrid.and.(nxgrid/=1 .and. nzgrid/=1)) then
+      else if (nprocx==1.and.(nxgrid/=1.and.nxgrid/=1.and.nxgrid/=nzgrid)) then
         call inverse_laplacian_fft_z(phi)
       else
         call inverse_laplacian_fft(phi)
@@ -153,14 +159,14 @@ module Poisson
 !
 !  Forward transform (to k-space).
 !
-      if (nprocx==1.and.(nxgrid==nygrid).and.(nxgrid==nzgrid)) then
+      if (luse_fourier_transform) then
         if (lshear) then
           call fourier_transform_shear(phi,b1)
         else
           call fourier_transform(phi,b1)
         endif
-      else
-        if (nxgrid==nzgrid) then
+      else  
+        if (.not.(nxgrid/=1.and.nzgrid/=1.and.nxgrid/=nzgrid)) then
           call fft_xyz_parallel(phi,b1)
         else
           call fatal_error("inverse_laplacian_fft",&
@@ -237,7 +243,7 @@ module Poisson
 !
 !  Inverse transform (to real space).
 !
-      if (nprocx==1.and.(nxgrid==nygrid).and.(nxgrid==nzgrid)) then
+      if (luse_fourier_transform) then
         if (lshear) then
           call fourier_transform_shear(phi,b1,linv=.true.)
         else
@@ -571,6 +577,60 @@ module Poisson
       return
 !
     endsubroutine inverse_laplacian_isoz
+!***********************************************************************
+    subroutine decide_fourier_routine
+!
+! Decide, based on the dimensionality and on the geometry
+! of the grid, which fourier transform routine is to be 
+! used. "fourier_transform" and "fourier_tranform_shear" 
+! are functional only without x-parallelization, and for 
+! cubic, 2D square, and 1D domains only. Everything else 
+! should use fft_parallel instead.
+! 
+! 05-dec-2011/wlad: coded
+!
+      logical :: lxpresent,lypresent,lzpresent
+      logical :: l3D,l2Dxy,l2Dyz,l2Dxz
+      logical :: l1Dx,l1Dy,l1Dz
+!
+! Check the dimensionality and store it in logicals
+!
+      lxpresent=(nxgrid/=1)
+      lypresent=(nygrid/=1)
+      lzpresent=(nzgrid/=1)
+!
+      l3D  =     lxpresent.and.     lypresent.and.     lzpresent
+      l2Dxy=     lxpresent.and.     lypresent.and..not.lzpresent
+      l2Dyz=.not.lxpresent.and.     lypresent.and.     lzpresent
+      l2Dxz=     lxpresent.and..not.lypresent.and.     lzpresent
+      l1Dx =     lxpresent.and..not.lypresent.and..not.lzpresent
+      l1Dy =.not.lxpresent.and.     lypresent.and..not.lzpresent
+      l1Dz =.not.lxpresent.and..not.lypresent.and.     lzpresent
+!
+      if (ldebug.and.lroot) then
+        if (l3D)   print*,"This is a 3D simulation"
+        if (l2Dxy) print*,"This is a 2D xy simulation"
+        if (l2Dyz) print*,"This is a 2D yz simulation"
+        if (l2Dxz) print*,"This is a 2D xz simulation"
+        if (l1Dx)  print*,"This is a 1D x simulation"
+        if (l1Dy)  print*,"This is a 1D y simulation"
+        if (l1Dz)  print*,"This is a 1D z simulation"
+      endif
+!
+! The subroutine "fourier_transform" should only be used 
+! for 1D, square 2D or cubic domains without x-parallelization.
+! Everything else uses fft_parallel. 
+!
+      luse_fourier_transform=(nprocx==1.and.&        
+           (l1dx                                       .or.&
+            l1dy                                       .or.&
+            l1dz                                       .or.&
+            (l2dxy.and.nxgrid==nygrid)                 .or.&
+            (l2dxz.and.nxgrid==nzgrid)                 .or.&
+            (l2dyz.and.nygrid==nzgrid)                 .or.&
+            (l3d.and.nxgrid==nygrid.and.nygrid==nzgrid)))
+!
+    endsubroutine decide_fourier_routine
 !***********************************************************************
     subroutine read_poisson_init_pars(unit,iostat)
 !
