@@ -69,6 +69,7 @@ module Pscalar
   logical :: lpscalar_per_unitvolume_diff=.false.
   logical :: lnotpassive=.false., lupw_cc=.false.
   logical :: lmean_friction_cc=.false.
+  logical :: lremove_mean=.false.
 !
   namelist /pscalar_run_pars/ &
       nopscalar, tensor_pscalar_diff, gradC0, soret_diff, &
@@ -78,7 +79,7 @@ module Pscalar
       lpscalar_diff_simple, &
       lpscalar_per_unitvolume, lpscalar_per_unitvolume_diff, &
       pscalar_sink, Rpscalar_sink, lreactions, lambda_cc, lam_gradC, &
-      om_gradC, lgradC_profile, lnotpassive, lupw_cc
+      om_gradC, lgradC_profile, lnotpassive, lupw_cc, lremove_mean
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -933,6 +934,36 @@ module Pscalar
       endselect
 !
     endsubroutine get_slices_pscalar
+!***********************************************************************
+    subroutine pscalar_after_boundary(f)
+!
+!  Removes overall means of passive scalars.
+!
+!  5-dec-11/MR: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+
+      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+ 
+      real, dimension(npscalar) :: ccm, ccm_tmp
+      integer :: i
+
+      if (lremove_mean.and.lfirst) then
+
+        do i=1,npscalar
+          ccm_tmp(i) = sum(f(l1:l2,m1:m2,n1:n2,icc+i-1))
+        enddo
+
+        call mpiallreduce_sum(ccm_tmp,ccm,npscalar)
+
+        do i=1,npscalar
+          f(l1:l2,m1:m2,n1:n2,icc+i-1) =   f(l1:l2,m1:m2,n1:n2,icc+i-1) &
+                                         - ccm(i)/nwgrid
+        enddo
+
+      endif
+
+    endsubroutine pscalar_after_boundary
 !***********************************************************************
     subroutine calc_mpscalar
 !

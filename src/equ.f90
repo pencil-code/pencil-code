@@ -309,6 +309,7 @@ module Equ
       if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)
       if (ltestfield)             call testfield_after_boundary(f,p)
+      if (lpscalar)               call pscalar_after_boundary(f)
       if (ldensity)               call calc_ldensity_pars(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)

@@ -200,6 +200,18 @@ module Pscalar
 !
     endsubroutine get_slices_pscalar
 !***********************************************************************
+    subroutine pscalar_after_boundary(f)
+!
+!  Removes overall means of passive scalars.
+!
+!  5-dec-11/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine pscalar_after_boundary
+!***********************************************************************
     subroutine calc_mpscalar
 !
     endsubroutine calc_mpscalar
