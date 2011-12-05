@@ -828,7 +828,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'cugccm',idiag_cugccm)
         call parse_name(iname,cname(iname),cform(iname),'ccugum',idiag_ccugum)
         call parse_name(iname,cname(iname),cform(iname),'gcguzm',idiag_gcguzm)
-        call parse_name(iname,cname(iname),cform(iname),'cluz-uzlcm',idiag_cluz_uzlcm)
+        call parse_name(iname,cname(iname),cform(iname),'cluz_uzlcm',idiag_cluz_uzlcm)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.
