@@ -25,11 +25,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.
+  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.,b2=0
 
 !
   namelist /initial_condition_pars/ &
-      b0,s0,width,p0,eps,mphi,ampl,om,b1
+      b0,s0,width,p0,eps,mphi,ampl,om,b1,b2
 !
   contains
 !***********************************************************************
@@ -78,7 +78,7 @@ module InitialCondition
       argum=sqrt2*(x-s0)/width
       term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
       term2=(2.*x**2-width**2)*exp(-argum**2)
-      press=p0-(.5*b0/s0)**2*(term1+term2)
+      press=p0-(.5*b0/s0)**2*(term1+term2)-b2**2/x**3
       del_lnrho=eps*alog(press/cs20)
 !
       do n=1,mz
@@ -105,7 +105,7 @@ module InitialCondition
       argum=(x-s0)/width
       term1=s0*sqrtpi*erfunc(argum)
       term2=-width*exp(-argum**2)
-      az=-b1*x-(.5*b0/s0)*width*(term1+term2)
+      az=-(.5*b0/s0)*width*(term1+term2)-b1*x-b2*log(x)
 !
       do n=1,mz
         do m=1,my
