@@ -888,7 +888,7 @@ module Special
       real, dimension (nx) :: hc,lnrho_floor
 !
       if (ldensity_floor_c) then
-        lnrho_floor = alog(p%b2/(0.5*c_light)**2/mu0/cdt)
+        lnrho_floor = alog(p%b2/(0.5*real(c_light))**2/mu0/cdt)
         where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
           f(l1:l2,m,n,ilnrho) = lnrho_floor
         endwhere
