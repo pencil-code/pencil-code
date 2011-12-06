@@ -349,7 +349,8 @@ module Diagnostics
 !  Append to diagnostics file.
 !
         open(1,file=trim(directory)//'/sound.dat',position='append',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(directory)//'/sound.dat',dist=1)) goto 99      ! file distributed (???), backskipping enabled
+! file distributed (???), backskipping enabled
+        if (outlog(iostat,'open',trim(directory)//'/sound.dat',dist=1)) goto 99
 !
         if (lfirst) then
 !
