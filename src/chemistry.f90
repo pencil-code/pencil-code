@@ -1921,10 +1921,6 @@ module Chemistry
        do j2=1,my
        do j1=1,mx
 !
-  !     do j3=1,nxgrid+8
-  !    do j2=1,nygrid+8
-  !    do j1=1,nzgrid+8
-!
         Rad=0.
        if (nxgrid >1) then
         Rad=x(j1)*x(j1)
@@ -1938,26 +1934,12 @@ module Chemistry
 !
        Rad=sqrt(Rad)
 !
-       !  if (Rad<0.2) then
-!          f(j1,j2,j3,ilnTT)=log(init_TT1+(init_TT2-init_TT1)*((0.06-Rad)/0.06)**2)
-          ! f(j1,j2,j3,ilnTT)=log(init_TT1)+log(3.5)*((0.2-Rad)/0.2)**2
-           f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/init_x2)**2)+init_TT1)
-       !  else
-       !   f(j1,j2,j3,ilnTT)=log(init_TT1)
-       !  endif
+       f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-(Rad/init_x2)**2)+init_TT1)
+       mu1_full(j1,j2,j3)=f(j1,j2,j3,i_H2)/(mH2)+f(j1,j2,j3,i_O2)/(mO2) &
+           +f(j1,j2,j3,i_H2O)/(mH2O)+f(j1,j2,j3,i_N2)/(mN2)
 !
-         ! f(j1,j2,j3,ilnTT)=log((init_TT2-init_TT1)*exp(-((0.2-Rad)/0.2)**2)+init_TT1)
-          mu1_full(j1,j2,j3)=f(j1,j2,j3,i_H2)/(2.*mH2)+f(j1,j2,j3,i_O2)/(2.*mO2) &
-              +f(j1,j2,j3,i_H2O)/(2.*mH2+mO2)+f(j1,j2,j3,i_N2)/(2.*mN2)
-!
-         f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
-              -log(mu1_full(j1,j2,j3))
-!
-      !  f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(l1,m1,n1,ilnTT)  &
-      !      -log(mu1_full(l1,m1,n1))
-      !  f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)  &
-    !        -f(j1,j2,j3,ilnTT)-log(mu1_full(j1,j2,j3))
-!
+       f(j1,j2,j3,ilnrho)=log(init_pressure)-log(Rgas)-f(j1,j2,j3,ilnTT)  &
+           -log(mu1_full(j1,j2,j3))
 !
 !  Initialize velocity
 !
@@ -1973,25 +1955,16 @@ module Chemistry
            if (nxgrid/=1) then
             sz1=(xyz0(1)+Lxyz(1)*0.15)
             sz2=(xyz0(1)+Lxyz(1)*(1.-0.15))
-            if ((x(j1)<sz1) .or. (sz2<x(j1))) then
-         !     f(j1,j2,j3,iux)=0.
-            endif
            endif
 !
           if (nygrid/=1)   then
             sz1=(xyz0(2)+Lxyz(2)*0.15)
             sz2=(xyz0(2)+Lxyz(2)*(1.-0.15))
-            if ((y(j2)<sz1) .or. (y(j2)>sz2)) then
-          !     f(j1,j2,j3,iuy)=0.
-            endif
           endif
 !
           if (nzgrid/=1)  then
            sz1=(xyz0(3)+Lxyz(3)*0.15)
            sz2=(xyz0(3)+Lxyz(3)*(1.-0.15))
-           if ((z(j3)<sz1) .or. (z(j3)>sz2)) then
-           !   f(j1,j2,j3,iuz)=0.
-           endif
           endif
 !
        enddo
