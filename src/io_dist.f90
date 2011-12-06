@@ -371,7 +371,8 @@ contains
 !
       call parse_filename(filename,dir,fpart)
       open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
-      if (outlog(iostat,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) goto 99     ! file not distributed???, backskipping enabled 
+! file not distributed???, backskipping enabled 
+      if (outlog(iostat,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) goto 99
 !
       write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
       if (outlog(iostat,"write fpart")) goto 99
@@ -383,7 +384,8 @@ contains
         call mpibarrier()
         if (lroot) then
           open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=iostat)
-          if (outlog(iostat,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return   ! file not distributed, backskipping enabled
+! file not distributed, backskipping enabled
+          if (outlog(iostat,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return
 !
           write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
           if (outlog(iostat,"write fpart")) return
