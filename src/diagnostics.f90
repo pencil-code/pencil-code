@@ -928,7 +928,9 @@ module Diagnostics
       if (lfirst_proc_y.and.nnamexz>0) then
         open(1, file=trim(directory_snap)//'/yaverages.dat', &
             form='unformatted', position='append',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(directory_snap)//'/yaverages.dat',dist=1)) return         ! file distributed, backskipping enabled
+! file distributed, backskipping enabled
+        if (outlog(iostat,'open',trim(directory_snap)//'/yaverages.dat',dist=1)) return
+
 !
         write(1,IOSTAT=iostat) t2davgfirst
         if (outlog(iostat,'write t2davgfirst')) return
@@ -954,7 +956,8 @@ module Diagnostics
       if (lfirst_proc_z.and.nnamexy>0) then
         open(1, file=trim(directory_snap)//'/zaverages.dat', &
             form='unformatted', position='append',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(directory_snap)//'/zaverages.dat',dist=1)) return    ! file distributed, backskipping enabled
+! file distributed, backskipping enabled
+        if (outlog(iostat,'open',trim(directory_snap)//'/zaverages.dat',dist=1)) return
 !
         write(1,IOSTAT=iostat) t2davgfirst
         if (outlog(iostat,'write t2davgfirst')) return
