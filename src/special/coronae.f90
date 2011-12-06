@@ -21,7 +21,7 @@ module Special
 !
   real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.,Kiso=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
-  real :: hyper3_chi=0.,hyper3_diffrho=0.
+  real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper2_spi=0.
   real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
@@ -58,7 +58,7 @@ module Special
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
-      ldensity_floor_c,chi_spi,Kiso
+      ldensity_floor_c,chi_spi,Kiso,hyper2_spi
 !
 ! variables for print.in
 !
@@ -562,12 +562,17 @@ module Special
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/0.01)
        endif
+       if (hyper2_spi /= 0.) then
+          call del4(f,ispitzerz,hc,IGNOREDX=.true.)
+          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper2_spi*hc
+!
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper2_spi/0.01)
+       endif
 !
        call div(f,ispitzer,rhs)
 !
 !       call dot(p%glnTT+p%glnrho,q,tmp)
 !       rhs = rhs +tmp
-!       rhs = f(l1:l2,m,n,ipsitzer
 !
        rhs = rhs * exp(-p%lnrho-p%lnTT)
 !
@@ -798,6 +803,7 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc
+      integer :: itemp
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
       if (Kiso /= 0.) call calc_heatcond_spitzer_iso(df,p)
@@ -820,20 +826,21 @@ module Special
 !      endif
 !
       if (hyper3_chi /= 0.) then
-        call del6(f,ilnTT,hc,IGNOREDX=.true.)
-        if (ltemperature .and. (.not.ltemperature_nolog)) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_chi*hc
-!
-!  due to ignoredx hyper3_chi has [1/s]
-!
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+        if (lentropy) then
+          itemp = iss
+        elseif (ltemperature) then
+          itemp = ilnTT
         else
           call fatal_error('hyper3_chi special','only for ltemperature')
         endif
-      endif
+
+        call del6(f,itemp,hc,IGNOREDX=.true.)
+        df(l1:l2,m,n,itemp) = df(l1:l2,m,n,itemp) + hyper3_chi*hc
 !
-!      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + 2e2*exp(-(t-0.5)**2.*1e4)* &
-!          exp(-(x(l1:l2)-10.)**2*2.)*exp(-(z(n)-2.5)**2*2.)
+!  due to ignoredx hyper3_chi has [1/s]
+!
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+      endif
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
@@ -1369,6 +1376,8 @@ module Special
         df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + chi_spitzer * rhs
       else if (lentropy .and. (.not. pretend_lnTT)) then
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + chi_spitzer * rhs /p%cp1/gamma
+      else if (lthermal_energy) then
+        df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + chi_spitzer * rhs *exp(p%lnrho+p%lnTT)
       else
         call fatal_error('calc_heatcond_tensor', &
             'not implemented for current set of thermodynamic variables')
@@ -1629,7 +1638,6 @@ module Special
 !      lnneni = (1.+cubic_step(z(n)*unit_length,4e6,1e6))* &
 !          (p%lnrho+61.4412 +log(real(unit_mass)))
 !
-      !lnQ = get_lnQ(lnTT_SI)
       call getlnQ(lnTT_SI,lnQ,delta_lnTT)
 !
       rtv_cool = exp(lnQ-unit_lnQ+lnneni)
@@ -1684,17 +1692,19 @@ module Special
         rtv_yz(m-m1+1,n-n1+1)=rtv_cool(ix_loc-l1+1)
         if (m == iy_loc)  rtv_xz(:,n-n1+1)= rtv_cool
         if (n == iz_loc)  rtv_xy(:,m-m1+1)= rtv_cool
-        if (n == iz2_loc) rtv_xy2(:,m-m1+1)=rtv_cool
+        if (n == iz2_loc) rtv_xy2(:,m-m1+1)= rtv_cool
         if (n == iz3_loc) rtv_xy3(:,m-m1+1)= rtv_cool
         if (n == iz4_loc) rtv_xy4(:,m-m1+1)= rtv_cool
       endif
 !
       if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,rtv_cool/cdts)
-        dt1_max=max(dt1_max,abs(rtv_cool/max(tini,delta_lnTT)))
+        if (lentropy) then
+          rtv_cool=gamma*p%cp1*rtv_cool
+        endif
+        dt1_max=max(dt1_max,rtv_cool/max(tini,delta_lnTT))
         if (ldiagnos.and.idiag_dtrad /= 0.) then
           itype_name(idiag_dtrad)=ilabel_max_dt
-          call max_mn_name(rtv_cool/cdts,idiag_dtrad,l_dt=.true.)
+          call max_mn_name(rtv_cool/max(tini,delta_lnTT),idiag_dtrad,l_dt=.true.)
         endif
       endif
 !
@@ -1832,6 +1842,9 @@ module Special
       else if (lentropy .and. pretend_lnTT) then
         rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      else if (lentropy .and. (.not. pretend_lnTT)) then
+        rhs = p%TT1*p%rho1*heatinput
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + rhs
       else if (lthermal_energy) then
         rhs = heatinput
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + rhs
