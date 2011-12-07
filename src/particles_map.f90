@@ -1323,7 +1323,7 @@ module Particles_map
 !
     endsubroutine interpolation_consistency_check
 !***********************************************************************
-    subroutine interpolate_quantities(f,fp,ineargrid)
+    subroutine interpolate_quantities(f,fp,p,ineargrid)
 !
 !  Interpolate the needed sub-grid quantities according to preselected
 !  interpolation policies.
@@ -1335,10 +1335,11 @@ module Particles_map
       real,dimension(mx,my,mz,mfarray) :: f
       real,dimension(mpar_loc,mpvar) :: fp
       integer,dimension(mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
       intent(in) :: f,fp,ineargrid
 !
-      integer :: k1,k2
+      integer :: k1,k2,k
 !
       k1=k1_imn(imn); k2=k2_imn(imn)
 !
@@ -1400,6 +1401,21 @@ module Particles_map
             'pretend_lnTT in init_pars to be able to interpolate'// &
             ' the temperature if using the regular temperature module!')
         endif
+      endif
+!
+!  Temperature gradient:
+!
+      if (interp%lgradTT) then
+        allocate(interp_gradTT(k1:k2,3))
+        if (.not.allocated(interp_gradTT)) then
+          print*,'interpolate_quantities: unable to allocate '// &
+                 'sufficient memory for interp_gradTT'
+          call fatal_error('interpolate_quantities','')
+        endif
+
+        do k=k1,k2
+          interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
+        enddo
       endif
 !
 !  Density:

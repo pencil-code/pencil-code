@@ -1530,7 +1530,7 @@ module Particles_map
 !
     endsubroutine interpolation_consistency_check
 !***********************************************************************
-    subroutine interpolate_quantities(f,fp,ineargrid)
+    subroutine interpolate_quantities(f,fp,p,ineargrid)
 !
 !  Interpolate the needed sub-grid quantities according to preselected
 !  interpolation policies.
@@ -1540,8 +1540,9 @@ module Particles_map
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc,3) :: ineargrid
+      type (pencil_case) :: p
 !
-      if (interp%luu .or. interp%loo .or. interp%lTT) &
+      if (interp%luu .or. interp%loo .or. interp%lTT .or interp%lgradTT) &
           call fatal_error('interpolate_quantities', &
           'not implemented for block domain decomposition')
 !

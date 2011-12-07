@@ -654,7 +654,7 @@ module Particles_main
 !  are found in interp.
 !  (Clean-up should be performed at end of this subroutine!)
 !
-     call interpolate_quantities(f,fp,ineargrid)
+     call interpolate_quantities(f,fp,p,ineargrid)
 !
 !  Dynamical equations.
 !

@@ -58,11 +58,11 @@ module Particles_cdata
 !
 !  Interpolation toggles:
 !
-    logical :: luu, loo, lTT, lrho
+    logical :: luu, loo, lTT, lrho, lgradTT
 !
 !  Interpolation policies:
 !
-    integer :: pol_uu, pol_oo, pol_TT, pol_rho
+    integer :: pol_uu, pol_oo, pol_TT, pol_rho, pol_gradTT
   end type quant_interp_penc
 !  
   type(quant_interp_penc) :: interp
@@ -70,7 +70,7 @@ module Particles_cdata
 !  Interpolated quantities: moved outside type to conform to
 !  the f90 standard.
 !
-    real, dimension(:,:), allocatable :: interp_uu, interp_oo
+    real, dimension(:,:), allocatable :: interp_uu, interp_oo, interp_gradTT
     real, dimension(:), allocatable :: interp_TT, interp_rho
 !
 !  Interpolation policies:
