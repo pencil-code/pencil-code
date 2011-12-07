@@ -33,6 +33,7 @@ module Particles
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: tausp_species=0.0
   real, target, dimension (npar_species) :: tausp1_species=0.0
+  real, dimension (3) :: temp_grad0=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
@@ -57,12 +58,13 @@ module Particles
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0
-  real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0
+  real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0, thermophoretic_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   real :: particles_insert_rate
   real :: avg_n_insert, remaining_particles=0.0
   real :: max_particle_insert_time=huge1
   real :: Deltauy_gas_friction=0.0
+  real :: cond_ratio=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -83,6 +85,7 @@ module Particles
   logical :: lcoldstart_amplitude_correction=.false.
   logical :: luse_tau_ap=.true.
   logical :: lbrownian_forces=.false.
+  logical :: lthermophoretic_forces=.false.
   logical :: lenforce_policy=.false., lnostore_uu=.true.
   logical :: ldt_grav_par=.false., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
@@ -93,12 +96,14 @@ module Particles
   character (len=labellen) :: interp_pol_oo ='ngp'
   character (len=labellen) :: interp_pol_TT ='ngp'
   character (len=labellen) :: interp_pol_rho='ngp'
+  character (len=labellen) :: interp_pol_gradTT='ngp'
 !
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
   character (len=labellen) :: gravr_profile=''
 !
+  character (len=labellen) :: thermophoretic_eq= 'nothing'
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
@@ -121,16 +126,16 @@ module Particles
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier,&
       ldraglaw_eps_stk_transonic, pdlaw, ldragforce_stiff, &
       ldraglaw_steadystate, tstart_liftforce_par, &
-      tstart_brownian_par, lbrownian_forces, lenforce_policy, &
+      tstart_brownian_par, lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, brownian_T0, &
-      lnostore_uu, ldt_grav_par, ldragforce_radialonly, lsinkpoint, &
+      thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, lsinkpoint, &
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
       linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
       rhopmat, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1, &
       xp2, yp2, zp2, vpx2, vpy2, vpz2, lsinkparticle_1, rsinkparticle_1, &
-      lcalc_uup
+      lcalc_uup,temp_grad0,thermophoretic_eq,cond_ratio,interp_pol_gradTT
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -151,14 +156,15 @@ module Particles
       ldraglaw_variable_density, ldraglaw_steadystate, &
       tstart_liftforce_par, tstart_brownian_par, lbrownian_forces, &
       lenforce_policy, interp_pol_uu,interp_pol_oo, interp_pol_TT, &
-      interp_pol_rho, brownian_T0, lnostore_uu, ldt_grav_par, &
+      interp_pol_rho, brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
       ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
       rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
-      lsinkparticle_1, rsinkparticle_1
+      lsinkparticle_1, rsinkparticle_1,lthermophoretic_forces,temp_grad0,&
+      thermophoretic_eq,cond_ratio,interp_pol_gradTT
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -476,8 +482,12 @@ module Particles
         interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or.lparticles_spin
       endif
       interp%loo=.false.
-      interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))
-      interp%lrho=lbrownian_forces.or.ldraglaw_steadystate
+      interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
+          .or.(lthermophoretic_forces.and.(thermophoretic_T0==0.0))
+      interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(0)==0.0) &
+          .and. (temp_grad0(1)==0.0) .and. (temp_grad0(2)==0.0)
+      interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
+          .or. lthermophoretic_forces
 !
 !  Determine interpolation policies:
 !   Make sure that interpolation of uu is chosen in a backwards compatible
@@ -527,6 +537,20 @@ module Particles
       case default
         call fatal_error('initialize_particles','No such such value for '// &
           'interp_pol_TT: '//trim(interp_pol_TT))
+      endselect
+!
+      select case (interp_pol_gradTT)
+      case ('tsc')
+        call fatal_error('initialize_particles','Not implemented gradTT'// &
+          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+      case ('cic')
+        call fatal_error('initialize_particles','Not implemented gradTT'// &
+          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
+      case ('ngp')
+        interp%pol_gradTT=ngp
+      case default
+        call fatal_error('initialize_particles','No such such value for '// &
+          'interp_pol_gradTT: '//trim(interp_pol_gradTT))
       endselect
 !
       select case (interp_pol_rho)
@@ -1953,6 +1977,9 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_jxbr)=.true.
         lpenc_requested(i_fvisc)=.true.
       endif
+      if (lthermophoretic_forces) then
+        lpenc_requested(i_gTT)=.true.
+      endif
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2551,7 +2578,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: dragforce, liftforce, bforce, uup
+      real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
@@ -2680,7 +2707,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     dragforce(2)*fp(k,iyp)+dragforce(3)*fp(k,izp))/ &
                     (fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
               endif
-!
+!            
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
 !  Back-reaction friction force from particles on gas. Three methods are
@@ -2918,6 +2945,17 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=k1_imn(imn),k2_imn(imn)
             call calc_brownian_force(fp,k,ineargrid(k,:),stocunn(k),bforce)
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+bforce
+          enddo
+        endif
+      endif
+!
+!  Add Thernophoretic forces.
+!
+      if (lthermophoretic_forces) then
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call calc_thermophoretic_force(fp,k,ineargrid(k,:),thermforce)
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)+thermforce
           enddo
         endif
       endif
@@ -3241,7 +3279,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real :: tausg1_point,OO
       integer :: ix0, iy0, iz0, inx0, jspec
-      logical :: nochange=.false.
+      logical :: nochange=.true.
 !
       intent(in) :: rep,uup
 !
@@ -4256,6 +4294,67 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
     endsubroutine calc_brownian_force
+!***********************************************************************
+ subroutine calc_thermophoretic_force(fp,k,ineark,force)
+!
+!  Calculate the Thermophoretic force due to a temperature gradient in the gas.
+!
+!   Henrik Lutro, testing
+!     
+      use Viscosity, only: getnu
+      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(3), intent(out) :: force
+      real, dimension(3) :: temp_grad
+      real TT,mu,nu,Kn,phi,mass_p
+      real Ktc,Ce,Cm,Cint
+      character (len=labellen) :: ivis=''
+      integer, dimension(3) :: ineark
+      integer :: k
+      intent(in) :: fp,k
+      Ktc=1.10
+      Cm=1.13
+      Ce=2.17
+      !Find dynamic viscosity
+      call getnu(nu_input=nu,ivis=ivis)
+      if (ivis=='nu-const') then
+        mu=nu*interp_rho(k)
+      elseif (ivis=='rho-nu-const') then
+        mu=nu
+      elseif (ivis=='sqrtrho-nu-const') then
+        mu=mu*sqrt(interp_rho(k))
+      else
+        call fatal_error('calc_pencil_rep','No such ivis!')
+      endif
+      Cint=0.5
+          
+      if (interp%lTT) then
+        TT=interp_TT(k)
+      else
+        TT=thermophoretic_T0
+      endif
+      if (interp%lgradTT) then
+        temp_grad=interp_gradTT(k,:)
+      else 
+        temp_grad=temp_grad0
+     endif
+!
+      Kn=mean_free_path_gas/fp(k,iap)
+!   
+      mass_p=(4.0*pi/3.0)*rhopmat*fp(k,iap)**3
+      if(thermophoretic_eq=='near_continuum') then
+        phi=-9*pi/cond_ratio
+      elseif(thermophoretic_eq=='transition') then
+        phi=-12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn))&
+            /((1.0+3.0*Kn*exp(-Cint/Kn))*(1.0+3.0*Cm*Kn)*(2.0+cond_ratio+2.0*cond_ratio*Ce*Kn))
+      elseif(thermophoretic_eq=='free_molecule') then
+        phi=0.0
+      else
+        call fatal_error('calc_pencil_rep','No thermoporetic range chosen')
+      endif
+!
+      force=(fp(k,iap)*temp_grad*mu**2*phi)/(TT*interp_rho(k)*mass_p)
+!
+    endsubroutine calc_thermophoretic_force
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !
