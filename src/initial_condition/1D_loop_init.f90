@@ -139,7 +139,7 @@ contains
 !
 !  04-sep-10/bing: coded
 !
-      use EquationOfState, only: get_cp1,gamma
+      use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
       use Syscalls, only: file_exists, file_size
@@ -341,6 +341,10 @@ contains
           else
             f(:,:,:,ieth)=f(:,:,:,ieth)*exp(f(:,:,:,ilnrho))/(gamma*cp1)
           endif
+        else if (lentropy .and. (.not. pretend_lnTT)) then
+          if (leos) call get_cp1(cp1)
+          f(:,:,:,iss) = (log(gamma_m1/cs20/cp1)+spread(spread(profile_x,2,my),3,mz)- &
+              gamma_m1*(f(:,:,:,ilnrho)-log(rho_init))) / cp1 /gamma
         else
           call fatal_error('setup_profiles', &
               'Not implemented for current set of thermodynamic variables.')
