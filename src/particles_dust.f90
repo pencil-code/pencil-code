@@ -484,8 +484,8 @@ module Particles
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
           .or.(lthermophoretic_forces.and.(thermophoretic_T0==0.0))
-      interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(0)==0.0) &
-          .and. (temp_grad0(1)==0.0) .and. (temp_grad0(2)==0.0)
+      interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(1)==0.0) &
+          .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
           .or. lthermophoretic_forces
 !
