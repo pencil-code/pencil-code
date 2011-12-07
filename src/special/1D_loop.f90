@@ -410,6 +410,7 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc
+      integer :: itmp
 !
       if (hcond_grad_iso/=0.) call calc_heatcond_glnTT_iso(df,p)
       if (Kpara/=0.) call calc_heatcond_spitzer(f,df,p)
@@ -419,17 +420,21 @@ module Special
       if (Kchrom/=0.) call calc_heatcond_kchrom(df,p)
       if (bullets_h0/=0.) call calc_bullets_heating(df,p)
 !
+      if (ltemperature) then
+        itmp = ilnTT
+      else if (lentropy) then
+        itmp = iss
+      else
+        call fatal_error('hyper3_chi special','only for ltemperature')
+      endif
+
       if (hyper3_chi /= 0.) then
-        call del6(f,ilnTT,hc,IGNOREDX=.true.)
-        if (ltemperature .and. (.not.ltemperature_nolog)) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + hyper3_chi*hc
+        call del6(f,itmp,hc,IGNOREDX=.true.)
+          df(l1:l2,m,n,itmp) = df(l1:l2,m,n,itmp) + hyper3_chi*hc
 !
 !  due to ignoredx hyper3_chi has [1/s]
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
-        else
-          call fatal_error('hyper3_chi special','only for ltemperature')
-        endif
       endif
 !
     endsubroutine special_calc_entropy
@@ -536,9 +541,11 @@ module Special
         if (pretend_lnTT) then
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs
         else
-          call fatal_error('calc_heatcond_spitzer', &
-              'not implented for lentropy and not pretend_lnTT')
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + rhs/(gamma*p%cp1)
         endif
+      else
+        call fatal_error('calc_heatcond_spitzer', &
+            'not implented for lentropy and not pretend_lnTT')
       endif
 !
       if (lfirst.and.ldt) then
@@ -686,9 +693,11 @@ module Special
     else if (lentropy) then
       if (pretend_lnTT) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
-      else
-        call fatal_error('calc_heat_cool_RTV','not implemented for lentropy')
+      else  
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool/(gamma*p%cp1)
       endif
+    else
+      call fatal_error('calc_heat_cool_RTV','not implemented for lentropy')
     endif
 !
     if (lfirst.and.ldt) then
@@ -1019,7 +1028,14 @@ module Special
       rhs = p%TT1*p%rho1*gamma*p%cp1*heatinput* &
           cubic_step(real(t),init_time,init_time)
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      if (ltemperature .and. (.not. ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      else if (lentropy .and. (.not. pretend_lnTT)) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + rhs/gamma/p%cp1
+      else
+        call fatal_error('calc_artif_heating', &
+            'not for current set of thermodynamic variables')
+      endif
 !
       if (lfirst.and.ldt) then
         if (ldiagnos.and.idiag_dtnewt/=0) then
@@ -1064,6 +1080,8 @@ module Special
 !
       if (ltemperature .and. (.not. ltemperature_nolog)) then
         df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cp1*rhs*gamma*hcond_grad_iso
+      else if (lentropy .and. (.not. pretend_lnTT)) then
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + rhs*hcond_grad_iso
       else
         call fatal_error('calc_heatcond_glnTT_iso','only for ltemperature')
       endif
