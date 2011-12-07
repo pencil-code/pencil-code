@@ -203,6 +203,7 @@ module Entropy
   integer :: idiag_TTm=0        ! DIAG_DOC: $\left<T\right>$
   integer :: idiag_TTmax=0      ! DIAG_DOC: $T_{\max}$
   integer :: idiag_TTmin=0      ! DIAG_DOC: $T_{\min}$
+  integer :: idiag_gTmax=0      ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_ssmax=0      ! DIAG_DOC: $s_{\max}$
   integer :: idiag_ssmin=0      ! DIAG_DOC: $s_{\min}$
   integer :: idiag_gTrms=0      ! DIAG_DOC: $(\nabla T)_{\rm rms}$
@@ -2363,6 +2364,10 @@ module Entropy
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
           idiag_uzTTmz/=0 .or. idiag_TT2mz/=0 .or. idiag_uxTTmx/=0) &
           lpenc_diagnos(i_TT)=.true.
+      if (idiag_gTmax/=0) then
+        lpenc_diagnos(i_glnTT) =.true.
+        lpenc_diagnos(i_TT) =.true.
+      endif
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0 .or. &
           idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0) &
           lpenc_diagnos2d(i_TT)=.true.
@@ -2509,7 +2514,7 @@ module Entropy
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
-      real, dimension(nx) :: ufpres, uduu
+      real, dimension(nx) :: ufpres, uduu, glnTT2
       integer :: j,ju
       integer :: i
 !
@@ -2665,6 +2670,10 @@ module Entropy
         if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
         if (idiag_TTmin/=0)  call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
+        if (idiag_gTmax/=0) then
+          call dot2(p%glnTT,glnTT2)
+          call max_mn_name(p%TT*sqrt(glnTT2),idiag_gTmax)
+        endif
         if (idiag_TTm/=0)    call sum_mn_name(p%TT*uT,idiag_TTm)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
         if (idiag_yHmax/=0)  call max_mn_name(p%yH,idiag_yHmax)
@@ -4804,7 +4813,7 @@ module Entropy
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
-        idiag_ssmax=0; idiag_ssmin=0
+        idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
@@ -4844,6 +4853,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
+        call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'ssmin',idiag_ssmin)
         call parse_name(iname,cname(iname),cform(iname),'ssmax',idiag_ssmax)
         call parse_name(iname,cname(iname),cform(iname),'gTrms',idiag_gTrms)
@@ -5030,6 +5040,30 @@ module Entropy
             slices%xy3(l-l1+1,m-m1+1)=exp(tmpval)
             call eoscalc(ieosvars,f(l,m,iz4_loc,idensity),f(l,m,iz4_loc,iss),lnTT=tmpval)
             slices%xy4(l-l1+1,m-m1+1)=exp(tmpval)
+          enddo; enddo
+          slices%ready=.true.
+!
+        case ('lnTT')
+!
+          if (ldensity_nolog) then
+            ieosvars=irho_ss
+            idensity=irho
+          else
+            ieosvars=ilnrho_ss
+            idensity=ilnrho
+          endif
+!
+          do m=m1,m2; do n=n1,n2
+            call eoscalc(ieosvars,f(ix_loc,m,n,idensity),f(ix_loc,m,n,iss),lnTT=slices%yz(m-m1+1,n-n1+1))
+          enddo; enddo
+          do l=l1,l2; do n=n1,n2
+            call eoscalc(ieosvars,f(l,iy_loc,n,idensity),f(l,iy_loc,n,iss),lnTT=slices%xz(l-l1+1,n-n1+1))
+          enddo; enddo
+          do l=l1,l2; do m=m1,m2
+            call eoscalc(ieosvars,f(l,m,iz_loc,idensity),f(l,m,iz_loc,iss),lnTT=slices%xy(l-l1+1,m-m1+1))
+            call eoscalc(ieosvars,f(l,m,iz2_loc,idensity),f(l,m,iz2_loc,iss),lnTT=slices%xy2(l-l1+1,m-m1+1))
+            call eoscalc(ieosvars,f(l,m,iz3_loc,idensity),f(l,m,iz3_loc,iss),lnTT=slices%xy3(l-l1+1,m-m1+1))
+            call eoscalc(ieosvars,f(l,m,iz4_loc,idensity),f(l,m,iz4_loc,iss),lnTT=slices%xy4(l-l1+1,m-m1+1))
           enddo; enddo
           slices%ready=.true.
 !
