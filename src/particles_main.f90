@@ -22,6 +22,8 @@ module Particles_main
   use Particles_stirring
   use Particles_sub
   use Particles_viscosity
+  use Particles_diagnos_dv
+  use Particles_diagnos_state
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -39,14 +41,15 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      call register_particles          ()
-      call register_particles_radius   ()
-      call register_particles_spin     ()
-      call register_particles_number   ()
-      call register_particles_mass     ()
-      call register_particles_selfgrav ()
-      call register_particles_nbody    ()
-      call register_particles_viscosity()
+      call register_particles              ()
+      call register_particles_radius       ()
+      call register_particles_spin         ()
+      call register_particles_number       ()
+      call register_particles_mass         ()
+      call register_particles_selfgrav     ()
+      call register_particles_nbody        ()
+      call register_particles_viscosity    ()
+      call register_particles_diagnos_state()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -60,16 +63,18 @@ module Particles_main
 !
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
-      call rprint_particles            (lreset,LWRITE=lroot)
-      call rprint_particles_radius     (lreset,LWRITE=lroot)
-      call rprint_particles_spin       (lreset,LWRITE=lroot)
-      call rprint_particles_number     (lreset,LWRITE=lroot)
-      call rprint_particles_mass       (lreset,LWRITE=lroot)
-      call rprint_particles_selfgrav   (lreset,LWRITE=lroot)
-      call rprint_particles_nbody      (lreset,LWRITE=lroot)
-      call rprint_particles_viscosity  (lreset,LWRITE=lroot)
-      call rprint_particles_coagulation(lreset,LWRITE=lroot)
-      call rprint_particles_collisions (lreset,LWRITE=lroot)
+      call rprint_particles              (lreset,LWRITE=lroot)
+      call rprint_particles_radius       (lreset,LWRITE=lroot)
+      call rprint_particles_spin         (lreset,LWRITE=lroot)
+      call rprint_particles_number       (lreset,LWRITE=lroot)
+      call rprint_particles_mass         (lreset,LWRITE=lroot)
+      call rprint_particles_selfgrav     (lreset,LWRITE=lroot)
+      call rprint_particles_nbody        (lreset,LWRITE=lroot)
+      call rprint_particles_viscosity    (lreset,LWRITE=lroot)
+      call rprint_particles_coagulation  (lreset,LWRITE=lroot)
+      call rprint_particles_collisions   (lreset,LWRITE=lroot)
+      call rprint_particles_diagnos_dv   (lreset,LWRITE=lroot)
+      call rprint_particles_diagnos_state(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
@@ -149,18 +154,20 @@ module Particles_main
 !
 !  Initialize individual modules.
 !
-      call initialize_particles_mpicomm   (f,lstarting)
-      call initialize_particles           (f,lstarting)
-      call initialize_particles_radius    (f,lstarting)
-      call initialize_particles_spin      (f,lstarting)
-      call initialize_particles_number    (f,lstarting)
-      call initialize_particles_mass      (f,lstarting)
-      call initialize_particles_selfgrav  (f,lstarting)
-      call initialize_particles_nbody     (f,lstarting)
-      call initialize_particles_viscosity (f,lstarting)
-      call initialize_particles_coag      (f,lstarting)
-      call initialize_particles_collisions(f,lstarting)
-      call initialize_particles_stalker   (f,lstarting)
+      call initialize_particles_mpicomm      (f,lstarting)
+      call initialize_particles              (f,lstarting)
+      call initialize_particles_radius       (f,lstarting)
+      call initialize_particles_spin         (f,lstarting)
+      call initialize_particles_number       (f,lstarting)
+      call initialize_particles_mass         (f,lstarting)
+      call initialize_particles_selfgrav     (f,lstarting)
+      call initialize_particles_nbody        (f,lstarting)
+      call initialize_particles_viscosity    (f,lstarting)
+      call initialize_particles_coag         (f,lstarting)
+      call initialize_particles_collisions   (f,lstarting)
+      call initialize_particles_stalker      (f,lstarting)
+      call initialize_particles_diagnos_dv   (f,lstarting)
+      call initialize_particles_diagnos_state(f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
@@ -205,11 +212,12 @@ module Particles_main
       intent (out) :: f
 !
       if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
-      if (lparticles_number) call init_particles_number(f,fp)
-      if (lparticles_mass)   call init_particles_mass(f,fp)
+      if (lparticles_number)        call init_particles_number(f,fp)
+      if (lparticles_mass)          call init_particles_mass(f,fp)
       call init_particles(f,fp,ineargrid)
-      if (lparticles_spin)   call init_particles_spin(f,fp)
-      if (lparticles_nbody)  call init_particles_nbody(f,fp)
+      if (lparticles_spin)          call init_particles_spin(f,fp)
+      if (lparticles_nbody)         call init_particles_nbody(f,fp)
+      if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -1056,6 +1064,24 @@ module Particles_main
         endif
       endif
 !
+      if (lparticles_diagnos_dv) then
+        call read_particles_diagnos_dv_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('particles_diagnos_dv_run_pars',iostat); return
+          endif
+        endif
+      endif
+!
+      if (lparticles_diagnos_state) then
+        call read_particles_diagnos_state_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('particles_diagnos_state_run_pars',iostat); return
+          endif
+        endif
+      endif
+!
     endsubroutine particles_read_runpars
 !***********************************************************************
     subroutine samplepar_runpars(label,iostat)
@@ -1068,18 +1094,20 @@ module Particles_main
       if (lroot) then
         print*
         print*,'-----BEGIN sample particle namelist ------'
-        if (lparticles)             print*,'&particles_run_pars         /'
-        if (lparticles_radius)      print*,'&particles_radius_run_pars  /'
-        if (lparticles_spin)        print*,'&particles_spin_run_pars    /'
-        if (lparticles_number)      print*,'&particles_number_run_pars  /'
-        if (lparticles_mass)        print*,'&particles_mass_run_pars    /'
-        if (lparticles_selfgravity) print*,'&particles_selfgrav_run_pars/'
-        if (lparticles_nbody)       print*,'&particles_nbody_run_pars   /'
-        if (lparticles_viscosity)   print*,'&particles_visc_run_pars    /'
-        if (lparticles_coagulation) print*,'&particles_coag_run_pars    /'
-        if (lparticles_collisions)  print*,'&particles_coll_run_pars    /'
-        if (lparticles_stirring)    print*,'&particles_stirring_run_pars/'
-        if (lparticles_stalker)     print*,'&particles_stalker_run_pars /'
+        if (lparticles)                print*,'&particles_run_pars         /'
+        if (lparticles_radius)         print*,'&particles_radius_run_pars  /'
+        if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
+        if (lparticles_number)         print*,'&particles_number_run_pars  /'
+        if (lparticles_mass)           print*,'&particles_mass_run_pars    /'
+        if (lparticles_selfgravity)    print*,'&particles_selfgrav_run_pars/'
+        if (lparticles_nbody)          print*,'&particles_nbody_run_pars   /'
+        if (lparticles_viscosity)      print*,'&particles_visc_run_pars    /'
+        if (lparticles_coagulation)    print*,'&particles_coag_run_pars    /'
+        if (lparticles_collisions)     print*,'&particles_coll_run_pars    /'
+        if (lparticles_stirring)       print*,'&particles_stirring_run_pars/'
+        if (lparticles_stalker)        print*,'&particles_stalker_run_pars /'
+        if (lparticles_diagnos_dv)     print*,'&particles_diagnos_dv_run_pars/'
+        if (lparticles_diagnos_state)  print*,'&particles_diagnos_state_run_pars/'
         print*,'------END sample particle namelist -------'
         print*
         if (present(label)) &
@@ -1097,18 +1125,20 @@ module Particles_main
 !
       integer, intent (in) :: unit
 !
-      if (lparticles)             call write_particles_run_pars(unit)
-      if (lparticles_radius)      call write_particles_rad_run_pars(unit)
-      if (lparticles_spin)        call write_particles_spin_run_pars(unit)
-      if (lparticles_number)      call write_particles_num_run_pars(unit)
-      if (lparticles_mass)        call write_particles_mass_run_pars(unit)
-      if (lparticles_selfgravity) call write_particles_selfg_run_pars(unit)
-      if (lparticles_nbody)       call write_particles_nbody_run_pars(unit)
-      if (lparticles_viscosity)   call write_particles_visc_run_pars(unit)
-      if (lparticles_coagulation) call write_particles_coag_run_pars(unit)
-      if (lparticles_collisions)  call write_particles_coll_run_pars(unit)
-      if (lparticles_stirring)    call write_particles_stir_run_pars(unit)
-      if (lparticles_stalker)     call write_pstalker_run_pars(unit)
+      if (lparticles)                call write_particles_run_pars(unit)
+      if (lparticles_radius)         call write_particles_rad_run_pars(unit)
+      if (lparticles_spin)           call write_particles_spin_run_pars(unit)
+      if (lparticles_number)         call write_particles_num_run_pars(unit)
+      if (lparticles_mass)           call write_particles_mass_run_pars(unit)
+      if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
+      if (lparticles_nbody)          call write_particles_nbody_run_pars(unit)
+      if (lparticles_viscosity)      call write_particles_visc_run_pars(unit)
+      if (lparticles_coagulation)    call write_particles_coag_run_pars(unit)
+      if (lparticles_collisions)     call write_particles_coll_run_pars(unit)
+      if (lparticles_stirring)       call write_particles_stir_run_pars(unit)
+      if (lparticles_stalker)        call write_pstalker_run_pars(unit)
+      if (lparticles_diagnos_dv)     call write_particles_diagnos_dv_run_pars(unit)
+      if (lparticles_diagnos_state)  call write_particles_diagnos_state_run_pars(unit)
 !
     endsubroutine particles_wparam2
 !***********************************************************************

@@ -195,6 +195,7 @@ module Particles_sub
                 print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
                 call fatal_error_local('boundconds_particles','')
               endif
+              if (ipyy .ne. 0) fp(k,ipxx)=fp(k,ipxx)+Lxyz(1)
             endif
 !  xp > x1
             if (fp(k,ixp)>=xyz1(1)) then
@@ -217,6 +218,7 @@ module Particles_sub
                 print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
                 call fatal_error_local('boundconds_particles','')
               endif
+              if (ipxx .ne. 0) fp(k,ipxx)=fp(k,ipxx)-Lxyz(1)
             endif
           elseif (boundx=='out') then
 !
@@ -328,6 +330,7 @@ module Particles_sub
                 print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
                 call fatal_error_local('boundconds_particles','')
               endif
+              if (ipyy .ne. 0) fp(k,ipyy)=fp(k,ipyy)+Lxyz(2)
             endif
 !  yp > y1
             if (fp(k,iyp)>=xyz1(2)) then
@@ -339,6 +342,7 @@ module Particles_sub
                 print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
                 call fatal_error_local('boundconds_particles','')
               endif
+              if (ipyy .ne. 0) fp(k,ipyy)=fp(k,ipyy)-Lxyz(2)
             endif
           elseif (boundy=='out') then
             ! massive particles can be out of the box
@@ -373,6 +377,7 @@ module Particles_sub
                 print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
                 call fatal_error_local('boundconds_particles','')
               endif
+              if (ipzz .ne. 0) fp(k,ipzz)=fp(k,ipzz)+Lxyz(3)
             endif
 !  zp > z1
             if (fp(k,izp)>=xyz1(3)) then
@@ -384,6 +389,7 @@ module Particles_sub
                 print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
                 call fatal_error_local('boundconds_particles','')
               endif
+              if (ipzz .ne. 0) fp(k,ipzz)=fp(k,ipzz)-Lxyz(3)
             endif
           elseif (boundz=='out') then
             ! massive particles can be out of the box
@@ -468,7 +474,7 @@ module Particles_sub
 !  Set corresponding entry in itype_name
 !
         if (present(lsqrt)) then
-          itype_name(iname)=ilabel_sum_sqrt_par
+          itype_name(iname)=ilabel_sum_weighted_sqrt
         else
           itype_name(iname)=ilabel_sum_par
         endif

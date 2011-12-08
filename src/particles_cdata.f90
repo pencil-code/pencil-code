@@ -33,6 +33,7 @@ module Particles_cdata
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0
   integer :: inpswarm=0, irhopswarm=0
   integer :: ipsx=0, ipsy=0, ipsz=0
+  integer :: ipss=0, ipst=0, ipxx=0, ipyy=0, ipzz=0
   integer :: iuup=0, iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
   integer :: inp=0
@@ -82,5 +83,7 @@ module Particles_cdata
   integer, parameter :: cic=0
   integer, parameter :: tsc=1
   integer, parameter :: ngp=2
+!
+  real :: t_nextcol=0. !collision diagnostic times, set to turn-over of largest eddies
 !
 endmodule Particles_cdata

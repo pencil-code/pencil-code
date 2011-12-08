@@ -1,4 +1,3 @@
-! $Id$
 !
 !  This module takes care of everything related to dust particles.
 !
@@ -102,8 +101,19 @@ module Particles
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
   character (len=labellen) :: gravr_profile=''
-!
   character (len=labellen) :: thermophoretic_eq= 'nothing'
+!
+  integer :: init_repeat=0       !repeat particle initialization for distance statistics
+!
+!  Interactions with special/shell
+!
+  integer :: k_shell=-1            !k associated with minshell (special/shell.f90)
+  logical :: l_shell=.false.       !using special/shell.f90 for gas velocities
+!
+  real, dimension(3) :: uup_shared=0
+  real :: turnover_shared=0
+  logical :: vel_call=.false., turnover_call=.false.
+!
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
@@ -163,6 +173,7 @@ module Particles
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
+      l_shell, init_repeat, k_shell, &
       lsinkparticle_1, rsinkparticle_1,lthermophoretic_forces,temp_grad0,&
       thermophoretic_eq,cond_ratio,interp_pol_gradTT
 !
@@ -192,7 +203,7 @@ module Particles
   integer :: idiag_rhopmxz=0, idiag_nparpmax=0, idiag_npmxy=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
-  integer :: idiag_vpyfull2m=0, idiag_deshearbcsm=0
+  integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
 !
   contains
 !***********************************************************************
@@ -348,7 +359,7 @@ module Particles
         endif
         if (rhop_swarm==0.0) &
             rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
-        if (mp_swarm==0.0) &
+        if (mp_swarm==0.0) & 
             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
@@ -565,6 +576,14 @@ module Particles
           'interp_pol_rho: '//trim(interp_pol_rho))
       endselect
 !
+      if (l_shell) then
+        if( k_shell .lt. 0) call fatal_error('initialize_particles','Set k_shell')
+        call put_shared_variable('uup_shared',uup_shared,ierr)
+        call put_shared_variable('vel_call',vel_call,ierr)
+        call put_shared_variable('turnover_call',turnover_call,ierr)
+        call put_shared_variable('turnover_shared',turnover_shared,ierr)
+      endif
+!
 !  Write constants to disk.
 !
       if (lroot) then
@@ -591,6 +610,7 @@ module Particles
       use Mpicomm, only: mpireduce_sum
       use InitialCondition, only: initial_condition_xxp,&
                                   initial_condition_vvp
+      use Particles_diagnos_dv, only: repeated_init
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
@@ -1035,6 +1055,8 @@ k_loop:   do while (.not. (k>npar_loc))
       if (nygrid==1) fp(1:npar_loc,iyp)=y(nghost+1)
       if (nzgrid==1) fp(1:npar_loc,izp)=z(nghost+1)
 !
+      if (init_repeat/=0) call repeated_init(fp,init_repeat)
+!
 !  Redistribute particles among processors (now that positions are determined).
 !
       call boundconds_particles(fp,ipar)
@@ -1353,6 +1375,7 @@ k_loop:   do while (.not. (k>npar_loc))
 ! declarations in particles_tracers to make it work here.
 !
       use General, only: random_number_wrapper
+      use Particles_diagnos_state, only: insert_particles_diagnos_state
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
@@ -1466,6 +1489,10 @@ k_loop:   do while (.not. (k>npar_loc))
           if (nxgrid==1) fp(npar_loc_old+1:npar_loc,ixp)=x(nghost+1)
           if (nygrid==1) fp(npar_loc_old+1:npar_loc,iyp)=y(nghost+1)
           if (nzgrid==1) fp(npar_loc_old+1:npar_loc,izp)=z(nghost+1)
+!
+          if (lparticles_diagnos_state) &
+              call insert_particles_diagnos_state(fp, npar_loc_old)
+!
         endif
       endif ! if (lroot) then
 !
@@ -2008,7 +2035,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_rhop) .and. irhop==0) then
+      if (lpencil_in(i_rhop) .and. irhop==0) then 
         lpencil_in(i_np)=.true.
         lpencil_in(i_rhop_swarm)=.true.
       endif
@@ -2389,6 +2416,10 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_vprms/=0) &
+            call sum_par_name((fp(1:npar_loc,ivpx)**2 &
+                              +fp(1:npar_loc,ivpy)**2 &
+                              +fp(1:npar_loc,ivpz)**2),idiag_vprms,lsqrt=.true.)
         if (idiag_vpyfull2m/=0) &
             call sum_par_name((fp(1:npar_loc,ivpy)- &
             qshear*Omega*fp(1:npar_loc,ixp))**2,idiag_vpyfull2m)
@@ -2546,6 +2577,11 @@ k_loop:   do while (.not. (k>npar_loc))
                 dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
               endif
               dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
+              if (l_shell) then
+                dt1_advpx=abs(fp(k,ivpx))/k_shell
+                dt1_advpy=abs(fp(k,ivpy))/k_shell
+                dt1_advpz=abs(fp(k,ivpz))/k_shell
+              endif
               dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
                    sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
             endif
@@ -2569,6 +2605,8 @@ k_loop:   do while (.not. (k>npar_loc))
       use Diagnostics
       use EquationOfState, only: cs20
       use Particles_spin, only: calc_liftforce
+      use Particles_diagnos_dv, only: collisions
+      use Particles_diagnos_state, only: persistence_check
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2675,12 +2713,19 @@ k_loop:   do while (.not. (k>npar_loc))
                   else
                     uup=f(ix0,iy0,iz0,iux:iuz)
                   endif
+                elseif (l_shell) then
+                  call calc_gas_velocity_shell_call(k,uup,fp)
                 else
                   uup=0.0
                 endif
               else
                 uup=interp_uu(k,:)
               endif
+!
+!  Track particle state in terms of local gas velocity
+!
+              if (lparticles_diagnos_state .and. lfirst) &
+                  call persistence_check(fp, k, uup)
 !
 !  Get the friction time. For the case of |uup| ~> cs, the Epstein drag law
 !  is dependent on the relative mach number, hence the need to feed uup as
@@ -2992,15 +3037,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-        call yzsum_mn_name_x(p%np,idiag_npmx)
-        call xzsum_mn_name_y(p%np,idiag_npmy)
-        call xysum_mn_name_z(p%np,idiag_npmz)
-        call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
-        call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
-        call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        call yzsum_mn_name_x(p%epsp,idiag_epspmx)
-        call xzsum_mn_name_y(p%epsp,idiag_epspmy)
-        call xysum_mn_name_z(p%epsp,idiag_epspmz)
+        if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
+        if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
+        if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
+        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
+        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
+        if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
+        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
+        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
       endif
 !
@@ -3009,6 +3054,12 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
         if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
         if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
+      endif
+!
+!  particle-particle separation and relative velocity diagnostics
+!
+      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
+        if (t .gt. t_nextcol) call collisions(fp)
       endif
 !
 !  Clean up (free allocated memory).
@@ -3163,7 +3214,7 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo; enddo; enddo
           if (ipar(k)/=1 .and. rp<rsinkparticle_1) then
             if (lparticles_mass) then
-              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm)
+              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm) 
               momp_swarm_removed = momp_swarm_removed + &
                   fp(k,ivpx:ivpz)*fp(k,irhopswarm)
 !              if (lshear) then
@@ -3793,7 +3844,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !
           do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1)
+            ix0=ineargrid(k,1) 
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
             if (lcollisional_heat .or. ldiagnos) then
@@ -4022,6 +4073,21 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine compensate_friction_increase
 !***********************************************************************
+    subroutine calc_gas_velocity_shell_call(k1, uup, fp)
+!
+      use Special, only: special_calc_particles
+!
+      real,dimension(mpar_loc,mpvar) :: fp
+      real, dimension(3) :: uup
+      integer :: k1
+!
+      vel_call=.true.
+      uup_shared=fp(k1,ixp:izp)
+      call special_calc_particles(fp)
+      uup=uup_shared
+!
+    endsubroutine calc_gas_velocity_shell_call
+!***********************************************************************
     subroutine calculate_rms_speed(fp,ineargrid,p)
 !
       use Diagnostics
@@ -4107,11 +4173,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,IVIS=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then
+      elseif (ivis=='rho-nu-const') then 
         nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
-      elseif (ivis=='sqrtrho-nu-const') then
-        nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
-      elseif (ivis=='sqrtrho-nu-const') then
+      elseif (ivis=='sqrtrho-nu-const') then 
         nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
@@ -4188,9 +4252,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then
+      elseif (ivis=='rho-nu-const') then 
         nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then
+      elseif (ivis=='sqrtrho-nu-const') then 
         nu=nu_/sqrt(interp_rho(k))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
@@ -4253,9 +4317,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then
+      elseif (ivis=='rho-nu-const') then 
         nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then
+      elseif (ivis=='sqrtrho-nu-const') then 
         nu=nu_/sqrt(interp_rho(k))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
@@ -4479,7 +4543,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
-        idiag_npmxy=0
+        idiag_npmxy=0; idiag_vprms=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -4563,6 +4627,7 @@ k_loop:   do while (.not. (k>npar_loc))
             'npargone',idiag_npargone)
         call parse_name(iname,cname(iname),cform(iname), &
             'vpyfull2m',idiag_vpyfull2m)
+        call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname), &
             'deshearbcsm',idiag_deshearbcsm)
       enddo
