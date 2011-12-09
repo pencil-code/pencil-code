@@ -1542,7 +1542,7 @@ module Particles_map
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
 !
-      if (interp%luu .or. interp%loo .or. interp%lTT .or interp%lgradTT) &
+      if (interp%luu .or. interp%loo .or. interp%lTT .or. interp%lgradTT) &
           call fatal_error('interpolate_quantities', &
           'not implemented for block domain decomposition')
 !
