@@ -2,6 +2,12 @@
 !
 !  This module folds ghost zones for a single processor run.
 !
+!  The module adds the value of f or df in the first ghost zone to the first
+!  physical point at the opposite side of the grid. This is useful for example
+!  for letting particles assign drag force to the ghost zones and then adding
+!  the total assigned drag force back into the physical domain over the
+!  periodic boundaries.
+!
 module GhostFold
 !
   use Cdata
