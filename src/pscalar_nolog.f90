@@ -87,7 +87,7 @@ module Pscalar
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
   integer :: idiag_gcc5m=0, idiag_gcc10m=0
   integer :: idiag_ucm=0, idiag_uudcm=0, idiag_Cz2m=0, idiag_Cz4m=0
-  integer :: idiag_Crmsm=0, idiag_uxcm=0, idiag_uycm=0, idiag_uzcm=0
+  integer :: idiag_Crmsm=0, idiag_ccrms, idiag_uxcm=0, idiag_uycm=0, idiag_uzcm=0
   integer :: idiag_cc1m=0, idiag_cc2m=0, idiag_cc3m=0, idiag_cc4m=0
   integer :: idiag_cc5m=0, idiag_cc6m=0, idiag_cc7m=0, idiag_cc8m=0
   integer :: idiag_cc9m=0, idiag_cc10m=0
@@ -642,6 +642,8 @@ module Pscalar
         if (idiag_Cz4m/=0)    call sum_mn_name(p%rho*p%cc(:,1)*z(n)**4,idiag_Cz4m)
         if (idiag_Crmsm/=0) &
             call sum_mn_name((p%rho*p%cc(:,1))**2,idiag_Crmsm,lsqrt=.true.)
+        if (idiag_ccrms/=0) &
+            call sum_mn_name(p%cc(:,1)**2,idiag_ccrms,lsqrt=.true.)
         if (idiag_cc1m/=0)    call sum_mn_name(p%cc1(:,1)   ,idiag_cc1m)
         if (idiag_cc2m/=0)    call sum_mn_name(p%cc1(:,1)**2,idiag_cc2m)
         if (idiag_cc3m/=0)    call sum_mn_name(p%cc1(:,1)**3,idiag_cc3m)
@@ -775,7 +777,7 @@ module Pscalar
         idiag_Qrhoccm=0; idiag_Qpsclm=0; idiag_mcct=0
         idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0
         idiag_uxcmz=0; idiag_uycmz=0; idiag_uzcmz=0
-        idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
+        idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0; idiag_ccrms=0
         idiag_uxcm=0; idiag_uycm=0; idiag_uzcm=0
         idiag_cc1m=0; idiag_cc2m=0; idiag_cc3m=0; idiag_cc4m=0; idiag_cc5m=0
         idiag_cc6m=0; idiag_cc7m=0; idiag_cc8m=0; idiag_cc9m=0; idiag_cc10m=0
@@ -804,6 +806,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'Cz2m',idiag_Cz2m)
         call parse_name(iname,cname(iname),cform(iname),'Cz4m',idiag_Cz4m)
         call parse_name(iname,cname(iname),cform(iname),'Crmsm',idiag_Crmsm)
+        call parse_name(iname,cname(iname),cform(iname),'ccrms',idiag_ccrms)
         call parse_name(iname,cname(iname),cform(iname),'cc1m',idiag_cc1m)
         call parse_name(iname,cname(iname),cform(iname),'cc2m',idiag_cc2m)
         call parse_name(iname,cname(iname),cform(iname),'cc3m',idiag_cc3m)
