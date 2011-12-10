@@ -4331,7 +4331,7 @@ The equation of motion is accordingly
 Here $\Phi_{\rm grav}$ is the gravity potential,
 $\jv$ the electric current density, $\Bv$
 the magnetic flux density, $\nu$ is kinematic viscosity, $\zeta$ describes a bulk
-viscosity, and
+viscosity, and, in Cartesian coordinates
 \begin{equation} \label{Eq-S-traceless}
   {\mathsf S}_{ij} = \frac{1}{2}\left({\partial u_i\over\partial x_j}
                  + {\partial u_j\over\partial x_i}
@@ -4339,6 +4339,9 @@ viscosity, and
 \end{equation}
 is the rate-of-shear tensor that is traceless, because it can be written as
 the generic rate-of-strain tensor minus its trace.
+In curvilinear coordinates, we have to replace partial differentiation
+by covariant differentiation (indicated by semicolons), so we write
+${\mathsf S}_{ij}=\frac{1}{2}(u_{i;j}+u_{j;i})-\frac{1}{3}\delta_{ij}\Div\uv$.
 
 The interpretation of the two viscosity terms varies greatly depending upon
 the Viscosity module used, and indeed on the parameters given to the module.
