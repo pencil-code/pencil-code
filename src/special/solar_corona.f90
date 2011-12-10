@@ -2331,12 +2331,11 @@ module Special
       call dot(p%glnTT,bunit,tmpj)
       rhs = rhs*tmpj
 !
-      chi = glnT2*hcond2
+      chi = glnT2*hcond2 * get_hcond_fade_fact()
 !
-      rhs = hcond2*(rhs + glnT2*tmp)
+      rhs = (rhs + glnT2*tmp)*hcond2 * get_hcond_fade_fact()
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + &
-          rhs*gamma*get_hcond_fade_fact()
+      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs*gamma
 !
       if (lfirst.and.ldt) then
         fdiff=gamma*chi*dxyz_2
@@ -2376,9 +2375,9 @@ module Special
       enddo
       call dot(p%glnTT,tmpv,tmp)
 !
-      chi = glnT2*hcond3
+      chi = glnT2*hcond3 * get_hcond_fade_fact()
 !
-      rhs = 2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)
+      rhs = (2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)) * get_hcond_fade_fact()
 !
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs*gamma*hcond3
 !
