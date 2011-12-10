@@ -49,7 +49,8 @@ module Snapshot
       optional :: enum, flist, noghost
 !
       real, save :: tsnap
-      integer, save :: ifirst=0,nsnap
+      integer, save :: nsnap
+      logical, save :: lfirst_call=.true.
       logical :: lsnap
       character (len=fnlen) :: file
       character (len=intlen) :: ch
@@ -69,9 +70,9 @@ module Snapshot
 !  At first call, need to initialize tsnap.
 !  tsnap calculated in read_snaptime, but only available to root processor.
 !
-        if (ifirst==0) then
+        if (lfirst_call) then
           call read_snaptime(file,tsnap,nsnap,dsnap,t)
-          ifirst=1
+          lfirst_call=.false.
         endif
 !
 !  Check whether we want to output snapshot. If so, then
@@ -218,7 +219,8 @@ module Snapshot
       real, dimension (:,:,:), allocatable :: b_vec
       character (len=fnlen) :: file
       logical :: lspec,llwrite_only=.false.,ldo_all
-      integer, save :: ifirst=0,nspec
+      integer, save :: nspec
+      logical, save :: lfirst_call=.true.
       real, save :: tspec
       integer :: ivec,im,in,stat,ipos,ispec
       real, dimension (nx) :: bb
@@ -244,9 +246,9 @@ module Snapshot
 !  At first call, need to initialize tspec.
 !  tspec calculated in read_snaptime, but only available to root processor.
 !
-      if (ldo_all.and.ifirst==0) then
+      if (ldo_all .and. lfirst_call) then
         call read_snaptime(file,tspec,nspec,dspec,t)
-        ifirst=1
+        lfirst_call=.false.
       endif
 !
 !  Check whether we want to output power snapshot. If so, then
