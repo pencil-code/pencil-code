@@ -5,10 +5,8 @@
 !!!!!!!!!!!!!!!!!!!!!!
 !
 !  Distributed IO (i.e. each process writes its own file data/procX)
-!  07-Nov-2001/wd: Put into separate module, so one can choose
-!  alternative IO mechanism.
 !
-!  The file format written by output() (and used, e.g. in var.dat)
+!  The file format written by output_snap() (and used, e.g. in var.dat)
 !  consists of the followinig Fortran records:
 !    1. data(mx,my,mz,nvar)
 !    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
@@ -17,65 +15,21 @@
 !
 !  04-nov-11/MR: IOSTAT handling generally introduced
 !  16-nov-11/MR: calls to outlog adapted
+!  10-Dec-2011/Bourdin.KIS: major cleanup
 !
 module Io
 !
-  use Cparam, only: intlen
+  use Cdata
+  use Cparam, only: intlen, fnlen
   use Messages
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
   include 'io.h'
 !
-  interface output              ! Overload the `output' function
-    module procedure output_vect
-    module procedure output_scal
-  endinterface
-!
-  interface output_pencil        ! Overload the `output_pencil' function
-    module procedure output_pencil_vect
-    module procedure output_pencil_scal
-  endinterface
-!
   ! define unique logical unit number for input and output calls
   integer :: lun_input=88
   integer :: lun_output=91
-!
-  !
-  ! Interface to external C function(s).
-  ! Need to have two different C functions in order to have F90
-  ! interfaces, since a pencil can be either a 1-d or a 2-d array.
-  !
-!   interface output_penciled_vect_c
-!     subroutine output_penciled_vect_c(filename,pencil,&
-!                                       ndim,i,iy,iz,t, &
-!                                       nx,ny,nz,nghost,fnlen)
-!       use Cdata, only: mx
-!       real,dimension(mx,*) :: pencil
-!       double precision :: t
-!       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-!       character (len=*) :: filename
-!     endsubroutine output_penciled_vect_c
-!   endinterface
-!   !
-!   interface output_penciled_scal_c
-!     subroutine output_penciled_scal_c(filename,pencil,&
-!                                       ndim,i,iy,iz,t, &
-!                                       nx,ny,nz,nghost,fnlen)
-!       use Cdata, only: mx
-!       real,dimension(mx) :: pencil
-!       double precision :: t
-!       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-!       character (len=*) :: filename
-!     endsubroutine output_penciled_scal_c
-!   endinterface
-  !
-  !  Still not possible with the NAG compiler (`No specific match for
-  !  reference to generic OUTPUT_PENCILED_SCAL_C')
-  !
-  external output_penciled_scal_c
-  external output_penciled_vect_c
 !
 contains
 !***********************************************************************
@@ -103,7 +57,6 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: datadir,directory,datadir_snap,directory_snap
       use Mpicomm, only: iproc
       use General, only: itoa, safe_character_assign
 !
@@ -126,85 +79,49 @@ contains
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine input(file,a,nv,mode)
+    subroutine output_snap(file,a,nv)
 !
-!  read snapshot file, possibly with mesh and time (if mode=1)
-!  11-apr-97/axel: coded
-!
-      use Cdata
-      use Mpicomm, only: start_serialize,end_serialize,stop_it
-!
-      character (len=*) :: file
-      integer :: nv,mode
-      real, dimension (mx,my,mz,nv) :: a
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      integer :: iostat
-!
-      if (lserial_io) call start_serialize()
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading.", iostat)
-!
-      if (ip<=8) print*,'input: open, mx,my,mz,nv=',mx,my,mz,nv
-      read(lun_input,IOSTAT=iostat) a
-      if (iostat /= 0) call stop_it( "Cannot read a from "//trim(file), iostat)
-!
-      if (ip<=8) print*,'input: read ',file
-      if (mode==1) then
-!
-!  check whether we want to read deltay from snapshot
-!
-        if (lshear) then
-          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-          if (iostat /= 0) call stop_it( &
-            "Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file), iostat)
-        else
-          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-          if (iostat /= 0) call stop_it( &
-            "Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file), iostat)
-        endif
-        t = t_sp
-!
-        if (ip<=3) print*,'input: ip,x=',ip,x
-        if (ip<=3) print*,'input: y=',y
-        if (ip<=3) print*,'input: z=',z
-!
-      endif
-!
-      close(lun_input,IOSTAT=iostat)
-      if (outlog(iostat,'close',file)) continue
-!
-      if (lserial_io) call end_serialize()
-!
-    endsubroutine input
-!***********************************************************************
-    subroutine output_vect(file,a,nv)
-!
-!  write snapshot file, always write time and mesh, could add other things
-!  version for vector field
+!  Write snapshot file, always write time and mesh, could add other things
+!  version for vector field.
 !
 !  11-apr-97/axel: coded
+!  28-jun-10/julien: Added different file formats
 !
-      use Cdata
-      use Mpicomm, only: start_serialize,end_serialize
+      use Mpicomm, only: start_serialize, end_serialize
+      use Persist, only: output_persistent
 !
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
       real :: t_sp   ! t in single precision for backwards compatibility
-!
       integer :: iostat
 !
       t_sp = t
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-!
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) goto 99
+      if (outlog(iostat,'open',file=file,dist=lun_output)) goto 99 
 !
-      write(lun_output,IOSTAT=iostat) a
-      if (outlog(iostat,'write a')) goto 99
+      if (lwrite_2d) then
+        if (nx==1) then
+          write(lun_output,IOSTAT=iostat) a(l1,:,:,:)
+        elseif (ny==1) then
+          write(lun_output,IOSTAT=iostat) a(:,m1,:,:)
+        elseif (nz==1) then
+          write(lun_output,IOSTAT=iostat) a(:,:,n1,:)
+        else
+          iostat=0
+          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
+        endif
+      else
+        write(lun_output,IOSTAT=iostat) a
+      endif
+      if (outlog(iostat,'write a')) goto 99          ! problematic if fatal_error doesn't stop program
+!
+!  Write shear at the end of x,y,z,dx,dy,dz.
+!  At some good moment we may want to treat deltay like with
+!  other modules and call a corresponding i/o parameter module.
 !
       if (lshear) then
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
@@ -213,155 +130,184 @@ contains
         write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
         if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) goto 99
       endif
+      call output_persistent(lun_output)
 !
       close(lun_output,IOSTAT=iostat)
       if (outlog(iostat,'close')) continue
 !
-99    if (lserial_io) call end_serialize()
+99    if (lformat) call output_snap_form (file,a,nv)
 !
-    endsubroutine output_vect
+      if (ltec) call output_snap_tec (file,a,nv)
+!
+      if (lserial_io) call end_serialize()
+!
+    endsubroutine output_snap
 !***********************************************************************
-    subroutine output_scal(file,a,nv)
+    subroutine input_snap(file,a,nv,mode)
 !
-!  write snapshot file, always write time and mesh, could add other things
-!  version for scalar field
+!  Read snapshot file, possibly with mesh and time (if mode=1).
 !
 !  11-apr-97/axel: coded
 !
-      use Cdata
-      use Mpicomm, only: stop_it,start_serialize,end_serialize
+      use Mpicomm, only: start_serialize, end_serialize, stop_it
+      use Persist, only: input_persistent
 !
-      integer :: nv
-      real, dimension (mx,my,mz) :: a
       character (len=*) :: file
+      integer :: nv,mode
+      real, dimension (mx,my,mz,nv) :: a
       real :: t_sp   ! t in single precision for backwards compatibility
-!
       integer :: iostat
 !
-      t_sp = t
-      if ((ip<=8) .and. lroot) print*,'output_scal'
-      if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
+      if (lserial_io) call start_serialize()
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
+!      if (ip<=8) print*,'input_snap: open, mx,my,mz,nv=',mx,my,mz,nv
+      if (lwrite_2d) then
+        if (nx==1) then
+          read(lun_input,IOSTAT=iostat) a(4,:,:,:)
+        elseif (ny==1) then
+          read(lun_input,IOSTAT=iostat) a(:,4,:,:)
+        elseif (nz==1) then
+          read(lun_input,IOSTAT=iostat) a(:,:,4,:)
+        else
+          iostat=0
+          call fatal_error('input_snap','lwrite_2d used for 3-D simulation!')
+        endif
+      else
+        read(lun_input,IOSTAT=iostat) a
+      endif
+      if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
+
+      if (ip<=8) print*,'input_snap: read ',file
+      if (mode==1) then
+!
+!  Check whether we want to read deltay from snapshot.
+!
+        if (lshear) then
+          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
+          if (iostat /= 0) call stop_it("Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file),iostat)
+        else
+          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
+          if (iostat /= 0) call stop_it("Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file),iostat)
+        endif
+!
+!  set initial time to that of snapshot, unless
+!  this is overridden
+!
+        if (lreset_tstart) then
+          t=tstart
+        else
+          t=t_sp
+        endif
+!
+!  verify the ip, x, y, and z readings
+!
+        if (ip<=3) print*,'input_snap: ip,x=',ip,x
+        if (ip<=3) print*,'input_snap: y=',y
+        if (ip<=3) print*,'input_snap: z=',z
+!
+      endif
+!
+      call input_persistent(lun_input)
+!
+      close(lun_input,IOSTAT=iostat)
+      if (outlog(iostat,'close',file)) return
+!
+      if (lserial_io) call end_serialize()
+!
+    endsubroutine input_snap
+!***********************************************************************
+    subroutine output_globals(file,a,nv)
+!
+!  Write snapshot file of globals, always write mesh.
+!
+!  10-nov-06/tony: coded
+!
+      use Mpicomm, only: start_serialize,end_serialize
+!
+      integer :: nv
+      real, dimension (mx,my,mz,nv) :: a
+      character (len=*) :: file
+!
+      integer :: iostat
+
+      if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-!
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
       if (outlog(iostat,'open',file)) goto 99
 !
-      write(lun_output,IOSTAT=iostat) a
-      if (outlog(iostat,'write a')) goto 99
-!
-      if (lshear) then
-        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) goto 99
+      if (lwrite_2d) then
+        if (nx==1) then
+          write(lun_output,IOSTAT=iostat) a(4,:,:,:)
+        elseif (ny==1) then
+          write(lun_output,IOSTAT=iostat) a(:,4,:,:)
+        elseif (nz==1) then
+          write(lun_output,IOSTAT=iostat) a(:,:,4,:)
+        else
+          iostat=0
+          call fatal_error('output_globals','lwrite_2d used for 3-D simulation!')
+        endif
       else
-        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) goto 99
+        write(lun_output,IOSTAT=iostat) a
       endif
+      if (outlog(iostat,'write a')) goto 99                   !problematic if fatal_error doesn't stop program
 !
       close(lun_output,IOSTAT=iostat)
       if (outlog(iostat,'close')) continue
 !
 99    if (lserial_io) call end_serialize()
 !
-    endsubroutine output_scal
+    endsubroutine output_globals
 !***********************************************************************
-    subroutine output_pencil_vect(file,a,ndim)
+    subroutine input_globals(filename,a,nv)
 !
-!  Write snapshot file of penciled vector data (for debugging).
-!  Wrapper to the C routine output_penciled_vect_c.
+!  Read globals snapshot file, ignoring mesh.
 !
-!  15-feb-02/wolf: coded
+!  10-nov-06/tony: coded
 !
-      use Cdata
+      use Mpicomm, only: start_serialize,end_serialize,stop_it
 !
-      integer :: ndim
-      real, dimension (nx,ndim) :: a
-      character (len=*) :: file
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      t_sp = t
-      if (ip<9.and.lroot.and.imn==1) &
-           print*,'output_pencil_vect('//file//'): ndim=',ndim
-!
-      if (headt .and. (imn==1)) write(*,'(A)') &
-           'output_pencil: Writing to ' // trim(file) // &
-           ' for debugging -- this may slow things down'
-!
-       call output_penciled_vect_c(file, a, ndim, &
-                                   imn, mm(imn), nn(imn), t_sp, &
-                                   nx, ny, nz, nghost, len(file))
-!
-    endsubroutine output_pencil_vect
-!***********************************************************************
-    subroutine output_pencil_scal(file,a,ndim)
-!
-!  Write snapshot file of penciled scalar data (for debugging).
-!  Wrapper to the C routine output_penciled_scal_c.
-!
-!  15-feb-02/wolf: coded
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-!
-      integer :: ndim
-      real, dimension (nx) :: a
-      character (len=*) :: file
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      t_sp = t
-      if ((ip<=8) .and. lroot .and. imn==1) &
-           print*,'output_pencil_scal('//file//')'
-!
-      if (ndim /= 1) &
-           call stop_it("output_pencil_scal: called with scalar field, but ndim/=1")
-!
-      if (headt .and. (imn==1)) print*, &
-           'output_pencil_scal: Writing to ', trim(file), &
-           ' for debugging -- this may slow things down'
-!
-      call output_penciled_scal_c(file, a, ndim, &
-                                  imn, mm(imn), nn(imn), t_sp, &
-                                  nx, ny, nz, nghost, len(file))
-!
-    endsubroutine output_pencil_scal
-!***********************************************************************
-    subroutine outpus(file,a,nv)
-!
-!  write snapshot file, always write mesh and time, could add other things
-!
-!  11-oct-98/axel: adapted
-!
-      use Cdata
-!
+      character (len=*) :: filename
       integer :: nv
-      character (len=*) :: file
       real, dimension (mx,my,mz,nv) :: a
-      real :: t_sp   ! t in single precision for backwards compatibility
 !
       integer :: iostat
 !
-      t_sp = t
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) return
+      if (lserial_io) call start_serialize()
 !
-      write(lun_output,IOSTAT=iostat) a(l1:l2,m1:m2,n1:n2,:)
-      if (outlog(iostat,"write a")) return
+      open(lun_input,FILE=filename,FORM='unformatted',IOSTAT=iostat)
+      if (iostat /= 0) call stop_it("Cannot open "//trim(filename)//" for reading",iostat)
+
+      if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
+      if (lwrite_2d) then
+        if (nx==1) then
+          read(lun_input,IOSTAT=iostat) a(4,:,:,:)
+        elseif (ny==1) then
+          read(lun_input,IOSTAT=iostat) a(:,4,:,:)
+        elseif (nz==1) then
+          read(lun_input,IOSTAT=iostat) a(:,:,4,:)
+        else
+          iostat=0
+          call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
+        endif
+      else
+        read(lun_input,IOSTAT=iostat) a
+      endif
+      if (iostat /= 0) call stop_it("Cannot read a from "//trim(filename),iostat)
+      if (ip<=8) print*,'input_globals: read ',filename
+      close(lun_input,IOSTAT=iostat)
+      if (outlog(iostat,'close',filename)) continue
 !
-      write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-      if (outlog(iostat,"write t_sp,x,y,z,dx,dy,dz,deltay")) return
+      if (lserial_io) call end_serialize()
 !
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,"close")) return
-!
-    endsubroutine outpus
+    endsubroutine input_globals
 !***********************************************************************
     subroutine log_filename_to_file(filename,flist)
 !
 !  In the directory containing `filename', append one line to file
 !  `flist' containing the file part of filename
 !
-      use Cdata, only: lroot,lcopysnapshots_exp,datadir
-      use Cparam, only: fnlen
       use General, only: parse_filename
       use Mpicomm, only: mpibarrier
 !
@@ -405,7 +351,6 @@ contains
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
@@ -438,7 +383,6 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !   3-jun-04/bing: added xiprim, psiprim ,zetaprim, etc.
 !
-      use Cdata
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
@@ -512,8 +456,6 @@ contains
 !
       if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
 !
-      call keep_compiler_quiet(t_sp)
-!
     endsubroutine rgrid
 !***********************************************************************
     subroutine wproc_bounds(file)
@@ -522,7 +464,6 @@ contains
 !
 !   10-jul-08/kapelrud: coded
 !
-      use Cdata, only: procx_bounds,procy_bounds,procz_bounds
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
@@ -551,7 +492,6 @@ contains
 !
 !   10-jul-08/kapelrud: coded
 !
-      use Cdata, only: procx_bounds,procy_bounds,procz_bounds
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
@@ -584,7 +524,7 @@ contains
 !
 ! temporary work around to keep the compiler quiet
       tmp = tau
-      call keep_compiler_quiet(file)
+      file = trim (file)
 !
     endsubroutine wtime
 !***********************************************************************
@@ -597,8 +537,260 @@ contains
 !
 ! temporary work around to keep the compiler quiet
       tmp = tau
-      call keep_compiler_quiet(file)
+      file = trim (file)
 !
     endsubroutine rtime
+!***********************************************************************
+    subroutine output_snap_form(file,a,nv)
+!
+!  Write FORMATTED snapshot file
+!
+!  28-june-10/julien: coded (copy from output_snap)
+!
+      integer :: nv
+      integer :: i, j, k
+      real, dimension (mx,my,mz,nv) :: a
+      character (len=*) :: file
+!
+      integer :: iostat
+
+      open(lun_output,FILE=trim(file)//'.form',IOSTAT=iostat)
+      if (outlog(iostat,'open',trim(file)//'.form',dist=lun_output)) return 
+!
+      if (lwrite_2d) then
+!
+        if (nx==1) then
+          do i = m1, m2
+            do j = n1, n2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(l1,i,j,:)')) return
+            enddo
+          enddo
+        elseif (ny==1) then
+          do i = l1, l2
+            do j = n1, n2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(i,m1,j,:)')) return
+            enddo
+          enddo
+        elseif (nz==1) then
+          do i = l1, l2
+            do j = m1, m2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(i,j,n1,:)')) return
+            enddo
+          enddo
+        else
+          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
+        endif
+!
+      else if (ny==1.and.nz==1) then
+!
+        do i = l1, l2
+          write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),a(i,m1,n1,:)
+          if (outlog(iostat,'write x, a')) return
+        enddo
+!
+      else
+!
+        do i = l1, l2
+          do j = m1, m2
+            do k = n1, n2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a')) return
+            enddo
+          enddo
+        enddo
+!
+      endif
+!
+      close(lun_output,IOSTAT=iostat)
+      if (outlog(iostat,'close')) continue
+!
+    endsubroutine output_snap_form
+!***********************************************************************
+    subroutine output_snap_tec(file,a,nv)
+!
+!  Write TECPLOT output files (binary)
+!
+!  28-june-10/julien: coded
+!
+      integer :: nv
+      integer :: i, j, k, kk, iostat
+      real, dimension (mx,my,mz,nv) :: a
+      real, dimension (nx*ny*nz) :: xx, yy, zz
+      character (len=*) :: file
+      character(len=2) :: car
+      character (len=8), dimension (nv) :: name
+      character (len=120) :: filel
+!
+      filel=trim(file)//'.tec'
+
+      open(lun_output,FILE=filel,IOSTAT=iostat)
+      if (outlog(iostat,'open',filel,dist=lun_output)) return 
+!
+      kk = 0
+      do k = 1, nz
+        do j = 1, ny
+          do i = 1, nx
+            xx(kk+i) = x(i)
+            yy(kk+i) = y(j)
+            zz(kk+i) = z(k)
+          enddo
+          kk = kk + nx
+        enddo
+      enddo
+!
+!  Write header
+!
+      write(lun_output,*,IOSTAT=iostat) 'TITLE     = "output"'
+      if (outlog(iostat,'write TITLE')) return
+!
+      if (lwrite_2d) then
+!
+        if (nx==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "y"'
+          if (outlog(iostat,'write "VARIABLES = y"')) return
+          write(lun_output,*,IOSTAT=iostat) '"z"'
+          if (outlog(iostat,'write "z"')) return
+        elseif (ny==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+          write(lun_output,*,IOSTAT=iostat) '"z"'
+          if (outlog(iostat,'write "z"')) return
+        elseif (nz==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+          write(lun_output,*,IOSTAT=iostat) '"y"'
+          if (outlog(iostat,'write "y"')) return
+        endif
+!
+      else
+!
+        if (ny==1.and.nz==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+        else
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+          write(lun_output,*,IOSTAT=iostat) '"y"'
+          if (outlog(iostat,'write "VARIABLES = y"')) return
+          write(lun_output,*,IOSTAT=iostat) '"z"'
+          if (outlog(iostat,'write "VARIABLES = z"')) return
+        endif
+!
+      endif
+      do i = 1, nv
+        write(car,'(i2)') i
+        name(i) = 'VAR_'//adjustl(car)
+        write(lun_output,*,IOSTAT=iostat) '"'//trim(name(i))//'"'
+        if (outlog(iostat,'write name(i)')) return
+      enddo
+!
+      write(lun_output,*,IOSTAT=iostat) 'ZONE T="Zone"'
+      if (outlog(iostat,'write "ZONE T=Zone"')) return
+!
+      if (lwrite_2d) then
+        if (nx==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=1, J=',ny, ', K=',nz
+          if (outlog(iostat,'write ny, nz')) return
+        endif
+        if (ny==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=1, K=',nz
+          if (outlog(iostat,'write nx, nz')) return
+        endif
+        if (nz==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=',ny, ', K=1'
+          if (outlog(iostat,'write nx, ny')) return
+        endif
+      else
+        if (ny==1.and.nz==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=  1, K=  1'
+          if (outlog(iostat,'write nx')) return
+        else
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=',ny, ', K=',nz
+          if (outlog(iostat,'write nx, ny, nz')) return
+        endif
+      endif
+!
+      write(lun_output,*,IOSTAT=iostat) ' DATAPACKING=BLOCK'
+      if (outlog(iostat,'write "DATAPACKING=BLOCK"')) return
+!
+!
+!  Write data
+!
+      if (lwrite_2d) then
+        if (nx==1) then
+!
+          write(lun_output,*,IOSTAT=iostat) yy
+          if (outlog(iostat,'write yy')) return
+          write(lun_output,*,IOSTAT=iostat) zz
+          if (outlog(iostat,'write zz')) return
+!
+          do j = 1, nv
+            write(lun_output,*,IOSTAT=iostat) a(l1,m1:m2,n1:n2,j)
+            if (outlog(iostat,'write a')) return
+          enddo
+!
+        elseif (ny==1) then
+!
+          write(lun_output,*,IOSTAT=iostat) xx
+          if (outlog(iostat,'write xx')) return
+!
+          write(lun_output,*,IOSTAT=iostat) zz
+          if (outlog(iostat,'write zz')) return
+!
+          do j = 1, nv
+            write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1,n1:n2,j)
+            if (outlog(iostat,'write a')) return
+          enddo
+!
+        elseif (nz==1) then
+          write(lun_output,*,IOSTAT=iostat) xx
+          if (outlog(iostat,'write xx')) return
+!
+          write(lun_output,*,IOSTAT=iostat) yy
+          if (outlog(iostat,'write yy')) return
+!
+          do j = 1, nv
+            write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1:m2,n1,j)
+            if (outlog(iostat,'write a')) return
+          enddo
+!
+        else
+          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
+        endif
+      else if (ny==1.and.nz==1) then
+!
+             write(lun_output,*,IOSTAT=iostat) xx
+             if (outlog(iostat,'write xx')) return
+!
+             do j = 1, nv
+               write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1,n1,j)
+               if (outlog(iostat,'write a')) return
+             enddo
+!
+           else
+!
+             write(lun_output,*,IOSTAT=iostat) xx
+             if (outlog(iostat,'write xx')) return
+!
+             write(lun_output,*,IOSTAT=iostat) yy
+             if (outlog(iostat,'write yy')) return
+!
+             write(lun_output,*,IOSTAT=iostat) zz
+             if (outlog(iostat,'write zz')) return
+!
+             do j = 1, nv
+               write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1:m2,n1:n2,j)
+               if (outlog(iostat,'write a')) return
+             enddo
+!
+           endif
+!
+      close(lun_output,IOSTAT=iostat)
+      if (outlog(iostat,'close')) continue
+!
+    endsubroutine output_snap_tec
 !***********************************************************************
 endmodule Io

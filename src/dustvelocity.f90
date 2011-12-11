@@ -883,10 +883,10 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
+      use Debug_IO
       use Diagnostics
       use EquationOfState, only: gamma
       use General
-      use IO
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

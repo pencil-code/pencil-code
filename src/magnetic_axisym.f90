@@ -1356,10 +1356,10 @@ module Magnetic
 !
 !   7-oct-09/axel: adapted from magnetic
 !
+      use Debug_IO, only: output_pencil
       use Deriv, only: der6
       use Diagnostics
       use EquationOfState, only: eoscalc,gamma_m1
-      use Io, only: output_pencil
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
       use Sub
@@ -2347,7 +2347,7 @@ module Magnetic
 !
       use Sub, only: hypergeometric2F1,gamma_function
       use Deriv, only: der
-      use IO, only: output
+      use Debug_IO, only: output
 !
       real, intent(in) :: mu
       real :: xi2,A_phi

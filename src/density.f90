@@ -500,9 +500,7 @@ module Density
       use General, only: itoa,complex_phase
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
-      use IO
       use Mpicomm
-      use Selfgravity, only: rhs_poisson_const
       use Sub
       use InitialCondition, only: initial_condition_lnrho
       use SharedVariables, only: get_shared_variable
@@ -514,7 +512,7 @@ module Density
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,lnrho,TT,ss
-      real, pointer :: gravx
+      real, pointer :: gravx, rhs_poisson_const
       complex :: omega_jeans
       integer :: j, ierr,ix,iy
       logical :: lnothing
@@ -739,8 +737,6 @@ module Density
             do n=n1,n2; do m=m1,m2
               r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
               call potential(POT=pot,POT0=pot0,RMN=r_mn) ! gravity potential
-!  MEMOPT/AJ: commented out, since we do not use global potential anymore.
-!              call output(trim(directory)//'/pot.dat',pot,1)
 !
 !  rho0, cs0, pot0 are the values in the centre
 !
@@ -970,6 +966,9 @@ module Density
 !
 !  Soundwave + self gravity.
 !
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
+          if (ierr/=0) call stop_it("init_lnrho: "//&
+             "there was a problem when getting rhs_poisson_const")
           omega_jeans = sqrt(cmplx(cs20*kx_lnrho(j)**2 - &
               rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(j))
           if (lroot) &
@@ -992,6 +991,9 @@ module Density
 !
 !  Soundwave + self gravity.
 !
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
+          if (ierr/=0) call stop_it("init_lnrho: "//&
+             "there was a problem when getting rhs_poisson_const")
           k_j2 = kx_lnrho(j)**2 + ky_lnrho(j)**2 + kz_lnrho(j)**2
           omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_poisson_const*rho0,0.))/ &
               (rho0*sqrt(k_j2))
@@ -1020,6 +1022,9 @@ module Density
 !
 !  Soundwave + self gravity + (differential) rotation.
 !
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
+          if (ierr/=0) call stop_it("init_lnrho: "//&
+             "there was a problem when getting rhs_poisson_const")
           omega_jeans = sqrt(cmplx(cs20*kx_lnrho(j)**2 + &
               Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(j))
 !

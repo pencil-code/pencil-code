@@ -261,7 +261,6 @@ module NeutralDensity
       use General, only: itoa,complex_phase
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
                           lnumerical_equilibrium
-      use Selfgravity,only: rhs_poisson_const
       use Initcond
       use InitialCondition, only: initial_condition_lnrhon
       use Sub, only: notanumber

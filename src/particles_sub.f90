@@ -82,8 +82,6 @@ module Particles_sub
 !
 !  29-dec-04/anders: adapted from output
 !
-      use IO, only: lun_output
-!
       character(len=*) :: filename
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc) :: ipar

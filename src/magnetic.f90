@@ -2331,9 +2331,9 @@ module Magnetic
 !  26-may-04/axel: ambipolar diffusion added
 !  18-jun-04/axel: Hall term added
 !
+      use Debug_IO, only: output_pencil
       use Deriv, only: der6
       use Diagnostics
-      use Io, only: output_pencil
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
       use Sub
@@ -5543,7 +5543,7 @@ module Magnetic
 !
       use Sub, only: hypergeometric2F1,gamma_function
       use Deriv, only: der
-      use IO, only: output
+      use Debug_IO, only: output
 !
       real, intent(in) :: mu
       real :: xi2,A_phi

@@ -2388,7 +2388,6 @@ module Particles_nbody
     subroutine particles_nbody_write_snapshot(snapbase,enum,flist)
 !
       use General, only:safe_character_assign
-      use IO, only: lun_output
       use Sub, only: update_snaptime, read_snaptime
 !
 !  Input and output of information about the massive particles

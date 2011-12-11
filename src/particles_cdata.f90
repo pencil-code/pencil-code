@@ -10,7 +10,8 @@ module Particles_cdata
 !
   public
 !
-  integer, parameter :: mspvar=mpvar+1 
+  integer, parameter :: mspvar=mpvar+1
+  integer, parameter :: lun_output=93
 !
   real, parameter :: npar_per_cell=npar/(1.0*nwgrid)
   real :: rp_int=-impossible, rp_ext=-impossible

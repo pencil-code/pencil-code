@@ -608,7 +608,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   3-aug-03/axel: added max(dtau,dtaumin) construct
 !
-      use IO, only: output
+      use Debug_IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
@@ -967,7 +967,7 @@ module Radiation
 !  DOCUMENT ME!
 !
       use Mpicomm, only: radboundary_zx_periodic_ray
-      use IO, only: output
+      use Debug_IO, only: output
 !
       real, dimension(ny,nz) :: Qrad_yz,tau_yz,emtau1_yz
       real, dimension(nx,nz) :: Qrad_zx,tau_zx !,emtau1_zx
@@ -1072,7 +1072,7 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use IO, only: output
+      use Debug_IO, only: output
 !
 !  Identifier.
 !
@@ -1397,7 +1397,7 @@ module Radiation
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
       use EquationOfState, only: eoscalc
-      use IO, only: output
+      use Debug_IO, only: output
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
@@ -1471,8 +1471,8 @@ module Radiation
 !   3-apr-04/tobi: coded
 !   8-feb-09/axel: added B2 for visualisation purposes
 !
+      use Debug_IO, only: output
       use EquationOfState, only: eoscalc
-      use IO, only: output
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f

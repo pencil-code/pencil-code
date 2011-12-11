@@ -348,7 +348,7 @@ module Shock
 !
 !  23-nov-02/tony: coded
 !
-!for debug      use IO
+!for debug      use Debug_IO
 !
      real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz) :: tmp

@@ -161,7 +161,7 @@ module Cosmicrayflux
 !
       use Sub
       use Slices
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mfarray) :: f

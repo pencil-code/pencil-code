@@ -3937,7 +3937,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  24-mar-08/axel: adapted from density.f90
 !   6-feb-09/axel: added epsilon factor in ABC flow (eps_fcont=1. -> nocos)
 !
-      use Io, only: output_pencil
+      use Debug_IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p

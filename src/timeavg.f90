@@ -101,10 +101,11 @@ module Timeavg
 !   9-oct-02/wolf: adapted from wsnaps
 !
       use Cdata
+      use Debug_IO, only: output
       use General
+      use IO, only: log_filename_to_file
       use Mpicomm
       use Sub
-      use IO
 !
       character (len=intlen) :: ch
       character (len=fnlen) :: file

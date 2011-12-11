@@ -2,10 +2,10 @@
 
   private
 
-  public :: lun_input,lun_output
+  public :: lun_input, lun_output
   public :: register_io
-  public :: output_pencil
-  public :: input, output
+  public :: output_snap, input_snap
+  public :: output_globals, input_globals
 
   public :: wgrid, rgrid, wtime, rtime
   public :: wproc_bounds, rproc_bounds

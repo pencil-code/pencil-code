@@ -1152,7 +1152,7 @@ module Particles_main
 !  26-nov-08/ccyang: add independent sequence for particle snapshots
 !
       use General, only: itoa, safe_character_assign
-      use Io
+      use IO, only: log_filename_to_file
       use Particles_mpicomm, only: output_blocks
       use Sub
 !

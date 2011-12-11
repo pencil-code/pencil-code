@@ -2188,8 +2188,6 @@ module Particles_mpicomm
 !
 !  04-nov-09/anders: coded
 !
-      use Io, only: lun_output
-!
       character(len=*) :: filename
 !
       intent (in) :: filename
@@ -2238,8 +2236,6 @@ module Particles_mpicomm
 !  Read block domain decomposition from file.
 !
 !  04-nov-09/anders: coded
-!
-      use Io, only: lun_output
 !
       character(len=*) :: filename
 !

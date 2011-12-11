@@ -165,7 +165,6 @@ module Viscosity
 !  16-july-04/nils: coded
 !
       use Diagnostics
-      use IO
       use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f

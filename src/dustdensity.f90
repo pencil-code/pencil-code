@@ -437,14 +437,16 @@ module Dustdensity
       use EquationOfState, only: cs0, cs20, gamma, beta_glnrho_scaled
       use Initcond, only: hat3d, sinwave_phase
       use InitialCondition, only: initial_condition_nd
-      use Selfgravity, only: rhs_poisson_const
+      use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
       use Sub, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: eps
       real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt
-      integer :: j, k, l, i
+      real, pointer :: rhs_poisson_const
+      integer :: j, k, l, i, ierr
       logical :: lnothing
 !
 !  Different initializations of nd.
@@ -617,6 +619,9 @@ module Dustdensity
           enddo; enddo
           if (lroot) print*, 'init_nd: Cosine nd with nd_const=', nd_const
         case ('jeans-wave-dust-x')
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
+          if (ierr/=0) call stop_it("init_nd: "//&
+             "there was a problem when getting rhs_poisson_const")
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ind(1)) = 1.0 + amplnd*cos(kx_nd*x(l1:l2))
             f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) - amplnd* &

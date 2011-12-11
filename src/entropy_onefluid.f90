@@ -828,9 +828,9 @@ module Entropy
 !  17-sep-01/axel: coded
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
 !
+      use Debug_IO
       use Diagnostics
       use Gravity
-      use IO
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f

@@ -3564,7 +3564,7 @@ module Entropy
 !  10-feb-04/bing: coded
 !
       use EquationOfState, only: gamma, gamma_m1
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3724,7 +3724,7 @@ module Entropy
 !  23-feb-11/pete: coded
 !
       use Diagnostics
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: dot, notanumber
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -3811,7 +3811,7 @@ module Entropy
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
       use Diagnostics
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: dot, notanumber, g2ij, write_zprof, write_zprof_once
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -4107,7 +4107,7 @@ module Entropy
 !
       use Diagnostics, only: sum_mn_name
       use Gravity, only: z2
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: step, cubic_step, write_zprof
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -4375,7 +4375,7 @@ module Entropy
 !
 !  13-sep-07/boris: coded
 !
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: step
 !
       type (pencil_case) :: p
@@ -4455,7 +4455,7 @@ module Entropy
 !   1-sep-08/dhruba: coded
 !
       use Diagnostics, only: sum_mn_name, zsum_mn_name_xy
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: step
 !
       type (pencil_case) :: p
@@ -4556,7 +4556,7 @@ module Entropy
 !
 !   4-aug-10/gustavo: coded
 !
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: step
 !
       type (pencil_case) :: p
@@ -4637,7 +4637,7 @@ module Entropy
 !
 !  15-dec-04/bing: coded
 !
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -4764,7 +4764,7 @@ module Entropy
 !
 !  12-nov-10/mvaisala: adapted from cacl_heat_cool
 !
-      use IO, only: output_pencil
+      use Debug_IO, only: output_pencil
       use Sub, only: step, cubic_step, write_zprof
       use EquationOfState, only: eoscalc,ilnrho_ss
 !
@@ -5416,8 +5416,8 @@ module Entropy
 !  15-dec-2004/bing: coded
 !  25-sep-2006/bing: updated, using external data
 !
+      use Debug_IO, only:  output_pencil
       use EquationOfState, only: lnrho0, gamma
-      use Io, only:  output_pencil
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mvar) :: df
