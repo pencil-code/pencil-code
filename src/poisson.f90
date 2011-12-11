@@ -69,7 +69,7 @@ module Poisson
 !      |       |           /       /
 !      |       |         /       /
 !       - - - -          - - - -
-!     
+!
 !  To make the gravity force isotropic at small scales one can limit k to
 !  the largest circular region that is present in both the square and the
 !  parallellogram. The circle has radius kmax=kNy/sqrt(2). See Gammie (2001).
@@ -96,14 +96,14 @@ module Poisson
 !
       intent(inout) :: phi
 !
-      if (lcylindrical_coords) then 
+      if (lcylindrical_coords) then
         if (lroot) print*,'You are using cylindrical coordinates. '//&
              'Use poisson_multigrid.f90 instead'
         call fatal_error("inverse_laplacian","")
       endif
 !
-      if (lspherical_coords) then 
-        if (lroot) then 
+      if (lspherical_coords) then
+        if (lroot) then
           print*,'There is no poisson solver for spherical '
           print*,'coordinates yet. Please feel free to implement it. '
           print*,'Many people will thank you for that.'
@@ -116,7 +116,7 @@ module Poisson
       else if (lisoz) then
         call inverse_laplacian_isoz(phi)
       else if (lexpand_grid) then
-        if (lroot) then 
+        if (lroot) then
           print*,'The poisson solver for global disk was moved to an '
           print*,'experimental module because it uses too much memory. '
           print*,'If your memory requirements are modest ( < 500 proc) '
@@ -165,7 +165,7 @@ module Poisson
         else
           call fourier_transform(phi,b1)
         endif
-      else  
+      else
         if (.not.(nxgrid/=1.and.nzgrid/=1.and.nxgrid/=nzgrid)) then
           call fft_xyz_parallel(phi,b1)
         else
@@ -225,7 +225,7 @@ module Poisson
             else
               k2 = kx_fft(ikx+ipx*nx)**2+ky_fft(iky+ipy*ny)**2
             endif
-!            
+!
             phi(ikx,iky,ikz) = -.5*phi(ikx,iky,ikz) / sqrt(k2)
             b1(ikx,iky,ikz)  = -.5* b1(ikx,iky,ikz) / sqrt(k2)
           endif
@@ -368,7 +368,6 @@ module Poisson
       real, dimension(nx,ny,nz), intent(inout) :: phi
 !
       real, dimension(nx,ny,nz) :: b1
-      real, dimension(nx,ny) :: phiz,b1z
 !
       integer, parameter :: nxt = nx / nprocz
       real, dimension(nzgrid,nxt) :: phirt, b1t
@@ -396,8 +395,8 @@ module Poisson
 !  Forward transform in xy
 !
       b1 = 0.
-      if (nprocx==1) then 
-        if (nxgrid==nygrid) then 
+      if (nprocx==1) then
+        if (nxgrid==nygrid) then
           if (lshear) then
             call fourier_transform_shear_xy(phi, b1)
           else
@@ -456,8 +455,8 @@ module Poisson
 !
 !  Inverse transform in xy
 !
-      if (nprocx==1) then 
-        if (nxgrid==nygrid) then 
+      if (nprocx==1) then
+        if (nxgrid==nygrid) then
           if (lshear) then
             call fourier_transform_shear_xy(phi,b1,linv=.true.)
           else
@@ -581,12 +580,12 @@ module Poisson
     subroutine decide_fourier_routine
 !
 ! Decide, based on the dimensionality and on the geometry
-! of the grid, which fourier transform routine is to be 
-! used. "fourier_transform" and "fourier_tranform_shear" 
-! are functional only without x-parallelization, and for 
-! cubic, 2D square, and 1D domains only. Everything else 
+! of the grid, which fourier transform routine is to be
+! used. "fourier_transform" and "fourier_tranform_shear"
+! are functional only without x-parallelization, and for
+! cubic, 2D square, and 1D domains only. Everything else
 ! should use fft_parallel instead.
-! 
+!
 ! 05-dec-2011/wlad: coded
 !
       logical :: lxpresent,lypresent,lzpresent
@@ -617,11 +616,11 @@ module Poisson
         if (l1Dz)  print*,"This is a 1D z simulation"
       endif
 !
-! The subroutine "fourier_transform" should only be used 
+! The subroutine "fourier_transform" should only be used
 ! for 1D, square 2D or cubic domains without x-parallelization.
-! Everything else uses fft_parallel. 
+! Everything else uses fft_parallel.
 !
-      luse_fourier_transform=(nprocx==1.and.&        
+      luse_fourier_transform=(nprocx==1.and.&
            (l1dx                                       .or.&
             l1dy                                       .or.&
             l1dz                                       .or.&
