@@ -1,4 +1,4 @@
-!
+! $Id$
 !  This module takes care of everything related to dust particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -359,7 +359,7 @@ module Particles
         endif
         if (rhop_swarm==0.0) &
             rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
-        if (mp_swarm==0.0) & 
+        if (mp_swarm==0.0) &
             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
@@ -2035,7 +2035,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_rhop) .and. irhop==0) then 
+      if (lpencil_in(i_rhop) .and. irhop==0) then
         lpencil_in(i_np)=.true.
         lpencil_in(i_rhop_swarm)=.true.
       endif
@@ -2752,7 +2752,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     dragforce(2)*fp(k,iyp)+dragforce(3)*fp(k,izp))/ &
                     (fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2)
               endif
-!            
+!
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
 !  Back-reaction friction force from particles on gas. Three methods are
@@ -3214,7 +3214,7 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo; enddo; enddo
           if (ipar(k)/=1 .and. rp<rsinkparticle_1) then
             if (lparticles_mass) then
-              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm) 
+              rhop_swarm_removed = rhop_swarm_removed + fp(k,irhopswarm)
               momp_swarm_removed = momp_swarm_removed + &
                   fp(k,ivpx:ivpz)*fp(k,irhopswarm)
 !              if (lshear) then
@@ -3844,7 +3844,7 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !
           do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1) 
+            ix0=ineargrid(k,1)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
             if (lcollisional_heat .or. ldiagnos) then
@@ -4173,9 +4173,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,IVIS=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then 
+      elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
-      elseif (ivis=='sqrtrho-nu-const') then 
+      elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
@@ -4252,9 +4252,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then 
+      elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then 
+      elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
@@ -4317,9 +4317,9 @@ k_loop:   do while (.not. (k>npar_loc))
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
         nu=nu_
-      elseif (ivis=='rho-nu-const') then 
+      elseif (ivis=='rho-nu-const') then
         nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then 
+      elseif (ivis=='sqrtrho-nu-const') then
         nu=nu_/sqrt(interp_rho(k))
       elseif (ivis=='nu-therm') then
         nu=nu_*sqrt(interp_TT(k))
@@ -4364,7 +4364,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Calculate the Thermophoretic force due to a temperature gradient in the gas.
 !
 !   Henrik Lutro, testing
-!     
+!
       use Viscosity, only: getnu
       real, dimension(mpar_loc,mpvar) :: fp
       real, dimension(3), intent(out) :: force
@@ -4390,7 +4390,7 @@ k_loop:   do while (.not. (k>npar_loc))
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
       Cint=0.5
-          
+
       if (interp%lTT) then
         TT=interp_TT(k)
       else
@@ -4398,12 +4398,12 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
       if (interp%lgradTT) then
         temp_grad=interp_gradTT(k,:)
-      else 
+      else
         temp_grad=temp_grad0
      endif
 !
       Kn=mean_free_path_gas/fp(k,iap)
-!   
+!
       mass_p=(4.0*pi/3.0)*rhopmat*fp(k,iap)**3
       if(thermophoretic_eq=='near_continuum') then
         phi=-9*pi/cond_ratio
