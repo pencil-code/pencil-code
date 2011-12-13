@@ -1547,6 +1547,7 @@ module Particles_map
           'not implemented for block domain decomposition')
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
