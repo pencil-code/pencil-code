@@ -384,7 +384,6 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
-      integer, dimension (3) :: max_loc
       real, dimension (mx,my,mz) :: tmp
       real, dimension (nx) :: penc, penc1
       integer :: imn
