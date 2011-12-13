@@ -927,6 +927,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-r8 #(p-bc9901.hpc2n.umu.se)
 #LIBMPISUFFIX=#(p-bc9901.hpc2n.umu.se)
 ##
+## Axel on Abisko
+##
+#FC=mpif90 #(t-mn01.hpc2n.umu.se)
+#FFLAGS= -O3  #(t-mn01.hpc2n.umu.se)
+#CC=mpicc #(t-mn01.hpc2n.umu.se)
+#CFLAGS=-O3 -DFUNDERSC=1 #(t-mn01.hpc2n.umu.se)
+#LD_MPI= #(t-mn01.hpc2n.umu.se)
+#FFLAGS_DOUBLE=-r8 #(t-mn01.hpc2n.umu.se)
+#LIBMPISUFFIX=#(t-mn01.hpc2n.umu.se)
+##
 ## Axel on Sanssouci (ifc 9.1)
 ##
 #FC=mpif90 #(sanssouci|belvedere|octopus)
