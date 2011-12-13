@@ -4375,6 +4375,9 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension(3) :: ineark
       integer :: k
       intent(in) :: fp,k
+!
+      call keep_compiler_quiet(ineark)
+!
       Ktc=1.10
       Cm=1.13
       Ce=2.17
