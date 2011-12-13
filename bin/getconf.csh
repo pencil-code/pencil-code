@@ -336,7 +336,7 @@ else if (($hn =~ Xcomp*) || ($masterhost =~ andromeda)) then
   source ${HOME}/.cshrc
   set $mpirun=mpirun
 #------------------------------------------
-else if ($hn =~ *.hpc2n.umu.se ) then
+else if ($hn =~ b*.hpc2n.umu.se ) then
   echo "HPC2N cluster (akka) - Umea"
   echo "******************************"
   echo "Always use  multiple of 8 no. of processors .."
@@ -352,6 +352,18 @@ else if ($hn =~ *.hpc2n.umu.se ) then
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
   set $mpirun=mpirun
+#------------------------------------------
+else if ($hn =~ t*.hpc2n.umu.se ) then
+  echo "HPC2N cluster (abisko) - Umea"
+  echo "******************************"
+  echo "Always use  multiple of ? no. of processors .."
+  echo "..for multiprecossor jobs. "
+  echo " ******************************"
+  set mpirunops = ''
+  set mpirun = 'srun'
+  set npops = ''
+  setenv PENCIL_HOME $HOME/nobackup/pencil-code/
+  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
 #------------------------------------------
 else if ($hn =~ compute-*.local ) then
   echo "Warp cluster (warp) - Pittsburg"
