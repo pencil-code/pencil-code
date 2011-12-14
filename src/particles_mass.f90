@@ -130,6 +130,11 @@ module Particles_mass
             print*, 'init_particles_mass: constant particle gravity'
             print*, 'init_particles_mass: gravr_swarm=', gravr_swarm0
           endif
+          if (.not. lselfgravity) then
+            if (lroot) print*, 'init_particles_mass: need selfgravity '// &
+                'module for this initial condition'
+            call fatal_error('init_particles_mass','')
+          endif
           fp(1:npar_loc,irhopswarm)=gravr_swarm0/ &
               (rhs_poisson_const/(4*pi)*dx**3)
 !
@@ -138,7 +143,11 @@ module Particles_mass
             print*, 'init_particles_mass: set particle 1 gravity'
             print*, 'init_particles_mass: gravr_swarm1=', gravr_swarm1
           endif
-          print*, gravr_swarm1, rhs_poisson_const, pi, dx
+          if (.not. lselfgravity) then
+            if (lroot) print*, 'init_particles_mass: need selfgravity '// &
+                'module for this initial condition'
+            call fatal_error('init_particles_mass','')
+          endif
           do k=1,npar_loc
             if (ipar(k)==1) &
                 fp(k,irhopswarm)=gravr_swarm1/(rhs_poisson_const/(4*pi)*dx**3)
