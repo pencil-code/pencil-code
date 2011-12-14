@@ -133,49 +133,49 @@ module Particles
       epsp_friction_increase,lcollisional_dragforce_cooling, ldragforce_heat, &
       lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
-      mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier,&
+      mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, pdlaw, ldragforce_stiff, &
-      ldraglaw_steadystate, tstart_liftforce_par, &
-      tstart_brownian_par, lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
+      ldraglaw_steadystate, tstart_liftforce_par, tstart_brownian_par, &
+      lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, brownian_T0, &
-      thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, lsinkpoint, &
-      xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
-      lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, Lz0, lglobalrandom, &
-      linsert_particles_continuously, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const, ldragforce_equi_noback, &
-      rhopmat, Deltauy_gas_friction, xp1, yp1, zp1, vpx1, vpy1, vpz1, &
-      xp2, yp2, zp2, vpx2, vpy2, vpz2, lsinkparticle_1, rsinkparticle_1, &
-      lcalc_uup,temp_grad0,thermophoretic_eq,cond_ratio,interp_pol_gradTT
+      thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
+      lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
+      lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
+      Lz0, lglobalrandom, linsert_particles_continuously, &
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, np_const, &
+      rhop_const, ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
+      yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
+      lsinkparticle_1, rsinkparticle_1, lcalc_uup, temp_grad0, &
+      thermophoretic_eq, cond_ratio, interp_pol_gradTT
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
       ldragforce_gas_par, ldragforce_dust_par, np_swarm, mp_swarm, &
       rhop_swarm, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
-      nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, &
-      gravz, gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, &
-      tstart_dragforce_par, tstart_grav_par, lparticlemesh_cic, &
-      lparticlemesh_tsc, taucool, lcollisional_cooling_taucool, &
-      lcollisional_cooling_rms, lcollisional_cooling_twobody, &
-      lcollisional_dragforce_cooling, tau_coll_min, ltau_coll_min_courant, &
-      coeff_restitution, tstart_collisional_cooling, tausg_min, &
-      epsp_friction_increase, ldragforce_heat, lcollisional_heat, &
-      lcompensate_friction_increase, lmigration_real_check,ldraglaw_variable, &
-      luse_tau_ap, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
-      mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
+      nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
+      gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
+      tstart_grav_par, lparticlemesh_cic, lparticlemesh_tsc, taucool, &
+      lcollisional_cooling_taucool, lcollisional_cooling_rms, &
+      lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
+      tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
+      tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
+      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
+      lmigration_real_check,ldraglaw_variable, luse_tau_ap, ldraglaw_epstein, &
+      ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
+      ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
-      ldraglaw_variable_density, ldraglaw_steadystate, &
-      tstart_liftforce_par, tstart_brownian_par, lbrownian_forces, &
-      lenforce_policy, interp_pol_uu,interp_pol_oo, interp_pol_TT, &
-      interp_pol_rho, brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
+      ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
+      tstart_brownian_par, lbrownian_forces, lenforce_policy, &
+      interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
+      brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
       ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
       rsinkpoint, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
-      l_shell, init_repeat, k_shell, &
-      lsinkparticle_1, rsinkparticle_1,lthermophoretic_forces,temp_grad0,&
-      thermophoretic_eq,cond_ratio,interp_pol_gradTT
+      lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
+      thermophoretic_eq, cond_ratio, interp_pol_gradTT
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
