@@ -27,13 +27,13 @@ module Particles_diagnos_state
 !
   contains
 !***********************************************************************
-    subroutine register_particles_diagnos_state()
+    subroutine register_pars_diagnos_state()
 !
 !  Dummy
 !
-    endsubroutine register_particles_diagnos_state
+    endsubroutine register_pars_diagnos_state
 !***********************************************************************
-    subroutine initialize_particles_diagnos_state(f,lstarting)
+    subroutine initialize_pars_diagnos_state(f,lstarting)
 !
 !  Dummy
 !
@@ -43,7 +43,7 @@ module Particles_diagnos_state
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_particles_diagnos_state
+    endsubroutine initialize_pars_diagnos_state
 !***********************************************************************
     subroutine init_particles_diagnos_state(fp)
 !
@@ -67,7 +67,7 @@ module Particles_diagnos_state
 !
     endsubroutine insert_particles_diagnos_state
 !***********************************************************************
-    subroutine read_particles_diagnos_state_run_pars(unit,iostat)
+    subroutine read_pars_diag_state_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -75,15 +75,15 @@ module Particles_diagnos_state
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_diagnos_state_run_pars
+    endsubroutine read_pars_diag_state_run_pars
 !***********************************************************************
-    subroutine write_particles_diagnos_state_run_pars(unit)
+    subroutine write_pars_diag_state_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_diagnos_state_run_pars
+    endsubroutine write_pars_diag_state_run_pars
 !*******************************************************************
     subroutine rprint_particles_diagnos_state(lreset,lwrite)
 !
@@ -108,4 +108,3 @@ module Particles_diagnos_state
     endsubroutine persistence_check
 !***********************************************************************
 endmodule Particles_diagnos_state
-
