@@ -646,9 +646,6 @@ module Particles_map
         lrunningsort=.true.
       endif
       ncount=0
-!AH testing different sort
-        isorttype=3
-        lrunningsort=.false.
 !
 !  Calculate integer value to sort after.
 !
@@ -1523,9 +1520,6 @@ module Particles_map
               call interpolate_quadratic( &
                    f,i1,i2,fp(k,ixp:izp),vec(k,:),ineargrid(k,:),0,ipar(k) )
             endif
-          case (isl)
-! this assumes you want gas velocity...	
-            call calc_gas_velocity_shell_call(fp,k,vec(k,:))
           case (ngp)
             vec(k,:)=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),i1:i2)
           endselect
@@ -1625,68 +1619,5 @@ module Particles_map
       call keep_compiler_quiet(fp)
 !
     endsubroutine shepherd_neighbour_pencil3d
-!***********************************************************************
-    subroutine calc_gas_velocity_call(fp, k, uup, ineargrid)
-!
-      use Special, only: special_calc_particles
-!
-      real,dimension(mpar_loc,mpvar) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(3) :: uup
-      integer :: k
-!
-      intent(in) :: fp, ineargrid, k
-      intent(out) :: uup
-!
-      if (.not.interp%luu) then
-        if (interp%pol_uu == isl) then
-          call calc_gas_velocity_shell_call(fp,k,uup)
-        else if (lhydro) then
-          if (interp%pol_uu == cic) then
-            call interpolate_linear(f,iux,iuz, &
-                fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
-          elseif (interp%pol_uu == tsc) then
-            if (linterpolate_spline) then
-                call interpolate_quadratic_spline(f,iux,iuz, &
-                    fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
-            else
-                call interpolate_quadratic(f,iux,iuz, &
-                    fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
-            endif
-          else
-            uup=f(ineargrid(k,1),ineargrid(k,2), &
-                  ineargrid(k,3),iux:iuz)
-          endif
-        else
-          uup=0.0
-        endif
-      else
-        uup=interp_uu(k,:)
-      endif
-!
-    endsubroutine calc_gas_velocity_call
-!***********************************************************************
-    subroutine calc_gas_velocity_shell_call(fp, k, uup)
-!
-      use Special, only: special_calc_particles
-!
-      real,dimension(mpar_loc,mpvar) :: fp
-      real, dimension(3) :: uup
-      integer :: k
-!
-      logical, save :: first_inc=.true.
-!
-      if (first_inc) then
-        call get_shared_variable('uup_shared',uup_shared,ierr)
-        call get_shared_variable('vel_call',vel_call,ierr)
-        first_inc=.false.
-      endif
-!
-      vel_call=.true.
-      uup_shared=fp(k,ixp:izp)
-      call special_calc_particles(fp)
-      uup=uup_shared
-!
-    endsubroutine calc_gas_velocity_shell_call
 !***********************************************************************
 endmodule Particles_map
