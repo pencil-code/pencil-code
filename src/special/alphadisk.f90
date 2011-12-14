@@ -95,14 +95,14 @@ module Special
 !
 !  Code constants
 !
-  real :: msun_cgs,mearth_cgs,au_cgs,au1_cgs
-  real :: GNewton_cgs,yr_cgs,myr
+  real :: msun_cgs, mearth_cgs, au_cgs, au1_cgs
+  real :: GNewton_cgs, yr_cgs, myr
 !
-!  These are the needed internal "pencils"
+!  These are the needed internal "pencils".
 !
-  real, dimension(nx) :: del2sigmanu,gsigmanu,psigma,pmdot
-  real, dimension(nx) :: c1,c2,c3
-  real, dimension(nx) :: rr,rr1
+  real, dimension(nx) :: del2sigmanu, gsigmanu, psigma, pmdot
+  real, dimension(nx) :: c1, c2, c3
+  real, dimension(nx) :: rr, rr1
   real, dimension(nx) :: swind
   real :: cprime
 !
@@ -128,25 +128,32 @@ module Special
                                        !   the temperature table has min and max
                                        !   in a range slightly bigger than the
                                        !   simulation variable.
+  real    :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
+  real    :: plaw_temperature=0.5, temperature0=280.0
 !
-  namelist /special_init_pars/ mdot_input,alpha,mwind_input,&
-       temperature_background,temperature_precision,nsigma_table,&
-       sigma_middle,sigma_floor,tmid_table_buffer
+  character (len=labellen), dimension(ninit) :: initsigma='nothing'
+  character (len=labellen), dimension(ninit) :: inittmid='nothing'
+!
+  namelist /special_init_pars/ &
+      initsigma, mdot_input, plaw_density, sigma0, alpha, mwind_input, &
+      inittmid, plaw_r0, plaw_temperature, temperature0, &
+      temperature_background, temperature_precision, nsigma_table, &
+      sigma_middle, sigma_floor, tmid_table_buffer
 !
   namelist /special_run_pars/ lwind
 !
-  real, dimension(:)  , allocatable :: sigma_table,lnsigma_table
-  real, dimension(:,:), allocatable :: tmid1_table,tmid2_table
+  real, dimension(:)  , allocatable :: sigma_table, lnsigma_table
+  real, dimension(:,:), allocatable :: tmid1_table, tmid2_table
 !
 ! Declare index of new variables in f array. Surface density, midplane
 ! temperature, and mass accretion rate.
 !
-  integer :: isigma=0,itmid=0,imdot=0
+  integer :: isigma=0, itmid=0, imdot=0
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-   integer :: idiag_dtyear=0,idiag_sigmam=0
-   integer :: idiag_sigmamin=0,idiag_sigmamax=0,idiag_tmyr=0
+   integer :: idiag_dtyear=0, idiag_sigmam=0
+   integer :: idiag_sigmamin=0, idiag_sigmamax=0, idiag_tmyr=0
    integer :: maxit=1000
 !
    interface sigma_to_mdot
@@ -166,10 +173,6 @@ module Special
 !
       if (lroot) call svn_id( &
            "$Id: nospecial.f90 15287 2010-11-04 11:03:57Z sven.bingert $")
-!
-      !call farray_register_pde('special',isigma)
-      !call farray_register_auxiliary('spec2aux',imdot,communicated=.true.)
-      !call farray_register_auxiliary('specaux',itmid)
 !
       call farray_register_pde('sigma',isigma)
       call farray_register_auxiliary('mdot',imdot,communicated=.true.)
@@ -265,32 +268,80 @@ module Special
 !***********************************************************************
     subroutine init_special(f)
 !
-!  initialise special condition; called from start.f90
+!  Initialise special condition; called from start.f90.
 !
 !  06-oct-2003/tony: coded
 !  01-aug-11/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      integer :: j
+!
       intent(inout) :: f
 !
-!  Set the density, from the initial mass accretion rate.
+!  Initialize gas column density.
 !
-      do m=m1,m2; do n=n1,n2
-        f(l1:l2,m,n,imdot) = mdot_input*(msun_cgs/yr_cgs)
-        call mdot_to_sigma(f(l1:l2,m,n,imdot),f(l1:l2,m,n,isigma))
-      enddo;enddo
+      do j=1,ninit
+!
+        select case (initsigma(j))
+!        
+        case('nothing')
+!
+!  Set the density from the initial mass accretion rate.
+!
+        case('mdot-constant')
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,imdot) = mdot_input*(msun_cgs/yr_cgs)
+            call mdot_to_sigma(f(l1:l2,m,n,imdot),f(l1:l2,m,n,isigma))
+          enddo;enddo
+!
+!  Power law.
+!
+        case('power-law')
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,isigma) = sigma0*(x(l1:l2)/plaw_r0)**(-plaw_density)
+          enddo;enddo
+!
+!  Catch unknown initial conditions.
+!
+        case default
+          call fatal_error('init_special','No such initial condition: '// &
+              initsigma(j))
+        endselect
+      enddo
+!
+!  Initialize gas temperature.
+!
+      do j=1,ninit
+!
+        select case (inittmid(j))
+!
+        case('nothing')
+        case('radiative')
 !
 !  Pre-calculate temperatures, store in memory.
 !
-      call precalc_temperatures(f)
+          call precalc_temperatures(f)
 !
 !  Set the temperature via linear interpolation between the
 !  pre-calculated values.
 !
-      do m=m1,m2; do n=n1,n2
-        call get_tmid(f(l1:l2,m,n,isigma),f(l1:l2,m,n,itmid))
-      enddo;enddo
+          do m=m1,m2; do n=n1,n2
+            call get_tmid(f(l1:l2,m,n,isigma),f(l1:l2,m,n,itmid))
+          enddo;enddo
+        case('power-law')
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,itmid) = temperature0* &
+                (x(l1:l2)/plaw_r0)**(-plaw_temperature)
+          enddo;enddo
+!
+!  Catch unknown initial conditions.
+!
+        case default
+          call fatal_error('init_special','No such initial condition: '// &
+              inittmid(j))
+        endselect
+      enddo
 !
       if (lroot) then
         print*,'minmax sigma= ',minval(f(l1:l2,m1:m2,n1:n2,isigma)),&
