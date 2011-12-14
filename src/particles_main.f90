@@ -49,7 +49,7 @@ module Particles_main
       call register_particles_selfgrav     ()
       call register_particles_nbody        ()
       call register_particles_viscosity    ()
-      call register_particles_diagnos_state()
+      call register_pars_diagnos_state     ()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -167,7 +167,7 @@ module Particles_main
       call initialize_particles_collisions   (f,lstarting)
       call initialize_particles_stalker      (f,lstarting)
       call initialize_particles_diagnos_dv   (f,lstarting)
-      call initialize_particles_diagnos_state(f,lstarting)
+      call initialize_pars_diagnos_state     (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
@@ -1065,7 +1065,7 @@ module Particles_main
       endif
 !
       if (lparticles_diagnos_dv) then
-        call read_particles_diagnos_dv_run_pars(unit,iostat)
+        call read_pars_diagnos_dv_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
             call samplepar_runpars('particles_diagnos_dv_run_pars',iostat); return
@@ -1074,7 +1074,7 @@ module Particles_main
       endif
 !
       if (lparticles_diagnos_state) then
-        call read_particles_diagnos_state_run_pars(unit,iostat)
+        call read_pars_diag_state_run_pars(unit,iostat)
         if (present(iostat)) then
           if (iostat/=0) then
             call samplepar_runpars('particles_diagnos_state_run_pars',iostat); return
@@ -1137,8 +1137,8 @@ module Particles_main
       if (lparticles_collisions)     call write_particles_coll_run_pars(unit)
       if (lparticles_stirring)       call write_particles_stir_run_pars(unit)
       if (lparticles_stalker)        call write_pstalker_run_pars(unit)
-      if (lparticles_diagnos_dv)     call write_particles_diagnos_dv_run_pars(unit)
-      if (lparticles_diagnos_state)  call write_particles_diagnos_state_run_pars(unit)
+      if (lparticles_diagnos_dv)     call write_pars_diagnos_dv_run_pars(unit)
+      if (lparticles_diagnos_state)  call write_pars_diag_state_run_pars(unit)
 !
     endsubroutine particles_wparam2
 !***********************************************************************

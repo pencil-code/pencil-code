@@ -121,7 +121,7 @@ module Particles_diagnos_dv
 !
     endsubroutine initialize_particles_diagnos_dv
 !***********************************************************************
-    subroutine read_particles_diagnos_dv_run_pars(unit,iostat)
+    subroutine read_pars_diagnos_dv_run_pars(unit,iostat)
 !
 !  Read run parameters from run.in.
 !
@@ -138,9 +138,9 @@ module Particles_diagnos_dv
 !
 99    return
 !
-    endsubroutine read_particles_diagnos_dv_run_pars
+    endsubroutine read_pars_diagnos_dv_run_pars
 !***********************************************************************
-    subroutine write_particles_diagnos_dv_run_pars(unit)
+    subroutine write_pars_diagnos_dv_run_pars(unit)
 !
 !  Write run parameters to param.nml.
 !
@@ -150,7 +150,7 @@ module Particles_diagnos_dv
 !
       write(unit,NML=particles_diagnos_dv_run_pars)
 !
-    endsubroutine write_particles_diagnos_dv_run_pars
+    endsubroutine write_pars_diagnos_dv_run_pars
 !*******************************************************************
     subroutine rprint_particles_diagnos_dv(lreset,lwrite)
 !
