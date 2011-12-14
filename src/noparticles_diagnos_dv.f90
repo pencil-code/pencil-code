@@ -39,7 +39,7 @@ module Particles_diagnos_dv
 !
     endsubroutine initialize_particles_diagnos_dv
 !***********************************************************************
-    subroutine read_particles_diagnos_dv_run_pars(unit,iostat)
+    subroutine read_pars_diagnos_dv_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -47,15 +47,15 @@ module Particles_diagnos_dv
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_particles_diagnos_dv_run_pars
+    endsubroutine read_pars_diagnos_dv_run_pars
 !***********************************************************************
-    subroutine write_particles_diagnos_dv_run_pars(unit)
+    subroutine write_pars_diagnos_dv_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_particles_diagnos_dv_run_pars
+    endsubroutine write_pars_diagnos_dv_run_pars
 !*******************************************************************
     subroutine rprint_particles_diagnos_dv(lreset,lwrite)
 !
