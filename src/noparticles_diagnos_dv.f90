@@ -87,4 +87,3 @@ module Particles_diagnos_dv
     endsubroutine repeated_init
 !***********************************************************************
 endmodule Particles_diagnos_dv
-
