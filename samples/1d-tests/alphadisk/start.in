@@ -15,7 +15,9 @@
   lwrite_aux=T
 /
 &special_init_pars
+  initsigma='mdot-constant'
   mdot_input=1d-7
   mwind_input=1d-8
+  inittmid='radiative'
   alpha=1d-2
 /
