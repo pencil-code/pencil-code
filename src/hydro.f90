@@ -66,6 +66,7 @@ module Hydro
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
+  real :: xhalf
   real, dimension (ninit) :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
   real, dimension (ninit) :: kx_ux=0.0, kx_uy=0.0, kx_uz=0.0
   real, dimension (ninit) :: ky_ux=0.0, ky_uy=0.0, ky_uz=0.0
@@ -805,6 +806,11 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case ('const_uu','const-uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
+        case('smooth_step_ux')
+          xhalf= 0.5*(xyz1(1)+xyz0(1))
+          do iy=m1,m2;do iz=n1,n2
+            f(:,iy,iz,iuy)= -ampluu(j)+2.*ampluu(j)*step(x,xhalf,widthuu)
+          enddo;enddo
         case('parabola_x')
           do ix=l1,l2;do iy=m1,m2;do iz=n1,n2
             f(ix,iy,iz,iuu)=0
