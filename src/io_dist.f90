@@ -20,16 +20,42 @@
 module Io
 !
   use Cdata
-  use Cparam, only: intlen, fnlen
+  use Cparam, only: intlen, fnlen, max_int
   use Messages
 !
   implicit none
 !
   include 'io.h'
+  include 'record_types.h'
+!
+  interface write_persist
+    module procedure write_persist_logical_0D
+    module procedure write_persist_logical_1D
+    module procedure write_persist_int_0D
+    module procedure write_persist_int_1D
+    module procedure write_persist_real_0D
+    module procedure write_persist_real_1D
+  endinterface
+!
+  interface read_persist
+    module procedure read_persist_logical_0D
+    module procedure read_persist_logical_1D
+    module procedure read_persist_int_0D
+    module procedure read_persist_int_1D
+    module procedure read_persist_real_0D
+    module procedure read_persist_real_1D
+  endinterface
 !
   ! define unique logical unit number for input and output calls
   integer :: lun_input=88
   integer :: lun_output=91
+!
+  ! Indicates if IO is done distributed (each proc writes into a procdir)
+  ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
+  logical :: lcollective_IO=.false.
+!
+  logical :: persist_initialized=.false.
+  integer :: persist_last_id=-max_int
 !
 contains
 !***********************************************************************
@@ -85,137 +111,440 @@ contains
 !  version for vector field.
 !
 !  11-apr-97/axel: coded
-!  28-jun-10/julien: Added different file formats
+!  13-Dec-2011/Bourdin.KIS: reworked
 !
       use Mpicomm, only: start_serialize, end_serialize
-      use Persist, only: output_persistent
 !
-      integer :: nv
-      real, dimension (mx,my,mz,nv) :: a
-      character (len=*) :: file
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv
+      real, dimension (mx,my,mz,nv), intent(in) :: a
+!
       real :: t_sp   ! t in single precision for backwards compatibility
-      integer :: iostat
+      integer :: ierr
 !
       t_sp = t
-      if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
+      if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file=file,dist=lun_output)) goto 99 
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr)
+      if (outlog (ierr, 'open', file=file, dist=lun_output)) then
+        if (lserial_io) call end_serialize()
+        return
+      endif
 !
       if (lwrite_2d) then
-        if (nx==1) then
-          write(lun_output,IOSTAT=iostat) a(l1,:,:,:)
-        elseif (ny==1) then
-          write(lun_output,IOSTAT=iostat) a(:,m1,:,:)
-        elseif (nz==1) then
-          write(lun_output,IOSTAT=iostat) a(:,:,n1,:)
+        if (nx == 1) then
+          write (lun_output, IOSTAT=ierr) a(l1,:,:,:)
+        elseif (ny == 1) then
+          write (lun_output, IOSTAT=ierr) a(:,m1,:,:)
+        elseif (nz == 1) then
+          write (lun_output, IOSTAT=ierr) a(:,:,n1,:)
         else
-          iostat=0
-          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
+          ierr = 0
+          call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
       else
-        write(lun_output,IOSTAT=iostat) a
+        write (lun_output, IOSTAT=ierr) a
       endif
-      if (outlog(iostat,'write a')) goto 99          ! problematic if fatal_error doesn't stop program
+      ! problematic if fatal_error doesn't stop program:
+      if (outlog (ierr, 'write a')) then
+        if (lserial_io) call end_serialize()
+        return
+      endif
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
 !  other modules and call a corresponding i/o parameter module.
 !
       if (lshear) then
-        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) goto 99
+        write (lun_output, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz, deltay
+        if (outlog (ierr, 'write t_sp,x,y,z,dx,dy,dz,deltay')) then
+          if (lserial_io) call end_serialize()
+          return
+        endif
       else
-        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz')) goto 99
+        write (lun_output, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz
+        if (outlog (ierr, 'write t_sp,x,y,z,dx,dy,dz')) then
+          if (lserial_io) call end_serialize()
+          return
+        endif
       endif
-      call output_persistent(lun_output)
 !
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
+    endsubroutine output_snap
+!***********************************************************************
+    subroutine output_snap_finalize()
 !
-99    if (lformat) call output_snap_form (file,a,nv)
+!  Close snapshot file.
 !
-      if (ltec) call output_snap_tec (file,a,nv)
+!  13-Dec-2011/Bourdin.KIS: adapted from output_snap
+!
+      use Mpicomm, only: end_serialize
+!
+      integer :: ierr
+      logical :: lerror
+!
+      if (persist_initialized) then
+        write (lun_output, iostat=ierr) id_block_PERSISTENT
+        lerror = outlog (ierr, 'write id_block_PERSISTENT')
+        persist_initialized = .false.
+        persist_last_id = -max_int
+      endif
+!
+      close (lun_output, IOSTAT=ierr)
+      lerror = outlog (ierr, 'close')
 !
       if (lserial_io) call end_serialize()
 !
-    endsubroutine output_snap
+    endsubroutine output_snap_finalize
+!***********************************************************************
+    logical function init_write_persist()
+!
+!  Initialize writing of persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      integer :: ierr
+!
+      write (lun_output, iostat=ierr) id_block_PERSISTENT
+      init_write_persist = outlog (ierr, 'write id_block_PERSISTENT')
+      persist_initialized = .not. init_write_persist
+      persist_last_id = -max_int
+!
+    endfunction init_write_persist
+!***********************************************************************
+    logical function write_persist_id(label, id)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+!
+      integer :: ierr
+!
+      write_persist_id = .true.
+      if (.not. persist_initialized) return
+!
+      if (persist_last_id /= id) then
+        write (lun_output, iostat=ierr) id
+        write_persist_id = outlog (ierr, 'write persistent ID '//label)
+        persist_last_id = id
+      else
+        write_persist_id = .false.
+      endif
+!
+    endfunction write_persist_id
+!***********************************************************************
+    logical function write_persist_logical_0D(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      logical, intent(in) :: value
+!
+      integer :: ierr
+!
+      write_persist_logical_0D = .true.
+      if (.not. persist_initialized) return
+      if (write_persist_id (label, id)) return
+!
+      write (lun_output, iostat=ierr) value
+      write_persist_logical_0D = outlog (ierr, 'write persistent '//label)
+!
+    endfunction write_persist_logical_0D
+!***********************************************************************
+    logical function write_persist_logical_1D(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      logical, dimension(:), intent(in) :: value
+!
+      integer :: ierr
+!
+      write_persist_logical_1D = .true.
+      if (.not. persist_initialized) return
+      if (write_persist_id (label, id)) return
+!
+      write (lun_output, iostat=ierr) value
+      write_persist_logical_1D = outlog (ierr, 'write persistent '//label)
+!
+    endfunction write_persist_logical_1D
+!***********************************************************************
+    logical function write_persist_int_0D(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      integer, intent(in) :: value
+!
+      integer :: ierr
+!
+      write_persist_int_0D = .true.
+      if (.not. persist_initialized) return
+      if (write_persist_id (label, id)) return
+!
+      write (lun_output, iostat=ierr) value
+      write_persist_int_0D = outlog (ierr, 'write persistent '//label)
+!
+    endfunction write_persist_int_0D
+!***********************************************************************
+    logical function write_persist_int_1D(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      integer, dimension(:), intent(in) :: value
+!
+      integer :: ierr
+!
+      write_persist_int_1D = .true.
+      if (.not. persist_initialized) return
+      if (write_persist_id (label, id)) return
+!
+      write (lun_output, iostat=ierr) value
+      write_persist_int_1D = outlog (ierr, 'write persistent '//label)
+!
+    endfunction write_persist_int_1D
+!***********************************************************************
+    logical function write_persist_real_0D(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      real, intent(in) :: value
+!
+      integer :: ierr
+!
+      write_persist_real_0D = .true.
+      if (.not. persist_initialized) return
+      if (write_persist_id (label, id)) return
+!
+      write (lun_output, iostat=ierr) value
+      write_persist_real_0D = outlog (ierr, 'write persistent '//label)
+!
+    endfunction write_persist_real_0D
+!***********************************************************************
+    logical function write_persist_real_1D(label, id, value)
+!
+!  Write persistent data to snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(in) :: id
+      real, dimension(:), intent(in) :: value
+!
+      integer :: ierr
+!
+      write_persist_real_1D = .true.
+      if (.not. persist_initialized) return
+      if (write_persist_id (label, id)) return
+!
+      write (lun_output, iostat=ierr) value
+      write_persist_real_1D = outlog (ierr, 'write persistent '//label)
+!
+    endfunction write_persist_real_1D
 !***********************************************************************
     subroutine input_snap(file,a,nv,mode)
 !
 !  Read snapshot file, possibly with mesh and time (if mode=1).
 !
 !  11-apr-97/axel: coded
+!  13-Dec-2011/Bourdin.KIS: reworked
 !
       use Mpicomm, only: start_serialize, end_serialize, stop_it
-      use Persist, only: input_persistent
 !
-      character (len=*) :: file
-      integer :: nv,mode
-      real, dimension (mx,my,mz,nv) :: a
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv, mode
+      real, dimension (mx,my,mz,nv), intent(out) :: a
+!
       real :: t_sp   ! t in single precision for backwards compatibility
-      integer :: iostat
+      integer :: ierr
 !
       if (lserial_io) call start_serialize()
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
-!      if (ip<=8) print*,'input_snap: open, mx,my,mz,nv=',mx,my,mz,nv
+      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr)
+      if (ierr /= 0) call stop_it ("Cannot open "//trim(file)//" for reading", ierr)
+!      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
-        if (nx==1) then
-          read(lun_input,IOSTAT=iostat) a(4,:,:,:)
-        elseif (ny==1) then
-          read(lun_input,IOSTAT=iostat) a(:,4,:,:)
-        elseif (nz==1) then
-          read(lun_input,IOSTAT=iostat) a(:,:,4,:)
+        if (nx == 1) then
+          read (lun_input, IOSTAT=ierr) a(4,:,:,:)
+        elseif (ny == 1) then
+          read (lun_input, IOSTAT=ierr) a(:,4,:,:)
+        elseif (nz == 1) then
+          read (lun_input, IOSTAT=ierr) a(:,:,4,:)
         else
-          iostat=0
-          call fatal_error('input_snap','lwrite_2d used for 3-D simulation!')
+          ierr = 0
+          call fatal_error ('input_snap', 'lwrite_2d used for 3-D simulation!')
         endif
       else
-        read(lun_input,IOSTAT=iostat) a
+        read (lun_input, IOSTAT=ierr) a
       endif
-      if (iostat /= 0) call stop_it("Cannot read a from "//trim(file),iostat)
+      if (ierr /= 0) call stop_it ("Cannot read a from "//trim(file), ierr)
 
-      if (ip<=8) print*,'input_snap: read ',file
-      if (mode==1) then
+      if (ip <= 8) print *, 'input_snap: read ', file
+      if (mode == 1) then
 !
 !  Check whether we want to read deltay from snapshot.
 !
         if (lshear) then
-          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-          if (iostat /= 0) call stop_it("Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file),iostat)
+          read (lun_input, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz, deltay
+          if (ierr /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file), ierr)
         else
-          read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-          if (iostat /= 0) call stop_it("Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file),iostat)
+          read (lun_input, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz
+          if (ierr /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file), ierr)
         endif
 !
 !  set initial time to that of snapshot, unless
 !  this is overridden
 !
         if (lreset_tstart) then
-          t=tstart
+          t = tstart
         else
-          t=t_sp
+          t = t_sp
         endif
 !
 !  verify the ip, x, y, and z readings
 !
-        if (ip<=3) print*,'input_snap: ip,x=',ip,x
-        if (ip<=3) print*,'input_snap: y=',y
-        if (ip<=3) print*,'input_snap: z=',z
+        if (ip <= 3) print *, 'input_snap: ip,x=', ip, x
+        if (ip <= 3) print *, 'input_snap: y=', y
+        if (ip <= 3) print *, 'input_snap: z=', z
 !
       endif
 !
-      call input_persistent(lun_input)
+    endsubroutine input_snap
+!***********************************************************************
+    subroutine input_snap_finalize(file)
 !
-      close(lun_input,IOSTAT=iostat)
-      if (outlog(iostat,'close',file)) return
+!  Close snapshot file.
+!
+!  11-apr-97/axel: coded
+!  13-Dec-2011/Bourdin.KIS: reworked
+!
+      use Mpicomm, only: end_serialize
+!
+      character (len=*), intent(in) :: file
+!
+      integer :: ierr
+!
+      close (lun_input, IOSTAT=ierr)
+      if (outlog (ierr, 'close', file)) return
 !
       if (lserial_io) call end_serialize()
 !
-    endsubroutine input_snap
+    endsubroutine input_snap_finalize
+!***********************************************************************
+    logical function read_persist_logical_0D(label, value)
+!
+!  Read persistent data from snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      logical, intent(out) :: value
+!
+      integer :: ierr
+!
+      read (lun_input, iostat=ierr) value
+      read_persist_logical_0D = outlog (ierr, 'read persistent '//label)
+!
+    endfunction read_persist_logical_0D
+!***********************************************************************
+    logical function read_persist_logical_1D(label, value)
+!
+!  Read persistent data from snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      logical, dimension(:), intent(out) :: value
+!
+      integer :: ierr
+!
+      read (lun_input, iostat=ierr) value
+      read_persist_logical_1D = outlog (ierr, 'read persistent '//label)
+!
+    endfunction read_persist_logical_1D
+!***********************************************************************
+    logical function read_persist_int_0D(label, value)
+!
+!  Read persistent data from snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: value
+!
+      integer :: ierr
+!
+      read (lun_input, iostat=ierr) value
+      read_persist_int_0D = outlog (ierr, 'read persistent '//label)
+!
+    endfunction read_persist_int_0D
+!***********************************************************************
+    logical function read_persist_int_1D(label, value)
+!
+!  Read persistent data from snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, dimension(:), intent(out) :: value
+!
+      integer :: ierr
+!
+      read (lun_input, iostat=ierr) value
+      read_persist_int_1D = outlog (ierr, 'read persistent '//label)
+!
+    endfunction read_persist_int_1D
+!***********************************************************************
+    logical function read_persist_real_0D(label, value)
+!
+!  Read persistent data from snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      real, intent(out) :: value
+!
+      integer :: ierr
+!
+      read (lun_input, iostat=ierr) value
+      read_persist_real_0D = outlog (ierr, 'read persistent '//label)
+!
+    endfunction read_persist_real_0D
+!***********************************************************************
+    logical function read_persist_real_1D(label, value)
+!
+!  Read persistent data from snapshot file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      real, dimension(:), intent(out) :: value
+!
+      integer :: ierr
+!
+      read (lun_input, iostat=ierr) value
+      read_persist_real_1D = outlog (ierr, 'read persistent '//label)
+!
+    endfunction read_persist_real_1D
 !***********************************************************************
     subroutine output_globals(file,a,nv)
 !
@@ -540,257 +869,5 @@ contains
       file = trim (file)
 !
     endsubroutine rtime
-!***********************************************************************
-    subroutine output_snap_form(file,a,nv)
-!
-!  Write FORMATTED snapshot file
-!
-!  28-june-10/julien: coded (copy from output_snap)
-!
-      integer :: nv
-      integer :: i, j, k
-      real, dimension (mx,my,mz,nv) :: a
-      character (len=*) :: file
-!
-      integer :: iostat
-
-      open(lun_output,FILE=trim(file)//'.form',IOSTAT=iostat)
-      if (outlog(iostat,'open',trim(file)//'.form',dist=lun_output)) return 
-!
-      if (lwrite_2d) then
-!
-        if (nx==1) then
-          do i = m1, m2
-            do j = n1, n2
-              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
-              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(l1,i,j,:)')) return
-            enddo
-          enddo
-        elseif (ny==1) then
-          do i = l1, l2
-            do j = n1, n2
-              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
-              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(i,m1,j,:)')) return
-            enddo
-          enddo
-        elseif (nz==1) then
-          do i = l1, l2
-            do j = m1, m2
-              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
-              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(i,j,n1,:)')) return
-            enddo
-          enddo
-        else
-          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
-        endif
-!
-      else if (ny==1.and.nz==1) then
-!
-        do i = l1, l2
-          write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),a(i,m1,n1,:)
-          if (outlog(iostat,'write x, a')) return
-        enddo
-!
-      else
-!
-        do i = l1, l2
-          do j = m1, m2
-            do k = n1, n2
-              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
-              if (outlog(iostat,'write x, y, z, dx, dy, dz, a')) return
-            enddo
-          enddo
-        enddo
-!
-      endif
-!
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
-!
-    endsubroutine output_snap_form
-!***********************************************************************
-    subroutine output_snap_tec(file,a,nv)
-!
-!  Write TECPLOT output files (binary)
-!
-!  28-june-10/julien: coded
-!
-      integer :: nv
-      integer :: i, j, k, kk, iostat
-      real, dimension (mx,my,mz,nv) :: a
-      real, dimension (nx*ny*nz) :: xx, yy, zz
-      character (len=*) :: file
-      character(len=2) :: car
-      character (len=8), dimension (nv) :: name
-      character (len=120) :: filel
-!
-      filel=trim(file)//'.tec'
-
-      open(lun_output,FILE=filel,IOSTAT=iostat)
-      if (outlog(iostat,'open',filel,dist=lun_output)) return 
-!
-      kk = 0
-      do k = 1, nz
-        do j = 1, ny
-          do i = 1, nx
-            xx(kk+i) = x(i)
-            yy(kk+i) = y(j)
-            zz(kk+i) = z(k)
-          enddo
-          kk = kk + nx
-        enddo
-      enddo
-!
-!  Write header
-!
-      write(lun_output,*,IOSTAT=iostat) 'TITLE     = "output"'
-      if (outlog(iostat,'write TITLE')) return
-!
-      if (lwrite_2d) then
-!
-        if (nx==1) then
-          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "y"'
-          if (outlog(iostat,'write "VARIABLES = y"')) return
-          write(lun_output,*,IOSTAT=iostat) '"z"'
-          if (outlog(iostat,'write "z"')) return
-        elseif (ny==1) then
-          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
-          if (outlog(iostat,'write "VARIABLES = x"')) return
-          write(lun_output,*,IOSTAT=iostat) '"z"'
-          if (outlog(iostat,'write "z"')) return
-        elseif (nz==1) then
-          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
-          if (outlog(iostat,'write "VARIABLES = x"')) return
-          write(lun_output,*,IOSTAT=iostat) '"y"'
-          if (outlog(iostat,'write "y"')) return
-        endif
-!
-      else
-!
-        if (ny==1.and.nz==1) then
-          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
-          if (outlog(iostat,'write "VARIABLES = x"')) return
-        else
-          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
-          if (outlog(iostat,'write "VARIABLES = x"')) return
-          write(lun_output,*,IOSTAT=iostat) '"y"'
-          if (outlog(iostat,'write "VARIABLES = y"')) return
-          write(lun_output,*,IOSTAT=iostat) '"z"'
-          if (outlog(iostat,'write "VARIABLES = z"')) return
-        endif
-!
-      endif
-      do i = 1, nv
-        write(car,'(i2)') i
-        name(i) = 'VAR_'//adjustl(car)
-        write(lun_output,*,IOSTAT=iostat) '"'//trim(name(i))//'"'
-        if (outlog(iostat,'write name(i)')) return
-      enddo
-!
-      write(lun_output,*,IOSTAT=iostat) 'ZONE T="Zone"'
-      if (outlog(iostat,'write "ZONE T=Zone"')) return
-!
-      if (lwrite_2d) then
-        if (nx==1) then
-          write(lun_output,*,IOSTAT=iostat) ' I=1, J=',ny, ', K=',nz
-          if (outlog(iostat,'write ny, nz')) return
-        endif
-        if (ny==1) then
-          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=1, K=',nz
-          if (outlog(iostat,'write nx, nz')) return
-        endif
-        if (nz==1) then
-          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=',ny, ', K=1'
-          if (outlog(iostat,'write nx, ny')) return
-        endif
-      else
-        if (ny==1.and.nz==1) then
-          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=  1, K=  1'
-          if (outlog(iostat,'write nx')) return
-        else
-          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=',ny, ', K=',nz
-          if (outlog(iostat,'write nx, ny, nz')) return
-        endif
-      endif
-!
-      write(lun_output,*,IOSTAT=iostat) ' DATAPACKING=BLOCK'
-      if (outlog(iostat,'write "DATAPACKING=BLOCK"')) return
-!
-!
-!  Write data
-!
-      if (lwrite_2d) then
-        if (nx==1) then
-!
-          write(lun_output,*,IOSTAT=iostat) yy
-          if (outlog(iostat,'write yy')) return
-          write(lun_output,*,IOSTAT=iostat) zz
-          if (outlog(iostat,'write zz')) return
-!
-          do j = 1, nv
-            write(lun_output,*,IOSTAT=iostat) a(l1,m1:m2,n1:n2,j)
-            if (outlog(iostat,'write a')) return
-          enddo
-!
-        elseif (ny==1) then
-!
-          write(lun_output,*,IOSTAT=iostat) xx
-          if (outlog(iostat,'write xx')) return
-!
-          write(lun_output,*,IOSTAT=iostat) zz
-          if (outlog(iostat,'write zz')) return
-!
-          do j = 1, nv
-            write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1,n1:n2,j)
-            if (outlog(iostat,'write a')) return
-          enddo
-!
-        elseif (nz==1) then
-          write(lun_output,*,IOSTAT=iostat) xx
-          if (outlog(iostat,'write xx')) return
-!
-          write(lun_output,*,IOSTAT=iostat) yy
-          if (outlog(iostat,'write yy')) return
-!
-          do j = 1, nv
-            write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1:m2,n1,j)
-            if (outlog(iostat,'write a')) return
-          enddo
-!
-        else
-          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
-        endif
-      else if (ny==1.and.nz==1) then
-!
-             write(lun_output,*,IOSTAT=iostat) xx
-             if (outlog(iostat,'write xx')) return
-!
-             do j = 1, nv
-               write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1,n1,j)
-               if (outlog(iostat,'write a')) return
-             enddo
-!
-           else
-!
-             write(lun_output,*,IOSTAT=iostat) xx
-             if (outlog(iostat,'write xx')) return
-!
-             write(lun_output,*,IOSTAT=iostat) yy
-             if (outlog(iostat,'write yy')) return
-!
-             write(lun_output,*,IOSTAT=iostat) zz
-             if (outlog(iostat,'write zz')) return
-!
-             do j = 1, nv
-               write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1:m2,n1:n2,j)
-               if (outlog(iostat,'write a')) return
-             enddo
-!
-           endif
-!
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
-!
-    endsubroutine output_snap_tec
 !***********************************************************************
 endmodule Io

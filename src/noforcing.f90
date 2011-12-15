@@ -161,28 +161,23 @@ module Forcing
 !
     endsubroutine write_forcing_run_pars
 !***********************************************************************
-    subroutine input_persistent_forcing(id,lun,done)
+    subroutine input_persistent_forcing(id,done)
 !
 !  Read in the stored time of the next SNI
 !
-      integer :: id,lun
+      integer :: id
       logical :: done
 !
       call keep_compiler_quiet(id)
-      call keep_compiler_quiet(lun)
       call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************
-    logical function output_persistent_forcing(lun)
+    logical function output_persistent_forcing()
 !
 !  Writes out the time of the next SNI
 !
 !  16-nov-11/MR: changed into logical function
-!
-      integer :: lun
-!
-      call keep_compiler_quiet(lun)
 !
       output_persistent_forcing = .false.
 

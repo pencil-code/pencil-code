@@ -4199,61 +4199,54 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine write_forcing_run_pars
 !***********************************************************************
-    subroutine input_persistent_forcing(id,lun,done)
+    subroutine input_persistent_forcing(id,done)
 !
 !  Read in the stored time of the next SNI
 !
 !  21-dec-05/tony: coded
+!  13-Dec-2011/Bourdin.KIS: reworked
 !
-      integer :: id,lun
+      use IO, only: read_persist
+!
+      integer :: id
       logical :: done
 !
-      if (id==id_record_FORCING_LOCATION) then
-        read (lun) location
-        done=.true.
-      elseif (id==id_record_FORCING_TSFORCE) then
-        read (lun) tsforce
-        done=.true.
-      endif
-      if (lroot) print*,'input_persistent_forcing: ', location,tsforce
+      select case (id)
+        case (id_record_FORCING_LOCATION)
+          if (read_persist ('FORCING_LOCATION', location)) return
+          done = .true.
+        case (id_record_FORCING_TSFORCE)
+          if (read_persist ('FORCING_TSFORCE', tsforce)) return
+          done = .true.
+      endselect
+!
+      if (lroot) print *, 'input_persistent_forcing: ', location, tsforce
 !
     endsubroutine input_persistent_forcing
 !***********************************************************************
-    logical function output_persistent_forcing(lun)
+    logical function output_persistent_forcing()
 !
 !  Writes out the time of the next SNI
 !  This is used, for example, for forcing functions with temporal
 !  memory, such as in the paper by Mee & Brandenburg (2006, MNRAS)
 !
 !  21-dec-05/tony: coded
-!   6-nov-11/MR: IOSTAT handling added
-!  16-nov-11/MR: changed into logical function to signal I/O errors
+!  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Messages, only: outlog
+      use IO, only: write_persist
 !
-      integer :: lun
-!
-      integer :: iostat
-!
-      if (lroot) then
-        if (tsforce>=0.) print*,'output_persistent_forcing: ', location, tsforce
-      endif
+      if (lroot .and. (tsforce>=0.)) &
+          print *, 'output_persistent_forcing: ', location, tsforce
 !
 !  write details
 !
-      output_persistent_forcing = .true.
-!
-      write (lun,IOSTAT=iostat) id_record_FORCING_LOCATION
-      if (outlog(iostat,'write id_record_FORCING_LOCATION')) return
-      write (lun,IOSTAT=iostat) location
-      if (outlog(iostat,'write location')) return
-      write (lun,IOSTAT=iostat) id_record_FORCING_TSFORCE
-      if (outlog(iostat,'write id_record_FORCING_TSFORCE')) return
-      write (lun,IOSTAT=iostat) tsforce
-      if (outlog(iostat,'write tsforce')) return
-!
       output_persistent_forcing = .false.
-
+!
+      if (write_persist ('FORCING_LOCATION', id_record_FORCING_LOCATION, location)) &
+          output_persistent_forcing = .true.
+      if (write_persist ('FORCING_TSFORCE', id_record_FORCING_TSFORCE, tsforce)) &
+          output_persistent_forcing = .true.
+!
     endfunction output_persistent_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)

@@ -48,27 +48,22 @@ module Interstellar
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
-    subroutine input_persistent_interstellar(id,lun,done)
+    subroutine input_persistent_interstellar(id,done)
 !
 !  Read in the stored time of the next SNI
 !
-      integer :: id,lun
+      integer :: id
       logical :: done
 !
       call keep_compiler_quiet(id)
-      call keep_compiler_quiet(lun)
       call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_interstellar
 !***********************************************************************
-    logical function output_persistent_interstellar(lun)
+    logical function output_persistent_interstellar()
 !
 !  Writes out the time of the next SNI
 !
-      integer :: lun
-!
-      call keep_compiler_quiet(lun)
-
       output_persistent_interstellar = .false.
 !
     endfunction output_persistent_interstellar

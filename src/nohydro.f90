@@ -32,7 +32,6 @@ module Hydro
   real, dimension (mx,my,3) :: uumxy=0.
 !
   real :: u_out_kep=0.0
-  real :: tphase_kinflow=-1.,phase1=0., phase2=0.
   logical, target :: lpressuregradient_gas=.false.
   logical :: lcalc_uumean=.false.,lupw_uu=.false.
   logical :: lcalc_uumeanxy=.false.
@@ -55,7 +54,6 @@ module Hydro
   integer :: idiag_umy=0,idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divu2m=0,idiag_epsK=0
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
-  integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0, idiag_ekin=0
 !
   contains
@@ -304,8 +302,6 @@ module Hydro
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
           if (idiag_uzpt/=0) call save_name(p%uu(lpoint-nghost,3),idiag_uzpt)
-          if (idiag_phase1/=0) call save_name(phase1,idiag_phase1)
-          if (idiag_phase2/=0) call save_name(phase2,idiag_phase2)
         endif
       endif
 !
@@ -766,65 +762,6 @@ module Hydro
 !
     endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
-    subroutine input_persistent_hydro(id,lun,done)
-!
-!  Read in the stored time of the next random phase calculation
-!
-!  12-apr-08/axel: adapted from input_persistent_forcing
-!
-      integer :: id,lun
-      logical :: done
-!
-      if (id==id_record_NOHYDRO_TPHASE) then
-        read (lun) tphase_kinflow
-        done=.true.
-      elseif (id==id_record_NOHYDRO_PHASE1) then
-        read (lun) phase1
-        done=.true.
-      elseif (id==id_record_NOHYDRO_PHASE2) then
-        read (lun) phase2
-        done=.true.
-      endif
-      if (lroot) print*,'input_persistent_hydro: ',tphase_kinflow
-!
-    endsubroutine input_persistent_hydro
-!***********************************************************************
-    logical function output_persistent_hydro(lun)
-!
-!  Writes out the time of the next random phase calculation
-!
-!  12-apr-08/axel: adapted from output_persistent_forcing
-!
-      integer :: lun
-!
-      integer :: iostat
-!
-      if (lroot.and.ip<14) then
-        if (tphase_kinflow>=0.) &
-            print*,'output_persistent_hydro: ',tphase_kinflow
-      endif
-!
-!  write details
-!
-      output_persistent_hydro = .true.
-
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_TPHASE
-      if (outlog(iostat,'write id_record_NOHYDRO_TPHASE')) return
-      write (lun,IOSTAT=iostat) tphase_kinflow
-      if (outlog(iostat,'write tphase_kinflow')) return
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_PHASE1
-      if (outlog(iostat,'write id_record_NOHYDRO_TPHASE1')) return
-      write (lun,IOSTAT=iostat) phase1
-      if (outlog(iostat,'write phase1')) return
-      write (lun,IOSTAT=iostat) id_record_NOHYDRO_PHASE2
-      if (outlog(iostat,'write id_record_NOHYDRO_TPHASE2')) return
-      write (lun,IOSTAT=iostat) phase2
-      if (outlog(iostat,'write phase2')) return
-!
-      output_persistent_hydro = .false.
-!
-    endfunction output_persistent_hydro
-!***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
@@ -883,7 +820,6 @@ module Hydro
         idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
         idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0
         idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0
-        idiag_phase1=0; idiag_phase2=0
         idiag_orms=0; idiag_omax=0; idiag_oumphi=0
         idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
         idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
@@ -931,8 +867,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxpt',idiag_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',idiag_uypt)
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
-        call parse_name(iname,cname(iname),cform(iname),'phase1',idiag_phase1)
-        call parse_name(iname,cname(iname),cform(iname),'phase2',idiag_phase2)
       enddo
 !
 !  write column where which hydro variable is stored

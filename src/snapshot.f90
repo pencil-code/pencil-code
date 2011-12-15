@@ -30,11 +30,13 @@ module Snapshot
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tsnap.dat'
 !   5-apr-03/axel: possibility for additional (hard-to-get) output
 !  31-may-03/axel: wsnap can write either w/ or w/o auxiliary variables
+!  28-jun-10/julien: added different file formats
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign
-      use IO, only: output_snap,log_filename_to_file
-      use Sub, only: read_snaptime,update_snaptime
+      use IO, only: output_snap, output_snap_finalize, log_filename_to_file
+      use Persist, only: output_persistent
+      use Sub, only: read_snaptime, update_snaptime
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -79,9 +81,12 @@ module Snapshot
         if (lsnap) then
           call update_ghosts(a)
           if (msnap==mfarray) call update_auxiliaries(a)
-          call output_snap(chsnap//ch,a,msnap)
-          if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
-          if (present(flist)) call log_filename_to_file(chsnap//ch,flist)
+          call safe_character_assign(file,trim(chsnap)//ch)
+          call output_snap(file,a,msnap)
+          call output_persistent()
+          call output_snap_finalize()
+          if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
+          if (present(flist)) call log_filename_to_file(file,flist)
         endif
 !
       else
@@ -102,9 +107,15 @@ module Snapshot
         else
           call update_ghosts(a)
         endif
-        call output_snap(chsnap,a,msnap)
-        if (present(flist)) call log_filename_to_file(chsnap,flist)
+        call safe_character_assign(file,trim(chsnap))
+        call output_snap(file,a,msnap)
+        call output_persistent()
+        call output_snap_finalize()
+        if (present(flist)) call log_filename_to_file(file,flist)
       endif
+!
+      if (lformat) call output_snap_form (file,a,msnap)
+      if (ltec) call output_snap_tec (file,a,msnap)
 !
     endsubroutine wsnap
 !***********************************************************************
@@ -114,7 +125,8 @@ module Snapshot
 !
 !  24-jun-05/tony: coded from snap reading code in run.f90
 !
-      use IO, only: input_snap
+      use IO, only: input_snap, input_snap_finalize
+      use Persist, only: input_persistent
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
@@ -122,6 +134,7 @@ module Snapshot
       integer :: msnap
       real, dimension (mx,my,mz,msnap) :: f
       character (len=*) :: chsnap
+!
       integer :: ivar
 !
         if (ip<=6.and.lroot) print*,'reading var files'
@@ -143,6 +156,8 @@ module Snapshot
           f(:,:,:,iax:iaz)=0.
           print*,'read old snapshot file (but without magnetic field)'
           call input_snap(trim(directory_snap)//'/var.dat',f,msnap-3,1)
+          call input_persistent()
+          call input_snap_finalize(trim(directory_snap)//'/var.dat')
           ! shift the rest of the data
           if (iaz<mvar) then
             do ivar=iaz+1,mvar
@@ -156,6 +171,8 @@ module Snapshot
         elseif (lread_oldsnap_nopscalar) then
           print*,'read old snapshot file (but without passive scalar)'
           call input_snap(chsnap,f,msnap-1,1)
+          call input_persistent()
+          call input_snap_finalize(chsnap)
           ! shift the rest of the data
           if (ilncc<mvar) then
             do ivar=ilncc+1,mvar
@@ -169,6 +186,8 @@ module Snapshot
         elseif (lread_oldsnap_notestfield) then
           print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
           call input_snap(chsnap,f,msnap-ntestfield,1)
+          call input_persistent()
+          call input_snap_finalize(chsnap)
           ! shift the rest of the data
           if (iaztestpq<msnap) then
             do ivar=iaztestpq+1,msnap
@@ -182,6 +201,8 @@ module Snapshot
         elseif (lread_oldsnap_notestscalar) then
           print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
           call input_snap(chsnap,f,msnap-ntestscalar,1)
+          call input_persistent()
+          call input_snap_finalize(chsnap)
           ! shift the rest of the data
           if (iaztestpq<msnap) then
             do ivar=iaztestpq+1,msnap
@@ -191,6 +212,8 @@ module Snapshot
           endif
         else
           call input_snap(chsnap,f,msnap,1)
+          call input_persistent()
+          call input_snap_finalize(chsnap)
         endif
 !
     endsubroutine rsnap
@@ -428,5 +451,261 @@ module Snapshot
       endif
 !
     endsubroutine shift_dt
+!***********************************************************************
+    subroutine output_snap_form(file,a,nv)
+!
+!  Write FORMATTED snapshot file
+!
+!  28-june-10/julien: coded (copy from output_snap)
+!
+      use IO, only: lun_output
+!
+      integer :: nv
+      integer :: i, j, k
+      real, dimension (mx,my,mz,nv) :: a
+      character (len=*) :: file
+!
+      integer :: iostat
+
+      open(lun_output,FILE=trim(file)//'.form',IOSTAT=iostat)
+      if (outlog(iostat,'open',trim(file)//'.form',dist=lun_output)) return 
+!
+      if (lwrite_2d) then
+!
+        if (nx==1) then
+          do i = m1, m2
+            do j = n1, n2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(l1),y(i),z(j),dx,dy,dz,a(l1,i,j,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(l1,i,j,:)')) return
+            enddo
+          enddo
+        elseif (ny==1) then
+          do i = l1, l2
+            do j = n1, n2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(m1),z(j),dx,dy,dz,a(i,m1,j,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(i,m1,j,:)')) return
+            enddo
+          enddo
+        elseif (nz==1) then
+          do i = l1, l2
+            do j = m1, m2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(j),z(n1),dx,dy,dz,a(i,j,n1,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a(i,j,n1,:)')) return
+            enddo
+          enddo
+        else
+          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
+        endif
+!
+      else if (ny==1.and.nz==1) then
+!
+        do i = l1, l2
+          write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),a(i,m1,n1,:)
+          if (outlog(iostat,'write x, a')) return
+        enddo
+!
+      else
+!
+        do i = l1, l2
+          do j = m1, m2
+            do k = n1, n2
+              write(lun_output,'(40(f12.5))',IOSTAT=iostat) x(i),y(j),z(k),dx,dy,dz,a(i,j,k,:)
+              if (outlog(iostat,'write x, y, z, dx, dy, dz, a')) return
+            enddo
+          enddo
+        enddo
+!
+      endif
+!
+      close(lun_output,IOSTAT=iostat)
+      if (outlog(iostat,'close')) continue
+!
+    endsubroutine output_snap_form
+!***********************************************************************
+    subroutine output_snap_tec(file,a,nv)
+!
+!  Write TECPLOT output files (binary)
+!
+!  28-june-10/julien: coded
+!
+      use IO, only: lun_output
+!
+      integer :: nv
+      integer :: i, j, k, kk, iostat
+      real, dimension (mx,my,mz,nv) :: a
+      real, dimension (nx*ny*nz) :: xx, yy, zz
+      character (len=*) :: file
+      character(len=2) :: car
+      character (len=8), dimension (nv) :: name
+      character (len=120) :: filel
+!
+      filel=trim(file)//'.tec'
+
+      open(lun_output,FILE=filel,IOSTAT=iostat)
+      if (outlog(iostat,'open',filel,dist=lun_output)) return 
+!
+      kk = 0
+      do k = 1, nz
+        do j = 1, ny
+          do i = 1, nx
+            xx(kk+i) = x(i)
+            yy(kk+i) = y(j)
+            zz(kk+i) = z(k)
+          enddo
+          kk = kk + nx
+        enddo
+      enddo
+!
+!  Write header
+!
+      write(lun_output,*,IOSTAT=iostat) 'TITLE     = "output"'
+      if (outlog(iostat,'write TITLE')) return
+!
+      if (lwrite_2d) then
+!
+        if (nx==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "y"'
+          if (outlog(iostat,'write "VARIABLES = y"')) return
+          write(lun_output,*,IOSTAT=iostat) '"z"'
+          if (outlog(iostat,'write "z"')) return
+        elseif (ny==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+          write(lun_output,*,IOSTAT=iostat) '"z"'
+          if (outlog(iostat,'write "z"')) return
+        elseif (nz==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+          write(lun_output,*,IOSTAT=iostat) '"y"'
+          if (outlog(iostat,'write "y"')) return
+        endif
+!
+      else
+!
+        if (ny==1.and.nz==1) then
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+        else
+          write(lun_output,*,IOSTAT=iostat) 'VARIABLES = "x"'
+          if (outlog(iostat,'write "VARIABLES = x"')) return
+          write(lun_output,*,IOSTAT=iostat) '"y"'
+          if (outlog(iostat,'write "VARIABLES = y"')) return
+          write(lun_output,*,IOSTAT=iostat) '"z"'
+          if (outlog(iostat,'write "VARIABLES = z"')) return
+        endif
+!
+      endif
+      do i = 1, nv
+        write(car,'(i2)') i
+        name(i) = 'VAR_'//adjustl(car)
+        write(lun_output,*,IOSTAT=iostat) '"'//trim(name(i))//'"'
+        if (outlog(iostat,'write name(i)')) return
+      enddo
+!
+      write(lun_output,*,IOSTAT=iostat) 'ZONE T="Zone"'
+      if (outlog(iostat,'write "ZONE T=Zone"')) return
+!
+      if (lwrite_2d) then
+        if (nx==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=1, J=',ny, ', K=',nz
+          if (outlog(iostat,'write ny, nz')) return
+        endif
+        if (ny==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=1, K=',nz
+          if (outlog(iostat,'write nx, nz')) return
+        endif
+        if (nz==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=',ny, ', K=1'
+          if (outlog(iostat,'write nx, ny')) return
+        endif
+      else
+        if (ny==1.and.nz==1) then
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=  1, K=  1'
+          if (outlog(iostat,'write nx')) return
+        else
+          write(lun_output,*,IOSTAT=iostat) ' I=',nx, ', J=',ny, ', K=',nz
+          if (outlog(iostat,'write nx, ny, nz')) return
+        endif
+      endif
+!
+      write(lun_output,*,IOSTAT=iostat) ' DATAPACKING=BLOCK'
+      if (outlog(iostat,'write "DATAPACKING=BLOCK"')) return
+!
+!
+!  Write data
+!
+      if (lwrite_2d) then
+        if (nx==1) then
+!
+          write(lun_output,*,IOSTAT=iostat) yy
+          if (outlog(iostat,'write yy')) return
+          write(lun_output,*,IOSTAT=iostat) zz
+          if (outlog(iostat,'write zz')) return
+!
+          do j = 1, nv
+            write(lun_output,*,IOSTAT=iostat) a(l1,m1:m2,n1:n2,j)
+            if (outlog(iostat,'write a')) return
+          enddo
+!
+        elseif (ny==1) then
+!
+          write(lun_output,*,IOSTAT=iostat) xx
+          if (outlog(iostat,'write xx')) return
+!
+          write(lun_output,*,IOSTAT=iostat) zz
+          if (outlog(iostat,'write zz')) return
+!
+          do j = 1, nv
+            write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1,n1:n2,j)
+            if (outlog(iostat,'write a')) return
+          enddo
+!
+        elseif (nz==1) then
+          write(lun_output,*,IOSTAT=iostat) xx
+          if (outlog(iostat,'write xx')) return
+!
+          write(lun_output,*,IOSTAT=iostat) yy
+          if (outlog(iostat,'write yy')) return
+!
+          do j = 1, nv
+            write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1:m2,n1,j)
+            if (outlog(iostat,'write a')) return
+          enddo
+!
+        else
+          call fatal_error('output_snap','lwrite_2d used for 3-D simulation!')
+        endif
+      else if (ny==1.and.nz==1) then
+!
+             write(lun_output,*,IOSTAT=iostat) xx
+             if (outlog(iostat,'write xx')) return
+!
+             do j = 1, nv
+               write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1,n1,j)
+               if (outlog(iostat,'write a')) return
+             enddo
+!
+           else
+!
+             write(lun_output,*,IOSTAT=iostat) xx
+             if (outlog(iostat,'write xx')) return
+!
+             write(lun_output,*,IOSTAT=iostat) yy
+             if (outlog(iostat,'write yy')) return
+!
+             write(lun_output,*,IOSTAT=iostat) zz
+             if (outlog(iostat,'write zz')) return
+!
+             do j = 1, nv
+               write(lun_output,*,IOSTAT=iostat) a(l1:l2,m1:m2,n1:n2,j)
+               if (outlog(iostat,'write a')) return
+             enddo
+!
+           endif
+!
+      close(lun_output,IOSTAT=iostat)
+      if (outlog(iostat,'close')) continue
+!
+    endsubroutine output_snap_tec
 !***********************************************************************
 endmodule Snapshot

@@ -296,26 +296,22 @@ module Magnetic
 !
     endsubroutine bb_unitvec_shock
 !***********************************************************************
-    subroutine input_persistent_magnetic(id,lun,done)
+    subroutine input_persistent_magnetic(id,done)
 !
 !  Dummy routine
 !
-      integer :: id,lun
+      integer :: id
       logical :: done
 !
       call keep_compiler_quiet(id)
-      call keep_compiler_quiet(lun)
       call keep_compiler_quiet(done)
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
-    logical function output_persistent_magnetic(lun)
+    logical function output_persistent_magnetic()
 !
 !  Dummy routine
 !
-      integer :: lun
-!
-      call keep_compiler_quiet(lun)
       output_persistent_magnetic = .false.
 !
     endfunction output_persistent_magnetic

@@ -3304,31 +3304,6 @@ module Hydro
 !
     endsubroutine udamping
 !***********************************************************************
-    subroutine input_persistent_hydro(id,lun,done)
-!
-!  Dummy routine
-!
-      integer :: id,lun
-      logical :: done
-!
-      call keep_compiler_quiet(id)
-      call keep_compiler_quiet(lun)
-      call keep_compiler_quiet(done)
-!
-    endsubroutine input_persistent_hydro
-!***********************************************************************
-    logical function output_persistent_hydro(lun)
-!
-!  Dummy routine
-!
-      integer :: lun
-!
-      call keep_compiler_quiet(lun)
-!
-      output_persistent_hydro = .false.
-!
-    endfunction output_persistent_hydro
-!***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit

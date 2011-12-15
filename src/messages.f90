@@ -598,6 +598,7 @@ module Messages
 !                          
 !  3-nov-11/MR: coded;
 ! 16-nov-11/MR: modified; experimental version which always stops program on I/O error
+! 13-Dec-2011/Bourdin.KIS: added EOF sensing, which is not an error.
 !
     use Syscalls, only: system
     use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip
@@ -620,15 +621,19 @@ module Messages
 !
     outlog = .false.
 !
-    ! experimental! Don't set .false.
+    ! Set the following expression to .false. to activate the experimental code
     if (.true.) then
-      if (code/=0) then
+      if (code < 0) then
+        outlog = .true.
+        call warning(mode, 'reached End-Of-File')
+      else if (code > 0) then
         outlog = .true.
         call stop_it('due to I/O error')
       endif
       return
     endif
 !
+    ! EXPERIMENTAL CODE:
     lopen  = mode(1:4)=='open'
     lread  = mode(1:5)=='read '
     lwrite = mode(1:6)=='write '

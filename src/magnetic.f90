@@ -994,9 +994,9 @@ module Magnetic
 !
 !  write profile (uncomment for debugging)
 !
-!     if (lroot) then
-!       do n=n1,n2
-!         print*,z(n),eta_z(n)
+!     if (lfirst_proc_xy) then
+!       do n=1,mz
+!         write (100+iproc,*) z(n), eta_z(n), geta_z(n,:)
 !       enddo
 !     endif
 !
@@ -6129,61 +6129,55 @@ module Magnetic
 !
     endsubroutine bb_unitvec_shock
 !***********************************************************************
-    subroutine input_persistent_magnetic(id,lun,done)
+    subroutine input_persistent_magnetic(id,done)
 !
 !  Read in the stored phase and amplitude for the correction of the Beltrami
 !  wave forcing.
 !
 !   5-apr-08/axel: adapted from input_persistent_forcing
+!  13-Dec-2011/Bourdin.KIS: reworked
 !
-      integer :: id,lun
+      use IO, only: read_persist
+!
+      integer :: id
       logical :: done
 !
-      if (id==id_record_MAGNETIC_PHASE) then
-        read (lun) phase_beltrami
-        done=.true.
-        if (lroot) print*,'input_persistent_magnetic: ', phase_beltrami
-      elseif (id==id_record_MAGNETIC_AMPL) then
-        read (lun) ampl_beltrami
-        done=.true.
-        if (lroot) print*,'input_persistent_magnetic: ', ampl_beltrami
-      endif
+      select case (id)
+        case (id_record_MAGNETIC_PHASE)
+          if (read_persist ('MAGNETIC_PHASE', phase_beltrami)) return
+          if (lroot) print *, 'input_persistent_magnetic: ', phase_beltrami
+          done = .true.
+        case (id_record_MAGNETIC_AMPL)
+          if (read_persist ('MAGNETIC_AMPL', ampl_beltrami)) return
+          if (lroot) print *, 'input_persistent_magnetic: ', ampl_beltrami
+          done = .true.
+      endselect
 !
     endsubroutine input_persistent_magnetic
 !***********************************************************************
-    logical function output_persistent_magnetic(lun)
+    logical function output_persistent_magnetic()
 !
 !  Write the stored phase and amplitude for the
 !  correction of the Beltrami wave forcing
 !
 !    5-apr-08/axel: adapted from output_persistent_forcing
-!   16-nov-11/MR: IOSTAT handling added
+!   13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Messages, only: outlog
+      use IO, only: write_persist
 !
-      integer :: lun
-!
-      integer :: iostat
-!
-      if (lroot.and.ip<14.and.lforcing_cont_aa_local) then
-        if (phase_beltrami>=0.0) print*, 'output_persistent_magnetic: ', &
+      if (lroot .and. (ip < 14) .and. lforcing_cont_aa_local) then
+        if (phase_beltrami >= 0.0) print *, 'output_persistent_magnetic: ', &
             phase_beltrami, ampl_beltrami
       endif
 !
 !  write details
 !
-      output_persistent_magnetic = .true.
-!
-      write (lun,IOSTAT=iostat) id_record_MAGNETIC_PHASE
-      if (outlog(iostat,'write id_record_MAGNETIC_PHASE')) return
-      write (lun,IOSTAT=iostat) phase_beltrami
-      if (outlog(iostat,'write phase_beltrami')) return
-      write (lun,IOSTAT=iostat) id_record_MAGNETIC_AMPL
-      if (outlog(iostat,'write id_record_MAGNETIC_AMPL')) return
-      write (lun,IOSTAT=iostat) ampl_beltrami
-      if (outlog(iostat,'write ampl_beltrami')) return
-!
       output_persistent_magnetic = .false.
+!
+      if (write_persist ('MAGNETIC_PHASE', id_record_MAGNETIC_PHASE, phase_beltrami)) &
+          output_persistent_magnetic = .true.
+      if (write_persist ('MAGNETIC_AMPL', id_record_MAGNETIC_AMPL, ampl_beltrami)) &
+          output_persistent_magnetic = .true.
 !
     endfunction output_persistent_magnetic
 !***********************************************************************

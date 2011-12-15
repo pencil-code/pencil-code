@@ -888,73 +888,90 @@ module Interstellar
 !
     endsubroutine initialize_interstellar
 !*****************************************************************************
-    subroutine input_persistent_interstellar(id,lun,done)
+    subroutine input_persistent_interstellar(id,done)
 !
 !  Read in the stored time of the next SNI
 !
-      integer :: id,lun,i
+!  13-Dec-2011/Bourdin.KIS: reworked
+!
+      use IO, only: lun_input, lcollective_IO
+!
+      integer :: id
       logical :: done
 !
-      if (id==id_record_T_NEXT_SNI) then
-        read (lun) t_next_SNI, t_next_SNII
-        done=.true.
-      elseif (id==id_record_ISM_SN_TOGGLE) then
-        read (lun) lSNI, lSNII
-        done=.true.
-      elseif (id==id_record_ISM_SNRS) then
-!  Forget any existing SNRs.
-        SNRs(:)%state=SNstate_invalid
-        read (lun) nSNR
-        do i=1,nSNR
-          read (lun) SNRs(i)
-          SNR_index(i)=i
-        enddo
-        done=.true.
-      elseif (id==id_record_BOLD_MASS) then
-        read (lun) boldmass
-        done=.true.
-      endif
+      integer :: i, ierr
+!
+      if (lcollective_IO) call fatal_error ('input_persistent_interstellar', &
+          "The interstellar persistent variables can't be read collectively!")
+!
+      select case (id)
+        case (id_record_T_NEXT_SNI)
+          read (lun_input, iostat=ierr) t_next_SNI, t_next_SNII
+          if (outlog (ierr, 'read persistent T_NEXT_SNI')) return
+          done = .true.
+        case (id_record_ISM_SN_TOGGLE)
+          read (lun_input, iostat=ierr) lSNI, lSNII
+          if (outlog (ierr, 'read persistent ISM_SN_TOGGLE')) return
+          done = .true.
+        case (id_record_BOLD_MASS)
+          read (lun_input, iostat=ierr) boldmass
+          if (outlog (ierr, 'read persistent BOLD_MASS')) return
+          done = .true.
+        case (id_record_ISM_SNRS)
+          ! Forget any existing SNRs.
+          SNRs(:)%state = SNstate_invalid
+          read (lun_input, iostat=ierr) nSNR
+          if (outlog (ierr, 'read persistent nSNR')) return
+          do i = 1, nSNR
+            read (lun_input, iostat=ierr) SNRs(i)
+            if (outlog (ierr, 'read persistent SNRs')) return
+            SNR_index(i) = i
+          enddo
+          done = .true.
+      endselect
+!
       if (lroot) &
-          print*,'input_persistent_interstellar: ', t_next_SNI, t_next_SNII
+          print *, 'input_persistent_interstellar: ', t_next_SNI, t_next_SNII
 !
     endsubroutine input_persistent_interstellar
 !*****************************************************************************
-    logical function output_persistent_interstellar(lun)
+    logical function output_persistent_interstellar()
 !
 !  Writes out the time of the next SNI
 !
-!  16-nov-11/MR: changed into logical function to signal I/O errors, I/O error handling introduced
+!  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Messages, only: outlog
-      integer :: lun, i, iSNR, iostat
+      use IO, only: write_persist_id, lun_output, lcollective_IO
+!
+      integer :: i, ierr
+!
+      if (lcollective_IO) call fatal_error ('output_persistent_interstellar', &
+          "The interstellar persistent variables can't be written collectively!")
 !
       output_persistent_interstellar = .true.
 !
-      if (lroot.and.lSNI.and.lSNII) &
-          print*,'output_persistent_interstellar: ', t_next_SNI, t_next_SNII
-      write (lun,IOSTAT=iostat) id_record_T_NEXT_SNI
-      if (outlog(iostat,'write id_record_T_NEXT_SNI')) return
-      write (lun,IOSTAT=iostat) t_next_SNI, t_next_SNII
-      if (outlog(iostat,'write t_next_SNI, t_next_SNII')) return
-      write (lun,IOSTAT=iostat) id_record_ISM_SN_TOGGLE
-      if (outlog(iostat,'write id_record_ISM_SN_TOGGLE')) return
-      write (lun,IOSTAT=iostat) lSNI,lSNII
-      if (outlog(iostat,'write lSNI,lSNII')) return
-      write (lun,IOSTAT=iostat) id_record_BOLD_MASS
-      if (outlog(iostat,'write id_record_BOLD_MASS')) return
-      write (lun,IOSTAT=iostat) boldmass
-      if (outlog(iostat,'write boldmass')) return
-      write (lun,IOSTAT=iostat) id_record_ISM_SNRS
-      if (outlog(iostat,'write id_record_ISM_SNRS')) return
-      write (lun,IOSTAT=iostat) nSNR
-      if (outlog(iostat,'write nSNR')) return
-      do i=1,nSNR
-        iSNR=SNR_index(i)
-        write (lun,IOSTAT=iostat) SNRs(iSNR)
-        if (outlog(iostat,'write SNRs(iSNR)')) return
+      if (write_persist_id ('T_NEXT_SNI', id_record_T_NEXT_SNI)) return
+      write (lun_output, iostat=ierr) t_next_SNI, t_next_SNII
+      if (outlog (ierr, 'write persistent T_NEXT_SNI')) return
+!
+      if (write_persist_id ('ISM_SN_TOGGLE', id_record_ISM_SN_TOGGLE)) return
+      write (lun_output, iostat=ierr) lSNI, lSNII
+      if (outlog (ierr, 'write persistent ISM_SN_TOGGLE')) return
+!
+      if (write_persist_id ('BOLD_MASS', id_record_BOLD_MASS)) return
+      write (lun_output, iostat=ierr) boldmass
+      if (outlog (ierr, 'write persistent BOLD_MASS')) return
+!
+      if (write_persist_id ('ISM_SNRS', id_record_ISM_SNRS)) return
+      write (lun_output, iostat=ierr) nSNR
+      if (outlog (ierr, 'write persistent nSNR')) return
+      do i = 1, nSNR
+        write (lun_output, iostat=ierr) SNRs(SNR_index(i))
+        if (outlog (ierr, 'write persistent SNRs')) return
       enddo
 !
-    output_persistent_interstellar = .false.
+      output_persistent_interstellar = .false.
+!
     endfunction output_persistent_interstellar
 !*****************************************************************************
     subroutine rprint_interstellar(lreset,lwrite)
