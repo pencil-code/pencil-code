@@ -342,8 +342,8 @@ else if ($hn =~ p*.hpc2n.umu.se ) then
   echo "Always use  multiple of 8 no. of processors .."
   echo "..for multiprecossor jobs. "
   echo " ******************************"
-  module add psc/4.0.10
-  module load openmpi/psc
+  module add intel-compiler
+  module load openmpi/intel
   #
   limit stacksize 524288
   setenv OMP_NUM_THREADS 1
