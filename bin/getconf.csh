@@ -336,12 +336,13 @@ else if (($hn =~ Xcomp*) || ($masterhost =~ andromeda)) then
   source ${HOME}/.cshrc
   set $mpirun=mpirun
 #------------------------------------------
-else if ($hn =~ b*.hpc2n.umu.se ) then
+else if ($hn =~ p*.hpc2n.umu.se ) then
   echo "HPC2N cluster (akka) - Umea"
   echo "******************************"
   echo "Always use  multiple of 8 no. of processors .."
   echo "..for multiprecossor jobs. "
   echo " ******************************"
+  module add psc/4.0.10
   module load openmpi/psc
   #
   limit stacksize 524288
