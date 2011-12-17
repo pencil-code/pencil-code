@@ -42,21 +42,11 @@ module Special
   real, dimension(nx) :: c1, c2, c3
   real, dimension(nx) :: rr, rr1
   real, dimension(nx) :: swind
-  real, dimension(nx) :: nut_powerlaw
+  real, dimension(nx) :: nut_global
 !
 !  Shortcuts
 !
   real :: one_over_three_pi
-!
-!  Switchables for simplified Hayashi (1981) temperature model.
-!
-  real    :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
-  real    :: plaw_temperature=0.5, temperature0=280.0
-  real    :: mumol=2.34
-!
-!  Switchables for Gaussian initial profile.
-!
-  real    :: r0_gaussian=1.0, width_gaussian=1.0
 !
 !  Switchables for radiative disk model.
 !
@@ -78,6 +68,11 @@ module Special
                                        !   simulation variable.
   real    :: cprime
 !
+  real :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
+  real :: plaw_temperature=0.5, temperature0=280.0
+  real :: mumol=2.34, nut_constant=0.0
+  real :: r0_gaussian=1.0, width_gaussian=1.0
+!
   character (len=labellen), dimension(ninit) :: initsigma='nothing'
   character (len=labellen), dimension(ninit) :: inittmid='nothing'
   character (len=labellen) :: temperature_model='radiative'
@@ -85,7 +80,7 @@ module Special
   namelist /special_init_pars/ &
       initsigma, mdot_input, plaw_density, sigma0, alpha, mwind_input, &
       inittmid, plaw_r0, plaw_temperature, temperature0, mumol, &
-      r0_gaussian, width_gaussian, temperature_model, &
+      r0_gaussian, width_gaussian, temperature_model, nut_constant, &
       temperature_background, temperature_precision, nsigma_table, &
       sigma_middle, sigma_floor, tmid_table_buffer
 !
@@ -328,8 +323,16 @@ module Special
 !
 !  Store turbulent viscosity for use in evolution equation.
 !
-          nut_powerlaw=alpha*(kB_cgs*f(l1:l2,m1,n1,itmid)/(mumol*munit_cgs))/ &
+          nut_global=alpha*(kB_cgs*f(l1:l2,m1,n1,itmid)/(mumol*munit_cgs))/ &
               sqrt(GNewton_cgs*msun_cgs/x(l1:l2)**3)
+!
+!  Constant turbulent viscosity (for testing).
+!
+        case('nut-constant')
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,itmid) = 0.0
+          enddo;enddo
+          nut_global=nut_constant
 !
 !  Temperature from radiative model.
 !
@@ -781,7 +784,7 @@ module Special
 !  Hayashi disk model with power law temperature profile.
 !
       case('Hayashi')
-        sigma = mdot/(3*pi*nut_powerlaw)
+        sigma = mdot/(3*pi*nut_global)
 !
 !  More realistic disk model using look up table for temperatures.
 !
@@ -827,7 +830,7 @@ module Special
 !  Hayashi disk model with power law temperature profile.
 !
       case('Hayashi')
-        mdot = 3*pi*nut_powerlaw*sigma
+        mdot = 3*pi*nut_global*sigma
 !
 !  More realistic disk model using look up table for temperatures.
 !
@@ -876,7 +879,7 @@ module Special
 !  Hayashi disk model with power law temperature profile.
 !
       case('Hayashi')
-        mdot = 3*pi*nut_powerlaw(i)*sigma
+        mdot = 3*pi*nut_global(i)*sigma
 !
 !  More realistic disk model using look up table for temperatures.
 !
