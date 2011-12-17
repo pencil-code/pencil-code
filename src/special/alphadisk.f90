@@ -1,34 +1,12 @@
 ! $Id: nospecial.f90 15287 2010-11-04 11:03:57Z sven.bingert $
 !
-!  This module provide a way for users to specify custom
-!  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
+!  This module solves for a viscously diffusive disk according to
+!  the alpha-formalism, also adding photoevaporation. It is a
+!  one-dimensional evolutionary model, that evolves the disk over
+!  its multimillion year lifetime.
 !
-!  The module provides a set of standard hooks into the Pencil-Code and
-!  currently allows the following customizations:
-!
-!  Description                                     | Relevant function call
-!  ---------------------------------------------------------------------------
-!  Special variable registration                   | register_special
-!    (pre parameter read)                          |
-!  Special variable initialization                 | initialize_special
-!    (post parameter read)                         |
-!  Special variable finalization                   | finalize_special
-!    (deallocation, etc.)                          |
-!                                                  |
-!  Special initial condition                       | init_special
-!   this is called last so may be used to modify   |
-!   the mvar variables declared by this module     |
-!   or optionally modify any of the other f array  |
-!   variables.  The latter, however, should be     |
-!   avoided where ever possible.                   |
-!                                                  |
-!  Special term in the mass (density) equation     | special_calc_density
-!  Special term in the momentum (hydro) equation   | special_calc_hydro
-!  Special term in the entropy equation            | special_calc_entropy
-!  Special term in the induction (magnetic)        | special_calc_magnetic
-!     equation                                     |
-!                                                  |!  Special equation                                | dspecial_dt
-!    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
+!  Details of the 'radiative' model are published in Lyra, Paardekooper, &
+!  Mac Low (2010, ApJ, 715, 68).
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -41,53 +19,13 @@
 ! COMMUNICATED AUXILIARIES 1
 !
 !***************************************************************
-!
-! HOW TO USE THIS FILE
-! --------------------
-!
-! Change the line above to
-!   lspecial = .true.
-! to enable use of special hooks.
-!
-! The rest of this file may be used as a template for your own
-! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the
-! features you want to use.
-!
-! Save the file with a meaningful name, eg. geo_kws.f90 and place
-! it in the $PENCIL_HOME/src/special directory.  This path has
-! been created to allow users ot optionally check their contributions
-! in to the Pencil-Code SVN repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or
-! may require some assistance from one of the main Pencil-Code team.
-!
-! To use your additional physics code edit the Makefile.local in
-! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module
-! selections to say something like:
-!
-!   SPECIAL=special/geo_kws
-!
-! Where geo_kws it replaced by the filename of your new module
-! upto and not including the .f90
-!
-!
-!********************************************************************
-!
-!  This code solves for a viscously diffusive disk according to
-!  the alpha-formalism, also adding photoevaporation. It is a
-!  one-dimensional evolutionary model, that evolves the disk over
-!  its multimillion year lifetime. Details of the model are published
-!  in Lyra, Paardekooper, & Mac Low (2010, ApJ, 715, 68).
-!
-!*********************************************************************
 module Special
 !
   use Cdata
   use Cparam
+  use Deriv
   use Messages, only: svn_id, fatal_error
   use Sub, only: keep_compiler_quiet
-  use Deriv
 !
   implicit none
 !
@@ -95,7 +33,7 @@ module Special
 !
 !  Code constants
 !
-  real :: msun_cgs, mearth_cgs, au_cgs, au1_cgs
+  real :: msun_cgs, mearth_cgs, au_cgs, au1_cgs, kB_cgs, munit_cgs
   real :: GNewton_cgs, yr_cgs, myr
 !
 !  These are the needed internal "pencils".
@@ -104,13 +42,23 @@ module Special
   real, dimension(nx) :: c1, c2, c3
   real, dimension(nx) :: rr, rr1
   real, dimension(nx) :: swind
-  real :: cprime
+  real, dimension(nx) :: nut_powerlaw
 !
 !  Shortcuts
 !
   real :: one_over_three_pi
 !
-!  Switchables
+!  Switchables for simplified Hayashi (1981) temperature model.
+!
+  real    :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
+  real    :: plaw_temperature=0.5, temperature0=280.0
+  real    :: mumol=2.34
+!
+!  Switchables for Gaussian initial profile.
+!
+  real    :: r0_gaussian=1.0, width_gaussian=1.0
+!
+!  Switchables for radiative disk model.
 !
   real    :: temperature_background=10.! Background temperature of disk
   real    :: temperature_precision=0.1 ! Newton-Raphson iteration precision
@@ -128,37 +76,40 @@ module Special
                                        !   the temperature table has min and max
                                        !   in a range slightly bigger than the
                                        !   simulation variable.
-  real    :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
-  real    :: plaw_temperature=0.5, temperature0=280.0
+  real    :: cprime
 !
   character (len=labellen), dimension(ninit) :: initsigma='nothing'
   character (len=labellen), dimension(ninit) :: inittmid='nothing'
+  character (len=labellen) :: temperature_model='radiative'
 !
   namelist /special_init_pars/ &
       initsigma, mdot_input, plaw_density, sigma0, alpha, mwind_input, &
-      inittmid, plaw_r0, plaw_temperature, temperature0, &
+      inittmid, plaw_r0, plaw_temperature, temperature0, mumol, &
+      r0_gaussian, width_gaussian, temperature_model, &
       temperature_background, temperature_precision, nsigma_table, &
       sigma_middle, sigma_floor, tmid_table_buffer
 !
-  namelist /special_run_pars/ lwind
+  namelist /special_run_pars/ &
+      lwind
 !
   real, dimension(:)  , allocatable :: sigma_table, lnsigma_table
   real, dimension(:,:), allocatable :: tmid1_table, tmid2_table
 !
-! Declare index of new variables in f array. Surface density, midplane
-! temperature, and mass accretion rate.
+!  Declare index of new variables in f array. Surface density, midplane
+!  temperature, and mass accretion rate.
 !
   integer :: isigma=0, itmid=0, imdot=0
 !
-! Diagnostic variables (needs to be consistent with reset list below).
+!  Diagnostic variables (needs to be consistent with reset list below).
 !
    integer :: idiag_dtyear=0, idiag_sigmam=0
    integer :: idiag_sigmamin=0, idiag_sigmamax=0, idiag_tmyr=0
+   integer :: idiag_sigmamx=0
    integer :: maxit=1000
 !
    interface sigma_to_mdot
-      module procedure sigma_to_mdot_mn
-      module procedure sigma_to_mdot_pt
+     module procedure sigma_to_mdot_mn
+     module procedure sigma_to_mdot_pt
    endinterface
 !
   contains
@@ -168,11 +119,14 @@ module Special
 !  Set up indices for variables in special modules.
 !
 !  6-oct-03/tony: coded
+!  01-aug-11/wlad: adapted
 !
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-           "$Id: nospecial.f90 15287 2010-11-04 11:03:57Z sven.bingert $")
+          "$Id: nospecial.f90 15287 2010-11-04 11:03:57Z sven.bingert $")
+!
+!  Register variables needed for alpha disk.
 !
       call farray_register_pde('sigma',isigma)
       call farray_register_auxiliary('mdot',imdot,communicated=.true.)
@@ -209,6 +163,8 @@ module Special
       AU_cgs               = 1.49d13    !cm
       yr_cgs               = 31556926.  !s
       GNewton_cgs          = 6.67d-8
+      kB_cgs               = 1.380649d-16 !erg/K
+      munit_cgs            = 1.660538d-30 ! g
 !
 !  Some shortcuts
 !
@@ -221,14 +177,18 @@ module Special
       rr=x(l1:l2)
       rr1=1./rr
 !
+!  Initializations that depend on the temperature model.
+!
+      select case (temperature_model)
+!
+      case ('Hayashi')
+!
+      case ('radiative')
+!
 !  Get the coefficients of Papaloizou & Terquem, to transform to and
 !  from surface density and mass accretion rate.
 !
-      call get_coeff(alpha)
-!
-!  Also set the wind profile.
-!
-      call get_wind()
+        call get_coeff(alpha)
 !
 !  The temperature has a one-to-one correlation with density and radius,
 !  for a particular set of (alpha, background_temperature). This is
@@ -238,14 +198,20 @@ module Special
 !  the memory, and interpolate between density values in runtime. Here
 !  we allocate the needed variables for these memory-stored look-up tables.
 !
-      allocate(sigma_table  (nsigma_table))
-      allocate(lnsigma_table(nsigma_table))
-      allocate(tmid1_table  (nsigma_table,nx))
-      allocate(tmid2_table  (nsigma_table,nx))
+        allocate(sigma_table  (nsigma_table))
+        allocate(lnsigma_table(nsigma_table))
+        allocate(tmid1_table  (nsigma_table,nx))
+        allocate(tmid2_table  (nsigma_table,nx))
+!
+      endselect
+!
+!  Set the wind profile.
+!
+      call get_wind()
 !
 !  Some variables need be re-initialized in runtime before the time loop.
 !
-      if (.not.lstarting) call init_special(f)
+      if (.not.lstarting) call init_special(f,lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -255,6 +221,7 @@ module Special
 !  called by run.f90   together with lstarting=.false.  before exiting.
 !
 !  14-aug-2011/Bourdin.KIS: coded
+!  01-aug-11/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -262,11 +229,19 @@ module Special
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-      deallocate(sigma_table,lnsigma_table,tmid1_table,tmid2_table)
+!  Deallocate the variables needed for the radiative temperature model.
+!
+      select case (temperature_model)
+!
+      case ('radiative')
+!
+        deallocate(sigma_table,lnsigma_table,tmid1_table,tmid2_table)
+!
+      endselect
 !
     endsubroutine finalize_special
 !***********************************************************************
-    subroutine init_special(f)
+    subroutine init_special(f,lstarting_in)
 !
 !  Initialise special condition; called from start.f90.
 !
@@ -274,49 +249,90 @@ module Special
 !  01-aug-11/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical, optional :: lstarting_in
 !
       integer :: j
+      logical :: lstarting
 !
       intent(inout) :: f
+
+      if (present(lstarting_in)) then
+        lstarting=lstarting_in
+      else
+        lstarting=.true.
+      endif
 !
-!  Initialize gas column density.
+!  Initialize the gas column density.
 !
-      do j=1,ninit
+      if (lstarting) then
 !
-        select case (initsigma(j))
-!        
-        case('nothing')
+        do j=1,ninit
 !
-!  Set the density from the initial mass accretion rate.
+          select case (initsigma(j))
 !
-        case('mdot-constant')
-          do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,imdot) = mdot_input*(msun_cgs/yr_cgs)
-            call mdot_to_sigma(f(l1:l2,m,n,imdot),f(l1:l2,m,n,isigma))
-          enddo;enddo
+!  Do nothing (default).
 !
-!  Power law.
+          case('nothing')
 !
-        case('power-law')
-          do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,isigma) = sigma0*(x(l1:l2)/plaw_r0)**(-plaw_density)
-          enddo;enddo
+!  Gaussian column density.
+!
+          case('gaussian')
+            do m=m1,m2; do n=n1,n2
+              f(l1:l2,m,n,isigma) = &
+                  sigma0*exp(-(x(l1:l2)-r0_gaussian)**2/(2*width_gaussian**2))
+            enddo;enddo
+!
+!  Power law column density profile.
+!
+          case('power-law')
+            do m=m1,m2; do n=n1,n2
+              f(l1:l2,m,n,isigma) = sigma0*(x(l1:l2)/plaw_r0)**(-plaw_density)
+            enddo;enddo
+!
+!  Set the column density from the initial mass accretion rate.
+!
+          case('mdot-constant')
+            do m=m1,m2; do n=n1,n2
+              f(l1:l2,m,n,imdot) = mdot_input*(msun_cgs/yr_cgs)
+              call mdot_to_sigma(f(l1:l2,m,n,imdot),f(l1:l2,m,n,isigma))
+            enddo;enddo
 !
 !  Catch unknown initial conditions.
 !
-        case default
-          call fatal_error('init_special','No such initial condition: '// &
-              initsigma(j))
-        endselect
-      enddo
+          case default
+            call fatal_error('init_special','No such initial condition: '// &
+                initsigma(j))
+          endselect
 !
-!  Initialize gas temperature.
+        enddo
+!
+      endif
+!
+!  Initialize the gas temperature.
 !
       do j=1,ninit
 !
         select case (inittmid(j))
 !
+!  Do nothing (default).
+!
         case('nothing')
+!
+!  Power law temperature profile.
+!
+        case('power-law')
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,itmid) = temperature0* &
+                (x(l1:l2)/plaw_r0)**(-plaw_temperature)
+          enddo;enddo
+!
+!  Store turbulent viscosity for use in evolution equation.
+!
+          nut_powerlaw=alpha*(kB_cgs*f(l1:l2,m1,n1,itmid)/(mumol*munit_cgs))/ &
+              sqrt(GNewton_cgs*msun_cgs/x(l1:l2)**3)
+!
+!  Temperature from radiative model.
+!
         case('radiative')
 !
 !  Pre-calculate temperatures, store in memory.
@@ -328,12 +344,7 @@ module Special
 !
           do m=m1,m2; do n=n1,n2
             call get_tmid(f(l1:l2,m,n,isigma),f(l1:l2,m,n,itmid))
-          enddo;enddo
-        case('power-law')
-          do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,itmid) = temperature0* &
-                (x(l1:l2)/plaw_r0)**(-plaw_temperature)
-          enddo;enddo
+          enddo; enddo
 !
 !  Catch unknown initial conditions.
 !
@@ -341,7 +352,14 @@ module Special
           call fatal_error('init_special','No such initial condition: '// &
               inittmid(j))
         endselect
+!
       enddo
+!
+!  Calculate Mdot from column density (and temperature).
+!
+      do m=m1,m2; do n=n1,n2
+        call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
+      enddo; enddo
 !
       if (lroot) then
         print*,'minmax sigma= ',minval(f(l1:l2,m1:m2,n1:n2,isigma)),&
@@ -366,6 +384,7 @@ module Special
 !  01-aug-11/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+!
       real, dimension (nx) :: omega
       real :: maxsigma,minsigma,dsig
       real :: maxlnsigma,minlnsigma,dlnsig
@@ -473,10 +492,6 @@ module Special
       psigma=f(l1:l2,m,n,isigma)
       pmdot=f(l1:l2,m,n,imdot)
 !
-! sigma*nu = mdot/3pi
-!
-!      call update_bound_mdot(f)
-!
       call grad(f,imdot,tmp_vec)
       gsigmanu = tmp_vec(:,1)*one_over_three_pi
 !
@@ -502,8 +517,8 @@ module Special
 !  06-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      use Diagnostics, only: sum_mn_name,max_mn_name,save_name
-      !use Sub, only: identify_bcs
+      use Diagnostics, only: sum_mn_name, max_mn_name, save_name, &
+          yzsum_mn_name_x 
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -516,12 +531,11 @@ module Special
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-      !if (headtt) call identify_bcs('special',isigma)
 !
-!  Viscous diffusion equation for density.
+!  Viscous diffusion equation for density (e.g. Pringle 1981).
 !
       df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) + &
-           3*del2sigmanu + 4.5*rr1*gsigmanu
+          3*del2sigmanu + 4.5*rr1*gsigmanu
 !
 !  Add the photoevaporative wind.
 !
@@ -530,7 +544,6 @@ module Special
           print*,'dspecial_dt: adding wind'
           print*,'wind minmax: ',minval(swind),maxval(swind)
         endif
-!
         df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) - swind
       endif
 !
@@ -545,10 +558,10 @@ module Special
         print*,'dspecial_dt: max(diffus_special) =', maxval(diffus_special)
       endif
 !
-! SAMPLE DIAGNOSTIC IMPLEMENTATION
+!  Diagnostics.
 !
       if (ldiagnos) then
-        if (idiag_dtyear/=0)   then
+        if (idiag_dtyear/=0) then
           nu=pmdot*one_over_three_pi/psigma
           call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
         endif
@@ -558,12 +571,19 @@ module Special
         if (idiag_sigmamin/=0) call max_mn_name(-psigma,idiag_sigmamin,lneg=.true.)
       endif
 !
+!  1-D averages.
+!
+      if (l1davgfirst) then
+        if (idiag_sigmamx/=0) call yzsum_mn_name_x(psigma,idiag_sigmamx)
+      endif
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -574,16 +594,19 @@ module Special
       endif
 !
 99    return
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
+!
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -594,9 +617,11 @@ module Special
       endif
 !
 99    return
-endsubroutine read_special_run_pars
+!
+    endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=special_run_pars)
@@ -611,14 +636,16 @@ endsubroutine read_special_run_pars
 !
       use Diagnostics, only: parse_name
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+!
+      logical :: lwr
+      integer :: iname, inamex
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
+!  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -627,6 +654,7 @@ endsubroutine read_special_run_pars
         idiag_sigmam=0
         idiag_sigmamax=0
         idiag_sigmamin=0
+        idiag_sigmamx=0
       endif
 !
       do iname=1,nname
@@ -637,11 +665,12 @@ endsubroutine read_special_run_pars
         call parse_name(iname,cname(iname),cform(iname),'sigmamin',idiag_sigmamin)
       enddo
 !
-!  write column where which special variable is stored
+!  Check for those quantities for which we want yz-averages.
 !
-      !if (lwr) then
-      !  write(3,*) 'i_dtyear=',idiag_dtyear
-      !endif
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'sigmamx', &
+            idiag_sigmamx)
+      enddo
 !
     endsubroutine rprint_special
 !***********************************************************************
@@ -684,17 +713,28 @@ endsubroutine read_special_run_pars
       real, intent(in) :: dt_
       real, dimension(nx) :: tmid
 !
+      select case (temperature_model)
+!
+      case ('Hayashi')
+        do m=m1,m2 ; do n=n1,n2
+          call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
+        enddo; enddo
+!
+      case ('radiative')
+!
 !  Set the temperature. If no planet evolution is calculated, this
 !  is just a post-processed quantity. However, if planet evolution
 !  is calculated on the fly, the temperature should be calculated
 !  at this frequency.
 !
-      do m=m1,m2 ; do n=n1,n2
-        call get_tmid(f(l1:l2,m,n,isigma),tmid)
-        f(l1:l2,m,n,itmid)=tmid
+        do m=m1,m2 ; do n=n1,n2
+          call get_tmid(f(l1:l2,m,n,isigma),tmid)
+          f(l1:l2,m,n,itmid)=tmid
 !
-        call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
-      enddo; enddo
+          call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
+        enddo; enddo
+!
+      endselect
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
@@ -736,31 +776,38 @@ endsubroutine read_special_run_pars
       real :: lgmdot,lgmdot1,lgmdot2,lgsigma
       integer :: i
 !
-      !lgsigma_thin =  lgmdot - c1
-      !lgsigma_int  = (lgmdot - c2)/2.0
-      !lgsigma_thick= (lgmdot - c3)/1.1
+      select case (temperature_model)
 !
-      do i=1,nx
+!  Hayashi disk model with power law temperature profile.
 !
-        lgmdot=alog10(mdot(i))
-        lgmdot1 = (3.1*c1(i) - cprime)/2.1
-        lgmdot2 = (2*c3(i)-1.1*c2(i))/0.9
+      case('Hayashi')
+        sigma = mdot/(3*pi*nut_powerlaw)
 !
-        if (lgmdot.le.lgmdot1) then
-          lgsigma = lgmdot - c1(i)
-        else if ((lgmdot.gt.lgmdot1).and.(lgmdot.lt.lgmdot2)) then
-          lgsigma = .5*(lgmdot - c2(i))
-        else if (lgmdot.ge.lgmdot2) then
-          !optimization will take care of this division
-          lgsigma = (lgmdot - c3(i))/1.1
-        else
-          print*,'mdot=',mdot(i)
-          call fatal_error("mdot_to_sigma","")
-        endif
+!  More realistic disk model using look up table for temperatures.
 !
-        sigma(i)=10**lgsigma
+      case('radiative')
+        do i=1,nx
 !
-      enddo
+          lgmdot=alog10(mdot(i))
+          lgmdot1 = (3.1*c1(i) - cprime)/2.1
+          lgmdot2 = (2*c3(i)-1.1*c2(i))/0.9
+!
+          if (lgmdot<=lgmdot1) then
+            lgsigma = lgmdot - c1(i)
+          else if ((lgmdot>lgmdot1).and.(lgmdot<lgmdot2)) then
+            lgsigma = .5*(lgmdot - c2(i))
+          else if (lgmdot>=lgmdot2) then
+            !optimization will take care of this division
+            lgsigma = (lgmdot - c3(i))/1.1
+          else
+            print*,'mdot=',mdot(i)
+            call fatal_error("mdot_to_sigma","")
+          endif
+!
+          sigma(i)=10**lgsigma
+!
+        enddo
+      endselect
 !
     endsubroutine mdot_to_sigma
 !***********************************************************************
@@ -775,32 +822,41 @@ endsubroutine read_special_run_pars
       real :: lgsigma,lgsigma1,lgsigma2,lgmdot
       integer :: i
 !
-      !lgmdot_thin = c1 +     lgsigma
-      !lgmdot_int   =c2 + 2.0*lgsigma
-      !lgmdot_thick= c3 + 1.1*lgsigma
+      select case (temperature_model)
 !
-      do i=1,nx
+!  Hayashi disk model with power law temperature profile.
 !
-        lgsigma1=(c1(i)-cprime)/2.1
-        lgsigma2=(c3(i)-c2(i))/0.9
+      case('Hayashi')
+        mdot = 3*pi*nut_powerlaw*sigma
 !
-        lgsigma=alog10(sigma(i))
+!  More realistic disk model using look up table for temperatures.
 !
-        if (lgsigma.le.lgsigma1) then
-          lgmdot=c1(i) + lgsigma
-        else if ((lgsigma.gt.lgsigma1).and.(lgsigma.lt.lgsigma2)) then
-          lgmdot=c2(i) + 2.0*lgsigma
-        else if (lgsigma.ge.lgsigma2) then
-          lgmdot=c3(i) + 1.1*lgsigma
-        else
-          print*,'sigma=',sigma(i)
-          print*,'all sigmae=',sigma
-          call fatal_error("sigma_to_mdot","")
-        endif
+      case('radiative')
 !
-        mdot(i)=10**lgmdot
+        do i=1,nx
 !
-      enddo
+          lgsigma1=(c1(i)-cprime)/2.1
+          lgsigma2=(c3(i)-c2(i))/0.9
+!
+          lgsigma=alog10(sigma(i))
+!
+          if (lgsigma<=lgsigma1) then
+            lgmdot=c1(i) + lgsigma
+          else if ((lgsigma>lgsigma1).and.(lgsigma<lgsigma2)) then
+            lgmdot=c2(i) + 2.0*lgsigma
+          else if (lgsigma>=lgsigma2) then
+            lgmdot=c3(i) + 1.1*lgsigma
+          else
+            print*,'sigma=',sigma(i)
+            print*,'all sigmae=',sigma
+            call fatal_error("sigma_to_mdot","")
+          endif
+!
+          mdot(i)=10**lgmdot
+!
+        enddo
+!
+      endselect
 !
     endsubroutine sigma_to_mdot_mn
 !***********************************************************************
@@ -815,24 +871,37 @@ endsubroutine read_special_run_pars
       real :: lgsigma,lgsigma1,lgsigma2,lgmdot
       integer :: i
 !
-      lgsigma1=(c1(i)-cprime)/2.1
-      lgsigma2=(c3(i)-c2(i))/0.9
+      select case (temperature_model)
 !
-      lgsigma=alog10(sigma)
+!  Hayashi disk model with power law temperature profile.
 !
-      if (lgsigma.le.lgsigma1) then
-        lgmdot=c1(i) + lgsigma
-      else if ((lgsigma.gt.lgsigma1).and.(lgsigma.lt.lgsigma2)) then
-        lgmdot=c2(i) + 2.0*lgsigma
-      else if (lgsigma.ge.lgsigma2) then
-        lgmdot=c3(i) + 1.1*lgsigma
-      else
-        print*,'sigma=',sigma
-        print*,'all sigmae=',sigma
-        call fatal_error("sigma_to_mdot","")
-      endif
+      case('Hayashi')
+        mdot = 3*pi*nut_powerlaw(i)*sigma
 !
-      mdot=10**lgmdot
+!  More realistic disk model using look up table for temperatures.
+!
+      case('radiative')
+!
+        lgsigma1=(c1(i)-cprime)/2.1
+        lgsigma2=(c3(i)-c2(i))/0.9
+!
+        lgsigma=alog10(sigma)
+!
+        if (lgsigma<=lgsigma1) then
+          lgmdot=c1(i) + lgsigma
+        else if ((lgsigma>lgsigma1).and.(lgsigma<lgsigma2)) then
+          lgmdot=c2(i) + 2.0*lgsigma
+        else if (lgsigma>=lgsigma2) then
+          lgmdot=c3(i) + 1.1*lgsigma
+        else
+          print*,'sigma=',sigma
+          print*,'all sigmae=',sigma
+          call fatal_error("sigma_to_mdot","")
+        endif
+!
+        mdot=10**lgmdot
+!
+      endselect
 !
     endsubroutine sigma_to_mdot_pt
 !***********************************************************************
@@ -854,7 +923,7 @@ endsubroutine read_special_run_pars
       rg=5*AU_cgs       ! this can be better calculated GM/c^2, or similar
 !
       do i=1,nx
-        if (rr(i).le.rg) then
+        if (rr(i)<=rg) then
           swind(i)=0.
         else
           den=2*pi*(rmax-rg)*rr(i)
@@ -905,11 +974,11 @@ endsubroutine read_special_run_pars
 !
         sig=sigma(i)
 !
-        if (sig.gt.maxsigma) then
+        if (sig>maxsigma) then
           print*,'sigma,maxsigma=',sig,maxsigma
           call fatal_error("get_tmid","sigma is greater than the maximum "//&
                "value in the table")
-        else if ((sig.ge.sigma_middle).and.(sig.le.maxsigma)) then
+        else if ((sig>=sigma_middle).and.(sig<=maxsigma)) then
 !
           isig_do = floor((sigma(i) - minsigma)*dsig1) + 1
           isig_up =  isig_do+1
@@ -937,7 +1006,7 @@ endsubroutine read_special_run_pars
           temperature(i) = dsig1*(tmid1_table(isig_do,i)*(sup-sig)+&
                                   tmid1_table(isig_up,i)*(sig-sdo))
 !
-        else if ((sig.ge.sigma_floor).and.(sig.le.sigma_middle)) then
+        else if ((sig>=sigma_floor).and.(sig<=sigma_middle)) then
 !
           lnsig=alog(sig)
           isig_do = floor((lnsig - minlnsigma)*dlnsig1) + 1
@@ -1004,14 +1073,14 @@ endsubroutine read_special_run_pars
 !
       do j=1,maxit
 !
-        if (phileft*phiright.lt.0.) exit
+        if (phileft*phiright<0.) exit
 !
 !  If the above is true, the root was bracketed and we exit
 !  the loop. Else go either reducing x1 or increasing x2 to
 !  bracket the root. Check which (x1 or x2) yields a solution
 !  further from zero.
 !
-        if (abs(phileft) .lt. abs(phiright)) then
+        if (abs(phileft) < abs(phiright)) then
 !
 !        x2./          phi(x1) < phi(x2)
 !      x1 ./           Decrease x1 to bracket the root
@@ -1134,7 +1203,7 @@ endsubroutine read_special_run_pars
 !
 ! Orient the search so that phi(x1)<0
 !
-      if (phileft .lt. 0.) then
+      if (phileft < 0.) then
         xl=x1 ; xh=x2
       else
         xh=x1 ; xl=x2
@@ -1150,7 +1219,7 @@ endsubroutine read_special_run_pars
         bla1=(rts-xh)*dphi-phi
         bla2=(rts-xl)*dphi-phi
 !
-        if ((bla1*bla2 .gt. 0) .or. (abs(2.*phi) .gt. abs(dxold*dphi))) then
+        if ((bla1*bla2 > 0) .or. (abs(2.*phi) > abs(dxold*dphi))) then
 !
           dxold=deltax
           deltax=0.5*(xh-xl)
@@ -1173,7 +1242,7 @@ endsubroutine read_special_run_pars
             goto 999
           endif
         endif
-        if (abs(deltax) .lt. 2*temperature_precision) then
+        if (abs(deltax) < 2*temperature_precision) then
           out=rts
           goto 999
         endif
@@ -1188,7 +1257,7 @@ endsubroutine read_special_run_pars
         endif
 !
         call get_phi(rts,sigma,omega,mdot,phi,dphi,d2phi)
-        if (phi .lt. 0) then
+        if (phi < 0) then
           xl=rts
         else
           xh=rts
@@ -1218,7 +1287,7 @@ endsubroutine read_special_run_pars
 !
       icount=0
 !
-      do while (abs(right-left) .gt. 2*temperature_precision)
+      do while (abs(right-left) > 2*temperature_precision)
 !
         midpoint=.5*(right+left)
 !
@@ -1227,13 +1296,13 @@ endsubroutine read_special_run_pars
 !
 ! initialize the bisecting
 !
-        if (phileft*phimid .lt. 0) then
+        if (phileft*phimid < 0) then
           right=midpoint
         else
           left=midpoint
         endif
         icount=icount+1
-        if (icount .gt. maxit) then
+        if (icount > maxit) then
           print*,'exceed maximum of iterations'
           print*,'left,right=',left,right
           call fatal_error("bisection","")
@@ -1272,28 +1341,28 @@ endsubroutine read_special_run_pars
       if (tt < 0.0) then
         call fatal_error("calc_opacity", "Negative temperature")
       endif
-      if (TT .le. T1) then
+      if (TT <= T1) then
         k=2d-4 ; a=0 ; b= 2.1  ; kk=k*tt**b
-      else if ((TT .gt. T1) .and. (TT .le. T2)) then
+      else if ((TT > T1) .and. (TT <= T2)) then
         k=3.   ; a=0 ; b=-0.01 ; kk=k*tt**b
-      else if ((TT .gt. T2) .and. (TT .le. T3)) then
+      else if ((TT > T2) .and. (TT <= T3)) then
         k=0.01 ; a=0 ; b= 1.1  ; kk=k*tt**b
-      else if ((TT .gt. T3) .and. (TT .le. T4)) then
+      else if ((TT > T3) .and. (TT <= T4)) then
         k=5d4  ; a=0 ; b=-1.5  ; kk=k*tt**b
-      else if ((TT .gt. T4) .and. (TT .le. T5)) then
+      else if ((TT > T4) .and. (TT <= T5)) then
         k=0.1  ; a=0 ;  b= 0.7 ; kk=k*tt**b
-      else if ((TT .gt. T5) .and. (TT .le. T6)) then
+      else if ((TT > T5) .and. (TT <= T6)) then
         k=2d15 ; a=0 ; b=-5.2  ; kk=k*tt**b
-      else if ((TT .gt. T6) .and. (TT .le. T7)) then
+      else if ((TT > T6) .and. (TT <= T7)) then
         k=0.02 ; a=0 ; b= 0.8  ; kk=k*tt**b
-      else if ((TT .gt. T7) .and. (TT .le. T8)) then
+      else if ((TT > T7) .and. (TT <= T8)) then
         logk=81.3010 ; a=1. ; b=-24.
         H=sqrt(TT*cp*(gamma-1))/omega
         rho=sigma/(2*H)
         logkk=logk+a*alog10(rho)+b*alog10(TT)
         kk=10**(logkk)
         k=1d33
-      else if ((TT .gt. T8) .and. (TT .le. T9)) then
+      else if ((TT > T8) .and. (TT <= T9)) then
         k=1d-8 ; a=2./3 ; b=3.
         H=sqrt(TT*cp*(gamma-1))/omega
         rho=sigma/(2*H)
