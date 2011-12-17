@@ -57,9 +57,9 @@ module Special
   real    :: sigma_floor=1d-4          ! Density floor of the simulation, also
                                        !  lower limit of the log table
   logical :: lwind=.true.
-  real    :: mdot_input=1d-7           ! Mass accretion rate in Msun/yr
-  real    :: mwind_input=1d-8          ! Wind mass loss rate in Msun/yr
-  real    :: alpha=1d-2                !
+  real    :: mdot_input=1.0d-7         ! Mass accretion rate in Msun/yr
+  real    :: mwind_input=1.0d-8        ! Wind mass loss rate in Msun/yr
+  real    :: alpha=1.0d-2              !
   integer :: nsigma_table=500          ! Resolution of look-up tables for the
                                        !   solution of temperature.
   real    :: tmid_table_buffer=0.01    ! Small buffer for temperature, so that
@@ -70,7 +70,7 @@ module Special
 !
   real :: plaw_r0=1.0, plaw_density=1.0, sigma0=1700.0
   real :: plaw_temperature=0.5, temperature0=280.0
-  real :: mumol=2.34, nut_constant=0.0
+  real :: mumol=2.34, nut_constant=0.0, lambda_nut=0.0, ampl_nut=0.0
   real :: r0_gaussian=1.0, width_gaussian=1.0
 !
   character (len=labellen), dimension(ninit) :: initsigma='nothing'
@@ -81,6 +81,7 @@ module Special
       initsigma, mdot_input, plaw_density, sigma0, alpha, mwind_input, &
       inittmid, plaw_r0, plaw_temperature, temperature0, mumol, &
       r0_gaussian, width_gaussian, temperature_model, nut_constant, &
+      lambda_nut, ampl_nut, &
       temperature_background, temperature_precision, nsigma_table, &
       sigma_middle, sigma_floor, tmid_table_buffer
 !
@@ -269,6 +270,11 @@ module Special
 !
           case('nothing')
 !
+!  Constant column density.
+!
+          case('constant')
+            f(l1:l2,m1:m2,n1:n2,isigma) = sigma0
+!
 !  Gaussian column density.
 !
           case('gaussian')
@@ -323,7 +329,8 @@ module Special
 !
 !  Store turbulent viscosity for use in evolution equation.
 !
-          nut_global=alpha*(kB_cgs*f(l1:l2,m1,n1,itmid)/(mumol*munit_cgs))/ &
+          nut_global=alpha* &
+              (kB_cgs*f(l1:l2,m1,n1,itmid)/(mumol*munit_cgs))/ &
               sqrt(GNewton_cgs*msun_cgs/x(l1:l2)**3)
 !
 !  Constant turbulent viscosity (for testing).
@@ -333,6 +340,14 @@ module Special
             f(l1:l2,m,n,itmid) = 0.0
           enddo;enddo
           nut_global=nut_constant
+!
+!  Sinusoidal turbulent viscosity (for testing).
+!
+        case('nut-sinusoidal')
+          do m=m1,m2; do n=n1,n2
+            f(l1:l2,m,n,itmid) = 0.0
+          enddo;enddo
+          nut_global=nut_constant*(1.0+ampl_nut*sin((2*pi/lambda_nut)*x(l1:l2)))
 !
 !  Temperature from radiative model.
 !
