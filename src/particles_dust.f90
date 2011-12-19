@@ -54,6 +54,7 @@ module Particles
   real :: tstart_liftforce_par=0.0
   real :: tstart_brownian_par=0.0
   real :: tstart_collisional_cooling=0.0
+  real :: tstart_sink_par=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
   real :: pdlaw=0.0
@@ -135,7 +136,8 @@ module Particles
       lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, pdlaw, ldragforce_stiff, &
-      ldraglaw_steadystate, tstart_liftforce_par, tstart_brownian_par, &
+      ldraglaw_steadystate, tstart_liftforce_par, &
+      tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, brownian_T0, &
       thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
@@ -165,7 +167,8 @@ module Particles
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
       ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
-      tstart_brownian_par, lbrownian_forces, lenforce_policy, &
+      tstart_brownian_par, tstart_sink_par, &
+      lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
       brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
       ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
@@ -2019,10 +2022,12 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
       endif
-      if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0 .or. &
           idiag_epspmin/=0 .or. idiag_epspmax/=0) &
           lpenc_diagnos(i_epsp)=.true.
+      if (idiag_rhopmxy/=0 .or. idiag_rhopmxz/=0 .or. idiag_rhopmphi/=0) &
+          lpenc_diagnos2d(i_rhop)=.true.
+      if (idiag_npmxy/=0 ) lpenc_diagnos2d(i_np)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -3127,6 +3132,9 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k, ksink, iproc_sink, iproc_sink_send
       integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
       integer, parameter :: itag1=100, itag2=101
+!
+!  Sinkparticle activated at time tstart_sink_par  
+      if (t <= tstart_sink_par) return
 !
       if (lsinkpoint) then
         k=1
