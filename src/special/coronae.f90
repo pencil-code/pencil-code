@@ -1390,7 +1390,7 @@ module Special
       call dot(p%bunit,unit_glnTT,cosbgT)
 !
       if (lfirst.and.ldt) then
-        chi_spitzer=chi_spitzer*cosbgT**2.
+        chi_spitzer=chi_spitzer*abs(cosbgT)
         diffus_chi=diffus_chi + chi_spitzer*dxyz_2
 !
         u_spitzer = 3.5*chi_spitzer*( &
@@ -1422,7 +1422,7 @@ module Special
 !  => chi =  Grad(lnT)^2
 !
       use Diagnostics, only: max_mn_name
-      use Sub, only: dot2,dot,multsv,multmv
+      use Sub, only: dot2,dot,multsv,multmv,unit_vector
       use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -1430,9 +1430,9 @@ module Special
 !
       real, dimension (nx) :: glnT2
       real, dimension (nx) :: tmp,rhs,chi
-      real, dimension (nx,3) :: hhh,tmpv,gflux
+      real, dimension (nx,3) :: hhh,tmpv,gflux,unit_glnTT
       real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: b_1
+      real, dimension (nx) :: b_1,cosbgT
       real, dimension (nx) :: tmpj
       integer :: i,j,k
 !
@@ -1514,10 +1514,18 @@ module Special
         if (n == iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
       endif
 !
+!
+!  for timestep extension multiply with the
+!  cosine between grad T and bunit
+!
+      call unit_vector(p%glnTT,unit_glnTT)
+      call dot(p%bunit,unit_glnTT,cosbgT)
+!
       if (lfirst.and.ldt) then
-        diffus_chi=diffus_chi+gamma*chi*dxyz_2
+        chi = gamma*chi*dxyz_2*abs(cosbgT)
+        diffus_chi=diffus_chi+chi
         if (ldiagnos.and.idiag_dtchi2 /= 0.) then
-          call max_mn_name(gamma*chi*dxyz_2/cdtv,idiag_dtchi2,l_dt=.true.)
+          call max_mn_name(chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
 !
