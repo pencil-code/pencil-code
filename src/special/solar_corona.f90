@@ -46,7 +46,7 @@ module Special
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
   real :: vel_time_offset=0.0, mag_time_offset=0.0
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
-  real :: swamp_diffrho=0.0, swamp_chi=0.0
+  real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
 !
   real, dimension(nx,ny,2) :: A_init
@@ -83,7 +83,7 @@ module Special
        nc_z_max,nc_z_trans_width,nc_lnrho_num_magn,nc_lnrho_trans_width, &
        lnc_density_depend, lnc_intrin_energy_depend, &
        init_time_fade_start, init_time_hcond_fade_start, &
-       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, &
+       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
        vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
 !
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -605,6 +605,12 @@ module Special
         endif
       endif
 !
+      if (swamp_eta > 0.0) then
+        lpenc_requested(i_del2a)=.true.
+        lpenc_requested(i_diva)=.true.
+        lpenc_requested(i_uxb)=.true.
+      endif
+!
       if (hcond1/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
@@ -862,6 +868,8 @@ module Special
 !
       if (lmassflux) call force_solar_wind(df,p)
 !
+      if (swamp_eta > 0.0) call calc_swamp_eta(df,p)
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
@@ -1058,7 +1066,7 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    function get_swamp_fade_fact(height)
+    function get_swamp_fade_fact(height,deriv)
 !
 !   Get height-dependant smooth fading factor for swamp layer at top.
 !
@@ -1066,32 +1074,39 @@ module Special
 !
       real :: get_swamp_fade_fact
       real, intent(in) :: height
+      real, intent(out), optional :: deriv
 !
       real, save :: last_height = -1.0
       real, save :: last_fade_fact = 0.0
-      real :: tau
+      real, save :: last_deriv = 0.0
+      real :: tau, delta_inv
 !
       if (last_height == height) then
         get_swamp_fade_fact = last_fade_fact
       else
+        last_deriv = 0.0
         if (height <= swamp_fade_start) then
           get_swamp_fade_fact = 0.0
         elseif (height >= swamp_fade_end) then
           get_swamp_fade_fact = 1.0
         else
           ! tau is a normalized z, the transition interval is [-0.5, 0.5]:
-          tau = (height-swamp_fade_start) / (swamp_fade_end-swamp_fade_start) - 0.5
+          delta_inv = 1.0 / (swamp_fade_end-swamp_fade_start)
+          tau = (height-swamp_fade_start) * delta_inv - 0.5
           if (tau <= -0.5) then
             get_swamp_fade_fact = 0.0
           elseif (tau >= 0.5) then
             get_swamp_fade_fact = 1.0
           else
             get_swamp_fade_fact = 0.5 + tau * (1.5 - 2.0*tau**2)
+            last_deriv = (1.5 - 6.0*tau**2) * delta_inv
           endif
         endif
         last_height = height
         last_fade_fact = get_swamp_fade_fact
       endif
+!
+      if (present (deriv)) deriv = last_deriv
 !
     endfunction get_swamp_fade_fact
 !***********************************************************************
@@ -1204,6 +1219,26 @@ module Special
       endif
 !
     endsubroutine calc_swamp_temp
+!***********************************************************************
+    subroutine calc_swamp_eta(df,p)
+!
+!   Additional hight-dependant magnetic diffusivity (swamp layer at top).
+!
+!   19-Dec-2011/Bourdin.KIS: coded
+!
+      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real :: swamp_fade_fact, dfade_fact
+!
+      swamp_fade_fact = swamp_eta * get_swamp_fade_fact (z(n), dfade_fact)
+      if (swamp_fade_fact > 0.0) then
+        df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) + p%uxb(:,1) + swamp_fade_fact * p%del2a(:,1)
+        df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) + p%uxb(:,2) + swamp_fade_fact * p%del2a(:,2)
+        df(l1:l2,m,n,iaz) = df(l1:l2,m,n,iaz) + p%uxb(:,3) + swamp_fade_fact * p%del2a(:,3) + swamp_eta * dfade_fact * p%diva
+      endif
+!
+    endsubroutine calc_swamp_eta
 !***********************************************************************
     subroutine update_vel_field (time_offset, times_dat, field_dat, time_l, time_r, Ux_l, Uy_l, Ux_r, Uy_r)
 !
