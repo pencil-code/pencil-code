@@ -2392,7 +2392,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
       endif
 !
     endsubroutine u_dot_grad_vec
@@ -2452,7 +2452,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
       endif
 !
     endsubroutine u_dot_grad_vec_alt
