@@ -283,11 +283,11 @@ module Magnetic
   integer :: idiag_dobrms=0     ! DIAG_DOC: $\left<(\boldsymbol{\omega}-\Bv)^2
                                 ! DIAG_DOC: \right>^{1/2}$
   integer :: idiag_uxbxm=0      ! DIAG_DOC: $\left<u_xB_x\right>$
-  integer :: idiag_uxbym=0      ! DIAG_DOC: $\left<u_xB_y\right>$
-  integer :: idiag_uxbzm=0      ! DIAG_DOC: $\left<u_xB_z\right>$
   integer :: idiag_uybxm=0      ! DIAG_DOC: $\left<u_yB_x\right>$
+  integer :: idiag_uzbxm=0      ! DIAG_DOC: $\left<u_zB_x\right>$
+  integer :: idiag_uxbym=0      ! DIAG_DOC: $\left<u_xB_y\right>$
   integer :: idiag_uybym=0      ! DIAG_DOC: $\left<u_yB_y\right>$
-  integer :: idiag_uybzm=0      ! DIAG_DOC: $\left<u_yB_z\right>$
+  integer :: idiag_uzbym=0      ! DIAG_DOC: $\left<u_zB_y\right>$
   integer :: idiag_uxbzm=0      ! DIAG_DOC: $\left<u_xB_z\right>$
   integer :: idiag_uybzm=0      ! DIAG_DOC: $\left<u_yB_z\right>$
   integer :: idiag_uzbzm=0      ! DIAG_DOC: $\left<u_zB_z\right>$
@@ -6246,7 +6246,9 @@ module Magnetic
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
         idiag_ajm=0; idiag_cosubm=0; idiag_jbm=0; idiag_hjbm=0
         idiag_uam=0; idiag_ubm=0; idiag_dubrms=0; idiag_dobrms=0; idiag_ujm=0
-        idiag_uxbxm=0; idiag_uybym=0; idiag_uzbzm=0
+        idiag_uxbxm=0; idiag_uybxm=0; idiag_uzbxm=0
+        idiag_uxbym=0; idiag_uybym=0; idiag_uzbym=0
+        idiag_uxbzm=0; idiag_uybzm=0; idiag_uzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
