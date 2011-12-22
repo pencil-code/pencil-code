@@ -1099,7 +1099,7 @@ module Magnetic
         if (lfargo_advection.and..not.ladvective_gauge) &
              call fatal_error('initialize_magnetic',&
              'For fargo advection you need the advective gauge. '//&
-             'You may want to switch ladvection_gauge=T in magnetic_run_pars')
+             'You may want to switch ladvective_gauge=T in magnetic_run_pars')
       endif
 !
       call keep_compiler_quiet(lstarting)
@@ -1448,7 +1448,7 @@ module Magnetic
       use Mpicomm, only: stop_it
 !
       lpenc_requested(i_bb)=.true.
-      lpenc_requested(i_uxb)=.true.
+      if (.not.ladvective_gauge) lpenc_requested(i_uxb)=.true.
 !
 !  need uga always for advective gauge.
 !
@@ -1472,7 +1472,7 @@ module Magnetic
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
           lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux) &
           lpenc_requested(i_jj)=.true.
-      if (.not.lweyl_gauge) &
+      if (.not.lweyl_gauge.and.lcartesian_coords) &
           lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_eta_const.or.lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or. &
@@ -2119,7 +2119,8 @@ module Magnetic
           if (lpencil(i_jj)) call curl_mn(p%bij,p%jj)
         else
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
-          call curl_mn(p%bij,p%jj,p%bb)
+          if (.not. lpencil(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
+          call curl_mn(p%bij,p%jj,p%bb)            ! consistency check...
           if (lpencil(i_del2a)) p%del2a=p%graddiva-p%jj
 !           if (lpencil(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
         endif
