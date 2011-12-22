@@ -6,8 +6,6 @@
 !
 ! CPARAM logical, parameter :: lborder_profiles = .true.
 !
-! PENCILS PROVIDED rborder_mn
-!
 !***************************************************************
 module BorderProfiles
 !
@@ -26,6 +24,8 @@ module BorderProfiles
   real, dimension(mx) :: border_prof_x=1.0
   real, dimension(my) :: border_prof_y=1.0
   real, dimension(mz) :: border_prof_z=1.0
+  real, dimension(nx) :: rborder_mn
+  real                :: tborder1=impossible
 !
 ! WL: Ideally,this 4D array f_init should be allocatable, since it 
 !     is only used in specific conditions in the code (only when the 
@@ -152,6 +152,8 @@ module BorderProfiles
           any(border_frac_z/=0)) &
         lborder_quenching=.true.
 !
+      if (tborder/=0.) tborder1=1./tborder
+!
     endsubroutine initialize_border_profiles
 !***********************************************************************
     subroutine request_border_driving(border_var)
@@ -205,15 +207,15 @@ module BorderProfiles
       use Cdata
 !
       if (lborder_driving) then
-        lpenc_requested(i_rborder_mn)=.true.
-        if (lcylindrical_coords.or.lcylinder_in_a_box) then
+        if (tborder==0.) lpenc_requested(i_uu)=.true.
+        if (lcylinder_in_a_box.or.lcylindrical_coords) then
           lpenc_requested(i_rcyl_mn)=.true.
-          lpenc_requested(i_rcyl_mn1)=.true.
-          lpenc_requested(i_phix)=.true.
-          lpenc_requested(i_phiy)=.true.
-        elseif (lspherical_coords.or.lsphere_in_a_box) then
+          if (tborder==0.) then 
+            lpenc_requested(i_phix)=.true.
+            lpenc_requested(i_phiy)=.true.
+          endif
+        elseif (lsphere_in_a_box.or.lspherical_coords) then
           lpenc_requested(i_r_mn)=.true.
-          lpenc_requested(i_r_mn1)=.true.
         else
           lpenc_requested(i_x_mn)=.true.
         endif
@@ -223,19 +225,20 @@ module BorderProfiles
 !***********************************************************************
     subroutine calc_pencils_borderprofiles(f,p)
 !
+!  rborder_mn is an "internal" pencil to BorderProfiles, that does not 
+!  need to be put in the pencil case.
+!
       use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      if (lpencil(i_rborder_mn)) then 
-        if (lcylinder_in_a_box.or.lcylindrical_coords) then
-          p%rborder_mn = p%rcyl_mn
-        elseif (lsphere_in_a_box.or.lspherical_coords) then
-          p%rborder_mn = p%r_mn
-        else
-          p%rborder_mn = p%x_mn
-        endif
+      if (lcylinder_in_a_box.or.lcylindrical_coords) then
+        rborder_mn = p%rcyl_mn
+      elseif (lsphere_in_a_box.or.lspherical_coords) then
+        rborder_mn = p%r_mn
+      else
+        rborder_mn = p%x_mn
       endif
 !
       call keep_compiler_quiet(f)
@@ -353,9 +356,9 @@ module BorderProfiles
       do i=1,nx
         if ( &
             !inner stripe
-             (p%rborder_mn(i)<=r_int_border+2*wborder_int).or.&
+             (rborder_mn(i)<=r_int_border+2*wborder_int).or.&
             !outer stripe
-             (p%rborder_mn(i)>=r_ext_border-2*wborder_ext)) then
+             (rborder_mn(i)>=r_ext_border-2*wborder_ext)) then
 !        
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
@@ -423,12 +426,12 @@ module BorderProfiles
         elseif (lspherical_coords) then
           uphi=p%uu(i,3)
         endif
-        inverse_drive_time = .5*pi_1*uphi/p%rborder_mn(i)
+        inverse_drive_time = .5*pi_1*uphi/rborder_mn(i)
 !
 !  specify tborder as input
 !
       else
-        inverse_drive_time=1./tborder
+        inverse_drive_time=tborder1
       endif
 !
     endsubroutine get_drive_time
