@@ -6,8 +6,6 @@
 !
 ! CPARAM logical, parameter :: lborder_profiles = .false.
 !
-! PENCILS PROVIDED rborder_mn
-!
 !***************************************************************
 module BorderProfiles
 !
@@ -74,8 +72,6 @@ module BorderProfiles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!
-      if (lpencil(i_rborder_mn))  p%rborder_mn=0.
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
