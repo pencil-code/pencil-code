@@ -494,7 +494,7 @@ module Sub
       logical :: ladd1
 !
       intent(in) :: a,b,ladd
-      intent(out) :: c
+      intent(inout) :: c
 !
       if (present(ladd)) then
         ladd1=ladd
@@ -2463,7 +2463,7 @@ module Sub
 !  where M is a second rank matrix.
 !
 !  07-aug-10/dhruba: coded
-! 24-nov-11/dhruba: added upwinding 
+! 24-nov-11/dhruba: added upwinding
 !
       use Deriv, only: der6
       intent(in) :: gradM,f,k
@@ -2493,7 +2493,7 @@ module Sub
 !
 ! The same operation needs to be done to each element
 ! of the matrix ugradM. We assume below that this matrix
-! is symmetric. Otherwise the following should be written. 
+! is symmetric. Otherwise the following should be written.
 !
         ipk=0
         do ipi=1,3
@@ -3153,7 +3153,7 @@ module Sub
         bcast_array(1) = tout
         bcast_array(2) = nout
       endif
-
+!
       call mpibcast_real(bcast_array,nbcast_array)
       tout = bcast_array(1)
       nout = bcast_array(2)
@@ -3199,14 +3199,14 @@ module Sub
 !  make sure tt is always larger than tout.
 !  (otherwise slices are written just to catch up with tt.)
 !
-!  WL: Add possibility that there should be a small threshold in this 
+!  WL: Add possibility that there should be a small threshold in this
 !      comparison. Needed for outputing at the exact tsnap, otherwise
-!      a difference between tsp and tout to machine precision can be 
-!      interpreted as stating that the output is to be done at the next, 
-!      not the current, timestep. 
-! 
-      if (lfirstcall) then 
-        if (.not.loutput_varn_at_exact_tsnap) then 
+!      a difference between tsp and tout to machine precision can be
+!      interpreted as stating that the output is to be done at the next,
+!      not the current, timestep.
+!
+      if (lfirstcall) then
+        if (.not.loutput_varn_at_exact_tsnap) then
           deltat_threshold=0.0
         else
           deltat_threshold=dtmin
@@ -3490,7 +3490,7 @@ module Sub
         kronecker_delta=0.
       endif
 !
-    endfunction 
+    endfunction
 !***********************************************************************
     function poly_1(coef, x)
 !
@@ -6046,14 +6046,14 @@ nameloop: do
 !  Taken from http://nuclear.llnl.gov/CNP/apt/apt/aptvunb.html.
 !
 !  18-oct-11/bing: copied from bb_unitvec_shock in magnetic.f90
-!     
+!
       real, dimension(nx,3) :: bb,bb_hat,bb2
       real, dimension(nx) :: a2,aerr2,bb_len
       integer :: j
       real :: tol
 !
       intent(in) :: bb
-      intent(out) :: bb_hat     
+      intent(out) :: bb_hat
 !
 !  Truncate small components to zero.
 !
