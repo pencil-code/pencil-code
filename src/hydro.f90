@@ -4650,8 +4650,18 @@ module Hydro
       if (.not.lcalc_uumeanxz) then
         call fatal_error("vertical_shear_z2","you need to set lcalc_uumeanxz=T in hydro_run_pars")
       else
-         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
              -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
+      endif
+!
+!  Linear vertical shear profile U_y(z), forcing the y-averaged averaged flow.
+!
+      case ('vertical_shear_linear')
+      if (.not.lcalc_uumeanxz) then
+        call fatal_error("vertical_shear_z2","you need to set lcalc_uumeanxz=T in hydro_run_pars")
+      else
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+            -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*z(n))
       endif
 !
 !  set u_phi=0 below given radius, i.e. enforce a tachocline in
