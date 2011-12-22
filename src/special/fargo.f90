@@ -61,13 +61,16 @@ module Special
   real :: dummy
   logical :: lno_radial_advection=.false.
   logical :: lfargoadvection_as_shift=.false.
+  logical :: lkeplerian_gauge=.false.
+  logical :: lremove_volume_average=.false.
 !
   real, dimension (nxgrid) :: xgrid1
   real :: nygrid1
 !
   namelist /special_init_pars/ dummy
 !   
-  namelist /special_run_pars/ lno_radial_advection, lfargoadvection_as_shift
+  namelist /special_run_pars/ lno_radial_advection, lfargoadvection_as_shift,&
+       lkeplerian_gauge,lremove_volume_average
 !
   integer :: idiag_nshift=0
 !
@@ -272,8 +275,8 @@ module Special
             call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
             tmp2(:,j)=tmp
           enddo
-          tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%aa(:,2)*p%uu(:,2)
-          tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%aa(:,1)*p%uu(:,2)
+          tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%aa(:,2)
+          tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%aa(:,2)
 !
           uuadvec_gaa=tmp2
         endif
@@ -572,7 +575,7 @@ endsubroutine read_special_run_pars
       real, dimension (nx) :: uphi
       integer :: nnghost
 !
-!  Just needs to the calculated at the first sub-timestep
+!  Just needs to calculate at the first sub-timestep
 !
       if (lfargo_advection.and.lfirst) then
 !
@@ -601,6 +604,11 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_sub
+!
+      if (lmagnetic) then
+        if (lkeplerian_gauge)       call apply_keplerian_gauge(f)
+        if (lremove_volume_average) call remove_volume_average(f)
+      endif
 !
       if (lfargo_advection) then 
         if (lfargoadvection_as_shift) then
@@ -648,15 +656,15 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ny) :: a_re,a_im
       real, dimension (nx) :: phidot
-      integer :: ivar,nnghost
+      integer :: ivar,ng
       real :: dt_
 !
 !  Pencil uses linear velocity. Fargo will shift based on 
 !  angular velocity. Get phidot from uphi. 
 !
       do n=n1,n2
-        nnghost=n-n1+1
-        phidot=uu_average(:,nnghost)*rcyl_mn1
+        ng=n-n1+1
+        phidot=uu_average(:,ng)*rcyl_mn1
 !
         do ivar=1,mvar
 !
@@ -822,6 +830,128 @@ endsubroutine read_special_run_pars
       enddo
 !
     endsubroutine fractional_shift
+!********************************************************************
+    subroutine apply_keplerian_gauge(f)
+!
+      use Mpicomm , only: mpiallreduce_sum
+      use Deriv, only: der
+!
+!  Substract mean emf from the radial component of the induction
+!  equation. Activated only when large Bz fields and are present
+!  keplerian advection. Due to this u_phi x Bz term, the radial
+!  component of the magnetic potential
+!  develops a divergence that grows linearly in time. Since it is
+!  purely divergent, it is okay analytically. But numerically it leads to
+!  problems if this divergent grows bigger than the curl, which it does
+!  eventually.
+!
+!  This is a cylindrical version of the rtime_phiavg special file.
+!
+!  13-sep-07/wlad: adapted from remove_mean_momenta
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,mz) :: fsum_tmp,glambda_rz
+      real, dimension (mx,my,mz) :: lambda
+      real, dimension (nx) :: glambda_z
+      real                    :: fac
+      integer :: i
+!
+      !if (.not.lupdate_bounds_before_special) then
+      !  print*,'The boundaries have not been updated prior '
+      !  print*,'to calling this subroutine. This may lead '
+      !  print*,'to troubles since it needs derivatives '
+      !  print*,'and integrals, thus properly set ghost zones. '
+      !  print*,'Use lupdate_bounds_before_special=T in '
+      !  print*,'the run_pars of run.in.'
+      !  call fatal_error("apply_keplerian_gauge","")
+      !endif
+!
+      fac = 1.0/nygrid
+!
+! Set boundaries of iax      
+!
+      !call update_ghosts(f,iax)
+!
+! Average over phi - the result is a (nr,nz) array
+!
+      fsum_tmp = 0.
+      do m=m1,m2; do n=1,mz
+        fsum_tmp(:,n) = fsum_tmp(:,n) + fac*f(:,m,n,iax)
+      enddo; enddo
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipz, and different ipy
+!
+      call mpiallreduce_sum(fsum_tmp,glambda_rz,(/mx,mz/),idir=2)
+!
+! Gauge-transform radial A
+!
+      do m=m1,m2
+        f(l1:l2,m,n1:n2,iax) = f(l1:l2,m,n1:n2,iax) - glambda_rz(l1:l2,n1:n2)
+      enddo
+!
+! Integrate in R to get lambda, using N=6 composite Simpson's rule. 
+! Ghost zones in r needed for glambda_r. 
+!
+      do i=l1,l2 ; do n=1,mz
+        lambda(i,:,n) = dx/6.*(   glambda_rz(i-3,n)+glambda_rz(i+3,n)+&
+                               4*(glambda_rz(i-2,n)+glambda_rz(i  ,n)+glambda_rz(i+2,n))+&
+                               2*(glambda_rz(i-1,n)+glambda_rz(i+1,n)))
+      enddo; enddo
+!
+!  Gauge-transform vertical A. Ghost zones in z needed for lambda. 
+!
+      do m=m1,m2; do n=n1,n2
+        call der(lambda,glambda_z,3)
+        f(l1:l2,m,n,iaz) = f(l1:l2,m,n,iaz) - glambda_z
+      enddo; enddo
+!
+    endsubroutine apply_keplerian_gauge
+!********************************************************************
+    subroutine remove_volume_average(f)
+!
+      use Mpicomm , only: mpiallreduce_sum
+!
+!  Substract mean emf from the radial component of the induction
+!  equation. Activated only when large Bz fields and are present
+!  keplerian advection. Due to this u_phi x Bz term, the radial
+!  component of the magnetic potential
+!  develops a divergence that grows linearly in time. Since it is
+!  purely divergent, it is okay analytically. But numerically it leads to
+!  problems if this divergent grows bigger than the curl, which it does
+!  eventually.
+!
+!  This is a cylindrical version of the rtime_phiavg special file.
+!
+!  13-sep-07/wlad: adapted from remove_mean_momenta
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real :: fsum_tmp,mean_ax,fac
+      integer :: i
+!
+      fac = 1.0/nwgrid
+!
+! Set boundaries of iax      
+!
+      !call update_ghosts(f,iax)
+!
+! Average over phi - the result is a (nr,nz) array
+!
+      fsum_tmp = 0.
+      do m=m1,m2; do n=n1,n2 ; do i=l1,l2
+        fsum_tmp = fsum_tmp + fac*f(i,m,n,iax)
+      enddo; enddo; enddo
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipz, and different ipy
+!
+      call mpiallreduce_sum(fsum_tmp,mean_ax)
+!
+! Gauge-transform radial A
+!
+      f(l1:l2,m1:m2,n1:n2,iax) = f(l1:l2,m1:m2,n1:n2,iax) - mean_ax 
+!
+    endsubroutine remove_volume_average
 !********************************************************************
 !
 !********************************************************************
