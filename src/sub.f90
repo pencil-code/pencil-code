@@ -2062,9 +2062,9 @@ module Sub
 !  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom .
 !
       if (lcylindrical_coords) then
-         do i=1,3
-            d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
-         enddo
+        do i=1,3
+          d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
+        enddo
       endif
 !
 !  Calculate b_i,j = eps_ikl A_l,kj, as well as optionally,
