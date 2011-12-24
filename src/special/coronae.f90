@@ -1437,7 +1437,7 @@ module Special
       integer :: i,j,k
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       b_1=1./(sqrt(p%b2)+tini)
 !
@@ -1549,7 +1549,7 @@ module Special
       integer :: i
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       call dot2(p%glnTT,glnTT2)
       call dot(p%glnrho,p%glnTT,glnr_glnT)
@@ -3509,7 +3509,7 @@ module Special
       integer :: i,j,k
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (headtt) print*,'special/calc_heatcond_chiconst',hcond1
 !
