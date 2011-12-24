@@ -5036,10 +5036,10 @@ module Boundcond
 !
         call get_shared_variable('FtopKtop',FtopKtop,ierr)
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-             "there was a problem when getting FtopKtop")
-      call get_shared_variable('Ftop',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting Ftop")
+            "there was a problem when getting FtopKtop")
+        call get_shared_variable('Ftop',Ftop,ierr)
+        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+            "there was a problem when getting Ftop")
 !
         if (headtt) print*,'bc_ss_flux_x: Ftop=',Ftop
         if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
