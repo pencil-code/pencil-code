@@ -816,8 +816,7 @@ module Entropy
       real :: fradtop
       integer :: j
 !
-      intent(inout) :: f,p
-      intent(out) :: df
+      intent(inout) :: f,p,df
 !
 ! Initialization of thdiff in the declaration the
 ! variable gets the SAVE attribute,
@@ -1033,7 +1032,7 @@ module Entropy
       real, dimension (nx) :: thdiff, g2, gshockgTT, gshockglnTT
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (headtt) print*, 'calc_heatcond_shock: chi_shock=', chi_shock
 !
@@ -1151,7 +1150,7 @@ module Entropy
 !  Initialize
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (headtt) print*,'enter calc_heat_cool', rcool, wcool, cool, cs20
 !
