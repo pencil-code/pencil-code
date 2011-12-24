@@ -3581,7 +3581,7 @@ module Initcond
       integer :: i
 !
       intent(in)  :: ampl,i1,i2
-      intent(out) :: f
+      intent(inout) :: f
 !
 !  The default is noise in the range r_int < r < r_ext, but the user
 !  is allowed to use a different range by initializing the variables
