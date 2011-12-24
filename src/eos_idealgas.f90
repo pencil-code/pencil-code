@@ -2099,7 +2099,7 @@ module EquationOfState
 !  we have the nonconstant rho_xy*chi in tmp_xy.
 !
         if (lheatc_chiconst) then
-          tmp_xy=Ftop/(rho_xy*chi*cs2_xy)
+          tmp_xy=Ftop/(exp(lnrho_xy)*chi*cs2_xy)
         else
           tmp_xy=FtopKtop/cs2_xy
         endif
