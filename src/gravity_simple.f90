@@ -546,7 +546,7 @@ module Gravity
       integer :: k
 !
       intent(in) :: f,p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Add gravity acceleration on gas.
 !
