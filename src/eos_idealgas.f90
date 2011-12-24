@@ -1684,7 +1684,7 @@ module EquationOfState
       case (ipp_ss)
         pp_=var1
         ss_=var2
-        lnrho_=log(pp)/gamma-ss/cp
+        lnrho_=log(pp_)/gamma-ss_/cp
         TT_=pp_/((gamma_m1)*cv*exp(lnrho_))
         cs2_=cp*gamma_m1*TT_
       case default
