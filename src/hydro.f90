@@ -2952,7 +2952,7 @@ module Hydro
       type (pencil_case) :: p
       real :: c2,s2,Om2
 !
-      intent(in) :: p 
+      intent(in) :: p
       intent(inout) :: df
 !
 !  info about coriolis_spherical term
