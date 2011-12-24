@@ -1175,6 +1175,7 @@ module Entropy
         else
           call fatal_error("calc_heat_cool", &
               "opacity not yet implemented for 3D")
+          tau = 0.  ! to avoid compiler warnings
         endif
 !
 !  Analytical gray description of Hubeny (1990)
