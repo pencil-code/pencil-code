@@ -91,7 +91,7 @@ module InitialCondition
 ! For the magnetic field
 !
   logical :: ladd_field=.true.
-  character (len=labellen) :: initcond_aa='plasma-beta'
+  character (len=labellen) :: initcond_aa=''
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/)
   real :: rmode_mag=4.,zmode_mag=16.,amplbb=1.
   real :: rm_int=0.0,rm_ext=impossible
