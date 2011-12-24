@@ -5126,6 +5126,9 @@ module Boundcond
           'Could not allocate memory for exp_fact')
       allocate(tmp_re(nx,ny),stat=stat)
       if (stat>0) call fatal_error('bc_del2zero', &
+          'Could not allocate memory for tmp_re')
+      allocate(tmp_im(nx,ny),stat=stat)
+      if (stat>0) call fatal_error('bc_del2zero', &
           'Could not allocate memory for tmp_im')
 !
 !  Get local wave numbers
