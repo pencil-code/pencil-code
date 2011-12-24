@@ -3337,7 +3337,6 @@ module Initcond
         if (lroot) print*,'posnoise_vect: ampl=0 for i1,i2=',i1,i2
       else
         if ((ip<=8).and.lroot) print*,'posnoise_vect: i1,i2=',i1,i2
-          if (lroot) print*,'posnoise_vect: variable i=',i
         do n=1,mz; do m=1,my
           do i=i1,i2
             call random_number_wrapper(tmp)
