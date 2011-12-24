@@ -2495,7 +2495,6 @@ module Hydro
       real, dimension (mx,my,3) :: tempxy
       real, dimension (mx,mz,3) :: tempxz
 !
-!     intent(in) :: f
       intent(inout) :: f
 !
 !  possibility of setting interior boundary conditions
@@ -2848,7 +2847,7 @@ module Hydro
 !
 !  30-oct-09/MR: outsourced, parameter velind added
 !
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
 !
@@ -2919,7 +2918,7 @@ module Hydro
 !
 !  09-aug-10/GG:
 !
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
 !
@@ -2952,6 +2951,9 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: c2,s2,Om2
+!
+      intent(in) :: p 
+      intent(inout) :: df
 !
 !  info about coriolis_spherical term
 !
