@@ -1168,8 +1168,7 @@ module Density
       integer :: isoth
 !
       intent(in)    :: mpoly,zint,zbot,zblend,isoth
-      intent(out)   :: f
-      intent(inout) :: cs2int,lnrhoint
+      intent(inout) :: cs2int,lnrhoint,f
 !
       stp = step(z,zblend,widthlnrho(1))
       do n=n1,n2; do m=m1,m2
