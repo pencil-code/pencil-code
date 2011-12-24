@@ -790,7 +790,7 @@ module Initcond
         om_all(2:nr+1)=om_nr
         om_all(nr+2)=omegao
         om_diff=0.
-        om_diff=om_all(1:nr+1)-om_all(2:nr+2) ! difference in omega from ring to ring
+        om_diff(1:nr+1)=om_all(1:nr+1)-om_all(2:nr+2) ! difference in omega from ring to ring
         omx(l1:l2)=omegai
         do k=1,nr+1
           if (k==1) then
