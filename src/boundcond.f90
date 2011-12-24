@@ -7002,11 +7002,9 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
-      real, dimension (nxgrid) :: fft_az_r,fft_az_i,A_r,A_i,kx,exp_fact
+      real, dimension (nxgrid) :: fft_az_r,fft_az_i,A_r,A_i,exp_fact
       real, dimension (nxgrid) :: iay_global
       integer :: i,j,ipos,dir
-!
-      kx = abs(kx_fft(ipx*nx+1:ipx*nx+nx))
 !
       select case (topbot)
 !
@@ -7045,7 +7043,7 @@ module Boundcond
       do i=1,nghost
         if (iproc==0) then
 !
-          exp_fact = exp(-kx*(z(ipos+dir*i)-z(ipos)))
+          exp_fact = exp(-abs(kx_fft)*(z(ipos+dir*i)-z(ipos)))
 !
           A_r = exp_fact*fft_az_r
           A_i = exp_fact*fft_az_i
