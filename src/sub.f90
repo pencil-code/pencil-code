@@ -326,8 +326,8 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      real, dimension (nx) :: a
-      real :: res
+      real, dimension (nx), intent(in) :: a
+      real, intent(inout) :: res
 !
       if (lfirstpoint) then
         res=maxval(a)
