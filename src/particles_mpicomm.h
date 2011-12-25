@@ -3,7 +3,7 @@
 
   public :: initialize_particles_mpicomm, migrate_particles
   public :: output_blocks, input_blocks, load_balance_particles
-  public :: sort_blocks
+  public :: sort_blocks, find_index_by_bisection
 
   public :: nxb, nyb, nzb, nbx, nby, nbz, nbricks, nghostb, mxb, myb, mzb
   public :: l1b, l2b, m1b, m2b, n1b, n2b
@@ -19,5 +19,4 @@
   public :: xref_par, yref_par, zref_par
   public :: lfill_blocks_density, lfill_blocks_velocity
   public :: lfill_blocks_gpotself, lfill_bricks_velocity
-  public :: lreblock_particles_run, it1_loadbalance
-  public :: find_index_by_bisection
+  public :: lreblock_particles_run, it1_loadbalance, lbrick_partition

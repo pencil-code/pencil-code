@@ -46,7 +46,7 @@ module Particles_mpicomm
   integer :: it1_loadbalance=100
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
   logical :: lfill_blocks_gpotself=.false., lfill_bricks_velocity=.false.
-  logical :: lreblock_particles_run=.false.
+  logical :: lreblock_particles_run=.false., lbrick_partition=.false.
 !
   include 'mpif.h'
 !
