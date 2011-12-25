@@ -1667,21 +1667,21 @@ module Particles_mpicomm
       if (lbrick_partition) then
         if (.not. allocated(npart_brick)) allocate(npart_brick(0:nbricks-1))
         if (.not. allocated(npbrick_part)) &
-            allocate(npbrick_part(npart_brick_max))
+            allocate(npbrick_part(0:npart_brick_max-1))
         if (.not. allocated(nproc_foster_brick_part)) &
             allocate(nproc_foster_brick_part(0:nbricks-1))
         if (.not. allocated(iproc_foster_brick_part)) &
-            allocate(iproc_foster_brick_part(npart_brick_max))
+            allocate(iproc_foster_brick_part(0:npart_brick_max-1))
         if (.not. allocated(npart_brick_old)) &
             allocate(npart_brick_old(0:nbricks-1))
         if (.not. allocated(npbrick_part_old)) &
-            allocate(npbrick_part_old(npart_brick_max))
+            allocate(npbrick_part_old(0:npart_brick_max-1))
         if (.not. allocated(iproc_foster_part_old)) &
-            allocate(iproc_foster_part_old(npart_brick_max))
+            allocate(iproc_foster_part_old(0:npart_brick_max-1))
         if (.not. allocated(iproc_grandparent_part)) &
-            allocate(iproc_grandparent_part(npart_brick_max))
+            allocate(iproc_grandparent_part(0:npart_brick_max-1))
         if (.not. allocated(iproc_grandparent_part_old)) &
-            allocate(iproc_grandparent_part_old(npart_brick_max))
+            allocate(iproc_grandparent_part_old(0:npart_brick_max-1))
         npart_brick_old=npart_brick
         npbrick_part_old=npbrick_part
         iproc_foster_part_old=iproc_foster_brick_part
@@ -1689,15 +1689,15 @@ module Particles_mpicomm
         do ibrick=0,nbricks-1
           if (npbrick(ibrick)>npar_target) then
             npart_brick(ibrick)=npbrick(ibrick)/npar_target
-            if (mod(npart_brick(ibrick),npbrick(ibrick)/npar_target)/=0) &
+            if (mod(npbrick(ibrick),npar_target)/=0) &
                 npart_brick(ibrick)=npart_brick(ibrick)+1
-            npbrick(ibrick)=-npart_brick_index
             npbrick_part(npart_brick_index)=-ibrick
             do ibrick_part=1,npart_brick(ibrick)-1
               npbrick_part(npart_brick_index+ibrick_part)=npar_target
             enddo
             npbrick_part(npart_brick_index+npart_brick(ibrick))= &
                 npbrick(ibrick)-(npart_brick(ibrick)-1)*npar_target
+            npbrick(ibrick)=-npart_brick_index
             npart_brick_index=npart_brick_index+npart_brick(ibrick)+1
           else
             npart_brick(ibrick)=1
@@ -1722,11 +1722,11 @@ module Particles_mpicomm
         nproc_foster_brick_part=0
         do while ( (npar_sum<npar_target) .and. (ibrick<nbricks) )
           ibrick_part=0
-          if (npbrick(ibrick)/=0) then
+          if (npbrick(ibrick)>0 .or. npart_brick(ibrick)>1) then
             iproc_parent_block(iblock)=iproc
             ibrick_parent_block(iblock)=ibrick
             iproc_foster_brick(ibrick)=iproc
-            if (npbrick(ibrick)<0) then
+            if (npart_brick(ibrick)>1) then
               npar_sum=npar_sum+npbrick_part(-npbrick(ibrick)+1)
               iproc_foster_brick_part(-npbrick(ibrick)+1)=iproc
               nproc_foster_brick_part(ibrick)=nproc_foster_brick_part(ibrick)+1
@@ -1737,6 +1737,7 @@ module Particles_mpicomm
             endif
             iblock=iblock+1
           endif
+          ibrick=ibrick+1
         enddo
       else
         do while ( (npar_sum<npar_target) .and. (ibrick<nbricks) )
