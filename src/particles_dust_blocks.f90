@@ -91,7 +91,8 @@ module Particles
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
-      np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run
+      np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
+      lbrick_partition
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -105,7 +106,8 @@ module Particles
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
-      np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run
+      np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
+      lbrick_partition
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
