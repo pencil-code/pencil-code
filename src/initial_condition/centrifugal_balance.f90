@@ -87,6 +87,7 @@ module InitialCondition
   real :: radial_percent_smooth=10.0,rshift=0.0
   logical :: lcorrect_selfgravity=.false.
   real :: gravitational_const=0.
+  real :: magnetic_power_law=impossible
 !
 ! For the magnetic field
 !
@@ -114,7 +115,7 @@ module InitialCondition
        llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
        zmode_mag,rmode_mag,rm_int,rm_ext,amplbb,Bz_const, &
-       r0_pot,qgshear,n_pot
+       r0_pot,qgshear,n_pot,magnetic_power_law
 !
   contains
 !***********************************************************************
@@ -464,7 +465,7 @@ module InitialCondition
       use Sub, only: step_scalar, power_law
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: amplbb, pblaw
+      real :: amplbb,pblaw
       real, dimension(nx) :: Aphi, rr, rrcyl
       real, dimension(mx) :: bz,aphi_mx,Breal,pp
       character (len=labellen) :: intlabel
@@ -651,6 +652,17 @@ module InitialCondition
          Breal = sqrt(pp/gamma)/(zmode_mag*2*pi)
          call set_field(f,Breal)
 !
+       case ("lambda_over_Lz_cte") 
+         if (zmode_mag==0) &
+              call fatal_error("initcond_aa","zmode_mag is zero")
+         if (magnetic_power_law/=impossible) then 
+           pblaw=magnetic_power_law
+         else
+           pblaw=1.5+0.5*density_power_law !alfven
+         endif
+         call power_law(Lxyz(3)/(zmode_mag*2*pi),x,pblaw,Breal,r_ref)
+         call set_field(f,Breal)
+!
         case ('','nothing')
 !
 !  Do nothing
@@ -711,6 +723,15 @@ module InitialCondition
       real, dimension (nx,3) :: aa,bb,jj,jxb,jxbr
       real, dimension (nx) :: rr_sph,rr_cyl,rho1
       real, dimension (nx) :: fpres_magnetic
+!
+      if (.not.lspherical_coords) then
+        call fatal_error("correct_lorentz_numerical",&
+            "only implemented for spherical coordinates")
+        if ((B_ext(1)/=0).or.(B_ext(3)/=0)) then
+          call fatal_error("correct_lorentz_numerical",&
+              "only implemented for polar fields")
+        endif
+      endif
 !
       do m=m1,m2
         do n=n1,n2
