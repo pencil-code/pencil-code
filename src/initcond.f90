@@ -4224,7 +4224,7 @@ module Initcond
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: tmp,ztop,zbot
+      real :: tmp,ztop,zbot,dummy=1.
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_lnrho,prof_z
       integer :: i,lend,j
@@ -4238,7 +4238,7 @@ module Initcond
       if (pretend_lnTT) print*,'corona_init: not implemented for pretend_lnTT=T'
 !
       if (lroot) then
-        inquire(IOLENGTH=lend) tmp
+        inquire(IOLENGTH=lend) dummy
         open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
         read (10) prof_lnT
         read (10) prof_z
@@ -4603,7 +4603,7 @@ module Initcond
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: tmp,ztop,zbot
+      real :: tmp,ztop,zbot,dummy=1.
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_z
       real :: tmprho,tmpT,tmpdT,tmpz,dz_step,lnrho_0,rho0
@@ -4624,7 +4624,7 @@ module Initcond
       endif
 !
       if (lroot) then
-        inquire(IOLENGTH=lend) tmp
+        inquire(IOLENGTH=lend) dummy
         open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
         read (10) prof_lnT
         read (10) prof_z
