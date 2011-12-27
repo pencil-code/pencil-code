@@ -1283,9 +1283,9 @@ module EquationOfState
 !
       elseif (psize==mx) then
         if (ldensity_nolog) then
-          lnrho_=log(f(l1:l2,m,n,irho))
+          lnrho_=log(f(:,m,n,irho))
         else
-          lnrho_=f(l1:l2,m,n,ilnrho)
+          lnrho_=f(:,m,n,ilnrho)
         endif
         if (present(ee)) then
           if (pretend_lnTT) then
