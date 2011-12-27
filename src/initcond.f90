@@ -4603,7 +4603,7 @@ module Initcond
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: tmp,ztop,zbot,dummy=1.
+      real :: ztop,zbot,dummy=1.
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_z
       real :: tmprho,tmpT,tmpdT,tmpz,dz_step,lnrho_0,rho0
