@@ -2481,7 +2481,7 @@ module Special
 !
       if (itsub == 3) lstop = file_exists('STOP')
       if (lstop.or.t >= tmax .or. it >= nt.or. &
-          mod(it,isave) == 0.or.dt < dtmin) &
+          mod(it,isave) == 0.or.(dt < dtmin.and.dt /= 0.)) &
           call write_points(level)
 !
     endsubroutine drive3
