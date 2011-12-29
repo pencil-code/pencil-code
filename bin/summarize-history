@@ -35,13 +35,13 @@ my @diff_opts = qw/-s -w78 -a/;    # Options for $diff
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $need_cleanup = 0;
 my ($tmp1,$tmp2,$tmpname1,$tmpname2) = ('fh01', 'fh02');
-my ($full,$debug) = (0,0);
+my ($full,$debug) = (0,0,0);
 
 my $log;
 
 
 (my $progname = $0) =~ s|.*/||;
-my $usage="Usage:  $progname [-f] [<params_file>]
+my $usage="Usage:  $progname [-f|-s] [<params_file>]
   Evaluate <params_file> (default is `$parfile') and print a history
   of changes.
 Options:
@@ -137,7 +137,11 @@ while (@entries) {
     my $difference = `$diff @diff_opts $tmpname2 $tmpname1`;
     # Remove context lines written by some sdiffs:
     $difference =~ s/^[0-9]+(,[0-9]+)?[adc][0-9]+(,[0-9]+)?\s*\n//mg;
-    if ($full || ($difference =~ /^\s*[^#\s]/sm)) {
+    # Ignore changes in "Date" and sumulation time "t=":
+    my $short_diff = $difference;
+    $short_diff =~ s/^\s*(?:\S\s*)*Date:[^\n]*(?:\n|$)//is;
+    $short_diff =~ s/^\s*t\s*=[^\n]*(?:\n|$)//is;
+    if ($full || ($short_diff =~ /^\s*[^#\s]/sm)) {
         print $difference;
         print "$sepline\n";
     }
