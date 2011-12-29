@@ -889,6 +889,7 @@ module EquationOfState
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
+        TT_=exp(lnTT_)
         TT1_=exp(-lnTT_)
         rhs=exp(lnrho_e-lnrho_+1.5*(lnTT_-lnTT_ion)-TT_ion*TT1_)
         rhs=max(rhs,tini)       ! avoid log(0.) below
@@ -1995,11 +1996,9 @@ module EquationOfState
      endsubroutine find_mass
 !***********************************************************************
     subroutine read_Lewis
-
-       real, dimension (mx,my,mz,mfarray) :: f
-
-       call keep_compiler_quiet(f)
-
+!
+! Dummy routine 
+!
     endsubroutine read_Lewis
 !***********************************************************************
 endmodule EquationOfState
