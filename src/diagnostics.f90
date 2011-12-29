@@ -472,7 +472,8 @@ module Diagnostics
           fsum_tmp(isum_count)=vname(iname)
           if (itype_name(iname)==ilabel_sum_weighted .or. &
               itype_name(iname)==ilabel_sum_weighted_sqrt .or. &
-              itype_name(iname)==ilabel_sum_par) then
+              itype_name(iname)==ilabel_sum_par .or. &
+              itype_name(iname)==ilabel_sum_sqrt_par) then
             fweight_tmp(isum_count)=fweight(iname)
             lweight_comm=.true.
           endif
@@ -526,7 +527,10 @@ module Diagnostics
             if (itype_name(iname)==ilabel_sum_par)        &
                 vname(iname)=fsum(isum_count)/fweight(isum_count)
 !
-            if (itype_name(iname)==ilabel_integrate)            &
+            if (itype_name(iname)==ilabel_sum_sqrt_par)        &
+                vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
+!
+            if (itype_name(iname)==ilabel_integrate)      &
                 vname(iname)=fsum(isum_count)
 !
              if (itype_name(iname)==ilabel_surf)          &
