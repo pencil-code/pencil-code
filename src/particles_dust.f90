@@ -580,7 +580,7 @@ module Particles
       endselect
 !
       if (l_shell) then
-        if( k_shell .lt. 0) call fatal_error('initialize_particles','Set k_shell')
+        if ( k_shell < 0) call fatal_error('initialize_particles','Set k_shell')
         call put_shared_variable('uup_shared',uup_shared,ierr)
         call put_shared_variable('vel_call',vel_call,ierr)
         call put_shared_variable('turnover_call',turnover_call,ierr)
@@ -3064,7 +3064,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  particle-particle separation and relative velocity diagnostics
 !
       if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
-        if (t .gt. t_nextcol) call collisions(fp)
+        if (t > t_nextcol) call collisions(fp)
       endif
 !
 !  Clean up (free allocated memory).
@@ -4416,12 +4416,12 @@ k_loop:   do while (.not. (k>npar_loc))
       Kn=mean_free_path_gas/fp(k,iap)
 !
       mass_p=(4.0*pi/3.0)*rhopmat*fp(k,iap)**3
-      if(thermophoretic_eq=='near_continuum') then
+      if (thermophoretic_eq=='near_continuum') then
         phi=-9*pi/cond_ratio
-      elseif(thermophoretic_eq=='transition') then
+      elseif (thermophoretic_eq=='transition') then
         phi=-12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn))&
             /((1.0+3.0*Kn*exp(-Cint/Kn))*(1.0+3.0*Cm*Kn)*(2.0+cond_ratio+2.0*cond_ratio*Ce*Kn))
-      elseif(thermophoretic_eq=='free_molecule') then
+      elseif (thermophoretic_eq=='free_molecule') then
         phi=0.0
       else
         call fatal_error('calc_pencil_rep','No thermoporetic range chosen')

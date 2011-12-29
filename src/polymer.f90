@@ -198,7 +198,7 @@ module Polymer
 !
       select case(poly_algo)
         case('simple')
-          if(lroot) print*, 'poly_algo:no more pencils needed now'
+          if (lroot) print*, 'poly_algo:no more pencils needed now'
         case('cholesky')
           call fatal_error('pencil_criteria_polymer', &
               'poly_algo: cholesky decomposition is not implemented yet')
@@ -438,7 +438,7 @@ module Polymer
 !
 !  polymer diffusion (sometime only for numerical stability)
 !
-      if(eta_poly.ne.0) then
+      if (eta_poly/=0) then
         ipk=0
         do ipi=1,3
           do ipj=ipi,3

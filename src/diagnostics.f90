@@ -1393,6 +1393,7 @@ module Diagnostics
         elseif (present(lint)) then
           itype_name(iname)=ilabel_integrate
         else
+          if (iname<=1) print*, 'AAAAAAAAAAAAA', iname
           itype_name(iname)=ilabel_sum
         endif
 !

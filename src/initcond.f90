@@ -4943,7 +4943,7 @@ module Initcond
              open(19, file=datafile)
            else
              call fatal_error('Bonnor-Ebert Sphere', 'No input file')
-           end if
+           endif
            read(19,*) var1, len_file
            bigr = var1/unit_length
            write (*,*) '(Modified BE-sphere) R = ', var1, 'cm =',&
@@ -4953,7 +4953,7 @@ module Initcond
              r_rho(jj) = var1/unit_length
              lnrho_r(jj) = log(var2/unit_density)
              lnTT_file(jj) = log(var3/unit_temperature)
-           end do
+           enddo
 !
            counter = 0
            do n = n1,n2
@@ -4967,7 +4967,7 @@ module Initcond
                  if (rr_box <= bigr) then
                    do while (r_rho(test+1) <= rr_box)
                       test = test + 1
-                   end do
+                   enddo
                    f(l,m,n,ilnrho) = lnrho_r(test)
                    call eoscalc(ilnrho_lnTT, lnrho_r(test), lnTT_file(test),&
                                 ss=tmp)
@@ -4976,7 +4976,7 @@ module Initcond
                  else
                    do while (r_rho(test+1) <= bigr)
                       test = test + 1
-                   end do
+                   enddo
                    if (rr_box <= temp_trans*bigr) then
                       x_wave = rr_box-bigr
                       wavelength = 2.0*bigr*(temp_trans-1)
@@ -4984,17 +4984,17 @@ module Initcond
                       T_cloud_out_rel0 = 1 + QQQ*(T_cloud_out_rel-1.0)
                    else
                       T_cloud_out_rel0 = T_cloud_out_rel
-                   end if
+                   endif
                    f(l,m,n,ilnrho) = log(exp(lnrho_r(test))/T_cloud_out_rel0)
                    lnTTpoint = log(exp(lnTT_file(test))* &
                        T_cloud_out_rel0*temp_coeff_out)
                    call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), &
                                 lnTTpoint, ss=tmp)
                    f(l,m,n,iss) = tmp
-                 end if
-               end do
-             end do
-           end do
+                 endif
+               enddo
+             enddo
+           enddo
            write (*,*) 'Covers:', counter, '/', &
                        (abs(n1-n2)*abs(m1-m2)*abs(l1-l2)), 'cells'
 !
@@ -5011,7 +5011,7 @@ module Initcond
            else
              write (*,*) datafile
              call fatal_error('Bonnor-Ebert Sphere', 'No input file')
-           end if
+           endif
            read(19,*) var1, len_file, var2
            bigr = var1/unit_length
            lnTTpoint0 = log(var2*temp_coeff/unit_temperature)
@@ -5021,7 +5021,7 @@ module Initcond
              read(19,*) var1, var2
              r_rho(jj) = var1/unit_length
              lnrho_r(jj) = log(var2*dens_coeff/unit_density)
-           end do
+           enddo
            write (*,*) 'Temperature, lnTT = ', lnTTpoint0
 !
            counter = 0
@@ -5037,7 +5037,7 @@ module Initcond
                  if (rr_box <= bigr) then
                    do while (r_rho(test+1) <= rr_box)
                      test = test + 1
-                   end do
+                   enddo
                    f(l,m,n,ilnrho) = lnrho_r(test)
                    call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), lnTTpoint, ss=tmp)
                    f(l,m,n,iss) = tmp
@@ -5045,7 +5045,7 @@ module Initcond
                  else
                    do while (r_rho(test+1) <= bigr)
                      test = test + 1
-                   end do
+                   enddo
                    if (rr_box <= temp_trans*bigr) then
                       x_wave = rr_box-bigr
                       wavelength = 2.0*bigr*(temp_trans-1)
@@ -5053,17 +5053,17 @@ module Initcond
                       T_cloud_out_rel0 = 1 + QQQ*(T_cloud_out_rel-1.0)
                    else
                       T_cloud_out_rel0 = T_cloud_out_rel
-                   end if
+                   endif
                    !WRITE (*,*) 'T_cloud_out_rel:', T_cloud_out_rel0
                    f(l,m,n,ilnrho) = log(exp(lnrho_r(test))/T_cloud_out_rel0)
                    lnTTpoint = log(exp(lnTTpoint0)* &
                        T_cloud_out_rel0*temp_coeff_out)
                    call eoscalc(ilnrho_lnTT, f(l,m,n,ilnrho), lnTTpoint, ss=tmp)
                    f(l,m,n,iss) = tmp
-                 end if
-               end do
-             end do
-           end do
+                 endif
+               enddo
+             enddo
+           enddo
            write (*,*) 'Covers:', counter, '/', &
                        (abs(n1-n2)*abs(m1-m2)*abs(l1-l2)), 'cells'
            write (*,*) (temp_trans*bigr-bigr), wavelength/2.0, 4.0*wavelength/2.0

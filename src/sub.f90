@@ -2489,7 +2489,7 @@ module Sub
 !  Test if Upwind is used.
 !
       if (present(upwind)) lupwind1=upwind
-      if(lupwind1) then
+      if (lupwind1) then
 !
 ! The same operation needs to be done to each element
 ! of the matrix ugradM. We assume below that this matrix
@@ -3484,7 +3484,7 @@ module Sub
       real :: kronecker_delta
       integer :: i,j
 !
-      if (i.eq.j)  then
+      if (i==j)  then
         kronecker_delta = 1.
       else
         kronecker_delta=0.

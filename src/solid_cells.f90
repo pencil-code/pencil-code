@@ -158,14 +158,14 @@ module Solid_Cells
           print*,'nforcepoints=',nforcepoints
           print*,'nlong,nlat=',nlong,nlat
         endif
-      end if
+      endif
       if (ncylinders==0) then
         cylinder_radius(1)=impossible
         cylinder_xpos(1)=impossible
         cylinder_ypos(1)=impossible
         cylinder_zpos(1)=impossible
         cylinder_temp(1)=impossible
-      end if
+      endif
 !
 ! If the plane describing the interface between two processor sub-domains
 ! happens to be inside the solid structure there might be problems. Check
@@ -506,7 +506,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       else
         print*, "Warning: Subroutine fp_nearest_grid not implemented ", &
             "for this objectform."
-      end if
+      endif
 !
 !
 !  Loop over all forcepoints on each object, iobj
@@ -533,7 +533,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           fpx = xobj - robj*sin(longitude)*sin(latitude)
           fpy = yobj - robj*cos(longitude)*sin(latitude)
           fpz = zobj + robj*cos(latitude)
-        end if
+        endif
 !
 !  Find nearest grid point in x-direction
 !
@@ -764,7 +764,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           else
             print*, "Warning: Subroutine dsolid_dt not implemented ", &
                 "for this objectform."
-          end if
+          endif
           do ifp=1,nforcepoints
             iy0=fpnearestgrid(iobj,ifp,2)
             iz0=fpnearestgrid(iobj,ifp,3)
@@ -798,7 +798,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                 else
                   call fatal_error('dsolid_dt','No such objectform!')
                   call keep_compiler_quiet(nvec)
-                end if
+                endif
 !
 ! Find force in x,y and z direction
 !
@@ -826,7 +826,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                       + fp_stress(3,2)*nvec(2) &
                       + fp_stress(3,3)*nvec(3)) * surfaceelement
 !
-                end if
+                endif
 !
 !  Local Nusselt number
 !

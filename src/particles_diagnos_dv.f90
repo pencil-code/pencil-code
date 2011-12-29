@@ -105,7 +105,7 @@ module Particles_diagnos_dv
           print*,'set particle_gridsize/=0 and col_radius/=0'
           call stop_it('')
         endif
-        if ((colspace .gt. 0) .and. (colvel .gt. 0)) then
+        if ((colspace > 0) .and. (colvel > 0)) then
           ncoltypes=npar_species*(npar_species+1)/2
           allocate(coldat(colspace, colvel,ncoltypes))
           allocate(coldat2(colspace, colvel,ncoltypes))
@@ -226,7 +226,7 @@ module Particles_diagnos_dv
 !
               do while (k2/=0)
                 call calc_distance2(fp, k1, k2, distance2)
-                if (distance2 .lt. col_radius2) then
+                if (distance2 < col_radius2) then
                   distance=distance2**(0.5)
 !
 ! we consider (colspace) evenly spaced bands up to col_radius

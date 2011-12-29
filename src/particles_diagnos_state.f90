@@ -197,7 +197,7 @@ module Particles_diagnos_state
 !  execute state change, write state change to file
 !
       if (l_swap) then
-        if (.not. (fp(k,ipss) .lt. 0)) call &
+        if (.not. (fp(k,ipss) < 0)) call &
             data_store_persistence(fp, k, r_new, .false.)
         fp(k,ipss)=r_new
         fp(k,ipst)=t
@@ -215,7 +215,7 @@ module Particles_diagnos_state
         if (idiag_upm/=0) &
             call sum_par_name((/sum((fp(k,ivpx:ivpz)-uup)**2)/),idiag_upm,lsqrt=.true.)
         if (idiag_uzminus/=0) then
-          if (uup(3) .lt. 0) then
+          if (uup(3) < 0) then
             call sum_par_name((/ uup(3) /),idiag_uzminus)
             call sum_par_name((/ 1. /),idiag_uzminuscount)
           else
@@ -224,7 +224,7 @@ module Particles_diagnos_state
           endif
         endif
         if (idiag_uzplus/=0) then
-          if (uup(3) .ge. 0) then
+          if (uup(3) >= 0) then
             call sum_par_name((/ uup(3) /),idiag_uzplus)
             call sum_par_name((/ 1. /),idiag_uzpluscount)
           else
@@ -249,7 +249,7 @@ module Particles_diagnos_state
 !
       select case(state_def)
       case ('velz') !gas z velocity up or down in lab frame (particle settling)
-        if (uup(3) .gt. 0) then
+        if (uup(3) > 0) then
           r_new=2
         else
           r_new=1
@@ -259,9 +259,9 @@ module Particles_diagnos_state
           'state_def: '//trim(state_def))
       endselect
 !
-      if (abs(fp(k, ipss)-r_new) .gt. 0.1) then
+      if (abs(fp(k, ipss)-r_new) > 0.1) then
         l_swap=.true.
-      elseif (abs(fp(k, ipss)-r_new) .le. 0.1) then
+      elseif (abs(fp(k, ipss)-r_new) <= 0.1) then
         l_swap=.false.
       endif
 !
