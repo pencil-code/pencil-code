@@ -690,7 +690,7 @@ module EquationOfState
 !
 !   04-apr-06/tobi: Adapted for this EOS module
 !   27-jan-11/MR: caught zero in calculation of kapparho
-
+!
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -2208,11 +2208,9 @@ module EquationOfState
      endsubroutine find_mass
 !***********************************************************************
     subroutine read_Lewis
-
-       real, dimension (mx,my,mz,mfarray) :: f
-
-       call keep_compiler_quiet(f)
-
+!
+!  Dummy routine
+!
     endsubroutine read_Lewis
 !***********************************************************************
 endmodule EquationOfState
