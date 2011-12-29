@@ -34,7 +34,7 @@ module Particles_radius
   real :: tau_ocean_driving=0.0, tau_ocean_driving1=0.0
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
-  real :: ap1=1.0 
+  real :: ap1=1.0
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   character (len=labellen), dimension(ninit) :: initap='nothing'
@@ -234,7 +234,7 @@ module Particles_radius
             mmin=0.0
             mmax=1.0
             do while (.true.)
-              if ((1.0-exp(-mmax)*(1+mmax))<p) then 
+              if ((1.0-exp(-mmax)*(1+mmax))<p) then
                 mmax=mmax+1.0
               else
                 exit
@@ -353,7 +353,7 @@ module Particles_radius
       integer :: k, ix0, ix
 !
       intent (in) :: f, fp
-      intent (out) :: dfp
+      intent (inout) :: dfp
 !
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
@@ -443,7 +443,7 @@ module Particles_radius
       integer :: k, ix, ix0
 !
       intent (in) :: f, fp
-      intent (out) :: dfp
+      intent (inout) :: dfp
 !
 !  Change in particle radius due to condensation and evaporation.
 !
