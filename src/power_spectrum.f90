@@ -1588,6 +1588,7 @@ endsubroutine pdf
   nVol2d=0.
   spectrum=0.
   spectrum_sum=0.
+  spectrumy_sum=0.
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
