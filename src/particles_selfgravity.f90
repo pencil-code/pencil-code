@@ -243,7 +243,7 @@ module Particles_selfgravity
       logical :: lheader, lnbody, lfirstcall=.true.
 !
       intent (in) :: f, fp
-      intent (out) :: dfp
+      intent (inout) :: dfp
 !
       if (t>=tstart_selfgrav) then
 !
