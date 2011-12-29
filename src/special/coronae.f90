@@ -2591,16 +2591,16 @@ module Special
       integer, dimension(nx,ny) :: k
       real :: rand
 !
-      k(:,:)=0; ipos=0; jpos=0
+      ipos=0; jpos=0
 !
-      where (avoidarr == 0) k(:,:)=1
+      k = abs(avoidarr-1)
 !
 ! Choose and find location of one of them
 !
       call random_number_wrapper(rand)
       kfind=int(rand*sum(k))+1
       count=0
-      do i=1,nx; do j=1,ny
+      do i=kfind/ny,nx; do j=1,ny
         if (k(i,j) == 1) then
           count=count+1
           if (count == kfind) then
