@@ -127,7 +127,7 @@ module EquationOfState
       real, dimension (mx,my,mz), intent(out) :: mu1_full_tmp
 !
       call fatal_error('getmu_array','SHOULD NOT BE CALLED WITH NOEOS')
-
+!
       mu1_full_tmp=0.0
 !
       call keep_compiler_quiet(f)
@@ -243,7 +243,7 @@ module EquationOfState
     endsubroutine getdensity
 !***********************************************************************
     subroutine gettemperature(f,TT_tmp)
-
+!
      real, dimension (mx,my,mz,mfarray), optional :: f
      real, dimension (mx,my,mz), intent(out) :: TT_tmp
 !
@@ -255,7 +255,7 @@ module EquationOfState
     endsubroutine gettemperature
 !***********************************************************************
     subroutine getpressure(pp_tmp)
-
+!
      real, dimension (mx,my,mz), intent(out) :: pp_tmp
 !
      call fatal_error('getpressure','Should not be called with noeos.')
@@ -562,7 +562,7 @@ module EquationOfState
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
-     subroutine get_average_pressure(average_density,average_pressure)
+    subroutine get_average_pressure(average_density,average_pressure)
 !
 !  01-dec-2009/piyali+dhruba: dimmy
 !
@@ -790,7 +790,6 @@ module EquationOfState
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
         enddo
-
 !
 !  top boundary
 !
@@ -869,12 +868,10 @@ module EquationOfState
           f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
                - gamma_m1/gamma*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
         enddo
-
+!
       case default
         call fatal_error('bc_ss_temp_x','invalid argument')
       endselect
-
-
 !
     endsubroutine bc_ss_temp_x
 !***********************************************************************
@@ -928,7 +925,7 @@ module EquationOfState
           f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
                - gamma_m1/gamma*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
         enddo
-
+!
       case default
         call fatal_error('bc_ss_temp_y','invalid argument')
       endselect
@@ -1060,7 +1057,7 @@ module EquationOfState
           f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) +f(:,:,n2-i,iss) &
                                                   -f(:,:,n2+i,iss) +2*i*dz*tmp
         enddo
-
+!
       case default
         call fatal_error('bc_lnrho_temp_z','invalid argument')
       endselect
@@ -1262,7 +1259,7 @@ module EquationOfState
           f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
                + gamma_m1/gamma*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
         enddo
-
+!
       case default
         call fatal_error('bc_ss_stemp_x','invalid argument')
       endselect
@@ -1309,12 +1306,11 @@ module EquationOfState
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
                + gamma_m1/gamma*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
         enddo
-
+!
       case default
         call fatal_error('bc_ss_stemp_y','invalid argument')
       endselect
 !
-
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
     subroutine bc_ss_stemp_z(f,topbot)
@@ -1566,7 +1562,7 @@ module EquationOfState
     case default
       call fatal_error('bc_ss_energy','invalid argument')
     endselect
-
+!
     endsubroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
@@ -1618,66 +1614,65 @@ module EquationOfState
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
     subroutine read_transport_data
-
+!
        real, dimension (mx,my,mz,mfarray) :: f
-
+!
        call keep_compiler_quiet(f)
-
+!
     endsubroutine read_transport_data
 !***********************************************************************
     subroutine write_thermodyn()
-
+!
       real, dimension (mx,my,mz,mfarray) :: f
-
-       call keep_compiler_quiet(f)
-
+!
+      call keep_compiler_quiet(f)
+!
     endsubroutine write_thermodyn
 !***********************************************************************
     subroutine read_thermodyn(input_file)
-
+!
       character (len=*), intent(in) :: input_file
-
+!
       call keep_compiler_quiet(input_file)
-
+!
     endsubroutine read_thermodyn
 !***********************************************************************
     subroutine read_species(input_file)
-
+!
       character (len=*) :: input_file
-
+!
       call keep_compiler_quiet(input_file)
+!
     endsubroutine read_species
 !***********************************************************************
     subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-
+!
       integer, intent(out) :: ind_glob
       integer, intent(inout) :: ind_chem
       character (len=*), intent(in) :: species_name
       logical, intent(out) :: found_specie
-
-         call keep_compiler_quiet(ind_glob)
-         call keep_compiler_quiet(ind_chem)
-         call keep_compiler_quiet(species_name)
-         call keep_compiler_quiet(found_specie)
-
-     endsubroutine find_species_index
+!
+      call keep_compiler_quiet(ind_glob)
+      call keep_compiler_quiet(ind_chem)
+      call keep_compiler_quiet(species_name)
+      call keep_compiler_quiet(found_specie)
+!
+    endsubroutine find_species_index
 !***********************************************************************
-     subroutine find_mass(element_name,MolMass)
-
+    subroutine find_mass(element_name,MolMass)
+!
       character (len=*), intent(in) :: element_name
       real, intent(out) :: MolMass
 !
-       call keep_compiler_quiet(element_name)
-       call keep_compiler_quiet(MolMass)
-
-     endsubroutine find_mass
+      call keep_compiler_quiet(element_name)
+      call keep_compiler_quiet(MolMass)
+!
+    endsubroutine find_mass
 !***********************************************************************
     subroutine read_Lewis
-
-       real, dimension (mx,my,mz,mfarray) :: f
-
-       call keep_compiler_quiet(f)
-
+!
+!  Dummy routine
+!
     endsubroutine read_Lewis
 !***********************************************************************
 endmodule EquationOfState
