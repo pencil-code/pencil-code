@@ -115,6 +115,14 @@ pro precalc_data, i, vars
       varsets[i].Temp = vars.TT[l1:l2,m1:m2,n1:n2] * unit.temperature
     end
   end
+  if (any (strcmp (tags, 'Spitzer_q', /fold_case)) and any (tag_names (run_param) eq "K_SPITZER")) then begin
+    ; Absolute value of the Spitzer heat flux vector q
+    if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
+      varsets[i].Spitzer_q = run_param.K_spitzer * (exp (vars.lnTT[l1:l2,m1:m2,n1:n2]) * unit.temperature) ^ 2.5 * sqrt (dot2 ((grad (exp (vars.lnTT * unit.temperature)))[l1:l2,m1:m2,n1:n2,*]))
+    end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
+      varsets[i].Spitzer_q = run_param.K_spitzer * (vars.TT[l1:l2,m1:m2,n1:n2] * unit.temperature) ^ 2.5 * sqrt (dot2 ((grad (vars.TT * unit.temperature))[l1:l2,m1:m2,n1:n2,*]))
+    end
+  end
   if (any (strcmp (tags, 'ln_rho', /fold_case))) then begin
     ; Natural logarithmic density
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
