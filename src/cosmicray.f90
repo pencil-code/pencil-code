@@ -5,7 +5,7 @@
 !  ZEUS 3D implementation.
 !
 !  this module solves for ln(ecr).  ecr is used for lnecr
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -253,7 +253,7 @@ print*,"init_ecr: initecr = ", initecr
       integer :: j
 !
       intent(in) :: f,p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -316,7 +316,7 @@ print*,"init_ecr: initecr = ", initecr
     subroutine read_cosmicray_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=cosmicray_init_pars,ERR=99, IOSTAT=iostat)
       else
@@ -327,29 +327,29 @@ print*,"init_ecr: initecr = ", initecr
 !***********************************************************************
     subroutine write_cosmicray_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=cosmicray_init_pars)
-
+!
     endsubroutine write_cosmicray_init_pars
 !***********************************************************************
     subroutine read_cosmicray_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=cosmicray_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=cosmicray_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_cosmicray_run_pars
 !***********************************************************************
     subroutine write_cosmicray_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=cosmicray_run_pars)
-
+!
     endsubroutine write_cosmicray_run_pars
 !***********************************************************************
     subroutine rprint_cosmicray(lreset,lwrite)
@@ -467,7 +467,6 @@ print*,"init_ecr: initecr = ", initecr
           print *,"cosmicray: no diffusion"
           stop
       endif
-
 !
 !  calculate unit vector of bb
 !
@@ -524,7 +523,7 @@ print*,"init_ecr: initecr = ", initecr
 !  calculate gecr2 - needed for lnecr form
 !
       call dot2_mn(gecr,gecr2)
-
+!
 !  if variable tensor, add extra terms and add result into decr/dt
 !
       if (lvariable_tensor_diff)then
@@ -565,11 +564,9 @@ print*,"init_ecr: initecr = ", initecr
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
         + Kperp*(del2ecr+gecr2) + (Kpara-Kperp)*tmp
-
+!
       endif
 !
     endsubroutine tensor_diffusion
 !***********************************************************************
-
 endmodule Cosmicray
-
