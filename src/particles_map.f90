@@ -794,7 +794,7 @@ module Particles_map
       integer, dimension (3) :: ineargrid_swap
       integer :: ipar_swap, imn, k, kswap
 !
-      intent (out) :: fp, ineargrid, ipar, dfp
+      intent (inout) :: fp, ineargrid, ipar, dfp
 !
       do imn=1,ny*nz
         if (npar_imn(imn)>=2) then
@@ -1410,7 +1410,7 @@ module Particles_map
                  'sufficient memory for interp_gradTT'
           call fatal_error('interpolate_quantities','')
         endif
-
+!
         do k=k1,k2
           interp_gradTT(k,:)=p%gTT(ineargrid(k,1)-nghost,:)
         enddo
