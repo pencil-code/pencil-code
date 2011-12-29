@@ -220,7 +220,7 @@ module Special
 !
 ! next line commented out temporarily
 !      intent(in)  :: f
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
