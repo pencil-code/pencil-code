@@ -296,7 +296,7 @@ module Pscalar
       integer :: j
 !
       intent(in)  :: f
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -548,9 +548,9 @@ module Pscalar
 !  5-dec-11/MR: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
-
+!
       call keep_compiler_quiet(f)
-
+!
     endsubroutine pscalar_after_boundary
 !***********************************************************************
     subroutine calc_mpscalar
