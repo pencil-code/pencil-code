@@ -2600,7 +2600,7 @@ module Special
       call random_number_wrapper(rand)
       kfind=int(rand*sum(k))+1
       count=0
-      do i=kfind/ny,nx; do j=1,ny
+      do i=1,nx; do j=1,ny
         if (k(i,j) == 1) then
           count=count+1
           if (count == kfind) then
