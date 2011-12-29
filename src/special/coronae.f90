@@ -731,7 +731,8 @@ module Special
       if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
-        if ((lgranulation.and.Bavoid < huge1).or.Bz_flux /= 0.) call set_B2(f)
+        if ((lgranulation.and.Bavoid < huge1.and.t>=t_gran) &
+            .or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
