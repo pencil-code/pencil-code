@@ -40,7 +40,8 @@ module Special
   logical :: luse_timedep_magnetogram=.false.,lwrite_driver=.false.
   logical :: lnc_density_depend=.false.,lnc_intrin_energy_depend=.false.
   integer :: irefz=n1,nglevel=max_gran_levels,cool_type=5
-  real :: massflux=0.,u_add,hcond2=0.,hcond3=0.,init_time=0.,init_time_hcond=0.
+  real :: massflux=0.,u_add
+  real :: K_spitzer=0.,hcond2=0.,hcond3=0.,init_time=0.,init_time_hcond=0.
   real :: init_time_fade_start=0.0, init_time_hcond_fade_start=0.0
   real :: nc_z_max=0.0, nc_z_trans_width=0.0
   real :: nc_lnrho_num_magn=0.0, nc_lnrho_trans_width=0.0
@@ -74,7 +75,7 @@ module Special
 ! run parameters
   namelist /special_run_pars/ &
        tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
-       tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
+       K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
        chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
        b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time,init_time_hcond, &
        lquench,q0,qw,dq,massflux,luse_vel_field,luse_mag_vel_field,prof_type, &
@@ -646,7 +647,7 @@ module Special
         lpenc_requested(i_del2lnTT)=.true.
       endif
 !
-      if (Kgpara/=0.0) then
+      if (K_spitzer/=0.0) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
@@ -737,6 +738,12 @@ module Special
       read (unit, NML=special_run_pars, IOSTAT=ierr)
       if (present (iostat)) iostat = ierr
       if (ierr /= 0) return
+!
+      if (Kgpara /= 0.0) then
+          call warning('calc_heatcond_grad', &
+              'Please use K_spitzer instead of Kgpara')
+          K_spitzer = Kgpara
+      endif
 !
       if (Kgpara2/=0.0) then
         if (K_iso/=0.0) then
@@ -949,7 +956,7 @@ module Special
         if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + chi_hyper2
       endif
 !
-      if (Kgpara/=0.0) call calc_heatcond_tensor(df,p,Kgpara,2.5)
+      if (K_spitzer/=0.0) call calc_heatcond_tensor(df,p,K_spitzer,2.5)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
       if (hcond2/=0.0) call calc_heatcond_glnTT(df,p)
       if (hcond3/=0.0) call calc_heatcond_glnTT_iso(df,p)
