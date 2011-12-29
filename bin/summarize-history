@@ -41,7 +41,7 @@ my $log;
 
 
 (my $progname = $0) =~ s|.*/||;
-my $usage="Usage:  $progname [-f|-s] [<params_file>]
+my $usage="Usage:  $progname [-f] [<params_file>]
   Evaluate <params_file> (default is `$parfile') and print a history
   of changes.
 Options:
