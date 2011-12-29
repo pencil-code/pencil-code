@@ -2519,7 +2519,7 @@ module Entropy
       integer :: i
 !
       intent(inout)  :: f,p
-      intent(out) :: df
+      intent(inout) :: df
 !
       Hmax = 0.0
 !
@@ -3016,7 +3016,7 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2
 !
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Check that chi is ok.
 !
@@ -3103,7 +3103,7 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,thchi
 !
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Check that chi is ok.
 !
@@ -3195,7 +3195,7 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,rhochi
 !
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Check that chi is ok.
 !
@@ -3275,7 +3275,7 @@ module Entropy
 !
       real, dimension (nx) :: thdiff
 !
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Check that chi_hyper3 is ok.
 !
@@ -3305,7 +3305,7 @@ module Entropy
       use Sub, only: del6fj
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
-      real, dimension (mx,my,mz,mvar),intent(out) :: df
+      real, dimension (mx,my,mz,mvar),intent(inout) :: df
 !
       real, dimension (nx) :: thdiff,tmp
 !
@@ -3344,7 +3344,7 @@ module Entropy
       real, dimension (nx) :: thdiff
 !
       intent(in)  :: f
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (headtt) print*, 'calc_heatcond_hyper3: chi_hyper3=', chi_hyper3
 !
@@ -3379,7 +3379,7 @@ module Entropy
       real, dimension (nx) :: thdiff
 !
       intent(in)  :: f
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (headtt) print*, 'calc_heatcond_hyper3: chi_hyper3=', chi_hyper3
 !
@@ -3419,7 +3419,7 @@ module Entropy
       real, dimension (nx) :: thdiff,g2,gshockglnTT
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Check that chi is ok.
 !
@@ -3489,7 +3489,7 @@ module Entropy
       real, dimension (nx) :: hcond
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
 !
@@ -3576,7 +3576,7 @@ module Entropy
       type (pencil_case) :: p
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Calculate variable diffusion coefficients along pencils.
 !
@@ -3732,7 +3732,7 @@ module Entropy
       real, dimension (nx) :: thdiff, chix, g2
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Diffusion of the form
 !      rho*T*Ds/Dt = ... + nab.(K*gradT),
@@ -3829,7 +3829,7 @@ module Entropy
       save :: hcond, glhc, chit_prof, glchit_prof, chit_aniso_prof, glchit_aniso_prof
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Heat conduction / entropy diffusion
 !
@@ -4118,8 +4118,7 @@ module Entropy
       real :: profile_buffer
 !
       intent(in) :: p
-      intent(out) :: df
-      intent(inout) :: Hmax
+      intent(inout) :: Hmax,df
 !
       if (pretend_lnTT) call fatal_error('calc_heat_cool', &
           'not implemented when pretend_lnTT = T')
@@ -4664,7 +4663,7 @@ module Entropy
           B_2   = (/    2.0,     1.5,   2.867,  -0.65,   0.5, 0.0 /)
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (pretend_lnTT) call fatal_error('calc_heat_cool_RTV', &
           'not implemented when pretend_lnTT = T')
@@ -4744,7 +4743,7 @@ module Entropy
       real :: scl
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (pretend_lnTT) call fatal_error('calc_tau_ss_exterior', &
           'not implemented when pretend_lnTT = T')
@@ -4774,7 +4773,7 @@ module Entropy
       type (pencil_case) :: p
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Add heating/cooling to entropy equation.
 !
@@ -5424,7 +5423,7 @@ module Entropy
       real, dimension (nx) :: newton
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz), save :: prof_lnT,prof_z
-      real :: lnTTor
+      real :: lnTTor,dummy=1.
       integer :: i,lend
       type (pencil_case) :: p
 !
@@ -5440,7 +5439,7 @@ module Entropy
 !
       if (it == 1) then
         if (lroot) then
-          inquire(IOLENGTH=lend) lnTTor
+          inquire(IOLENGTH=lend) dummy
           open (10,file=lnT_dat,form='unformatted',status='unknown',recl=lend*prof_nz)
           read (10) prof_lnT
           read (10) prof_z
