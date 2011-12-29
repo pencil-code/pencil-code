@@ -1692,6 +1692,7 @@ module Particles_mpicomm
             if (mod(npbrick(ibrick),npar_target)/=0) &
                 npart_brick(ibrick)=npart_brick(ibrick)+1
             npbrick_part(npart_brick_index)=-ibrick
+            iproc_foster_brick_part(npart_brick_index)=-ibrick
             do ibrick_part=1,npart_brick(ibrick)-1
               npbrick_part(npart_brick_index+ibrick_part)=npar_target
             enddo
@@ -1714,6 +1715,7 @@ module Particles_mpicomm
       nblock_loc_old=nblock_loc
       ibrick=0
       iblock=0
+      nbrick_foster=0
       npar_sum=0
       iproc_foster_brick=-1
       iproc_parent_block=-1
@@ -1737,6 +1739,7 @@ module Particles_mpicomm
             endif
             iblock=iblock+1
           endif
+          if (npart_brick(ibrick)==1) nbrick_foster=nbrick_foster+1
           ibrick=ibrick+1
         enddo
       else
@@ -1751,9 +1754,9 @@ module Particles_mpicomm
           endif
           ibrick=ibrick+1
         enddo
+        nbrick_foster=ibrick
       endif
       nblock_loc=iblock
-      nbrick_foster=ibrick
       npar_brick_taken=npar_sum
 !
 !  Communicate with processors left and right, in increments of one.
@@ -1787,29 +1790,39 @@ module Particles_mpicomm
         nbrick_give=0
         if (npar_requ>0) then
           if (lbrick_partition) then
-            do ibrick=nbrick_foster,nbricks-1
-              if (npbrick(ibrick)>0) then
+            if (iproc==3) print*, 'AAAAA', nbrick_foster, nbricks
+            ibrick=nbrick_foster
+            do while (ibrick<=nbricks-1)
+              if (npart_brick(ibrick)==1) then
                 npar_give=npar_give+npbrick(ibrick)
                 npbrick_give(nbrick_give)=npbrick(ibrick)
+                ibrick_give(nbrick_give)=ibrick
                 nbrick_give=nbrick_give+1
                 iproc_foster_brick(ibrick)=iproc_left
                 nbrick_foster=nbrick_foster+1
                 if (npar_give>npar_requ) exit
-              elseif (npbrick(ibrick)<0 .and. &
-                  nproc_foster_brick_part(ibrick)<npart_brick(ibrick)) then
+                ibrick=ibrick+1
+              elseif (nproc_foster_brick_part(ibrick)<npart_brick(ibrick)) then
+                if (iproc==3) print*, 'QQQQQQ', npart_brick(ibrick), &
+                    nproc_foster_brick_part(ibrick)
                 do ibrick_part= &
-                    -npbrick(ibrick)+nproc_foster_brick_part(ibrick)+1, &
+                    -npbrick(ibrick)+1+nproc_foster_brick_part(ibrick), &
                     -npbrick(ibrick)+npart_brick(ibrick)
+                  print*, 'YYYYYYYY', iproc, di, ibrick_part
                   npar_give=npar_give+npbrick_part(ibrick_part)
                   npbrick_give(nbrick_give)=npbrick_part(ibrick_part)
                   ibrick_give(nbrick_give)=ibrick
                   nbrick_give=nbrick_give+1
                   iproc_foster_brick_part(ibrick_part)=iproc_left
-                  nbrick_foster=nbrick_foster+1
                   nproc_foster_brick_part(ibrick)= &
                       nproc_foster_brick_part(ibrick)+1
-                  if (npar_give>npar_requ) exit
+                  if (nproc_foster_brick_part(ibrick)==npart_brick(ibrick)) &
+                      nbrick_foster=nbrick_foster+1
+                  if (npar_give>=npar_requ) exit  ! do ibrick_part
+                  if (nproc_foster_brick_part(ibrick)==npart_brick(ibrick)) &
+                      ibrick=ibrick+1
                 enddo
+                if (npar_give>=npar_requ) exit  ! do while (ibrick)
               endif
             enddo
           else
@@ -1821,7 +1834,7 @@ module Particles_mpicomm
                 nbrick_give=nbrick_give+1
                 iproc_foster_brick(ibrick)=iproc_left
                 nbrick_foster=nbrick_foster+1
-                if (npar_give>npar_requ) exit
+                if (npar_give>=npar_requ) exit
               endif
             enddo
           endif
