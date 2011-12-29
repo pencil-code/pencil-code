@@ -119,6 +119,7 @@ module Special
   real, dimension(nx,ny) :: vx,vy,w,avoidarr
   real, save :: tsnap_uu=0.
   integer, save :: isnap
+  real :: dt_gran,t_gran
 !
 !  miscellaneous variables
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
@@ -775,13 +776,16 @@ module Special
 !
       if (luse_ext_vel_field) call read_ext_vel_field()
 !
+      if (t>=t_gran) then
+        t_gran = t + dt_gran
 !  Compute photospheric granulation.
-      if (lgranulation .and. (ipz == 0) .and. &
-          (.not.lpencil_check_at_work)) then
-        if (itsub == 1) then
-          call granulation_driver(f)
+
+        if (lgranulation .and. (ipz == 0) .and. &
+            (.not.lpencil_check_at_work)) then
+          if (itsub == 1) then
+            call granulation_driver(f)
+          endif
         endif
-!
       endif
 !
 !  Read time dependent magnetic lower boundary
@@ -2199,6 +2203,10 @@ module Special
       real :: granr,ampl,life_time,ldif=2.
       integer :: xrange,yrange
 !
+! update granule velocities only every second
+      dt_gran = 1./unit_time
+      t_gran = t
+!
 ! Every granule has 6 values associated with it: data(1-6).
 ! These contain,  x-position, y-position,
 !    current amplitude, amplitude at t=t_0, t_0, and life_time.
@@ -2601,14 +2609,14 @@ module Special
       kfind=int(rand*sum(k))+1
       count=0
       do i=1,nx; do j=1,ny
-        if (k(i,j) == 1) then
-          count=count+1
-          if (count == kfind) then
-            ipos=i
-            jpos=j
-            exit
-          endif
+       if (k(i,j) == 1) then
+        count=count+k(i,j)
+        if (count == kfind) then
+          ipos=i
+          jpos=j
+          exit
         endif
+      endif
       enddo; enddo
 !
 ! Create new data for new point
@@ -2726,7 +2734,7 @@ module Special
       real :: dist0,tmp,ampl,granr
       integer :: xrange,yrange
       integer :: xpos,ypos
-!      logical :: loverlapp
+!      logical :: lno_overlap
 !
 ! SVEN: ACHTUNG xrange ist integer aber xrange_arr ist ein Real
 !
@@ -2741,7 +2749,7 @@ module Special
 !
       xpos = int(current%data(1)+ipx*nx)
 !
-!      loverlapp = .false.
+!      lno_overlap = .true.
 !
       do ii=xpos-xrange,xpos+xrange
 !
@@ -2749,7 +2757,7 @@ module Special
         i = 1+mod(ii-1+nxgrid,nxgrid)
 ! Shift to iproc positions
         il = i-ipx*nx
-! Check if there is an overlapp
+! Check if there is an overlap
         if ((il >= 1) .and. (il <= nx)) then
 !
           ypos = int(current%data(2)+ipy*ny)
@@ -2785,7 +2793,7 @@ module Special
                   vx(il,jl)=vv*xdist/dist
                   vy(il,jl)=vv*ydist/dist
                   w(il,jl) =wtmp
-!                  loverlapp = .true.
+!                  lno_overlap = .false.
                 else
                   ! intergranular area
                   vx(il,jl)=vx(il,jl)+vv*xdist/dist
@@ -2799,7 +2807,7 @@ module Special
         endif
       enddo
 !
-! TODO  if (.not.loverlapp.and. t*unit_time > 300) call remove_point
+!      if (lno_overlap.and. t*unit_time > 300) call remove_point
 !
     endsubroutine draw_update
 !***********************************************************************
