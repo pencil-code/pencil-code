@@ -230,7 +230,7 @@ module Chiral
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-
+!
       real, dimension (nx,3,3) :: gXXij_chiral,gYYij_chiral
       real, dimension (nx,3) :: gXX_chiral,gYY_chiral,bbEP,jjEP,jxbEP
       real, dimension (nx) :: bbEP2,jjEP2,jbEP
@@ -245,7 +245,7 @@ module Chiral
 !
       intent(in)  :: p
       intent(inout) :: f
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -282,7 +282,7 @@ module Chiral
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+chiral_diff*del2XX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+chiral_diff*del2YY_chiral
 !
-!  For Euler Potentials, possibility to add Lorentz force 
+!  For Euler Potentials, possibility to add Lorentz force
 !
       if (llorentzforceEP) then
         if (lhydro) then
@@ -345,7 +345,7 @@ module Chiral
       dYY_chiral=(1.-YY_chiral/chiral_fisherK)*YY_chiral*chiral_fishernu
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
-
+!
       case ('nothing')
         if (lroot.and.ip<=5) print*,"chiral_reaction='nothing'"
 !
@@ -485,43 +485,41 @@ module Chiral
     subroutine read_chiral_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=chiral_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=chiral_init_pars,ERR=99)
       endif
-
-
+!
 99    return
     endsubroutine read_chiral_init_pars
 !***********************************************************************
     subroutine write_chiral_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=chiral_init_pars)
-
+!
     endsubroutine write_chiral_init_pars
 !***********************************************************************
     subroutine read_chiral_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=chiral_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=chiral_run_pars,ERR=99)
       endif
-
-
+!
 99    return
     endsubroutine read_chiral_run_pars
 !***********************************************************************
     subroutine write_chiral_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=chiral_run_pars)
-
+!
     endsubroutine write_chiral_run_pars
 !***********************************************************************
     subroutine rprint_chiral(lreset,lwrite)
@@ -642,4 +640,3 @@ module Chiral
     endsubroutine get_slices_chiral
 !***********************************************************************
 endmodule Chiral
-
