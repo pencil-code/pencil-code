@@ -390,7 +390,7 @@ module Poisson
         ikx0 = ipz * nxt
         iky0 = ipy * ny
         l1st = .false.
-      end if
+      endif
 !
 !  Forward transform in xy
 !
@@ -424,7 +424,7 @@ module Poisson
           a1  = a0 * ky_fft(iky0+iy)
         else
           ky2 = kx_fft(iky0+iy)**2
-        end if
+        endif
 !
         do ix = 1, nxt
 !
@@ -432,7 +432,7 @@ module Poisson
             kx2 = (kx_fft(ikx0+ix) + a1)**2
           else
             kx2 = ky_fft(ikx0+ix)**2
-          end if
+          endif
 !
           cz = cmplx(phirt(:,ix), b1t(:,ix))
           call cfftf (nzgrid, cz, wsave)
@@ -440,18 +440,18 @@ module Poisson
             cz = -cz / (kx2 + ky2 + kz2) / nzgrid
           elsewhere
             cz = 0.
-          end where
+          endwhere
           call cfftb (nzgrid, cz, wsave)
 !
           phirt(:,ix) = real(cz)
           b1t(:,ix) = aimag(cz)
 !
-        end do
+        enddo
 !
         call transp_zx(phirt, phi(:,iy,:))
         call transp_zx(b1t, b1(:,iy,:))
 !
-      end do
+      enddo
 !
 !  Inverse transform in xy
 !
@@ -515,7 +515,7 @@ module Poisson
         ikx0 = ipz * nxt
         iky0 = ipy * ny
         l1st = .false.
-      end if
+      endif
 !
 !  Forward transform in xy
 !
@@ -538,13 +538,13 @@ module Poisson
           a1  = a0 * ky_fft(iky0+iy)
         else
           ky2 = kx_fft(iky0+iy)**2
-        end if
+        endif
         do ix = 1, nxt
           if (lshear) then
             kx2 = (kx_fft(ikx0+ix) + a1)**2
           else
             kx2 = ky_fft(ikx0+ix)**2
-          end if
+          endif
           if (kx2 /= 0. .or. ky2 /= 0.) then
             cz(1:nzgrid) = (/cmplx(phirt(:,ix), b1t(:,ix))/)
             cz(nzgrid+1:nzg2) = 0.
@@ -556,14 +556,14 @@ module Poisson
             do iz = 1, nzgrid; do iz1 = 1, nzgrid
               cz(iz) = cz(iz) + cmplx(phirt(iz1,ix), b1t(iz1,ix)) * &
                                 abs(iz - iz1) * dz2h
-            end do; end do
-          end if
+            enddo; enddo
+          endif
           phirt(:,ix) = real(cz(1:nzgrid))
           b1t(:,ix) = aimag(cz(1:nzgrid))
-        end do
+        enddo
         call transp_zx(phirt, phi(:,iy,:))
         call transp_zx(b1t, b1(:,iy,:))
-      end do
+      enddo
 !
 !  Inverse transform in xy
 !
