@@ -387,7 +387,7 @@ module Selfgravity
       type (pencil_case) :: p
 !
       intent(in) :: f,p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  Add self-gravity acceleration on the gas and on the dust.
 !
