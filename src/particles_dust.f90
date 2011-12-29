@@ -2056,7 +2056,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Calculate Particles pencils.
 !  Most basic pencils should come first, as others may depend on them.
-
+!
 !  16-feb-06/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3133,7 +3133,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
       integer, parameter :: itag1=100, itag2=101
 !
-!  Sinkparticle activated at time tstart_sink_par  
+!  Sinkparticle activated at time tstart_sink_par
       if (t <= tstart_sink_par) return
 !
       if (lsinkpoint) then
@@ -3638,7 +3638,7 @@ k_loop:   do while (.not. (k>npar_loc))
                'mean_free_path_gas in the .in files. Stop and check.'
           call fatal_error("calc_draglaw_parameters","")
         endif
-
+!
         if (nzgrid==1) then
           !the sqrt(2pi) factor is inside the mean_free_path_gas constant
           lambda=mean_free_path_gas * sqrt(p%cs2(inx0))*rho0/(p%rho(inx0)*OO*cs0)
@@ -4396,12 +4396,12 @@ k_loop:   do while (.not. (k>npar_loc))
       elseif (ivis=='rho-nu-const') then
         mu=nu
       elseif (ivis=='sqrtrho-nu-const') then
-        mu=mu*sqrt(interp_rho(k))
+        mu=nu*sqrt(interp_rho(k))
       else
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
       Cint=0.5
-
+!
       if (interp%lTT) then
         TT=interp_TT(k)
       else
