@@ -2033,7 +2033,6 @@ module Special
       real, dimension (:,:), allocatable :: Ax,Ay
       real, dimension (:,:), allocatable :: Al_i,Al_r,Ar_i,Ar_r
       real, dimension (:,:), allocatable, save :: Axl,Axr,Ayl,Ayr
-!
       real, dimension (:,:), allocatable :: kx,ky,k2
 !
       real :: mu0_SI,u_b,time_SI
@@ -2045,7 +2044,7 @@ module Special
       stat = 0
       if (.not.allocated(Axl))  allocate(Axl(nxgrid,nygrid),stat=ierr)
       if (.not.allocated(Axr))  allocate(Axr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      if (.not.allocated(Ayl))  allocate(Ayl(nxgrid,nygrid),stat=ierr);  ierr=max(stat,ierr)
+      if (.not.allocated(Ayl))  allocate(Ayl(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
       if (.not.allocated(Ayr))  allocate(Ayr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
       allocate(Ax(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)  
       allocate(Ay(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)
@@ -2065,10 +2064,6 @@ module Special
       idx2 = min(2,nxgrid)
       idy2 = min(2,nygrid)
 !
-      kx =spread(kx_fft,2,nygrid)
-      ky =spread(ky_fft,1,nxgrid)
-      k2 = kx*kx + ky*ky
-!
       if (tr+delta_t <= time_SI) then
 !
         allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
@@ -2082,6 +2077,10 @@ module Special
         allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+!
+        kx =spread(kx_fft,2,nygrid)
+        ky =spread(ky_fft,1,nxgrid)
+        k2 = kx*kx + ky*ky
 !
         if (ierr > 0) call fatal_error('bc_force_aa_time', &
             'Could not allocate memory for all variables, please check')
