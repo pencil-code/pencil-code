@@ -2028,9 +2028,11 @@ module Special
       integer :: ierr,lend,i,idx2,idy2,stat
       logical :: ex
 !
-      real, dimension (:,:), allocatable, save :: Bz0l,Bz0r
-      real, dimension (:,:), allocatable :: Bz0_i,Bz0_r
-      real, dimension (:,:), allocatable :: A_i,A_r
+      real, dimension (:,:), allocatable :: Bz0l,Bz0r
+      real, dimension (:,:), allocatable :: Bz0l_i,Bz0r_i
+      real, dimension (:,:), allocatable :: Ax,Ay
+      real, dimension (:,:), allocatable :: Al_i,Al_r,Ar_i,Ar_r
+      real, dimension (:,:), allocatable, save :: Axl,Axr,Ayl,Ayr
 !
       real, dimension (:,:), allocatable :: kx,ky,k2
 !
@@ -2041,16 +2043,12 @@ module Special
 !
       ierr = 0
       stat = 0
-      if (.not.allocated(Bz0l))  allocate(Bz0l(nxgrid,nygrid),stat=ierr)
-      if (.not.allocated(Bz0r))  allocate(Bz0r(nxgrid,nygrid),stat=stat)
-      ierr = max(stat,ierr)
-      allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      allocate(Bz0_r(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
-      allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
-      allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
-      allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
-      allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+      if (.not.allocated(Axl))  allocate(Axl(nxgrid,nygrid),stat=ierr)
+      if (.not.allocated(Axr))  allocate(Axr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+      if (.not.allocated(Ayl))  allocate(Ayl(nxgrid,nygrid),stat=ierr);  ierr=max(stat,ierr)
+      if (.not.allocated(Ayr))  allocate(Ayr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+      allocate(Ax(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)  
+      allocate(Ay(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)
 !
       if (ierr > 0) call fatal_error('bc_force_aa_time', &
           'Could not allocate memory for all variables, please check')
@@ -2072,6 +2070,21 @@ module Special
       k2 = kx*kx + ky*ky
 !
       if (tr+delta_t <= time_SI) then
+!
+        allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Bz0l_i(nxgrid,nygrid),stat=stat); ierr=max(stat,ierr)
+        allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Bz0r_i(nxgrid,nygrid),stat=stat); ierr=max(stat,ierr)
+        allocate(Al_r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Al_i(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Ar_r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Ar_i(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+        allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+        allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
+!
+        if (ierr > 0) call fatal_error('bc_force_aa_time', &
+            'Could not allocate memory for all variables, please check')
         !
         inquire(IOLENGTH=lend) tl
         open (10,file=mag_times_dat,form='unformatted',status='unknown', &
@@ -2106,52 +2119,79 @@ module Special
         mu0_SI = 4.*pi*1.e-7
         u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
-        Bz0l = Bz0l *  1e-4 / u_b
-        Bz0r = Bz0r *  1e-4 / u_b
+        Bz0l = Bz0l *  1e-4 / u_b  ! left real part
+        Bz0l_i = 0.                !   imaginary part
+
+        Bz0r = Bz0r *  1e-4 / u_b  ! right real part
+        Bz0r_i = 0.                !   imaginary part 
+!
+        call fourier_transform_other(Bz0l,Bz0l_i)
+        call fourier_transform_other(Bz0r,Bz0r_i)
+!        
+! First the Ax component:
+        where (k2 /= 0 )
+          Al_r = -Bz0l_i*ky/k2
+          Al_i =  Bz0l  *ky/k2
+!
+          Ar_r = -Bz0r_i*ky/k2
+          Ar_i =  Bz0r  *ky/k2
+        elsewhere
+          Al_r = -Bz0l_i*ky/ky(1,idy2)
+          Al_i =  Bz0l  *ky/ky(1,idy2)
+!
+          Ar_r = -Bz0r_i*ky/ky(1,idy2)
+          Ar_i =  Bz0r  *ky/ky(1,idy2)
+        endwhere
+!        
+        call fourier_transform_other(Al_r,Al_i,linv=.true.)
+        call fourier_transform_other(Ar_r,Ar_i,linv=.true.)
+        Axl = Al_r
+        Axr = Ar_r
+!
+! Then the Ay component:
+        where (k2 /= 0 )
+          Al_r =  Bz0l_i*kx/k2
+          Al_i = -Bz0l  *kx/k2
+!
+          Ar_r =  Bz0r_i*kx/k2
+          Ar_i = -Bz0r  *kx/k2
+        elsewhere
+          Al_r =  Bz0l_i*kx/kx(idx2,1)
+          Al_i = -Bz0l  *kx/kx(idx2,1)
+! 
+          Ar_r =  Bz0r_i*kx/kx(idx2,1)
+          Ar_i = -Bz0r  *kx/kx(idx2,1)
+        endwhere
+!
+        call fourier_transform_other(Al_r,Al_i,linv=.true.)
+        call fourier_transform_other(Ar_r,Ar_i,linv=.true.)
+!
+        Ayl = Al_r
+        Ayr = Ar_r
+!
+        if (allocated(Bz0l)) deallocate(Bz0l)
+        if (allocated(Bz0l_i)) deallocate(Bz0l_i)
+        if (allocated(Bz0r)) deallocate(Bz0r)
+        if (allocated(Bz0r_i)) deallocate(Bz0r_i)
+        if (allocated(Al_r)) deallocate(Al_r)
+        if (allocated(Al_i)) deallocate(Al_i)
+        if (allocated(Ar_r)) deallocate(Ar_r)
+        if (allocated(Ar_i)) deallocate(Ar_i)
+        if (allocated(kx)) deallocate(kx)
+        if (allocated(ky)) deallocate(ky)
+        if (allocated(k2)) deallocate(k2)
 !
       endif
-      !
-      Bz0_r  = (time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l
-      !
-      Bz0_i = 0.
-      !
-      ! Fourier Transform of Bz0:
-      !
-      call fourier_transform_other(Bz0_r,Bz0_i)
-      !
-      ! First the Ax component:
-      where (k2 /= 0 )
-        A_r = -Bz0_i*ky/k2
-        A_i =  Bz0_r*ky/k2
-        !
-      elsewhere
-        A_r = -Bz0_i*ky/ky(1,idy2)
-        A_i =  Bz0_r*ky/ky(1,idy2)
-      endwhere
-      !
-      call fourier_transform_other(A_r,A_i,linv=.true.)
-      f(l1:l2,m1:m2,n1,iax) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-      !
-      !  then Ay component:
-      where (k2 /= 0 )
-        A_r =  Bz0_i*kx/k2
-        A_i = -Bz0_r*kx/k2
-      elsewhere
-        A_r =  Bz0_i*kx/kx(idx2,1)
-        A_i = -Bz0_r*kx/kx(idx2,1)
-      endwhere
-      !
-      call fourier_transform_other(A_r,A_i,linv=.true.)
-      f(l1:l2,m1:m2,n1,iay) = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-      !
-      if (allocated(Bz0_r)) deallocate(Bz0_r)
-      if (allocated(Bz0_i)) deallocate(Bz0_i)
-      if (allocated(A_r)) deallocate(A_r)
-      if (allocated(A_i)) deallocate(A_i)
-      if (allocated(kx)) deallocate(kx)
-      if (allocated(ky)) deallocate(ky)
-      if (allocated(k2)) deallocate(k2)
 !
+      Ax  = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
+      Ay  = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+!
+      f(l1:l2,m1:m2,n1,iax) = Ax(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+      f(l1:l2,m1:m2,n1,iay) = Ay(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+!
+      if (allocated(Ax)) deallocate(Ax)
+      if (allocated(Ay)) deallocate(Ay)
+
     endsubroutine mag_time_bound
 !***********************************************************************
     subroutine uu_twist(f)
