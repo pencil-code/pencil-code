@@ -1665,7 +1665,10 @@ module Particles_mpicomm
 !    -6 1000 1000  900
 !
       if (lbrick_partition) then
-        if (.not. allocated(npart_brick)) allocate(npart_brick(0:nbricks-1))
+        if (.not. allocated(npart_brick)) then
+          allocate(npart_brick(0:nbricks-1))
+          npart_brick=1
+        endif
         if (.not. allocated(npbrick_part)) &
             allocate(npbrick_part(0:npart_brick_max-1))
         if (.not. allocated(nproc_foster_brick_part)) &
@@ -1790,7 +1793,6 @@ module Particles_mpicomm
         nbrick_give=0
         if (npar_requ>0) then
           if (lbrick_partition) then
-            if (iproc==3) print*, 'AAAAA', nbrick_foster, nbricks
             ibrick=nbrick_foster
             do while (ibrick<=nbricks-1)
               if (npart_brick(ibrick)==1) then
@@ -1803,12 +1805,9 @@ module Particles_mpicomm
                 if (npar_give>npar_requ) exit
                 ibrick=ibrick+1
               elseif (nproc_foster_brick_part(ibrick)<npart_brick(ibrick)) then
-                if (iproc==3) print*, 'QQQQQQ', npart_brick(ibrick), &
-                    nproc_foster_brick_part(ibrick)
                 do ibrick_part= &
                     -npbrick(ibrick)+1+nproc_foster_brick_part(ibrick), &
                     -npbrick(ibrick)+npart_brick(ibrick)
-                  print*, 'YYYYYYYY', iproc, di, ibrick_part
                   npar_give=npar_give+npbrick_part(ibrick_part)
                   npbrick_give(nbrick_give)=npbrick_part(ibrick_part)
                   ibrick_give(nbrick_give)=ibrick
@@ -1954,38 +1953,40 @@ module Particles_mpicomm
         nreq=0
         ibrick=0
         do while (ibrick<nbricks)
-          if (npart_brick(ibrick)>=2) then
-            if (npart_brick_old(ibrick)>=2) then
-              do ibrick_part=-npbrick(ibrick)+1, &
-                  -npbrick(ibrick)+npart_brick(ibrick)
-                call MPI_ISEND(-npart_brick_old(ibrick), 1, MPI_INTEGER, &
-                    iproc_foster_brick_part(ibrick_part), tag_id+ibrick, &
-                    MPI_COMM_WORLD, ireq, ierr)
-                nreq=nreq+1
-                ireq_array(nreq)=ireq
-              enddo
+          if (iproc_foster_brick(ibrick)/=-1) then
+            if (npart_brick(ibrick)>=2) then
+              if (npart_brick_old(ibrick)>=2) then
+                do ibrick_part=-npbrick(ibrick)+1, &
+                    -npbrick(ibrick)+npart_brick(ibrick)
+                  call MPI_ISEND(-npart_brick_old(ibrick), 1, MPI_INTEGER, &
+                      iproc_foster_brick_part(ibrick_part), tag_id+ibrick, &
+                      MPI_COMM_WORLD, ireq, ierr)
+                  nreq=nreq+1
+                  ireq_array(nreq)=ireq
+                enddo
+              else
+                do ibrick_part=-npbrick(ibrick)+1, &
+                    -npbrick(ibrick)+npart_brick(ibrick)
+                  call MPI_ISEND(iproc_foster_old(ibrick), 1, MPI_INTEGER, &
+                      iproc_foster_brick(ibrick), tag_id+ibrick, &
+                      MPI_COMM_WORLD, ireq, ierr)
+                  nreq=nreq+1
+                  ireq_array(nreq)=ireq
+                enddo
+              endif
             else
-              do ibrick_part=-npbrick(ibrick)+1, &
-                  -npbrick(ibrick)+npart_brick(ibrick)
+              if (npart_brick_old(ibrick)>=2) then
+                call MPI_ISEND(-npart_brick_old(ibrick), 1, MPI_INTEGER, &
+                    iproc_foster_brick(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
+                    ireq, ierr)
+              else
                 call MPI_ISEND(iproc_foster_old(ibrick), 1, MPI_INTEGER, &
                     iproc_foster_brick(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
                     ireq, ierr)
-                nreq=nreq+1
-                ireq_array(nreq)=ireq
-              enddo
+              endif
+              nreq=nreq+1
+              ireq_array(nreq)=ireq
             endif
-          else
-            if (npart_brick_old(ibrick)>=2) then
-              call MPI_ISEND(-npart_brick_old(ibrick), 1, MPI_INTEGER, &
-                  iproc_foster_brick(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
-                  ireq, ierr)
-            else
-              call MPI_ISEND(iproc_foster_old(ibrick), 1, MPI_INTEGER, &
-                  iproc_foster_brick(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
-                  ireq, ierr)
-            endif
-            nreq=nreq+1
-            ireq_array(nreq)=ireq
           endif
           ibrick=ibrick+1
         enddo
@@ -2005,6 +2006,8 @@ module Particles_mpicomm
         do ireq=1,nreq
           call MPI_WAIT(ireq_array(ireq),stat,ierr)
         enddo
+
+      call fatal_error('','')
 !
 !  Send list of multiple grand parents to foster parents of previously
 !  partitioned bricks.
