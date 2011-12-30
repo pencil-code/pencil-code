@@ -29,10 +29,10 @@
 /
 &grav_init_pars
   gravz_profile='zero'
-  kz_gg=3.9269908           ! = pi/Lz
-  nu_epicycle=0.!1.0        ! = Omega
-  gravz=0.!0.25464791       ! = Omega^2/kz
-  potz_const=0.!0.064845561 ! = Omega^2/kz^2
+  kz_gg=3.9269908            ! = pi/Lz
+  nu_epicycle=0.  !1.0       ! = Omega
+  gravz=0. !0.25464791       ! = Omega^2/kz
+  potz_const=0. !0.064845561 ! = Omega^2/kz^2
 /
 &entropy_init_pars
 /
