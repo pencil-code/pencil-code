@@ -1799,6 +1799,7 @@ module Particles_mpicomm
                 npar_give=npar_give+npbrick(ibrick)
                 npbrick_give(nbrick_give)=npbrick(ibrick)
                 ibrick_give(nbrick_give)=ibrick
+!                ibrick_part_give(nbrick_give)=0
                 nbrick_give=nbrick_give+1
                 iproc_foster_brick(ibrick)=iproc_left
                 nbrick_foster=nbrick_foster+1
@@ -1811,6 +1812,8 @@ module Particles_mpicomm
                   npar_give=npar_give+npbrick_part(ibrick_part)
                   npbrick_give(nbrick_give)=npbrick_part(ibrick_part)
                   ibrick_give(nbrick_give)=ibrick
+!                  ibrick_part_give(nbrick_give)= &
+!                      nproc_foster_brick_part(ibrick)
                   nbrick_give=nbrick_give+1
                   iproc_foster_brick_part(ibrick_part)=iproc_left
                   nproc_foster_brick_part(ibrick)= &
@@ -1854,6 +1857,12 @@ module Particles_mpicomm
             iproc_left, tag_id, MPI_COMM_WORLD, ierr)
         call MPI_RECV(npar_recv, 1, MPI_INTEGER, &
             iproc_right, tag_id, MPI_COMM_WORLD, stat, ierr)
+!        if (lbrick_partition) then
+!          call MPI_SEND(ibrick_part_give(0:nbrick_give-1), nbrick_give, &
+!              MPI_INTEGER, iproc_left, tag_id, MPI_COMM_WORLD, ierr)
+!          call MPI_RECV(ibrick_part_recv(0:nbrick_give-1), nbrick_give, &
+!              MPI_INTEGER, iproc_left, tag_id, MPI_COMM_WORLD, ierr)
+!        endif
 !
 !  Stop the code if load balancing puts too many blocks at any processor.
 !
@@ -1885,6 +1894,9 @@ module Particles_mpicomm
           do iblock=0,nbrick_recv-1
             iproc_parent_block(nblock_loc+iblock)=iproc_right
             ibrick_parent_block(nblock_loc+iblock)=ibrick_recv(iblock)
+!            if (lbrick_partition) &
+!                ibrick_part_parent_block(nblock_loc+iblock)= &
+!                ibrick_part_recv(iblock)
           enddo
           nblock_loc=nblock_loc+nbrick_recv
           npar_sum=npar_sum+npar_recv
@@ -1968,7 +1980,7 @@ module Particles_mpicomm
                 do ibrick_part=-npbrick(ibrick)+1, &
                     -npbrick(ibrick)+npart_brick(ibrick)
                   call MPI_ISEND(iproc_foster_old(ibrick), 1, MPI_INTEGER, &
-                      iproc_foster_brick(ibrick), tag_id+ibrick, &
+                      iproc_foster_brick_part(ibrick_part), tag_id+ibrick, &
                       MPI_COMM_WORLD, ireq, ierr)
                   nreq=nreq+1
                   ireq_array(nreq)=ireq
