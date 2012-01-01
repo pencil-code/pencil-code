@@ -41,9 +41,11 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       --notify    Tell us (audibly and visually) when compilation is done.
 #   -N, --no-pencil-check
 #                   Suppress pencil consistency check, irrespective of
-#                   &run_pars.lpencil_check .
+#                   &run_pars.lpencil_check.
 #   -q, --quiet     Be quiet.
 #   -v, --version   Print version number.
+#       --last      Return the dates+paths of the last runs by 'tailing'
+#                   the $PENCIL_HOME/.run_directories.log file.
 # Examples:
 #   pc_run start              # just start
 #   pc_run run                # just run
@@ -106,7 +108,8 @@ GetOptions(\%opts,
                -N   --no-pencil-check
                     --notify
                -q   --quiet
-               -v   --version )
+               -v   --version
+                    --last)
           ) or die "Aborting.\n";
 
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
@@ -119,6 +122,7 @@ my $cmdname = (split('/', $0))[-1];
 
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
+if ($opts{'last'}) { die get_last(); }
 
 my $config_files   = ($opts{'f'} || $opts{'config-files'}    || undef);
 my $host_id        = ($opts{'H'} || $opts{'host-id'}         || undef);
@@ -1322,6 +1326,12 @@ sub version {
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
 
     return "$cmdname version $rev ($date)\n";
+}
+# ---------------------------------------------------------------------- #
+sub get_last {
+# Return the last run dates+paths recorded in the .run_directories.log file
+
+    `tail $ENV{PENCIL_HOME}/.run_directories.log`;
 }
 # ---------------------------------------------------------------------- #
 
