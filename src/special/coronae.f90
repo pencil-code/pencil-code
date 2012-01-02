@@ -38,7 +38,7 @@ module Special
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
   logical :: mark=.false.,ldensity_floor_c=.false.
-  real :: eighth_moment=0.,hcond1=0.
+  real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -58,7 +58,7 @@ module Special
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
-      ldensity_floor_c,chi_spi,Kiso,hyper2_spi
+      ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI
 !
 ! variables for print.in
 !
@@ -777,20 +777,20 @@ module Special
 !
       if (luse_ext_vel_field) call read_ext_vel_field()
 !
-      if (t>=t_gran) then
-        t_gran = t + dt_gran
 !  Compute photospheric granulation.
-
-        if (lgranulation .and. (ipz == 0) .and. &
-            (.not.lpencil_check_at_work)) then
-          if (itsub == 1) then
-            call granulation_driver(f)
-          endif
+!
+      if (lgranulation .and. (ipz == 0) .and. &
+          (.not.lpencil_check_at_work)) then
+        if (itsub == 1) then
+          call granulation_driver(f)
         endif
       endif
 !
 !  Read time dependent magnetic lower boundary
+!
       if (lmag_time_bound.and. (ipz == 0)) call mag_time_bound(f)
+!
+      if (t>=t_gran) t_gran = t + dt_gran
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -2244,7 +2244,7 @@ module Special
       integer :: xrange,yrange
 !
 ! update granule velocities only every second
-      dt_gran = 1./unit_time
+      dt_gran = dt_gran_SI/unit_time
       t_gran = t
 !
 ! Every granule has 6 values associated with it: data(1-6).
@@ -2385,33 +2385,54 @@ module Special
       use General, only: random_seed_wrapper
       use Mpicomm, only: mpisend_real, mpirecv_real
       use Sub, only: cubic_step
+      use Syscalls, only: file_exists
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, save, dimension(mseed) :: global_rstate
+      logical :: lstop=.false.
+      integer :: level
 !
       if (.not.lequidist(1).or..not.lequidist(2)) &
           call fatal_error('read_ext_vel_field', &
           'not yet implemented for non-equidistant grids')
 !
+      if (t >= t_gran) then 
 ! Save global random number seed, will be restored after granulation
 ! is done
-      call random_seed_wrapper(GET=global_rstate)
-      call random_seed_wrapper(PUT=points_rstate)
+        call random_seed_wrapper(GET=global_rstate)
+        call random_seed_wrapper(PUT=points_rstate)
 !
-      Ux=0.0
-      Uy=0.0
-      call multi_drive3()
+        Ux=0.0
+        Uy=0.0
+        call multi_drive3()
 !
-      if (increase_vorticity /= 0.) call enhance_vorticity()
-      if (quench /= 0.) call footpoint_quenching(f)
+        if (increase_vorticity /= 0.) call enhance_vorticity()
+        if (quench /= 0.) call footpoint_quenching(f)
+!
+! restore global seed and save seed list of the granulation
+        call random_seed_wrapper(GET=points_rstate)
+        call random_seed_wrapper(PUT=global_rstate)
+      endif
 !
       f(l1:l2,m1:m2,n1,iux) = Ux*u_amplifier
       f(l1:l2,m1:m2,n1,iuy) = Uy*u_amplifier
       f(l1:l2,m1:m2,n1,iuz) = 0.
 !
-! restore global seed and save seed list of the granulation
-      call random_seed_wrapper(GET=points_rstate)
-      call random_seed_wrapper(PUT=global_rstate)
+      if (t >= tsnap_uu) then
+        do level=1,n_gran_level
+          call write_points(level,isnap)
+        enddo
+        tsnap_uu = tsnap_uu + dsnap
+        isnap  = isnap + 1
+      endif
+!
+      if (itsub == 3) lstop = file_exists('STOP')
+      if (lstop.or.t >= tmax .or. it >= nt.or. &
+          mod(it,isave) == 0.or.(dt < dtmin.and.dt /= 0.)) then
+        do level=1,n_gran_level
+          call write_points(level)
+        enddo
+      endif
 !
     endsubroutine granulation_driver
 !***********************************************************************
@@ -2474,10 +2495,7 @@ module Special
 !***********************************************************************
     subroutine drive3(level)
 !
-      use Syscalls, only: file_exists
-!
       integer, intent(in) :: level
-      logical :: lstop=.false.
 !
       call reset_arrays
 !
@@ -2518,19 +2536,6 @@ module Special
 ! Save granules to file.
 !
       call reset_pointer
-!
-      if (t >= tsnap_uu) then
-        call write_points(level,isnap)
-        if (level == n_gran_level) then
-          tsnap_uu = tsnap_uu + dsnap
-          isnap  = isnap + 1
-        endif
-      endif
-!
-      if (itsub == 3) lstop = file_exists('STOP')
-      if (lstop.or.t >= tmax .or. it >= nt.or. &
-          mod(it,isave) == 0.or.(dt < dtmin.and.dt /= 0.)) &
-          call write_points(level)
 !
     endsubroutine drive3
 !***********************************************************************
@@ -2862,6 +2867,30 @@ module Special
       real :: dummy=1.
 !
       character (len=64) :: filename
+!
+      select case (level)
+      case (1)
+        first => firstlev
+        current => firstlev
+        if (associated(firstlev%next)) then
+          first%next => firstlev%next
+          current%next => firstlev%next
+        endif
+      case (2)
+        first => secondlev
+        current => secondlev
+        if (associated(secondlev%next)) then
+          first%next => secondlev%next
+          current%next => secondlev%next
+        endif
+      case (3)
+        first => thirdlev
+        current => thirdlev
+        if (associated(thirdlev%next)) then
+          first%next => thirdlev%next
+          current%next => thirdlev%next
+        endif
+      endselect
 !
       inquire(IOLENGTH=lend) dummy
 !
