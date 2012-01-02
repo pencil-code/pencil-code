@@ -50,7 +50,9 @@ module Particles
   real :: ky_vpx=0.0, ky_vpy=0.0, ky_vpz=0.0
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
-  real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
+  real :: tstart_dragforce_par=0.0 
+  real :: tstart_grav_par=0.0, tstart_grav_x_par=0.0
+  real :: tstart_grav_z_par=0.0, tstart_grav_r_par=0.0
   real :: tstart_liftforce_par=0.0
   real :: tstart_brownian_par=0.0
   real :: tstart_collisional_cooling=0.0
@@ -126,7 +128,8 @@ module Particles
       kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, taucool, &
+      tstart_dragforce_par, tstart_grav_par, &
+      tstart_grav_x_par, tstart_grav_z_par,tstart_grav_r_par, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, tausp_species, tau_coll_min, &
       ltau_coll_min_courant, coeff_restitution, tstart_collisional_cooling, &
@@ -156,7 +159,9 @@ module Particles
       rhop_swarm, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
-      tstart_grav_par, lparticlemesh_cic, lparticlemesh_tsc, taucool, &
+      tstart_grav_par, tstart_grav_x_par, &
+      tstart_grav_z_par, tstart_grav_r_par, &
+      lparticlemesh_cic, lparticlemesh_tsc, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
@@ -482,6 +487,14 @@ module Particles
         if (lroot) print*, 'initialize_particles: sink particle radius is '// &
             'zero or negative: ', rsinkparticle_1
         call fatal_error('initialize_particles','')
+      endif
+!
+!  Particle self gravity for x,z,r direction
+!
+      if ( tstart_grav_par > 0.0) then
+        tstart_grav_x_par = tstart_grav_par
+        tstart_grav_z_par = tstart_grav_par
+        tstart_grav_r_par = tstart_grav_par
       endif
 !
 !  Set up interpolation logicals. These logicals can be OR'ed with some logical
@@ -2249,10 +2262,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Gravity on the particles.
 !
-      if (t>=tstart_grav_par) then
 !
 !  Gravity in the x-direction.
 !
+      if (t>=tstart_grav_x_par) then
+!        
         select case (gravx_profile)
 !
           case ('')
@@ -2280,8 +2294,12 @@ k_loop:   do while (.not. (k>npar_loc))
             call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
 !
         endselect
+!        
+      endif
 !
 !  Gravity in the z-direction.
+!
+      if (t>=tstart_grav_z_par) then
 !
         select case (gravz_profile)
 !
@@ -2311,7 +2329,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         endselect
 !
+      endif
+!
 !  Radial gravity.
+!
+      if (t>=tstart_grav_r_par) then
 !
         select case (gravr_profile)
 !
