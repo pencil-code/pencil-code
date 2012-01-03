@@ -87,7 +87,8 @@ module Pscalar
   integer :: idiag_Qrhoccm=0, idiag_Qpsclm=0, idiag_mcct=0
   integer :: idiag_gcc5m=0, idiag_gcc10m=0
   integer :: idiag_ucm=0, idiag_uudcm=0, idiag_Cz2m=0, idiag_Cz4m=0
-  integer :: idiag_Crmsm=0, idiag_ccrms, idiag_uxcm=0, idiag_uycm=0, idiag_uzcm=0
+  integer :: idiag_Crmsm=0, idiag_ccrms=0
+  integer :: idiag_uxcm=0, idiag_uycm=0, idiag_uzcm=0
   integer :: idiag_cc1m=0, idiag_cc2m=0, idiag_cc3m=0, idiag_cc4m=0
   integer :: idiag_cc5m=0, idiag_cc6m=0, idiag_cc7m=0, idiag_cc8m=0
   integer :: idiag_cc9m=0, idiag_cc10m=0
@@ -777,7 +778,8 @@ module Pscalar
         idiag_Qrhoccm=0; idiag_Qpsclm=0; idiag_mcct=0
         idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0
         idiag_uxcmz=0; idiag_uycmz=0; idiag_uzcmz=0
-        idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0; idiag_ccrms=0
+        idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
+        idiag_ccrms=0
         idiag_uxcm=0; idiag_uycm=0; idiag_uzcm=0
         idiag_cc1m=0; idiag_cc2m=0; idiag_cc3m=0; idiag_cc4m=0; idiag_cc5m=0
         idiag_cc6m=0; idiag_cc7m=0; idiag_cc8m=0; idiag_cc9m=0; idiag_cc10m=0
