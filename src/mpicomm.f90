@@ -685,10 +685,10 @@ module Mpicomm
 !       print*,'finalize_isendrcv_bdry: MPICOMM recv ul: ', &
 !                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
 !
-!  make sure the other precessors don't carry on sending new data
+!  make sure the other processors don't carry on sending new data
 !  which could be mistaken for an earlier time
 !
-      call mpibarrier
+      call mpibarrier()
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
@@ -5884,7 +5884,7 @@ module Mpicomm
       endif
       call mpireduce_sum(ay_local,ay,nygrid)
 ! maybe we should synchrosize here.
-      call mpibarrier
+      call mpibarrier()
 !
     endsubroutine y2x
 !***********************************************************************
@@ -5909,7 +5909,7 @@ module Mpicomm
       endif
       call mpireduce_sum(az_local,az,nzgrid)
 ! maybe we should synchrosize here.
-      call mpibarrier
+      call mpibarrier()
 !
     endsubroutine z2x
 !***********************************************************************
@@ -6586,8 +6586,8 @@ module Mpicomm
 !  written. Message contains list of processors at which operation failed.
 !
 !  flag   (IN) : indicates failure of I/O operation at local processor
-!  message(OUT): message fragment containing list of processors where operation failed
-!                (only relevant for root)
+!  message(OUT): message fragment containing list of processors where 
+!                operation failed  (only relevant for root)
 !  return value: flag for 'synchronize!', identical for all processors
 !
 !  14-nov-11/MR: coded
@@ -6640,9 +6640,11 @@ module Mpicomm
         endif
 !
       endif
-!     
-      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)   ! broadcasts flag for
-!                                                                                    ! 'sychronization necessary'
+!
+      call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)
+! broadcasts flag for
+!
+! 'sychronization necessary'
     end function report_clean_output
 !**************************************************************************
 endmodule Mpicomm
