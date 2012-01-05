@@ -94,7 +94,7 @@ module Pscalar
   integer :: idiag_cc9m=0, idiag_cc10m=0
   integer :: idiag_gcc1m=0, idiag_gcc2m=0, idiag_gcc3m=0, idiag_gcc4m=0
   integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
-  integer :: idiag_cugccm, idiag_ccugum
+  integer :: idiag_cugccm=0, idiag_ccugum=0
   integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0, idiag_ccglnrm=0
   integer :: idiag_uxcmz=0, idiag_uycmz=0, idiag_uzcmz=0
   integer :: idiag_ccmxy=0, idiag_ccmxz=0
