@@ -2095,7 +2095,6 @@ module Sub
 !  Calculate del2 and graddiv, if requested.
 !
       if (present(graddiv)) then
-!--     graddiv(:,:)=d2A(:,:,1,1)+d2A(:,:,2,2)+d2A(:,:,3,3)
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
         if (lspherical_coords) then
           graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*r1_mn*2+ &
