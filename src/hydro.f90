@@ -2524,17 +2524,17 @@ module Hydro
             ruzm=ruzm+fact*sum(ruz)
           enddo
           enddo
-        endif
 !
 !  communicate to the other processors
 !
-        fsum_tmp(1)=ruxm
-        fsum_tmp(2)=ruym
-        fsum_tmp(3)=ruzm
-        call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
-        ruxm=fsum(1)
-        ruym=fsum(2)
-        ruzm=fsum(3)
+          fsum_tmp(1)=ruxm
+          fsum_tmp(2)=ruym
+          fsum_tmp(3)=ruzm
+          call mpiallreduce_sum(fsum_tmp,fsum,nreduce)
+          ruxm=fsum(1)
+          ruym=fsum(2)
+          ruzm=fsum(3)
+        endif
       endif
 !
 !  do xy-averaged mean field for each component
