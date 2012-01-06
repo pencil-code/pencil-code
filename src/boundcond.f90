@@ -347,7 +347,7 @@ module Boundcond
                     write(unit=errormsg,fmt='(A,A4,A,I3)') &
                          "No such boundary condition bcx1/2 = ", &
                          bc12(j), " for j=", j
-                    call stop_it_if_any(.true.,"boundconds_x: "//trim(errormsg))
+                    call fatal_error_local("boundconds_x: ",trim(errormsg))
                   endif
                 endselect
               endif
@@ -355,11 +355,6 @@ module Boundcond
           enddo
         endif
       endselect
-!
-      ! Catch any 'stop_it_if_any' calls from single MPI ranks that may
-      ! have occured inside the above select statement. This final call
-      ! for all MPI ranks is necessary to prevent dead-lock situations.
-      call stop_it_if_any(.false.,"")
 !
     endsubroutine boundconds_x
 !***********************************************************************
@@ -558,18 +553,13 @@ module Boundcond
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
                        bc12(j), " for j=", j
-                  call stop_it_if_any(.true.,"boundconds_y: "//trim(errormsg))
+                  call fatal_error_local("boundconds_y: ",trim(errormsg))
                 endif
               endselect
             endif
           enddo
         enddo
       endselect
-!
-      ! Catch any 'stop_it_if_any' calls from single MPI ranks that may
-      ! have occured inside the above select statement. This final call
-      ! for all MPI ranks is necessary to prevent dead-lock situations.
-      call stop_it_if_any(.false.,"")
 !
     endsubroutine boundconds_y
 !***********************************************************************
@@ -889,19 +879,13 @@ module Boundcond
                 if (.not.bc%done) then
                   write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
                        bc12(j), " for j=", j
-                  call stop_it_if_any(.true.,"boundconds_z: "//trim(errormsg))
+                  call fatal_error_local("boundconds_z: ",trim(errormsg))
                 endif
               endselect
             endif
           enddo
         enddo
       endselect
-!
-! Catch any 'stop_it_if_any' calls from single MPI ranks that may
-! have occured inside the above select statement. This final call
-! for all MPI ranks is necessary to prevent dead-lock situations.
-!
-      call stop_it_if_any(.false.,"")
 !
     endsubroutine boundconds_z
 !***********************************************************************
