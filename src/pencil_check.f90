@@ -44,7 +44,6 @@ module Pencil_check
       use General, only: random_number_wrapper, random_seed_wrapper
       use Mpicomm, only: mpireduce_and, mpireduce_or, mpibcast_logical, stop_it_if_any
       use Sub, only: notanumber
-      use Mpicomm, only: mpibarrier
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
