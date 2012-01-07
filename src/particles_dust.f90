@@ -89,7 +89,7 @@ module Particles
   logical :: lbrownian_forces=.false.
   logical :: lthermophoretic_forces=.false.
   logical :: lenforce_policy=.false., lnostore_uu=.true.
-  logical :: ldt_grav_par=.false., ldt_adv_par=.true.
+  logical :: ldt_grav_par=.true., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
   logical :: lcalc_uup=.false.
