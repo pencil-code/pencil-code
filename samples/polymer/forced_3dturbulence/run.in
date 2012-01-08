@@ -4,7 +4,7 @@
 &run_pars
   cvsid='$Id: run.in,v 1.1 2011-02-28 09:11:28 dhruba Exp $'
   nt=50, it1=10, cdt=0.4, cdtv=0.30, isave=5, itorder=3
-  dsnap=.2, dvid=.5, ialive=1
+  dsnap=.2, dvid=.5, 
   lwrite_aux=T
 /
 &eos_run_pars

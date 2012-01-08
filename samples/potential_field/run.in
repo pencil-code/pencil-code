@@ -3,7 +3,7 @@
   !nt=1001, it1=50, isave=20, itorder=3
   nt=100, it1=10, isave=20, itorder=3
   !tmax=1.0, it1=10, isave=20, itorder=3
-  dsnap=10., dvid=.5, ialive=1
+  dsnap=10., dvid=.5, 
   bcz = 's','s','a','a2','pot','nil','nil'
 !  bcz = 's','s','a','a2','pwd','nil','nil'
 !  bcz = 's','s','a','a2','c1','nil','nil'

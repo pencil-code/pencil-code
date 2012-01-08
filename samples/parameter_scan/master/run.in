@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id$'
   nt=1500, it1=10, cdt=0.4, isave=50, itorder=3
-  dsnap=100. dvid=500., ialive=1
+  dsnap=100. dvid=500., 
   kinflow='ShearingWave', eps_kinflow=-1., ampl_kinflow=1.
 /
 &testfield_run_pars

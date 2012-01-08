@@ -6,7 +6,7 @@
 &run_pars
   cvsid='$Id: run.in,v 1.1 2009-06-06 19:52:08 brandenb Exp $',
   nt=50, it1=10, isave=500, itorder=3
-  dsnap=200., dvid=10., ialive=1
+  dsnap=200., dvid=10., 
   bcz = 's','s','a','a2','c1:cT','s','s','a'
 /
 &eos_run_pars

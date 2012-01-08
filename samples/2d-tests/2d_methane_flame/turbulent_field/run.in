@@ -4,7 +4,7 @@
 &run_pars
   cvsid='$Id: run.in,v 1.1 2010-05-19 14:35:08 nilshau Exp $'
   nt=20000, it1=10, cdt=0.4, cdtv=0.80, isave=500, itorder=3,
-  dsnap=10.0, dvid=1e-5, ialive=1,dtmin=1e-9
+  dsnap=10.0, dvid=1e-5, ,dtmin=1e-9
 /
 &eos_run_pars
 /

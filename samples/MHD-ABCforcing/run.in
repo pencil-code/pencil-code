@@ -1,7 +1,7 @@
 &run_pars
   cvsid='$Id$',
   nt=51, it1=10, cdt=0.4, isave=20, itorder=3
-  dsnap=20., dvid=20., ialive=1
+  dsnap=20., dvid=20., 
   dspec=5., ou_spec=T, ab_spec=T
   lpencil_check=T
 /

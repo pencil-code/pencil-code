@@ -2,7 +2,7 @@
   cvsid='$Id$',
   nt=1001, it1=50, isave=20, itorder=3
   !nt=1, it1=20, isave=20, itorder=1
-  dsnap=10., dvid=.5, ialive=1
+  dsnap=10., dvid=.5, 
   bcz = 's','s','a','a2','c1','nil','nil'
 /
 &eos_run_pars

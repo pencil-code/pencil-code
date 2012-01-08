@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id$'
   nt=5001, it1=1000, isave=2000, itorder=3, cdt=1.
-  dsnap=1. dvid=.05, ialive=1
+  dsnap=1. dvid=.05, 
   lpencil_check=T
 /
 &magnetic_run_pars

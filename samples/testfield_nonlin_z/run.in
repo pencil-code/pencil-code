@@ -5,7 +5,7 @@
 &run_pars
   cvsid='$Id: run.in,v 1.1 2010-01-01 18:05:23 brandenb Exp $',
   nt=11, it1=2, isave=500, itorder=3
-  dsnap=500, dvid=100., ialive=1
+  dsnap=500, dvid=100., 
 ! lpencil_check=T
 /
 &hydro_run_pars

@@ -5,8 +5,8 @@
 &run_pars
   cvsid='$Id$',
   ip=13,
-  nt=10000, it1=20, isave=100, itorder=3, ialive=1  !(for long run)
-  nt=10, it1=2, isave=100, itorder=3, ialive=1 !(test run only)
+  nt=10000, it1=20, isave=100, itorder=3,   !(for long run)
+  nt=10, it1=2, isave=100, itorder=3,  !(test run only)
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
   dsnap=10., dvid=2., d2davg=10.
   lpencil_check=T
