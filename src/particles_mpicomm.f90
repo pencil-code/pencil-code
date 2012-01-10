@@ -748,4 +748,17 @@ module Particles_mpicomm
 !      
     endsubroutine find_index_by_bisection
 !***********************************************************************
+    subroutine get_brick_index(xxp, iproc, ibrick)
+!
+!  10-jan-12/ccyang: dummy
+!
+      real, dimension(3), intent(in) :: xxp
+      integer, intent(out) :: iproc, ibrick
+!
+      call keep_compiler_quiet(xxp)
+      call keep_compiler_quiet(iproc)
+      call keep_compiler_quiet(ibrick)
+!
+    endsubroutine get_brick_index
+!***********************************************************************
 endmodule Particles_mpicomm

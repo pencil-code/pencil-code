@@ -55,22 +55,15 @@ module Particles_map
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, save :: dx1, dy1, dz1
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
-      integer :: k, ix0, iy0, iz0, ibx0, iby0, ibz0, ipx0, ipy0, ipz0
+      integer :: k, status
       integer :: iblockl, iblocku, iblockm, ibrick_global_par
       integer :: iproc_parent_par, ibrick_parent_par
       integer :: iproc_parent_par_previous, ibrick_parent_par_previous
       logical :: lbinary_search
-      logical, save :: lfirstcall=.true.
 !
       intent(in)  :: fp
       intent(out) :: ineargrid
-!
-      if (lfirstcall) then
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
-      endif
 !
 !  Sort blocks by parent processor and by parent brick and create global
 !  brick array.
@@ -79,74 +72,16 @@ module Particles_map
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
 !
-!  Default values in case of missing directions.
-!
-      ix0=l1b; iy0=m1b; iz0=n1b; ibx0=0; iby0=0; ibz0=0; ipx0=0; ipy0=0; ipz0=0
-!
       do k=1,npar_loc
-!
-!  Find processor, brick, and grid x-coordinate.
-!
-        if (nxgrid/=1) then
-          if (lequidist(1)) then
-            ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
-          else
-            call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
-          endif
-          ipx0=(ix0-1)/nx
-          ix0=ix0-ipx0*nx
-          ibx0=(ix0-1)/nxb
-          ix0=ix0-ibx0*nxb+1
-        endif
-!
-!  Find processor, brick, and grid y-coordinate.
-!
-        if (nygrid/=1) then
-          if (lequidist(2)) then
-            iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
-          else
-            call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
-          endif
-          ipy0=(iy0-1)/ny
-          iy0=iy0-ipy0*ny
-          iby0=(iy0-1)/nyb
-          iy0=iy0-iby0*nyb+1
-        endif
-!
-!  Find processor, brick, and grid z-coordinate.
-!
-        if (nzgrid/=1) then
-          if (lequidist(3)) then
-            iz0=nint((fp(k,izp)-zref_par)*dz1)+1
-          else
-            call find_index_by_bisection(fp(k,izp),zgrid,iz0)
-          endif
-          ipz0=(iz0-1)/nz
-          iz0=iz0-ipz0*nz
-          ibz0=(iz0-1)/nzb
-          iz0=iz0-ibz0*nzb+1
-        endif
-!
-!  Check that particle is not closest to ghost cell (or completely outside
-!  bounds).
-!
-        if ((ix0<l1b.or.ix0>l2b).or.(iy0<m1b.or.iy0>m2b).or. &
-            (iz0<n1b.or.iz0>n2b)) then
-          print*, 'map_nearest_grid: grid index of particle out of bounds'
-          print*, 'map_nearest_grid: it, itsub, iproc, k, ipar=', &
-              it, itsub, iproc, k, ipar(k)
-          print*, 'map_nearest_grid: ix0 , iy0 , iz0 =', ix0, iy0, iz0
-          print*, 'map_nearest_grid: ibx0, iby0, ibz0=', ibx0, iby0, ibz0
-          print*, 'map_nearest_grid: ipx0, ipy0, ipz0=', ipx0, ipy0, ipz0
-          print*, 'map_nearest_grid: fp=', fp(k,:)
-          call fatal_error_local('map_nearest_grid','')
-        endif
 !
 !  Calculate processor, brick, and grid point index of particle.
 !
-        ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
-        ibrick_parent_par=ibx0+iby0*nbx+ibz0*nbx*nby
-        iproc_parent_par =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+        call get_brick_index(fp(k,(/ixp,iyp,izp/)), iproc_parent_par, ibrick_parent_par, ineargrid(k,:), status=status)
+        if (status < 0) then
+          print*, 'map_nearest_grid: error in finding the grid index of particle'
+          print*, 'map_nearest_grid: it, itsub, iproc, k, ipar=', it, itsub, iproc, k, ipar(k)
+          call fatal_error_local('map_nearest_grid','')
+        endif
 !
 !  Check if nearest block is the same as for previous particle.
 !
@@ -181,11 +116,8 @@ module Particles_map
                 'adopted block'
             print*, 'map_nearest_grid: it, itsub, iproc, k, ipar=', &
                 it, itsub, iproc, k, ipar(k)
-            print*, 'map_nearest_grid: ipx0, ipy0, ipz0, iproc0=', &
-                ipx0, ipy0, ipz0, ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
             print*, 'map_nearest_grid: ipx , ipy , ipz , iproc =', &
                 ipx, ipy, ipz, iproc
-            print*, 'map_nearest_grid: ibx0, iby0, ibz0=', ibx0, iby0, ibz0
             print*, 'map_nearest_grid: ibrick_global_par, iblockl, iblocku =', &
                 ibrick_global_par, iblockl, iblocku
             print*, 'map_nearest_grid: ibrick_global_arr =', &

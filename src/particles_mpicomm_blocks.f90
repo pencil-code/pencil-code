@@ -42,7 +42,6 @@ module Particles_mpicomm
   integer, dimension (0:nbricks-1) :: iproc_foster_brick
   integer, dimension (ncpus) :: iproc_parent_list, iproc_foster_list
 !
-  real :: xref_par=0.0, yref_par=0.0, zref_par=0.0
   integer :: it1_loadbalance=100
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
   logical :: lfill_blocks_gpotself=.false., lfill_bricks_velocity=.false.
@@ -183,18 +182,6 @@ module Particles_mpicomm
 !
         call input_blocks(trim(directory_snap)//'/blocks.dat')
       endif
-!
-!  For placing particles in blocks the CPUs need a common reference point that
-!  is not affected by round off errors or representation noise.
-!
-      if (lroot) then
-        xref_par=x(l1)
-        yref_par=y(m1)
-        zref_par=z(n1)
-      endif
-      call mpibcast_real(xref_par,1)
-      call mpibcast_real(yref_par,1)
-      call mpibcast_real(zref_par,1)
 !
       call keep_compiler_quiet(f)
 !
@@ -421,14 +408,12 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      real, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
       integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
-      integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, npar_loc_start
       integer :: i, j, k, nmig_enter_proc_tot
       integer :: ibrick_global_rec, ibrick_global_rec_previous
@@ -437,14 +422,8 @@ module Particles_mpicomm
       integer :: itag_nmig=500, itag_ipar=510, itag_fp=520, itag_dfp=530
       logical :: lredo, lredo_all, lmigrate, lmigrate_previous
       logical :: lreblocking
-      logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
-!
-      if (lfirstcall) then
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
-      endif
 !
       lreblocking=lreblock_particles_run.and.it==1.and.itsub==0
 !
@@ -472,46 +451,7 @@ module Particles_mpicomm
 !
 !  Calculate processor and brick index of particle.
 !
-          ix0=l1b; iy0=m1b; iz0=n1b; ibx0=0; iby0=0; ibz0=0
-          ipx0=0; ipy0=0; ipz0=0
-!
-          if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            if (lequidist(1)) then
-              ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
-            else
-              call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
-            endif
-            ipx0=(ix0-1)/nx
-            ix0=ix0-ipx0*nx
-            ibx0=(ix0-1)/nxb
-          endif
-!
-          if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            if (lequidist(2)) then
-              iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
-            else
-              call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
-            endif
-            ipy0=(iy0-1)/ny
-            iy0=iy0-ipy0*ny
-            iby0=(iy0-1)/nyb
-          endif
-!
-          if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            if (lequidist(3)) then
-              iz0=nint((fp(k,izp)-zref_par)*dz1)+1
-            else
-              call find_index_by_bisection(fp(k,izp),zgrid,iz0)
-            endif
-            ipz0=(iz0-1)/nz
-            iz0=iz0-ipz0*nz
-            ibz0=(iz0-1)/nzb
-           endif
-!
-!  Calculate processor and brick index of particle.
-!
-          ibrick_rec=ibx0+iby0*nbx+ibz0*nbx*nby
-          iproc_rec =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+          call get_brick_index(fp(k,(/ixp,iyp,izp/)), iproc_rec, ibrick_rec)
 !
 !  Find out whether particle has left the blocks adopted by this processor.
 !
@@ -555,8 +495,6 @@ module Particles_mpicomm
                     'this is ridiculous'
                 print*, 'migrate_particles_btop: ibrick_rec, iproc_rec, '// &
                     'inearblock=', ibrick_rec, iproc_rec, inearblock(k)
-                print*, 'migrate_particles_btop: '// &
-                    'ipx0, ipy0, ipz0=', ipx0, ipy0, ipz0
                 print*, 'migrate_particles_btop: '// &
                     'lmigrate, lmigrate_previous=', lmigrate, lmigrate_previous
                 print*, 'migrate_particles_btop: '// &
@@ -773,7 +711,6 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      real, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
@@ -782,20 +719,13 @@ module Particles_mpicomm
       integer, dimension (26), save :: iproc_comm=-1
       integer, save :: nproc_comm=0
       integer :: dipx, dipy, dipz, iblock, ibrick_rec, npar_loc_start
-      integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec
       integer :: nmig_leave_total, ileave_high_max
       logical :: lredo, lredo_all
       integer :: itag_nmig=540, itag_ipar=550, itag_fp=560, itag_dfp=570
       logical :: lmigrate, lreblocking
-      logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
-!
-      if (lfirstcall) then
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
-      endif
 !
       lreblocking=lreblock_particles_run.and.it==1.and.itsub==0
 !
@@ -855,46 +785,7 @@ module Particles_mpicomm
 !
 !  Calculate processor and brick index of particle.
 !
-          ix0=nghostb+1; iy0=nghostb+1; iz0=nghostb+1; ibx0=0; iby0=0; ibz0=0
-          ipx0=0; ipy0=0; ipz0=0
-!
-          if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            if (lequidist(1)) then
-              ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
-            else
-              call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
-            endif
-            ipx0=(ix0-1)/nx
-            ix0=ix0-ipx0*nx
-            ibx0=(ix0-1)/nxb
-          endif
-!
-          if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            if (lequidist(2)) then
-              iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
-            else
-              call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
-            endif
-            ipy0=(iy0-1)/ny
-            iy0=iy0-ipy0*ny
-            iby0=(iy0-1)/nyb
-          endif
-!
-          if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            if (lequidist(3)) then
-              iz0=nint((fp(k,izp)-zref_par)*dz1)+1
-            else
-              call find_index_by_bisection(fp(k,izp),zgrid,iz0)
-            endif
-            ipz0=(iz0-1)/nz
-            iz0=iz0-ipz0*nz
-            ibz0=(iz0-1)/nzb
-          endif
-!
-!  Calculate processor and brick index of particle.
-!
-          ibrick_rec=ibx0+iby0*nbx+ibz0*nbx*nby
-          iproc_rec =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+          call get_brick_index(fp(k,(/ixp,iyp,izp/)), iproc_rec, ibrick_rec)
 !
 !  Find out whether particle is in any of the blocks adopted by this processor.
 !
@@ -930,8 +821,6 @@ module Particles_mpicomm
                     iproc, iproc_rec
                 print*, 'migrate_particles_ptop: ipx , ipy , ipz =', &
                     ipx, ipy, ipz
-                print*, 'migrate_particles_ptop: ipx0, ipy0, ipz0=', &
-                    ipx0, ipy0, ipz0
                 print*, 'migrate_particles_ptop: it, itsub, t, deltay=', &
                     it, itsub, t, deltay
                 print*, 'migrate_particles_ptop: fp=', fp(k,:)
@@ -1211,27 +1100,19 @@ module Particles_mpicomm
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
       real, dimension (npar_mig,mpvar) :: fp_mig, dfp_mig
-      real, save :: dx1, dy1, dz1
       integer, dimension (npar_mig) :: ipar_mig, iproc_rec_array
       integer, dimension (npar_mig) :: isort_array
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
       integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
       integer, dimension (0:ncpus-1) :: iproc_rec_count
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
-      integer :: ix0, iy0, iz0, ipx0, ipy0, ipz0, ibx0, iby0, ibz0
       integer :: ibrick_rec, iproc_rec, nmig_enter_proc, npar_loc_start
       integer :: i, j, k, iblockl, iblocku, iblockm, ibrick_global_rec
       integer :: ibrick_global_rec_previous, nmig_leave_total, ileave_high_max
       integer :: itag_nmig=580, itag_ipar=590, itag_fp=600, itag_dfp=610
       logical :: lredo, lredo_all, lmigrate, lmigrate_previous, lreblocking
-      logical, save :: lfirstcall=.true.
 !
       intent (inout) :: fp, ipar, dfp
-!
-      if (lfirstcall) then
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
-      endif
 !
       lreblocking=lreblock_particles_run.and.it==1.and.itsub==0
 !
@@ -1258,46 +1139,7 @@ module Particles_mpicomm
 !
 !  Calculate processor and brick index of particle.
 !
-          ix0=nghostb+1; iy0=nghostb+1; iz0=nghostb+1; ibx0=0; iby0=0; ibz0=0
-          ipx0=0; ipy0=0; ipz0=0
-!
-          if (nxgrid/=1) then  !  Find processor and brick x-coordinate
-            if (lequidist(1)) then
-              ix0=nint((fp(k,ixp)-xref_par)*dx1)+1
-            else
-              call find_index_by_bisection(fp(k,ixp),xgrid,ix0)
-            endif
-            ipx0=(ix0-1)/nx
-            ix0=ix0-ipx0*nx
-            ibx0=(ix0-1)/nxb
-          endif
-!
-          if (nygrid/=1) then  !  Find processor and brick y-coordinate
-            if (lequidist(2)) then
-              iy0=nint((fp(k,iyp)-yref_par)*dy1)+1
-            else
-              call find_index_by_bisection(fp(k,iyp),ygrid,iy0)
-            endif
-            ipy0=(iy0-1)/ny
-            iy0=iy0-ipy0*ny
-            iby0=(iy0-1)/nyb
-          endif
-!
-          if (nzgrid/=1) then  !  Find processor and brick z-coordinate
-            if (lequidist(3)) then
-              iz0=nint((fp(k,izp)-zref_par)*dz1)+1
-            else
-              call find_index_by_bisection(fp(k,izp),zgrid,iz0)
-            endif
-            ipz0=(iz0-1)/nz
-            iz0=iz0-ipz0*nz
-            ibz0=(iz0-1)/nzb
-          endif
-!
-!  Calculate processor and brick index of particle.
-!
-          ibrick_rec=ibx0+iby0*nbx+ibz0*nbx*nby
-          iproc_rec =ipx0+ipy0*nprocx+ipz0*nprocx*nprocy
+          call get_brick_index(fp(k,(/ixp,iyp,izp/)), iproc_rec, ibrick_rec)
 !
 !  Find out whether the particle is in any block adopted by the local processor.
 !
@@ -2459,5 +2301,140 @@ module Particles_mpicomm
       endif
 !
     endsubroutine find_index_by_bisection
+!***********************************************************************
+    subroutine get_brick_index(xxp, iproc, ibrick, ineargrid, status)
+!
+!  Find the parent processor and brick of a given position.
+!
+!  09-jan-12/ccyang: adapted from the original version in various
+!                    routines migrate_particles_*_to_*
+!
+      real, dimension(3), intent(in) :: xxp
+      integer, intent(out) :: iproc, ibrick
+      integer, dimension(3), intent(out), optional :: ineargrid
+      integer, intent(out), optional :: status
+!
+      logical :: lfirstcall = .true.
+      integer, save :: nbxy, npxy
+      real, save :: dx1, dy1, dz1
+      real, save :: xref_par, yref_par, zref_par
+!
+      integer :: ix0, iy0, iz0
+      integer :: ibx0, iby0, ibz0
+      integer :: ipx0, ipy0, ipz0
+!
+      init: if (lfirstcall) then
+!
+!  Save the inverse grid spacing.
+!
+        nbxy = nbx * nby
+        npxy = nprocx * nprocy
+        dx1 = 1. / dx
+        dy1 = 1. / dy
+        dz1 = 1. / dz
+!
+!  For placing particles in blocks the CPUs need a common reference point that
+!  is not affected by round off errors or representation noise.
+!
+        if (lroot) then
+          xref_par=x(l1)
+          yref_par=y(m1)
+          zref_par=z(n1)
+        endif
+        call mpibcast_real(xref_par,1)
+        call mpibcast_real(yref_par,1)
+        call mpibcast_real(zref_par,1)
+!
+        lfirstcall = .false.
+      endif init
+!
+!  Find processor and brick x-coordinate
+!
+      if (nxgrid/=1) then
+        if (lequidist(1)) then
+          ix0=nint((xxp(1)-xref_par)*dx1)+1
+        else
+          call find_index_by_bisection(xxp(1),xgrid,ix0)
+        endif
+        ipx0=(ix0-1)/nx
+        ix0=ix0-ipx0*nx
+        ibx0=(ix0-1)/nxb
+        ix0=ix0-ibx0*nxb+nghostb
+      else
+        ibx0 = 0
+        ipx0 = 0
+        ix0 = l1b
+      endif
+!
+!  Find processor and brick y-coordinate
+!
+      if (nygrid/=1) then
+        if (lequidist(2)) then
+          iy0=nint((xxp(2)-yref_par)*dy1)+1
+        else
+          call find_index_by_bisection(xxp(2),ygrid,iy0)
+        endif
+        ipy0=(iy0-1)/ny
+        iy0=iy0-ipy0*ny
+        iby0=(iy0-1)/nyb
+        iy0=iy0-iby0*nyb+nghostb
+      else
+        iby0 = 0
+        ipy0 = 0
+        iy0 = m1b
+      endif
+!
+!  Find processor and brick z-coordinate
+!
+      if (nzgrid/=1) then
+        if (lequidist(3)) then
+          iz0=nint((xxp(3)-zref_par)*dz1)+1
+        else
+          call find_index_by_bisection(xxp(3),zgrid,iz0)
+        endif
+        ipz0=(iz0-1)/nz
+        iz0=iz0-ipz0*nz
+        ibz0=(iz0-1)/nzb
+        iz0=iz0-ibz0*nzb+nghostb
+      else
+        ibz0 = 0
+        ipz0 = 0
+        iz0 = n1b
+      endif
+!
+!  Check that particle is not closest to ghost cell (or completely outside
+!  bounds).
+!
+      if ((ix0<l1b.or.ix0>l2b).or.(iy0<m1b.or.iy0>m2b).or.(iz0<n1b.or.iz0>n2b)) then
+        print*, 'get_brick_index: grid index of particle out of bounds'
+        print*, 'get_brick_index: ix0 , iy0 , iz0  =', ix0, iy0, iz0
+        print*, 'get_brick_index: ibx0, iby0, ibz0 =', ibx0, iby0, ibz0
+        print*, 'get_brick_index: ipx0, ipy0, ipz0 =', ipx0, ipy0, ipz0
+        print*, 'get_brick_index: xxp = ', xxp
+        if (present(status)) then
+          status = -1
+        else
+          call fatal_error_local('get_brick_index','')
+        endif
+      endif
+!
+!  Calculate processor and brick index.
+!
+      ibrick = ibx0 + iby0 * nbx + ibz0 * nbxy
+      iproc  = ipx0 + ipy0 * nprocx + ipz0 * npxy
+!
+!  Save the nearest grid point.
+!
+      if (present(ineargrid)) then
+        ineargrid(1) = ix0
+        ineargrid(2) = iy0
+        ineargrid(3) = iz0
+      endif
+!
+!  Clean exit.
+!
+      if (present(status)) status = 0
+!
+    endsubroutine get_brick_index
 !***********************************************************************
 endmodule Particles_mpicomm
