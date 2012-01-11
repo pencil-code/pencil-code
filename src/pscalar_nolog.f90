@@ -96,7 +96,7 @@ module Pscalar
   integer :: idiag_gcc6m=0, idiag_gcc7m=0, idiag_gcc8m=0, idiag_gcc9m=0
   integer :: idiag_cugccm=0, idiag_ccugum=0
   integer :: idiag_ccmx=0, idiag_ccmy=0, idiag_ccmz=0, idiag_ccglnrm=0
-  integer :: idiag_uxcmz=0, idiag_uycmz=0, idiag_uzcmz=0
+  integer :: idiag_uxcmz=0, idiag_uycmz=0, idiag_uzcmz=0, idiag_cc2mz=0
   integer :: idiag_ccmxy=0, idiag_ccmxz=0
   integer :: idiag_cluz_uzlcm=0, idiag_gcguzm=0
 !
@@ -679,6 +679,7 @@ module Pscalar
 !
       if (l1davgfirst) then
         call xysum_mn_name_z(p%cc(:,1),idiag_ccmz)
+        call xysum_mn_name_z(p%cc(:,1)**2,idiag_cc2mz)
         call xzsum_mn_name_y(p%cc(:,1),idiag_ccmy)
         call yzsum_mn_name_x(p%cc(:,1),idiag_ccmx)
         call xysum_mn_name_z(p%uu(:,1)*p%cc(:,1),idiag_uxcmz)
@@ -777,7 +778,7 @@ module Pscalar
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_ccm=0
         idiag_Qrhoccm=0; idiag_Qpsclm=0; idiag_mcct=0
         idiag_ccmz=0; idiag_ccmy=0; idiag_ccmx=0
-        idiag_uxcmz=0; idiag_uycmz=0; idiag_uzcmz=0
+        idiag_uxcmz=0; idiag_uycmz=0; idiag_uzcmz=0; idiag_cc2mz=0
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
         idiag_ccrms=0
         idiag_uxcm=0; idiag_uycm=0; idiag_uzcm=0
@@ -843,6 +844,7 @@ module Pscalar
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uycmz',idiag_uycmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzcmz',idiag_uzcmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ccmz',idiag_ccmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'cc2mz',idiag_cc2mz)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
