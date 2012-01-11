@@ -7,7 +7,8 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
   log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
   xstyle=xstyle,ystyle=ystyle,fluct=fluct,newwindow=newwindow, xsize=xsize, $
-  ysize=ysize,png_truecolor=png_truecolor
+  ysize=ysize,png_truecolor=png_truecolor, $
+  xaxisscale=xaxisscale
 ;
 ; $Id$
 ;
