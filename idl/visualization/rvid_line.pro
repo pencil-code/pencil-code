@@ -8,7 +8,7 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
   xstyle=xstyle,ystyle=ystyle,fluct=fluct,newwindow=newwindow, xsize=xsize, $
   ysize=ysize,png_truecolor=png_truecolor, $
-  xaxisscale=xaxisscale
+  xaxisscale=xaxisscale, normalize=normalize
 ;
 ; $Id$
 ;
@@ -31,7 +31,6 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
 common pc_precision, zero, one
 ;
 default,proc,-1
-default,amax,.05
 default,amin,-amax
 default,field,'lnrho'
 default,datadir,'data'
@@ -46,6 +45,11 @@ default, xgrid, 0
 default, ygrid, 0
 default, zgrid, 0
 default, psym, -2
+;
+;  normalization by the rms value at each time step
+;  in that case the default should be around 3.
+;
+if keyword_set(normalize) then default,amax,2.5 else default,amax,.05
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
@@ -205,6 +209,7 @@ while (not eof(1)) do begin
   if (keyword_set(exsquared)) then axz=exp(axz)^2
   if (keyword_set(nsmooth)) then axz=smooth(axz,nsmooth)
   if (keyword_set(fluct)) then axz=axz-mean(axz)
+  if (keyword_set(normalize)) then axz=axz/sqrt(mean(axz^2))
   if (keyword_set(func)) then begin
     value=axz
     res=execute('axz='+func,1)
