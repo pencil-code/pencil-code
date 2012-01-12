@@ -1,4 +1,4 @@
-! $Id: particles_collisions.f90 17701 2011-10-07 15:14:06Z michiel.lambrechts $
+! $Id$
 !
 !  This module bins particle pairs in separation and relative velocity at regular
 !  intervals.
@@ -333,10 +333,10 @@ module Particles_diagnos_dv
         else
           open(UNIT=lun_input,FILE=trim(filename),FORM='unformatted')
         endif
-        n_snaps=n_snaps+1              
+        n_snaps=n_snaps+1
         write(UNIT=lun_input), n_snaps, coldat2, compdat2
       endif
-      close(UNIT=lun_input)      
+      close(UNIT=lun_input)
 !
     endsubroutine write_collisions
 !***********************************************************************
@@ -453,7 +453,7 @@ module Particles_diagnos_dv
       endif
       lfirstcall=.false.
 !
-      do k=1, npar_loc 
+      do k=1, npar_loc
         ineargrid_c(k,1)=max(min(ceiling((fp(k, ixp)-xyz0_loc(1))*dx1),n_c(1)),1)
         ineargrid_c(k,2)=max(min(ceiling((fp(k, iyp)-xyz0_loc(2))*dy1),n_c(2)),1)
         ineargrid_c(k,3)=max(min(ceiling((fp(k, izp)-xyz0_loc(3))*dz1),n_c(3)),1)
