@@ -208,7 +208,7 @@ module Particles_diagnos_dv
 !
 ! generate shepherd/neighbour arrays
 !
-      call shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c, dx_c)
+      call shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c)
 !
 ! loop over particles in the collisional grid
 !

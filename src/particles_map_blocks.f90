@@ -1450,7 +1450,7 @@ module Particles_map
 !
     endsubroutine shepherd_neighbour_block
 !***********************************************************************
-    subroutine shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c, dx_c)
+    subroutine shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c)
 !
 !  17-12-2011: ought to be coded by AlexHubbard
 !

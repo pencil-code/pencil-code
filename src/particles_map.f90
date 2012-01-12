@@ -1586,8 +1586,7 @@ module Particles_map
 !
     endsubroutine fill_bricks_with_blocks
 !***********************************************************************
-    subroutine shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c, &
-        dx_c)
+    subroutine shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c)
 !
 !  20-July-2010: coded AlexHubbard
 !
@@ -1596,7 +1595,6 @@ module Particles_map
 !  Adapted from particles_map
 !
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension(3) :: dx_c
       integer, dimension (mpar_loc,3) :: ineargrid_c
       integer, dimension (:,:,:) :: kshepherd_c
       integer, dimension (mpar_loc) :: kneighbour_c
