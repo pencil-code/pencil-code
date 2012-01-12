@@ -1,3 +1,4 @@
+! $Id$
 !
 !  This module tracks the evolution of particles in terms of
 !  user defined "states".  Currently the only implemented state is in terms
@@ -45,7 +46,7 @@ module Particles_diagnos_state
 !  Set up indices for access to the fp and dfp arrays
 !
       if (lroot) call svn_id( &
-           "$Id: particles_dust.f90 17241 2011-07-21 06:56:36Z anders@astro.lu.se $")
+           "$Id$")
 !
       ipss=npvar+1  !particle state
       ipst=npvar+2  !time particle entered current state
@@ -53,7 +54,7 @@ module Particles_diagnos_state
       ipxx=npvar+3  !x position particle entered current state
       ipyy=npvar+4  !y position particle entered current state
       ipzz=npvar+5  !z position particle entered current state
-!    
+!
 !     individual particle labels are tracked through ipar,
 !
       npvar=npvar+5
@@ -110,7 +111,7 @@ module Particles_diagnos_state
       do k=npar_loc_old+1,npar_loc
         fp(k,ipst)=t
         fp(k,ipss)=-1.
-        fp(k,ipxx:ipzz)=fp(k,ixp:izp)                
+        fp(k,ipxx:ipzz)=fp(k,ixp:izp)
       enddo
 !
     endsubroutine insert_particles_diagnos_state
@@ -296,7 +297,7 @@ module Particles_diagnos_state
             POSITION='append',FORM='formatted')
         l_opened=.true.
       endif
-!         
+!
       if (l_opened) then
         time_span=t-fp(k,ipst)
         travel=fp(k,ixp:izp)-fp(k,ipxx:ipzz)
