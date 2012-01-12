@@ -6,8 +6,6 @@
 module Filter
 !
   use Cdata
-  use Mpicomm
-  use Sub
 !
   implicit none
 !
@@ -37,7 +35,7 @@ module Filter
 !  30-Aug-02/wolf: coded
 !  28-jul-03/axel: moved to own module, allowed range ivar1-ivar2
 !
-      use Boundcond
+      use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -94,11 +92,8 @@ module Filter
 !
 !  30-Aug-02/wolf: coded
 !
-      use Cdata
-      use Mpicomm
-      use Sub
-      use Deriv
-!-- use Wsnaps
+      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -164,7 +159,9 @@ module Filter
 !
 !  8-Jul-02/wolf: coded
 !
-      use Boundcond
+      use Boundcond, only: boundconds
+      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+      use Sub, only: del6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -237,10 +234,6 @@ module Filter
 !  may not be too bad an approximation even several procs.
 !
 !  28-Sep-02/axel: coded
-!
-      use Cdata
-      use Mpicomm
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
