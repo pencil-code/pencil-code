@@ -1326,6 +1326,7 @@ module Magnetic
         case ('Alfven-xy'); call alfven_xy(amplaa(j),f,iuu,iaa,kx_aa(j),ky_aa(j))
         case ('Alfven-xz'); call alfven_xz(amplaa(j),f,iuu,iaa,kx_aa(j),kz_aa(j))
         case ('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
+        case ('Alfvenz-bell'); call alfvenz_bell(amplaa(j),f,iuu,iaa,kz_aa(j),B_ext(3),J_ext(3))
         case ('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,kz_aa(j),Omega)
         case ('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa)
         case ('Ferriere-uniform-Bx'); call ferriere_uniform_x(amplaa(j),f,iaa)
@@ -5459,6 +5460,32 @@ module Magnetic
       enddo; enddo
 !
     endsubroutine alfvenz_rot
+!***********************************************************************
+    subroutine alfvenz_bell(ampl,f,iuu,iaa,kz,B0,J0)
+!
+!  Bell instability for the pressureless equations
+!  du/dt = j x B0 - J0 x b
+!  da/dt = u x B0
+!
+!  13-jan-12/axel: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kz,B0,J0,lam,oA
+      integer :: iuu,iaa
+!
+!  ux, uy, Ax and Ay
+!
+      oA=kz*B0
+      lam=sqrt(oA*(J0-oA))
+      if (lroot) print*,'alfvenz_bell: Bell inst., lam,kz,oA,B0,J0=',lam,kz,oA,B0,J0
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,iuu+0)=-ampl*sin(kz*z(n))*lam/kz
+        f(l1:l2,m,n,iuu+1)=+ampl*cos(kz*z(n))*lam/kz
+        f(l1:l2,m,n,iaa+0)=+ampl*cos(kz*z(n))*B0/kz
+        f(l1:l2,m,n,iaa+1)=+ampl*sin(kz*z(n))*B0/kz
+      enddo; enddo
+!
+    endsubroutine alfvenz_bell
 !***********************************************************************
     subroutine alfvenz_rot_shear(ampl,f,iuu,iaa,kz,OO)
 !
