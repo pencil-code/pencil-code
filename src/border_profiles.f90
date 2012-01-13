@@ -27,8 +27,8 @@ module BorderProfiles
   real, dimension(nx) :: rborder_mn
   real                :: tborder1=impossible
 !
-! WL: Ideally,this 4D array f_init should be allocatable, since it 
-!     is only used in specific conditions in the code (only when the 
+! WL: Ideally,this 4D array f_init should be allocatable, since it
+!     is only used in specific conditions in the code (only when the
 !     border profile chosen is 'initial-condition').
 !
   real, dimension(mx,my,mz,mvar) :: f_init
@@ -48,7 +48,7 @@ module BorderProfiles
 !   9-nov-09/axel: set r_int_border and r_ext_border if still impossible
 !  17-jun-10/wlad: moved r_int_border and r_ext_border to border drive
 !                  because r_int and r_ext are not set until after all
-!                  calls to initialize are done in Register.   
+!                  calls to initialize are done in Register.
 !
       use Cdata
       use Messages
@@ -159,8 +159,8 @@ module BorderProfiles
     subroutine request_border_driving(border_var)
 !
 !  Tell the BorderProfiles subroutine that we need border driving.
-!  Used for requesting the right pencils. Also save the initial 
-!  conditions in case that is the border profile to be used. 
+!  Used for requesting the right pencils. Also save the initial
+!  conditions in case that is the border profile to be used.
 !
 !  25-aug-09/anders: coded
 !  06-mar-11/wlad  : added IC functionality
@@ -172,7 +172,7 @@ module BorderProfiles
 !
 !  Check if there is a variable requesting initial condition as border
 !
-      if (lread.and.border_var=='initial-condition') then         
+      if (lread.and.border_var=='initial-condition') then
 !
 !  Check if VAR0 exists
 !
@@ -180,7 +180,7 @@ module BorderProfiles
         if (.not.exists) then
           print*,'VAR0 for iproc=',iproc,'not found!'
           print*,'Check lwrite_ic in start.in. If it'
-          print*,'is false, re-run start.csh with lwrite_ic=T' 
+          print*,'is false, re-run start.csh with lwrite_ic=T'
           STOP 1
         endif
 !
@@ -210,7 +210,7 @@ module BorderProfiles
         if (tborder==0.) lpenc_requested(i_uu)=.true.
         if (lcylinder_in_a_box.or.lcylindrical_coords) then
           lpenc_requested(i_rcyl_mn)=.true.
-          if (tborder==0.) then 
+          if (tborder==0.) then
             lpenc_requested(i_phix)=.true.
             lpenc_requested(i_phiy)=.true.
           endif
@@ -225,7 +225,7 @@ module BorderProfiles
 !***********************************************************************
     subroutine calc_pencils_borderprofiles(f,p)
 !
-!  rborder_mn is an "internal" pencil to BorderProfiles, that does not 
+!  rborder_mn is an "internal" pencil to BorderProfiles, that does not
 !  need to be put in the pencil case.
 !
       use Sub, only: keep_compiler_quiet
@@ -258,7 +258,7 @@ module BorderProfiles
         call set_border_xy(ivar,fborder)
       elseif (lcylindrical_coords) then
         call set_border_xz(ivar,fborder)
-      else 
+      else
         print*,'The system has no obvious symmetry. It is    '
         print*,'better to stop and check how you want to save'
         print*,'the initial condition for border profiles    '
@@ -271,10 +271,10 @@ module BorderProfiles
 !***********************************************************************
     subroutine set_border_xy(ivar,fborder)
 !
-!  Save the initial condition for a quantity that is 
-!  symmetric in the z axis. That can be a vertically 
-!  symmetric box in cartesian coordinates or an 
-!  azimuthally symmetric box in spherical coordinates. 
+!  Save the initial condition for a quantity that is
+!  symmetric in the z axis. That can be a vertically
+!  symmetric box in cartesian coordinates or an
+!  azimuthally symmetric box in spherical coordinates.
 !
 !  28-apr-09/wlad: coded
 !
@@ -294,8 +294,8 @@ module BorderProfiles
 !***********************************************************************
     subroutine set_border_xz(ivar,fborder)
 !
-!  Save the initial condition for a quantity that is 
-!  symmetric in the y axis. An azimuthally symmetric 
+!  Save the initial condition for a quantity that is
+!  symmetric in the y axis. An azimuthally symmetric
 !  box in cylindrical coordinates, for instance.
 !
 !  28-apr-09/wlad: coded
@@ -330,7 +330,7 @@ module BorderProfiles
 !   -------------------------------------------
 ! r_int_border    r_int_border        ...          r_ext_border    r_ext_border
 !          +2*w                      -2*w
-! 
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
@@ -342,7 +342,7 @@ module BorderProfiles
 !  if r_int_border and/or r_ext_border are still set to impossible,
 !  then put them equal to r_int and r_ext, respectively.
 !
-      if (lfirstcall) then 
+      if (lfirstcall) then
         if (r_int_border==impossible) r_int_border=r_int
         if (r_ext_border==impossible) r_ext_border=r_ext
         lfirstcall=.false.
@@ -359,7 +359,7 @@ module BorderProfiles
              (rborder_mn(i)<=r_int_border+2*wborder_int).or.&
             !outer stripe
              (rborder_mn(i)>=r_ext_border-2*wborder_ext)) then
-!        
+!
           call get_drive_time(p,inverse_drive_time,i)
           call get_border(p,pborder,i)
           df(i+l1-1,m,n,j) = df(i+l1-1,m,n,j) &
@@ -458,11 +458,13 @@ module BorderProfiles
         border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
 !
         df(l1:l2,m,n,j) = df(l1:l2,m,n,j) * border_prof_pencil
-!        
+!
         if (lborder_hyper_diff) then
-          call del6(f,j,del6_fj,IGNOREDX=.true.)
-          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
-              border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
+          if (maxval(border_prof_pencil) < 1.) then
+            call del6(f,j,del6_fj,IGNOREDX=.true.)
+            df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+                border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
+          endif
         endif
       endif
 !
