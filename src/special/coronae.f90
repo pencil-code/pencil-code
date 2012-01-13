@@ -36,7 +36,7 @@ module Special
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
-  logical :: coronae_fix=.false.
+  logical :: coronae_fix=.false.,lfilter_farray=.false.
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
 !
@@ -507,7 +507,7 @@ module Special
         call identify_bcs('spitzerz',ispitzerz)
       endif
 !
-      call filter(f,df)
+      if (lfilter_farray) call filter_farray(f,df)
 !
       if (tau_inv_spitzer /= 0.) then
 !
@@ -3742,7 +3742,7 @@ module Special
 !
     endsubroutine der_upwind
 !***********************************************************************
-    subroutine filter(f,df)
+    subroutine filter_farray(f,df)
 !
 !  Reduce noise of farray using mesh independend hyper diffusion.
 !  Filter strength is equal for all variables up to now and has
@@ -3766,7 +3766,7 @@ module Special
         enddo
       endif
 !
-    endsubroutine filter
+    endsubroutine filter_farray
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
