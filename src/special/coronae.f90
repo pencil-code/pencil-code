@@ -37,7 +37,7 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.
-  logical :: mark=.false.,ldensity_floor_c=.false.
+  logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
@@ -58,7 +58,7 @@ module Special
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
-      ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI
+      ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules
 !
 ! variables for print.in
 !
@@ -507,6 +507,8 @@ module Special
         call identify_bcs('spitzerz',ispitzerz)
       endif
 !
+      call filter(f,df)
+!
       if (tau_inv_spitzer /= 0.) then
 !
         b2_1=1./(p%b2+tini)
@@ -533,7 +535,7 @@ module Special
 !
         if (Ksat/=0.) then
           call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
-          qsat = 0.01*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
+          qsat = Ksat*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
 !
           where (qabs > qsat)
             spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
@@ -838,7 +840,7 @@ module Special
         else
           call fatal_error('hyper3_chi special','only for ltemperature')
         endif
-
+!
         call del6(f,itemp,hc,IGNOREDX=.true.)
         df(l1:l2,m,n,itemp) = df(l1:l2,m,n,itemp) + hyper3_chi*hc
 !
@@ -2046,7 +2048,7 @@ module Special
       if (.not.allocated(Axr))  allocate(Axr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
       if (.not.allocated(Ayl))  allocate(Ayl(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
       if (.not.allocated(Ayr))  allocate(Ayr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      allocate(Ax(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)  
+      allocate(Ax(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)
       allocate(Ay(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)
 !
       if (ierr > 0) call fatal_error('bc_force_aa_time', &
@@ -2120,13 +2122,13 @@ module Special
 !
         Bz0l = Bz0l *  1e-4 / u_b  ! left real part
         Bz0l_i = 0.                !   imaginary part
-
+!
         Bz0r = Bz0r *  1e-4 / u_b  ! right real part
-        Bz0r_i = 0.                !   imaginary part 
+        Bz0r_i = 0.                !   imaginary part
 !
         call fourier_transform_other(Bz0l,Bz0l_i)
         call fourier_transform_other(Bz0r,Bz0r_i)
-!        
+!
 ! First the Ax component:
         where (k2 /= 0 )
           Al_r = -Bz0l_i*ky/k2
@@ -2141,7 +2143,7 @@ module Special
           Ar_r = -Bz0r_i*ky/ky(1,idy2)
           Ar_i =  Bz0r  *ky/ky(1,idy2)
         endwhere
-!        
+!
         call fourier_transform_other(Al_r,Al_i,linv=.true.)
         call fourier_transform_other(Ar_r,Ar_i,linv=.true.)
         Axl = Al_r
@@ -2157,7 +2159,7 @@ module Special
         elsewhere
           Al_r =  Bz0l_i*kx/kx(idx2,1)
           Al_i = -Bz0l  *kx/kx(idx2,1)
-! 
+!
           Ar_r =  Bz0r_i*kx/kx(idx2,1)
           Ar_i = -Bz0r  *kx/kx(idx2,1)
         endwhere
@@ -2190,7 +2192,7 @@ module Special
 !
       if (allocated(Ax)) deallocate(Ax)
       if (allocated(Ay)) deallocate(Ay)
-
+!
     endsubroutine mag_time_bound
 !***********************************************************************
     subroutine uu_twist(f)
@@ -2366,6 +2368,9 @@ module Special
       yrange_arr(2)=nint(ldif*yrange)
       yrange_arr(3)=nint(ldif*ldif*yrange)
 !
+      if (lwrite_granules) &
+          open (77+iproc,file=trim(directory_snap)//trim('/granules.txt'))
+!
     endsubroutine set_driver_params
 !***********************************************************************
     subroutine granulation_driver(f)
@@ -2396,7 +2401,7 @@ module Special
           call fatal_error('read_ext_vel_field', &
           'not yet implemented for non-equidistant grids')
 !
-      if (t >= t_gran) then 
+      if (t >= t_gran) then
 ! Save global random number seed, will be restored after granulation
 ! is done
         call random_seed_wrapper(GET=global_rstate)
@@ -2432,6 +2437,7 @@ module Special
         do level=1,n_gran_level
           call write_points(level)
         enddo
+        close (77+iproc)
       endif
 !
     endsubroutine granulation_driver
@@ -2597,6 +2603,8 @@ module Special
               tmppoint(1) = current%data(1) + ipx*nx
               tmppoint(2) = current%data(2) + ipy*ny
               tmppoint(3:6) = current%data(3:6)
+              if (lwrite_granules.and.level==1) &
+                  write (77+iproc,'(I2,E10.2,E10.2,E10.2,E10.2,E10.2,E10.2,I3,I5)') 1,current%data,level,current%number
             else
 ! Create dummy result
               tmppoint(:)=0.
@@ -2619,6 +2627,8 @@ module Special
               current%data(2)=tmppoint_recv(2)-ipy*ny
               current%data(3:6)=tmppoint_recv(3:6)
               call draw_update(level)
+              if (lwrite_granules.and.level==1) &
+                write (77+iproc,'(I2,E10.2,E10.2,E10.2,E10.2,E10.2,E10.2,I3,I5)') 1,current%data,level,current%number
             endif
           endif
 !
@@ -2779,7 +2789,7 @@ module Special
       real :: dist0,tmp,ampl,granr
       integer :: xrange,yrange
       integer :: xpos,ypos
-!      logical :: lno_overlap
+      logical :: lno_overlap
 !
 ! SVEN: ACHTUNG xrange ist integer aber xrange_arr ist ein Real
 !
@@ -2794,7 +2804,7 @@ module Special
 !
       xpos = int(current%data(1)+ipx*nx)
 !
-!      lno_overlap = .true.
+      lno_overlap = .true.
 !
       do ii=xpos-xrange,xpos+xrange
 !
@@ -2813,6 +2823,8 @@ module Special
             j = 1+mod(jj-1+nygrid,nygrid)
             jl = j-ipy*ny
             if ((jl >= 1) .and. (jl <= ny)) then
+!
+              lno_overlap = .false.
 !
               xdist=dx*(ii-current%data(1)-ipx*nx)
               ydist=dy*(jj-current%data(2)-ipy*ny)
@@ -2838,7 +2850,6 @@ module Special
                   vx(il,jl)=vv*xdist/dist
                   vy(il,jl)=vv*ydist/dist
                   w(il,jl) =wtmp
-!                  lno_overlap = .false.
                 else
                   ! intergranular area
                   vx(il,jl)=vx(il,jl)+vv*xdist/dist
@@ -2852,7 +2863,7 @@ module Special
         endif
       enddo
 !
-!      if (lno_overlap.and. t*unit_time > 300) call remove_point
+!      if (lno_overlap .and. it > 2) call remove_point(level)
 !
     endsubroutine draw_update
 !***********************************************************************
@@ -3014,7 +3025,7 @@ module Special
 ! remove point if amplitude is less than threshold
         if (current%data(3)/ampl_arr(level) < thresh &
             .and.t > current%data(5)) then
-          call remove_point
+          call remove_point(level)
         endif
 !
 ! check if last point is reached
@@ -3028,11 +3039,16 @@ module Special
 !
     endsubroutine update_points
 !***********************************************************************
-    subroutine remove_point
+    subroutine remove_point(level)
 !
 ! Remove any pointer from the list.
 !
 ! 12-aug-10/bing: coded
+!
+      integer, intent(in) :: level
+!
+      if (lwrite_granules) &
+          write (77+iproc,'(I2,E10.2,E10.2,E10.2,E10.2,E10.2,E10.2,I3,I5)') -1,current%data,level,current%number
 !
       if (associated(current%next)) then
 ! current is NOT the last one
@@ -3725,6 +3741,32 @@ module Special
       endif
 !
     endsubroutine der_upwind
+!***********************************************************************
+    subroutine filter(f,df)
+!
+!  Reduce noise of farray using mesh independend hyper diffusion.
+!  Filter strength is equal for all variables up to now and has
+!  to be smaller than 1/64 for numerical stability.
+!
+!  13-jan-12/bing: coded
+!
+      use Sub, only: del6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: del6_fj
+      real, dimension (mvar) :: filter_strength=0.01
+      integer :: j
+!
+      if (dt/=0.) then
+        do j=1,mvar
+          call del6(f,j,del6_fj,IGNOREDX=.true.)
+          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+              filter_strength(j)*del6_fj /dt
+        enddo
+      endif
+!
+    endsubroutine filter
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
