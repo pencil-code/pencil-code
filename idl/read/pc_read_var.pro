@@ -48,6 +48,8 @@
 ;   /nostats: Suppress only summary statistics.
 ;     /stats: Force printing of summary statistics even if /quiet is set.
 ;      /help: Display this usage information, and exit.
+;/noreadgrid: Skip reading the grid into a structure, which is too
+;             slow in high processor count.
 ;
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
@@ -81,7 +83,7 @@ pro pc_read_var,                                                  $
     swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
-    exit_status=exit_status
+    exit_status=exit_status, noreadgrid=noreadgrid
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -283,7 +285,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; Read the grid. Calling pc_read_grid also makes sure any derivative stuff is
 ; correctly set in the common block.
 ;
-  pc_read_grid, object=grid, dim=dim, proc=proc, datadir=datadir, $
+  if (not(keyword_set(noreadgrid))) then $
+      pc_read_grid, object=grid, dim=dim, proc=proc, datadir=datadir, $
       param=param, swap_endian=swap_endian, allprocs=allprocs, /quiet
 ;
 ; Apply "magic" variable transformations for derived quantities.
