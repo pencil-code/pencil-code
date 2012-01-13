@@ -31,7 +31,6 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
 common pc_precision, zero, one
 ;
 default,proc,-1
-default,amin,-amax
 default,field,'lnrho'
 default,datadir,'data'
 default,imgdir,'.'
@@ -50,6 +49,7 @@ default, psym, -2
 ;  in that case the default should be around 3.
 ;
 if keyword_set(normalize) then default,amax,2.5 else default,amax,.05
+default,amin,-amax
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
