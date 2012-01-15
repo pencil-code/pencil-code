@@ -1149,8 +1149,7 @@ module Forcing
                   forcing_rhs2(:,j)=forcing_rhs(:,j)
                 elseif (lforcing2_curl) then
                   forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
-                    *real(cmplx(coef3(j),-profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
-                    *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+                    *real(cmplx(0.,coef3(j)))*fda(:,j)
                 else
                   forcing_rhs2(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                     *real(cmplx(0.,coef3(j)) &
