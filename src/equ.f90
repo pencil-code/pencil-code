@@ -302,8 +302,10 @@ module Equ
 !DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to
 ! hydro_after_boundary etc.
 !AB: yes, we should rename these step by step
+!AB: so calc_polymer_after_boundary -> polymer_after_boundary
       if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
+!--   if (lmagnetic)              call magnetic_after_boundary(f)
       if (lentropy)               call calc_lentropy_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (lpolymer)               call calc_polymer_after_boundary(f)
