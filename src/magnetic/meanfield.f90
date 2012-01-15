@@ -496,14 +496,18 @@ module Magnetic_meanfield
 !  The following 9 lines have not been used for any publications so far.
 !
         if (lmeanfield_jxb_with_vA2) then
-          meanfield_urms21=1./(3.*meanfield_kf*meanfield_etat)**2
-          meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
-          meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
-          meanfield_qe_func=meanfield_qe*(1.-2*pi_1*atan(p%b2*meanfield_Be21))
-          meanfield_qs_der=2*pi_1*meanfield_qs/(1.+(p%vA2*meanfield_urms21)**2)
-          meanfield_qp_der=2*pi_1*meanfield_qp/(1.+(p%vA2*meanfield_urms21)**2)
-          meanfield_qe_der=2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
-          call multsv_mn(meanfield_qs_func,p%jxb,tmp_jxb); p%jxb_mf=tmp_jxb
+          call inevitably_fatal_error('calc_pencils_magnetic', &
+            'lmeanfield_jxb_with_vA2 should be checked')
+!--
+!         meanfield_urms21=1./(3.*meanfield_kf*meanfield_etat)**2
+!         meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
+!         meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
+!         meanfield_qe_func=meanfield_qe*(1.-2*pi_1*atan(p%b2*meanfield_Be21))
+!         meanfield_qs_der=2*pi_1*meanfield_qs/(1.+(p%vA2*meanfield_urms21)**2)
+!         meanfield_qp_der=2*pi_1*meanfield_qp/(1.+(p%vA2*meanfield_urms21)**2)
+!         meanfield_qe_der=2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
+!         call multsv_mn(meanfield_qs_func,p%jxb,tmp_jxb); p%jxb_mf=tmp_jxb
+!--
 !
 !  The follwing (not lmeanfield_jxb_with_vA2) has been used for the
 !  various publications so far.
