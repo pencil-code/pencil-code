@@ -58,7 +58,8 @@ module Special
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
-      ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules
+      ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
+      lfilter_farray
 !
 ! variables for print.in
 !
@@ -483,7 +484,7 @@ module Special
       use Diagnostics,     only : max_mn_name
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx) :: b2_1,qsat,qabs
@@ -496,7 +497,7 @@ module Special
       integer :: i
 !
       intent(in) :: p
-      intent(inout) :: df
+      intent(inout) :: f,df
 !
 !  Identify module and boundary conditions.
 !
@@ -513,21 +514,22 @@ module Special
 !
         b2_1=1./(p%b2+tini)
 !
-        do i=1,3
-          call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
-        enddo
-        call dot2(p%glnTT,tmp)
-        where (sqrt(tmp) < 1e-5)
-          glnTT_upwind(:,1) = p%glnTT(:,1)
-          glnTT_upwind(:,2) = p%glnTT(:,2)
-          glnTT_upwind(:,3) = p%glnTT(:,3)
-        endwhere
+       ! do i=1,3
+       !   call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+       ! enddo
+       ! call dot2(p%glnTT,tmp)
+       ! where (sqrt(tmp) < 1e-5)
+       !   glnTT_upwind(:,1) = p%glnTT(:,1)
+       !   glnTT_upwind(:,2) = p%glnTT(:,2)
+       !   glnTT_upwind(:,3) = p%glnTT(:,3)
+       ! endwhere
+
+       ! call multsv(Kspitzer_para*exp(3.5*p%lnTT),glnTT_upwind,K1)
+        call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
 !
-        call multsv(Kspitzer_para*exp(3.5*p%lnTT),glnTT_upwind,K1)
-!        call multsv(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho),p%glnTT,K1)
 !
         call dot(K1,p%bb,tmp)
-        call multsv(b2_1*tmp,p%bb,spitzer_vec)
+        call multsv(-b2_1*tmp,p%bb,spitzer_vec)
 !
 !  Limit the heat flux
 !
@@ -546,7 +548,7 @@ module Special
 !
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
-              tau_inv_spitzer*(-q(:,i)-spitzer_vec(:,i))
+              tau_inv_spitzer*(-q(:,i)+spitzer_vec(:,i))
         enddo
 !
 ! add diffusion to heat conduction vector
@@ -574,9 +576,6 @@ module Special
 !
        call div(f,ispitzer,rhs)
 !
-!       call dot(p%glnTT+p%glnrho,q,tmp)
-!       rhs = rhs +tmp
-!
        rhs = rhs * exp(-p%lnrho-p%lnTT)
 !
        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
@@ -593,6 +592,11 @@ module Special
         endif
 !
         if (lfirst.and.ldt) then
+          call dot2(f(l1:l2,m,n,ispitzerx:ispitzerz),rhs,PRECISE_SQRT=.true.)
+          rhs = rhs*exp(-p%lnTT-p%lnrho)*gamma*p%cp1
+          advec_uu = max(advec_uu,rhs)
+          if (idiag_dtspitzer/=0) call max_mn_name(rhs/cdt,idiag_dtspitzer,l_dt=.true.)
+          !
           dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
         endif
       endif
