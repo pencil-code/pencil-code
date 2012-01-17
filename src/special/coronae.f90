@@ -37,6 +37,7 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
   logical :: coronae_fix=.false.,lfilter_farray=.false.
+  real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
 !
@@ -59,7 +60,7 @@ module Special
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
-      lfilter_farray
+      lfilter_farray,filter_strength
 !
 ! variables for print.in
 !
@@ -3759,14 +3760,15 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: del6_fj
-      real, dimension (mvar) :: filter_strength=0.01
       integer :: j
 !
       if (dt/=0.) then
         do j=1,mvar
-          call del6(f,j,del6_fj,IGNOREDX=.true.)
-          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
-              filter_strength(j)*del6_fj /dt
+          if (filter_strength(j)/=0.) then 
+            call del6(f,j,del6_fj,IGNOREDX=.true.)
+            df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+                filter_strength(j)*del6_fj /dt
+          endif
         enddo
       endif
 !
