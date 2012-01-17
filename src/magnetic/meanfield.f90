@@ -523,15 +523,15 @@ module Magnetic_meanfield
           meanfield_Be21=1./(meanfield_Be*Beq)**2
           meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
           meanfield_qe_func=meanfield_qe*(1.-2*pi_1*atan(p%b2*meanfield_Be21))
-          meanfield_qs_der=2*pi_1*meanfield_qs*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
-          meanfield_qe_der=2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
+          meanfield_qs_der=-2*pi_1*meanfield_qs*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
+          meanfield_qe_der=-2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
           meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
-          meanfield_qp_der=2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
+          meanfield_qp_der=-2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
 
           if(qp_model=='rational') then
             B2renorm=1/Beq**2
             meanfield_qp_func=meanfield_qp/(p%b2*B2renorm/meanfield_Bp**2+1.)
-            meanfield_qp_der=-meanfield_qp_func**2/(meanfield_qp*meanfield_Bp**2)
+            meanfield_qp_der=-meanfield_qp_func**2/(meanfield_qp*meanfield_Bp**2)*B2renorm
           endif
 !
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
