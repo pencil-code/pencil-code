@@ -527,28 +527,21 @@ module Magnetic_meanfield
           meanfield_qe_der=2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
           meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
           meanfield_qp_der=2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
+
           if(qp_model=='rational') then
             B2renorm=1/Beq**2
-!           rational fit where qp=(x0^2+c)/(x^2+c)
-!           qp_c=qp_d/4*(1-qp_x0**2/qp_d)**2  !qp_d is defined as a positive value
-!            meanfield_qp_func=(qp_x0**2+qp_c)/(p%b2*B2renorm+qp_c)
-!            meanfield_qp_der=-meanfield_qp_func/(p%b2*B2renorm+qp_c)
-!           new formalism with qp0 and bp instead of xc and d, derivative w respect to b2
-            meanfield_qp_func=meanfield_qp/(p%b2*B2renorm/meanfield_Bp**2+1)
-            meanfield_qp_der=-meanfield_qp_func**2/(-meanfield_qp*meanfield_Bp**2)
-
-
+            meanfield_qp_func=meanfield_qp/(p%b2*B2renorm/meanfield_Bp**2+1.)
+            meanfield_qp_der=-meanfield_qp_func**2/(meanfield_qp*meanfield_Bp**2)
           endif
 !
-!  Add -(1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
+!  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !
-          call multsv_mn(-meanfield_qs_func,p%jxb,p%jxb_mf)
-          call multmv_transp(p%bij,p%bb,Bk_Bki)
-          call multsv_mn_add(meanfield_qp_func-meanfield_qs_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
-!         if (meanfield_Beq_height/=0.) p%jxb(:,3)=p%jxb(:,3)+p%b2**2*meanfield_Qp_der/meanfield_Beq_height
+          call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+          call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
-!
+!  
+          call multsv_mn(-meanfield_qs_func,p%jxb+Bk_Bki,p%jxb_mf)
           call dot(Bk_Bki,p%bb,BiBk_Bki)
           call multsv_mn_add(-2*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
 !
