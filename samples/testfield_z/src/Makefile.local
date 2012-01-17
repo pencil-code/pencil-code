@@ -9,6 +9,6 @@ ENTROPY=noentropy
 MAGNETIC=nomagnetic
 HYDRO=hydro
 DENSITY=density
-TESTFIELD=testfield_z
+TESTFIELD=test_methods/testfield_z
 SHEAR=shear
 VISCOSITY=viscosity
