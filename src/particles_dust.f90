@@ -4233,7 +4233,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine calc_stokes_cunningham(fp,stocunn)
 !
-!  Calculate thi Stokes-Cunningham factor
+!  Calculate the Stokes-Cunningham factor
 !
 !  12-aug-08/kapelrud: coded
 !
