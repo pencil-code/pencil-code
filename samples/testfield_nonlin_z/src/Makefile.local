@@ -10,5 +10,5 @@ MAGNETIC=magnetic
 HYDRO=hydro
 EOS=noeos
 DENSITY=nodensity
-TESTFIELD=testfield_nonlin_z
+TESTFIELD=test_methods/testfield_nonlin_z
 REAL_PRECISION=double
