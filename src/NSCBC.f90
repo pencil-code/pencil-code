@@ -1368,8 +1368,10 @@ include 'NSCBC.h'
             call get_gamma_slice(gamma_,direction,lll)
           else
             gamma_=gamma
+            mu1=1.0
+            grad_mu1=0.
           endif
-        else
+        else          
           gamma_=1.
         endif
 !
