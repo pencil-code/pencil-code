@@ -1447,6 +1447,7 @@ module Particles_map
       if (allocated(interp_oo)) deallocate(interp_oo)
       if (allocated(interp_TT)) deallocate(interp_TT)
       if (allocated(interp_rho)) deallocate(interp_rho)
+      if (allocated(interp_gradTT)) deallocate(interp_gradTT)
 !
     endsubroutine cleanup_interpolated_quantities
 !***********************************************************************
