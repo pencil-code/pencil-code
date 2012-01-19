@@ -32,8 +32,8 @@ module Entropy
 !
   real :: entropy_floor = 0.
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
-  real :: luminosity=0.0, wheat=0.1, cool=0.0, zcool=0.0, rcool=0.0, wcool=0.1
-  real :: rcool1=0.0, rcool2=0.0, deltaT=0.0
+  real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0, rcool=0.0, wcool=0.1
+  real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real, target :: chi=0.0
@@ -130,11 +130,11 @@ module Entropy
       initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
       mixinglength_flux, chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
-      thermal_background, thermal_peak, thermal_scaling, cs2cool, center1_x, &
+      thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, center1_x, &
       center1_y, center1_z, center2_x, center2_y, center2_z, T0, ampl_TT, &
       kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
-      tau_cool_ss, &
+      tau_cool_ss, cool2, &
       TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, &
       rho0ts, T0hs, lconvection_gravx, Fbot, hcond0_kramers, nkramers, &
       alpha_MLT, lprestellar_cool_iso
@@ -144,8 +144,8 @@ module Entropy
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
-      rcool1, rcool2, deltaT, &
-      wcool, Fbot, lcooling_general, &
+      rcool1, rcool2, deltaT, cs2cool2, cool2,&
+      wcool, wcool2, Fbot, lcooling_general, &
       ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
@@ -4497,6 +4497,15 @@ module Entropy
         if (rcool==0.0) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+!
+!  Heating/cooling with two cooling layers on top of each other
+!
+      case ('shell2')
+        if (rcool==0.0) rcool=r_ext
+        if (rcool2==0.0) rcool2=r_ext
+        prof = step(x(l1:l2),rcool,wcool)
+        prof2= step(x(l1:l2),rcool2,wcool2)
+        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool-cool2*prof2*(p%cs2-cs2cool2)/cs2cool2
 !
 !  Latitude dependent heating/cooling: imposes a latitudinal variation
 !  of temperature proportional to cos(theta) at each depth. deltaT gives
