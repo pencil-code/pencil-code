@@ -55,8 +55,9 @@ module Magnetic_meanfield
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_rmin
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
-  real :: meanfield_qs=1.0, meanfield_qp=1.0, meanfield_qe=1.0
+  real :: meanfield_qs=0.0, meanfield_qp=0.0, meanfield_qe=0.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
+  real :: meanfield_qp1
   real :: meanfield_etaB=0.0
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
@@ -299,6 +300,14 @@ module Magnetic_meanfield
         endif
       endif
 !
+!  define inverse of meanfield_qp
+!
+      if (meanfield_qp==0.) then
+        meanfield_qp1=0.
+      else
+        meanfield_qp1=1./meanfield_qp
+      endif
+!
 !  Initialize module variables which are parameter dependent
 !  wave speed of gauge potential
 !
@@ -521,17 +530,24 @@ module Magnetic_meanfield
           meanfield_Bs21=1./(meanfield_Bs*Beq)**2
           meanfield_Bp21=1./(meanfield_Bp*Beq)**2
           meanfield_Be21=1./(meanfield_Be*Beq)**2
+!
+!  Compute qs(B^2), qe(B^2), and their derivatives
+!
           meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
           meanfield_qe_func=meanfield_qe*(1.-2*pi_1*atan(p%b2*meanfield_Be21))
           meanfield_qs_der=-2*pi_1*meanfield_qs*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
           meanfield_qe_der=-2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
-          meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
-          meanfield_qp_der=-2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
-
+!
+!  Compute qp(B^2) and its derivative for 2 different parameterizations
+!  qp=qp0/(1+B^2*meanfield_Bp21)
+!  qp'=-qp0/(1+B^2*meanfield_Bp21)^2*meanfield_Bp21=-qp^2*meanfield_Bp21/qp0
+!
           if(qp_model=='rational') then
-            B2renorm=1/Beq**2
-            meanfield_qp_func=meanfield_qp/(p%b2*B2renorm/meanfield_Bp**2+1.)
-            meanfield_qp_der=-meanfield_qp_func**2/(meanfield_qp*meanfield_Bp**2)*B2renorm
+            meanfield_qp_func=meanfield_qp/(1.+p%b2*meanfield_Bp21)
+            meanfield_qp_der=-meanfield_qp_func**2*meanfield_Bp21*meanfield_qp1
+          else
+            meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
+            meanfield_qp_der=-2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
           endif
 !
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
@@ -541,7 +557,7 @@ module Magnetic_meanfield
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
 !  
-          call multsv_mn(-meanfield_qs_func,p%jxb+Bk_Bki,p%jxb_mf)
+          call multsv_mn_add(-meanfield_qs_func,p%jxb+Bk_Bki,p%jxb_mf)
           call dot(Bk_Bki,p%bb,BiBk_Bki)
           call multsv_mn_add(-2*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
 !
