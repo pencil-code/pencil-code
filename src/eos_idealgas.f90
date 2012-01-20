@@ -1398,9 +1398,9 @@ module EquationOfState
           endif
         case (mx)
           if (ieosvars==ilnrho_lnTT) then
-            lnrho_=f(l1:l2,m,n,ieosvar1)
+            lnrho_=f(:,m,n,ieosvar1)
           else
-            lnrho_=log(f(l1:l2,m,n,ieosvar1))
+            lnrho_=log(f(:,m,n,ieosvar1))
           endif
           if (leos_isentropic) then
             lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
