@@ -1378,7 +1378,7 @@ module Dustdensity
       integer :: k,i
 !
       intent(in)  :: f,p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
