@@ -81,8 +81,8 @@ module Particles_nbody
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Set up mass as particle index. Plus seven, since the other 6 are 
-!  used by positions and velocities.      
+!  Set up mass as particle index. Plus seven, since the other 6 are
+!  used by positions and velocities.
 !
       imass=npvar+1
 !
@@ -117,7 +117,7 @@ module Particles_nbody
 !
       mspar_orig=0
       do ks=1,nspar
-        if (pmass(ks)/=0.0) then 
+        if (pmass(ks)/=0.0) then
           mspar_orig=mspar_orig+1
           ipar_nbody(mspar_orig)=ks
         endif
@@ -141,14 +141,14 @@ module Particles_nbody
       call rprint_particles_nbody(.false.,LWRITE=lroot)
       if (lroot) close(3)
 !
-!  G_Newton. Overwrite the one set by start.in if set again here, 
-!  because I might want units in which both G and GM are 1. 
+!  G_Newton. Overwrite the one set by start.in if set again here,
+!  because I might want units in which both G and GM are 1.
 !  If we are solving for selfgravity, get that one instead.
 !
       if (GNewton == impossible) then
-        !ONLY REASSIGN THE GNEWTON 
+        !ONLY REASSIGN THE GNEWTON
         !IF IT IS NOT SET IN START.IN!!!!!
-        if (lselfgravity) then 
+        if (lselfgravity) then
           call get_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
           if (ierr/=0) then
             if (lroot) print*, 'initialize_particles_nbody: '// &
@@ -163,7 +163,7 @@ module Particles_nbody
 !
       GNewton1=1./GNewton
 !
-!  Get the variable tstart_selfgrav from selfgrav, so we know when to create 
+!  Get the variable tstart_selfgrav from selfgrav, so we know when to create
 !  sinks.
 !
       if (lselfgravity) then
@@ -177,7 +177,7 @@ module Particles_nbody
 !
 !  inverse mass
 !
-      if (lstarting) then 
+      if (lstarting) then
         if (lramp) then
           do ks=1,mspar
             if (ks/=istar) pmass(ks) = epsi
@@ -208,7 +208,7 @@ module Particles_nbody
             'one from nbody')
       endif
 !
-      if (rsmooth/=r_smooth(istar)) then 
+      if (rsmooth/=r_smooth(istar)) then
         print*,'rsmooth from cdata=',rsmooth
         print*,'r_smooth(istar)=',r_smooth(istar)
         call fatal_error('initialize_particles_nbody','inconsitency '//&
@@ -216,10 +216,10 @@ module Particles_nbody
             'one from nbody')
       endif
 !
-!  Check for consistency between the poisson and integral 
+!  Check for consistency between the poisson and integral
 !  calculations of selfgravity.
 !
-      if (lbackreaction.and.lselfgravity) then 
+      if (lbackreaction.and.lselfgravity) then
         print*,'self-gravity is already taken into '//&
             'account. lbackreaction is a way of '//&
             'integrating the self-gravity only in few '//&
@@ -230,23 +230,23 @@ module Particles_nbody
 !  The presence of dust particles needs to be known.
 !
       if (npar > nspar) ldust=.true.
-      if (linterpolate_gravity.and.(.not.ldust)) then 
+      if (linterpolate_gravity.and.(.not.ldust)) then
         if (lroot) print*,'interpolate gravity is just'//&
             ' for the dust component. No need for it if'//&
             ' you are not using dust particles'
         call fatal_error('initialize_particles_nbody','')
       endif
-      if (any(laccretion).and.linterpolate_gravity) then 
+      if (any(laccretion).and.linterpolate_gravity) then
         if (lroot) print*,'interpolate gravity  not yet '//&
             'implemented in connection with accretion'
         call fatal_error('initialize_particles_nbody','')
       endif
-      
+!
       if (linterpolate_gravity) then
          if (lroot) print*,'initializing global array for nbody gravity'
          call farray_register_global('ggp',iglobal_ggp,vector=3)
       endif
-!      
+!
       if (linterpolate_quadratic_spline) &
            linterpolate_linear=.false.
 !
@@ -273,13 +273,13 @@ module Particles_nbody
           lpenc_requested(i_rhop)=.true.
 !
       if (lexclude_frozen) then
-        if (lcylinder_in_a_box) then 
+        if (lcylinder_in_a_box) then
           lpenc_requested(i_rcyl_mn)=.true.
         else
           lpenc_requested(i_r_mn)=.true.
         endif
       endif
-!           
+!
       if (idiag_totenergy/=0) then
         lpenc_diagnos(i_u2)=.true.
         lpenc_diagnos(i_rho)=.true.
@@ -334,7 +334,7 @@ module Particles_nbody
       real, dimension(mspar,3) :: position,velocity
       real :: tmp,parc
       integer :: k,ks
-
+!
       intent (in) :: f
       intent (out) :: fp
 !
@@ -344,7 +344,7 @@ module Particles_nbody
         call warning("init_particles_nbody", 'mspar < nspar:')
         print*, 'mspar = ', mspar, ', nspar = ', nspar
         print*, 'nspar is the number of allocated n-body particles'
-        print*, 'mspar is the number of those particles with' 
+        print*, 'mspar is the number of those particles with'
         print*, ' non-zero mass in this processor.'
         print*, ''
         print*, 'you should set pmass to non-zero values in start.in'
@@ -362,7 +362,7 @@ module Particles_nbody
 !
       case ('nothing')
         if (lroot) print*, 'init_particles_nbody: nothing'
-!        
+!
       case ('origin')
         if (lroot) then
           print*, 'init_particles_nbody: All nbody particles at origin'
@@ -420,8 +420,8 @@ module Particles_nbody
           call fatal_error('init_particles_nbody','')
         endif
 !
-!  Ok, I have the masses and the positions of all massive particles 
-!  except the last, which will have a position determined to fix the 
+!  Ok, I have the masses and the positions of all massive particles
+!  except the last, which will have a position determined to fix the
 !  center of mass on the center of the grid.
 !
         if (any(ysp0/=0)) then
@@ -433,7 +433,7 @@ module Particles_nbody
                  ' for non-zero azimuthal initial position')
           endif
         endif
-        if (any(zsp0/=0)) then  
+        if (any(zsp0/=0)) then
           if (lspherical_coords) then
             call fatal_error('init_particles_nbody','not yet generalized'//&
                  ' for non-zero azimuthal initial position')
@@ -462,22 +462,22 @@ module Particles_nbody
 !
         tmp = 0.;parc=0
         do ks=1,mspar
-          if (ks/=istar) then 
+          if (ks/=istar) then
             sma(ks)=abs(position(ks,1))
             tmp=tmp+pmass(ks)
             parc = parc - sma(ks)*pmass(ks)
           endif
         enddo
 !
-!  Fixed-cm assumes that the total mass is always one. The mass of the 
+!  Fixed-cm assumes that the total mass is always one. The mass of the
 !  star is adjusted to ensure this.
-! 
+!
         pmass(istar)=1.- tmp;pmass1=1./max(pmass,tini);totmass=1.;totmass1=1.
 !
         parc = parc*totmass1
         if (tmp >= 1.0) &
             call fatal_error('init_particles_nbody', &
-            'The mass of one '//& 
+            'The mass of one '//&
             '(or more) of the particles is too big! The masses should '//&
             'never be bigger than g0. Please scale your assemble so that '//&
             'the combined mass of the (n-1) particles is less than that. '//&
@@ -491,7 +491,7 @@ module Particles_nbody
 !
 !  The last one (star) fixes the CM at Rcm=zero
 !
-        if (lcartesian_coords) then 
+        if (lcartesian_coords) then
           position(istar,1)=parc
         elseif (lcylindrical_coords) then
           !put the star in positive coordinates, with pi for azimuth
@@ -502,7 +502,7 @@ module Particles_nbody
           position(istar,3)=pi
         endif
 !
-        if (lroot) then 
+        if (lroot) then
           print*,'pmass =',pmass
           print*,'position (x)=',position(:,1)
           print*,'position (y)=',position(:,2)
@@ -517,10 +517,10 @@ module Particles_nbody
             print*,'initparticles_nbody. Slot for nbody particle ',ipar(k),&
                 ' was at fp position ',k,' at processor ',iproc
 !
-!  Here I substitute the first mspar dust particles by massive ones, 
+!  Here I substitute the first mspar dust particles by massive ones,
 !  since the first ipars are less than mspar
 !
-            fp(k,ixp:izp)=position(ipar(k),1:3) 
+            fp(k,ixp:izp)=position(ipar(k),1:3)
 !
 !  Correct for non-existing dimensions (not really needed, I think)
 !
@@ -565,7 +565,7 @@ module Particles_nbody
         do k=1,npar_loc
           if (ipar(k) <= mspar) &
               fp(k,ivpx:ivpz)=velocity(ipar(k),1:3)
-        enddo           
+        enddo
 !
       case ('fixed-cm')
 !
@@ -580,7 +580,7 @@ module Particles_nbody
         enddo
         parc = parc*totmass
         do ks=1,mspar
-          if (ks/=istar) then 
+          if (ks/=istar) then
             if (lcartesian_coords) then
               velocity(ks,2) = sign(1.,position(ks,1))*(kep_vel(ks) + parc)
             elseif (lcylindrical_coords) then
@@ -594,11 +594,11 @@ module Particles_nbody
 !
 !  The last one (star) fixes the CM also with velocity zero
 !
-        if (lcartesian_coords) then 
+        if (lcartesian_coords) then
           velocity(istar,2)=parc
-        elseif (lcylindrical_coords) then 
+        elseif (lcylindrical_coords) then
           velocity(istar,2)=-parc
-        elseif (lspherical_coords) then 
+        elseif (lspherical_coords) then
           velocity(istar,3)=-parc
         endif
 !
@@ -690,7 +690,7 @@ module Particles_nbody
           enddo
         endif
       endif
-! 
+!
 !  Add the acceleration to the gas.
 !
       if (lhydro) then
@@ -705,7 +705,7 @@ module Particles_nbody
 !
 !  Backreaction of the gas+dust gravity onto the massive particles
 !  The integration is needed for these two cases:
-!  
+!
 !   1. We are not solving the Poisson equation (lbackreaction)
 !   2. We are, but a particle is out of the box (a star, for instance)
 !      and therefore the potential cannot be interpolated.
@@ -715,7 +715,7 @@ module Particles_nbody
           if (lselfgravity) then
             if ((fsp(ks,ixp)< xyz0(1)).or.(fsp(ks,ixp) > xyz1(1)) .or. &
                 (fsp(ks,iyp)< xyz0(2)).or.(fsp(ks,iyp) > xyz1(2)) .or. &
-                (fsp(ks,izp)< xyz0(3)).or.(fsp(ks,izp) > xyz1(3))) then 
+                (fsp(ks,izp)< xyz0(3)).or.(fsp(ks,izp) > xyz1(3))) then
               !particle out of box
               lparticle_out=.true.
             endif
@@ -761,7 +761,7 @@ module Particles_nbody
             if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
                 call calc_torque(p,rpcyl_mn(:,ks),ks)
 !
-!  Total energy      
+!  Total energy
 !
             if (idiag_totenergy/=0) then
               !potential energy
@@ -794,7 +794,7 @@ module Particles_nbody
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of nbody and dust particles velocities due to particle-particle
-!  interaction only. 
+!  interaction only.
 !
 !  Coriolis and shear are already added in particles_dust.
 !
@@ -832,11 +832,11 @@ module Particles_nbody
 !
 !  Calculate Hills radius if laccretion is switched on.
 !
-      do ks=1,mspar 
-        if (laccretion(ks).and.(ks/=istar)) then 
+      do ks=1,mspar
+        if (laccretion(ks).and.(ks/=istar)) then
           if (lcartesian_coords) then
             rr=sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
-          elseif (lcylindrical_coords) then 
+          elseif (lcylindrical_coords) then
             rr=fsp(ks,ixp)
             if (nzgrid/=1) rr=sqrt(fsp(ks,ixp)**2+fsp(ks,izp)**2)
           elseif (lspherical_coords) then
@@ -872,7 +872,7 @@ module Particles_nbody
       enddo
 !
 !  Position and velocity diagnostics (per nbody particle).
-! 
+!
       if (ldiagnos) then
         do ks=1,mspar
           if (lfollow_particle(ks)) then
@@ -940,7 +940,7 @@ module Particles_nbody
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
 !
-!  The acceleration is in non-coordinate basis (all have dimension of length). 
+!  The acceleration is in non-coordinate basis (all have dimension of length).
 !  The main dxx_dt of particle_dust takes care of transforming the linear
 !  velocities to angular changes in position.
 !
@@ -974,7 +974,7 @@ module Particles_nbody
 !
 !  Register a, a simple scalar, as diagnostic.
 !
-!  Works for individual particle diagnostics. 
+!  Works for individual particle diagnostics.
 !
 !  07-mar-08/wlad: adapted from sum_par_name
 !
@@ -1052,8 +1052,8 @@ module Particles_nbody
       integer :: k
 !
       ftmp=fsp(1:mspar,:)
-
-      if (lcartesian_coords) then 
+!
+      if (lcartesian_coords) then
         vcm(1) = sum(ftmp(:,imass)*ftmp(:,ivpx))
         vcm(2) = sum(ftmp(:,imass)*ftmp(:,ivpy))
         vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivpz))
@@ -1086,16 +1086,16 @@ module Particles_nbody
         xcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*cos(ftmp(:,izp))))
         ycm=sum(ftmp(:,imass)*(ftmp(:,ixp)*sin(ftmp(:,iyp))*sin(ftmp(:,izp))))
         zcm=sum(ftmp(:,imass)*(ftmp(:,ixp)*cos(ftmp(:,iyp))))
-!        
+!
         thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
         phicm=atan2(ycm,xcm)
 !
         vcm(1)= vxcm*sin(thtcm)*cos(phicm) + &
-            vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm) 
+            vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm)
         vcm(2)= vxcm*cos(thtcm)*cos(phicm) + &
-            vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm) 
+            vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm)
         vcm(3)=-vxcm*sin(phicm)            + &
-            vycm*cos(phicm) 
+            vycm*cos(phicm)
       endif
 !
       do k=1,npar_loc
@@ -1121,7 +1121,7 @@ module Particles_nbody
       real :: dqx,dqz,rp0,fac
       real, dimension(3) :: xxpar,accg,sum_loc
       integer :: j
-      type (pencil_case) :: p      
+      type (pencil_case) :: p
       logical :: lfirstcall=.true.
 !
       intent(out) :: accg
@@ -1347,12 +1347,12 @@ module Particles_nbody
 !
       real :: tmass
 !
-      if (lnorm) then 
+      if (lnorm) then
         tmass=1.
       else
         tmass=sum(pmass)
       endif
-!   
+!
     endsubroutine get_totalmass
 !***********************************************************************
     subroutine get_gravity_field_nbody(grr,gg,ks)
@@ -1423,7 +1423,7 @@ module Particles_nbody
         do i=1,nx
 !
 !  Exclude material from inside the Roche Lobe. Compute internal
-!  and external torques. 
+!  and external torques.
 !
           if (dist(i)>=hills) then
             if (p%rcyl_mn(i)>=rr) torqext(i) = torque(i)
@@ -1441,23 +1441,23 @@ module Particles_nbody
 !
         rr_mn = x(l1:l2)     ; phi  = y(m)
         rp    = fsp(ks,ixp)  ; phip = fsp(ks,iyp)
-        dist2 = rr_mn**2 + rp**2 - 2*rr_mn*rp*cos(phi-phip) 
+        dist2 = rr_mn**2 + rp**2 - 2*rr_mn*rp*cos(phi-phip)
         rpre  = rr_mn*rp*sin(phi-phip)
         tmp   = -GNewton*pmass(ks)*p%rho*rpre*&
              (dist2 + r_smooth(ks)**2)**(-1.5)*rr_mn
 !
         pcut=0.8 !*hills
         tempering = 1./(exp(-(sqrt(dist2)/hills - pcut)/(.1*pcut))+1.)
-!        
+!
         torque = tmp * tempering
-
+!
         torqext=0.
         torqint=0.
 !
         do i=1,nx
 !
 !  Exclude material from inside the Roche Lobe. Compute internal
-!  and external torques. 
+!  and external torques.
 !
         !  if (dist2(i)>=hills**2) then
             if (p%rcyl_mn(i)>=rp) torqext(i) = torque(i)
@@ -1468,7 +1468,7 @@ module Particles_nbody
 !
         call sum_mn_name(torqext,idiag_torqext(ks))
         call sum_mn_name(torqint,idiag_torqint(ks))
-! 
+!
       else
         call fatal_error('calc_torque','calc_torque not yet '//&
              'implemented for spherical coordinates.')
@@ -1477,7 +1477,7 @@ module Particles_nbody
     endsubroutine calc_torque
 !***********************************************************************
     subroutine get_ramped_mass
-!     
+!
       real :: ramping_period,tmp
       integer :: ks
 !
@@ -1487,7 +1487,7 @@ module Particles_nbody
         tmp=0.
         !just need to do that for the original masses
         do ks=1,mspar_orig
-          if (ks/=istar) then 
+          if (ks/=istar) then
             pmass(ks)= max(dble(tini),&
                  final_ramped_mass(ks)*(sin((.5*pi)*(t/ramping_period))**2))
             tmp=tmp+pmass(ks)
@@ -1502,7 +1502,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine calc_nbodygravity_particles(f)
 !
-!  For the case of interpolated gravity, add the gravity 
+!  For the case of interpolated gravity, add the gravity
 !  of all n-body particles to slots of the f-array.
 !
 !  08-mar-08/wlad: coded
@@ -1534,7 +1534,7 @@ module Particles_nbody
 !  Sum the gravities of all massive particles
 !
 !  08-mar-08/wlad: coded
-!  
+!
       use Sub
 !
       real, dimension (mx,mspar) :: rp_mn,rpcyl_mn
@@ -1578,18 +1578,18 @@ module Particles_nbody
 !***********************************************************************
     subroutine create_sink_particles_nbody(f,fp,dfp,ineargrid)
 !
-!  If the flow in any place of the grid has gone gravitationally 
-!  unstable, substitute the local flow by a sink particle. By now, 
-!  the only criterion if the local Jeans mass. The Jeans length is 
+!  If the flow in any place of the grid has gone gravitationally
+!  unstable, substitute the local flow by a sink particle. By now,
+!  the only criterion if the local Jeans mass. The Jeans length is
 !
-!    lambda_J = sqrt(pi*cs2/(G*rho)) 
+!    lambda_J = sqrt(pi*cs2/(G*rho))
 !
-!  We substitute lambda_J by the biggest resolution element and write 
+!  We substitute lambda_J by the biggest resolution element and write
 !  the condition in terms of density
 !
-!     rho_J = pi*cs2/G*Delta_x^2 
+!     rho_J = pi*cs2/G*Delta_x^2
 !
-!  The constant is a free parameter of the module. 
+!  The constant is a free parameter of the module.
 !
 !  13-mar-08/wlad: coded
 !
@@ -1619,7 +1619,7 @@ module Particles_nbody
 !
 !  Just activate this routine if we want sinks to be created and self-
 !  gravity is used. If one does not add the t>=tstart_selfgrav flag, the
-!  particles initially have zero velocity dispersion and collapse 
+!  particles initially have zero velocity dispersion and collapse
 !  immediately.
 !
       if (lcreate_sinks.and.t>=tstart_selfgrav) then
@@ -1632,11 +1632,11 @@ module Particles_nbody
           if (ldebug) print*,'Entered create_sink_particles_nbody'
 !
           do i=1,nx
-            if (lcartesian_coords) then 
+            if (lcartesian_coords) then
               Delta1(i)=max(dx_1(i),dy_1(mpoint),dz_1(npoint))
-            elseif (lcylindrical_coords) then 
+            elseif (lcylindrical_coords) then
               Delta1(i)=max(dx_1(i),rcyl_mn1(i)*dy_1(mpoint),dz_1(npoint))
-            elseif (lspherical_coords) then 
+            elseif (lspherical_coords) then
               call fatal_error('create_sink_particle_nbody', &
                   'not yet implemented for spherical polars')
             endif
@@ -1653,35 +1653,35 @@ module Particles_nbody
 !
 !  define the "pencils"
 !
-            if (ldensity_nolog) then 
+            if (ldensity_nolog) then
               prho=f(l1:l2,m,n,irho)
             else
               prho=exp(f(l1:l2,m,n,ilnrho))
             endif
 !
-            if (ldust)  then 
+            if (ldust)  then
               prhop=f(l1:l2,m,n,irhop)
               pnp  =int(f(l1:l2,m,n,inp))
             endif
 !
             if (lhydro) puu=f(l1:l2,m,n,iux:iuz)
 !
-            if (llocal_iso) then 
+            if (llocal_iso) then
               call farray_use_global('cs2',iglobal_cs2)
               pcs2=f(l1:l2,m,n,iglobal_cs2)
             else
               pcs2=cs20
             endif
 !
-            dvolume = dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)      
+            dvolume = dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
 !
 !  Jeans analysis of the Gas
 !
 !  The Jeans length is lambda_J = sqrt(pi*cs2/(G*rho))
-!  We substitute lambda_J by the biggest resolution 
+!  We substitute lambda_J by the biggest resolution
 !  element and write the condition in terms of density
 !
-!     rho_J = pi*cs2/G*Delta_x^2 
+!     rho_J = pi*cs2/G*Delta_x^2
 !
 !  The constant is a free parameter of the module
 !
@@ -1689,8 +1689,8 @@ module Particles_nbody
 !
               if (ldebug) print*,"Entered create sink from gas"
 !
-              if (nzgrid/=1) then 
-                rho_jeans = create_jeans_constant*3.*pi*pcs2*GNewton1*Delta1**2/32 
+              if (nzgrid/=1) then
+                rho_jeans = create_jeans_constant*3.*pi*pcs2*GNewton1*Delta1**2/32
               else
                 rho_jeans = create_jeans_constant*   pi*pcs2*GNewton1*Delta1   /8
               endif
@@ -1698,7 +1698,7 @@ module Particles_nbody
 !  start particle counter for dust particles
 !
               do i=1,nx
-                if (prho(i)>rho_jeans(i)) then 
+                if (prho(i)>rho_jeans(i)) then
 !
 !  create a new particle at the center of the grid
 !
@@ -1724,32 +1724,32 @@ module Particles_nbody
 !  give it the velocity of the grid cell
 !
                   fcsp_loc(nc_loc,ivpx:ivpz) = puu(i,:)
-!          
-!  the mass of the new particle is the 
+!
+!  the mass of the new particle is the
 !  collapsed mass m=[rho - rho_jeans]*dV
 !
                   fcsp_loc(nc_loc,imass)   = (prho(i)-rho_jeans(i))*dvolume(i)
 !
 !  and that amount was lost by the grid, so only rho_jeans remains
 !
-                  if (ldensity_nolog) then 
+                  if (ldensity_nolog) then
                     f(i+nghost,m,n,irho)   = rho_jeans(i)
-                  else 
+                  else
                     f(i+nghost,m,n,ilnrho) = log(rho_jeans(i))
                   endif
-!         
+!
                 endif
               enddo
             endif!if lcreate_gas
 !
 !  Jeans analysis of the dust
-! 
-            if (ldust.and.lparticles_selfgravity.and.lcreate_dust) then 
+!
+            if (ldust.and.lparticles_selfgravity.and.lcreate_dust) then
 !
               if (ldebug) print*,"Entered create sink from dust"
 !
-!  k1s,k2s and ineargrids are already defined. Substitute sound speed 
-!  for vpm2=<(vvp-<vvp>)^2>, the particle's velocity dispersion 
+!  k1s,k2s and ineargrids are already defined. Substitute sound speed
+!  for vpm2=<(vvp-<vvp>)^2>, the particle's velocity dispersion
 !
               vvpm=0.0; vpm2=0.0
               do k=k1_imn(imn),k2_imn(imn)
@@ -1774,8 +1774,8 @@ module Particles_nbody
                 if (pnp(i)>1.0) vpm2(i)=vpm2(i)/pnp(i)
               enddo
 !
-              if (nzgrid/=1) then 
-                rho_jeans_dust = create_jeans_constant*3*pi*vpm2*GNewton1*Delta1**2/32 
+              if (nzgrid/=1) then
+                rho_jeans_dust = create_jeans_constant*3*pi*vpm2*GNewton1*Delta1**2/32
               else
                 rho_jeans_dust = create_jeans_constant*  pi*vpm2*GNewton1*Delta1   /8
               endif
@@ -1795,13 +1795,13 @@ module Particles_nbody
 !  Now check for unstable particle concentrations within this pencil
 !
               do i=1,nx
-                if (prhop(i)>rho_jeans_dust(i)) then 
+                if (prhop(i)>rho_jeans_dust(i)) then
 !
 !  This cell is unstable. Remove all particles from it
 !
                   if (pnp(i) > 1.0) then
-                    !removing must always be done backwards 
-                    do kn=pnp(i),1,-1 
+                    !removing must always be done backwards
+                    do kn=pnp(i),1,-1
                       if (.not.(any(ipar(k)==ipar_nbody))) &
                            call remove_particle(fp,ipar,pik(i,kn))
                     enddo
@@ -1825,16 +1825,16 @@ module Particles_nbody
                     fcsp_loc(nc_loc,iyp) = y(m)
                     fcsp_loc(nc_loc,izp) = z(n)
 !
-!  give it the mean velocity of the group of particles that 
+!  give it the mean velocity of the group of particles that
 !  was accreted
 !
                     fcsp_loc(nc_loc,ivpx:ivpz) = vvpm(i,:)
-!          
-!  the mass of the new particle is the 
+!
+!  the mass of the new particle is the
 !  collapsed mass M=m_particle*np
 !
                     fcsp_loc(nc_loc,imass)    = mp_swarm*pnp(i)
-!         
+!
                   endif
                 endif
               enddo
@@ -1845,12 +1845,12 @@ module Particles_nbody
                print*,'I, processor ',iproc,&
                ' created ',nc_loc,' particles'
 !
-!  Finished creating them. Now merge them across the processors 
+!  Finished creating them. Now merge them across the processors
 !  into a single array
 !
           fcsp_proc=0.
           nc=0
-          if (lmpicomm) then 
+          if (lmpicomm) then
             if (.not.lroot) then
               if (ldebug) print*,'processor ',iproc,'sending ',nc_loc,' particles'
               call mpisend_int(nc_loc,1,root,222)
@@ -1895,13 +1895,13 @@ module Particles_nbody
 !
         endif
 !
-!  print to the screen the positions and velocities of the 
+!  print to the screen the positions and velocities of the
 !  newly generated sinks
 !
         if (ldebug) then
           print*,'---------------------------'
           print*,'the massive particles present are:'
-          do ks=1,mspar 
+          do ks=1,mspar
             print*,'ks=',ks
             print*,'positions=',fsp(ks,ixp:izp)
             print*,'velocities=',fsp(ks,ivpx:ivpz)
@@ -1940,10 +1940,10 @@ module Particles_nbody
 !**************************************************************************
     subroutine merge_and_share(fcsp,nc,fp)
 !
-!  Subroutine to merge a gravitationally unstable 
+!  Subroutine to merge a gravitationally unstable
 !  cluster of particles into a sink particle
-!  
-!  13-mar-08/wlad: coded  
+!
+!  13-mar-08/wlad: coded
 !
       use Mpicomm
 !
@@ -1964,8 +1964,8 @@ module Particles_nbody
 !
       call mpiallreduce_sum_int(npar_loc,npar_tot)
 !
-!  The root processor is the only one that has the right fcsp (the 
-!  array of particles that were created). Merge them with a friends of 
+!  The root processor is the only one that has the right fcsp (the
+!  array of particles that were created). Merge them with a friends of
 !  friends algorithm
 !
       if (lroot) then
@@ -1973,15 +1973,15 @@ module Particles_nbody
         call friends_of_friends(fcsp,fleft,nc,nf)
 !
 !  Friends of friends merged the created particles into few massive
-!  clusters. These new clusters are truly sinks. Now we have nf new 
+!  clusters. These new clusters are truly sinks. Now we have nf new
 !  particles.
 !
         pmass(mspar+1:mspar+nf)=fleft(1:nf,imass)
 !
 !  Allocate the new ipar_nbodies
 !
-        do i=1,nf 
-          ipar_nbody(mspar+i)=mspar+i 
+        do i=1,nf
+          ipar_nbody(mspar+i)=mspar+i
 !  Activate accretion for the newly created sinks
           if (laccrete_when_create) then
             ladd_mass(mspar+i)=.true.
@@ -1992,7 +1992,7 @@ module Particles_nbody
 !
 !  But check if we did not end up with too many particles
 !
-        if (mspar>nspar) then 
+        if (mspar>nspar) then
           print*,'after friends_of_friends, we still have '//&
                'too many nbody particles.'//&
                'Stop and allocated more'
@@ -2004,27 +2004,29 @@ module Particles_nbody
       endif
 !
 !  Broadcast mspar, ipar_nbody and pmass
-!      
+!
       call mpibcast_int(mspar,1)
       call mpibcast_int(ipar_nbody(1:mspar),mspar)
-      call mpibcast_real(pmass,mspar)      
+      call mpibcast_real(pmass,mspar)
       call mpibcast_logical(ladd_mass,mspar)
       call mpibcast_logical(laccretion,mspar)
 !
 !  Migrate the particles to their respective processors
 !
       if (lmpicomm) then
-        
+!
         dy1=1/dy; dz1=1/dz
           !y0_mig=0.5*(y(m1)+y(m1-1)); y1_mig=0.5*(y(m2)+y(m2+1))
           !z0_mig=0.5*(z(n1)+z(n1-1)); z1_mig=0.5*(z(n2)+z(n2+1))
 !
 !  Only the root processor knows where the particle is (fleft)
 !
+        nsmig(:)=0
+!
         if (lroot) then
-
+!
           do kc=1,nf
-!  y-index 
+!  y-index
             ipy_rec=ipy
             iy0=nint((fleft(kc,iyp)-y(m1))*dy1+nygrid)-nygrid+1
             do while (iy0>ny)
@@ -2051,10 +2053,10 @@ module Particles_nbody
 !
 !  Fill up the migration arrays if the particles are not at the root processor
 !
-            if (iproc_rec/=root) then 
+            if (iproc_rec/=root) then
               nsmig(iproc_rec)=nsmig(iproc_rec)+1
               fcsp_mig(iproc_rec,nsmig(iproc_rec),:)=fleft(kc,1:mpvar)
-            else 
+            else
 !  The particle is at the root processor, so create it here
               npar_loc=npar_loc+1
               fp(npar_loc,:)=fleft(kc,1:mpvar)
@@ -2063,11 +2065,11 @@ module Particles_nbody
           enddo !loop over particles
 !
 !  Send them now
-!          
+!
           do j=1,ncpus-1
             ns=nsmig(j)
             call mpisend_int(ns, 1, j, 111)
-            if (ns/=0) then 
+            if (ns/=0) then
                call mpisend_real(fcsp_mig(j,1:ns,:), (/ns,mpvar/), j, 222)
             endif
           enddo
@@ -2090,7 +2092,7 @@ module Particles_nbody
 !
         endif !if lroot
 !
-      else !serial version. Just copy it all 
+      else !serial version. Just copy it all
 !
         do kc=1,nf
           npar_loc=npar_loc+1
@@ -2100,7 +2102,7 @@ module Particles_nbody
 !
       endif
 !
-      if (ldebug) then 
+      if (ldebug) then
         print*,'merge_and_share finished. '
         print*,'We have now ',mspar,' nbody particles, '
         print*,'located at '
@@ -2111,24 +2113,24 @@ module Particles_nbody
 !***********************************************************************
     subroutine friends_of_friends(fcsp,fleft,nc,nfinal)
 !
-!  Algorithm that cluster particles together based on a proximity 
-!  threshold. It takes a particle and find all its neighbours (=friends). 
-!  Then loops through the neighbours finding the neighbours of the 
-!  neighbours (friends of friends), and so on. 
+!  Algorithm that cluster particles together based on a proximity
+!  threshold. It takes a particle and find all its neighbours (=friends).
+!  Then loops through the neighbours finding the neighbours of the
+!  neighbours (friends of friends), and so on.
 !
 !  13-mar-08/wlad: coded
 !
       integer, intent(in)  :: nc
       real,    dimension(maxsink,mspvar) :: fcsp
       real,    dimension(nspar,mspvar)   :: fleft
-      integer, dimension(nc,nc)          :: clusters 
-      integer, dimension(nc)             :: cluster 
+      integer, dimension(nc,nc)          :: clusters
+      integer, dimension(nc)             :: cluster
       logical, dimension(nc)             :: lchecked
       real, dimension(mspvar)            :: particle
-      
+!
       integer :: ks,kf,nclusters,nf,i,nfinal
       integer :: min_number_members,kpar
-
+!
       intent(out) :: nfinal,fleft
 !
       min_number_members=3
@@ -2137,9 +2139,9 @@ module Particles_nbody
 !
       lchecked(1:nc)=.false.
 !
-!  No clusters yet, counter is zero 
+!  No clusters yet, counter is zero
 !
-      nclusters=0 
+      nclusters=0
 !
 !  And the final number of particles is the same as the initial
 !
@@ -2155,12 +2157,12 @@ module Particles_nbody
           call make_cluster(ks,lchecked,cluster,nc,nf,fcsp)
 !
 !  Cluster done, check if the number of particles is enough
-!          
+!
           if (nf >= min_number_members) then
 !
 !  Okay, it is a cluster, raise the counter
 !
-            nclusters=nclusters+1 
+            nclusters=nclusters+1
             clusters(1:nf,nclusters)=cluster(1:nf)
 !
 !  Collapse the cluster into a single sink particle
@@ -2190,16 +2192,16 @@ module Particles_nbody
 !***********************************************************************
     subroutine make_cluster(ks,lchecked,cluster,nc,nf,fcsp)
 !
-!  This subroutine starts a cluster of particles, by checking the 
+!  This subroutine starts a cluster of particles, by checking the
 !  first one. Once a particle is checked, it will also look for its
-!  neighbours, checking them. In the end, all friends and friends 
+!  neighbours, checking them. In the end, all friends and friends
 !  of friends are checked into the cluster.
 !
 !  13-mar-08/wlad: coded
 !
       integer, intent(in) :: nc
       real,    dimension(maxsink,mspvar)   :: fcsp
-      integer, intent(inout), dimension(nc) :: cluster 
+      integer, intent(inout), dimension(nc) :: cluster
       logical, intent(inout), dimension(nc) :: lchecked
       integer, intent(in)  :: ks
       integer, intent(out) :: nf
@@ -2208,14 +2210,14 @@ module Particles_nbody
 !
 !  Start the cluster counter
 !
-      ic=0 
+      ic=0
 !
 !  Tag the particles as checked. The subroutine will also
 !  loop through its friends and friends of friends
 !
       call check_particle(ks,lchecked,cluster,ic,nc,fcsp)
 !
-!  When it ends this loop, the cluster is done. Nf is the final 
+!  When it ends this loop, the cluster is done. Nf is the final
 !  number of members in the cluster
 !
       nf=ic
@@ -2230,7 +2232,7 @@ module Particles_nbody
 !
       integer, intent(in) :: nc
       real,    dimension(maxsink,mspvar)   :: fcsp
-      integer, intent(inout), dimension(nc) :: cluster 
+      integer, intent(inout), dimension(nc) :: cluster
       logical, intent(inout), dimension(nc) :: lchecked
       integer, intent(inout) :: ic
       integer, intent(in) :: k
@@ -2240,7 +2242,7 @@ module Particles_nbody
       ic=ic+1
       cluster(ic)=k
 !
-!  Tag it as visited and add its friends to the cluster 
+!  Tag it as visited and add its friends to the cluster
 !  as well
 !
       lchecked(k)=.true.
@@ -2250,9 +2252,9 @@ module Particles_nbody
 !***********************************************************************
     subroutine add_friends(par,lchecked,cluster,ic,nc,fcsp)
 !
-!  Add all neighbours of a particle to the cluster. This subroutine 
-!  is called by check_particle, but also calls it. The procedure is 
-!  therefore recursive: the loop will be over when all friends of 
+!  Add all neighbours of a particle to the cluster. This subroutine
+!  is called by check_particle, but also calls it. The procedure is
+!  therefore recursive: the loop will be over when all friends of
 !  friends are added to the cluster.
 !
 !  13-mar-08/wlad: coded
@@ -2265,21 +2267,21 @@ module Particles_nbody
       integer, intent(in)                   :: par
 !
       real    :: dist,link_length
-      integer :: k      
+      integer :: k
 !
-!  linking length 
+!  linking length
 !
       link_length=4.*dx
 !
 !  Loop through the particle
 !
-      do k=1,nc 
-        if (.not.lchecked(k)) then 
+      do k=1,nc
+        if (.not.lchecked(k)) then
           call get_particles_interdistance(&
                fcsp(k,ixp:izp),fcsp(par,ixp:izp),&
                DISTANCE=dist)
-
-          if (dist<=link_length) then 
+!
+          if (dist<=link_length) then
 !
 !  if so, add it to the cluster, tag it and call its friends
 !
@@ -2294,7 +2296,7 @@ module Particles_nbody
     subroutine collapse_cluster(cluster,nf,fcsp,particle)
 !
 !  Collapse the cluster into a single particle
-!  with the total mass, momentum and energy of the 
+!  with the total mass, momentum and energy of the
 !  collapsed stuff
 !
 !  13-mar-08/wlad: coded
@@ -2315,7 +2317,7 @@ module Particles_nbody
       do ic=1,nf
         k=cluster(ic)
         mass=mass+fcsp(k,imass)
-        if (lcartesian_coords) then 
+        if (lcartesian_coords) then
           xxp(1)=fcsp(k,ixp) ; vvp(1)=fcsp(k,ivpx)
           xxp(2)=fcsp(k,iyp) ; vvp(2)=fcsp(k,ivpy)
           xxp(3)=fcsp(k,izp) ; vvp(3)=fcsp(k,ivpz)
@@ -2340,12 +2342,12 @@ module Particles_nbody
         ycm=position(2);vycm=velocity(2)
         position(1)=sqrt(xcm**2+ycm**2)
         position(2)=atan2(ycm,xcm)
-!        
+!
         velocity(1)= vxcm*cos(position(2))+vycm*sin(position(2))
         velocity(2)=-vxcm*sin(position(2))+vycm*cos(position(2))
       endif
-!      
-!  put it onto the output array      
+!
+!  put it onto the output array
 !
       particle(ixp : izp)=position
       particle(ivpx:ivpz)=velocity
@@ -2375,7 +2377,7 @@ module Particles_nbody
       call mpibcast_real(fsp(1:mspar,:),(/mspar,mspvar/))
       call mpibcast_int(ipar_nbody(1:mspar),mspar)
 !
-      if (ldebug) then 
+      if (ldebug) then
         print*,'particles_nbody_read_snapshot'
         print*,'mspar=',mspar
         print*,'fsp(1:mspar)=',fsp(1:mspar,:)
@@ -2391,7 +2393,7 @@ module Particles_nbody
       use Sub, only: update_snaptime, read_snaptime
 !
 !  Input and output of information about the massive particles
-! 
+!
 !  01-apr-08/wlad: coded
 !
       integer, save :: ifirst=0, nsnap
@@ -2401,7 +2403,7 @@ module Particles_nbody
       logical :: enum,lsnap
       character (len=intlen) :: nsnap_ch
       optional :: flist
-!          
+!
       if (enum) then
         call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
         if (ifirst==0) then
