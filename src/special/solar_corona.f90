@@ -1178,7 +1178,7 @@ module Special
 !
 !   02-jun-11/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: fdiff
@@ -1203,7 +1203,7 @@ module Special
 !
 !   02-jun-11/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: fdiff
@@ -1233,7 +1233,7 @@ module Special
 !
 !   19-Dec-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real :: swamp_fade_fact, dfade_fact
@@ -2214,7 +2214,7 @@ module Special
       integer :: i,j,k
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       if (headtt) print*,'solar_corona/calc_heatcond_chiconst',hcond1
 !
@@ -2313,7 +2313,7 @@ module Special
       integer :: i,j,k
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  calculate unit vector of bb
 !
@@ -2405,7 +2405,7 @@ module Special
       integer :: i
 !
       intent(in) :: p
-      intent(out) :: df
+      intent(inout) :: df
 !
       call dot2(p%glnTT,glnT2)
       call dot(p%glnTT,p%glnrho,glnT_glnr)
