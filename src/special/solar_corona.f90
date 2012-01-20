@@ -2677,7 +2677,7 @@ module Special
       real, dimension (nx) :: heat_event,heat_event1D
       integer, dimension(mseed) :: global_rstate
       real :: z_Mm,heat_unit
-      real :: nano_sigma_t,nano_time,nano_start,nano_sigma_z
+      real :: nano_sigma_t,nano_time,nano_start=0.,nano_sigma_z
       real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
       real :: nano_amplitude
       real, dimension(2) :: event_pos
