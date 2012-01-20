@@ -1521,6 +1521,7 @@ module Special
       integer, intent(out) :: frame_pos
       real, intent(out) :: frame_time
 !
+      real :: dummy=1.
       integer :: px, py, partner, rec_len, ierr
       real :: time_l, delta_t
       integer, parameter :: unit=12, tag_pos=314, tag_time=315
@@ -1534,7 +1535,7 @@ module Special
           frame_time = huge (0.0)
         else
           ! Read the time table from file
-          inquire (iolength=rec_len) frame_time
+          inquire (iolength=rec_len) dummy
           open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
 !
           delta_t = 0.0
