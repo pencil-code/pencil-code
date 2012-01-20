@@ -320,7 +320,7 @@ module Grid
           ! d[log x] = const ==> dx = const*x
           a= log(xyz1(1)/xyz0(1))/(xi1up-xi1lo)
           b= .5*(xi1up+xi1lo-log(xyz1(1)*xyz0(1))/a)
-!          
+!
           call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2,param=c)
           call grid_profile(a*(xi1lo-b),grid_func(1),g1lo,param=c)
           call grid_profile(a*(xi1up-b),grid_func(1),g1up,param=c)
@@ -333,7 +333,7 @@ module Grid
           ! Grid distance increases as a power-law set by c=coeff_grid(1)
           ! i.e., grid distance increases as an inverse power-law
           ! d[x^c] = const ==> dx = const/x^(c-1)
-          if (lroot) then 
+          if (lroot) then
             print*,"Constructing power-law grid. It will "
             print*,"generate a grid obeying the constrain "
             print*,""
@@ -356,7 +356,7 @@ module Grid
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
-
+!
         case ('squared')
           ! Grid distance increases linearily
           a=max(nxgrid,1)
@@ -771,8 +771,8 @@ module Grid
       real :: sinth_min=1e-5,costh_min=1e-5
       integer :: xj,yj,zj,itheta
 !
-! WL: Axel, I coded serial arrays xgrid, ygrid, zgrid, that maybe 
-! make this z_allprocs obsolete. Can you check if you can use zgrid 
+! WL: Axel, I coded serial arrays xgrid, ygrid, zgrid, that maybe
+! make this z_allprocs obsolete. Can you check if you can use zgrid
 ! instead of z_allprocs? (19-oct-2010)
 !
 !  Set z_allprocs, which contains the z values from all processors
@@ -909,7 +909,7 @@ module Grid
           box_volume = box_volume*1./3.*(xyz1(1)**3-xyz0(1)**3)
           dVol_x=x**2*xprim
         else
-!         
+!
           if (ldegenerate_directions) then
             dVol_x=1.
           else
@@ -1053,7 +1053,7 @@ module Grid
       endif
 !
 !  Inverse volume elements
-!      
+!
       dVol1_x = 1./dVol_x
       dVol1_y = 1./dVol_y
       dVol1_z = 1./dVol_z
@@ -1142,7 +1142,7 @@ module Grid
       call remove_zprof()
       lwrite_prof=.true.
 !
-!  Set the the serial grid arrays, that contain the coordinate values 
+!  Set the the serial grid arrays, that contain the coordinate values
 !  from all processors.
 !
       call construct_serial_arrays()
@@ -1457,7 +1457,7 @@ module Grid
         ! Grid distance increases linearily
         g=0.5*xi**2
         if (present(gder1)) gder1= xi
-        if (present(gder2)) gder2= 0.      
+        if (present(gder2)) gder2= 0.
 !
       case ('log')
         ! Grid distance increases logarithmically
@@ -1576,12 +1576,12 @@ module Grid
 !***********************************************************************
     subroutine construct_serial_arrays
 !
-!  The arrays xyz are local only, yet sometimes the serial array is 
-!  needed. Construct here the serial arrays out of the local ones, 
-!  but gathering them processor-wise and broadcasting the constructed 
-!  array. This is only done in start time, so legibility (3 near-copies 
-!  of the same code) is preferred over code-reusability (one general 
-!  piece of code called three times). 
+!  The arrays xyz are local only, yet sometimes the serial array is
+!  needed. Construct here the serial arrays out of the local ones,
+!  but gathering them processor-wise and broadcasting the constructed
+!  array. This is only done in start time, so legibility (3 near-copies
+!  of the same code) is preferred over code-reusability (one general
+!  piece of code called three times).
 !
 !  19-oct-10/wlad: coded
 !
@@ -1592,14 +1592,16 @@ module Grid
       real, dimension(nz) :: zrecv
       integer :: jx,jy,jz,iup,ido,iproc_recv
 !
+      xrecv=0.; yrecv=0.; zrecv=0.
+!
 !  Serial x array
 !
       if (iproc/=root) then
 !
-!  All processors of the same row (ipx,ipy or ipz) 
+!  All processors of the same row (ipx,ipy or ipz)
 !  send their array values to the root.
 !
-        if ((ipy==0).and.(ipz==0)) then 
+        if ((ipy==0).and.(ipz==0)) then
           call mpisend_real(x(l1:l2),nx,root,111)
         endif
       else
@@ -1610,15 +1612,15 @@ module Grid
           !avoid send-to-self
           if (jx/=root) then
 !
-!  Formula of the serial processor number: 
+!  Formula of the serial processor number:
 !  iproc=ipx+nprocx*ipy+nprocx*nprocy*ipz
-!  Since for the x-row ipy=ipz=0, this reduces 
+!  Since for the x-row ipy=ipz=0, this reduces
 !  to iproc_recv=jx.
 !
             iproc_recv=jx
             call mpirecv_real(xrecv,nx,iproc_recv,111)
 !
-            ido=jx    *nx + 1 
+            ido=jx    *nx + 1
             iup=(jx+1)*nx
             xgrid(ido:iup)=xrecv
           else
@@ -1628,7 +1630,7 @@ module Grid
         enddo
       endif
 !
-!  Serial array constructed. Broadcast the result. Repeat the 
+!  Serial array constructed. Broadcast the result. Repeat the
 !  procedure for y and z arrays.
 !
       call mpibcast_real(xgrid,nxgrid)
@@ -1636,7 +1638,7 @@ module Grid
 !  Serial y-array
 !
       if (iproc/=root) then
-        if (ipx==0.and.ipz==0) then 
+        if (ipx==0.and.ipz==0) then
           call mpisend_real(y(m1:m2),ny,root,222)
         endif
       else
@@ -1657,7 +1659,7 @@ module Grid
 !  Serial z-array
 !
       if (iproc/=root) then
-        if (ipx==0.and.ipy==0) then 
+        if (ipx==0.and.ipy==0) then
           call mpisend_real(z(n1:n2),nz,root,333)
         endif
       else
