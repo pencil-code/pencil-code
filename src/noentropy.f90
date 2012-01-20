@@ -273,7 +273,7 @@ module Entropy
       integer :: i
 !
       intent(in) :: f,p
-      intent(out) :: df
+      intent(inout) :: df
 !
 !  ``cs2/dx^2'' for timestep - but only if we are evolving hydrodynamics.
 !
