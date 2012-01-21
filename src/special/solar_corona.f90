@@ -374,7 +374,7 @@ module Special
       use Syscalls, only: file_exists
 !
       integer :: i, ierr
-      integer, parameter :: unit=12, lnrho_tag=368, lnTT_tag=369
+      integer, parameter :: unit=12
       real :: var_lnrho, var_lnTT, var_z
       real, dimension (:), allocatable :: prof_lnrho, prof_lnTT, prof_z
       logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT
@@ -2678,7 +2678,7 @@ module Special
       real, dimension (nx) :: heat_event,heat_event1D
       integer, dimension(mseed) :: global_rstate
       real :: z_Mm,heat_unit
-      real :: nano_sigma_t,nano_time,nano_start=0.,nano_sigma_z
+      real :: nano_sigma_t,nano_time=0.,nano_start=0.,nano_sigma_z
       real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
       real :: nano_amplitude
       real, dimension(2) :: event_pos
@@ -2961,7 +2961,6 @@ module Special
 !
 !  11-may-10/bing: coded
 !
-      use EquationOfState, only: gamma_inv,get_cp1,gamma_m1,lnrho0,cs20
       use General, only: random_seed_wrapper
       use Mpicomm, only: mpisend_real, mpirecv_real, collect_xy, distribute_xy
       use Sub, only: cubic_step
