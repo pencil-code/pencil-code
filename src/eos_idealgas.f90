@@ -2885,7 +2885,9 @@ module EquationOfState
              f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(alog(f(:,:,n1,irho))-lnrho0)
              do i=1,nghost
                f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-                  - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
+               !   - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
+!AB: this could be better
+                  - 2*(cp-cv)*(log(f(:,:,n1,irho))-lnrho0)
              enddo
            else
              f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n1,ilnrho)-lnrho0)
@@ -2925,7 +2927,9 @@ module EquationOfState
             f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(alog(f(:,:,n2,irho))-lnrho0)
             do i=1,nghost
               f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-                   - (cp-cv)*(log(f(:,:,n2-i,irho)*f(:,:,n2+i,irho))-2*lnrho0)
+                   !- (cp-cv)*(log(f(:,:,n2-i,irho)*f(:,:,n2+i,irho))-2*lnrho0)
+!AB: this could be better
+                   - 2*(cp-cv)*(log(f(:,:,n2,irho))-lnrho0)
             enddo
           else
             f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(f(:,:,n2,ilnrho)-lnrho0)
