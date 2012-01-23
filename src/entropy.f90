@@ -4503,8 +4503,8 @@ module Entropy
       case ('shell2')
         if (rcool==0.0) rcool=r_ext
         if (rcool2==0.0) rcool2=r_ext
-        prof = step(x(l1:l2),rcool,wcool)
         prof2= step(x(l1:l2),rcool2,wcool2)
+        prof = step(x(l1:l2),rcool,wcool)-prof2
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool-cool2*prof2*(p%cs2-cs2cool2)/cs2cool2
 !
 !  Latitude dependent heating/cooling: imposes a latitudinal variation
