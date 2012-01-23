@@ -1608,8 +1608,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ## norosx52 (Mac Pro, 8 cores)
 ##
 ##FC=/opt/ompi/bin/mpif90 #(norosx52)
-##FC=mpif90 #(norosx52)
-#FC=/opt/local/bin/openmpif90 #(norosx52)
+#FC=mpif90 #(norosx52)
+##FC=/opt/local/bin/openmpif90 #(norosx52)
 #FFLAGS= -O3 #(norosx52)
 #CFLAGS=-DFUNDERSC=1 -I/opt/local/include#(norosx52)
 #LD_GSL = -lgsl -lgslcblas -L/opt/local/lib/#(norosx52)
