@@ -57,7 +57,7 @@ module Magnetic_meanfield
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=0.0, meanfield_qp=0.0, meanfield_qe=0.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0
-  real :: meanfield_qp1
+  real :: meanfield_qp1, meanfield_qs1, meanfield_qe1
   real :: meanfield_etaB=0.0
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
@@ -306,6 +306,22 @@ module Magnetic_meanfield
         meanfield_qp1=0.
       else
         meanfield_qp1=1./meanfield_qp
+      endif
+!
+!  define inverse of meanfield_qs
+!
+      if (meanfield_qs==0.) then
+        meanfield_qs1=0.
+      else
+        meanfield_qs1=1./meanfield_qs
+      endif
+!
+!  define inverse of meanfield_qe
+!
+      if (meanfield_qe==0.) then
+        meanfield_qe1=0.
+      else
+        meanfield_qe1=1./meanfield_qe
       endif
 !
 !  Initialize module variables which are parameter dependent
