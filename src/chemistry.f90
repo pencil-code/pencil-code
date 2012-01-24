@@ -6053,18 +6053,20 @@ module Chemistry
             do ii = 2, m22-1
             if (x(i) > grid(ii,1,1)-(grid(imid,1,1)-grid(ipos,1,1)) .and. x(i) &
                   <= grid(ii+1,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then
-              f(i,j,k,iux)=f(i,j,k,iux)+a(ii,m1,n1,iux)+(x(i)-grid(ii,1,1)&
-                  +(grid(imid,1,1)-grid(ipos,1,1)))*(a(ii+1,m1,n1,iux)-a(ii,m1,n1,iux))&
-                  /(grid(ii+1,1,1)-grid(ii,1,1))
+              if (lperi(1) == .false. ) then
+                f(i,j,k,iux)=f(i,j,k,iux)+a(ii,m1,n1,iux)+(x(i)-grid(ii,1,1)&
+                    +(grid(imid,1,1)-grid(ipos,1,1)))*(a(ii+1,m1,n1,iux)&
+                    -a(ii,m1,n1,iux))/(grid(ii+1,1,1)-grid(ii,1,1))
+              endif
               f(i,j,k,iuz+1:mvar)=a(ii,m1,n1,iuz+1:mvar)+(x(i)-grid(ii,1,1)+ &
                   (grid(imid,1,1)-grid(ipos,1,1)))*(a(ii+1,m1,n1,iuz+1:mvar) &
                   -a(ii,m1,n1,iuz+1:mvar))/(grid(ii+1,1,1)-grid(ii,1,1))
             else if (x(i) <= grid(2,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then
-              f(i,j,k,iux)=f(i,j,k,iux)+a(l1,m1,n1,iux)
+              if (lperi(1) == .false.) f(i,j,k,iux)=f(i,j,k,iux)+a(l1,m1,n1,iux)
               f(i,j,k,iuz+1:mvar)=a(l1,m1,n1,iuz+1:mvar)
               exit
             else if (x(i) >= grid(m22-1,1,1)-(grid(imid,1,1)-grid(ipos,1,1))) then
-              f(i,j,k,iux)=f(i,j,k,iux)+a(l22,m1,n1,iux)
+              if (lperi(1) == .false.)f(i,j,k,iux)=f(i,j,k,iux)+a(l22,m1,n1,iux)
               f(i,j,k,iuz+1:mvar)=a(l22,m1,n1,iuz+1:mvar)
               exit
             endif
