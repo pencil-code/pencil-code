@@ -599,7 +599,10 @@ module Grid
         case ('sinh2')
 !
           a = coeff_grid(3) / nzgrid
-          if (lperi(3)) xi3 = xi3 + .5
+          if (lperi(3)) then
+            xi3 = xi3 + .5
+            xi3proc = xi3proc + .5
+          endif
           xi3star = find_star(a*xi3lo, a*xi3up, z0, z0+Lz, xyz_star(3), grid_func(3)) / a
           call grid_profile(a*(xi3  -xi3star), grid_func(3), g3, g3der1, g3der2)
           call grid_profile(a*(xi3lo-xi3star), grid_func(3), g3lo)
