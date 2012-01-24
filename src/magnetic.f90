@@ -6108,7 +6108,7 @@ module Magnetic
 !
 !  debug output (currently only on root processor)
 !
-      if (lroot) then
+      if (lroot.and.ldebug) then
         print*
         print*,'x, eta_x, geta_x(:,1)'
         do l=l1,l2
