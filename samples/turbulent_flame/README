@@ -53,3 +53,20 @@ Comments:
           in IDL. (Remember to run ./src/read_videofiles.x on the
           linux prompt first.) 
 
+
+       If you are intersted in a flame in an isotropic box, instead of 
+       a flame in flow of decaying turbulence you can jump from 1) to 7).
+       Unfortunately this has not been very well tested but I think it should
+       work relatively fine.
+       7) Run the 3D initial conditions found in init_cond_3D_isotropic.
+          See that it has reach statistically steady state by typing
+          > .r ts
+          in IDL.
+       8) Run the startscript of the main simulation (found in 3D_isotropic).
+       9) When the startscript finalizes your should use pc_copyvar 
+            > pc_copyvar var.dat var.dat ../init_cond_3D_isotropic . -e
+          in order to copy the 3D initial condition to the main simulation.
+      10) Run the main simulation. Please remember that if you want to
+          continue running the simulation even after it has finalized 
+          once you must turn off the reinitialization of the chemistry
+          in run.in.
