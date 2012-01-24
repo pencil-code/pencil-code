@@ -1,0 +1,27 @@
+!
+!  Initialisation parameters for Kelvin-Helmholtz turbulence.
+!
+&init_pars
+  cvsid='$Id$',
+  unit_system='cgs'
+  unit_temperature=1.
+  unit_velocity=1.
+  unit_length=1.
+  lperi=T,T,T
+  Lxyz  =  0.25 ,   0.25 ,  0.25
+  xyz0  = -0.125,  -0.125, -0.125
+/
+&eos_init_pars
+/
+&hydro_init_pars
+  inituu='const_uu'
+  uu_const=0.
+/
+&density_init_pars
+ldensity_nolog=F
+/
+&entropy_init_pars
+/
+&chemistry_init_pars
+  initchem='air'
+/

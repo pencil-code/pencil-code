@@ -1,0 +1,32 @@
+!
+!  Run parameters for Kelvin-Helmholtz turbulence.
+!
+&run_pars
+  cvsid='$Id$',
+  nt=20000, it1=10, cdtv=0.4, isave=100, itorder=3
+  dsnap=5e-4, dvid=1e-6, dtmin=1e-30, dt=2e-8
+  lpencil_check=F, lpencil_check_small=F, lrandom_f_pencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&entropy_run_pars
+  lupw_lnTT=T
+/
+&forcing_run_pars
+  iforce='helical', force=250000., relhel=0.
+  lscale_kvector_tobox=T
+/
+&chemistry_run_pars
+  lreactions=F
+  ldiff_simple=T
+  lthcond_simple=T
+  lfilter=T
+/
+&viscosity_run_pars
+ ivisc='nu-mixture'
+/
