@@ -42,7 +42,7 @@
 ;-
 pro pc_read_var_raw,                                                  $
     object=object, varfile=varfile, datadir=datadir, tags=tags,       $
-    dim=dim, param=param, grid=grid, par2=par2,                       $
+    dim=dim, param=param, par2=par2,                                  $
     proc=proc, allprocs=allprocs, trimall=trimall, quiet=quiet,       $
     swap_endian=swap_endian, f77=f77
 
@@ -153,12 +153,6 @@ COMPILE_OPT IDL2,HIDDEN
   default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
       param=param,quiet=quiet)
   totalvars=(size(varcontent))[1]
-;
-; Read the grid. Calling pc_read_grid also makes sure any derivative stuff is
-; correctly set in the common block.
-;
-  pc_read_grid, object=grid, dim=dim, proc=proc, datadir=datadir, $
-      param=param, swap_endian=swap_endian, allprocs=allprocs, /quiet
 ;
 ; Initialise read buffers.
 ;
