@@ -3784,59 +3784,23 @@ module Special
 !
 !  18-06-2008/bing: coded
 !
-      use Mpicomm, only: mpisend_real,mpirecv_real
+      use Mpicomm, only: sum_xy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,ipt
       real :: local_flux,local_mass
       real :: total_flux,total_mass
-      real :: get_lf,get_lm
-      integer, parameter :: tag_f=111, tag_m=211, tag_u=311
 !
       local_flux=sum(exp(f(l1:l2,m1:m2,n2,ilnrho))*f(l1:l2,m1:m2,n2,iuz))
       local_mass=sum(exp(f(l1:l2,m1:m2,n2,ilnrho)))
 !
-!  One  processor has to collect the data
-!
-      if (lfirst_proc_xy) then
-        total_flux=local_flux
-        total_mass=local_mass
-        do i=0,nprocx-1
-          do j=0,nprocy-1
-            if ((i==0).and.(j==0)) cycle
-            ipt = i+nprocx*j+ipz*nprocxy
-            call mpirecv_real(get_lf,1,ipt,tag_f)
-            call mpirecv_real(get_lm,1,ipt,tag_m)
-            total_flux=total_flux+get_lf
-            total_mass=total_mass+get_lm
-          enddo
-        enddo
+      call sum_xy (local_flux, total_flux)
+      call sum_xy (local_mass, total_mass)
 !
 !  Get u0 addition rho*(u+u0) = wind
 !  rho*u + u0 *rho =wind
 !  u0 = (wind-rho*u)/rho
 !
-        u_add = (massflux-total_flux) / total_mass
-      else
-        ! send to first processor at given height
-        !
-        call mpisend_real(local_flux,1,ipz*nprocxy,tag_f)
-        call mpisend_real(local_mass,1,ipz*nprocxy,tag_m)
-      endif
-!
-!  now distribute u_add
-!
-      if (lfirst_proc_xy) then
-        do i=0,nprocx-1
-          do j=0,nprocy-1
-            if ((i==0).and.(j==0)) cycle
-            ipt = i+nprocx*j+ipz*nprocxy
-            call mpisend_real(u_add,1,ipt,tag_u)
-          enddo
-        enddo
-      else
-        call mpirecv_real(u_add,1,ipz*nprocxy,tag_u)
-      endif
+      u_add = (massflux-total_flux) / total_mass
 !
     endsubroutine get_wind_speed_offset
 !***********************************************************************
