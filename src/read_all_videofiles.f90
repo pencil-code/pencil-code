@@ -6,7 +6,7 @@ program rvid_box
 !  read and combine slices from individual processor directories data
 !  /procN, write them to data/, where the can be used by used by
 !  rvid_box.pro. Adapated from read_videofiles.f90 but reads
-!  all files without wating for a user input.
+!  all files without waiting for a user input.
 !
 !  17-dec-10/bing: coded
 !
