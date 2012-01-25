@@ -52,7 +52,7 @@ sed -e $str templates/$modfile > $newrun/$modfile
 #
 cd $newrun
 start.csh
-N.csh
+run_background.csh
 sleep 20
 cvsci_run
 #
