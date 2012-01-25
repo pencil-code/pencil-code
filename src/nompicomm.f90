@@ -141,12 +141,14 @@ module Mpicomm
   endinterface
 !
   interface distribute_xy
+    module procedure distribute_xy_0D
     module procedure distribute_xy_2D
     module procedure distribute_xy_3D
     module procedure distribute_xy_4D
   endinterface
 !
   interface collect_xy
+    module procedure collect_xy_0D
     module procedure collect_xy_2D
     module procedure collect_xy_3D
     module procedure collect_xy_4D
@@ -1444,6 +1446,23 @@ module Mpicomm
 !
     endsubroutine sum_xy
 !***********************************************************************
+    subroutine distribute_xy_0D (in, out, source_proc)
+!
+!  This routine distributes a scalar on the source processor
+!  to all processors in the xy-plane.
+!
+!  25-jan-2012/Bourdin.KIS: coded
+!
+      real, intent(in) :: in
+      real, intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      if (present (source_proc) .and. (iproc /= source_proc)) return
+!
+      out = in
+!
+    endsubroutine distribute_xy_0D
+!***********************************************************************
     subroutine distribute_xy_2D (in, out, source_proc)
 !
 !  This routine divides a large array of 2D data on the broadcaster processor
@@ -1494,6 +1513,26 @@ module Mpicomm
       out = in
 !
     endsubroutine distribute_xy_4D
+!***********************************************************************
+    subroutine collect_xy_0D (in, out, dest_proc)
+!
+!  Collect 0D data from all processors in the xy-plane
+!  and combine it into one large array on the collector processor.
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: in
+      real, dimension(:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      if (nprocx /= size (out, 1)) &
+          call stop_it ('collect_xy_0D: output x dim must be nprocx')
+      if (nprocy /= size (out, 2)) &
+          call stop_it ('collect_xy_0D: output y dim must be nprocy')
+!
+      if (present (out) .or. present (dest_proc)) out = in
+!
+    endsubroutine collect_xy_0D
 !***********************************************************************
     subroutine collect_xy_2D (in, out, dest_proc)
 !

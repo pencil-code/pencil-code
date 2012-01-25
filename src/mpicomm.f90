@@ -185,12 +185,14 @@ module Mpicomm
   endinterface
 !
   interface distribute_xy
+    module procedure distribute_xy_0D
     module procedure distribute_xy_2D
     module procedure distribute_xy_3D
     module procedure distribute_xy_4D
   endinterface
 !
   interface collect_xy
+    module procedure collect_xy_0D
     module procedure collect_xy_2D
     module procedure collect_xy_3D
     module procedure collect_xy_4D
@@ -405,10 +407,10 @@ module Mpicomm
       if (lprocz_slowest) then
         ipx = modulo(iproc, nprocx)
         ipy = modulo(iproc/nprocx, nprocy)
-        ipz = iproc/(nprocx*nprocy)
+        ipz = iproc/nprocxy
       else
         ipx = modulo(iproc, nprocx)
-        ipy = iproc/(nprocx*nprocy)
+        ipy = iproc/nprocxy
         ipz = modulo(iproc/nprocx, nprocy)
       endif
 !
@@ -434,18 +436,18 @@ module Mpicomm
 !
 !  Set up `lower' and `upper' neighbours.
 !
-      xlneigh = (ipz*nprocx*nprocy+ipy*nprocx+modulo(ipx-1,nprocx))
-      xuneigh = (ipz*nprocx*nprocy+ipy*nprocx+modulo(ipx+1,nprocx))
-      ylneigh = (ipz*nprocx*nprocy+modulo(ipy-1,nprocy)*nprocx+ipx)
-      yuneigh = (ipz*nprocx*nprocy+modulo(ipy+1,nprocy)*nprocx+ipx)
-      zlneigh = (modulo(ipz-1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
-      zuneigh = (modulo(ipz+1,nprocz)*nprocx*nprocy+ipy*nprocx+ipx)
+      xlneigh = (ipz*nprocxy+ipy*nprocx+modulo(ipx-1,nprocx))
+      xuneigh = (ipz*nprocxy+ipy*nprocx+modulo(ipx+1,nprocx))
+      ylneigh = (ipz*nprocxy+modulo(ipy-1,nprocy)*nprocx+ipx)
+      yuneigh = (ipz*nprocxy+modulo(ipy+1,nprocy)*nprocx+ipx)
+      zlneigh = (modulo(ipz-1,nprocz)*nprocxy+ipy*nprocx+ipx)
+      zuneigh = (modulo(ipz+1,nprocz)*nprocxy+ipy*nprocx+ipx)
 !
 ! For boundary condition across the pole set up pole-neighbours
 ! This assumes that the domain is equally distributed among the
 ! processors in the z direction.
 !
-      poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocx*nprocy+ipy*nprocx+ipx
+      poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
 !
 !  Set the four corners in the yz-plane (in cyclic order).
 !
@@ -3548,38 +3550,74 @@ module Mpicomm
       real, intent(in) :: in
       real, intent(out) :: out
 !
-      real :: buffer
+      real :: buffer, sum
       integer :: px, py, partner
       integer, parameter :: tag=114
 !
 !
       if (lfirst_proc_xy) then
         ! initialize sum with the local data
-        out = in
+        sum = in
         ! collect and sum up the remote data
         do px = 0, nprocx-1
           do py = 0, nprocy-1
             partner = px + py*nprocx + ipz*nprocxy
             if (iproc == partner) cycle
             call mpirecv_real (buffer, 1, partner, tag)
-            out = out + buffer
-          enddo
-        enddo
-        ! distribute back the sum
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
-            if (iproc == partner) cycle
-            call mpisend_real (out, 1, partner, tag)
+            sum = sum + buffer
           enddo
         enddo
       else
         ! send data to collector and receive the sum
         call mpisend_real (in, 1, ipz*nprocxy, tag)
-        call mpirecv_real (out, 1, ipz*nprocxy, tag)
       endif
 !
+      ! distribute back the sum
+      call distribute_xy (sum, out)
+!
     endsubroutine sum_xy
+!***********************************************************************
+    subroutine distribute_xy_0D (in, out, source_proc)
+!
+!  This routine distributes a scalar on the source processor
+!  to all processors in the xy-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  25-jan-2012/Bourdin.KIS: coded
+!
+      real, intent(in) :: in
+      real, intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      integer :: px, py, broadcaster, partner
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+!
+      broadcaster = ipz * nprocxy
+      if (present (source_proc)) broadcaster = broadcaster + source_proc
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out = in
+            else
+              ! send to partner
+              call MPI_SEND (in, 1, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, 1, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xy_0D
 !***********************************************************************
     subroutine distribute_xy_2D (in, out, source_proc)
 !
@@ -3772,6 +3810,55 @@ module Mpicomm
       deallocate (buffer)
 !
     endsubroutine distribute_xy_4D
+!***********************************************************************
+    subroutine collect_xy_0D (in, out, dest_proc)
+!
+!  Collect 0D data from all processors in the xy-plane
+!  and combine it into one large array on one destination processor.
+!  'dest_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, intent(in) :: in
+      real, dimension(:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      integer :: px, py, collector, partner
+      integer, parameter :: ytag=116
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      real :: buffer
+!
+!
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
+!
+      if (iproc == collector) then
+        ! collect the data
+        if (nprocx /= size (out, 1)) &
+            call stop_fatal ('collect_xy_0D: output x dim must be nprocx', lfirst_proc_xy)
+        if (nprocy /= size (out, 2)) &
+            call stop_fatal ('collect_xy_0D: output y dim must be nprocy', lfirst_proc_xy)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out(px,py) = in
+            else
+              ! receive from partner
+              call MPI_RECV (buffer, 1, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              out(px,py) = buffer
+            endif
+          enddo
+        enddo
+      else
+        ! send to collector
+        call MPI_SEND (in, 1, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+    endsubroutine collect_xy_0D
 !***********************************************************************
     subroutine collect_xy_2D (in, out, dest_proc)
 !
@@ -6327,7 +6414,7 @@ module Mpicomm
       logical,                      optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
       integer, dimension(3,*),      optional,intent(in   ) :: kxrange, kyrange, zrange
 !
-      integer :: i,np,iproca,iproce,nprocxy,nxy,tag
+      integer :: i,np,iproca,iproce,nxy,tag
       integer, dimension(3,10) :: kxrangel,kyrangel,zrangel
 !
       integer, dimension(MPI_STATUS_SIZE) :: status
@@ -6382,7 +6469,6 @@ module Mpicomm
         endif
       endif
 !
-      nprocxy = nprocx*nprocy                             ! nprocx=1
       nxy = nxgrid*ny
 !
       iproca=1; iproce=-1
