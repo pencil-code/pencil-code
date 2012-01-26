@@ -32,7 +32,7 @@ end
 
 
 ; Precalculates a data set and loads data, if necessary
-pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, show_aver=show_aver, time=time
+pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, show_aver=show_aver, time=time
   
   common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
@@ -51,9 +51,9 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, grid=grid,
     if (n_elements (vars) eq 0) then begin
       print, 'Reading: ', varfile, ' ... please wait!'
       if (i eq 0) then begin
-        pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, /nostats
+        pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, /nostats
       endif else begin
-        pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, grid=grid, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, /quiet
+        pc_read_var, varfile=varfile, object=vars, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, /quiet
       endelse
       sources = tag_names (vars)
       precalc_data, number, vars

@@ -333,29 +333,29 @@ if (not pc_gui_loaded) then BEGIN
 	time_add = 0.0
 	if (addfile) then begin
 		; Precalculate additional timestep
-		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_add
+		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_add
 	end
 
 	time_var = 0.0
 	if (load_varfile) then begin
 		; Precalculate initial timestep
-		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_var
+		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_var
 	end
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
+		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
 		if (skipping ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
 			pos_last = skipping + (num_selected-1)*stepping
-			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
+			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
 			if (ignore_end ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start, end_time=max ([time_end, time_var, time_add])
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
 					; Precalculate selected timesteps
 					pos = skipping + (i-1)*stepping
-					precalc, load_varfile+num_additional+num_selected-i, varfile=snapshots[pos], datadir=datadir, dim=dim, grid=grid, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+					precalc, load_varfile+num_additional+num_selected-i, varfile=snapshots[pos], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 				end
 			end
 		end
