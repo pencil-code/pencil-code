@@ -1,4 +1,4 @@
-! $Id: parker_wind.f90,v 1.0 2009-09-24 09:08:03 fabio, simon Exp $
+! $Id: parker_wind.f90,v 1.0 2012-01-24 09:08:03 Dhruba, joern Exp $
 !
 ! Initial condition for the parker wind in spherical coordinates.  
 !
@@ -28,10 +28,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: rcrit,mdot
+  real :: rcrit=1., mdot=0.
+  real, dimension(mx) :: vv=0.
+  real, dimension(mx) :: den=0.
   
   namelist /initial_condition_pars/ &
-       rcrit,mdot
+       rcrit, mdot
 !
   contains
 !***********************************************************************
@@ -39,7 +41,7 @@ module InitialCondition
 !
 !  Register variables associated with this module; likely none.
 !
-!  20-may-11/simon: coded
+!  26-jan-12/joern: coded
 !
       if (lroot) call svn_id( &
            "$Id: parker_wind.f90, $")
@@ -62,16 +64,21 @@ module InitialCondition
 !
 !  Initialize the velocity field.
 !
-!  07-may-09/wlad: coded
+!  24-jan-12/joern: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer :: iy, iz
 !
-!  Iterations to get the Parker solution goes here. 
-! 
-! if (not anelastic) 
-! call a subroutine which actually does the iterations. 
-! else 
-! just get the 1d velocity which has been stored in an array. 
+      if (.not. lanelastic) then
+        call parker_wind_iteration(vv,den)
+        do iy=m1,m2;do iz=n1,n2
+          f(l1:l2,iy,iy,ilnrho)=log(den(l1:l2))
+          f(l1:l2,iy,iz,iuu)=vv(l1:l2)
+          f(l1:l2,iy,iz,iuu+1)=0.
+          f(l1:l2,iy,iz,iuu+2)=0.
+        enddo; enddo
+      endif
+
 !
       call keep_compiler_quiet(f)
 !
@@ -83,19 +90,23 @@ module InitialCondition
 !  will take care of converting it to linear 
 !  density if you use ldensity_nolog
 !
-!  07-sep-11/simon: coded
+!  24-jan-12/joern: coded
 !
       use SharedVariables
       use EquationOfState
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
-!
-! if(not anelastic) 
-! get the density from the velocity which has been already stored in an f array slot
-! else
-! call the subroutine that does the actual iterations and gets the 1d velocity
-!
-!
-      call keep_compiler_quiet(f)
+!      
+      if (lanelastic) then
+        call parker_wind_iteration(vv,den)
+      do iy=m1,m2;do iz=n1,n2
+          f(l1:l2,iy,iy,ilnrho)=log(den(l1:l2))
+          f(l1:l2,iy,iz,iuu)=vv(l1:l2)
+          f(l1:l2,iy,iz,iuu+1)=0.
+          f(l1:l2,iy,iz,iuu+2)=0.
+        enddo; enddo
+      endif
+
+   call keep_compiler_quiet(f)
 
     endsubroutine initial_condition_lnrho
 !********************************************************************
@@ -105,8 +116,6 @@ module InitialCondition
 !
 !  07-sep-11/simon: coded
 !
-      use SharedVariables
-      use EquationOfState
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
 !
@@ -120,9 +129,6 @@ module InitialCondition
 !
 !  07-sep-11/simon: coded
 !
-      use SharedVariables
-      use EquationOfState
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
 !      
     endsubroutine initial_condition_ss
@@ -162,6 +168,38 @@ module InitialCondition
       write(unit,NML=initial_condition_pars)
 !
     endsubroutine write_initial_condition_pars
+!***********************************************************************
+    subroutine parker_wind_iteration(vel,rho)
+!
+      use SharedVariables
+      use EquationOfState
+!     
+      real, dimension (mx), intent(out) :: vel
+      real, dimension (mx), intent(out) :: rho
+      real, dimension (nx) :: cs20logx,GM_r
+      real :: Ecrit
+      integer :: j
+!
+      Ecrit=0.5*cs20-cs20*log(cs0)-2*cs20*log(rcrit)-2*cs20
+      cs20logx=2*cs20*log(x(l1:l2))
+      GM_r=2.*rcrit*cs20/x(l1:l2)
+!     
+      vel=x/rcrit 
+      do j=1,2000
+        where (x(l1:l2)>=rcrit)
+          vel(l1:l2)=sqrt(2.*(Ecrit+cs20logx &
+          +GM_r+cs20*log(vel(l1:l2))))
+        elsewhere
+          vel(l1:l2)=exp(0.5*vel(l1:l2)**2-Ecrit &
+          -cs20logx-GM_r)
+        endwhere
+      enddo
+!
+      rho(l1:l2)=Mdot/(4*pi*x(l1:l2)**2*vel(l1:l2))
+print*,'Ecrit=',Ecrit
+print*,'Rho0=',log(rho(l1))
+!
+    endsubroutine parker_wind_iteration 
 !***********************************************************************
 !
 !********************************************************************
