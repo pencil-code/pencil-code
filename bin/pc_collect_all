@@ -1,0 +1,16 @@
+#!/bin/sh
+
+DATADIR="data"
+PROCDIR="$DATADIR/proc0"
+ALLPROCS="allprocs"
+SCRIPT="src/pre_and_post_processing/pc_collect.x"
+
+for ENTRY in `find "$PROCDIR" -name VAR[0-9]*`
+do
+	FILE=`basename "$ENTRY"`
+	if [ ! -e "$ALLPROCS/$FILE" ]; then
+		echo "collecting $FILE"
+		echo "$FILE" | $SCRIPT
+	fi
+done
+
