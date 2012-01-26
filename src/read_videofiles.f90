@@ -4,8 +4,7 @@
       program rvid_box
 !
 !  read and combine slices from individual processor directories data
-!  /procN, write them to data/, where the can be used by used by
-!  rvid_box.pro
+!  /procN, write them to data/, where they can be used by rvid_box.pro
 !
 !  13-nov-02/axel: coded
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
