@@ -506,8 +506,8 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
-      real, dimension (nx) :: meanfield_urms21, meanfield_etaB2, Beq, B2renorm
-      real, dimension (nx,3) :: Bk_Bki, tmp_jxb,exa_meanfield
+      real, dimension (nx) :: meanfield_etaB2, Beq
+      real, dimension (nx,3) :: Bk_Bki, exa_meanfield
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact
       integer :: j,l
@@ -573,7 +573,7 @@ module Magnetic_meanfield
           call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
-!  
+!
           call multsv_mn_add(-meanfield_qs_func,p%jxb+Bk_Bki,p%jxb_mf)
           call dot(Bk_Bki,p%bb,BiBk_Bki)
           call multsv_mn_add(-2*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
