@@ -15,7 +15,8 @@
 pro emissivity_event, event
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	WIDGET_CONTROL, WIDGET_INFO(event.top, /CHILD)
 
@@ -30,15 +31,22 @@ pro emissivity_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = idx
 		cut_z = idx
 		WIDGET_CONTROL, em_sel, SENSITIVE = 0
-		em_z = total (em[*,*,cut_z:*], 3)
+		WIDGET_CONTROL, image, SENSITIVE = 0
+		if (event.drag le 0) then begin
+			em_z = total (em[*,*,cut_z:*], 3)
+			if (bin_x ne 1 or bin_y ne 1) then em_z = congrid (em_z, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
+		end
 		WIDGET_CONTROL, em_sel, SENSITIVE = 1
+		WIDGET_CONTROL, image, SENSITIVE = 1
 		DRAW_IMAGES = 1
 	end
 	'HORIZ':  begin
 		sub_horiz = event.select
 		WIDGET_CONTROL, em_sel, SENSITIVE = 0
+		WIDGET_CONTROL, image, SENSITIVE = 0
 		precalc_emissivity
 		WIDGET_CONTROL, em_sel, SENSITIVE = 1
+		WIDGET_CONTROL, image, SENSITIVE = 1
 		DRAW_IMAGES = 1
 	end
 	'VAL_B': begin
@@ -64,15 +72,19 @@ pro emissivity_event, event
 		selected_emissivity = event.index
 		if (last ne selected_emissivity) then begin
 			WIDGET_CONTROL, em_sel, SENSITIVE = 0
+			WIDGET_CONTROL, image, SENSITIVE = 0
 			precalc_emissivity
 			WIDGET_CONTROL, em_sel, SENSITIVE = 1
+			WIDGET_CONTROL, image, SENSITIVE = 1
 		end
 		DRAW_IMAGES = 1
 	end
 	'IMAGE': begin
 		WIDGET_CONTROL, em_sel, SENSITIVE = 0
+		WIDGET_CONTROL, image, SENSITIVE = 0
 		save_emissivity, "PNG"
 		WIDGET_CONTROL, em_sel, SENSITIVE = 1
+		WIDGET_CONTROL, image, SENSITIVE = 1
 	end
 	'QUIT': begin
 		quit = event.top
@@ -93,7 +105,7 @@ end
 pro precalc_emissivity
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
@@ -140,15 +152,15 @@ end
 pro plot_emissivity
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	plot_em_x = em_x
 	plot_em_y = em_y
 
 	if (cut_z ge 1) then begin
-		plot_em_x[*,0:cut_z-1] = 0.5 * (emin + emax)
-		plot_em_y[*,0:cut_z-1] = 0.5 * (emin + emax)
+		plot_em_x[*,0:(cut_z-1)*bin_z] = 0.5 * (emin + emax)
+		plot_em_y[*,0:(cut_z-1)*bin_z] = 0.5 * (emin + emax)
 	endif
 
 	wset, wem_x
@@ -166,7 +178,7 @@ end
 pro save_emissivity, img_type
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
@@ -198,7 +210,7 @@ end
 pro emissivity, sets, limits, scaling=scaling
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	; Emissivities for different ions (values with only one decimal digit are UNVERIFIED)
