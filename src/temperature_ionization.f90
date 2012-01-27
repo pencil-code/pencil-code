@@ -211,7 +211,7 @@ module Entropy
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-      endsubroutine initialize_entropy
+    endsubroutine initialize_entropy
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
 !
@@ -236,6 +236,7 @@ module Entropy
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -342,10 +343,10 @@ module Entropy
       if (ldt) lpenc_requested(i_cs2)=.true.
 !
       if (ldensity) then
-       if (.not. lchemistry) then
-        lpenc_requested(i_gamma_m1)=.true.
-        lpenc_requested(i_delta)=.true.
-       endif
+        if (.not. lchemistry) then
+          lpenc_requested(i_gamma_m1)=.true.
+          lpenc_requested(i_delta)=.true.
+        endif
         lpenc_requested(i_divu)=.true.
       endif
 !
@@ -373,11 +374,11 @@ module Entropy
       endif
 !
       if (ladvection_temperature) then
-       if (ltemperature_nolog) then
-         lpenc_requested(i_ugTT)=.true.
-       else
-         lpenc_requested(i_uglnTT)=.true.
-       endif
+        if (ltemperature_nolog) then
+          lpenc_requested(i_ugTT)=.true.
+        else
+          lpenc_requested(i_uglnTT)=.true.
+        endif
       endif
 !
       if (lheatc_chiconst) then
