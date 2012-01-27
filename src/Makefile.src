@@ -987,6 +987,15 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI= #(warp.hpc1.cs.cmu.edu*)
 #LIBMPISUFFIX= #(warp.hpc1.cs.cmu.edu*)
 ##
+## Axel on warp.hpc1.cs.cmu.edu (gfortran)
+##XX
+##FC=ifort #(warp.hpc1.cs.cmu.edu*)
+##FFLAGS= -O3 -fno-underscoring #(warp.hpc1.cs.cmu.edu*)
+##CC=gcc #(warp.hpc1.cs.cmu.edu*)
+##CFLAGS=-O3 #(warp.hpc1.cs.cmu.edu*)
+##LD_MPI= #(warp.hpc1.cs.cmu.edu*)
+##LIBMPISUFFIX= #(warp.hpc1.cs.cmu.edu*)
+##
 ## Axel on norlx55 (gfortran)
 ##
 #FC=${HOME}/Library/bin/mpif90 #(norlx55*)
