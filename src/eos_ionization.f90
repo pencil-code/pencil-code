@@ -1890,7 +1890,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
+      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1904,7 +1904,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1918,7 +1918,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1932,7 +1932,7 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN EOS_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1997,7 +1997,7 @@ module EquationOfState
 !***********************************************************************
     subroutine read_Lewis
 !
-! Dummy routine 
+! Dummy routine
 !
     endsubroutine read_Lewis
 !***********************************************************************
