@@ -69,6 +69,11 @@ pro emissivity_event, event
 		end
 		DRAW_IMAGES = 1
 	end
+	'IMAGE': begin
+		WIDGET_CONTROL, em_sel, SENSITIVE = 0
+		save_emissivity, "PNG"
+		WIDGET_CONTROL, em_sel, SENSITIVE = 1
+	end
 	'QUIT': begin
 		quit = event.top
 	end
@@ -88,8 +93,8 @@ end
 pro precalc_emissivity
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
@@ -125,8 +130,8 @@ pro precalc_emissivity
 		end
 	end
 
-	if (bin_x ne 1 or bin_z ne 1) then em_x = congrid (em_x, fix (num_x*bin_x), fix ((num_z-cut_z)*bin_z), cubic = 0)
-	if (bin_y ne 1 or bin_z ne 1) then em_y = congrid (em_y, fix (num_y*bin_y), fix ((num_z-cut_z)*bin_z), cubic = 0)
+	if (bin_x ne 1 or bin_z ne 1) then em_x = congrid (em_x, fix (num_x*bin_x), fix (num_z*bin_z), cubic = 0)
+	if (bin_y ne 1 or bin_z ne 1) then em_y = congrid (em_y, fix (num_y*bin_y), fix (num_z*bin_z), cubic = 0)
 	if (bin_x ne 1 or bin_y ne 1) then em_z = congrid (em_z, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
 end
 
@@ -154,6 +159,38 @@ pro plot_emissivity
 
 	wset, wem_z
 	tvscl, alog10 ((em_z > emin) < emax)
+end
+
+
+; Saves the data with the given format
+pro save_emissivity, img_type
+
+	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+
+	prefix = parameter[selected_emissivity].title
+	suffix = "." + strlowcase (img_type)
+
+	wset, wem_x
+	save_image, prefix+"_x"+suffix
+	wset, wem_y
+	save_image, prefix+"_y"+suffix
+	wset, wem_z
+	save_image, prefix+"_z"+suffix
+
+	x = coord.x * unit.default_length
+	y = coord.y * unit.default_length
+	z = coord.z * unit.default_length
+	dx = coord.dx
+	dy = coord.dy
+	dz = coord.dz
+	time = varfiles[selected_snapshot].time * unit.time
+	parameters = parameter[selected_emissivity]
+	emissivity = prefix
+
+	save, filename=prefix+"_cuts.xdr", time, emissivity, parameters, em_x, em_y, em_z, x, y, z, dx, dy, dz
 end
 
 
@@ -209,6 +246,8 @@ pro emissivity, sets, limits, scaling=scaling
 	em_sel  = WIDGET_DROPLIST (col, value=(parameter[*].title), uvalue='EMIS', EVENT_PRO=emissivity_event, title='Ion:', SENSITIVE = 0)
 	col     = WIDGET_BASE (top, /col)
 	b_sub   = CW_BGROUP (col, 'normalise averages', /nonexcl, uvalue='HORIZ', set_value=sub_horiz)
+	col     = WIDGET_BASE (top, /col)
+	image	= WIDGET_BUTTON (col, value='SAVE IMAGE', UVALUE='IMAGE', xsize=100)
 	col     = WIDGET_BASE (top, /col)
 	tmp	= WIDGET_BUTTON (col, value='QUIT', UVALUE='QUIT', xsize=100)
 	drow    = WIDGET_BASE (BASE, /row)
