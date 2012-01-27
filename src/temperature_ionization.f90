@@ -46,10 +46,6 @@ module Entropy
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=intlen) :: iinit_str
 !
-  ! Delete (or use) me asap!
-  real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
-  logical :: lmultilayer
-!
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
@@ -61,12 +57,28 @@ module Entropy
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
       iheatcond
 !
-  integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
-  integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
-  integer :: idiag_ethm=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
-  integer :: idiag_dtchi=0,idiag_dtc=0
-  integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
-  integer :: idiag_mum=0,idiag_ppmax=0,idiag_ppmin=0
+  integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
+  integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
+  integer :: idiag_TTm=0      ! DIAG_DOC: $\left< T \right>$
+  integer :: idiag_yHmax=0    ! DIAG_DOC:
+  integer :: idiag_yHmin=0    ! DIAG_DOC:
+  integer :: idiag_yHm=0      ! DIAG_DOC:
+  integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
+                              ! DIAG_DOC:  \left< c_v \rho T \right> $
+                              ! DIAG_DOC: \quad(mean thermal energy)
+  integer :: idiag_ssm=0      ! DIAG_DOC:
+  integer :: idiag_cv=0
+  integer :: idiag_cp=0
+  integer :: idiag_dtchi=0
+  integer :: idiag_dtc=0      ! DIAG_DOC:
+  integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
+                              ! DIAG_DOC:  \left< c_v T \right>$
+                              ! DIAG_DOC: \quad(mean internal energy)
+  integer :: idiag_ppm=0      ! DIAG_DOC:
+  integer :: idiag_csm=0
+  integer :: idiag_mum=0      ! DIAG_DOC:
+  integer :: idiag_ppmax=0    ! DIAG_DOC:
+  integer :: idiag_ppmin=0    ! DIAG_DOC:
 !
   contains
 !***********************************************************************
