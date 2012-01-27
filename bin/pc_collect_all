@@ -1,19 +1,19 @@
 #!/bin/sh
 
 # $Id$  
-# Script to automatically collect distributed VARN into
-# one single file in data/allprocs.
+# Script to automatically collect distributed VARN files into
+# one single file that will be stored in data/allprocs.
 #  
 
 DATADIR="data"
 PROCDIR="$DATADIR/proc0"
-ALLPROCS="allprocs"
+ALLPROCS="$DATADIR/allprocs"
 SCRIPT="src/pre_and_post_processing/pc_collect.x"
 
 for ENTRY in `find "$PROCDIR" -name VAR[0-9]*`
 do
 	FILE=`basename "$ENTRY"`
-	if [ ! -e "$DATADIR/$ALLPROCS/$FILE" ]; then
+	if [ ! -e "$ALLPROCS/$FILE" ]; then
 		echo "collecting $FILE"
 		echo "$FILE" | $1 $SCRIPT
 	fi
