@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  This module takes care of entropy (initial condition
-!  and time advance)
+!  This module can replace the entropy module by using lnT or T (with
+!  ltemperature_nolog=.true.) as dependent variable.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
