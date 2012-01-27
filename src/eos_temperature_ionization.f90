@@ -517,7 +517,8 @@ module EquationOfState
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
 !
-      call fatal_error('getdensity','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('getdensity','SHOULD NOT BE CALLED WITH'// &
+          ' eos_temperature_ionization')
       rho = 0.
 !
       call keep_compiler_quiet(yH)
@@ -593,7 +594,8 @@ module EquationOfState
 !
       cs2=impossible
       cp1tilde=impossible
-      call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('pressure_gradient_farray','SHOULD NOT BE CALLED WITH'// &
+          ' eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
 !
@@ -612,7 +614,8 @@ module EquationOfState
 !
       cs2=impossible
       cp1tilde=impossible
-      call fatal_error('pressure_gradient_point','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('pressure_gradient_point','SHOULD NOT BE CALLED WITH'// &
+          ' eos_temperature_ionization')
 !
       call keep_compiler_quiet(lnrho)
       call keep_compiler_quiet(ss)
@@ -632,7 +635,8 @@ module EquationOfState
       real, dimension(nx,3), intent(out) :: glnTT
 !
       glnTT=0.
-      call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH'// &
+          ' eos_temperature_ionization')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(glnrho)
@@ -652,7 +656,8 @@ module EquationOfState
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
 !
-      call fatal_error('temperature_laplacian','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('temperature_laplacian','SHOULD NOT BE CALLED WITH'// &
+          ' eos_temperature_ionization')
 !
       del2lnTT=0.
 !
@@ -776,7 +781,8 @@ module EquationOfState
       real, intent(out), optional :: ee,pp
 !
 !
-      call fatal_error('eoscalc_point','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('eoscalc_point','SHOULD NOT BE CALLED WITH'// &
+          ' eos_temperature_ionization')
 !
       if (present(lnrho)) lnrho=0.
       if (present(ss)) ss=0.
@@ -807,7 +813,8 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp
 !
-      call fatal_error('eoscalc_pencil','SHOULD NOT BE CALLED WITH NOEOS')
+      call fatal_error('eoscalc_pencil','SHOULD NOT BE CALLED WITH'// &
+          ' eos_temperature_ionization')
 !
       if (present(lnrho)) lnrho=0.
       if (present(ss)) ss=0.
@@ -2116,7 +2123,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED in '// &
+          ' eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2130,7 +2138,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED in '// &
+          ' eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2144,7 +2153,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED in '// &
+          ' eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
