@@ -1122,7 +1122,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1138,7 +1138,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1155,7 +1155,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1283,7 +1283,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
+      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1295,7 +1295,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1307,7 +1307,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -1319,7 +1319,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN NOEOS")
+      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
