@@ -44,7 +44,7 @@ module InitialCondition
 !  26-jan-12/joern: coded
 !
       if (lroot) call svn_id( &
-           "$Id: parker_wind.f90, $")
+           "$Id: parker_wind.f90, v 1.0 2012-01-24 09:08:03 Dhruba, joern Exp$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -72,10 +72,10 @@ module InitialCondition
       if (.not. lanelastic) then
         call parker_wind_iteration(vv,den)
         do iy=m1,m2;do iz=n1,n2
-          f(l1:l2,iy,iy,ilnrho)=log(den(l1:l2))
-          f(l1:l2,iy,iz,iuu)=vv(l1:l2)
-          f(l1:l2,iy,iz,iuu+1)=0.
-          f(l1:l2,iy,iz,iuu+2)=0.
+          f(:,iy,iy,ilnrho)=log(den)
+          f(:,iy,iz,iuu)=vv
+          f(:,iy,iz,iuu+1)=0.
+          f(:,iy,iz,iuu+2)=0.
         enddo; enddo
       endif
 
@@ -99,10 +99,10 @@ module InitialCondition
       if (lanelastic) then
         call parker_wind_iteration(vv,den)
       do iy=m1,m2;do iz=n1,n2
-          f(l1:l2,iy,iy,ilnrho)=log(den(l1:l2))
-          f(l1:l2,iy,iz,iuu)=vv(l1:l2)
-          f(l1:l2,iy,iz,iuu+1)=0.
-          f(l1:l2,iy,iz,iuu+2)=0.
+          f(:,iy,iy,ilnrho)=log(den)
+          f(:,iy,iz,iux)=vv
+          f(:,iy,iz,iuy)=0.
+          f(:,iy,iz,iuz)=0.
         enddo; enddo
       endif
 
@@ -176,27 +176,28 @@ module InitialCondition
 !     
       real, dimension (mx), intent(out) :: vel
       real, dimension (mx), intent(out) :: rho
-      real, dimension (nx) :: cs20logx,GM_r
+      real, dimension (mx) :: cs20logx,GM_r
       real :: Ecrit
       integer :: j
 !
       Ecrit=0.5*cs20-cs20*log(cs0)-2*cs20*log(rcrit)-2*cs20
-      cs20logx=2*cs20*log(x(l1:l2))
-      GM_r=2.*rcrit*cs20/x(l1:l2)
+      cs20logx=2*cs20*log(x)
+      GM_r=2.*rcrit*cs20/x
 !     
       vel=x/rcrit 
       do j=1,2000
-        where (x(l1:l2)>=rcrit)
-          vel(l1:l2)=sqrt(2.*(Ecrit+cs20logx &
-          +GM_r+cs20*log(vel(l1:l2))))
+        where (x>=rcrit)
+          vel=sqrt(2.*(Ecrit+cs20logx &
+          +GM_r+cs20*log(vel)))
         elsewhere
-          vel(l1:l2)=exp(0.5*vel(l1:l2)**2-Ecrit &
+          vel=exp(0.5*vel**2-Ecrit &
           -cs20logx-GM_r)
         endwhere
       enddo
 !
-      rho(l1:l2)=Mdot/(4*pi*x(l1:l2)**2*vel(l1:l2))
+      rho=Mdot/(4*pi*x**2*vel)
 print*,'Ecrit=',Ecrit
+print*, 'GM=', 2.*rcrit*cs20
 print*,'Rho0=',log(rho(l1))
 !
     endsubroutine parker_wind_iteration 
