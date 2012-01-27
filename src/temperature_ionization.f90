@@ -22,7 +22,6 @@ module Entropy
   use Cparam
   use Cdata
   use Messages
-  use Interstellar
   use Sub, only: keep_compiler_quiet
 !
   implicit none
@@ -211,6 +210,7 @@ module Entropy
       endsubroutine initialize_entropy
 !***********************************************************************
     subroutine read_entropy_init_pars(unit,iostat)
+!
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
@@ -224,9 +224,11 @@ module Entropy
     endsubroutine read_entropy_init_pars
 !***********************************************************************
     subroutine write_entropy_init_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=entropy_init_pars)
+!
     endsubroutine write_entropy_init_pars
 !***********************************************************************
     subroutine read_entropy_run_pars(unit,iostat)
@@ -247,7 +249,7 @@ module Entropy
 !
       write(unit,NML=entropy_run_pars)
     endsubroutine write_entropy_run_pars
-!!**********************************************************************
+!***********************************************************************
     subroutine init_ss(f)
 !
 !  initialise entropy; called from start.f90
@@ -625,7 +627,7 @@ module Entropy
 !  where g2=glnrho+glnTT
 !
       use Diagnostics, only: max_mn_name
-      use Sub!, only: dot,multsv
+      use Sub, only: dot,multsv
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -721,7 +723,7 @@ module Entropy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
-      use Diagnostics
+      use Diagnostics, only: parse_name
 !
       integer :: iname
       logical :: lreset,lwr
