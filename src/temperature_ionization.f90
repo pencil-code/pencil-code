@@ -79,6 +79,10 @@ module Entropy
   integer :: idiag_ppmax=0    ! DIAG_DOC:
   integer :: idiag_ppmin=0    ! DIAG_DOC:
 !
+! xy averaged diagnostics given in xyaver.in written every it1d timestep
+!
+  integer :: idiag_mumz=0     ! XYAVG_DOC: $\left<\mu\right>_{xy}$
+!
   contains
 !***********************************************************************
     subroutine register_entropy()
@@ -422,7 +426,7 @@ module Entropy
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmax/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmin/=0) lpenc_diagnos(i_pp)=.true.
-      if (idiag_mum/=0) lpenc_diagnos(i_mu1)=.true.
+      if (idiag_mum/=0 .or. idiag_mumz) lpenc_diagnos(i_mu1)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -487,7 +491,7 @@ module Entropy
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
 !
-      use Diagnostics, only: max_mn_name,sum_mn_name
+      use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
       use Special, only: special_calc_entropy
       use Sub, only: cubic_step,identify_bcs
       use Viscosity, only: calc_viscous_heat
@@ -605,6 +609,12 @@ module Entropy
         if (idiag_ppmin/=0) call max_mn_name(-p%pp,idiag_ppmin,lneg=.true.)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(1/p%mu1,idiag_mum)
+      endif
+!
+!  1-D averages.
+!
+      if (l1davgfirst) then
+        call xysum_mn_name_z(1/p%mu1,idiag_mumz)
       endif
 !
     endsubroutine dss_dt
@@ -725,7 +735,7 @@ module Entropy
 !
       use Diagnostics, only: parse_name
 !
-      integer :: iname
+      integer :: iname, inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -741,7 +751,7 @@ module Entropy
         idiag_ethm=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0; idiag_ppmax=0; idiag_ppmin=0
-        idiag_mum=0
+        idiag_mum=0; idiag_mumz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -765,6 +775,12 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'mum',idiag_mum)
+      enddo
+!
+!  Check for those quantities for which we want xy-averages.
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'mumz',idiag_mumz)
       enddo
 !
 !  write column where which variable is stored
