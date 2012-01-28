@@ -158,7 +158,7 @@ module Hydro
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
-  real :: Shearx=0.
+  real :: Shearx=0., rescale_uu=0.
 !
   namelist /hydro_run_pars/ &
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
@@ -178,7 +178,8 @@ module Hydro
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
-      lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, hydro_xaver_range
+      lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
+      hydro_xaver_range
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -572,6 +573,7 @@ module Hydro
         do j=1,ninit
           select case (inituu(j))
           case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
+          case ('rescale'); f(:,:,:,iux:iuz)=rescale_uu*f(:,:,:,iux:iuz)
           endselect
         enddo
       endif
