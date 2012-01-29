@@ -827,6 +827,6 @@ module InitialCondition
 !**  copies dummy routines from noinitial_condition.f90 for any    **
 !**  InitialCondition routines not implemented in this file        **
 !**                                                                **
-    include 'initial_condition_dummies.inc'
+    include '../initial_condition_dummies.inc'
 !********************************************************************
 endmodule InitialCondition
