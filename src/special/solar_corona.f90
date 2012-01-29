@@ -1132,12 +1132,12 @@ module Special
 !
       if (last_time == t) then
         get_time_fade_fact = last_fade_fact
-      elseif (init_time > 0.0) then
-        get_time_fade_fact = cubic_step (real (t*unit_time) - init_time_fade_start, init_time, init_time)
+      elseif (t >= init_time_fade_start + init_time) then
+        get_time_fade_fact = 1.0
         last_time = t
         last_fade_fact = get_time_fade_fact
       else
-        get_time_fade_fact = 1.0
+        get_time_fade_fact = cubic_step (real (t*unit_time) - init_time_fade_start, init_time, init_time)
         last_time = t
         last_fade_fact = get_time_fade_fact
       endif
@@ -1160,12 +1160,12 @@ module Special
 !
       if (last_time == t) then
         get_hcond_fade_fact = last_fade_fact
-      elseif (init_time_hcond > 0.0) then
-        get_hcond_fade_fact = cubic_step (real (t*unit_time) - init_time_hcond_fade_start, init_time_hcond, init_time_hcond)
+      elseif (t >= init_time_hcond_fade_start + init_time_hcond) then
+        get_hcond_fade_fact = 1.0
         last_time = t
         last_fade_fact = get_hcond_fade_fact
       else
-        get_hcond_fade_fact = 1.0
+        get_hcond_fade_fact = cubic_step (real (t*unit_time) - init_time_hcond_fade_start, init_time_hcond, init_time_hcond)
         last_time = t
         last_fade_fact = get_hcond_fade_fact
       endif
