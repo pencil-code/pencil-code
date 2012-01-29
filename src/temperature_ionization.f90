@@ -427,7 +427,7 @@ module Entropy
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmax/=0) lpenc_diagnos(i_pp)=.true.
       if (idiag_ppmin/=0) lpenc_diagnos(i_pp)=.true.
-      if (idiag_mum/=0 .or. idiag_mumz) lpenc_diagnos(i_mu1)=.true.
+      if (idiag_mum/=0 .or. idiag_mumz/=0) lpenc_diagnos(i_mu1)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
