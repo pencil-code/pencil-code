@@ -42,7 +42,6 @@ dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6  & k1=3.2 & k2=4.6   ;(gives 314 vectors
 dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6  & k1=2.0 & k2=3.0   ;(gives 60 vectors)
 dkz=1. & ex=1. & ey=1. & ez=1. & kmax=16 & k1=14.95 & k2=15.05    ;(gives 294 vectors)
 dkz=1. & ex=1. & ey=1. & ez=1. & kmax=10 & k1=2.5 & k2=3.5    ;(gives 98 vectors)
-dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.0   ;(gives 20 vectors)
 dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.01   ;(gives 26 vectors)
 dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.0   ;(gives 86 vectors)
 ;dkz=1. & ex=1. & ey=1. & ez=2. & kmax=10 & k1=3.8 & k2=4.2    ;(gives 98 vectors)
@@ -50,7 +49,12 @@ dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.0   ;(gives 86 vectors)
 ;dkx=.25  & dky=1 & dkz=1 & ex=1. & ey=1. & ez=1. & kmax=2. & k1=0 & k2=2.1   ;(gives 148 vectors)
 dkx=1. & dky=1 & dkz=1 & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=3.5   ;(gives 172 vectors)
 dkx=1. & dky=.25 & dkz=.25 & ex=1. & ey=1. & ez=1. & kmax=6. & k1=2.5 & k2=3.5   ;(gives 1830 vectors, for spherical shell)
-dkx=1. & dky=4. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=50. & k1=19.5 & k2=20.5  ;(gives 1216 vectors, for 2 x 1/2 x 2 box)
+dkx=.5 & dky=.5 & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=8. & k1=4.5 & k2=5.5  ;(gives 1216 vectors, for 4 x 4 x 1 box)
+dkx=.25 & dky=.25 & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=8. & k1=4.8 & k2=5.2  ;(gives 1216 vectors, for 4 x 4 x 1 box)
+dkx=.125 & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=8. & k1=4.6 & k2=5.4  ;(gives 1216 vectors, for 4 x 4 x 1 box)
+dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.0   ;(gives 20 vectors)
+dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=0.9 & k2=2.1   ;(gives 32 vectors)
+dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=30 & k1=19.8 & k2=20.2   ;(gives 1974 vectors)
 ;
 kav=0.
 kmaxz=kmax
@@ -105,6 +109,6 @@ close,1
 ;  plot vectors in kx,kz plane for ky=0
 ;
 good=where(kky eq 2.)
-plot,kkx(good),kkz(good),ps=2,xr=[-1.2,1.2]*kmax,yr=[-1.2,1.2]*kmax
+;plot,kkx(good),kkz(good),ps=2,xr=[-1.2,1.2]*kmax,yr=[-1.2,1.2]*kmax
 ;
 END
