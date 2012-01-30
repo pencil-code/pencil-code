@@ -646,7 +646,7 @@ module FArrayManager
               return
             endif
             print*,"Using f-array variable: ",varname
-            call fatal_error("farray_use_variable","F-array variable not found!")
+            call fatal_error("farray_use_variable","f-array variable not found!")
           endif
           ivar=>item%ivar(component)%p
         else
@@ -661,7 +661,7 @@ module FArrayManager
         return
       endif
       print*,"Using f-array variable: ",varname
-      call fatal_error("farray_use_variable","F-array variable not found!")
+      call fatal_error("farray_use_variable","f-array variable not found!")
 !
     endsubroutine farray_use_variable
 !***********************************************************************
