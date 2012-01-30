@@ -442,8 +442,11 @@ COMPILE_OPT IDL2,HIDDEN
         if (precision eq 'D') then bytes=8 else bytes=4
         point_lun, file, long64(dim.mx*dim.my)*long64(dim.mz*dim.mvar*bytes)
       endif
-      readu, file, t, x, y, z, dx, dy, dz
-      if (param.lshear) then readu, file, deltay
+      if (param.lshear) then begin
+         readu, file, t, x, y, z, dx, dy, dz, deltay
+      endif else begin
+         readu, file, t, x, y, z, dx, dy, dz
+      endelse
     endif else if (nprocs eq 1) then begin
       ; single processor distributed file
       if (param.lshear) then begin
