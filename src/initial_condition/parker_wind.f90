@@ -14,6 +14,12 @@
 !!!!!!!
 !! NB: This is a very early stage of the initial condition. DO NOT USE IT!!!
 !! dhruba+ joern: very much a work in progress. 
+!!
+!! You still have to set in start.in
+!! 1) Density at the lower boundary with set and fbcx1
+!! 2) gravx_profile='kepler' with gravx
+!! Just run start.csh once, set density and gravity
+!! and then start.csh again.
 !!!!!!!
 
 module InitialCondition
@@ -196,9 +202,11 @@ module InitialCondition
       enddo
 !
       rho=Mdot/(4*pi*x**2*vel)
-print*,'Ecrit=',Ecrit
-print*, 'GM=', 2.*rcrit*cs20
-print*,'Rho0=',log(rho(l1))
+      if (lroot) then 
+        print*,'Ecrit=',Ecrit
+        print*, 'GM=', 2.*rcrit*cs20
+        print*,'lnrho0=',log(rho(l1))
+      endif
 !
     endsubroutine parker_wind_iteration 
 !***********************************************************************
