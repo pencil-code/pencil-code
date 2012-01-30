@@ -1,4 +1,4 @@
-! $Id: parker_wind.f90,v 1.0 2012-01-24 09:08:03 Dhruba, joern Exp $
+! $Id: parker_wind.f90,v 1.1 2012-01-30 09:08:03 joern Exp $
 !
 ! Initial condition for the parker wind in spherical coordinates.  
 !
@@ -50,7 +50,7 @@ module InitialCondition
 !  26-jan-12/joern: coded
 !
       if (lroot) call svn_id( &
-           "$Id: parker_wind.f90, v 1.0 2012-01-24 09:08:03 Dhruba, joern Exp$")
+           "$Id: parker_wind.f90, v 1.1 2012-01-30 14:08:03 joern Exp$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
