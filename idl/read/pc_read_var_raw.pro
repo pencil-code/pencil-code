@@ -270,7 +270,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
     openr, file, filename, f77=f77, swap_endian=swap_endian, /get_lun
 ;
-    if (nprocs eq 1) then begin
+    if (allprocs eq 1) then begin
+      ; collectively written files
       readu, file, object
       if (f77 eq 0) then begin
         close, file
@@ -280,10 +281,22 @@ COMPILE_OPT IDL2,HIDDEN
       endif
       readu, file, t, x, y, z, dx, dy, dz
       if (param.lshear) then readu, file, deltay
+    endif else if (nprocs eq 1) then begin
+      ; single processor distributed file
+      readu, file, object
+      if (param.lshear) then begin
+        readu, file, t, x, y, z, dx, dy, dz, deltay
+      endif else begin
+        readu, file, t, x, y, z, dx, dy, dz
+      endelse
     endif else begin
+      ; multiple processor distributed files
       readu, file, buffer
-      readu, file, t, xloc, yloc, zloc, dx, dy, dz
-      if (param.lshear) then readu, deltay
+      if (param.lshear) then begin
+        readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
+      endif else begin
+        readu, file, t, xloc, yloc, zloc, dx, dy, dz
+      endelse
 ;
       x[i0x:i1x] = xloc[i0xloc:i1xloc]
       y[i0y:i1y] = yloc[i0yloc:i1yloc]

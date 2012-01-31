@@ -128,6 +128,7 @@ program pc_distribute
   ! read time:
   open(lun_input,FILE=trim(directory_in)//'/grid.dat',FORM='unformatted')
   read(lun_input) t_sp,gx,gy,gz,dummy_dx,dummy_dy,dummy_dz
+  if (lshear) read(lun_input) deltay
   close(lun_input)
   t = t_sp
 !

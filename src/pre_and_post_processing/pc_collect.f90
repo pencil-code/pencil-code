@@ -262,11 +262,8 @@ program pc_collect
   close(lun_output)
   open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
   t_sp = t
-  if (lshear) then
-    write(lun_output) t_sp,gx,gy,gz,dx,dy,dz,deltay
-  else
-    write(lun_output) t_sp,gx,gy,gz,dx,dy,dz
-  endif
+  write(lun_output) t_sp,gx,gy,gz,dx,dy,dz
+  if (lshear) write(lun_output) deltay
   close(lun_output)
 !
   ! write global grid:
