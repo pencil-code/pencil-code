@@ -1448,7 +1448,9 @@ module Particles_mpicomm
       integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
       integer :: nbrick_give, nbrick_recv, ibrick_global
       integer :: iproc_left, iproc_right
-      integer :: tag_id=100, tag_id2=1000, tag_id3=10000
+      integer, parameter :: tag_id=100
+      integer, parameter :: tag_id2=tag_id+nbrickx*nbricky*nbrickz
+      integer, parameter :: tag_id3=tag_id2+nbrickx*nbricky*nbrickz
       integer :: ierr, ireq, nreq
       integer :: iproc_recv, iproc_send
       integer :: ipvar, nblock_send, npar_loc_tmp
