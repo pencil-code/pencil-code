@@ -131,6 +131,7 @@ module Magnetic
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., linduction=.true.
+  logical :: ldiamagnetism=.false.
   logical :: lresi_eta_const=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
   logical :: lresi_etaSS=.false.
@@ -191,7 +192,7 @@ module Magnetic
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_x0=1.0, eta_x1=1.0
-  real :: alphaSSm=0.0, J_ext_quench=0.0
+  real :: alphaSSm=0.0, J_ext_quench=0.0, B2_diamag=0.0
   real :: k1_ff=1.0, ampl_ff=1.0, swirl=1.0
   real :: k1x_ff=1.0, k1y_ff=1.0, k1z_ff=1.0
   real :: inertial_length=0.0, linertial_2
@@ -234,7 +235,8 @@ module Magnetic
       lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
-      va2power_jxb, llorentzforce, linduction, reinitialize_aa, rescale_aa, &
+      va2power_jxb, llorentzforce, linduction, ldiamagnetism, B2_diamag, &
+      reinitialize_aa, rescale_aa, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, xdep_profile, eta_width, &
       eta_z0, eta_z1, eta_x0, eta_x1, eta_spitzer, borderaa, &
@@ -1530,6 +1532,14 @@ module Magnetic
         endif
       endif
 !
+!  Pencils requested for diamagnetism
+!
+      if (ldiamagnetism) then
+        lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_jj)=.true.
+      endif
+!
       if (lupw_aa) then
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
@@ -2126,6 +2136,11 @@ module Magnetic
 !           if (lpencil(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
         endif
       endif
+!
+!  possibility of diamagnetism
+!
+      if (ldiamagnetism) call diamagnetism(p)
+!
 ! jj
       if (lpencil(i_jj)) then
         p%jj=mu01*p%jj
@@ -2331,6 +2346,35 @@ module Magnetic
       if (lmagn_mf) call calc_pencils_magn_mf(f,p)
 !
     endsubroutine calc_pencils_magnetic
+!***********************************************************************
+    subroutine diamagnetism(p)
+!
+!  Compute diamagnetism
+!
+      use Sub
+!
+      real, dimension (nx) :: chi_diamag
+      real, dimension (nx,3) :: gchi_diamag, Bk_Bki, jj_diamag
+      type (pencil_case) :: p
+!
+      intent(inout)  :: p
+!
+!  cmpute chi, and gradchi
+!
+      chi_diamag=B2_diamag/p%b2
+!
+!  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
+!
+      call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+      call multsv(-.5*chi_diamag/p%b2,Bk_Bki,gchi_diamag)
+      call cross(gchi_diamag,p%bb,jj_diamag)
+      call multsv_add(jj_diamag,chi_diamag,p%jj,jj_diamag)
+!
+!  update current density
+!
+      p%jj=p%jj+jj_diamag
+!
+    endsubroutine diamagnetism
 !***********************************************************************
     subroutine daa_dt(f,df,p)
 !

@@ -1011,7 +1011,7 @@ module Sub
 !***********************************************************************
     subroutine multsv_add_mn(a,b,c,d)
 !
-!  Multiply scalar with a vector and subtract from another vector.
+!  Multiply scalar with a vector and add to another vector.
 !
 !  29-oct-97/axel: coded
 !
