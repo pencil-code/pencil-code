@@ -116,6 +116,8 @@ module Viscosity
   integer :: idiag_fviscmz=0    ! XYAVG_DOC: $\left<2\nu\varrho u_i
                                 ! XYAVG_DOC: \mathcal{S}_{iz} \right>_{xy}$
                                 ! XYAVG_DOC: ($z$-component of viscous flux)
+  integer :: idiag_epsKmz=0     ! XYAVG_DOC: $\left<2\nu\varrho\Strain^2
+                                ! XYAVG_DOC: \right>_{xy}$
 !
 ! yz averaged diagnostics given in yzaver.in written every it1d timestep
 !
@@ -563,6 +565,7 @@ module Viscosity
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
+        idiag_epsKmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -589,6 +592,7 @@ module Viscosity
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscmz',idiag_fviscmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsKmz',idiag_epsKmz)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -717,11 +721,11 @@ module Viscosity
 !
       if (idiag_meshRemax/=0.or.idiag_Reshock/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_visc_heatm/=0) lpenc_diagnos(i_visc_heat)=.true.
-      if (idiag_epsK/=0.or.idiag_epsK_LES/=0) then
+      if (idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
       endif
-      if (idiag_epsK/=0) then
+      if (idiag_epsK/=0.or.idiag_epsKmz/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
@@ -1590,6 +1594,8 @@ module Viscosity
             p%uu(:,1)*p%sij(:,1,3)+ &
             p%uu(:,2)*p%sij(:,2,3)+ &
             p%uu(:,3)*p%sij(:,3,3)),idiag_fviscmz)
+        if (idiag_epsKmz/=0) &
+            call xysum_mn_name_z(p%visc_heat*p%rho,idiag_epsKmz)
         if (idiag_fviscmx/=0) &
             call yzsum_mn_name_x(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+ &

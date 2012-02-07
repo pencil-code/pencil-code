@@ -603,6 +603,7 @@ module Magnetic
   integer :: idiag_b2mz=0       ! XYAVG_DOC: $\left<\Bv^2\right>_{xy}$
   integer :: idiag_j2mz=0       ! XYAVG_DOC: $\left<\jv^2\right>_{xy}$
   integer :: idiag_poynzmz=0    ! XYAVG_DOC: Averaged poynting flux in z direction
+  integer :: idiag_epsMmz=0     ! XYAVG_DOC: $\left<\eta\mu_0\jv^2\right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -1666,7 +1667,7 @@ module Magnetic
 !
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0 .or. &
-          idiag_ajm/=0 .or. idiag_j2mz/=0) &
+          idiag_ajm/=0 .or. idiag_j2mz/=0 .or. idiag_epsMmz/=0) &
           lpenc_diagnos(i_j2)=.true.
 !
       if (idiag_hjrms/=0 ) lpenc_diagnos(i_hj2)= .true.
@@ -3569,6 +3570,7 @@ module Magnetic
         call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
         call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
         call xysum_mn_name_z(etatotal,idiag_etatotalmz)
+        call xysum_mn_name_z(eta*mu0*p%j2,idiag_epsMmz)
 !
 !  Calculate magnetic helicity flux (ExA contribution).
 !
@@ -6322,7 +6324,7 @@ module Magnetic
         idiag_uxbym=0; idiag_uybym=0; idiag_uzbym=0
         idiag_uxbzm=0; idiag_uybzm=0; idiag_uzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
-        idiag_epsAD=0
+        idiag_epsAD=0; idiag_epsMmz=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
         idiag_jxpt=0; idiag_jypt=0; idiag_jzpt=0
         idiag_Expt=0; idiag_Eypt=0; idiag_Ezpt=0
@@ -6768,6 +6770,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'e3xamz3',idiag_e3xamz3)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'etatotalmz',idiag_etatotalmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsMmz',idiag_epsMmz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
