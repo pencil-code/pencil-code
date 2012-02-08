@@ -2034,16 +2034,33 @@ module Diagnostics
 !
     endsubroutine ysum_mn_name_xz
 !***********************************************************************
-    subroutine zsum_mn_name_xy(a,iname)
+    subroutine zsum_mn_name_xy(a,iname,lint)
 !
 !  Successively calculate sum over z of a, which is supplied at each call.
 !  The result fnamexy is xy-dependent.
 !  Start from zero if lfirstpoint=.true.
 !
 !  19-jun-02/axel: adapted from xysum_mn_name
+!  08-feb-12/ccyang: add option for integration
 !
-      real, dimension (nx) :: a
-      integer :: iname,m_nghost
+      real, dimension(nx), intent(in) :: a
+      integer, intent(in) :: iname
+      logical, intent(in), optional :: lint
+!
+      integer :: m_nghost
+      real :: factor
+!
+!  Scale factor for integration
+!
+      if (present(lint)) then
+        if (lint) then
+          factor = real(nzgrid) * zprim(n)
+        else
+          factor = 1.
+        endif
+      else
+        factor = 1.
+      endif
 !
 !  Initialize to zero, including other parts of the xy-array
 !  which are later merged with an mpi reduce command.
@@ -2053,7 +2070,7 @@ module Diagnostics
 !  m starts with nghost+1=4, so the correct index is m-nghost.
 !
       m_nghost=m-nghost
-      fnamexy(:,m_nghost,iname)=fnamexy(:,m_nghost,iname)+a
+      fnamexy(:,m_nghost,iname)=fnamexy(:,m_nghost,iname)+factor*a
 !
     endsubroutine zsum_mn_name_xy
 !***********************************************************************
