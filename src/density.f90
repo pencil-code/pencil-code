@@ -144,6 +144,7 @@ module Density
 !
 ! xy averaged diagnostics given in xyaver.in
   integer :: idiag_rhomz=0      ! XYAVG_DOC: $\left<\varrho\right>_{xy}$
+  integer :: idiag_rho2mz=0     ! XYAVG_DOC: $\left<\varrho^2\right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
   integer :: idiag_rhomy=0      ! XZAVG_DOC: $\left<\varrho\right>_{xz}$
@@ -156,6 +157,7 @@ module Density
 !
 ! z averaged diagnostics given in zaver.in
   integer :: idiag_rhomxy=0     ! ZAVG_DOC: $\left<\varrho\right>_{z}$
+  integer :: idiag_sigma=0      ! ZAVG_DOC; $\Sigma\equiv\int\varrho\,\mathrm{d}z$
 !
   contains
 !***********************************************************************
@@ -1430,10 +1432,10 @@ module Density
 !  Diagnostic pencils.
 !
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
-           idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
+           idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rho2mz/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. &
-           idiag_drhom/=0 .or. idiag_rhomxmask/=0) &
+           idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
@@ -1967,6 +1969,7 @@ module Density
         if (idiag_rhomphi/=0)   call phisum_mn_name_rz(p%rho,idiag_rhomphi)
         if (idiag_rhomxz/=0)    call ysum_mn_name_xz(p%rho,idiag_rhomxz)
         if (idiag_rhomxy/=0)    call zsum_mn_name_xy(p%rho,idiag_rhomxy)
+        if (idiag_sigma/=0)     call zsum_mn_name_xy(p%rho,idiag_sigma,lint=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -1974,6 +1977,7 @@ module Density
       if (l1davgfirst) then
         if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
         call xysum_mn_name_z(p%rho,idiag_rhomz)
+        call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
         call xzsum_mn_name_y(p%rho,idiag_rhomy)
       endif
@@ -2447,10 +2451,11 @@ module Density
         idiag_ugrhom=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
-        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
+        idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0
         idiag_rhomxz=0; idiag_grhomax=0
         idiag_rhomxmask=0
+        idiag_sigma=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -2477,8 +2482,8 @@ module Density
 !  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz', &
-            idiag_rhomz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2mz',idiag_rho2mz)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
@@ -2512,8 +2517,8 @@ module Density
 !  Check for those quantities for which we want z-averages.
 !
       do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy', &
-            idiag_rhomxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhomxy',idiag_rhomxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'sigma',idiag_sigma)
       enddo
 !
 !  Check for those quantities for which we want phi-averages.
