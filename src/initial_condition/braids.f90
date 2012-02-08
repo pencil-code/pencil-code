@@ -94,19 +94,19 @@ module InitialCondition
         use Sub
         
         real, dimension (mx,my,mz,mfarray) :: f
+!         real, dimension (nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,mfarray) :: f
         
         real :: distance_tubes ! distance between the flux tubes
         real :: l_straight ! length of the regions with a straight magnetic field
         real :: a(5) ! the coefficients for the rotation polynomial
-        real :: z0 ! auxiliary variable for the creation of the magnetic field
         
         real :: phi ! = phi, the rotation angle for the braid
         real :: phi_offset ! auxiliary variable for the rotation
+        real :: z_start ! auxiliary variable for the creation of the braid
         integer :: rotation_sign ! sign of the rotation in the braid
         real :: rotation_center(2) ! the center of the rotation for the braid
         
         integer :: word_len, idx, idx_strand
-        real :: x_size, y_size, z_size ! the dimensions of the box
         character (len=len_trim(word)) :: wordn ! the trimmed word
         
         ! keeps track of the current position of the strand
@@ -126,15 +126,14 @@ module InitialCondition
         real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
 
 
-        !  check the word
-        
+        ! check the word        
         wordn = word
         word_len = len(wordn)
         if (verify(wordn, 'ABCDEFGHabcdefgh') .ge. word_len) then
             write(*,*) "error: invalid word. Note that the highest braid is 'h'"
         endif
             
-        !  determine the number of strands
+        ! determine the number of strands
         n_strands = 0
         do idx = 1, word_len
             ascii_code = ichar(wordn(idx:idx))
@@ -150,22 +149,26 @@ module InitialCondition
         enddo
         n_strands = n_strands + 1
  
-        !  determine the size of the box
-        x_size = x(l2) - x(l1)
-        y_size = y(m2) - y(m1)
-        z_size = z(n2) - z(n1)
-      
-        !  compute the distance between the braids
-        l_straight = (z_size - word_len*l_sigma) / (word_len+1)  
+!         write(*,*) "l1 = ", l1, " l2 = ", l2, " m1 = ", m1, " m2 = ", m2, " n1 = ", n1, " n2 = ", n2
+!         write(*,*) "mx = ", mx, " my = ", my, " mz = ", mz
+!         write(*,*) "nx = ", nx, " ny = ", ny, " nz = ", nz
+!         write(*,*) "x0 = ", x0, " y0 = ", y0, " z0 = ", z0, " Lx = ", Lx, " Ly = ", Ly, " Lz = ", Lz
+!         write(*,*) "dx = ", dx, " dy = ", dy, " dz = ", dz
+!         write(*,*) "iproc = ", iproc, " ipx = ", ipx, " ipy = ", ipy, " ipz = ", ipz
+!         write(*,*) "nxgrid = ", nxgrid, " nygrid = ", nygrid, " nzgrid = ", nzgrid, " nghost = ", nghost
+
+        ! compute the distance between the braids
+        l_straight = (Lz - word_len*l_sigma) / (word_len+1)  
         if (l_straight .le. 0.) then
             write(*,*) "error: distance between braids is negative, check l_sigma"
         endif
         
-        distance_tubes = x_size / (n_strands+1)
+        distance_tubes = Lx / (n_strands+1)
       
+        ! clear the magnetic field to zero
+        f(l1:l2,m1:m2,n1:n2,iax:iaz) = 0.
+!         f(:,:,:,iax:iaz) = 0.
         
-        !  clear the magnetic field to zero
-        f(l1:l2,m1:m2,n1:n2,iax:iaz) = 0.0
         
         !  set the coefficients for the rotation polynomial
         a(1) = steepnes
@@ -176,65 +179,28 @@ module InitialCondition
 
         !  Calculate the minimum step size of the curve parameters 
         !  to avoid discretization issues, like mesh points without magnetic field
-        delta_tube_param = min(x(l1+1)-x(l1), y(m1+1)-y(m1), z(n1+1)-z(n1))
+        delta_tube_param = min(dx, dy, dz)
         ! correct for the braid steepnes
-        delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi*distance_tubes)
+        delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi * distance_tubes)
         delta_circle_radius = delta_tube_param
         delta_circle_param = delta_circle_radius/(width_tube/2.)
 
         !  loop over all strands      
         do idx_strand = 1,n_strands
-            !  compute the initial position if this strand
-            tube_pos(1) = x(l1) + idx_strand * x_size / (n_strands + 1)
-            tube_pos(2) = (y(m2) + y(m1))/2.
-            tube_pos(3) = z(n1)
+            !  compute the initial position of this strand
+            tube_pos(1) = x0 + idx_strand * Lx / (n_strands + 1)
+            tube_pos(2) = Ly/2. + y0
+            tube_pos(3) = z0
             idx = 1
             
             ! reset the strand_position vector
             strand_position = (/1,2,3,4,5,6,7,8,9/)
-            
-            ! create a field in the upper and lower ghost zones for numerical stability
-            tangent = (/0,0,1/)
-            !  loop which changes the circle's radius
-            circle_radius = 0.
-            do
-                if (circle_radius .gt. width_tube/2.) exit
-                !  loop which goes around the circle
-                circle_param = 0.
-                do
-                    if (circle_param .gt. 2.*pi) exit
-                    circle_pos(1) = tube_pos(1) + circle_radius*cos(circle_param)
-                    circle_pos(2) = tube_pos(2) + circle_radius*sin(circle_param)
-
-                    !  Find the corresponding mesh point to this position.
-                    l = nint((circle_pos(1) - x(l1))/x_size * (l2-l1)) + l1
-                    m = nint((circle_pos(2) - y(m1))/y_size * (m2-m1)) + m1
-                    n = nint((circle_pos(3) - z(n1))/z_size * (n2-n1)) + n1
-
-                    !  Write the magnetic field B.
-                    !  Note that B is written in the f-array where A is stored. This is
-                    !  corrected further in the code.
-                    do j = 1,n1
-                        if (prof == 'gaussian') then
-                            f(j,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
-                            f(j+n2,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
-                        else if (prof == 'constant') then
-                            f(j,m,n,iax:iaz) = tangent*ampl
-                            f(j+n2,m,n,iax:iaz) = tangent*ampl
-                        else
-                            write(*,*) "error: invalid magnetic field profile"
-                        endif
-                    enddo
-                    circle_param = circle_param + delta_circle_param
-                enddo
-                circle_radius = circle_radius + delta_circle_radius
-            enddo            
-            
+                        
             !  loop over all braids
             do
                 !  create straight lines
                 do
-                    if (tube_pos(3) .gt. (l_straight*idx + l_sigma*(idx-1) + z(n1))) exit
+                    if (tube_pos(3) .gt. (l_straight*idx + l_sigma*(idx-1) + z0)) exit
                     tangent = (/0,0,1/)
 
                     !  loop which changes the circle's radius
@@ -250,9 +216,17 @@ module InitialCondition
                             circle_pos(3) = tube_pos(3)
 
                             !  Find the corresponding mesh point to this position.
-                            l = nint((circle_pos(1) - x(l1))/x_size * (l2-l1)) + l1
-                            m = nint((circle_pos(2) - y(m1))/y_size * (m2-m1)) + m1
-                            n = nint((circle_pos(3) - z(n1))/z_size * (n2-n1)) + n1
+                            l = nint((circle_pos(1) - x0)/dx) + nghost - nx*ipx
+                            m = nint((circle_pos(2) - y0)/dy) + nghost - ny*ipy
+                            n = nint((circle_pos(3) - z0)/dz) + nghost - nz*ipz
+                            if (l .gt. mx .or. m .gt. my .or. n .gt. mz .or. l .lt. 1 .or. m .lt. 1 .or. n .lt. 1) then
+!                             if (l .gt. nxgrid+2*nghost .or. m .gt. nygrid+2*nghost .or. n .gt. nzgrid+2*nghost) then
+!                             if (l .gt. l2-l1 .or. m .gt. m2-m1 .or. n .gt. n2-n1) then
+!                                 write(*,*) "l = ", l, " m = ", m, " n = ", n
+!                                 write(*,*) "straight line in the loop"
+!                                 write(*,*) "circle_pos = ", circle_pos
+                                exit
+                            endif
 
                             !  Write the magnetic field B.
                             !  Note that B is written in the f-array where A is stored. This is
@@ -267,11 +241,10 @@ module InitialCondition
                         circle_radius = circle_radius + delta_circle_radius
                     enddo            
                     tube_pos(3) = tube_pos(3) + delta_tube_param
-!                     tube_pos(3) = tube_pos(3) + z(l1+1) - z(l1)
                 enddo
                 if (idx .gt. word_len) exit
 
-                !  create the braid
+                ! create the braid
                 ! determine the number of the braid
                 if (ichar(word(idx:idx)) .gt. ichar('H')) then
                     braid_num = ichar(word(idx:idx)) - ichar('a') + 1
@@ -314,13 +287,13 @@ module InitialCondition
                 
                     ! do the rotation
                     tube_param = 0.
-                    z0 = tube_pos(3)
+                    z_start = tube_pos(3)
                     do while (tube_param .lt. (l_sigma))
                         phi = ((a(5)*(tube_param-l_sigma/2.)**5 + a(3)*(tube_param-l_sigma/2.)**3 &
                             + a(1)*(tube_param-l_sigma/2.) - pi)/2. + phi_offset) * rotation_sign
                         tube_pos(1) = rotation_center(1) + distance_tubes/2.*cos(phi)
                         tube_pos(2) = rotation_center(2) + distance_tubes/2.*sin(phi)
-                        tube_pos(3) = tube_param + z0
+                        tube_pos(3) = tube_param + z_start
                         
                         tangent(1) = -distance_tubes/2. * sin(phi) * &
                                     (5*a(5)*(tube_param-l_sigma/2.)**4 + &
@@ -371,9 +344,17 @@ module InitialCondition
 
                                 !  Find the corresponding mesh point to this position.
 
-                                l = nint((circle_pos(1) - x(l1))/x_size * (l2-l1)) + l1
-                                m = nint((circle_pos(2) - y(m1))/y_size * (m2-m1)) + m1
-                                n = nint((circle_pos(3) - z(n1))/z_size * (n2-n1)) + n1
+                                l = nint((circle_pos(1) - x0)/dx) + nghost - nx*ipx
+                                m = nint((circle_pos(2) - y0)/dy) + nghost - ny*ipy
+                                n = nint((circle_pos(3) - z0)/dz) + nghost - nz*ipz
+                                if (l .gt. mx .or. m .gt. my .or. n .gt. mz .or. l .lt. 1 .or. m .lt. 1 .or. n .lt. 1) then
+!                                 if (l .gt. nxgrid+2*nghost .or. m .gt. nygrid+2*nghost .or. n .gt. nzgrid+2*nghost) then
+!                                 if (l .gt. l2-l1 .or. m .gt. m2-m1 .or. n .gt. n2-n1) then
+!                                     write(*,*) "l = ", l, " m = ", m, " n = ", n
+!                                     write(*,*) "actual braid"
+!                                     write(*,*) "circle_pos = ", circle_pos
+                                    exit
+                                endif
 
                                 !  Write the magnetic field B.
                                 !  Note that B is written in the f-array where A is stored. This is
@@ -397,8 +378,22 @@ module InitialCondition
                 endif
                 idx = idx + 1
             enddo
-            
+!             
         enddo
+
+!
+!  If requested trace the magnetic field lines from top to buttom.
+!  This creates the first set of fixed points.
+!
+!         if (lfixed_points == True) then
+            ! loop over all points at z=1
+                ! find F0(x,y)=(x,y) to the given F1(x,y)
+                ! store F1(x,y)-F0(x,y) into an array
+            ! write out F1(x,y)-F0(x,y) together with t
+            ! find the fixed points
+            !  Write out the position of the fixed points.            
+        
+!         end
 
 !
 !  Transform the magnetic field into a vector potential
@@ -421,7 +416,7 @@ module InitialCondition
           ju=iaa-1+j
           f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
       enddo
-!
+
     endsubroutine initial_condition_aa
 !***********************************************************************
     subroutine read_initial_condition_pars(unit,iostat)
