@@ -4219,9 +4219,15 @@ module Entropy
       if (lfirst.and.ldt) Hmax=Hmax+heat*p%rho1
 !
 !  Volume heating/cooling term on the mean entropy with respect to ss_const.
+!  Allow for local heating/cooling w.r.t. ss when lcalc_ss_volaverage=F
 !
-      if (lcalc_ss_volaverage.and.tau_cool_ss/=0.) then
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(ss_volaverage-ss_const)/tau_cool_ss
+      if (tau_cool_ss/=0.) then
+        if (lcalc_ss_volaverage) then
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+            -(ss_volaverage-ss_const)/tau_cool_ss
+        else
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(p%ss-ss_const)/tau_cool_ss
+        endif
       endif
 !
 !  Heating/cooling related diagnostics.
