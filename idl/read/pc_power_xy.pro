@@ -39,7 +39,7 @@ FUNCTION gen_exinds, vec
   return, exinds
   
 END
-
+;******************************************************************************************
 PRO plot_segs, x, y, seginds, styles=styles, colors=colors, overplot=overplot, _extra=extra
 
 ;  7-jan-11/MR: coded
@@ -89,7 +89,193 @@ PRO plot_segs, x, y, seginds, styles=styles, colors=colors, overplot=overplot, _
   if ia lt np-1 then oplot, x(ia:np-1), y(ia:np-1), lines=styles(toggle), color=colors(toggle)
 
 END
+;******************************************************************************************
+PRO alloc_specs, specloc, spec, lint_shell, lint_z
 
+common pars,  nx, ny, nz, nk, nt
+
+  if lint_shell then begin
+    if lint_z then begin
+      specloc=fltarr(nk)
+      spec=fltarr(nk,nt) 
+    endif else begin
+      specloc=fltarr(nk,nz)      
+      spec=fltarr(nk,nz,nt)
+    endelse
+  endif else if lint_z then begin
+    specloc=fltarr(nx,ny)
+    spec=fltarr(nx,ny,nt) 
+  endif else begin
+    specloc=fltarr(nx,ny,nz)
+    spec=fltarr(nx,ny,nz,nt)
+  endelse
+
+END
+;******************************************************************************************
+FUNCTION read_firstpass, file, lint_shell, lint_z, extr, startpos
+
+common pars,  nx, ny, nz, nk
+common wavenrs, kxs, kys, kshell
+;
+;  Looping through all the data to get number of spectral snapshots
+;
+close,1
+
+openr,1, file, error=err
+if err ne 0 then return, 0
+
+  headline = ''
+  readf, 1, headline
+  witheader=strpos(strlowcase(headline),'power spectrum') ne -1
+  
+  if witheader then begin
+    
+    warn = 'Warning: File header of '+strtrim(file,2)
+    if (strpos(strlowcase(headline),'shell-integrated') ne -1) ne lint_shell then begin
+    
+      if lint_shell then $
+        print, warn+' says "not shell-integrated" - assume that' $
+      else $
+        print, warn+' says "shell-integrated" - assume that'
+        
+      lint_shell = ~lint_shell
+      
+    endif
+    
+    if (strpos(strlowcase(headline),'z-integrated') ne -1) ne lint_z then begin
+
+      if lint_z then $
+        print, warn+' says "not z-integrated" - assume that' $
+      else $
+        print, warn+' says "z-integrated" - assume that'
+        
+      lint_z = ~lint_z
+      
+    endif
+  
+    readf, 1, headline
+
+    if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
+      print, warn+' corrupt!'
+     
+    readf, 1, kxs, kys 
+    kxs = shift(kxs,nx/2)
+    kys = shift(kys,ny/2)  
+
+    if (lint_shell) then begin
+    
+      readf, 1, headline
+      if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
+        print, warn+' corrupt!' $
+      else begin
+
+        opos = strpos(headline,'(') & cpos = strpos(headline,')')
+        len = cpos-opos-1
+
+        if len le 0 then begin
+          print, warn+' corrupt! Number of shell wavenumbers missing -
+          print, '         will use nk=', strtrim(string(nk),2), ' which is perhaps by one too large.'
+          print, '         Correct data file by hand (or nk in code if necessary).'
+        endif else $
+          nk = fix(strmid(headline,opos+1,len))
+
+      endelse
+ 
+      kshell = fltarr(nk) 
+      readf, 1, kshell 
+
+    endif
+    
+    point_lun, -1, pos 
+   
+  endif else begin
+
+    kxs=(findgen(nx)-nx/2)*2*!pi/Lx                ;,(nx+1)/2)*2*!pi/Lx
+    kys=(findgen(ny)-ny/2)*2*!pi/Ly                ;,(ny+1)/2)*2*!pi/Ly
+     
+    if lint_shell then begin                       ; valid for old style files
+
+      kshell = fltarr(nk)
+       
+      for ix=0,nx-1 do $
+        for iy=0,ny-1 do begin
+          ik = round( sqrt( kxs(ix)^2+kys(iy)^2 )/(2*!pi/Lx) )
+	  kshell(ik)=ik*2*!pi/Lx
+        endfor
+
+    endif
+ 
+    pos=0L
+    point_lun, 1, pos
+    
+  endelse
+
+  if lint_shell then begin
+    
+    if lint_z then $
+      spectrum1=fltarr(nk) $
+    else $
+      spectrum1=fltarr(nk,nz)
+      
+  endif else if lint_z then $
+    spectrum1=fltarr(nx,ny) $
+  else $
+    spectrum1=fltarr(nx,ny,nz)
+    
+  globalmin=1e12
+  globalmax=1e-30
+  nt=0L & time=0. & s0=1
+  
+  while not eof(1) do begin
+  
+    if witheader then begin
+      
+      point_lun, -1, pos
+      readf,1,headline
+    
+      if strpos(strlowcase(headline),'power spectrum') eq -1 then $
+        point_lun, 1, pos $
+      else begin
+        readf,1,headline
+        readf,1, kxs, kys
+        if (lint_shell) then begin
+        
+          readf, 1, headline
+          if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
+            print, 'Warning: File header corrupt!'
+            
+          readf, 1, kshell 
+        endif
+      endelse
+ 
+    endif
+
+    if s0 then begin
+      point_lun, -1, startpos
+      s0 = 0
+    endif
+
+    readf,1,time  
+    readf,1,spectrum1
+    
+    ext = max(spectrum1)     ;!!!(1:*,*))
+    if (ext gt globalmax) then globalmax=ext
+    ext = min(spectrum1)     ;!!!(1:*,*))
+    if (ext lt globalmin) then globalmin=ext
+
+    nt=nt+1L
+  
+  endwhile
+  
+  close, 1
+
+; end first reading
+
+  extr = [globalmin,globalmax]
+  return, nt
+
+END
+;******************************************************************************************
 PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
@@ -137,8 +323,11 @@ PRO pc_power_xy,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, 
 ;  29-nov-10/MR  : adaptions to different types of spectra (with/without headers), 
 ;                  keyword parameters lint_shell, lint_z and print added
 ;
+common pars,  nx, ny, nz, nk, nt
+common wavenrs, kxs, kys, kshell
+
 default,var1,'u'
-default,var2,'b'
+default,var2, ''      ;'b'
 default,last,1
 default,w,0.1
 default,tmin,0
@@ -176,7 +365,10 @@ end else begin
         stop
     end
     file1='power'+var1
-    file2='power'+var2
+    if var2 ne '' then $
+      file2='power'+var2 $
+    else $
+      file2=''
 end 
 
 file1=file1+'_xy'
@@ -231,7 +423,8 @@ nz=mz-nghostz*2
 kxs = fltarr(nx) & kys = fltarr(ny) 
   
 k0=2.*!pi/Lz
-nk=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1 
+nk0=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1 
+nk=nk0
 
 ;if  keyword_set(v1) then begin
 ;  if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
@@ -240,176 +433,62 @@ nk=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1
 ;    k = k*k0   
 ;  end
 ;end
-;
-;  Looping through all the data to get number of spectral snapshots
-;
-close,1
 
-openr,1, datatopdir+'/'+file1
+nt1 = read_firstpass( datatopdir+'/'+file1, lint_shell, lint_z, global_ext1, startpos1 )
 
-  point_lun, -1, pos0
-  headline = ''
-  readf, 1, headline
-  witheader=strpos(strlowcase(headline),'power spectrum') ne -1
-  
-  if witheader then begin
-    
-    if (strpos(strlowcase(headline),'shell-integrated') ne -1) ne lint_shell then begin
-    
-      if lint_shell then $
-        print, 'Warning: File header says "not shell-integrated" - assume that' $
-      else $
-        print, 'Warning: File header says "shell-integrated" - assume that'
-        
-      lint_shell = ~lint_shell
-      
-    endif
-    
-    if (strpos(strlowcase(headline),'z-integrated') ne -1) ne lint_z then begin
-
-      if lint_z then $
-        print, 'Warning: File header says "not z-integrated" - assume that' $
-      else $
-        print, 'Warning: File header says "z-integrated" - assume that'
-        
-      lint_z = ~lint_z
-      
-    endif
-  
-    readf, 1, headline
-
-    if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
-      print, 'Warning: File header corrupt!'
-     
-    readf, 1, kxs, kys 
-    if (lint_shell) then begin
-    
-      readf, 1, headline
-      if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
-        print, 'Warning: File header corrupt!' $
-      else begin
-
-        opos = strpos(headline,'(') & cpos = strpos(headline,')')
-        len = cpos-opos-1
-
-        if len le 0 then begin
-          print, 'Warning: File header corrupt! Number of shell wavenumbers missing -
-          print, '         will use nk=', strtrim(string(nk),2), ' which is perhaps by one too large.'
-          print, '         Correct data file by hand (or nk in code if necessary).'
-        endif else $
-          nk = fix(strmid(headline,opos+1,len))
-
-      endelse
+if nt1 eq 0 then begin
+  print, 'Error when reading '+datatopdir+'/'+file1+'!'
+  stop
+endif else $
+  nk1 = nk
  
-      kshell = fltarr(nk) 
-      readf, 1, kshell 
-    endif
-    
-    point_lun, -1, pos 
-   
+default,yrange,[10.0^(floor(alog10(global_ext1(0)))),10.0^ceil(alog10(global_ext1(1)))]
+
+;
+;  Reading file 2 if it is defined
+;
+if (file2 ne '') then begin
+
+  nk = nk0
+  nt2 = read_firstpass( datatopdir+'/'+file2, lint_shell, lint_z, global_ext2, startpos2 )
+ 
+  if nt2 eq 0 or nk ne nk1 then begin
+
+    if nt2 eq 0 then $ 
+      print, 'Error: No data readable from file '+datatopdir+'/'+file2+'!' $
+    else $
+      print, 'Error: Number of shell wavenumbers different in files '+datatopdir+'/'+file1+' and '+datatopdir+'/'+file2+'!'
+
+    print, '       File2 ignored.' 
+    file2 = ''
+    close, 1
+    nk = nk1
+    nt = nt1
+
   endif else begin
 
-    kxs=(findgen(nx)-nx/2)*2*!pi/Lx                ;,(nx+1)/2)*2*!pi/Lx
-    kys=(findgen(ny)-ny/2)*2*!pi/Ly                ;,(ny+1)/2)*2*!pi/Ly
-     
-    if lint_shell then begin                       ; valid for old style files
+    if nt1 ne nt2 then begin 
+      print, 'Warning: Number of time steps different in files '+datatopdir+'/'+file1+' and '+datatopdir+'/'+file2+'!'
+      print, '         Adopting minimum.' 
+      nt = nt1<nt2
+    endif else $
+      nt = nt1
 
-      kshell = fltarr(nk)
-       
-      for ix=0,nx-1 do $
-        for iy=0,ny-1 do begin
-          ik = round( sqrt( kxs(ix)^2+kys(iy)^2 )/(2*!pi/Lx) )
-	  kshell(ik)=ik*2*!pi/Lx
-        endfor
+    alloc_specs, spectrum2, spec2, lint_shell, lint_z 
+    openr, 2, datatopdir+'/'+file2
+    point_lun, 2, startpos2
 
-    endif
- 
-    pos=0L
-    point_lun, 1, pos
-    
   endelse
 
-  if lint_shell then begin
-    
-    if lint_z then $
-      spectrum1=fltarr(nk) $
-    else $
-      spectrum1=fltarr(nk,nz)
-      
-  endif else if lint_z then $
-    spectrum1=fltarr(nx,ny) $
-  else $
-    spectrum1=fltarr(nx,ny,nz)
-    
-  globalmin=1e12
-  globalmax=1e-30
-  nt=0L & time=0.
-  
-  while not eof(1) do begin
-  
-    if witheader then begin
-      
-      point_lun, -1, pos
-      readf,1,headline
-    
-      if strpos(strlowcase(headline),'power spectrum') eq -1 then $
-        point_lun, 1, pos $
-      else begin
-        readf,1,headline
-        readf,1, kxs, kys
-        if (lint_shell) then begin
-        
-          readf, 1, headline
-          if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
-            print, 'Warning: File header corrupt!'
-            
-          readf, 1, kshell 
-        endif
-      endelse
- 
-      readf,1,time
-     
-    endif else $
-      readf,1,time
-      
-    readf,1,spectrum1
-    
-    if (max(spectrum1(1:*,*)) gt globalmax) then globalmax=max(spectrum1(1:*,*))
-    if (min(spectrum1(1:*,*)) lt globalmin) then globalmin=min(spectrum1(1:*,*))
-    nt=nt+1L
-  
-  endwhile
-  
-; end first reading
- 
-if lint_shell then begin
-  if lint_z then $
-    spec1=fltarr(nk,nt) $
-  else $
-    spec1=fltarr(nk,nz,nt)
-endif else if lint_z then $
-  spec1=fltarr(nx,ny,nt) $
-else $
-  spec1=fltarr(nx,ny,nz,nt)
-  
+endif
+
 tt=fltarr(nt)
 lasti=nt-1
 
-default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(spectrum1(1:*))))]
+alloc_specs, spectrum1, spec1, lint_shell, lint_z 
+openr, 1, datatopdir+'/'+file1
+point_lun, 1, startpos1
 
-;
-;  Opening file 2 if it is defined
-;
-if (file2 ne '') then begin
-  close,2
-  if lint_shell then $
-    spectrum2=fltarr(nk,nz)
-  openr,2,datatopdir+'/'+file2, ERROR = err
-  if err eq 0 then $
-    spec2=fltarr(nk,nz,nt) $
-  else $
-    file2=''
-endif
 ;
 ;  Plotting the results for last time frame
 ;;
@@ -443,33 +522,11 @@ if lint_shell then begin
 endif
 
   i=0L
-  point_lun, 1, pos0
   while not eof(1) do begin 
- 
-    if witheader then begin
-      
-      point_lun, -1, pos
-      readf,1,headline
     
-      if strpos(strlowcase(headline),'power spectrum') eq -1 then $
-        point_lun, 1, pos $
-      else begin
-        
-        readf,1,headline
-        readf,1, kxs, kys
-        
-        if (lint_shell) then begin
-          readf, 1, headline
-          readf, 1, kshell 
-        endif
-
-      endelse
-      readf,1,time
-      
-    endif else $
-      readf,1,time
-  
+    readf,1,time
     readf,1,spectrum1
+
     tt(i)=time
     
     if lint_shell then $
@@ -483,63 +540,80 @@ endif
     miny=min(spectrum1(1:*))
 
     if (file2 ne '') then begin
+
       readf,2,time
+      if time ne tt(i) then $
+        print, 'Warning: Times in '+datatopdir+'/'+file1+' and '+datatopdir+'/'+file2+' different!'
+
       readf,2,spectrum2
-      spec2(*,*,i)=spectrum2
-      if (max(spectrum2(1:*,*)) gt maxy) then maxy=max(spectrum2(1:*,*))
-      if (min(spectrum2(1:*,*)) lt miny) then miny=min(spectrum2(1:*,*))
+
+      if lint_shell then $
+        spec2(*,*,i)=spectrum2 $
+      else if lint_z then $
+        spec2(*,*,i)=shift(spectrum2,nx/2,ny/2) $     ; why transpose necessary?
+      else $
+        spec2(*,*,*,i)=spectrum2
+
     endif
     ;
     ;  normalize?
     ;
     if keyword_set(norm) then begin
       spectrum2=spectrum2/total(spectrum2)
-      print,'divide spectrum by total(spectrum2)'
+      print,'divide spectrum2 by total(spectrum2)'
     endif
-    ;
-    if (last eq 0) then begin      
-      if (time ge tmin) then begin
-    	if (time le tmax) then begin
-    	  if lint_shell then begin
-    	    xrr=[1,nk*k0]
-    	    yrr=[globalmin,globalmax]
-    	    !p.title='t='+str(time)
-    	    if iplot eq 1 then begin
-    	      plot_oo,k,spectrum1*k^compensate1,back=255,col=0,yr=yrange
-    	      oplot,k,spectrum2*k^compensate1,col=122
-               ;xx=[1,5] & oplot,xx,2e-6*xx^1.5,col=55
-               ;xyouts,2,1e-5,'!8k!6!u3/2!n',siz=1.8,col=55
-              xx=[1,5] & oplot,xx,2e-8*xx^1.5,col=55
-              xyouts,2,1e-7,'!8k!6!u3/2!n',siz=1.8,col=55
-        	 
-	      if (file2 ne '') then begin
-        	;
-        	; possibility of special settings for helicity plotting
-        	; of second variable
-        	;
-        	if keyword_set(helicity2) then begin
-        	  oplot,k,.5*abs(spectrum2)*k^compensate2,col=122
-        	  oplot,k,+.5*spectrum2*k^compensate2,col=122,ps=6
-        	  oplot,k,-.5*spectrum2*k^compensate2,col=55,ps=6
-        	endif else begin
-        	  oplot,k,abs(spectrum2)*k^compensate2,col=122
-        	endelse
-		
-        	if (tot eq 1) then $
-        	  oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
-        	
-              endif
-	      
-              if (lin ne 0) then begin
-        	fac=spectrum1(2)/k(2)^(lin)*1.5
-                oplot,k(2:*),k(2:*)^(lin)*fac,lin=2,col=0
-              endif
-              wait,w
-            endif 
-          endif else if lint_z then begin
-               stop
-          endif
-        endif
+    
+    if (last eq 0) then begin 
+
+    ; creates movie with time dependent spectra (only implemented for lint_shell=T, lint_z=T!)
+     
+      if (time ge tmin and time le tmax) then begin
+
+    	if lint_shell and lint_z then begin
+
+    	  xrr=[1,nk*k0]
+    	  yrr=global_ext
+    	  !p.title='t='+str(time)
+
+    	  if iplot eq 1 then begin
+
+    	    plot_oo,kshell,spectrum1*kshell^compensate1,back=255,col=0,yr=yrange
+    	    oplot,kshell,spectrum2*kshell^compensate1,col=122
+             ;xx=[1,5] & oplot,xx,2e-6*xx^1.5,col=55
+             ;xyouts,2,1e-5,'!8k!6!u3/2!n',siz=1.8,col=55
+            xx=[1,5] & oplot,xx,2e-8*xx^1.5,col=55
+            xyouts,2,1e-7,'!8k!6!u3/2!n',siz=1.8,col=55
+               
+	    if (file2 ne '') then begin
+              ;
+              ; possibility of special settings for helicity plotting
+              ; of second variable
+              ;
+              if keyword_set(helicity2) then begin
+                oplot,kshell,.5*abs(spectrum2)*kshell^compensate2,col=122
+                oplot,kshell,+.5*spectrum2*kshell^compensate2,col=122,ps=6
+                oplot,kshell,-.5*spectrum2*kshell^compensate2,col=55,ps=6
+              endif else begin
+                oplot,kshell,abs(spectrum2)*kshell^compensate2,col=122
+              endelse
+	
+              if (tot eq 1) then $
+                oplot,kshell,(spectrum1+spectrum2)*kshell^compensate,col=47
+        
+            endif
+	    
+            if (lin ne 0) then begin
+              fac=spectrum1(2)/kshell(2)^(lin)*1.5
+              oplot,kshell(2:*),kshell(2:*)^(lin)*fac,lin=2,col=0
+            endif
+            wait,w
+          endif 
+        endif else begin
+          if lint_z then $
+            stop, 'Warning: No implementation for movie with lint_shell=F, lint_z=T!' $
+          else $
+            stop, 'Warning: No implementation for movie with lint_shell=T, lint_z=F!'
+        endelse
       endif
     endif
     
@@ -562,11 +636,6 @@ endif
     ;
   endwhile
   
-  if witheader then begin
-    kxs = shift(kxs,nx/2)
-    kys = shift(kys,ny/2)  
-  endif
-   
   if not lint_shell then begin
     if lint_z then begin
   
@@ -668,7 +737,7 @@ cont1:
       
       if (file2 ne '') then begin
       
-    	oplot,k,spectrum2*kshell^compensate,col=122
+    	oplot,kshell,spectrum2*kshell^compensate,col=122
     	if (tot eq 1) then $
     	  oplot,kshell,(spectrum1+spectrum2)*kshell^compensate,col=47
     	
@@ -678,10 +747,9 @@ cont1:
     	fac=spectrum1(2)/kshell(2)^(lin)*1.5
     	oplot,k(2:*),kshell(2:*)^(lin)*fac,lin=2,col=0
       endif
-      
+      stop
     endif
     
-cont:
 close,1
 close,2
 
