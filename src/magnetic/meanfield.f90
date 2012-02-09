@@ -50,7 +50,7 @@ module Magnetic_meanfield
   real :: Omega_ampl=0.0, dummy=0.0
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
-  real :: meanfield_Beq=1.0, meanfield_Beq_height=0.
+  real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0., uturb=.1
   real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0.
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_rmin
@@ -74,7 +74,6 @@ module Magnetic_meanfield
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
-  real :: qp_d, qp_x0
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
@@ -92,13 +91,13 @@ module Magnetic_meanfield
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       x_surface, x_surface2, z_surface, &
       alpha_rmin,&
-      qp_d, qp_x0, qp_model,&
+      qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
       meanfield_etat_width, &
       meanfield_kf, meanfield_kf_profile, &
       meanfield_kf_width, meanfield_kf_width2, &
-      meanfield_Beq, meanfield_Beq_height, meanfield_Beq_profile, &
+      meanfield_Beq, meanfield_Beq2_height, meanfield_Beq_profile, uturb,&
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
@@ -124,6 +123,8 @@ module Magnetic_meanfield
   integer :: idiag_EMFmz3=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_z$
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
+  integer :: idiag_peffmxz=0       ! YAVG_DOC: $\left< q_p \right>_{y}$
+
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -509,7 +510,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
-      real, dimension (nx) :: meanfield_etaB2, Beq
+      real, dimension (nx) :: meanfield_etaB2, Beq21
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact
@@ -523,9 +524,9 @@ module Magnetic_meanfield
 !
 !  The following 9 lines have not been used for any publications so far.
 !
-        if (lmeanfield_jxb_with_vA2) then
-          call inevitably_fatal_error('calc_pencils_magnetic', &
-            'lmeanfield_jxb_with_vA2 should be checked')
+!        if (lmeanfield_jxb_with_vA2) then
+!          call inevitably_fatal_error('calc_pencils_magnetic', &
+!            'lmeanfield_jxb_with_vA2 should be checked')
 !--
 !         meanfield_urms21=1./(3.*meanfield_kf*meanfield_etat)**2
 !         meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%vA2*meanfield_urms21))
@@ -540,15 +541,25 @@ module Magnetic_meanfield
 !  The follwing (not lmeanfield_jxb_with_vA2) has been used for the
 !  various publications so far.
 !
-        else
-          if (meanfield_Beq_profile=='exp(z/H)') then
-            Beq=meanfield_Beq*exp(z(n)/meanfield_Beq_height)
-          else
-            Beq=meanfield_Beq
-          endif
-          meanfield_Bs21=1./(meanfield_Bs*Beq)**2
-          meanfield_Bp21=1./(meanfield_Bp*Beq)**2
-          meanfield_Be21=1./(meanfield_Be*Beq)**2
+!            
+!        else
+          select case (meanfield_Beq_profile)
+          case ('exp(z/H)');
+!           H = -2* density scale height, old version
+            Beq21=1./meanfield_Beq**2*exp(-2*z(n)/meanfield_Beq_height)
+          case ('exp(z/2H)');
+!           H = density scale height, more straightforward
+            Beq21=1./meanfield_Beq**2*exp(z(n)/meanfield_Beq2_height)
+          case ('uturbconst');
+!           allows to take into account a shifted equilibrium solution caused by the additional pressure contribution
+            Beq21=p%rho1/(uturb**2)
+          case default;
+            Beq21=1./meanfield_Beq**2
+          endselect
+!
+          meanfield_Bs21=Beq21/meanfield_Bs**2
+          meanfield_Bp21=Beq21/meanfield_Bp**2
+          meanfield_Be21=Beq21/meanfield_Be**2
 !
 !  Compute qp(B^2), qs(B^2), qe(B^2), and their derivatives for 2 different parameterizations
 !  qp=qp0/(1+B^2*meanfield_Bp21)
@@ -579,12 +590,12 @@ module Magnetic_meanfield
 !
           call multsv_mn_add(-meanfield_qs_func,p%jxb+Bk_Bki,p%jxb_mf)
           call dot(Bk_Bki,p%bb,BiBk_Bki)
-          call multsv_mn_add(-2*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
+          call multsv_mn_add(-2.*meanfield_qs_der*BiBk_Bki,p%bb,p%jxb_mf)
 !
 !  Add e_z*grad(qe*B^2). This has not yet been found to promote instability.
 !
-          p%jxb_mf(:,3)=p%jxb_mf(:,3)+2*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
-        endif
+          p%jxb_mf(:,3)=p%jxb_mf(:,3)+2.*(meanfield_qe_der*p%b2+meanfield_qe_func)*Bk_Bki(:,3)
+!        endif
         call multsv_mn(p%rho1,p%jxb_mf,p%jxbr_mf)
       endif
 !
@@ -833,6 +844,7 @@ module Magnetic_meanfield
 !
       use Diagnostics
 !
+      real, dimension (nx) :: Beq21, mf_qp 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -911,8 +923,17 @@ module Magnetic_meanfield
       endif
 !
 !  2-D averages.
-!  Note that this does not necessarily happen with ldiagnos=.true.
 !
+      if (l2davgfirst) then
+        if (idiag_peffmxz/=0)  then
+          Beq21=p%rho1/(uturb**2+p%u2)
+          mf_qp=meanfield_qp/(1.+p%b2*Beq21/meanfield_Bp**2)
+!         y-averaged effective magnetic pressure, only makes sense for the 'uturbconst' profile
+          call ysum_mn_name_xz((1.-mf_qp)*p%b2/2*Beq21,idiag_peffmxz)
+        endif
+      endif
+!  Note that this does not necessarily happen with ldiagnos=.true.
+! 
 !     if (l2davgfirst) then
 !       if (idiag_Ezmxz/=0) call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
 !     else
@@ -1075,7 +1096,7 @@ module Magnetic_meanfield
 !
       if (lreset) then
         idiag_qsm=0; idiag_qpm=0; idiag_qem=0;
-        idiag_EMFmz1=0; idiag_EMFmz2=0; idiag_EMFmz3=0
+        idiag_EMFmz1=0; idiag_EMFmz2=0; idiag_EMFmz3=0; idiag_peffmxz=0
         idiag_qpmz=0
       endif
 !
@@ -1109,6 +1130,7 @@ module Magnetic_meanfield
 !  Check for those quantities for which we want y-averages.
 !
       do ixz=1,nnamexz
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'peffmxz',idiag_peffmxz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
