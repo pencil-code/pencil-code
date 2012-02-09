@@ -110,7 +110,6 @@ module Magnetic_meanfield
       lrhs_term, lrhs_term2, rhs_term_amplz, rhs_term_amplphi, rhs_term_ampl, &
       Omega_rmax,Omega_rwidth
 !
-!
 ! Diagnostic variables (need to be consistent with reset list below)
 !
   integer :: idiag_qsm=0        ! DIAG_DOC: $\left<q_p(\overline{B})\right>$
@@ -125,6 +124,10 @@ module Magnetic_meanfield
   integer :: idiag_EMFmz3=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_z$
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
+!
+! xy averaged diagnostics given in xyaver.in
+!
+  integer :: idiag_qpmz=0       ! XYAVG_DOC: $\left<q_p\right>_{xy}$
 !
   contains
 !***********************************************************************
@@ -493,7 +496,7 @@ module Magnetic_meanfield
 !
       use Sub
       use General, only: bessj
-      use Diagnostics, only: sum_mn_name
+      use Diagnostics, only: sum_mn_name, xysum_mn_name_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -814,6 +817,12 @@ module Magnetic_meanfield
         if (idiag_qem/=0) call sum_mn_name(meanfield_qe_func,idiag_qem)
       endif
 !
+!  1d-averages. Happens at every it1d timesteps, NOT at every it1.
+!
+      if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
+        call xysum_mn_name_z(meanfield_qp_func,idiag_qpmz)
+      endif
+!
     endsubroutine calc_pencils_magn_mf
 !***********************************************************************
     subroutine daa_dt_meanfield(f,df,p)
@@ -1067,6 +1076,7 @@ module Magnetic_meanfield
       if (lreset) then
         idiag_qsm=0; idiag_qpm=0; idiag_qem=0;
         idiag_EMFmz1=0; idiag_EMFmz2=0; idiag_EMFmz3=0
+        idiag_qpmz=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -1093,6 +1103,7 @@ module Magnetic_meanfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz1',idiag_EMFmz1)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz2',idiag_EMFmz2)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'EMFmz3',idiag_EMFmz3)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'qpmz',idiag_qpmz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
