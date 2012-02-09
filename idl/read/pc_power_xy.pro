@@ -232,6 +232,8 @@ kxs = fltarr(nx) & kys = fltarr(ny)
   
 k0=2.*!pi/Lz
 
+nk=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1 
+
 ;if  keyword_set(v1) then begin
 ;  if ((v1 EQ "_phiu") OR (v1 EQ "_phi_kin") $
 ;       OR (v1 EQ "hel_phi_kin") OR (v1 EQ "hel_phi_mag") $
@@ -277,21 +279,8 @@ openr,1, datatopdir+'/'+file1
   
     readf, 1, headline
 
-    if lint_shell then begin
-      
-      nk=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1 
-      kshell = fltarr(nk)
-         
-      if lint_z then $
-        spectrum1=fltarr(nk) $
-      else $
-        spectrum1=fltarr(nk,nz)
-        
-    endif else if lint_z then $
-      spectrum1=fltarr(nx,ny) $
-    else $
-      spectrum1=fltarr(nx,ny,nz)
-
+    if lint_shell then kshell = fltarr(nk)
+ 
     if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
       print, 'Warning: File header corrupt!'
      
@@ -312,17 +301,34 @@ openr,1, datatopdir+'/'+file1
     kxs=(findgen(nx)-nx/2)*2*!pi/Lx                ;,(nx+1)/2)*2*!pi/Lx
     kys=(findgen(ny)-ny/2)*2*!pi/Ly                ;,(ny+1)/2)*2*!pi/Ly
      
-    if lint_shell then $                           ; valid for old style files
+    if lint_shell then begin                       ; valid for old style files
+
+      kshell = fltarr(nk)
+       
       for ix=0,nx-1 do $
         for iy=0,ny-1 do begin
           ik = round( sqrt( kxs(ix)^2+kys(iy)^2 )/(2*!pi/Lx) )
 	  kshell(ik)=ik*2*!pi/Lx
         endfor
-      
+
+    endif
+ 
     pos=0L
     point_lun, 1, pos
     
   endelse
+
+  if lint_shell then begin
+    
+    if lint_z then $
+      spectrum1=fltarr(nk) $
+    else $
+      spectrum1=fltarr(nk,nz)
+      
+  endif else if lint_z then $
+    spectrum1=fltarr(nx,ny) $
+  else $
+    spectrum1=fltarr(nx,ny,nz)
     
   globalmin=1e12
   globalmax=1e-30
