@@ -231,7 +231,6 @@ nz=mz-nghostz*2
 kxs = fltarr(nx) & kys = fltarr(ny) 
   
 k0=2.*!pi/Lz
-
 nk=round( sqrt( ((nx+1)*!pi/Lx)^2+((ny+1)*!pi/Ly)^2)/(2*!pi/Lx) )+1 
 
 ;if  keyword_set(v1) then begin
@@ -279,8 +278,6 @@ openr,1, datatopdir+'/'+file1
   
     readf, 1, headline
 
-    if lint_shell then kshell = fltarr(nk)
- 
     if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
       print, 'Warning: File header corrupt!'
      
@@ -289,8 +286,22 @@ openr,1, datatopdir+'/'+file1
     
       readf, 1, headline
       if strpos(strlowcase(headline),'wavenumbers') eq -1 then $
-        print, 'Warning: File header corrupt!'
-        
+        print, 'Warning: File header corrupt!' $
+      else begin
+
+        opos = strpos(headline,'(') & cpos = strpos(headline,')')
+        len = cpos-opos-1
+
+        if len le 0 then begin
+          print, 'Warning: File header corrupt! Number of shell wavenumbers missing -
+          print, '         will use nk=', strtrim(string(nk),2), ' which is perhaps by one too large.'
+          print, '         Correct data file by hand (or nk in code if necessary).'
+        endif else $
+          nk = fix(strmid(headline,opos+1,len))
+
+      endelse
+ 
+      kshell = fltarr(nk) 
       readf, 1, kshell 
     endif
     
