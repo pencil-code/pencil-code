@@ -2629,7 +2629,7 @@ module Entropy
 !
       if ((luminosity/=0.0) .or. (cool/=0.0) .or. &
           (tau_cor/=0.0) .or. (tauheat_buffer/=0.0) .or. &
-          heat_uniform/=0.0 .or. tau_cool/=0.0 .or. &
+          heat_uniform/=0.0 .or. tau_cool/=0.0 .or. tau_cool_ss/=0.0 .or. &
           cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
           (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
           (tau_cool2 /=0)) &
