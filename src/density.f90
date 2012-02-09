@@ -1435,7 +1435,7 @@ module Density
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rho2mz/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0 .or. idiag_rhomxy/=0 .or. idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. &
-           idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma) &
+           idiag_drhom/=0 .or. idiag_rhomxmask/=0 .or. idiag_sigma/=0) &
            lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
