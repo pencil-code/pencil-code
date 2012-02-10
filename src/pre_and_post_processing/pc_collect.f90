@@ -264,33 +264,33 @@ program pc_collect
       if (lfirst_proc_z) start_pos = 1
       if (llast_proc_z) end_pos = mz
       do pz = start_pos, end_pos
-        write(lun_output,rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
+        write (lun_output, rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
       enddo
     enddo
   enddo
 !
   ! write additional data:
-  close(lun_output)
-  open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
+  close (lun_output)
+  open (lun_output, FILE=trim(directory_out)//'/'//trim(filename), FORM='unformatted', position='append')
   t_sp = t
-  write(lun_output) t_sp,gx,gy,gz,dx,dy,dz
-  if (lshear) write(lun_output) deltay
-  close(lun_output)
+  write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+  if (lshear) then write (lun_output) deltay
+  close (lun_output)
 !
   ! write global grid:
-  open(lun_output,FILE=trim(directory_out)//'/grid.dat',FORM='unformatted')
-  write(lun_output) t_sp,gx,gy,gz,dx,dy,dz
-  write(lun_output) dx,dy,dz
-  write(lun_output) Lx,Ly,Lz
-  write(lun_output) gdx_1,gdy_1,gdz_1
-  write(lun_output) gdx_tilde,gdy_tilde,gdz_tilde
-  close(lun_output)
+  open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted')
+  write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+  write (lun_output) dx, dy, dz
+  write (lun_output) Lx, Ly, Lz
+  write (lun_output) gdx_1, gdy_1, gdz_1
+  write (lun_output) gdx_tilde, gdy_tilde, gdz_tilde
+  close (lun_output)
 !
   print *, 'Writing snapshot for time t =', t
 !
 !  Give all modules the possibility to exit properly.
 !
-  call finalize_modules(f,.true.)
+  call finalize_modules (f, .true.)
 !
 !  Free any allocated memory.
 !
