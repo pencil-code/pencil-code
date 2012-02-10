@@ -9,7 +9,8 @@
 !  The file format written by output() (and used, e.g. in var.dat)
 !  consists of the followinig Fortran records:
 !    1. data(mx,my,mz,nvar)
-!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
+!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1)
+! or 2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
 !  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 !  for one vector field, 8 for var.dat in the case of MHD with entropy.
 !
