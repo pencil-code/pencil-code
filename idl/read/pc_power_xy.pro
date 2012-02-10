@@ -608,6 +608,7 @@ endif
             endif
             wait,w
           endif 
+
         endif else begin
           if lint_z then $
             stop, 'Warning: No implementation for movie with lint_shell=F, lint_z=T!' $
@@ -730,24 +731,33 @@ cont1:
   
     if (last eq 1 and iplot eq 1) then begin
     
-      !p.title='t=' + string(time)
-      !y.range=[miny,maxy]
+      if lint_shell and lint_z then begin
+
+        !p.title='t=' + string(time)
+        !y.range=[miny,maxy]
+        
+        plot_oo,kshell,spectrum1*kshell^compensate,back=255,col=0,yr=yrange
+        
+        if (file2 ne '') then begin
+        
+          oplot,kshell,spectrum2*kshell^compensate,col=122
+          if (tot eq 1) then $
+            oplot,kshell,(spectrum1+spectrum2)*kshell^compensate,col=47
+    
+        endif
+        
+        if (lin ne 0) then begin
+          fac=spectrum1(2)/kshell(2)^(lin)*1.5
+          oplot,k(2:*),kshell(2:*)^(lin)*fac,lin=2,col=0
+        endif
+
+      endif else begin
+        if lint_z then $
+          stop, 'Warning: No implementation for last spectrum plot with lint_shell=F, lint_z=T!' $
+        else $
+          stop, 'Warning: No implementation for last spectrum plot with lint_shell=T, lint_z=F!'
+      endelse
       
-      plot_oo,kshell,spectrum1*kshell^compensate,back=255,col=0,yr=yrange
-      
-      if (file2 ne '') then begin
-      
-    	oplot,kshell,spectrum2*kshell^compensate,col=122
-    	if (tot eq 1) then $
-    	  oplot,kshell,(spectrum1+spectrum2)*kshell^compensate,col=47
-    	
-      endif
-      
-      if (lin ne 0) then begin
-    	fac=spectrum1(2)/kshell(2)^(lin)*1.5
-    	oplot,k(2:*),kshell(2:*)^(lin)*fac,lin=2,col=0
-      endif
-      stop
     endif
     
 close,1
