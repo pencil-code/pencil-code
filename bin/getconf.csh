@@ -1486,11 +1486,6 @@ else if ($masterhost =~ pfe) then
   echo "Running on NASA Pleiades system"
   module load comp-intel mpi/mpt.1.25
   set mpirun = "mpiexec"
-
-else
-  echo "Generic setup; hostname is <$hn>"
-  if ($mpi) echo "Use mpirun"
-  set mpirun = mpirun
 #----------------------------------------------
 # For ukmhd cluster St Andrews
 # NB replace #!/bin/csh with #!/usr/local/bin/csh line 1
@@ -1510,13 +1505,30 @@ else if ($hostname =~ mhdc) then
        set resubop = "$resubop1$resubop2"
        set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
        echo "Finished  mhdc machine specific settings"
+#--------------------------------------------
+# For the HECToR in the EPCC cluster in Edinburgh, UK
+# NB You might change mpirunops and/or mpops
+#
+else if ($hn =~ hector*) then
+  echo "HECToR on epcc, Edinburgh, UK"
+  set npops = "-n $ncpus -N 32"
+#  set mpirunops = "-n 8 -N 8"
+  set mpirun = aprun
+  setenv SCRATCH_DIR ./scratch
+  setenv TMPDIR ./tmp
+#  set local_disc = 0
+#  set one_local_disc = 0
+#  set remote_top     = 1
+#  set local_binary = 0
 ## --------------------------------------------
-
 else if ($hn =~ norosx52) then
   echo "norosx52 pc, Stockholm"
   set mpirun = /opt/local/bin/openmpirun
+else 
+  echo "Generic setup; hostname is <$hn>"
+  if ($mpi) echo "Use mpirun"
+  set mpirun = mpirun
 endif
-
 ## ------------------------------
 ## End of machine specific settings
 ## ------------------------------
