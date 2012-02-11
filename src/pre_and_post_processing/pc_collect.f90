@@ -88,7 +88,7 @@ program pc_collect
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
-  if (lwrite_aux.and..not.lread_aux) then 
+  if (lwrite_aux.and..not.lread_aux) then
     if (lroot) then
       print*,''
       print*,'lwrite_aux=T but lread_aux=F'
@@ -184,14 +184,14 @@ program pc_collect
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
 !
-! Size of box at local processor. The if-statement is for 
+! Size of box at local processor. The if-statement is for
 ! backward compatibility.
 !
-        if (all(lequidist)) then 
+        if (all(lequidist)) then
           Lxyz_loc(1)=Lxyz(1)/nprocx
           Lxyz_loc(2)=Lxyz(2)/nprocy
           Lxyz_loc(3)=Lxyz(3)/nprocz
-          xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1) 
+          xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
           xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
           xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
           xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
@@ -274,7 +274,7 @@ program pc_collect
   open (lun_output, FILE=trim(directory_out)//'/'//trim(filename), FORM='unformatted', position='append')
   t_sp = t
   write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-  if (lshear) then write (lun_output) deltay
+  if (lshear) write (lun_output) deltay
   close (lun_output)
 !
   ! write global grid:
