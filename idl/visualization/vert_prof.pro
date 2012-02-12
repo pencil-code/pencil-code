@@ -18,7 +18,7 @@
 ; title:  title string for the plot
 ; log:    set this to use a logarithmic scale for data display
 ;
-pro vert_prof, data, coord=coord, title=title, log=log
+pro vert_prof, data, coord=coord, title=title, min=min, max=max, log=log
 
 	num_z = (size (data))[3]
 	if (n_elements (coord) eq 0) then coord = findgen (num_z)
@@ -36,8 +36,9 @@ pro vert_prof, data, coord=coord, title=title, log=log
 		prof_min[z] = tmp[0]
 		prof_max[z] = tmp[1]
 	end
-	data_min = min (data)
-	data_max = max (data)
+
+	if (keyword_set (min)) then data_min = min else data_min = min (data)
+	if (keyword_set (max)) then data_max = max else data_max = max (data)
 
 	if (num_coord_z le 1) then begin
 		yrange = [coord[0]-1, coord[0]+1]
