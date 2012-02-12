@@ -3633,19 +3633,14 @@ module Mpicomm
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny ! transfer box sizes
-      integer :: px, py, broadcaster, partner, nbox, alloc_err
+      integer :: px, py, broadcaster, partner, nbox
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      real, dimension(:,:), allocatable :: buffer
 !
 !
       bnx = size (out, 1)
       bny = size (out, 2)
       nbox = bnx*bny
-!
-      allocate (buffer(bnx,bny), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('distribute_xy_2D: not enough memory for buffer!', .true.)
 !
       broadcaster = ipz * nprocxy
       if (present (source_proc)) broadcaster = broadcaster + source_proc
@@ -3653,9 +3648,9 @@ module Mpicomm
       if (iproc == broadcaster) then
         ! distribute the data
         if (bnx * nprocx /= size (in, 1)) &
-            call stop_fatal ('distribute_xy_2D: input x dim must be nprocx*output', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_2D: input x dim must be nprocx*output', .true.)
         if (bny * nprocy /= size (in, 2)) &
-            call stop_fatal ('distribute_xy_2D: input y dim must be nprocy*output', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_2D: input y dim must be nprocy*output', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3665,18 +3660,15 @@ module Mpicomm
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
             else
               ! send to partner
-              buffer = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny)
-              call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny), &
+                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
-        out = buffer
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine distribute_xy_2D
 !***********************************************************************
@@ -3694,11 +3686,9 @@ module Mpicomm
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz ! transfer box sizes
-      integer :: px, py, broadcaster, partner, nbox, alloc_err
+      integer :: px, py, broadcaster, partner, nbox
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      real, dimension(:,:,:), allocatable :: buffer
 !
 !
       bnx = size (out, 1)
@@ -3706,20 +3696,17 @@ module Mpicomm
       bnz = size (out, 3)
       nbox = bnx*bny*bnz
 !
-      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('distribute_xy_3D: not enough memory for buffer!', .true.)
-!
       broadcaster = ipz * nprocxy
       if (present (source_proc)) broadcaster = broadcaster + source_proc
 !
       if (iproc == broadcaster) then
         ! distribute the data
         if (bnx * nprocx /= size (in, 1)) &
-            call stop_fatal ('distribute_xy_3D: input x dim must be nprocx*output', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_3D: input x dim must be nprocx*output', .true.)
         if (bny * nprocy /= size (in, 2)) &
-            call stop_fatal ('distribute_xy_3D: input y dim must be nprocy*output', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_3D: input y dim must be nprocy*output', .true.)
         if (bnz /= size (in, 3)) &
-            call stop_fatal ('distribute_xy_3D: z dim must equal between in and out', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_3D: z dim must equal between in and out', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3729,18 +3716,15 @@ module Mpicomm
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:)
             else
               ! send to partner
-              buffer = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:)
-              call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:), &
+                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
-        out = buffer
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine distribute_xy_3D
 !***********************************************************************
@@ -3758,11 +3742,9 @@ module Mpicomm
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
-      integer :: px, py, broadcaster, partner, nbox, alloc_err
+      integer :: px, py, broadcaster, partner, nbox
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      real, dimension(:,:,:,:), allocatable :: buffer
 !
 !
       bnx = size (out, 1)
@@ -3771,22 +3753,19 @@ module Mpicomm
       bna = size (out, 4)
       nbox = bnx*bny*bnz*bna
 !
-      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('distribute_xy_4D: not enough memory for buffer!', .true.)
-!
       broadcaster = ipz * nprocxy
       if (present (source_proc)) broadcaster = broadcaster + source_proc
 !
       if (iproc == broadcaster) then
         ! distribute the data
         if (bnx * nprocx /= size (in, 1)) &
-            call stop_fatal ('distribute_xy_4D: input x dim must be nprocx*output', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_4D: input x dim must be nprocx*output', .true.)
         if (bny * nprocy /= size (in, 2)) &
-            call stop_fatal ('distribute_xy_4D: input y dim must be nprocy*output', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_4D: input y dim must be nprocy*output', .true.)
         if (bnz /= size (in, 3)) &
-            call stop_fatal ('distribute_xy_4D: z dim must equal between in and out', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_4D: z dim must equal between in and out', .true.)
         if (bna /= size (in, 4)) &
-            call stop_fatal ('distribute_xy_4D: 4th dim must equal between in and out', lfirst_proc_xy)
+            call stop_fatal ('distribute_xy_4D: 4th dim must equal between in and out', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3796,18 +3775,15 @@ module Mpicomm
               out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:)
             else
               ! send to partner
-              buffer = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:)
-              call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:), &
+                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
-        out = buffer
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
@@ -3836,9 +3812,9 @@ module Mpicomm
       if (iproc == collector) then
         ! collect the data
         if (nprocx /= size (out, 1)) &
-            call stop_fatal ('collect_xy_0D: output x dim must be nprocx', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_0D: output x dim must be nprocx', .true.)
         if (nprocy /= size (out, 2)) &
-            call stop_fatal ('collect_xy_0D: output y dim must be nprocy', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_0D: output y dim must be nprocy', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3885,18 +3861,18 @@ module Mpicomm
       bny = size (in, 2)
       nbox = bnx*bny
 !
-      allocate (buffer(bnx,bny), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('collect_xy_2D: not enough memory for buffer!', .true.)
-!
       collector = ipz * nprocxy
       if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
         if (bnx * nprocx /= size (out, 1)) &
-            call stop_fatal ('collect_xy_2D: output x dim must be nprocx*input', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_2D: output x dim must be nprocx*input', .true.)
         if (bny * nprocy /= size (out, 2)) &
-            call stop_fatal ('collect_xy_2D: output y dim must be nprocy*input', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_2D: output y dim must be nprocy*input', .true.)
+!
+        allocate (buffer(bnx,bny), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('collect_xy_2D: not enough memory for buffer!', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3911,13 +3887,12 @@ module Mpicomm
             endif
           enddo
         enddo
+!
+        deallocate (buffer)
       else
         ! send to collector
-        buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine collect_xy_2D
 !***********************************************************************
@@ -3947,18 +3922,18 @@ module Mpicomm
       bnz = size (in, 3)
       nbox = bnx*bny*bnz
 !
-      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('collect_xy_3D: not enough memory for buffer!', .true.)
-!
       collector = ipz * nprocxy
       if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
         if (bnx * nprocx /= size (out, 1)) &
-            call stop_fatal ('collect_xy_3D: output x dim must be nprocx*input', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_3D: output x dim must be nprocx*input', .true.)
         if (bny * nprocy /= size (out, 2)) &
-            call stop_fatal ('collect_xy_3D: output y dim must be nprocy*input', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_3D: output y dim must be nprocy*input', .true.)
+!
+        allocate (buffer(bnx,bny,bnz), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('collect_xy_3D: not enough memory for buffer!', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -3973,13 +3948,12 @@ module Mpicomm
             endif
           enddo
         enddo
+!
+        deallocate (buffer)
       else
         ! send to collector
-        buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine collect_xy_3D
 !***********************************************************************
@@ -4010,22 +3984,22 @@ module Mpicomm
       bna = size (in, 4)
       nbox = bnx*bny*bnz*bna
 !
-      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('collect_xy_4D: not enough memory for buffer!', .true.)
-!
       collector = ipz * nprocxy
       if (present (dest_proc)) collector = collector + dest_proc
 !
       if (iproc == collector) then
         ! collect the data
         if (bnx * nprocx /= size (out, 1)) &
-            call stop_fatal ('collect_xy_4D: output x dim must be nprocx*input', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_4D: output x dim must be nprocx*input', .true.)
         if (bny * nprocy /= size (out, 2)) &
-            call stop_fatal ('collect_xy_4D: output y dim must be nprocy*input', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_4D: output y dim must be nprocy*input', .true.)
         if (bnz /= size (out, 3)) &
-            call stop_fatal ('collect_xy_4D: z dim must equal between in and out', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_4D: z dim must equal between in and out', .true.)
         if (bna /= size (out, 4)) &
-            call stop_fatal ('collect_xy_4D: 4th dim must equal between in and out', lfirst_proc_xy)
+            call stop_fatal ('collect_xy_4D: 4th dim must equal between in and out', .true.)
+!
+        allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('collect_xy_4D: not enough memory for buffer!', .true.)
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -4040,13 +4014,12 @@ module Mpicomm
             endif
           enddo
         enddo
+!
+        deallocate (buffer)
       else
         ! send to collector
-        buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine collect_xy_4D
 !***********************************************************************
@@ -4064,11 +4037,9 @@ module Mpicomm
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz ! transfer box sizes
-      integer :: pz, broadcaster, partner, nbox, alloc_err
+      integer :: pz, broadcaster, partner, nbox
       integer, parameter :: ytag=117
       integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      real, dimension(:,:,:), allocatable :: buffer
 !
 !
       bnx = size (out, 1)
@@ -4076,20 +4047,17 @@ module Mpicomm
       bnz = size (out, 3)
       nbox = bnx*bny*bnz
 !
-      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('distribute_z_3D: not enough memory for buffer!', .true.)
-!
       broadcaster = ipx + ipy*nprocx
       if (present (source_proc)) broadcaster = broadcaster + source_proc*nprocxy
 !
       if (iproc == broadcaster) then
         ! distribute the data
         if (bnx /= size (in, 1)) &
-            call stop_fatal ('distribute_z_4D: x dim must be equal between in and out', lfirst_proc_z)
+            call stop_fatal ('distribute_z_4D: x dim must be equal between in and out', .true.)
         if (bny /= size (in, 2)) &
-            call stop_fatal ('distribute_z_4D: y dim must be equal between in and out', lfirst_proc_z)
+            call stop_fatal ('distribute_z_4D: y dim must be equal between in and out', .true.)
         if (bnz * nprocz /= size (in, 3)) &
-            call stop_fatal ('distribute_z_4D: input z dim must be nprocz*output', lfirst_proc_z)
+            call stop_fatal ('distribute_z_4D: input z dim must be nprocz*output', .true.)
 !
         do pz = 0, nprocz-1
           partner = ipx + ipy*nprocx + pz*nprocxy
@@ -4098,17 +4066,13 @@ module Mpicomm
             out = in(:,:,pz*bnz+1:(pz+1)*bnz)
           else
             ! send to partner
-            buffer = in(:,:,pz*bnz+1:(pz+1)*bnz)
-            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz), nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
-        out = buffer
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine distribute_z_3D
 !***********************************************************************
@@ -4126,11 +4090,9 @@ module Mpicomm
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
-      integer :: pz, broadcaster, partner, nbox, alloc_err
+      integer :: pz, broadcaster, partner, nbox
       integer, parameter :: ytag=117
       integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      real, dimension(:,:,:,:), allocatable :: buffer
 !
 !
       bnx = size (out, 1)
@@ -4139,22 +4101,19 @@ module Mpicomm
       bna = size (out, 4)
       nbox = bnx*bny*bnz*bna
 !
-      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('distribute_z_4D: not enough memory for buffer!', .true.)
-!
       broadcaster = ipx + ipy*nprocx
       if (present (source_proc)) broadcaster = broadcaster + source_proc*nprocxy
 !
       if (iproc == broadcaster) then
         ! distribute the data
         if (bnx /= size (in, 1)) &
-            call stop_fatal ('distribute_z_4D: x dim must be equal between in and out', lfirst_proc_z)
+            call stop_fatal ('distribute_z_4D: x dim must be equal between in and out', .true.)
         if (bny /= size (in, 2)) &
-            call stop_fatal ('distribute_z_4D: y dim must be equal between in and out', lfirst_proc_z)
+            call stop_fatal ('distribute_z_4D: y dim must be equal between in and out', .true.)
         if (bnz * nprocz /= size (in, 3)) &
-            call stop_fatal ('distribute_z_4D: input z dim must be nprocz*output', lfirst_proc_z)
+            call stop_fatal ('distribute_z_4D: input z dim must be nprocz*output', .true.)
         if (bna /= size (in, 4)) &
-            call stop_fatal ('distribute_z_4D: 4th dim must equal between in and out', lfirst_proc_z)
+            call stop_fatal ('distribute_z_4D: 4th dim must equal between in and out', .true.)
 !
         do pz = 0, nprocz-1
           partner = ipx + ipy*nprocx + pz*nprocxy
@@ -4163,17 +4122,13 @@ module Mpicomm
             out = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
           else
             ! send to partner
-            buffer = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
-            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz,:), nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
-        out = buffer
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine distribute_z_4D
 !***********************************************************************
@@ -4203,20 +4158,20 @@ module Mpicomm
       bnz = size (in, 3)
       nbox = bnx*bny*bnz
 !
-      allocate (buffer(bnx,bny,bnz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('collect_z_3D: not enough memory for buffer!', .true.)
-!
       collector = ipx + ipy*nprocx
       if (present (dest_proc)) collector = collector + dest_proc*nprocxy
 !
       if (iproc == collector) then
         ! collect the data
         if (bnx /= size (out, 1)) &
-            call stop_fatal ('collect_z_3D: x dim must equal between in and out', lfirst_proc_z)
+            call stop_fatal ('collect_z_3D: x dim must equal between in and out', .true.)
         if (bny /= size (out, 2)) &
-            call stop_fatal ('collect_z_3D: y dim must equal between in and out', lfirst_proc_z)
+            call stop_fatal ('collect_z_3D: y dim must equal between in and out', .true.)
         if (bnz * nprocz /= size (out, 3)) &
-            call stop_fatal ('collect_z_3D: output z dim must be nprocz*input', lfirst_proc_z)
+            call stop_fatal ('collect_z_3D: output z dim must be nprocz*input', .true.)
+!
+        allocate (buffer(bnx,bny,bnz), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('collect_z_3D: not enough memory for buffer!', .true.)
 !
         do pz = 0, nprocz-1
           partner = ipx + ipy*nprocx + pz*nprocxy
@@ -4229,13 +4184,12 @@ module Mpicomm
             out(:,:,pz*bnz+1:(pz+1)*bnz) = buffer
           endif
         enddo
+!
+        deallocate (buffer)
       else
         ! send to collector
-        buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine collect_z_3D
 !***********************************************************************
@@ -4266,22 +4220,22 @@ module Mpicomm
       bna = size (in, 4)
       nbox = bnx*bny*bnz*bna
 !
-      allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('collect_z_4D: not enough memory for buffer!', .true.)
-!
       collector = ipx + ipy*nprocx
       if (present (dest_proc)) collector = collector + dest_proc*nprocxy
 !
       if (iproc == collector) then
         ! collect the data
         if (bnx /= size (out, 1)) &
-            call stop_fatal ('collect_z_4D: x dim must equal between in and out', lfirst_proc_z)
+            call stop_fatal ('collect_z_4D: x dim must equal between in and out', .true.)
         if (bny /= size (out, 2)) &
-            call stop_fatal ('collect_z_4D: y dim must equal between in and out', lfirst_proc_z)
+            call stop_fatal ('collect_z_4D: y dim must equal between in and out', .true.)
         if (bnz * nprocz /= size (out, 3)) &
-            call stop_fatal ('collect_z_4D: output z dim must be nprocz*input', lfirst_proc_z)
+            call stop_fatal ('collect_z_4D: output z dim must be nprocz*input', .true.)
         if (bna /= size (out, 4)) &
-            call stop_fatal ('collect_z_4D: 4th dim must equal between in and out', lfirst_proc_z)
+            call stop_fatal ('collect_z_4D: 4th dim must equal between in and out', .true.)
+!
+        allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('collect_z_4D: not enough memory for buffer!', .true.)
 !
         do pz = 0, nprocz-1
           partner = ipx + ipy*nprocx + pz*nprocxy
@@ -4294,75 +4248,240 @@ module Mpicomm
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = buffer
           endif
         enddo
+!
+        deallocate (buffer)
       else
         ! send to collector
-        buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
       endif
-!
-      deallocate (buffer)
 !
     endsubroutine collect_z_4D
 !***********************************************************************
-    subroutine globalize_z (in, out)
+    subroutine globalize_xy (in, out, dest_proc)
 !
-!  Globalizes local data to all processors in the z-direction.
+!  Globalizes local 4D data in the xy-plane to the destination processor.
 !  The local data is supposed to include the ghost cells.
 !  Inner ghost layers are cut away during the combination of the data.
+!  'dest_proc' is the destination iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  11-feb-2012/Bourdin.KIS: adapted from collect_xy and globalize_z
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: cnx, cny ! transfer box sizes minus ghosts
+      integer :: px, py, x_add, y_add, collector, partner, nbox, alloc_err
+      integer, parameter :: ytag=121
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      real, dimension(:,:,:,:), allocatable :: buffer
+!
+!
+      bnx = size (in, 1)
+      bny = size (in, 2)
+      bnz = size (in, 3)
+      bna = size (in, 4)
+      nbox = bnx*bny*bnz*bna
+      cnx = bnx - 2*nghost
+      cny = bny - 2*nghost
+!
+      collector = ipz * nprocxy
+      if (present (dest_proc)) collector = collector + dest_proc
+!
+      if (iproc == collector) then
+        ! collect the data
+        if (cnx * nprocx + 2*nghost /= size (out, 1)) &
+            call stop_fatal ('globalize_xy: output x dim must be nprocx*input minus inner ghosts', .true.)
+        if (cny * nprocy + 2*nghost /= size (out, 2)) &
+            call stop_fatal ('globalize_xy: output y dim must be nprocy*input minus inner ghosts', .true.)
+        if (bnz /= size (out, 3)) &
+            call stop_fatal ('globalize_xy: z dim must equal between in and out', .true.)
+        if (bna /= size (out, 4)) &
+            call stop_fatal ('globalize_xy: 4th dim must equal between in and out', .true.)
+!
+        allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            x_add = nghost
+            y_add = nghost
+            if (px == 0) x_add = 0
+            if (py == 0) y_add = 0
+            if (iproc == partner) then
+              ! data is local
+              out(px*cnx+1+x_add:px*cnx+mx,py*cny+1+y_add:py*cny+my,:,:) = in(1+x_add:mx,1+y_add:my,:,:)
+            else
+              ! receive from partner
+              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              out(px*cnx+1+x_add:px*cnx+mx,py*cny+1+y_add:py*cny+my,:,:) = buffer(1+x_add:mx,1+y_add:my,:,:)
+            endif
+          enddo
+        enddo
+!
+        deallocate (buffer)
+      else
+        ! send to collector
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+    endsubroutine globalize_xy
+!***********************************************************************
+    subroutine localize_xy (in, out, source_proc)
+!
+!  Localizes global 4D data to all processors in the xy-plane.
+!  The global data is supposed to include the outer ghost layers.
+!  The returned data will include inner ghost layers.
+!  Inner ghost layers are cut away during the combination of the data.
+!  'source_proc' is the source iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  11-feb-2012/Bourdin.KIS: adapted from collect_xy and globalize_z
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: cnx, cny ! transfer box sizes minus ghosts
+      integer :: px, py, broadcaster, partner, nbox
+      integer, parameter :: ytag=122
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      bna = size (out, 4)
+      nbox = bnx*bny*bnz*bna
+      cnx = bnx - 2*nghost
+      cny = bny - 2*nghost
+!
+      broadcaster = ipz * nprocxy
+      if (present (source_proc)) broadcaster = broadcaster + source_proc
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (cnx * nprocx + 2*nghost /= size (in, 1)) &
+            call stop_fatal ('localize_xy: input x dim must be nprocx*output minus inner ghosts', .true.)
+        if (cny * nprocy + 2*nghost /= size (in, 2)) &
+            call stop_fatal ('localize_xy: input y dim must be nprocy*output minus inner ghosts', .true.)
+        if (bnz /= size (in, 3)) &
+            call stop_fatal ('localize_xy: z dim must equal between in and out', .true.)
+        if (bna /= size (in, 4)) &
+            call stop_fatal ('localize_xy: 4th dim must equal between in and out', .true.)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) then
+              ! data is local
+              out = in(px*cnx+1:px*cnx+mx,py*cny+1:py*cny+my,:,:)
+            else
+              ! send to partner
+              call MPI_SEND (in(px*cnx+1:px*cnx+mx,py*cny+1:py*cny+my,:,:), &
+                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+      endif
+!
+    endsubroutine localize_xy
+!***********************************************************************
+    subroutine globalize_z (in, out, dest_proc)
+!
+!  Globalizes local 1D data to all processors in the z-direction.
+!  The local data is supposed to include the ghost cells.
+!  Inner ghost layers are cut away during the combination of the data.
+!  'dest_proc' is the destination ipz-layer number relative to the first
+!  processor in the z-direction (Default: 0, equals lfirst_proc_z).
 !
 !  13-aug-2011/Bourdin.KIS: coded
 !
       real, dimension(mz), intent(in) :: in
-      real, dimension(nzgrid+2*nghost), intent(out) :: out
+      real, dimension(nzgrid+2*nghost), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
 !
-      integer :: pz, partner, alloc_err
+      integer :: pz, z_add, collector, partner, alloc_err
       integer, parameter :: ytag=119
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:), allocatable :: buffer
 !
+      collector = ipx + ipy * nprocx
+      if (present (dest_proc)) collector = collector + dest_proc * nprocxy
 !
-      allocate (buffer(nz), stat=alloc_err)
-      if (alloc_err > 0) call stop_fatal ('collect_z_3D: not enough memory for buffer!', .true.)
+      if (iproc == collector) then
+        ! collect the data
+        allocate (buffer(mz), stat=alloc_err)
+        if (alloc_err > 0) call stop_fatal ('globalize_z: not enough memory for buffer!', .true.)
 !
-      if (lfirst_proc_z) then
+        do pz = 0, nprocz-1
+          partner = ipx + ipy*nprocx + pz*nprocxy
+          z_add = nghost
+          if (pz == 0) z_add = 0
+          if (iproc == partner) then
+            ! data is local
+            out(pz*nz+1+z_add:pz*nz+mz) = in(1+z_add:mz)
+          else
+            ! receive from partner
+            call MPI_RECV (buffer, mz, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            out(pz*nz+1+z_add:pz*nz+mz) = buffer(1+z_add:mz)
+          endif
+        enddo
+!
+        deallocate (buffer)
+      else
+        ! send to collector
+        call MPI_SEND (in, mz, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+      endif
+!
+    endsubroutine globalize_z
+!***********************************************************************
+    subroutine localize_z (in, out, source_proc)
+!
+!  Localizes global 1D data on any processor along the z-direction.
+!  The global data is supposed to include the outer ghost layers.
+!  The returned data will include inner ghost layers.
+!  'source_proc' is the source ipz-layer number relative to the first
+!  processor in the z-direction (Default: 0, equals lfirst_proc_z).
+!
+!  11-Feb-2012/Bourdin.KIS: coded
+!
+      real, dimension(mz), intent(in) :: in
+      real, dimension(nzgrid+2*nghost), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      integer :: pz, broadcaster, partner
+      integer, parameter :: ytag=120
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      broadcaster = ipx + ipy * nprocx
+      if (present (source_proc)) broadcaster = broadcaster + source_proc * nprocxy
+!
+      if (iproc == broadcaster) then
         ! collect the data
         do pz = 0, nprocz-1
           partner = ipx + ipy*nprocx + pz*nprocxy
           if (iproc == partner) then
             ! data is local
-            out(1:mz) = in
+            out = in(pz*nz+1:pz*nz+mz)
           else
-            ! receive from partner
-            call MPI_RECV (buffer, nz, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            out(pz*nz+2*nghost+1:pz*nz+mz) = buffer
+            ! send to partner
+            call MPI_SEND (in(pz*nz+1:pz*nz+mz), mz, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
           endif
         enddo
       else
-        ! send to collector
-        buffer = in(2*nghost+1:mz)
-        call MPI_SEND (buffer, nz, MPI_REAL, ipx + ipy*nprocx, ytag, MPI_COMM_WORLD, mpierr)
+        ! receive from broadcaster
+        call MPI_RECV (out, mz, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
       endif
-!
-      ! broadcast globalized data
-      call mpibcast_real (out, nzgrid+2*nghost)
-!
-      deallocate (buffer)
-!
-    endsubroutine globalize_z
-!***********************************************************************
-    subroutine localize_z (in, out)
-!
-!  Localizes global data on any processor.
-!  The global data is supposed to include the outer ghost layers.
-!  The returned data will include inner ghost layers.
-!
-!  13-aug-2011/Bourdin.KIS: coded
-!
-      real, dimension(nzgrid+2*nghost), intent(in) :: in
-      real, dimension(mz), intent(out) :: out
-!
-      out = in(ipz*nz+1:ipz*nz+mz)
 !
     endsubroutine localize_z
 !***********************************************************************
@@ -6672,7 +6791,7 @@ module Mpicomm
 !  written. Message contains list of processors at which operation failed.
 !
 !  flag   (IN) : indicates failure of I/O operation at local processor
-!  message(OUT): message fragment containing list of processors where 
+!  message(OUT): message fragment containing list of processors where
 !                operation failed  (only relevant for root)
 !  return value: flag for 'synchronize!', identical for all processors
 !

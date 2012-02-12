@@ -1457,7 +1457,7 @@ module Mpicomm
       real, intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc) .and. (iproc /= source_proc)) return
+      if (present (source_proc)) continue
 !
       out = in
 !
@@ -1474,7 +1474,7 @@ module Mpicomm
       real, dimension(:,:), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc) .and. (iproc /= source_proc)) return
+      if (present (source_proc)) continue
 !
       out = in
 !
@@ -1491,7 +1491,7 @@ module Mpicomm
       real, dimension(:,:,:), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc) .and. (iproc /= source_proc)) return
+      if (present (source_proc)) continue
 !
       out = in
 !
@@ -1508,7 +1508,7 @@ module Mpicomm
       real, dimension(:,:,:,:), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc) .and. (iproc /= source_proc)) return
+      if (present (source_proc)) continue
 !
       out = in
 !
@@ -1590,7 +1590,7 @@ module Mpicomm
       real, dimension(:,:,:), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc) .and. (iproc /= source_proc)) return
+      if (present (source_proc)) continue
 !
       out = in
 !
@@ -1607,7 +1607,7 @@ module Mpicomm
       real, dimension(:,:,:,:), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc) .and. (iproc /= source_proc)) return
+      if (present (source_proc)) continue
 !
       out = in
 !
@@ -1643,24 +1643,62 @@ module Mpicomm
 !
     endsubroutine collect_z_4D
 !***********************************************************************
-    subroutine globalize_z (in, out)
+    subroutine globalize_xy (in, out, dest_proc)
 !
-!  Globalizes local data to all processors in the z-direction.
+!  Globalizes local 4D data in the xy-plane to the destination processor.
+!  The local data is supposed to include the ghost cells.
+!  Inner ghost layers are cut away during the combination of the data.
+!  'dest_proc' is the destination iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  11-feb-2012/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
+!
+      if (present (out) .or. present (dest_proc)) out = in
+!
+    endsubroutine globalize_xy
+!***********************************************************************
+    subroutine localize_xy (in, out, source_proc)
+!
+!  Localizes global 4D data to all processors in the xy-plane.
+!  The global data is supposed to include the outer ghost layers.
+!  The returned data will include inner ghost layers.
+!  Inner ghost layers are cut away during the combination of the data.
+!
+!  11-feb-2012/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(in) :: in
+      real, dimension(:,:,:,:), intent(out) :: out
+      integer, intent(in), optional :: source_proc
+!
+      if (present (source_proc)) continue
+!
+      out = in
+!
+    endsubroutine localize_xy
+!***********************************************************************
+    subroutine globalize_z (in, out, dest_proc)
+!
+!  Globalizes local 1D data to all processors in the z-direction.
 !  The local data is supposed to include the ghost cells.
 !  Inner ghost layers are cut away during the combination of the data.
 !
 !  13-aug-2011/Bourdin.KIS: coded
 !
       real, dimension(mz), intent(in) :: in
-      real, dimension(nzgrid+2*nghost), intent(out) :: out
+      real, dimension(nzgrid+2*nghost), intent(out), optional :: out
+      integer, intent(in), optional :: dest_proc
 !
-      out(ipz*nz+1:ipz*nz+mz) = in
+      if (present (out) .or. present (dest_proc)) out = in
 !
     endsubroutine globalize_z
 !***********************************************************************
-    subroutine localize_z (in, out)
+    subroutine localize_z (in, out, source_proc)
 !
-!  Localizes global data on any processor.
+!  Localizes global 1D data on any processor along the z-direction.
 !  The global data is supposed to include the outer ghost layers.
 !  The returned data will include inner ghost layers.
 !
@@ -1668,8 +1706,11 @@ module Mpicomm
 !
       real, dimension(nzgrid+2*nghost), intent(in) :: in
       real, dimension(mz), intent(out) :: out
+      integer, intent(in), optional :: source_proc
 !
-      out = in(ipz*nz+1:ipz*nz+mz)
+      if (present (source_proc)) continue
+!
+      out = in
 !
     endsubroutine localize_z
 !***********************************************************************
