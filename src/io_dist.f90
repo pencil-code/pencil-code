@@ -548,7 +548,7 @@ contains
 !***********************************************************************
     subroutine output_globals(file,a,nv)
 !
-!  Write snapshot file of globals, always write mesh.
+!  Write snapshot file of globals, ignoring mesh.
 !
 !  10-nov-06/tony: coded
 !
@@ -646,7 +646,7 @@ contains
 !
       call parse_filename(filename,dir,fpart)
       open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
-! file not distributed???, backskipping enabled 
+! file not distributed???, backskipping enabled
       if (outlog(iostat,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) goto 99
 !
       write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
@@ -680,8 +680,6 @@ contains
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !
-      use Mpicomm, only: stop_it
-!
       character (len=*) :: file
       integer :: iostat
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -689,16 +687,16 @@ contains
       t_sp = t
 
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it( &
+      if (iostat /= 0) call fatal_error('wgrid', &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?", iostat)
+          " -- is data/ visible from all nodes?", .true.)
       write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
       write(lun_output,IOSTAT=iostat) dx,dy,dz
       write(lun_output,IOSTAT=iostat) Lx,Ly,Lz
       write(lun_output,IOSTAT=iostat) dx_1,dy_1,dz_1
       write(lun_output,IOSTAT=iostat) dx_tilde,dy_tilde,dz_tilde
-      if (iostat /= 0) call stop_it( &
-          "Cannot write "//trim(file)//" properly", iostat)
+      if (iostat /= 0) call fatal_error('wgrid', &
+          "Cannot write "//trim(file)//" properly", .true.)
       close(lun_output,IOSTAT=iostat)
       if (outlog(iostat,'close',file)) continue
 !
@@ -712,8 +710,6 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !   3-jun-04/bing: added xiprim, psiprim ,zetaprim, etc.
 !
-      use Mpicomm, only: stop_it
-!
       character (len=*) :: file
 !
       integer :: iostat, ierr
@@ -722,17 +718,17 @@ contains
 !  if xiprim etc is not written, just ignore it
 !
       open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it( &
+      if (iostat /= 0) call fatal_error('rgrid', &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?",iostat)
+          " -- is data/ visible from all nodes?",.true.)
 !
       read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-      if (iostat/=0) call stop_it("Error when reading t_sp,x,y,z,dx,dy,dz from "//trim(file),iostat) 
+      if (iostat/=0) call fatal_error('rgrid', "Error when reading t_sp,x,y,z,dx,dy,dz from "//trim(file),.true.)
 !
       read(lun_input,IOSTAT=iostat) dx,dy,dz
-      if (iostat/=0) call stop_it("Error when reading dx,dy,dz from "//trim(file),iostat) 
+      if (iostat/=0) call fatal_error('rgrid', "Error when reading dx,dy,dz from "//trim(file),.true.)
 !
-      read(lun_input,IOSTAT=ierr) Lx,Ly,Lz     
+      read(lun_input,IOSTAT=ierr) Lx,Ly,Lz
 !      print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
 !
       read(lun_input,end=990,IOSTAT=iostat) dx_1,dy_1,dz_1
@@ -753,7 +749,7 @@ contains
           print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
         else
           print*, 'rgrid: IOSTAT=', ierr
-          call stop_it("rgrid: error when reading Lx,Ly,Lz from "//trim(file),ierr)
+          call fatal_error("rgrid", "error when reading Lx,Ly,Lz from "//trim(file),.true.)
         endif
       endif
 !
@@ -783,7 +779,7 @@ contains
 !
 !  should stop if dxmin=0
 !
-      if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
+      if (dxmin==0) call fatal_error("rgrid", "check Lx,Ly,Lz: is one of them 0?")
 !
     endsubroutine rgrid
 !***********************************************************************
@@ -828,16 +824,16 @@ contains
       integer :: iostat
 !
       open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat/=0) call stop_it("Cannot open "//trim(file)//" for reading",iostat) 
-!     
+      if (iostat/=0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
+!
       read(lun_input,IOSTAT=iostat) procx_bounds
-      if (iostat/=0) call stop_it("Error when reading procx_bounds from "//trim(file),iostat) 
+      if (iostat/=0) call stop_it("Error when reading procx_bounds from "//trim(file),iostat)
 
       read(lun_input,IOSTAT=iostat) procy_bounds
-      if (iostat/=0) call stop_it("Error when reading procy_bounds from "//trim(file),iostat) 
+      if (iostat/=0) call stop_it("Error when reading procy_bounds from "//trim(file),iostat)
 
       read(lun_input,IOSTAT=iostat) procz_bounds
-      if (iostat/=0) call stop_it("Error when reading procz_bounds from "//trim(file),iostat) 
+      if (iostat/=0) call stop_it("Error when reading procz_bounds from "//trim(file),iostat)
 !
       close(lun_input,IOSTAT=iostat)
       if (outlog(iostat,'close',file)) continue
