@@ -97,7 +97,8 @@ module Magnetic_meanfield
       meanfield_etat_width, &
       meanfield_kf, meanfield_kf_profile, &
       meanfield_kf_width, meanfield_kf_width2, &
-      meanfield_Beq, meanfield_Beq2_height, meanfield_Beq_profile, uturb,&
+      meanfield_Beq, meanfield_Beq_height, meanfield_Beq2_height, &
+      meanfield_Beq_profile, uturb, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
@@ -456,6 +457,8 @@ module Magnetic_meanfield
           lpencil_in(i_graddivA)=.true.
         endif
         lpencil_in(i_b2)=.true.
+!
+!  compute del2a regardless of gauge
 !
         if (meanfield_etat/=0.0 .or. ietat/=0) then
 !         if (lweyl_gauge) then
