@@ -55,6 +55,8 @@ dkx=.125 & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=8. & k1=4.6 & k2=5.4  
 dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=1.0 & k2=2.0   ;(gives 20 vectors)
 dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=0.9 & k2=2.1   ;(gives 32 vectors)
 dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=30 & k1=19.8 & k2=20.2   ;(gives 1974 vectors)
+dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=60 & k1=39.95 & k2=40.05   ;(gives 2118 vectors)
+dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=120 & k1=79.99 & k2=80.01   ;(gives 1470 vectors)
 ;
 kav=0.
 kmaxz=kmax
