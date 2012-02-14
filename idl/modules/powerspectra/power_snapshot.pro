@@ -88,9 +88,9 @@ if (arg_present(eks)) then begin
   if (n_elements(Lx) ne 0)  then k0x=2*!pi/Lx*one
   if (n_elements(Ly) ne 0)  then k0y=2*!pi/Ly*one
   if (n_elements(Lz) ne 0)  then k0z=2*!pi/Lz*one
-  kx=[indgen(nx/2+1),-reverse(indgen(nx/2-1)+1)]*k0x
-  ky=[indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)]*k0y
-  kz=[indgen(nz/2+1),-reverse(indgen(nz/2-1)+1)]*k0z
+  if (nx eq 1) then kx=[0] else kx=[indgen(nx/2+1),-reverse(indgen(nx/2-1)+1)]*k0x
+  if (ny eq 1) then ky=[0] else ky=[indgen(ny/2+1),-reverse(indgen(ny/2-1)+1)]*k0y
+  if (nz eq 1) then kz=[0] else kz=[indgen(nz/2+1),-reverse(indgen(nz/2-1)+1)]*k0z
 ;
 ;  Define scalar wavenumber over which to bin.
 ;
