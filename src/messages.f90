@@ -622,7 +622,7 @@ module Messages
     outlog = .false.
 !
     filename = ""
-    submsg = ""
+    message = ""
     if (present (file)) filename = ' "'//trim (file)//'"'
     if (present (msg)) message = ': '//trim (msg)
 !
