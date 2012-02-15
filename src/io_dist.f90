@@ -120,34 +120,34 @@ contains
       real, dimension (mx,my,mz,nv), intent(in) :: a
 !
       real :: t_sp   ! t in single precision for backwards compatibility
-      integer :: ierr
+      integer :: io_err
 !
       t_sp = t
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr)
-      if (outlog (ierr, 'open', file=file, dist=lun_output)) then
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=io_err)
+      if (outlog (io_err, 'open', file=file, dist=lun_output)) then
         if (lserial_io) call end_serialize()
         return
       endif
 !
       if (lwrite_2d) then
         if (nx == 1) then
-          write (lun_output, IOSTAT=ierr) a(l1,:,:,:)
+          write (lun_output, IOSTAT=io_err) a(l1,:,:,:)
         elseif (ny == 1) then
-          write (lun_output, IOSTAT=ierr) a(:,m1,:,:)
+          write (lun_output, IOSTAT=io_err) a(:,m1,:,:)
         elseif (nz == 1) then
-          write (lun_output, IOSTAT=ierr) a(:,:,n1,:)
+          write (lun_output, IOSTAT=io_err) a(:,:,n1,:)
         else
-          ierr = 0
+          io_err = 0
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
       else
-        write (lun_output, IOSTAT=ierr) a
+        write (lun_output, IOSTAT=io_err) a
       endif
       ! problematic if fatal_error doesn't stop program:
-      if (outlog (ierr, 'write a')) then
+      if (outlog (io_err, 'write a')) then
         if (lserial_io) call end_serialize()
         return
       endif
@@ -157,14 +157,14 @@ contains
 !  other modules and call a corresponding i/o parameter module.
 !
       if (lshear) then
-        write (lun_output, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz, deltay
-        if (outlog (ierr, 'write t_sp,x,y,z,dx,dy,dz,deltay')) then
+        write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
+        if (outlog (io_err, 'write t_sp,x,y,z,dx,dy,dz,deltay')) then
           if (lserial_io) call end_serialize()
           return
         endif
       else
-        write (lun_output, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz
-        if (outlog (ierr, 'write t_sp,x,y,z,dx,dy,dz')) then
+        write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+        if (outlog (io_err, 'write t_sp,x,y,z,dx,dy,dz')) then
           if (lserial_io) call end_serialize()
           return
         endif
@@ -172,7 +172,7 @@ contains
 !
     endsubroutine output_snap
 !***********************************************************************
-    subroutine output_snap_finalize()
+    subroutine output_snap_finalize(file)
 !
 !  Close snapshot file.
 !
@@ -180,18 +180,20 @@ contains
 !
       use Mpicomm, only: end_serialize
 !
-      integer :: ierr
+      character (len=*), intent(in) :: file
+!
+      integer :: io_err
       logical :: lerror
 !
       if (persist_initialized) then
-        write (lun_output, iostat=ierr) id_block_PERSISTENT
-        lerror = outlog (ierr, 'write id_block_PERSISTENT')
+        write (lun_output, iostat=io_err) id_block_PERSISTENT
+        lerror = outlog (io_err, 'write id_block_PERSISTENT')
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
 !
-      close (lun_output, IOSTAT=ierr)
-      lerror = outlog (ierr, 'close')
+      close (lun_output, IOSTAT=io_err)
+      if (io_err /= 0) call fatal_error ("output_snap_finalize", "error on close "//trim (file), .true.)
 !
       if (lserial_io) call end_serialize()
 !
@@ -203,10 +205,10 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      integer :: ierr
+      integer :: io_err
 !
-      write (lun_output, iostat=ierr) id_block_PERSISTENT
-      init_write_persist = outlog (ierr, 'write id_block_PERSISTENT')
+      write (lun_output, iostat=io_err) id_block_PERSISTENT
+      init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
       persist_initialized = .not. init_write_persist
       persist_last_id = -max_int
 !
@@ -221,14 +223,14 @@ contains
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
-      integer :: ierr
+      integer :: io_err
 !
       write_persist_id = .true.
       if (.not. persist_initialized) return
 !
       if (persist_last_id /= id) then
-        write (lun_output, iostat=ierr) id
-        write_persist_id = outlog (ierr, 'write persistent ID '//label)
+        write (lun_output, iostat=io_err) id
+        write_persist_id = outlog (io_err, 'write persistent ID '//label)
         persist_last_id = id
       else
         write_persist_id = .false.
@@ -246,14 +248,14 @@ contains
       integer, intent(in) :: id
       logical, intent(in) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
       write_persist_logical_0D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      write (lun_output, iostat=ierr) value
-      write_persist_logical_0D = outlog (ierr, 'write persistent '//label)
+      write (lun_output, iostat=io_err) value
+      write_persist_logical_0D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_logical_0D
 !***********************************************************************
@@ -267,14 +269,14 @@ contains
       integer, intent(in) :: id
       logical, dimension(:), intent(in) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
       write_persist_logical_1D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      write (lun_output, iostat=ierr) value
-      write_persist_logical_1D = outlog (ierr, 'write persistent '//label)
+      write (lun_output, iostat=io_err) value
+      write_persist_logical_1D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_logical_1D
 !***********************************************************************
@@ -288,14 +290,14 @@ contains
       integer, intent(in) :: id
       integer, intent(in) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
       write_persist_int_0D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      write (lun_output, iostat=ierr) value
-      write_persist_int_0D = outlog (ierr, 'write persistent '//label)
+      write (lun_output, iostat=io_err) value
+      write_persist_int_0D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_int_0D
 !***********************************************************************
@@ -309,14 +311,14 @@ contains
       integer, intent(in) :: id
       integer, dimension(:), intent(in) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
       write_persist_int_1D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      write (lun_output, iostat=ierr) value
-      write_persist_int_1D = outlog (ierr, 'write persistent '//label)
+      write (lun_output, iostat=io_err) value
+      write_persist_int_1D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_int_1D
 !***********************************************************************
@@ -330,14 +332,14 @@ contains
       integer, intent(in) :: id
       real, intent(in) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
       write_persist_real_0D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      write (lun_output, iostat=ierr) value
-      write_persist_real_0D = outlog (ierr, 'write persistent '//label)
+      write (lun_output, iostat=io_err) value
+      write_persist_real_0D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_real_0D
 !***********************************************************************
@@ -351,14 +353,14 @@ contains
       integer, intent(in) :: id
       real, dimension(:), intent(in) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
       write_persist_real_1D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      write (lun_output, iostat=ierr) value
-      write_persist_real_1D = outlog (ierr, 'write persistent '//label)
+      write (lun_output, iostat=io_err) value
+      write_persist_real_1D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_real_1D
 !***********************************************************************
@@ -376,27 +378,27 @@ contains
       real, dimension (mx,my,mz,nv), intent(out) :: a
 !
       real :: t_sp   ! t in single precision for backwards compatibility
-      integer :: ierr
+      integer :: io_err
 !
       if (lserial_io) call start_serialize()
-      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr)
-      if (ierr /= 0) call stop_it ("Cannot open "//trim(file)//" for reading", ierr)
+      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=io_err)
+      if (io_err /= 0) call stop_it ("Cannot open "//trim(file)//" for reading", io_err)
 !      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
-          read (lun_input, IOSTAT=ierr) a(4,:,:,:)
+          read (lun_input, IOSTAT=io_err) a(4,:,:,:)
         elseif (ny == 1) then
-          read (lun_input, IOSTAT=ierr) a(:,4,:,:)
+          read (lun_input, IOSTAT=io_err) a(:,4,:,:)
         elseif (nz == 1) then
-          read (lun_input, IOSTAT=ierr) a(:,:,4,:)
+          read (lun_input, IOSTAT=io_err) a(:,:,4,:)
         else
-          ierr = 0
+          io_err = 0
           call fatal_error ('input_snap', 'lwrite_2d used for 3-D simulation!')
         endif
       else
-        read (lun_input, IOSTAT=ierr) a
+        read (lun_input, IOSTAT=io_err) a
       endif
-      if (ierr /= 0) call stop_it ("Cannot read a from "//trim(file), ierr)
+      if (io_err /= 0) call stop_it ("Cannot read a from "//trim(file), io_err)
 
       if (ip <= 8) print *, 'input_snap: read ', file
       if (mode == 1) then
@@ -404,11 +406,11 @@ contains
 !  Check whether we want to read deltay from snapshot.
 !
         if (lshear) then
-          read (lun_input, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz, deltay
-          if (ierr /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file), ierr)
+          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
+          if (io_err /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file), io_err)
         else
-          read (lun_input, IOSTAT=ierr) t_sp, x, y, z, dx, dy, dz
-          if (ierr /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file), ierr)
+          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+          if (io_err /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file), io_err)
         endif
 !
 !  set initial time to that of snapshot, unless
@@ -441,10 +443,10 @@ contains
 !
       character (len=*), intent(in) :: file
 !
-      integer :: ierr
+      integer :: io_err
 !
-      close (lun_input, IOSTAT=ierr)
-      if (outlog (ierr, 'close', file)) return
+      close (lun_input, IOSTAT=io_err)
+      if (io_err /= 0) call fatal_error ("input_snap_finalize", "error on close "//trim (file), .true.)
 !
       if (lserial_io) call end_serialize()
 !
@@ -459,10 +461,10 @@ contains
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
-      read (lun_input, iostat=ierr) value
-      read_persist_logical_0D = outlog (ierr, 'read persistent '//label)
+      read (lun_input, iostat=io_err) value
+      read_persist_logical_0D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_logical_0D
 !***********************************************************************
@@ -475,10 +477,10 @@ contains
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
-      read (lun_input, iostat=ierr) value
-      read_persist_logical_1D = outlog (ierr, 'read persistent '//label)
+      read (lun_input, iostat=io_err) value
+      read_persist_logical_1D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_logical_1D
 !***********************************************************************
@@ -491,10 +493,10 @@ contains
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
-      read (lun_input, iostat=ierr) value
-      read_persist_int_0D = outlog (ierr, 'read persistent '//label)
+      read (lun_input, iostat=io_err) value
+      read_persist_int_0D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_int_0D
 !***********************************************************************
@@ -507,10 +509,10 @@ contains
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
-      read (lun_input, iostat=ierr) value
-      read_persist_int_1D = outlog (ierr, 'read persistent '//label)
+      read (lun_input, iostat=io_err) value
+      read_persist_int_1D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_int_1D
 !***********************************************************************
@@ -523,10 +525,10 @@ contains
       character (len=*), intent(in) :: label
       real, intent(out) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
-      read (lun_input, iostat=ierr) value
-      read_persist_real_0D = outlog (ierr, 'read persistent '//label)
+      read (lun_input, iostat=io_err) value
+      read_persist_real_0D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_real_0D
 !***********************************************************************
@@ -539,10 +541,10 @@ contains
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
 !
-      integer :: ierr
+      integer :: io_err
 !
-      read (lun_input, iostat=ierr) value
-      read_persist_real_1D = outlog (ierr, 'read persistent '//label)
+      read (lun_input, iostat=io_err) value
+      read_persist_real_1D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_real_1D
 !***********************************************************************
@@ -558,32 +560,32 @@ contains
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
-      integer :: iostat
+      integer :: io_err
 
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) goto 99
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      if (outlog(io_err,'open',file)) goto 99
 !
       if (lwrite_2d) then
         if (nx==1) then
-          write(lun_output,IOSTAT=iostat) a(4,:,:,:)
+          write(lun_output,IOSTAT=io_err) a(4,:,:,:)
         elseif (ny==1) then
-          write(lun_output,IOSTAT=iostat) a(:,4,:,:)
+          write(lun_output,IOSTAT=io_err) a(:,4,:,:)
         elseif (nz==1) then
-          write(lun_output,IOSTAT=iostat) a(:,:,4,:)
+          write(lun_output,IOSTAT=io_err) a(:,:,4,:)
         else
-          iostat=0
+          io_err=0
           call fatal_error('output_globals','lwrite_2d used for 3-D simulation!')
         endif
       else
-        write(lun_output,IOSTAT=iostat) a
+        write(lun_output,IOSTAT=io_err) a
       endif
-      if (outlog(iostat,'write a')) goto 99                   !problematic if fatal_error doesn't stop program
+      if (outlog(io_err,'write a')) goto 99                   !problematic if fatal_error doesn't stop program
 !
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
+      close(lun_output,IOSTAT=io_err)
+      if (outlog(io_err,'close')) continue
 !
 99    if (lserial_io) call end_serialize()
 !
@@ -601,32 +603,32 @@ contains
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
 !
-      integer :: iostat
+      integer :: io_err
 !
       if (lserial_io) call start_serialize()
 !
-      open(lun_input,FILE=filename,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it("Cannot open "//trim(filename)//" for reading",iostat)
+      open(lun_input,FILE=filename,FORM='unformatted',IOSTAT=io_err)
+      if (io_err /= 0) call stop_it("Cannot open "//trim(filename)//" for reading",io_err)
 
       if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
       if (lwrite_2d) then
         if (nx==1) then
-          read(lun_input,IOSTAT=iostat) a(4,:,:,:)
+          read(lun_input,IOSTAT=io_err) a(4,:,:,:)
         elseif (ny==1) then
-          read(lun_input,IOSTAT=iostat) a(:,4,:,:)
+          read(lun_input,IOSTAT=io_err) a(:,4,:,:)
         elseif (nz==1) then
-          read(lun_input,IOSTAT=iostat) a(:,:,4,:)
+          read(lun_input,IOSTAT=io_err) a(:,:,4,:)
         else
-          iostat=0
+          io_err=0
           call fatal_error('input_globals','lwrite_2d used for 3-D simulation!')
         endif
       else
-        read(lun_input,IOSTAT=iostat) a
+        read(lun_input,IOSTAT=io_err) a
       endif
-      if (iostat /= 0) call stop_it("Cannot read a from "//trim(filename),iostat)
+      if (io_err /= 0) call stop_it("Cannot read a from "//trim(filename),io_err)
       if (ip<=8) print*,'input_globals: read ',filename
-      close(lun_input,IOSTAT=iostat)
-      if (outlog(iostat,'close',filename)) continue
+      close(lun_input,IOSTAT=io_err)
+      if (outlog(io_err,'close',filename)) continue
 !
       if (lserial_io) call end_serialize()
 !
@@ -642,31 +644,31 @@ contains
 !
       character (len=*) :: filename,flist
       character (len=fnlen) :: dir,fpart
-      integer :: iostat
+      integer :: io_err
 !
       call parse_filename(filename,dir,fpart)
-      open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
+      open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=io_err)
 ! file not distributed???, backskipping enabled
-      if (outlog(iostat,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) goto 99
+      if (outlog(io_err,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) goto 99
 !
-      write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
-      if (outlog(iostat,"write fpart")) goto 99
+      write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
+      if (outlog(io_err,"write fpart")) goto 99
 !
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,"close")) continue
+      close(lun_output,IOSTAT=io_err)
+      if (outlog(io_err,"close")) continue
 !
 99    if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
-          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=iostat)
+          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err)
 ! file not distributed, backskipping enabled
-          if (outlog(iostat,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return
+          if (outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return
 !
-          write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
-          if (outlog(iostat,"write fpart")) return
+          write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
+          if (outlog(io_err,"write fpart")) return
 
-          close(lun_output,IOSTAT=iostat)
-          if (outlog(iostat,"close")) continue
+          close(lun_output,IOSTAT=io_err)
+          if (outlog(io_err,"close")) continue
 
         endif
       endif
@@ -681,24 +683,24 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !
       character (len=*) :: file
-      integer :: iostat
+      integer :: io_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = t
 
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call fatal_error('wgrid', &
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      if (io_err /= 0) call fatal_error('wgrid', &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?", .true.)
-      write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-      write(lun_output,IOSTAT=iostat) dx,dy,dz
-      write(lun_output,IOSTAT=iostat) Lx,Ly,Lz
-      write(lun_output,IOSTAT=iostat) dx_1,dy_1,dz_1
-      write(lun_output,IOSTAT=iostat) dx_tilde,dy_tilde,dz_tilde
-      if (iostat /= 0) call fatal_error('wgrid', &
+      write(lun_output,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
+      write(lun_output,IOSTAT=io_err) dx,dy,dz
+      write(lun_output,IOSTAT=io_err) Lx,Ly,Lz
+      write(lun_output,IOSTAT=io_err) dx_1,dy_1,dz_1
+      write(lun_output,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
+      if (io_err /= 0) call fatal_error('wgrid', &
           "Cannot write "//trim(file)//" properly", .true.)
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,'close',file)) continue
+      close(lun_output,IOSTAT=io_err)
+      if (outlog(io_err,'close',file)) continue
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -712,43 +714,43 @@ contains
 !
       character (len=*) :: file
 !
-      integer :: iostat, ierr
+      integer :: io_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
 !  if xiprim etc is not written, just ignore it
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call fatal_error('rgrid', &
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      if (io_err /= 0) call fatal_error('rgrid', &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
           " -- is data/ visible from all nodes?",.true.)
 !
-      read(lun_input,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz
-      if (iostat/=0) call fatal_error('rgrid', "Error when reading t_sp,x,y,z,dx,dy,dz from "//trim(file),.true.)
+      read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
+      if (io_err/=0) call fatal_error('rgrid', "Error when reading t_sp,x,y,z,dx,dy,dz from "//trim(file),.true.)
 !
-      read(lun_input,IOSTAT=iostat) dx,dy,dz
-      if (iostat/=0) call fatal_error('rgrid', "Error when reading dx,dy,dz from "//trim(file),.true.)
+      read(lun_input,IOSTAT=io_err) dx,dy,dz
+      if (io_err/=0) call fatal_error('rgrid', "Error when reading dx,dy,dz from "//trim(file),.true.)
 !
-      read(lun_input,IOSTAT=ierr) Lx,Ly,Lz
+      read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
 !      print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
 !
-      read(lun_input,end=990,IOSTAT=iostat) dx_1,dy_1,dz_1
-      if (outlog(iostat,"read dx_1,dy_1,dz_1",file)) continue
+      read(lun_input,end=990,IOSTAT=io_err) dx_1,dy_1,dz_1
+      if (outlog(io_err,"read dx_1,dy_1,dz_1",file)) continue
 !
-      read(lun_input,end=990,IOSTAT=iostat) dx_tilde,dy_tilde,dz_tilde
-      if (outlog(iostat,"read dx_tilde,dy_tilde,dz_tilde")) continue
+      read(lun_input,end=990,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
+      if (outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde")) continue
 !
-990   close(lun_input,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
+990   close(lun_input,IOSTAT=io_err)
+      if (outlog(io_err,'close')) continue
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
 !  We should keep this for the time being
 !
-      if (ierr /= 0) then
-        if (ierr < 0) then
+      if (io_err /= 0) then
+        if (io_err < 0) then
           print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
         else
-          print*, 'rgrid: IOSTAT=', ierr
+          print*, 'rgrid: IOSTAT=', io_err
           call fatal_error("rgrid", "error when reading Lx,Ly,Lz from "//trim(file),.true.)
         endif
       endif
@@ -792,22 +794,22 @@ contains
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
-      integer :: iostat
+      integer :: io_err
 !
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) return
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      if (outlog(io_err,'open',file)) return
 !
-      write(lun_output,IOSTAT=iostat) procx_bounds
-      if (outlog(iostat,'write procx_bounds')) return
+      write(lun_output,IOSTAT=io_err) procx_bounds
+      if (outlog(io_err,'write procx_bounds')) return
 !
-      write(lun_output,IOSTAT=iostat) procy_bounds
-      if (outlog(iostat,'write procy_bounds')) return
+      write(lun_output,IOSTAT=io_err) procy_bounds
+      if (outlog(io_err,'write procy_bounds')) return
 !
-      write(lun_output,IOSTAT=iostat) procz_bounds
-      if (outlog(iostat,'write procz_bounds')) return
+      write(lun_output,IOSTAT=io_err) procz_bounds
+      if (outlog(io_err,'write procz_bounds')) return
 !
-      close(lun_output,IOSTAT=iostat)
-      if (outlog(iostat,'close' )) continue
+      close(lun_output,IOSTAT=io_err)
+      if (outlog(io_err,'close' )) continue
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -821,22 +823,22 @@ contains
 !
       character (len=*) :: file
 !
-      integer :: iostat
+      integer :: io_err
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat/=0) call stop_it("Cannot open "//trim(file)//" for reading",iostat)
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      if (io_err/=0) call stop_it("Cannot open "//trim(file)//" for reading",io_err)
 !
-      read(lun_input,IOSTAT=iostat) procx_bounds
-      if (iostat/=0) call stop_it("Error when reading procx_bounds from "//trim(file),iostat)
+      read(lun_input,IOSTAT=io_err) procx_bounds
+      if (io_err/=0) call stop_it("Error when reading procx_bounds from "//trim(file),io_err)
 
-      read(lun_input,IOSTAT=iostat) procy_bounds
-      if (iostat/=0) call stop_it("Error when reading procy_bounds from "//trim(file),iostat)
+      read(lun_input,IOSTAT=io_err) procy_bounds
+      if (io_err/=0) call stop_it("Error when reading procy_bounds from "//trim(file),io_err)
 
-      read(lun_input,IOSTAT=iostat) procz_bounds
-      if (iostat/=0) call stop_it("Error when reading procz_bounds from "//trim(file),iostat)
+      read(lun_input,IOSTAT=io_err) procz_bounds
+      if (io_err/=0) call stop_it("Error when reading procz_bounds from "//trim(file),io_err)
 !
-      close(lun_input,IOSTAT=iostat)
-      if (outlog(iostat,'close',file)) continue
+      close(lun_input,IOSTAT=io_err)
+      if (outlog(io_err,'close',file)) continue
 !
     endsubroutine rproc_bounds
 !***********************************************************************

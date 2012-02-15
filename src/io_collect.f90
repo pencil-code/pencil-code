@@ -319,13 +319,15 @@ contains
 !
     endsubroutine output_snap
 !***********************************************************************
-    subroutine output_snap_finalize()
+    subroutine output_snap_finalize(file)
 !
 !  Close snapshot file.
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
       use Mpicomm, only: lroot, mpibcast_int
+!
+      character (len=*) :: file
 !
       integer :: io_err
       logical :: lerror
@@ -338,7 +340,10 @@ contains
         persist_last_id = -max_int
       endif
 !
-      if (lroot) close (lun_output)
+      if (lroot) then
+        close (lun_output, IOSTAT=io_err)
+        if (io_err /= 0) call fatal_error ("output_snap_finalize", "error on close "//trim (file), .true.)
+      endif
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -1055,7 +1060,7 @@ contains
       real, dimension (mx,my,mz,nv) :: a
 !
       call output_snap (file, a, nv, 0)
-      call output_snap_finalize ()
+      call output_snap_finalize (file)
 !
     endsubroutine output_globals
 !***********************************************************************

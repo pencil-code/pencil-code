@@ -84,7 +84,7 @@ module Snapshot
           call safe_character_assign(file,trim(chsnap)//ch)
           call output_snap(file,a,msnap)
           call output_persistent()
-          call output_snap_finalize()
+          call output_snap_finalize(file)
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
         endif
@@ -110,7 +110,7 @@ module Snapshot
         call safe_character_assign(file,trim(chsnap))
         call output_snap(file,a,msnap)
         call output_persistent()
-        call output_snap_finalize()
+        call output_snap_finalize(file)
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
