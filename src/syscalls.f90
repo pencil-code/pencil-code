@@ -181,7 +181,7 @@ module Syscalls
 !
     endfunction get_tmp_prefix
 !***********************************************************************
-    subroutine system(command)
+    subroutine system_cmd(command)
 !
 !  launches system command.
 !
@@ -191,7 +191,7 @@ module Syscalls
 !
       call system_c(trim(command)//char(0))
 !
-    endsubroutine system
+    endsubroutine system_cmd
 !***********************************************************************
     function is_nan_0D(value)
 !

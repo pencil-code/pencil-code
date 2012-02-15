@@ -600,7 +600,7 @@ module Messages
 ! 16-nov-11/MR: modified; experimental version which always stops program on I/O error
 ! 13-Dec-2011/Bourdin.KIS: added EOF sensing, which is not an error.
 !
-    use Syscalls, only: system
+    use Syscalls, only: system_cmd
     use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip
     use Mpicomm, only: report_clean_output
 !
@@ -764,7 +764,7 @@ module Messages
         if (iostat/=0) write(*,'(a)',iostat=IOSTAT) date//' '//trim(errormsg)
 !
         if ( index(mailaddress,'@') > 0 ) &        ! send mail to user if address could be valid
-          call system( &
+          call system_cmd( &
                'echo '//trim(errormsg)//'| mail -s PencilCode Message '//trim(mailaddress) )
       endif
     endif

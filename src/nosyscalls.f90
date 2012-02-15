@@ -198,7 +198,7 @@ module Syscalls
 !
     endfunction get_tmp_prefix
 !***********************************************************************
-    subroutine system(command)
+    subroutine system_cmd(command)
 !
 !  dummy for system command.
 !
@@ -209,7 +209,7 @@ module Syscalls
       print *, 'system: Not available in the F95 standard, please use the syscalls module.'
       stop
 !
-    endsubroutine system
+    endsubroutine system_cmd
 !***********************************************************************
     function is_nan_0D(value)
 !
