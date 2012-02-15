@@ -119,6 +119,7 @@ contains
       integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
 !
       if (lroot) then
+        ! collect the global x-data from all leading processors in the yz-plane
         gx(1:l2) = x(1:l2)
         if (nprocx > 1) then
           do px = 1, nprocx-1
@@ -126,6 +127,7 @@ contains
             gx(px*nx+l1:px*nx+mx) = buf_x
           enddo
         endif
+        ! collect the global y-data from all leading processors in the xz-plane
         gy(1:m2) = y(1:m2)
         if (nprocy > 1) then
           do py = 1, nprocy-1
@@ -133,6 +135,7 @@ contains
             gy(py*ny+m1:py*ny+my) = buf_y
           enddo
         endif
+        ! collect the global z-data from all leading processors in the xy-plane
         gz(1:n2) = z(1:n2)
         if (nprocz > 1) then
           do pz = 1, nprocz-1
@@ -141,6 +144,7 @@ contains
           enddo
         endif
       else
+        ! leading processors send their local coordinates
         if (lfirst_proc_yz) call mpisend_real (x(l1:mx), l2, 0, tag_gx)
         if (lfirst_proc_xz) call mpisend_real (y(m1:my), m2, 0, tag_gy)
         if (lfirst_proc_xy) call mpisend_real (z(n1:mz), n2, 0, tag_gz)
@@ -334,7 +338,7 @@ contains
         persist_last_id = -max_int
       endif
 !
-      close (lun_output)
+      if (lroot) close (lun_output)
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
