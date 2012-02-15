@@ -779,6 +779,7 @@ module Messages
 !  Returns on first hit.
 !
 !  3-nov-11/MR: coded
+!  15-Feb-2012/Bourdin: removed deprecated features
 !
     character (LEN=*),                           intent(IN) :: file
     integer,                                     intent(IN) :: nstr
@@ -787,7 +788,7 @@ module Messages
 !
     character (LEN=3) :: model
     character (LEN=fnlen) :: line
-    integer :: lun=90,i,count,iostat
+    integer :: lun=90,i,count,io_err
    
     if ( .not.present(mode) ) then
       model='any'
@@ -797,32 +798,30 @@ module Messages
 !
     scanfile = .false.
 !
-    open(lun,file=file,ERR=99,IOSTAT=iostat) 
+    open(lun,file=file,IOSTAT=io_err)
+    if (io_err /= 0) return
 !
     do
-      read(lun,'(a)',ERR=97,END=98) line
+      read(lun,'(a)',IOSTAT=io_err) line
+      if (io_err /= 0) exit
 !
       count=0
       do i=1,nstr
-        if ( index(line,trim(strings(i)))/=0 ) then
+        if (index(line,trim(strings(i))) /= 0) then
           if (mode=='any') then
             scanfile = .true.
-            goto 98
-          else
-            count = count+1
+            exit
           endif
+          count = count+1
         endif
       enddo
 !
-      if ( count==nstr ) then
-        scanfile = .true.
-        exit 
-      endif 
-      
-97  enddo
- 
-98  close(lun,ERR=99)
-99  continue
+      if (count == nstr) scanfile = .true.
+      if (scanfile) exit 
+!
+    enddo
+!
+    close(lun)
 !
   end function scanfile
 !***********************************************************************
