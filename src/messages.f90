@@ -628,8 +628,10 @@ module Messages
         call warning(mode, 'reached End-Of-File')
       else if (code > 0) then
         outlog = .true.
-        call stop_it('due to I/O error')
+        call stop_it_if_any(.true., 'due to I/O error')
       endif
+      ! catch possible fatal 'stop_it_if_any'-calls from other processors
+      call stop_it_if_any(.false., '')
       return
     endif
 !
