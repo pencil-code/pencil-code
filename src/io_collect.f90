@@ -335,7 +335,7 @@ contains
 !
       if (persist_initialized) then
         if (lroot) write (lun_output, iostat=io_err) id_block_PERSISTENT
-        call mpibcast_int (io_err, 1)
+        call mpibcast_int (io_err)
         if (outlog (io_err, 'write id_block_PERSISTENT', file)) continue
         persist_initialized = .false.
         persist_last_id = -max_int
@@ -412,7 +412,6 @@ contains
           if (io_err > 0) call fatal_error ('input_snap', 'Could not read additional data', .true.)
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           if (lshear) read (lun_input) deltay
-          t = t_sp
         endif
 !
       else
@@ -422,9 +421,10 @@ contains
         call localize_xy (ga, a)
       endif
 !
-      if (mode == 1) then
-        call mpibcast_real (t, 1)
-        if (lshear) call mpibcast_real (deltay, 1)
+      if (lread_add) then
+        call mpibcast_real (t_sp)
+        t = t_sp
+        if (lshear) call mpibcast_real (deltay)
       endif
 !
     endsubroutine input_snap
@@ -456,7 +456,7 @@ contains
       integer :: io_err
 !
       if (lroot) write (lun_output, iostat=io_err) id_block_PERSISTENT
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
       persist_initialized = .not. init_write_persist
       persist_last_id = -max_int
@@ -481,7 +481,7 @@ contains
 !
       if (persist_last_id /= id) then
         if (lroot) write (lun_output, iostat=io_err) id
-        call mpibcast_int (io_err, 1)
+        call mpibcast_int (io_err)
         write_persist_id = outlog (io_err, 'write persistent ID '//label)
         persist_last_id = id
       else
@@ -534,7 +534,7 @@ contains
         call mpisend_logical (value, 1, 0, tag_log_0D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       write_persist_logical_0D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_logical_0D
@@ -585,7 +585,7 @@ contains
         call mpisend_logical (value, nv, 0, tag_log_1D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       write_persist_logical_1D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_logical_1D
@@ -634,7 +634,7 @@ contains
         call mpisend_int (value, 1, 0, tag_int_0D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       write_persist_int_0D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_int_0D
@@ -685,7 +685,7 @@ contains
         call mpisend_int (value, nv, 0, tag_int_1D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       write_persist_int_1D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_int_1D
@@ -734,7 +734,7 @@ contains
         call mpisend_real (value, 1, 0, tag_real_0D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       write_persist_real_0D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_real_0D
@@ -785,7 +785,7 @@ contains
         call mpisend_real (value, nv, 0, tag_real_1D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       write_persist_real_1D = outlog (io_err, 'write persistent '//label)
 !
     endfunction write_persist_real_1D
@@ -827,7 +827,7 @@ contains
         call mpirecv_logical (value, 1, 0, tag_log_0D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       read_persist_logical_0D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_logical_0D
@@ -871,7 +871,7 @@ contains
         call mpirecv_logical (value, nv, 0, tag_log_1D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       read_persist_logical_1D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_logical_1D
@@ -913,7 +913,7 @@ contains
         call mpirecv_int (value, 1, 0, tag_int_0D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       read_persist_int_0D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_int_0D
@@ -957,7 +957,7 @@ contains
         call mpirecv_int (value, nv, 0, tag_int_1D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       read_persist_int_1D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_int_1D
@@ -999,7 +999,7 @@ contains
         call mpirecv_real (value, 1, 0, tag_real_0D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       read_persist_real_0D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_real_0D
@@ -1043,7 +1043,7 @@ contains
         call mpirecv_real (value, nv, 0, tag_real_1D)
       endif
 !
-      call mpibcast_int (io_err, 1)
+      call mpibcast_int (io_err)
       read_persist_real_1D = outlog (io_err, 'read persistent '//label)
 !
     endfunction read_persist_real_1D
@@ -1292,16 +1292,21 @@ contains
 !   21-sep-02/wolf: coded
 !   11-Feb-2012/Bourdin.KIS: adapted
 !
+      use Mpicomm, only: mpibcast_real
+!
       double precision :: tau
       character (len=*) :: file
 !
       integer :: io_err
       real:: t_sp   ! t in single precision for backwards compatibility
 !
-      open (lun_input, FILE=file, IOSTAT=io_err)
-      if (outlog (io_err, "rtime: open for reading", file)) continue
-      read (lun_input,*) t_sp
-      close (lun_input)
+      if (lroot) then
+        open (lun_input, FILE=file, IOSTAT=io_err)
+        if (outlog (io_err, "rtime: open for reading", file)) continue
+        read (lun_input,*) t_sp
+        close (lun_input)
+      endif
+      call mpibcast_real (t_sp)
       tau = t_sp
 !
     endsubroutine rtime
