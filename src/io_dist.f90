@@ -127,7 +127,7 @@ contains
 !
       if (lserial_io) call start_serialize()
       open (lun_output, FILE=file, FORM='unformatted', IOSTAT=io_err)
-      if (outlog (io_err, 'open', file, dist=lun_output)) continue
+      if (outlog (io_err, 'open', file, dist=lun_output)) return
 !
       if (lwrite_2d) then
         if (nx == 1) then
@@ -144,7 +144,7 @@ contains
         write (lun_output, IOSTAT=io_err) a
       endif
 !
-      if (outlog (io_err, 'write main data', file)) continue
+      if (outlog (io_err, 'write main data', file)) return
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
@@ -152,10 +152,10 @@ contains
 !
       if (lshear) then
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-        if (outlog (io_err, 'write additional data plus deltay', file)) continue
+        if (outlog (io_err, 'write additional data plus deltay', file)) return
       else
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-        if (outlog (io_err, 'write additional data', file)) continue
+        if (outlog (io_err, 'write additional data', file)) return
       endif
 !
       if (lserial_io) call end_serialize()
@@ -436,7 +436,7 @@ contains
       integer :: io_err
 !
       close (lun_input, IOSTAT=io_err)
-      if (outlog (io_err, "input_snap_finalize: error on close", file)) continue
+      if (outlog (io_err, "input_snap_finalize: error on close", file)) return
 !
       if (lserial_io) call end_serialize()
 !
@@ -556,7 +556,7 @@ contains
 !
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
-      if (outlog(io_err,'open',file)) continue
+      if (outlog(io_err,'open',file)) return
 !
       if (lwrite_2d) then
         if (nx==1) then
@@ -572,10 +572,10 @@ contains
       else
         write(lun_output,IOSTAT=io_err) a
       endif
-      if (outlog(io_err,'write a',file)) continue
+      if (outlog(io_err,'write a',file)) return
 !
       close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close',file)) continue
+      if (outlog(io_err,'close',file)) return
 !
       if (lserial_io) call end_serialize()
 !
@@ -618,7 +618,7 @@ contains
       if (io_err /= 0) call stop_it("Cannot read a from "//trim(filename),io_err)
       if (ip<=8) print*,'input_globals: read ',filename
       close(lun_input,IOSTAT=io_err)
-      if (outlog(io_err,'close',filename)) continue
+      if (outlog(io_err,'close',filename)) return
 !
       if (lserial_io) call end_serialize()
 !
@@ -639,13 +639,13 @@ contains
       call parse_filename(filename,dir,fpart)
       open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=io_err)
 ! file not distributed???, backskipping enabled
-      if (outlog(io_err,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) continue
+      if (outlog(io_err,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) return
 !
       write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-      if (outlog(io_err,"write fpart", flist)) continue
+      if (outlog(io_err,"write fpart", flist)) return
 !
       close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,"close", flist)) continue
+      if (outlog(io_err,"close", flist)) return
 !
       if (lcopysnapshots_exp) then
         call mpibarrier()
@@ -655,10 +655,10 @@ contains
           if (outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return
 !
           write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-          if (outlog(io_err,"write fpart", "move-me.list")) continue
+          if (outlog(io_err,"write fpart", "move-me.list")) return
 !
           close(lun_output,IOSTAT=io_err)
-          if (outlog(io_err,"close", "move-me.list")) continue
+          if (outlog(io_err,"close", "move-me.list")) return
         endif
       endif
 !
@@ -689,7 +689,7 @@ contains
       if (io_err /= 0) call fatal_error('wgrid', &
           "Cannot write "//trim(file)//" properly", .true.)
       close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close',file)) continue
+      if (outlog(io_err,'close',file)) return
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -723,13 +723,13 @@ contains
 !      print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
 !
       read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
-      if (outlog(io_err,"read dx_1,dy_1,dz_1", file)) continue
+      if (outlog(io_err,"read dx_1,dy_1,dz_1", file)) return
 !
       read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-      if (outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde", file)) continue
+      if (outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde", file)) return
 !
       close(lun_input,IOSTAT=io_err)
-      if (outlog(io_err,'close', file)) continue
+      if (outlog(io_err,'close', file)) return
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
@@ -786,19 +786,19 @@ contains
       integer :: io_err
 !
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
-      if (outlog(io_err,'open',file)) continue
+      if (outlog(io_err,'open',file)) return
 !
       write(lun_output,IOSTAT=io_err) procx_bounds
-      if (outlog(io_err,'write procx_bounds',file)) continue
+      if (outlog(io_err,'write procx_bounds',file)) return
 !
       write(lun_output,IOSTAT=io_err) procy_bounds
-      if (outlog(io_err,'write procy_bounds',file)) continue
+      if (outlog(io_err,'write procy_bounds',file)) return
 !
       write(lun_output,IOSTAT=io_err) procz_bounds
-      if (outlog(io_err,'write procz_bounds',file)) continue
+      if (outlog(io_err,'write procz_bounds',file)) return
 !
       close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close' )) continue
+      if (outlog(io_err,'close' )) return
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -827,7 +827,7 @@ contains
       if (io_err/=0) call stop_it("Error when reading procz_bounds from "//trim(file),io_err)
 !
       close(lun_input,IOSTAT=io_err)
-      if (outlog(io_err,'close',file)) continue
+      if (outlog(io_err,'close',file)) return
 !
     endsubroutine rproc_bounds
 !***********************************************************************
