@@ -127,10 +127,7 @@ contains
 !
       if (lserial_io) call start_serialize()
       open (lun_output, FILE=file, FORM='unformatted', IOSTAT=io_err)
-      if (outlog (io_err, 'open', file=file, dist=lun_output)) then
-        if (lserial_io) call end_serialize()
-        return
-      endif
+      if (outlog (io_err, 'open', file, dist=lun_output)) continue
 !
       if (lwrite_2d) then
         if (nx == 1) then
@@ -146,11 +143,8 @@ contains
       else
         write (lun_output, IOSTAT=io_err) a
       endif
-      ! problematic if fatal_error doesn't stop program:
-      if (outlog (io_err, 'write a')) then
-        if (lserial_io) call end_serialize()
-        return
-      endif
+!
+      if (outlog (io_err, 'write main data', file)) continue
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
@@ -158,17 +152,13 @@ contains
 !
       if (lshear) then
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-        if (outlog (io_err, 'write t_sp,x,y,z,dx,dy,dz,deltay')) then
-          if (lserial_io) call end_serialize()
-          return
-        endif
+        if (outlog (io_err, 'write additional data plus deltay', file)) continue
       else
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-        if (outlog (io_err, 'write t_sp,x,y,z,dx,dy,dz')) then
-          if (lserial_io) call end_serialize()
-          return
-        endif
+        if (outlog (io_err, 'write additional data', file)) continue
       endif
+!
+      if (lserial_io) call end_serialize()
 !
     endsubroutine output_snap
 !***********************************************************************
@@ -371,7 +361,7 @@ contains
 !  11-apr-97/axel: coded
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Mpicomm, only: start_serialize, end_serialize, stop_it
+      use Mpicomm, only: start_serialize, end_serialize
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -382,7 +372,7 @@ contains
 !
       if (lserial_io) call start_serialize()
       open (lun_input, FILE=file, FORM='unformatted', IOSTAT=io_err)
-      if (io_err /= 0) call stop_it ("Cannot open "//trim(file)//" for reading", io_err)
+      if (outlog (io_err, "Can't open for reading", file)) continue
 !      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
@@ -398,7 +388,7 @@ contains
       else
         read (lun_input, IOSTAT=io_err) a
       endif
-      if (io_err /= 0) call stop_it ("Cannot read a from "//trim(file), io_err)
+      if (outlog (io_err, "Can't read main data", file)) continue
 
       if (ip <= 8) print *, 'input_snap: read ', file
       if (mode == 1) then
@@ -407,10 +397,10 @@ contains
 !
         if (lshear) then
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          if (io_err /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz,deltay from "//trim(file), io_err)
+          if (outlog (io_err, "Can't read additional data plus deltay", file)) continue
         else
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-          if (io_err /= 0) call stop_it ("Cannot read t_sp,x,y,z,dx,dy,dz from "//trim(file), io_err)
+          if (outlog (io_err, "Can't read additional data", file)) continue
         endif
 !
 !  set initial time to that of snapshot, unless
@@ -446,7 +436,7 @@ contains
       integer :: io_err
 !
       close (lun_input, IOSTAT=io_err)
-      if (io_err /= 0) call fatal_error ("input_snap_finalize", "error on close "//trim (file), .true.)
+      if (outlog (io_err, "input_snap_finalize: error on close", file)) continue
 !
       if (lserial_io) call end_serialize()
 !
@@ -554,7 +544,7 @@ contains
 !
 !  10-nov-06/tony: coded
 !
-      use Mpicomm, only: start_serialize,end_serialize
+      use Mpicomm, only: start_serialize, end_serialize
 !
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
@@ -566,7 +556,7 @@ contains
 !
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
-      if (outlog(io_err,'open',file)) goto 99
+      if (outlog(io_err,'open',file)) continue
 !
       if (lwrite_2d) then
         if (nx==1) then
@@ -582,12 +572,12 @@ contains
       else
         write(lun_output,IOSTAT=io_err) a
       endif
-      if (outlog(io_err,'write a')) goto 99                   !problematic if fatal_error doesn't stop program
+      if (outlog(io_err,'write a',file)) continue
 !
       close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close')) continue
+      if (outlog(io_err,'close',file)) continue
 !
-99    if (lserial_io) call end_serialize()
+      if (lserial_io) call end_serialize()
 !
     endsubroutine output_globals
 !***********************************************************************
@@ -649,15 +639,15 @@ contains
       call parse_filename(filename,dir,fpart)
       open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=io_err)
 ! file not distributed???, backskipping enabled
-      if (outlog(io_err,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) goto 99
+      if (outlog(io_err,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) continue
 !
       write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-      if (outlog(io_err,"write fpart")) goto 99
+      if (outlog(io_err,"write fpart", flist)) continue
 !
       close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,"close")) continue
+      if (outlog(io_err,"close", flist)) continue
 !
-99    if (lcopysnapshots_exp) then
+      if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
           open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err)
@@ -665,11 +655,10 @@ contains
           if (outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return
 !
           write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-          if (outlog(io_err,"write fpart")) return
-
+          if (outlog(io_err,"write fpart", "move-me.list")) continue
+!
           close(lun_output,IOSTAT=io_err)
-          if (outlog(io_err,"close")) continue
-
+          if (outlog(io_err,"close", "move-me.list")) continue
         endif
       endif
 !
@@ -733,14 +722,14 @@ contains
       read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
 !      print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
 !
-      read(lun_input,end=990,IOSTAT=io_err) dx_1,dy_1,dz_1
-      if (outlog(io_err,"read dx_1,dy_1,dz_1",file)) continue
+      read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
+      if (outlog(io_err,"read dx_1,dy_1,dz_1", file)) continue
 !
-      read(lun_input,end=990,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-      if (outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde")) continue
+      read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
+      if (outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde", file)) continue
 !
-990   close(lun_input,IOSTAT=io_err)
-      if (outlog(io_err,'close')) continue
+      close(lun_input,IOSTAT=io_err)
+      if (outlog(io_err,'close', file)) continue
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
@@ -797,16 +786,16 @@ contains
       integer :: io_err
 !
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
-      if (outlog(io_err,'open',file)) return
+      if (outlog(io_err,'open',file)) continue
 !
       write(lun_output,IOSTAT=io_err) procx_bounds
-      if (outlog(io_err,'write procx_bounds')) return
+      if (outlog(io_err,'write procx_bounds',file)) continue
 !
       write(lun_output,IOSTAT=io_err) procy_bounds
-      if (outlog(io_err,'write procy_bounds')) return
+      if (outlog(io_err,'write procy_bounds',file)) continue
 !
       write(lun_output,IOSTAT=io_err) procz_bounds
-      if (outlog(io_err,'write procz_bounds')) return
+      if (outlog(io_err,'write procz_bounds',file)) continue
 !
       close(lun_output,IOSTAT=io_err)
       if (outlog(io_err,'close' )) continue
