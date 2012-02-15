@@ -341,9 +341,7 @@ contains
         persist_last_id = -max_int
       endif
 !
-      io_err = 0
-      if (lroot) close (lun_output, IOSTAT=io_err)
-      if (outlog (io_err, "output_snap_finalize: close", file)) continue
+      if (lroot) close (lun_output)
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -437,11 +435,7 @@ contains
 !
       character (len=*), intent(in) :: file
 !
-      integer :: io_err
-!
-      io_err = 0
-      if (lroot) close (lun_input, IOSTAT=io_err)
-      if (outlog (io_err, "input_snap_finalize: close", file)) continue
+      if (lroot) close (lun_input)
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
