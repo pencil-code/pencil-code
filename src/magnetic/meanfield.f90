@@ -295,7 +295,11 @@ module Magnetic_meanfield
 !  share etat profile with viscosity module
 !
         if (lviscosity) then
+          call put_shared_variable('etat_x',etat_x,ierr)
+          call put_shared_variable('etat_y',etat_y,ierr)
           call put_shared_variable('etat_z',etat_z,ierr)
+          call put_shared_variable('detat_x',detat_x,ierr)
+          call put_shared_variable('detat_y',detat_y,ierr)
           call put_shared_variable('detat_z',detat_z,ierr)
           print*,'ipz,z(n),etat_z(n),detat_z(n)'
           do n=n1,n2

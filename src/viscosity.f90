@@ -40,6 +40,8 @@ module Viscosity
   real :: lambda_jump=0.,roffset_lambda=0.
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
+  real, dimension(:), pointer :: etat_x, detat_x
+  real, dimension(:), pointer :: etat_y, detat_y
   real, dimension(:), pointer :: etat_z, detat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof
@@ -397,8 +399,16 @@ module Viscosity
 !
       if (PrM_turb/=0.) then
         if (lmagn_mf) then
+          call get_shared_variable('etat_x',etat_x,ierr)
+          if (ierr/=0) call fatal_error("initialize_viscosity","shared etat_x")
+          call get_shared_variable('etat_y',etat_y,ierr)
+          if (ierr/=0) call fatal_error("initialize_viscosity","shared etat_y")
           call get_shared_variable('etat_z',etat_z,ierr)
           if (ierr/=0) call fatal_error("initialize_viscosity","shared etat_z")
+          call get_shared_variable('detat_x',detat_x,ierr)
+          if (ierr/=0) call fatal_error("initialize_viscosity","shared detat_x")
+          call get_shared_variable('detat_y',detat_y,ierr)
+          if (ierr/=0) call fatal_error("initialize_viscosity","shared detat_y")
           call get_shared_variable('detat_z',detat_z,ierr)
           if (ierr/=0) call fatal_error("initialize_viscosity","shared detat_z")
           print*,'ipz,z(n),etat_z(n),detat_z(n)'
@@ -1036,13 +1046,12 @@ module Viscosity
 !  turbulent viscosity profile from magnetic
 !  viscous force: nu(z)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
 !  The following can in future be generalized to read
-!  gradnu(:,3)=PrM_turb*etat_x*etat_y(m)*detat_z(n), etc.
 !
       if (lvisc_nut_from_magnetic) then
-        pnu=PrM_turb*etat_z(n)
-        gradnu(:,1)=0.
-        gradnu(:,2)=0.
-        gradnu(:,3)=PrM_turb*detat_z(n)
+        pnu=PrM_turb*etat_x*etat_y(m)*etat_z(n)
+        gradnu(:,1)=PrM_turb*detat_x*etat_y(m)*etat_z(n)
+        gradnu(:,2)=PrM_turb*etat_x*detat_y(m)*etat_z(n)
+        gradnu(:,3)=PrM_turb*etat_x*etat_y(m)*detat_z(n)
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         p%fvisc=p%fvisc+tmp+2*sgradnu
