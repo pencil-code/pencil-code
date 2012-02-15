@@ -330,20 +330,18 @@ contains
       character (len=*) :: file
 !
       integer :: io_err
-      logical :: lerror
 !
       if (persist_initialized) then
         if (lroot) write (lun_output, iostat=io_err) id_block_PERSISTENT
         call mpibcast_int (io_err, 1)
-        lerror = outlog (io_err, 'write id_block_PERSISTENT')
+        if (outlog (io_err, 'write id_block_PERSISTENT', file)) continue
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
 !
-      if (lroot) then
-        close (lun_output, IOSTAT=io_err)
-        if (io_err /= 0) call fatal_error ("output_snap_finalize", "error on close "//trim (file), .true.)
-      endif
+      io_err = 0
+      if (lroot) close (lun_output, IOSTAT=io_err)
+      if (outlog (io_err, "output_snap_finalize: close", file)) continue
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -439,10 +437,9 @@ contains
 !
       integer :: io_err
 !
-      if (lroot) then
-        close (lun_input, IOSTAT=io_err)
-        if (io_err /= 0) call fatal_error ("input_snap_finalize", "error on close "//trim (file), .true.)
-      endif
+      io_err = 0
+      if (lroot) close (lun_input, IOSTAT=io_err)
+      if (outlog (io_err, "input_snap_finalize: close", file)) continue
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
@@ -1280,8 +1277,7 @@ contains
       t_sp = tau
       if (lroot) then
         open (lun_output, FILE=file, IOSTAT=io_err)
-        if (io_err /= 0) call fatal_error ("wtime", &
-            "Cannot open " // trim(file) // " for writing", .true.)
+        if (outlog (io_err, "wtime: open for writing", file)) continue
         write (lun_output,*) t_sp
         close (lun_output)
       endif
@@ -1301,8 +1297,7 @@ contains
       real:: t_sp   ! t in single precision for backwards compatibility
 !
       open (lun_input, FILE=file, IOSTAT=io_err)
-      if (io_err /= 0) call fatal_error ("wtime", &
-          "Cannot open " // trim(file) // " for reading", .true.)
+      if (outlog (io_err, "rtime: open for reading", file)) continue
       read (lun_input,*) t_sp
       close (lun_input)
       tau = t_sp
