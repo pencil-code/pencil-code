@@ -2582,7 +2582,7 @@ module Mpicomm
 !
     endsubroutine stop_it
 !***********************************************************************
-    subroutine stop_it_if_any(stop_flag,msg)
+    subroutine stop_it_if_any(stop_flag,msg,code)
 !
 !  Conditionally print message and stop.
 !  This works unilaterally, i.e. if STOP_FLAG is true on _any_ processor,
@@ -2590,9 +2590,12 @@ module Mpicomm
 !  the MPI rank number, if the message is not empty.
 !
 !  22-nov-04/wolf: coded
+!  15-Feb-2012/Bourdin.KIS: optional parameter code added
 !
       logical :: stop_flag
       character (len=*) :: msg
+      integer, optional :: code
+!
       logical :: global_stop_flag, identical_stop_flag
 !
 !  Get global OR of stop_flag and distribute it, so all processors agree
@@ -2607,7 +2610,11 @@ module Mpicomm
       if (global_stop_flag) then
         if ((.not. lroot) .and. (.not. identical_stop_flag) .and. (msg/='')) &
             write(*,'(A,I8,A,A)') 'RANK ', iproc, ' STOPPED: ', msg
-        call stop_it(msg)
+        if (present (code)) then
+          call stop_it(msg, code)
+        else
+          call stop_it(msg)
+        endif
       endif
 !
     endsubroutine stop_it_if_any
