@@ -137,7 +137,7 @@ module Snapshot
 !
       integer :: ivar
 !
-        if (ip<=6.and.lroot) print*,'reading var files'
+      if (ip<=6.and.lroot) print*,'reading var files'
 !
 !  No need to read maux variables as they will be calculated
 !  at the first time step -- even if lwrite_aux is set.
@@ -152,69 +152,69 @@ module Snapshot
 ! init_aa just adds to it, so junk remains junk. Anyhow
 ! the initialisation to zero cannot do any harm.
 !
-        if (lread_oldsnap_nomag) then
+      if (lread_oldsnap_nomag) then
+        f(:,:,:,iax:iaz)=0.
+        print*,'read old snapshot file (but without magnetic field)'
+        call input_snap(trim(directory_snap)//'/var.dat',f,msnap-3,1)
+        call input_persistent()
+        call input_snap_finalize(trim(directory_snap)//'/var.dat')
+        ! shift the rest of the data
+        if (iaz<mvar) then
+          do ivar=iaz+1,mvar
+            f(:,:,:,ivar)=f(:,:,:,ivar-3)
+          enddo
           f(:,:,:,iax:iaz)=0.
-          print*,'read old snapshot file (but without magnetic field)'
-          call input_snap(trim(directory_snap)//'/var.dat',f,msnap-3,1)
-          call input_persistent()
-          call input_snap_finalize(trim(directory_snap)//'/var.dat')
-          ! shift the rest of the data
-          if (iaz<mvar) then
-            do ivar=iaz+1,mvar
-              f(:,:,:,ivar)=f(:,:,:,ivar-3)
-            enddo
-            f(:,:,:,iax:iaz)=0.
-          endif
+        endif
 !
 !  Read data without passive scalar into new run with passive scalar.
 !
-        elseif (lread_oldsnap_nopscalar) then
-          print*,'read old snapshot file (but without passive scalar)'
-          call input_snap(chsnap,f,msnap-1,1)
-          call input_persistent()
-          call input_snap_finalize(chsnap)
-          ! shift the rest of the data
-          if (ilncc<mvar) then
-            do ivar=ilncc+1,mvar
-              f(:,:,:,ivar)=f(:,:,:,ivar-1)
-            enddo
-            f(:,:,:,ilncc)=0.
-          endif
+      elseif (lread_oldsnap_nopscalar) then
+        print*,'read old snapshot file (but without passive scalar)'
+        call input_snap(chsnap,f,msnap-1,1)
+        call input_persistent()
+        call input_snap_finalize(chsnap)
+        ! shift the rest of the data
+        if (ilncc<mvar) then
+          do ivar=ilncc+1,mvar
+            f(:,:,:,ivar)=f(:,:,:,ivar-1)
+          enddo
+          f(:,:,:,ilncc)=0.
+        endif
 !
 !  Read data without testfield into new run with testfield.
 !
-        elseif (lread_oldsnap_notestfield) then
-          print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
-          call input_snap(chsnap,f,msnap-ntestfield,1)
-          call input_persistent()
-          call input_snap_finalize(chsnap)
-          ! shift the rest of the data
-          if (iaztestpq<msnap) then
-            do ivar=iaztestpq+1,msnap
-              f(:,:,:,ivar)=f(:,:,:,ivar-ntestfield)
-            enddo
-            f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
-          endif
+      elseif (lread_oldsnap_notestfield) then
+        print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
+        call input_snap(chsnap,f,msnap-ntestfield,1)
+        call input_persistent()
+        call input_snap_finalize(chsnap)
+        ! shift the rest of the data
+        if (iaztestpq<msnap) then
+          do ivar=iaztestpq+1,msnap
+            f(:,:,:,ivar)=f(:,:,:,ivar-ntestfield)
+          enddo
+          f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
+        endif
 !
 !  Read data without testscalar into new run with testscalar.
 !
-        elseif (lread_oldsnap_notestscalar) then
-          print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
-          call input_snap(chsnap,f,msnap-ntestscalar,1)
-          call input_persistent()
-          call input_snap_finalize(chsnap)
-          ! shift the rest of the data
-          if (iaztestpq<msnap) then
-            do ivar=iaztestpq+1,msnap
-              f(:,:,:,ivar)=f(:,:,:,ivar-ntestscalar)
-            enddo
-            f(:,:,:,icctest:icctest+ntestscalar-1)=0.
-          endif
-        else
-          call input_snap(chsnap,f,msnap,1)
-          call input_persistent()
-          call input_snap_finalize(chsnap)
+      elseif (lread_oldsnap_notestscalar) then
+        print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
+        call input_snap(chsnap,f,msnap-ntestscalar,1)
+        call input_persistent()
+        call input_snap_finalize(chsnap)
+        ! shift the rest of the data
+        if (iaztestpq<msnap) then
+          do ivar=iaztestpq+1,msnap
+            f(:,:,:,ivar)=f(:,:,:,ivar-ntestscalar)
+          enddo
+          f(:,:,:,icctest:icctest+ntestscalar-1)=0.
         endif
+      else
+        call input_snap(chsnap,f,msnap,1)
+        call input_persistent()
+        call input_snap_finalize(chsnap)
+      endif
 !
     endsubroutine rsnap
 !***********************************************************************
