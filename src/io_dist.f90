@@ -372,7 +372,7 @@ contains
 !
       if (lserial_io) call start_serialize()
       open (lun_input, FILE=file, FORM='unformatted', IOSTAT=io_err)
-      if (outlog (io_err, "Can't open for reading", file)) continue
+      if (outlog (io_err, "Can't open for reading", file)) return
 !      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
@@ -388,7 +388,7 @@ contains
       else
         read (lun_input, IOSTAT=io_err) a
       endif
-      if (outlog (io_err, "Can't read main data", file)) continue
+      if (outlog (io_err, "Can't read main data", file)) return
 
       if (ip <= 8) print *, 'input_snap: read ', file
       if (mode == 1) then
@@ -397,10 +397,10 @@ contains
 !
         if (lshear) then
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          if (outlog (io_err, "Can't read additional data plus deltay", file)) continue
+          if (outlog (io_err, "Can't read additional data plus deltay", file)) return
         else
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-          if (outlog (io_err, "Can't read additional data", file)) continue
+          if (outlog (io_err, "Can't read additional data", file)) return
         endif
 !
 !  set initial time to that of snapshot, unless
