@@ -17,9 +17,9 @@ gsl_wrapper.o: gsl_wrapper.c Makefile.src Makefile.local
 #
 nogsl.o: nogsl.c Makefile.src Makefile.local
 #
-$(SYSCALLS_OBJ): $(SYSCALLS)_ansi.o $(CPARAM_OBJ) Makefile.src Makefile.local
+$(SYSCALLS_OBJ): syscalls_ansi.o $(CPARAM_OBJ) Makefile.src Makefile.local
 #
-$(SYSCALLS)_ansi.o: $(SYSCALLS)_ansi.c Makefile.src Makefile.local
+syscalls_ansi.o: syscalls_ansi.c Makefile.src Makefile.local
 #
 # Explicit dependencies for the different infrastructure modules.
 #
