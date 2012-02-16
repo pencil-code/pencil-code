@@ -255,7 +255,7 @@ contains
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
       integer, parameter :: tag_ga=676
-      integer :: pz, pa, bytes, alloc_err, z_start, z_end
+      integer :: pz, pa, io_len, alloc_err, z_start, z_end
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -273,8 +273,8 @@ contains
       if (lwrite_add) call collect_grid (x, y, z, gx, gy, gz)
 !
       if (lroot) then
-        inquire (IOLENGTH=bytes) t_sp
-        open (lun_output, FILE=file, status='replace', access='direct', recl=ngx*ngy*bytes)
+        inquire (IOLENGTH=io_len) t_sp
+        open (lun_output, FILE=file, status='replace', access='direct', recl=ngx*ngy*io_len)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
@@ -352,6 +352,7 @@ contains
 !
       use Cdata
       use Mpicomm, only: lroot, localize_xy, mpisend_real, mpirecv_real, mpibcast_real
+      use Syscalls, only: sizeof_real
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -362,7 +363,7 @@ contains
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
       integer, parameter :: tag_ga=675
-      integer :: pz, pa, z_start, z_end, bytes, alloc_err, io_err
+      integer :: pz, pa, z_start, z_end, io_len, alloc_err, io_err
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -376,8 +377,8 @@ contains
 !
       if (lroot) then
         if (ip <= 8) print *, 'input_snap: open ', file
-        inquire (IOLENGTH=bytes) t_sp
-        open (lun_input, FILE=file, access='direct', recl=ngx*ngy*bytes)
+        inquire (IOLENGTH=io_len) t_sp
+        open (lun_input, FILE=file, access='direct', recl=ngx*ngy*io_len)
 !
         if (ip <= 8) print *, 'input_snap: read dim=', ngx, ngy, ngz, nv
         ! iterate through xy-leading processors in the z-direction
@@ -406,7 +407,9 @@ contains
           ! read additional data
           close (lun_input)
           open (lun_input, FILE=file, FORM='unformatted')
-          call fseek (lun_input, ngx*ngy*ngz*nv*bytes, 0)
+ write (*,*) "SIZE OF REAL: ", sizeof_real()
+ write (*,*) "IO_LEN: ", io_len
+          call fseek (lun_input, ngx*ngy*ngz*nv*sizeof_real(), 0)
           read (lun_input, IOSTAT=io_err) t_sp, gx, gy, gz, dx, dy, dz
           if (io_err > 0) call fatal_error ('input_snap', 'Could not read additional data', .true.)
           if (lshear) read (lun_input) deltay
@@ -443,13 +446,15 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int
+      use Mpicomm, only: lroot, mpibcast_logical
 !
       integer :: io_err
 !
-      if (lroot) write (lun_output, iostat=io_err) id_block_PERSISTENT
-      call mpibcast_int (io_err)
-      init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
+      if (lroot) then
+        write (lun_output, iostat=io_err) id_block_PERSISTENT
+        init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
+      endif
+      call mpibcast_logical (init_write_persist)
       persist_initialized = .not. init_write_persist
       persist_last_id = -max_int
 !
@@ -461,7 +466,7 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int
+      use Mpicomm, only: lroot, mpibcast_logical
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -472,9 +477,11 @@ contains
       if (.not. persist_initialized) return
 !
       if (persist_last_id /= id) then
-        if (lroot) write (lun_output, iostat=io_err) id
-        call mpibcast_int (io_err)
-        write_persist_id = outlog (io_err, 'write persistent ID '//label)
+        if (lroot) then
+          write (lun_output, iostat=io_err) id
+          write_persist_id = outlog (io_err, 'write persistent ID '//label)
+        endif
+        call mpibcast_logical (write_persist_id)
         persist_last_id = id
       else
         write_persist_id = .false.
@@ -488,7 +495,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -520,14 +527,14 @@ contains
           enddo
         enddo
         write (lun_output, iostat=io_err) global
+        write_persist_logical_0D = outlog (io_err, 'write persistent '//label)
 !
         deallocate (global)
       else
         call mpisend_logical (value, 1, 0, tag_log_0D)
       endif
 !
-      call mpibcast_int (io_err)
-      write_persist_logical_0D = outlog (io_err, 'write persistent '//label)
+      call mpibcast_logical (write_persist_logical_0D)
 !
     endfunction write_persist_logical_0D
 !***********************************************************************
@@ -537,7 +544,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -571,14 +578,14 @@ contains
           enddo
         enddo
         write (lun_output, iostat=io_err) global
+        write_persist_logical_1D = outlog (io_err, 'write persistent '//label)
 !
         deallocate (global, buffer)
       else
         call mpisend_logical (value, nv, 0, tag_log_1D)
       endif
 !
-      call mpibcast_int (io_err)
-      write_persist_logical_1D = outlog (io_err, 'write persistent '//label)
+      call mpibcast_logical (write_persist_logical_1D)
 !
     endfunction write_persist_logical_1D
 !***********************************************************************
@@ -588,7 +595,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_int, mpirecv_int
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -620,14 +627,14 @@ contains
           enddo
         enddo
         write (lun_output, iostat=io_err) global
+        write_persist_int_0D = outlog (io_err, 'write persistent '//label)
 !
         deallocate (global)
       else
         call mpisend_int (value, 1, 0, tag_int_0D)
       endif
 !
-      call mpibcast_int (io_err)
-      write_persist_int_0D = outlog (io_err, 'write persistent '//label)
+      call mpibcast_logical (write_persist_int_0D)
 !
     endfunction write_persist_int_0D
 !***********************************************************************
@@ -637,7 +644,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_int, mpirecv_int
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -671,14 +678,14 @@ contains
           enddo
         enddo
         write (lun_output, iostat=io_err) global
+        write_persist_int_1D = outlog (io_err, 'write persistent '//label)
 !
         deallocate (global, buffer)
       else
         call mpisend_int (value, nv, 0, tag_int_1D)
       endif
 !
-      call mpibcast_int (io_err)
-      write_persist_int_1D = outlog (io_err, 'write persistent '//label)
+      call mpibcast_logical (write_persist_int_1D)
 !
     endfunction write_persist_int_1D
 !***********************************************************************
@@ -688,7 +695,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_real, mpirecv_real
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -720,14 +727,14 @@ contains
           enddo
         enddo
         write (lun_output, iostat=io_err) global
+        write_persist_real_0D = outlog (io_err, 'write persistent '//label)
 !
         deallocate (global)
       else
         call mpisend_real (value, 1, 0, tag_real_0D)
       endif
 !
-      call mpibcast_int (io_err)
-      write_persist_real_0D = outlog (io_err, 'write persistent '//label)
+      call mpibcast_logical (write_persist_real_0D)
 !
     endfunction write_persist_real_0D
 !***********************************************************************
@@ -737,7 +744,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_real, mpirecv_real
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -771,14 +778,14 @@ contains
           enddo
         enddo
         write (lun_output, iostat=io_err) global
+        write_persist_real_1D = outlog (io_err, 'write persistent '//label)
 !
         deallocate (global, buffer)
       else
         call mpisend_real (value, nv, 0, tag_real_1D)
       endif
 !
-      call mpibcast_int (io_err)
-      write_persist_real_1D = outlog (io_err, 'write persistent '//label)
+      call mpibcast_logical (write_persist_real_1D)
 !
     endfunction write_persist_real_1D
 !***********************************************************************
@@ -788,7 +795,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
@@ -803,6 +810,7 @@ contains
             'Could not allocate memory for global buffer', .true.)
 !
         read (lun_input, iostat=io_err) global
+        read_persist_logical_0D = outlog (io_err, 'read persistent '//label)
         value = global(ipx+1,ipy+1,ipz+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -819,8 +827,7 @@ contains
         call mpirecv_logical (value, 1, 0, tag_log_0D)
       endif
 !
-      call mpibcast_int (io_err)
-      read_persist_logical_0D = outlog (io_err, 'read persistent '//label)
+      call mpibcast_logical (read_persist_logical_0D)
 !
     endfunction read_persist_logical_0D
 !***********************************************************************
@@ -830,7 +837,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
@@ -847,6 +854,7 @@ contains
             'Could not allocate memory for global buffer', .true.)
 !
         read (lun_input, iostat=io_err) global
+        read_persist_logical_1D = outlog (io_err, 'read persistent '//label)
         value = global(ipx+1,ipy+1,ipz+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -863,8 +871,7 @@ contains
         call mpirecv_logical (value, nv, 0, tag_log_1D)
       endif
 !
-      call mpibcast_int (io_err)
-      read_persist_logical_1D = outlog (io_err, 'read persistent '//label)
+      call mpibcast_logical (read_persist_logical_1D)
 !
     endfunction read_persist_logical_1D
 !***********************************************************************
@@ -874,7 +881,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_int, mpirecv_int
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
@@ -889,6 +896,7 @@ contains
             'Could not allocate memory for global buffer', .true.)
 !
         read (lun_input, iostat=io_err) global
+        read_persist_int_0D = outlog (io_err, 'read persistent '//label)
         value = global(ipx+1,ipy+1,ipz+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -905,8 +913,7 @@ contains
         call mpirecv_int (value, 1, 0, tag_int_0D)
       endif
 !
-      call mpibcast_int (io_err)
-      read_persist_int_0D = outlog (io_err, 'read persistent '//label)
+      call mpibcast_logical (read_persist_int_0D)
 !
     endfunction read_persist_int_0D
 !***********************************************************************
@@ -916,7 +923,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_int, mpirecv_int
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
@@ -933,6 +940,7 @@ contains
             'Could not allocate memory for global buffer', .true.)
 !
         read (lun_input, iostat=io_err) global
+        read_persist_int_1D = outlog (io_err, 'read persistent '//label)
         value = global(ipx+1,ipy+1,ipz+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -949,8 +957,7 @@ contains
         call mpirecv_int (value, nv, 0, tag_int_1D)
       endif
 !
-      call mpibcast_int (io_err)
-      read_persist_int_1D = outlog (io_err, 'read persistent '//label)
+      call mpibcast_logical (read_persist_int_1D)
 !
     endfunction read_persist_int_1D
 !***********************************************************************
@@ -960,7 +967,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_real, mpirecv_real
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
@@ -975,6 +982,7 @@ contains
             'Could not allocate memory for global buffer', .true.)
 !
         read (lun_input, iostat=io_err) global
+        read_persist_real_0D = outlog (io_err, 'read persistent '//label)
         value = global(ipx+1,ipy+1,ipz+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -991,8 +999,7 @@ contains
         call mpirecv_real (value, 1, 0, tag_real_0D)
       endif
 !
-      call mpibcast_int (io_err)
-      read_persist_real_0D = outlog (io_err, 'read persistent '//label)
+      call mpibcast_logical (read_persist_real_0D)
 !
     endfunction read_persist_real_0D
 !***********************************************************************
@@ -1002,7 +1009,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpisend_real, mpirecv_real
+      use Mpicomm, only: lroot, mpibcast_logical, mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
@@ -1019,6 +1026,7 @@ contains
             'Could not allocate memory for global buffer', .true.)
 !
         read (lun_input, iostat=io_err) global
+        read_persist_real_1D = outlog (io_err, 'read persistent '//label)
         value = global(ipx+1,ipy+1,ipz+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -1035,8 +1043,7 @@ contains
         call mpirecv_real (value, nv, 0, tag_real_1D)
       endif
 !
-      call mpibcast_int (io_err)
-      read_persist_real_1D = outlog (io_err, 'read persistent '//label)
+      call mpibcast_logical (read_persist_real_1D)
 !
     endfunction read_persist_real_1D
 !***********************************************************************
