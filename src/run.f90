@@ -59,7 +59,7 @@ program run
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO,              only: rgrid, directory_names
+  use IO,              only: rgrid, directory_names, rproc_bounds
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
