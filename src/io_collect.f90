@@ -406,9 +406,9 @@ contains
           ! read additional data
           close (lun_input)
           open (lun_input, FILE=file, FORM='unformatted')
-          call fseek (lun_input, ngx*ngy*ngz*nv*bytes, 0, io_err)
+          call fseek (lun_input, ngx*ngy*ngz*nv*bytes, 0)
+          read (lun_input, io_err) t_sp, gx, gy, gz, dx, dy, dz
           if (io_err > 0) call fatal_error ('input_snap', 'Could not read additional data', .true.)
-          read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           if (lshear) read (lun_input) deltay
         endif
 !
