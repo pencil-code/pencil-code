@@ -84,7 +84,7 @@ module Snapshot
           call safe_character_assign(file,trim(chsnap)//ch)
           call output_snap(file,a,msnap)
           call output_persistent()
-          call output_snap_finalize(file)
+          call output_snap_finalize()
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
         endif
@@ -110,7 +110,7 @@ module Snapshot
         call safe_character_assign(file,trim(chsnap))
         call output_snap(file,a,msnap)
         call output_persistent()
-        call output_snap_finalize(file)
+        call output_snap_finalize()
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
 !
@@ -157,7 +157,7 @@ module Snapshot
         print*,'read old snapshot file (but without magnetic field)'
         call input_snap(trim(directory_snap)//'/var.dat',f,msnap-3,1)
         call input_persistent()
-        call input_snap_finalize(trim(directory_snap)//'/var.dat')
+        call input_snap_finalize()
         ! shift the rest of the data
         if (iaz<mvar) then
           do ivar=iaz+1,mvar
@@ -172,7 +172,7 @@ module Snapshot
         print*,'read old snapshot file (but without passive scalar)'
         call input_snap(chsnap,f,msnap-1,1)
         call input_persistent()
-        call input_snap_finalize(chsnap)
+        call input_snap_finalize()
         ! shift the rest of the data
         if (ilncc<mvar) then
           do ivar=ilncc+1,mvar
@@ -187,7 +187,7 @@ module Snapshot
         print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
         call input_snap(chsnap,f,msnap-ntestfield,1)
         call input_persistent()
-        call input_snap_finalize(chsnap)
+        call input_snap_finalize()
         ! shift the rest of the data
         if (iaztestpq<msnap) then
           do ivar=iaztestpq+1,msnap
@@ -202,7 +202,7 @@ module Snapshot
         print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
         call input_snap(chsnap,f,msnap-ntestscalar,1)
         call input_persistent()
-        call input_snap_finalize(chsnap)
+        call input_snap_finalize()
         ! shift the rest of the data
         if (iaztestpq<msnap) then
           do ivar=iaztestpq+1,msnap
@@ -213,7 +213,7 @@ module Snapshot
       else
         call input_snap(chsnap,f,msnap,1)
         call input_persistent()
-        call input_snap_finalize(chsnap)
+        call input_snap_finalize()
       endif
 !
     endsubroutine rsnap

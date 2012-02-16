@@ -121,13 +121,14 @@ contains
 !
       real :: t_sp   ! t in single precision for backwards compatibility
       integer :: io_err
+      logical :: lerror
 !
       t_sp = t
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
       open (lun_output, FILE=file, FORM='unformatted', IOSTAT=io_err)
-      if (outlog (io_err, 'open', file, dist=lun_output)) return
+      lerror = outlog (io_err, 'open', file, dist=lun_output)
 !
       if (lwrite_2d) then
         if (nx == 1) then
@@ -144,7 +145,7 @@ contains
         write (lun_output, IOSTAT=io_err) a
       endif
 !
-      if (outlog (io_err, 'write main data', file)) return
+      lerror = outlog (io_err, 'write main data', file)
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
 !  At some good moment we may want to treat deltay like with
@@ -152,25 +153,23 @@ contains
 !
       if (lshear) then
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-        if (outlog (io_err, 'write additional data plus deltay', file)) return
+        lerror = outlog (io_err, 'write additional data plus deltay', file)
       else
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-        if (outlog (io_err, 'write additional data', file)) return
+        lerror = outlog (io_err, 'write additional data', file)
       endif
 !
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_snap
 !***********************************************************************
-    subroutine output_snap_finalize(file)
+    subroutine output_snap_finalize()
 !
 !  Close snapshot file.
 !
 !  13-Dec-2011/Bourdin.KIS: adapted from output_snap
 !
       use Mpicomm, only: end_serialize
-!
-      character (len=*), intent(in) :: file
 !
       integer :: io_err
       logical :: lerror
@@ -182,8 +181,7 @@ contains
         persist_last_id = -max_int
       endif
 !
-      close (lun_output, IOSTAT=io_err)
-      if (io_err /= 0) call fatal_error ("output_snap_finalize", "error on close "//trim (file), .true.)
+      close (lun_output)
 !
       if (lserial_io) call end_serialize()
 !
@@ -369,10 +367,11 @@ contains
 !
       real :: t_sp   ! t in single precision for backwards compatibility
       integer :: io_err
+      logical :: lerror
 !
       if (lserial_io) call start_serialize()
       open (lun_input, FILE=file, FORM='unformatted', IOSTAT=io_err)
-      if (outlog (io_err, "Can't open for reading", file)) return
+      lerror = outlog (io_err, "Can't open for reading", file)
 !      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
@@ -388,7 +387,7 @@ contains
       else
         read (lun_input, IOSTAT=io_err) a
       endif
-      if (outlog (io_err, "Can't read main data", file)) return
+      lerror = outlog (io_err, "Can't read main data", file)
 
       if (ip <= 8) print *, 'input_snap: read ', file
       if (mode == 1) then
@@ -397,10 +396,10 @@ contains
 !
         if (lshear) then
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          if (outlog (io_err, "Can't read additional data plus deltay", file)) return
+          lerror = outlog (io_err, "Can't read additional data plus deltay", file)
         else
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
-          if (outlog (io_err, "Can't read additional data", file)) return
+          lerror = outlog (io_err, "Can't read additional data", file)
         endif
 !
 !  set initial time to that of snapshot, unless
@@ -422,7 +421,7 @@ contains
 !
     endsubroutine input_snap
 !***********************************************************************
-    subroutine input_snap_finalize(file)
+    subroutine input_snap_finalize()
 !
 !  Close snapshot file.
 !
@@ -431,13 +430,7 @@ contains
 !
       use Mpicomm, only: end_serialize
 !
-      character (len=*), intent(in) :: file
-!
-      integer :: io_err
-!
-      close (lun_input, IOSTAT=io_err)
-      if (outlog (io_err, "input_snap_finalize: error on close", file)) return
-!
+      close (lun_input)
       if (lserial_io) call end_serialize()
 !
     endsubroutine input_snap_finalize
@@ -551,12 +544,11 @@ contains
       character (len=*) :: file
 !
       integer :: io_err
-
-      if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
+      logical :: lerror
 !
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
-      if (outlog(io_err,'open',file)) return
+      lerror = outlog(io_err,"output_globals: Can't open",file)
 !
       if (lwrite_2d) then
         if (nx==1) then
@@ -572,16 +564,14 @@ contains
       else
         write(lun_output,IOSTAT=io_err) a
       endif
-      if (outlog(io_err,'write a',file)) return
-!
-      close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close',file)) return
+      lerror = outlog(io_err,"Can't write data block",file)
+      close(lun_output)
 !
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(filename,a,nv)
+    subroutine input_globals(file,a,nv)
 !
 !  Read globals snapshot file, ignoring mesh.
 !
@@ -589,16 +579,17 @@ contains
 !
       use Mpicomm, only: start_serialize,end_serialize,stop_it
 !
-      character (len=*) :: filename
+      character (len=*) :: file
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
 !
       integer :: io_err
+      logical :: lerror
 !
       if (lserial_io) call start_serialize()
 !
-      open(lun_input,FILE=filename,FORM='unformatted',IOSTAT=io_err)
-      if (io_err /= 0) call stop_it("Cannot open "//trim(filename)//" for reading",io_err)
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      lerror = outlog(io_err,"input_globals: Can't open",file)
 
       if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
       if (lwrite_2d) then
@@ -615,16 +606,14 @@ contains
       else
         read(lun_input,IOSTAT=io_err) a
       endif
-      if (io_err /= 0) call stop_it("Cannot read a from "//trim(filename),io_err)
-      if (ip<=8) print*,'input_globals: read ',filename
-      close(lun_input,IOSTAT=io_err)
-      if (outlog(io_err,'close',filename)) return
+      lerror = outlog(io_err,"Can't read data block",file)
+      close(lun_input)
 !
       if (lserial_io) call end_serialize()
 !
     endsubroutine input_globals
 !***********************************************************************
-    subroutine log_filename_to_file(filename,flist)
+    subroutine log_filename_to_file(file,flist)
 !
 !  In the directory containing `filename', append one line to file
 !  `flist' containing the file part of filename
@@ -632,33 +621,29 @@ contains
       use General, only: parse_filename
       use Mpicomm, only: mpibarrier
 !
-      character (len=*) :: filename,flist
+      character (len=*) :: file,flist
       character (len=fnlen) :: dir,fpart
+!
       integer :: io_err
+      logical :: lerror
 !
-      call parse_filename(filename,dir,fpart)
-      open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=io_err)
-! file not distributed???, backskipping enabled
-      if (outlog(io_err,"open",trim(dir)//'/'//trim(flist),dist=-lun_output)) return
-!
+      call parse_filename(file,dir,fpart)
+      open(lun_output,FILE=trim(dir)//'/'//flist,POSITION='append',IOSTAT=io_err)
+      ! file not distributed?, backskipping enabled
+      lerror = outlog(io_err,"open",trim(dir)//'/'//flist,dist=-lun_output)
       write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-      if (outlog(io_err,"write fpart", flist)) return
-!
-      close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,"close", flist)) return
+      lerror = outlog(io_err,"write fpart", flist)
+      close(lun_output)
 !
       if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
           open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err)
-! file not distributed, backskipping enabled
-          if (outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)) return
-!
+          ! file not distributed?, backskipping enabled
+          lerror = outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)
           write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
-          if (outlog(io_err,"write fpart", "move-me.list")) return
-!
-          close(lun_output,IOSTAT=io_err)
-          if (outlog(io_err,"close", "move-me.list")) return
+          lerror = outlog(io_err,"write fpart", "move-me.list")
+          close(lun_output)
         endif
       endif
 !
@@ -672,7 +657,9 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !
       character (len=*) :: file
+!
       integer :: io_err
+      logical :: lerror
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = t
@@ -682,14 +669,16 @@ contains
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?", .true.)
       write(lun_output,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
+      lerror = outlog(io_err,"wgrid: write main data block", file)
       write(lun_output,IOSTAT=io_err) dx,dy,dz
+      lerror = outlog(io_err,"wgrid: write dx,dy,dz", file)
       write(lun_output,IOSTAT=io_err) Lx,Ly,Lz
+      lerror = outlog(io_err,"wgrid: write Lx,Ly,Lz", file)
       write(lun_output,IOSTAT=io_err) dx_1,dy_1,dz_1
+      lerror = outlog(io_err,"wgrid: write dx_1,dy_1,dz_1", file)
       write(lun_output,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-      if (io_err /= 0) call fatal_error('wgrid', &
-          "Cannot write "//trim(file)//" properly", .true.)
-      close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close',file)) return
+      lerror = outlog(io_err,"wgrid: write dx_tilde,dy_tilde,dz_tilde", file)
+      close(lun_output)
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -699,50 +688,35 @@ contains
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
-!   3-jun-04/bing: added xiprim, psiprim ,zetaprim, etc.
 !
       character (len=*) :: file
 !
       integer :: io_err
+      logical :: lerror
       real :: t_sp   ! t in single precision for backwards compatibility
-!
-!  if xiprim etc is not written, just ignore it
 !
       open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
       if (io_err /= 0) call fatal_error('rgrid', &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
           " -- is data/ visible from all nodes?",.true.)
-!
       read(lun_input,IOSTAT=io_err) t_sp,x,y,z,dx,dy,dz
-      if (io_err/=0) call fatal_error('rgrid', "Error when reading t_sp,x,y,z,dx,dy,dz from "//trim(file),.true.)
-!
+      lerror = outlog(io_err,"rgrid: read main data block", file)
       read(lun_input,IOSTAT=io_err) dx,dy,dz
-      if (io_err/=0) call fatal_error('rgrid', "Error when reading dx,dy,dz from "//trim(file),.true.)
-!
+      lerror = outlog(io_err,"rgrid: read dx,dy,dz", file)
       read(lun_input,IOSTAT=io_err) Lx,Ly,Lz
-!      print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
-!
-      read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
-      if (outlog(io_err,"read dx_1,dy_1,dz_1", file)) return
-!
-      read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
-      if (outlog(io_err,"read dx_tilde,dy_tilde,dz_tilde", file)) return
-!
-      close(lun_input,IOSTAT=io_err)
-      if (outlog(io_err,'close', file)) return
-!
-!  give notification if Lx is not read in
-!  This should only happen when reading in old data files
-!  We should keep this for the time being
-!
-      if (io_err /= 0) then
-        if (io_err < 0) then
-          print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
-        else
-          print*, 'rgrid: IOSTAT=', io_err
-          call fatal_error("rgrid", "error when reading Lx,Ly,Lz from "//trim(file),.true.)
-        endif
+      if (io_err < 0) then
+        ! End-Of-File: give notification that box dimensions are not read.
+        ! This should only happen when reading old files.
+        ! We should allow this for the time being.
+        call warning ('rgrid', "Lx,Ly,Lz are not yet in grid.dat")
+      else
+        lerror = outlog(io_err,"rgrid: read Lx,Ly,Lz", file)
+        read(lun_input,IOSTAT=io_err) dx_1,dy_1,dz_1
+        lerror = outlog(io_err,"rgrid: read dx_1,dy_1,dz_1", file)
+        read(lun_input,IOSTAT=io_err) dx_tilde,dy_tilde,dz_tilde
+        lerror = outlog(io_err,"rgrid: read dx_tilde,dy_tilde,dz_tilde", file)
       endif
+      close(lun_input)
 !
 !  Find minimum/maximum grid spacing. Note that
 !    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
@@ -779,26 +753,22 @@ contains
 !   Export processor boundaries to file.
 !
 !   10-jul-08/kapelrud: coded
-!
-      use Mpicomm, only: stop_it
+!   16-Feb-2012/Bourdin.KIS: rewritten
 !
       character (len=*) :: file
+!
       integer :: io_err
+      logical :: lerror
 !
       open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
-      if (outlog(io_err,'open',file)) return
-!
+      lerror = outlog(io_err,"Can't open",file)
       write(lun_output,IOSTAT=io_err) procx_bounds
-      if (outlog(io_err,'write procx_bounds',file)) return
-!
+      lerror = outlog(io_err,'write procx_bounds',file)
       write(lun_output,IOSTAT=io_err) procy_bounds
-      if (outlog(io_err,'write procy_bounds',file)) return
-!
+      lerror = outlog(io_err,'write procy_bounds',file)
       write(lun_output,IOSTAT=io_err) procz_bounds
-      if (outlog(io_err,'write procz_bounds',file)) return
-!
-      close(lun_output,IOSTAT=io_err)
-      if (outlog(io_err,'close' )) return
+      lerror = outlog(io_err,'write procz_bounds',file)
+      close(lun_output)
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -807,27 +777,22 @@ contains
 !   Import processor boundaries from file.
 !
 !   10-jul-08/kapelrud: coded
-!
-      use Mpicomm, only: stop_it
+!   16-Feb-2012/Bourdin.KIS: rewritten
 !
       character (len=*) :: file
 !
       integer :: io_err
+      logical :: lerror
 !
       open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
-      if (io_err/=0) call stop_it("Cannot open "//trim(file)//" for reading",io_err)
-!
+      lerror = outlog(io_err,"Can't open",file)
       read(lun_input,IOSTAT=io_err) procx_bounds
-      if (io_err/=0) call stop_it("Error when reading procx_bounds from "//trim(file),io_err)
-
+      lerror = outlog(io_err,'read procx_bounds',file)
       read(lun_input,IOSTAT=io_err) procy_bounds
-      if (io_err/=0) call stop_it("Error when reading procy_bounds from "//trim(file),io_err)
-
+      lerror = outlog(io_err,'read procy_bounds',file)
       read(lun_input,IOSTAT=io_err) procz_bounds
-      if (io_err/=0) call stop_it("Error when reading procz_bounds from "//trim(file),io_err)
-!
-      close(lun_input,IOSTAT=io_err)
-      if (outlog(io_err,'close',file)) return
+      lerror = outlog(io_err,'read procz_bounds',file)
+      close(lun_output)
 !
     endsubroutine rproc_bounds
 !***********************************************************************

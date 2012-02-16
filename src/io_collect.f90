@@ -321,22 +321,22 @@ contains
 !
     endsubroutine output_snap
 !***********************************************************************
-    subroutine output_snap_finalize(file)
+    subroutine output_snap_finalize()
 !
 !  Close snapshot file.
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int
-!
-      character (len=*) :: file
+      use Mpicomm, only: lroot
 !
       integer :: io_err
+      logical :: lerror
 !
       if (persist_initialized) then
-        if (lroot) write (lun_output, iostat=io_err) id_block_PERSISTENT
-        call mpibcast_int (io_err)
-        if (outlog (io_err, 'write id_block_PERSISTENT', file)) continue
+        if (lroot) then
+          write (lun_output, iostat=io_err) id_block_PERSISTENT
+          lerror = outlog (io_err, 'write id_block_PERSISTENT')
+        endif
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
@@ -427,13 +427,11 @@ contains
 !
     endsubroutine input_snap
 !***********************************************************************
-    subroutine input_snap_finalize(file)
+    subroutine input_snap_finalize()
 !
 !  Close snapshot file.
 !
 !  11-Feb-2012/Bourdin.KIS: coded
-!
-      character (len=*), intent(in) :: file
 !
       if (lroot) close (lun_input)
 !
@@ -1053,7 +1051,7 @@ contains
       real, dimension (mx,my,mz,nv) :: a
 !
       call output_snap (file, a, nv, 0)
-      call output_snap_finalize (file)
+      call output_snap_finalize ()
 !
     endsubroutine output_globals
 !***********************************************************************
@@ -1068,7 +1066,7 @@ contains
       real, dimension (mx,my,mz,nv) :: a
 !
       call input_snap (file, a, nv, 0)
-      call input_snap_finalize (file)
+      call input_snap_finalize ()
 !
     endsubroutine input_globals
 !***********************************************************************
@@ -1268,12 +1266,13 @@ contains
       character (len=*) :: file
 !
       integer :: io_err
+      logical :: lerror
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       t_sp = tau
       if (lroot) then
         open (lun_output, FILE=file, IOSTAT=io_err)
-        if (outlog (io_err, "wtime: open for writing", file)) continue
+        lerror = outlog (io_err, "wtime: Can't open", file)
         write (lun_output,*) t_sp
         close (lun_output)
       endif
@@ -1292,11 +1291,12 @@ contains
       character (len=*) :: file
 !
       integer :: io_err
+      logical :: lerror
       real:: t_sp   ! t in single precision for backwards compatibility
 !
       if (lroot) then
         open (lun_input, FILE=file, IOSTAT=io_err)
-        if (outlog (io_err, "rtime: open for reading", file)) continue
+        lerror = outlog (io_err, "rtime: Can't open", file)
         read (lun_input,*) t_sp
         close (lun_input)
       endif
