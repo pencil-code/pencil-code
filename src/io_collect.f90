@@ -335,7 +335,7 @@ contains
       if (persist_initialized) then
         if (lroot) then
           write (lun_output, iostat=io_err) id_block_PERSISTENT
-          lerror = outlog (io_err, 'write id_block_PERSISTENT')
+          lerror = outlog (io_err, 'finish persistent block')
         endif
         persist_initialized = .false.
         persist_last_id = -max_int
@@ -450,7 +450,7 @@ contains
 !
       if (lroot) then
         write (lun_output, iostat=io_err) id_block_PERSISTENT
-        init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
+        init_write_persist = outlog (io_err, 'start persistent block')
       endif
       call mpibcast_logical (init_write_persist)
       persist_initialized = .not. init_write_persist
