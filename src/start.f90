@@ -68,7 +68,7 @@ program start
   use Initcond
   use InitialCondition, only: initial_condition_all, initial_condition_clean_up
   use Interstellar,     only: init_interstellar
-  use IO
+  use IO,               only: wgrid, directory_names
   use Lorenz_gauge,     only: init_lorenz_gauge
   use Magnetic,         only: init_aa
   use Messages
@@ -498,7 +498,6 @@ program start
         call write_snapshot_particles(directory_snap,f,ENUM=.false.)
     call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io),mvar_io, &
         ENUM=.false.)
-    call wtime(trim(directory)//'/time.dat',t)
   elseif (lmodify) then
     call wsnap(trim(directory_snap)//'/'//modify_filename,f(:,:,:,1:mvar_io), &
         mvar_io,ENUM=.false.)

@@ -796,30 +796,4 @@ contains
 !
     endsubroutine rproc_bounds
 !***********************************************************************
-    subroutine wtime(file,tau)
-!
-      double precision :: tau,tmp
-      character (len=*) :: file
-!
-!     nothing needs to be done here
-!
-! temporary work around to keep the compiler quiet
-      tmp = tau
-      file = trim (file)
-!
-    endsubroutine wtime
-!***********************************************************************
-    subroutine rtime(file,tau)
-!
-      double precision :: tau,tmp
-      character (len=*) :: file
-!
-!     nothing needs to be done here
-!
-! temporary work around to keep the compiler quiet
-      tmp = tau
-      file = trim (file)
-!
-    endsubroutine rtime
-!***********************************************************************
 endmodule Io

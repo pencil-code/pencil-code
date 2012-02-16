@@ -59,7 +59,7 @@ program run
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO
+  use IO,              only: rgrid, directory_names
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
@@ -271,7 +271,6 @@ program run
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
-!  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
   call rsnap(trim(directory_snap)//'/var.dat',f,mvar_in)
 !
@@ -279,10 +278,9 @@ program run
 !
   call get_nseed(nseed)
 !
-!  Read time and global variables (if any).
+!  Read global variables (if any).
 !
-  call rtime(trim(directory)//'/time.dat',t)
-  if (mglobal/=0)  &
+  if (mglobal/=0) &
       call input_globals(trim(directory_snap)//'/global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
@@ -641,9 +639,7 @@ program run
 !
         call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io), &
                    mvar_io,ENUM=.false.,noghost=noghost_for_isave)
-        call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
-                            ENUM=.false.)
-        call wtime(trim(directory)//'/time.dat',t)
+        call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
       endif
     endif
 !
@@ -709,8 +705,6 @@ program run
     print*
     print*, 'Writing final snapshot at time t =', t
   endif
-!
-  call wtime(trim(directory)//'/time.dat',t)
 !
   if (.not.lnowrite) then
     if (save_lastsnap) then
