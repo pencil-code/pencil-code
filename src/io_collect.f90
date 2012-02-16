@@ -60,7 +60,7 @@ module Io
 !
 contains
 !***********************************************************************
-    subroutine register_io ()
+    subroutine register_io()
 !
 !  dummy routine, generates separate directory for each processor.
 !  VAR#-files are written to the directory directory_snap which will
@@ -76,7 +76,7 @@ contains
 !
     endsubroutine register_io
 !***********************************************************************
-    subroutine directory_names ()
+    subroutine directory_names()
 !
 !  Set up the directory names:
 !  set directory name for the output (one subdirectory for each processor)
@@ -97,7 +97,7 @@ contains
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine collect_grid (x, y, z, gx, gy, gz)
+    subroutine collect_grid(x, y, z, gx, gy, gz)
 !
 !  This routine collects the global grid on the root processor.
 !
@@ -152,7 +152,7 @@ contains
 !
     endsubroutine collect_grid
 !***********************************************************************
-    subroutine distribute_grid (gx, gy, gz, x, y, z)
+    subroutine distribute_grid(gx, gy, gz, x, y, z)
 !
 !  This routine distributes the global grid to all processors.
 !
@@ -226,7 +226,7 @@ contains
         ! send local z-data to all other processors in the same xy-plane
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy            
+            partner = px + py*nprocx + ipz*nprocxy
             if (partner == iproc) cycle
             call mpisend_real (z, mz, partner, tag_gz)
           enddo
@@ -238,7 +238,7 @@ contains
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_snap (file, a, nv, mode)
+    subroutine output_snap(file, a, nv, mode)
 !
 !  write snapshot file, always write mesh and time, could add other things.
 !
@@ -345,7 +345,7 @@ contains
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
-    subroutine input_snap (file, a, nv, mode)
+    subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
@@ -802,7 +802,7 @@ contains
         if (alloc_err > 0) call fatal_error ('read_persist_logical_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        read (lun_output, iostat=io_err) global
+        read (lun_input, iostat=io_err) global
         value = global(ipx+1,ipy+1,ipz+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -846,7 +846,7 @@ contains
         if (alloc_err > 0) call fatal_error ('read_persist_logical_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        read (lun_output, iostat=io_err) global
+        read (lun_input, iostat=io_err) global
         value = global(ipx+1,ipy+1,ipz+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -888,7 +888,7 @@ contains
         if (alloc_err > 0) call fatal_error ('read_persist_int_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        read (lun_output, iostat=io_err) global
+        read (lun_input, iostat=io_err) global
         value = global(ipx+1,ipy+1,ipz+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -932,7 +932,7 @@ contains
         if (alloc_err > 0) call fatal_error ('read_persist_int_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        read (lun_output, iostat=io_err) global
+        read (lun_input, iostat=io_err) global
         value = global(ipx+1,ipy+1,ipz+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -974,7 +974,7 @@ contains
         if (alloc_err > 0) call fatal_error ('read_persist_real_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        read (lun_output, iostat=io_err) global
+        read (lun_input, iostat=io_err) global
         value = global(ipx+1,ipy+1,ipz+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -1018,7 +1018,7 @@ contains
         if (alloc_err > 0) call fatal_error ('read_persist_real_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        read (lun_output, iostat=io_err) global
+        read (lun_input, iostat=io_err) global
         value = global(ipx+1,ipy+1,ipz+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
@@ -1070,7 +1070,7 @@ contains
 !
     endsubroutine input_globals
 !***********************************************************************
-    subroutine log_filename_to_file (filename, flist)
+    subroutine log_filename_to_file(filename, flist)
 !
 !  In the directory containing 'filename', append one line to file
 !  'flist' containing the file part of filename
@@ -1101,7 +1101,7 @@ contains
 !
     endsubroutine log_filename_to_file
 !***********************************************************************
-    subroutine wgrid (file)
+    subroutine wgrid(file)
 !
 !  Write processor-local part of grid coordinates.
 !
@@ -1144,7 +1144,7 @@ contains
 !
     endsubroutine wgrid
 !***********************************************************************
-    subroutine rgrid (file)
+    subroutine rgrid(file)
 !
 !  Read processor-local part of grid coordinates.
 !
