@@ -407,8 +407,6 @@ contains
           ! read additional data
           close (lun_input)
           open (lun_input, FILE=file, FORM='unformatted')
- write (*,*) "SIZE OF REAL: ", sizeof_real()
- write (*,*) "IO_LEN: ", io_len
           call fseek (lun_input, ngx*ngy*ngz*nv*sizeof_real(), 0)
           read (lun_input, IOSTAT=io_err) t_sp, gx, gy, gz, dx, dy, dz
           if (io_err > 0) call fatal_error ('input_snap', 'Could not read additional data', .true.)
