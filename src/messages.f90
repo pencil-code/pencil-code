@@ -622,16 +622,16 @@ module Messages
     outlog = .false.
 !
     filename = ""
-    if (present (file)) filename = '"'//trim (file)//'"'
+    if (present (file)) filename = ' in "'//trim (file)//'"'
 !
     ! Set the following expression to .false. to activate the experimental code
     if (.true.) then
       if (code < 0) then
         outlog = .true.
-        call warning(mode, 'reached End-Of-File'//trim (filename)//trim (mode))
+        call warning(mode, 'End-Of-File'//trim (filename))
       else if (code > 0) then
         outlog = .true.
-        call fatal_error('I/O error', trim (filename)//trim (mode), .true.)
+        call fatal_error(mode, 'I/O error'//trim (filename), .true.)
       endif
       return
     endif
