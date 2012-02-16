@@ -67,6 +67,7 @@ void FTNIZE(is_nan_c)
 }
 
 /* ---------------------------------------------------------------------- */
+
 void FTNIZE(system_c) (char *command)
 /* Date:   04-Nov-2011
    Author: MR (matthias.rheinhardt@helsinki.fi)
@@ -74,6 +75,19 @@ void FTNIZE(system_c) (char *command)
 */
 {
   printf ("NoSysCalls: system_c is not available\n");
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FTNIZE(sizeof_real_c)
+     (REAL *value, FINT *result)
+/* Determine the number of bytes used for value.
+   Returns:
+   * the number of bytes used for value
+*/
+{
+  *result = -1;
+  printf ("NoSysCalls: sizeof_c is not available\n");
 }
 
 /* ---------------------------------------------------------------------- */

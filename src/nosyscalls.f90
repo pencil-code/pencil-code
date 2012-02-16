@@ -211,6 +211,22 @@ module Syscalls
 !
     endsubroutine system_cmd
 !***********************************************************************
+    function sizeof_real()
+!
+!  Determines the size of a real in bytes.
+!
+!  Returns:
+!  * The number of bytes used for a real.
+!
+!  16-Feb-2012/Bourdin.KIS: coded
+!
+      integer :: sizeof_real
+!
+      print *, 'sizeof_real: Not available in the F95 standard, please use the syscalls module.'
+      stop
+!
+    endfunction sizeof_real
+!***********************************************************************
     function is_nan_0D(value)
 !
 !  Determines if value is not a number (NaN).

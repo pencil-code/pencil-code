@@ -11,6 +11,7 @@ module Syscalls
   external get_env_var_c
   external is_nan_c
   external system_c
+  external sizeof_real_c
 !
   interface is_nan
      module procedure is_nan_0D
@@ -192,6 +193,21 @@ module Syscalls
       call system_c(trim(command)//char(0))
 !
     endsubroutine system_cmd
+!***********************************************************************
+    function sizeof_real()
+!
+!  Determines the size of a real in bytes.
+!
+!  Returns:
+!  * The number of bytes used for a real.
+!
+!  16-Feb-2012/Bourdin.KIS: coded
+!
+      integer :: sizeof_real
+!
+      call sizeof_real_c(1.0, sizeof_real)
+!
+    endfunction sizeof_real
 !***********************************************************************
     function is_nan_0D(value)
 !
