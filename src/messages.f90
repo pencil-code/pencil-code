@@ -616,24 +616,22 @@ module Messages
     integer :: unit=90, iostat, ind
     character (LEN=intlen) :: date, codestr
     character (LEN=fnlen), dimension(2) :: strarr
-    character (LEN=fnlen) :: filename, message, submsg
+    character (LEN=fnlen) :: filename, submsg
     logical :: lopen, lclose, lread, lwrite, lsync
 !
     outlog = .false.
 !
     filename = ""
-    message = ""
-    if (present (file)) filename = ' "'//trim (file)//'"'
-    if (present (msg)) message = ': '//trim (msg)
+    if (present (file)) filename = '"'//trim (file)//'"'
 !
     ! Set the following expression to .false. to activate the experimental code
     if (.true.) then
       if (code < 0) then
         outlog = .true.
-        call warning(mode, 'reached End-Of-File'//trim (filename)//trim (message))
+        call warning(mode, 'reached End-Of-File'//trim (filename)//trim (mode))
       else if (code > 0) then
         outlog = .true.
-        call fatal_error(msg, 'I/O error'//trim (filename)//trim (message), .true.)
+        call fatal_error('I/O error', trim (filename)//trim (mode), .true.)
       endif
       return
     endif
