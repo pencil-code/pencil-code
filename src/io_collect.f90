@@ -407,7 +407,7 @@ contains
           close (lun_input)
           open (lun_input, FILE=file, FORM='unformatted')
           call fseek (lun_input, ngx*ngy*ngz*nv*bytes, 0)
-          read (lun_input, io_err) t_sp, gx, gy, gz, dx, dy, dz
+          read (lun_input, IOSTAT=io_err) t_sp, gx, gy, gz, dx, dy, dz
           if (io_err > 0) call fatal_error ('input_snap', 'Could not read additional data', .true.)
           if (lshear) read (lun_input) deltay
         endif
