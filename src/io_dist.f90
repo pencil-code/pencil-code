@@ -449,7 +449,7 @@ contains
       read (lun_input, iostat=io_err) id
       read_persist_id = outlog (io_err, 'read persistent ID '//label)
 !
-    endfunction write_persist_id
+    endfunction read_persist_id
 !***********************************************************************
     logical function read_persist_logical_0D(label, value)
 !
