@@ -435,6 +435,22 @@ contains
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
+    logical function read_persist_id(label, id)
+!
+!  Read persistent block ID from snapshot file.
+!
+!  17-Feb-2012/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: label
+      integer, intent(out) :: id
+!
+      integer :: io_err
+!
+      read (lun_input, iostat=io_err) id
+      read_persist_id = outlog (io_err, 'read persistent ID '//label)
+!
+    endfunction write_persist_id
+!***********************************************************************
     logical function read_persist_logical_0D(label, value)
 !
 !  Read persistent data from snapshot file.

@@ -8,7 +8,7 @@
   public :: input_snap, input_snap_finalize
   public :: output_globals, input_globals
   public :: init_write_persist, write_persist, write_persist_id
-  public :: read_persist
+  public :: read_persist, read_persist_id
 
   public :: wgrid, rgrid
   public :: wproc_bounds, rproc_bounds

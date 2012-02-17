@@ -36,7 +36,7 @@ module Persist
 !  26-may-03/axel: adapted from output_vect
 !   6-apr-08/axel: added input_persistent_magnetic
 !
-      use IO, only: read_persist
+      use IO, only: read_persist_id
       use Interstellar, only: input_persistent_interstellar
       use Forcing, only: input_persistent_forcing
       use Magnetic, only: input_persistent_magnetic
@@ -46,20 +46,20 @@ module Persist
 !
       if (lroot .and. (ip <= 8)) print *, 'input_persistent: START'
 !
-      if (read_persist ('INITIAL_BLOCK_ID', id)) return
+      if (read_persist_id ('INITIAL_BLOCK_ID', id)) return
       if (id /= id_block_PERSISTENT) then
         if (lroot .and. (ip <= 8)) print *, 'input_persistent: Missing initial persistent block ID'
         return
       endif
 !
-      if (read_persist ('FIRST_BLOCK_ID', id)) return
+      if (read_persist_id ('FIRST_BLOCK_ID', id)) return
       do while (id /= id_block_PERSISTENT)
         done = .false.
         if (.not. done) call input_persistent_general (id, done)
         if (.not. done) call input_persistent_interstellar (id, done)
         if (.not. done) call input_persistent_forcing (id, done)
         if (.not. done) call input_persistent_magnetic (id, done)
-        if (read_persist ('NEXT_BLOCK_ID', id)) return
+        if (read_persist_id ('NEXT_BLOCK_ID', id)) return
       enddo
 !
       if (lroot .and. (ip <= 8)) print *, 'input_persistent: DONE'
