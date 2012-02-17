@@ -1710,8 +1710,8 @@ module Mpicomm
 !
 !  13-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension(mz), intent(in) :: in
-      real, dimension(nzgrid+2*nghost), intent(out), optional :: out
+      real, dimension(:), intent(in) :: in
+      real, dimension(:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
 !
       if (present (out) .or. present (dest_proc)) out = in
@@ -1726,8 +1726,8 @@ module Mpicomm
 !
 !  13-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension(nzgrid+2*nghost), intent(in) :: in
-      real, dimension(mz), intent(out) :: out
+      real, dimension(:), intent(in) :: in
+      real, dimension(:), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
       if (present (source_proc)) continue
