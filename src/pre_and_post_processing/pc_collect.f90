@@ -8,6 +8,7 @@ program pc_collect
   use Cparam, only: fnlen
   use Diagnostics
   use Filter
+  use General, only: random_seed_wrapper
   use IO
   use Messages
   use Param_IO
@@ -17,16 +18,18 @@ program pc_collect
 !
   implicit none
 !
+  include '../record_types.h'
+!
   character (len=fnlen) :: filename
   character (len=*), parameter :: directory_out = 'data/allprocs'
 !
   real, dimension (mx,my,mz,mfarray) :: f
   integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
-  real, dimension (:,:,:,:), allocatable :: gf
+  real, dimension (:,:,:,:), allocatable :: gf, gs
   real, dimension (ngx) :: gx, gdx_1, gdx_tilde
   real, dimension (ngy) :: gy, gdy_1, gdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
-  logical :: ex
+  logical :: ex, lerror
   integer :: mvar_in, bytes, pz, pa, start_pos, end_pos, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -118,8 +121,14 @@ program pc_collect
     mvar_in=mvar
   endif
 !
+!  Get state length of random number generator.
+!
+  call get_nseed(nseed)
+!
   allocate (gf (ngx,ngy,mz,mvar_io), stat=alloc_err)
   if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gf.', .true.)
+  allocate (gs (nprocx,nprocy,nprocz,nseed), stat=alloc_err)
+  if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gs.', .true.)
 !
 !  Print resolution and dimension of the simulation.
 !
@@ -148,6 +157,7 @@ program pc_collect
     gf = huge(1.0)
     gx = huge(1.0)
     gy = huge(1.0)
+    gs = huge(1.0)
 !
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
@@ -237,6 +247,10 @@ program pc_collect
         ! collect f in gf:
         gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f(:,:,:,1:mvar_io)
 !
+        ! collect random seeds in gs:
+        call random_seed_wrapper(GET=seed)
+        gs(1+ipx,1+ipy,1+ipz,:) = seed(1:nseed)
+!
         ! collect x coordinates:
         gx(1+ipx*nx:mx+ipx*nx) = x
         gdx_1(1+ipx*nx:mx+ipx*nx) = dx_1
@@ -282,7 +296,14 @@ program pc_collect
   write (lun_output) Lx, Ly, Lz
   write (lun_output) gdx_1, gdy_1, gdz_1
   write (lun_output) gdx_tilde, gdy_tilde, gdz_tilde
-  close (lun_output)
+!
+  ! write persistent data:
+  lerror = init_write_persist()
+  if (lerror) call fatal_error ('init_write_persist', "IO-error")
+  lerror = write_persist_id ('RANDOM_SEEDS', id_record_RANDOM_SEEDS)
+  if (lerror) call fatal_error ('write_persist_id', "IO-error")
+  write (lun_output) gs
+  call output_snap_finalize()
 !
   print *, 'Writing snapshot for time t =', t
 !
