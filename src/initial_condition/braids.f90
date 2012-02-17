@@ -38,7 +38,7 @@ module InitialCondition
   character (len=labellen) :: prof='gaussian'
   character (len=labellen) :: word = "AA"
   real :: h_max = 0.4, h_min = 1e-4, l_max = 10., tol = 1e-4
-  integer :: trace_sub = 1
+  integer :: trace_sub = 4
   character (len=labellen) :: trace_field = ''
 ! variables for the blob configurations  
   integer :: n_blobs = 0
@@ -137,18 +137,18 @@ module InitialCondition
     integer :: l, j, ju, n_strands, ascii_code
     real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
 !
-!   Variables for the blob configuration
-    integer :: n_blobs = 2
-!
 !   In case field line tracing is applied, use this array.
 !   The last dimension is used for the following:
 !   2 for the initial seed position (x0,y0)
 !   3 for the current position in 3d space
 !   1 for the total length
 !   1 for the integrated quantity
-!     real, dimension(:,:), allocatable :: tracers_init
-!     allocate (tracers_init(nx*ny*trace_sub**2,7))
-    real, dimension (nx*ny,7) :: tracers_init
+!     real, dimension(:,:), pointer :: tracers
+!     real, allocatable :: tracers(:,:)
+!     if (associated(tracers)) deallocate(tracers)
+!     allocate (tracers(nx*ny*trace_sub**2,7))
+!     real, dimension (nx*ny*4**2,7) :: tracers
+    real, dimension (nx*ny,7) :: tracers
 !
 !
 !   check the word
@@ -422,7 +422,6 @@ module InitialCondition
 !
     if (n_blobs > 0) then
       do j=1,n_blobs
-        write(*,*) "blob position = ", xc(j), yc(j), zc(j)
 !       create the field in the blobs
         do l=l1,l2
           do m=m1,m2
@@ -445,21 +444,25 @@ module InitialCondition
 !
 !   Trace the specified field lines
     if (trace_field == 'bb' .and. ipz == 0) then
+!       write(*,*) x, y, z, dx, dy, dz
       write(*,*) "creating the initial seed"
-!     create the initial seeds at z0
+!     create the initial seeds at z0+dz
       do l=1,nx*trace_sub
         do m=1,ny*trace_sub
-          tracers_init(l+m*nx*trace_sub,1) = x(ipx*nx+l/trace_sub+nghost) + dx*mod(l,trace_sub)/trace_sub
-          tracers_init(l+m*nx*trace_sub,2) = y(ipy*ny+m/trace_sub+nghost) + dy*mod(m,trace_sub)/trace_sub
-          tracers_init(l+m*nx*trace_sub,3) = x(ipx*nx+l/trace_sub+nghost) + dx*mod(l,trace_sub)/trace_sub
-          tracers_init(l+m*nx*trace_sub,4) = y(ipy*ny+m/trace_sub+nghost) + dy*mod(m,trace_sub)/trace_sub
-          tracers_init(l+m*nx*trace_sub,5) = z0+dz
-          tracers_init(l+m*nx*trace_sub,6) = 0.
-          tracers_init(l+m*nx*trace_sub,7) = 0.
+          tracers(l+(m-1)*nx*trace_sub,1) = x(ipx*nx+l/trace_sub+nghost+1-1/trace_sub) + &
+              (dx*mod(l,trace_sub))/trace_sub
+          tracers(l+(m-1)*nx*trace_sub,2) = y(ipy*ny+m/trace_sub+nghost+1-1/trace_sub) + &
+              (dy*mod(m,trace_sub))/trace_sub
+          tracers(l+(m-1)*nx*trace_sub,3) = tracers(l+(m-1)*nx*trace_sub,1)
+          tracers(l+(m-1)*nx*trace_sub,4) = tracers(l+(m-1)*nx*trace_sub,2)
+          tracers(l+(m-1)*nx*trace_sub,5) = z0+dz
+          tracers(l+(m-1)*nx*trace_sub,6) = 0.
+          tracers(l+(m-1)*nx*trace_sub,7) = 0.
         enddo
       enddo
-      call trace_streamlines(f,tracers_init,nx*ny*trace_sub**2,h_max,h_min,l_max,tol)
+      call trace_streamlines(f,tracers,nx*ny*trace_sub**2,h_max,h_min,l_max,tol)
     endif
+!     deallocate(tracers)
 !
   endsubroutine initial_condition_aa
 !***********************************************************************
