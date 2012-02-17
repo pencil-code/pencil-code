@@ -212,13 +212,11 @@ program pc_collect
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
-!  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
         call rsnap(trim(directory_snap)//'/'//trim(filename),f,mvar_in)
 !
 !  Read time and global variables (if any).
 !
-        call rtime(trim(directory)//'/'//trim(filename),t)
         if (mglobal/=0)  &
             call input_globals(trim(directory_snap)//'/global.dat', &
             f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
