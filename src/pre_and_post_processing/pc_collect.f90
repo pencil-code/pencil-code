@@ -25,7 +25,8 @@ program pc_collect
 !
   real, dimension (mx,my,mz,mfarray) :: f
   integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
-  real, dimension (:,:,:,:), allocatable :: gf, gs
+  real, dimension (:,:,:,:), allocatable :: gf
+  integer, dimension (:,:,:,:), allocatable :: gs
   real, dimension (ngx) :: gx, gdx_1, gdx_tilde
   real, dimension (ngy) :: gy, gdy_1, gdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
@@ -157,7 +158,7 @@ program pc_collect
     gf = huge(1.0)
     gx = huge(1.0)
     gy = huge(1.0)
-    gs = huge(1.0)
+    gs = -max_int
 !
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
