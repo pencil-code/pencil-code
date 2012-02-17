@@ -79,6 +79,8 @@ module Streamlines
 !
     real, dimension (mx,my,mz,mfarray) :: f
 !     real, dimension(:,:), allocatable :: tracers
+!     real tracers(:,:)
+!     real, dimension (nx*ny*4**2,7) :: tracers
     real, dimension (nx*ny,7) :: tracers
 !     real, dimension (1024*16,7) :: tracers
 !     real, dimension (16384,7) :: tracers
@@ -101,24 +103,17 @@ module Streamlines
     write(*,*) "tracing ", n_tracers, " stream lines"
 !
 !   convert the magnetic vector potential into the magnetic field
+    write(*,*) "do the curling"
     do m=1,ny
       do n=1,nz
         call curl(f,iaa,bb_aux(:,m,n,:))
       enddo
     enddo
 !
-!     do n=1,nz
-!       do m=1,ny
-!         do l=1,nx
-!           write(*,*) x(l+nghost), y(m+nghost), z(n+nghost), bb_aux(l,m,n,:)
-!         enddo
-!       enddo
-!     enddo
-!
-!
 !   open the destination file
     open(unit = 1, file = "tracers.dat", form = "unformatted")
 !
+    write(*,*) "start the tracing"
     do tracer_idx=1,n_tracers
       tracers(tracer_idx, 6) = 0.
 !     initial step length dh
@@ -173,18 +168,12 @@ module Streamlines
         else
 !           dist2 = sqrt(dot_product((x_double - tracers(tracer_idx,3:5)),(x_double - tracers(tracer_idx,3:5))))
           tracers(tracer_idx,3:5) = x_double
-!           write(*,*) "tracer = ", tracers(tracer_idx,3:5), dh, loop_count
-!           write(*,*) "bb_aux = ", bb_aux(grid_pos(1),grid_pos(2),grid_pos(3),:)
           tracers(tracer_idx, 6) = tracers(tracer_idx, 6) + dh
           if (abs(dh) < h_min) dh = 2*dh
 !           if (dist2 < (tol/1000.)**2) dh = 2*dh
         endif
 !
-        if (tracers(tracer_idx, 6) >= l_max) then
-!           write(*,*) "dh = ", dh, " line length = ", tracers(tracer_idx, 6), &
-!               " loop_count = ", loop_count, " at grid_pos ", grid_pos
-          exit
-        endif
+        if (tracers(tracer_idx, 6) >= l_max) exit
 !
         loop_count = loop_count + 1
       enddo
@@ -194,7 +183,7 @@ module Streamlines
 !         write(*,*) "tracer reached a boundary for tracer number ", &
 !         tracer_idx, " loop_count = ", loop_count, " at grid_pos ", grid_pos
 !       endif
-      if (tracers(tracer_idx, 6) == 0) &
+!       if (tracers(tracer_idx, 6) == 0) &
 !       write(*,*) "length 0 at grid_pos ", grid_pos, " outside = ", outside
       write(1) tracers(tracer_idx,:)
       write(*,*) tracers(tracer_idx,:)
