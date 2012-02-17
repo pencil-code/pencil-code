@@ -631,7 +631,7 @@ module Messages
         call warning(mode, 'End-Of-File'//trim (filename))
       else if (code > 0) then
         outlog = .true.
-        call fatal_error(mode, 'I/O error'//trim (filename), .true.)
+        call fatal_error(mode, 'I/O error (code '//trim (itoa (code))//')'//trim (filename), .true.)
       endif
       return
     endif
