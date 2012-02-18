@@ -126,10 +126,12 @@ module Particles
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
-  integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
+  integer :: idiag_mpt=0, idiag_dedragp=0
+  integer :: idiag_rhopmxy=0, idiag_rhopmxz=0, idiag_rhopmr=0
+  integer :: idiag_sigmap=0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0, idiag_dvpmax=0, idiag_epotpm=0
-  integer :: idiag_rhopmxz=0, idiag_nparbmax=0
+  integer :: idiag_nparbmax=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
 !
@@ -1085,8 +1087,6 @@ k_loop:   do while (.not. (k>npar_loc))
           idiag_rhopmax/=0 .or. idiag_rhopmin/=0 .or. idiag_rhopmphi/=0 .or. &
           idiag_rhopmx/=0 .or. idiag_rhopmy/=0 .or. idiag_rhopmz/=0) &
           lpenc_diagnos(i_rhop)=.true.
-      if (idiag_rhopmxy/=0 .or. idiag_rhopmr/=0 .or. idiag_rhopmxz/=0) &
-          lpenc_diagnos2d(i_rhop)=.true.
       if (idiag_dedragp/=0 .or. idiag_decollp/=0) then
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
@@ -1094,7 +1094,8 @@ k_loop:   do while (.not. (k>npar_loc))
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0 .or. &
           idiag_epspmin/=0 .or. idiag_epspmax/=0) &
           lpenc_diagnos(i_epsp)=.true.
-      if (idiag_rhopmxy/=0 .or. idiag_rhopmxz/=0) lpenc_diagnos2d(i_rhop)=.true.
+      if (idiag_rhopmxz/=0 .or. idiag_rhopmxy/=0 .or. idiag_rhopmr/=0 .or. &
+          idiag_sigmap/=0) lpenc_diagnos2d(i_rhop)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -1620,6 +1621,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
         if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
         if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
+        if (idiag_sigmap/=0)   call zsum_mn_name_xy(p%rhop,idiag_sigmap,lint=.true.)
       endif
 !
     endsubroutine dvvp_dt_pencil
@@ -2186,7 +2188,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
-        idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
+        idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0; idiag_sigmap=0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparbmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
@@ -2292,6 +2294,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       do inamexy=1,nnamexy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'sigmap',idiag_sigmap)
       enddo
 !
 !  Check for those quantities for which we want xz-averages.
