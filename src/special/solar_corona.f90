@@ -1990,7 +1990,7 @@ module Special
 !
 ! 08-feb-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: globalize_z
+      use Mpicomm, only: globalize_z, mpibcast_real
 !
       real, dimension (nx), intent(in) :: lnrho
       real, dimension (nx), intent(out) :: lnTT_ref
@@ -2007,6 +2007,8 @@ module Special
             'Could not allocate memory for lnrho_/lnTT_global_z', .true.)
         call globalize_z (lnrho_init_z, lnrho_global_z)
         call globalize_z (lnTT_init_z, lnTT_global_z)
+        call mpibcast_real (lnrho_global_z, mzgrid)
+        call mpibcast_real (lnTT_global_z, mzgrid)
         lfirst_call = .false.
       endif
 !
