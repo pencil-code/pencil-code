@@ -4404,7 +4404,7 @@ module Mpicomm
 !***********************************************************************
     subroutine globalize_z (in, out, dest_proc)
 !
-!  Globalizes local 1D data to all processors in the z-direction.
+!  Globalizes local 1D data in the z-direction to the destination processor.
 !  The local data is supposed to include the ghost cells.
 !  Inner ghost layers are cut away during the combination of the data.
 !  'dest_proc' is the destination ipz-layer number relative to the first
@@ -4454,7 +4454,7 @@ module Mpicomm
 !***********************************************************************
     subroutine localize_z (in, out, source_proc)
 !
-!  Localizes global 1D data on any processor along the z-direction.
+!  Localizes global 1D data to all processors along the z-direction.
 !  The global data is supposed to include the outer ghost layers.
 !  The returned data will include inner ghost layers.
 !  'source_proc' is the source ipz-layer number relative to the first
