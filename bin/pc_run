@@ -1331,7 +1331,7 @@ sub version {
 sub get_last {
 # Return the last run dates+paths recorded in the .run_directories.log file
 
-    `tail $ENV{PENCIL_HOME}/.run_directories.log`;
+    `tail -20 $ENV{PENCIL_HOME}/.run_directories.log`;
 }
 # ---------------------------------------------------------------------- #
 
