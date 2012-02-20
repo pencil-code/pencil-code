@@ -3812,7 +3812,7 @@ module Entropy
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
-      use Sub, only: dot, notanumber, g2ij, write_zprof, write_zprof_once
+      use Sub, only: dot, notanumber, g2ij, write_zprof_once
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4108,7 +4108,6 @@ module Entropy
       use Diagnostics, only: sum_mn_name
       use Gravity, only: z2
       use Debug_IO, only: output_pencil
-      use Sub, only: step, cubic_step, write_zprof
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -4779,7 +4778,6 @@ module Entropy
 !  12-nov-10/mvaisala: adapted from cacl_heat_cool
 !
       use Debug_IO, only: output_pencil
-      use Sub, only: step, cubic_step, write_zprof
       use EquationOfState, only: eoscalc,ilnrho_ss
 !
       real, dimension (mx,my,mz,mfarray) :: f
