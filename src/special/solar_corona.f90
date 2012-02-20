@@ -1997,7 +1997,6 @@ module Special
 !
       integer :: px, z_ref
       real :: pos, frac
-      integer, parameter :: mzgrid = nzgrid + 2*nghost
       real, dimension(:), allocatable, save :: lnrho_global_z, lnTT_global_z
       logical, save :: lfirst_call=.true.
 !
