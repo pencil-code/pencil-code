@@ -101,9 +101,8 @@ module Timeavg
 !   9-oct-02/wolf: adapted from wsnaps
 !
       use Cdata
-      use Debug_IO, only: output
       use General
-      use IO, only: log_filename_to_file
+      use IO, only: log_filename_to_file, output_globals
       use Mpicomm
       use Sub
 !
@@ -134,7 +133,7 @@ module Timeavg
 !
         call update_snaptime(file,tsnap,nsnap,tavg,t,lsnap,ch)
         if (lsnap) then
-          call output(chsnap//ch,f_tavg,mtavg)
+          call output_globals(chsnap//ch,f_tavg,mtavg)
           if (present(flist)) call log_filename_to_file(chsnap//ch,flist)
         endif
 !
@@ -142,7 +141,7 @@ module Timeavg
 !
 !  write snapshot without label (typically, timeavg.dat)
 !
-        call output(chsnap,f_tavg,mtavg)
+        call output_globals(chsnap,f_tavg,mtavg)
       endif
 !
     endsubroutine wsnap_timeavgs
