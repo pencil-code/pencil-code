@@ -117,7 +117,7 @@ module Special
   integer, save :: pow
   integer, save, dimension(mseed) :: points_rstate
   real, dimension(nx,ny) :: Ux,Uy,b2
-  real, dimension(nx,ny) :: Ux_ext,Uy_ext
+  real, dimension(:,:), allocatable :: Ux_ext_global,Uy_ext_global
   real, dimension(nx,ny) :: vx,vy,w,avoidarr
   real, save :: tsnap_uu=0.
   integer, save :: isnap
@@ -532,20 +532,19 @@ module Special
         call dot(K1,p%bb,tmp)
         call multsv(-b2_1*tmp,p%bb,spitzer_vec)
 !
-!  Limit the heat flux
-!
-        q = f(l1:l2,m,n,ispitzerx:ispitzerz)
-!
         if (Ksat/=0.) then
           call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
           qsat = Ksat*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
 !
-          where (qabs > qsat)
+          qsat = 1./(1./qsat +1./qabs)
+          where (qabs > sqrt(tini))
             spitzer_vec(:,1) = spitzer_vec(:,1)*qsat/qabs
             spitzer_vec(:,2) = spitzer_vec(:,2)*qsat/qabs
             spitzer_vec(:,3) = spitzer_vec(:,3)*qsat/qabs
           endwhere
         endif
+!
+        q = f(l1:l2,m,n,ispitzerx:ispitzerz)
 !
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
@@ -577,9 +576,9 @@ module Special
 !
        call div(f,ispitzer,rhs)
 !
-       rhs = rhs * exp(-p%lnrho-p%lnTT)
+       rhs = gamma*p%cp1* rhs * exp(-p%lnrho-p%lnTT)
 !
-       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
+!       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
        if (lvideo) then
 !
@@ -594,6 +593,7 @@ module Special
 !
         if (lfirst.and.ldt) then
           call dot2(f(l1:l2,m,n,ispitzerx:ispitzerz),rhs,PRECISE_SQRT=.true.)
+!          
           rhs = rhs*exp(-p%lnTT-p%lnrho)*gamma*p%cp1
           advec_uu = max(advec_uu,rhs)
           if (idiag_dtspitzer/=0) call max_mn_name(rhs/cdt,idiag_dtspitzer,l_dt=.true.)
@@ -3186,23 +3186,29 @@ module Special
     subroutine evolve_granules()
 !
       integer :: xpos,ypos
+      real :: new_xpos,new_ypos
 !
       do
-        xpos = int(current%data(1))
-        ypos = int(current%data(2))
 !
-        current%data(1) =  current%data(1) + Ux_ext(xpos,ypos)*dt
-        current%data(2) =  current%data(2) + Uy_ext(xpos,ypos)*dt
+! get global positions
+        xpos = int(current%data(1)) + ipx*nx
+        ypos = int(current%data(2)) + ipy*ny
 !
-        if (current%data(1)+ipx*nx < 0.5) &
-            current%data(1) = current%data(1) + nxgrid - ipx*nx
-        if (current%data(2)+ipy*ny < 0.5) &
-            current%data(2) = current%data(2) + nygrid - ipy*ny
+! shift positions
+        new_xpos =  current%data(1) + Ux_ext_global(xpos,ypos)*dt
+        new_ypos =  current%data(2) + Uy_ext_global(xpos,ypos)*dt
 !
-        if (current%data(1)+ipx*nx > nxgrid+0.5) &
-            current%data(1) = current%data(1) - nxgrid + ipx*nx
-        if (current%data(2)+ipy*ny > nygrid+0.5) &
-            current%data(2) = current%data(2) - nygrid + ipy*ny
+! test if positions outside domain and use periodicity
+
+        if (new_xpos < 0.5) new_xpos = new_xpos + nxgrid 
+        if (new_ypos < 0.5) new_ypos = new_ypos + nygrid 
+!
+        if (new_xpos > nxgrid+0.5) new_xpos = new_xpos - nxgrid
+        if (new_ypos > nygrid+0.5) new_ypos = new_ypos - nygrid
+!
+!  shift back to local coordinates and asign to granule data
+        current%data(1) = new_xpos - ipx*nx
+        current%data(2) = new_ypos - ipy*ny
 !
         if (associated(current%next)) then
           call get_next_point
@@ -3343,11 +3349,10 @@ module Special
 !***********************************************************************
     subroutine read_ext_vel_field()
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
+      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any, mpibcast_real
 !
       real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
       real, dimension (:,:), allocatable :: tmpl,tmpr
-      real, dimension (:,:), allocatable :: ux_ext_global,uy_ext_global
       integer, parameter :: tag_x=321,tag_y=322
       integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
       integer :: lend=0,ierr,i,stat,px,py
@@ -3437,29 +3442,17 @@ module Special
             Uy_ext_global = tmpr
           endif
 !
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px == 0) .and. (py == 0)) cycle
-              Ux_ext=Ux_ext_global(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)/unit_velocity
-              Uy_ext=Uy_ext_global(px*nx+1:(px+1)*nx,py*ny+1:(py+1)*ny)/unit_velocity
-              call mpisend_real (Ux_ext, (/ nx, ny /), px+py*nprocx, tag_x)
-              call mpisend_real (Uy_ext, (/ nx, ny /), px+py*nprocx, tag_y)
-            enddo
-          enddo
-!
-          Ux_ext = Ux_ext_global(1:nx,1:ny)
-          Uy_ext = Uy_ext_global(1:nx,1:ny)
-!
           close (unit)
         else
           if (lfirst_proc_z) then
             call mpirecv_real (tl, 1, 0, tag_tl)
             call mpirecv_real (tr, 1, 0, tag_tr)
             call mpirecv_real (delta_t, 1, 0, tag_dt)
-            call mpirecv_real (Ux_ext, (/ nx, ny /), 0, tag_x)
-            call mpirecv_real (Uy_ext, (/ nx, ny /), 0, tag_y)
           endif
         endif
+!
+        call mpibcast_real(Ux_ext_global,(/nxgrid,nygrid/))
+        call mpibcast_real(Uy_ext_global,(/nxgrid,nygrid/))
 !
       endif
 !
