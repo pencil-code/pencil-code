@@ -3375,10 +3375,14 @@ module Special
       ierr = max(stat,ierr)
       if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
       ierr = max(stat,ierr)
+      if (.not.allocated(Ux_ext_global)) &
+          allocate(Ux_ext_global(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
+      if (.not.allocated(Uy_ext_global)) &
+          allocate(Uy_ext_global(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
       allocate(tmpl(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
       allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
-      allocate(Ux_ext_global(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
-      allocate(Uy_ext_global(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
 !
       if (ierr > 0) call stop_it_if_any(.true.,'uu_driver: '// &
           'Could not allocate memory for all variable, please check')
@@ -3458,8 +3462,8 @@ module Special
 !
       if (allocated(tmpl)) deallocate(tmpl)
       if (allocated(tmpr)) deallocate(tmpr)
-      if (allocated(ux_ext_global)) deallocate(ux_ext_global)
-      if (allocated(uy_ext_global)) deallocate(uy_ext_global)
+!      if (allocated(ux_ext_global)) deallocate(ux_ext_global)
+!     if (allocated(uy_ext_global)) deallocate(uy_ext_global)
 !
     endsubroutine read_ext_vel_field
 !***********************************************************************
