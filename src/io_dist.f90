@@ -28,6 +28,10 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
+  interface output_form
+    module procedure output_form_int_0D
+  endinterface
+!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D
@@ -186,6 +190,35 @@ contains
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_snap_finalize
+!***********************************************************************
+    subroutine output_form_int_0D(file,data,lappend)
+!
+!  Write formatted integer data to a file.
+!  Set lappend to false to overwrite the file, default is to append the data.
+!
+!  19-Feb-2012/Bourdin.KIS: coded
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: data
+      logical, intent(in), optional :: lappend
+!
+      integer :: io_err
+      logical :: lappend_opt, lerror
+!
+      lappend_opt = .false.
+      if (present(lappend)) lappend_opt = lappend
+!
+      if (lappend_opt) then
+        open (lun_output, file=file, form='formatted', IOSTAT=io_err, position='append')
+      else
+        open (lun_output, file=file, form='formatted', IOSTAT=io_err)
+      endif
+      lerror = outlog(io_err, 'open formatted', file)
+      write (lun_output,*,IOSTAT=io_err) data
+      lerror = outlog(io_err, 'write formatted data', file)
+      close (lun_output)
+!
+    endsubroutine output_form_int_0D
 !***********************************************************************
     logical function init_write_persist()
 !

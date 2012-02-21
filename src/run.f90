@@ -59,7 +59,7 @@ program run
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals
+  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, output_form
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
@@ -272,7 +272,7 @@ program run
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-  call rsnap(trim(directory_snap)//'/var.dat',f,mvar_in)
+  call rsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_in),mvar_in)
 !
   if (lparticles) call read_snapshot_particles(directory_snap)
 !
@@ -609,13 +609,12 @@ program run
     endif
 !
 !  Setting ialive=1 can be useful on flaky machines!
-!  Each processor writes it's processor number (if it is alive!)
+!  The iteration number is written into thi file "data/proc*/alive.info".
 !  Set ialive=0 to fully switch this off.
 !
     if (ialive /= 0) then
       if (mod(it,ialive)==0) &
-          call outpui(trim(directory)//'/alive.info', &
-          spread(it,1,1) ,1) ! (all procs alive?)
+          call output_form(trim(directory)//'/alive.info',it,.false.)
     endif
     if (lparticles) &
         call write_snapshot_particles(directory_snap,f,ENUM=.true.)

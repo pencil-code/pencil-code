@@ -69,7 +69,6 @@ module Sub
   public :: noform
 !
   public :: update_snaptime, read_snaptime
-  public :: inpui, outpui, inpup, outpup
   public :: parse_shell
   public :: get_radial_distance, power_law
 !
@@ -2872,125 +2871,6 @@ module Sub
 !
     endsubroutine gradf_upw1st
 !***********************************************************************
-    subroutine inpup(file,a,nv)
-!
-!  Read particle snapshot file.
-!
-!  11-apr-00/axel: adapted from input
-!
-      integer :: nv
-      real, dimension (nv) :: a
-      character (len=*) :: file
-!
-      open(1,file=file,form='unformatted')
-      read(1) a
-      close(1)
-!
-    endsubroutine inpup
-!***********************************************************************
-    subroutine inpui(file,a,nv)
-!
-!  Read data (random seed, etc.) from file.
-!
-!  11-apr-00/axel: adapted from input
-!
-      integer :: nv,iostat
-      integer, dimension (nv) :: a
-      character (len=*) :: file
-!
-      open(1,file=file,form='formatted')
-      read(1,*,IOSTAT=iostat) a
-      close(1)
-!
-      if (iostat /= 0) then
-        if (lroot) &
-             print*, "Error encountered reading ", &
-                     size(a), "integers from ", trim(file)
-        call fatal_error('inpui','')
-      endif
-    endsubroutine inpui
-!***********************************************************************
-    subroutine inpuf(file,a,nv)
-!
-!  Read formatted snapshot.
-!
-!   5-aug-98/axel: coded
-!
-      integer :: nv
-      real, dimension (mx,my,mz,nv) :: a
-      character (len=*) :: file
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      open(1,file=file)
-      read(1,10) a
-      read(1,10) t_sp,x,y,z
-      t = t_sp
-      close(1)
-10    format(8e10.3)
-!
-    endsubroutine inpuf
-!***********************************************************************
-    subroutine outpup(file,a,nv)
-!
-!  Write snapshot file, always write mesh and time, could add other things.
-!
-!  11-apr-00/axel: adapted from output
-!
-      integer :: nv
-      real, dimension (nv) :: a
-      character (len=*) :: file
-!
-      open(1,file=file,form='unformatted')
-      write(1) a
-      close(1)
-!
-    endsubroutine outpup
-!***********************************************************************
-    subroutine outpui(file,a,nv)
-!
-!  Write snapshot file, always write mesh and time, could add other things.
-!
-!  11-apr-00/axel: adapted from output
-!  04-nov-11/MR: I/O error handling added
-!  17-nov-11/MR: call of outlog changed
-!
-      integer :: nv
-      integer, dimension (nv) :: a
-      character (len=*) :: file
-!
-      integer :: iostat
-!
-      open(1,file=file,form='formatted',IOSTAT=iostat)
-      if (outlog(iostat,'open',file)) return
-!
-      write(1,*,IOSTAT=iostat) a
-      if (outlog(iostat,'write a')) return
-!
-      close(1,IOSTAT=iostat)
-      if (outlog(iostat,'close')) continue
-!
-    endsubroutine outpui
-!***********************************************************************
-    subroutine outpuf(file,a,nv)
-!
-!  Write formatted snapshot, otherwise like output.
-!
-!   5-aug-98/axel: coded
-!
-      integer :: nv
-      character (len=*) :: file
-      real, dimension (mx,my,mz,nv) :: a
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      t_sp = t
-      open(1,file=file)
-      write(1,10) a
-      write(1,10) t_sp,x,y,z
-      close(1)
-10    format(8e10.3)
-!
-    endsubroutine outpuf
-!***********************************************************************
     character function numeric_precision()
 !
 !  Return 'S' if running in single, 'D' if running in double precision.
@@ -4795,9 +4675,12 @@ nameloop: do
 !  10-jul-05/axel: coded
 !
       use General, only: safe_character_assign
+      use IO, only: lcollective_IO
 !
       character (len=120) :: fname,wfile,listfile
       integer :: ierr, unit=2
+!
+      if (lcollective_IO .and. .not. lroot) return
 !
 !  Do this only for the first step.
 !
@@ -4806,6 +4689,7 @@ nameloop: do
 !  Read list of file and remove them one by one.
 !
       open(unit,file=listfile,iostat=ierr)
+      if (ierr /= 0) return
       do while ((it <= nt) .and. (ierr == 0))
         read(unit,*,iostat=ierr) fname
         if (ierr == 0) then

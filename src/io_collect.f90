@@ -7,7 +7,7 @@
 !  I/O via MPI root rank by collecting data from all processors.
 !  (storing data into one file, e.g. data/allprocs/var.dat)
 !
-!  The file written by output() (and used e.g. for 'var.dat')
+!  The file written by output_snap() (and used e.g. for 'var.dat')
 !  consists of the followinig records (not using record markers):
 !    1. data(mxgrid,mygrid,mzgrid,nvar)
 !    2. t(1), x(mxgrid), y(mygrid), z(mzgrid), dx(1), dy(1), dz(1)
@@ -28,6 +28,10 @@ module Io
 !
   include 'io.h'
   include 'record_types.h'
+!
+  interface output_form
+    module procedure output_form_int_0D
+  endinterface
 !
   interface write_persist
     module procedure write_persist_logical_0D
@@ -108,9 +112,9 @@ contains
       real, dimension(mx), intent(in) :: x
       real, dimension(my), intent(in) :: y
       real, dimension(mz), intent(in) :: z
-      real, dimension(nxgrid+2*nghost), intent(out) :: gx
-      real, dimension(nygrid+2*nghost), intent(out) :: gy
-      real, dimension(nzgrid+2*nghost), intent(out) :: gz
+      real, dimension(nxgrid+2*nghost), intent(out), optional :: gx
+      real, dimension(nygrid+2*nghost), intent(out), optional :: gy
+      real, dimension(nzgrid+2*nghost), intent(out), optional :: gz
 !
       real, dimension(l2) :: buf_x
       real, dimension(m2) :: buf_y
@@ -152,7 +156,7 @@ contains
 !
     endsubroutine collect_grid
 !***********************************************************************
-    subroutine distribute_grid(gx, gy, gz, x, y, z)
+    subroutine distribute_grid(x, y, z, gx, gy, gz)
 !
 !  This routine distributes the global grid to all processors.
 !
@@ -160,15 +164,15 @@ contains
 !
       use Mpicomm, only: lroot, mpisend_real, mpirecv_real
 !
-      real, dimension(nxgrid+2*nghost), intent(in) :: gx
-      real, dimension(nygrid+2*nghost), intent(in) :: gy
-      real, dimension(nzgrid+2*nghost), intent(in) :: gz
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
+      real, dimension(nxgrid+2*nghost), intent(in), optional :: gx
+      real, dimension(nygrid+2*nghost), intent(in), optional :: gy
+      real, dimension(nzgrid+2*nghost), intent(in), optional :: gz
 !
       integer :: px, py, pz, partner
-      integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
+      integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
       if (lroot) then
         ! send local x-data to all leading yz-processors along the x-direction
@@ -244,7 +248,7 @@ contains
 !
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, globalize_xy, mpisend_real, mpirecv_real
+      use Mpicomm, only: lroot, globalize_xy, mpisend_real, mpirecv_real, mpibarrier
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv
@@ -252,72 +256,95 @@ contains
       integer, optional, intent(in) :: mode
 !
       real, dimension (:,:,:,:), allocatable :: ga
+      real, dimension (:,:), allocatable :: buffer
       real, dimension (:), allocatable :: gx, gy, gz
-      integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
       integer, parameter :: tag_ga=676
       integer :: pz, pa, io_len, alloc_err, z_start, z_end
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (lfirst_proc_xy) then
-        allocate (ga(ngx,ngy,mz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
-        if (lroot) then
-          allocate (gx(ngy), gy(ngy), gz(ngz), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
-        endif
-      endif
-!
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
-      if (lwrite_add) call collect_grid (x, y, z, gx, gy, gz)
+!
+      if (lfirst_proc_xy) then
+        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
+      endif
 !
       if (lroot) then
+        allocate (buffer(mxgrid,mygrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for buffer', .true.)
+!
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_output, FILE=file, status='replace', access='direct', recl=ngx*ngy*io_len)
+        open (lun_output, FILE=file, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
           if (pz == 0) then
             ! receive data from the local xy-plane
             call globalize_xy (a, ga)
-          else
-            ! receive collected data from leading processors in the xy-planes
-            call mpirecv_real (ga, (/ ngx, ngy, mz, nv /), pz*nprocxy, tag_ga)
           endif
           z_start = n1
           z_end = n2
           if (pz == 0) z_start = 1
-          if (pz == nprocz-1) z_end = n2 + nghost
+          if (pz == nprocz-1) z_end = mz
           ! iterate through variables
-          do pa = 1, mvar_io
+          do pa = 1, nv
             ! iterate through xy-planes and write each plane separately
             do iz = z_start, z_end
-              write (lun_output, rec=iz+pz*nz+(pa-1)*ngz) ga(:,:,iz,pa)
+              if (pz == 0) then
+                buffer = ga(:,:,iz,pa)
+              else
+                ! receive collected data from leading processors in the xy-planes
+                call mpirecv_real (buffer, (/ mxgrid, mygrid /), pz*nprocxy, tag_ga)
+              endif
+              write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
             enddo
           enddo
         enddo
-!
-        ! write additional data:
-        if (lwrite_add) then
-          close (lun_output)
-          open (lun_output, FILE=file, FORM='unformatted', position='append')
-          t_sp = t
-          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-          if (lshear) write (lun_output) deltay
-        endif
+        deallocate (buffer)
 !
       else
         if (lfirst_proc_xy) then
           ! receive data from the local xy-plane
           call globalize_xy (a, ga)
           ! send collected data to root processor
-          call mpisend_real (ga, (/ ngx, ngy, mz, nv /), 0, tag_ga)
+          z_start = n1
+          z_end = n2
+          if (ipz == 0) z_start = 1
+          if (ipz == nprocz-1) z_end = mz
+          ! iterate through variables
+          do pa = 1, nv
+            ! iterate through xy-planes and write each plane separately
+            do iz = z_start, z_end
+              call mpisend_real (ga(:,:,iz,pa), (/ mxgrid, mygrid /), 0, tag_ga)
+            enddo
+          enddo
         else
           ! send data to leading processor in the local xy-plane
           call globalize_xy (a)
         endif
       endif
+!
+      ! write additional data:
+      if (lroot) then
+        if (lwrite_add) then
+          close (lun_output)
+          allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
+          call collect_grid (x, y, z, gx, gy, gz)
+
+          open (lun_output, FILE=file, FORM='unformatted', position='append')
+          t_sp = t
+          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          if (lshear) write (lun_output) deltay
+          deallocate (gx, gy, gz)
+        endif
+      else
+        call collect_grid (x, y, z)
+      endif
+!
+      if (lfirst_proc_xy) deallocate (ga)
 !
     endsubroutine output_snap
 !***********************************************************************
@@ -329,18 +356,110 @@ contains
 !
       use Mpicomm, only: lroot
 !
-      if (persist_initialized) then
-        if (lroot) then
+      if (lroot) then
+        if (persist_initialized) then
           if (ip <= 9) write (*,*) 'finish persistent block'
           write (lun_output) id_block_PERSISTENT
+          persist_initialized = .false.
+          persist_last_id = -max_int
         endif
-        persist_initialized = .false.
-        persist_last_id = -max_int
+        close (lun_output)
       endif
 !
-      if (lroot) close (lun_output)
-!
     endsubroutine output_snap_finalize
+!***********************************************************************
+    subroutine output_form_int_0D(file,data,lappend)
+!
+!  Write formatted integer data to a file.
+!  Set lappend to false to overwrite the file, default is to append the data.
+!
+!  19-Feb-2012/Bourdin.KIS: coded
+!
+      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: data
+      logical, intent(in), optional :: lappend
+!
+      integer, dimension(ncpus) :: data_global
+      integer :: partner, buffer
+      integer, parameter :: tag_data = 683
+      logical :: lappend_opt, lerror
+!
+      lappend_opt = .false.
+      if (present(lappend)) lappend_opt = lappend
+!
+      if (lroot) then
+        ! collect data into global array
+        data_global(iproc) = data
+        do partner = 0, ncpus-1
+          if (partner == iproc) cycle
+          call mpirecv_int(buffer, 1, partner, tag_data)
+          data_global(partner) = buffer
+        enddo
+        ! write global data to file
+        if (lappend_opt) then
+          open (lun_output, file=file, form='formatted', position='append')
+        else
+          open (lun_output, file=file, form='formatted')
+        endif
+        write (lun_output,*) data_global
+        close (lun_output)
+      else
+        ! send local data
+        call mpisend_int(data, 1, 0, tag_data)
+      endif
+!
+    endsubroutine output_form_int_0D
+!***********************************************************************
+    subroutine fseek_pos(unit, rec_len, num_rec, reference)
+!
+!  Seeks to a given position in an opened file relative to a reference point.
+!  If reference=0, this is relative to the beginning of the file,
+!  if reference=1, this is relative to the current position in the file,
+!  and if reference=2, this is relative to the end of the file.
+!  'rec_len' and 'num_rec' are referring to a record length and a given number
+!  of records that one likes to seek, boths must be representable in integer.
+!  If 'num_rec' is negative, seeking is done backwards.
+!
+!  20-Feb-2012/Bourdin.KIS: coded
+!
+      use General, only: itoa
+!
+      integer, intent(in) :: unit
+      integer(kind=8) :: rec_len, num_rec
+      integer, intent(in) :: reference
+!
+      integer :: i, num, len
+!
+      if (num_rec < 0) then
+        num_rec = -num_rec
+        rec_len = -rec_len
+      endif
+!
+      ! all numbers must be representable as integer(kind=4)
+      len = rec_len
+      num = num_rec
+      if (len /= rec_len) call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
+          "rec_len is not representable as integer(kind=4).", .true.)
+      if (num /= num_rec) call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
+          "num_rec is not representable as integer(kind=4).", .true.)
+!
+! WORKAROUND:
+! Even though the ifort manual states that ifort would be able to fseek
+! with an 64-bit integer argument, this is NOT working!
+! Therefore, we have to iterate the fseek with an 32-bit integer to be save.
+! Note: gfortran would be able to seek with a 64-bit integer value, though.
+! (20-Feb-2012, Bourdin.KIS)
+!
+      call fseek (unit, rec_len, reference)
+      if (num >= 2) then
+        do i = 2, num
+          call fseek (unit, rec_len, 1)
+        enddo
+      endif
+!
+    endsubroutine fseek_pos
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
@@ -357,66 +476,81 @@ contains
       integer, optional, intent(in) :: mode
 !
       real, dimension (:,:,:,:), allocatable :: ga
+      real, dimension (:,:), allocatable :: buffer
       real, dimension (:), allocatable :: gx, gy, gz
-      integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
       integer, parameter :: tag_ga=675
-      integer :: pz, pa, z_start, z_end, io_len, alloc_err
+      integer :: pz, pa, io_len, alloc_err
+      integer(kind=8) :: rec_len, num_rec
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
-!
-      if (lfirst_proc_xy) then
-        allocate (ga(ngx,ngy,mz,nv), gx(ngx), gy(ngy), gz(ngz), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga,gx,gy,gz', .true.)
-      endif
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
 !
+      if (lfirst_proc_xy) then
+        allocate (ga(mxgrid,mygrid,mz,nv), buffer(mxgrid,mygrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga,buffer', .true.)
+      endif
+!
       if (lroot) then
         if (ip <= 8) print *, 'input_snap: open ', file
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_input, FILE=file, access='direct', recl=ngx*ngy*io_len)
+        open (lun_input, FILE=file, access='direct', recl=mxgrid*mygrid*io_len)
 !
-        if (ip <= 8) print *, 'input_snap: read dim=', ngx, ngy, ngz, nv
+        if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mzgrid, nv
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
-          z_start = n1
-          z_end = n2
-          if (pz == 0) z_start = 1
-          if (pz == nprocz-1) z_end = n2 + nghost
           ! iterate through variables
-          do pa = 1, mvar_io
+          do pa = 1, nv
             ! iterate through xy-planes and read each plane separately
-            do iz = z_start, z_end
-              read (lun_input, rec=iz+pz*nz+(pa-1)*ngz) ga(:,:,iz,pa)
+            do iz = 1, mz
+              read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
+              if (pz == 0) then
+                ga(:,:,iz,pa) = buffer
+              else
+                ! send collective data to the leading processors in the xy-planes
+                call mpisend_real (buffer, (/ mxgrid, mygrid /), pz*nprocxy, tag_ga)
+              endif
             enddo
           enddo
-          if (pz == 0) then
-            ! distribute data in the local xy-plane
-            call localize_xy (ga, a)
-          else
-            ! send collective data to the leading processors in the xy-planes
-            call mpisend_real (ga, (/ ngx, ngy, mz, nv /), pz*nprocxy, tag_ga)
-          endif
+          ! distribute data in the local xy-plane
+          if (pz == 0) call localize_xy (ga, a)
         enddo
-!
-        if (lread_add) then
-          ! read additional data
-          close (lun_input)
-          open (lun_input, FILE=file, FORM='unformatted')
-          call fseek (lun_input, ngx*ngy*ngz*nv*sizeof_real(), 0)
-          read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
-          if (lshear) read (lun_input) deltay
-        endif
 !
       else
         if (lfirst_proc_xy) then
-          call mpirecv_real (ga, (/ ngx, ngy, mz, nv /), 0, tag_ga)
+          ! receive whole xy-plane from root processor
+          do pa = 1, nv
+            do iz = 1, mz
+              call mpirecv_real (buffer, (/ mxgrid, mygrid /), 0, tag_ga)
+              ga(:,:,iz,pa) = buffer
+            enddo
+          enddo
         endif
+        ! distribute xy-plane to all corresponding processors
         call localize_xy (ga, a)
       endif
 !
+      if (lfirst_proc_xy) deallocate (ga, buffer)
+!
+      ! read additional data
       if (lread_add) then
+        if (lroot) then
+          close (lun_input)
+          allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+          if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
+!
+          rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
+          num_rec = int (mzgrid, kind=8) * int (nv*sizeof_real(), kind=8)
+          open (lun_input, FILE=file, FORM='unformatted')
+          call fseek_pos (lun_input, rec_len, num_rec, 0)
+          read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+          call distribute_grid (x, y, z, gx, gy, gz)
+          if (lshear) read (lun_input) deltay
+          deallocate (gx, gy, gz)
+        else
+          call distribute_grid (x, y, z)
+        endif
         call mpibcast_real (t_sp)
         t = t_sp
         if (lshear) call mpibcast_real (deltay)
@@ -1112,7 +1246,7 @@ contains
         call mpibarrier ()
         if (lroot) then
           open (lun_output,FILE=trim (datadir)//'/move-me.list', POSITION='append')
-            write (lun_output,'(A)') trim (fpart)
+          write (lun_output,'(A)') trim (fpart)
           close (lun_output)
         endif
       endif
@@ -1137,9 +1271,7 @@ contains
       if (lroot) then
         allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
-      endif
 !
-      if (lroot) then
         open (lun_output, FILE=file, FORM='unformatted')
         t_sp = t
         call collect_grid (x, y, z, gx, gy, gz)
@@ -1151,10 +1283,12 @@ contains
         call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         write (lun_output) gx, gy, gz
         close (lun_output)
+!
+        deallocate (gx, gy, gz)
       else
-        call collect_grid (x, y, z, gx, gy, gz)
-        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        call collect_grid (x, y, z)
+        call collect_grid (dx_1, dy_1, dz_1)
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
 !
     endsubroutine wgrid
@@ -1176,25 +1310,34 @@ contains
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+      if (lroot) then
+        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-      if (lroot) open (lun_input, FILE=file, FORM='unformatted')
-      if (lroot) read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
-      call distribute_grid (gx, gy, gz, x, y, z)
-      if (lroot) read (lun_input) dx, dy, dz
+        open (lun_input, FILE=file, FORM='unformatted')
+        read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+        call distribute_grid (x, y, z, gx, gy, gz)
+        read (lun_input) dx, dy, dz
+        read (lun_input) Lx, Ly, Lz
+        read (lun_input) gx, gy, gz
+        call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        read (lun_input) gx, gy, gz
+        call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        close (lun_input)
+!
+        deallocate (gx, gy, gz)
+      else
+        call distribute_grid (x, y, z)
+        call distribute_grid (dx_1, dy_1, dz_1)
+        call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
+      endif
+!
       call mpibcast_real (dx)
       call mpibcast_real (dy)
       call mpibcast_real (dz)
-      if (lroot) read (lun_input) Lx, Ly, Lz
       call mpibcast_real (Lx)
       call mpibcast_real (Ly)
       call mpibcast_real (Lz)
-      if (lroot) read (lun_input) gx, gy, gz
-      call distribute_grid (gx, gy, gz, dx_1, dy_1, dz_1)
-      if (lroot) read (lun_input) gx, gy, gz
-      call distribute_grid (gx, gy, gz, dx_tilde, dy_tilde, dz_tilde)
-      if (lroot) close (lun_input)
 !
 !  Find minimum/maximum grid spacing. Note that
 !    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
@@ -1232,6 +1375,8 @@ contains
       character (len=*) :: file
       integer :: ierr
 !
+      call fatal_error ("wproc_bounds", "Not yet implemented in io_collect.")
+!
       if (lroot) then
         open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
         if (ierr /= 0) call stop_it( &
@@ -1256,13 +1401,17 @@ contains
       character (len=*) :: file
       integer :: ierr
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=ierr)
-      if (ierr /= 0) call stop_it( &
-          "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
-      read(lun_input) procy_bounds
-      read(lun_input) procz_bounds
-      close(lun_input)
+      call fatal_error ("rproc_bounds", "Not yet implemented in io_collect.")
+!
+      if (lroot) then
+        open(lun_input,FILE=file,FORM='unformatted',IOSTAT=ierr)
+        if (ierr /= 0) call stop_it( &
+            "Cannot open " // trim(file) // " (or similar) for reading" // &
+            " -- is data/ visible from all nodes?")
+        read(lun_input) procy_bounds
+        read(lun_input) procz_bounds
+        close(lun_input)
+      endif
 !
     endsubroutine rproc_bounds
 !***********************************************************************
