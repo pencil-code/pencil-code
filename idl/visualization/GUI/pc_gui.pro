@@ -64,7 +64,7 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
-	ohmic_heating_rate:'HR_ohm', $
+;	ohmic_heating_rate:'HR_ohm', $
 ;	magnetic_energy:'rho_mag', $
 ;	magnetic_field_x:'bx', $
 ;	magnetic_field_y:'by', $
