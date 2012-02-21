@@ -360,11 +360,12 @@ contains
         if (persist_initialized) then
           if (ip <= 9) write (*,*) 'finish persistent block'
           write (lun_output) id_block_PERSISTENT
-          persist_initialized = .false.
-          persist_last_id = -max_int
         endif
         close (lun_output)
       endif
+!
+      persist_initialized = .false.
+      persist_last_id = -max_int
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -580,6 +581,7 @@ contains
         if (ip <= 9) write (*,*) 'begin persistent block'
         write (lun_output) id_block_PERSISTENT
       endif
+!
       init_write_persist = .false.
       persist_initialized = .true.
       persist_last_id = -max_int
