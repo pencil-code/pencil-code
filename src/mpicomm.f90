@@ -3313,7 +3313,7 @@ module Mpicomm
       integer, intent(in), optional :: start_index
 !
       real, dimension (nx,nghost,nghost+1,3) :: lbufyo,ubufyo,lbufyi,ubufyi
-      real, dimension (nghost,ny+2*nghost,nghost+1,3) :: lbufxo,ubufxo,lbufxi,ubufxi
+      real, dimension (nghost,my,nghost+1,3) :: lbufxo,ubufxo,lbufxi,ubufxi
       integer :: nbufx,nbufy,nn1,nn2,is,ie
 !
       is = iax
@@ -3368,7 +3368,7 @@ module Mpicomm
         lbufxo = f( l1:l1i,:,nn1:nn2,is:ie)
         ubufxo = f(l2i:l2 ,:,nn1:nn2,is:ie)
 !
-        nbufx=nghost*(ny+2*nghost)*(nghost+1)*3
+        nbufx=nghost*my*(nghost+1)*3
 !
         call MPI_IRECV(ubufxi,nbufx,MPI_REAL,xuneigh,tolowx, &
                        MPI_COMM_WORLD,irecv_rq_fromuppx,mpierr)
@@ -3406,7 +3406,7 @@ module Mpicomm
       real, dimension (mx,my), intent (inout) :: data
 !
       real, dimension (nx,nghost) :: lbufyo,ubufyo,lbufyi,ubufyi
-      real, dimension (nghost,ny+2*nghost) :: lbufxo,ubufxo,lbufxi,ubufxi
+      real, dimension (nghost,my) :: lbufxo,ubufxo,lbufxi,ubufxi
       integer :: nbufx,nbufy
 !
 !  Periodic boundaries in y -- communicate along y if necessary
@@ -3450,7 +3450,7 @@ module Mpicomm
         lbufxo = data( l1:l1i,:)
         ubufxo = data(l2i:l2 ,:)
 !
-        nbufx = nghost * (ny + 2*nghost)
+        nbufx = nghost * my
 !
         call MPI_IRECV (ubufxi, nbufx, MPI_REAL, xuneigh, tolowx, &
                        MPI_COMM_WORLD, irecv_rq_fromuppx, mpierr)
@@ -4413,7 +4413,7 @@ module Mpicomm
 !  13-aug-2011/Bourdin.KIS: coded
 !
       real, dimension(mz), intent(in) :: in
-      real, dimension(nzgrid+2*nghost), intent(out), optional :: out
+      real, dimension(mzgrid), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
 !
       integer :: pz, z_add, collector, partner, alloc_err
@@ -4463,7 +4463,7 @@ module Mpicomm
 !  11-Feb-2012/Bourdin.KIS: coded
 !
       real, dimension(mz), intent(in) :: in
-      real, dimension(nzgrid+2*nghost), intent(out) :: out
+      real, dimension(mzgrid), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
       integer :: pz, broadcaster, partner
