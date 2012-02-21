@@ -4343,7 +4343,6 @@ module Mpicomm
 !  Localizes global 4D data to all processors in the xy-plane.
 !  The global data is supposed to include the outer ghost layers.
 !  The returned data will include inner ghost layers.
-!  Inner ghost layers are cut away during the combination of the data.
 !  'source_proc' is the source iproc number relative to the first processor
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !
