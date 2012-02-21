@@ -1008,18 +1008,11 @@ module Special
 !
       if (lpencil_check_at_work) return
 !
-      ! External magnetic field driver
-      if (luse_mag_field .and. lfirst_proc_z) then
-        call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
-            A_init, time_mag_l, time_mag_r)
-        call mag_driver (A_init, Bz_total_flux, f)
-      endif
-!
       ! Prepare for footpoint quenching (lquench), flux conservation (Bz_flux),
       ! and the granulation computation (lgranulation and Bavoid).
       if ((lquench .and. lfirst_proc_z) .or. ((Bavoid > 0.) .and. lgran_proc) &
           .or. (lgranulation .and. (Bavoid > 0.) .and. lfirst_proc_z) &
-          .or. luse_mag_field) then
+          .or. (luse_mag_field .and. lfirst_proc_z)) then
         if (lfirst_proc_z .and. .not. allocated (BB2_local)) then
           allocate (BB2_local(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
@@ -1027,6 +1020,13 @@ module Special
         endif
         ! Compute magnetic energy BB2 for granulation driver.
         call set_BB2 (f, BB2_local, Bz_total_flux)
+      endif
+!
+      ! External magnetic field driver
+      if (luse_mag_field .and. lfirst_proc_z) then
+        call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
+            A_init, time_mag_l, time_mag_r)
+        call mag_driver (A_init, Bz_total_flux, f)
       endif
 !
       ! External horizontal velocity driver
