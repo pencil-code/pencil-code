@@ -162,7 +162,7 @@ module Forcing
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
-      use Sub, only: inpui,step_scalar,erfunc
+      use Sub, only: step_scalar,erfunc
       real :: zstar
       integer :: l
 !
