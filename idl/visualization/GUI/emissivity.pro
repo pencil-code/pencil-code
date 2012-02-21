@@ -274,8 +274,9 @@ pro emissivity, sets, limits, scaling=scaling
 	wem_z   = !d.window
 	bcot    = WIDGET_BASE (base, /row)
 
-	val_b   = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=0.5*(num_x*bin_x+num_y*bin_y)>max([num_x,num_y]) )
-	val_t   = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=0.5*(num_x*bin_x+num_y*bin_y)>max([num_x,num_y]) )
+	sl_size = ((2*num_x*bin_x+num_y*bin_y)/2.5 > (400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2) < 500
+	val_b   = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=sl_size)
+	val_t   = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=sl_size)
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
