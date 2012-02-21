@@ -12,11 +12,13 @@
 #ifdef DOUBLE_PRECISION
   #define REAL double
   #define FINT int
+  #define FINT8 long long
   #define NBYTES 8
   #define GSL_PREC GSL_PREC_DOUBLE
 #else
   #define REAL float
   #define FINT int
+  #define FINT8 long long
   #define NBYTES 4
   #define GSL_PREC  GSL_PREC_SINGLE
 #endif
