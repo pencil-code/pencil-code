@@ -795,18 +795,28 @@ module Forcing
       ik=nk*(.9999*fran(2))+1
       if (ip<=6) print*,'forcing_irro: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
 !
-!  need to multiply by dt (for Euler step), but it also needs to be
+!  Need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
-!  to a delta function of the time difference
+!  to a delta function of the time difference.
+!  Divide also by kav, so it would be ffnorm=force*sqrt(kav/dt)*dt/kav,
+!  but this can be simplified to give:
 !
-      ffnorm=force*sqrt(kav/dt)*dt
+      ffnorm=force*sqrt(dt/kav)
+!
+!  pre-calculate for the contributions e^(ikx*x), e^(iky*y), e^(ikz*z),
+!  as well as the phase factor.
+!
       fx=exp(cmplx(0.,kkx(ik)*x+phase))*ffnorm
       fy=exp(cmplx(0.,kky(ik)*y))
       fz=exp(cmplx(0.,kkz(ik)*z))
 !
+!  write i*k as vector
+!
       ikk(1)=cmplx(0.,kkx(ik))
       ikk(2)=cmplx(0.,kky(ik))
       ikk(3)=cmplx(0.,kkz(ik))
+!
+!  Loop over all directions, but skip over directions with no extent.
 !
       do j=1,3
         if (extent(j)) then
