@@ -1087,7 +1087,7 @@ module Param_IO
 !
     endsubroutine wparam
 !***********************************************************************
-    subroutine rparam(prefix_)
+    subroutine rparam()
 !
 !  Read startup parameters.
 !
@@ -1095,17 +1095,9 @@ module Param_IO
 !
       use Mpicomm, only: parallel_open, parallel_close
 !
-      character (len=*), optional :: prefix_
-      character (len=20) :: prefix
       integer :: unit=1
 !
-      if (present(prefix_)) then 
-        prefix=prefix_
-      else
-        prefix=''
-      endif
-!      
-      call parallel_open(unit,trim(prefix)//trim(datadir)//'/param.nml')
+      call parallel_open(unit,trim(datadir)//'/param.nml')
 !
       read(unit,NML=init_pars)
       rewind(unit)
