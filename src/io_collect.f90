@@ -248,7 +248,7 @@ contains
 !
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, globalize_xy, mpisend_real, mpirecv_real, mpibarrier
+      use Mpicomm, only: lroot, globalize_xy, mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv
@@ -448,7 +448,7 @@ contains
 ! WORKAROUND:
 ! Even though the ifort manual states that ifort would be able to fseek
 ! with an 64-bit integer argument, this is NOT working!
-! Therefore, we have to iterate the fseek with an 32-bit integer to be save.
+! Therefore, we have to iterate the fseek with a 32-bit integer to be save.
 ! Note: gfortran would be able to seek with a 64-bit integer value, though.
 ! (20-Feb-2012, Bourdin.KIS)
 !
