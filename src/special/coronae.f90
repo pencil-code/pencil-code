@@ -169,6 +169,11 @@ module Special
       real :: dummy=1.,cp1=1.,eps0,unit_ampere,e_charge
       logical :: exists
 !
+      if (maxval(filter_strength) > 0.02) then
+        call fatal_error('initialize_special', &
+            'filter_strength has to be smaller than 0.02. A good value is 0.01')
+      endif
+!
       Kspitzer_para = Kspitzer_para_SI /unit_density/unit_velocity**3./ &
           unit_length*unit_temperature**(3.5)
 !
@@ -593,7 +598,7 @@ module Special
 !
         if (lfirst.and.ldt) then
           call dot2(f(l1:l2,m,n,ispitzerx:ispitzerz),rhs,PRECISE_SQRT=.true.)
-!          
+!
           rhs = rhs*exp(-p%lnTT-p%lnrho)*gamma*p%cp1
           advec_uu = max(advec_uu,rhs)
           if (idiag_dtspitzer/=0) call max_mn_name(rhs/cdt,idiag_dtspitzer,l_dt=.true.)
@@ -3203,8 +3208,8 @@ module Special
 !
 ! test if positions outside domain and use periodicity
 
-        if (new_xpos < 0.5) new_xpos = new_xpos + nxgrid 
-        if (new_ypos < 0.5) new_ypos = new_ypos + nygrid 
+        if (new_xpos < 0.5) new_xpos = new_xpos + nxgrid
+        if (new_ypos < 0.5) new_ypos = new_ypos + nygrid
 !
         if (new_xpos >= nxgrid+0.5) new_xpos = new_xpos - nxgrid
         if (new_ypos >= nygrid+0.5) new_ypos = new_ypos - nygrid
@@ -3390,7 +3395,7 @@ module Special
           allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
           if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
             'Could not allocate memory for some variable, please check')
-!      
+!
           inquire(IOLENGTH=lend) tl
           open (unit,file=vel_times_dat,form='unformatted', &
               status='unknown',recl=lend,access='direct')
@@ -3762,7 +3767,7 @@ module Special
 !
       if (dt/=0.) then
         do j=1,mvar
-          if (filter_strength(j)/=0.) then 
+          if (filter_strength(j)/=0.) then
             call del6(f,j,del6_fj,IGNOREDX=.true.)
             df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
                 filter_strength(j)*del6_fj /dt
