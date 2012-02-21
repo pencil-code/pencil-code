@@ -195,7 +195,7 @@ module Param_IO
         close(unit)
         if (len(trim(tdir)) > 0) call parse_shell(tdir,dir)
       endif
-      if (ip<10) print*,'get_snapdir: dir=',trim(dir)
+      if (lroot.and.ip<10) print*,'get_snapdir: dir=',trim(dir)
 !
     endsubroutine get_snapdir
 !***********************************************************************
@@ -1087,7 +1087,7 @@ module Param_IO
 !
     endsubroutine wparam
 !***********************************************************************
-    subroutine rparam ()
+    subroutine rparam(prefix_)
 !
 !  Read startup parameters.
 !
@@ -1095,9 +1095,17 @@ module Param_IO
 !
       use Mpicomm, only: parallel_open, parallel_close
 !
+      character (len=*), optional :: prefix_
+      character (len=20) :: prefix
       integer :: unit=1
 !
-      call parallel_open(unit,trim(datadir)//'/param.nml')
+      if (present(prefix_)) then 
+        prefix=prefix_
+      else
+        prefix=''
+      endif
+!      
+      call parallel_open(unit,trim(prefix)//trim(datadir)//'/param.nml')
 !
       read(unit,NML=init_pars)
       rewind(unit)
