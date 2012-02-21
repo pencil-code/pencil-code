@@ -57,34 +57,48 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ; 'j'                       ; absolute value of the current density
 ; 'HR_ohm'                  ; ohmic heating rate per volume (eta*mu0*j^2)
 ; 'rho_u_z'                 ; vertical component of the impulse density
+; 'P_therm'                 ; thermal pressure
+; 'Rn_visc'                 ; viscous mesh Reynolds number
+; 'Rn_mag'                  ; magnetic mesh Reynolds number
 ; (more quantities can be defined in 'precalc_data', see pc_gui_companion.pro)
 default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
 	ohmic_heating_rate:'HR_ohm', $
-	magnetic_energy:'rho_mag', $
-	magnetic_field_x:'bx', $
-	magnetic_field_y:'by', $
+;	magnetic_energy:'rho_mag', $
+;	magnetic_field_x:'bx', $
+;	magnetic_field_y:'by', $
 	magnetic_field_z:'bz', $
+	spitzer_ratio:'spitzer_ratio', $
 	velocity:'u_abs', $
-	velocity_x:'u_x', $
-	velocity_y:'u_y', $
+;	velocity_x:'u_x', $
+;	velocity_y:'u_y', $
 	velocity_z:'u_z', $
-	logarithmic_density:'log_rho', $
-	thermal_pressure:'P_therm', $
-	impulse_density_z:'rho_u_z' }
+;	thermal_pressure:'P_therm', $
+;	impulse_density_z:'rho_u_z', $
+;	viscous_Rn:'Rn_visc', $
+;	magnetic_Rn:'Rn_mag', $
+;	magnetic_Hx:'Hx_mag', $
+;	magnetic_Hy:'Hy_mag', $
+;	magnetic_Hz:'Hz_mag', $
+;	magnetic_H:'H_mag', $
+;	minimum_density:'rho_c', $
+	Spitzer_heatflux:'Spitzer_q', $
+	logarithmic_density:'log_rho' $
+	}
 
 
 ;;;
 ;;; Quantities to be overplotted (calculated in 'precalc_data')
 ;;;
 ; Available quantities for overplotting are:
-; 'b', 'a_contour', and 'u'
+; 'b', 'a_contour', 'grad_P_therm', and 'u'
 default, overplot_quantities, { $
-	magnetic_field:'b', $
+;	magnetic_field:'b', $
 	fieldlines:'a_contour', $
 ;	thermal_pressure_gradient:'grad_P_therm', $
-	velocities:'u' }
+	velocities:'u' $
+	}
 
 
 ;;;
@@ -283,14 +297,14 @@ if (not pc_gui_loaded) then BEGIN
 
 	pc_units, obj=unit, datadir=datadir
 	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
-	pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
+	pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, /trim, /quiet
 	pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=dim, datadir=datadir, /quiet
 
-	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
+	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, dx:congrid (1.0/grid.dx_1, disp_size_x, 1, 1, /center, /interp)*unit.length, dy:congrid (1.0/grid.dy_1, disp_size_y, 1, 1, /center, /interp)*unit.length, dz:congrid (1.0/grid.dz_1, disp_size_z, 1, 1, /center, /interp)*unit.length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
 
 	if ((n_elements (dt) le 0) and file_test (datadir+"/time_series.dat")) then pc_read_ts, obj=ts, datadir=datadir, /quiet
-	show_timeseries, ts, tags, units, param, run_param
+	pc_show_ts, ts, units=units, param=param, run_param=run_param
 
 
 	print, "Allocating memory..."
@@ -330,27 +344,23 @@ if (not pc_gui_loaded) then BEGIN
 
 	prepare_varset, load_varfile+num_additional+num_selected, units, coords, varset, overplot, datadir, param, run_param
 
-	time_add = 0.0
 	if (addfile) then begin
 		; Precalculate additional timestep
-		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_add
+		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 	end
 
-	time_var = 0.0
 	if (load_varfile) then begin
 		; Precalculate initial timestep
-		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_var
+		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 	end
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_start
-		if (skipping ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start
+		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
 			pos_last = skipping + (num_selected-1)*stepping
-			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, time=time_end
-			if (ignore_end ge 1) then show_timeseries, ts, tags, units, param, run_param, start_time=time_start, end_time=max ([time_end, time_var, time_add])
+			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
 					; Precalculate selected timesteps
