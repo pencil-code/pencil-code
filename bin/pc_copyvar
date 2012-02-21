@@ -125,6 +125,9 @@ if ($execute) echo ""
 if ($execute) then
   foreach dir ( $source/${data}proc* )
     set procdir=`basename $dir`
+    if (! -e $dest/${data}$procdir ) then
+      mkdir $dest/${data}$procdir
+    endif
     echo "$cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
     $cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
   end
