@@ -80,7 +80,7 @@ module Syscalls
 !
 !  19-mar-10/Bourdin.KIS: coded
 !
-      integer file_size
+      integer :: file_size
       character(len=*) :: file
 !
       file_size=-1
