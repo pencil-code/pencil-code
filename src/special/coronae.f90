@@ -3195,6 +3195,9 @@ module Special
         ypos = int(current%data(2)) + ipy*ny
 !
 ! shift positions
+        if (xpos==0) xpos=1
+        if (ypos==0) ypos=1
+!
         new_xpos =  current%data(1) + Ux_ext_global(xpos,ypos)*dt
         new_ypos =  current%data(2) + Uy_ext_global(xpos,ypos)*dt
 !
@@ -3203,8 +3206,8 @@ module Special
         if (new_xpos < 0.5) new_xpos = new_xpos + nxgrid 
         if (new_ypos < 0.5) new_ypos = new_ypos + nygrid 
 !
-        if (new_xpos > nxgrid+0.5) new_xpos = new_xpos - nxgrid
-        if (new_ypos > nygrid+0.5) new_ypos = new_ypos - nygrid
+        if (new_xpos >= nxgrid+0.5) new_xpos = new_xpos - nxgrid
+        if (new_ypos >= nygrid+0.5) new_ypos = new_ypos - nygrid
 !
 !  shift back to local coordinates and asign to granule data
         current%data(1) = new_xpos - ipx*nx
@@ -3349,12 +3352,11 @@ module Special
 !***********************************************************************
     subroutine read_ext_vel_field()
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any, mpibcast_real
+      use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
 !
-      real, dimension (:,:), save, allocatable :: uxl,uxr,uyl,uyr
       real, dimension (:,:), allocatable :: tmpl,tmpr
-      integer, parameter :: tag_x=321,tag_y=322
       integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
+      integer, parameter :: tag_ux=348,tag_uy=349
       integer :: lend=0,ierr,i,stat,px,py
       real, save :: tl=0.,tr=0.,delta_t=0.
 !
@@ -3368,30 +3370,27 @@ module Special
 !
       ierr = 0
       stat = 0
-      if (.not.allocated(uxl))  allocate(uxl(nx,ny),stat=ierr)
-      if (.not.allocated(uxr))  allocate(uxr(nx,ny),stat=stat)
-      ierr = max(stat,ierr)
-      if (.not.allocated(uyl))  allocate(uyl(nx,ny),stat=stat)
-      ierr = max(stat,ierr)
-      if (.not.allocated(uyr))  allocate(uyr(nx,ny),stat=stat)
-      ierr = max(stat,ierr)
       if (.not.allocated(Ux_ext_global)) &
           allocate(Ux_ext_global(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
       if (.not.allocated(Uy_ext_global)) &
           allocate(Uy_ext_global(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
-      allocate(tmpl(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
-      allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
 !
-      if (ierr > 0) call stop_it_if_any(.true.,'uu_driver: '// &
-          'Could not allocate memory for all variable, please check')
+      if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
+          'Could not allocate memory for some variable, please check')
 !
 !  Read the time table
 !
       if ((t*unit_time < tl+delta_t) .or. (t*unit_time >= tr+delta_t)) then
-        !
+!
         if (lroot) then
+!
+          allocate(tmpl(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
+          allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
+          if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
+            'Could not allocate memory for some variable, please check')
+!      
           inquire(IOLENGTH=lend) tl
           open (unit,file=vel_times_dat,form='unformatted', &
               status='unknown',recl=lend,access='direct')
@@ -3416,15 +3415,6 @@ module Special
           enddo
           close (unit)
 !
-          do px=0, nprocx-1
-            do py=0, nprocy-1
-              if ((px == 0) .and. (py == 0)) cycle
-              call mpisend_real (tl, 1, px+py*nprocx, tag_tl)
-              call mpisend_real (tr, 1, px+py*nprocx, tag_tr)
-              call mpisend_real (delta_t, 1, px+py*nprocx, tag_dt)
-            enddo
-          enddo
-!
 ! Read velocity field
 !
           open (unit,file=vel_field_dat,form='unformatted', &
@@ -3447,23 +3437,34 @@ module Special
           endif
 !
           close (unit)
+!
+! send the data
+!
+          do px=0, nprocx-1
+            do py=0, nprocy-1
+              if ((px == 0) .and. (py == 0)) cycle
+              call mpisend_real(tl, 1, px+py*nprocx, tag_tl)
+              call mpisend_real(tr, 1, px+py*nprocx, tag_tr)
+              call mpisend_real(delta_t, 1, px+py*nprocx, tag_dt)
+              call mpisend_real(Ux_ext_global,(/nxgrid,nygrid/),px+py*nprocx,tag_ux)
+              call mpisend_real(Uy_ext_global,(/nxgrid,nygrid/),px+py*nprocx,tag_uy)
+            enddo
+          enddo
+!
+          if (allocated(tmpl)) deallocate(tmpl)
+          if (allocated(tmpr)) deallocate(tmpr)
+!
         else
           if (lfirst_proc_z) then
-            call mpirecv_real (tl, 1, 0, tag_tl)
-            call mpirecv_real (tr, 1, 0, tag_tr)
-            call mpirecv_real (delta_t, 1, 0, tag_dt)
+            call mpirecv_real(tl, 1, 0, tag_tl)
+            call mpirecv_real(tr, 1, 0, tag_tr)
+            call mpirecv_real(delta_t, 1, 0, tag_dt)
+            call mpirecv_real(Ux_ext_global,(/nxgrid,nygrid/),0,tag_ux)
+            call mpirecv_real(Uy_ext_global,(/nxgrid,nygrid/),0,tag_uy)
           endif
         endif
 !
-        call mpibcast_real(Ux_ext_global,(/nxgrid,nygrid/))
-        call mpibcast_real(Uy_ext_global,(/nxgrid,nygrid/))
-!
       endif
-!
-      if (allocated(tmpl)) deallocate(tmpl)
-      if (allocated(tmpr)) deallocate(tmpr)
-!      if (allocated(ux_ext_global)) deallocate(ux_ext_global)
-!     if (allocated(uy_ext_global)) deallocate(uy_ext_global)
 !
     endsubroutine read_ext_vel_field
 !***********************************************************************
