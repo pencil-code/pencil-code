@@ -432,7 +432,6 @@ module Interstellar
 !  read parameters from seed.dat and interstellar.dat
 !
       use General, only: random_seed_wrapper
-      use Sub, only: inpui,inpup
       use Mpicomm, only: stop_it
       use EquationOfState, only: getmu
 !
