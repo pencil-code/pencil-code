@@ -970,7 +970,7 @@ module Param_IO
 !
     endsubroutine warning_lperi
 !***********************************************************************
-    subroutine wparam ()
+    subroutine wparam()
 !
 !  Write startup parameters
 !
@@ -1087,7 +1087,7 @@ module Param_IO
 !
     endsubroutine wparam
 !***********************************************************************
-    subroutine rparam ()
+    subroutine rparam()
 !
 !  Read startup parameters.
 !
@@ -1174,7 +1174,7 @@ module Param_IO
 !
     endsubroutine rparam
 !***********************************************************************
-    subroutine wparam2 ()
+    subroutine wparam2()
 !
 !  Write runtime parameters for IDL.
 !
