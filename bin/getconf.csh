@@ -566,6 +566,21 @@ else if (($hn =~ node[0-9][0-9]*) && ($USER =~ csc01114)) then
   set remote_top     = 1
   set local_binary = 0
 #---------------------------------------------------
+else if ($hn =~ inaf*) then
+  echo "cometa"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+  endif
+#  setenv LSF_PJL_TYPE mvapich
+  set mpirunops = ''
+  set mpirun = 'mpirun -machinefile mm'
+  set mpirun = 'mpirun.lsf'
+  set npops = "-n $ncpus"
+#  set local_disc = 0
+#  set one_local_disc = 0
+#  set remote_top     = 1
+#  set local_binary = 0
+#---------------------------------------------------
 else if ($hn =~ node[0-9]* && $masterhost != 'vsl176') then
   echo "CLX - CINECA, Bologna (IBM Linux Cluster)"
   if ( $?PBS_JOBID ) then
