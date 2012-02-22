@@ -123,10 +123,10 @@ program pc_reduce
 !
 !  Print resolution and dimension of the simulation.
 !
-  if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
-  if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
-  if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
-  if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
+  if (lroot) write (*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
+  if (lroot) print *, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
+  if (lroot) print *, 'Lx, Ly, Lz=', Lxyz
+  if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
   iproc = 0
   call directory_names()
@@ -181,7 +181,7 @@ program pc_reduce
 !  Read coordinates.
 !
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid('grid.dat')
+        call rgrid ('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for 
 ! backward compatibility.
@@ -308,7 +308,7 @@ program pc_reduce
   open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
   t_sp = t
   write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
-  if (lshear) write(lun_output) deltay
+  if (lshear) write (lun_output) deltay
   close (lun_output)
 !
   ! write global grid:

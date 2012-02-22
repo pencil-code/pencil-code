@@ -118,10 +118,10 @@ program pc_distribute
 !
 !  Print resolution and dimension of the simulation.
 !
-  if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
-  if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
-  if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
-  if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
+  if (lroot) write (*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
+  if (lroot) print *, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
+  if (lroot) print *, 'Lx, Ly, Lz=', Lxyz
+  if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
   inquire (file=trim(directory_in)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_distribute', 'File not found: '//trim(directory_in)//'/'//filename, .true.)
@@ -188,7 +188,7 @@ program pc_distribute
 !  Read coordinates.
 !
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid('grid.dat')
+        call rgrid ('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for 
 ! backward compatibility.
