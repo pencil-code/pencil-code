@@ -182,7 +182,7 @@ module Param_IO
 !   2-nov-02/axel: adapted from get_datadir
 !
       character (len=*) :: dir
-      character (len=120) :: tdir
+      character (len=fnlen) :: tdir
       logical :: exists
       integer :: unit=1
 !
@@ -1087,7 +1087,7 @@ module Param_IO
 !
     endsubroutine wparam
 !***********************************************************************
-    subroutine rparam()
+    subroutine rparam ()
 !
 !  Read startup parameters.
 !
