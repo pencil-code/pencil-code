@@ -39,36 +39,6 @@ module Debug_IO
   integer :: lun_input=89
   integer :: lun_output=92
 !
-  !
-  ! Interface to external C function(s).
-  ! Need to have two different C functions in order to have F90
-  ! interfaces, since a pencil can be either a 1-d or a 2-d array.
-  !
-!   interface output_penciled_vect_c
-!     subroutine output_penciled_vect_c(filename,pencil,&
-!                                       ndim,i,iy,iz,t, &
-!                                       nx,ny,nz,nghost,fnlen)
-!       real,dimension(mx,*) :: pencil
-!       double precision :: t
-!       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-!       character (len=*) :: filename
-!     endsubroutine output_penciled_vect_c
-!   endinterface
-!   !
-!   interface output_penciled_scal_c
-!     subroutine output_penciled_scal_c(filename,pencil,&
-!                                       ndim,i,iy,iz,t, &
-!                                       nx,ny,nz,nghost,fnlen)
-!       real,dimension(mx) :: pencil
-!       double precision :: t
-!       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-!       character (len=*) :: filename
-!     endsubroutine output_penciled_scal_c
-!   endinterface
-  !
-  !  Still not possible with the NAG compiler (`No specific match for
-  !  reference to generic OUTPUT_PENCILED_SCAL_C')
-  !
   external output_penciled_scal_c
   external output_penciled_vect_c
 !
@@ -81,88 +51,6 @@ module Debug_IO
   logical :: io_initialized=.false.
 !
 contains
-!
-!***********************************************************************
-    subroutine register_io()
-!
-!  define MPI data types needed for MPI-IO
-!  closely follwing Gropp et al. `Using MPI-2'
-!
-!  20-sep-02/wolf: coded
-!  25-oct-02/axel: removed assignment of datadir; now set in cdata.f90
-!
-      use Cdata, only: datadir,directory_snap
-      use Mpicomm, only: stop_it
-!
-      integer, dimension(3) :: globalsize=(/nxgrid,nygrid,nzgrid/)
-      integer, dimension(3) :: localsize =(/nx    ,ny    ,nz    /)
-      integer, dimension(3) :: memsize   =(/mx    ,my    ,mz    /)
-      integer, dimension(3) :: start_index,mem_start_index
-!
-      lmonolithic_io = .true.   ! we write f to one single file
-!
-!  identify version number
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-!
-!  consistency check
-!
-      if (.not. lmpicomm) call stop_it('Need mpicomm for io_mpio')
-!
-!  global indices of first element of iproc's data in the file
-!
-      start_index(1) = ipx*localsize(1)
-      start_index(2) = ipy*localsize(2)
-      start_index(3) = ipz*localsize(3)
-!
-!  construct the new datatype `io_filetype'
-!
-      call MPI_TYPE_CREATE_SUBARRAY(3, &
-               globalsize, localsize, start_index, &
-               MPI_ORDER_FORTRAN, MPI_REAL, &
-               io_filetype, ierr)
-      call MPI_TYPE_COMMIT(io_filetype,ierr)
-!
-!  create a derived datatype describing the data layout in memory
-!  (i.e. including the ghost zones)
-!
-      mem_start_index = nghost
-      call MPI_TYPE_CREATE_SUBARRAY(3, &
-               memsize, localsize, mem_start_index, &
-               MPI_ORDER_FORTRAN, MPI_REAL, &
-               io_memtype, ierr)
-      call MPI_TYPE_COMMIT(io_memtype,ierr)
-!
-      io_initialized=.true.
-!
-!  initialize datadir and directory_snap (where var.dat and VAR# go)
-!  -- may be overwritten in *.in parameter file
-!
-      directory_snap = ''
-!
-    endsubroutine register_io
-!***********************************************************************
-    subroutine directory_names()
-!
-!  Set up the directory names:
-!  initialize datadir to `data' (would have been `tmp' with older runs)
-!  set directory name for the output (one subdirectory for each processor)
-!  if  datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
-!
-!  02-oct-2002/wolf: coded
-!
-      use Cdata, only: datadir,directory,datadir_snap,directory_snap
-      use General, only: safe_character_assign
-!
-      if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) then
-        datadir_snap = datadir
-      endif
-!
-      call safe_character_assign(directory, trim(datadir)//'/allprocs')
-      call safe_character_assign(directory_snap,trim(datadir_snap)//'/allprocs')
-!
-    endsubroutine directory_names
 !***********************************************************************
     subroutine commit_io_type_vect(nv)
 !
@@ -261,40 +149,6 @@ contains
       endif
 !
     endsubroutine commit_io_type_vect_1D
-!***********************************************************************
-    subroutine input(file,a,nv,mode)
-!
-!  read snapshot file, possibly with mesh and time (if mode=1)
-!  11-apr-97/axel: coded
-!
-      use Mpicomm, only: stop_it
-!
-      character (len=*) :: file
-      integer :: nv,mode
-      real, dimension (mx,my,mz,nv) :: a
-!
-      if (ip<=8) print*,'input: mx,my,mz,nv=',mx,my,mz,nv
-      if (.not. io_initialized) &
-           call stop_it("input: Need to call register_io first")
-!
-      call commit_io_type_vect(nv)
-!
-!  open file and set view (specify which file positions we can access)
-!
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
-               MPI_MODE_RDONLY, &
-               MPI_INFO_NULL, fhandle, ierr)
-      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
-               "native", MPI_INFO_NULL, ierr)
-!
-!  read data
-!
-      call MPI_FILE_READ_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
-      call MPI_FILE_CLOSE(fhandle, ierr)
-!
-      call keep_compiler_quiet(mode)
-!
-    endsubroutine input
 !***********************************************************************
     subroutine output_vect(file,a,nv)
 !
@@ -430,28 +284,6 @@ contains
                                   nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_pencil_scal
-!***********************************************************************
-    subroutine outpus(file,a,nv)
-!
-!  write snapshot file, always write mesh and time, could add other things
-!  11-oct-98/axel: adapted
-!
-      use Mpicomm, only: stop_it
-!
-      integer :: nv
-      character (len=*) :: file
-      real, dimension (mx,my,mz,nv) :: a
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      t_sp = t
-      call stop_it("outpus: doesn't work with io_mpio yet -- but wasn't used anyway")
-!
-      open(1,FILE=file,FORM='unformatted')
-      write(1) a(l1:l2,m1:m2,n1:n2,:)
-      write(1) t_sp,x,y,z,dx,dy,dz,deltay
-      close(1)
-!
-    endsubroutine outpus
 !***********************************************************************
     subroutine write_record_info(file, nv)
 !
@@ -598,37 +430,6 @@ contains
 !
     endsubroutine read_grid_data
 !***********************************************************************
-    subroutine log_filename_to_file(filename,flist)
-!
-!  In the directory containing `filename', append one line to file
-!  `flist' containing the file part of filename
-!
-!  13-may-08/wolf: adapted from io_dist.f90
-!
-      use Cdata, only: lroot,lcopysnapshots_exp,datadir
-      use Cparam, only: fnlen
-      use General, only: parse_filename
-!
-      character (len=*) :: filename,flist
-      character (len=fnlen) :: dir,fpart
-      integer :: iostat
-!
-      if (lroot) then
-        call parse_filename(filename,dir,fpart)
-!
-        open(lun_output,FILE=trim(dir)//'/'//trim(flist),POSITION='append',IOSTAT=iostat)
-        if (outlog(iostat,'open',trim(dir)//'/'//trim(flist),dist=-lun_output)) return      ! file not distributed, backskipping enabled
-!
-        write(lun_output,'(A)',IOSTAT=iostat) trim(fpart)
-        if (outlog(iostat,'write fpart')) return
-!
-        close(lun_output,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-!
-      endif
-!
-    endsubroutine log_filename_to_file
-!***********************************************************************
     subroutine wgrid(file)
 !
 !  Write processor-local part of grid coordinates.
@@ -727,118 +528,5 @@ contains
       call keep_compiler_quiet(file)
 !
     endsubroutine rgrid
-!***********************************************************************
-    subroutine wproc_bounds(file)
-!
-!   Export processor boundaries to file.
-!
-!   20-aug-09/bourdin: adapted
-!
-      use Cdata, only: procy_bounds,procz_bounds
-      use Mpicomm, only: stop_it
-!
-      character (len=*) :: file
-      integer :: iostat
-!
-      if (lroot) then
-        open(lun_output,FILE=file,FORM='unformatted',IOSTAT=iostat)
-        if (iostat /= 0) call stop_it( &
-            "Cannot open "//trim(file)//" (or similar) for writing"// &
-            " -- is data/ visible from all nodes?")
-!
-        write(lun_output,IOSTAT=iostat) procy_bounds
-        write(lun_output,IOSTAT=iostat) procz_bounds
-        if (iostat /= 0) call stop_it( &
-            "Cannot write proc_bounds properly into"//trim(file),iostat)
-!
-        close(lun_output,IOSTAT=iostat)
-        if (outlog(iostat,'close',file)) continue
-      endif
-!
-    endsubroutine wproc_bounds
-!***********************************************************************
-    subroutine rproc_bounds(file)
-!
-!   Import processor boundaries from file.
-!
-!   20-aug-09/bourdin: adapted
-!
-      use Cdata, only: procy_bounds,procz_bounds
-      use Mpicomm, only: stop_it
-!
-      character (len=*) :: file
-      integer :: iostat
-!
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=iostat)
-      if (iostat /= 0) call stop_it( &
-          "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?",iostat)
-!
-      read(lun_input,IOSTAT=iostat) procy_bounds
-      if (iostat /= 0) call stop_it( &
-          "Cannot read procy_bounds from"//trim(file),iostat)
-!
-      read(lun_input,IOSTAT=iostat) procz_bounds
-      if (iostat /= 0) call stop_it( &
-          "Cannot read procz_bounds from"//trim(file),iostat)
-!
-      close(lun_input,IOSTAT=iostat)
-      if (outlog(iostat,'close',file)) continue
-!
-    endsubroutine rproc_bounds
-!***********************************************************************
-    subroutine wtime(file,tau)
-!
-!  Write t to file
-!  21-sep-02/wolf: coded
-!
-      use Mpicomm, only: stop_it
-!
-      double precision :: tau
-      character (len=*) :: file
-!
-      integer :: iostat
-      real :: t_sp   ! t in single precision for backwards compatibility
-!
-      t_sp = tau
-      if (lroot) then
-        open(lun_output,FILE=file,IOSTAT=iostat)
-        if (outlog(iostat,'open',file)) return
-!
-        write(lun_output,*,IOSTAT=iostat) t_sp
-        if (outlog(iostat,'write t_sp')) return
-!
-        close(lun_output,IOSTAT=iostat)
-        if (outlog(iostat,'close')) continue
-      endif
-!
-    endsubroutine wtime
-!***********************************************************************
-    subroutine rtime(file,tau)
-!
-!  Read t from file
-!  21-sep-02/wolf: coded
-!
-      use Mpicomm, only: stop_it
-!
-      double precision :: tau
-      character (len=*) :: file
-!
-      integer :: iostat
-      real:: t_sp   ! t in single precision for backwards compatibility
-!
-      open(lun_input,FILE=file,IOSTAT=iostat)
-      if (iostat /= 0) call stop_it( &
-          "Cannot open "//trim(file)//" for reading",iostat)
-!
-      read(lun_input,*,IOSTAT=iostat) t_sp
-      if (iostat /= 0) call stop_it( &
-          "Cannot read t_sp from "//trim(file),iostat)
-!
-      close(lun_input,IOSTAT=iostat)
-      if (outlog(iostat,'close',file)) continue
-      tau = t_sp
-!
-    endsubroutine rtime
 !***********************************************************************
 endmodule Io
