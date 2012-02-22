@@ -51,6 +51,9 @@ program pc_reduce
 !
   inquire (IOLENGTH=bytes) 1.0
 !
+  if (lcollective_IO) call fatal_error ('pc_reduce', &
+      "Reducing snapshots currently requires the distributed IO-module.")
+!
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
 !
@@ -127,9 +130,9 @@ program pc_reduce
 !
   iproc = 0
   call directory_names()
-  inquire (file=trim(directory_snap)//'/'//trim(filename), exist=ex)
-  if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//trim(filename), .true.)
-  open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),status='replace',access='direct',recl=nrx*nry*bytes)
+  inquire (file=trim(directory_snap)//'/'//filename, exist=ex)
+  if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//filename, .true.)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=nrx*nry*bytes)
 !
   gz = huge(1.0)
 !
@@ -171,14 +174,14 @@ program pc_reduce
         llast_proc_xz = llast_proc_x .and. llast_proc_z
         llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
 !
-!  Set up directory names `directory' and `directory_snap'.
+!  Set up directory names.
 !
         call directory_names()
 !
 !  Read coordinates.
 !
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid(trim(directory)//'/grid.dat')
+        call rgrid('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for 
 ! backward compatibility.
@@ -209,20 +212,20 @@ program pc_reduce
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-        call rsnap(trim(directory_snap)//'/'//trim(filename),f,mvar_in)
+        call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
 !
 !  Read time and global variables (if any).
 !
-        if (mglobal/=0)  &
-            call input_globals(trim(directory_snap)//'/global.dat', &
-            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+        if (mglobal /= 0) &
+            call input_globals ('global.dat', &
+                f(:,:,:,mvar+maux+1:mvar+maux+mglobal), mglobal)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
         lpencil_check_at_work = .true.
-        call initialize_modules(f,LSTARTING=.true.)
+        call initialize_modules (f, LSTARTING=.true.)
         lpencil_check_at_work = .false.
 !
 !  Find out which pencils are needed and write information about required,
@@ -295,33 +298,33 @@ program pc_reduce
       if (lfirst_proc_z) start_pos = 1
       if (llast_proc_z) end_pos = mz
       do pz = start_pos, end_pos
-        write(lun_output,rec=pz+ipz*nz+(pa-1)*ngz) rf(:,:,pz,pa)
+        write (lun_output, rec=pz+ipz*nz+(pa-1)*ngz) rf(:,:,pz,pa)
       enddo
     enddo
   enddo
 !
   ! write additional data:
-  close(lun_output)
-  open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),FORM='unformatted',position='append')
+  close (lun_output)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
   t_sp = t
-  write(lun_output) t_sp,rx,ry,gz,dx*reduce,dy*reduce,dz
+  write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
   if (lshear) write(lun_output) deltay
-  close(lun_output)
+  close (lun_output)
 !
   ! write global grid:
-  open(lun_output,FILE=trim(directory_out)//'/grid.dat',FORM='unformatted')
-  write(lun_output) t_sp,rx,ry,gz,dx*reduce,dy*reduce,dz
-  write(lun_output) dx*reduce,dy*reduce,dz
-  write(lun_output) Lx,Ly,Lz
-  write(lun_output) rdx_1,rdy_1,gdz_1
-  write(lun_output) rdx_tilde,rdy_tilde,gdz_tilde
-  close(lun_output)
+  open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
+  write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
+  write (lun_output) dx*reduce, dy*reduce, dz
+  write (lun_output) Lx, Ly, Lz
+  write (lun_output) rdx_1, rdy_1, gdz_1
+  write (lun_output) rdx_tilde, rdy_tilde, gdz_tilde
+  close (lun_output)
 !
   print*, 'Writing snapshot for time t =', t
 !
 !  Gvie all modules the possibility to exit properly.
 !
-  call finalize_modules(f,.true.)
+  call finalize_modules (f, .true.)
 !
 !  Free any allocated memory.
 !

@@ -52,6 +52,9 @@ program pc_collect
 !
   inquire (IOLENGTH=bytes) 1.0
 !
+  if (lcollective_IO) call fatal_error ('pc_collect', &
+      "Collecting snapshots currently requires the distributed IO-module.")
+!
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
 !
@@ -140,9 +143,9 @@ program pc_collect
 !
   iproc = 0
   call directory_names()
-  inquire (file=trim(directory_snap)//'/'//trim(filename), exist=ex)
-  if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_snap)//'/'//trim(filename), .true.)
-  open(lun_output,FILE=trim(directory_out)//'/'//trim(filename),status='replace',access='direct',recl=ngx*ngy*bytes)
+  inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
+  if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=ngx*ngy*bytes)
 !
   gz = huge(1.0)
 !
@@ -193,7 +196,7 @@ program pc_collect
 !  Read coordinates.
 !
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid(trim(directory)//'/grid.dat')
+        call rgrid('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for
 ! backward compatibility.
@@ -224,20 +227,20 @@ program pc_collect
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-        call rsnap(trim(directory_snap)//'/'//trim(filename),f,mvar_in)
+        call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
 !
 !  Read time and global variables (if any).
 !
-        if (mglobal/=0)  &
-            call input_globals(trim(directory_snap)//'/global.dat', &
-            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+        if (mglobal /= 0) &
+            call input_globals ('global.dat', &
+                f(:,:,:,mvar+maux+1:mvar+maux+mglobal), mglobal)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
         lpencil_check_at_work = .true.
-        call initialize_modules(f,LSTARTING=.true.)
+        call initialize_modules (f, LSTARTING=.true.)
         lpencil_check_at_work = .false.
 !
 !  Find out which pencils are needed and write information about required,
@@ -284,14 +287,14 @@ program pc_collect
 !
   ! write additional data:
   close (lun_output)
-  open (lun_output, FILE=trim(directory_out)//'/'//trim(filename), FORM='unformatted', position='append')
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
   t_sp = t
   write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
   if (lshear) write (lun_output) deltay
   close (lun_output)
 !
   ! write global grid:
-  open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted')
+  open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
   write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
   write (lun_output) dx, dy, dz
   write (lun_output) Lx, Ly, Lz

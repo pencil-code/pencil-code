@@ -51,6 +51,9 @@ program pc_distribute
 !
   inquire (IOLENGTH=bytes) 1.0
 !
+  if (lcollective_IO) call fatal_error ('pc_distribute', &
+      "Distributing snapshots currently requires the distributed IO-module.")
+!
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
 !
@@ -120,19 +123,19 @@ program pc_distribute
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-  inquire (file=trim(directory_in)//'/'//trim(filename), exist=ex)
-  if (.not. ex) call fatal_error ('pc_distribute', 'File not found: '//trim(directory_in)//'/'//trim(filename), .true.)
+  inquire (file=trim(directory_in)//'/'//filename, exist=ex)
+  if (.not. ex) call fatal_error ('pc_distribute', 'File not found: '//trim(directory_in)//'/'//filename, .true.)
   inquire (file=trim(directory_in)//'/grid.dat', exist=ex)
   if (.not. ex) call fatal_error ('pc_distribute', 'File not found: '//trim(directory_in)//'/grid.dat', .true.)
 !
   ! read time:
-  open(lun_input,FILE=trim(directory_in)//'/grid.dat',FORM='unformatted')
-  read(lun_input) t_sp,gx,gy,gz,dummy_dx,dummy_dy,dummy_dz
-  if (lshear) read(lun_input) deltay
-  close(lun_input)
+  open (lun_input, FILE=trim(directory_in)//'/grid.dat', FORM='unformatted', status='old')
+  read (lun_input) t_sp, gx, gy, gz, dummy_dx, dummy_dy, dummy_dz
+  if (lshear) read (lun_input) deltay
+  close (lun_input)
   t = t_sp
 !
-  open(lun_input,FILE=trim(directory_in)//'/'//trim(filename),access='direct',recl=ngx*ngy*bytes)
+  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=ngx*ngy*bytes, status='old')
 !
 ! Loop over processors
 !
@@ -148,7 +151,7 @@ program pc_distribute
     ! read xy-layer:
     do pa = 1, mvar_io
       do pz = 1, mz
-        read(lun_input,rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
+        read (lun_input, rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
       enddo
     enddo
 !
@@ -178,14 +181,14 @@ program pc_distribute
         llast_proc_xz = llast_proc_x .and. llast_proc_z
         llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
 !
-!  Set up directory names `directory' and `directory_snap'.
+!  Set up directory names.
 !
         call directory_names()
 !
 !  Read coordinates.
 !
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid(trim(directory)//'/grid.dat')
+        call rgrid('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for 
 ! backward compatibility.
@@ -217,7 +220,7 @@ program pc_distribute
 !  (must be done before need_XXXX can be used, for example)
 !
         lpencil_check_at_work = .true.
-        call initialize_modules(f,LSTARTING=.true.)
+        call initialize_modules (f, LSTARTING=.true.)
         lpencil_check_at_work = .false.
 !
 !  Find out which pencils are needed and write information about required,
@@ -232,18 +235,18 @@ program pc_distribute
         z = gz(1+ipz*nz:mz+ipz*nz)
 !
         ! write data:
-        call wsnap(trim(directory_snap)//'/'//trim(filename),f(:,:,:,1:mvar_io),mvar_io,enum=.false.,noghost=.true.)
+        call wsnap (filename, f(:,:,:,1:mvar_io), mvar_io, enum=.false., noghost=.true.)
 !
       enddo
     enddo
   enddo
 !
-  close(lun_input)
+  close (lun_input)
   print *, 'Writing snapshot for time t =', t
 !
 !  Gvie all modules the possibility to exit properly.
 !
-  call finalize_modules(f,.true.)
+  call finalize_modules (f, .true.)
 !
 !  Free any allocated memory.
 !
