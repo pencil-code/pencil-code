@@ -155,7 +155,7 @@ module Snapshot
       if (lread_oldsnap_nomag) then
         f(:,:,:,iax:iaz)=0.
         print*,'read old snapshot file (but without magnetic field)'
-        call input_snap(trim(directory_snap)//'/var.dat',f,msnap-3,1)
+        call input_snap('var.dat',f,msnap-3,1)
         call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data

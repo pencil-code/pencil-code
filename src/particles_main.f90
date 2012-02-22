@@ -1230,7 +1230,7 @@ module Particles_main
           call particles_boundconds(f)
           call output_particles(snapname,fp,ipar)
           if (lparticles_blocks) &
-              call output_blocks(trim(directory_snap)//'/BLOCKS'//nsnap_ch)
+              call output_blocks(trim(directory_dist)//'/BLOCKS'//nsnap_ch)
           if (ip<=10 .and. lroot) &
               print*,'wsnap_particles: written snapshot ', snapname
           if (present(flist)) call log_filename_to_file(snapname,flist)
@@ -1249,7 +1249,7 @@ module Particles_main
         endif
         call output_particles(snapname,fp,ipar)
         if (lparticles_blocks) &
-            call output_blocks(trim(directory_snap)//'/blocks.dat')
+            call output_blocks(trim(directory_dist)//'/blocks.dat')
         if (ip<=10 .and. lroot) &
              print*,'wsnap_particles: written snapshot ', snapname
         if (present(flist)) call log_filename_to_file(snapname,flist)

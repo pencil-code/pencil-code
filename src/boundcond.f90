@@ -1996,7 +1996,7 @@ module Boundcond
       if (lbc_file_x) then
         if (lroot) then
           print*,'opening bc_file_x.dat'
-          open(9,file=trim(directory_snap)//'/bc_file_x.dat',form='unformatted')
+          open(9,file=trim(directory_dist)//'/bc_file_x.dat',form='unformatted')
           read(9,end=99) bc_file_x_array
           close(9)
         endif

@@ -901,7 +901,7 @@ module Diagnostics
 !
         open(1,file=trim(datadir)//'/phizaverages.dat',position='append',IOSTAT=iostat)
 ! file not distributed, backskipping enabled
-        if (outlog(iostat,'open',trim(directory_snap)//'/phizaverages.dat',dist=-1)) return
+        if (outlog(iostat,'open',trim(datadir)//'/phizaverages.dat',dist=-1)) return
 !
         if (it==1) then
           write(1,'(1p,8e14.5e3)',IOSTAT=iostat) rcyl
@@ -930,10 +930,10 @@ module Diagnostics
       integer :: iostat
 !
       if (lfirst_proc_y.and.nnamexz>0) then
-        open(1, file=trim(directory_snap)//'/yaverages.dat', &
+        open(1, file=trim(directory_dist)//'/yaverages.dat', &
             form='unformatted', position='append',IOSTAT=iostat)
 ! file distributed, backskipping enabled
-        if (outlog(iostat,'open',trim(directory_snap)//'/yaverages.dat',dist=1)) return
+        if (outlog(iostat,'open',trim(directory_dist)//'/yaverages.dat',dist=1)) return
 
 !
         write(1,IOSTAT=iostat) t2davgfirst
@@ -958,10 +958,10 @@ module Diagnostics
       integer :: iostat
 !
       if (lfirst_proc_z.and.nnamexy>0) then
-        open(1, file=trim(directory_snap)//'/zaverages.dat', &
+        open(1, file=trim(directory_dist)//'/zaverages.dat', &
             form='unformatted', position='append',IOSTAT=iostat)
 ! file distributed, backskipping enabled
-        if (outlog(iostat,'open',trim(directory_snap)//'/zaverages.dat',dist=1)) return
+        if (outlog(iostat,'open',trim(directory_dist)//'/zaverages.dat',dist=1)) return
 !
         write(1,IOSTAT=iostat) t2davgfirst
         if (outlog(iostat,'write t2davgfirst')) return

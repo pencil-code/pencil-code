@@ -88,15 +88,26 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: datadir, directory, datadir_snap, directory_snap
-      use General, only: safe_character_assign
+      use Cdata, only: datadir, directory, datadir_snap, directory_dist, directory_snap
+      use General, only: safe_character_assign, itoa
       use Mpicomm, only: lroot
 !
-      if ((datadir_snap == '') .or. (index (datadir_snap, 'allprocs') > 0)) then
+      character (len=intlen) :: chproc
+!
+!  check whether directory_snap contains `/proc0' -- if so, revert to the
+!  default name.
+!  Rationale: if directory_snap was not explicitly set in start.in, it
+!  will be written to param.nml as 'data/proc0', but this should in fact
+!  be data/procN on processor N.
+!
+      if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) then
         datadir_snap = datadir
       endif
 !
-      call safe_character_assign (directory, trim (datadir)//'/allprocs')
+      chproc = itoa (iproc)
+      call safe_character_assign (directory, trim (datadir)//'/proc'//chproc)
+      call safe_character_assign (directory_dist, &
+                                            trim (datadir_snap)//'/proc'//chproc)
       call safe_character_assign (directory_snap, trim (datadir_snap)//'/allprocs')
 !
     endsubroutine directory_names
@@ -276,7 +287,7 @@ contains
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for buffer', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_output, FILE=file, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
@@ -334,7 +345,7 @@ contains
           if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
           call collect_grid (x, y, z, gx, gy, gz)
 
-          open (lun_output, FILE=file, FORM='unformatted', position='append')
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = t
           write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
           if (lshear) write (lun_output) deltay
@@ -385,7 +396,7 @@ contains
       integer, dimension(ncpus) :: data_global
       integer :: partner, buffer
       integer, parameter :: tag_data = 683
-      logical :: lappend_opt, lerror
+      logical :: lappend_opt
 !
       lappend_opt = .false.
       if (present(lappend)) lappend_opt = lappend
@@ -400,9 +411,9 @@ contains
         enddo
         ! write global data to file
         if (lappend_opt) then
-          open (lun_output, file=file, form='formatted', position='append')
+          open (lun_output, file=trim (directory_snap)//'/'//file, form='formatted', position='append', status='old')
         else
-          open (lun_output, file=file, form='formatted')
+          open (lun_output, file=trim (directory_snap)//'/'//file, form='formatted', status='replace')
         endif
         write (lun_output,*) data_global
         close (lun_output)
@@ -496,7 +507,7 @@ contains
       if (lroot) then
         if (ip <= 8) print *, 'input_snap: open ', file
         inquire (IOLENGTH=io_len) t_sp
-        open (lun_input, FILE=file, access='direct', recl=mxgrid*mygrid*io_len)
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
         if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mzgrid, nv
         ! iterate through xy-leading processors in the z-direction
@@ -543,7 +554,7 @@ contains
 !
           rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
           num_rec = int (mzgrid, kind=8) * int (nv*sizeof_real(), kind=8)
-          open (lun_input, FILE=file, FORM='unformatted')
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
           call fseek_pos (lun_input, rec_len, num_rec, 0)
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)
@@ -1231,13 +1242,16 @@ contains
 !
       use Cdata, only: lroot, lcopysnapshots_exp, datadir
       use Cparam, only: fnlen
-      use General, only: parse_filename
+      use General, only: parse_filename, safe_character_assign
       use Mpicomm, only: mpibarrier
 !
       character (len=*) :: filename, flist
+!
       character (len=fnlen) :: dir, fpart
 !
       call parse_filename (filename, dir, fpart)
+      if (dir == '.') call safe_character_assign (dir, directory_snap)
+!
       if (lroot) then
         open (lun_output, FILE=trim (dir)//'/'//trim (flist), POSITION='append')
         write (lun_output, '(A)') trim (fpart)
@@ -1247,7 +1261,7 @@ contains
       if (lcopysnapshots_exp) then
         call mpibarrier ()
         if (lroot) then
-          open (lun_output,FILE=trim (datadir)//'/move-me.list', POSITION='append')
+          open (lun_output,FILE=trim (datadir)//'/move-me.list', POSITION='append', status='old')
           write (lun_output,'(A)') trim (fpart)
           close (lun_output)
         endif
@@ -1257,7 +1271,7 @@ contains
 !***********************************************************************
     subroutine wgrid(file)
 !
-!  Write processor-local part of grid coordinates.
+!  Write grid coordinates.
 !
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
@@ -1274,7 +1288,7 @@ contains
         allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        open (lun_output, FILE=file, FORM='unformatted')
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
         t_sp = t
         call collect_grid (x, y, z, gx, gy, gz)
         write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
@@ -1297,7 +1311,7 @@ contains
 !***********************************************************************
     subroutine rgrid(file)
 !
-!  Read processor-local part of grid coordinates.
+!  Read grid coordinates.
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
@@ -1316,7 +1330,7 @@ contains
         allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-        open (lun_input, FILE=file, FORM='unformatted')
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
         read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
         call distribute_grid (x, y, z, gx, gy, gz)
         read (lun_input) dx, dy, dz
@@ -1369,25 +1383,22 @@ contains
 !
 !   Export processor boundaries to file.
 !
-!   20-aug-09/bourdin: adapted
+!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
 !
-      use Cdata, only: procy_bounds,procz_bounds
+      use Cdata, only: procy_bounds, procz_bounds
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
+!
       integer :: ierr
 !
-      call fatal_error ("wproc_bounds", "Not yet implemented in io_collect.")
-!
-      if (lroot) then
-        open(lun_output,FILE=file,FORM='unformatted',IOSTAT=ierr)
-        if (ierr /= 0) call stop_it( &
-            "Cannot open " // trim(file) // " (or similar) for writing" // &
-            " -- is data/ visible from all nodes?")
-        write(lun_output) procy_bounds
-        write(lun_output) procz_bounds
-        close(lun_output)
-      endif
+      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='replace')
+      if (ierr /= 0) call stop_it ( &
+          "Cannot open " // trim(file) // " (or similar) for writing" // &
+          " -- is data/ visible from all nodes?")
+      write (lun_output) procy_bounds
+      write (lun_output) procz_bounds
+      close (lun_output)
 !
     endsubroutine wproc_bounds
 !***********************************************************************
@@ -1395,25 +1406,22 @@ contains
 !
 !   Import processor boundaries from file.
 !
-!   20-aug-09/bourdin: adapted
+!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
 !
-      use Cdata, only: procy_bounds,procz_bounds
+      use Cdata, only: procy_bounds, procz_bounds
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
+!
       integer :: ierr
 !
-      call fatal_error ("rproc_bounds", "Not yet implemented in io_collect.")
-!
-      if (lroot) then
-        open(lun_input,FILE=file,FORM='unformatted',IOSTAT=ierr)
-        if (ierr /= 0) call stop_it( &
-            "Cannot open " // trim(file) // " (or similar) for reading" // &
-            " -- is data/ visible from all nodes?")
-        read(lun_input) procy_bounds
-        read(lun_input) procz_bounds
-        close(lun_input)
-      endif
+      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr, status='old')
+      if (ierr /= 0) call stop_it ( &
+          "Cannot open " // trim(file) // " (or similar) for reading" // &
+          " -- is data/ visible from all nodes?")
+      read (lun_input) procy_bounds
+      read (lun_input) procz_bounds
+      close (lun_input)
 !
     endsubroutine rproc_bounds
 !***********************************************************************

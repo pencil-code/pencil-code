@@ -303,7 +303,7 @@ program start
 !
 !  Write grid.dat file.
 !
-  call wgrid(trim(directory)//'/grid.dat')
+  call wgrid('grid.dat')
   if (lparticles) call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
 !  Write .general file for data explorer.
@@ -360,11 +360,11 @@ program start
 !  and read modify_filename into f
 !
   if (lmodify) then
-    call rsnap(trim(directory_snap)//'/var.dat',df,mvar)
-    call rsnap(trim(directory_snap)//'/'//modify_filename,f,mvar)
+    call rsnap('var.dat',df,mvar)
+    call rsnap(modify_filename,f,mvar)
   else
     if (lread_oldsnap) then
-      call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
+      call rsnap('var.dat',f,mvar)
     else
       f(:,:,:,1:mvar)=0.0
     endif
@@ -427,7 +427,7 @@ program start
 !
   if (lwrite_stratification) then
     call update_ghosts(f)
-    open(19,file=trim(directory_snap)//'/stratification.dat')
+    open(19,file=trim(directory_dist)//'/stratification.dat')
       write(19,*) f(l1,m1,:,ilnrho)
     close(19)
   endif
@@ -481,10 +481,9 @@ program start
 !
   if (lwrite_ic) then
     if (lparticles) &
-        call write_snapshot_particles(directory_snap,f,ENUM=.false.,snapnum=0)
+        call write_snapshot_particles(directory_dist,f,ENUM=.false.,snapnum=0)
 !
-    call wsnap(trim(directory_snap)//'/VAR0',f(:,:,:,1:mvar_io), &
-        mvar_io,ENUM=.false.,FLIST='varN.list')
+    call wsnap('VAR0',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.,FLIST='varN.list')
   endif
 !
 !  The option lnowrite writes everything except the actual var.dat file.
@@ -495,12 +494,10 @@ program start
   if (.not.lnowrite .and. .not.lnoerase) then
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
-        call write_snapshot_particles(directory_snap,f,ENUM=.false.)
-    call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io),mvar_io, &
-        ENUM=.false.)
+        call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+    call wsnap('var.dat',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
   elseif (lmodify) then
-    call wsnap(trim(directory_snap)//'/'//modify_filename,f(:,:,:,1:mvar_io), &
-        mvar_io,ENUM=.false.)
+    call wsnap(modify_filename,f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
   endif
   call wdim(trim(directory)//'/dim.dat')
 !
@@ -514,9 +511,9 @@ program start
 !
 !  Write global variables.
 !
-  if (mglobal/=0)  &
-      call output_globals(trim(directory_snap)//'/global.dat', &
-      f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+  if (mglobal/=0) &
+      call output_globals('global.dat', &
+          f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Write input parameters to a parameter file (for run.x and IDL).
 !  Do this late enough, so init_entropy etc. can adjust them.

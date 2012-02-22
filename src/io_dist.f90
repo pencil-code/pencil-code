@@ -104,6 +104,8 @@ contains
 !
       chproc=itoa(iproc)
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+      call safe_character_assign(directory_dist, &
+                                            trim(datadir_snap)//'/proc'//chproc)
       call safe_character_assign(directory_snap, &
                                             trim(datadir_snap)//'/proc'//chproc)
 !
@@ -131,7 +133,7 @@ contains
       if (lroot .and. (ip <= 8)) print *, 'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-      open (lun_output, FILE=file, FORM='unformatted', IOSTAT=io_err)
+      open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
       lerror = outlog (io_err, 'open', file, dist=lun_output)
 !
       if (lwrite_2d) then
@@ -209,9 +211,9 @@ contains
       if (present(lappend)) lappend_opt = lappend
 !
       if (lappend_opt) then
-        open (lun_output, file=file, form='formatted', IOSTAT=io_err, position='append')
+        open (lun_output, file=trim(directory_snap)//'/'//file, form='formatted', IOSTAT=io_err, position='append', status='old')
       else
-        open (lun_output, file=file, form='formatted', IOSTAT=io_err)
+        open (lun_output, file=trim(directory_snap)//'/'//file, form='formatted', IOSTAT=io_err, status='replace')
       endif
       lerror = outlog(io_err, 'open formatted', file)
       write (lun_output,*,IOSTAT=io_err) data
@@ -403,8 +405,8 @@ contains
       logical :: lerror
 !
       if (lserial_io) call start_serialize()
-      open (lun_input, FILE=file, FORM='unformatted', IOSTAT=io_err)
-      lerror = outlog (io_err, "Can't open for reading", file)
+      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='old')
+      lerror = outlog (io_err, "Can't open for reading", trim(directory_snap)//'/'//file)
 !      if (ip<=8) print *, 'input_snap: open, mx,my,mz,nv=', mx, my, mz, nv
       if (lwrite_2d) then
         if (nx == 1) then
@@ -596,7 +598,7 @@ contains
       logical :: lerror
 !
       if (lserial_io) call start_serialize()
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      open(lun_output,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
       lerror = outlog(io_err,"output_globals: Can't open",file)
 !
       if (lwrite_2d) then
@@ -637,7 +639,7 @@ contains
 !
       if (lserial_io) call start_serialize()
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      open(lun_input,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='old')
       lerror = outlog(io_err,"input_globals: Can't open",file)
 
       if (ip<=8) print*,'input_globals: open, mx,my,mz,nv=',mx,my,mz,nv
@@ -667,16 +669,18 @@ contains
 !  In the directory containing `filename', append one line to file
 !  `flist' containing the file part of filename
 !
-      use General, only: parse_filename
+      use General, only: parse_filename, safe_character_assign
       use Mpicomm, only: mpibarrier
 !
       character (len=*) :: file,flist
-      character (len=fnlen) :: dir,fpart
 !
+      character (len=fnlen) :: dir,fpart
       integer :: io_err
       logical :: lerror
 !
       call parse_filename(file,dir,fpart)
+      if (dir == '.') call safe_character_assign(dir,directory_snap)
+!
       open(lun_output,FILE=trim(dir)//'/'//flist,POSITION='append',IOSTAT=io_err)
       ! file not distributed?, backskipping enabled
       lerror = outlog(io_err,"open",trim(dir)//'/'//flist,dist=-lun_output)
@@ -687,7 +691,7 @@ contains
       if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
-          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err)
+          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err,status='old')
           ! file not distributed?, backskipping enabled
           lerror = outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)
           write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
@@ -713,7 +717,7 @@ contains
 !
       t_sp = t
 
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      open(lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='replace')
       if (io_err /= 0) call fatal_error('wgrid', &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
           " -- is data/ visible from all nodes?", .true.)
@@ -744,7 +748,7 @@ contains
       logical :: lerror
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      open(lun_input,FILE=trim(directory)//'/'//file,FORM='unformatted',IOSTAT=io_err,status='old')
       if (io_err /= 0) call fatal_error('rgrid', &
           "Cannot open " // trim(file) // " (or similar) for reading" // &
           " -- is data/ visible from all nodes?",.true.)
@@ -809,7 +813,7 @@ contains
       integer :: io_err
       logical :: lerror
 !
-      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      open(lun_output,FILE=file,FORM='unformatted',IOSTAT=io_err,status='replace')
       lerror = outlog(io_err,"Can't open",file)
       write(lun_output,IOSTAT=io_err) procx_bounds
       lerror = outlog(io_err,'write procx_bounds',file)
@@ -833,7 +837,7 @@ contains
       integer :: io_err
       logical :: lerror
 !
-      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err)
+      open(lun_input,FILE=file,FORM='unformatted',IOSTAT=io_err,status='old')
       lerror = outlog(io_err,"Can't open",file)
       read(lun_input,IOSTAT=io_err) procx_bounds
       lerror = outlog(io_err,'read procx_bounds',file)

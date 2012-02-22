@@ -23,7 +23,7 @@ module Cdata
 !
 !  Default CVS Id.
 !
-  character (len=120) :: cvsid='no cvsid is given in start.in or run.in!'
+  character (len=linelen) :: cvsid='no cvsid is given in start.in or run.in!'
 !
 !  Cartesian coordinate system.
 !
@@ -141,9 +141,9 @@ module Cdata
 !
 !  Input/output of data.
 !
-  character (len=120) :: datadir='data'
-  character (len=120) :: directory='',datadir_snap='',directory_snap=''
-  character (len=120) :: modify_filename='modify.dat'
+  character (len=fnlen) :: datadir='data'
+  character (len=fnlen) :: directory='',datadir_snap='',directory_snap='',directory_dist=''
+  character (len=fnlen) :: modify_filename='modify.dat'
   real :: dsnap=100.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
@@ -519,9 +519,9 @@ module Cdata
 !
 !  A buffer in which to construct an error message.
 !
-  character (len=255) :: errormsg
-  character (len=255) :: mailaddress=''
-  logical             :: lstop_on_ioerror=.true.
+  character (len=linelen) :: errormsg
+  character (len=linelen) :: mailaddress=''
+  logical :: lstop_on_ioerror=.true.
 !
 !  Auxiliary variables.
 !

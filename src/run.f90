@@ -130,14 +130,14 @@ program run
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
-!  Set up directory names `directory' and `directory_snap'.
+!  Set up directory names.
 !
   call directory_names()
 !
 !  Read coordinates.
 !
   if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-  call rgrid(trim(directory)//'/grid.dat')
+  call rgrid('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for 
 ! backward compatibility.
@@ -272,16 +272,16 @@ program run
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-  call rsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_in),mvar_in)
+  call rsnap('var.dat',f(:,:,:,1:mvar_in),mvar_in)
 !
-  if (lparticles) call read_snapshot_particles(directory_snap)
+  if (lparticles) call read_snapshot_particles(directory_dist)
 !
   call get_nseed(nseed)
 !
 !  Read global variables (if any).
 !
   if (mglobal/=0) &
-      call input_globals(trim(directory_snap)//'/global.dat', &
+      call input_globals('global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Set initial time to zero if requested.
@@ -365,7 +365,7 @@ program run
   call write_pencil_info()
 !
   if (mglobal/=0)  &
-      call output_globals(trim(directory_snap)//'/global.dat', &
+      call output_globals('global.dat', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Update ghost zones, so rprint works corrected for at the first
@@ -613,16 +613,13 @@ program run
 !  Set ialive=0 to fully switch this off.
 !
     if (ialive /= 0) then
-      if (mod(it,ialive)==0) &
-          call output_form(trim(directory)//'/alive.info',it,.false.)
+      if (mod(it,ialive)==0) call output_form('alive.info',it,.false.)
     endif
     if (lparticles) &
-        call write_snapshot_particles(directory_snap,f,ENUM=.true.)
+        call write_snapshot_particles(directory_dist,f,ENUM=.true.)
 !
-    call wsnap(trim(directory_snap)//'/VAR',f(:,:,:,1:mvar_io), &
-        mvar_io,ENUM=.true.,FLIST='varN.list')
-    call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
-         FLIST='tavgN.list')
+    call wsnap('VAR',f(:,:,:,1:mvar_io),mvar_io,ENUM=.true.,FLIST='varN.list')
+    call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
 !
 !  Write slices (for animation purposes).
 !
@@ -634,11 +631,11 @@ program run
     if (isave/=0.and..not.lnowrite) then
       if (mod(it,isave)==0) then
         if (lparticles) &
-            call write_snapshot_particles(directory_snap,f,ENUM=.false.)
+            call write_snapshot_particles(directory_dist,f,ENUM=.false.)
 !
-        call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io), &
+        call wsnap('var.dat',f(:,:,:,1:mvar_io), &
                    mvar_io,ENUM=.false.,noghost=noghost_for_isave)
-        call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
+        call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
       endif
     endif
 !
@@ -649,10 +646,9 @@ program run
 !  Save global variables.
 !
     if (isaveglobal/=0) then
-      if (mod(it,isaveglobal)==0) then
-        if (mglobal/=0)  &
-          call output_globals(trim(directory_snap)//'/global.dat', &
-              f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) then
+        call output_globals('global.dat', &
+            f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
       endif
     endif
 !
@@ -708,27 +704,23 @@ program run
   if (.not.lnowrite) then
     if (save_lastsnap) then
       if (lparticles) &
-          call write_snapshot_particles(directory_snap,f,ENUM=.false.)
+          call write_snapshot_particles(directory_dist,f,ENUM=.false.)
 !
-      call wsnap(trim(directory_snap)//'/var.dat',f(:,:,:,1:mvar_io),mvar_io, &
-          ENUM=.false.)
-      call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',ENUM=.false.)
+      call wsnap('var.dat',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
+      call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
 !
 !  dvar is written for analysis and debugging purposes only.
 !
       if (ip<=11 .or. lwrite_dvar) then
-        call wsnap(trim(directory)//'/dvar.dat',df(:,:,:,1:mvar),mvar, &
-            ENUM=.false.,noghost=.true.)
+        call wsnap('dvar.dat',df(:,:,:,1:mvar),mvar,ENUM=.false.,noghost=.true.)
         call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
       endif
 !
 !  Write crash files before exiting if we haven't written var.dat already
 !
     else
-      call wsnap(trim(directory_snap)//'/crash.dat',f(:,:,:,1:mvar_io), &
-          mvar_io,ENUM=.false.)
-      if (ip<=11) call wsnap(trim(directory)//'/dcrash.dat',df(:,:,:,1:mvar), &
-          mvar,ENUM=.false.)
+      call wsnap('crash.dat',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
+      if (ip<=11) call wsnap('dcrash.dat',df(:,:,:,1:mvar),mvar,ENUM=.false.)
     endif
   endif
 !

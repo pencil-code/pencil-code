@@ -378,7 +378,7 @@ module Density
 !
       if (.not. lstarting .and. lwrite_stratification) then
         if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
-        open(19,file=trim(directory_snap)//'/stratification.dat')
+        open(19,file=trim(directory_dist)//'/stratification.dat')
           if (ldensity_nolog) then
             if (lroot) then
               print*, 'initialize_density: currently only possible to read'

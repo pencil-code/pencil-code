@@ -1172,7 +1172,7 @@ module Equ
       if ( (it>1) .and. lfirst .and. (dt<=crash_file_dtmin_factor*dtmin) ) then
         write(icrash_string, fmt='(i1)') icrash
         filename='crash'//icrash_string//'.dat'
-        call wsnap(trim(directory_snap)//'/'//filename,f,mvar_io,ENUM=.false.)
+        call wsnap(filename,f,mvar_io,ENUM=.false.)
         if (lroot) then
           print*, 'Time-step is very low - writing '//trim(filename)
           print*, '(it, itsub=', it, itsub, ')'

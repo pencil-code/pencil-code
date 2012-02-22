@@ -266,7 +266,7 @@ module Particles_stalker
 !
 !  Write information to a file
 !
-        open(1,file=trim(directory_snap)//'/particles_stalker.dat', &
+        open(1,file=trim(directory_dist)//'/particles_stalker.dat', &
             form='unformatted',position='append')
 !
 !  Write the time and the number of stalked particles at this processor.

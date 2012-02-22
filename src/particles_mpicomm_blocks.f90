@@ -180,7 +180,7 @@ module Particles_mpicomm
 !
 !  Read block domain decomposition from file.
 !
-        call input_blocks(trim(directory_snap)//'/blocks.dat')
+        call input_blocks(trim(directory_dist)//'/blocks.dat')
       endif
 !
       call keep_compiler_quiet(f)

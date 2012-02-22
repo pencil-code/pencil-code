@@ -670,8 +670,8 @@ module Radiation
 !  Debug output.
 !
       if (lrad_debug) then
-        call output(trim(directory_snap)//'/tau-'//raydir_str//'.dat',tau,1)
-        call output(trim(directory_snap)//'/Qintr-'//raydir_str//'.dat',Qrad,1)
+        call output(trim(directory_dist)//'/tau-'//raydir_str//'.dat',tau,1)
+        call output(trim(directory_dist)//'/Qintr-'//raydir_str//'.dat',Qrad,1)
       endif
 !
     endsubroutine Qintrinsic
@@ -1096,7 +1096,7 @@ module Radiation
       endif
 !
       if (lrad_debug) then
-        call output(trim(directory_snap)//'/Qrev-'//raydir_str//'.dat',Qrad,1)
+        call output(trim(directory_dist)//'/Qrev-'//raydir_str//'.dat',Qrad,1)
       endif
 !
     endsubroutine Qrevision
@@ -1456,7 +1456,7 @@ module Radiation
       endselect
 !
       if (lrad_debug) then
-        call output(trim(directory_snap)//'/Srad.dat',Srad,1)
+        call output(trim(directory_dist)//'/Srad.dat',Srad,1)
       endif
 !
     endsubroutine source_function
