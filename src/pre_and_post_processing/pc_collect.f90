@@ -136,10 +136,10 @@ program pc_collect
 !
 !  Print resolution and dimension of the simulation.
 !
-  if (lroot) write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
-  if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
-  if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
-  if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
+  if (lroot) write (*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
+  if (lroot) print *, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
+  if (lroot) print *, 'Lx, Ly, Lz=', Lxyz
+  if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
   iproc = 0
   call directory_names()
@@ -196,7 +196,7 @@ program pc_collect
 !  Read coordinates.
 !
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid('grid.dat')
+        call rgrid ('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for
 ! backward compatibility.
@@ -291,15 +291,6 @@ program pc_collect
   t_sp = t
   write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
   if (lshear) write (lun_output) deltay
-  close (lun_output)
-!
-  ! write global grid:
-  open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
-  write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-  write (lun_output) dx, dy, dz
-  write (lun_output) Lx, Ly, Lz
-  write (lun_output) gdx_1, gdy_1, gdz_1
-  write (lun_output) gdx_tilde, gdy_tilde, gdz_tilde
 !
   ! write persistent data:
   lerror = init_write_persist()
@@ -308,6 +299,15 @@ program pc_collect
   if (lerror) call fatal_error ('write_persist_id', "IO-error")
   write (lun_output) gs
   call output_snap_finalize()
+!
+  ! write global grid:
+  open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
+  write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+  write (lun_output) dx, dy, dz
+  write (lun_output) Lx, Ly, Lz
+  write (lun_output) gdx_1, gdy_1, gdz_1
+  write (lun_output) gdx_tilde, gdy_tilde, gdz_tilde
+  close (lun_output)
 !
   print *, 'Writing snapshot for time t =', t
 !
