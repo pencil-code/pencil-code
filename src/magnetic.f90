@@ -6280,18 +6280,19 @@ module Magnetic
       use IO, only: write_persist
 !
       if (lroot .and. (ip < 14) .and. lforcing_cont_aa_local) then
-        if (phase_beltrami >= 0.0) print *, 'output_persistent_magnetic: ', &
-            phase_beltrami, ampl_beltrami
+        print *, 'output_persistent_magnetic: ', phase_beltrami, ampl_beltrami
       endif
 !
 !  write details
 !
       output_persistent_magnetic = .false.
 !
-      if (write_persist ('MAGNETIC_PHASE', id_record_MAGNETIC_PHASE, phase_beltrami)) &
-          output_persistent_magnetic = .true.
-      if (write_persist ('MAGNETIC_AMPL', id_record_MAGNETIC_AMPL, ampl_beltrami)) &
-          output_persistent_magnetic = .true.
+      if (lforcing_cont_aa_local) then
+        if (write_persist ('MAGNETIC_PHASE', id_record_MAGNETIC_PHASE, phase_beltrami)) &
+            output_persistent_magnetic = .true.
+        if (write_persist ('MAGNETIC_AMPL', id_record_MAGNETIC_AMPL, ampl_beltrami)) &
+            output_persistent_magnetic = .true.
+      endif
 !
     endfunction output_persistent_magnetic
 !***********************************************************************
