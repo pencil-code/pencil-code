@@ -111,6 +111,9 @@ module Persist
           if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
           call random_seed_wrapper (PUT=seed)
           done = .true.
+        case (id_record_DELTA_Y)
+          if (read_persist ('DELTA_Y', deltay)) return
+          done = .true.
       endselect
 !
     endsubroutine input_persistent_general
@@ -121,15 +124,20 @@ module Persist
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed
+      use Cdata, only: seed, nseed, lshear, deltay
       use General, only: random_seed_wrapper
       use IO, only: write_persist
 !
       output_persistent_general = .false.
 !
-      call random_seed_wrapper(GET=seed)
+      call random_seed_wrapper (GET=seed)
       if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
           output_persistent_general = .true.
+!
+      if (lshear) then
+        if (write_persist ('DELTA_Y', id_record_DELTA_Y, deltay)) &
+            output_persistent_general = .true.
+      endif
 !
     endfunction output_persistent_general
 !***********************************************************************
