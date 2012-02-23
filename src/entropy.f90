@@ -104,6 +104,7 @@ module Entropy
   logical :: lconvection_gravx=.false.
   logical :: ltau_cool_variable=.false.
   logical :: lprestellar_cool_iso=.false.
+  logical :: lphotoelectric_heating=.false.
   logical, save :: lfirstcall_hcond=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -161,7 +162,7 @@ module Entropy
       lchit_aniso_simplified, lconvection_gravx, &
       ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
       nkramers, xbot_aniso, xtop_aniso, entropy_floor, lprestellar_cool_iso, &
-      zz1, zz2
+      zz1, zz2, lphotoelectric_heating
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -2310,7 +2311,23 @@ module Entropy
         lpenc_requested(i_cp)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_rho)=.true.
+!
+!  extra pencils for variable cooling time
+!
+        if (ltau_cool_variable) then 
+          if (lcartesian_coords.or.lcylindrical_coords) then
+            lpenc_requested(i_rcyl_mn1)=.true.
+          elseif (lspherical_coords) then
+            lpenc_requested(i_r_mn1)=.true.
+          endif
+!
+!  for photoelectric dust heating in debris disks
+!
+          if (lphotoelectric_heating) lpenc_requested(i_rhop)=.true.
+        endif
+!
       endif
+!
       if (tau_cool2/=0.0) lpenc_requested(i_rho)=.true.
       if (cool_newton/=0.0) lpenc_requested(i_TT)=.true.
 !
@@ -2393,6 +2410,7 @@ module Entropy
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_pp)=.true.
       endif
+!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -4241,19 +4259,39 @@ module Entropy
 !
 ! Thermal relaxation for radially stratified global Keplerian disks
 !
+      use EquationOfState, only: rho0,gamma_inv
+!
       real, dimension(nx), intent(inout) :: heat
-      real, dimension (nx) :: period,rr1
+      real, dimension (nx) :: rr1,TT_drive
+      real, save :: rho01,tau1_cool
+      real, dimension (nx), save :: period_inv
+      logical, save :: lfirstcall=.true.
       type (pencil_case), intent(in) :: p
 !
-      if (lcartesian_coords.or.lcylindrical_coords) then
-        rr1=p%rcyl_mn1
-      elseif (lspherical_coords) then
-        rr1=p%r_mn1
+        if (lcartesian_coords.or.lcylindrical_coords) then
+          rr1=p%rcyl_mn1
+        elseif (lspherical_coords) then
+          rr1=p%r_mn1
+        endif
+        !period=2*pi*rr1**(-1.5)
+        period_inv=.5*pi_1*rr1**(1.5)
+!
+! Set the constants
+!
+      if (lfirstcall) then 
+        tau1_cool=1./tau_cool
+        if (lphotoelectric_heating) rho01=1./rho0
+        lfirstcall=.false.
       endif
 !
-      period=2*pi*rr1**(-1.5)
+      if (.not.lphotoelectric_heating) then 
+        TT_drive=TTref_cool*rr1**TT_powerlaw      
+      else
+        TT_drive=TTref_cool*rr1**TT_powerlaw*p%rhop*rho01
+      endif
+!
       heat=heat-p%rho*p%cp*gamma_inv*&
-           (p%TT-TTref_cool*rr1**TT_powerlaw)/(tau_cool*period)
+           (p%TT-TT_drive)*tau1_cool*period_inv
 !
     endsubroutine calc_heat_cool_variable
 !***********************************************************************
