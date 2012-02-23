@@ -3368,13 +3368,13 @@ module Special
       ierr = max(stat,ierr)
       if (.not.allocated(Uy_ext_global)) allocate(Uy_ext_global(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
-      if (.not.allocated(Uy_ext_global)) allocate(Ux_e_g_l(nxgrid,nygrid),stat=stat)
+      if (.not.allocated(Ux_e_g_l)) allocate(Ux_e_g_l(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
-      if (.not.allocated(Uy_ext_global)) allocate(Ux_e_g_r(nxgrid,nygrid),stat=stat)
+      if (.not.allocated(Ux_e_g_r)) allocate(Ux_e_g_r(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
-      if (.not.allocated(Uy_ext_global)) allocate(Uy_e_g_l(nxgrid,nygrid),stat=stat)
+      if (.not.allocated(Uy_e_g_l)) allocate(Uy_e_g_l(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
-      if (.not.allocated(Uy_ext_global)) allocate(Uy_e_g_r(nxgrid,nygrid),stat=stat)
+      if (.not.allocated(Uy_e_g_r)) allocate(Uy_e_g_r(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
 !
       if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
