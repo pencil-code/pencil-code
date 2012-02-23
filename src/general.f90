@@ -537,13 +537,19 @@ module General
       character (len=*), intent(in):: str2
 !
       call safe_character_assign(str1, trim(str1) // str2)
-      return
 !
-      entry safe_character_prepend_2(str1,str2)
+    endsubroutine safe_character_append_2
+!***********************************************************************
+    subroutine safe_character_prepend_2(str1,str2)
+!
+!  23-feb-12/bing: adapted from safe_character_append_2
+!
+      character (len=*), intent(inout):: str1
+      character (len=*), intent(in):: str2
 !
       call safe_character_assign(str1, trim(str2) // trim(str1))
 !
-    endsubroutine safe_character_append_2
+    endsubroutine safe_character_prepend_2
 !***********************************************************************
     subroutine safe_character_append_3(str1,str2,str3)
 !
