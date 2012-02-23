@@ -1,0 +1,33 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  abiabatically stratified polytropic atmosphere
+!
+&run_pars
+  cvsid='$Id$'
+  nt=500, it1=50, isave=50, itorder=3, ialive=10, cdt=.6
+  bcz = 's','s','a','a2','a','a','a','s'  !(perfect conductor)
+  dsnap=50., dvid=50.
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-const'
+  chi_t=1e-2
+/
+&magnetic_run_pars
+  eta=1e-2, B_ext=.0, 1e-2, .0
+  luse_Bext_in_b2=T
+/
+&magn_mf_run_pars
+  lmeanfield_jxb=T, qp_model='rational'
+  meanfield_qp=40., meanfield_Bp=.05
+/
+&viscosity_run_pars
+  nu=1e-2
+/

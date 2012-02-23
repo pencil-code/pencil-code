@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id$'
+  xyz1=+3.,+3.,+1.
+  xyz0=-3.,-3.,-5.
+  lwrite_ic=F
+  lperi=T,T,F
+/
+&eos_init_pars
+/
+&hydro_init_pars
+  inituu='gaussian-noise', ampluu=1e-6
+/
+&density_init_pars
+  initlnrho='polytropic_simple'
+  mpoly=1.5
+/
+&grav_init_pars
+  gravz_profile='const', gravz=-1., zinfty=1.5
+/
+&entropy_init_pars
+  initss='polytropic', mpoly0=1.5
+/
+&magnetic_init_pars
+/
+&magn_mf_init_pars
+/
