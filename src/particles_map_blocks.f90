@@ -1450,21 +1450,24 @@ module Particles_map
 !
     endsubroutine shepherd_neighbour_block
 !***********************************************************************
-    subroutine shepherd_neighbour_pencil3d(fp,ineargrid_c,kshepherd_c,kneighbour_c)
+    subroutine shepherd_neighbour_pencil3d(fp,ineargrid,kshepherd,kneighbour)
 !
-!  17-12-2011: ought to be coded by AlexHubbard
+!  17-dec-2011: ought to be coded by AlexHubbard
 !
 !  Create a shepherd/neighbour list of particles in the pencil.
 !  On collisional grid
 !  Adapted from particles_map
 !
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension(3) :: dx_c
-      integer, dimension (mpar_loc,3) :: ineargrid_c
-      integer, dimension (:,:,:) :: kshepherd_c
-      integer, dimension (mpar_loc) :: kneighbour_c
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (:,:,:) :: kshepherd
+      integer, dimension (mpar_loc) :: kneighbour
 !
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+      call keep_compiler_quiet(kshepherd)
+      call keep_compiler_quiet(kneighbour)
+!
       call not_implemented("shepherd_neighbour_pencil3d", &
            "This is just a dummy coded to make the code compile")
 !
