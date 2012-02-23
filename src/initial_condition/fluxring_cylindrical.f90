@@ -25,11 +25,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.,b2=0
+  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.,b2=0.,bz=0.
 
 !
   namelist /initial_condition_pars/ &
-      b0,s0,width,p0,eps,mphi,ampl,om,b1,b2
+      b0,s0,width,p0,eps,mphi,ampl,om,b1,b2,bz
 !
   contains
 !***********************************************************************
@@ -96,9 +96,10 @@ module InitialCondition
 !  beta magnetic field. 
 !
 !  07-may-09/wlad: coded
-!
+!  23-feb-12/fabio: added costant bz to the initial setup
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: argum,term1,term2,ax,az
+      real, dimension (mx) :: argum,term1,term2,ax,az,ay
 !
 !  vector potential for the magnetic flux flux ring
 !
@@ -106,10 +107,12 @@ module InitialCondition
       term1=s0*sqrtpi*erfunc(argum)
       term2=-width*exp(-argum**2)
       az=-(.5*b0/s0)*width*(term1+term2)-b1*x-b2*log(x)
+      ay=.5*bz*x
 !
       do n=1,mz
         do m=1,my
           f(:,m,n,iaz)=f(:,m,n,iaz)+az
+          f(:,m,n,iay)=f(:,m,n,iay)+ay
         enddo
       enddo
 !
