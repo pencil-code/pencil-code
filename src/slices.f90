@@ -39,16 +39,16 @@ module Slices
 !  13-nov-02/axel: added more fields, use wslice.
 !  18-mar-03/axel: added dust velocity
 !
-      integer, save :: ifirst=0
+      logical, save :: lfirst_call=.true.
 !
       character (len=fnlen) :: file
 !
 !  Output vid-data in 'tvid' time intervals
 !
       file = trim(datadir)//'/tvid.dat'
-      if (ifirst==0) then
+      if (lfirst_call) then
         call read_snaptime(file,tvid,nvid,dvid,t)
-        ifirst=1
+        lfirst_call=.false.
       endif
 !
 !  This routine sets lvideo=T whenever its time to write a slice

@@ -1163,7 +1163,8 @@ module Particles_main
       real :: dsnap_par_minor, dsnap_par
       integer, dimension (mpar_loc) :: ipar
 !
-      integer, save :: ifirst=0, nsnap, nsnap_minor, nsnap_par
+      logical, save :: lfirst_call=.true.
+      integer, save :: nsnap, nsnap_minor, nsnap_par
       real, save :: tsnap, tsnap_minor, tsnap_par
       character (len=fnlen), save :: fmajor, fminor, fpar
       logical :: lsnap_minor=.false., lsnap_par=.false.
@@ -1180,7 +1181,7 @@ module Particles_main
 !  At first call, need to initialize tsnap.
 !  tsnap calculated in read_snaptime, but only available to root processor.
 !
-        if (ifirst==0) then
+        if (lfirst_call) then
           call safe_character_assign(fmajor,trim(datadir)//'/tsnap.dat')
           call read_snaptime(fmajor,tsnap,nsnap,dsnap,t)
           if (dsnap_par_minor>0.0) then
@@ -1191,7 +1192,7 @@ module Particles_main
             call safe_character_assign(fpar,trim(datadir)//'/tsnap_par.dat')
             call read_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t)
           endif
-          ifirst=1
+          lfirst_call=.false.
         endif
 !
 !  Output independent sequence of particle snapshots.

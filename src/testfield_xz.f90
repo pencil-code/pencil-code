@@ -874,7 +874,7 @@ module Testfield
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=fnlen) :: file
       logical :: ltestfield_out
-      integer,save :: ifirst=0
+      logical, save :: lfirst_call=.true.
       integer :: j,jtest
 !
       intent(inout) :: f
@@ -883,12 +883,12 @@ module Testfield
 !
       if (linit_aatest) then
         file=trim(datadir)//'/tinit_aatest.dat'
-        if (ifirst==0) then
+        if (lfirst_call) then
           call read_snaptime(trim(file),taainit,naainit,daainit,t)
           if (taainit==0 .or. taainit < t-daainit) then
             taainit=t+daainit
           endif
-          ifirst=1
+          lfirst_call=.false.
         endif
 !
 !  Do only one xy plane at a time (for cache efficiency)

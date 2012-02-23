@@ -2396,7 +2396,8 @@ module Particles_nbody
 !
 !  01-apr-08/wlad: coded
 !
-      integer, save :: ifirst=0, nsnap
+      logical, save :: lfirst_call=.true.
+      integer, save :: nsnap
       real, save :: tsnap
       character (len=*) :: snapbase,flist
       character (len=fnlen) :: snapname, filename_diag
@@ -2406,9 +2407,9 @@ module Particles_nbody
 !
       if (enum) then
         call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
-        if (ifirst==0) then
+        if (lfirst_call) then
           call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
-          ifirst=1
+          lfirst_call=.false.
         endif
         call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
         if (lsnap) then

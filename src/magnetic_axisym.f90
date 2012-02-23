@@ -1675,7 +1675,7 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=fnlen) :: file
       logical :: lmagnetic_out
-      integer,save :: ifirst=0
+      logical, save :: lfirst_call=.true.
 !
       intent(inout) :: f
 !
@@ -1683,12 +1683,12 @@ module Magnetic
 !
       if (lreset_aa) then
         file=trim(datadir)//'/treset_aa.dat'
-        if (ifirst==0) then
+        if (lfirst_call) then
           call read_snaptime(trim(file),taareset,naareset,daareset,t)
           if (taareset==0 .or. taareset < t-daareset) then
             taareset=t+daareset
           endif
-          ifirst=1
+          lfirst_call=.false.
         endif
 !
 !  Rescale when the time has come

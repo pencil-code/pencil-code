@@ -657,7 +657,7 @@ module Testflow
       logical :: ltestflow_out
 !
       integer :: jtest,j,i,i3,i4, nl
-      integer,save :: ifirst=0
+      logical, save :: lfirst_call=.true.
       integer :: iuxtest, iuytest, iuztest, ihhtest
 !
       character :: cjtest
@@ -997,14 +997,14 @@ module Testflow
 !
         file=trim(datadir)//'/tinit_uutest.dat'
 !
-        if (ifirst==0) then
+        if (lfirst_call) then
 !
           call read_snaptime(trim(file),tuuinit,nuuinit,duuinit,t)
 !
           if (tuuinit==0 .or. tuuinit < t-duuinit) then
             tuuinit=t+duuinit
           endif
-          ifirst=1
+          lfirst_call=.false.
 !
         endif
 !

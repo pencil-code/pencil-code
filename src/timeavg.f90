@@ -110,7 +110,8 @@ module Timeavg
       character (len=fnlen) :: file
       character (len=*) :: chsnap,flist
       logical :: lsnap,enum
-      integer, save :: ifirst=0,nsnap
+      logical, save :: lfirst_call=.true.
+      integer, save :: nsnap
       real, save :: tsnap
       optional :: flist
 !
@@ -124,9 +125,9 @@ module Timeavg
 !  at first call, need to initialize tsnap
 !  tsnap calculated in read_snaptime, but only available to root processor
 !
-        if (ifirst==0) then
+        if (lfirst_call) then
           call read_snaptime(file,tsnap,nsnap,tavg,t)
-          ifirst=1
+          lfirst_call=.false.
         endif
 !
 !  Check whether we want to output snapshot.

@@ -4103,7 +4103,7 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=fnlen) :: file
       logical :: lmagnetic_out
-      integer,save :: ifirst=0
+      logical, save :: lfirst_call=.true.
 !
       intent(inout) :: f
 !
@@ -4111,12 +4111,12 @@ module Magnetic
 !
       if (lreset_aa) then
         file=trim(datadir)//'/treset_aa.dat'
-        if (ifirst==0) then
+        if (lfirst_call) then
           call read_snaptime(trim(file),taareset,naareset,daareset,t)
           if (taareset==0 .or. taareset < t-daareset) then
             taareset=t+daareset
           endif
-          ifirst=1
+          lfirst_call=.false.
         endif
 !
 !  Rescale when the time has come
@@ -4344,7 +4344,7 @@ module Magnetic
       real, save :: phase_beltrami_before
       real, save :: R2,R12
       type (pencil_case) :: p
-      integer, save :: ifirst
+      logical, save :: lfirst_call=.true.
       integer :: j,jfff,ifff
       real :: fact
 !
@@ -4352,8 +4352,8 @@ module Magnetic
 !  x,y,z points and are then saved and used for all subsequent steps
 !  and pencils
 !
-      if (ip<=6) print*,'forcing_continuous: ifirst=',ifirst
-      if (ifirst==0) then
+      if (lfirst_call) then
+        if (ip<=6) print*,'forcing_continuous: lfirst_call=',lfirst_call
         if (iforcing_continuous_aa=='fixed_swirl') then
           if (lroot) print*,'forcing_continuous: fixed_swirl; swirl=',swirl
           R2=radius**2
@@ -4374,9 +4374,9 @@ module Magnetic
           sinz=sin(k1_ff*z+phase_beltrami)
           cosz=cos(k1_ff*z+phase_beltrami)
         endif
+        lfirst_call=.false.
       endif
-      ifirst=ifirst+1
-      if (ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
+      if (ip<=6) print*,'forcing_continuous: dt, lfirst_call=',dt,lfirst_call
 !
 !  at the first meshpoint, and if phase_beltrami is finite,
 !  recalculate sinz and cosz for the phase correction of an
