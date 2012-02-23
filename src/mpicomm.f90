@@ -4461,8 +4461,8 @@ module Mpicomm
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      real, dimension(mz), intent(in) :: in
-      real, dimension(mzgrid), intent(out) :: out
+      real, dimension(mzgrid), intent(in) :: in
+      real, dimension(mz), intent(out) :: out
       integer, intent(in), optional :: source_proc
 !
       integer :: pz, broadcaster, partner
