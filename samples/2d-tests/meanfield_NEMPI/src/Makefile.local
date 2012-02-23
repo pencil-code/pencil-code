@@ -11,3 +11,4 @@ GRAVITY=gravity_simple
 ENTROPY=entropy
 MAGNETIC=magnetic
 MAGNETIC_MEANFIELD=magnetic/meanfield
+REAL_PRECISION=double
