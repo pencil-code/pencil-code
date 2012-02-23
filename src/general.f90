@@ -512,7 +512,7 @@ module General
 !  25-oct-02/axel: added tag in output to give name of routine
 !
       character (len=*), intent(in):: src
-      character (len=*), intent(inout):: dest
+      character (len=*), intent(out):: dest
       integer :: destLen, srcLen
 !
       destLen = len(dest)
@@ -521,7 +521,7 @@ module General
       if (destLen<srcLen) then
         print*, "safe_character_assign: ", &
             "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" &
-             //src//"' to '"//dest//"'"
+             //src//"' to ",destLen," characters"
         dest=src(1:destLen)
       else
         dest=src
