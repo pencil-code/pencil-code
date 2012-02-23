@@ -691,7 +691,7 @@ contains
       if (lcopysnapshots_exp) then
         call mpibarrier()
         if (lroot) then
-          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err,status='old')
+          open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err)
           ! file not distributed?, backskipping enabled
           lerror = outlog(io_err,"open",trim(datadir)//'/move-me.list',dist=-lun_output)
           write(lun_output,'(A)',IOSTAT=io_err) trim(fpart)
