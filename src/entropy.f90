@@ -30,7 +30,7 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: entropy_floor = 0.
+  real :: entropy_floor = impossible
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0, rcool=0.0, wcool=0.1
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
@@ -4273,8 +4273,8 @@ module Entropy
         elseif (lspherical_coords) then
           rr1=p%r_mn1
         endif
-        !period=2*pi*rr1**(-1.5)
-        period_inv=.5*pi_1*rr1**(1.5)
+        !period=2*pi/omega
+        period_inv=.5*pi_1*rr1**1.5
 !
 ! Set the constants
 !
@@ -5881,7 +5881,8 @@ module Entropy
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      if (entropy_floor > 0.) where(f(:,:,:,iss) < entropy_floor) f(:,:,:,ieth) = entropy_floor
+      if (entropy_floor /= impossible) &
+        where(f(:,:,:,iss) < entropy_floor) f(:,:,:,iss) = entropy_floor
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
