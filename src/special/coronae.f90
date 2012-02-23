@@ -118,6 +118,9 @@ module Special
   integer, save, dimension(mseed) :: points_rstate
   real, dimension(nx,ny) :: Ux,Uy,b2
   real, dimension(:,:), allocatable :: Ux_ext_global,Uy_ext_global
+  real, dimension(:,:), allocatable :: Ux_e_g_l,Ux_e_g_r
+  real, dimension(:,:), allocatable :: Uy_e_g_l,Uy_e_g_r
+!
   real, dimension(nx,ny) :: vx,vy,w,avoidarr
   real, save :: tsnap_uu=0.
   integer, save :: isnap
@@ -498,7 +501,7 @@ module Special
       real, dimension(nx,3) :: K1
       real, dimension(nx,3) :: spitzer_vec
       real, dimension(nx) :: tmp,dt_1_8th,nu_coll,hc
-      real, dimension(nx,3) :: q,glnTT_upwind
+      real, dimension(nx,3) :: q
       real :: coeff
       integer :: i
 !
@@ -2396,7 +2399,7 @@ module Special
       integer :: level
 !
       if (.not.lequidist(1).or..not.lequidist(2)) &
-          call fatal_error('read_ext_vel_field', &
+          call fatal_error('granulation_driver', &
           'not yet implemented for non-equidistant grids')
 !
       if (t >= t_gran) then
@@ -3083,51 +3086,49 @@ module Special
 ! at a given height irefz
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx,ny) :: bbx,bby,bbz,fac
+      real, dimension(nx,ny) :: bbx,bby,bbz,fac_dx,fac_dy,fac_dz
+!
+      fac_dx = (1./60)*spread(dx_1(l1:l2),2,ny)
+      fac_dy = (1./60)*spread(dy_1(m1:m2),1,nx)
+      fac_dz = (1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
 !
 ! compute B = curl(A) for irefz layer
 !
 ! Bx
       if (nygrid /= 1) then
-        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-        bbx= fac*( &
+        bbx= fac_dy*( &
             + 45.0*(f(l1:l2,m1+1:m2+1,irefz,iaz)-f(l1:l2,m1-1:m2-1,irefz,iaz)) &
             -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iaz)-f(l1:l2,m1-2:m2-2,irefz,iaz)) &
             +      (f(l1:l2,m1+3:m2+3,irefz,iaz)-f(l1:l2,m1-3:m2-3,irefz,iaz)))
       endif
       if (nzgrid /= 1) then
-        fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-        bbx= bbx -fac*( &
+        bbx= bbx -fac_dz*( &
             + 45.0*(f(l1:l2,m1:m2,irefz+1,iay)-f(l1:l2,m1:m2,irefz-1,iay)) &
             -  9.0*(f(l1:l2,m1:m2,irefz+2,iay)-f(l1:l2,m1:m2,irefz-2,iay)) &
             +      (f(l1:l2,m1:m2,irefz+3,iay)-f(l1:l2,m1:m2,irefz-2,iay)))
       endif
 ! By
       if (nzgrid /= 1) then
-        fac=(1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
-        bby= fac*( &
+        bby= fac_dz*( &
             + 45.0*(f(l1:l2,m1:m2,irefz+1,iax)-f(l1:l2,m1:m2,irefz-1,iax)) &
             -  9.0*(f(l1:l2,m1:m2,irefz+2,iax)-f(l1:l2,m1:m2,irefz-2,iax)) &
             +      (f(l1:l2,m1:m2,irefz+3,iax)-f(l1:l2,m1:m2,irefz-3,iax)))
       endif
       if (nxgrid /= 1) then
-        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-        bby=bby-fac*( &
+        bby=bby-fac_dx*( &
             +45.0*(f(l1+1:l2+1,m1:m2,irefz,iaz)-f(l1-1:l2-1,m1:m2,irefz,iaz)) &
             -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iaz)-f(l1-2:l2-2,m1:m2,irefz,iaz)) &
             +      (f(l1+3:l2+3,m1:m2,irefz,iaz)-f(l1-3:l2-3,m1:m2,irefz,iaz)))
       endif
 ! Bz
       if (nxgrid /= 1) then
-        fac=(1./60)*spread(dx_1(l1:l2),2,ny)
-        bbz= fac*( &
+        bbz= fac_dx*( &
             +45.0*(f(l1+1:l2+1,m1:m2,irefz,iay)-f(l1-1:l2-1,m1:m2,irefz,iay)) &
             -  9.0*(f(l1+2:l2+2,m1:m2,irefz,iay)-f(l1-2:l2-2,m1:m2,irefz,iay)) &
             +      (f(l1+3:l2+3,m1:m2,irefz,iay)-f(l1-3:l2-3,m1:m2,irefz,iay)))
       endif
       if (nygrid /= 1) then
-        fac=(1./60)*spread(dy_1(m1:m2),1,nx)
-        bbz=bbz-fac*( &
+        bbz=bbz-fac_dy*( &
             +45.0*(f(l1:l2,m1+1:m2+1,irefz,iax)-f(l1:l2,m1-1:m2-1,irefz,iax)) &
             -  9.0*(f(l1:l2,m1+2:m2+2,irefz,iax)-f(l1:l2,m1-2:m2-2,irefz,iax)) &
             +      (f(l1:l2,m1+3:m2+3,irefz,iax)-f(l1:l2,m1-3:m2-3,irefz,iax)))
@@ -3347,9 +3348,9 @@ module Special
 !
       use Mpicomm, only: mpisend_real, mpirecv_real, stop_it_if_any
 !
-      real, dimension (:,:), allocatable :: tmpl,tmpr
       integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
-      integer, parameter :: tag_ux=348,tag_uy=349
+      integer, parameter :: tag_uxl=348,tag_uyl=349
+      integer, parameter :: tag_uxr=350,tag_uyr=351
       integer :: lend=0,ierr,i,stat,px,py
       real, save :: tl=0.,tr=0.,delta_t=0.
 !
@@ -3363,11 +3364,17 @@ module Special
 !
       ierr = 0
       stat = 0
-      if (.not.allocated(Ux_ext_global)) &
-          allocate(Ux_ext_global(nxgrid,nygrid),stat=stat)
+      if (.not.allocated(Ux_ext_global)) allocate(Ux_ext_global(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
-      if (.not.allocated(Uy_ext_global)) &
-          allocate(Uy_ext_global(nxgrid,nygrid),stat=stat)
+      if (.not.allocated(Uy_ext_global)) allocate(Uy_ext_global(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
+      if (.not.allocated(Uy_ext_global)) allocate(Ux_e_g_l(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
+      if (.not.allocated(Uy_ext_global)) allocate(Ux_e_g_r(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
+      if (.not.allocated(Uy_ext_global)) allocate(Uy_e_g_l(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
+      if (.not.allocated(Uy_ext_global)) allocate(Uy_e_g_r(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
 !
       if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
@@ -3378,11 +3385,6 @@ module Special
       if ((t*unit_time < tl+delta_t) .or. (t*unit_time >= tr+delta_t)) then
 !
         if (lroot) then
-!
-          allocate(tmpl(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
-          allocate(tmpr(nxgrid,nygrid),stat=stat); ierr = max(stat,ierr)
-          if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
-            'Could not allocate memory for some variable, please check')
 !
           inquire(IOLENGTH=lend) tl
           open (unit,file=vel_times_dat,form='unformatted', &
@@ -3413,21 +3415,11 @@ module Special
           open (unit,file=vel_field_dat,form='unformatted', &
               status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
-          read (unit,rec=2*i-1) tmpl
-          read (unit,rec=2*i+1) tmpr
-          if (tr /= tl) then
-            Ux_ext_global=(t*unit_time-(tl+delta_t))*(tmpr-tmpl)/(tr-tl)+tmpl
-          else
-            Ux_ext_global = tmpr
-          endif
+          read (unit,rec=2*i-1) Ux_e_g_l
+          read (unit,rec=2*i+1) Ux_e_g_r
 !
-          read (unit,rec=2*i)   tmpl
-          read (unit,rec=2*i+2) tmpr
-          if (tr /= tl) then
-            Uy_ext_global=(t*unit_time-(tl+delta_t))*(tmpr-tmpl)/(tr-tl)+tmpl
-          else
-            Uy_ext_global = tmpr
-          endif
+          read (unit,rec=2*i)   Uy_e_g_l
+          read (unit,rec=2*i+2) Uy_e_g_r
 !
           close (unit)
 !
@@ -3439,24 +3431,38 @@ module Special
               call mpisend_real(tl, 1, px+py*nprocx, tag_tl)
               call mpisend_real(tr, 1, px+py*nprocx, tag_tr)
               call mpisend_real(delta_t, 1, px+py*nprocx, tag_dt)
-              call mpisend_real(Ux_ext_global,(/nxgrid,nygrid/),px+py*nprocx,tag_ux)
-              call mpisend_real(Uy_ext_global,(/nxgrid,nygrid/),px+py*nprocx,tag_uy)
+              call mpisend_real(Ux_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uxl)
+              call mpisend_real(Uy_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uyl)
+              call mpisend_real(Ux_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uxr)
+              call mpisend_real(Uy_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uyr)
             enddo
           enddo
-!
-          if (allocated(tmpl)) deallocate(tmpl)
-          if (allocated(tmpr)) deallocate(tmpr)
 !
         else
           if (lfirst_proc_z) then
             call mpirecv_real(tl, 1, 0, tag_tl)
             call mpirecv_real(tr, 1, 0, tag_tr)
             call mpirecv_real(delta_t, 1, 0, tag_dt)
-            call mpirecv_real(Ux_ext_global,(/nxgrid,nygrid/),0,tag_ux)
-            call mpirecv_real(Uy_ext_global,(/nxgrid,nygrid/),0,tag_uy)
+            call mpirecv_real(Ux_e_g_l,(/nxgrid,nygrid/),0,tag_uxl)
+            call mpirecv_real(Uy_e_g_l,(/nxgrid,nygrid/),0,tag_uyl)
+            call mpirecv_real(Ux_e_g_r,(/nxgrid,nygrid/),0,tag_uxr)
+            call mpirecv_real(Uy_e_g_r,(/nxgrid,nygrid/),0,tag_uyr)
           endif
         endif
 !
+      endif
+!
+! compute field by linear interpolation between two snapshots
+!
+      if (tr /= tl) then
+        Ux_ext_global=(t*unit_time-(tl+delta_t))*(Ux_e_g_r-Ux_e_g_l)/(tr-tl)+Ux_e_g_l
+      else
+        Ux_ext_global = Ux_e_g_r
+      endif
+      if (tr /= tl) then
+        Uy_ext_global=(t*unit_time-(tl+delta_t))*(Uy_e_g_r-Uy_e_g_l)/(tr-tl)+Uy_e_g_l
+      else
+        Uy_ext_global = Uy_e_g_r
       endif
 !
     endsubroutine read_ext_vel_field
