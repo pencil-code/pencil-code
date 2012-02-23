@@ -5472,7 +5472,7 @@ module Chemistry
     subroutine air_field(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: sum_Y
+      real, dimension (mx,my,mz) :: sum_Y,tmp
 !
       logical :: emptyfile=.true.
       logical :: found_specie
@@ -5602,8 +5602,9 @@ module Chemistry
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3)
+          tmp=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+            f(:,:,:,ilnrho)=alog(tmp)
         endif
         if (nxgrid>1) f(:,:,:,iux)=f(:,:,:,iux)+init_ux
       endif
@@ -5616,8 +5617,9 @@ module Chemistry
           f(:,:,:,ilnrho)=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=alog(f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3)
+          tmp=f(:,:,:,ilnrho)*(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+          f(:,:,:,ilnrho)=alog(tmp)
         endif
         if (ltemperature_nolog) then
           if (ldensity_nolog) then
@@ -5629,11 +5631,13 @@ module Chemistry
           endif
         else
           if (ldensity_nolog) then
-            f(:,:,:,ilnTT)=alog((PP/(k_B_cgs/m_u_cgs)*&
-                air_mass/f(:,:,:,ilnrho))/unit_mass*unit_length**3)!+f(:,:,:,ilnTT)
+            tmp=(PP/(k_B_cgs/m_u_cgs)*&
+                air_mass/f(:,:,:,ilnrho))/unit_mass*unit_length**3 
+            f(:,:,:,ilnTT)=alog(tmp)!+f(:,:,:,ilnTT)
           else
-            f(:,:,:,ilnTT)=alog((PP/(k_B_cgs/m_u_cgs)*&
-                air_mass/exp(f(:,:,:,ilnrho)))/unit_mass*unit_length**3)!+f(:,:,:,ilnTT)
+            tmp=(PP/(k_B_cgs/m_u_cgs)*&
+                air_mass/exp(f(:,:,:,ilnrho)))/unit_mass*unit_length**3
+            f(:,:,:,ilnTT)=alog(tmp)!+f(:,:,:,ilnTT)
           endif
         endif
         if (velx/=0.) f(:,:,:,iux)=f(:,:,:,iux)+velx
@@ -5662,8 +5666,9 @@ module Chemistry
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
+          tmp=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+          f(:,:,:,ilnrho)=alog(tmp)
         endif
       endif
 !
