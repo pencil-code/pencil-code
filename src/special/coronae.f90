@@ -520,19 +520,7 @@ module Special
 !
         b2_1=1./(p%b2+tini)
 !
-       ! do i=1,3
-       !   call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
-       ! enddo
-       ! call dot2(p%glnTT,tmp)
-       ! where (sqrt(tmp) < 1e-5)
-       !   glnTT_upwind(:,1) = p%glnTT(:,1)
-       !   glnTT_upwind(:,2) = p%glnTT(:,2)
-       !   glnTT_upwind(:,3) = p%glnTT(:,3)
-       ! endwhere
-
-       ! call multsv(Kspitzer_para*exp(3.5*p%lnTT),glnTT_upwind,K1)
         call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
-!
 !
         call dot(K1,p%bb,tmp)
         call multsv(-b2_1*tmp,p%bb,spitzer_vec)
@@ -583,7 +571,7 @@ module Special
 !
        rhs = gamma*p%cp1* rhs * exp(-p%lnrho-p%lnTT)
 !
-!       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
        if (lvideo) then
 !
