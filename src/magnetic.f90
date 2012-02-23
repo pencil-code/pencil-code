@@ -220,9 +220,6 @@ module Magnetic
   character (len=labellen) :: xdep_profile='two-step'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
-
-  character (len=4096) :: intfile
-  integer              :: len_intfile
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, J_ext, &
@@ -244,7 +241,7 @@ module Magnetic
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, luse_Bext_in_b2, ampl_fcont_aa, &
-      lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, & 
+      lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
       magnetic_xaver_range
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -2421,7 +2418,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS,penc
       real, dimension (nx) :: vdrift
-      real :: tmp,eta_out1,maxetaBB
+      real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
       integer :: isound,lspoint,mspoint,nspoint
@@ -4245,33 +4242,11 @@ module Magnetic
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-!      if ( iproc==root ) then
-        if (present(iostat)) then
-          read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
-        else
-          read(unit,NML=magnetic_init_pars,ERR=99)
-        endif
-!      endif
-      
-      if (.false.) then      ! ncpus>1) then    !experimental
-
-!!        if (iproc==root) then
-!!          write(intfile,NML=magnetic_init_pars)
-!!          len_intfile = len_trim(intfile)
-!!        endif
-
-!!        call mpibcast_int(len_intfile,1)
-!!        call mpibcast_char(intfile,len_intfile)
-
-!!        if ( iproc/=root ) then
-!!          if (present(iostat)) then
-!!            read(intfile,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
-!!          else
-!!            read(intfile,NML=magnetic_init_pars,ERR=99)
-!!          endif
-!!        endif 
-
-      endif 
+      if (present(iostat)) then
+        read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=magnetic_init_pars,ERR=99)
+      endif
 !
 !  read namelist for mean-field theory (if invoked)
 !
