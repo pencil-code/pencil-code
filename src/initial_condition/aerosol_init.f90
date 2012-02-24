@@ -297,7 +297,7 @@ module InitialCondition
     subroutine air_field_local(f, air_mass, PP)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: sum_Y!, psat
+      real, dimension (mx,my,mz) :: sum_Y, tmp!, psat
 !      real, dimension (mx,my,mz) :: init_water1_,init_water2_
 !      real, dimension (mx,my,mz,ndustspec) :: psf
 !      real , dimension (my) :: init_x1_ar, init_x2_ar, del_ar, del_ar1, del_ar2
@@ -419,8 +419,9 @@ module InitialCondition
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3)
+          tmp=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+          f(:,:,:,ilnrho)=alog(tmp)
         endif
 !
         if (ltemperature_nolog) then
@@ -432,8 +433,9 @@ module InitialCondition
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/TT)/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/TT)/unit_mass*unit_length**3)
+          tmp=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/TT)/unit_mass*unit_length**3
+          f(:,:,:,ilnrho)=alog(tmp)
         endif
 !
 
@@ -451,7 +453,7 @@ module InitialCondition
     subroutine reinitialization(f, air_mass, PP, ii_max,init_water1_min,init_water2_max)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: sum_Y, psat, air_mass_ar
+      real, dimension (mx,my,mz) :: sum_Y, psat, air_mass_ar, tmp
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
       real, dimension (my,mz) :: init_water1_min,init_water2_max
       real, dimension (mx,my,mz,ndustspec) :: psf
@@ -516,8 +518,9 @@ module InitialCondition
           f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
         else
-          f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3)
+          tmp=(PP/(k_B_cgs/m_u_cgs)*&
+            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+          f(:,:,:,ilnrho)=alog(tmp)
         endif
       endif
 !
@@ -578,8 +581,9 @@ module InitialCondition
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)&
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
          else
-           f(:,:,:,ilnrho)=alog((PP/(k_B_cgs/m_u_cgs) &
-            *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3) 
+           tmp=(PP/(k_B_cgs/m_u_cgs) &
+            *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+           f(:,:,:,ilnrho)=alog(tmp) 
          endif
 !
          if ((nxgrid>1) .and. (nygrid==1)) then
