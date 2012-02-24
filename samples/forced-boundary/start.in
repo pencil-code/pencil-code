@@ -24,7 +24,9 @@
 &density_init_pars
 /
 &magnetic_init_pars
+/
+&initial_condition_pars
   initaa='fluxrings', amplaa=1e-0
   fring1=1e-0, Iring1=0., Rring1=1.6, wr1=0.4,
-    axisr1=0.,1.,0., dispr1=0.,0.,0.,
+  axisr1=0.,1.,0., dispr1=0.,0.,0.,
 /
