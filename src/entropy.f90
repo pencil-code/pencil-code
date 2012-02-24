@@ -30,7 +30,7 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: entropy_floor = impossible
+  real :: entropy_floor = impossible, TT_floor = impossible
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0, rcool=0.0, wcool=0.1
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
@@ -162,7 +162,7 @@ module Entropy
       lchit_aniso_simplified, lconvection_gravx, &
       ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
       nkramers, xbot_aniso, xtop_aniso, entropy_floor, lprestellar_cool_iso, &
-      zz1, zz2, lphotoelectric_heating
+      zz1, zz2, lphotoelectric_heating, TT_floor
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -4289,6 +4289,9 @@ module Entropy
       else
         TT_drive=TTref_cool*rr1**TT_powerlaw*p%rhop*rho01
       endif
+!
+      if (TT_floor /= impossible) & 
+           where(TT_drive < TT_floor) TT_drive = TT_floor
 !
       heat=heat-p%rho*p%cp*gamma_inv*&
            (p%TT-TT_drive)*tau1_cool*period_inv
