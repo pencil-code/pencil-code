@@ -4,6 +4,7 @@
 !
 &init_pars
   cvsid='$Id$'
+  random_gen='nr_f90'  !(Use machine-indep numerical receipes random numbers)
   xyz1=+3.,+3.,+1.
   xyz0=-3.,-3.,-5.
   lwrite_ic=F
