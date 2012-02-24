@@ -26,13 +26,14 @@ program rvid_box
       integer :: ipx,ipy,ipz,iproc,it
       integer :: ipy1,ipx1,ipz1,ipz2,ipz3,ipz4
       integer :: lun_pos=33, lun_video=34, i
-      integer :: lun_read=11,lun_write=22
+      integer :: lun_read=11,lun_write=22, lun_stride=44
       integer :: iostat=0,stat=0,videostat=0
       integer :: isep1=0,idummy,sindex
       logical :: lread_slice_xy,lread_slice_xy2,lread_slice_xy3
       logical :: lread_slice_xy4,lread_slice_xz,lread_slice_yz
       real :: t
       real :: slice_pos=0.
+      integer :: stride=1
 !
       character (len=fnlen) :: file='',fullname='',wfile='',directory=''
       character (len=fnlen) :: datadir='data',path='',cfield=''
@@ -57,6 +58,18 @@ program rvid_box
           print*,'ERROR: neither videoread.in nor video.in found'
           STOP 1
         endif
+      endif
+!
+!  Put the stride in a file, stride.in
+!
+      inquire(file='stride.in',exist=exists)
+      if (exists) then
+        open(lun_stride,file='stride.in')
+        read(lun_stride,'(i3)') stride
+        close(lun_stride)
+        print*,'Read stride.in. Will skip every ',stride,' slices'
+      else
+        stride = 1 
       endif
 !
 ! Loop over all processors to find the positions of the slices.
