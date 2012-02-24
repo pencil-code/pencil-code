@@ -62,19 +62,23 @@ module LsodeForChemistry
 !
     endsubroutine pde_chemistry
 !***********************************************************************
-    subroutine lsode_fc(t0,t1,f,df)
+    subroutine lsode_fc(t0_,t1_,f,df)
 !
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
 !
     integer :: i,j,k
     integer :: NEQ, LRW, LIW, MF
-    real, dimension(nchemspec+1) :: Y, YDOT0
-    real :: t0, t1, t
-    real, dimension(1) :: RTOL, ATOL
+    DOUBLE PRECISION, dimension(nchemspec+1) :: Y, YDOT0
+    DOUBLE PRECISION :: t0, t1, t
+    real :: t0_, t1_
+    DOUBLE PRECISION, dimension(1) :: RTOL, ATOL
     integer, dimension(21+nchemspec) :: IWORK
-    real, dimension(22+(nchemspec+10)*(nchemspec+1)) :: RWORK
+    DOUBLE PRECISION, dimension(22+(nchemspec+10)*(nchemspec+1)) :: RWORK
 !
+    t0=t0_
+    t1=t1_
+
     NEQ=nchemspec+1
     MF=22
     LRW=22+(nchemspec+10)*(nchemspec+1)
