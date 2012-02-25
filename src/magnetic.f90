@@ -5940,23 +5940,33 @@ module Magnetic
 !
       use General, only: erfcc
       use Sub, only: step, der_step, cubic_step, cubic_der_step
+      use EquationOfState, only: cs0
 !
-      real, dimension(mz) :: eta_z,z2
-      real, dimension(mz,3) :: geta_z
-      character (len=labellen) :: zdep_profile
+      real, dimension(mz), intent(out) :: eta_z
+      real, dimension(mz,3), intent(out) :: geta_z
+      character(len=labellen), intent(in) :: zdep_profile
 !
-      intent(out) :: eta_z,geta_z
+      real, dimension(mz) :: zoh, z2
+      real :: h
 !
       select case (zdep_profile)
         case ('fs')
-          z2 = z**2.
+          if (cs0 > 0. .and. Omega > 0.) then
+            h = sqrt(2.) * cs0 / Omega
+          else
+            h = 1.
+          endif
+          zoh = z / h
+          z2 = zoh**2
 !  resistivity profile from Fleming & Stone (ApJ 585:908-920)
-          eta_z = eta*exp(-z2/2.+sigma_ratio*erfcc(abs(z))/4.)
+!          eta_z = eta*exp(-z2/2.+sigma_ratio*erfcc(abs(z))/4.)
+          eta_z = eta * exp(-0.5 * z2 + 0.25 * sigma_ratio * erfcc(abs(zoh)))
 !
 ! its gradient:
           geta_z(:,1) = 0.
           geta_z(:,2) = 0.
-          geta_z(:,3) = eta_z*(-z-sign(1.,z)*sigma_ratio*exp(-z2)/(2.*sqrt(pi)))
+!          geta_z(:,3) = eta_z*(-z-sign(1.,z)*sigma_ratio*exp(-z2)/(2.*sqrt(pi)))
+          geta_z(:,3) = -eta_z * (zoh + (0.5 * sigma_ratio / sqrt(pi)) * sign(1.,z) * exp(-z2)) / h
 !
         case ('tanh')
 !  default to spread gradient over ~5 grid cells.
