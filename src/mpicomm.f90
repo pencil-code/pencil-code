@@ -436,12 +436,12 @@ module Mpicomm
 !
 !  Set up `lower' and `upper' neighbours.
 !
-      xlneigh = (ipz*nprocxy+ipy*nprocx+modulo(ipx-1,nprocx))
-      xuneigh = (ipz*nprocxy+ipy*nprocx+modulo(ipx+1,nprocx))
-      ylneigh = (ipz*nprocxy+modulo(ipy-1,nprocy)*nprocx+ipx)
-      yuneigh = (ipz*nprocxy+modulo(ipy+1,nprocy)*nprocx+ipx)
-      zlneigh = (modulo(ipz-1,nprocz)*nprocxy+ipy*nprocx+ipx)
-      zuneigh = (modulo(ipz+1,nprocz)*nprocxy+ipy*nprocx+ipx)
+      xlneigh = modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
+      xuneigh = modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
+      ylneigh = ipx + modulo(ipy-1,nprocy)*nprocx + ipz*nprocxy
+      yuneigh = ipx + modulo(ipy+1,nprocy)*nprocx + ipz*nprocxy
+      zlneigh = ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      zuneigh = ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
 ! For boundary condition across the pole set up pole-neighbours
 ! This assumes that the domain is equally distributed among the
@@ -451,10 +451,10 @@ module Mpicomm
 !
 !  Set the four corners in the yz-plane (in cyclic order).
 !
-      llcorn=ipx+(modulo(ipy-1,nprocy)+modulo(ipz-1,nprocz)*nprocy)*nprocx
-      ulcorn=ipx+(modulo(ipy+1,nprocy)+modulo(ipz-1,nprocz)*nprocy)*nprocx
-      uucorn=ipx+(modulo(ipy+1,nprocy)+modulo(ipz+1,nprocz)*nprocy)*nprocx
-      lucorn=ipx+(modulo(ipy-1,nprocy)+modulo(ipz+1,nprocz)*nprocy)*nprocx
+      llcorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      ulcorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
+      uucorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
+      lucorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
 !  This value is not yet the one read in, but the one initialized in cparam.f90.
 !
