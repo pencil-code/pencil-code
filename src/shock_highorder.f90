@@ -79,13 +79,13 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       use Messages, only: fatal_error
+      use Messages, only: fatal_error
 !
-       real, dimension (mx,my,mz,mfarray) :: f
-       logical, intent(in) :: lstarting
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical, intent(in) :: lstarting
 !
-       real, dimension (-3:3) :: weights
-       integer :: i,j,k
+      real, dimension (-3:3) :: weights
+      integer :: i,j,k
 !
 !  Initialize shock profile to zero
 !
