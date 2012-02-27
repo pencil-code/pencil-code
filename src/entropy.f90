@@ -231,6 +231,7 @@ module Entropy
   integer :: idiag_fradz_kramers=0 ! XYAVG_DOC: $F_{\rm rad}$ (from Kramers'
                                    ! XYAVG_DOC: opacity)
   integer :: idiag_fradz_Kprof=0 ! XYAVG_DOC: $F_{\rm rad}$ (from Kprof)
+  integer :: idiag_fradz_constchi=0 ! XYAVG_DOC: $F_{\rm rad}$ (from chi_const)
   integer :: idiag_fturbz=0     ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
@@ -3027,14 +3028,17 @@ module Entropy
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
-      use Diagnostics, only: max_mn_name
+      use Diagnostics!, only: max_mn_name
       use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,g2
+      real, dimension (nx) :: thdiff,g2,chit_prof
+      real, dimension (nx,3) :: glchit_prof
 !
       intent(inout) :: df
+!
+      save :: chit_prof, glchit_prof
 !
 !  Check that chi is ok.
 !
@@ -3056,8 +3060,12 @@ module Entropy
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*chi*(p%del2lnTT+g2)
         if (chi_t/=0.) then
+          call chit_profile(chit_prof)
+          call gradlogchit_profile(glchit_prof)
           call dot(p%glnrho+p%glnTT,p%gss,g2)
-          thdiff=thdiff+chi_t*(p%del2ss+g2)
+          thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
+          call dot(glchit_prof,p%gss,g2)
+          thdiff=thdiff+chi_t*g2
         endif
       else
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
@@ -3065,17 +3073,28 @@ module Entropy
 !AB:  divide by p%cp1, since we don't have cp here.
         thdiff=chi*(p%del2lnTT+g2)/p%cp1
         if (chi_t/=0.) then
+          call chit_profile(chit_prof)
+          call gradlogchit_profile(glchit_prof)
           call dot(p%glnrho+p%glnTT,p%gss,g2)
 !
 !  Provisional expression for magnetic chi_t quenching;
-!  (Derivatives of B are still missing.
+!  (Derivatives of B are still missing.)
 !
           if (chiB==0.) then
-            thdiff=thdiff+chi_t*(p%del2ss+g2)
-          else
-            thdiff=thdiff+chi_t*(p%del2ss+g2)/(1.+chiB*p%b2)
+            thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
+            call dot(glchit_prof,p%gss,g2)
+            thdiff=thdiff+chi_t*g2
+           else
+            thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)/(1.+chiB*p%b2)
+            call dot(glchit_prof,p%gss,g2)
+            thdiff=thdiff+chi_t*g2/(1.+chiB*p%b2)
           endif
         endif
+      endif
+!
+      if (l1davgfirst) then
+        call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+        call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
       endif
 !
 !  Add heat conduction to entropy equation.
@@ -4879,7 +4898,7 @@ module Entropy
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradz_kramers=0; idiag_fradxy_kramers=0;
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
-        idiag_ufpresm=0; idiag_uduum=0
+        idiag_ufpresm=0; idiag_uduum=0; idiag_fradz_constchi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -4945,6 +4964,7 @@ module Entropy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_Kprof',idiag_fradz_Kprof)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_constchi',idiag_fradz_constchi)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz_kramers',idiag_fradz_kramers)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
@@ -5363,20 +5383,32 @@ module Entropy
 !
 !  23-jan-2002/wolf: coded
 !  18-sep-2002/axel: added lmultilayer switch
+!  27-feb-2012/pete: removed lmultilayer switch
 !
       use Gravity, only: z1, z2
       use Sub, only: step
 !
       real, dimension (nx) :: chit_prof,z_mn
+      real :: zbot, ztop
+!
+!  If zz1 and/or zz2 are not set, use z1 and z2 instead.
+!
+      if (zz1 == impossible) then
+          zbot=z1
+      else
+          zbot=zz1
+      endif
+!
+      if (zz2 == impossible) then
+          ztop=z2
+      else
+          ztop=zz2
+      endif
 !
       if (lgravz) then
-        if (lmultilayer) then
-          z_mn=spread(z(n),1,nx)
-          chit_prof = 1 + (chit_prof1-1)*step(z_mn,z1,-widthss) &
-                        + (chit_prof2-1)*step(z_mn,z2,widthss)
-        else
-          chit_prof=1.
-        endif
+        z_mn=spread(z(n),1,nx)
+        chit_prof = 1 + (chit_prof1-1)*step(z_mn,zbot,-widthss) &
+                      + (chit_prof2-1)*step(z_mn,ztop,widthss)
       endif
 !
       if (lspherical_coords) then
@@ -5398,16 +5430,27 @@ module Entropy
 !
       real, dimension (nx,3) :: glchit_prof
       real, dimension (nx) :: z_mn
+      real :: zbot, ztop
+!
+!  If zz1 and/or zz2 are not set, use z1 and z2 instead.
+!
+      if (zz1 == impossible) then
+          zbot=z1
+      else
+          zbot=zz1
+      endif
+!
+      if (zz2 == impossible) then
+          ztop=z2
+      else
+          ztop=zz2
+      endif
 !
       if (lgravz) then
-        if (lmultilayer) then
-          z_mn=spread(z(n),1,nx)
-          glchit_prof(:,1:2) = 0.
-          glchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,z1,-widthss) &
-                           + (chit_prof2-1)*der_step(z_mn,z2,widthss)
-        else
-          glchit_prof = 0.
-        endif
+        z_mn=spread(z(n),1,nx)
+        glchit_prof(:,1:2) = 0.
+        glchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,zbot,-widthss) &
+                         + (chit_prof2-1)*der_step(z_mn,ztop,widthss)
       endif
 !
       if (lspherical_coords) then

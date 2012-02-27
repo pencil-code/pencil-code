@@ -2437,7 +2437,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
 !
-      real, pointer :: chi_t,hcondzbot,hcondztop
+      real, pointer :: chi,chi_t,hcondzbot,hcondztop
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2455,6 +2455,9 @@ module EquationOfState
       call get_shared_variable('chi_t',chi_t,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
            "there was a problem when getting chi_t")
+      call get_shared_variable('chi',chi,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
+           "there was a problem when getting chi")
       call get_shared_variable('hcondzbot',hcondzbot,ierr)
       if (ierr/=0) call stop_it("bc_ss_flux_turb: "//&
            "there was a problem when getting hcondzbot")
@@ -2503,8 +2506,13 @@ module EquationOfState
         dlnrhodz_xy=fac*(+ 45.0*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                          -  9.0*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                          +      (f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho)))
-        dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*(gamma_m1)*dlnrhodz_xy)/ &
-            (chi_t*rho_xy+hcondztop/cv)
+        if (hcondztop==impossible) then
+          dsdz_xy=-(sigmaSBt*TT_xy**3+chi*rho_xy*cp*(gamma_m1)*dlnrhodz_xy)/ &
+              (chi_t*rho_xy+chi*rho_xy*cp/cv)
+        else
+          dsdz_xy=-(sigmaSBt*TT_xy**3+hcondztop*(gamma_m1)*dlnrhodz_xy)/ &
+              (chi_t*rho_xy+hcondztop/cv)
+        endif
 !
 !  enforce ds/dz=-(sigmaSBt*T^3 + hcond*(gamma-1)*glnrho)/(chi_t*rho+hcond/cv)
 !
