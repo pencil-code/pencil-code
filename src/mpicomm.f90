@@ -4264,23 +4264,24 @@ module Mpicomm
 !
     endsubroutine collect_z_4D
 !***********************************************************************
-    subroutine globalize_xy(in, out, dest_proc)
+    subroutine globalize_xy(in, out, dest_proc, source_pz)
 !
 !  Globalizes local 4D data in the xy-plane to the destination processor.
 !  The local data is supposed to include the ghost cells.
 !  Inner ghost layers are cut away during the combination of the data.
 !  'dest_proc' is the destination iproc number relative to the first processor
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!  'source_pz' specifies the source pz-layer (Default: ipz).
 !
 !  11-feb-2012/Bourdin.KIS: adapted from collect_xy and globalize_z
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out), optional :: out
-      integer, intent(in), optional :: dest_proc
+      integer, intent(in), optional :: dest_proc, source_pz
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: cnx, cny ! transfer box sizes minus ghosts
-      integer :: px, py, x_add, y_add, collector, partner, nbox, alloc_err
+      integer :: px, py, pz, x_add, y_add, collector, partner, nbox, alloc_err
       integer, parameter :: ytag=121
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4297,6 +4298,8 @@ module Mpicomm
 !
       collector = ipz * nprocxy
       if (present (dest_proc)) collector = collector + dest_proc
+      pz = ipz
+      if (present (source_pz)) pz = source_pz
 !
       if (iproc == collector) then
         ! collect the data
@@ -4314,7 +4317,7 @@ module Mpicomm
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = px + py*nprocx + pz*nprocxy
             x_add = nghost
             y_add = nghost
             if (px == 0) x_add = 0
@@ -4338,23 +4341,24 @@ module Mpicomm
 !
     endsubroutine globalize_xy
 !***********************************************************************
-    subroutine localize_xy(in, out, source_proc)
+    subroutine localize_xy(out, in, source_proc, dest_pz)
 !
 !  Localizes global 4D data to all processors in the xy-plane.
 !  The global data is supposed to include the outer ghost layers.
 !  The returned data will include inner ghost layers.
 !  'source_proc' is the source iproc number relative to the first processor
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!  'dest_pz' specifies the destination pz-layer (Default: ipz).
 !
 !  11-feb-2012/Bourdin.KIS: adapted from collect_xy and globalize_z
 !
-      real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
-      integer, intent(in), optional :: source_proc
+      real, dimension(:,:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc, dest_pz
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: cnx, cny ! transfer box sizes minus ghosts
-      integer :: px, py, broadcaster, partner, nbox
+      integer :: px, py, pz, broadcaster, partner, nbox
       integer, parameter :: ytag=122
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -4369,6 +4373,8 @@ module Mpicomm
 !
       broadcaster = ipz * nprocxy
       if (present (source_proc)) broadcaster = broadcaster + source_proc
+      pz = ipz
+      if (present (dest_pz)) pz = dest_pz
 !
       if (iproc == broadcaster) then
         ! distribute the data
@@ -4383,7 +4389,7 @@ module Mpicomm
 !
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            partner = px + py*nprocx + ipz*nprocxy
+            partner = px + py*nprocx + pz*nprocxy
             if (iproc == partner) then
               ! data is local
               out = in(px*cnx+1:px*cnx+mx,py*cny+1:py*cny+my,:,:)
@@ -4451,7 +4457,7 @@ module Mpicomm
 !
     endsubroutine globalize_z
 !***********************************************************************
-    subroutine localize_z(in, out, source_proc)
+    subroutine localize_z(out, in, source_proc)
 !
 !  Localizes global 1D data to all processors along the z-direction.
 !  The global data is supposed to include the outer ghost layers.
@@ -4461,8 +4467,8 @@ module Mpicomm
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      real, dimension(mzgrid), intent(in) :: in
       real, dimension(mz), intent(out) :: out
+      real, dimension(mzgrid), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: pz, broadcaster, partner

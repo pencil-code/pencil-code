@@ -1665,7 +1665,7 @@ module Mpicomm
 !
     endsubroutine collect_z_4D
 !***********************************************************************
-    subroutine globalize_xy(in, out, dest_proc)
+    subroutine globalize_xy(in, out, dest_proc, source_pz)
 !
 !  Globalizes local 4D data in the xy-plane to the destination processor.
 !  The local data is supposed to include the ghost cells.
@@ -1677,13 +1677,14 @@ module Mpicomm
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out), optional :: out
-      integer, intent(in), optional :: dest_proc
+      integer, intent(in), optional :: dest_proc, source_pz
 !
-      if (present (out) .or. present (dest_proc)) out = in
+      if (present (dest_proc) .or. present (source_pz)) continue
+      if (present (out)) out = in
 !
     endsubroutine globalize_xy
 !***********************************************************************
-    subroutine localize_xy(in, out, source_proc)
+    subroutine localize_xy(out, in, source_proc, dest_pz)
 !
 !  Localizes global 4D data to all processors in the xy-plane.
 !  The global data is supposed to include the outer ghost layers.
@@ -1692,13 +1693,12 @@ module Mpicomm
 !
 !  11-feb-2012/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
-      integer, intent(in), optional :: source_proc
+      real, dimension(:,:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc, dest_pz
 !
-      if (present (source_proc)) continue
-!
-      out = in
+      if (present (source_proc) .or. present (dest_pz)) continue
+      if (present (in)) out = in
 !
     endsubroutine localize_xy
 !***********************************************************************
@@ -1714,11 +1714,12 @@ module Mpicomm
       real, dimension(:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
 !
-      if (present (out) .or. present (dest_proc)) out = in
+      if (present (dest_proc)) continue
+      if (present (out)) out = in
 !
     endsubroutine globalize_z
 !***********************************************************************
-    subroutine localize_z(in, out, source_proc)
+    subroutine localize_z(out, in, source_proc)
 !
 !  Localizes global 1D data to all processors along the z-direction.
 !  The global data is supposed to include the outer ghost layers.
@@ -1726,13 +1727,12 @@ module Mpicomm
 !
 !  13-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension(:), intent(in) :: in
       real, dimension(:), intent(out) :: out
+      real, dimension(:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       if (present (source_proc)) continue
-!
-      out = in
+      if (present (in)) out = in
 !
     endsubroutine localize_z
 !***********************************************************************
