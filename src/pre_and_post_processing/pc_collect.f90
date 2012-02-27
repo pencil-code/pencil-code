@@ -89,7 +89,7 @@ program pc_collect
 !
 !  Register physics modules.
 !
-  call register_modules()
+  if (lenforce_redundant) call register_modules()
 !
 !  Define the lenergy logical
 !
@@ -231,22 +231,24 @@ program pc_collect
 !
 !  Read time and global variables (if any).
 !
-        if (mglobal /= 0) &
-            call input_globals ('global.dat', &
-                f(:,:,:,mvar+maux+1:mvar+maux+mglobal), mglobal)
+        if (lenforce_redundant) then
+          if (mglobal /= 0) &
+               call input_globals ('global.dat', &
+               f(:,:,:,mvar+maux+1:mvar+maux+mglobal), mglobal)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-        lpencil_check_at_work = .true.
-        call initialize_modules (f, LSTARTING=.true.)
-        lpencil_check_at_work = .false.
+          lpencil_check_at_work = .true.
+          call initialize_modules (f, LSTARTING=.true.)
+          lpencil_check_at_work = .false.
 !
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc.
 !
-        call choose_pencils()
+          call choose_pencils()
+        endif
 !
         ! collect f in gf:
         gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f(:,:,:,1:mvar_io)
