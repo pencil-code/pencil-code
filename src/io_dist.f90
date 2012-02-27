@@ -222,14 +222,23 @@ contains
 !
     endsubroutine output_form_int_0D
 !***********************************************************************
-    logical function init_write_persist()
+    logical function init_write_persist(file)
 !
 !  Initialize writing of persistent data to snapshot file.
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
+      character (len=*), intent(in), optional :: file
+!
       integer :: io_err
 !
+      if (present (file)) then
+        close (lun_output)
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
+        init_write_persist = outlog (io_err, 'open persistent file for writing')
+      endif
+!
+      if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
       write (lun_output, iostat=io_err) id_block_PERSISTENT
       init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
       persist_initialized = .not. init_write_persist
@@ -470,7 +479,29 @@ contains
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
-    logical function read_persist_id(label, id)
+    logical function init_read_persist(file)
+!
+!  Initialize writing of persistent data to persistent file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      character (len=*), intent(in), optional :: file
+!
+      integer :: io_err
+!
+      if (present (file)) then
+        close (lun_input)
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='old')
+        init_read_persist = outlog (io_err, 'open persistent file for reading')
+      endif
+!
+      if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
+      init_read_persist = .false.
+      persist_initialized = .true.
+!
+    endfunction init_read_persist
+!***********************************************************************
+    logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
 !
@@ -478,11 +509,25 @@ contains
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
+      logical, intent(in), optional :: lerror_prone
 !
+      logical :: lcatch_error
       integer :: io_err
 !
+      lcatch_error = .false.
+      if (present (lerror_prone)) lcatch_error = lerror_prone
+!
       read (lun_input, iostat=io_err) id
-      read_persist_id = outlog (io_err, 'read persistent ID '//label)
+      if (lcatch_error) then
+        if (io_err /= 0) then
+          id = -max_int
+          read_persist_id = .true.
+        else
+          read_persist_id = .false.
+        endif
+      else
+        read_persist_id = outlog (io_err, 'read persistent ID '//label)
+      endif
 !
     endfunction read_persist_id
 !***********************************************************************

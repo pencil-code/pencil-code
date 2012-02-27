@@ -28,7 +28,7 @@ module Persist
 !
   contains
 !***********************************************************************
-    subroutine input_persistent()
+    subroutine input_persistent(file)
 !
 !  Read auxiliary information from snapshot file.
 !  lun should be set to the same lun as that of the snapshot.
@@ -36,17 +36,32 @@ module Persist
 !  26-may-03/axel: adapted from output_vect
 !   6-apr-08/axel: added input_persistent_magnetic
 !
-      use IO, only: read_persist_id
+      use IO, only: init_read_persist, read_persist_id
       use Interstellar, only: input_persistent_interstellar
       use Forcing, only: input_persistent_forcing
       use Magnetic, only: input_persistent_magnetic
 !
+      character (len=*), intent(in), optional :: file
+!
       integer :: id
       logical :: done
 !
-      if (lroot .and. (ip <= 8)) print *, 'input_persistent: START'
+      if (lroot .and. (ip <= 8)) print *, 'input_persistent: START '//trim (file)
 !
-      if (read_persist_id ('INITIAL_BLOCK_ID', id)) return
+      if (read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) then
+        if (.not. present (file)) return
+        if (file == 'var.dat') then
+          if (init_read_persist ('pers_'//file)) return
+        elseif (index (file, 'VAR') == 1) then
+          if (init_read_persist ('PERS_'//file(4:))) return
+        else
+          return
+        endif
+        if (read_persist_id ('INITIAL_BLOCK_ID', id)) return
+      else
+        if (init_read_persist ()) return
+      endif
+!
       if (id /= id_block_PERSISTENT) then
         if (lroot .and. (ip <= 8)) print *, 'input_persistent: Missing initial persistent block ID'
         return
@@ -66,7 +81,7 @@ module Persist
 !
     endsubroutine input_persistent
 !***********************************************************************
-    subroutine output_persistent()
+    subroutine output_persistent(file)
 !
 !  Write auxiliary information into snapshot file.
 !  lun should be set to the same lun as that of the snapshot
@@ -81,9 +96,21 @@ module Persist
       use Forcing, only: output_persistent_forcing
       use Magnetic, only: output_persistent_magnetic
 !
-      if (lroot .and. (ip <= 8)) print *, 'output_persistent: START'
+      character (len=*), intent(in) :: file
 !
-      if (init_write_persist()) return
+      if (lroot .and. (ip <= 8)) print *, 'output_persistent: START '//trim (file)
+!
+      if (lseparate_persist) then
+        if ((file == 'var.dat') .or. (file == 'crash.dat')) then
+          if (init_write_persist('pers_'//file)) return
+        elseif (index (file, 'VAR') == 1) then
+          if (init_write_persist('PERS_'//file(4:))) return
+        else
+          return
+        endif
+      else
+        if (init_write_persist()) return
+      endif
 !
       if (output_persistent_general()) return
       if (output_persistent_interstellar()) return

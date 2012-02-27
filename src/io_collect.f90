@@ -11,9 +11,7 @@
 !  consists of the followinig records (not using record markers):
 !    1. data(mxgrid,mygrid,mzgrid,nvar)
 !    2. t(1), x(mxgrid), y(mygrid), z(mzgrid), dx(1), dy(1), dz(1)
-!    3. deltay(1) [optional: if lshear==.true.]
-!  Where mxgrid is nxgrid+2*nghost, the same applies for mygrid and mzgrid,
-!  and nvar denotes the number of variables to be saved.
+!  Where nvar denotes the number of variables to be saved.
 !  In the case of MHD with entropy, nvar is 8 for a 'var.dat' file.
 !
 !  13-Jan-2012/Bourdin.KIS: adapted from io_dist.f90
@@ -88,7 +86,6 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: datadir, directory, datadir_snap, directory_dist, directory_snap
       use General, only: safe_character_assign, itoa
       use Mpicomm, only: lroot
 !
@@ -277,85 +274,57 @@ contains
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
-      if (lfirst_proc_xy) then
-        allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga', .true.)
-      endif
-!
       if (lroot) then
-        allocate (buffer(mxgrid,mygrid), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for buffer', .true.)
+        allocate (ga(mxgrid,mygrid,mz,nv), buffer(mxgrid,mygrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga,buffer', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
         open (lun_output, FILE=trim (directory_snap)//'/'//file, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
-          if (pz == 0) then
-            ! receive data from the local xy-plane
-            call globalize_xy (a, ga)
-          endif
           z_start = n1
           z_end = n2
           if (pz == 0) z_start = 1
           if (pz == nprocz-1) z_end = mz
+          ! receive data from the xy-plane of the pz-layer
+          call globalize_xy (a(:,:,z_start:z_end,:), ga(:,:,z_start:z_end,:), source_pz=pz)
           ! iterate through variables
           do pa = 1, nv
             ! iterate through xy-planes and write each plane separately
             do iz = z_start, z_end
-              if (pz == 0) then
-                buffer = ga(:,:,iz,pa)
-              else
-                ! receive collected data from leading processors in the xy-planes
-                call mpirecv_real (buffer, (/ mxgrid, mygrid /), pz*nprocxy, tag_ga)
-              endif
+              buffer = ga(:,:,iz,pa)
               write (lun_output, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
             enddo
           enddo
         enddo
-        deallocate (buffer)
+        deallocate (ga, buffer)
 !
       else
-        if (lfirst_proc_xy) then
-          ! receive data from the local xy-plane
-          call globalize_xy (a, ga)
-          ! send collected data to root processor
-          z_start = n1
-          z_end = n2
-          if (ipz == 0) z_start = 1
-          if (ipz == nprocz-1) z_end = mz
-          ! iterate through variables
-          do pa = 1, nv
-            ! iterate through xy-planes and write each plane separately
-            do iz = z_start, z_end
-              call mpisend_real (ga(:,:,iz,pa), (/ mxgrid, mygrid /), 0, tag_ga)
-            enddo
-          enddo
-        else
-          ! send data to leading processor in the local xy-plane
-          call globalize_xy (a)
-        endif
+        z_start = n1
+        z_end = n2
+        if (ipz == 0) z_start = 1
+        if (ipz == nprocz-1) z_end = mz
+        ! send data to root processor
+        call globalize_xy (a(:,:,z_start:z_end,:), dest_proc=-ipz*nprocxy)
       endif
 !
       ! write additional data:
       if (lroot) then
         if (lwrite_add) then
-          close (lun_output)
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
           call collect_grid (x, y, z, gx, gy, gz)
-
+!
+          close (lun_output)
           open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = t
           write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-          if (lshear) write (lun_output) deltay
           deallocate (gx, gy, gz)
         endif
       else
         call collect_grid (x, y, z)
       endif
-!
-      if (lfirst_proc_xy) deallocate (ga)
 !
     endsubroutine output_snap
 !***********************************************************************
@@ -367,16 +336,15 @@ contains
 !
       use Mpicomm, only: lroot
 !
-      if (lroot) then
-        if (persist_initialized) then
+      if (persist_initialized) then
+        if (lroot) then
           if (ip <= 9) write (*,*) 'finish persistent block'
           write (lun_output) id_block_PERSISTENT
         endif
-        close (lun_output)
+        persist_initialized = .false.
       endif
 !
-      persist_initialized = .false.
-      persist_last_id = -max_int
+      if (lroot) close (lun_output)
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -478,7 +446,6 @@ contains
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Cdata
       use Mpicomm, only: lroot, localize_xy, mpisend_real, mpirecv_real, mpibcast_real
       use Syscalls, only: sizeof_real
 !
@@ -491,7 +458,7 @@ contains
       real, dimension (:,:), allocatable :: buffer
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=675
-      integer :: pz, pa, io_len, alloc_err
+      integer :: pz, pa, z_start, io_len, alloc_err
       integer(kind=8) :: rec_len, num_rec
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -499,12 +466,9 @@ contains
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
 !
-      if (lfirst_proc_xy) then
+      if (lroot) then
         allocate (ga(mxgrid,mygrid,mz,nv), buffer(mxgrid,mygrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga,buffer', .true.)
-      endif
-!
-      if (lroot) then
         if (ip <= 8) print *, 'input_snap: open ', file
         inquire (IOLENGTH=io_len) t_sp
         open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=mxgrid*mygrid*io_len, status='old')
@@ -512,60 +476,50 @@ contains
         if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mzgrid, nv
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
+          if (pz == 0) then
+            z_start = 1
+          else
+            ! for efficiency, some data that was already read can be moved
+            ga(:,:,mz-5:mz,:) = ga(:,:,1:6,:)
+            z_start = 4
+          endif
           ! iterate through variables
           do pa = 1, nv
             ! iterate through xy-planes and read each plane separately
-            do iz = 1, mz
+            do iz = z_start, mz
               read (lun_input, rec=iz+pz*nz+(pa-1)*mzgrid) buffer
-              if (pz == 0) then
-                ga(:,:,iz,pa) = buffer
-              else
-                ! send collective data to the leading processors in the xy-planes
-                call mpisend_real (buffer, (/ mxgrid, mygrid /), pz*nprocxy, tag_ga)
-              endif
-            enddo
-          enddo
-          ! distribute data in the local xy-plane
-          if (pz == 0) call localize_xy (ga, a)
-        enddo
-!
-      else
-        if (lfirst_proc_xy) then
-          ! receive whole xy-plane from root processor
-          do pa = 1, nv
-            do iz = 1, mz
-              call mpirecv_real (buffer, (/ mxgrid, mygrid /), 0, tag_ga)
               ga(:,:,iz,pa) = buffer
             enddo
           enddo
-        endif
-        ! distribute xy-plane to all corresponding processors
-        call localize_xy (ga, a)
-      endif
+          ! distribute data in the xy-plane of the pz-layer
+          call localize_xy (a, ga, dest_pz=pz)
+        enddo
+        deallocate (ga, buffer)
 !
-      if (lfirst_proc_xy) deallocate (ga, buffer)
+      else
+        ! receive data from root processor
+        call localize_xy (a, source_proc=-ipz*nprocxy)
+      endif
 !
       ! read additional data
       if (lread_add) then
         if (lroot) then
-          close (lun_input)
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
           rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
           num_rec = int (mzgrid, kind=8) * int (nv*sizeof_real(), kind=8)
+          close (lun_input)
           open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
           call fseek_pos (lun_input, rec_len, num_rec, 0)
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)
-          if (lshear) read (lun_input) deltay
           deallocate (gx, gy, gz)
         else
           call distribute_grid (x, y, z)
         endif
         call mpibcast_real (t_sp)
         t = t_sp
-        if (lshear) call mpibcast_real (deltay)
       endif
 !
     endsubroutine input_snap
@@ -576,26 +530,38 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
+      if (persist_initialized) then
+        persist_initialized = .false.
+        persist_last_id = -max_int
+      endif
+!
       if (lroot) close (lun_input)
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
-    logical function init_write_persist()
+    logical function init_write_persist(file)
 !
-!  Initialize writing of persistent data to snapshot file.
+!  Initialize writing of persistent data to persistent file.
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: lroot
 !
+      character (len=*), intent(in), optional :: file
+!
+      persist_last_id = -max_int
+!
       if (lroot) then
+        if (present (file)) then
+          close (lun_output)
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+        endif
         if (ip <= 9) write (*,*) 'begin persistent block'
         write (lun_output) id_block_PERSISTENT
       endif
 !
       init_write_persist = .false.
       persist_initialized = .true.
-      persist_last_id = -max_int
 !
     endfunction init_write_persist
 !***********************************************************************
@@ -925,7 +891,30 @@ contains
 !
     endfunction write_persist_real_1D
 !***********************************************************************
-    logical function read_persist_id(label, id)
+    logical function init_read_persist(file)
+!
+!  Initialize reading of persistent data from persistent file.
+!
+!  13-Dec-2011/Bourdin.KIS: coded
+!
+      use Mpicomm, only: lroot
+!
+      character (len=*), intent(in), optional :: file
+!
+      if (lroot) then
+        if (ip <= 9) write (*,*) 'begin persistent block'
+        if (present (file)) then
+          close (lun_input)
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
+        endif
+      endif
+!
+      init_read_persist = .false.
+      persist_initialized = .true.
+!
+    endfunction init_read_persist
+!***********************************************************************
+    logical function read_persist_id(label, id, lerror_prone)
 !
 !  Read persistent block ID from snapshot file.
 !
@@ -935,15 +924,28 @@ contains
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
+      logical, intent(in), optional :: lerror_prone
+!
+      logical :: lcatch_error
+      integer :: io_err
+!
+      lcatch_error = .false.
+      if (present (lerror_prone)) lcatch_error = lerror_prone
 !
       if (lroot) then
         if (ip <= 9) write (*,*) 'read persistent ID '//trim (label)
-        read (lun_input) id
+        if (lcatch_error) then
+          read (lun_input, iostat=io_err) id
+          if (io_err /= 0) id = -max_int
+        else
+          read (lun_input) id
+        endif
       endif
 !
       call mpibcast_int (id)
 !
       read_persist_id = .false.
+      if (id == -max_int) read_persist_id = .true.
 !
     endfunction read_persist_id
 !***********************************************************************
@@ -1240,8 +1242,6 @@ contains
 !  In the directory containing 'filename', append one line to file
 !  'flist' containing the file part of filename
 !
-      use Cdata, only: lroot, lcopysnapshots_exp, datadir
-      use Cparam, only: fnlen
       use General, only: parse_filename, safe_character_assign
       use Mpicomm, only: mpibarrier
 !
@@ -1261,7 +1261,7 @@ contains
       if (lcopysnapshots_exp) then
         call mpibarrier ()
         if (lroot) then
-          open (lun_output,FILE=trim (datadir)//'/move-me.list', POSITION='append', status='old')
+          open (lun_output,FILE=trim (datadir)//'/move-me.list', POSITION='append')
           write (lun_output,'(A)') trim (fpart)
           close (lun_output)
         endif
@@ -1275,7 +1275,6 @@ contains
 !
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
-      use Cdata
       use Mpicomm, only: lroot
 !
       character (len=*) :: file
@@ -1317,7 +1316,6 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
-      use Cdata
       use Mpicomm, only: lroot, mpibcast_int, mpibcast_real
 !
       character (len=*) :: file
@@ -1385,7 +1383,6 @@ contains
 !
 !   22-Feb-2012/Bourdin.KIS: adapted from io_dist
 !
-      use Cdata, only: procy_bounds, procz_bounds
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file
@@ -1408,7 +1405,6 @@ contains
 !
 !   22-Feb-2012/Bourdin.KIS: adapted from io_dist
 !
-      use Cdata, only: procy_bounds, procz_bounds
       use Mpicomm, only: stop_it
 !
       character (len=*) :: file

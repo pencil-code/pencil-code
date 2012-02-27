@@ -83,7 +83,7 @@ module Snapshot
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
           call output_snap(file,a,msnap)
-          call output_persistent()
+          call output_persistent(file)
           call output_snap_finalize()
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
@@ -109,7 +109,7 @@ module Snapshot
         endif
         call safe_character_assign(file,trim(chsnap))
         call output_snap(file,a,msnap)
-        call output_persistent()
+        call output_persistent(file)
         call output_snap_finalize()
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
@@ -212,7 +212,7 @@ module Snapshot
         endif
       else
         call input_snap(chsnap,f,msnap,1)
-        call input_persistent()
+        call input_persistent(chsnap)
         call input_snap_finalize()
       endif
 !
@@ -467,7 +467,7 @@ module Snapshot
       integer :: i, j, k, io_err
 !
       open(lun_output,FILE=trim(directory_dist)//trim(file)//'.form',IOSTAT=io_err)
-      if (outlog(io_err,'open',trim(file)//'.form',dist=lun_output)) return 
+      if (outlog(io_err,'open',trim(file)//'.form',dist=lun_output)) return
 !
       if (lwrite_2d) then
 !
@@ -536,12 +536,9 @@ module Snapshot
 !
       integer :: i, j, k, kk, io_err
       real, dimension (nx*ny*nz) :: xx, yy, zz
-      character (len=fnlen) :: filename
 !
-      filename = trim(directory_dist)//trim(file)//'.tec'
-!
-      open(lun_output,FILE=filename,IOSTAT=io_err)
-      if (outlog(io_err,'open',filename,dist=lun_output)) return 
+      open(lun_output,FILE=trim(directory_dist)//trim(file)//'.tec',IOSTAT=io_err)
+      if (outlog(io_err,'open',trim(file)//'.tec',dist=lun_output)) return
 !
       kk = 0
       do k = 1, nz
