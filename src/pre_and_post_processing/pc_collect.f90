@@ -9,6 +9,7 @@ program pc_collect
   use Diagnostics
   use Filter
   use General, only: random_seed_wrapper
+  use Grid, only: initialize_grid
   use IO
   use Messages
   use Param_IO
@@ -89,19 +90,19 @@ program pc_collect
 !
 !  Register physics modules.
 !
-  if (lenforce_redundant) call register_modules()
+  call register_modules()
 !
 !  Define the lenergy logical
 !
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
-  if (lwrite_aux.and..not.lread_aux) then
+  if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then
-      print*,''
-      print*,'lwrite_aux=T but lread_aux=F'
-      print*,'The code will write the auxiliary variables to allprocs/VARN'
-      print*,' without having read them from proc*/VARN'
-      print*,''
+      print *, ''
+      print *, 'lwrite_aux=T but lread_aux=F'
+      print *, 'The code will write the auxiliary variables to allprocs/VARN'
+      print *, ' without having read them from proc*/VARN'
+      print *, ''
       call fatal_error("pc_collect","Stop and check")
     endif
   endif
@@ -147,11 +148,19 @@ program pc_collect
   if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
   open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=ngx*ngy*bytes)
 !
-  gz = huge(1.0)
+!  Allow modules to do any physics modules do parameter dependent
+!  initialization. And final pre-timestepping setup.
+!  (must be done before need_XXXX can be used, for example)
+!
+  lpencil_check_at_work = .true.
+  call initialize_modules(f, LSTARTING=.true.)
+  lpencil_check_at_work = .false.
 !
 ! Loop over processors
 !
   write (*,*) "IPZ-layer:"
+!
+  gz = huge(1.0)
 !
   do ipz = 0, nprocz-1
 !
@@ -223,32 +232,15 @@ program pc_collect
           Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
         endif
 !
+!  Need to re-initialize the local grid for each processor.
+!
+        call initialize_grid()
+!
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
         call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
-!
-!  Read time and global variables (if any).
-!
-        if (lenforce_redundant) then
-          if (mglobal /= 0) &
-               call input_globals ('global.dat', &
-               f(:,:,:,mvar+maux+1:mvar+maux+mglobal), mglobal)
-!
-!  Allow modules to do any physics modules do parameter dependent
-!  initialization. And final pre-timestepping setup.
-!  (must be done before need_XXXX can be used, for example)
-!
-          lpencil_check_at_work = .true.
-          call initialize_modules (f, LSTARTING=.true.)
-          lpencil_check_at_work = .false.
-!
-!  Find out which pencils are needed and write information about required,
-!  requested and diagnostic pencils to disc.
-!
-          call choose_pencils()
-        endif
 !
         ! collect f in gf:
         gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f(:,:,:,1:mvar_io)
@@ -294,12 +286,16 @@ program pc_collect
   write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
   if (lshear) write (lun_output) deltay
 !
-  ! write persistent data:
-  lerror = init_write_persist()
-  if (lerror) call fatal_error ('init_write_persist', "IO-error")
-  lerror = write_persist_id ('RANDOM_SEEDS', id_record_RANDOM_SEEDS)
-  if (lerror) call fatal_error ('write_persist_id', "IO-error")
-  write (lun_output) gs
+  if (.not. lseparate_persist) then
+    ! write persistent data:
+    call warning ('write_persistent', "Only the RANDOM_SEEDS are currently collected.")
+    lerror = init_write_persist()
+    if (lerror) call fatal_error ('write_persist', "IO-error")
+    lerror = write_persist_id ('RANDOM_SEEDS', id_record_RANDOM_SEEDS)
+    if (lerror) call fatal_error ('write_persist_id', "IO-error")
+    write (lun_output) gs
+  endif
+!
   call output_snap_finalize()
 !
   ! write global grid:

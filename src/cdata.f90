@@ -620,13 +620,5 @@ module Cdata
   real :: re_mesh=1.
   logical :: ldynamical_diffusion=.false.
 !
-!  Enforce a call to some subroutines that appear copied-and-pasted from 
-!  [start][run].f90 to pc_collect.f90 yet seem redundant in the sense that 
-!  the code compiles without them being called, and also that they break the 
-!  funtionality of the relevant code when, for instance, global data is used, 
-!  such as the gravitational field in gravity_r.f90
-!
-  logical :: lenforce_redundant=.true.
-!
 !***********************************************************************
 endmodule Cdata

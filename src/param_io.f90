@@ -135,7 +135,7 @@ module Param_IO
       llsode, lsplit_second, nu_sts,lsuper_time_stepping, lfargo_advection, &
       ldynamical_diffusion, re_mesh, lconst_advection, u0_advec, &
       loutput_varn_at_exact_tsnap, &
-      lstop_on_ioerror, mailaddress, lenforce_redundant
+      lstop_on_ioerror, mailaddress
 !
   contains
 !***********************************************************************

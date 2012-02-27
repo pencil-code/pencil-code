@@ -9,6 +9,7 @@ program pc_reduce
   use Cparam, only: fnlen
   use Diagnostics
   use Filter
+  use Grid, only: initialize_grid
   use IO
   use Messages
   use Param_IO
@@ -99,6 +100,17 @@ program pc_reduce
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
+  if (lwrite_aux .and. .not. lread_aux) then
+    if (lroot) then
+      print *, ''
+      print *, 'lwrite_aux=T but lread_aux=F'
+      print *, 'The code will write the auxiliary variables to allprocs/VARN'
+      print *, ' without having read them from proc*/VARN'
+      print *, ''
+      call fatal_error("pc_distribute","Stop and check")
+    endif
+  endif
+!
 !  Will we write all slots of f?
 !
   if (lwrite_aux) then
@@ -134,11 +146,19 @@ program pc_reduce
   if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//filename, .true.)
   open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=nrx*nry*bytes)
 !
-  gz = huge(1.0)
+!  Allow modules to do any physics modules do parameter dependent
+!  initialization. And final pre-timestepping setup.
+!  (must be done before need_XXXX can be used, for example)
+!
+  lpencil_check_at_work = .true.
+  call initialize_modules (f, LSTARTING=.true.)
+  lpencil_check_at_work = .false.
 !
 ! Loop over processors
 !
   write (*,*) "IPZ-layer:"
+!
+  gz = huge(1.0)
 !
   do ipz = 0, nprocz-1
 !
@@ -208,30 +228,15 @@ program pc_reduce
           Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
         endif
 !
+!  Need to re-initialize the local grid for each processor.
+!
+        call initialize_grid()
+!
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
         call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
-!
-!  Read time and global variables (if any).
-!
-        if (mglobal /= 0) &
-            call input_globals ('global.dat', &
-                f(:,:,:,mvar+maux+1:mvar+maux+mglobal), mglobal)
-!
-!  Allow modules to do any physics modules do parameter dependent
-!  initialization. And final pre-timestepping setup.
-!  (must be done before need_XXXX can be used, for example)
-!
-        lpencil_check_at_work = .true.
-        call initialize_modules (f, LSTARTING=.true.)
-        lpencil_check_at_work = .false.
-!
-!  Find out which pencils are needed and write information about required,
-!  requested and diagnostic pencils to disc.
-!
-        call choose_pencils()
 !
         ! reduce f:
         do pa = 1, mvar_io
