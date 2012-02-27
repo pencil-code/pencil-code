@@ -536,9 +536,12 @@ module Snapshot
 !
       integer :: i, j, k, kk, io_err
       real, dimension (nx*ny*nz) :: xx, yy, zz
+      character (len=fnlen) :: filename
 !
-      open(lun_output,FILE=trim(directory_dist)//trim(file)//'.tec',IOSTAT=io_err)
-      if (outlog(io_err,'open',filel,dist=lun_output)) return 
+      filename = trim(directory_dist)//trim(file)//'.tec'
+!
+      open(lun_output,FILE=filename,IOSTAT=io_err)
+      if (outlog(io_err,'open',filename,dist=lun_output)) return 
 !
       kk = 0
       do k = 1, nz
