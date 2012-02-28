@@ -30,7 +30,8 @@ module Viscosity
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
-  real :: nu=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
+  real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0
+  real :: nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
@@ -52,6 +53,7 @@ module Viscosity
   logical :: lvisc_nu_therm=.false.
   logical :: lvisc_mu_therm=.false.
   logical :: lvisc_nu_const=.false.
+  logical :: lvisc_nu_tdep=.false.
   logical :: lvisc_nu_prof=.false.
   logical :: lvisc_nu_profx=.false.
   logical :: lvisc_nu_profr=.false.
@@ -82,7 +84,8 @@ module Viscosity
   logical, pointer:: lviscosity_heat
 !
   namelist /viscosity_run_pars/ &
-      nu, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
+      nu, nu_tdep_exponent, &
+      nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
@@ -90,6 +93,7 @@ module Viscosity
       PrM_turb, roffset_lambda, nu_spitzer
 !
 ! other variables (needs to be consistent with reset list below)
+  integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
   integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
   integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
@@ -167,6 +171,7 @@ module Viscosity
       lvisc_nu_therm=.false.
       lvisc_mu_therm=.false.
       lvisc_nu_const=.false.
+      lvisc_nu_tdep=.false.
       lvisc_nu_prof=.false.
       lvisc_nu_profx=.false.
       lvisc_nu_profr=.false.
@@ -215,6 +220,10 @@ module Viscosity
           if (nu/=0.) lpenc_requested(i_sij)=.true.
 !          if (meanfield_nuB/=0.) lpenc_requested(i_b2)=.true.
           lvisc_nu_const=.true.
+        case ('nu-tdep')
+          if (lroot) print*,'time-dependent nu*(del2u+graddivu/3+2S.glnrho)'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_nu_tdep=.true.
         case ('nu-prof')
           if (lroot) print*,'viscous force with a vertical profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
@@ -324,7 +333,8 @@ module Viscosity
       if (lrun) then
         if ( (lvisc_simplified.or.lvisc_rho_nu_const.or.&
              lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or.&
-             lvisc_nu_therm.or.lvisc_mu_therm).and.nu==0.0) &
+             lvisc_nu_tdep.or.lvisc_nu_therm.or.&
+             lvisc_mu_therm).and.nu==0.0) &
             call warning('initialize_viscosity', &
             'Viscosity coefficient nu is zero!')
         if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
@@ -570,6 +580,7 @@ module Viscosity
         idiag_dtnu=0; idiag_nu_LES=0; idiag_epsK=0; idiag_epsK_LES=0
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
+        idiag_nu_tdep=0; idiag_fviscm=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0
       endif
@@ -578,6 +589,7 @@ module Viscosity
 !
       if (lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'nu_tdep',idiag_nu_tdep)
         call parse_name(iname,cname(iname),cform(iname),'fviscm',idiag_fviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmin',idiag_fviscmin)
         call parse_name(iname,cname(iname),cform(iname),'fviscmax',idiag_fviscmax)
@@ -632,13 +644,13 @@ module Viscosity
       if ((lentropy.or.ltemperature) .and. &
           (lvisc_simplified .or. lvisc_rho_nu_const .or. &
            lvisc_sqrtrho_nu_const .or. lvisc_nu_therm .or.&
-           lvisc_nu_const .or. lvisc_nu_shock .or. &
+           lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
            lvisc_nut_from_magnetic .or. lvisc_mu_therm))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const.or.lvisc_sqrtrho_nu_const.or. &
-          lvisc_nu_const.or.lvisc_nu_therm.or.&
+          lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_therm .or. &
           lvisc_nu_prof.or.lvisc_nu_profx.or.lvisc_spitzer .or. &
           lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_therm) then
@@ -665,7 +677,7 @@ module Viscosity
       endif
       if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
       if (lvisc_simplified .or. lvisc_rho_nu_const .or. &
-          lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. &
+          lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. lvisc_nu_tdep .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
@@ -693,7 +705,8 @@ module Viscosity
           lvisc_spitzer) &
           lpenc_requested(i_rho1)=.true.
 !
-      if (lvisc_nu_const .or. lvisc_nu_prof .or. lvisc_nu_profx .or. &
+      if (lvisc_nu_const .or. lvisc_nu_tdep .or. &
+          lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nut_from_magnetic.or.lvisc_nu_therm .or.  &
@@ -945,6 +958,17 @@ module Viscosity
 !
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
+      endif
+!
+      if (lvisc_nu_tdep) then
+!
+!  viscous force: nu(t)*(del2u+graddivu/3+2S.glnrho)
+!  -- the correct expression for nu=const
+!
+        nu_tdep=nu*t**nu_tdep_exponent
+        p%fvisc=p%fvisc+2*nu_tdep*p%sglnrho+nu_tdep*(p%del2u+1./3.*p%graddivu)
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_tdep
       endif
 !
       if (lvisc_mixture) then
@@ -1547,6 +1571,7 @@ module Viscosity
 !  Diagnostic output
 !
       if (ldiagnos) then
+        if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
         if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)
         if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
         if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
