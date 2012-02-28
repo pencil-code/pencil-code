@@ -554,6 +554,10 @@ module Magnetic_meanfield
           case ('exp(z/H)');
 !           H = -2* density scale height, old version
             Beq21=1./meanfield_Beq**2*exp(-2*z(n)/meanfield_Beq_height)
+!
+!  Beq ~ exp(-z/2H), where H=Hrho is the density scale height.
+!  Give here meanfield_Beq2_height, which is the scale height for Beq^2.
+!
           case ('exp(z/2H)');
 !           H = density scale height, more straightforward
             Beq21=1./meanfield_Beq**2*exp(z(n)/meanfield_Beq2_height)
