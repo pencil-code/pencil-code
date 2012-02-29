@@ -77,16 +77,12 @@ module Timestep
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(mx,my,mz,nchemspec,nchemspec) :: jacob
       type (pencil_case) :: p
-      real :: ds
-      real, dimension(1) :: dt1, dt1_local
 !
       real :: errmax, tnew
-      real :: dt_temp, dt_next, dt_did
+      real :: dt_next, dt_did
       integer :: j,i
       logical :: dtnotok
-      integer :: l
 !
       ldt=.false.
       dtnotok=.true.
@@ -109,7 +105,7 @@ module Timestep
       do i=1,maxtry
 !        print*,"i=",i,"   trying dt=",dt
         ! Do a Stiff step
-        call stiff(f(:,:,:,1:mvar), df, p, errmax)
+        call stiff(f, df, p, errmax)
 !        print*,"errmax=",errmax
         ! Step succeeded so exit
         ! New time
@@ -169,22 +165,21 @@ module Timestep
 !
       intent(inout) :: f
       intent(out)   :: df, p, errmax
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: fscal
       ! Note: The tmp array will not use more memory than the temporary
       !   array that would be implicitly created with calls like
       !     call pde(f + a21*k(:,:,:,:,1), k(:,:,:,:,2),p))
-      real, dimension (mx,my,mz,mvar) :: tmp
+      real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: jacob
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer, dimension (mx,my,mz,nchemspec) :: indx
-      real, dimension(mx,my,mz,mvar,4) :: k
+      real, dimension(mx,my,mz,mfarray,4) :: k
       real, dimension(mx,my,mz,nchemspec) :: ktemp
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs
-      integer :: i,j,l,lll
-      integer :: i1
+      integer :: j,l
 !
       df=0.
       errmax=0.
