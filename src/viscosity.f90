@@ -30,7 +30,7 @@ module Viscosity
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
-  real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0
+  real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
@@ -84,7 +84,7 @@ module Viscosity
   logical, pointer:: lviscosity_heat
 !
   namelist /viscosity_run_pars/ &
-      nu, nu_tdep_exponent, &
+      nu, nu_tdep_exponent, nu_tdep_t0, &
       nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
@@ -965,7 +965,7 @@ module Viscosity
 !  viscous force: nu(t)*(del2u+graddivu/3+2S.glnrho)
 !  -- the correct expression for nu=const
 !
-        nu_tdep=nu*t**nu_tdep_exponent
+        nu_tdep=nu*(t-nu_tdep_t0)**nu_tdep_exponent
         p%fvisc=p%fvisc+2*nu_tdep*p%sglnrho+nu_tdep*(p%del2u+1./3.*p%graddivu)
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
         if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_tdep
