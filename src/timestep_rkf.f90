@@ -11,7 +11,7 @@ module Timestep
 !
   public :: rk_2n
 !
-  ! Parameters for adaptive time stepping
+! Parameters for adaptive time stepping
   real, parameter :: safety      =  0.9
   real, parameter :: dt_decrease = -0.25
   real, parameter :: dt_increase = -0.20
@@ -27,15 +27,11 @@ module Timestep
 !
 !  22-jun-06/tony: coded
 !
-      use Mpicomm
-      use Cdata
-      use Messages
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: ds
-      real, dimension(1) :: dt1, dt1_local
 !
       real :: errmax, tnew
       real :: dt_temp, dt_next, dt_did
@@ -63,11 +59,11 @@ module Timestep
       lfirst=.true.
       do i=1,10
         ! Do a Runge-Kutta step
-        call rkck(f(:,:,:,1:mvar), df, p, errmax)
+        call rkck(f, df, p, errmax)
         ! Step succeeded so exit
         if (errmax <= safety) exit
         ! Step didn't succeed so decrease the time step
-!        print*,"Decreasing"
+!        print*,"Decreasing",errmax,dt
         dt_temp = safety*dt*(errmax**dt_decrease)
         ! Don't decrease the time step by more than a factor of ten
         dt = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
@@ -110,10 +106,11 @@ module Timestep
 !
 ! Explicit fifth order Runge--Kutta--Fehlberg time stepping
 !
-      use Cdata
       use Mpicomm, only: mpiallreduce_max
-      use Equ
-    ! RK parameters by Cash and Karp
+      use Equ, only: pde
+!
+! RK parameters by Cash and Karp
+!
       real, parameter :: b21 = 0.2
       real, parameter :: b31 = 0.075
       real, parameter :: b32 = 0.225
@@ -142,23 +139,24 @@ module Timestep
       real, parameter :: dc5 = c5 - 277.0 / 14336.0
       real, parameter :: dc6 = c6 - 0.25
 !
-      ! Note: f is intent(inout), as pde may change it due to
-      !   lshift_datacube_x, density floor, or velocity ceiling.
-      !   None of those will do exctly what is intended, because they are
-      !   only really modifying f during the first substep.
+! Note: f is intent(inout), as pde may change it due to
+!   lshift_datacube_x, density floor, or velocity ceiling.
+!   None of those will do exctly what is intended, because they are
+!   only really modifying f during the first substep.
+!
       intent(inout) :: f
       intent(out)   :: df, p, errmax
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(mx,my,mz,mvar,5) :: k
-      ! Note: The tmp array will not use more memory than the temporary
-      !   array that would be implicitly created with calls like
-      !     call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
-      real, dimension (mx,my,mz,mvar) :: tmp
+      real, dimension(mx,my,mz,mfarray,5) :: k
+! Note: The tmp array will not use more memory than the temporary
+!   array that would be implicitly created with calls like
+!   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
+      real, dimension (mx,my,mz,mfarray) :: tmp
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs
-      integer :: j,lll
+      integer :: j
 !
       df=0.
       errmax=0.
@@ -166,93 +164,93 @@ module Timestep
 !
       call pde(f, k(:,:,:,:,1), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
-!
+        k(l1:l2,m,n,j,1) = dt*k(l1:l2,m,n,j,1)
       enddo; enddo; enddo
 !
       lfirst=.false.
       tmp = f + b21*k(:,:,:,:,1)
+!
       call pde(tmp, k(:,:,:,:,2), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
+        k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       enddo; enddo; enddo
 !
       tmp = f + b31*k(:,:,:,:,1) + b32*k(:,:,:,:,2)
+!
       call pde(tmp, k(:,:,:,:,3), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
+        k(l1:l2,m,n,j,3) = dt*k(l1:l2,m,n,j,3)
       enddo; enddo; enddo
 !
       tmp = f + b41*k(:,:,:,:,1) &
               + b42*k(:,:,:,:,2) &
               + b43*k(:,:,:,:,3)
+!
       call pde(tmp, k(:,:,:,:,4), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
+        k(l1:l2,m,n,j,4) = dt*k(l1:l2,m,n,j,4)
       enddo; enddo; enddo
 !
       tmp = f + b51*k(:,:,:,:,1) &
               + b52*k(:,:,:,:,2) &
               + b53*k(:,:,:,:,3) &
               + b54*k(:,:,:,:,4)
+!
       call pde(tmp, k(:,:,:,:,5), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
+        k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       enddo; enddo; enddo
 !
       errmaxs=0.
-!
       tmp = f + b61*k(:,:,:,:,1) &
               + b62*k(:,:,:,:,2) &
               + b63*k(:,:,:,:,3) &
               + b64*k(:,:,:,:,4) &
               + b65*k(:,:,:,:,5)
+!
       call pde(tmp, df, p)
 !
       do j=1,mvar; do n=n1,n2; do m=m1,m2
-          df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
+        df(l1:l2,m,n,j) = dt*df(l1:l2,m,n,j)
 !
-          err = dc1*k(l1:l2,m,n,j,1) + dc2*k(l1:l2,m,n,j,2) + &
-                dc3*k(l1:l2,m,n,j,3) + dc4*k(l1:l2,m,n,j,4) + &
-                dc5*k(l1:l2,m,n,j,5) + dc6*df(l1:l2,m,n,j)
+        err = dc1*k(l1:l2,m,n,j,1) + dc2*k(l1:l2,m,n,j,2) + &
+              dc3*k(l1:l2,m,n,j,3) + dc4*k(l1:l2,m,n,j,4) + &
+              dc5*k(l1:l2,m,n,j,5) + dc6*df(l1:l2,m,n,j)
 !
-          df(l1:l2,m,n,j) = c1*k(l1:l2,m,n,j,1) + c2*k(l1:l2,m,n,j,2) + &
-                            c3*k(l1:l2,m,n,j,3) + c4*k(l1:l2,m,n,j,4) + &
-                            c5*k(l1:l2,m,n,j,5) + c6*df(l1:l2,m,n,j)
+        df(l1:l2,m,n,j) = c1*k(l1:l2,m,n,j,1) + c2*k(l1:l2,m,n,j,2) + &
+                          c3*k(l1:l2,m,n,j,3) + c4*k(l1:l2,m,n,j,4) + &
+                          c5*k(l1:l2,m,n,j,5) + c6*df(l1:l2,m,n,j)
 !
-          ! Get the maximum error over the whole field
+! Get the maximum error over the whole field
+!
+        select case (timestep_scaling(j))
+        case ('per_var_err')
+          ! Per variable error
+          !          scal=  ( &
+          !              sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
+          !              sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + 1e-30)
+          !          errmaxs = max(maxval(abs(err/scal)),errmaxs)
+          scal=  sqrt(f(l1:l2,m,n,j)**2  + k(l1:l2,m,n,j,1)**2 + 1e-30)
+          errmaxs = max(maxval(abs(err/scal)),errmaxs)
+        case ('cons_frac_err')
+          ! Constant fractional error
+          errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
+        case ('cons_err')
+          ! Constant error
+          scal = max(abs(f(l1:l2,m,n,j)), 1e-8)
+          errmaxs = max(maxval(abs(err/scal)),errmaxs)
           !
-          select case (timestep_scaling(j))
-          case ('per_var_err')
-            ! Per variable error
-            scal=  ( &
-                 sqrt(f(l1:l2,m,n,1)**2+f(l1:l2,m,n,2)**2)  + &
-                 sqrt(k(l1:l2,m,n,1,1)**2 + k(l1:l2,m,n,2,1)**2) + &
-                 1e-30)
-            errmaxs = max(maxval(abs(err/scal)),errmaxs)
-            !scal=  ( &
-            !     abs(f(l1:l2,m,n,j))  + abs(k(l1:l2,m,n,j,1)) + 1e-30)
-            !errmaxs = max(maxval(abs(err/scal)),errmaxs)
-          case ('cons_frac_err')
-            ! Constant fractional error
-            errmaxs = max(maxval(abs(err/f(l1:l2,m,n,j))),errmaxs)
-          case ('cons_err')
-            ! Constant error
-            scal = max(abs(f(l1:l2,m,n,j)), 1e-8)
-            errmaxs = max(maxval(abs(err/scal)),errmaxs)
-            !
-          case ('none')
-            ! No error check
-            errmaxs = 0
-            !
-          endselect
-          !
-        enddo; enddo; enddo
-        !
-        ! Divide your maximum error by the required accuracy
-        !
-        errmaxs=errmaxs/eps_rkf
-        !
+        case ('none')
+          ! No error check
+          errmaxs = 0
+        endselect
+!
+      enddo; enddo; enddo
+!
+! Divide your maximum error by the required accuracy
+!
+      errmaxs=errmaxs/eps_rkf
+!
       call mpiallreduce_max(errmaxs,errmax)
 !
     endsubroutine rkck
