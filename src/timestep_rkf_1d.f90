@@ -23,7 +23,6 @@ module Timestep
     subroutine rk_2n(f,df,p)
 !
 !  Runge-Kutta-Fehlberg accurate to 5th order
-!  At the moment, itorder can be 1, 2, or 3.
 !
 !  22-jun-06/tony: coded
 !
@@ -37,8 +36,6 @@ module Timestep
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: ds
-      real, dimension(1) :: dt1, dt1_local
 !
       real :: errmax, tnew
       real :: dt_temp, dt_next, dt_did
@@ -66,7 +63,7 @@ module Timestep
       lfirst=.true.
       do i=1,10
         ! Do a Runge-Kutta step
-        call rkck(f(:,:,:,1:mvar), df, p, errmax)
+        call rkck(f, df, p, errmax)
         ! Step succeeded so exit
         if (errmax <= safety) exit
         ! Step didn't succeed so decrease the time step
@@ -144,16 +141,16 @@ module Timestep
       real, parameter :: dc5      = c5 - 277.0 / 14336.0
       real, parameter :: dc6      = c6 - 0.25
 !
-      real, dimension (mx,my,mz,mvar), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(inout) :: p
-      real, dimension(mx,my,mz,mvar,5) :: k
-      real, save, dimension(mx,my,mz,mvar) :: tmp1
-      real, dimension(mx,my,mz,mvar) :: tmp2
+      real, dimension(mx,my,mz,mfarray,5) :: k
+      real, save, dimension(mx,my,mz,mfarray) :: tmp1
+      real, dimension(mx,my,mz,mfarray) :: tmp2
       real, dimension(nx) :: scal, err
       real, intent(inout) :: errmax
       real :: errmaxs
-      integer :: j,lll
+      integer :: j
       logical, save :: first_call=.true.
 !
       if (ny /= 1 .or. nz /= 1) then
