@@ -156,6 +156,7 @@ module Timestep
 !
       df=0.
       errmax=0.
+      errmaxs=0.
       k=0.
 !
       call pde(f, k(:,:,:,:,1), p)
@@ -198,7 +199,6 @@ module Timestep
         k(l1:l2,m,n,j,5) = dt*k(l1:l2,m,n,j,5)
       enddo; enddo; enddo
 !
-      errmaxs=0.
       tmp = f + b61*k(:,:,:,:,1) &
               + b62*k(:,:,:,:,2) &
               + b63*k(:,:,:,:,3) &
@@ -239,7 +239,6 @@ module Timestep
           !
         case ('none')
           ! No error check
-          errmaxs = 0
         endselect
 !
       enddo; enddo; enddo
