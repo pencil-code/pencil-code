@@ -34,7 +34,7 @@ module Timestep
       type (pencil_case) :: p
 !
       real :: errmax, tnew
-      real :: dt_temp, dt_next, dt_did
+      real :: dt_temp, dt_next
       integer :: j,i
 !
       ldt=.false.
@@ -75,7 +75,6 @@ module Timestep
         endif
       enddo
 !
-!      print*,"errmax, errcon", errmax,errcon
       if (errmax > errcon) then
         ! Increase the time step
         dt_next = safety*dt*(errmax**dt_increase)
@@ -84,13 +83,10 @@ module Timestep
         dt_next = 5.0*dt
       endif
 !
-      ! Time step that was actually performed
-      dt_did = dt
-!
       if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
-      ! Increase time
+! Increase time
       t = t+dt
-      ! Time step to try next time
+! Time step to try next time
       dt = dt_next
 !
 !  Time evolution of grid variables
@@ -175,7 +171,8 @@ module Timestep
         k(l1:l2,m,n,j,2) = dt*k(l1:l2,m,n,j,2)
       enddo; enddo; enddo
 !
-      tmp = f + b31*k(:,:,:,:,1) + b32*k(:,:,:,:,2)
+      tmp = f + b31*k(:,:,:,:,1) &
+              + b32*k(:,:,:,:,2)
 !
       call pde(tmp, k(:,:,:,:,3), p)
       do j=1,mvar; do n=n1,n2; do m=m1,m2
