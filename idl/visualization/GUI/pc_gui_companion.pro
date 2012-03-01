@@ -146,17 +146,17 @@ pro precalc_data, i, vars
     end
   end
   if (any (strcmp (tags, 'P', /fold_case))) then begin
-    ; Pressure
-    varsets[i].P = param.cp * (param.gamma - 1.0) / param.gamma
+    ; Pressure [N/m^2]
+    varsets[i].P = param.cp * (param.gamma - 1.0) / param.gamma * unit.density*unit.velocity^2
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-      varsets[i].P *= exp (vars.lnrho[l1:l2,m1:m2,n1:n2]) * unit.density
+      varsets[i].P *= exp (vars.lnrho[l1:l2,m1:m2,n1:n2])
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-      varsets[i].P *= vars.rho[l1:l2,m1:m2,n1:n2] * unit.density
+      varsets[i].P *= vars.rho[l1:l2,m1:m2,n1:n2]
     endif
     if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
-      varsets[i].P *= exp (vars.lnTT[l1:l2,m1:m2,n1:n2]) * unit.temperature
+      varsets[i].P *= exp (vars.lnTT[l1:l2,m1:m2,n1:n2])
     end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
-      varsets[i].P *= vars.TT[l1:l2,m1:m2,n1:n2] * unit.temperature
+      varsets[i].P *= vars.TT[l1:l2,m1:m2,n1:n2]
     endif
   end
   if (any (strcmp (tags, 'rho_u_z', /fold_case)) and any (strcmp (sources, 'uu', /fold_case))) then begin
