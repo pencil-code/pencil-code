@@ -4281,19 +4281,19 @@ module Entropy
       use EquationOfState, only: rho0,gamma_inv
 !
       real, dimension(nx), intent(inout) :: heat
-      real, dimension (nx) :: rr1,TT_drive
+      real, dimension (nx) :: rr1,TT_drive, OO
       real, save :: rho01,tau1_cool
-      real, dimension (nx), save :: period_inv
       logical, save :: lfirstcall=.true.
       type (pencil_case), intent(in) :: p
 !
-        if (lcartesian_coords.or.lcylindrical_coords) then
-          rr1=p%rcyl_mn1
-        elseif (lspherical_coords) then
-          rr1=p%r_mn1
-        endif
-        !period=2*pi/omega
-        period_inv=.5*pi_1*rr1**1.5
+      if (lcartesian_coords.or.lcylindrical_coords) then
+        rr1=p%rcyl_mn1
+      elseif (lspherical_coords) then
+        rr1=p%r_mn1
+      endif
+      !period=2*pi/omega
+      !period_inv=.5*pi_1*rr1**1.5
+      OO=rr1**1.5
 !
 ! Set the constants
 !
@@ -4312,8 +4312,11 @@ module Entropy
       if (TT_floor /= impossible) & 
            where(TT_drive < TT_floor) TT_drive = TT_floor
 !
+!  tau_cool = tau_cool_0 * Omega0/Omega
+!  tau_cool1 = 1/tau_cool_0 * Omega/Omega0
+!
       heat=heat-p%rho*p%cp*gamma_inv*&
-           (p%TT-TT_drive)*tau1_cool*period_inv
+           (p%TT-TT_drive)*tau1_cool*OO
 !
     endsubroutine calc_heat_cool_variable
 !***********************************************************************
