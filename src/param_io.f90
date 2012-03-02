@@ -538,7 +538,7 @@ module Param_IO
 !
     endsubroutine print_startpars
 !***********************************************************************
-    subroutine read_runpars(file,annotation)
+    subroutine read_runpars(logging)
 !
 !  Read input parameters.
 !
@@ -552,8 +552,7 @@ module Param_IO
       use Mpicomm, only: parallel_open, parallel_close
       use Sub, only: parse_bc
 !
-      logical, optional :: file
-      character (len=*), optional :: annotation
+      logical, optional :: logging
 !
       integer :: ierr, unit=1
 !
@@ -718,15 +717,8 @@ module Param_IO
 !  [No longer used, since at the time when read_runpars() is called, t
 !  is not known yet]
 !
-      if (present(file)) then
-        if (file) then
-          if (present(annotation)) then
-            call print_runpars(FILE=trim(datadir)//'/params.log', &
-                               ANNOTATION=annotation)
-          else
-            call print_runpars(FILE=trim(datadir)//'/params.log')
-          endif
-        endif
+      if (present(logging)) then
+        if (logging) call print_runpars()
       endif
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
@@ -803,7 +795,7 @@ module Param_IO
 !
     endsubroutine sample_runpars
 !***********************************************************************
-    subroutine print_runpars(file,annotation)
+    subroutine print_runpars(file)
 !
 !  Print input parameters.
 !
@@ -811,30 +803,39 @@ module Param_IO
 !  31-may-02/wolf: renamed from cprint to print_runpars
 !   4-oct-02/wolf: added log file stuff
 !
-      character (len=*), optional :: file,annotation
-      integer :: unit=6         ! default unit is 6=stdout
+      character (len=*), optional :: file
+!
+      integer :: unit=1
       character (len=linelen) :: line
       character (len=datelen) :: date
 !
       if (lroot) then
-        ! get first line from file RELOAD
-        line = read_line_from_file('RELOAD')
-        if ((line == '') .and. present(annotation)) then
-          line = trim(annotation)
+        if (lreloading) then
+          ! get first line from file RELOAD
+          line = read_line_from_file('RELOAD')
+          if ((trim(line) == '') .or. (line == char(0))) line = 'Reloading'
+        else
+          line = 'Running'
         endif
+!
+        call date_time_string(date)
         if (present(file)) then
-          unit = 1
-          call date_time_string(date)
-          open(unit,FILE=file,position='append')
-          write(unit,*) &
-              '! -------------------------------------------------------------'
+          if (file == 'stdout') then
+            unit = 6
+          else
+            open(unit,FILE=file,position='append')
+          endif
+        else
+          open(unit,FILE=trim(datadir)//'/params.log',position='append')
+        endif
+        write(unit,*) &
+            '! -------------------------------------------------------------'
 !
 !  Add comment from `RELOAD' and time.
 !
-          write(unit,'(A,A)') ' ! ', trim(line)
-          write(unit,'(A,A)') ' ! Date: ', trim(date)
-          write(unit,*) '! t=', t
-        endif
+        write(unit,'(A,A)') ' ! ', trim(line)
+        write(unit,'(A,A)') ' ! Date: ', trim(date)
+        write(unit,*) '! t=', t
 !
         write(unit,NML=run_pars)
 !
@@ -873,7 +874,7 @@ module Param_IO
         call write_polymer_run_pars(unit)
         call particles_wparam2(unit)
 !
-        if (present(file)) close(unit)
+        if (unit /= 6) close(unit)
 !
       endif
 !
