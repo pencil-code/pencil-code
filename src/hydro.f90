@@ -1265,22 +1265,14 @@ module Hydro
           enddo;enddo
           f(:,:,:,iuy)=0.
 !
-!
         case ( 'anelastic-lin')
-          print*, "anelastic-2dxz: ampl_uy,kx_uu,kz_uu = ", ampl_uy(j),kx_uu,ky_uu,kz_uu
-          do n=n1,n2; do m=m1,m2
-!            f(l1:l2,m,n,iuy)=ampl_uy(j)*sin(kx_uu*x(l1:l2))*sin(ky_uu*y(m))*sin(kz_uu*z(n))
-            f(l1:l2,m,n,iuy)=ampl_uy(j)*exp(-kx_uu*x(l1:l2)**2-kz_uu*z(n)**2)
-          enddo; enddo
-          call update_ghosts(f)
-! 2D curl
-          do n=n1,n2;do m=m1,m2
-            call grad(f,iuy,tmp_nx3)
-            f(l1:l2,m,n,iux) = -tmp_nx3(:,3)/f(l1:l2,m,n,irho_b)
-            f(l1:l2,m,n,iuz) =  tmp_nx3(:,1)/f(l1:l2,m,n,irho_b)
-          enddo;enddo
+          print*, "anelastic-2dxz: ampl_ux,kx_uu,kz_uu = ", ampl_ux(j),kx_uu,kz_uu
           f(:,:,:,iuy)=0.
-!
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iux)=ampl_ux(j)*sin(x(l1:l2))*cos(z(n))
+            f(l1:l2,m,n,iuz)=-ampl_ux(j)*cos(x(l1:l2))*sin(z(n))
+          enddo; enddo
+          write(22) f(l1:l2,m1:m2,n1:n2,iuz)
 !
         case ('incompressive-shwave')
 ! incompressible shear wave of Johnson & Gammine (2005a)

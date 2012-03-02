@@ -824,7 +824,7 @@ module Equ
 !  for anelastic case
 !
         if (lanelastic) then
-          call calc_pencils_density(f,p)
+!          call calc_pencils_density(f,p)
           f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
           f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
           f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
