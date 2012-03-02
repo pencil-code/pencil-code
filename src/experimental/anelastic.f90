@@ -11,7 +11,7 @@
 ! CPARAM logical, parameter :: lanelastic = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 5
+! MAUX CONTRIBUTION 6
 ! COMMUNICATED AUXILIARIES 5
 !
 ! PENCILS PROVIDED glnrho(3); grho(3); gpp(3); 
@@ -143,6 +143,7 @@ module Density
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
+      call farray_register_auxiliary('divu',idivu,communicated=.false.)
 !
 !  Identify version number (generated automatically by CVS).
 !
@@ -184,9 +185,8 @@ module Density
       endif
 !
 !  initialize cs2cool to cs20
-!  (currently disabled, because it causes problems with mdarf auto-test)
+!  (currently disabled, because it causes problems with mdwarf auto-test)
 !     cs2cool=cs20
-!
 !
       if (diffrho==0.) then
 !
@@ -223,10 +223,6 @@ module Density
         lnothing=.true.
       enddo
 !
-      if (lfreeze_lnrhoint) lfreeze_varint(ilnrho)    = .true.
-      if (lfreeze_lnrhoext) lfreeze_varext(ilnrho)    = .true.
-      if (lfreeze_lnrhosqu) lfreeze_varsquare(ilnrho) = .true.
-!
 ! Tell the equation of state that we're here and what f variable we use
 ! DM+PC
 ! For anelastic case use pressure
@@ -251,55 +247,6 @@ module Density
          call farray_register_global('gg',iglobal_gg,vector=3)
       endif
 !
-!  Possible to read initial stratification from file.
-!
-      if (.not. lstarting .and. lwrite_stratification) then
-        if (lroot) print*, 'initialize_density: reading original stratification from stratification.dat'
-        open(19,file=trim(directory_snap)//'/stratification.dat')
-          if (ldensity_nolog) then
-            if (lroot) then
-              print*, 'initialize_density: currently only possible to read'
-              print*, '                    *logarithmic* stratification from file'
-            endif
-            call fatal_error('initialize_density','')
-          else
-            read(19,*) lnrho_init_z
-          endif
-        close(19)
-!
-!  Need to precalculate some terms for anti shock diffusion.
-!
-        if (lanti_shockdiffusion) then        
-          call der_pencil(3,lnrho_init_z,dlnrhodz_init_z)
-          call der2_pencil(3,lnrho_init_z,del2lnrho_init_z)
-          glnrho2_init_z=dlnrhodz_init_z**2
-        endif
-      endif
-!
-!  Must write stratification to file to counteract the shock diffusion of the
-!  mean stratification.
-!
-      if (lanti_shockdiffusion .and. .not. lwrite_stratification) then
-        if (lroot) print*, 'initialize_density: must have lwrite_stratification for anti shock diffusion'
-        call fatal_error('','')
-      endif
-!
-!
-!  For diffusion term with non-logarithmic density we need to save rho
-!  as an auxiliary variable.
-!
-      if (ldiffusion_nolog .and. .not. lrho_as_aux) then
-        if (lroot) then
-          print*, 'initialize_density: must have lrho_as_aux=T '// &
-              'for non-logarithmic diffusion'
-          print*, '  (consider setting lrho_as_aux=T and'
-          print*, '   !  MAUX CONTRIBUTION 1'
-          print*, '   !  COMMUNICATED AUXILIARIES 1'
-          print*, '   in cparam.local)'
-        endif
-        call fatal_error('initialize_density','')
-      endif
-!
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f)
@@ -316,7 +263,7 @@ module Density
       use Initcond
       use IO
       use Mpicomm
-      use Selfgravity, only: rhs_poisson_const
+!      use Selfgravity, only: rhs_poisson_const
       use InitialCondition, only: initial_condition_lnrho
       use SharedVariables, only: get_shared_variable
       use Poisson, only: inverse_laplacian
@@ -369,24 +316,31 @@ module Density
 !
         case ('const')
           if (lroot) print*,'initialize anelastic: const'
-          do m=1,my
-          do n=1,mz
-            f(1:mx,m,n,ipp)=rho0*cs20
+          do n=1,mz; do m=1,my
             if (lanelastic_lin) then
               f(1:mx,m,n,irho_b)=rho0
             else
               f(1:mx,m,n,irho)=rho0
             endif
-          enddo
-          enddo
+          enddo; enddo
+          f(:,:,:,ipp)=0.
+!
+        case ('test-poisson')
+          if (lroot) print*,'initialize anelastic: test-poisson'
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ipp)=-2.*sin(x(l1:l2))*cos(z(n))
+          enddo; enddo
+!          call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+          call inverse_laplacian_z(f,f(l1:l2,m1:m2,n1:n2,ipp))
+          print*, 'print results in binary file'
+          write(11) f(l1:l2,4,n1:n2,ipp)
 !
         case ('-ln(1+u2/2cs02)')
           f(:,:,:,ilnrho) = -alog(1. &
             +(f(:,:,:,iux)**2+f(:,:,:,iuy)**2+f(:,:,:,iuz)**2)/(2.*cs0**2))
 !
         case ('anelastic')
-          do m=1,my
-          do n=1,mz
+          do m=1,my; do n=1,mz
             if (lanelastic_lin) then
               f(1:mx,m,n,ipp)=0.0
               f(1:mx,m,n,irho_b)=rho0*exp(gamma*gravz*z(n)/cs20) ! Define the base state density
@@ -394,8 +348,7 @@ module Density
               f(1:mx,m,n,irho)=rho0*exp(gamma*gravz*z(n)/cs20)
               f(1:mx,m,n,ipp)=f(1:mx,m,n,irho)*cs20
             endif
-          enddo
-          enddo
+          enddo; enddo
 !
         case ('polytropic_simple')
           if (lanelastic_lin) then
@@ -495,52 +448,23 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-      lpenc_requested(i_pp)=.true.
-      lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho)=.true.
-      lpenc_requested(i_ugrho)=.true.
-      if (ldiff_shock) then
-        lpenc_requested(i_shock)=.true.
-        lpenc_requested(i_gshock)=.true.
-        if (ldensity_nolog .or. ldiffusion_nolog) then
-          lpenc_requested(i_grho)=.true.
-          lpenc_requested(i_del2rho)=.true.
-          if (ldiffusion_nolog) lpenc_requested(i_rho1)=.true.
-        else
-          lpenc_requested(i_glnrho)=.true.
-          lpenc_requested(i_glnrho2)=.true.
-          lpenc_requested(i_del2lnrho)=.true.
-        endif
-      endif
-      if (ldiff_normal) then
-        if (ldensity_nolog .or. ldiffusion_nolog) then
-          lpenc_requested(i_del2rho)=.true.
-          if (ldiffusion_nolog) lpenc_requested(i_rho1)=.true.
-        else
-          lpenc_requested(i_glnrho2)=.true.
-          lpenc_requested(i_del2lnrho)=.true.
-        endif
-      endif
-      if (ldiff_hyper3) lpenc_requested(i_del6rho)=.true.
-      if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
-      if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
-           lpenc_requested(i_rho1)=.true.
-      if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
+!      lpenc_requested(i_pp)=.true.
+!      lpenc_requested(i_lnrho)=.true.
+!      lpenc_requested(i_ugrho)=.true.
 !
-      if (lmassdiff_fix) lpenc_requested(i_rho1)=.true.
-!
-      lpenc_diagnos2d(i_lnrho)=.true.
+!      lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
-      if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
-      if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
-      if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
-      if (idiag_divrhoum/=0.or.idiag_divrhourms/=0..or.idiag_divrhoumax/=0.) then
-         lpenc_diagnos(i_rho)=.true.
-!        lpenc_diagnos(i_uglnrho)=.true.
-         lpenc_diagnos(i_ugrho)=.true.
-         lpenc_diagnos(i_divu)=.true.
-      endif
+!      if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
+!      if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
+!      if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
+!      if (idiag_divrhoum/=0.or.idiag_divrhourms/=0..or.idiag_divrhoumax/=0.) then
+!         lpenc_diagnos(i_rho)=.true.
+!!        lpenc_diagnos(i_uglnrho)=.true.
+!         lpenc_diagnos(i_ugrho)=.true.
+!         lpenc_diagnos(i_divu)=.true.
+!      endif
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -552,36 +476,36 @@ module Density
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (ldensity_nolog) then
-        if (lpencil_in(i_rho1)) lpencil_in(i_rho)=.true.
-      else
-        if (lpencil_in(i_rho)) lpencil_in(i_rho1)=.true.
-      endif
-      if (lpencil_in(i_uglnrho)) then
-        lpencil_in(i_uu)=.true.
-        lpencil_in(i_glnrho)=.true.
-      endif
-      if (lpencil_in(i_ugrho)) then
-        lpencil_in(i_uu)=.true.
-        lpencil_in(i_grho)=.true.
-      endif
-      if (lpencil_in(i_glnrho2)) lpencil_in(i_glnrho)=.true.
-      if (lpencil_in(i_sglnrho)) then
-        lpencil_in(i_sij)=.true.
-        lpencil_in(i_glnrho)=.true.
-      endif
-      if (lpencil_in(i_uij5glnrho)) then
-        lpencil_in(i_uij5)=.true.
-        lpencil_in(i_glnrho)=.true.
-      endif
+!      if (ldensity_nolog) then
+!        if (lpencil_in(i_rho1)) lpencil_in(i_rho)=.true.
+!      else
+!        if (lpencil_in(i_rho)) lpencil_in(i_rho1)=.true.
+!      endif
+!      if (lpencil_in(i_uglnrho)) then
+!        lpencil_in(i_uu)=.true.
+!        lpencil_in(i_glnrho)=.true.
+!      endif
+!      if (lpencil_in(i_ugrho)) then
+!        lpencil_in(i_uu)=.true.
+!        lpencil_in(i_grho)=.true.
+!      endif
+!      if (lpencil_in(i_glnrho2)) lpencil_in(i_glnrho)=.true.
+!      if (lpencil_in(i_sglnrho)) then
+!        lpencil_in(i_sij)=.true.
+!        lpencil_in(i_glnrho)=.true.
+!      endif
+!      if (lpencil_in(i_uij5glnrho)) then
+!        lpencil_in(i_uij5)=.true.
+!        lpencil_in(i_glnrho)=.true.
+!      endif
 !  The pencils glnrho and grho come in a bundle.
-      if (lpencil_in(i_glnrho) .and. lpencil_in(i_grho)) then
-        if (ldensity_nolog) then
-          lpencil_in(i_grho)=.false.
-        else
-          lpencil_in(i_glnrho)=.false.
-        endif
-      endif
+!      if (lpencil_in(i_glnrho) .and. lpencil_in(i_grho)) then
+!        if (ldensity_nolog) then
+!          lpencil_in(i_grho)=.false.
+!        else
+!          lpencil_in(i_glnrho)=.false.
+!        endif
+!      endif
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -601,6 +525,7 @@ module Density
       integer :: i, mm, nn, ierr,l, irhoxx
 !
       if (ldensity_nolog) call fatal_error('density_anelastic','working with lnrho')
+!
       if (lanelastic_lin) then
         irhoxx=irho_b
       else 
@@ -662,6 +587,7 @@ module Density
       if (headtt) call identify_bcs('rhs',irhs)
       if (headtt) call identify_bcs('rhs',irhs+1)
       if (headtt) call identify_bcs('rhs',irhs+2)
+      if (headtt) call identify_bcs('idivu',idivu)
 !
 !  Calculate density diagnostics
 !
@@ -1137,7 +1063,7 @@ module Density
 !***********************************************************************
     subroutine anelastic_after_mn(f, p, df, mass_per_proc)
 !
-      use Poisson, only: inverse_laplacian,inverse_laplacian_semispectral
+      use Poisson, only: inverse_laplacian
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
       use Boundcond, only: boundconds
 !
@@ -1149,28 +1075,32 @@ module Density
       real, dimension (nx) :: phi_rhs_pencil
       real, dimension (1)  :: mass_per_proc
       real    :: average_density,average_pressure,init_average_density
-      integer :: j, ju, l
-      
+      integer :: j, ju, l, i
 !
 !  Set first the boundary conditions on rhs
 !
       call initiate_isendrcv_bdry(f,irhs,irhs+2)
       call finalize_isendrcv_bdry(f,irhs,irhs+2)
       call boundconds(f,irhs,irhs+2)
-
 !
 !  Find the divergence of rhs
 !
 !      pold(1:nx,1:ny,1:nz)=f(l1:l2,m1:m2,n1:n2,ipp)
-      do m=m1,m2; do n=n1,n2
-          call div(f,irhs,phi_rhs_pencil)
-          f(l1:l2,m,n,ipp)=phi_rhs_pencil
-      enddo; enddo
+      do n=n1,n2
+      do m=m1,m2
+        call div(f,irhs,phi_rhs_pencil)
+        f(l1:l2,m,n,ipp)=phi_rhs_pencil
+      enddo
+      enddo
 !
 !  get pressure from inverting the Laplacian
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+!  refresh the ghost zones: periodic pressure
+        call initiate_isendrcv_bdry(f,ipp)
+        call finalize_isendrcv_bdry(f,ipp)
+        call boundconds(f,ipp,ipp)
         if (.not. lanelastic_lin) then 
           call get_average_density(mass_per_proc(1),average_density)
           call get_average_pressure(init_average_density,average_density,average_pressure)
@@ -1178,151 +1108,172 @@ module Density
         endif
       else
         call inverse_laplacian_z(f,f(l1:l2,m1:m2,n1:n2,ipp))       
+!
+! fill the ghost zones: 
+! In the vertical direction: dP/dz=0 (symmetric)
+!
+        m=4; n=n1
+        do i=1,nghost
+           f(l1:l2,4,n1-i,ipp)= f(l1:l2,4,n1+i,ipp)
+        enddo
+        n=n2
+        do i=1,nghost
+          f(l1:l2,4,n2+i,ipp)=f(l1:l2,4,n2-i,ipp)
+        enddo
+! Bc in the horizontal direction: periodic
+        f(1:l1-1,:,:,ipp) = f(l2i:l2,:,:,ipp)
+        f(l2+1:mx,:,:,ipp) = f(l1:l1i,:,:,ipp)
       endif
-!
-!  Update the boundary conditions for the new pressure (needed to
-!  compute grad(P)
-!
-      call initiate_isendrcv_bdry(f,ipp)
-      call finalize_isendrcv_bdry(f,ipp)
-      call boundconds(f,ipp,ipp)
 !
 !  Add the pressure gradient term to the NS equation
 !
-      do n=n1,n2
-      do m=m1,m2
+      do n=n1,n2; do m=m1,m2
         call grad(f,ipp,gpp)
         do j=1,3
           ju=j+iuu-1
           if (lanelastic_lin) then
-            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b) &
-                              + gamma*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)*p%gg(:,j)
+!            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b) &
+!                + gamma*f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)*p%gg(:,j)
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho_b)
           else
             df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)/f(l1:l2,m,n,irho)
           endif 
         enddo
+!
         if (.not. lanelastic_lin) then
           f(l1:l2,m,n,irho)=f(l1:l2,m,n,ipp)*cs20
+!         call initiate_isendrcv_bdry(f,ilnrho)
+!         call finalize_isendrcv_bdry(f,ilnrho)
+!         call boundconds(f,ilnrho,ilnrho)
         endif
-      enddo
-      enddo
-
-!      call initiate_isendrcv_bdry(f,ilnrho)
-!      call finalize_isendrcv_bdry(f,ilnrho)
-!      call boundconds(f,ilnrho,ilnrho)
+      enddo; enddo
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
     subroutine inverse_laplacian_z(f,phi)
 !
-!  Solve the pressure equation in the anelastic case by Fourier 
-!  transforming in the xy-plane and solving the discrete matrix 
-!  equation in the z-direction. Inspired from inverse_laplacian_semispectral 
-!  coded in the Poisson module.
+!  Solve the Poisson equation by Fourier transforming in the xy-plane and
+!  solving the discrete matrix equation in the z-direction.
 !
-!  16-dec-09/dintrans+piyali: coded
+!  02-mar-2012/dintrans+dubuffet: coded
 !
       use Fourier, only: fourier_transform_xy
-      use General, only: tridag, cyclic
-      use Mpicomm, only: transp_xz, transp_zx
-      use Sub,     only: max_mn
+      use General, only: tridag
 !
-
-!      real, dimension(nzgrid,nxt), intent (out) :: b
-
-      integer, parameter :: nxt=nx/nprocz
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,ny,nz) :: phi, b1
-      real, dimension (nzgrid,nxt)    :: rhst, rhst2
-      real, dimension (nzgrid)       :: a_tri, b_tri, c_tri
-      real, dimension (nzgrid)       :: r_tri, u_tri
-      real    :: dz_2, dz_1, k2, aalpha, bbeta
-      real, dimension (mx, my, mz)       :: Hp, dHp
-      real, dimension (nx,3)       :: g
-      integer :: ikx, iky
+      real, dimension (nx,ny,nz) :: phi, b1, d2uz, b2
+      real, dimension (nx) :: tmpx
+      real, dimension (nz) :: a_tri, b_tri, c_tri, r_tri, u_tri
+      real :: k2
+      integer :: ikx, iky, j, k
       logical :: err
 !
-!  The right-hand-side of the pressure equation is purely real.
+!  Identify version.
+!
+      if (lroot .and. ip<10) call svn_id( &
+          '$Id$')
+!
+! test with the pressure
+!
+!      do n=n1,n2
+!      do m=m1,m2
+!!        call der2(f,iuz,tmpx,3)
+!        call der(f,iuz,tmpx,3)
+!        d2uz(:,m-nghost,n-nghost)=1.e-3*tmpx
+!      enddo
+!      enddo
+!
+!  The right-hand-side of the Poisson equation is purely real.
 !
       b1 = 0.0
-      Hp=cs20*(f(:,:,:,irho_b)/rho0)**(gamma_m1)* & 
-               exp(gamma*f(:,:,:,iss_b)*1.)/(-0.1*gamma)
-      do n=n1,n2; do m=m1,m2
-      call grad(Hp, g)
-      dHp(l1:l2,m,n)=g(1:nx,3)
-      enddo; enddo
-
+      b2 = 0.0
 !
 !  Forward transform (to k-space).
-      call fourier_transform_xy(phi, b1)
 !
-!  Solve for discrete z-direction
-!  First the real part
+      call fourier_transform_xy(phi,b1)
+!      call fourier_transform_xy(d2uz,b2)
 !
-      dz_1=1./dz
-      dz_2=1./dz**2
-      a_tri(1:nz)=dz_2-0.5*dz_1/Hp(l1,m1,n1-1:n2-1)
-      c_tri(1:nz)=dz_2+0.5*dz_1/Hp(l1,m1,n1:n2)
-      do iky=1,ny
-        call transp_xz(phi(:,iky,:),rhst)
-        do ikx=1,nx/nprocz
-          k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          if (k2==0.) then
-            rhst(:,ikx)=0.
-          else
-            b_tri=-2.*dz_2-dHp(l1,m1,n1:n2)/Hp(l1,m1,n1:n2)**2-k2
-            r_tri=rhst(:,ikx)
-! Dirichlet BC
-            b_tri(1)=1.
-            c_tri(1)=0.
-            r_tri(1)=0.
-            b_tri(nz)=1.
-            a_tri(nz)=0.
-            r_tri(nz)=0.
-          call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
-! Periodic BC
-!          bbeta=dz_2   ! right corner
-!          aalpha=dz_2  ! left corner
-!          call cyclic(a_tri, b_tri, c_tri, aalpha, bbeta, r_tri, u_tri, nz)
-           rhst(:,ikx)=u_tri
-          endif
-        enddo
-          call transp_zx(rhst,phi(:,iky,:))
-      enddo
-!
-!  Second the imaginary part
+!  Solve for discrete z-direction with zero density above and below z-boundary.
 !
       do iky=1,ny
-        call transp_xz(b1(:,iky,:),rhst2)
-        do ikx=1,nx/nprocz
-        k2=kx_fft(ikx+nz*ipz)**2+ky_fft(iky)**2
-          if (k2==0.) then
-            rhst2(:,ikx)=0.
+        do ikx=1,nx
+          if ((kx_fft(ikx)==0.0) .and. (ky_fft(iky)==0.0)) then
+            phi(ikx,iky,:) = 0.0
           else
-            b_tri=-2.*dz_2-k2
-            r_tri=rhst2(:,ikx)
-! Dirichlet BC
-            b_tri(1)=1.
-            c_tri(1)=0.
-            r_tri(1)=0.
-            b_tri(nz)=1.
-            a_tri(nz)=0.
-            r_tri(nz)=0.
-            call tridag(a_tri, b_tri, c_tri, r_tri, u_tri, err)
-! Periodic BC
-!          bbeta=dz_2   ! right corner
-!          aalpha=dz_2  ! left corner
-!          call cyclic(a_tri, b_tri, c_tri, aalpha, bbeta, r_tri, u_tri, nz)
-            rhst2(:,ikx)=u_tri
+            k2=kx_fft(ikx)**2+ky_fft(iky)**2
+            a_tri=1.0/dz**2
+            b_tri=-2.0/dz**2-k2
+            c_tri=1.0/dz**2
+            r_tri=phi(ikx,iky,:)
+! P = 0 (useful to test the Poisson solver)
+!            b_tri(1)=1.  ; c_tri(1)=0.  ; r_tri(1)=0.
+!            b_tri(nz)=1. ; a_tri(nz)=0. ; r_tri(nz)=0.
+! dP/dz = 0
+            c_tri(1)=c_tri(1)+a_tri(1)
+            a_tri(nz)=a_tri(nz)+c_tri(nz)
+! delta P = 0 outside
+!            b_tri(1)=b_tri(1)+2./dz**2/(2.+2*sqrt(k2)*dz+k2*dz**2)
+!            b_tri(nz)=b_tri(nz)+2./dz**2/(2.+2*sqrt(k2)*dz+k2*dz**2)
+! dP/dz = mu d2 uz /dz2
+!            c_tri(1)=c_tri(1)+a_tri(1)
+!            r_tri(1)=r_tri(1)+2./dz*d2uz(ikx,iky,1)
+!            a_tri(nz)=a_tri(nz)+c_tri(nz)
+!            r_tri(nz)=r_tri(nz)-2./dz*d2uz(ikx,iky,nz)
+! P = mu d uz /dz
+!            b_tri(1)=1.
+!            c_tri(1)=0.
+!            r_tri(1)=d2uz(ikx,iky,1)
+!            b_tri(nz)=1.
+!            a_tri(nz)=0.
+!            r_tri(nz)=d2uz(ikx,iky,nz)
+!
+            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
+            phi(ikx,iky,:)=u_tri
           endif
         enddo
-          call transp_zx(rhst2,b1(:,iky,:))
       enddo
-
+!
+      do iky=1,ny
+        do ikx=1,nx
+          if ((kx_fft(ikx)==0.0) .and. (ky_fft(iky)==0.0)) then
+            b1(ikx,iky,:) = 0.0
+          else
+            k2=kx_fft(ikx)**2+ky_fft(iky)**2
+            a_tri=1.0/dz**2
+            b_tri=-2.0/dz**2-k2
+            c_tri=1.0/dz**2
+            r_tri=b1(ikx,iky,:)
+! P = 0 (useful to test the Poisson solver)
+!            b_tri(1)=1.  ; c_tri(1)=0.  ; r_tri(1)=0.
+!            b_tri(nz)=1. ; a_tri(nz)=0. ; r_tri(nz)=0.
+! dP/dz = 0
+            c_tri(1)=c_tri(1)+a_tri(1)
+            a_tri(nz)=a_tri(nz)+c_tri(nz)
+! delta P = 0 outside
+!            b_tri(1)=b_tri(1)+2./dz**2/(2.+2*sqrt(k2)*dz+k2*dz**2)
+!            b_tri(nz)=b_tri(nz)+2./dz**2/(2.+2*sqrt(k2)*dz+k2*dz**2)
+! dP/dz = mu d2 uz /dz2
+!            c_tri(1)=c_tri(1)+a_tri(1)
+!            r_tri(1)=r_tri(1)+2./dz*b2(ikx,iky,1)
+!            a_tri(nz)=a_tri(nz)+c_tri(nz)
+!            r_tri(nz)=r_tri(nz)-2./dz*b2(ikx,iky,nz)
+! P = mu d uz /dz
+!            b_tri(1)=1.
+!            c_tri(1)=0.
+!            r_tri(1)=b2(ikx,iky,1)
+!            b_tri(nz)=1.
+!            a_tri(nz)=0.
+!            r_tri(nz)=b2(ikx,iky,nz)
+!
+            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
+            b1(ikx,iky,:)=u_tri
+          endif
+        enddo
+      enddo
 !
 !  Inverse transform (to real space).
 !
-      call fourier_transform_xy(phi, b1, linv=.true.)
+      call fourier_transform_xy(phi,b1,linv=.true.)
 !
     endsubroutine inverse_laplacian_z
 !***********************************************************************
