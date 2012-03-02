@@ -3117,6 +3117,10 @@ module Special
       fac_dy = (1./60)*spread(dy_1(m1:m2),1,nx)
       fac_dz = (1./60)*spread(spread(dz_1(irefz),1,nx),2,ny)
 !
+      bbx=0.
+      bby=0.
+      bbz=0.
+!
 ! compute B = curl(A) for irefz layer
 !
 ! Bx
