@@ -720,6 +720,7 @@ module Special
     subroutine special_before_boundary(f)
 !
 !  Modify the f array before the boundaries are communicated.
+!  Is called before each substep
 !
 !  13-sep-10/bing: coded
 !
@@ -727,15 +728,23 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i,j,ipt
+      logical :: lcompute_gran
       real :: tmp,dA
+!
+! Decide wether we want to compute granulation in the next step or not
+!
+      if (lgranulation .and. itsub == 1 .and. t >= t_gran) then
+        lcompute_gran = .true.
+      else
+        lcompute_gran = .false.
+      endif
 !
       if (twisttype/=0) call uu_twist(f)
 !
       if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
-        if ((lgranulation.and.Bavoid < huge1.and.t>=t_gran) &
-            .or.Bz_flux /= 0.) call set_B2(f)
+        if ((lcompute_gran.and.Bavoid<huge1).or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
@@ -778,6 +787,8 @@ module Special
         endif
       endif
 !
+! Get the external velocity field, i.e. derived from LCT
+!
       if (luse_ext_vel_field) call read_ext_vel_field()
 !
 !  Compute photospheric granulation.
@@ -789,11 +800,24 @@ module Special
         endif
       endif
 !
+! Add the field to the global motion
+      if (luse_ext_vel_field .and. ipz==0) then
+        if (lgranulation) then
+          f(l1:l2,m1:m2,n1,iux) = f(l1:l2,m1:m2,n1,iux) + &
+              Ux_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          f(l1:l2,m1:m2,n1,iuy) = f(l1:l2,m1:m2,n1,iuy) + &
+              Uy_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        else
+          f(l1:l2,m1:m2,n1,iux) = Ux_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+          f(l1:l2,m1:m2,n1,iuy) = Uy_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
+      endif
+!
 !  Read time dependent magnetic lower boundary
 !
       if (lmag_time_bound.and. (ipz == 0)) call mag_time_bound(f)
 !
-      if (t>=t_gran) t_gran = t + dt_gran
+      if (itsub==1 .and. t>=t_gran) t_gran = t + dt_gran
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1777,7 +1801,8 @@ module Special
               j=1
               notdone=.false.
             elseif (j >= 37) then
-              call fatal_error('get_lnQ','lnTT to large',.true.)
+              j=36
+              !              call fatal_error('get_lnQ','lnTT to large',.true.)
               notdone=.false.
             endif
           endif
@@ -3764,7 +3789,7 @@ module Special
           if (filter_strength(j)/=0.) then
             call del6(f,j,del6_fj,IGNOREDX=.true.)
             df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
-                filter_strength(j)*del6_fj /dt
+                filter_strength(j)*del6_fj/dt
           endif
         enddo
       endif
