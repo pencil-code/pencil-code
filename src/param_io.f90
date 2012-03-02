@@ -816,7 +816,6 @@ module Param_IO
           line = 'Running'
         endif
 !
-        call date_time_string(date)
         if (present(file)) then
           if (file == 'stdout') then
             unit = 6
@@ -826,11 +825,12 @@ module Param_IO
         else
           open(unit,FILE=trim(datadir)//'/params.log',position='append')
         endif
+!
+!  Add separator, comment, and time.
+!
+        call date_time_string(date)
         write(unit,*) &
             '! -------------------------------------------------------------'
-!
-!  Add comment from `RELOAD' and time.
-!
         write(unit,'(A,A)') ' ! ', trim(line)
         write(unit,'(A,A)') ' ! Date: ', trim(date)
         write(unit,*) '! t=', t
