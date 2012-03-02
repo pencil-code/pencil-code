@@ -11,7 +11,7 @@
 ! CPARAM logical, parameter :: lanelastic = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 6
+! MAUX CONTRIBUTION 5
 ! COMMUNICATED AUXILIARIES 5
 !
 ! PENCILS PROVIDED glnrho(3); grho(3); gpp(3); 
@@ -143,7 +143,7 @@ module Density
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
       call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
-      call farray_register_auxiliary('divu',idivu,communicated=.false.)
+!      call farray_register_auxiliary('divu',idivu,communicated=.false.)
 !
 !  Identify version number (generated automatically by CVS).
 !
@@ -587,7 +587,7 @@ module Density
       if (headtt) call identify_bcs('rhs',irhs)
       if (headtt) call identify_bcs('rhs',irhs+1)
       if (headtt) call identify_bcs('rhs',irhs+2)
-      if (headtt) call identify_bcs('idivu',idivu)
+!      if (headtt) call identify_bcs('idivu',idivu)
 !
 !  Calculate density diagnostics
 !
