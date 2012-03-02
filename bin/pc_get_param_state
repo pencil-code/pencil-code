@@ -10,7 +10,7 @@
 use strict;
 
 my $run_file = "run.in";
-my $out_file = "run_<T>.in";
+my $out_file = "run_<TIME>.in";
 my $par_file = "data/params.log";
 
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
@@ -61,7 +61,7 @@ foreach $block (@blocks) {
 }
 
 my $comment = "Reference time: ".$started."\n";
-$out_file =~ s/<T>/$started/is;
+$out_file =~ s/<TIME>/$started/is;
 if ($params =~ /^\s*!\s*Date\s*:\s*(\S+\s\S+)/im) { $comment .= "Executed on: ".$1."\n"; }
 print $comment;
 $comment =~ s/^/! /gm;
