@@ -1199,7 +1199,7 @@ module Special
 !***********************************************************************
     subroutine calc_swamp_temp(df,p)
 !
-!   Additional hight-dependant temperature diffusion (swamp layer at top).
+!   Additional height-dependent temperature diffusion (swamp layer at top).
 !
 !   02-jun-11/Bourdin.KIS: coded
 !
