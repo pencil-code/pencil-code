@@ -713,9 +713,7 @@ module Param_IO
 !
       ldebug=lroot.and.(ip<7)
 !
-!  Write parameters to log file.
-!  [No longer used, since at the time when read_runpars() is called, t
-!  is not known yet]
+!  Write parameters to log file, if requested.
 !
       if (present(logging)) then
         if (logging) call print_runpars()
