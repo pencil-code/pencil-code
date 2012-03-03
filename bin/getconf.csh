@@ -381,7 +381,15 @@ else if ($hn =~ compute-*.local ) then
   #
   setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
-  set $mpirun=mpirun
+  set $mpirun=mpiexec
+  set mpirunops = " -genv I_MPI_DEVICE rdssm:OpenIB-cma -machinefile $PBS_NODEFILE"
+  cp $PBS_NODEFILE machines
+  uniq machines > mpd.hosts
+  set myprocpernode = 8
+  echo $ncpus
+  set mynodes = `expr $ncpus / $myprocpernode `
+  mpdboot -n $mynodes  -f mpd.hosts  -r ssh
+#  mpdboot -f mpd.hosts -n 16 -r ssh
 #------------------------------------------------
 else if ($hn =~ meera*)  then
   echo "******************************"
