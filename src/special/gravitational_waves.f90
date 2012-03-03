@@ -35,9 +35,9 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lspecial = .false.
+! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 0
+! MVAR CONTRIBUTION 12
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -80,7 +80,7 @@ module Special
 !
   implicit none
 !
-  include 'special.h'
+  include '../special.h'
 !
 !!  namelist /special_init_pars/ dummy
 !
@@ -88,12 +88,11 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-!!   integer :: ispecial=0
-!!   integer :: ispecaux=0
+  integer :: ihij,igij
 !
 !! Diagnostic variables (needs to be consistent with reset list below).
 !
-!!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
+  integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
 !
   contains
 !***********************************************************************
@@ -103,12 +102,16 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
+      use FArrayManager
+!
       if (lroot) call svn_id( &
            "$Id$")
 !
-!!      call farray_register_pde('special',ispecial)
-!!      call farray_register_auxiliary('specaux',ispecaux)
-!!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
+      call farray_register_pde('hij',ihij,vector=6)
+      call farray_register_pde('gij',igij,vector=6)
+!
+      if (lroot) call svn_id( &
+           "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -181,6 +184,9 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_b2)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -227,9 +233,15 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
+      use Diagnostics
+      use Sub, only: del2v
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: del2hii,del2hij
       type (pencil_case) :: p
+!
+      integer :: j,jhij,jgij
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -239,15 +251,39 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
-!!
-!! SAMPLE DIAGNOSTIC IMPLEMENTATION
-!!
-!!      if (ldiagnos) then
-!!        if (idiag_SPECIAL_DIAGNOSTIC/=0) then
-!!          call sum_mn_name(MATHEMATICAL EXPRESSION,idiag_SPECIAL_DIAGNOSTIC)
-!!! see also integrate_mn_name
-!!        endif
-!!      endif
+        if (lmagnetic) then
+!         print*,'AXEL:',p%bb(:,2)
+!
+!  g11=1, g22=2, g33=3, g12=4, g13=5, g23=6, 
+!  g11=0, g22=1, g33=2, g12=3, g13=4, g23=5, 
+!
+          do j=1,6
+            jhij=ihij-1+j
+            jgij=igij-1+j
+            df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
+          enddo
+          call del2v(f,ihij  ,del2hii)
+          call del2v(f,ihij+3,del2hij)
+          df(l1:l2,m,n,igij+0)=df(l1:l2,m,n,igij+0)+del2hii(:,1)+ &
+            p%bb(:,1)**2-onethird*p%b2
+          df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
+            p%bb(:,2)**2-onethird*p%b2
+          df(l1:l2,m,n,igij+2)=df(l1:l2,m,n,igij+2)+del2hii(:,3)+ &
+            p%bb(:,3)**2-onethird*p%b2
+          df(l1:l2,m,n,igij+3)=df(l1:l2,m,n,igij+3)+del2hij(:,1)+p%bb(:,1)*p%bb(:,2)
+          df(l1:l2,m,n,igij+4)=df(l1:l2,m,n,igij+4)+del2hij(:,2)+p%bb(:,1)*p%bb(:,3)
+          df(l1:l2,m,n,igij+5)=df(l1:l2,m,n,igij+5)+del2hij(:,3)+p%bb(:,2)*p%bb(:,3)
+        else
+          call fatal_error("dspecial_dt","need magnetic field")
+        endif
+!
+!  diagnostics
+!
+       if (ldiagnos) then
+         if (lroot.and.m==mpoint.and.n==npoint) then
+           if (idiag_g22pt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_g22pt)
+         endif
+       endif
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
@@ -296,7 +332,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-!!      integer :: iname
+      use Diagnostics
+!
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -307,17 +345,16 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-!!        idiag_SPECIAL_DIAGNOSTIC=0
+        idiag_g22pt=0
       endif
-!!
-!!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),&
-!!            'NAMEOFSPECIALDIAGNOSTIC',idiag_SPECIAL_DIAGNOSTIC)
-!!      enddo
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
+      enddo
 !!
 !!!  write column where which magnetic variable is stored
 !!      if (lwr) then
-!!        write(3,*) 'idiag_SPECIAL_DIAGNOSTIC=',idiag_SPECIAL_DIAGNOSTIC
+!!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
 !!      endif
 !!
     endsubroutine rprint_special

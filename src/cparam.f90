@@ -112,7 +112,7 @@ module Cparam
   real, parameter :: pi_1=1./pi,pi4_1=pi**(-4),pi5_1=pi**(-5)
   real, parameter :: sqrtpi=1.77245385090551602729816748334115D0
   real, parameter :: sqrt2=1.41421356237309504880168872420970D0
-  real, parameter :: four_pi_over_three=4.0/3.0*pi
+  real, parameter :: four_pi_over_three=4.0/3.0*pi,onethird=1./3.
 !
 !  first zeros of Bessel functions of order 0 and 1
 !  k2bessel0 is the second zero of Bessel function of order 0
