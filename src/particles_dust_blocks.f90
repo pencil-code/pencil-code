@@ -59,7 +59,7 @@ module Particles
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
-  logical :: ldraglaw_epstein=.true.
+  logical :: ldraglaw_epstein=.true., ldraglaw_variable=.false.
   logical :: ldt_grav_par=.false., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
@@ -92,7 +92,7 @@ module Particles
       Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
-      lbrick_partition
+      lbrick_partition, ldraglaw_variable
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -107,7 +107,7 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
-      lbrick_partition
+      lbrick_partition, ldraglaw_variable
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -2025,7 +2025,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: iblock
       logical, optional :: nochange_opt
 !
-      real :: tmp, epsp
+      real :: tmp, epsp, OO
       integer :: ix0, iy0, iz0, jspec
       logical :: nochange=.false.
 !
@@ -2050,7 +2050,33 @@ k_loop:   do while (.not. (k>npar_loc))
         else
           tmp=tausp1
         endif
-        tausp1_par=tmp
+!
+!  Discriminate between constant tau and special case for
+!  1/tau=omega when omega is not constant (as, for instance,
+!  global Keplerian disks, for which omega=rad**(-3/2)
+!
+        if (ldraglaw_variable) then 
+          if (lcartesian_coords) then
+            OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75)
+          elseif (lcylindrical_coords) then
+            OO=fp(k,ixp)**(-1.5)
+          elseif (lspherical_coords) then
+            call fatal_error("get_frictiontime",&
+                 "variable draglaw not implemented for"//&
+                 "spherical coordinates")
+            OO=0.
+          else
+            call fatal_error("get_frictiontime", &
+                 "no valid coord system")
+            OO=0.
+          endif
+          tausp1_par=tmp*OO
+        else
+!
+!  Constant friction time
+!
+          tausp1_par=tmp
+        endif
       endif
 !
 !  Change friction time artificially.
