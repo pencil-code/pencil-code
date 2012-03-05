@@ -357,7 +357,7 @@ else if ($hn =~ p*.hpc2n.umu.se ) then
 else if ($hn =~ t*.hpc2n.umu.se ) then
   echo "HPC2N cluster (abisko) - Umea"
   echo "******************************"
-  echo "Always use  multiple of ? no. of processors .."
+  echo "Always use  multiple of 48 no. of processors .."
   echo "..for multiprecossor jobs. "
   echo " ******************************"
   set mpirunops = ''
