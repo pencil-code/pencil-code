@@ -70,21 +70,16 @@ default, quantities, { $
 ;	magnetic_field_y:'by', $
 	magnetic_field_z:'bz', $
 ;	spitzer_ratio:'spitzer_ratio', $
-	spitzer_diff:'spitzer_diff', $
 	velocity:'u_abs', $
 ;	velocity_x:'u_x', $
 ;	velocity_y:'u_y', $
 	velocity_z:'u_z', $
 ;	thermal_pressure:'P_therm', $
-;	impulse_density_z:'rho_u_z', $
+	impulse_density_z:'rho_u_z', $
 ;	viscous_Rn:'Rn_visc', $
 ;	magnetic_Rn:'Rn_mag', $
-;	magnetic_Hx:'Hx_mag', $
-;	magnetic_Hy:'Hy_mag', $
-;	magnetic_Hz:'Hz_mag', $
-;	magnetic_H:'H_mag', $
 ;	minimum_density:'rho_c', $
-	Spitzer_heatflux:'Spitzer_q', $
+;	Spitzer_heatflux:'Spitzer_q', $
 	logarithmic_density:'log_rho' $
 	}
 
