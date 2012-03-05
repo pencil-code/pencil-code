@@ -35,7 +35,7 @@
 ;-
 pro pc_read_var_time,                                                              $
     time=time, varfile=varfile_, allprocs=allprocs, datadir=datadir, param=param,  $
-    dim=dim, ivar=ivar, swap_endian=swap_endian, f77=f77, exit_status=exit_status
+    dim=dim, ivar=ivar, swap_endian=swap_endian, f77=f77, exit_status=exit_status, quiet=quiet
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -57,6 +57,7 @@ COMPILE_OPT IDL2,HIDDEN
     allprocs = 0
   endelse
   default, f77, 1
+  default, quiet, 0
 ;
 ; Default data directory.
 ;
@@ -142,6 +143,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; If requested print a summary (actually the default - unless being quiet).
 ;
-  print, ' t = ', t
+  if (not quiet) then print, ' t = ', t
 ;
 end
