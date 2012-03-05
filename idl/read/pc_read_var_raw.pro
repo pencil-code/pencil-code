@@ -42,9 +42,9 @@
 ;-
 pro pc_read_var_raw,                                                  $
     object=object, varfile=varfile, datadir=datadir, tags=tags,       $
-    dim=dim, param=param, par2=par2,                                  $
+    dim=dim, param=param, par2=par2, varcontent=varcontent,           $
     proc=proc, allprocs=allprocs, trimall=trimall, quiet=quiet,       $
-    swap_endian=swap_endian, f77=f77
+    swap_endian=swap_endian, f77=f77, time=time
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -150,8 +150,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read meta data and set up variable/tag lists.
 ;
-  default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-      param=param,quiet=quiet)
+  if (n_elements(varcontent) eq 0) then $
+      varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
   totalvars=(size(varcontent))[1]
 ;
 ; Initialise read buffers.
@@ -329,5 +329,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ' t = ', t
     print, ''
   endif
+;
+  if (n_elements (time) eq 1) then time = t
 ;
 end
