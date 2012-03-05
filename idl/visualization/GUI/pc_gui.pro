@@ -69,7 +69,8 @@ default, quantities, { $
 ;	magnetic_field_x:'bx', $
 ;	magnetic_field_y:'by', $
 	magnetic_field_z:'bz', $
-	spitzer_ratio:'spitzer_ratio', $
+;	spitzer_ratio:'spitzer_ratio', $
+	spitzer_diff:'spitzer_diff', $
 	velocity:'u_abs', $
 ;	velocity_x:'u_x', $
 ;	velocity_y:'u_y', $
@@ -106,6 +107,8 @@ default, overplot_quantities, { $
 ;;;
 default, default_length             , 1.e6
 default, default_length_str         , 'Mm'
+default, default_time               , 1.0
+default, default_time_str           , 's'
 default, default_velocity           , 1.e3
 default, default_velocity_str       , 'km/s'
 default, default_density            , 1.0
@@ -296,7 +299,7 @@ if (not pc_gui_loaded) then BEGIN
 
 
 	pc_units, obj=unit, datadir=datadir
-	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
+	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_time:default_time, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_time_str:default_time_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
 	pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, /trim, /quiet
 	pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=dim, datadir=datadir, /quiet

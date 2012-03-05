@@ -642,7 +642,7 @@ pro save_slices
 	pos_x = px
 	pos_y = py
 	pos_z = pz
-	time = varfiles[selected_snapshot].time * unit.time
+	time = varfiles[selected_snapshot].time
 
 	save, filename=quantity+"_cuts.xdr", time, quantity, cut_xy, cut_xz, cut_yz, cut_x, cut_y, cut_z, pos_x, pos_y, pos_z, x, y, z, dx, dy, dz
 end
@@ -968,7 +968,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	if (n_elements (units) ge 1) then unit = units
 	if (n_elements (unit) eq 0) then begin
 		print, "WARNING: setting units to unity."
-		unit = { velocity:1, temperature:1, length:1, time:1, density:1, default_length:1, default_length_str:'-', default_velocity:1, default_velocity_str:'-', default_density:1.0, default_density_str:'-', default_mass:1.0, default_mass_str:'-' }
+		unit = { velocity:1.0, temperature:1.0, length:1.0, time:1.0, density:1.0, default_length:1.0, default_length_str:'-', default_time:1.0, default_time_str:'-', default_velocity:1.0, default_velocity_str:'-', default_density:1.0, default_density_str:'-', default_mass:1.0, default_mass_str:'-' }
 	end
 
 	if (n_elements (scaling) eq 0) then scaling = 1
@@ -1016,7 +1016,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	range = 0
 
 	num_snapshots = n_elements (varfiles)
-	snaps = varfiles[*].title
+	snaps = varfiles[*].title + " (" + strtrim (varfiles[*].time, 2) + " " + unit.default_time_str + ")"
 
 	tags = tag_names (set)
 	num_cubes = n_tags (set)
@@ -1082,13 +1082,13 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	bcol    = WIDGET_BASE (CTRL, /col)
 	bcot    = WIDGET_BASE (bcol, /row)
-	vars    = WIDGET_DROPLIST (bcot, value=tags, uvalue='VAR', sensitive=vars_active, EVENT_PRO=cslice_event, title='data set')
-	bcot    = WIDGET_BASE (bcol, /row)
-	over    = WIDGET_DROPLIST (bcot, value=overs, uvalue='OVER', sensitive=over_active, EVENT_PRO=cslice_event, title='overplot')
-	bcot    = WIDGET_BASE (bcol, /row)
-	snap    = WIDGET_DROPLIST (bcot, value=snaps, uvalue='SNAP', sensitive=snap_active, EVENT_PRO=cslice_event, title='time step')
+	snap    = WIDGET_DROPLIST (bcot, value=snaps, uvalue='SNAP', sensitive=snap_active, EVENT_PRO=cslice_event, title='file')
 	prev    = WIDGET_BUTTON (bcot, value='-', uvalue='PREV', sensitive=prev_active, EVENT_PRO=cslice_event)
 	next    = WIDGET_BUTTON (bcot, value='+', uvalue='NEXT', sensitive=next_active, EVENT_PRO=cslice_event)
+	bcot    = WIDGET_BASE (bcol, /row)
+	vars    = WIDGET_DROPLIST (bcot, value=tags, uvalue='VAR', sensitive=vars_active, EVENT_PRO=cslice_event, title='quantity')
+	bcot    = WIDGET_BASE (bcol, /row)
+	over    = WIDGET_DROPLIST (bcot, value=overs, uvalue='OVER', sensitive=over_active, EVENT_PRO=cslice_event, title='overplot')
 
 	bcol    = WIDGET_BASE (CTRL, /col)
 	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCALE', set_value=abs_scale)
