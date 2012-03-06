@@ -278,7 +278,6 @@ module Density
     subroutine anelastic_after_mn(f, p, df, mass_per_proc)
 !
       use Poisson, only: inverse_laplacian
-      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
       use Boundcond, only: update_ghosts
       use Sub, only: div, grad
 !
