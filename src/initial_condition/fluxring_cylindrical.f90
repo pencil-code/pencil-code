@@ -78,7 +78,7 @@ module InitialCondition
       argum=sqrt2*(x-s0)/width
       term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
       term2=(2.*x**2-width**2)*exp(-argum**2)
-      press=p0-(.5*b0/s0)**2*(term1+term2)-b2**2/x**3
+      press=p0-(.5*b0/s0)**2*(term1+term2)
       del_lnrho=eps*alog(press/cs20)
 !
       do n=1,mz
