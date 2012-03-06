@@ -330,8 +330,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ''
   endif
 ;
-  if (n_elements (time) eq 1) then time = t
-;
+  time = t
   grid = { t:t, x:x, y:y, z:z, dx:dx, dy:dy, dz:dz }
 ;
 end
