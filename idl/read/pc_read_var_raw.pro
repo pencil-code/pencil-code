@@ -332,7 +332,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (n_elements (time) eq 1) then time = t
 ;
-  if (n_elements (grid) ne 0) then $
-      grid = { t:t, x:x, y:y, z:z, dx:dx, dy:dy, dz:dz }
+  grid = { t:t, x:x, y:y, z:z, dx:dx, dy:dy, dz:dz }
 ;
 end
