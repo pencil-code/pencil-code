@@ -44,7 +44,7 @@ pro pc_read_var_raw,                                                  $
     object=object, varfile=varfile, datadir=datadir, tags=tags,       $
     dim=dim, param=param, par2=par2, varcontent=varcontent,           $
     proc=proc, allprocs=allprocs, trimall=trimall, quiet=quiet,       $
-    swap_endian=swap_endian, f77=f77, time=time
+    swap_endian=swap_endian, f77=f77, time=time, grid=grid
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -331,5 +331,8 @@ COMPILE_OPT IDL2,HIDDEN
   endif
 ;
   if (n_elements (time) eq 1) then time = t
+;
+  if (n_elements (grid) ne 0) then $
+      grid = { t:t, x:x, y:y, z:z, dx:dx, dy:dy, dz:dz }
 ;
 end
