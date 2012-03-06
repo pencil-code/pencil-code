@@ -50,7 +50,7 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 		return
 	end
 
-	varfiles = { title:"N/A", loaded:1, number:0, precalc_done:1 }
+	varfiles = { title:"N/A", time:0.0d0, loaded:1, number:0, precalc_done:1 }
 
 	; setup coordinates, if necessary
 	if (n_elements (coords) eq 0) then begin
