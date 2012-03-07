@@ -94,6 +94,7 @@ module Forcing
   real :: tgentle=0.
   real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
   real :: fcont_ampl
+  real ::  ampl_diffrot,omega_exponent
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -127,7 +128,8 @@ module Forcing
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,&
-       z_bb,width_bb,eta_bb,fcont_ampl
+       z_bb,width_bb,eta_bb,fcont_ampl,&
+       ampl_diffrot,omega_exponent
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_ruxfxm=0, idiag_ruyfym=0, idiag_ruzfzm=0
@@ -530,6 +532,8 @@ module Forcing
         enddo
       elseif (iforcing_cont=='fluxring_cylindrical') then
         if (lroot) print*,'forcing_cont: fluxring cylindrical'
+      elseif (iforcing_cont=='counter_centrifugal') then
+        if (lroot) print*,'forcing_cont: counter_centrifugal'
         !nothing...
       endif
 !
@@ -3901,6 +3905,27 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_fluxring_cylindrical
 !***********************************************************************
+    subroutine calc_counter_centrifugal(force)
+!
+!   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
+! Calculates the force required to counter the centrifugal force coming
+! from an existing differential rotation. 
+!
+      real, dimension (nx,3), intent(out) :: force
+      real, dimension (nx) :: vphi,omega_diffrot
+      real ::  b0=1., s0=2., width=.2
+!
+!  
+!
+      omega_diffrot = ampl_diffrot*x(l1:l2)**(omega_exponent)
+      vphi =  x(l1:l2)*omega_diffrot
+      force(:,1)=-vphi**2/x(l1:l2)
+      force(:,2)=0.
+      force(:,3)=0.
+      force = fcont_ampl*force
+!
+    endsubroutine calc_counter_centrifugal
+!***********************************************************************
     subroutine calc_lforcing_cont_pars(f)
 !
 !  precalculate parameters that are new at each timestep,
@@ -4127,6 +4152,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case('fluxring_cylindrical')
           call calc_fluxring_cylindrical(force)
+        case('counter_centrifugal')
+          call calc_counter_centrifugal(force)
 !
         case default
           call stop_it('forcing: no continuous iforcing_cont specified')
