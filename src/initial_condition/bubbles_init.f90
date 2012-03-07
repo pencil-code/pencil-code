@@ -1,4 +1,4 @@
-! $Id: bubbles_init.f90,v 1.0 2009-09-24 09:08:03 fabio, simon Exp $
+! $Id$
 !
 ! Initial condition for bubbles in a stratified medium.
 ! Set bubble size, bubble density, surrounding medium density,
@@ -62,7 +62,7 @@ module InitialCondition
 !  20-may-11/simon: coded
 !
       if (lroot) call svn_id( &
-           "$Id: bubbles_init.f90,v 1.0 2011-05-20 09:08:03 simon Exp $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
