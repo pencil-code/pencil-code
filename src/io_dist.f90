@@ -57,6 +57,7 @@ module Io
   ! Indicates if IO is done distributed (each proc writes into a procdir)
   ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
   logical :: lcollective_IO=.false.
+  character (len=labellen) :: IO_strategy="dist"
 !
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
@@ -108,6 +109,8 @@ contains
                                             trim(datadir_snap)//'/proc'//chproc)
       call safe_character_assign(directory_snap, &
                                             trim(datadir_snap)//'/proc'//chproc)
+      call safe_character_assign(directory_collect, &
+                                            trim (datadir_snap)//'/allprocs')
 !
     endsubroutine directory_names
 !***********************************************************************

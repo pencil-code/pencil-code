@@ -76,7 +76,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Get necessary dimensions quietly.
 ;
   if (n_elements(dim) eq 0) then begin
-    if (keyword_set(allprocs)) then begin
+    if (allprocs gt 0) then begin
       pc_read_dim, object=dim, datadir=datadir, /quiet
     endif else begin
       pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
@@ -110,7 +110,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Build the full path and filename.
 ;
-  if (allprocs) then dirname='/allprocs/' else dirname='/proc0/'
+  if (allprocs eq 1) then dirname='/allprocs/' else dirname='/proc0/'
   filename=datadir+dirname+varfile
 ;
 ; Check for existence and read the data.

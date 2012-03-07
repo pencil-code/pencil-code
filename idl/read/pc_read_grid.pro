@@ -61,7 +61,7 @@ if (n_elements(dim) eq 0) then  $
 if (n_elements(param) eq 0) then  $
     pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
 
-if (allprocs) then begin
+if (allprocs gt 0) then begin
   ncpus=1
 endif else begin
   ncpus=dim.nprocx*dim.nprocy*dim.nprocz
@@ -97,7 +97,7 @@ get_lun, file
 
 for i=0,ncpus-1 do begin
   ; Build the full path and filename
-  if (allprocs) then begin
+  if (allprocs gt 0) then begin
     filename=datadir+'/allprocs/grid.dat'
   endif else if (n_elements(proc) ne 0) then begin
     filename=datadir+'/proc'+str(proc)+'/grid.dat'
@@ -164,7 +164,7 @@ for i=0,ncpus-1 do begin
 
   openr,file,filename,/F77,SWAP_ENDIAN=SWAP_ENDIAN
     
-  if (allprocs or (n_elements(proc) ne 0)) then begin
+  if ((allprocs gt 0) or (n_elements(proc) ne 0)) then begin
     readu,file, t,x,y,z
     readu,file, dx,dy,dz
     found_Lxyz=0
@@ -251,7 +251,7 @@ endif
 ;
 fmt = '(A,4G15.6)'
 if (keyword_set(print)) then begin
-  if n_elements(proc) eq 0 then begin
+  if (n_elements(proc) eq 0) then begin
     print, FORMAT='(A,I2,A)', 'For all processors calculation domain:'
   endif else begin
     print, FORMAT='(A,I2,A)', 'For processor ',proc,' calculation domain:'

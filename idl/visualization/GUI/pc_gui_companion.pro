@@ -23,7 +23,7 @@ pro prepare_varset, num, units, coords, varset, overset, dir, params, run_params
   param = params
   run_param = run_params
   
-  varfiles = { title:"-", time:1.0d0, loaded:0, number:-1, precalc_done:0 }
+  varfiles = { title:"-", time:0.0d0, loaded:0, number:-1, precalc_done:0 }
   varfiles = replicate (varfiles, num)
   
   varsets = replicate (varset, num)

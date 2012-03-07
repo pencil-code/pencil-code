@@ -56,6 +56,7 @@ module Io
   ! Indicates if IO is done distributed (each proc writes into a procdir)
   ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
   logical :: lcollective_IO=.true.
+  character (len=labellen) :: IO_strategy="collect"
 !
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
@@ -75,6 +76,8 @@ contains
 !  identify version number
 !
       if (lroot) call svn_id ("$Id$")
+      if (lseparate_persist) call fatal_error ('io_collect', &
+          "This module only works with the setting lseparate_persist=.false.")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -106,6 +109,7 @@ contains
       call safe_character_assign (directory_dist, &
                                             trim (datadir_snap)//'/proc'//chproc)
       call safe_character_assign (directory_snap, trim (datadir_snap)//'/allprocs')
+      call safe_character_assign (directory_collect, trim (datadir_snap)//'/allprocs')
 !
     endsubroutine directory_names
 !***********************************************************************

@@ -169,7 +169,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Read dimensions (global)...
 ;
-  if ((n_elements(proc) eq 1) or allprocs) then begin
+  if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
     procdim=dim
   endif else begin
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
@@ -200,8 +200,19 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Number of processors over which to loop.
 ;
-  if (n_elements(proc) eq 1 or allprocs) then begin
+  if (n_elements(proc) eq 1 or (allprocs eq 1)) then begin
     nprocs=1
+  endif else if (allprocs eq 2) then begin
+    nprocs=dim.nprocz
+    procdim.nx=nx
+    procdim.ny=ny
+    procdim.mx=mx
+    procdim.my=my
+    procdim.mw=mx*my*procdim.mz
+    procdim.ipx=0
+    procdim.ipy=0
+    mxloc=mx
+    myloc=my
   endif else begin
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
   endelse
@@ -339,15 +350,22 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Build the full path and filename.
 ;
-    if (allprocs) then filename=datadir+'/allprocs/'+varfile else $
-    if (n_elements(proc) eq 1) then filename=datadir+'/proc'+str(proc)+'/'+varfile $
-    else begin
-      filename=datadir+'/proc'+str(i)+'/'+varfile
-      if (not keyword_set(quiet)) then $
-          print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
-          strtrim(str(nprocs)), ' (', $
-          strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-      pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
+    if (allprocs eq 2) then begin
+      filename=datadir+'/proc'+str(i*dim.nprocx*dim.nprocy)+'/'+varfile
+      procdim.ipz=i
+    endif else if (allprocs eq 1) then begin
+      filename=datadir+'/allprocs/'+varfile
+    endif else begin
+      if (n_elements(proc) eq 1) then begin
+        filename=datadir+'/proc'+str(proc)+'/'+varfile
+      endif else begin
+        filename=datadir+'/proc'+str(i)+'/'+varfile
+        if (not keyword_set(quiet)) then $
+            print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
+            strtrim(str(nprocs)), ' (', $
+            strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
+        pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
+      endelse
     endelse
 ;
 ; Check for existence and read the data.
@@ -445,7 +463,6 @@ COMPILE_OPT IDL2,HIDDEN
         point_lun, file, long64(dim.mx*dim.my)*long64(dim.mz*mvar_io*bytes)
       endif
       readu, file, t, x, y, z, dx, dy, dz
-      if (param.lshear) then readu, file, deltay
     endif else if (nprocs eq 1) then begin
       ; single processor distributed file
       if (param.lshear) then begin
@@ -454,16 +471,29 @@ COMPILE_OPT IDL2,HIDDEN
         readu, file, t, x, y, z, dx, dy, dz
       endelse
     endif else begin
-      ; multiple processor distributed files
-      if (param.lshear) then begin
-        readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
+      if (allprocs eq 2) then begin
+        ; xy-collectively written files for each ipz-layer
+        if (i eq 0) then begin
+          if (f77 eq 0) then begin
+            close, file
+            openr, file, filename, /f77, swap_endian=swap_endian
+            if (precision eq 'D') then bytes=8 else bytes=4
+            point_lun, file, long64(dim.mx*dim.my)*long64(procdim.mz*dim.mvar*bytes)
+          endif
+          readu, file, t, x, y, z, dx, dy, dz
+        endif
       endif else begin
-        readu, file, t, xloc, yloc, zloc, dx, dy, dz
-      endelse
+        ; multiple processor distributed files
+        if (param.lshear) then begin
+           readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
+        endif else begin
+          readu, file, t, xloc, yloc, zloc, dx, dy, dz
+        endelse
 ;
-      x[i0x:i1x] = xloc[i0xloc:i1xloc]
-      y[i0y:i1y] = yloc[i0yloc:i1yloc]
-      z[i0z:i1z] = zloc[i0zloc:i1zloc]
+        x[i0x:i1x] = xloc[i0xloc:i1xloc]
+        y[i0y:i1y] = yloc[i0yloc:i1yloc]
+        z[i0z:i1z] = zloc[i0zloc:i1zloc]
+      endelse
 ;
 ; Loop over variables.
 ;

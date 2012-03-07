@@ -56,7 +56,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the
 ; common block. Don't need the data for anything though.
 ;
-  if (allprocs or (n_elements(grid) eq 1)) then begin
+  if ((n_elements(grid) eq 1) or (allprocs eq 1)) then begin
     procgrid=grid
   endif else begin
     pc_read_grid, obj=procgrid, dim=dim, datadir=datadir, param=param, proc=proc, swap_endian=swap_endian, /quiet
@@ -64,7 +64,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Read dimensions (global)...
 ;
-  if (allprocs or (n_elements(proc) eq 1)) then begin
+  if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
     procdim=dim
   endif else begin
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
@@ -95,7 +95,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Number of processors over which to loop.
 ;
-  if (allprocs or (n_elements(proc) eq 1)) then begin
+  if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
     nprocs=1
   endif else begin
     nprocs=dim.nprocx*dim.nprocy*dim.nprocz
@@ -174,7 +174,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   for i=0,nprocs-1 do begin
     ; Build the full path and filename
-    if (allprocs) then begin
+    if (allprocs eq 2) then begin
+      filename=datadir+'/proc'+str(i)+'/'+varfile
+    endif else if (allprocs eq 1) then begin
       filename=datadir+'/allprocs/'+varfile
     endif else if (n_elements(proc) eq 1) then begin
       filename=datadir+'/proc'+str(proc)+'/'+varfile

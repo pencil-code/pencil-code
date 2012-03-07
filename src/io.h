@@ -2,7 +2,7 @@
 
   private
 
-  public :: lun_input, lun_output, lcollective_IO
+  public :: lun_input, lun_output, lcollective_IO, IO_strategy
   public :: register_io, output_form
   public :: output_snap, output_snap_finalize
   public :: input_snap, input_snap_finalize

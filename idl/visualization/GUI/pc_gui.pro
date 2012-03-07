@@ -147,18 +147,22 @@ default, pc_gui_loaded, 0
 
 if (not pc_gui_loaded) then BEGIN
 
-	allprocs = 1
-	procdir = datadir+"/allprocs/"
 	default, load_varfile, 1
-	if (load_varfile and not file_test (procdir+varfile)) then begin
-		allprocs = 0
-		procdir = datadir+"/proc0/"
-		if (not file_test (procdir+varfile)) then begin
-			print, "No '"+varfile+"' file found."
-			load_varfile = 0
-			stop
+	if (n_elements (allprocs) eq 0) then begin
+		allprocs = 1
+		procdir = datadir+"/allprocs/"
+		if (load_varfile and not file_test (procdir+varfile)) then begin
+			allprocs = 0
+			procdir = datadir+"/proc0/"
+			if (not file_test (procdir+varfile)) then begin
+				print, "No '"+varfile+"' file found."
+				load_varfile = 0
+				stop
+			endif
 		endif
-	endif
+	end else begin
+		if (allprocs eq 2) then procdir = datadir+"/proc0/"
+	end
 
 	default, addfile, crashfile
 	if ((addfile ne varfile) and file_test (procdir+addfile)) then begin
