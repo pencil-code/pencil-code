@@ -1,4 +1,4 @@
-! $Id: waves_Bx.f90,v 1.0 2011-06-29 18:02:00 simon Exp $
+! $Id$
 !
 ! Initial condition for sin(kz) or cos(kz) magnetic field.
 !
@@ -39,7 +39,7 @@ module InitialCondition
 !  29-june-11/simon: coded
 !
       if (lroot) call svn_id( &
-           "$Id: bubbles_init.f90,v 1.0 2011-06-29 18:02:00 simon Exp $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
