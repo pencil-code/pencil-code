@@ -26,10 +26,12 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.,b2=0.,bz=0.
-
+  real :: omega_exponent=0.,ampl_diffrot=0.
+  logical :: linitial_diffrot=.false.
 !
   namelist /initial_condition_pars/ &
-      b0,s0,width,p0,eps,mphi,ampl,om,b1,b2,bz
+      b0,s0,width,p0,eps,mphi,ampl,om,b1,b2,linitial_diffrot,omega_exponent,&
+     ampl_diffrot
 !
   contains
 !***********************************************************************
@@ -54,7 +56,19 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real,dimension(mx) :: omega_diffrot
 !
+!
+      if(linitial_diffrot) then
+      do n=1,mz
+        do m=1,my
+          omega_diffrot = ampl_diffrot*x**(omega_exponent)
+          f(:,m,n,iuy)=f(:,m,n,iuy)+ x*omega_diffrot
+        enddo
+      enddo
+    endif
+!
+
     endsubroutine initial_condition_uu
 !***********************************************************************
     subroutine initial_condition_lnrho(f)
@@ -101,7 +115,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: argum,term1,term2,ax,az,ay
 !
-!  vector potential for the magnetic flux flux ring
+!  vector potential for the magnetic flux ring
 !
       argum=(x-s0)/width
       term1=s0*sqrtpi*erfunc(argum)
@@ -111,7 +125,8 @@ module InitialCondition
 !
       do n=1,mz
         do m=1,my
-          f(:,m,n,iaz)=f(:,m,n,iaz)+az
+!          f(:,m,n,iaz)=f(:,m,n,iaz)+az
+          f(:,m,n,iaz)= az
           f(:,m,n,iay)=f(:,m,n,iay)+ay
         enddo
       enddo
