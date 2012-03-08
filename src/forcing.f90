@@ -3909,13 +3909,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
 !   4-aug-11/dhruba+axel: adapted from fluxring_cylindrical
 ! Calculates the force required to counter the centrifugal force coming
-! from an existing differential rotation. 
+! from an existing differential rotation.
 !
       real, dimension (nx,3), intent(out) :: force
       real, dimension (nx) :: vphi,omega_diffrot
-      real ::  b0=1., s0=2., width=.2
-!
-!  
 !
       omega_diffrot = ampl_diffrot*x(l1:l2)**(omega_exponent)
       vphi =  x(l1:l2)*omega_diffrot
@@ -4081,7 +4078,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=-fact*ky*cosx(l1:l2)*siny(m) - fact2*ky*sinx(l1:l2)*cosx(l1:l2)
           force(:,2)=+fact*kx*sinx(l1:l2)*cosy(m) - fact2*kx*siny(m)*cosy(m)
           force(:,3)=+fact*kf*cosx(l1:l2)*cosy(m)
-
+!
           if ( Omega/=0. .and. theta==0. ) then              ! Obs, only implemented for rotation axis in z direction.
             fact = 2.*ampl_ff*Omega
             force(:,1)= force(:,1)-fact*kx*sinx(l1:l2)*cosy(m)
@@ -4181,7 +4178,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         if (idiag_rufm/=0) then
           call dot_mn(p%uu,p%fcont,uf)
           call sum_mn_name(p%rho*uf,idiag_rufm)
-
+!
         endif
         if (lmagnetic) then
           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
