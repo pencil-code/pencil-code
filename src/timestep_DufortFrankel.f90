@@ -40,7 +40,7 @@ module Timestep
       real, dimension (nx) :: cdt1,cdt2,fold_tmp
       type (pencil_case) :: p
       real :: ds
-      real, dimension(1) :: dt1, dt1_local
+      real :: dt1, dt1_local, dt1_last=0.0
       integer :: j
 !
 !  Set up df and ds for each time sub.

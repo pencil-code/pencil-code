@@ -40,7 +40,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar), intent(out) :: df
       type (pencil_case), intent(out) :: p
 !
-      real, dimension(1) :: dt1, dt1_local
+      real :: dt1, dt1_local, dt1_last=0.0
       real, dimension (itorder) :: tau_sts
       integer :: j
 !

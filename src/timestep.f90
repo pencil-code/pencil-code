@@ -35,7 +35,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: ds
-      real :: dt1,dt1_local
+      real :: dt1, dt1_local, dt1_last=0.0
       integer :: j
 !
 !  Coefficients for up to order 3.

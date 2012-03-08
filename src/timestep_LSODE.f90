@@ -41,7 +41,7 @@ module Timestep
       type (pencil_case) :: p
       real :: ds
       real :: t0, t1
-      real, dimension(1) :: dt1, dt1_local
+      real :: dt1, dt1_local, dt1_last=0.0
       integer :: j
 !
       if (lroot .and. headt .and. llsode) print*, 'timestep_LSODE: '// &

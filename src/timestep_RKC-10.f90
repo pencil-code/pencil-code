@@ -47,7 +47,7 @@ contains
         ! real, dimension (mx,my,mz,mvar) :: fn_target, fn1_target
         real, dimension (mx,my,mz,mvar) :: df, dfn
         type (pencil_case) :: p
-        real, dimension(1) :: dt1, dt1_local
+        real :: dt1, dt1_local, dt1_last=0.0
         double precision :: t0
         integer :: iv
 
