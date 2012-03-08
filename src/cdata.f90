@@ -98,10 +98,7 @@ module Cdata
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
   real :: eps_rkf=1e-8, eps_stiff=1e-6
   real :: ddt=0.0
-  real :: dt1_last=0.0
   real :: dtmin=1.0e-6, dtmax=1.0e37
-! Variables used in the Super_time_stepping module
-! under development (gustavo)
   real :: nu_sts=0.1
   logical :: lreset_tstart=.false.
 !
