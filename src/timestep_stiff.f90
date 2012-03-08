@@ -71,8 +71,6 @@ module Timestep
 !
 !  28-aug-09/rplasson: coded
 !
-      use Mpicomm
-      use Cdata
       use Messages
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -156,15 +154,16 @@ module Timestep
     endsubroutine rk_2n
 !***********************************************************************
     subroutine stiff(f, df, p, errmax)
-    ! Stiff algorithm for time stepping
-      use Cdata
+! Stiff algorithm for time stepping
+!
       use Mpicomm, only: mpiallreduce_max
-      use Equ
+      use Equ, only: pde
       use Sub, only: ludcmp, lubksb
       use Chemistry, only: jacobn
 !
       intent(inout) :: f
       intent(out)   :: df, p, errmax
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: fscal
       ! Note: The tmp array will not use more memory than the temporary
@@ -183,8 +182,11 @@ module Timestep
 !
       df=0.
       errmax=0.
+      errmaxs=0.
       k=0.
-      call jacobn(f,jacob)
+!
+      if (lchemistry) then
+        call jacobn(f,jacob)
 !      do n=n1,n2; do m=m1,m2;do l=l1,l2
 !        print*,"jacob(",n,",",m,",",l,")="
 !        do i=1,nchemspec
@@ -194,10 +196,10 @@ module Timestep
 !          print*,"/"
 !        enddo
 !      enddo; enddo; enddo
-      jacob(:,:,:,:,:)=-jacob(:,:,:,:,:)
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        jacob(l1:l2,m,n,j,j)=1.0/(gam*dt)+jacob(l1:l2,m,n,j,j)
-      enddo; enddo; enddo
+        jacob(:,:,:,:,:)=-jacob(:,:,:,:,:)
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          jacob(l1:l2,m,n,j,j)=1.0/(gam*dt)+jacob(l1:l2,m,n,j,j)
+        enddo; enddo; enddo
 !      do n=n1,n2; do m=m1,m2;do l=l1,l2
 !        print*,"jacob(",n,",",m,",",l,")="
 !        do i=1,nchemspec
@@ -207,9 +209,9 @@ module Timestep
 !          print*,"/"
 !        enddo
 !      enddo; enddo; enddo
-      do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call ludcmp(jacob(l,m,n,:,:),indx(l,m,n,:))
-      enddo; enddo; enddo
+        do n=n1,n2; do m=m1,m2; do l=l1,l2
+          call ludcmp(jacob(l,m,n,:,:),indx(l,m,n,:))
+        enddo; enddo; enddo
 !      do n=n1,n2; do m=m1,m2;do l=l1,l2
 !        print*,"jacob_lu(",n,",",m,",",l,")="
 !        do i=1,nchemspec
@@ -219,6 +221,7 @@ module Timestep
 !          print*,"/"
 !        enddo
 !      enddo; enddo; enddo
+      endif
 !
       call pde(f, k(:,:,:,:,1), p)
 !
@@ -229,90 +232,78 @@ module Timestep
         fscal(l1:l2,m,n,j) = abs(f(l1:l2,m,n,j))+abs(df(l1:l2,m,n,j)*dt)+1e-8!tiny(0.)
       enddo; enddo; enddo
 !
-!      print*,"before:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),1)
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
-      do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
-      enddo; enddo; enddo
-!      print*,"after:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),1)=ktemp(l1:l2,m,n,j)
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
+      if (lchemistry) then
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),1)
+        enddo; enddo; enddo
+        do n=n1,n2; do m=m1,m2; do l=l1,l2
+          call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
+        enddo; enddo; enddo
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          k(l1:l2,m,n,ichemspec(j),1)=ktemp(l1:l2,m,n,j)
+        enddo; enddo; enddo
+      endif
 !
       lfirst=.false.
 !
       tmp = f + a21*k(:,:,:,:,1)
       call pde(tmp, k(:,:,:,:,2), p)
-!      print*,"before:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)+ &
-            c21*k(l1:l2,m,n,ichemspec(j),1)/dt
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
-      do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
-      enddo; enddo; enddo
-!      print*,"after:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),2)=ktemp(l1:l2,m,n,j)
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
+!
+      if (lchemistry) then
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),2)+ &
+              c21*k(l1:l2,m,n,ichemspec(j),1)/dt
+        enddo; enddo; enddo
+        do n=n1,n2; do m=m1,m2; do l=l1,l2
+          call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
+        enddo; enddo; enddo
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          k(l1:l2,m,n,ichemspec(j),2)=ktemp(l1:l2,m,n,j)
+        enddo; enddo; enddo
+      endif
 !
       tmp = f + a31*k(:,:,:,:,1) + a32*k(:,:,:,:,2)
       call pde(tmp, k(:,:,:,:,3), p)
       k(:,:,:,:,4)=k(:,:,:,:,3)
-!      print*,"before:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),3)+ &
-            (c31*k(l1:l2,m,n,ichemspec(j),1)+ &
-             c32*k(l1:l2,m,n,ichemspec(j),2))/dt
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
-      do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
-      enddo; enddo; enddo
-!      print*,"after:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),3)=ktemp(l1:l2,m,n,j)
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
 !
-!      print*,"before:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),4)+&
-            (c41*k(l1:l2,m,n,ichemspec(j),1)+ &
-             c42*k(l1:l2,m,n,ichemspec(j),2)+ &
-             c43*k(l1:l2,m,n,ichemspec(j),3))/dt
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
-      do n=n1,n2; do m=m1,m2; do l=l1,l2
-        call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
-      enddo; enddo; enddo
-!      print*,"after:"
-      do j=1,nchemspec; do n=n1,n2; do m=m1,m2
-        k(l1:l2,m,n,ichemspec(j),4)=ktemp(l1:l2,m,n,j)
-!        print*,ktemp(l1:l2,m,n,j)
-      enddo; enddo; enddo
+      if (lchemistry) then
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),3)+ &
+              (c31*k(l1:l2,m,n,ichemspec(j),1)+ &
+              c32*k(l1:l2,m,n,ichemspec(j),2))/dt
+        enddo; enddo; enddo
+        do n=n1,n2; do m=m1,m2; do l=l1,l2
+          call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
+        enddo; enddo; enddo
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          k(l1:l2,m,n,ichemspec(j),3)=ktemp(l1:l2,m,n,j)
+        enddo; enddo; enddo
 !
-      errmaxs=0.
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          ktemp(l1:l2,m,n,j)=k(l1:l2,m,n,ichemspec(j),4)+&
+              (c41*k(l1:l2,m,n,ichemspec(j),1)+ &
+              c42*k(l1:l2,m,n,ichemspec(j),2)+ &
+              c43*k(l1:l2,m,n,ichemspec(j),3))/dt
+        enddo; enddo; enddo
+        do n=n1,n2; do m=m1,m2; do l=l1,l2
+          call lubksb(jacob(l,m,n,:,:),indx(l,m,n,:),ktemp(l,m,n,:))
+        enddo; enddo; enddo
+        do j=1,nchemspec; do n=n1,n2; do m=m1,m2
+          k(l1:l2,m,n,ichemspec(j),4)=ktemp(l1:l2,m,n,j)
+        enddo; enddo; enddo
+      endif
 !
       do j=1,mvar
-!        print*,"j=",j
         do n=n1,n2; do m=m1,m2
 !
           err = e1*k(l1:l2,m,n,j,1) + e2*k(l1:l2,m,n,j,2) + &
-              e3*k(l1:l2,m,n,j,3) + e4*k(l1:l2,m,n,j,4)
+                e3*k(l1:l2,m,n,j,3) + e4*k(l1:l2,m,n,j,4)
 !
           df(l1:l2,m,n,j) = b1*k(l1:l2,m,n,j,1) + b2*k(l1:l2,m,n,j,2) + &
-              b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4)
+                            b3*k(l1:l2,m,n,j,3) + b4*k(l1:l2,m,n,j,4)
 !
-!          print*,df(l1:l2,m,n,j)," (",err,")"
-          ! Get the maximum error over the whole field
-          !
+! Get the maximum error over the whole field
+!
           select case (timestep_scaling(j))
           case ('per_var_err')
             !
@@ -339,21 +330,16 @@ module Timestep
             errmaxs = max(maxval(abs(err/fscal(l1:l2,m,n,j))),errmaxs)
             !
           case ('none')
-            !
             ! No error check
-            !
-            errmaxs = 0
-            !
           endselect
           !
         enddo; enddo
-!        print*,"j=",j," errmaxs=",errmaxs
       enddo
-      !
-      ! Divide your maximum error by the required accuracy
-      !
+!
+! Divide your maximum error by the required accuracy
+!
       errmaxs=errmaxs/eps_stiff
-      !
+!
       call mpiallreduce_max(errmaxs,errmax)
 !
     endsubroutine stiff
