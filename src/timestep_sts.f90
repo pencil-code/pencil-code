@@ -5,7 +5,7 @@
 ! Gremaud, P. 1996, Commun. Num. Meth. Eng.,  12, 31)
 !
 !
-!  TODO: add i.e. particles, border profiles
+!  TODO: add i.e. particles, interstellar, shear
 !
 module Timestep
 !
@@ -31,8 +31,10 @@ module Timestep
 !  17-march-11/gustavo: coded
 !  08-march-12/bing+bourdin.kis: first stable
 !
+      use BorderProfiles, only: border_quenching
       use Equ, only: pde
       use Mpicomm, only: mpireduce_max
+      use Special, only: special_after_timestep
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(out) :: df
@@ -74,9 +76,12 @@ module Timestep
 !  Time evolution of grid variables.
 !
         do j=1,mvar; do n=n1,n2; do m=m1,m2
+          if (lborder_profiles) call border_quenching(f,df,j,tau_sts(itsub))
           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+tau_sts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
+        if (lspecial) call special_after_timestep(f,df,tau_sts(itsub))
+        
 !  Increase time.
 !
         t = t + tau_sts(itsub)
@@ -103,3 +108,4 @@ module Timestep
     endsubroutine substeps
 !***********************************************************************
 endmodule Timestep
+  
