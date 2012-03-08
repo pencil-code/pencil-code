@@ -16,11 +16,11 @@ module Timestep
 !
   private
 !
-  public :: rk_2n
+  public :: time_step
 !
   contains
 !***********************************************************************
-    subroutine rk_2n(f,df,p)
+    subroutine time_step(f,df,p)
 !
 !  Runge Kutta advance, accurate to order itorder.
 !  At the moment, itorder can be 1, 2, or 3.
@@ -128,7 +128,7 @@ module Timestep
 !  Calculate dt_beta_ts (e.g. for t=t+dt_beta_ts(itsub)*ds or for Dustdensity)
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'rk_2n: iproc, dt=', iproc, dt  !(all have same dt?)
+        if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
 !
 !  Add artificial damping at the location of SN explosions for a short time
 !  after insertion.
@@ -181,6 +181,6 @@ module Timestep
 !
       endif
 !
-    endsubroutine rk_2n
+    endsubroutine time_step
 !***********************************************************************
 endmodule Timestep

@@ -195,7 +195,7 @@ module TestPerturb
 !
       use Diagnostics
       use Hydro, only: calc_pencils_hydro
-      use Timestep, only: rk_2n
+      use Timestep, only: time_step
 
       real, dimension (mx,my,mz,mfarray) :: fsave,f
       real, dimension (mx,my,mz,mvar) :: df
@@ -239,7 +239,7 @@ module TestPerturb
 !  Time advance for nt_test timesteps
 !
           do it_testperturb=1,nt_testperturb
-            call rk_2n(f,df,p)
+            call time_step(f,df,p)
             if (ip<13) print*,'testperturb_begin: stay in the loop; t=',t
           enddo
           if (ip<14) print*,'testperturb_begin: do analysis; t,jtest=',t,jtest

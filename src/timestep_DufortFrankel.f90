@@ -13,11 +13,11 @@ module Timestep
 !
   private
 !
-  public :: rk_2n
+  public :: time_step
 !
   contains
 !***********************************************************************
-    subroutine rk_2n(f,df,p)
+    subroutine time_step(f,df,p)
 !
 !  Runge Kutta advance, accurate to order itorder.
 !  At the moment, itorder can be 1, 2, or 3.
@@ -113,6 +113,6 @@ diffarr=1.
 !
       t=t+dt*ds
 !
-    endsubroutine rk_2n
+    endsubroutine time_step
 !***********************************************************************
 endmodule Timestep

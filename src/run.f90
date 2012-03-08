@@ -79,7 +79,7 @@ program run
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
-  use Timestep,        only: rk_2n
+  use Timestep,        only: time_step
 !
   implicit none
 !
@@ -538,7 +538,7 @@ program run
 !
 !  Time advance.
 !
-    call rk_2n(f,df,p)
+    call time_step(f,df,p)
 !
 !  Print diagnostic averages to screen and file.
 !

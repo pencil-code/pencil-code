@@ -12,11 +12,11 @@ module Timestep
 !
   private
 !
-  public :: rk_2n
+  public :: time_step
 !
   contains
 !***********************************************************************
-    subroutine rk_2n(f,df,p)
+    subroutine time_step(f,df,p)
 !
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
@@ -101,7 +101,7 @@ module Timestep
 !  Calculate dt_beta_ts.
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'rk_2n: iproc, dt=', iproc, dt  !(all have same dt?)
+        if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
 !
 !  Add artificial damping at the location of SN explosions for a short time
 !  after insertion.
@@ -136,6 +136,6 @@ module Timestep
 !
       enddo
 !
-    endsubroutine rk_2n
+    endsubroutine time_step
 !***********************************************************************
 endmodule Timestep

@@ -28,12 +28,12 @@ module Timestep
 
     private
 
-    public :: rk_2n
+    public :: time_step
 
 contains
 
 !***********************************************************************
-    subroutine rk_2n(f,df,p)
+    subroutine time_step(f,df,p)
     !
     !  Long-time-step Runge--Kutta--Chebyshev stepping, accurate to second
     !  order.
@@ -351,7 +351,7 @@ contains
           f(:,:,:,iv) = fn(:,:,:,iv)
         enddo
 
-    endsubroutine rk_2n
+    endsubroutine time_step
 !***********************************************************************
 
     subroutine swap(a, b)

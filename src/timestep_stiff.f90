@@ -10,7 +10,7 @@ module Timestep
 !
   private
 !
-  public :: rk_2n
+  public :: time_step
 !
   ! Parameters for adaptive time stepping
   integer, parameter :: maxtry = 40
@@ -65,7 +65,7 @@ module Timestep
   contains
 !
 !***********************************************************************
-    subroutine rk_2n(f,df,p)
+    subroutine time_step(f,df,p)
 !
 !  Stiff solver, accurate to 2nd(?) order
 !
@@ -86,7 +86,7 @@ module Timestep
       dtnotok=.true.
 !
       if (itorder/=4) &
-        call fatal_error('rk_2n','itorder must be 4 for stiff solver')
+        call fatal_error('time_step','itorder must be 4 for stiff solver')
 !
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
@@ -95,7 +95,7 @@ module Timestep
 !
 !
       if (linterstellar.or.lshear.or.lparticles) &
-            call fatal_error("rk_2n", &
+            call fatal_error("time_step", &
                    "Shear, interstellar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
 !
@@ -151,7 +151,7 @@ module Timestep
         f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+df(l1:l2,m,n,j)
       enddo; enddo; enddo
 !
-    endsubroutine rk_2n
+    endsubroutine time_step
 !***********************************************************************
     subroutine stiff(f, df, p, errmax)
 ! Stiff algorithm for time stepping

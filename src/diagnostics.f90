@@ -118,7 +118,7 @@ module Diagnostics
       integer :: iname, iostat
 !
 !  Add general (not module-specific) quantities for diagnostic output. If the
-!  timestep (=dt) is to be written, it is known only after rk_2n, so the best
+!  timestep (=dt) is to be written, it is known only after time_step, so the best
 !  place to enter it into the save list is here. Use 1.0*(it-1) to have floating
 !  point or double precision.
 !

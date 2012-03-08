@@ -9,7 +9,7 @@ module Timestep
 !
   private
 !
-  public :: rk_2n
+  public :: time_step
 !
   ! Parameters for adaptive time stepping
   real, parameter :: safety           = 0.9
@@ -20,7 +20,7 @@ module Timestep
   contains
 !
 !***********************************************************************
-    subroutine rk_2n(f,df,p)
+    subroutine time_step(f,df,p)
 !
 !  Runge-Kutta-Fehlberg accurate to 5th order
 !
@@ -47,7 +47,7 @@ module Timestep
       errcon = (5.0/safety)**(1.0/dt_increase)
 !
       if (itorder/=5) &
-        call fatal_error('rk_2n','itorder must be 5 for Runge-Kutta-Fehlberg')
+        call fatal_error('time_step','itorder must be 5 for Runge-Kutta-Fehlberg')
 !
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt
@@ -56,7 +56,7 @@ module Timestep
       !
 !
       if (linterstellar.or.lshear.or.lparticles) &
-            call fatal_error("rk_2n", &
+            call fatal_error("time_step", &
                    "Shear, interstallar and particles are not" // &
                    " yet supported by the adaptive rkf scheme")
 !
@@ -104,7 +104,7 @@ module Timestep
         f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+df(l1:l2,m,n,j)
       enddo; enddo; enddo
 !
-    endsubroutine rk_2n
+    endsubroutine time_step
 !***********************************************************************
     subroutine rkck(f, df, p, errmax)
     ! Explicit fifth order Runge--Kutta--Fehlberg time stepping

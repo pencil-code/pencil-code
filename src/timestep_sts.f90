@@ -16,11 +16,11 @@ module Timestep
 !
   private
 !
-  public :: rk_2n
+  public :: time_step
 !
   contains
 !***********************************************************************
-    subroutine rk_2n(f,df,p)
+    subroutine time_step(f,df,p)
 !
 !  Temporal advance for a diffusion problem using STS.
 !  'itorder' plays the role of the parameter N in Alexiades paper, which
@@ -88,7 +88,7 @@ module Timestep
 !
       enddo
 !
-    endsubroutine rk_2n
+    endsubroutine time_step
 !***********************************************************************
     subroutine substeps(dt_expl,tau)
 !
