@@ -325,6 +325,40 @@ module Solid_Cells
 !
       case ('nothing')
         if (lroot) print*,'init_solid_cells: nothing'
+      case ('cylinder')
+!  Initial condition for cyilinder in quiecent medium
+        call gaunoise(ampl_noise,f,iux,iuz)
+        shiftx=0
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+!
+!  Loop over all cylinders
+!
+          do icyl=1,nobjects
+            a2 = objects(icyl)%r**2
+            xr=x(i)-objects(icyl)%x(1)
+            yr=y(j)-objects(icyl)%x(2)
+            rr2 = xr**2+yr**2
+            if (rr2 > a2) then
+              if (ilnTT /= 0) then
+                wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
+                f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT)&
+                    +objects(icyl)%T*(1-wall_smoothing_temp)
+                f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
+                    *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+              endif
+            else
+              if (ilnTT /= 0) then
+                f(i,j,k,ilnTT) = objects(icyl)%T
+                f(i,j,k,ilnrho)=f(l2,m2,n2,ilnrho)&
+                     *f(l2,m2,n2,ilnTT)/objects(icyl)%T
+              endif
+            endif
+          enddo
+        enddo
+        enddo
+        enddo
       case ('cylinderstream_x')
 !  Stream functions for flow around a cylinder as initial condition.
         call gaunoise(ampl_noise,f,iux,iuz)
