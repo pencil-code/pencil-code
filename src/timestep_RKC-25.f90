@@ -41,7 +41,7 @@ contains
     !  18-aug-08/perl: generated
     !
 
-        use Mpicomm
+        use Mpicomm, only: mpiallreduce_max
 
         real, dimension (mx,my,mz,mfarray) :: f
         ! real, dimension (mx,my,mz,mvar) :: fn_target, fn1_target
@@ -77,11 +77,10 @@ contains
 
             ! Timestep growth limiter
             if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-            call mpireduce_max(dt1_local,dt1)
-            if (lroot) dt=1.0/dt1
+            call mpiallreduce_max(dt1_local,dt1)
+            dt=1.0/dt1
             ! Timestep growth limiter
             if (ddt/=0.) dt1_last=dt1_local/ddt
-            call mpibcast_real(dt,1)
         endif
         !
         ! IMPLEMENT ME:

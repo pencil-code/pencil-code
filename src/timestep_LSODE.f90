@@ -118,11 +118,10 @@ module Timestep
           dt1_local=maxval(dt1_max(1:nx))
           !Timestep growth limiter
           if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-          call mpireduce_max(dt1_local,dt1)
-          if (lroot) dt=1.0/dt1
+          call mpiallreduce_max(dt1_local,dt1)
+          dt=1.0/dt1
           !Timestep growth limiter
           if (ddt/=0.) dt1_last=dt1_local/ddt
-          call mpibcast_real(dt,1)
         endif
 !
 !  Calculate dt_beta_ts (e.g. for t=t+dt_beta_ts(itsub)*ds or for Dustdensity)
