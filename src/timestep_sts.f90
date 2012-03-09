@@ -33,7 +33,7 @@ module Timestep
 !
       use BorderProfiles, only: border_quenching
       use Equ, only: pde
-      use Mpicomm, only: mpireduce_max
+      use Mpicomm, only: mpiallreduce_max
       use Special, only: special_after_timestep
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
