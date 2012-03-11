@@ -6,6 +6,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: leos = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
@@ -13,7 +15,7 @@
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; mumol; mumol1; glnmumol(3)
-! PENCILS PROVIDED ppvap; csvap2
+! PENCILS PROVIDED rho_anel; ppvap; csvap2
 !
 !***************************************************************
 module EquationOfState
@@ -43,8 +45,11 @@ module EquationOfState
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer :: iglobal_cs2, iglobal_glnTT
-  real, dimension(mz) :: profz_eos=1.0
+  real, dimension(mz) :: profz_eos=1.0, dprofz_eos=0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
+  real, dimension(nchemspec,18) :: species_constants
+  real, dimension(nchemspec,7) :: tran_data
+  real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
   real :: Rgas_unit_sys=1.0
   real :: lnTT0=impossible
   real :: mudry=1.0, muvap=1.0, mudry1=1.0, muvap1=1.0
@@ -85,7 +90,6 @@ module EquationOfState
 !
 !  06-jan-10/anders: adapted from eos_idealgas
 !
-      leos=.true.
       leos_idealgas=.true.
 !
       iyH=0
@@ -365,6 +369,22 @@ module EquationOfState
 !
     endsubroutine getmu
 !***********************************************************************
+    subroutine getmu_array(f,mu1_full_tmp)
+!
+!  dummy routine to calculate mean molecular weight
+!
+!   16-mar-10/natalia
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz), intent(out) :: mu1_full_tmp
+!
+      call fatal_error('getmu_array','not implemented')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(mu1_full_tmp)
+!
+    endsubroutine getmu_array
+!***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
 !  Writes iyH and ilnTT to index.pro file.
@@ -501,13 +521,13 @@ module EquationOfState
 !  Pencils that are independent of the chosen thermodynamical variables.
 !
 ! mumol1
-      if (lpencil(i_mumol1)) p%mumol1=(1-p%cc)*mudry1+p%cc*muvap1
+      if (lpencil(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
 ! mumol
       if (lpencil(i_mumol)) p%mumol=1/p%mumol1
 ! glnmumol
       if (lpencil(i_glnmumol)) then
         do i=1,3
-          p%glnmumol(:,i)=-p%mumol*(p%gcc(:,i)*(muvap1-mudry1))
+          p%glnmumol(:,i)=-p%mumol*(p%gcc(:,i,1)*(muvap1-mudry1))
         enddo
       endif
 ! cp
@@ -592,7 +612,7 @@ module EquationOfState
 ! pp
       if (lpencil(i_pp)) p%pp=(p%cp-p%cv)*p%rho*p%TT
 ! ppvap
-      if (lpencil(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc*p%rho*p%TT
+      if (lpencil(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc(:,1)*p%rho*p%TT
 ! cs2
       if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*gamma_m1
 ! csvap2
@@ -633,6 +653,28 @@ module EquationOfState
 !
     endsubroutine getdensity
 !***********************************************************************
+    subroutine gettemperature(f,TT_tmp)
+!
+     real, dimension (mx,my,mz,mfarray), optional :: f
+     real, dimension (mx,my,mz), intent(out) :: TT_tmp
+!
+     call fatal_error('gettemperature','not implemented')
+!
+     call keep_compiler_quiet(present(f))
+     call keep_compiler_quiet(TT_tmp)
+!
+    endsubroutine gettemperature
+!***********************************************************************
+    subroutine getpressure(pp_tmp)
+!
+     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+!
+     call fatal_error('getpressure','not implemented')
+!
+     call keep_compiler_quiet(pp_tmp)
+!
+    endsubroutine getpressure
+!***********************************************************************
     subroutine get_cp1(cp1_)
 !
       real :: cp1_
@@ -642,6 +684,14 @@ module EquationOfState
       call keep_compiler_quiet(cp1_)
 !
     endsubroutine get_cp1
+!***********************************************************************
+    subroutine get_cv1(cv1_)
+!
+      real, intent(out) :: cv1_
+!
+      call fatal_error('get_cv1','not implemented')
+!
+    endsubroutine get_cv1
 !***********************************************************************
     subroutine get_ptlaw(ptlaw_)
 !
@@ -1192,5 +1242,113 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_lnrho_hds_z_liso
+!***********************************************************************
+    subroutine bc_ss_a2stemp_x(f,topbot)
+!
+!  11-mar-2012/anders: dummmy
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_a2stemp_x
+!***********************************************************************
+    subroutine bc_ss_a2stemp_y(f,topbot)
+!
+!  11-mar-2012/anders: dummmy
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_a2stemp_y
+!***********************************************************************
+    subroutine bc_ss_a2stemp_z(f,topbot)
+!
+!  11-mar-2012/anders: dummmy
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_a2stemp_z
+!***********************************************************************
+    subroutine bc_ss_flux_turb_x(f,topbot)
+!
+!  11-mar-2012/anders: dummmy
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_flux_turb_x
+!***********************************************************************
+    subroutine find_mass(element_name,MolMass)
+!
+      character (len=*), intent(in) :: element_name
+      real, intent(out) :: MolMass
+!
+      call keep_compiler_quiet(element_name)
+      call keep_compiler_quiet(MolMass)
+!
+    endsubroutine find_mass
+!***********************************************************************
+    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
+!
+      integer, intent(out) :: ind_glob
+      integer, intent(inout) :: ind_chem
+      character (len=*), intent(in) :: species_name
+      logical, intent(out) :: found_specie
+!
+      call keep_compiler_quiet(ind_glob)
+      call keep_compiler_quiet(ind_chem)
+      call keep_compiler_quiet(species_name)
+      call keep_compiler_quiet(found_specie)
+!
+    endsubroutine find_species_index
+!***********************************************************************
+    subroutine read_transport_data
+!
+       real, dimension (mx,my,mz,mfarray) :: f
+!
+       call keep_compiler_quiet(f)
+!
+    endsubroutine read_transport_data
+!***********************************************************************
+    subroutine write_thermodyn()
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine write_thermodyn
+!***********************************************************************
+    subroutine read_thermodyn()
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine read_thermodyn
+!***********************************************************************
+    subroutine read_species(input_file)
+!
+      character (len=*) :: input_file
+!
+      call keep_compiler_quiet(input_file)
+!
+    endsubroutine read_species
+!***********************************************************************
+    subroutine read_Lewis
+!
+    endsubroutine read_Lewis
 !***********************************************************************
 endmodule EquationOfState
