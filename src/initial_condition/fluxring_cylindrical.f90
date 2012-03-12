@@ -25,13 +25,13 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.,b2=0.,bz=0.
+  real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.,b2=0.,bz=0.,hel=1.,nohel=0.
   real :: omega_exponent=0.,ampl_diffrot=0.
   logical :: linitial_diffrot=.false.
 !
   namelist /initial_condition_pars/ &
       b0,s0,width,p0,eps,mphi,ampl,om,b1,b2,linitial_diffrot,omega_exponent,&
-     ampl_diffrot
+     ampl_diffrot,hel,nohel
 !
   contains
 !***********************************************************************
@@ -138,7 +138,7 @@ print*,'ampl=',ampl
 
      do n=1,mz
       do m=1,my
-        ax=ampl*x*cos(om*z(n))*sin(mphi*y(m))
+        ax=ampl*x*(hel*cos(om*z(n))*sin(mphi*y(m))+nohel*sin(om*z(n))*sin(mphi*y(m)))
         az=ampl*x*cos(om*z(n))*cos(mphi*y(m))
         f(:,m,n,iax)=f(:,m,n,iax)+ax
         f(:,m,n,iaz)=f(:,m,n,iaz)+az
