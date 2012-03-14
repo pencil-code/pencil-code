@@ -312,7 +312,7 @@ module Cdata
                          ! too large, so expressions like
                          ! exp(gamma_m1*p%lnrho) don't cause overflow
   logical :: lpencil_check=.false., lpencil_check_small=.true.
-  logical :: lrandom_f_pencil_check=.true.
+  logical :: lpencil_check_no_zeros=.true.
   logical :: lpencil_init=.false.
   logical :: lpencil_requested_swap=.true., lpencil_diagnos_swap=.false.
   logical :: lpencil_check_diagnos_opti=.false.

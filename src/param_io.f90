@@ -126,7 +126,7 @@ module Param_IO
       border_frac_x, border_frac_y, border_frac_z, &
       lcylinder_in_a_box, lsphere_in_a_box, ipencil_swap, &
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
-      lpencil_check_small, lrandom_f_pencil_check, lpencil_check_diagnos_opti, &
+      lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
       crash_file_dtmin_factor, niter_poisson, lADI, ltestperturb, eps_rkf, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
@@ -134,8 +134,7 @@ module Param_IO
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts, lfargo_advection, &
       ldynamical_diffusion, re_mesh, lconst_advection, u0_advec, &
-      loutput_varn_at_exact_tsnap, &
-      lstop_on_ioerror, mailaddress
+      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress
 !
   contains
 !***********************************************************************

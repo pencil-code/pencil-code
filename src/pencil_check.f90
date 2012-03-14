@@ -101,11 +101,15 @@ module Pencil_check
       lfirst=.true.
       headt=.false.
       itsub=1  ! some modules like dustvelocity.f90 reference dt_beta_ts(itsub)
-      if (lrandom_f_pencil_check) then
+      if (lpencil_check_no_zeros) then
         call random_seed_wrapper(GET=iseed_org)
         call random_seed_wrapper(PUT=iseed_org)
         do i=1,mfarray
-          call random_number_wrapper(f_other(:,:,:,i))
+          if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
+            call random_number_wrapper(f_other(:,:,:,i))
+          else
+            f_other(:,:,:,i)=f(:,:,:,i)
+          endif
         enddo
       else
         f_other=f
@@ -154,10 +158,14 @@ module Pencil_check
             print*, 'pencil_consistency_check: performing full pencil check'// &
             ' (takes a while)'
         df=0.0
-        if (lrandom_f_pencil_check) then
+        if (lpencil_check_no_zeros) then
           call random_seed_wrapper(PUT=iseed_org)
           do i=1,mvar+maux
-            call random_number_wrapper(f_other(:,:,:,i))
+            if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
+              call random_number_wrapper(f_other(:,:,:,i))
+            else
+              f_other(:,:,:,i)=f(:,:,:,i)
+            endif
           enddo
         else
           f_other=f
@@ -250,10 +258,14 @@ f_loop:   do iv=1,mvar
       if (lroot) print*, 'pencil_consistency_check: '// &
           'checking dependence on pencil initialization'
       df=0.0
-      if (lrandom_f_pencil_check) then
+      if (lpencil_check_no_zeros) then
         call random_seed_wrapper(PUT=iseed_org)
         do i=1,mvar+maux
-          call random_number_wrapper(f_other(:,:,:,i))
+          if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
+            call random_number_wrapper(f_other(:,:,:,i))
+          else
+            f_other(:,:,:,i)=f(:,:,:,i)
+          endif
         enddo
       else
         f_other=f
@@ -315,10 +327,14 @@ f_lop:  do iv=1,mvar
       lout=.true.
       lfirst=.true.
       df=0.0
-      if (lrandom_f_pencil_check) then
+      if (lpencil_check_no_zeros) then
         call random_seed_wrapper(put=iseed_org)
         do i=1,mfarray
-          call random_number_wrapper(f_other(:,:,:,i))
+          if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
+            call random_number_wrapper(f_other(:,:,:,i))
+          else
+            f_other(:,:,:,i)=f(:,:,:,i)
+          endif
         enddo
       else
         f_other=f
@@ -342,10 +358,14 @@ f_lop:  do iv=1,mvar
             print*, 'pencil_consistency_check: performing full pencil check'// &
             ' (takes a while)'
         df=0.0
-        if (lrandom_f_pencil_check) then
+        if (lpencil_check_no_zeros) then
           call random_seed_wrapper(put=iseed_org)
           do i=1,mfarray
-            call random_number_wrapper(f_other(:,:,:,i))
+            if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
+              call random_number_wrapper(f_other(:,:,:,i))
+            else
+              f_other(:,:,:,i)=f(:,:,:,i)
+            endif
           enddo
         else
           f_other=f
@@ -433,7 +453,7 @@ f_lop:  do iv=1,mvar
 !
 !  Clean up.
 !
-      if (lrandom_f_pencil_check) call random_seed_wrapper(put=iseed_org)
+      if (lpencil_check_no_zeros) call random_seed_wrapper(put=iseed_org)
       headt=.true.
       lout=.false.
       lfirst=.false.
