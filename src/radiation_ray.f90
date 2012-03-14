@@ -211,7 +211,7 @@ module Radiation
 !
 !  Empirically we have found that cdtrad>0.1 is unsafe.
 !
-      if (ldt .and. cdtrad>0.1) then
+      if (ldt.and.cdtrad>0.1) then
         call fatal_error('initialize_radiation', &
             'cdtrad is larger than 0.1 - do you really want this?')
       endif
@@ -1314,7 +1314,7 @@ module Radiation
 !
 !  Time-step contribution from cooling.
 !
-        if (lfirst .and. ldt) then
+        if (lfirst.and.ldt) then
 !
 !  Choose less stringent time-scale of optically thin or thick cooling.
 !
@@ -1803,7 +1803,11 @@ module Radiation
 !  21-11-04/anders: coded
 !
       if (lcooling) then
-        if (ldt) lpenc_requested(i_cv1)=.true.
+        if (ldt) then
+          lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_TT)=.true.
+          lpenc_requested(i_cv1)=.true.
+        endif
         if (lrad_cool_diffus.or.lrad_pres_diffus) then
           lpenc_requested(i_glnrho)=.true.
           lpenc_requested(i_TT)=.true.

@@ -1005,6 +1005,23 @@ k_loop:   do while (.not. (k>npar_loc))
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
 !
+        case ('gaussian-x')
+          if (lroot) print*, 'init_particles: Gaussian particle positions'
+          do k=1,npar_loc
+            do while (.true.)
+              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+              call random_number_wrapper(r)
+              call random_number_wrapper(p)
+              fp(k,ixp)= xp0*sqrt(-2*alog(r))*cos(2*pi*p)
+              if ((fp(k,ixp)>=xyz0(1)).and.(fp(k,ixp)<=xyz1(1))) exit
+            enddo
+          enddo
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=xyz0_par(3)+fp(1:npar_loc,izp)*Lxyz_par(3)
+!
         case ('gaussian-z-pure')
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
