@@ -12,7 +12,7 @@
   bcz = 's','s','a','StS','StS','s:pwd','s:nil','a:nil','s'
   lmaxadvec_sum=T
   lwrite_aux=T
-  lrandom_f_pencil_check=F, lpencil_check=T
+  lpencil_check=T
 /
 &eos_run_pars
   xHe=0.1

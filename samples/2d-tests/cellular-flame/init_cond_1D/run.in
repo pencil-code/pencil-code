@@ -5,7 +5,7 @@
   cvsid='$Id: run.in,v 1.1 2010-05-19 14:39:09 nilshau Exp $',
   nt=300, it1=10, cdtv=0.4, isave=100, itorder=3
   dsnap=1e-4, dvid=1e-7, dtmin=1e-30, dt=1e-10
-  lpencil_check=F, lpencil_check_small=F, lrandom_f_pencil_check=F
+  lpencil_check=F, lpencil_check_small=F, lpencil_check_no_zeros=F
 !bcx = 'set:a2','set:a2','set:a2', 'a2','set:a2','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s','set:1s'
 /
 &eos_run_pars

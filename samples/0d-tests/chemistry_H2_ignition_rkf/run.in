@@ -8,7 +8,7 @@
   lpencil_check=F
   Udrift_bc=100.
   dt=1e-16
-  lpencil_check=F, lpencil_check_small=F, lrandom_f_pencil_check=F
+  lpencil_check=F, lpencil_check_small=F, lpencil_check_no_zeros=F
 /
 &eos_run_pars
 /

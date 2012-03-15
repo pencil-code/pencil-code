@@ -11,7 +11,7 @@
   lmaxadvec_sum=T
   lwrite_aux=T
   ip=14
-  lrandom_f_pencil_check=F, lpencil_check=T
+  lpencil_check_no_zeros=F, lpencil_check=T
 /
 &eos_run_pars
   xHe=0.1

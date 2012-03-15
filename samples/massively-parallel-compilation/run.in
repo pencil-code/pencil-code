@@ -3,7 +3,7 @@
   cvsid='$Id: run.in 16296 2011-02-15 09:59:26Z fred.gent.ncl $',
   nt=1, it1=1, itorder=1, dtmax=1.0e-20
   dsnap=1.0, tavg=2.0
-  lpencil_check=F, lpencil_check_small=T, lrandom_f_pencil_check=F
+  lpencil_check=F, lpencil_check_small=T, lpencil_check_no_zeros=F
 /
 &eos_run_pars
 /
