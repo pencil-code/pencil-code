@@ -1270,16 +1270,24 @@ include 'NSCBC.h'
 !
       end subroutine find_composition_at_inlet
 !***********************************************************************
-      subroutine turbulent_vel_x(u_turb,lowergrid,uppergrid,imin,imax, &
-          jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_x(u_turb,lowergrid,uppergrid,imin,imax_, &
+          jmin,jmax_,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
         real, dimension(ny,nz,3), intent(out) :: u_turb
-        integer, intent(in) :: lowergrid,uppergrid,imin,imax,jmin,jmax
+        integer, intent(in) :: lowergrid,uppergrid,imin,imax_,jmin,jmax_
         real, intent(in) :: weight,smooth
+        integer :: imax,jmax
+!
+!  Check size of inlet data
+!
+        if (imax_<imin+ny-1) call fatal_error('turbulent_vel_x','imax_ < imin+ny')
+        if (jmax_<jmin+nz-1) call fatal_error('turbulent_vel_x','jmax_ < jmin+nz')
+        imax=imin+ny-1
+        jmax=jmin+nz-1
 !
         u_turb(:,:,:)&
             =(f_in(uppergrid,imin:imax,jmin:jmax,iux:iuz)*(1-weight)&
@@ -1287,16 +1295,24 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_x
 !***********************************************************************
-      subroutine turbulent_vel_y(u_turb,lowergrid,uppergrid,imin,imax, &
-          jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_y(u_turb,lowergrid,uppergrid,imin,imax_, &
+          jmin,jmax_,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
         real, dimension(nx,nz,3), intent(out) :: u_turb
-        integer, intent(in) :: lowergrid,uppergrid,imin,imax,jmin,jmax
+        integer, intent(in) :: lowergrid,uppergrid,imin,imax_,jmin,jmax_
         real, intent(in) :: weight,smooth
+        integer :: imax,jmax
+!
+!  Check size of inlet data
+!
+        if (imax_<imin+nx-1) call fatal_error('turbulent_vel_y','imax_ < imin+nx')
+        if (jmax_<jmin+nz-1) call fatal_error('turbulent_vel_y','jmax_ < jmin+nz')
+        imax=imin+nx-1
+        jmax=jmin+nz-1
 !
         u_turb(:,:,:)&
             =(f_in(imin:imax,uppergrid,jmin:jmax,iux:iuz)*(1-weight)&
@@ -1304,16 +1320,24 @@ include 'NSCBC.h'
 !
       end subroutine turbulent_vel_y
 !***********************************************************************
-      subroutine turbulent_vel_z(u_turb,lowergrid,uppergrid,imin,imax, &
-          jmin,jmax,weight,smooth)
+      subroutine turbulent_vel_z(u_turb,lowergrid,uppergrid,imin,imax_, &
+          jmin,jmax_,weight,smooth)
 !
 !  Set the turbulent inlet velocity
 !
 !  2010.01.21/Nils Erland: coded
 !
         real, dimension(nx,ny,3), intent(out) :: u_turb
-        integer, intent(in) :: lowergrid,uppergrid,imin,imax,jmin,jmax
+        integer, intent(in) :: lowergrid,uppergrid,imin,imax_,jmin,jmax_
         real, intent(in) :: weight,smooth
+        integer :: imax,jmax
+!
+!  Check size of inlet data
+!
+        if (imax_<imin+nx-1) call fatal_error('turbulent_vel_z','imax_ < imin+nx')
+        if (jmax_<jmin+ny-1) call fatal_error('turbulent_vel_z','jmax_ < jmin+ny')
+        imax=imin+nx-1
+        jmax=jmin+ny-1
 !
         u_turb(:,:,:)&
             =(f_in(imin:imax,jmin:jmax,uppergrid,iux:iuz)*(1-weight)&
