@@ -1305,7 +1305,6 @@ module Special
 !    Div K T Grad ln T
 !      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
 !
-      use Deriv,           only : der_upwind1st
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv,unit_vector
       use EquationOfState, only : gamma
@@ -1361,9 +1360,13 @@ module Special
         enddo
       enddo
 !
-      do i=1,3
-        call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
-      enddo
+      if (nghost == 3) then
+        do i=1,3
+          call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
+        enddo
+      else
+        glnTT_upwind = p%glnTT
+      endif
       gKp = 3.5*glnTT_upwind
 !
       call dot2(p%glnTT,glnTT2)
@@ -2287,9 +2290,9 @@ module Special
 !     here radius of granules is 0.8 Mm or bigger (3 times dx)
 !
       if (unit_system == 'SI') then
-        granr=max(0.8*1.e6/unit_length,3.*dx,3.*dy)
+        granr=max(0.8*1.e6/real(unit_length),3.*dx,3.*dy)
       elseif  (unit_system == 'cgs') then
-        granr=max(0.8*1.e8/unit_length,3.*dx,3.*dy)
+        granr=max(0.8*1.e8/real(unit_length),3.*dx,3.*dy)
       else
         granr=0.
         call fatal_error('set_driver_params','No valid unit system')
