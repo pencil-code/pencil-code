@@ -94,11 +94,10 @@ contains
 !
       character (len=intlen) :: chproc
 !
-!  check whether directory_snap contains `/proc0' -- if so, revert to the
+!  check whether directory_snap contains `/allprocs' -- if so, revert to the
 !  default name.
 !  Rationale: if directory_snap was not explicitly set in start.in, it
-!  will be written to param.nml as 'data/proc0', but this should in fact
-!  be data/procN on processor N.
+!  will be written to param.nml as 'data/allprocs'.
 !
       if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) then
         datadir_snap = datadir
@@ -314,8 +313,8 @@ contains
       endif
 !
       ! write additional data:
-      if (lroot) then
-        if (lwrite_add) then
+      if (lwrite_add) then
+        if (lroot) then
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
           call collect_grid (x, y, z, gx, gy, gz)
@@ -325,9 +324,9 @@ contains
           t_sp = t
           write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
           deallocate (gx, gy, gz)
+        else
+          call collect_grid (x, y, z)
         endif
-      else
-        call collect_grid (x, y, z)
       endif
 !
     endsubroutine output_snap
