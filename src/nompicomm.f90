@@ -235,11 +235,22 @@ module Mpicomm
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
 !
+  integer :: mpi_precision
+!
   contains
 !***********************************************************************
     subroutine mpicomm_init()
 !
 !  29-jul-2010/anders: dummy
+!
+      use Syscalls, only: sizeof_real
+!
+      if (sizeof_real() < 8) then
+        mpi_precision = MPI_REAL
+        if (lroot) write (*,*) "\nWARNING: using SINGLE PRECISION, you'd better know what you do!\n"
+      else
+        mpi_precision = MPI_DOUBLE_PRECISION
+      endif
 !
     endsubroutine mpicomm_init
 !***********************************************************************
