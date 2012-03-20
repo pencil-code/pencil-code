@@ -44,7 +44,7 @@
   public :: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
   public :: remap_to_pencil_yz, unmap_from_pencil_yz
 
-  public :: y2x,z2x
+  public :: y2x, z2x
   public :: MPI_adi_x, MPI_adi_z
 
   public :: parallel_open, parallel_close
@@ -60,7 +60,7 @@
   public :: radboundary_zx_periodic_ray
 
 ! Variables
-  public :: ipx, ipy, ipz, lroot, iproc
+  public :: ipx, ipy, ipz, lroot, iproc, mpi_precision
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
 
