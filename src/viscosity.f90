@@ -642,7 +642,7 @@ module Viscosity
 !  20-11-04/anders: coded
 !
       if ((lentropy.or.ltemperature) .and. &
-          (lvisc_simplified .or. lvisc_rho_nu_const .or. &
+          (lvisc_rho_nu_const .or. &
            lvisc_sqrtrho_nu_const .or. lvisc_nu_therm .or.&
            lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
