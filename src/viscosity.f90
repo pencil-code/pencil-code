@@ -1366,13 +1366,11 @@ module Viscosity
         if (lfirst.and.ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
-!  viscous force: Handle damping at the core of SNRs
-!
       if (linterstellar.and.lvisc_snr_damp) then
         call calc_snr_damping(p)
       endif
 !
-!  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
+!  viscous force: Handle damping at the core of SNRs
 !
       if (lvisc_smag_simplified) then
 !
@@ -1390,11 +1388,8 @@ module Viscosity
           call multsv_mn(nu_smag,p%sglnrho,tmp2)
           call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
-          if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-            if (headtt) then
-              call warning('calc_pencils_viscosity','viscous heating term '//&
-                'is not implemented for lvisc_smag_simplified')
-            endif
+          if (lpencil(i_visc_heat)) then
+              p%visc_heat=p%visc_heat+2*nu_smag*p%sij2
           endif
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
         else
