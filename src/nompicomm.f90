@@ -243,14 +243,7 @@ module Mpicomm
 !
 !  29-jul-2010/anders: dummy
 !
-      use Syscalls, only: sizeof_real
-!
-      if (sizeof_real() < 8) then
-        mpi_precision = MPI_REAL
-        if (lroot) write (*,*) "\nWARNING: using SINGLE PRECISION, you'd better know what you do!\n"
-      else
-        mpi_precision = MPI_DOUBLE_PRECISION
-      endif
+      mpi_precision = -1
 !
     endsubroutine mpicomm_init
 !***********************************************************************
