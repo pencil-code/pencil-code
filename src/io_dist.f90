@@ -21,7 +21,7 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
-  use Messages
+  use Messages, only: fatal_error, outlog, warning, svn_id
 !
   implicit none
 !
@@ -116,8 +116,7 @@ contains
 !***********************************************************************
     subroutine output_snap(file,a,nv)
 !
-!  Write snapshot file, always write time and mesh, could add other things
-!  version for vector field.
+!  Write snapshot file, always write time and mesh, could add other things.
 !
 !  11-apr-97/axel: coded
 !  13-Dec-2011/Bourdin.KIS: reworked
