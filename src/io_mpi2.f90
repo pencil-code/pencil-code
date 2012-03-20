@@ -355,20 +355,26 @@ contains
       local_subsize(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, local_size, local_subsize, &
           local_start, order, mpi_precision, local_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+          'Could not create local subarray: "'//file//'"')
       call MPI_TYPE_COMMIT(local_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+          'Could not commit local type: "'//file//'"')
 !
 ! Define 'global_type' to indicate the local data portion in the global file.
 !
       global_size(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, global_size, local_subsize, &
           global_start, order, mpi_precision, global_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+          'Could not create global subarray: "'//file//'"')
       call MPI_TYPE_COMMIT(global_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+          'Could not commit global type: "'//file//'"')
 !
       call MPI_FILE_OPEN(comm, trim (directory_snap)//'/'//file, &
           MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
- call flush()
- write (*,*) "MPI_ERR: ", mpi_err, iproc
- call flush()
+ write (*,*) "MPI_ERR open: ", mpi_err, iproc
       if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
           'Could not open: "'//trim (directory_snap)//'/'//file//'"')
 !
@@ -549,37 +555,45 @@ contains
       local_subsize(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, local_size, local_subsize, &
           local_start, order, mpi_precision, local_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
+          'Could not create local subarray: "'//file//'"')
       call MPI_TYPE_COMMIT(local_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
+          'Could not commit local subarray: "'//file//'"')
 !
 ! Define 'global_type' to indicate the local data portion in the global file.
 !
       global_size(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, global_size, local_subsize, &
           global_start, order, mpi_precision, global_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
+          'Could not create global subarray: "'//file//'"')
       call MPI_TYPE_COMMIT(global_type, mpi_err)
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
+          'Could not commit global subarray: "'//file//'"')
 !
       call MPI_FILE_OPEN(comm, trim (directory_snap)//'/'//file, &
           MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
           'Could not open: "'//trim (directory_snap)//'/'//file//'"')
 !
 ! Setting file view and write raw binary data, ie. 'native'.
 !
       call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, &
           'native', io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
           'Could not create view for "'//file//'"')
 !
       call MPI_FILE_READ_ALL(handle, a, 1, local_type, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
           'Could not write "'//file//'"')
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
           'Could not close "'//file//'"')
 !
       call MPI_FINALIZE(mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
+      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
           'Could not finalize "'//file//'"')
 !
       ! read additional data
