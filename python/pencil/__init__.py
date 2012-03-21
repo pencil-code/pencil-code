@@ -15,7 +15,7 @@ from pencil.files.zprof import *
 from pencil.files.power import *
 from pencil.files.animate_interactive import *
 from pencil.files.pc2vtk import *
-from pencil.files.power2vtk import *
 from pencil.files.post_processing import *
+from pencil.files.tracers import *
 from pencil.math.derivatives import *
 from pencil.math.vector_multiplication import *
