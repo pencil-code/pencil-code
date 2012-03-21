@@ -536,43 +536,6 @@ module Special
 !
     endsubroutine get_gradshock
 !***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      type (boundary_condition) :: bc
-!
-!      select case (bc%bcname)
-!       case ('stp')
-!         select case (bc%location)
-!         case (iBC_X_TOP)
-!           call bc_BL_x(f,-1, bc)
-!         case (iBC_X_BOT)
-!           call bc_BL_x(f,-1, bc)
-!         case (iBC_Z_TOP)
-!           call bc_BL_z(f,-1, bc)
-!         case (iBC_Z_BOT)
-!           call bc_BL_z(f,-1, bc)
-!         endselect
-!         bc%done=.true.
-!      endselect
-
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc%bcname)
-!
-    endsubroutine special_boundconds
-!***********************************************************************
-!
-!  PRIVATE UTITLITY ROUTINES
-!
-!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !   Possibility to modify the f array before the boundaries are

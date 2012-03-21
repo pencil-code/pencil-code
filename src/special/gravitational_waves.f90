@@ -593,21 +593,6 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!  Some precalculated pencils of data are passed in for efficiency,
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition), intent(in) :: bc
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc)
-!
-    endsubroutine special_boundconds
-!***********************************************************************
     subroutine special_after_timestep(f,df,dt_)
 !
 !  Possibility to modify the f and df after df is updated.

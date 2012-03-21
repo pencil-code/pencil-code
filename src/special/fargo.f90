@@ -541,22 +541,6 @@ endsubroutine read_special_run_pars
 !
     endsubroutine special_calc_entropy
 !***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!   Possibility of custom boundary condition.
-!
-!   06-oct-03/tony: coded
-!
-      use Cdata
-!      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      type (boundary_condition) :: bc
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc%bcname)
-!
-    endsubroutine special_boundconds
-!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are 

@@ -592,9 +592,6 @@ module Special
       case ('wip')
         call bc_wip_x(f,+1,topbot,bc%ivar,val=bc%value1)
         bc%done=.true.
-!!$      case ('wo')
-!!$        call bc_wo_x(f,+1,topbot,bc%ivar,val=bc%value1)
-!!$        bc%done=.true.
       end select
 !
     endsubroutine special_boundconds

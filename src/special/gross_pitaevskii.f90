@@ -932,25 +932,6 @@ endsubroutine read_special_run_pars
 
   endfunction sphere_sharp
 !***********************************************************************
-    subroutine special_boundconds(f,bc)
-!
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-!      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      type (boundary_condition) :: bc
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc%bcname)
-!
-    endsubroutine special_boundconds
-!***********************************************************************
     subroutine gpe_interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear)
 !
 !  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
