@@ -218,7 +218,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     plotArrows = False
     
     # check if the data has the right dimensions
-    if (len(data.shape) != 3):
+    if (len(data.shape) != 3 and len(data.shape) != 4):
         print 'error: data dimensions are invalid: {0} instead of 3'.format(len(data.shape))
         return -1
         
