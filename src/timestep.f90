@@ -30,6 +30,7 @@ module Timestep
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
       use Snapshot, only: shift_dt
+      use Boundcond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -127,8 +128,10 @@ module Timestep
 !
         if (lshear) call advance_shear(f,df,dt_beta_ts(itsub)*ds)
 !
-        if (lspecial) &
-            call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
+        if (lspecial) then
+          if (lhydro) call update_ghosts(f,iuu,iuu+2)
+          call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
+        endif
 !
 !  Increase time.
 !

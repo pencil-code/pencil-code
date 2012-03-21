@@ -11,7 +11,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 2
+! MAUX CONTRIBUTION 1
 ! COMMUNICATED AUXILIARIES 1
 !
 !***************************************************************
@@ -29,8 +29,9 @@ module Special
 !
   integer :: idivu
   real :: Ra_=0.0
+  logical :: lwrite_debug=.false.
 !
-  namelist /special_run_pars/ Ra_
+  namelist /special_run_pars/ Ra_, lwrite_debug
 !
   contains
 !
@@ -50,7 +51,7 @@ module Special
            "$Id: boussinesq.f90 17798 2011-10-31 14:52:44Z boris.dintrans $")
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
-      call farray_register_auxiliary('divu',idivu,communicated=.false.)
+!      call farray_register_auxiliary('divu',idivu,communicated=.false.)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -60,24 +61,21 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState, only: select_eos_variable
       use Poisson, only: inverse_laplacian
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-!  Initialize any module variables which are parameter dependent
-!
-!      call select_eos_variable('rho',irho)
-!
 !      do n=n1,n2; do m=m1,m2
 !        f(l1:l2,m,n,ipp)=-2.*sin(x(l1:l2))*cos(z(n))
 !      enddo; enddo
-!      write(10) f(l1:l2,m1:m2,n1:n2,ipp)
-!      call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
-!      call inverse_laplacian_z(f,f(l1:l2,m1:m2,n1:n2,ipp),dt_)
-!      print*, 'write test results in binary file #11'
-!      write(11) f(l1:l2,m1:m2,n1:n2,ipp)
+!      if (lwrite_debug) write(10) f(l1:l2,m1:m2,n1:n2,ipp)
+!      if (lperi(3)) then
+!        call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
+!      else
+!        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+!      endif
+!      if (lwrite_debug) write(11) f(l1:l2,m1:m2,n1:n2,ipp)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -120,50 +118,44 @@ module Special
     subroutine special_after_timestep(f,df,dt_)
 !
       use Poisson, only: inverse_laplacian
-      use Boundcond, only: update_ghosts
-      use Sub, only: div, grad, gij, del2
+      use Sub, only: div, grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
-      real, dimension (nx,ny,nz) :: tmp_div
       real, intent(in) :: dt_
-      real :: s, err
-      integer :: i,j, ju, iter, l 
+      real :: s
+      integer :: j, ju
 !
-!  Set first the boundary conditions on rhs
-!
-!      bcx(1:3)='a'; bcz(1:3)='a'
-      call update_ghosts(f,iuu,iuu+2)
-!
-!  Find the divergence of rhs
+!  Find the divergence of rhs (the velocity field has correct ghost zones
+!  updated in timestep.f90)
 !
       do n=n1,n2; do m=m1,m2
         call div(f,iuu,phi_rhs_pencil)
         f(l1:l2,m,n,ipp)=phi_rhs_pencil/dt_
       enddo; enddo
-!      write(31) f(l1:l2,m1:m2,n1:n2,ipp)
+      if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,ipp)
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
       else
         call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
       endif
-!      write(32) f(l1:l2,4,n1:n2,ipp)
+      if (lwrite_debug) write(32) f(l1:l2,4,n1:n2,ipp)
 !
-!  refresh the ghost zones for pressure
+!  refresh the ghost zones for pressure: 
+!  periodic in x-y and dP/dz=0 in z
 !
-      call update_ghosts(f,ipp)
-!
-!  verify that del2 P = div(u)/dt_
-!
-!      do n=n1,n2; do m=m1,m2
-!        call del2(f,ipp,phi_rhs_pencil)
-!        f(l1:l2,m,n,idivu)=phi_rhs_pencil
-!      enddo; enddo
-!      write(34) f(l1:l2,m1:m2,n1:n2,idivu)
+      f(1:l1-1,:,:,ipp) = f(l2i:l2,:,:,ipp)
+      f(l2+1:mx,:,:,ipp) = f(l1:l1i,:,:,ipp)
+      f(:,1:m1-1,:,ipp) = f(:,m2i:m2,:,ipp)
+      f(:,m2+1:my,:,ipp) = f(:,m1:m1i,:,ipp)
+      do j=1,nghost
+        f(:,:,n1-j,ipp)=f(:,:,n1+j,ipp)
+        f(:,:,n2+j,ipp)=f(:,:,n2-j,ipp)
+      enddo
 !
 !  Euler-advance of the velocity field with just the pressure gradient term
 !
@@ -174,16 +166,6 @@ module Special
           f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-dt_*gpp(:,j)
         enddo
       enddo; enddo
-!
-!  fill in the auxiliary array idivu with divergence of new velocity
-!
-!      bcx(1:3)='p'; bcz(1:2)='s'; bcz(3)='a'
-      call update_ghosts(f,iuu,iuu+2)
-      do n=n1,n2; do m=m1,m2
-        call div(f,iuu,phi_rhs_pencil)
-        f(l1:l2,m,n,idivu)=phi_rhs_pencil
-      enddo; enddo
-!      write(33) f(l1:l2,m1:m2,n1:n2,idivu)
 !
     endsubroutine special_after_timestep
 !***********************************************************************
