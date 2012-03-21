@@ -776,7 +776,7 @@ module Hydro
 !  07-nov-01/wolf: coded
 !  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
 !
-      use Boundcond,only:update_ghosts
+      use Boundcond, only:update_ghosts
       use Density, only: calc_pencils_density
       use EquationOfState, only: cs20, beta_glnrho_scaled
       use General
