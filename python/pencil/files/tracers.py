@@ -14,7 +14,7 @@ import os
 import pencil as pc
 
 
-def read_tracers(filename = 'tracers.dat', datadir = 'data/', zlim = []):
+def read_tracers(datadir = 'data/', filename = 'tracers.dat', zlim = []):
     """
     Reads the tracer files, composes a color map.
 
@@ -56,15 +56,15 @@ def read_tracers(filename = 'tracers.dat', datadir = 'data/', zlim = []):
     data = data_struct()
 
     # read the cpu structure
-    dim = pc.read_dim()
+    dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
         print "error: number of cores in z-direction > 1"
 
     # read the parameters
-    params = pc.read_param()
+    params = pc.read_param(datadir = datadir, quiet = True)
     
     # read the grid
-    grid = pc.read_grid()
+    grid = pc.read_grid(datadir = datadir, quiet = True)
 
     # determine the file structure
     n_proc = dim.nprocx*dim.nprocy
@@ -87,11 +87,11 @@ def read_tracers(filename = 'tracers.dat', datadir = 'data/', zlim = []):
     # read the data from all cores
     for i in range(n_proc):
         # read the cpu structure
-        dim_core = pc.read_dim(proc = i)
+        dim_core = pc.read_dim(datadir = datadir, proc = i)
         stride = dim_core.nx*dim_core.ny*trace_sub**2    
         llen = 3 + 7*stride
         
-        tracer_file = open('data/proc{0}/tracers.dat'.format(i), 'rb')
+        tracer_file = open(datadir+'proc{0}/'.format(i)+filename, 'rb')
         tmp = array.array('f')
         tmp.read(tracer_file, (3 + 7*dim_core.nx*dim_core.ny*trace_sub**2)*n_times)
         tracer_file.close()
@@ -135,3 +135,95 @@ def read_tracers(filename = 'tracers.dat', datadir = 'data/', zlim = []):
                     mapping_core[:,:,j,:]
                     
     return tracers, mapping, t
+
+
+
+def read_fixed_points(datadir = 'data/', filename = 'fixed_points.dat'):
+    """
+    Reads the fixed points files.
+
+    call signature::
+    
+      fixed = read_tracers(filename = 'tracers.dat', datadir = 'data/')
+    
+    Reads from the fixed points files.
+    #Returns the fixed points positions with and the times of the snapshots.
+    
+    Keyword arguments:
+    
+      *filename*:
+        Name of the tracer file.
+
+      *datadir*:
+        Data directory.
+    """
+    
+
+    class data_struct():
+        def __init__(self):
+            self.t = []
+            self.fidx = [] # number of fixed points at this time
+            self.x = []
+            self.y = []
+            self.q = []
+
+    # read the cpu structure
+    dim = pc.read_dim()
+    if (dim.nprocz > 1):
+        print "error: number of cores in z-direction > 1"
+
+    # determine the file structure
+    n_proc = dim.nprocx*dim.nprocy
+    
+    data = []
+
+    # total number of fixed points
+    n_fixed = 0
+    
+    # read the data from all cores
+    for i in range(n_proc):      
+        fixed_file = open(datadir+'proc{0}/'.format(i)+filename, 'rb')
+        tmp = fixed_file.read(4)
+        
+        data.append(data_struct())
+        eof = 0
+        if tmp == '':
+            eof = 1
+        while (eof == 0):
+            data[i].t.append(struct.unpack("<ff", fixed_file.read(8))[0])
+            n_fixed_core = int(struct.unpack("<fff", fixed_file.read(12))[1])
+            n_fixed += n_fixed_core
+            data[-1].fidx.append(n_fixed_core)
+
+            x = list(np.zeros(n_fixed_core))
+            y = list(np.zeros(n_fixed_core))
+            for j in range(n_fixed_core):
+                x[j] = struct.unpack("<ff", fixed_file.read(8))[1]
+                y[j] = struct.unpack("<ff", fixed_file.read(8))[0]
+            data[i].x.append(x)
+            data[i].y.append(y)
+
+            tmp = fixed_file.read(4)
+            if tmp == '':
+                eof = 1
+
+        fixed_file.close()
+        
+    fixed = data_struct()
+    for i in range(len(data[0].t)):
+        fixed.t.append(data[0].t[i])
+        x = []; y = []
+        for proc in range(n_proc):
+            x = x + data[proc].x[i]
+            y = y + data[proc].y[i]
+        fixed.x.append(x)
+        fixed.y.append(y)
+    
+    fixed.t = np.array(fixed.t)
+    fixed.x = np.array(fixed.x)
+    fixed.y = np.array(fixed.y)
+    
+    return fixed
+
+
+
