@@ -869,7 +869,7 @@ module Special
 !
       if (lgranulation .or. luse_vel_field) then
         ! Apply driving of velocity field.
-        if ((n == irefz) .and. lfirst_proc_z .and. (.not. lpencil_check_at_work)) &
+        if (.not. lpencil_check_at_work) &
             call vel_driver (Ux_local, Uy_local, f, df)
       endif
 !
@@ -1668,9 +1668,11 @@ module Special
 !
       real, dimension(nx) :: tmp
 !
-      ! Push velocity field into the desired direction.
-      df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tau_inv * (f(l1:l2,m,n,iux) - Ux(:,m-nghost))
-      df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - Uy(:,m-nghost))
+      if ((n == irefz) .and. lfirst_proc_z) then
+        ! Push velocity field into the desired direction.
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tau_inv * (f(l1:l2,m,n,iux) - Ux(:,m-nghost))
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - Uy(:,m-nghost))
+      endif
 !
       if (lfirst .and. ldt) then
         tmp(:) = tau_inv
