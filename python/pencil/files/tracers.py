@@ -12,15 +12,16 @@ import array
 import numpy as np
 import os
 import pencil as pc
+import pylab as plt
 
 
-def read_tracers(datadir = 'data/', filename = 'tracers.dat', zlim = []):
+def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
     """
     Reads the tracer files, composes a color map.
 
     call signature::
     
-      tracers, mapping, t = read_tracers(filename = 'tracers.dat', datadir = 'data/', zlim)
+      tracers, mapping, t = read_tracers(fileName = 'tracers.dat', dataDir = 'data/', zlim)
     
     Reads from the tracer files and computes the color map according to
     A R Yeates and G Hornig 2011 J. Phys. A: Math. Theor. 44 265501
@@ -31,12 +32,12 @@ def read_tracers(datadir = 'data/', filename = 'tracers.dat', zlim = []):
     
     Keyword arguments:
     
-      *filename*:
-        Name of the tracer file.
-
-      *datadir*:
+      *dataDir*:
         Data directory.
         
+      *fileName*:
+        Name of the tracer file.
+
       *zlim*:
         The upper limit for the field line mapping at which a field line is considered
         to have reached the upper boundary.
@@ -56,15 +57,15 @@ def read_tracers(datadir = 'data/', filename = 'tracers.dat', zlim = []):
     data = data_struct()
 
     # read the cpu structure
-    dim = pc.read_dim(datadir = datadir)
+    dim = pc.read_dim(datadir = dataDir)
     if (dim.nprocz > 1):
         print "error: number of cores in z-direction > 1"
 
     # read the parameters
-    params = pc.read_param(datadir = datadir, quiet = True)
+    params = pc.read_param(datadir = dataDir, quiet = True)
     
     # read the grid
-    grid = pc.read_grid(datadir = datadir, quiet = True)
+    grid = pc.read_grid(datadir = dataDir, quiet = True)
 
     # determine the file structure
     n_proc = dim.nprocx*dim.nprocy
@@ -87,11 +88,11 @@ def read_tracers(datadir = 'data/', filename = 'tracers.dat', zlim = []):
     # read the data from all cores
     for i in range(n_proc):
         # read the cpu structure
-        dim_core = pc.read_dim(datadir = datadir, proc = i)
+        dim_core = pc.read_dim(datadir = dataDir, proc = i)
         stride = dim_core.nx*dim_core.ny*trace_sub**2    
         llen = 3 + 7*stride
         
-        tracer_file = open(datadir+'proc{0}/'.format(i)+filename, 'rb')
+        tracer_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
         tmp = array.array('f')
         tmp.read(tracer_file, (3 + 7*dim_core.nx*dim_core.ny*trace_sub**2)*n_times)
         tracer_file.close()
@@ -138,24 +139,23 @@ def read_tracers(datadir = 'data/', filename = 'tracers.dat', zlim = []):
 
 
 
-def read_fixed_points(datadir = 'data/', filename = 'fixed_points.dat'):
+def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     """
     Reads the fixed points files.
 
     call signature::
     
-      fixed = read_tracers(filename = 'tracers.dat', datadir = 'data/')
+      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/')
     
-    Reads from the fixed points files.
-    #Returns the fixed points positions with and the times of the snapshots.
+    Reads from the fixed points files. Returns the fixed points positions.
     
     Keyword arguments:
     
-      *filename*:
-        Name of the tracer file.
-
-      *datadir*:
+      *dataDir*:
         Data directory.
+        
+      *fileName*:
+        Name of the fixed points file.
     """
     
 
@@ -182,7 +182,7 @@ def read_fixed_points(datadir = 'data/', filename = 'fixed_points.dat'):
     
     # read the data from all cores
     for i in range(n_proc):      
-        fixed_file = open(datadir+'proc{0}/'.format(i)+filename, 'rb')
+        fixed_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
         tmp = fixed_file.read(4)
         
         data.append(data_struct())
@@ -227,3 +227,92 @@ def read_fixed_points(datadir = 'data/', filename = 'fixed_points.dat'):
 
 
 
+def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
+                 fixedFile = 'fixed_points.dat', zlim = [],
+                 imageDir = './', movieFile = 'fixed_points.mpg',
+                 fps = 5.0, bitrate = 1800):
+    """
+    Plots the color mapping together with the fixed points.
+    Creates a movie file.
+
+    call signature::
+    
+      tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
+                 fixedFile = 'fixed_points.dat', zlim = [],
+                 imageDir = './', movieFile = 'fixed_points.mpg',
+                 fps = 5.0, bitrate = 1800)
+    
+    Plots the field line mapping together with the fixed points and creates
+    a movie file.
+    
+      *dataDir*:
+        Data directory.
+        
+      *tracerFile*:
+        Name of the tracer file.
+        
+      *fixedFile*:
+        Name of the fixed points file.
+
+      *zlim*:
+        The upper limit for the field line mapping at which a field line is considered
+        to have reached the upper boundary.
+      
+      *imageDir*:
+        Directory with the temporary png files.
+        
+      *movieFile*:
+        Output file for the movie. Ending should be 'mpg', since the compression
+        format is mpg.
+        
+      *fps*:
+        Frames per second of the animation.
+        
+      *bitrate*:
+        Bitrate of the movie file. Set to higher value for higher quality.
+    """
+    
+    
+    # read the mapping and the fixed point positions
+    tracers, mapping, t = read_tracers(dataDir = dataDir, fileName = tracerFile, zlim = zlim)
+    fixed = read_fixed_points(dataDir = dataDir, fileName = fixedFile)
+    
+    # read the parameters for the domain boundaries
+    params = pc.read_param(quiet = True)
+    domain = [params.xyz0[0], params.xyz0[1], params.xyz1[0], params.xyz1[1]]
+    
+    # prepare the plot
+    width = 6
+    height = 6
+    plt.rc("figure.subplot", left=(60/72.27)/width)
+    plt.rc("figure.subplot", right=(width-20/72.27)/width)
+    plt.rc("figure.subplot", bottom=(50/72.27)/height)
+    plt.rc("figure.subplot", top=(height-20/72.27)/height)
+    figure = plt.figure(figsize=(width, height))
+
+    dots = plt.plot(fixed.x[0,:], fixed.y[0,:], 'o', c='white')
+    image = plt.imshow(mapping[::-1,:,0,:], interpolation = 'nearest', extent = domain)
+    j = 0
+    frameName = imageDir + 'images%06d.png'%j
+    imageFiles = []
+    imageFiles.append(frameName)
+    figure.savefig(frameName)
+
+    for j in range(1,len(fixed.t)):
+        #time.sleep(0.5)
+        figure.clear()
+        dots = plt.plot(fixed.x[j,:], fixed.y[j,:], 'o', c = 'white')
+        image = plt.imshow(zip(*mapping[:,::-1,j,:]), interpolation = 'nearest', extent = [-4,4,-4,4])
+        #plt.show()
+        frameName = imageDir + 'images%06d.png'%j
+        imageFiles.append(frameName)
+        figure.savefig(frameName)
+
+    # convert the images into a mpg file
+    mencodeCommand = "mencoder 'mf://"+imageDir+"images*.png' -mf type=png:fps="+np.str(fps)+" -ovc lavc -lavcopts vcodec=mpeg4:vhq:vbitrate="+np.str(bitrate)+" -ffourcc MP4S -oac copy -o "+movieFile
+    os.system(mencodeCommand)
+    
+    # remove the image files
+    for fname in imageFiles:
+        os.remove(fname)
+    
