@@ -1,19 +1,25 @@
 ! $Id$
 !
+! 23-mar-2012/dintrans: coded
+!
+! Solve the Poisson equation for pressure when using the Boussinesq
+! approximation (the so-called ``projection method'').
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ldensity = .false.
 ! CPARAM logical, parameter :: lanelastic = .true.
+!
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 4
-! COMMUNICATED AUXILIARIES 4
+! MAUX CONTRIBUTION 1
+! COMMUNICATED AUXILIARIES 1
 !
 ! PENCILS PROVIDED rho; lnrho; rho1; glnrho(3); del2rho; del2lnrho
 ! PENCILS PROVIDED hlnrho(3,3); grho(3); glnrho2
 ! PENCILS PROVIDED del6lnrho; uij5glnrho(3); uglnrho; ugrho; sglnrho(3)
-! PENCILS PROVIDED ekin; transprho; gpp; del6TT; del6lnTT
+! PENCILS PROVIDED ekin; transprho
 !
 !***************************************************************
 module Density
@@ -26,6 +32,7 @@ module Density
   implicit none
 !
   logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
+  logical :: lwrite_debug=.false.
   real, dimension (nz,3) :: glnrhomz
 !
   include 'density.h'
@@ -40,7 +47,6 @@ module Density
           "$Id$")
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
-      call farray_register_auxiliary('rhs',irhs,vector=3,communicated=.true.)
 !
     endsubroutine register_density
 !***********************************************************************
@@ -70,7 +76,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      f(:,:,:,ipp)=0.
+      f(:,:,:,ipp)=1.
 !
     endsubroutine init_lnrho
 !***********************************************************************
@@ -140,9 +146,6 @@ module Density
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.0
 ! ekin
       if (lpencil(i_ekin)) p%ekin=0.0
-! pb with noidealgas: del6TT, del6lnTT
-       if (lpencil(i_del6TT)) p%del6TT=0.0
-       if (lpencil(i_del6lnTT)) p%del6lnTT=0.0
 !
       call keep_compiler_quiet(f)
 !
@@ -158,20 +161,11 @@ module Density
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !
-      use Sub, only: identify_bcs
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       intent(in) :: f,df,p
-!
-      if (headtt) then
-        call identify_bcs('pp',ipp)
-        call identify_bcs('rhs',irhs)
-        call identify_bcs('rhs',irhs+1)
-        call identify_bcs('rhs',irhs+2)
-      endif
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
@@ -265,6 +259,21 @@ module Density
 !
     endsubroutine get_init_average_density
 !***********************************************************************
+    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
+!
+!  14-dec-09/dintrans: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension(1) :: mass_per_proc
+      type (pencil_case) :: p
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(mass_per_proc)
+!
+    endsubroutine anelastic_after_mn
+!***********************************************************************
     subroutine dynamical_diffusion(umax)
 !   
 !  dummy routine
@@ -275,187 +284,138 @@ module Density
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************
-    subroutine anelastic_after_mn(f, p, df, mass_per_proc)
+    subroutine boussinesq(f,df,dt_)
 !
       use Poisson, only: inverse_laplacian
-      use Boundcond, only: update_ghosts
       use Sub, only: div, grad
+      use Boundcond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
-      real, dimension (1)  :: mass_per_proc
-      integer :: j, ju !, l, i
-!
-!  Set first the boundary conditions on rhs
-!
-      call update_ghosts(f,irhs,irhs+2)
+      real, intent(in) :: dt_
+      real :: s
+      integer :: j, ju
 !
 !  Find the divergence of rhs
 !
+      call update_ghosts(f,iuu,iuu+2)
       do n=n1,n2; do m=m1,m2
-        call div(f,irhs,phi_rhs_pencil)
-        f(l1:l2,m,n,ipp)=phi_rhs_pencil
+        call div(f,iuu,phi_rhs_pencil)
+        f(l1:l2,m,n,ipp)=phi_rhs_pencil/dt_
       enddo; enddo
-!
-!  get pressure from inverting the Laplacian
+      if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,ipp)
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
       else
-        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))       
+        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
       endif
+      if (lwrite_debug) write(32) f(l1:l2,4,n1:n2,ipp)
 !
-!  refresh the ghost zones for pressure
+!  refresh the ghost zones for the new pressure
 !
       call update_ghosts(f,ipp)
 !
-!  Add the pressure gradient term to the NS equation
+!  Euler-advance of the velocity field with just the pressure gradient term
 !
       do n=n1,n2; do m=m1,m2
         call grad(f,ipp,gpp)
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-gpp(:,j)
+          f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-dt_*gpp(:,j)
         enddo
       enddo; enddo
 !
-    endsubroutine anelastic_after_mn
+    endsubroutine boussinesq
 !***********************************************************************
     subroutine inverse_laplacian_z(phi)
 !
-!  Solve the Poisson equation by Fourier transforming in the xy-plane and
-!  solving the discrete matrix equation in the z-direction.
-!
-!  02-mar-2012/dintrans+dubuffet: coded
+!  19-mar-2012/dintrans: coded
+!  Note: the (kx=0,ky=0) mode is computed using a Green function
 !
       use Fourier, only: fourier_transform_xy
+      use Mpicomm, only: transp_xz, transp_zx
       use General, only: tridag
 !
-      real, dimension (nx,ny,nz) :: phi, b1
-      real, dimension (nz) :: a_tri, b_tri, c_tri, r_tri, u_tri
-      real :: k2
-      integer :: ikx, iky
-      logical :: err
+      real, dimension(nx,ny,nz) :: phi, b1
+      integer, parameter :: nxt = nx / nprocz
+      real, dimension(nzgrid,nxt) :: phit, b1t
+      real, dimension (nzgrid) :: a_tri, b_tri, c_tri, r_tri, u_tri
 !
-!  Identify version.
+      logical, save :: l1st = .true.
+      real,    save :: dz2h, dz_2
+      integer, save :: ikx0, iky0
 !
-      if (lroot .and. ip<10) call svn_id( &
-          '$Id$')
+      complex, dimension(nzgrid) :: cz
 !
-!  The right-hand-side of the Poisson equation is purely real.
+      integer :: ikx, iky, iz, iz1
+      real    :: ky2, k2
 !
-      b1 = 0.0
+!  Initialize the array wsave and other constants for future use.
 !
-!  Forward transform (to k-space).
+      if (l1st) then
+        dz_2 = 1./dz**2
+        dz2h = 0.5 * dz * dz
+        ikx0 = ipz * nxt
+        iky0 = ipy * ny
+        l1st = .false.
+      endif
 !
-      call fourier_transform_xy(phi,b1)
+!  Forward transform in xy
 !
-!  Solve for discrete z-direction
+      b1 = 0.
+      call fourier_transform_xy(phi, b1)
 !
-      do iky=1,ny
-        do ikx=1,nx
-          if ((kx_fft(ikx)==0.0) .and. (ky_fft(iky)==0.0)) then
-            phi(ikx,iky,:) = 1.0
+!  Convolution in z
+!
+      do iky = 1, ny
+        call transp_xz(phi(:,iky,:),  phit)
+        call transp_xz(b1(:,iky,:), b1t)
+        ky2 = ky_fft(iky0+iky)**2
+        do ikx = 1, nxt
+          k2 = kx_fft(ikx0+ikx)**2+ky2
+          if (k2/=0.0) then
+            c_tri(:)=dz_2
+            b_tri(:)=-2.0*dz_2-k2
+            a_tri(:)=dz_2
+!
+            c_tri(1)=2.*c_tri(1)
+            a_tri(nzgrid)=2.*a_tri(nzgrid)
+!
+            r_tri=phit(:,ikx)
+            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri)
+            phit(:,ikx)=u_tri
+!
+            r_tri=b1t(:,ikx)
+            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri)
+            b1t(:,ikx)=u_tri
           else
-            k2=kx_fft(ikx)**2+ky_fft(iky)**2
-            a_tri=1.0/dz**2
-            b_tri=-2.0/dz**2-k2
-            c_tri=1.0/dz**2
-            r_tri=phi(ikx,iky,:)
-! P = 0 (useful to test the Poisson solver)
-!            b_tri(1)=1.  ; c_tri(1)=0.  ; r_tri(1)=0.
-!            b_tri(nz)=1. ; a_tri(nz)=0. ; r_tri(nz)=0.
-! dP/dz = 0
-            c_tri(1)=c_tri(1)+a_tri(1)
-            a_tri(nz)=a_tri(nz)+c_tri(nz)
-!
-!            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-            call mytridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-            phi(ikx,iky,:)=u_tri
+            do iz = 1, nzgrid 
+              cz(iz) = 0.5*dz2h*(                       &
+                cmplx(phit(1,ikx),b1t(1,ikx))*abs(iz-1) &
+               +cmplx(phit(nzgrid,ikx),b1t(nzgrid,ikx))*abs(iz-nzgrid))
+              do iz1 = 2, nzgrid-1
+                cz(iz) = cz(iz) + cmplx(phit(iz1,ikx), b1t(iz1,ikx)) * &
+                         abs(iz - iz1) * dz2h
+              enddo
+            enddo
+            phit(:,ikx) = real(cz(1:nzgrid))
+            b1t(:,ikx)  = aimag(cz(1:nzgrid))
           endif
         enddo
+        call transp_zx(phit, phi(:,iky,:))
+        call transp_zx(b1t, b1(:,iky,:))
       enddo
 !
-      do iky=1,ny
-        do ikx=1,nx
-          if ((kx_fft(ikx)==0.0) .and. (ky_fft(iky)==0.0)) then
-            b1(ikx,iky,:) = 0.0
-          else
-            k2=kx_fft(ikx)**2+ky_fft(iky)**2
-            a_tri=1.0/dz**2
-            b_tri=-2.0/dz**2-k2
-            c_tri=1.0/dz**2
-            r_tri=b1(ikx,iky,:)
-! P = 0 (useful to test the Poisson solver)
-!            b_tri(1)=1.  ; c_tri(1)=0.  ; r_tri(1)=0.
-!            b_tri(nz)=1. ; a_tri(nz)=0. ; r_tri(nz)=0.
-! dP/dz = 0
-            c_tri(1)=c_tri(1)+a_tri(1)
-            a_tri(nz)=a_tri(nz)+c_tri(nz)
-!
-!            call tridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-            call mytridag(a_tri,b_tri,c_tri,r_tri,u_tri,err)
-            b1(ikx,iky,:)=u_tri
-          endif
-        enddo
-      enddo
-!
-!  Inverse transform (to real space).
+!  Inverse transform in xy
 !
       call fourier_transform_xy(phi,b1,linv=.true.)
 !
+      return
+!
     endsubroutine inverse_laplacian_z
-!***********************************************************************
-    subroutine mytridag(a,b,c,r,u,err)
-!
-!  Solves a tridiagonal system.
-!
-!  01-apr-03/tobi: from Numerical Recipes (p42-43).
-!
-!  | b1 c1 0  ...            | | u1   |   | r1   |
-!  | a2 b2 c2 ...            | | u2   |   | r2   |
-!  | 0  a3 b3 c3             | | u3   | = | r3   |
-!  |          ...            | | ...  |   | ...  |
-!  |          an-1 bn-1 cn-1 | | un-1 |   | rn-1 |
-!  |          0    a_n  b_n  | | un   |   | rn   |
-!
-      implicit none
-      real, dimension(:), intent(in) :: a,b,c,r
-      real, dimension(:), intent(out) :: u
-      real, dimension(size(b)) :: gam
-      logical, intent(out), optional :: err
-      integer :: n,j
-      real :: bet
-!
-      if (present(err)) err=.false.
-      n=size(b)
-      bet=b(1)
-      if (bet==0.0) then
-        print*,'tridag: Error at code stage 1'
-        if (present(err)) err=.true.
-        return
-      endif
-!
-      u(1)=r(1)/bet
-      do j=2,n
-!        print*, 'j=', j
-        gam(j)=c(j-1)/bet
-        bet=b(j)-a(j)*gam(j)
-        if (bet==0.0) then
-          print*,'tridag: Error at code stage 2'
-          if (present(err)) err=.true.
-          return
-        endif
-        u(j)=(r(j)-a(j)*u(j-1))/bet
-      enddo
-!
-      do j=n-1,1,-1
-        u(j)=u(j)-gam(j+1)*u(j+1)
-      enddo
-!
-    endsubroutine mytridag
 !***********************************************************************
 endmodule Density

@@ -932,6 +932,11 @@ module Entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
       endif
 !
+!  Boussinesq/Anelastic
+!
+      if (lanelastic) &
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + f(l1:l2,m,n,iuz)
+!
 !  Information on the timescales.
 !
       if (lfirst.and.ldt.and.(headtt.or.ldebug)) then

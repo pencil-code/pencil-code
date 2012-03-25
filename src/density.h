@@ -11,7 +11,7 @@
   public :: pencil_criteria_density, pencil_interdep_density
   public :: calc_pencils_density
   public :: get_init_average_density, anelastic_after_mn,calc_ldensity_pars
-  public :: dynamical_diffusion
+  public :: dynamical_diffusion, boussinesq
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !

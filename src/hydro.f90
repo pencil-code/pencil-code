@@ -158,7 +158,7 @@ module Hydro
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
-  real :: Shearx=0., rescale_uu=0.
+  real :: Shearx=0., rescale_uu=0., Ra=0.0
 !
   namelist /hydro_run_pars/ &
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
@@ -179,7 +179,7 @@ module Hydro
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
-      hydro_xaver_range
+      hydro_xaver_range, Ra
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1852,6 +1852,11 @@ module Hydro
 !
      if (ekman_friction/=0) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ekman_friction*p%uu
+!
+!  Boussinesq or anelastic
+!
+     if (lanelastic) &
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*f(l1:l2,m,n,iTT)
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
