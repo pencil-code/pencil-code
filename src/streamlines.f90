@@ -38,12 +38,14 @@ module Streamlines
 !
   integer :: trace_sub = 1
   character (len=labellen) :: trace_field = ''
+! the integrated quantity along the field line
+  character (len=labellen) :: int_q = ''
 !
 ! variables for the stream line tracing
   real :: h_max = 0.4, h_min = 1e-4, l_max = 10., tol = 1e-4
 !
   namelist /streamlines_run_pars/ &
-    trace_field, trace_sub, h_max, h_min, l_max, tol
+    trace_field, trace_sub, h_max, h_min, l_max, tol, int_q
 !
   contains
 !*********************************************************************** 
@@ -218,7 +220,7 @@ module Streamlines
 !
   endsubroutine get_vector
 !***********************************************************************
-  subroutine trace_streamlines(tracers,n_tracers,h_max,h_min,l_max,tol,vv)
+  subroutine trace_streamlines(f,tracers,n_tracers,h_max,h_min,l_max,tol,vv)
 !
 !   trace stream lines of the vetor field stored in vv
 !
@@ -226,11 +228,9 @@ module Streamlines
 !
     use Sub
 !
-!     real, dimension (mx,my,mz,mfarray) :: f
-!     real, dimension (nx*ny,7) :: tracers
+    real, dimension (mx,my,mz,mfarray) :: f
     real, pointer, dimension (:,:) :: tracers
     real, pointer, dimension (:,:,:,:) :: vv
-!     character (len=labellen) :: trace_field
     integer :: n_tracers, tracer_idx, j, l, ierr, proc_idx
 !   the "borrowed" vector from the other core
     real, dimension (3) :: vvb, vvb_buf
@@ -246,7 +246,7 @@ module Streamlines
     integer :: request_finished_send(nprocx*nprocy*nprocz)
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
 !
-    intent(in) :: n_tracers,h_max,h_min,l_max,tol,vv
+    intent(in) :: n_tracers,h_max,h_min,l_max,tol
 !
 !   tracing stream lines
 !
@@ -269,7 +269,7 @@ module Streamlines
     endif
 !
     do tracer_idx=1,n_tracers
-      tracers(tracer_idx, 6) = 0.
+      tracers(tracer_idx, 6:7) = 0.
 !     initial step length dh
       dh = sqrt(h_max*h_min/2.)
       loop_count = 0
@@ -378,9 +378,14 @@ module Streamlines
             exit
           endif
         else
-!           dist2 = sqrt(dot_product((x_double - tracers(tracer_idx,3:5)),(x_double - tracers(tracer_idx,3:5))))
-          tracers(tracer_idx,3:5) = x_double
           tracers(tracer_idx, 6) = tracers(tracer_idx, 6) + dh
+!         integrate the requested quantity along the field line
+          if (int_q == 'curlyA') then
+            tracers(tracer_idx, 7) = tracers(tracer_idx, 7) + &
+                dot_product(f(grid_pos(1),grid_pos(2),grid_pos(3),iax:iaz), &
+                (x_double - tracers(tracer_idx,3:5)))
+          endif
+          tracers(tracer_idx,3:5) = x_double
           if (abs(dh) < h_min) dh = 2*dh
         endif
 !
@@ -468,6 +473,8 @@ module Streamlines
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
+!   the integrated quantity along the field line
+    character (len=labellen) :: int_q
     real, pointer, dimension (:,:) :: tracers
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv
@@ -510,7 +517,7 @@ module Streamlines
     write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/tracers.dat'
     open(unit = 1, file = filename, form = "unformatted", position = "append")
 !     write(*,*) iproc, "wtracers: call streamline tracer"
-    call trace_streamlines(tracers,nx*ny*trace_sub**2,h_max,h_min,l_max,tol,vv)
+    call trace_streamlines(f,tracers,nx*ny*trace_sub**2,h_max,h_min,l_max,tol,vv)
     write(1) ttrace_write, tracers(:,:)
     close(1)
 !
