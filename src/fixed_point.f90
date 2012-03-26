@@ -23,7 +23,7 @@ module Fixed_point
 ! the arrays with the values for x, y, and z for all cores (tracer xyz)
   real, pointer, dimension (:) :: xt, yt, zt
 ! fixed points array
-  real, dimension (1000,2) :: fixed_points
+  real, dimension (1000,3) :: fixed_points
 ! total number of fixed points of this core
   integer :: fidx
   real :: fidx_read
@@ -71,7 +71,7 @@ module Fixed_point
 !         write(*,*) iproc, "fidx_read = ", fidx_read
         fidx = int(fidx_read)
 !         write(*,*) iproc, "fidx = ", fidx
-        allocate(fixed_tmp(fidx,2))
+        allocate(fixed_tmp(fidx,3))
         do j=1,fidx
           read(1) fixed_tmp(j,:)
         enddo
@@ -95,8 +95,10 @@ module Fixed_point
 !
   endsubroutine fixed_points_prepare
 !*********************************************************************** 
-  subroutine get_fixed_point(point, fixed_point, vv)
+  subroutine get_fixed_point(point, fixed_point, q, vv)
     real :: point(2), point_old(2), fixed_point(2)
+!   the integrated quantity along the field line
+    real :: q
 !     real, pointer, dimension(2) :: fixed_point
     real, pointer, dimension (:,:,:,:) :: vv
 !   the points for the extrapolation
@@ -106,7 +108,7 @@ module Fixed_point
     integer :: iter
     real :: lambda, dl
 !
-    intent(out) :: fixed_point
+    intent(out) :: fixed_point, q
 !
     allocate(tracers(5,7))
 !
@@ -120,8 +122,9 @@ module Fixed_point
       tracers(3,:) = (/point(1)+dl,point(2),point(1)+dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,0./)
       tracers(4,:) = (/point(1),point(2)-dl,point(1),point(2)-dl,z(1+nghost)-ipz*nz*dz+dz,0.,0./)
       tracers(5,:) = (/point(1),point(2)+dl,point(1),point(2)+dl,z(1+nghost)-ipz*nz*dz+dz,0.,0./)
-      call trace_streamlines(tracers,5,2e-1,2e-2,1000.,4e-2,vv)
+      call trace_streamlines(f,tracers,5,2e-1,2e-2,1000.,4e-2,vv)
       diff(1:5) = sqrt((tracers(1:5,3) - tracers(1:5,1))**2 + (tracers(1:5,4) - tracers(1:5,2))**2)
+      q = tracers(1,7)
 !     determine the gradient at this point
       der(1) = (diff(3)-diff(2))/(2*dl)
       der(2) = (diff(5)-diff(4))/(2*dl)
@@ -186,7 +189,7 @@ module Fixed_point
 !     trace intermediate field line
       tracer(1,:) = (/xm,ym,xm,ym,z(1+nghost)-ipz*nz*dz+dz,0.,0./)
 !     TODO: make the parameter variable
-      call trace_streamlines(tracer,1,2e-1,2e-2,1000.,4e-2,vv)
+      call trace_streamlines(f,tracer,1,2e-1,2e-2,1000.,4e-2,vv)
       if ((tracer(1,6) >= 1000.) .or. (tracer(1,5) < zt(nzgrid)-dz)) then
 !       discard any streamline which does not converge or hits the boundary
         dtot = 0.
@@ -243,12 +246,6 @@ module Fixed_point
     integer :: trace_sub
     real, dimension (1,7) :: idle_tracer
     real, pointer, dimension (:,:,:,:) :: vv
-!     real, pointer, dimension (:,:) :: fixed_points
-!     integer :: fidx
-!   the "borrowed" vector from the other core
-    real, dimension (3) :: vvb
-!   grid position of the requested vector
-    integer :: grid_pos(3)
 !   filename for the fixed point output
     character(len=1024) :: filename
     real :: poincare, diff(4,2), phi_min
@@ -258,8 +255,6 @@ module Fixed_point
 !   variables for the final non-blocking mpi communication
     integer :: request_finished_send(nprocx*nprocy*nprocz)
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
-!
-    intent(in) :: tracers, trace_sub, vv
 !
     addx = 0; addy = 0
     if (ipx .ne. nprocx-1) addx = 1
@@ -300,7 +295,7 @@ module Fixed_point
       if (addx == 1) then
         do l=1,ny*trace_sub
           tracer_tmp(1,:) = (/x(nghost+nx+1),yt(l)+ipy*ny*dy,x(nghost+nx+1),yt(l)+ipy*ny*dy,0.,0.,0./)
-          call trace_streamlines(tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
+          call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
           tracers2(l*(nx*trace_sub+addx),:) = tracer_tmp(1,:)
         enddo
       endif
@@ -308,7 +303,7 @@ module Fixed_point
       if (addy == 1) then
         do j=1,nx*trace_sub
           tracer_tmp(1,:) = (/xt(j)+ipx*nx*dx,y(nghost+ny+1),xt(j)+ipx*nx*dx,y(nghost+ny+1),0.,0.,0./)
-          call trace_streamlines(tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
+          call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
           tracers2(j+(nx*trace_sub+addx)*ny*trace_sub,:) = tracer_tmp(1,:)
         enddo
       endif
@@ -316,7 +311,7 @@ module Fixed_point
       if (addx*addy == 1) then
         tracer_tmp(1,:) = &
             (/x(nghost+nx+1),y(nghost+ny+1),x(nghost+nx+1),y(nghost+ny+1),0.,0.,0./)
-        call trace_streamlines(tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
+        call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
         tracers2(nx*ny*trace_sub**2+trace_sub*(ny+nx)+1,:) = tracer_tmp(1,:)
       endif
     else
@@ -345,7 +340,7 @@ module Fixed_point
 !   Trace a dummy field line to start a field receive request.
     tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
         (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-    call trace_streamlines(tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
+    call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
 
 !   Wait for all cores to compute their missing stream lines.
 !     write(*,*) iproc, "wait for others to finish tracer assignment"
@@ -366,7 +361,7 @@ module Fixed_point
 !     Trace a dummy field line to start a field receive request.
       tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
           (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-      call trace_streamlines(tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
+      call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
     enddo
 !
     call MPI_BARRIER(MPI_comm_world, ierr)
@@ -406,7 +401,7 @@ module Fixed_point
 !           write(*,*) iproc, "potential fixed point"
           call get_fixed_point((/(tracers2(j+(l-1)*(nx*trace_sub+addx),1)+tracers2(j+1+(l-1)*(nx*trace_sub+addx),1))/2., &
               (tracers2(j+(l-1)*(nx*trace_sub+addx),2)+tracers2(j+l*(nx*trace_sub+addx),2))/2./), &
-              fixed_points(fidx,:), vv)
+              fixed_points(fidx,1:2), fixed_points(fidx,3), vv)
           if ((fixed_points(fidx,1) < xt(1)) .or. (fixed_points(fidx,1) > xt(nxgrid*trace_sub)) .or. &
               (fixed_points(fidx,2) < yt(1)) .or. (fixed_points(fidx,2) > yt(nygrid*trace_sub))) then
             write(*,*) iproc, "fixed point lies outside the domain"
@@ -443,7 +438,7 @@ module Fixed_point
 !     Trace a dummy field line to start a field receive request.
       tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
           (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-      call trace_streamlines(tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
+      call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
 !     Check if a core has finished and update finished_rooting array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
         if (proc_idx .ne. iproc) then
@@ -516,10 +511,9 @@ module Fixed_point
       enddo
     endif
 !
-!     write(*,*) iproc, "looking for", fidx, "fixed points"
     do j=1,fidx
-      point = fixed_points(j,:)
-      call get_fixed_point(point, fixed_points(j,:), vv)
+      point = fixed_points(j,1:2)
+      call get_fixed_point(point, fixed_points(j,1:2), fixed_points(j,3), vv)
     enddo
 !
 !   Tell every other core that we have finished.
@@ -546,7 +540,7 @@ module Fixed_point
 !     Trace a dummy field line to start a field receive request.
       tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
           (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
-      call trace_streamlines(tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
+      call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
 !     Check if a core has finished and update finished_rooting array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
         if (proc_idx .ne. iproc) then
@@ -571,6 +565,7 @@ module Fixed_point
     write(1) tfixed_points_write
     write(1) float(fidx)
     do j=1,fidx
+      write(*,*) iproc, "wfixed_points: writing fixed_point", fixed_points(j,:)
       write(1) fixed_points(j,:)
     enddo
     close(1)
