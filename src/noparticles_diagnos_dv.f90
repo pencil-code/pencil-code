@@ -1,4 +1,4 @@
-! $Id: particles_collisions.f90 17701 2011-10-07 15:14:06Z michiel.lambrechts $
+! $Id$
 !
 !  This modules takes care of instantaneous collisions between
 !  superparticles.
