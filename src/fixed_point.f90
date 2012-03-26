@@ -12,9 +12,7 @@ module Fixed_point
   use Messages
   use Streamlines
 !
-!   include 'mpif.h'
-!
-  implicit none
+  include 'mpif.h'
 !
   real, dimension (mx,my,mz,mfarray) :: f
 !
