@@ -1,4 +1,4 @@
-! $Id: fixed_points.f90 17621 2012-03-01 12:05:20Z iomsn $
+! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
