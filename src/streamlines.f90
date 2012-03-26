@@ -131,15 +131,17 @@ module Streamlines
 !
   endsubroutine get_grid_pos
 !*********************************************************************** 
-  subroutine get_vector(grid_pos, vvb, vv)
+  subroutine get_vector(f, grid_pos, vvb, vv)
 !
-! Gets the vector field value from another core.
+! Gets the vector field value and the f-array at grid_pos from another core.
 !
 ! 20-feb-12/simon: coded
 !
     integer :: grid_pos(3), grid_pos_send(3)
-    real, dimension(3) :: vvb, vvb_send
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension(3+mfarray) :: vvb, vvb_send
     real, pointer, dimension (:,:,:,:) :: vv
+    real, dimension (mfarray) :: fb
     integer :: proc_id, x_proc, y_proc, z_proc, ierr
 !   variables for the non-blocking mpi communication
     integer, dimension (MPI_STATUS_SIZE) :: status_send, status_recv
@@ -183,8 +185,9 @@ module Streamlines
           call MPI_TEST(request,flag,status,ierr)
           if (flag == 1) then
 !           receive completed, send the vector field
-            vvb_send = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-            call MPI_SEND(vvb_send,3,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
+            vvb_send(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+            vvb_send(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+            call MPI_SEND(vvb_send,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
             if (ierr .ne. MPI_SUCCESS) then
               call fatal_error("streamlines", "MPI_SEND could not send")
               exit
@@ -205,7 +208,7 @@ module Streamlines
         sent = 1
       endif
       if (receiving == 0) then
-        call MPI_IRECV(vvb,3,MPI_REAL,proc_id,VV_RCV,MPI_comm_world,request_rcv,ierr)
+        call MPI_IRECV(vvb,3+mfarray,MPI_REAL,proc_id,VV_RCV,MPI_comm_world,request_rcv,ierr)
         if (ierr .ne. MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
         receiving = 1
@@ -233,7 +236,9 @@ module Streamlines
     real, pointer, dimension (:,:,:,:) :: vv
     integer :: n_tracers, tracer_idx, j, l, ierr, proc_idx
 !   the "borrowed" vector from the other core
-    real, dimension (3) :: vvb, vvb_buf
+    real, dimension (3+mfarray) :: vvb, vvb_buf
+!   the "borrowed" f-array at a given point for the field line integration
+    real, dimension (mfarray) :: fb
     real :: h_max, h_min, l_max, tol, dh, dist2
 !   auxilliary vectors for the tracing
     real, dimension(3) :: x_mid, x_single, x_half, x_double
@@ -294,8 +299,9 @@ module Streamlines
             call MPI_TEST(request,flag,status,ierr)
             if (flag == 1) then
 !             receive completed, send the vector field
-              vvb = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-              call MPI_SEND(vvb,3,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
+              vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+              vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+              call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
               if (ierr .ne. MPI_SUCCESS) then
                 call fatal_error("streamlines", "MPI_SEND could not send")
                 exit
@@ -312,8 +318,8 @@ module Streamlines
         if (outside == 1) exit
         if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
             (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(grid_pos, vvb, vv)
-          x_mid = tracers(tracer_idx,3:5) + 0.5*dh*vvb
+          call get_vector(f, grid_pos, vvb, vv)
+          x_mid = tracers(tracer_idx,3:5) + 0.5*dh*vvb(1:3)
         else
           x_mid = tracers(tracer_idx,3:5) + 0.5*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
         endif
@@ -322,8 +328,8 @@ module Streamlines
         if (outside == 1) exit
         if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
             (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(grid_pos, vvb, vv)
-          x_single = tracers(tracer_idx,3:5) + dh*vvb
+          call get_vector(f, grid_pos, vvb, vv)
+          x_single = tracers(tracer_idx,3:5) + dh*vvb(1:3)
         else
           x_single = tracers(tracer_idx,3:5) + dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
         endif
@@ -333,8 +339,8 @@ module Streamlines
         if (outside == 1) exit
         if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
             (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(grid_pos, vvb, vv)
-          x_mid = tracers(tracer_idx,3:5) + 0.25*dh*vvb
+          call get_vector(f, grid_pos, vvb, vv)
+          x_mid = tracers(tracer_idx,3:5) + 0.25*dh*vvb(1:3)
         else
           x_mid = tracers(tracer_idx,3:5) + 0.25*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
         endif
@@ -343,8 +349,8 @@ module Streamlines
         if (outside == 1) exit
         if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
             (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(grid_pos, vvb, vv)
-          x_half = tracers(tracer_idx,3:5) + 0.5*dh*vvb
+          call get_vector(f, grid_pos, vvb, vv)
+          x_half = tracers(tracer_idx,3:5) + 0.5*dh*vvb(1:3)
         else
           x_half = tracers(tracer_idx,3:5) + 0.5*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
         endif
@@ -353,8 +359,8 @@ module Streamlines
         if (outside == 1) exit
         if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
             (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(grid_pos, vvb, vv)
-          x_mid = x_half + 0.25*dh*vvb
+          call get_vector(f, grid_pos, vvb, vv)
+          x_mid = x_half + 0.25*dh*vvb(1:3)
         else
           x_mid = x_half + 0.25*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
         endif
@@ -363,10 +369,12 @@ module Streamlines
         if (outside == 1) exit
         if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
             (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(grid_pos, vvb, vv)
-          x_double = x_half + 0.5*dh*vvb
+          call get_vector(f, grid_pos, vvb, vv)
+          x_double = x_half + 0.5*dh*vvb(1:3)
+          fb = vvb(4:)
         else
           x_double = x_half + 0.5*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
+          fb = f(grid_pos(1),grid_pos(2),grid_pos(3),:)
         endif
 !
 !       (c) Check error (difference between methods):
@@ -382,8 +390,7 @@ module Streamlines
 !         integrate the requested quantity along the field line
           if (int_q == 'curlyA') then
             tracers(tracer_idx, 7) = tracers(tracer_idx, 7) + &
-                dot_product(f(grid_pos(1),grid_pos(2),grid_pos(3),iax:iaz), &
-                (x_double - tracers(tracer_idx,3:5)))
+                dot_product(fb(iax:iaz), (x_double - tracers(tracer_idx,3:5)))
           endif
           tracers(tracer_idx,3:5) = x_double
           if (abs(dh) < h_min) dh = 2*dh
@@ -433,8 +440,9 @@ module Streamlines
         call MPI_TEST(request,flag,status,ierr)
         if (flag == 1) then
 !         receive completed, send the vector field
-          vvb = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
-          call MPI_SEND(vvb,3,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
+          vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+          vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
+          call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
           if (ierr .ne. MPI_SUCCESS) then
             call fatal_error("streamlines", "MPI_SEND could not send")
             exit
