@@ -9,8 +9,6 @@ module Streamlines
 !
   use Cdata
   use Cparam
-  use Messages
-  use Sub, only: update_snaptime, read_snaptime
 !
   implicit none
 !
@@ -56,6 +54,8 @@ module Streamlines
 !  Prepare ltracers for writing tracers into tracers file
 !
 !  12-mar-12/simon: coded
+!
+    use Sub, only: update_snaptime, read_snaptime
 !
     integer, save :: ifirst=0
 !
@@ -230,8 +230,6 @@ module Streamlines
 !   trace stream lines of the vetor field stored in vv
 !
 !   13-feb-12/simon: coded
-!
-    use Sub
 !
     real, dimension (mx,my,mz,mfarray) :: f
     real, pointer, dimension (:,:) :: tracers
@@ -479,7 +477,7 @@ module Streamlines
 !
 !   12-mar-12/simon: coded
 !
-    use Sub
+    use Sub, only: keep_compiler_quiet
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
