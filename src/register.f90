@@ -826,6 +826,16 @@ module Register
           print*, 'rprint_list: ix,iy,iz,iz2=', ix,iy,iz,iz2
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamev=', nnamev
 !
+!  Set the tracers write flag.
+!
+      if ( dtracers/=0.0 ) &
+          lwrite_tracers = .true.
+!
+!  Set the fixed points write flag.
+!
+      if ( dfixed_points/=0.0 ) &
+          lwrite_fixed_points = .true.
+!
 !  Read in the list of variables for "sound".
 !
 !  In allocate_sound the relevant arrays are allocated and the list of

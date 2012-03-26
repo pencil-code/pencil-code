@@ -92,6 +92,7 @@ module Param_IO
   namelist /run_pars/ &
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
+      dtracers, dfixed_points, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, &
@@ -104,6 +105,7 @@ module Param_IO
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       ltime_integrals, lnowrite, noghost_for_isave, lwrite_yaverages, &
       lwrite_zaverages, lwrite_phiaverages, lwrite_slices, test_nonblocking, &
+      lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &

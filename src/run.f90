@@ -55,6 +55,7 @@ program run
   use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up
   use Filter
+  use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
@@ -73,6 +74,7 @@ program run
   use Slices
   use Snapshot
   use Solid_Cells,     only: solid_cells_clean_up
+  use Streamlines,     only: tracers_prepare, wtracers
   use Sub
   use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
@@ -519,6 +521,11 @@ program run
     if (lwrite_slices) call wvid_prepare()
     if (lwrite_2daverages) call write_2daverages_prepare()
 !
+!   Prepare for the writing of the trcers and the fixed points.
+!
+    if (lwrite_tracers) call tracers_prepare()
+    if (lwrite_fixed_points) call fixed_points_prepare()
+!
 !  Find out which pencils to calculate at current time-step.
 !
     lpencil = lpenc_requested
@@ -624,6 +631,14 @@ program run
 !  Write slices (for animation purposes).
 !
     if (lvideo.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
+!
+!  Write tracers (for animation purposes).
+!
+    if (ltracers.and.lwrite_tracers) call wtracers(f,trim(directory)//'/tracers_')
+!
+!  Write fixed points (for animation purposes).
+!
+    if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
 !
 !  Save snapshot every isnap steps in case the run gets interrupted.
 !  The time needs also to be written.
