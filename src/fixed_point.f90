@@ -244,12 +244,12 @@ module Fixed_point
     real, pointer, dimension (:,:) :: tracers, tracers2, tracer_tmp
 !   number of sub samples for each grid and direction for the field line tracing
     integer :: trace_sub
-    real, dimension (1,7) :: idle_tracer
+!    real, dimension (1,7) :: idle_tracer
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the fixed point output
     character(len=1024) :: filename
     real :: poincare, diff(4,2), phi_min
-    integer :: j, l, addx, addy, proc_idx, ierr
+    integer :: j, l, addx, addy, proc_idx, ierr, flag, status
 !   array with all finished cores
     integer :: finished_rooting(nprocx*nprocy*nprocz)
 !   variables for the final non-blocking mpi communication
@@ -480,12 +480,12 @@ module Fixed_point
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
-    real, pointer, dimension (:,:) :: tracers
+!    real, pointer, dimension (:,:) :: tracers
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the tracer output
     character(len=1024) :: filename
-    integer :: j, k
+    integer :: j, flag, status
     real :: point(2)
 !   array with all finished cores
     integer :: finished_rooting(nprocx*nprocy*nprocz)
@@ -494,12 +494,14 @@ module Fixed_point
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
     real, pointer, dimension (:,:) :: tracer_tmp
     integer :: ierr, proc_idx
+    character (len=labellen) :: trace_field='bb'
 !
 !   allocate memory for the traced field
     allocate(vv(nx,ny,nz,3))
 !
     allocate(tracer_tmp(1,7))
 !
+    call keep_compiler_quiet(path)
 !   TODO: include other fields as well
     if (trace_field == 'bb' .and. ipz == 0) then
 !       write(*,*) iproc, "wfixed_points: curling aa"
