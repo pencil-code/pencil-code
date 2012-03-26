@@ -144,7 +144,6 @@ module Streamlines
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension(3+mfarray) :: vvb, vvb_send
     real, pointer, dimension (:,:,:,:) :: vv
-!    real, dimension (mfarray) :: fb
     integer :: proc_id, x_proc, y_proc, z_proc, ierr
 !   variables for the non-blocking mpi communication
     integer, dimension (MPI_STATUS_SIZE) :: status_recv
@@ -403,8 +402,7 @@ module Streamlines
         loop_count = loop_count + 1
       enddo
 !
-!       write(*,*) iproc, tracers(tracer_idx,:), outside
-    enddo
+    enddo    
 !
 !   Tell every other core that we have finished.
     finished_tracing(:) = 0
@@ -483,7 +481,6 @@ module Streamlines
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
 !   the integrated quantity along the field line
-!    character (len=labellen) :: int_q
     real, pointer, dimension (:,:) :: tracers
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv

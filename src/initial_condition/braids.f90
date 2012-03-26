@@ -14,8 +14,8 @@ module InitialCondition
   use Cparam
   use Messages
   use Streamlines
-  use Fixed_points
-  use Sub, only: keep_compiler_quiet
+  use Fixed_point
+  use Sub, only: keep_compiler_quiet  
 !
   implicit none
 !
@@ -34,28 +34,28 @@ module InitialCondition
 ! tol = error tolerance for the field line tracing
 ! trace_sub = number of sub samples for each grid and direction for the field line tracing
 ! trace_field = vector field which should be traced
-! n_blobs = number of blobs for the blob configuration
+! int_q = the integrated quantity along the field line
 !
+! n_blobs = number of blobs for the blob configuration
 ! xc, yc, zc = position of the blobs
 ! blob_sgn = sign of the twist in the blob
 ! l_blob = length in z-direction of the blob
+! blob_scale = scaling factor for the Gaussian
 !
   real :: ampl = 1.0, width_tube = 0.3, l_sigma = 0.3, steepnes = 1.0  
   real :: B_bkg = 0.0
   character (len=labellen) :: prof='gaussian'
   character (len=labellen) :: word = "AA"
-! variables for the stream line tracing
-  real :: h_max = 0.4, h_min = 1e-4, l_max = 10., tol = 1e-4
-  integer :: trace_sub = 4
-  character (len=labellen) :: trace_field = ''
 ! variables for the blob configurations  
   integer :: n_blobs = 0
   real, dimension (6) :: xc, yc, zc, blob_sgn, l_blob
+  real :: blob_scale = 1.
 !
   namelist /initial_condition_pars/ &
     ampl,width_tube,l_sigma,steepnes,B_bkg,word,prof,trace_field,h_max,h_min,l_max,tol,trace_sub, &
+    int_q, &
 ! blob variables
-    n_blobs, xc, yc, zc, blob_sgn, l_blob
+    n_blobs, xc, yc, zc, blob_sgn, l_blob, blob_scale
 !
   contains
 !***********************************************************************
@@ -144,7 +144,7 @@ module InitialCondition
     integer :: n_strands, ascii_code
 !
 !   The next variables are used for the uncurling.
-    integer :: l, j, ju
+    integer :: l, j, ju, k
     real, dimension (nx,ny,nz,3) :: jj, tmpJ  ! This is phi for poisson.f90
 !
 !   In case field line tracing is applied, use this array.
@@ -153,7 +153,12 @@ module InitialCondition
 !   3 for the current position in 3d space
 !   1 for the total length
 !   1 for the integrated quantity
-    real, dimension (nx*ny,7) :: tracers
+!     real, dimension (nx*ny,7) :: tracers
+    real, pointer, dimension (:,:) :: tracers
+!   the traced field
+    real, pointer, dimension (:,:,:,:) :: vv
+!   filename for the tracer and fixed point output
+    character(len=1024) :: filename
 !
 !
 !   check the word
@@ -425,7 +430,7 @@ module InitialCondition
           do m=1,my
             do n=1,mz
               f(l,m,n,iaz) = f(l,m,n,iaz) + ampl * blob_sgn(j) * &
-                  exp(-(sqrt((x(l)-xc(j))**2 + (y(m)-yc(j))**2)/ampl)**2 - ((z(n)-zc(j))/l_blob(j))**2)
+                  exp(-((x(l)-xc(j))**2 + (y(m)-yc(j))**2)/blob_scale**2 - ((z(n)-zc(j))/l_blob(j))**2)
             enddo
           enddo
         enddo
@@ -443,22 +448,54 @@ module InitialCondition
 !   Trace the specified field lines
 !
     if (trace_field == 'bb' .and. ipz == 0) then
-!     create the initial seeds at z(1+nghost)-ipz*nz*dz+dz
-      do l=1,nx*trace_sub
-        do m=1,ny*trace_sub
-          tracers(l+(m-1)*nx*trace_sub,1) = x(1+nghost)-ipx*nx*dx + (ipx*nx+l/trace_sub-1/trace_sub)*dx + &
-              (dx*mod(l,trace_sub))/trace_sub
-          tracers(l+(m-1)*nx*trace_sub,2) = y(1+nghost)-ipy*ny*dy + (ipy*ny+m/trace_sub-1/trace_sub)*dx + &
-              (dy*mod(m,trace_sub))/trace_sub
-          tracers(l+(m-1)*nx*trace_sub,3) = tracers(l+(m-1)*nx*trace_sub,1)
-          tracers(l+(m-1)*nx*trace_sub,4) = tracers(l+(m-1)*nx*trace_sub,2)
-          tracers(l+(m-1)*nx*trace_sub,5) = z(1+nghost)-ipz*nz*dz+dz
-          tracers(l+(m-1)*nx*trace_sub,6) = 0.
-          tracers(l+(m-1)*nx*trace_sub,7) = 0.
+!
+!     allocate the memory for the tracers
+!       write(*,*) iproc, "allocating memory of size", ((nx-1)*trace_sub+1)*((ny-1)*trace_sub+1)
+!       allocate(tracers(((nx-1)*trace_sub+1)*((ny-1)*trace_sub+1),7))
+      allocate(tracers(nx*ny*trace_sub**2,7))
+!     allocate memory for the traced field
+      allocate(vv(nx,ny,nz,3))
+!     convert the magnetic vector potential into the magnetic field
+      do m=m1,m2
+        do n=n1,n2
+          call curl(f,iaa,vv(:,m-nghost,n-nghost,:))
         enddo
       enddo
-!       call trace_streamlines(f,tracers,nx*ny*trace_sub**2,h_max,h_min,l_max,tol,trace_field)
-!       call get_fixed_points(f,tracers,trace_field)
+!       write(*,*) iproc, "allocation successful"
+!     create the initial seeds at z(1+nghost)-ipz*nz*dz+dz
+      do j=1,nx*trace_sub
+        do k=1,ny*trace_sub
+          tracers(j+(k-1)*(nx*trace_sub),1) = x(1+nghost) + (dx/trace_sub)*(j-1)
+          tracers(j+(k-1)*(nx*trace_sub),2) = y(1+nghost) + (dy/trace_sub)*(k-1)
+          tracers(j+(k-1)*(nx*trace_sub),3) = tracers(j+(k-1)*(nx*trace_sub),1)
+          tracers(j+(k-1)*(nx*trace_sub),4) = tracers(j+(k-1)*(nx*trace_sub),2)
+          tracers(j+(k-1)*(nx*trace_sub),5) = z(1+nghost)-ipz*nz*dz+dz
+          tracers(j+(k-1)*(nx*trace_sub),6) = 0.
+          tracers(j+(k-1)*(nx*trace_sub),7) = 0.
+        enddo
+      enddo
+!
+!     find the tracers
+!
+      call trace_streamlines(f,tracers,nx*ny*trace_sub**2,h_max,h_min,l_max,tol,vv)
+!     write into output file
+      write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/tracers.dat'
+      open(unit = 1, file = filename, form = "unformatted")
+      write(1) 0., tracers(:,:)
+      close(1)
+!
+!     find the fixed points
+!
+      call get_fixed_points(f,tracers,trace_sub,vv)
+      write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/fixed_points.dat'
+      open(unit = 1, file = filename, form = "unformatted")
+      write(1) 0.
+      write(1) float(fidx)
+      do l=1,fidx
+        write(1) fixed_points(l,:)
+      enddo
+      close(1)
+      deallocate(tracers)
     endif
 !
   endsubroutine initial_condition_aa
