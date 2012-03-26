@@ -13,7 +13,7 @@ module Streamlines
 !
   implicit none
 !
-  private 
+  include 'mpif.h'
 !
   public :: tracers_prepare, wtracers, trace_streamlines
 !
