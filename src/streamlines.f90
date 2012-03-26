@@ -9,6 +9,7 @@ module Streamlines
 !
   use Cdata
   use Cparam
+  use Messages, only: fatal_error
 !
   implicit none
 !
@@ -477,7 +478,7 @@ module Streamlines
 !
 !   12-mar-12/simon: coded
 !
-    use Sub, only: keep_compiler_quiet
+    use Sub, only: keep_compiler_quiet, curl
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
