@@ -202,10 +202,10 @@ endif
 ifeq ($(HYDRO),nohydro)
   ifneq ($(VISCOSITY),noviscosity)
 nohydro_message:
-  @echo ";;; You are using HYDRO = nohydro, but VISCOSITY is not noviscosity."
-  @echo ";;; One can only use viscosity in connection with the hydro module."
-  @echo ";;; Please adapt the settings in Makefile.local."
-  exit 1
+	@echo ";;; You are using HYDRO = nohydro, but VISCOSITY is not noviscosity."
+	@echo ";;; One can only use viscosity in connection with the hydro module."
+	@echo ";;; Please adapt the settings in Makefile.local."
+	exit 1
 
   endif
 endif
@@ -214,51 +214,51 @@ endif
 #
 ifneq ($(BORDER_PROF),)
 nograv_message:
-  @echo ";;; Cannot compile:"
-  @echo ";;;    'BORDER_PROF' has been renamed to 'BORDER_PROFILES'"
-  @echo ";;;"
-  @echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
-  @echo ";;;"
-  @echo ";;;      perl -pi'~' -e 's/BORDER_PROF/BORDER_PROFILES/' $(FROM_PARENT)Makefile.local"
-  @echo ";;;"
-  exit 1
+	@echo ";;; Cannot compile:"
+	@echo ";;;    'BORDER_PROF' has been renamed to 'BORDER_PROFILES'"
+	@echo ";;;"
+	@echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
+	@echo ";;;"
+	@echo ";;;      perl -pi'~' -e 's/BORDER_PROF/BORDER_PROFILES/' $(FROM_PARENT)Makefile.local"
+	@echo ";;;"
+	exit 1
 endif
 # 
 ifeq ($(GRAVITY),nograv)
 nograv_message:
-  @echo ";;; Cannot compile:"
-  @echo ";;;    'nograv.f90' has been renamed to 'nogravity.f90'"
-  @echo ";;;"
-  @echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
-  @echo ";;;"
-  @echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)nograv([^a-zA-Z])/\$$1nogravity\$$2/' $(FROM_PARENT)Makefile.local"
-  @echo ";;;"
-  exit 1
+	@echo ";;; Cannot compile:"
+	@echo ";;;    'nograv.f90' has been renamed to 'nogravity.f90'"
+	@echo ";;;"
+	@echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
+	@echo ";;;"
+	@echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)nograv([^a-zA-Z])/\$$1nogravity\$$2/' $(FROM_PARENT)Makefile.local"
+	@echo ";;;"
+	exit 1
 endif
 # 
 ifeq ($(GRAVITY),grav_z)
 grav_z_message:
-  @echo ";;; Cannot compile:"
-  @echo ";;;    The file 'grav_z.f90' no longer exists"
-  @echo ";;; All functionality from grav_z.f90 is in gravity_simple.f90"
-  @echo ";;;"
-  @echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
-  @echo ";;;"
-  @echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)grav_z([^a-zA-Z])/\$$1gravity_simple\$$2/' $(FROM_PARENT)Makefile.local"
-  @echo ";;;"
-  exit 1
+	@echo ";;; Cannot compile:"
+	@echo ";;;    The file 'grav_z.f90' no longer exists"
+	@echo ";;; All functionality from grav_z.f90 is in gravity_simple.f90"
+	@echo ";;;"
+	@echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
+	@echo ";;;"
+	@echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)grav_z([^a-zA-Z])/\$$1gravity_simple\$$2/' $(FROM_PARENT)Makefile.local"
+	@echo ";;;"
+	exit 1
 endif
 # 
 ifeq ($(GRAVITY),grav_r)
 grav_r_message:
-  @echo ";;; Cannot compile:"
-  @echo ";;;    'grav_r.f90' has been renamed to 'gravity_r.f90'"
-  @echo ";;;"
-  @echo ";;; Please update your Makefile.local, e.g. via cut+paste:"
-  @echo ";;;"
-  @echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)grav_r([^a-zA-Z])/\$$1gravity_r\$$2/' $(FROM_PARENT)Makefile.local"
-  @echo ";;;"
-  exit 1
+	@echo ";;; Cannot compile:"
+	@echo ";;;    'grav_r.f90' has been renamed to 'gravity_r.f90'"
+	@echo ";;;"
+	@echo ";;; Please update your Makefile.local, e.g. via cut+paste:"
+	@echo ";;;"
+	@echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)grav_r([^a-zA-Z])/\$$1gravity_r\$$2/' $(FROM_PARENT)Makefile.local"
+	@echo ";;;"
+	exit 1
 endif
 #
 # Default names of source and object files (unswitchable modules).
@@ -1057,7 +1057,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##  Buenos Aires
 ##
 #FC=mpif90 #(caps.iafe.uba.ar)
-##FFLAGS= -g -pg    #-O3 #(caps.iafe.uba.ar)
+##FFLAGS= -g -pg		#-O3 #(caps.iafe.uba.ar)
 #FFLAGS= -O3 #(caps.iafe.uba.ar)
 #CC=mpicc #(caps.iafe.uba.ar)
 #CFLAGS=-O3 -DFUNDERSC=1 #(caps.iafe.uba.ar)
@@ -1776,15 +1776,15 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 # 
 #  Generic rules.
 # 
-.SUFFIXES:      # get rid of that annoying Modula rule
+.SUFFIXES:			# get rid of that annoying Modula rule
 .SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
 # 
 .f.o:
-  $(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
-  $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
 .c.o:
-  $(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*.o -c $*.c
+	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*.o -c $*.c
 # 
 #  Default target (start.x and run.x are compiled in "code").
 #
@@ -1818,11 +1818,11 @@ run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
 #
 start.o: $(start) Makefile.local
 start.x: start.o
-  $(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
+	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
 # 
 run.o: $(run) Makefile.local
 run.x: run.o
-  $(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
+	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
@@ -1830,30 +1830,30 @@ basics=cparam.o cdata.o general.o $(SYSCALLS_OBJ) syscalls_ansi.o
 #
 combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o
-  $(LD) $(LDFLAGS) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x
+	$(LD) $(LDFLAGS) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x
 #
 read_videofiles.o: $(basics)
 read_videofiles.x: read_videofiles.o
-  $(LD) $(LDFLAGS) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x
+	$(LD) $(LDFLAGS) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x
 #
 read_all_videofiles.o: $(basics)
 read_all_videofiles.x: read_all_videofiles.o
-  $(LD) $(LDFLAGS) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x
+	$(LD) $(LDFLAGS) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x
 #
 read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
-  $(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
+	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
 technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(SUB_OBJ) $(MAGNETIC).a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ)
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
-  $(LD) $(LDFLAGS) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x
 pre_and_post_processing/pc_reduce.o: pre_and_post_processing/pc_reduce.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_reduce.x: pre_and_post_processing/pc_reduce.o
-  $(LD) $(LDFLAGS) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x
 pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
 pre_and_post_processing/pc_distribute.x: pre_and_post_processing/pc_distribute.o
-  $(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
@@ -1863,109 +1863,109 @@ PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 pacx: pacx-makefile cparam.inc code
 # 
 Makefile: Makefile.src
-  scripts/check-mkfile Makefile.local Makefile.src
-  env ADAPT_MKFILE=$(ADAPT_MKFILE) scripts/adapt-mkfile Makefile.src Makefile
+	scripts/check-mkfile Makefile.local Makefile.src
+	env ADAPT_MKFILE=$(ADAPT_MKFILE) scripts/adapt-mkfile Makefile.src Makefile
 # 
 pacx-makefile: Makefile.src
-  scripts/acx-adapt-mkfile Makefile.src pacx-Makefile
-  cp pacx-Makefile Makefile
+	scripts/acx-adapt-mkfile Makefile.src pacx-Makefile
+	cp pacx-Makefile Makefile
 # 
 depend dep:
-  @printf "***** %-45s *****\n" \
-      '*********************************************' \
-      '(Re)-creating src/Makefile.depend.' \
-      'Only use this if you know what you are doing.' \
-      'You can revert with' \
-      '  rm src/Makefile.depend; pc_setupsrc' \
-      '*********************************************'
-  rm -f Makefile.depend
-  scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
+	@printf "***** %-45s *****\n" \
+	    '*********************************************' \
+	    '(Re)-creating src/Makefile.depend.' \
+	    'Only use this if you know what you are doing.' \
+	    'You can revert with' \
+	    '  rm src/Makefile.depend; pc_setupsrc' \
+	    '*********************************************'
+	rm -f Makefile.depend
+	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 # 
 #  Help us finding out what compiler, MPI library, etc we have and give
 #  recommendations
 #
 semiauto-conf:
-  echo "Running semiauto-conf"
-  @scripts/semiauto-conf \
-      FC="$(FC)" \
-      FFLAGS="$(FFLAGS)" \
-      FFLAGS_GENERAL="$(FFLAGS_GENERAL)" \
-      FFLAGS_FOURIER="$(FFLAGS_FOURIER)" \
-      F90FLAGS="$(F90FLAGS)" \
-      CC="$(CC)" \
-      CFLAGS="$(CFLAGS)" \
-      CFLAGS_GENERAL="$(CFLAGS_GENERAL)" \
-      CFLAGS_FOURIER="$(CFLAGS_FOURIER)" \
-      LD="$(LD)" \
-      LD_MPI="$(LD_MPI)" \
-      LD_FLAGS="$(LD_FLAGS)" \
-      LD_FOURIER="$(LD_FOURIER)" \
-      LIBMPISUFFIX="$(LIBMPISUFFIX)"
+	echo "Running semiauto-conf"
+	@scripts/semiauto-conf \
+	    FC="$(FC)" \
+	    FFLAGS="$(FFLAGS)" \
+	    FFLAGS_GENERAL="$(FFLAGS_GENERAL)" \
+	    FFLAGS_FOURIER="$(FFLAGS_FOURIER)" \
+	    F90FLAGS="$(F90FLAGS)" \
+	    CC="$(CC)" \
+	    CFLAGS="$(CFLAGS)" \
+	    CFLAGS_GENERAL="$(CFLAGS_GENERAL)" \
+	    CFLAGS_FOURIER="$(CFLAGS_FOURIER)" \
+	    LD="$(LD)" \
+	    LD_MPI="$(LD_MPI)" \
+	    LD_FLAGS="$(LD_FLAGS)" \
+	    LD_FOURIER="$(LD_FOURIER)" \
+	    LIBMPISUFFIX="$(LIBMPISUFFIX)"
 # 
 #  Generate files for automated debugging and testing etc.
 #
 start_buildtime:
-  @echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
+	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
 stop_buildtime:
-  @echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
+	@echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
 buildinfo:
-  @$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
-      -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
-      -e "LD_FOURIER='$(LD_FOURIER)';FFLAGS_FOURIER='$(FFLAGS_FOURIER)';CFLAGS_FOURIER='$(CFLAGS_FOURIER)';" \
-      -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
-      -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
-      -e "FC='$(FC)';" \
-      -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';TESTPERTURB='$(TESTPERTURB)';" \
-      -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENTROPY='$(ENTROPY)';" \
-      -e "MAGNETIC='$(MAGNETIC)';MAGNETIC_MEANFIELD='$(MAGNETIC_MEANFIELD)';" \
-      -e "RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
-      -e "LORENZ_GAUGE='$(LORENZ_GAUGE)';" \
-      -e "POLYMER='$(POLYMER)';" \
-      -e "CHIRAL='$(CHIRAL)';CHEMISTRY='$(CHEMISTRY)';DUSTVELOCITY='$(DUSTVELOCITY)';DUSTDENSITY='$(DUSTDENSITY)';" \
+	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
+	    -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
+	    -e "LD_FOURIER='$(LD_FOURIER)';FFLAGS_FOURIER='$(FFLAGS_FOURIER)';CFLAGS_FOURIER='$(CFLAGS_FOURIER)';" \
+	    -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
+	    -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
+	    -e "FC='$(FC)';" \
+	    -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';TESTPERTURB='$(TESTPERTURB)';" \
+	    -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENTROPY='$(ENTROPY)';" \
+	    -e "MAGNETIC='$(MAGNETIC)';MAGNETIC_MEANFIELD='$(MAGNETIC_MEANFIELD)';" \
+	    -e "RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
+	    -e "LORENZ_GAUGE='$(LORENZ_GAUGE)';" \
+	    -e "POLYMER='$(POLYMER)';" \
+	    -e "CHIRAL='$(CHIRAL)';CHEMISTRY='$(CHEMISTRY)';DUSTVELOCITY='$(DUSTVELOCITY)';DUSTDENSITY='$(DUSTDENSITY)';" \
             -e "NEUTRALVELOCITY='$(NEUTRALVELOCITY)';NEUTRALDENSITY='$(NEUTRALDENSITY)';" \
-      -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \
-      -e "EOS='$(EOS)';STRUCT_FUNC='$(STRUCT_FUNC)';SHOCK='$(SHOCK)';" \
-      -e "TESTSCALAR='$(TESTSCALAR)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
-      -e "TESTFIELD='$(TESTFIELD)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
-      -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
-      -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';INITIAL_CONDITION='$(INITIAL_CONDITION)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
-      -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" > .buildinfo
+	    -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \
+	    -e "EOS='$(EOS)';STRUCT_FUNC='$(STRUCT_FUNC)';SHOCK='$(SHOCK)';" \
+	    -e "TESTSCALAR='$(TESTSCALAR)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
+	    -e "TESTFIELD='$(TESTFIELD)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
+	    -e "TESTFLOW='$(TESTFLOW)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
+	    -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';INITIAL_CONDITION='$(INITIAL_CONDITION)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
+	    -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';PARTICLES_SPIN='$(PARTICLES_SPIN)';" > .buildinfo
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-  scripts/mkcparam -b $(preprocess) -o cparam.inc
+	scripts/mkcparam -b $(preprocess) -o cparam.inc
 # 
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
-  if [ "" ]; then \
-      rm -f cparam.inc; \
-      rm -f cparam_pencils.inc; \
-      ln -s cparam.inc cparam.inc; \
-      ln -s cparam_pencils.inc cparam_pencils.inc; \
-  fi
-  $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam.o -c cparam.f90
+	if [ "" ]; then \
+	    rm -f cparam.inc; \
+	    rm -f cparam_pencils.inc; \
+	    ln -s cparam.inc cparam.inc; \
+	    ln -s cparam_pencils.inc cparam_pencils.inc; \
+	fi
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam.o -c cparam.f90
 # 
 special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
-  scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
+	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 #
 initial_condition_dummies.inc:  noinitial_condition.f90 $(INITIAL_CONDITION).f90
-  scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 > initial_condition_dummies.inc
+	scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 > initial_condition_dummies.inc
 # 
 mpicomm_double.f90: mpicomm.f90
-  sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
+	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 # 
 ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
-  ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
+	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
 # 
 mpicomm_.f90: mpicomm.f90
-  perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm.f90 > mpicomm_.f90
+	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm.f90 > mpicomm_.f90
 # 
 mpicomm_double_.f90: mpicomm_double.f90
-  perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
+	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 # 
 nompicomm_.f90: nompicomm.f90
-  cp nompicomm.f90 nompicomm_.f90
+	cp nompicomm.f90 nompicomm_.f90
 # 
 EXECUTABLES=start.x run.x \
-  combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
+	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 # 
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
@@ -1973,40 +1973,40 @@ EXECUTABLES=start.x run.x \
 # 
 LAST_OBJ=$(EXECUTABLES:.x=.o)
 code: Makefile.inc cparam.inc
-  @# Realize error even when last command in pipe is FCCLEANER:
-  @echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
-  @if [ ! -z "$(FCCLEANER)" ]; then \
-      ($(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) \
-      || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
-  else \
-      $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
-  fi
+	@# Realize error even when last command in pipe is FCCLEANER:
+	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
+	    ($(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) \
+	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
+	fi
 # 
 FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
-  @echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
-  @if [ ! -z "$(FCCLEANER)" ]; then \
-      ($(MAKE) $(MAKEOPTS) $(FASTEXECS) \
-      || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
-  else \
-      $(MAKE) $(MAKEOPTS) $(FASTEXECS) ; \
-  fi
+	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
+	    ($(MAKE) $(MAKEOPTS) $(FASTEXECS) \
+	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	    $(MAKE) $(MAKEOPTS) $(FASTEXECS) ; \
+	fi
 # 
 debug:
-  @echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x"
-  @if [ ! -z "$(FCCLEANER)" ]; then \
-      ($(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
-      || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
-  else \
-      $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
-  fi
+	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x"
+	@if [ ! -z "$(FCCLEANER)" ]; then \
+	    ($(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
+	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
+	fi
 # 
 #  Handy for debugging; just compile by hand what is changed.
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
-  $(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
-  $(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
 # 
 #  Needed for the underscore trick.
 #
@@ -2017,55 +2017,55 @@ mpicomm_.f90: mpicomm.f90
 #  accept open(..., DELIM=...); this looks like a compiler bug.
 #
 $(MPICOMM_FIX).o: mpicomm.h $(MPICOMM_FIX).f90 cdata.o
-  $(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(MPICOMM_FIX).o -c $(MPICOMM_FIX).f90
 $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
-  $(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o $(PARTICLES_MPICOMM_OBJ) -c $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
-  $(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o fftpack.o -c fftpack.f90
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
-  $(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o param_io.o -c param_io.f90
+	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o param_io.o -c param_io.f90
 # 
 #  Remove all build files, but keep executables (misleading name..)
 #
 run:
-  rm -f *.o *.mod *.d
-  rm -f work.pc work.pcl
+	rm -f *.o *.mod *.d
+	rm -f work.pc work.pcl
 # 
 #  Alternative to make run. To copy executables to parent directory. Make
 #  clean(n) could then be run on the source. (misleading name..)
 #
 install:
-  cp *.x ../
+	cp *.x ../
 # 
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
 #  temporarily create them
 #
 TAGS: $(TAG_SOURCE)
-  etags $(TAG_SOURCE)
-  @ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
-  @ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
+	etags $(TAG_SOURCE)
+	@ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
+	@ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
 # 
 #  Clean up, but leave makefile and TAGS.
 #
 clean:
-  rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc *.il
-  rm -f special/*.o special/*.mod
-  rm -f initial_condition/*.o initial_condition/*.mod
-  rm -f pre_and_post_processing/*.o pre_and_post_processing/*.x
-  rm -f .current-precision
-  rm -f *.dot *.ps  # Dependency diagram files
-  rm -f work.pc work.pcl .build*
-  printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
+	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc *.il
+	rm -f special/*.o special/*.mod
+	rm -f initial_condition/*.o initial_condition/*.mod
+	rm -f pre_and_post_processing/*.o pre_and_post_processing/*.x
+	rm -f .current-precision
+	rm -f *.dot *.ps  # Dependency diagram files
+	rm -f work.pc work.pcl .build*
+	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 # 
 #  Clean up all
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
 cleann: clean
-  rm -f Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
-  rm -rf semiauto-conf_tmp f90_qnd_log_dir
-  rm -f *.inc && touch Makefile.inc
-  $(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
+	rm -f Makefile Makefile_inc TAGS  *mpicomm_.f90 mpicomm_double*.f90
+	rm -rf semiauto-conf_tmp f90_qnd_log_dir
+	rm -f *.inc && touch Makefile.inc
+	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 # 
 #  Same thing.
 #
@@ -2074,9 +2074,9 @@ cleanall: cleann
 #  Try to remove everything generated by pc_setupsrc, compilation, etc.
 #
 distclean: cleanall
-  find . -type l -print0 | xargs -0 rm -f
-  rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
-  rm -rf semiauto-conf* *.log history
+	find . -type l -print0 | xargs -0 rm -f
+	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
+	rm -rf semiauto-conf* *.log history
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.
 #
