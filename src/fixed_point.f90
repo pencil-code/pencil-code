@@ -35,7 +35,7 @@ module Fixed_point
 !
   contains
 !
-!*********************************************************************** 
+!***********************************************************************
   subroutine fixed_points_prepare
 !
 !  Prepare lfixed_points for writing the fixed points into the fixed points file.
@@ -96,7 +96,7 @@ module Fixed_point
     if (lfixed_points) tfixed_points_write = t
 !
   endsubroutine fixed_points_prepare
-!*********************************************************************** 
+!***********************************************************************
   subroutine get_fixed_point(point, fixed_point, q, vv)
     real :: point(2), point_old(2), fixed_point(2)
 !   the integrated quantity along the field line
@@ -131,7 +131,7 @@ module Fixed_point
       der(1) = (diff(3)-diff(2))/(2*dl)
       der(2) = (diff(5)-diff(4))/(2*dl)
 !     if the gradient is 0 we have already reached the fixed points
-      if (der(1) == 0 .and. der(2) == 0) then        
+      if (der(1) == 0 .and. der(2) == 0) then
 !         write(*,*) iproc, "der = 0"
         fixed_point = point
 !         exit
@@ -157,7 +157,7 @@ module Fixed_point
 !
     deallocate(tracers)
   end subroutine get_fixed_point
-!*********************************************************************** 
+!***********************************************************************
   recursive function edge(sx, sy, diff1, diff2, phi_min, vv, rec) result(dtot)
 !
 ! Computes rotation along one edge (recursively to phi_min).
@@ -209,7 +209,7 @@ module Fixed_point
     deallocate(tracer)
 !
   end function edge
-!*********************************************************************** 
+!***********************************************************************
   subroutine pindex(sx, sy, diff, phi_min, vv, poincare)
 !
 ! Finds the Poincare index of this grid cell.
@@ -233,7 +233,7 @@ module Fixed_point
     poincare = poincare + edge((/sx(1),sx(1)/), (/sy(2),sy(1)/), diff(4,:), diff(1,:), phi_min, vv, 1)
 !
   end subroutine pindex
-!*********************************************************************** 
+!***********************************************************************
   subroutine get_fixed_points(tracers,trace_sub,vv)
 !
 !  trace stream lines of the vetor field stored in f(:,:,:,iaa)
@@ -343,7 +343,7 @@ module Fixed_point
     tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
         (x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2.,0.,0.,0./)
     call trace_streamlines(f,tracer_tmp,1,2e-1,2e-2,1000.,4e-2,vv)
-
+!
 !   Wait for all cores to compute their missing stream lines.
 !     write(*,*) iproc, "wait for others to finish tracer assignment"
     do
@@ -417,7 +417,7 @@ module Fixed_point
     fidx = fidx - 1
 !
 !   Tell every other core that we have finished.
-!     write(*,*) iproc, "finished fixed point finding" 
+!     write(*,*) iproc, "finished fixed point finding"
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)
@@ -521,7 +521,7 @@ module Fixed_point
     enddo
 !
 !   Tell every other core that we have finished.
-!     write(*,*) iproc, "finished fixed point finding" 
+!     write(*,*) iproc, "finished fixed point finding"
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)

@@ -50,7 +50,7 @@ module Streamlines
     trace_field, trace_sub, h_max, h_min, l_max, tol, int_q
 !
   contains
-!*********************************************************************** 
+!***********************************************************************
   subroutine tracers_prepare()
 !
 !  Prepare ltracers for writing tracers into tracers file
@@ -79,7 +79,7 @@ module Streamlines
     if (ltracers) ttrace_write = t
 !
   endsubroutine tracers_prepare
-!*********************************************************************** 
+!***********************************************************************
   subroutine get_grid_pos(phys_pos, grid_pos, outside)
 !
 ! Determines the grid cell in this core for the physical location.
@@ -105,7 +105,7 @@ module Streamlines
     enddo
 !   check if the point lies outside the domain
     if (delta > dx/2.) outside = 1
-!      
+!
     delta = Ly
     do j=1,nygrid
       if (abs(phys_pos(2) - yg(j)) < delta) then
@@ -132,7 +132,7 @@ module Streamlines
     grid_pos(3) = grid_pos(3) - nz*ipz
 !
   endsubroutine get_grid_pos
-!*********************************************************************** 
+!***********************************************************************
   subroutine get_vector(f, grid_pos, vvb, vv)
 !
 ! Gets the vector field value and the f-array at grid_pos from another core.
@@ -203,7 +203,7 @@ module Streamlines
 !     Now it should be safe to make a blocking send request.
 !
 !     start blocking send and non-blocking receive
-      if (sent == 0) then        
+      if (sent == 0) then
         call MPI_SSEND(grid_pos_send,3,MPI_integer,proc_id,VV_RQST,MPI_comm_world,ierr)
         if (ierr .ne. MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_SSEND could not send request")
@@ -357,7 +357,7 @@ module Streamlines
           x_half = tracers(tracer_idx,3:5) + 0.5*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
         endif
 !
-        call get_grid_pos(x_half,grid_pos,outside)        
+        call get_grid_pos(x_half,grid_pos,outside)
         if (outside == 1) exit
         if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
             (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
