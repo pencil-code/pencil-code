@@ -420,7 +420,7 @@ module Equ
           if (lpolymer) then
             advec_poly=0.0; diffus_eta_poly=0.0
           endif
-          if (lspecial) then 
+          if (lspecial) then
             diffus_special=0.0
           endif
         endif
