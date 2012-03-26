@@ -53,6 +53,7 @@ module Density
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
   real :: wdamp=0.0, density_floor=-1.0
   real :: mass_source_Mdot=0.0, mass_source_sigma=0.0, mass_source_offset=0.0
+  real :: tstart_mass_source=0.0, tstop_mass_source=-1.0
   real :: lnrho_z_shift=0.0
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: rzero_ffree=0.,wffree=0.
@@ -94,31 +95,27 @@ module Density
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
-      rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, yblob, &
-      zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, mpoly, &
+      rho_const, cs2bot, cs2top, u0_advec, radius_lnrho, eps_planet, xblob, &
+      yblob, zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, mpoly, &
       strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
       lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
-      r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
-      T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
-      dens_coeff, temp_coeff, temp_trans, temp_coeff_out
-
+      r0_rho, invgrav_ampl, rnoise_int, rnoise_ext
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
-      cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, lmass_source, &
-      mass_source_profile, mass_source_Mdot,  mass_source_sigma, &
+      cs2bot, cs2top, u0_advec, lupw_lnrho, lupw_rho, idiff, lmass_source, &
+      mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
-      damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, &
-      lfreeze_lnrhoext, lnrho_const, lcontinuity_gas, borderlnrho, &
-      diffrho_hyper3_aniso, lfreeze_lnrhosqu, density_floor, &
-      lanti_shockdiffusion, lrho_as_aux, ldiffusion_nolog, &
-      lcheck_negative_density, lmassdiff_fix, lcalc_glnrhomean, &
-      ldensity_profile_masscons, lffree, ffree_profile, rzero_ffree, wffree, &
-      mass_source_tau1, density_xaver_range
+      damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
+      lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
+      lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
+      ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
+      lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
+      rzero_ffree, wffree, tstart_mass_source, tstop_mass_source
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1764,7 +1761,10 @@ module Density
 !
 !  Mass sources and sinks.
 !
-      if (lmass_source) call mass_source(f,df,p)
+      if (lmass_source) then
+        if (t>=tstart_mass_source .and. (tstop_mass_source==-1.0 .or. &
+            t<=tstop_mass_source) ) call mass_source(f,df,p)
+      endif
 !
 !  Mass diffusion.
 !
