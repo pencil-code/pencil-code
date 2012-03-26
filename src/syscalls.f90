@@ -175,7 +175,6 @@ module Syscalls
       if (len(trim(tmp_dir)) <= 0) call get_env_var('TMP', tmp_dir)
       if (len(trim(tmp_dir)) <= 0) call get_env_var('TMP_DIR', tmp_dir)
       if (len(trim(tmp_dir)) <= 0) call get_env_var('PBS_TEMP', tmp_dir)
-      if (len(trim(tmp_dir)) <= 0) call get_env_var('PBS_O_LOCAL', tmp_dir)
       if (len(trim(tmp_dir)) <= 0) tmp_dir = '/tmp'
 !
       write (get_tmp_prefix,'(A,A,I0,A)') trim(tmp_dir), '/pencil-', get_PID(), '-'
