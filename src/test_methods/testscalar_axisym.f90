@@ -23,7 +23,7 @@ module Testscalar
 !
   implicit none
 !
-  include 'testscalar.h'
+  include '../testscalar.h'
 !
 !  cosine and sine function for setting test fields and analysis
 !
