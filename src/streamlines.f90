@@ -14,6 +14,8 @@ module Streamlines
 !
   implicit none
 !
+  public :: tracers_prepare, wtracers
+!
   include 'mpif.h'
 !
 ! a few constants
@@ -49,7 +51,7 @@ module Streamlines
 !
   contains
 !*********************************************************************** 
-  subroutine tracers_prepare
+  subroutine tracers_prepare()
 !
 !  Prepare ltracers for writing tracers into tracers file
 !
@@ -141,11 +143,11 @@ module Streamlines
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension(3+mfarray) :: vvb, vvb_send
     real, pointer, dimension (:,:,:,:) :: vv
-    real, dimension (mfarray) :: fb
+!    real, dimension (mfarray) :: fb
     integer :: proc_id, x_proc, y_proc, z_proc, ierr
 !   variables for the non-blocking mpi communication
-    integer, dimension (MPI_STATUS_SIZE) :: status_send, status_recv
-    integer :: sent, receiving, request_send, request_rcv, flag_rcv
+    integer, dimension (MPI_STATUS_SIZE) :: status_recv
+    integer :: sent, receiving, request_rcv, flag_rcv
 !
     intent(out) :: vvb
 !
@@ -234,9 +236,9 @@ module Streamlines
     real, dimension (mx,my,mz,mfarray) :: f
     real, pointer, dimension (:,:) :: tracers
     real, pointer, dimension (:,:,:,:) :: vv
-    integer :: n_tracers, tracer_idx, j, l, ierr, proc_idx
+    integer :: n_tracers, tracer_idx, j, ierr, proc_idx
 !   the "borrowed" vector from the other core
-    real, dimension (3+mfarray) :: vvb, vvb_buf
+    real, dimension (3+mfarray) :: vvb
 !   the "borrowed" f-array at a given point for the field line integration
     real, dimension (mfarray) :: fb
     real :: h_max, h_min, l_max, tol, dh, dist2
@@ -482,13 +484,15 @@ module Streamlines
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
 !   the integrated quantity along the field line
-    character (len=labellen) :: int_q
+!    character (len=labellen) :: int_q
     real, pointer, dimension (:,:) :: tracers
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the tracer output
     character(len=1024) :: filename
     integer :: j, k
+!
+    call keep_compiler_quiet(path)
 !
 !   allocate the memory for the tracers
     allocate(tracers(nx*ny*trace_sub**2,7))
