@@ -52,6 +52,9 @@ module Streamlines
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
 !
+    call keep_compiler_quiet(path)
+    call keep_compiler_quiet(f)
+!
   endsubroutine wtracers
 !***********************************************************************
 endmodule Streamlines
