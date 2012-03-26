@@ -9,8 +9,13 @@ module Streamlines
 !
   use Cdata
   use Cparam
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
+!
+  private 
+!
+  public :: tracers_prepare, wtracers
 !
   integer, public :: ntracers
 !
@@ -35,5 +40,18 @@ module Streamlines
       call keep_compiler_quiet(tracers)
 !
     endsubroutine trace_streamlines
+!***********************************************************************
+    subroutine tracers_prepare()
+!
+!  Dummy routine
+!
+    endsubroutine tracers_prepare
+!***********************************************************************
+  subroutine wtracers(f,path)
+!
+    real, dimension (mx,my,mz,mfarray) :: f
+    character(len=*) :: path
+!
+  endsubroutine wtracers
 !***********************************************************************
 endmodule Streamlines
