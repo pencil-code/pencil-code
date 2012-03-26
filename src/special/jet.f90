@@ -1,4 +1,4 @@
-! $Id: internal_flow.f90 12795 2010-01-03 14:03:57Z ajohan@strw.leidenuniv.nl $
+! $Id$
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -84,7 +84,7 @@ module Special
 !  6-oct-03/tony: coded
 !
       if (lroot) call svn_id( &
-           "$Id: internal_flow.f90 12795 2010-01-03 14:03:57Z ajohan@strw.leidenuniv.nl $")
+           "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************

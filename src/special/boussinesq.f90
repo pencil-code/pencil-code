@@ -1,4 +1,4 @@
-! $Id: van_der_pol.f90 17798 2011-10-31 14:52:44Z boris.dintrans $
+! $Id$
 !
 !  Solve the Boussinesq equations
 !
@@ -48,7 +48,7 @@ module Special
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: boussinesq.f90 17798 2011-10-31 14:52:44Z boris.dintrans $")
+           "$Id$")
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
 !      call farray_register_auxiliary('divu',idivu,communicated=.false.)

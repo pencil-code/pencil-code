@@ -1,4 +1,4 @@
-! $Id: nospecial.f90 15287 2010-11-04 11:03:57Z sven.bingert $
+! $Id$
 !
 !  This module solves for a viscously diffusive disk according to
 !  the alpha-formalism, also adding photoevaporation. It is a
@@ -120,7 +120,7 @@ module Special
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
 !
       if (lroot) call svn_id( &
-          "$Id: nospecial.f90 15287 2010-11-04 11:03:57Z sven.bingert $")
+          "$Id$")
 !
 !  Register variables needed for alpha disk.
 !
