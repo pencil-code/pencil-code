@@ -40,6 +40,8 @@ module Fixed_point
 !
 !  14-mar-12/simon: coded
 !
+    use Sub, only: read_snaptime, update_snaptime
+!
     integer, save :: ifirst=0
 !
     character (len=fnlen) :: file
