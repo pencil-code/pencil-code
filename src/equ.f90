@@ -74,12 +74,10 @@ module Equ
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: df_iuu_pencil
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
-      real, dimension(1) :: mass_per_proc
       integer :: iv
       integer :: ivar1,ivar2
       real :: umax = 0.
