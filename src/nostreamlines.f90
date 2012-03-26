@@ -4,32 +4,35 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM integer, parameter :: nghost = 3
-!
 !***************************************************************
 module Streamlines
 !
   use Cdata
   use Cparam
-  use Messages
 !
   implicit none
-  
+!
+  integer, public :: ntracers
+!
   contains
-!*********************************************************************** 
-    subroutine trace_streamlines(f,iaa,tracers)
+!***********************************************************************
+    subroutine trace_streamlines(f,tracers,n_tracers,h_max,h_min,l_max,tol,vv)
 !
 !  trace stream lines of the vetor field stored in f(:,:,:,iaa)
 !
 !   13-feb-12/simon: coded
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: iaa, l, m
-      real, dimension (mx,my,7) :: tracers
 !
-      intent(in)  :: f,iaa,tracers
-      
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: n_tracers
+      real :: h_max, h_min, l_max, tol
+      real, dimension (mx,my,7) :: tracers
+      real, pointer, dimension (:,:,:,:) :: vv
+!
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(vv)
+      call keep_compiler_quiet(n_tracers)
+      call keep_compiler_quiet(h_max,h_min,l_max,tol)
+      call keep_compiler_quiet(tracers)
 !
     endsubroutine trace_streamlines
 !***********************************************************************
