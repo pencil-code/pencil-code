@@ -15,7 +15,7 @@ module Streamlines
 !
   private 
 !
-  public :: tracers_prepare, wtracers
+  public :: tracers_prepare, wtracers, trace_streamlines
 !
   integer, public :: ntracers
 !
