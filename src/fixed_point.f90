@@ -468,7 +468,7 @@ module Fixed_point
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
     real, pointer, dimension (:,:) :: tracer_tmp
     integer :: ierr, proc_idx
-!     character (len=labellen) :: trace_field='bb'
+    character (len=labellen) :: trace_field='bb'
 !
 !   allocate memory for the traced field
     allocate(vv(nx,ny,nz,3))
