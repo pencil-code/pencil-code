@@ -1609,12 +1609,19 @@ module Deriv
 
    coeffs(0,3) = -sum(coeffs(:,3))
 
-   coeffs(:,4) = 24.*(/  (-h13*(hm1+hm12) + hm1*hm12  +(h1+h12)*(h13-hm1-hm12) + h1*h12)/(hm3*hm13*hm23*h1m13*h12m13*h13m13), &
-                        -(-h13*(hm1+hm13) + hm1*hm13  +(h1+h12)*(h13-hm1-hm13) + h1*h12)/(hm2*hm3*hm12*h1m12*h12m12*h13m12),  &
-                         (-h13*(hm12+hm13)+ hm12*hm13 +(h1+h12)*(h13-hm12-hm13)+ h1*h12)/(hm1*hm2*hm23*h1m1*h12m1*h13m1),     &                                                         0.,                                                                                                  &
-                         (hm1*(hm12+hm13)+ hm12*hm13 -(h12+h13)*(hm1+hm12+hm13)+ h12*h13)/(h1*h2*h23*h1m1*h1m12*h1m13),       &
-                        -(hm1*(hm12+hm13)+ hm12*hm13 -(h1+h13)*(hm1+hm12+hm13) + h1*h13 )/(h2*h3*h12*h12m1*h12m12*h12m13),    &
-                         (hm1*(hm12+hm13)+ hm12*hm13 -(h1+h12)*(hm1+hm12+hm13) + h1*h12 )/(h3*h13*h23*h13m1*h13m12*h13m13)     /)
+   coeffs(:,4) = 24.*(/  (-h13*(hm1+hm12) + hm1*hm12  +(h1+h12)*(h13-hm1-hm12) + h1*h12)/ &
+                         (hm3*hm13*hm23*h1m13*h12m13*h13m13), &
+                        -(-h13*(hm1+hm13) + hm1*hm13  +(h1+h12)*(h13-hm1-hm13) + h1*h12)/ &
+                         (hm2*hm3*hm12*h1m12*h12m12*h13m12),  &
+                         (-h13*(hm12+hm13)+ hm12*hm13 +(h1+h12)*(h13-hm12-hm13)+ h1*h12)/ &
+                         (hm1*hm2*hm23*h1m1*h12m1*h13m1),     &  
+                         0.,                                  &
+                         (hm1*(hm12+hm13)+ hm12*hm13 -(h12+h13)*(hm1+hm12+hm13)+ h12*h13)/ &
+                         (h1*h2*h23*h1m1*h1m12*h1m13),       &
+                        -(hm1*(hm12+hm13)+ hm12*hm13 -(h1+h13)*(hm1+hm12+hm13) + h1*h13 )/ &
+                         (h2*h3*h12*h12m1*h12m12*h12m13),    &
+                         (hm1*(hm12+hm13)+ hm12*hm13 -(h1+h12)*(hm1+hm12+hm13) + h1*h12 )/ &
+                         (h3*h13*h23*h13m1*h13m12*h13m13)     /)
 
    coeffs(0,4) = -sum(coeffs(:,4))
 
