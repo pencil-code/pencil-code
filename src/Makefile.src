@@ -2005,8 +2005,8 @@ debug:
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
-	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start.x
-	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
+	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) -o start.x
+	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
 # 
 #  Needed for the underscore trick.
 #
