@@ -228,7 +228,7 @@ module Fixed_point
 !
   end subroutine pindex
 !***********************************************************************
-  subroutine get_fixed_points(f, tracers,trace_sub,vv)
+  subroutine get_fixed_points(f, tracers, trace_sub, vv)
 !
 !  trace stream lines of the vetor field stored in f(:,:,:,iaa)
 !
@@ -244,7 +244,8 @@ module Fixed_point
 !   filename for the fixed point output
     character(len=1024) :: filename
     real :: poincare, diff(4,2), phi_min
-    integer :: j, l, addx, addy, proc_idx, ierr, flag, status
+    integer :: j, l, addx, addy, proc_idx, ierr, flag
+    integer, dimension (MPI_STATUS_SIZE) :: status
 !   array with all finished cores
     integer :: finished_rooting(nprocx*nprocy*nprocz)
 !   variables for the final non-blocking mpi communication
@@ -459,7 +460,8 @@ module Fixed_point
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the tracer output
     character(len=1024) :: filename
-    integer :: j, flag, status
+    integer :: j, flag
+    integer, dimension (MPI_STATUS_SIZE) :: status
     real :: point(2)
 !   array with all finished cores
     integer :: finished_rooting(nprocx*nprocy*nprocz)
