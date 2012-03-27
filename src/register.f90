@@ -402,16 +402,19 @@ module Register
 !  Call finalization routines, i.e. freeing allocated memory.
 !
 ! 14-aug-2011/Bourdin.KIS: coded
+! 26-mar-2012/MR: finalize_deriv introduced
 !
       use Boundcond,        only: finalize_boundcond
       use Cdata
       use Special,          only: finalize_special
+      use Deriv,            only: finalize_deriv
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       call finalize_special(f,lstarting)
       call finalize_boundcond(f,lstarting)
+      call finalize_deriv()
 !
     endsubroutine finalize_modules
 !***********************************************************************

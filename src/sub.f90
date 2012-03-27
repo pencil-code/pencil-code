@@ -2462,8 +2462,8 @@ module Sub
 !
 !  07-aug-10/dhruba: coded
 ! 24-nov-11/dhruba: added upwinding
+! 26-mar-12/MR: doupwind introduced
 !
-      use Deriv, only: der6
       intent(in) :: gradM,f,k
       intent(out) :: ugradM
 !
@@ -2471,7 +2471,6 @@ module Sub
       real, dimension (nx,3,3,3) :: gradM
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: ugradM
-      real, dimension (nx) :: del6f
       integer :: k
       logical :: lupwind1=.false.
       logical, optional :: upwind
@@ -2496,33 +2495,7 @@ module Sub
         ipk=0
         do ipi=1,3
           do ipj=ipi,3
-!
-! x direction
-!
-            call der6(f,k+ipk,del6f,1,UPWIND=.true.)
-            ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-abs(uu(:,1))*del6f
-!
-! y direction
-!
-            call der6(f,k+ipk,del6f,2,UPWIND=.true.)
-            if (lcartesian_coords) then
-              ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-abs(uu(:,2))*del6f
-            else
-              if (lcylindrical_coords) &
-                  ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-rcyl_mn1*abs(uu(:,2))*del6f
-              if (lspherical_coords) &
-                  ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-r1_mn*abs(uu(:,2))*del6f
-            endif
-!
-!z direction
-!
-            call der6(f,k+ipk,del6f,3,UPWIND=.true.)
-            if ((lcartesian_coords).or.(lcylindrical_coords)) then
-              ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-abs(uu(:,3))*del6f
-            else
-              if (lspherical_coords) &
-                  ugradM(:,ipi,ipj)=ugradM(:,ipi,ipj)-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
-            endif
+            call doupwind(f,k+ipk,uu,ugradM(1,ipi,ipj))
             ipk=ipk+1
           enddo
         enddo
@@ -2551,8 +2524,7 @@ module Sub
 !  28-Aug-2007/dintrans: attempt of upwinding in cylindrical coordinates
 !  29-Aug-2007/dhruba: attempt of upwinding in spherical coordinates.
 !  28-Sep-2009/MR: ladd added for incremental work
-!
-      use Deriv, only: der6
+!  26-mar-12/MR: doupwind introduced
 !
       logical :: ladd1
 !
@@ -2561,7 +2533,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu,gradf
-      real, dimension (nx) :: ugradf, del6f
+      real, dimension (nx) :: ugradf
       integer :: k
       logical, optional :: upwind, ladd
 !
@@ -2580,36 +2552,9 @@ module Sub
 !
 !  Upwind correction (currently just for z-direction).
 !
-      if (present(upwind)) then; if (upwind) then
-!
-!  x-direction.
-!
-        call der6(f,k,del6f,1,UPWIND=.true.)
-        ugradf=ugradf-abs(uu(:,1))*del6f
-!
-!  y-direction.
-!
-        call der6(f,k,del6f,2,UPWIND=.true.)
-        if (lcartesian_coords) then
-          ugradf=ugradf-abs(uu(:,2))*del6f
-        else
-          if (lcylindrical_coords) &
-             ugradf=ugradf-rcyl_mn1*abs(uu(:,2))*del6f
-          if (lspherical_coords) &
-             ugradf=ugradf-r1_mn*abs(uu(:,2))*del6f
-        endif
-!
-!  z-direction.
-!
-        call der6(f,k,del6f,3,UPWIND=.true.)
-        if ((lcartesian_coords).or.(lcylindrical_coords)) then
-          ugradf=ugradf-abs(uu(:,3))*del6f
-        else
-          if (lspherical_coords) &
-             ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
-        endif
-!
-      endif; endif
+      if (present(upwind)) then
+        if (upwind) call doupwind(f,k,uu,ugradf)
+      endif
 !
     endsubroutine u_dot_grad_scl
 !***********************************************************************
@@ -2624,8 +2569,7 @@ module Sub
 !  28-Sep-2009/MR: ladd added for incremental work
 !  22-Jun-2011/dhruba: made this alternative version which also incorporated the
 ! kurganov-tadmore scheme.
-!
-      use Deriv, only: der6
+!  26-mar-12/MR: doupwind introduced
 !
       logical :: ladd1
 !
@@ -2634,7 +2578,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu,gradf
-      real, dimension (nx) :: ugradf, del6f, udelf
+      real, dimension (nx) :: ugradf, udelf
       integer :: k,iadvec
 ! iadvec=0 normal scheme
 ! iadvec=1 upwinding
@@ -2652,34 +2596,7 @@ module Sub
         call dot_mn(uu,gradf,ugradf,ladd1)
       case (1)
         call dot_mn(uu,gradf,ugradf,ladd1)
-!
-!  x-direction.
-!
-        call der6(f,k,del6f,1,UPWIND=.true.)
-        ugradf=ugradf-abs(uu(:,1))*del6f
-!
-!  y-direction.
-!
-        call der6(f,k,del6f,2,UPWIND=.true.)
-        if (lcartesian_coords) then
-          ugradf=ugradf-abs(uu(:,2))*del6f
-        else
-          if (lcylindrical_coords) &
-              ugradf=ugradf-rcyl_mn1*abs(uu(:,2))*del6f
-          if (lspherical_coords) &
-              ugradf=ugradf-r1_mn*abs(uu(:,2))*del6f
-        endif
-!
-!  z-direction.
-!
-        call der6(f,k,del6f,3,UPWIND=.true.)
-        if ((lcartesian_coords).or.(lcylindrical_coords)) then
-          ugradf=ugradf-abs(uu(:,3))*del6f
-        else
-          if (lspherical_coords) &
-              ugradf=ugradf-r1_mn*sin1th(m)*abs(uu(:,3))*del6f
-        endif
-!
+        call doupwind(f,k,uu,ugradf)
       case (2)
 !
 ! x, y and z directions respectively
@@ -5968,5 +5885,51 @@ nameloop: do
           call fatal_error('unit_vector:','has not the length 1')
 !
     endsubroutine unit_vector
+!***********************************************************************
+    subroutine doupwind(f,k,uu,ugradf)
+!
+!  Calculates upwind correction, works incrementally on ugradf
+!
+!  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
+!
+      use Deriv, only: der6, deri_3d_inds
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
+      integer                                           :: k
+      real, dimension (nx,3),             intent(IN)    :: uu
+      real, dimension (nx),               intent(INOUT) :: ugradf
+!      
+      real, dimension (nx,3) :: del6f
+      integer                :: ii
+      integer, dimension(nx) :: indxs
+!
+      do ii=1,3
+!
+        if ( lequidist(ii) ) then 
+          call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
+        else
+          where( uu(:,ii)>=0 ) 
+            indxs = 7
+          elsewhere
+            indxs = 8
+          endwhere
+          call deri_3d_inds(f(1,1,1,k),del6f,indxs,ii,lnometric=.true.)  
+        endif
+!
+        del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)  
+!
+      enddo
+!
+      if (lcylindrical_coords) &
+        del6f(:,2) = rcyl_mn1*del6f(:,2)
+!
+      if (lspherical_coords) then
+        del6f(:,2) = r1_mn*del6f(:,2)
+        del6f(:,3) = r1_mn*sin1th(m)*del6f(:,3)
+      endif
+!
+      ugradf = ugradf-sum(del6f,2)
+!
+    endsubroutine doupwind
 !***********************************************************************
 endmodule Sub

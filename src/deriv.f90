@@ -16,9 +16,10 @@ module Deriv
 !
   private
 !
-  public :: initialize_deriv
+  public :: initialize_deriv, finalize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
+  public :: deri_3d_inds
   public :: der_z,der2_z
   public :: der_upwind1st
   public :: der_onesided_4_slice
@@ -122,8 +123,8 @@ module Deriv
           df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (lspherical_coords)     df=df*r1_mn
-          if (lcylindrical_coords)   df=df*rcyl_mn1
+          if (lspherical_coords  ) df=df*r1_mn
+          if (lcylindrical_coords) df=df*rcyl_mn1
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
@@ -329,7 +330,7 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           fac=dx_1(l1:l2)**2
-          df2=fac*(der2_coef0*f (l1  :l2  ,m,n,k) &
+          df2=fac*(der2_coef0* f(l1  :l2  ,m,n,k) &
                   +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
                   +der2_coef2*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
                   +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
@@ -343,7 +344,7 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           fac=dy_1(m)**2
-          df2=fac*(der2_coef0*f(l1:l2,m  ,n,k) &
+          df2=fac*(der2_coef0* f(l1:l2,m  ,n,k) &
                   +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
@@ -359,7 +360,7 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           fac=dz_1(n)**2
-          df2=fac*(der2_coef0*f(l1:l2,m,n  ,k) &
+          df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
                    +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                    +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                    +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
@@ -1725,7 +1726,7 @@ module Deriv
 !***********************************************************************
     subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
 !
-!  made using der_onesided_4_slice_main. One sided derivstive is calculated
+!  made using der_onesided_4_slice_main. One sided derivative is calculated
 !  at one point (lll,mmm,nnn)
 !
 !  15-oct-09/Natalia: coded.
@@ -1902,4 +1903,30 @@ module Deriv
       endif
     endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
-endmodule Deriv
+    subroutine finalize_deriv()
+
+    endsubroutine finalize_deriv
+!***********************************************************************
+    subroutine deri_3d_inds(f,df,inds,j,lignored,lnometric)    
+!
+!  dummy routine for compatibility 
+!
+!  26-mar-12/MR: coded
+!
+      use Sub, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz)          :: f
+      real, dimension (nx)                :: df
+      integer                             :: j
+      logical,                   optional :: lignored, lnometric
+      integer, dimension(nx)              :: inds
+!
+      intent(in)  :: f,j,inds,lignored,lnometric
+      intent(out) :: df
+!
+      call keep_compiler_quiet(df)
+      call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
+!
+    endsubroutine deri_3d_inds
+!***********************************************************************
+  endmodule Deriv
