@@ -1652,7 +1652,7 @@ module Deriv
 !upwind 1st deriv, 5th order, u<0, sign already inverted!   tbc
 
    coeffs((/-3,-2,-1,1,2,3/),8) = (h1*h12*h13*hm1*hm12/720.)*coeffs((/-3,-2,-1,1,2,3/),6) 
-   coeffs(0,8) = sum(coeffs(:,8))
+   coeffs(0,8) = -sum(coeffs(:,8))
 
    endsubroutine calc_coeffs
 !*************************************************************************************************************
