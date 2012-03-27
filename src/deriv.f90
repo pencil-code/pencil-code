@@ -1913,7 +1913,7 @@ module Deriv
 !
 !  26-mar-12/MR: coded
 !
-      use Sub, only: keep_compiler_quiet
+!      use Sub, only: keep_compiler_quiet
 
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df
@@ -1924,7 +1924,7 @@ module Deriv
       intent(in)  :: f,j,inds,lignored,lnometric
       intent(out) :: df
 !
-      call keep_compiler_quiet(df)
+!      call keep_compiler_quiet(df)
       call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
 !
     endsubroutine deri_3d_inds
