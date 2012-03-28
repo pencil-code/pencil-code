@@ -61,12 +61,17 @@ module Deriv
     module procedure derij_other  ! derivative of another field
   endinterface
 !
-  interface  der_onesided_4_slice                ! Overload the der function
-    module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
+  interface  der_onesided_4_slice                  ! Overload the der function
+    module procedure  der_onesided_4_slice_main    ! derivative of an 'mvar' variable
     module procedure  der_onesided_4_slice_main_pt
-    module procedure  der_onesided_4_slice_other ! derivative of another field
+    module procedure  der_onesided_4_slice_other   ! derivative of another field
     module procedure  der_onesided_4_slice_other_pt
   endinterface
+
+!  interface deri_3d                  !not working, why?             
+!    module procedure deri_3d_ind
+!    module procedure deri_3d_inds
+!  endinterface  
 !
   contains
 !
@@ -209,7 +214,7 @@ module Deriv
 !
     endsubroutine der_other
 !***********************************************************************
-    subroutine deri_3d(f,df,ip,j,lignored,lnometric)    
+    subroutine deri_3d(f,df,i,j,lignored,lnometric)    
 !
 !  Along one pencil in NON f variable
 !  calculate derivative of a scalar, get scalar
@@ -222,26 +227,14 @@ module Deriv
 !
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df
-      integer                             :: ip,j
+      integer                             :: i,j
       logical,                   optional :: lignored, lnometric
-      integer, dimension(nx)              :: inds
 !
-      intent(in)  :: f,ip,j,inds
+      intent(in)  :: f,i,j,lignored,lnometric
       intent(out) :: df
 !
-      integer :: mm, nn, i, is, ii, li, ini
-      logical :: lmetric, linds
-
-      i=ip
-      linds=.false.
-      goto 1
-
-    entry deri_3d_inds(f,df,inds,j,lignored,lnometric)
-
-      if (lequidist(j)) i=inds(1)   !warning?
-      linds=.true.
-
- 1    continue    
+      integer :: mm, nn, is
+      logical :: lmetric
 !
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
@@ -270,19 +263,7 @@ module Deriv
                   + coeffsx(2,i,is)*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
                   + coeffsx(3,i,is)*(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n))
             endif
-          else if (linds) then
-            do ii=1,nx
-              li = l1+ii-1
-              ini = inds(ii)
-              df =  coeffsx(-3,ini,ii)*f(li-3,m,n) & 
-                  + coeffsx(-2,ini,ii)*f(li-2,m,n) &
-                  + coeffsx(-1,ini,ii)*f(li-1,m,n) &
-                  + coeffsx( 0,ini,ii)*f(li,  m,n) &
-                  + coeffsx( 1,ini,ii)*f(li+1,m,n) &
-                  + coeffsx( 2,ini,ii)*f(li+2,m,n) &
-                  + coeffsx( 3,ini,ii)*f(li+3,m,n)
-            enddo
-          else
+          else 
             df =  coeffsx(-3,i,:)*f(l1-3:l2-3,m,n) & 
                 + coeffsx(-2,i,:)*f(l1-2:l2-2,m,n) &
                 + coeffsx(-1,i,:)*f(l1-1:l2-1,m,n) &
@@ -311,24 +292,14 @@ module Deriv
             endif
           else 
             mm = m-m1+1
-            if (linds) then
-              df =  coeffsy(-3,inds,mm)*f(l1:l2,m-3,n) & 
-                  + coeffsy(-2,inds,mm)*f(l1:l2,m-2,n) &
-                  + coeffsy(-1,inds,mm)*f(l1:l2,m-1,n) &
-                  + coeffsy( 0,inds,mm)*f(l1:l2,m  ,n) &
-                  + coeffsy( 1,inds,mm)*f(l1:l2,m+1,n) &
-                  + coeffsy( 2,inds,mm)*f(l1:l2,m+2,n) &
-                  + coeffsy( 3,inds,mm)*f(l1:l2,m+3,n)
-            else
-              df =  coeffsy(-3,i,mm)*f(l1:l2,m-3,n) & 
-                  + coeffsy(-2,i,mm)*f(l1:l2,m-2,n) &
-                  + coeffsy(-1,i,mm)*f(l1:l2,m-1,n) &
-                  + coeffsy( 0,i,mm)*f(l1:l2,m  ,n) &
-                  + coeffsy( 1,i,mm)*f(l1:l2,m+1,n) &
-                  + coeffsy( 2,i,mm)*f(l1:l2,m+2,n) &
-                  + coeffsy( 3,i,mm)*f(l1:l2,m+3,n)
-               !!lignore???
-            endif
+            df =  coeffsy(-3,i,mm)*f(l1:l2,m-3,n) & 
+                + coeffsy(-2,i,mm)*f(l1:l2,m-2,n) &
+                + coeffsy(-1,i,mm)*f(l1:l2,m-1,n) &
+                + coeffsy( 0,i,mm)*f(l1:l2,m  ,n) &
+                + coeffsy( 1,i,mm)*f(l1:l2,m+1,n) &
+                + coeffsy( 2,i,mm)*f(l1:l2,m+2,n) &
+                + coeffsy( 3,i,mm)*f(l1:l2,m+3,n)
+             !!lignore???
           endif
           if (lmetric.and.(lspherical_coords .or. lcylindrical_coords)) df = df*r1i(:,i)
         else
@@ -350,24 +321,14 @@ module Deriv
             endif
           else
             nn = n-n1+1
-            if (linds) then
-              df =  coeffsz(-3,inds,nn)*f(l1:l2,m,n-3) & 
-                  + coeffsz(-2,inds,nn)*f(l1:l2,m,n-2) &
-                  + coeffsz(-1,inds,nn)*f(l1:l2,m,n-1) &
-                  + coeffsz( 0,inds,nn)*f(l1:l2,m,n  ) &
-                  + coeffsz( 1,inds,nn)*f(l1:l2,m,n+1) &
-                  + coeffsz( 2,inds,nn)*f(l1:l2,m,n+2) &
-                  + coeffsz( 3,inds,nn)*f(l1:l2,m,n+3)
-            else
-              df =  coeffsz(-3,i,nn)*f(l1:l2,m,n-3) & 
-                  + coeffsz(-2,i,nn)*f(l1:l2,m,n-2) &
-                  + coeffsz(-1,i,nn)*f(l1:l2,m,n-1) &
-                  + coeffsz( 0,i,nn)*f(l1:l2,m,n  ) &
-                  + coeffsz( 1,i,nn)*f(l1:l2,m,n+1) &
-                  + coeffsz( 2,i,nn)*f(l1:l2,m,n+2) &
-                  + coeffsz( 3,i,nn)*f(l1:l2,m,n+3)
-              !!lignore??
-            endif
+            df =  coeffsz(-3,i,nn)*f(l1:l2,m,n-3) & 
+                + coeffsz(-2,i,nn)*f(l1:l2,m,n-2) &
+                + coeffsz(-1,i,nn)*f(l1:l2,m,n-1) &
+                + coeffsz( 0,i,nn)*f(l1:l2,m,n  ) &
+                + coeffsz( 1,i,nn)*f(l1:l2,m,n+1) &
+                + coeffsz( 2,i,nn)*f(l1:l2,m,n+2) &
+                + coeffsz( 3,i,nn)*f(l1:l2,m,n+3)
+            !!lignore??
           endif
           if (lmetric.and.lspherical_coords) df=df*r1i(:,i)*sth1i(m,i)
         else
@@ -377,6 +338,79 @@ module Deriv
       endif
 !
     endsubroutine deri_3d
+!***********************************************************************
+    subroutine deri_3d_inds(f,df,inds,j,lnometric)
+!
+! only for first derivatives, i.e., inds(i) = 1,7,8 !!!
+!
+      real, dimension (mx,my,mz)          :: f
+      real, dimension (nx)                :: df
+      integer, dimension(nx)              :: inds
+      integer                             :: j
+      logical,                   optional :: lnometric
+!
+      intent(in)  :: f,j,inds,lnometric
+      intent(out) :: df
+!
+      integer :: mm, nn, ii, li, ini
+      logical :: lmetric
+
+      if (present(lnometric)) then
+        lmetric = .not.lnometric
+      else
+        lmetric = .true.
+      endif
+
+      if (j==1) then
+        if (nxgrid/=1) then
+          do ii=1,nx
+            li = l1+ii-1
+            ini = inds(ii)
+            df =  coeffsx(-3,ini,ii)*f(li-3,m,n) & 
+                + coeffsx(-2,ini,ii)*f(li-2,m,n) &
+                + coeffsx(-1,ini,ii)*f(li-1,m,n) &
+                + coeffsx( 0,ini,ii)*f(li,  m,n) &
+                + coeffsx( 1,ini,ii)*f(li+1,m,n) &
+                + coeffsx( 2,ini,ii)*f(li+2,m,n) &
+                + coeffsx( 3,ini,ii)*f(li+3,m,n)
+          enddo
+        else
+          df=0.
+          if (ip<=5) print*, 'deri_3d: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          mm = m-m1+1
+          df =  coeffsy(-3,inds,mm)*f(l1:l2,m-3,n) & 
+              + coeffsy(-2,inds,mm)*f(l1:l2,m-2,n) &
+              + coeffsy(-1,inds,mm)*f(l1:l2,m-1,n) &
+              + coeffsy( 0,inds,mm)*f(l1:l2,m  ,n) &
+              + coeffsy( 1,inds,mm)*f(l1:l2,m+1,n) &
+              + coeffsy( 2,inds,mm)*f(l1:l2,m+2,n) &
+              + coeffsy( 3,inds,mm)*f(l1:l2,m+3,n)
+          if (lmetric.and.(lspherical_coords .or. lcylindrical_coords)) df = df*r1i(:,1)
+        else
+          df=0.
+          if (ip<=5) print*, 'deri_3d: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          nn = n-n1+1
+          df =  coeffsz(-3,inds,nn)*f(l1:l2,m,n-3) & 
+              + coeffsz(-2,inds,nn)*f(l1:l2,m,n-2) &
+              + coeffsz(-1,inds,nn)*f(l1:l2,m,n-1) &
+              + coeffsz( 0,inds,nn)*f(l1:l2,m,n  ) &
+              + coeffsz( 1,inds,nn)*f(l1:l2,m,n+1) &
+              + coeffsz( 2,inds,nn)*f(l1:l2,m,n+2) &
+              + coeffsz( 3,inds,nn)*f(l1:l2,m,n+3)
+          if (lmetric.and.lspherical_coords) df=df*r1i(:,1)*sth1i(m,1)
+        else
+          df=0.
+          if (ip<=5) print*, 'deri_3d: Degenerate case in z-direction'
+        endif
+      endif
+!
+    endsubroutine deri_3d_inds
 !***********************************************************************
     subroutine deri(f,df,i1,i2,i,coefs,lequi)
 !
@@ -876,9 +910,9 @@ module Deriv
         upwnd = upwind
       else
         upwnd = .false.
-        if (.not.lcartesian_coords) &
-             call fatal_error('der6_other','in non-cartesian coordinates '// &    !tbc
-             'just works if upwinding is used')
+        !if (.not.lcartesian_coords) &
+        !     call fatal_error('der6_other','in non-cartesian coordinates '// &    !tbc
+        !     'just works if upwinding is used')
       endif
 !
       if (present(ignoredx)) then
