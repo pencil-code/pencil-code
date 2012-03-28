@@ -1925,6 +1925,7 @@ module Deriv
       intent(out) :: df
 !
 !      call keep_compiler_quiet(df)
+      df=0.
       call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
 !
     endsubroutine deri_3d_inds
