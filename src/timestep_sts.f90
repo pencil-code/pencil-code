@@ -3,6 +3,7 @@
 ! Module for the super-time-stepping scheme (STS)
 ! for diffusive terms (Alexiades, V., Amiez, G., &
 ! Gremaud, P. 1996, Commun. Num. Meth. Eng.,  12, 31)
+! which goes back to W. Gentzsch (ZAMM 58, T415-T416, 1978).
 !
 !
 !  TODO: add i.e. particles, interstellar, shear
@@ -124,7 +125,7 @@ module Timestep
         ! Alexiades (1996): (first: largest substep, last: smallest substep)
         tau(it) = dt_expl / ((-1+nu_sts)*cos(((2*j-1)*pi)/(2.0*itorder)) + 1+nu_sts)
         ! W. Gentzsch (1978): (first: smallest substep, last: largest substep)
-        ! tau(it) = dt_expl / ((cos(((2*it-1)*pi)/(2.0*itorder)) + 1.0) + R_sts/(2.0*itorder**2))
+        ! tau(it) = dt_expl / ((cos(((2*j-1)*pi)/(2.0*itorder)) + 1.0) + R_sts/(2.0*itorder**2))
       enddo
 !
     endsubroutine substeps
