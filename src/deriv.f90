@@ -1904,17 +1904,17 @@ module Deriv
     endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
     subroutine finalize_deriv()
-
+!
+!  Dummy
+!
     endsubroutine finalize_deriv
 !***********************************************************************
-    subroutine deri_3d_inds(f,df,inds,j,lignored,lnometric)    
+    subroutine deri_3d_inds(f,df,inds,j,lignored,lnometric)
 !
-!  dummy routine for compatibility 
+!  dummy routine for compatibility
 !
 !  26-mar-12/MR: coded
 !
-!      use Sub, only: keep_compiler_quiet
-
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df
       integer                             :: j
@@ -1924,10 +1924,9 @@ module Deriv
       intent(in)  :: f,j,inds,lignored,lnometric
       intent(out) :: df
 !
-!      call keep_compiler_quiet(df)
       df=0.
       call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
 !
     endsubroutine deri_3d_inds
 !***********************************************************************
-  endmodule Deriv
+ endmodule Deriv
