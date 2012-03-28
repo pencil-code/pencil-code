@@ -95,14 +95,36 @@ module Timestep
 !  Computes STS substeps based on the explicit time step.
 !
 !  17-march-11/gustavo: coded
+!  28-Mar-2012/Bourdin.KIS: added reverse and permuted order
+!
+      use Messages, only: fatal_error
 !
       real, dimension(itorder), intent(out) :: tau
       real, intent(in) :: dt_expl
-      integer :: it
+      integer :: it, j
 !
-      do it=1,itorder
-         tau(it) = dt_expl / ((-1.+nu_sts)*cos(((2.*it-1.)*pi)/(2.*itorder)) &
-              + 1. + nu_sts)
+      do it = 1, itorder
+        if (permute_sts == -1) then
+          ! Reverse order:
+          j = itorder + 1 - it
+        elseif (permute_sts > 0) then
+          if (modulo (itorder, permute_sts) == 0) call fatal_error( &
+              'timestep_sts', "'permute_sts' must not be a devider or 'itorder'")
+          ! Permuted order: (last substep stays last)
+          j = (modulo (it * permute_sts - 1, itorder) + 1)
+        elseif (permute_sts < 0) then
+          if (modulo (itorder, -permute_sts) == 0) call fatal_error( &
+              'timestep_sts', "'permute_sts' must not be a devider or 'itorder'")
+          ! Permuted reverse order: (last substep becomes first)
+          j = (modulo ((itorder + 1 - it) * (-permute_sts) - 1, itorder) + 1)
+        else
+          ! Regular order: (Default)
+          j = it
+        endif
+        ! Alexiades (1996): (first: largest substep, last: smallest substep)
+        tau(it) = dt_expl / ((-1+nu_sts)*cos(((2*j-1)*pi)/(2.0*itorder)) + 1+nu_sts)
+        ! W. Gentzsch (1978): (first: smallest substep, last: largest substep)
+        ! tau(it) = dt_expl / ((cos(((2*it-1)*pi)/(2.0*itorder)) + 1.0) + R_sts/(2.0*itorder**2))
       enddo
 !
     endsubroutine substeps
