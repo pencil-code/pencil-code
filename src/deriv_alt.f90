@@ -1033,9 +1033,7 @@ module Deriv
             enddo
 
             call deri_2d(work,df,4,1,coeffsy,lequidist(2))                      ! y-derivative
-!            print*, 'df=', df 
-!            print*, '==='        
-!            if ( m==11 ) stop    !.and. m==4 ) stop
+
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
@@ -1058,7 +1056,7 @@ module Deriv
 
             do ii=-3,+3
               if ( ii/=0 .or. .not.lequidist(3) ) &
-                call deri(f(1,m+ii,n),work(1,ii),l1,l2,1,coeffsx,lequidist(1))  ! x-derivative
+                call deri(f(1,m,n+ii),work(1,ii),l1,l2,1,coeffsx,lequidist(1))  ! x-derivative
             enddo
 
             call deri_2d(work,df,4,1,coeffsz,lequidist(3))                      ! z-derivative 
@@ -1162,7 +1160,7 @@ module Deriv
 
               do ii=-3,+3
                 if ( ii/=0 .or. .not.lequidist(3) ) &
-                  call deri(f(1,m+ii,n,k),work(1,ii),l1,l2,5,coeffsx,lequidist(1))      ! x-derivative
+                  call deri(f(1,m,n+ii,k),work(1,ii),l1,l2,5,coeffsx,lequidist(1))      ! x-derivative
               enddo
 
               call deri_2d(work,df,4,1,coeffsz,lequidist(3))                            ! z-derivative 
@@ -1177,7 +1175,7 @@ module Deriv
 
               do ii=-3,+3
                 if ( ii/=0 .or. .not.lequidist(3) ) &
-                  call deri(f(1,m+ii,n,k),work(1,ii),l1,l2,1,coeffsx,lequidist(1))      ! x-derivative
+                  call deri(f(1,m,n+ii,k),work(1,ii),l1,l2,1,coeffsx,lequidist(1))      ! x-derivative
               enddo
 
               call deri_2d(work,df,4,5,coeffsz,lequidist(3))                            ! z-derivative 
