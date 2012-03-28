@@ -5913,13 +5913,13 @@ nameloop: do
           elsewhere
             indxs = 8
           endwhere
-          call deri_3d_inds(f(1,1,1,k),del6f,indxs,ii,lnometric=.true.)  
+          call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)  
         endif
 !
         del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)  
 !
       enddo
-!
+!     
       if (lcylindrical_coords) &
         del6f(:,2) = rcyl_mn1*del6f(:,2)
 !
