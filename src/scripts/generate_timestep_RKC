@@ -67,7 +67,7 @@ my $f90 = ($opts{'f'} || $opts{'f90'} || ''); # flag for F90 vs text output
 # memoize('Cheby_der2_coeffs');
 
 my $module = 'Timestep';        # F90 module name
-my $subroutine = 'rk_2n';          # name of subroutine
+my $subroutine = 'time_step';          # name of subroutine
 my $indent = '    ';
 my $indent_by = 0;
 my $date_string = lc(strftime("%d-%b-%y", localtime()));
@@ -269,14 +269,14 @@ sub print_f90_subroutine_header {
     !  $date_string/perl: generated
     !
 
-        use Mpicomm
+        use Mpicomm, only: mpiallreduce_max
 
         real, dimension (mx,my,mz,mfarray) :: f
         ! real, dimension (mx,my,mz,mvar) :: fn_target, fn1_target
         real, dimension (mx,my,mz,mvar) :: df, dfn
         type (pencil_case) :: p
-        real, dimension(1) :: dt1, dt1_local
-        real               :: t0
+        real :: dt1, dt1_local, dt1_last=0.0
+        double precision :: t0
         integer :: iv
 
         ! Use pointers for cheaply flipping fn and fn1 after each substep
@@ -327,12 +327,11 @@ sub print_f90_subroutine {
                    "    dt1_local=maxval(dt1_max(1:nx))",
                    "",
                    "    ! Timestep growth limiter",
-                   "    if (real(ddt) .gt. 0.) dt1_local=max(dt1_local(1),dt1_last)",
-                   "    call mpireduce_max(dt1_local,dt1,1)",
-                   "    if (lroot) dt=1.0/dt1(1)",
+                   "    if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)",
+                   "    call mpiallreduce_max(dt1_local,dt1)",
+                   "    dt=1.0/dt1",
                    "    ! Timestep growth limiter",
-                   "    if (ddt/=0.) dt1_last=dt1_local(1)/ddt",
-                   "    call mpibcast_real(dt,1)",
+                   "    if (ddt/=0.) dt1_last=dt1_local/ddt",
                    "endif",
                    "!",
                    "! IMPLEMENT ME:",
@@ -371,6 +370,7 @@ sub print_f90_subroutine {
     }
     print_indented  (
                      "! Done: last fn is the updated f:",
+                     "! Increase time",
                      # "t = t0 + " . f90($c[$s-1]) . "*dt",
                      "t = t0 + dt",
                      "! need explicit loop here, as f(:,:,:,1:mvar) = fn",
@@ -439,7 +439,7 @@ module $module
 
     private
 
-    public :: $subroutine, timestep_autopsy
+    public :: $subroutine
 
 contains
 
@@ -472,14 +472,6 @@ sub print_f90_module_footer {
 
 
     endsubroutine swap
-!***********************************************************************
-    subroutine timestep_autopsy()
-
-        use Messages
-
-        call not_implemented("timestep_autopsy", "just a dummy routine")
-
-    endsubroutine timestep_autopsy
 !***********************************************************************
 
 endmodule $module
@@ -621,7 +613,15 @@ sub poly_deriv {
     return @der;
 }
 # ---------------------------------------------------------------------- #
-
-
+sub usage {
+    print "USAGE\n";
+    return;
+}
+# ---------------------------------------------------------------------- #
+sub version {
+    print "VERSION\n";
+    return;
+}
+# ---------------------------------------------------------------------- #
 
 # End of file generate_timestep_RKC
