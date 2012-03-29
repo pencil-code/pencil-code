@@ -8,9 +8,7 @@
 module Fixed_point
 !
   use Cdata
-  use Cparam
-  use Messages
-  use Streamlines
+  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -32,7 +30,7 @@ module Fixed_point
   contains
 !
 !***********************************************************************
-  subroutine fixed_points_prepare
+  subroutine fixed_points_prepare()
 !
 !  dummy
 !
@@ -49,5 +47,6 @@ module Fixed_point
       call keep_compiler_quiet(path)
 !
   endsubroutine wfixed_points
+!***********************************************************************
 
 endmodule Fixed_point
