@@ -4433,7 +4433,9 @@ module Initcond
 !
 !  Calculate transformed vector potential for every z layer
 !
-        zref = max(0.,z(i) - xyz0(3) - z0aa)
+        zref = max(0.,z(i) - z0aa)
+        if (abs(z(i)-z0aa) <= dz/2. ) &
+            print*,'Height of reference irefz for run.in: ',i
 !
         if (nygrid > 1) then
           where (k2 /= 0 )
