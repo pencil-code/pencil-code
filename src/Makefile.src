@@ -42,7 +42,7 @@ DUSTDENSITY       = nodustdensity
 DUSTVELOCITY      = nodustvelocity
 ENTROPY           = noentropy
 EOS               =   eos_idealgas
-FIXED_POINT       = fixed_point
+FIXED_POINT       = nofixed_point
 FORCING           = noforcing
 GRAVITY           = nogravity
 HYDRO             = nohydro
@@ -282,8 +282,8 @@ FARRAY_SRC=farray.f90
 FILTER_OBJ=filter.o
 FILTER_SRC=filter.f90
 #
-FIXED_POINT_OBJ=fixed_point.o
-FIXED_POINT_SRC=fixed_point.f90
+FIXED_POINT_OBJ=$(FIXED_POINT).o
+FIXED_POINT_SRC=$(FIXED_POINT).f90
 #
 GENERAL_OBJ=general.o
 GENERAL_SRC=general.f90
