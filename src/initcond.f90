@@ -4315,7 +4315,7 @@ module Initcond
 !
     endsubroutine corona_init
 !***********************************************************************
-    subroutine mdi_init(f,periodic)
+    subroutine mdi_init(f,periodic,z0aa)
 !
 !  Intialize the vector potential
 !  by potential field extrapolation
@@ -4330,6 +4330,7 @@ module Initcond
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
       logical, intent (in) :: periodic
+      real, intent (in) :: z0aa
       real :: zref,Bzflux
       logical :: exists
       integer :: i,j,idx2,idy2,stat,iostat,lend
@@ -4432,7 +4433,7 @@ module Initcond
 !
 !  Calculate transformed vector potential for every z layer
 !
-        zref = z(i) - xyz0(3)
+        zref = max(0.,z(i) - xyz0(3) - z0aa)
 !
         if (nygrid > 1) then
           where (k2 /= 0 )
