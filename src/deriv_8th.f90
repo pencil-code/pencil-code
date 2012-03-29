@@ -16,9 +16,10 @@ module Deriv
 !
   private
 !
-  public :: initialize_deriv
+  public :: initialize_deriv, finalize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
+  public :: deri_3d_inds
   public :: der_upwind1st, der_z, der2_z
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
@@ -1753,5 +1754,37 @@ module Deriv
       delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
 !
     endsubroutine der2_minmod
+!***********************************************************************
+    subroutine finalize_deriv()
+!
+!  Dummy
+!
+    endsubroutine finalize_deriv
+!***********************************************************************
+    subroutine deri_3d_inds(f,df,inds,j,lignored,lnometric)
+!
+!  dummy routine for compatibility
+!
+!  26-mar-12/MR: coded
+!
+!      use Sub, only: keep_compiler_quiet
+
+      real, dimension (mx,my,mz)          :: f
+      real, dimension (nx)                :: df
+      integer                             :: j
+      logical,                   optional :: lignored, lnometric
+      integer, dimension(nx)              :: inds
+!
+      intent(in)  :: f,j,inds,lignored,lnometric
+      intent(out) :: df
+!
+!      call keep_compiler_quiet(df)
+      call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
+!
+! dummy computation to avoid compiler warnings of unused variables
+      if (present(lignored).and.present(lnometric)) &
+          df  = inds + f(l1:l2,1,1) + j
+!
+    endsubroutine deri_3d_inds
 !***********************************************************************
 endmodule Deriv
