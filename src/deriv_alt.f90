@@ -908,6 +908,9 @@ module Deriv
 !
       if (present(upwind)) then
         upwnd = upwind
+        if ( upwnd .and. .not.lequidist(j) ) &
+          call fatal_error('der6_other','Not to be used '// &    !tbc
+          'for upwinding when grid is non-equidistant')
       else
         upwnd = .false.
         !if (.not.lcartesian_coords) &
@@ -924,25 +927,13 @@ module Deriv
 
       call deri_3d(f,df,6,j,igndx,lnometric=upwnd)
 !
-      if (upwnd) then
+      if ( upwnd .and. lequidist(j) ) then
         if (j==1) then
-          if (lequidist(j)) then
-            df = df*(dx_1(1)/60.)           ! as dx is ignored for equidistant grids
-          else
-            df = df/(60.*dx_1(l1:l2)**5)    ! tbc, performance, precalculate?
-          endif
+          df = df*(dx_1(1)/60.)           ! as dx is ignored for equidistant grids
         elseif (j==2) then
-          if (lequidist(j)) then
-            df = df*(dy_1(1)/60.)
-          else
-            df = df/(60.*dy_1(m)**5)    !tbc
-          endif
+          df = df*(dy_1(1)/60.)
         elseif (j==3) then
-          if (lequidist(j)) then
-            df = df*(dz_1(1)/60.)
-          else
-            df = df/(60.*dz_1(n)**5)    !tbc
-          endif
+          df = df*(dz_1(1)/60.)
         endif
       endif
 !
