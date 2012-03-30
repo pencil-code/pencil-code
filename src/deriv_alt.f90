@@ -710,7 +710,11 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
 !
-      call deri_3d(f(1,1,1,k),df,3,j,ignoredx)
+      if (present(ignoredx)) then
+        call deri_3d(f(1,1,1,k),df,3,j,ignoredx)
+      else
+        call deri_3d(f(1,1,1,k),df,3,j)
+      endif
 !
     endsubroutine der3
 !***********************************************************************
@@ -741,7 +745,11 @@ module Deriv
       if (present(upwind)) &
         call warning('der4','upwinding not implemented')
 !
-      call deri_3d(f(1,1,1,k),df,4,j,ignoredx)
+      if (present(ignoredx)) then
+        call deri_3d(f(1,1,1,k),df,4,j,ignoredx)
+      else
+        call deri_3d(f(1,1,1,k),df,4,j)
+      endif
 !
     endsubroutine der4
 !***********************************************************************
@@ -767,7 +775,11 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
 !
-      call deri_3d(f(1,1,1,k),df,5,j,ignoredx)
+      if (present(ignoredx)) then
+        call deri_3d(f(1,1,1,k),df,5,j,ignoredx)
+      else
+        call deri_3d(f(1,1,1,k),df,5,j)
+      endif
 !
     endsubroutine der5
 !***********************************************************************
@@ -796,7 +808,19 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
 !
-      call der6_other(f(1,1,1,k),df,j,ignoredx,upwind)
+      if (present(ignoredx)) then
+        if (present(upwind)) then
+          call der6_other(f(1,1,1,k),df,j,ignoredx,upwind)
+        else
+          call der6_other(f(1,1,1,k),df,j,ignoredx)
+        endif
+      else
+        if (present(upwind)) then
+          call der6_other(f(1,1,1,k),df,j,UPWIND=upwind)
+        else
+          call der6_other(f(1,1,1,k),df,j)
+        endif
+      endif
 !
     endsubroutine der6
 !***********************************************************************
