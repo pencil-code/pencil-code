@@ -3501,8 +3501,9 @@ module Special
 !***********************************************************************
     subroutine mark_boundary(f)
 !
-      use Sub, only: notanumber, cubic_step
+      use Mpicomm, only: mpisend_real,mpirecv_real
       use General, only: itoa, safe_character_assign
+      use Sub, only: notanumber, cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !
@@ -3510,72 +3511,109 @@ module Special
       character (len=*), parameter :: time_dat = 'boundlayer/times.dat'
       character (len=fnlen) :: data_dat
       character (len=intlen) :: llabel,rlabel
-      integer :: frame,unit=1,lend=0,ierr=0,i,j
+      integer :: frame,unit=1,lend=0,ierr=0,i,j,tag_left=350,tag_right=351,ipt
       real :: delta_t=0.
       logical :: init_left=.true.
+      real, dimension(:,:,:,:), allocatable :: global_left,global_right
       real, dimension(nx,ny,4,8) :: left,right=0.,inte
-      real, dimension(nx,ny) :: tmp
 !
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
-      if (nprocx /= 1 .or. nprocy /= 1) call fatal_error('mark_boundary','works only for nprocx=nprocy=1')
 !
       inquire(IOLENGTH=lend) tl
+!
       if (t .ge. tr) then
-        open (unit,file=time_dat,form='unformatted',status='unknown',recl=lend,access='direct')
-        ierr = 0
-        frame = 0
-        do while (ierr == 0)
-          frame=frame+1
-          read (unit,rec=frame,iostat=ierr) tl
-          read (unit,rec=frame+1,iostat=ierr) tr
-          if (ierr /= 0) then
-            frame=1
-            delta_t = t*unit_time                  ! EOF is reached => read again
+!
+        if (lroot) then
+          open (unit,file=time_dat,form='unformatted',status='unknown',recl=lend,access='direct')
+          ierr = 0
+          frame = 0
+          do while (ierr == 0)
+            frame=frame+1
             read (unit,rec=frame,iostat=ierr) tl
             read (unit,rec=frame+1,iostat=ierr) tr
-            ierr=-1
-          else
-            if (t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t) ierr=-1
-            ! correct time step is reached
-          endif
-        enddo
-        rlabel=itoa(10000+frame)
-        llabel=itoa(10000+frame-1)
-        write (*,*) 'File numbers ',llabel,' and ',rlabel
-        close (unit)
+            if (ierr /= 0) then
+              frame=1
+              delta_t = t*unit_time                  ! EOF is reached => read again
+              read (unit,rec=frame,iostat=ierr) tl
+              read (unit,rec=frame+1,iostat=ierr) tr
+              ierr=-1
+            else
+              if (t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t) ierr=-1
+              ! correct time step is reached
+            endif
+          enddo
+          rlabel=itoa(10000+frame)
+          llabel=itoa(10000+frame-1)
+          write (*,*) 'File numbers ',llabel,' and ',rlabel
+          close (unit)
+!  send the data to the other procs in the ipz=0 plane
+          do i=0,nprocx-1; do j=0,nprocy-1
+            ipt = i+nprocx*J
+            if (ipt /= 0) then
+              call mpisend_real(tl,1,ipt,tag_left)
+              call mpisend_real(tr,1,ipt,tag_right)
+            endif
+          enddo; enddo
+        else
+          call mpirecv_real(tl,1,0,tag_left)
+          call mpirecv_real(tr,1,0,tag_right)
+        endif 
 !
-        if (init_left) then
-          call safe_character_assign(data_dat,'boundlayer/input_'//trim(llabel)//'.dat')
+        if (lroot) then
+          if (.not. allocated(global_left)) allocate(global_left(nxgrid,nygrid,4,8))
+          if (.not. allocated(global_right)) allocate(global_right(nxgrid,nygrid,4,8))
+!
+          if (init_left) then
+            call safe_character_assign(data_dat,'boundlayer/input_'//trim(llabel)//'.dat')
+            open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
+                recl=nxgrid*nygrid*lend,access='direct')
+!
+            frame = 1
+            do j=1,8
+              do i=1,4
+                read (unit,rec=frame,iostat=ierr) global_left(:,:,i,j) 
+                frame = frame+1
+              enddo
+            enddo
+            close(unit)
+          else
+            left = right
+            init_left=.false.
+          endif
+!
+! Read new data
+          call safe_character_assign(data_dat,'boundlayer/input_'//trim(rlabel)//'.dat')
           open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
               recl=nxgrid*nygrid*lend,access='direct')
 !
           frame = 1
           do j=1,8
             do i=1,4
-              read (unit,rec=frame,iostat=ierr) tmp
-              left(:,:,i,j) = tmp
+              read (unit,rec=frame,iostat=ierr) global_right(:,:,i,j)
               frame = frame+1
             enddo
           enddo
           close(unit)
+!
+!  send the data to the other procs in the ipz=0 plane
+          do i=0,nprocx-1; do j=0,nprocy-1
+            ipt = i+nprocx*J
+            if (ipt /= 0) then
+              call mpisend_real(global_left(i*nx+1:(i+1)*nx,j*ny+1:(j+1)*ny,:,:), &
+                  (/nx,ny,4,8/),ipt,tag_left)
+              call mpisend_real(global_right(i*nx+1:(i+1)*nx,j*ny+1:(j+1)*ny,:,:), &
+                  (/nx,ny,4,8/),ipt,tag_right)
+            else
+              left = global_left(i*nx+1:(i+1)*nx,j*ny+1:(j+1)*ny,:,:)
+              right = global_right(i*nx+1:(i+1)*nx,j*ny+1:(j+1)*ny,:,:)
+            endif
+          enddo; enddo
         else
-          left = right
-          init_left=.false.
-        end if
-!
-        ! Read new data
-        call safe_character_assign(data_dat,'boundlayer/input_'//trim(rlabel)//'.dat')
-        open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
-            recl=nxgrid*nygrid*lend,access='direct')
-!
-        frame = 1
-        do j=1,8
-          do i=1,4
-            read (unit,rec=frame,iostat=ierr) right(:,:,i,j)
-            frame = frame+1
-          enddo
-        enddo
-        close(unit)
+          if (ipz == 0) then
+            call mpirecv_real(left, (/nx,ny,4,8/),0,tag_left)
+            call mpirecv_real(right, (/nx,ny,4,8/),0,tag_right)
+          endif
+        endif
       endif
 !
 ! Linear interpolate data
@@ -3584,9 +3622,8 @@ module Special
 !
 ! Use cubic step to interpolate the data.
 !
-!
-!      inte = cubic_step(real(t*unit_time)-tl,0.5*(tr-tl),0.5*(tr-tl))* &
-!          (right-left) +left
+!     inte = cubic_step(real(t*unit_time)-tl,0.5*(tr-tl),0.5*(tr-tl))* &
+!         (right-left) +left
 !
       do i=1,4
         if (lhydro) then
