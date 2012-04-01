@@ -15,6 +15,7 @@
 %%   chemistry.f90
 %%   coronae.f90
 %%   entropy_anelastic.f90
+%%   gravitational_waves.f90
 %%   lorenz_gauge.f90
 %%   magnetic_axisym.f90
 %%   meanfield.f90
@@ -28,6 +29,7 @@
 %%   solar_corona.f90
 %%   solid_cells.f90
 %%   temperature_idealgas.f90
+%%   temperature_ionization.f90
 %%   testfield_axisym.f90
 %%   testfield_axisym2.f90
 %%   testfield_axisym4.f90
@@ -654,6 +656,10 @@
   \var{ssmxy}     & $\left< s \right>_{z}$ \\
   \var{ssmxz}     & $\left< s \right>_{y}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{gravitational_waves.f90}} \\
+\midrule
+  \var{g22pt}     & $g_{22}(x_1,y_1,z_1,t)$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{lorenz_gauge.f90}} \\
 \midrule
   \var{phim}      & $\left<\phi\right>$ \\
@@ -765,6 +771,18 @@
                     \quad(time step relative to time
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{temperature_ionization.f90}} \\
+\midrule
+  \var{TTmax}     & $\max (T)$ \\
+  \var{TTmin}     & $\min (T)$ \\
+  \var{TTm}       & $\left< T \right>$ \\
+  \var{ethm}      & $\left< e_{\text{th}}\right> =
+                    \left< c_v \rho T \right> $
+                    \quad(mean thermal energy) \\
+  \var{eem}       & $\left< e \right> =
+                    \left< c_v T \right>$
+                    \quad(mean internal energy) \\
 \midrule
   \multicolumn{2}{c}{Module \file{testfield_axisym.f90}} \\
 \midrule
@@ -1501,6 +1519,7 @@
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule
+  \var{nu_tdep}   & time-dependent viscosity \\
   \var{fviscm}    & Mean value of viscous acceleration \\
   \var{fviscmin}  & Min value of viscous acceleration \\
   \var{fviscmax}  & Max value of viscous acceleration \\

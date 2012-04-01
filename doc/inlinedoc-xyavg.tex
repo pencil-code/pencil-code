@@ -7,7 +7,9 @@
 %%   density.f90
 %%   entropy.f90
 %%   magnetic.f90
+%%   meanfield.f90
 %%   temperature_idealgas.f90
+%%   temperature_ionization.f90
 %%   thermal_energy.f90
 %%   viscosity.f90
 
@@ -58,6 +60,7 @@
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
   \var{rhomz}     & $\left<\varrho\right>_{xy}$ \\
+  \var{rho2mz}    & $\left<\varrho^2\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
@@ -73,6 +76,7 @@
   \var{fradz_kramers} & $F_{\rm rad}$ (from Kramers'
                     opacity) \\
   \var{fradz_Kprof} & $F_{\rm rad}$ (from Kprof) \\
+  \var{fradz_constchi} & $F_{\rm rad}$ (from chi_const) \\
   \var{fturbz}    & $\left<\varrho T \chi_t \nabla_z
                     s\right>_{xy}$ \quad(turbulent
                     heat flux) \\
@@ -107,6 +111,7 @@
   \var{bx2rmz}    & $\left< B_x^2/\varrho \right>_{xy}$ \\
   \var{by2rmz}    & $\left< B_y^2/\varrho \right>_{xy}$ \\
   \var{bz2rmz}    & $\left< B_z^2/\varrho \right>_{xy}$ \\
+  \var{beta1mz}   & $\left< (B^2 / 2\mu_0) / p \right>_{xy}$ \\
   \var{jbmz}      & $\left<\Jv\cdot\Bv\right>|_{xy}$ \\
   \var{d6abmz}    & $\left<\nabla^6 \Av\cdot\Bv\right>|_{xy}$ \\
   \var{d6amz1}    & $\left<\nabla^6 \Av \right>_{xy}|_x$ \\
@@ -137,6 +142,11 @@
   \var{b2mz}      & $\left<\Bv^2\right>_{xy}$ \\
   \var{j2mz}      & $\left<\jv^2\right>_{xy}$ \\
   \var{poynzmz}   & Averaged poynting flux in z direction \\
+  \var{epsMmz}    & $\left<\eta\mu_0\jv^2\right>_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{meanfield.f90}} \\
+\midrule
+  \var{qpmz}      & $\left<q_p\right>_{xy}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
 \midrule
@@ -148,6 +158,10 @@
   \var{fpresymz}  & $\left<(\nabla p)_y\right>_{xy}$ \\
   \var{fpreszmz}  & $\left<(\nabla p)_z\right>_{xy}$ \\
 \midrule
+  \multicolumn{2}{c}{Module \file{temperature_ionization.f90}} \\
+\midrule
+  \var{mumz}      & $\left<\mu\right>_{xy}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{thermal_energy.f90}} \\
 \midrule
   \var{ppmz}      & $\left<p\right>_{xy}$ \\
@@ -158,6 +172,8 @@
   \var{fviscmz}   & $\left<2\nu\varrho u_i
                     \mathcal{S}_{iz} \right>_{xy}$
                     ($z$-component of viscous flux) \\
+  \var{epsKmz}    & $\left<2\nu\varrho\Strain^2
+                    \right>_{xy}$ \\
 %
 \bottomrule
 \end{longtable}

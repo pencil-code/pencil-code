@@ -5683,6 +5683,57 @@ You are running on a RedHat 8 or 9 system, right?
 Set \cmd{LANG=POSIX} in your shell's startup script and life will be much
 better.
 
+\subsubsection{Can I restart with a different number of cpus?}
+
+{\bf Q}: 
+I am running a simulation of nonhelical turbulence on the cluster
+using MPI. Suppose if I am running a $128^3$ simulation on 32 cpus/cores i.e.
+\begin{Verbatim}
+  integer, parameter :: ncpus=32,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
+  integer, parameter :: nxgrid=128,nygrid=nxgrid,nzgrid=nxgrid
+\end{Verbatim}
+And I stop the run after a bit. Is there a way to resume this run with
+different number of cpus like this :
+\begin{Verbatim}
+  integer, parameter :: ncpus=16,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
+  integer, parameter :: nxgrid=128,nygrid=nxgrid,nzgrid=nxgrid
+\end{Verbatim}
+I understand it has to be so in a new directory but making sure that
+the run starts from where I left it off in the previous directory.
+
+{\bf A}:
+The answer is no, if you use the standard distributed io.
+There is also parallel io, but I never used it.
+That would write the data in a single file, and then you could use the
+data for restart in another processor layout.
+
+\subsubsection{Can I restart with a different number of cpus?}
+
+{\bf Q}: 
+Is it right that once the simulation is resumed, pencil-code takes the
+last data from var.dat (which is the current snapshot of the fields)?
+If that is true, then, is it not possible to give that as the initial
+condition for the run in the second directory (with changed "ncpus")?
+Is there a mechanism already in place for that?
+
+{\bf A}:
+Yes, the code restarts from the last var.dat. It is written after a
+successful completion of the run, but it it crashes or you hit a time-out,
+there will be a var.dat that is overwritten every isave timesteps.
+If the system stops during writing, some var.dat files may be corrupt
+or have the wrong time. In that case you could restart from a good VAR
+file, if you have one, using, e.g.,
+\begin{Verbatim}
+  restart-new-dir-VAR . 46
+\end{Verbatim}
+where 46 is the number of your VAR file, i.e., VAR46 im this case.
+To restart in another directory, you say, from the old run directory,
+\begin{Verbatim}
+  restart-new-dir ../another_directory
+\end{Verbatim}
+Hope this helps.
+Look into pencil-code/bin/restart-new-dir to see what it is doing.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Visualization}
