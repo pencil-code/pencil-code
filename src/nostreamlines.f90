@@ -14,6 +14,8 @@ module Streamlines
   implicit none
 !
   public :: tracers_prepare, wtracers, trace_streamlines
+  public :: read_streamlines_init_pars, write_streamlines_init_pars
+  public :: read_streamlines_run_pars, write_streamlines_run_pars
 !
   integer, public :: ntracers
 !
@@ -54,5 +56,41 @@ module Streamlines
     call keep_compiler_quiet(f)
 !
   endsubroutine wtracers
+!***********************************************************************
+  subroutine read_streamlines_init_pars(unit,iostat)
+!
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+!
+    call keep_compiler_quiet(unit)
+    if (present(iostat)) call keep_compiler_quiet(iostat)
+!
+  endsubroutine read_streamlines_init_pars
+!***********************************************************************
+  subroutine write_streamlines_init_pars(unit)
+!
+    integer, intent(in) :: unit
+!
+    call keep_compiler_quiet(unit)
+!
+  endsubroutine write_streamlines_init_pars
+!***********************************************************************
+  subroutine read_streamlines_run_pars(unit,iostat)
+!
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+!
+    call keep_compiler_quiet(unit)
+    if (present(iostat)) call keep_compiler_quiet(iostat)
+!
+    endsubroutine read_streamlines_run_pars
+!***********************************************************************
+  subroutine write_streamlines_run_pars(unit)
+!
+    integer, intent(in) :: unit
+!
+    call keep_compiler_quiet(unit)
+!
+  endsubroutine write_streamlines_run_pars
 !***********************************************************************
 endmodule Streamlines

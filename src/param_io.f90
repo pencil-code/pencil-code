@@ -42,6 +42,7 @@ module Param_IO
   use Shock
   use Solid_Cells
   use Special
+  use Streamlines
   use Sub
   use Testfield
   use Testflow
@@ -238,6 +239,10 @@ module Param_IO
       if (ierr/=0) call sample_startpars('initial_condition_pars',ierr)
       rewind(unit)
 !
+      call read_streamlines_init_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('initial_streamlines_pars',ierr)
+      rewind(unit)
+!
       call read_eos_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('eos_init_pars',ierr)
       rewind(unit)
@@ -426,6 +431,7 @@ module Param_IO
         print*,'-----BEGIN sample namelist ------'
                                 print*,'&init_pars                 /'
         if (linitial_condition) print*,'&initial_condition_pars    /'
+        if (ltracers          ) print*,'&streamlines_init_pars     /'
         if (leos              ) print*,'&eos_init_pars             /'
         if (lhydro            ) print*,'&hydro_init_pars           /'
         if (ldensity          ) print*,'&density_init_pars         /'
@@ -497,6 +503,7 @@ module Param_IO
         write(unit,NML=init_pars          )
 !
         call write_initial_condition_pars(unit)
+        call write_streamlines_init_pars(unit)
         call write_eos_init_pars(unit)
         call write_hydro_init_pars(unit)
         call write_density_init_pars(unit)
@@ -566,6 +573,10 @@ module Param_IO
 !
       read(unit,NML=run_pars,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('run_pars',ierr)
+      rewind(unit)
+!
+      call read_streamlines_run_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('streamlines_run_pars',ierr)
       rewind(unit)
 !
       call read_eos_run_pars(unit,IOSTAT=ierr)
@@ -838,6 +849,7 @@ module Param_IO
 !
         write(unit,NML=run_pars)
 !
+        call write_streamlines_run_pars(unit)
         call write_eos_run_pars(unit)
         call write_hydro_run_pars(unit)
         call write_density_run_pars(unit)
@@ -1028,6 +1040,7 @@ module Param_IO
 !  Write each namelist separately.
 !
         call write_eos_init_pars(unit)
+        call write_streamlines_init_pars(unit)
         call write_hydro_init_pars(unit)
         call write_density_init_pars(unit)
         call write_forcing_init_pars(unit)
@@ -1100,6 +1113,8 @@ module Param_IO
       call parallel_open(unit,trim(datadir)//'/param.nml')
 !
       read(unit,NML=init_pars)
+      rewind(unit)
+      call read_streamlines_init_pars(unit)
       rewind(unit)
       call read_eos_init_pars(unit)
       rewind(unit)
@@ -1187,6 +1202,7 @@ module Param_IO
 !
         write(unit,NML=run_pars)
 !
+        call write_streamlines_run_pars(unit)
         call write_eos_run_pars(unit)
         call write_hydro_run_pars(unit)
         call write_density_run_pars(unit)

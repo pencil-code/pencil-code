@@ -13,7 +13,8 @@ module Streamlines
 !
   implicit none
 !
-  public :: tracers_prepare, wtracers
+  public :: tracers_prepare, wtracers, read_streamlines_init_pars
+  public :: write_streamlines_init_pars, read_streamlines_run_pars, write_streamlines_run_pars
 !
   include 'mpif.h'
 !
@@ -37,14 +38,15 @@ module Streamlines
 ! Time value to be written together with the tracers.
   real :: ttrace_write
 !
-  integer :: trace_sub = 1
-  character (len=labellen) :: trace_field = ''
+! parameters for the stream line tracing
+  integer, public :: trace_sub = 1
+  character (len=labellen), public :: trace_field = ''
 ! the integrated quantity along the field line
-  character (len=labellen) :: int_q = ''
+  character (len=labellen), public :: int_q = ''
+  real, public :: h_max = 0.4, h_min = 1e-4, l_max = 10., tol = 1e-4
 !
-! variables for the stream line tracing
-  real :: h_max = 0.4, h_min = 1e-4, l_max = 10., tol = 1e-4
-!
+  namelist /streamlines_init_pars/ &
+    trace_field, trace_sub, h_max, h_min, l_max, tol, int_q
   namelist /streamlines_run_pars/ &
     trace_field, trace_sub, h_max, h_min, l_max, tol, int_q
 !
@@ -225,7 +227,7 @@ module Streamlines
 !
   endsubroutine get_vector
 !***********************************************************************
-  subroutine trace_streamlines(f,tracers,n_tracers,h_max,h_min,l_max,tol,vv)
+  subroutine trace_streamlines(f,tracers,n_tracers,vv)
 !
 !   trace stream lines of the vetor field stored in vv
 !
@@ -239,7 +241,8 @@ module Streamlines
     real, dimension (3+mfarray) :: vvb
 !   the "borrowed" f-array at a given point for the field line integration
     real, dimension (mfarray) :: fb
-    real :: h_max, h_min, l_max, tol, dh, dist2
+!     real :: h_max, h_min, l_max, tol
+    real :: dh, dist2
 !   auxilliary vectors for the tracing
     real, dimension(3) :: x_mid, x_single, x_half, x_double
 !   current position on the grid
@@ -251,7 +254,7 @@ module Streamlines
     integer :: request_finished_send(nprocx*nprocy*nprocz)
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
 !
-    intent(in) :: n_tracers,h_max,h_min,l_max,tol
+    intent(in) :: n_tracers
 !
 !   tracing stream lines
 !
@@ -525,12 +528,58 @@ module Streamlines
     write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/tracers.dat'
     open(unit = 1, file = filename, form = "unformatted", position = "append")
 !     write(*,*) iproc, "wtracers: call streamline tracer"
-    call trace_streamlines(f,tracers,nx*ny*trace_sub**2,h_max,h_min,l_max,tol,vv)
+    call trace_streamlines(f,tracers,nx*ny*trace_sub**2,vv)
     write(1) ttrace_write, tracers(:,:)
     close(1)
 !
     deallocate(tracers)
     deallocate(vv)
   end subroutine wtracers
+!***********************************************************************
+  subroutine read_streamlines_init_pars(unit,iostat)
+!
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+!
+    if (present(iostat)) then
+      read(unit,NML=streamlines_init_pars,ERR=99, IOSTAT=iostat)
+    else
+      read(unit,NML=streamlines_init_pars,ERR=99)
+    endif
+!
+99  return
+!
+  endsubroutine read_streamlines_init_pars
+!***********************************************************************
+  subroutine write_streamlines_init_pars(unit)
+!
+    integer, intent(in) :: unit
+!
+    write(unit,NML=streamlines_init_pars)
+!
+  endsubroutine write_streamlines_init_pars
+!***********************************************************************
+  subroutine read_streamlines_run_pars(unit,iostat)
+!
+    integer, intent(in) :: unit
+    integer, intent(inout), optional :: iostat
+!
+    if (present(iostat)) then
+      read(unit,NML=streamlines_run_pars,ERR=99, IOSTAT=iostat)
+    else
+      read(unit,NML=streamlines_run_pars,ERR=99)
+    endif
+!
+99  return
+!
+  endsubroutine read_streamlines_run_pars
+!***********************************************************************
+  subroutine write_streamlines_run_pars(unit)
+!
+    integer, intent(in) :: unit
+!
+    write(unit,NML=streamlines_run_pars)
+!
+  endsubroutine write_streamlines_run_pars
 !***********************************************************************
 endmodule Streamlines
