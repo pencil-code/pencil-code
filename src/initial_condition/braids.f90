@@ -29,13 +29,6 @@ module InitialCondition
 ! word = sequence of the braid group
 ! prof = the amplitude profile across the tube
 !
-! h_max, h_min = max and min step size for the field line tracing
-! l_max = maximal length of traced field lines
-! tol = error tolerance for the field line tracing
-! trace_sub = number of sub samples for each grid and direction for the field line tracing
-! trace_field = vector field which should be traced
-! int_q = the integrated quantity along the field line
-!
 ! n_blobs = number of blobs for the blob configuration
 ! xc, yc, zc = position of the blobs
 ! blob_sgn = sign of the twist in the blob
@@ -52,10 +45,9 @@ module InitialCondition
   real :: blob_scale = 1.
 !
   namelist /initial_condition_pars/ &
-    ampl,width_tube,l_sigma,steepnes,B_bkg,word,prof,trace_field,h_max,h_min,l_max,tol,trace_sub, &
-    int_q, &
-! blob variables
-    n_blobs, xc, yc, zc, blob_sgn, l_blob, blob_scale
+    ampl,width_tube,l_sigma,steepnes,B_bkg,word,prof, &
+!   blob variables
+    n_blobs,xc,yc,zc,blob_sgn,l_blob,blob_scale
 !
   contains
 !***********************************************************************
@@ -450,7 +442,6 @@ module InitialCondition
     if (trace_field == 'bb' .and. ipz == 0) then
 !
 !     allocate the memory for the tracers
-!       write(*,*) iproc, "allocating memory of size", ((nx-1)*trace_sub+1)*((ny-1)*trace_sub+1)
 !       allocate(tracers(((nx-1)*trace_sub+1)*((ny-1)*trace_sub+1),7))
       allocate(tracers(nx*ny*trace_sub**2,7))
 !     allocate memory for the traced field
@@ -461,7 +452,6 @@ module InitialCondition
           call curl(f,iaa,vv(:,m-nghost,n-nghost,:))
         enddo
       enddo
-!       write(*,*) iproc, "allocation successful"
 !     create the initial seeds at z(1+nghost)-ipz*nz*dz+dz
       do j=1,nx*trace_sub
         do k=1,ny*trace_sub
@@ -477,7 +467,7 @@ module InitialCondition
 !
 !     find the tracers
 !
-      call trace_streamlines(f,tracers,nx*ny*trace_sub**2,h_max,h_min,l_max,tol,vv)
+      call trace_streamlines(f,tracers,nx*ny*trace_sub**2,vv)
 !     write into output file
       write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/tracers.dat'
       open(unit = 1, file = filename, form = "unformatted")
@@ -486,7 +476,7 @@ module InitialCondition
 !
 !     find the fixed points
 !
-      call get_fixed_points(f,tracers,trace_sub,vv)
+      call get_fixed_points(f,tracers,vv)
       write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/fixed_points.dat'
       open(unit = 1, file = filename, form = "unformatted")
       write(1) 0.
@@ -495,7 +485,10 @@ module InitialCondition
         write(1) fixed_points(l,:)
       enddo
       close(1)
+!
+!     free allocated memory
       deallocate(tracers)
+      deallocate(vv)
     endif
 !
   endsubroutine initial_condition_aa
