@@ -84,7 +84,7 @@ module Deriv
 
       do i=1,6 
 
-        if (lspherical_coords  ) then                         !-> grid.f90
+        if (lspherical_coords) then                         !-> grid.f90
           r1i  (:,i) = r1_mn**i
           sth1i(:,i) = sin1th**i
         endif
@@ -1588,13 +1588,13 @@ module Deriv
    real :: h1, h2, h3, hm1, hm2, hm3, h12, h23, h13, hm12, hm23, hm13, &
            h1m1, h1m12, h1m13, h12m1, h13m1, h12m12, h13m12, h12m13, h13m13
 
-   h1    = grid(1);            h2    = grid(2);           h3    = grid(3)
-   hm1   = grid(0);            hm2   = grid(-1);          hm3   = grid(-2)
-   h12   = grid(1) + grid(2);  h23   = grid(2)+grid(3);   h13   = h12+grid(3)
-   hm12  = grid(0) + grid(-1); hm23  = grid(-1)+grid(-2); hm13  = hm12+grid(-2)
-   h1m1  = grid(1) + grid(0);  h1m12 = grid(1)+hm12;      h1m13 = grid(1) + hm13  
-   h12m1 = h12 + grid(0); h12m12 = h12 + hm12; h12m13 = h12 + hm13  
-   h13m1 = h13 + grid(0); h13m12 = h13 + hm12; h13m13 = h13 + hm13  
+   h1    = grid(1);   h2    = grid(2); h3    = grid(3)
+   hm1   = grid(0);   hm2   = grid(-1);hm3   = grid(-2)
+   h12   = h1 + h2;   h23   = h2+h3;   h13   = h12+h3
+   hm12  = hm1 + hm2; hm23  = hm2+hm3; hm13  = hm12+hm3
+   h1m1  = h1 + hm1;  h1m12 = h1+hm12;      h1m13 = h1 + hm13  
+   h12m1 = h12 + hm1; h12m12 = h12 + hm12; h12m13 = h12 + hm13  
+   h13m1 = h13 + hm1; h13m12 = h13 + hm12; h13m13 = h13 + hm13  
 
    coeffs(:,1) = (/ -h1*h12*h13*hm1*hm12/(hm3*hm13*hm23*h1m13*h12m13*h13m13), &
                      h1*h12*h13*hm1*hm13/(hm2*hm3*hm12*h1m12*h12m12*h13m12),  &
@@ -1682,17 +1682,20 @@ module Deriv
 
    coeffs(0,5) = -sum(coeffs(:,5))
 
-   coeffs(:,6) = 720.*(/ 1/(hm3*hm13*hm23*h1m13*h12m13*h13m13),&
-                        -1/(hm2*hm3*hm12*h1m12*h12m12*h13m12), &
-                         1/(hm1*hm2*hm23*h1m1*h12m1*h13m1),    &
-                         0.e0,                                 &
-                         1/(h1*h2*h23*h1m1*h1m12*h1m13),       &
-                        -1/(h2*h3*h12*h12m1*h12m12*h12m13),    &
-                         1/(h3*h13*h23*h13m1*h13m12*h13m13)     /)
+   coeffs(:,6) = 720.*(/ 1./(hm3*hm13*hm23*h1m13*h12m13*h13m13),&
+                        -1./(hm2*hm3*hm12*h1m12*h12m12*h13m12), &
+                         1./(hm1*hm2*hm23*h1m1*h12m1*h13m1),    &
+                         0.,                                    &
+                         1./(h1*h2*h23*h1m1*h1m12*h1m13),       &
+                        -1./(h2*h3*h12*h12m1*h12m12*h12m13),    &
+                         1./(h3*h13*h23*h13m1*h13m12*h13m13)     /)
 
    coeffs(0,6) = -sum(coeffs(:,6))
 
 !upwind 1st deriv, 5th order, u>0
+
+   coeffs((/-3,-2,-1,1,2,3/),7) = (h1*h12*hm1*hm12*hm13/720.)*coeffs((/-3,-2,-1,1,2,3/),6) 
+   coeffs(0,7) = -sum(coeffs(:,7))
 
    coeffs(:,7) = (h1*h12*hm1*hm12*hm13/720.)*coeffs(:,6)
 
@@ -1700,6 +1703,8 @@ module Deriv
 
    coeffs((/-3,-2,-1,1,2,3/),8) = (h1*h12*h13*hm1*hm12/720.)*coeffs((/-3,-2,-1,1,2,3/),6) 
    coeffs(0,8) = -sum(coeffs(:,8))
+
+   coeffs(:,8) = (h1*h12*h13*hm1*hm12/720.)*coeffs(:,6)
 
    endsubroutine calc_coeffs
 !*************************************************************************************************************
