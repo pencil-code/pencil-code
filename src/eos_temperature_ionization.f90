@@ -2123,8 +2123,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED in '// &
-          ' eos_temperature_ionization")
+      call stop_it("bc_lnrho_cfb_r_iso: NOT IMPLEMENTED in "// &
+          "eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2138,8 +2138,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED in '// &
-          ' eos_temperature_ionization")
+      call stop_it("bc_lnrho_hds_z_iso: NOT IMPLEMENTED in "// &
+          "eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -2153,8 +2153,8 @@ module EquationOfState
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED in '// &
-          ' eos_temperature_ionization")
+      call stop_it("bc_lnrho_hdss_z_iso: NOT IMPLEMENTED in "// &
+          "eos_temperature_ionization")
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
