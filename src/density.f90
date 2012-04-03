@@ -103,7 +103,7 @@ module Density
       lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
-      r0_rho, invgrav_ampl, rnoise_int, rnoise_ext
+      r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, density_xaver_range
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -115,7 +115,8 @@ module Density
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
-      rzero_ffree, wffree, tstart_mass_source, tstop_mass_source
+      rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
+      density_xaver_range
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
