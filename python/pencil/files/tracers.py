@@ -181,31 +181,33 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     n_fixed = 0
     
     # read the data from all cores
-    for i in range(n_proc):      
+    for i in range(n_proc):
         fixed_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
-        tmp = fixed_file.read(4)
+        tmp = fixed_file.read()
         
         data.append(data_struct())
+        
+        # The index of the current value for t in the tmp array.
+        # Note that each entry has the length 4 bytes.
+        m = 4
         eof = 0
-        if tmp == '':
-            eof = 1
         while (eof == 0):
-            data[i].t.append(struct.unpack("<ff", fixed_file.read(8))[0])
-            n_fixed_core = int(struct.unpack("<fff", fixed_file.read(12))[1])
+            data[i].t.append(struct.unpack("<f", tmp[m:m+4])[0])
+            n_fixed_core = int(struct.unpack("<f", tmp[m+3*4:m+4*4])[0])
             n_fixed += n_fixed_core
             data[-1].fidx.append(n_fixed_core)
 
             x = list(np.zeros(n_fixed_core))
             y = list(np.zeros(n_fixed_core))
             for j in range(n_fixed_core):
-                x[j] = struct.unpack("<ff", fixed_file.read(8))[1]
-                y[j] = struct.unpack("<ff", fixed_file.read(8))[0]
+                x[j] = struct.unpack("<f", tmp[m+6*4+j*4*6:m+7*4+j*4*6])[0]
+                y[j] = struct.unpack("<f", tmp[m+7*4+j*4*6:m+8*4+j*4*6])[0]
             data[i].x.append(x)
             data[i].y.append(y)
-
-            tmp = fixed_file.read(4)
-            if tmp == '':
-                eof = 1
+                
+            m = m + (n_fixed_core*4 + 7)*4
+            if m >= len(tmp):
+	        eof = 1
 
         fixed_file.close()
         
