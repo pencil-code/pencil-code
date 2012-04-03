@@ -2472,7 +2472,6 @@ module Sub
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: ugradM
       integer :: k
-      logical :: lupwind1=.false.
       logical, optional :: upwind
       integer :: ipi,ipj,ipk
 !
@@ -2485,21 +2484,22 @@ module Sub
 !
 !  Test if Upwind is used.
 !
-      if (present(upwind)) lupwind1=upwind
-      if (lupwind1) then
+      if (present(upwind)) then
+        if (upwind) then
 !
 ! The same operation needs to be done to each element
 ! of the matrix ugradM. We assume below that this matrix
 ! is symmetric. Otherwise the following should be written.
 !
-        ipk=0
-        do ipi=1,3
-          do ipj=ipi,3
-            call doupwind(f,k+ipk,uu,ugradM(1,ipi,ipj))
-            ipk=ipk+1
+          ipk=0
+          do ipi=1,3
+            do ipj=ipi,3
+              call doupwind(f,k+ipk,uu,ugradM(1,ipi,ipj))
+              ipk=ipk+1
+            enddo
           enddo
-        enddo
-        call symmetrise3x3_ut2lt(ugradM)
+          call symmetrise3x3_ut2lt(ugradM)
+        endif
       endif
 !
 !  Spherical and cylindrical coordinates are not
@@ -2550,7 +2550,7 @@ module Sub
 !
       call dot_mn(uu,gradf,ugradf,ladd1)
 !
-!  Upwind correction (currently just for z-direction).
+!  Upwind correction 
 !
       if (present(upwind)) then
         if (upwind) call doupwind(f,k,uu,ugradf)
@@ -2613,7 +2613,6 @@ module Sub
               iadvec
           call fatal_error('u_dot_grad_scl','')
         endselect
-!
 !
     endsubroutine u_dot_grad_scl_alt
 !***********************************************************************
