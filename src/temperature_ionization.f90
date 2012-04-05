@@ -496,6 +496,7 @@ module Entropy
       use Special, only: special_calc_entropy
       use Sub, only: cubic_step,identify_bcs
       use Viscosity, only: calc_viscous_heat
+      use Interstellar, only: calc_heat_cool_interstellar
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (out) :: df
@@ -567,8 +568,7 @@ module Entropy
 !
 !  Interstellar radiative cooling and UV heating
 !
-      if (linterstellar) &
-          call calc_heat_cool_interstellar(f,df,p,Hmax)
+      if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
