@@ -4575,6 +4575,15 @@ module Entropy
         prof = step(x(l1:l2),rcool,wcool)-prof2
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool-cool2*prof2*(p%cs2-cs2cool2)/cs2cool2
 !
+!  Similar to shell3, it cools/heats to defined profile
+!
+      case ('shell3')
+        if (rcool==0.0) rcool=r_ext
+        if (rcool2==0.0) rcool2=r_ext
+        prof = step(x(l1:l2),rcool,wcool)
+        prof2 = cs2cool + abs(cs2cool2-cs2cool)*step(x(l1:l2),rcool2,wcool2)
+        heat = heat - cool*prof*(p%cs2-prof2)/prof2
+!
 !  Latitude dependent heating/cooling: imposes a latitudinal variation
 !  of temperature proportional to cos(theta) at each depth. deltaT gives
 !  the amplitude of the variation between theta_0 and the equator.
