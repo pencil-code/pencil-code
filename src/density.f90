@@ -2725,17 +2725,14 @@ module Density
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************
-    subroutine boussinesq(f,df,dt_)
+    subroutine boussinesq(f)
 !
 !  23-mar-2012/dintrans: coded
 !  dummy routine for the Boussinesq approximation
 !  
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, intent(in) :: dt_
 !
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dt_)
+      call keep_compiler_quiet(f)
 !
     endsubroutine boussinesq
 !***********************************************************************
