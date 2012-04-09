@@ -465,6 +465,8 @@ module Entropy
             else
               f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+log(TT_const)
             endif
+            cs2bot=gamma_m1*TT_const
+            cs2top=gamma_m1*TT_const
 !
           case ('single_polytrope'); call single_polytrope(f)
 !

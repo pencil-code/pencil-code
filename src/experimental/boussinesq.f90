@@ -284,18 +284,16 @@ module Density
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************
-    subroutine boussinesq(f,df,dt_)
+    subroutine boussinesq(f)
 !
       use Poisson, only: inverse_laplacian
       use Sub, only: div, grad
       use Boundcond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
-      real, intent(in) :: dt_
       real :: s
       integer :: j, ju
 !
@@ -304,7 +302,7 @@ module Density
       call update_ghosts(f,iuu,iuu+2)
       do n=n1,n2; do m=m1,m2
         call div(f,iuu,phi_rhs_pencil)
-        f(l1:l2,m,n,ipp)=phi_rhs_pencil/dt_
+        f(l1:l2,m,n,ipp)=phi_rhs_pencil/dt
       enddo; enddo
       if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,ipp)
 !
@@ -325,7 +323,7 @@ module Density
         call grad(f,ipp,gpp)
         do j=1,3
           ju=j+iuu-1
-          f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-dt_*gpp(:,j)
+          f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-dt*gpp(:,j)
         enddo
       enddo; enddo
 !

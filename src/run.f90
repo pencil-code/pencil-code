@@ -82,6 +82,7 @@ program run
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
   use Timeavg
   use Timestep,        only: time_step
+  use Density,         only: boussinesq
 !
   implicit none
 !
@@ -571,7 +572,10 @@ program run
 !  in the temperature equation (using the implicit_physics module).
 !
     if (lADI) call calc_heatcond_ADI(f)
+!
     if (ltestperturb) call testperturb_finalize(f)
+!
+    if (lanelastic) call boussinesq(f)
 !
     if (lroot) icount=icount+1  !  reliable loop count even for premature exit
 !
