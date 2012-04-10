@@ -51,7 +51,7 @@ module Sub
   public :: del2m3x3_sym
   public :: del4v, del4, del2vi_etc
   public :: del6v, del6, del6_other, del6fj, del6fjv
-  public :: gradf_upw1st
+  public :: gradf_upw1st, doupwind
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub
   public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
@@ -1993,9 +1993,9 @@ module Sub
 !
 !  Exit if this is requested for non-cartesian runs.
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-          call fatal_error('del6v', &
-          'not implemented for non-cartesian coordinates')
+      !!!!if (lcylindrical_coords.or.lspherical_coords) &
+      !!!!    call fatal_error('del6v', &
+      !!!!    'not implemented for non-cartesian coordinates')
 !
     endsubroutine del6v
 !***********************************************************************
@@ -2223,9 +2223,9 @@ module Sub
 !
 !  Exit if this is requested for lspherical_coords run.
 !
-        if (lspherical_coords.or.lcylindrical_coords) &
-            call fatal_error('del6', &
-            'not implemented for non-cartesian coordinates')
+!!!!        if (lspherical_coords.or.lcylindrical_coords) &
+!!!!            call fatal_error('del6', &
+!!!!            'not implemented for non-cartesian coordinates')
       endif
 !
       call der6(f,k,d6fdx,1,ignore_dx)
@@ -5885,11 +5885,12 @@ nameloop: do
 !
     endsubroutine unit_vector
 !***********************************************************************
-    subroutine doupwind(f,k,uu,ugradf)
+    subroutine doupwind(f,k,uu,ugradf,plus)
 !
 !  Calculates upwind correction, works incrementally on ugradf
 !
 !  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
+!   9-apr-12/MR: optional parameter plus added
 !
       use Deriv, only: der6, deri_3d_inds
 !
@@ -5897,10 +5898,12 @@ nameloop: do
       integer                                           :: k
       real, dimension (nx,3),             intent(IN)    :: uu
       real, dimension (nx),               intent(INOUT) :: ugradf
+      logical,                            intent(IN), optional :: plus
 !      
       real, dimension (nx,3) :: del6f
       integer                :: ii
       integer, dimension(nx) :: indxs
+      logical                :: lplus
 !
       do ii=1,3
 !
@@ -5927,7 +5930,16 @@ nameloop: do
         del6f(:,3) = r1_mn*sin1th(m)*del6f(:,3)
       endif
 !
-      ugradf = ugradf-sum(del6f,2)
+      if (present(plus)) then
+        lplus = plus
+      else
+        lplus = .false.
+      endif
+      if (lplus) then
+        ugradf = ugradf+sum(del6f,2)
+      else
+        ugradf = ugradf-sum(del6f,2)
+      endif
 !
     endsubroutine doupwind
 !***********************************************************************
