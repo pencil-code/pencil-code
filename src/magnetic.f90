@@ -2390,6 +2390,7 @@ module Magnetic
 !  12-aug-03/christer: added alpha effect (alpha in the equation above)
 !  26-may-04/axel: ambipolar diffusion added
 !  18-jun-04/axel: Hall term added
+!   9-apr-12/MR: upwinding for ladvective_gauge=F generalized
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
@@ -2904,13 +2905,18 @@ module Magnetic
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
 !
         else
-          do j=1,3; do k=1,3
-            if (k/=j) then
-              uxb_upw(:,j)=uxb_upw(:,j)+p%uu(:,k)*(p%aij(:,k,j)-p%aij(:,j,k))
-              call der6(f,iaa+j-1,penc,k,upwind=.true.)
-              uxb_upw(:,j) = uxb_upw(:,j) + abs(p%uu(:,k))*penc
-            endif
-          enddo; enddo
+          do j=1,3
+!
+            do k=1,3
+              if (k/=j) then
+                uxb_upw(:,j)=uxb_upw(:,j)+p%uu(:,k)*(p%aij(:,k,j)-p%aij(:,j,k))
+              endif
+            enddo
+!            
+            tmp2 = p%uu; tmp2(:,j)=0.                   !! performance??
+            call doupwind(f,iaa+j-1,tmp2,uxb_upw(1,j),plus=.true.)
+!
+          enddo
         endif
 !
 !  Full right hand side of the induction equation.
