@@ -47,6 +47,7 @@ module Entropy
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
+  real :: beta_bouss=-1.0
   integer, parameter :: nheatc_max=3
   logical, pointer :: lpressuregradient_gas
   logical :: ladvection_temperature=.true.
@@ -81,7 +82,8 @@ module Entropy
       lheatc_chiconst_accurate, hcond0, lcalc_heat_cool, lfreeze_lnTTint, &
       lfreeze_lnTText, widthlnTT, mpoly0, mpoly1, mpoly2, lhcond_global, &
       lviscosity_heat, chi_hyper3, chi_shock, Fbot, Tbump, Kmin, Kmax, &
-      hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, cool
+      hole_slope, hole_width, Kgpara, Kgperp, lADI_mixed, rcool, wcool, &
+      cool, beta_bouss
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -937,7 +939,7 @@ module Entropy
 !  Boussinesq/Anelastic
 !
       if (lanelastic) &
-        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + f(l1:l2,m,n,iuz)
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*f(l1:l2,m,n,iuz)
 !
 !  Information on the timescales.
 !
