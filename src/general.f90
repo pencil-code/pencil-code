@@ -955,63 +955,42 @@ module General
 !
     endsubroutine tridag_double
 !***********************************************************************
-    subroutine pendag (m,a,b,c,d,e,r)
+    subroutine pendag(n,a,b,c,d,e,r,u) 
 !
-!  Solve pentadiagonal system of M linear equations.
-!  A,B,C,D,E are the diagonals (A:subsub, B:sub, C:main, etc.).
-!  R is the rhs on input and contains the solution on output.
+!  10-avr-2012/dintrans: coded
 !
-!  01-apr-00/John Crowe (Newcastle): written
+      real, dimension(:), intent(in)  :: a,b,c,d,e,r
+      real, dimension(:), intent(out) :: u
+      real, dimension(size(r)) :: w,beta,alpha,cg,h
+      integer :: k,n
 !
-      implicit none
+      w(1)=c(1) 
+      beta(1)=0.0 
+      beta(2)=d(1)/w(1) 
+      alpha(1)=0.0 
+      alpha(2)=e(1)/w(1) 
+      alpha(n)=0.0 
+      alpha(n+1)=0.0 
 !
-      integer :: i,m
-      real :: x
-      real, dimension (m) :: a,b,c,d,e,r
+      do k=2,n 
+        cg(k)=b(k)-a(k)*beta(k-1) 
+        w(k)=c(k)-a(k)*alpha(k-1)-cg(k)*beta(k) 
+        if (w(k).eq.0.0) pause 'w(k)=0.0 in pendag'
+        beta(k+1)=(d(k)-cg(k)*alpha(k))/w(k) 
+        alpha(k+1)=e(k)/w(k) 
+      enddo 
 !
-!  Eliminate sub-diagonals.
+      h(1)=0.0 
+      h(2)=r(1)/w(1) 
+      do k=2,n 
+        h(k+1)=(r(k)-a(k)*h(k-1)-cg(k)*h(k))/w(k) 
+      end do 
 !
-      x    = b(2)/c(1)
-      c(2) = c(2)-d(1)*x
-      d(2) = d(2)-e(1)*x
-      r(2) = r(2)-r(1)*x
-!
-      do i=3,m-1,1
-!
-        x    = a(i)/c(i-2)
-        b(i) = b(i)-d(i-2)*x
-        c(i) = c(i)-e(i-2)*x
-        r(i) = r(i)-r(i-2)*x
-!
-        x    = b(i)/c(i-1)
-        c(i) = c(i)-d(i-1)*x
-        d(i) = d(i)-e(i-1)*x
-        r(i) = r(i)-r(i-1)*x
-!
-      enddo
-!
-      x    = a(m)/c(m-2)
-      b(m) = b(m)-d(m-2)*x
-      c(m) = c(m)-e(m-2)*x
-      r(m) = r(m)-r(m-2)*x
-!
-      x    = b(m)/c(m-1)
-      c(m) = c(m)-d(m-1)*x
-      r(m) = r(m)-r(m-1)*x
-!
-!  Eliminate super-diagonals.
-!
-      r(m-1) = r(m-1) - d(m-1)*r(m)/c(m)
-!
-      do i=m-2,1 ,-1
-        r(i)   = r(i) - d(i)*r(i+1)/c(i+1) - e(i)*r(i+2)/c(i+2)
-      enddo
-!
-!  Reduce c's to unity, leaving the answers in r.
-!
-      do i=1,m,1
-        r(i) = r(i) / c(i)
-      enddo
+      u(n)=h(n+1) 
+      u(n-1)=h(n)-beta(n)*u(n) 
+      do k=n-2,1,-1 
+        u(k)=h(k+1)-beta(k+1)*u(k+1)-alpha(k+1)*u(k+2) 
+      end do 
 !
     endsubroutine pendag
 !***********************************************************************

@@ -37,6 +37,10 @@ module Density
 !
   include 'density.h'
 !
+  integer :: iorder_z=4
+!
+  namelist /density_run_pars/ iorder_z
+!
   contains
 !***********************************************************************
     subroutine register_density()
@@ -78,7 +82,43 @@ module Density
 !
       f(:,:,:,ipp)=1.
 !
+!  Test of the Poisson solver
+!
+!      do n=n1,n2; do m=m1,m2
+!        f(l1:l2,m,n,ipp)=-2.*sin(x(l1:l2))*cos(z(n))
+!      enddo; enddo
+!      write(10) f(l1:l2,m1:m2,n1:n2,ipp)
+!      if (iorder_z==2) then
+!        call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,ipp))
+!      else
+!        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+!      endif
+!      write(11) f(l1:l2,m1:m2,n1:n2,ipp)
+!
     endsubroutine init_lnrho
+!***********************************************************************
+    subroutine read_density_run_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=density_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=density_run_pars,ERR=99)
+      endif
+!
+99    return
+!
+    endsubroutine read_density_run_pars
+!***********************************************************************
+    subroutine write_density_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit,NML=density_run_pars)
+!
+    endsubroutine write_density_run_pars
 !***********************************************************************
     subroutine calc_ldensity_pars(f)
 !
@@ -198,24 +238,6 @@ module Density
 !
     endsubroutine write_density_init_pars
 !***********************************************************************
-    subroutine read_density_run_pars(unit,iostat)
-!
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      call keep_compiler_quiet(unit)
-      if (present(iostat)) call keep_compiler_quiet(iostat)
-!
-    endsubroutine read_density_run_pars
-!***********************************************************************
-    subroutine write_density_run_pars(unit)
-!
-      integer, intent(in) :: unit
-!
-      call keep_compiler_quiet(unit)
-!
-    endsubroutine write_density_run_pars
-!***********************************************************************
     subroutine rprint_density(lreset,lwrite)
 !
       logical :: lreset,lwr
@@ -309,7 +331,11 @@ module Density
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
       else
-        call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+        if (iorder_z==2) then
+          call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,ipp))
+        else
+          call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,ipp))
+        endif
       endif
       if (lwrite_debug) write(32) f(l1:l2,4,n1:n2,ipp)
 !
@@ -331,8 +357,102 @@ module Density
 !***********************************************************************
     subroutine inverse_laplacian_z(phi)
 !
+!  10-avr-2012/dintrans: coded
+!  Fourth-order in the vertical direction that uses pendag().
+!  Note: the (kx=0,ky=0) mode is computed using a Green function.
+!
+      use Fourier, only: fourier_transform_xy
+      use Mpicomm, only: transp_xz, transp_zx
+      use General, only: pendag
+!
+      real, dimension(nx,ny,nz) :: phi, b1
+      integer, parameter :: nxt = nx / nprocz
+      real, dimension(nzgrid,nxt) :: phit, b1t
+      real, dimension (nzgrid) :: a_tri, b_tri, c_tri, d_tri, e_tri, r_tri, u_tri
+!
+      logical, save :: l1st = .true.
+      real,    save :: dz2h, dz_2
+      integer, save :: ikx0, iky0
+!
+      complex, dimension(nzgrid) :: cz
+!
+      integer :: ikx, iky, iz, iz1
+      real    :: ky2, k2
+!
+!  Initialize the array wsave and other constants for future use.
+!
+      if (l1st) then
+        dz_2 = 1./dz**2
+        dz2h = 0.5 * dz * dz
+        ikx0 = ipz * nxt
+        iky0 = ipy * ny
+        l1st = .false.
+      endif
+!
+!  Forward transform in xy
+!
+      b1 = 0.
+      call fourier_transform_xy(phi, b1)
+!
+!  Convolution in z
+!
+      do iky = 1, ny
+        call transp_xz(phi(:,iky,:),  phit)
+        call transp_xz(b1(:,iky,:), b1t)
+        ky2 = ky_fft(iky0+iky)**2
+        do ikx = 1, nxt
+          k2 = kx_fft(ikx0+ikx)**2+ky2
+          if (k2/=0.0) then
+            a_tri(:)=-1./12.*dz_2
+            b_tri(:)=+4./3.*dz_2
+            c_tri(:)=-5./2.*dz_2-k2
+            d_tri(:)=+4./3.*dz_2
+            e_tri(:)=-1./12.*dz_2
+            d_tri(1)=2.*d_tri(1)
+            e_tri(1)=2.*e_tri(1)
+            e_tri(2)=2.*e_tri(2)
+            a_tri(nzgrid)=2.*a_tri(nzgrid)
+            b_tri(nzgrid)=2.*b_tri(nzgrid)
+            a_tri(nzgrid-1)=2.*a_tri(nzgrid-1)
+!
+            r_tri=phit(:,ikx)
+            call pendag(nzgrid,a_tri,b_tri,c_tri,d_tri,e_tri,r_tri,u_tri)
+            phit(:,ikx)=u_tri
+!
+            r_tri=b1t(:,ikx)
+            call pendag(nzgrid,a_tri,b_tri,c_tri,d_tri,e_tri,r_tri,u_tri)
+            b1t(:,ikx)=u_tri
+          else
+            do iz = 1, nzgrid 
+              cz(iz) = 0.5*dz2h*(                       &
+                cmplx(phit(1,ikx),b1t(1,ikx))*abs(iz-1) &
+               +cmplx(phit(nzgrid,ikx),b1t(nzgrid,ikx))*abs(iz-nzgrid))
+              do iz1 = 2, nzgrid-1
+                cz(iz) = cz(iz) + cmplx(phit(iz1,ikx), b1t(iz1,ikx)) * &
+                         abs(iz - iz1) * dz2h
+              enddo
+            enddo
+            phit(:,ikx) = real(cz(1:nzgrid))
+            b1t(:,ikx)  = aimag(cz(1:nzgrid))
+          endif
+        enddo
+        call transp_zx(phit, phi(:,iky,:))
+        call transp_zx(b1t, b1(:,iky,:))
+      enddo
+!
+!  Inverse transform in xy
+!
+      call fourier_transform_xy(phi,b1,linv=.true.)
+!
+      return
+!
+    endsubroutine inverse_laplacian_z
+!***********************************************************************
+    subroutine inverse_laplacian_z_2nd(phi)
+!
 !  19-mar-2012/dintrans: coded
-!  Note: the (kx=0,ky=0) mode is computed using a Green function
+!  Second-order version in the vertical direction that uses tridag().
+!  Note: the (kx=0,ky=0) mode is computed using a Green function.
 !
       use Fourier, only: fourier_transform_xy
       use Mpicomm, only: transp_xz, transp_zx
@@ -377,9 +497,8 @@ module Density
           k2 = kx_fft(ikx0+ikx)**2+ky2
           if (k2/=0.0) then
             c_tri(:)=dz_2
-            b_tri(:)=-2.0*dz_2-k2
+            b_tri(:)=-2.*dz_2-k2
             a_tri(:)=dz_2
-!
             c_tri(1)=2.*c_tri(1)
             a_tri(nzgrid)=2.*a_tri(nzgrid)
 !
@@ -414,6 +533,6 @@ module Density
 !
       return
 !
-    endsubroutine inverse_laplacian_z
+    endsubroutine inverse_laplacian_z_2nd
 !***********************************************************************
 endmodule Density
