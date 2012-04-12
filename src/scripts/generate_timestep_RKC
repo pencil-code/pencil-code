@@ -262,34 +262,35 @@ sub print_f90_subroutine_header {
     print <<"JABBERWOCK";
 !***********************************************************************
     subroutine $subroutine(f,df,p)
-    !
-    !  Long-time-step Runge--Kutta--Chebyshev stepping, accurate to second
-    !  order.
-    !
-    !  $date_string/perl: generated
-    !
+!
+!  Long-time-step Runge--Kutta--Chebyshev stepping, accurate to second
+!  order.
+!
+!  $date_string/perl: generated
+!
+    
+      use Equ, only: pde
+      use Mpicomm, only: mpiallreduce_max
 
-        use Mpicomm, only: mpiallreduce_max
+      real, dimension (mx,my,mz,mfarray) :: f
+      ! real, dimension (mx,my,mz,mvar) :: fn_target, fn1_target
+      real, dimension (mx,my,mz,mvar) :: df, dfn
+      type (pencil_case) :: p
+      real :: dt1, dt1_local, dt1_last=0.0
+      double precision :: t0
+      integer :: iv
 
-        real, dimension (mx,my,mz,mfarray) :: f
-        ! real, dimension (mx,my,mz,mvar) :: fn_target, fn1_target
-        real, dimension (mx,my,mz,mvar) :: df, dfn
-        type (pencil_case) :: p
-        real :: dt1, dt1_local, dt1_last=0.0
-        double precision :: t0
-        integer :: iv
+! Use pointers for cheaply flipping fn and fn1 after each substep
+      ! target :: f, df
+      ! target :: fn_target, fn1_target
+      ! real, pointer :: f0(:,:,:,:), df0(:,:,:,:)
+      ! real, pointer :: fn(:,:,:,:), fn1(:,:,:,:)
+      real, dimension(mx,my,mz,mvar) :: f0, df0, fn, fn1
 
-        ! Use pointers for cheaply flipping fn and fn1 after each substep
-        ! target :: f, df
-        ! target :: fn_target, fn1_target
-        ! real, pointer :: f0(:,:,:,:), df0(:,:,:,:)
-        ! real, pointer :: fn(:,:,:,:), fn1(:,:,:,:)
-        real, dimension(mx,my,mz,mvar) :: f0, df0, fn, fn1
-
-        ! f0  => f(:,:,:,1:mvar)
-        f0  = f(:,:,:,1:mvar)
-        ! fn  => fn_target;
-        ! fn1 => fn1_target;
+      ! f0  => f(:,:,:,1:mvar)
+      f0  = f(:,:,:,1:mvar)
+      ! fn  => fn_target;
+      ! fn1 => fn1_target;
 
 JABBERWOCK
 
@@ -385,10 +386,9 @@ sub print_f90_subroutine {
 # ---------------------------------------------------------------------- #
 sub print_f90_subroutine_footer {
     print <<"SNARK";
-
+!
     endsubroutine $subroutine
 !***********************************************************************
-
 SNARK
 
 }
@@ -433,7 +433,6 @@ module $module
 
     use Cparam
     use Cdata
-    use Equ
 
     implicit none
 
@@ -451,33 +450,29 @@ sub print_f90_module_footer {
 
     print <<"BOROGOVE";
     subroutine swap(a, b)
-    !
-    ! Swap two pointers
-    !
-    !  $date_string/perl: generated
-    !
+!
+! Swap two pointers
+!
+!  $date_string/perl: generated
+!
 
 !        real, pointer :: a(:,:,:,:), b(:,:,:,:), tmp(:,:,:,:)
 
 !        tmp => a
 !        a   => b
 !        b   => tmp
-
+!
         real :: a(:,:,:,:), b(:,:,:,:), tmp(size(a,1), size(a,2), size(a,3), size(a,4))
-
+!
         tmp = a
         a   = b
         b   = tmp
-
-
-
+!
     endsubroutine swap
 !***********************************************************************
-
 endmodule $module
 
 ! End of file
-
 BOROGOVE
 
 }
