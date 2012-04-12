@@ -395,7 +395,7 @@ contains
       do ii=0,nprocx-1
         if (ipx==ii) then
           do i=l1+1,l2+nghost
-            int = 0.5 * (x(i)-x(i-1)) * (xgrav(i)*(1/TT(i-1)+1/TT(i)))
+            int = 0.5 * (x(i)-x(i-1)) * ((xgrav(i)+xgrav(i-1))/2.*(1/TT(i-1)+1/TT(i)))
             f(i,:,:,ilnrho)=f(i-1,:,:,ilnrho)-lnTT(i)+ &
                 lnTT(i-1)+konst*int
           enddo
@@ -411,7 +411,7 @@ contains
 !
       if (ipx==0) then
         do i=l1-1,1,-1
-          int = 0.5 * (x(i)-x(i+1)) * (xgrav(i)*(1/TT(i+1)+1/TT(i)))
+          int = 0.5 * (x(i)-x(i+1)) * ((xgrav(i)+xgrav(i+1))/2.*(1/TT(i+1)+1/TT(i)))
           f(i,:,:,ilnrho)=f(i+1,:,:,ilnrho)-lnTT(i)+ &
               lnTT(i+1)+konst*int
         enddo
