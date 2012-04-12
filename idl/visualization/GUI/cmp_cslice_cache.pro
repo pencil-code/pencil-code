@@ -393,7 +393,9 @@ pro cslice_event, event
 		frozen = 1
 		previous_snapshot = selected_snapshot
 		if (num_snapshots gt 1) then begin
-			for i = num_snapshots-1, 1, -1 do begin
+			last_snapshot = 1
+			if (selected_snapshot ne 0) then last_snapshot = 0
+			for i = num_snapshots-1, last_snapshot, -1 do begin
 				prepare_set, i
 				prepare_cube, -1
 				prepare_overplot
@@ -1100,24 +1102,21 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	scol    = WIDGET_BASE (CTRL, /col)
 	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
 	if (unit.default_length_str) then begin
-		co_x    = CW_FIELD (scot, title='X ['+unit.default_length_str+']:', uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, /floating, /all_events, xsize=12)
+		title_add = ' ['+unit.default_length_str+']:'
+		co_int = 0
+		co_float = 1
 	end else begin
-		co_x    = CW_FIELD (scot, title='X:', uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, /integer, /all_events, xsize=12)
+		title_add = ':'
+		co_int = 1
+		co_float = 0
 	end
+	co_x    = CW_FIELD (scot, title='X'+title_add, uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, integer=co_int, floating=co_float, /return_events, xsize=12)
 	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=coord_x_active)
 	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
-	if (unit.default_length_str) then begin
-		co_y    = CW_FIELD (scot, title='Y ['+unit.default_length_str+']:', uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, /floating, /all_events, xsize=12)
-	end else begin
-		co_y    = CW_FIELD (scot, title='Y:', uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, /integer, /all_events, xsize=12)
-	end
+	co_y    = CW_FIELD (scot, title='Y'+title_add, uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, integer=co_int, floating=co_float, /return_events, xsize=12)
 	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=coord_y_active)
 	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
-	if (unit.default_length_str) then begin
-		co_z    = CW_FIELD (scot, title='Z ['+unit.default_length_str+']:', uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, /floating, /all_events, xsize=12)
-	end else begin
-		co_z    = CW_FIELD (scot, title='Z:', uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, /integer, /all_events, xsize=12)
-	end
+	co_z    = CW_FIELD (scot, title='Z'+title_add, uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, integer=co_int, floating=co_float, /return_events, xsize=12)
 	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=coord_z_active)
 
 	DISP    = WIDGET_BASE (BASE, /row)
