@@ -2416,7 +2416,7 @@ module Magnetic
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
-      real, dimension (nx) :: fres2,etaSS,penc
+      real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
