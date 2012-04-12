@@ -195,7 +195,6 @@ module Fixed_point
       endif
     else
       dtot = dtot
-!       if (rec == 5) write(*,*) iproc, "5 recursions"
     endif
 !
     deallocate(tracer)
