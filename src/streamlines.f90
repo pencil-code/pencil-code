@@ -206,9 +206,9 @@ module Streamlines
 !
 !     start blocking send and non-blocking receive
       if (sent == 0) then
-        call MPI_SSEND(grid_pos_send,3,MPI_integer,proc_id,VV_RQST,MPI_comm_world,ierr)
+        call MPI_SEND(grid_pos_send,3,MPI_integer,proc_id,VV_RQST,MPI_comm_world,ierr)
         if (ierr .ne. MPI_SUCCESS) &
-            call fatal_error("streamlines", "MPI_SSEND could not send request")
+            call fatal_error("streamlines", "MPI_SEND could not send request")
         sent = 1
       endif
       if (receiving == 0) then
@@ -399,7 +399,6 @@ module Streamlines
           if (abs(dh) < h_min) dh = 2*dh
         endif
 !
-!         write(*,*) iproc, tracers(tracer_idx,:)
         if (tracers(tracer_idx, 6) >= l_max) exit
 !
         loop_count = loop_count + 1
@@ -468,7 +467,6 @@ module Streamlines
 !
       if (sum(finished_tracing) == nprocx*nprocy*nprocz) exit
     enddo
-!     write(*,*) iproc, "all finished"
 !
   endsubroutine trace_streamlines
 !***********************************************************************
@@ -501,7 +499,6 @@ module Streamlines
 !   prepare the traced field
     if (lmagnetic) then
       if (trace_field == 'bb' .and. ipz == 0) then
-!         write(*,*) iproc, "wtracers: curling aa"
 !       convert the magnetic vector potential into the magnetic field
         do m=m1,m2
           do n=n1,n2
@@ -511,7 +508,6 @@ module Streamlines
       endif
     endif
 !   TODO: include other fields as well
-!     write(*,*) iproc, "allocation successful"
 !
 !   create the initial seeds at z(1+nghost)-ipz*nz*dz+dz
     do j=1,nx*trace_sub
@@ -527,7 +523,6 @@ module Streamlines
     enddo
     write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/tracers.dat'
     open(unit = 1, file = filename, form = "unformatted", position = "append")
-!     write(*,*) iproc, "wtracers: call streamline tracer"
     call trace_streamlines(f,tracers,nx*ny*trace_sub**2,vv)
     write(1) ttrace_write, tracers(:,:)
     close(1)
