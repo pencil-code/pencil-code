@@ -216,7 +216,7 @@ module Grid
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
           if (lparticles .or. lsolid_cells) then
-            b=dxi_fact(3)
+            b=dxi_fact(3)   !!!! (1)
             call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,param=b)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
@@ -410,11 +410,27 @@ module Grid
                            'No such x grid function - '//grid_func(1))
         endselect
 !
+        if ( .not.lequidist(1) ) then
+          if (lfirst_proc_x) then
+            do i=1,nghost
+              x(l1-i)=2.*x(l1)-x(l1+i)
+              xprim(l1-i)=x(l1-i+1)-x(l1-i)           !!???
+            enddo
+          endif
+          if (llast_proc_x) then
+            do i=1,nghost
+              x(l2+i)=2.*x(l2)-x(l2-i)
+              xprim(l2+i)= x(l2+i)-x(l2+i-1)          !!???
+            enddo
+          endif
+        endif
+!          
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
 !
 !DM should this be xprim**3 ?
 !        dx_tilde=-xprim2/xprim**3
+!
       endif
 !
 !  y coordinate
@@ -489,7 +505,7 @@ module Grid
           yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 !
           if (lparticles .or. lsolid_cells) then
-            b=dxi_fact(3)
+            b=dxi_fact(3)    !!!! (2)
             call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
@@ -527,7 +543,6 @@ module Grid
             enddo
           endif
 !
-!
         case ('step-linear')
 !
           xi_step(2,1)=xi_step_frac(2,1)*(nygrid-1.0)
@@ -556,6 +571,21 @@ module Grid
                            'No such y grid function - '//grid_func(2))
 !
         endselect
+!
+        if ( .not.lequidist(2) ) then
+          if (lfirst_proc_y) then
+            do i=1,nghost
+              y(m1-i)=2.*y(m1)-y(m1+i)
+              yprim(m1-i)=y(m1-i+1)-y(m1-i)           !!???
+            enddo
+          endif
+          if (llast_proc_y) then
+            do i=1,nghost
+              y(m2+i)=2.*y(m2)-y(m2-i)
+              yprim(m2+i)= y(m2+i)-y(m2+i-1)          !!???
+            enddo
+          endif
+        endif
 !
 ! Added parts for spherical coordinates and cylindrical coordinates.
 ! From now on dy = d\theta but dy_1 = 1/rd\theta and similarly for \phi.
@@ -690,6 +720,21 @@ module Grid
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
         endselect
+!
+        if (.not.lequidist(3)) then
+          if (lfirst_proc_z) then
+            do i=1,nghost
+              z(n1-i)=2.*z(n1)-z(n1+i)
+              zprim(n1-i)=z(n1-i+1)-z(n1-i)           !!???
+            enddo
+          endif
+          if (llast_proc_z) then
+            do i=1,nghost
+              z(n2+i)=2.*z(n2)-z(n2-i)
+              zprim(n2+i)= z(n2+i)-z(n2+i-1)          !!???
+            enddo
+          endif
+        endif
 !
         dz_1=1./zprim
         dz_tilde=-zprim2/zprim**2
