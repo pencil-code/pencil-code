@@ -5885,12 +5885,13 @@ nameloop: do
 !
     endsubroutine unit_vector
 !***********************************************************************
-    subroutine doupwind(f,k,uu,ugradf,plus)
+    subroutine doupwind(f,k,uu,ugradf,mask)
 !
 !  Calculates upwind correction, works incrementally on ugradf
 !
 !  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
 !   9-apr-12/MR: optional parameter plus added
+!  12-apr-12/MR: optional parameter modified
 !
       use Deriv, only: der6, deri_3d_inds
 !
@@ -5898,28 +5899,37 @@ nameloop: do
       integer                                           :: k
       real, dimension (nx,3),             intent(IN)    :: uu
       real, dimension (nx),               intent(INOUT) :: ugradf
-      logical,                            intent(IN), optional :: plus
+      integer,                            intent(IN), optional :: mask 
 !      
       real, dimension (nx,3) :: del6f
-      integer                :: ii
+      integer                :: ii,msk
       integer, dimension(nx) :: indxs
-      logical                :: lplus
 !
+      msk=0
+      if (present(mask)) then
+        if ( mask>=1 .and. mask <=3 ) msk=mask
+      endif
+
       do ii=1,3
 !
-        if ( lequidist(ii) ) then 
-          call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
+        if (ii==msk) then
+          del6f(:,ii) = 0.
         else
-          where( uu(:,ii)>=0 ) 
-            indxs = 7
-          elsewhere
-            indxs = 8
-          endwhere
-          call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)  
+!
+          if ( lequidist(ii) ) then 
+            call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
+          else
+            where( uu(:,ii)>=0 ) 
+              indxs = 7
+            elsewhere
+              indxs = 8
+            endwhere
+            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)  
+          endif
+!
+          del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii) 
+!
         endif
-!
-        del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)  
-!
       enddo
 !     
       if (lcylindrical_coords) &
@@ -5930,12 +5940,7 @@ nameloop: do
         del6f(:,3) = r1_mn*sin1th(m)*del6f(:,3)
       endif
 !
-      if (present(plus)) then
-        lplus = plus
-      else
-        lplus = .false.
-      endif
-      if (lplus) then
+      if (msk>0) then
         ugradf = ugradf+sum(del6f,2)
       else
         ugradf = ugradf-sum(del6f,2)
