@@ -168,6 +168,35 @@ pro precalc_data, i, vars, index
       varsets[i].rho_u_z = vars[l1:l2,m1:m2,n1:n2,index.rho] * vars[l1:l2,m1:m2,n1:n2,index.uz] * unit.density*unit.velocity / (unit.default_density*unit.default_velocity)
     endif
   end
+    if (any (strcmp (tags, 'HR_viscous', /fold_case)) and any (tag_names (run_param) eq "NU")) then begin
+      ; Viscous heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
+      u_xx = (xder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
+      u_xy = (yder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
+      u_xz = (zder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
+      u_yx = (xder (vars[*,*,*,index.uy]))[l1:l2,m1:m2,n1:n2]
+      u_yy = (yder (vars[*,*,*,index.uy]))[l1:l2,m1:m2,n1:n2]
+      u_yz = (zder (vars[*,*,*,index.uy]))[l1:l2,m1:m2,n1:n2]
+      u_zx = (xder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
+      u_zy = (yder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
+      u_zz = (zder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
+      div_u3 = (u_xx + u_yy + u_zz) / 3.0
+      varsets[i].HR_viscous = run_param.nu * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.density * unit.velocity^3 / unit.length
+      u_xx = 0
+      u_xy = 0
+      u_xz = 0
+      u_yx = 0
+      u_yy = 0
+      u_yz = 0
+      u_zx = 0
+      u_zy = 0
+      u_zz = 0
+      div_u3 = 0
+      if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
+        varsets[i].HR_viscous *= exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho])
+      end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
+        varsets[i].HR_viscous *= vars[l1:l2,m1:m2,n1:n2,index.rho]
+      endif
+    end
   if (any (strcmp (sources, 'aa', /fold_case))) then begin
     if (any (strcmp (tags, 'Ax', /fold_case))) then begin
       ; Magnetic vector potential x-component
@@ -224,35 +253,6 @@ pro precalc_data, i, vars, index
       end else begin
         varsets[i].j = sqrt (dot2 ((curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / param.mu0)) * unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
       end
-    end
-    if (any (strcmp (tags, 'HR_viscous', /fold_case)) and any (tag_names (run_param) eq "NU")) then begin
-      ; Viscous heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
-      u_xx = (xder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
-      u_xy = (yder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
-      u_xz = (zder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
-      u_yx = (xder (vars[*,*,*,index.uy]))[l1:l2,m1:m2,n1:n2]
-      u_yy = (yder (vars[*,*,*,index.uy]))[l1:l2,m1:m2,n1:n2]
-      u_yz = (zder (vars[*,*,*,index.uy]))[l1:l2,m1:m2,n1:n2]
-      u_zx = (xder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
-      u_zy = (yder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
-      u_zz = (zder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
-      div_u3 = (u_xx + u_yy + u_zz) / 3.0
-      varsets[i].HR_viscous = run_param.nu * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.density * unit.velocity^3 / unit.length
-      u_xx = 0
-      u_xy = 0
-      u_xz = 0
-      u_yx = 0
-      u_yy = 0
-      u_yz = 0
-      u_zx = 0
-      u_zy = 0
-      u_zz = 0
-      div_u3 = 0
-      if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-        varsets[i].HR_viscous *= exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho])
-      end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-        varsets[i].HR_viscous *= vars[l1:l2,m1:m2,n1:n2,index.rho]
-      endif
     end
   end
   
