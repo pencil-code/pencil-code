@@ -428,9 +428,6 @@ module Grid
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
 !
-!DM should this be xprim**3 ?
-!        dx_tilde=-xprim2/xprim**3
-!
       endif
 !
 !  y coordinate
