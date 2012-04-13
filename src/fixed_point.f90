@@ -44,7 +44,7 @@ module Fixed_point
 !
     character (len=fnlen) :: file
 !   fixed points file name
-    character(len=1024) :: filename
+    character(len=1024) :: filename, str_tmp
     real, pointer, dimension (:,:) :: fixed_tmp
 !   integer which checks if end of file has been reached
     integer :: IOstatus, j
@@ -55,8 +55,9 @@ module Fixed_point
     if (ifirst==0) then
       call read_snaptime(file,tfixed_points,ntracers,dtracers,t)
 !     Read the previous fixed points from the file.
-      write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/fixed_points.dat'
-      open(unit = 1, file = filename, form = "unformatted")
+      write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
+      write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+      open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
 !     loop until we find the last entry
       IOstatus = 0
 !
@@ -238,7 +239,7 @@ module Fixed_point
     real, pointer, dimension (:,:) :: tracers, tracers2, tracer_tmp
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the fixed point output
-    character(len=1024) :: filename
+!    character(len=1024) :: filename, str_tmp
     real :: poincare, diff(4,2), phi_min
     integer :: j, l, addx, addy, proc_idx, ierr, flag
     integer, dimension (MPI_STATUS_SIZE) :: status
@@ -351,10 +352,6 @@ module Fixed_point
 !
     call MPI_BARRIER(MPI_comm_world, ierr)
 !
-!   open the destination file
-    write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/poincare.dat'
-    open(unit = 1, file = filename, form = "unformatted")
-!
 !   Find possible fixed points each grid cell.
 !   index of the fixed point
     fidx = 1
@@ -374,8 +371,6 @@ module Fixed_point
         diff(4,:) = diff(4,:) / sqrt(diff(4,1)**2+diff(4,2)**2)
 !       Get the Poincare index for this grid cell
         call pindex(f, xt(j:j+1)+ipx*nx*dx, yt(l:l+1)+ipy*ny*dy, diff, phi_min, vv, poincare)
-        write(2) (xt(j)+ipx*nx*dx+xt(j+1)+ipx*nx*dx)/2., &
-            (yt(l)+ipy*ny*dy+yt(l+1)+ipy*ny*dy)/2., poincare
 !       find the fixed point in this cell
         if (poincare >= 3) then
           call get_fixed_point(f,(/(tracers2(j+(l-1)*(nx*trace_sub+addx),1)+tracers2(j+1+(l-1)*(nx*trace_sub+addx),1))/2., &
@@ -383,7 +378,7 @@ module Fixed_point
               fixed_points(fidx,1:2), fixed_points(fidx,3), vv)
           if ((fixed_points(fidx,1) < xt(1)) .or. (fixed_points(fidx,1) > xt(nxgrid*trace_sub)) .or. &
               (fixed_points(fidx,2) < yt(1)) .or. (fixed_points(fidx,2) > yt(nygrid*trace_sub))) then
-            write(*,*) iproc, "fixed point lies outside the domain"
+            write(*,*) iproc, "warning: fixed point lies outside the domain"
           else
             fidx = fidx+1
           endif
@@ -455,7 +450,7 @@ module Fixed_point
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the tracer output
-    character(len=1024) :: filename
+    character(len=1024) :: filename, str_tmp
     integer :: j, flag
     integer, dimension (MPI_STATUS_SIZE) :: status
     real :: point(2)
@@ -528,10 +523,12 @@ module Fixed_point
       endif
     enddo
 !
-    write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/fixed_points.dat'
 !   Wait for other cores. This ensures that uncomplete fixed points wont get written out.
     call MPI_BARRIER(MPI_comm_world, ierr)
-    open(unit = 1, file = filename, form = "unformatted", position = "append")
+
+    write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
+    write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+    open(unit = 1, file = adjustl(trim(filename)), form = "unformatted", position = "append")
     write(1) tfixed_points_write
     write(1) float(fidx)
     do j=1,fidx

@@ -150,7 +150,7 @@ module InitialCondition
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the tracer and fixed point output
-    character(len=1024) :: filename
+    character(len=1024) :: filename, str_tmp
 !
 !
 !   check the word
@@ -442,7 +442,6 @@ module InitialCondition
     if (trace_field == 'bb' .and. ipz == 0) then
 !
 !     allocate the memory for the tracers
-!       allocate(tracers(((nx-1)*trace_sub+1)*((ny-1)*trace_sub+1),7))
       allocate(tracers(nx*ny*trace_sub**2,7))
 !     allocate memory for the traced field
       allocate(vv(nx,ny,nz,3))
@@ -469,16 +468,18 @@ module InitialCondition
 !
       call trace_streamlines(f,tracers,nx*ny*trace_sub**2,vv)
 !     write into output file
-      write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/tracers.dat'
-      open(unit = 1, file = filename, form = "unformatted")
+      write(str_tmp, "(I10.1,A)") iproc, '/tracers.dat'
+      write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+      open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
       write(1) 0., tracers(:,:)
       close(1)
 !
 !     find the fixed points
 !
       call get_fixed_points(f,tracers,vv)
-      write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/fixed_points.dat'
-      open(unit = 1, file = filename, form = "unformatted")
+      write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
+      write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+      open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
       write(1) 0.
       write(1) float(fidx)
       do l=1,fidx

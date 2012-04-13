@@ -486,7 +486,7 @@ module Streamlines
 !   the traced field
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the tracer output
-    character(len=1024) :: filename
+    character(len=1024) :: filename, str_tmp
     integer :: j, k
 !
     call keep_compiler_quiet(path)
@@ -521,8 +521,9 @@ module Streamlines
         tracers(j+(k-1)*(nx*trace_sub),7) = 0.
       enddo
     enddo
-    write(filename, "(A,I1.1,A)") 'data/proc', iproc, '/tracers.dat'
-    open(unit = 1, file = filename, form = "unformatted", position = "append")
+    write(str_tmp, "(I10.1,A)") iproc, '/tracers.dat'
+    write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+    open(unit = 1, file = adjustl(trim(filename)), form = "unformatted", position = "append")
     call trace_streamlines(f,tracers,nx*ny*trace_sub**2,vv)
     write(1) ttrace_write, tracers(:,:)
     close(1)
