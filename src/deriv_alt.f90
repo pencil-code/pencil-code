@@ -113,7 +113,7 @@ module Deriv
 
       if ( lequidist(1) ) then
 
-        allocate( coeffsx(-3:3,8,2) )
+        if (.not.allocated(coeffsx)) allocate( coeffsx(-3:3,8,2) )
         
         do i=1,6
           coeffsx( 0:3,i,1) = der_coef(:,i)*dx_1(1)**i
@@ -122,7 +122,7 @@ module Deriv
 
       else
 
-        allocate( coeffsx(-3:3,8,nx) )
+        if (.not.allocated(coeffsx)) allocate( coeffsx(-3:3,8,nx) )
         do i=l1,l2
           call calc_coeffs( x(i-nghost+1:i+nghost)-x(i-nghost:i+nghost-1), coeffsx(-3,1,i-l1+1) )   !use dx_1 ?
         enddo
@@ -132,7 +132,7 @@ module Deriv
 
       if ( lequidist(2) ) then
 
-        allocate( coeffsy(-3:3,8,2) )
+        if (.not.allocated(coeffsy)) allocate( coeffsy(-3:3,8,2) )
         do i=1,6
           coeffsy( 0:3,i,1) = der_coef(:,i)*dy_1(1)**i
           coeffsy( 0:3,i,2) = der_coef(:,i)
@@ -140,7 +140,7 @@ module Deriv
 
       else
 
-        allocate( coeffsy(-3:3,8,ny) )
+        if (.not.allocated(coeffsy)) allocate( coeffsy(-3:3,8,ny) )
         do i=m1,m2
           call calc_coeffs( y(i-nghost+1:i+nghost)-y(i-nghost:i+nghost-1), coeffsy(-3,1,i-m1+1) )
         enddo
@@ -149,7 +149,7 @@ module Deriv
 
       if ( lequidist(3) ) then
 
-        allocate( coeffsz(-3:3,8,2) )
+        if (.not.allocated(coeffsz)) allocate( coeffsz(-3:3,8,2) )
         do i=1,6
           coeffsz( 0:3,i,1) = der_coef(:,i)*dz_1(1)**i
           coeffsz( 0:3,i,2) = der_coef(:,i)
@@ -157,7 +157,7 @@ module Deriv
 
       else
 
-        allocate( coeffsz(-3:3,8,nz) )
+        if (.not.allocated(coeffsz)) allocate( coeffsz(-3:3,8,nz) )
         do i=n1,n2
           call calc_coeffs( z(i-nghost+1:i+nghost)-z(i-nghost:i+nghost-1), coeffsz(-3,1,i-n1+1) )
         enddo
@@ -1728,9 +1728,9 @@ module Deriv
 !*************************************************************************************************************
    subroutine test( coord, dc_1, nc, coefs )
 
+   integer :: mc, nc, nc1, nc2
    real, dimension(nc+2*nghost) :: coord, dc_1
    real, dimension(-3:3,8,nc) :: coefs
-   integer :: mc, nc, nc1, nc2
   
    real, parameter, dimension(0:6) :: c=(/1.d0,1.1d0,1.2d0,1.3d0,1.4d0,1.5d0,2.d0/)
    real, dimension(nc+2*nghost) :: func
