@@ -65,6 +65,7 @@ default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
 ;	ohmic_heating_rate:'HR_ohm', $
+;	viscous_heating_rate:'HR_viscous', $
 ;	magnetic_energy:'rho_mag', $
 ;	magnetic_field_x:'bx', $
 ;	magnetic_field_y:'by', $
