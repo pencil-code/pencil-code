@@ -2913,10 +2913,10 @@ module Magnetic
               endif
             enddo
 !            
-            tmp2 = p%uu; tmp2(:,j)=0.                   !! performance??
-            call doupwind(f,iaa+j-1,tmp2,uxb_upw(1,j),plus=.true.)
+            call doupwind(f,iaa+j-1,p%uu,uxb_upw(1,j),mask=j)
 !
           enddo
+!
         endif
 !
 !  Full right hand side of the induction equation.
