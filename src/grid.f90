@@ -424,7 +424,7 @@ module Grid
             enddo
           endif
         endif
-!          
+!
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
 !
@@ -1542,27 +1542,24 @@ module Grid
       case ('step-linear')
         if (.not. (present(dxyz) .and. present(xistep) .and. present(delta))) &
             call fatal_error('grid_profile',"'step-linear' needs its parameters.")
-        g=                                                                     &
-         dxyz(1)*0.5*(xi - delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) +&
-         dxyz(2)*0.5*( delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
-                           delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )+&
-         dxyz(3)*0.5*( xi + delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )
+        g=                                                                    &
+         dxyz(1)*0.5*(xi-delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) + &
+         dxyz(2)*0.5*(   delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))  - &
+                         delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )+ &
+         dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )
 !
         if (present(gder1)) then
-         gder1=                                                           &
-            dxyz(1)*0.5*( 1.0 - tanh(dble((xi-xistep(1))/delta(1))) )  +  &
-            dxyz(2)*0.5*( tanh(dble((xi-xistep(1))/delta(1)))  -          &
-                              tanh(dble((xi-xistep(2))/delta(2))) )    +  &
-            dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
+          gder1=                                                      &
+            dxyz(1)*0.5*(1.0-tanh(dble((xi-xistep(1))/delta(1))) ) +  &
+            dxyz(2)*0.5*(    tanh(dble((xi-xistep(1))/delta(1)))   -  &
+                             tanh(dble((xi-xistep(2))/delta(2))) ) +  &
+            dxyz(3)*0.5*(1.0+tanh(dble((xi-xistep(2))/delta(2))) )
 !
         endif
         if (present(gder2)) then
-         gder2=                                                               &
-          dxyz(1)*0.5* (-1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 +&
-          dxyz(2)*0.5*(( 1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 -&
-                       (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+&
-          dxyz(3)*0.5* ( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
-!
+          gder2=  &
+              + 0.5/delta(1)*(dxyz(2)-dxyz(1))/cosh(dble((xi-xistep(1))/delta(1)))**2 &
+              + 0.5/delta(2)*(dxyz(3)-dxyz(2))/cosh(dble((xi-xistep(2))/delta(2)))**2
         endif
 !
       case default
