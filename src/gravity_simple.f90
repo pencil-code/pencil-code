@@ -63,7 +63,7 @@ module Gravity
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
   integer :: n_pot=10
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero'
-  character (len=labellen) :: gravz_profile='const'
+  character (len=labellen) :: gravz_profile='zero'
 !
 !  Parameters used by other modules (only defined for other gravities)
 !
