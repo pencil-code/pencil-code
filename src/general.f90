@@ -955,7 +955,7 @@ module General
 !
     endsubroutine tridag_double
 !***********************************************************************
-    subroutine pendag(n,a,b,c,d,e,r,u) 
+    subroutine pendag(n,a,b,c,d,e,r,u)
 !
 !  10-avr-2012/dintrans: coded
 !
@@ -964,33 +964,33 @@ module General
       real, dimension(size(r)) :: w,beta,alpha,cg,h
       integer :: k,n
 !
-      w(1)=c(1) 
-      beta(1)=0.0 
-      beta(2)=d(1)/w(1) 
-      alpha(1)=0.0 
-      alpha(2)=e(1)/w(1) 
-      alpha(n)=0.0 
-      alpha(n+1)=0.0 
+      w(1)=c(1)
+      beta(1)=0.0
+      beta(2)=d(1)/w(1)
+      alpha(1)=0.0
+      alpha(2)=e(1)/w(1)
+      alpha(n)=0.0
+      alpha(n+1)=0.0
 !
-      do k=2,n 
-        cg(k)=b(k)-a(k)*beta(k-1) 
-        w(k)=c(k)-a(k)*alpha(k-1)-cg(k)*beta(k) 
-        if (w(k).eq.0.0) pause 'w(k)=0.0 in pendag'
-        beta(k+1)=(d(k)-cg(k)*alpha(k))/w(k) 
-        alpha(k+1)=e(k)/w(k) 
-      enddo 
+      do k=2,n
+        cg(k)=b(k)-a(k)*beta(k-1)
+        w(k)=c(k)-a(k)*alpha(k-1)-cg(k)*beta(k)
+        if (w(k).eq.0.0) write(*,*)'w(k)=0.0 in pendag'
+        beta(k+1)=(d(k)-cg(k)*alpha(k))/w(k)
+        alpha(k+1)=e(k)/w(k)
+      enddo
 !
-      h(1)=0.0 
-      h(2)=r(1)/w(1) 
-      do k=2,n 
-        h(k+1)=(r(k)-a(k)*h(k-1)-cg(k)*h(k))/w(k) 
-      end do 
+      h(1)=0.0
+      h(2)=r(1)/w(1)
+      do k=2,n
+        h(k+1)=(r(k)-a(k)*h(k-1)-cg(k)*h(k))/w(k)
+      end do
 !
-      u(n)=h(n+1) 
-      u(n-1)=h(n)-beta(n)*u(n) 
-      do k=n-2,1,-1 
-        u(k)=h(k+1)-beta(k+1)*u(k+1)-alpha(k+1)*u(k+2) 
-      end do 
+      u(n)=h(n+1)
+      u(n-1)=h(n)-beta(n)*u(n)
+      do k=n-2,1,-1
+        u(k)=h(k+1)-beta(k+1)*u(k+1)-alpha(k+1)*u(k+2)
+      end do
 !
     endsubroutine pendag
 !***********************************************************************
@@ -2096,24 +2096,24 @@ module General
 !
     integer,           intent(IN) :: unit
     integer, optional, intent(IN) :: count
-
+!
     integer :: i,n,iostat
-
+!
     if (present(count)) then
       n=count
     else
       n=1
     endif
-
+!
     backskip = .true.
-
+!
     do i=1,count
       backspace(unit,IOSTAT=iostat)
       if (iostat/=0) return
     enddo
-
+!
     backskip = .false.
-
+!
     endfunction backskip
 !***********************************************************************
 endmodule General
