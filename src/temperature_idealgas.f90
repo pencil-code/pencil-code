@@ -584,11 +584,16 @@ module Entropy
       endif
 !
       if (lcalc_heat_cool) then
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_TT)=.true.
-        lpenc_requested(i_TT1)=.true.
-        lpenc_requested(i_cv1)=.true.
-        if (lgravr) lpenc_requested(i_r_mn)=.true.
+        if (.not. lanelastic) then
+          lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_TT)=.true.
+          lpenc_requested(i_TT1)=.true.
+          lpenc_requested(i_cv1)=.true.
+        endif
+        if (lgravr) then
+          lpenc_requested(i_r_mn)=.true.
+          if (lanelastic) lpenc_requested(i_evr)=.true.
+        endif
       endif
 !
       if (lheatc_chiconst) then
@@ -875,7 +880,7 @@ module Entropy
 !
 !  Various heating conduction contributions.
 !
-      if (lcalc_heat_cool)  call calc_heat_cool(df,p)
+      if (lcalc_heat_cool)  call calc_heat_cool(f,df,p)
 !
 !  Thermal conduction
 !
@@ -938,8 +943,15 @@ module Entropy
 !
 !  Boussinesq/Anelastic
 !
-      if (lanelastic) &
-        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*f(l1:l2,m,n,iuz)
+      if (lanelastic) then
+        if (lsphere_in_a_box) then
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*( &
+          f(l1:l2,m,n,iux)*p%evr(:,1)+f(l1:l2,m,n,iuy)*p%evr(:,2)+ &
+          f(l1:l2,m,n,iuz)*p%evr(:,3))
+        else
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*f(l1:l2,m,n,iuz)
+        endif
+      endif
 !
 !  Information on the timescales.
 !
@@ -1145,12 +1157,13 @@ module Entropy
 !
     endsubroutine rad_equil
 !***********************************************************************
-    subroutine calc_heat_cool(df,p)
+    subroutine calc_heat_cool(f,df,p)
 !
       use Diagnostics, only: sum_lim_mn_name
       use EquationOfState, only: cs20
       use Sub, only: step
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: tau, cooling, kappa, a1, a3, prof, heat
@@ -1164,12 +1177,20 @@ module Entropy
       if (headtt) print*,'enter calc_heat_cool', rcool, wcool, cool, cs20
 !
       if (lgravr) then
-        ! 2-D heating/cooling profiles
-        prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)
-        heat = luminosity*prof
-        prof = step(p%r_mn,rcool,wcool)
-        heat = heat - cool*prof*(p%cs2-cs20)/cs20
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*heat
+        if (lanelastic) then
+          prof = step(p%r_mn,r_ext,wcool)
+          heat = -cool*prof
+          prof = 1.-step(p%r_mn,r_int,wcool)
+          heat = heat-cool*prof
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + heat*f(l1:l2,m,n,ilnTT)
+        else
+          ! 2-D heating/cooling profiles
+          prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.)
+          heat = luminosity*prof
+          prof = step(p%r_mn,rcool,wcool)
+          heat = heat - cool*prof*(p%cs2-cs20)/cs20
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*heat
+        endif
       else
         kappa0_cgs=2e-6  !cm2/g
         kappa0=kappa0_cgs*unit_density*unit_length

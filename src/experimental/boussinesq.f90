@@ -39,7 +39,7 @@ module Density
 !
   integer :: iorder_z=4
 !
-  namelist /density_run_pars/ iorder_z
+  namelist /density_run_pars/ iorder_z, lwrite_debug
 !
   contains
 !***********************************************************************
@@ -51,6 +51,7 @@ module Density
           "$Id$")
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)
+      if (lsphere_in_a_box) lgravr=.true.
 !
     endsubroutine register_density
 !***********************************************************************

@@ -1421,6 +1421,8 @@ module Hydro
 !
       if (lisotropic_advection) lpenc_requested(i_u2)=.true.
 !
+      if (lanelastic.and.lsphere_in_a_box) lpenc_requested(i_evr)=.true.
+!
 !  video pencils
 !
       if (dvid/=0.0) then
@@ -1738,7 +1740,7 @@ module Hydro
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2
       real :: kx
-      integer :: j
+      integer :: j, ju
 !
       intent(in) :: p
       intent(inout) :: f,df
@@ -1855,8 +1857,16 @@ module Hydro
 !
 !  Boussinesq or anelastic
 !
-     if (lanelastic) &
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*f(l1:l2,m,n,iTT)
+     if (lanelastic) then
+       if (lsphere_in_a_box) then
+         do j=1,3
+           ju=j+iuu-1
+           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+Ra*f(l1:l2,m,n,iTT)*p%evr(:,j)
+         enddo
+       else
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*f(l1:l2,m,n,iTT)
+       endif
+     endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
