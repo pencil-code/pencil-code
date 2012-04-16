@@ -975,7 +975,10 @@ module General
       do k=2,n
         cg(k)=b(k)-a(k)*beta(k-1)
         w(k)=c(k)-a(k)*alpha(k-1)-cg(k)*beta(k)
-        if (w(k).eq.0.0) write(*,*)'w(k)=0.0 in pendag'
+        if (w(k).eq.0.0) then
+          print*,"w(k)=0.0 in pendag"
+          stop
+        endif
         beta(k+1)=(d(k)-cg(k)*alpha(k))/w(k)
         alpha(k+1)=e(k)/w(k)
       enddo
@@ -984,13 +987,13 @@ module General
       h(2)=r(1)/w(1)
       do k=2,n
         h(k+1)=(r(k)-a(k)*h(k-1)-cg(k)*h(k))/w(k)
-      end do
+      enddo
 !
       u(n)=h(n+1)
       u(n-1)=h(n)-beta(n)*u(n)
       do k=n-2,1,-1
         u(k)=h(k+1)-beta(k+1)*u(k+1)-alpha(k+1)*u(k+2)
-      end do
+      enddo
 !
     endsubroutine pendag
 !***********************************************************************
