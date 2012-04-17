@@ -1954,7 +1954,7 @@ module Deriv
 !
      do i=1,nghost
        if (ldensity_nolog) then
-         f(l1-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
+         f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
              (log(f(ll+i,:,:,irho))-log(f(ll-i,:,:,irho))+2*i*dx*inh)
        else
          f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
