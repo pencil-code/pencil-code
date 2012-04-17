@@ -1790,43 +1790,61 @@ module Deriv
      real                             , intent(IN)   :: fac
      integer                          , intent(IN)   :: im,topbot
 
-     real, dimension(my,mz) :: work_yz
-     integer                :: i,ic
+     real, dimension(:,:), allocatable :: work_yz
+     integer                           :: i,ic,stat,ll
 
-     work_yz = inh
+     allocate(work_yz(my,mz),stat=stat)                                 !save this by working in f?
+     if (stat>0) call fatal_error('heatflux_boundcond_x', &
+         'Could not allocate memory for work_yz')
+
+     if (topbot==1) then
+       ll=l1
+       ic=1
+     elseif (topbot==1) then
+       ll=l2
+       ic=nx
+     else
+       call fatal_error('heatflux_boundcond_x', &
+         'Illegal value for parameter "topbot"')
+     endif
+
+     work_yz = inh                                                      ! Fbot/(K*cs2)
 
      select case (im)
      case (1,2)
-       do i=-im,im                                                    ! dlnrho, 1st+2nd order, + Fbot/(K*cs2)
-         work_yz = work_yz + coeffsx_1(i,im,topbot)*f(l1+i,:,:,ilnrho)
+       do i=-im,im                                                      ! dlnrho, 1st+2nd order
+         if (ldensity_nolog) then
+           work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,ilnrho)
+         else
+           work_yz = work_yz + coeffsx_1(i,im,topbot)*log(f(ll+i,:,:,irho))
+         endif
        enddo
      case (3)
-       if (topbot==1) then
-         ic=1
-       else
-         ic=nx
-       endif
-       do i=-im,im                                                    ! dlnrho, 3rd order, + Fbot/(K*cs2)
-         work_yz = work_yz + coeffsx(i,1,ic)*f(l1+i,:,:,ilnrho)
+       do i=-im,im                                                      ! dlnrho, 3rd order
+         if (ldensity_nolog) then
+           work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,ilnrho)
+         else
+           work_yz = work_yz + coeffsx(i,1,ic)*log(f(ll+i,:,:,irho))
+         endif
        enddo
      end select
 
-     work_yz = fac*work_yz
+     work_yz = fac*work_yz  
 
      select case (im)
      case (1,2)
-       do i=-im+1,im                                                    ! dlnrho, 1st+2nd order, + Fbot/(K*cs2)
-         work_yz = work_yz + coeffsx_1(i,im,topbot)*f(l1+i,:,:,iss)
+       do i=-im+1,im                                                    ! dss, 1st+2nd order
+         work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,iss)
        enddo
 
-       f(l1-im,:,:,iss) = -work_yz/coeffsx_1(-im,im,topbot)
+       f(ll-im,:,:,iss) = -work_yz/coeffsx_1(-im,im,topbot)
 
      case (3)
-       do i=-im+1,im                                                    ! dlnrho, 3rd order, + Fbot/(K*cs2)
-         work_yz = work_yz + coeffsx(i,1,ic)*f(l1+i,:,:,iss)
+       do i=-im+1,im                                                    ! dss, 3rd order
+         work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,iss)
        enddo
 
-       f(l1-im,:,:,iss) = -work_yz/coeffsx(-im,1,ic)
+       f(ll-im,:,:,iss) = -work_yz/coeffsx(-im,1,ic)
 
      end select
 
