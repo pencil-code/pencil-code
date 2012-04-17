@@ -30,12 +30,13 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der2_minmod
+  public :: heatflux_boundcond_x
 !
   real, dimension( 4,6) :: der_coef
   real, dimension(nx,6) :: r1i
   real, dimension(my,6) :: sth1i
 !
-  real, allocatable :: coeffsx(:,:,:),  coeffsy(:,:,:),  coeffsz(:,:,:)
+  real, dimension(:,:,:), allocatable :: coeffsx, coeffsy, coeffsz, coeffsx_1, coeffsy_1, coeffsz_1
 !
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -123,10 +124,15 @@ module Deriv
       else
 
         if (.not.allocated(coeffsx)) allocate( coeffsx(-3:3,8,nx) )
+        if (.not.allocated(coeffsx_1)) allocate( coeffsx_1(-2:2,2,2) )
+
         do i=l1,l2
           call calc_coeffs( x(i-nghost+1:i+nghost)-x(i-nghost:i+nghost-1), coeffsx(-3,1,i-l1+1) )   !use dx_1 ?
         enddo
 !        call test( x, dx_1, nx, coeffsx )
+
+        call calc_coeffs_1( x(l1-1:l1+2)-x(l1-2:l1+1), coeffsx_1(-2,1,1) )
+        call calc_coeffs_1( x(l2-1:l2+2)-x(l2-2:l2+1), coeffsx_1(-2,1,2) )
 
       endif
 
@@ -141,15 +147,21 @@ module Deriv
       else
 
         if (.not.allocated(coeffsy)) allocate( coeffsy(-3:3,8,ny) )
+        if (.not.allocated(coeffsy_1)) allocate( coeffsy_1(-2:2,2,2) )
+
         do i=m1,m2
           call calc_coeffs( y(i-nghost+1:i+nghost)-y(i-nghost:i+nghost-1), coeffsy(-3,1,i-m1+1) )
         enddo
+
+        call calc_coeffs_1( y(m1-1:m1+2)-y(m1-2:m1+1), coeffsy_1(-2,1,1) )
+        call calc_coeffs_1( y(m2-1:m2+2)-y(m2-2:m2+1), coeffsy_1(-2,1,2) )
 
       endif
 
       if ( lequidist(3) ) then
 
         if (.not.allocated(coeffsz)) allocate( coeffsz(-3:3,8,2) )
+
         do i=1,6
           coeffsz( 0:3,i,1) = der_coef(:,i)*dz_1(1)**i
           coeffsz( 0:3,i,2) = der_coef(:,i)
@@ -158,11 +170,17 @@ module Deriv
       else
 
         if (.not.allocated(coeffsz)) allocate( coeffsz(-3:3,8,nz) )
+        if (.not.allocated(coeffsz_1)) allocate( coeffsz_1(-2:2,2,2) )
+
         do i=n1,n2
           call calc_coeffs( z(i-nghost+1:i+nghost)-z(i-nghost:i+nghost-1), coeffsz(-3,1,i-n1+1) )
         enddo
 !        call test( z, dz_1, nz, coeffsz )
      
+        call calc_coeffs_1( z(n1-1:n1+2)-z(n1-2:n1+1), coeffsz_1(-2,1,1) )
+        call calc_coeffs_1( z(n2-1:n2+2)-z(n2-2:n2+1), coeffsz_1(-2,1,2) )
+
+!        call test_1( z, dz_1, nz, coeffsz_1 )
       endif
 !
     endsubroutine initialize_deriv
@@ -797,10 +815,9 @@ module Deriv
 !   8-jul-02/wolf: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx,upwind
-      logical :: upwnd, igndx
 !
       intent(in)  :: f,k,j,ignoredx,upwind
       intent(out) :: df
@@ -918,7 +935,7 @@ module Deriv
 !   8-jul-02/wolf: coded
 !
       real, dimension (mx,my,mz)         :: f
-      real, dimension (nx)               :: df,fac
+      real, dimension (nx)               :: df
       integer                            :: j
       logical,                  optional :: ignoredx,upwind
 !
@@ -1139,7 +1156,7 @@ module Deriv
 !  05-dec-06/anders: adapted from derij
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: i,j,k
 !
       intent(in) :: f,k,i,j
@@ -1580,8 +1597,6 @@ module Deriv
 !***********************************************************************
    subroutine calc_coeffs( grid, coeffs )
 
-   implicit none
-
    real, dimension(-2:3), intent(in)  :: grid
    real, dimension(-3:3,8), intent(out) :: coeffs
 
@@ -1708,15 +1723,39 @@ module Deriv
 
    endsubroutine calc_coeffs
 !*************************************************************************************************************
+   subroutine calc_coeffs_1( grid, coeffs )
+
+   real, dimension(-1:2), intent(in)  :: grid
+   real, dimension(-2:2,2), intent(out) :: coeffs
+
+   real :: h1, h2, hm1, hm2, h12, hm12, h1m1, h1m12, h12m1, h12m12
+
+   h1    = grid(1);   h2    = grid(2)  ; hm1  = grid(0);   hm2   = grid(-1)
+   h12   = h1 + h2;   hm12  = hm1 + hm2; h1m1 = h1 + hm1;  h1m12 = h1+hm12 
+   h12m1 = h12 + hm1; h12m12 = h12 + hm12  
+
+! 2nd order 1st derivative
+
+   coeffs(:,1) = (/ 0., -h1/(hm1*h1m1), 0., hm1/(h1*h1m1), 0. /)
+   coeffs(0,1) = -sum(coeffs(:,1))
+
+! 4th order 1st dervative
+ 
+   coeffs(:,2) = (/ h1*h12*hm1/(hm2*hm12*h1m12*h12m12), -h1*h12*hm12/(hm1*hm2*h1m1*h12m1), 0.,  &
+                   +h12*hm1*hm12/(h1*h2*h1m1*h1m12),    -h1*hm1*hm12/(h2*h12*h12m1*h12m12)       /)
+   coeffs(0,2) = -sum(coeffs(:,2))
+
+   endsubroutine calc_coeffs_1
+!*************************************************************************************************************
    real function derivative( func, i, coeffs, ldiff )
 
-   integer :: i
+   integer                , intent(in)           :: i
    real, dimension(-2:*)  , intent(in)           :: func
    real, dimension(-3:3,*), intent(in)           :: coeffs
    logical,                 intent(in), optional :: ldiff
 
    real, dimension(-3:3) :: funcl
-
+ 
    if ( present(ldiff) ) then
      funcl = func(i-3:i+3) - func(i)
      derivative = sum(funcl*coeffs(:,i))
@@ -1726,18 +1765,93 @@ module Deriv
 
    endfunction derivative
 !*************************************************************************************************************
+   real function derivative_1( func, i, coeffs, ldiff )
+                          
+   integer              , intent(in)           :: i
+   real, dimension(-2:*), intent(in)           :: func
+   real, dimension(-2:2), intent(in)           :: coeffs
+   logical,               intent(in), optional :: ldiff
+
+   real, dimension(-2:2) :: funcl
+ 
+   if ( present(ldiff) ) then
+     funcl = func(i-2:i+2) - func(i)
+     derivative_1 = sum(funcl*coeffs)
+   else
+     derivative_1 = sum(func(i-2:i+2)*coeffs)
+   endif
+
+   endfunction derivative_1
+!*************************************************************************************************************
+   subroutine heatflux_boundcond_x( f, inh, fac, im, topbot )
+
+     real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
+     real, dimension(my,mz)           , intent(IN)   :: inh
+     real                             , intent(IN)   :: fac
+     integer                          , intent(IN)   :: im,topbot
+
+     real, dimension(my,mz) :: work_yz
+     integer                :: i,ic
+
+     work_yz = inh
+
+     select case (im)
+     case (1,2)
+       do i=-im,im                                                    ! dlnrho, 1st+2nd order, + Fbot/(K*cs2)
+         work_yz = work_yz + coeffsx_1(i,im,topbot)*f(l1+i,:,:,ilnrho)
+       enddo
+     case (3)
+       if (topbot==1) then
+         ic=1
+       else
+         ic=nx
+       endif
+       do i=-im,im                                                    ! dlnrho, 3rd order, + Fbot/(K*cs2)
+         work_yz = work_yz + coeffsx(i,1,ic)*f(l1+i,:,:,ilnrho)
+       enddo
+     end select
+
+     work_yz = fac*work_yz
+
+     select case (im)
+     case (1,2)
+       do i=-im+1,im                                                    ! dlnrho, 1st+2nd order, + Fbot/(K*cs2)
+         work_yz = work_yz + coeffsx_1(i,im,topbot)*f(l1+i,:,:,iss)
+       enddo
+
+       f(l1-im,:,:,iss) = -work_yz/coeffsx_1(-im,im,topbot)
+
+     case (3)
+       do i=-im+1,im                                                    ! dlnrho, 3rd order, + Fbot/(K*cs2)
+         work_yz = work_yz + coeffsx(i,1,ic)*f(l1+i,:,:,iss)
+       enddo
+
+       f(l1-im,:,:,iss) = -work_yz/coeffsx(-im,1,ic)
+
+     end select
+
+   endsubroutine heatflux_boundcond_x
+!*************************************************************************************************************
    subroutine test( coord, dc_1, nc, coefs )
 
    integer :: mc, nc, nc1, nc2
    real, dimension(nc+2*nghost) :: coord, dc_1
    real, dimension(-3:3,8,nc) :: coefs
-  
-   real, parameter, dimension(0:6) :: c=(/1.d0,1.1d0,1.2d0,1.3d0,1.4d0,1.5d0,2.d0/)
+   real, dimension(-2:2,2,2) :: coefs_1
+
+   real, parameter, dimension(0:6) :: c=(/1.d0,1.1d0,1.2d0,0.d0,0.d0,0.d0,0.d0/)
    real, dimension(nc+2*nghost) :: func
 
    integer :: i,j
+   logical :: t1
 
-   mc = nc+2*nghost
+   t1=.false.
+   goto 1
+   entry test_1( coord, dc_1, nc, coefs_1 )
+
+   t1=.true.
+   
+ 1 mc = nc+2*nghost
 
    do i=1,mc
      func(i) = c(6)
@@ -1747,6 +1861,17 @@ module Deriv
    enddo
 
    nc = mc-2*nghost; nc1 = nghost+1; nc2 = nc1+nc-1
+
+   if (t1) then
+     print*, derivative_1( func, 1, coefs_1(-2,1,1) )
+     print*, c(1) + 2.e0*c(2)*coord(nc1) + 3.e0*c(3)*coord(nc1)**2 + 4.e0*c(4)*coord(nc1)**3 &
+                  + 5.e0*c(5)*coord(nc1)**4 + 6.e0*c(6)*coord(nc1)**5
+
+     print*, derivative_1( func, nc, coefs_1(:,1,2) )
+     print*, c(1) + 2.e0*c(2)*coord(nc2) + 3.e0*c(3)*coord(nc2)**2 + 4.e0*c(4)*coord(nc2)**3 &
+                  + 5.e0*c(5)*coord(nc2)**4 + 6.e0*c(6)*coord(nc2)**5
+     stop
+   endif
 
    !print*, (derivative( func, i, coefs(:,3,:) ), i=1,nc)
    !print*, '==='
