@@ -2194,7 +2194,7 @@ module Boundcond
 !  Lambda effect : stresses due to Lambda effect are added to the stress-tensor.
 !  For rotation along the z direction and also for not very strong rotation such
 !  that the breaking of rotational symmetry is only due to gravity, the only
-!  new term is appears in the r-phi component. This implies that this term
+!  new term appears in the r-phi component. This implies that this term
 !  affects only the boundary condition of u_{\phi} for the radial boundary.
 !
 !  25-Aug-2007/dhruba: coded
@@ -4915,30 +4915,34 @@ module Boundcond
 !  Constant flux boundary condition for entropy (called when bcx='c1')
 !
 !  17-mar-07/dintrans: coded
+!  16-apr-12/MR: eliminated cs2_yz; allocation of rho_yz -> work_yz only if necessary;
+!                introduced heatflux_boundcond_x 
+!                (necessary for nonequidistant grid)
 !
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
+      use Deriv, only: heatflux_boundcond_x
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
 !
-      real, dimension (:,:), allocatable :: tmp_yz,cs2_yz,rho_yz
+      real, dimension (:,:), allocatable :: tmp_yz,work_yz
       real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
       integer :: i,ierr,stat
+      integer, parameter :: BOT=1, TOP=2
 !
 !  Allocate memory for large arrays.
 !
       allocate(tmp_yz(my,mz),stat=stat)
       if (stat>0) call fatal_error('bc_ss_flux_x', &
           'Could not allocate memory for tmp_yz')
-      allocate(cs2_yz(my,mz),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux_x', &
-          'Could not allocate memory for cs2_yz')
-      allocate(rho_yz(my,mz),stat=stat)
-      if (stat>0) call fatal_error('bc_ss_flux_x', &
-          'Could not allocate memory for rho_yz')
+      if (lheatc_kramers .or. .not.lequidist(1)) then
+        allocate(work_yz(my,mz),stat=stat)
+        if (stat>0) call fatal_error('bc_ss_flux_x', &
+            'Could not allocate memory for work_yz')
+      endif
 !
 !  Do the 'c1' boundary condition (constant heat flux) for entropy and
 !  pretend_lnTT. Check whether we want to do top or bottom (this is
@@ -4988,29 +4992,27 @@ module Boundcond
 !  Both, bottom and top boundary conditions are corrected for linear density
 !
           if (ldensity_nolog) then
-            rho_yz=f(l1,:,:,irho)
-            cs2_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
+            if (lheatc_kramers) work_yz=f(l1,:,:,irho)
+            tmp_yz=cs20*exp(gamma_m1*(log(f(l1,:,:,irho))-lnrho0)+gamma*f(l1,:,:,iss))
           else
-            rho_yz=exp(f(l1,:,:,ilnrho))
-            cs2_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
+            if (lheatc_kramers) work_yz=exp(f(l1,:,:,ilnrho))
+            tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
           if (lheatc_kramers) then
-            tmp_yz=Fbot*rho_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_yz**(6.5*nkramers+1.))
+            tmp_yz=Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
           else
-            tmp_yz=FbotKbot/cs2_yz
+            tmp_yz=FbotKbot/tmp_yz
           endif
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
 !
-          do i=1,nghost
-            if (ldensity_nolog) then
-              f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
-                  (log(f(l1+i,:,:,irho))-log(f(l1-i,:,:,irho))+2*i*dx*tmp_yz)
-            else
-              f(l1-i,:,:,iss)=f(l1+i,:,:,iss)+gamma_m1/gamma* &
-                  (f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho)+2*i*dx*tmp_yz)
-            endif
-          enddo
+          if ( lequidist(1) ) then 
+            call heatflux_boundcond_x( f, tmp_yz, gamma_m1/gamma, 1, BOT )
+          else
+            do i=1,3
+              call heatflux_boundcond_x( f, tmp_yz, gamma_m1/gamma, i, BOT )
+            enddo
+          endif
         endif
 !
 !  top boundary
@@ -5040,16 +5042,16 @@ module Boundcond
 !  calculate Ftop/(K*cs2)
 !
           if (ldensity_nolog) then
-            rho_yz=f(l2,:,:,irho)
-            cs2_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
+            if (lheatc_kramers) work_yz=f(l2,:,:,irho)
+            tmp_yz=cs20*exp(gamma_m1*(log(f(l2,:,:,irho))-lnrho0)+gamma*f(l2,:,:,iss))
           else
-            rho_yz=exp(f(l2,:,:,ilnrho))
-            cs2_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
+            if (lheatc_kramers) work_yz=exp(f(l2,:,:,ilnrho))
+            tmp_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
           if (lheatc_kramers) then
-            tmp_yz=Ftop*rho_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*cs2_yz**(6.5*nkramers+1.))
+            tmp_yz=Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
           else
-            tmp_yz=FtopKtop/cs2_yz
+            tmp_yz=FtopKtop/tmp_yz
           endif
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Ftop/(K*cs2)
@@ -5074,8 +5076,7 @@ module Boundcond
 !  Deallocate large arrays.
 !
       if (allocated(tmp_yz)) deallocate(tmp_yz)
-      if (allocated(cs2_yz)) deallocate(cs2_yz)
-      if (allocated(rho_yz)) deallocate(rho_yz)
+      if (allocated(work_yz)) deallocate(work_yz)
 !
     endsubroutine bc_ss_flux_x
 !***********************************************************************
