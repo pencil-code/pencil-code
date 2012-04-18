@@ -4916,12 +4916,10 @@ module Boundcond
 !
 !  17-mar-07/dintrans: coded
 !  16-apr-12/MR: eliminated cs2_yz; allocation of rho_yz -> work_yz only if necessary;
-!                introduced heatflux_boundcond_x 
-!                (necessary for nonequidistant grid)
+!                introduced heatflux_boundcond_x (necessary for nonequidistant grid)
 !
       use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
       use SharedVariables, only: get_shared_variable
-      use Deriv, only: heatflux_boundcond_x
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
@@ -4933,39 +4931,36 @@ module Boundcond
       integer :: i,ierr,stat
       integer, parameter :: BOT=1, TOP=2
 !
+!  Do the 'c1' boundary condition (constant heat flux) for entropy.
+!
+      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
+      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+           "there was a problem when getting lheatc_kramers")
+!
 !  Allocate memory for large arrays.
 !
       allocate(tmp_yz(my,mz),stat=stat)
       if (stat>0) call fatal_error('bc_ss_flux_x', &
           'Could not allocate memory for tmp_yz')
-      if (lheatc_kramers .or. .not.lequidist(1)) then
+!
+      if (lheatc_kramers) then
+!
+        call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
+        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+             "there was a problem when getting hcond0_kramers")
+        call get_shared_variable('nkramers',nkramers,ierr)
+        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+             "there was a problem when getting nkramers")
+        call get_shared_variable('cp',cp,ierr)
+        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+             "there was a problem when getting cp")
+!
         allocate(work_yz(my,mz),stat=stat)
         if (stat>0) call fatal_error('bc_ss_flux_x', &
             'Could not allocate memory for work_yz')
       endif
 !
-!  Do the 'c1' boundary condition (constant heat flux) for entropy and
-!  pretend_lnTT. Check whether we want to do top or bottom (this is
-!  processor dependent)
-!
-      call get_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting FbotKbot")
-      call get_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting Fbot")
-      call get_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting hcond0_kramers")
-      call get_shared_variable('nkramers',nkramers,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting nkramers")
-      call get_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting lheatc_kramers")
-      call get_shared_variable('cp',cp,ierr)
-      if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-           "there was a problem when getting cp")
+! Check whether we want to do top or bottom (this is processor dependent)
 !
       select case (topbot)
 !
@@ -4973,7 +4968,10 @@ module Boundcond
 !  ===============
 !
       case ('bot')
-        if (headtt) print*,'bc_ss_flux_x: Fbot=',Fbot
+
+        call get_shared_variable('FbotKbot',FbotKbot,ierr)
+        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+             "there was a problem when getting FbotKbot")
         if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
@@ -4999,20 +4997,23 @@ module Boundcond
             tmp_yz=cs20*exp(gamma_m1*(f(l1,:,:,ilnrho)-lnrho0)+gamma*f(l1,:,:,iss))
           endif
           if (lheatc_kramers) then
-            tmp_yz=Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+!
+            call get_shared_variable('Fbot',Fbot,ierr)
+            if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+               "there was a problem when getting Fbot")
+            if (headtt) print*,'bc_ss_flux_x: Fbot=',Fbot
+!
+            tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
+                     (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+!
           else
             tmp_yz=FbotKbot/tmp_yz
           endif
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
+! 
+          call heatflux_boundcond_x( f, tmp_yz, gamma_m1/gamma, BOT )
 !
-          if ( lequidist(1) ) then 
-            call heatflux_boundcond_x( f, tmp_yz, gamma_m1/gamma, 1, BOT )
-          else
-            do i=1,3
-              call heatflux_boundcond_x( f, tmp_yz, gamma_m1/gamma, i, BOT )
-            enddo
-          endif
         endif
 !
 !  top boundary
@@ -5023,17 +5024,13 @@ module Boundcond
         call get_shared_variable('FtopKtop',FtopKtop,ierr)
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
             "there was a problem when getting FtopKtop")
-        call get_shared_variable('Ftop',Ftop,ierr)
-        if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
-            "there was a problem when getting Ftop")
 !
-        if (headtt) print*,'bc_ss_flux_x: Ftop=',Ftop
-        if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+         if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FtopKtop/T
 !
-        if (pretend_lnTT) then
+        if (pretend_lnTT) then      ! TODO: non-equidistant grid
           do i=1,nghost
             f(l2+i,:,:,iss)=f(l2-i,:,:,iss)-2*i*dx*FtopKtop/exp(f(l2,:,:,iss))
           enddo
@@ -5049,22 +5046,21 @@ module Boundcond
             tmp_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
           if (lheatc_kramers) then
-            tmp_yz=Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/(hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
+
+            call get_shared_variable('Ftop',Ftop,ierr)
+            if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
+            "there was a problem when getting Ftop")
+            if (headtt) print*,'bc_ss_flux_x: Ftop=',Ftop
+
+            tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
+                     (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
           else
             tmp_yz=FtopKtop/tmp_yz
           endif
 !
-!  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Ftop/(K*cs2)
+!  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = gamma_m1/gamma*Ftop/(K*cs2)
 !
-          do i=1,nghost
-            if (ldensity_nolog) then
-              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-                  (log(f(l2-i,:,:,irho))-log(f(l2+i,:,:,irho))-2*i*dx*tmp_yz)
-            else
-              f(l2+i,:,:,iss)=f(l2-i,:,:,iss)+gamma_m1/gamma* &
-                  (f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho)-2*i*dx*tmp_yz)
-            endif
-          enddo
+          call heatflux_boundcond_x( f, -tmp_yz, gamma_m1/gamma, TOP )
 !
         endif
 !
@@ -5079,6 +5075,43 @@ module Boundcond
       if (allocated(work_yz)) deallocate(work_yz)
 !
     endsubroutine bc_ss_flux_x
+!************************************************************************
+    subroutine heatflux_boundcond_x( f, inh, fac, topbot )
+!
+!  encapsules BC 'prescribed heat flux at x boundary'
+!
+!  17-apr-12/MR: outsourced from bc_ss_flux_x
+!
+      use Deriv, only: heatflux_deriv_x
+
+      real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
+      real, dimension(my,mz)           , intent(IN)   :: inh
+      real                             , intent(IN)   :: fac
+      integer                          , intent(IN)   :: topbot
+!
+      integer :: i,ll
+!
+      if ( .not.lequidist(1) ) then
+        if ( heatflux_deriv_x( f, inh, fac, topbot ) ) return
+      endif
+! 
+      if (topbot==1) then
+        ll=l1
+      else
+        ll=l2
+      endif
+!
+      do i=1,nghost
+        if (ldensity_nolog) then
+          f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
+              (log(f(ll+i,:,:,irho))-log(f(ll-i,:,:,irho))+2*i*dx*inh)
+        else
+          f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
+              (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho)+2*i*dx*inh)
+        endif
+      enddo
+!
+  endsubroutine heatflux_boundcond_x
 !***********************************************************************
     subroutine bc_del2zero(f,topbot,j)
 !
