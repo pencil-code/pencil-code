@@ -405,13 +405,13 @@ contains
 !  11-apr-97/axel: coded
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Mpicomm, only: start_serialize, end_serialize
+      use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, stop_it_if_any
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
       real, dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real :: t_sp   ! t in single precision for backwards compatibility
+      real :: t_sp, t_test   ! t in single precision for backwards compatibility
       integer :: io_err
       logical :: lerror
 !
@@ -448,20 +448,25 @@ contains
           lerror = outlog (io_err, "Can't read additional data", file)
         endif
 !
-!  set initial time to that of snapshot, unless
-!  this is overridden
+!  Verify consistency of the snapshots regarding their timestamp.
 !
-        if (lreset_tstart) then
-          t = tstart
-        else
-          t = t_sp
-        endif
+        t_test = t_sp
+        call mpibcast_real(t_test)
+        if (t_test /= t_sp) &
+            write (*,'(A,F)') 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
+        call stop_it_if_any((t_test /= t_sp), '')
 !
-!  verify the ip, x, y, and z readings
+!  Set time or overwrite it by a given value.
 !
-        if (ip <= 3) print *, 'input_snap: ip,x=', ip, x
+        t = t_sp
+        if (lreset_tstart) t = tstart
+!
+!  Verify the read values for x, y, z, and t.
+!
+        if (ip <= 3) print *, 'input_snap: x=', x
         if (ip <= 3) print *, 'input_snap: y=', y
         if (ip <= 3) print *, 'input_snap: z=', z
+        if (ip <= 3) print *, 'input_snap: t=', t
 !
       endif
 !
