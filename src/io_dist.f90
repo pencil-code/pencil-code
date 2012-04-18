@@ -453,7 +453,7 @@ contains
         t_test = t_sp
         call mpibcast_real(t_test)
         if (t_test /= t_sp) &
-            write (*,'(A,F)') 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
+            write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
         call stop_it_if_any((t_test /= t_sp), '')
 !
 !  Set time or overwrite it by a given value.
