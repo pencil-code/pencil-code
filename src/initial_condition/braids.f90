@@ -16,6 +16,8 @@ module InitialCondition
   use Streamlines
   use Fixed_point
   use Sub, only: keep_compiler_quiet  
+  use Boundcond ! for the core boundary communication
+  use mpicomm
 !
   implicit none
 !
@@ -153,6 +155,11 @@ module InitialCondition
     character(len=1024) :: filename, str_tmp
 !
 !
+    if (trace_field == 'bb' .and. ipz == 0) then
+!     allocate memory for the traced field
+      allocate(vv(nx,ny,nz,3))
+    endif
+!
 !   check the word
     wordn = word
     word_len = len(wordn)
@@ -245,7 +252,7 @@ module InitialCondition
 !               Note that B is written in the f-array where A is stored.
 !               This is corrected further in the code.
                 if (prof == 'gaussian') then
-                  f(l,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
+                  f(l,m,n,iax:iaz) = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
                 else if (prof == 'constant') then
                   f(l,m,n,iax:iaz) = tangent*ampl
                 endif
@@ -364,7 +371,7 @@ module InitialCondition
 !                 Note that B is written in the f-array where A is stored.
 !                 This is corrected further in the code.
                   if (prof == 'gaussian') then
-                    f(l,m,n,iax:iaz) = tangent*ampl*exp(-(2*circle_radius/width_tube)**2)
+                    f(l,m,n,iax:iaz) = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
                   else if (prof == 'constant') then
                     f(l,m,n,iax:iaz) = tangent*ampl
                   endif
@@ -402,15 +409,31 @@ module InitialCondition
       do j=1,3
         ju=iaa-1+j
         f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
-      enddo    
+      enddo
 !
 !     Add a background field to the braid
-      do l=l1,l2
-        do m=m1,m2
+      do l=1,mx
+        do m=1,my
           f(l,m,:,iax) = f(l,m,:,iax) - y(m)*B_bkg/2.
           f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
         enddo
       enddo
+!
+!     communicate the core boudnaries for taking the curl
+      call boundconds_x(f)
+      call initiate_isendrcv_bdry(f)
+      call finalize_isendrcv_bdry(f)
+      call boundconds_y(f)
+      call boundconds_z(f)
+!
+!     convert the magnetic vector potential into the magnetic field
+      if (trace_field == 'bb' .and. ipz == 0) then
+        do m=m1,m2
+          do n=n1,n2
+            call curl(f,iaa,vv(:,m-nghost,n-nghost,:))
+          enddo
+        enddo
+      endif
     endif
 !
 !   In case the blob configuration is wished create it.
@@ -435,6 +458,15 @@ module InitialCondition
           f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
         enddo
       enddo
+!
+!     convert the magnetic vector potential into the magnetic field
+      if (trace_field == 'bb' .and. ipz == 0) then
+        do m=m1,m2
+          do n=n1,n2
+            call curl(f,iaa,vv(:,m-nghost,n-nghost,:))
+          enddo
+        enddo
+      endif
     endif
 !
 !   Trace the specified field lines
@@ -443,14 +475,6 @@ module InitialCondition
 !
 !     allocate the memory for the tracers
       allocate(tracers(nx*ny*trace_sub**2,7))
-!     allocate memory for the traced field
-      allocate(vv(nx,ny,nz,3))
-!     convert the magnetic vector potential into the magnetic field
-      do m=m1,m2
-        do n=n1,n2
-          call curl(f,iaa,vv(:,m-nghost,n-nghost,:))
-        enddo
-      enddo
 !     create the initial seeds at z(1+nghost)-ipz*nz*dz+dz
       do j=1,nx*trace_sub
         do k=1,ny*trace_sub
