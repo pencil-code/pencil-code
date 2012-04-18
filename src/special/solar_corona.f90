@@ -1030,7 +1030,7 @@ module Special
       endif
 !
       ! External horizontal velocity driver
-      if (luse_vel_field) then
+      if (luse_vel_field .and. lfirst_proc_z) then
         if (.not. allocated (vel_x_l)) then
           allocate (vel_x_l(nx,ny), vel_y_l(nx,ny), vel_x_r(nx,ny), vel_y_r(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
@@ -1044,7 +1044,7 @@ module Special
       endif
 !
       ! External magnetic field horizontal LCT velocities (no quenching)
-      if (luse_mag_vel_field) then
+      if (luse_mag_vel_field .and. lfirst_proc_z) then
         if (.not. allocated (mag_x_l)) then
           allocate (mag_x_l(nx,ny), mag_y_l(nx,ny), mag_x_r(nx,ny), mag_y_r(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
