@@ -30,7 +30,7 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der2_minmod
-  public :: heatflux_boundcond_x
+  public :: heatflux_deriv_x
 !
   real, dimension( 4,6) :: der_coef
   real, dimension(nx,6) :: r1i
@@ -188,6 +188,9 @@ module Deriv
     subroutine finalize_deriv()
 
       deallocate( coeffsx, coeffsy, coeffsz )
+      if (allocated(coeffsx_1)) deallocate(coeffsx_1)
+      if (allocated(coeffsy_1)) deallocate(coeffsy_1)
+      if (allocated(coeffsz_1)) deallocate(coeffsz_1)
 
     endsubroutine finalize_deriv
 !***********************************************************************
@@ -1783,15 +1786,17 @@ module Deriv
 
    endfunction derivative_1
 !*************************************************************************************************************
-   subroutine heatflux_boundcond_x( f, inh, fac, im, topbot )
+   logical function heatflux_deriv_x( f, inh, fac, topbot )
 
      real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
      real, dimension(my,mz)           , intent(IN)   :: inh
      real                             , intent(IN)   :: fac
-     integer                          , intent(IN)   :: im,topbot
+     integer                          , intent(IN)   :: topbot
 
      real, dimension(:,:), allocatable :: work_yz
-     integer                           :: i,ic,stat,ll
+     integer                           :: i,ic,stat,ll, im
+
+     heatflux_deriv_x = .false.
 
      allocate(work_yz(my,mz),stat=stat)                                 !save this by working in f?
      if (stat>0) call fatal_error('heatflux_boundcond_x', &
@@ -1807,48 +1812,53 @@ module Deriv
        call fatal_error('heatflux_boundcond_x', &
          'Illegal value for parameter "topbot"')
      endif
+     
+     do im=1,3
 
-     work_yz = inh                                                      ! Fbot/(K*cs2)
+       work_yz = inh                                                      ! Fbot/(K*cs2)
 
-     select case (im)
-     case (1,2)
-       do i=-im,im                                                      ! dlnrho, 1st+2nd order
-         if (ldensity_nolog) then
-           work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,ilnrho)
-         else
-           work_yz = work_yz + coeffsx_1(i,im,topbot)*log(f(ll+i,:,:,irho))
-         endif
-       enddo
-     case (3)
-       do i=-im,im                                                      ! dlnrho, 3rd order
-         if (ldensity_nolog) then
-           work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,ilnrho)
-         else
-           work_yz = work_yz + coeffsx(i,1,ic)*log(f(ll+i,:,:,irho))
-         endif
-       enddo
-     end select
+       if (im<3) then
+         do i=-im,im                                                      ! dlnrho, 1st+2nd order
+           if (ldensity_nolog) then
+             work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,ilnrho)
+           else
+             work_yz = work_yz + coeffsx_1(i,im,topbot)*log(f(ll+i,:,:,irho))
+           endif
+         enddo
+       else
+         do i=-im,im                                                      ! dlnrho, 3rd order
+           if (ldensity_nolog) then
+             work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,ilnrho)
+           else
+             work_yz = work_yz + coeffsx(i,1,ic)*log(f(ll+i,:,:,irho))
+           endif
+         enddo
+       endif
 
-     work_yz = fac*work_yz  
+       work_yz = fac*work_yz  
 
-     select case (im)
-     case (1,2)
-       do i=-im+1,im                                                    ! dss, 1st+2nd order
-         work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,iss)
-       enddo
+       if (im<3) then
 
-       f(ll-im,:,:,iss) = -work_yz/coeffsx_1(-im,im,topbot)
+         do i=-im+1,im                                                    ! dss, 1st+2nd order
+           work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,iss)
+         enddo
 
-     case (3)
-       do i=-im+1,im                                                    ! dss, 3rd order
-         work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,iss)
-       enddo
+         f(ll-im,:,:,iss) = -work_yz/coeffsx_1(-im,im,topbot)
 
-       f(ll-im,:,:,iss) = -work_yz/coeffsx(-im,1,ic)
+       else
 
-     end select
+         do i=-im+1,im                                                    ! dss, 3rd order
+           work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,iss)
+         enddo
 
-   endsubroutine heatflux_boundcond_x
+         f(ll-im,:,:,iss) = -work_yz/coeffsx(-im,1,ic)
+
+       endif
+     enddo
+
+     heatflux_deriv_x = .true.
+
+   endfunction heatflux_deriv_x
 !*************************************************************************************************************
    subroutine test( coord, dc_1, nc, coefs )
 
