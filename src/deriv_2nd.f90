@@ -25,6 +25,7 @@ module Deriv
   public :: der_onesided_4_slice_other
   public :: der_z, der2_z
   public :: der2_minmod
+  public :: heatflux_deriv_x
 !
 !debug  integer, parameter :: icount_der   = 1         !DERCOUNT
 !debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
@@ -1755,5 +1756,20 @@ module Deriv
           df  = inds + f(l1:l2,1,1) + j
 !
     endsubroutine deri_3d_inds
+!************************************************************************
+    logical function heatflux_deriv_x( f, inh, fac, topbot )
+!
+!   dummy routine
+!
+!  17-apr-12/MR: coded
+!
+     real, dimension(mx,my,mz,mfarray), intent(IN):: f
+     real, dimension(my,mz)           , intent(IN):: inh
+     real                             , intent(IN):: fac
+     integer                          , intent(IN):: topbot
+!
+     heatflux_deriv_x = .false.
+
+    endfunction heatflux_deriv_x
 !***********************************************************************
 endmodule Deriv

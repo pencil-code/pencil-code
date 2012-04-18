@@ -25,7 +25,7 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der2_minmod
-  public :: heatflux_boundcond_x
+  public :: heatflux_deriv_x
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
 !
@@ -1933,35 +1933,19 @@ module Deriv
 !
     endsubroutine deri_3d_inds
 !************************************************************************
-   subroutine heatflux_boundcond_x( f, inh, fac, im, topbot )
+    logical function heatflux_deriv_x( f, inh, fac, topbot )
 !
-!  encapsules BC 'prescribed heat flux at x boundary'
+!   dummy routine
 !
-!  16-apr-12/MR: outsourced from Boundcond
+!  17-apr-12/MR: coded
 !   
-     real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
-     real, dimension(my,mz)           , intent(IN)   :: inh
-     real                             , intent(IN)   :: fac
-     integer                          , intent(IN)   :: im,topbot
+     real, dimension(mx,my,mz,mfarray), intent(IN):: f
+     real, dimension(my,mz)           , intent(IN):: inh
+     real                             , intent(IN):: fac
+     integer                          , intent(IN):: topbot
 !
-     integer :: i,ll
-!
-     if (topbot==1) then
-       ll=l1
-     else
-       ll=l2
-     endif
-!
-     do i=1,nghost
-       if (ldensity_nolog) then
-         f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-             (log(f(ll+i,:,:,irho))-log(f(ll-i,:,:,irho))+2*i*dx*inh)
-       else
-         f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-             (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho)+2*i*dx*inh)
-       endif
-     enddo
-!
-  endsubroutine heatflux_boundcond_x
+     heatflux_deriv_x = .false.
+ 
+    endfunction heatflux_deriv_x
 !***********************************************************************
  endmodule Deriv

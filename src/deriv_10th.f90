@@ -24,6 +24,7 @@ module Deriv
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der2_minmod
+  public :: heatflux_deriv_x
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4, der2_coef5
 !
@@ -1772,5 +1773,20 @@ module Deriv
           df  = inds + f(l1:l2,1,1) + j
 !
     endsubroutine deri_3d_inds
+!************************************************************************
+    logical function heatflux_deriv_x( f, inh, fac, topbot )
+!
+!   dummy routine
+!
+!  17-apr-12/MR: coded
+!
+     real, dimension(mx,my,mz,mfarray), intent(IN):: f
+     real, dimension(my,mz)           , intent(IN):: inh
+     real                             , intent(IN):: fac
+     integer                          , intent(IN):: topbot
+!
+     heatflux_deriv_x = .false.
+
+    endfunction heatflux_deriv_x
 !***********************************************************************
 endmodule Deriv
