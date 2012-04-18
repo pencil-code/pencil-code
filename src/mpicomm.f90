@@ -2520,7 +2520,11 @@ module Mpicomm
       if (lroot) call touch_file('ERROR')
 !
       call mpifinalize
-      STOP 1                    ! Return nonzero exit status
+      if (lroot) then
+        STOP 1                    ! Return nonzero exit status
+      else
+        STOP
+      endif
 !
     endsubroutine die_gracefully
 !***********************************************************************
@@ -2537,7 +2541,11 @@ module Mpicomm
 !
       if (lroot) call touch_file('ERROR')
 !
-      STOP 2                    ! Return nonzero exit status
+      if (lroot) then
+        STOP 2                    ! Return nonzero exit status
+      else
+        STOP
+      endif
 !
     endsubroutine die_immediately
 !***********************************************************************
@@ -2583,8 +2591,10 @@ module Mpicomm
       if (lroot) then
         if (present(code)) then
           write(*,'(A,A)') 'STOPPED: ', msg, '. CODE: '//trim(itoa(code))
-        else
+        elseif (msg /= '') then
           write(*,'(A,A)') 'STOPPED: ', msg
+        else
+          write(*,'(A)') 'STOPPED'
         endif
       endif
 !
