@@ -5089,25 +5089,25 @@ module Boundcond
       real                             , intent(IN)   :: fac
       integer                          , intent(IN)   :: topbot
 !
-      integer :: i,ll
+      integer :: i,ll,ia,ie
 !
       if ( .not.lequidist(1) ) then
         if ( heatflux_deriv_x( f, inh, fac, topbot ) ) return
       endif
 ! 
       if (topbot==1) then
-        ll=l1
+        ll=l1; ia=1; ie=nghost
       else
-        ll=l2
+        ll=l2; ia=-nghost; ie=-1
       endif
 !
-      do i=1,nghost
+      do i=ia,ie
         if (ldensity_nolog) then
           f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-              (log(f(ll+i,:,:,irho))-log(f(ll-i,:,:,irho))+2*i*dx*inh)
+              (log(f(ll+i,:,:,irho))-log(f(ll-i,:,:,irho))+(2*i*dx)*inh)
         else
           f(ll-i,:,:,iss)=f(ll+i,:,:,iss)+fac* &
-              (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho)+2*i*dx*inh)
+              (f(ll+i,:,:,ilnrho)-f(ll-i,:,:,ilnrho)+(2*i*dx)*inh)
         endif
       enddo
 !
