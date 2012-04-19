@@ -2026,10 +2026,10 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_tensor(df,p,Kpara,expo)
 !
-!    field-aligned heat conduction with T^expo and b = B/|B|
-!    L = Div * (b K_para T^expo b*Grad T)
-!      = Div * (b K_para T^(expo+1) b*Grad ln T)
-!    Spitzer-type coronal parameters: expo=2.5, K_para=9e-12 [kg*m^4/s^3/K^3.5]
+!    field-aligned heat conduction that is proportional to T^expo with b=B/|B|
+!    L = Div (b K T^expo b*Grad(T))
+!      = Div (b K T^(expo+1) b*Grad(lnT))
+!    Spitzer-type coronal parameters: expo=2.5, K=9e-12 [kg*m^4/s^3/K^3.5]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
@@ -2131,7 +2131,7 @@ module Special
       df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs
 !
 !  for timestep extension multiply with the
-!  cosine between grad T and bunit
+!  cosine between Grad(T) and bunit
 !
       call dot(p%bb,p%glnTT,cosbgT)
       call dot2(p%bb,b2)
@@ -2154,9 +2154,8 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_grad(df,p)
 !
-! additional heat conduction where the heat flux is
-! is proportional to \rho abs(gradT)
-! L= Div(rho |Grad(T)| Grad(T))
+! isotropic heat conduction that is proportional to rho |Grad(T)|
+! L = Div (rho |Grad(T)| Grad(T))
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot,dot2
@@ -2204,7 +2203,9 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !
-! L = Div( K rho b*(b*Grad(T))
+! field-aligned heat conduction that is proportional to rho
+! L = Div (b K rho b*Grad(T))
+! K = hcond1 [m^2/s]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
@@ -2297,10 +2298,12 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_glnTT(df,p)
 !
-!  L = Div( Grad(lnT)^2  rho b*(b*Grad(T)))
-!  => flux = T  Grad(lnT)^2  rho
-!    gflux = flux * (glnT + glnrho +Grad( Grad(lnT)^2))
-!  => chi =  Grad(lnT)^2
+! field-aligned heat conduction that is proportional to rho*Grad(lnT)^2
+!  L = Div (b K rho Grad(lnT)^2 b*Grad(T))
+!  => flux = K rho T Grad(lnT)^2
+!    gflux = flux * (glnT + glnrho + Grad(Grad(lnT)^2))
+!  => chi = Grad(lnT)^2
+!  K = hcond2 [m^6/s^3/K]
 !
       use Diagnostics, only: max_mn_name
       use Sub, only: dot2,dot,multsv,multmv
@@ -2396,7 +2399,9 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_glnTT_iso(df,p)
 !
-!  L = Div( Grad(lnT)^2 Grad(T))
+! isotropic heat conduction that is proportional to rho*Grad(lnT)^2
+!  L = Div (K rho Grad(lnT)^2 Grad(T))
+!  K = hcond3 [m^6/s^3/K]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
