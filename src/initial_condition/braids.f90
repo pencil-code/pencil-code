@@ -126,7 +126,7 @@ module InitialCondition
 !   keeps track of the current position of the strand
     integer, dimension(9) :: strand_position
 !   position of the other strand in the braid
-    integer :: other_position
+    integer :: other_position, ierr
     integer :: braid_num ! auxiliary variable for the braid position
 !
 !   step length for some curve parameters
@@ -136,6 +136,7 @@ module InitialCondition
     real, dimension(3) :: tube_pos, circle_pos, tangent, normal
 !   working variables for the strands
     integer :: n_strands, ascii_code
+    real, dimension(3) :: new_bb
 !
 !   The next variables are used for the uncurling.
     integer :: l, j, ju, k
@@ -193,7 +194,8 @@ module InitialCondition
 !
 !   clear the magnetic field to zero
 !     f(l1:l2,m1:m2,n1:n2,iax:iaz) = 0.
-    f(1:l2+nghost,1:m2+nghost,1:n2+nghost,iax:iaz) = 0.
+!     f(1:l2+nghost,1:m2+nghost,1:n2+nghost,iax:iaz) = 0.
+    f(:,:,:,iax:iaz) = 0.
 !
 !
 !   set the coefficients for the rotation polynomial
@@ -207,17 +209,17 @@ module InitialCondition
 !   to avoid discretization issues, like mesh points without magnetic field
     delta_tube_param = min(dx, dy, dz)
 !   correct for the braid steepnes
-    delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi * distance_tubes)
-    delta_circle_radius = delta_tube_param
+    delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi * distance_tubes * 8)
+    delta_circle_radius = delta_tube_param*8
     delta_circle_param = delta_circle_radius/(width_tube/2.)
 !
 !   loop over all strands
     if (n_blobs == 0) then
       do idx_strand = 1,n_strands
 !       compute the initial position of this strand
-        tube_pos(1) = x(1+nghost)-ipx*nx*dx + idx_strand * Lx/n_strands - 0.5*Lx/n_strands
-        tube_pos(2) = Ly/2. + y(1+nghost)-ipy*ny*dy
-        tube_pos(3) = z(1+nghost)-ipz*nz*dz
+        tube_pos(1) = x(l1)-ipx*nx*dx + idx_strand * Lx/n_strands - 0.5*Lx/n_strands
+        tube_pos(2) = Ly/2. + y(m1)-ipy*ny*dy
+        tube_pos(3) = z(n1)-ipz*nz*dz
         idx = 1
 !
 !       reset the strand_position vector
@@ -227,11 +229,11 @@ module InitialCondition
         do
 !         create straight lines
           do
-            if (tube_pos(3) > (l_straight*idx + l_sigma*(idx-1) + z(1+nghost)-ipz*nz*dz)) exit
+            if (tube_pos(3) > (l_straight*idx + l_sigma*(idx-1) + z(n1)-ipz*nz*dz)) exit
             tangent = (/0,0,1/)
 !
             circle_radius = 0.
-!          loop which changes the circle's radius
+!           loop which changes the circle's radius
             do
               if (circle_radius > width_tube/2.) exit
               circle_param = 0.
@@ -245,22 +247,27 @@ module InitialCondition
 !               Find the corresponding mesh point to this position.
                 l = nint((circle_pos(1) - x(1))/dx) + 1
                 m = nint((circle_pos(2) - y(1))/dy) + 1
-                n = nint((circle_pos(3) - z(1))/dz) + 1                  
-                if (l > mx .or. m > my .or. n > mz .or. l < 1 .or. m < 1 .or. n < 1) exit
+                n = nint((circle_pos(3) - z(1))/dz) + 1
 !
-!               Write the magnetic field B.
-!               Note that B is written in the f-array where A is stored.
-!               This is corrected further in the code.
-                if (prof == 'gaussian') then
-                  f(l,m,n,iax:iaz) = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
-                else if (prof == 'constant') then
-                  f(l,m,n,iax:iaz) = tangent*ampl
-                endif
+                if ((l > mx .or. m > my .or. n > mz .or. l < 1 .or. m < 1 .or. n < 1) .eqv. .false.) then
+!                 Write the magnetic field B.
+!                 Note that B is written in the f-array where A is stored.
+!                 This is corrected further in the code.
+                    if (prof == 'gaussian') then
+                      new_bb = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
+                    else if (prof == 'constant') then
+                      new_bb = tangent*ampl
+                    endif
+!                   Avoid issues in spots with high curvature.
+                    if ((f(l,m,n,iax)**2 + f(l,m,n,iay)**2 + f(l,m,n,iaz)**2) < &
+                        (new_bb(1)**2 + new_bb(2)**2 + new_bb(3)**2)) &
+                        f(l,m,n,iax:iaz) = new_bb
+                  endif
                 circle_param = circle_param + delta_circle_param
               enddo
               circle_radius = circle_radius + delta_circle_radius
             enddo
-            tube_pos(3) = tube_pos(3) + delta_tube_param
+            tube_pos(3) = tube_pos(3) + delta_tube_param*8
           enddo
           if (idx > word_len) exit
 !
@@ -364,16 +371,21 @@ module InitialCondition
 !                 Find the corresponding mesh point to this position.
                   l = nint((circle_pos(1) - x(1))/dx) + 1
                   m = nint((circle_pos(2) - y(1))/dy) + 1
-                  n = nint((circle_pos(3) - z(1))/dz) + 1                  
-                  if (l > mx .or. m > my .or. n > mz .or. l < 1 .or. m < 1 .or. n < 1) exit
+                  n = nint((circle_pos(3) - z(1))/dz) + 1
 !
-!                 Write the magnetic field B.
-!                 Note that B is written in the f-array where A is stored.
-!                 This is corrected further in the code.
-                  if (prof == 'gaussian') then
-                    f(l,m,n,iax:iaz) = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
-                  else if (prof == 'constant') then
-                    f(l,m,n,iax:iaz) = tangent*ampl
+                  if ((l > mx .or. m > my .or. n > mz .or. l < 1 .or. m < 1 .or. n < 1) .eqv. .false.) then
+!                   Write the magnetic field B.
+!                   Note that B is written in the f-array where A is stored.
+!                   This is corrected further in the code.
+                    if (prof == 'gaussian') then
+                      new_bb = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
+                    else if (prof == 'constant') then
+                      new_bb = tangent*ampl
+                    endif
+!                   Avoid issues in spots with high curvature.
+                    if ((f(l,m,n,iax)**2 + f(l,m,n,iay)**2 + f(l,m,n,iaz)**2) < &
+                        (new_bb(1)**2 + new_bb(2)**2 + new_bb(3)**2)) &
+                        f(l,m,n,iax:iaz) = new_bb
                   endif
                   circle_param = circle_param + delta_circle_param
                 enddo
@@ -383,8 +395,6 @@ module InitialCondition
               tube_param = tube_param + delta_tube_param
             enddo
           else
-!         create a straight field
-            tube_pos(3) = tube_pos(3)
           endif
           idx = idx + 1
         enddo
@@ -400,6 +410,7 @@ module InitialCondition
         enddo
       enddo
       tmpJ = -jj
+!
 !     Use the Poisson solver to solve \nabla^2 A = -J for A
       do j=1,3
         call inverse_laplacian(f,tmpJ(:,:,:,j))
@@ -411,20 +422,31 @@ module InitialCondition
         f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
       enddo
 !
-!     Add a background field to the braid
-      do l=1,mx
-        do m=1,my
-          f(l,m,:,iax) = f(l,m,:,iax) - y(m)*B_bkg/2.
-          f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
-        enddo
-      enddo
-!
-!     communicate the core boudnaries for taking the curl
+!     communicate the core boundaries for taking the curl
+      call MPI_BARRIER(MPI_comm_world, ierr)
       call boundconds_x(f)
       call initiate_isendrcv_bdry(f)
       call finalize_isendrcv_bdry(f)
       call boundconds_y(f)
       call boundconds_z(f)
+      call MPI_BARRIER(MPI_comm_world, ierr)
+!
+!     Add a background field to the braid
+      do l=l1,l2
+        do m=m1,m2
+          f(l,m,:,iax) = f(l,m,:,iax) - y(m)*B_bkg/2.
+          f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
+        enddo
+      enddo
+!
+!     communicate the core boundaries for taking the curl
+      call MPI_BARRIER(MPI_comm_world, ierr)
+      call boundconds_x(f)
+      call initiate_isendrcv_bdry(f)
+      call finalize_isendrcv_bdry(f)
+      call boundconds_y(f)
+      call boundconds_z(f)
+      call MPI_BARRIER(MPI_comm_world, ierr)
 !
 !     convert the magnetic vector potential into the magnetic field
       if (trace_field == 'bb' .and. ipz == 0) then
