@@ -2026,9 +2026,10 @@ module Special
 !***********************************************************************
     subroutine calc_heatcond_tensor(df,p,Kpara,expo)
 !
-!    anisotropic heat conduction with T^5/2
-!    Div K T Grad ln T
-!      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
+!    field-aligned heat conduction with T^expo and b = B/|B|
+!    L = Div * (b K_para T^expo b*Grad T)
+!      = Div * (b K_para T^(expo+1) b*Grad ln T)
+!    Spitzer-type coronal parameters: expo=2.5, K_para=9e-12 [kg*m^4/s^3/K^3.5]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
