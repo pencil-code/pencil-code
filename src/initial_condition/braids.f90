@@ -25,6 +25,7 @@ module InitialCondition
 !
 ! ampl = amplitude of the magnetic field
 ! width_tube = width of the flux tube
+! braid_margin = margin of outer most strands to the borders
 ! l_sigma = length of the twist region
 ! steepnes = steepnes of the braiding
 ! B_bkg = strength of the background field in z-direction
@@ -37,7 +38,7 @@ module InitialCondition
 ! l_blob = length in z-direction of the blob
 ! blob_scale = scaling factor for the Gaussian
 !
-  real :: ampl = 1.0, width_tube = 0.3, l_sigma = 0.3, steepnes = 1.0  
+  real :: ampl = 1.0, width_tube = 0.3, braid_margin = -1., l_sigma = 0.3, steepnes = 1.0  
   real :: B_bkg = 0.0
   character (len=labellen) :: prof='gaussian'
   character (len=labellen) :: word = "AA"
@@ -47,7 +48,7 @@ module InitialCondition
   real :: blob_scale = 1.
 !
   namelist /initial_condition_pars/ &
-    ampl,width_tube,l_sigma,steepnes,B_bkg,word,prof, &
+    ampl,width_tube,braid_margin,l_sigma,steepnes,B_bkg,word,prof, &
 !   blob variables
     n_blobs,xc,yc,zc,blob_sgn,l_blob,blob_scale
 !
@@ -190,7 +191,11 @@ module InitialCondition
       call fatal_error("braids", "distance between braids is negative, check l_sigma")
     endif
 !
-    distance_tubes = Lx / n_strands
+    if (braid_margin < 0) braid_margin = 0.5*Lx/n_strands
+    if (braid_margin > Lx/2.) &
+        call fatal_error("braids", "braid margin is larger then Lx/2")
+!
+    distance_tubes = (Lx-2*braid_margin)/(n_strands-1)
 !
 !   clear the magnetic field to zero
 !     f(l1:l2,m1:m2,n1:n2,iax:iaz) = 0.
@@ -217,7 +222,7 @@ module InitialCondition
     if (n_blobs == 0) then
       do idx_strand = 1,n_strands
 !       compute the initial position of this strand
-        tube_pos(1) = x(l1)-ipx*nx*dx + idx_strand * Lx/n_strands - 0.5*Lx/n_strands
+        tube_pos(1) = x(l1)-ipx*nx*dx + (idx_strand-1)*distance_tubes + braid_margin
         tube_pos(2) = Ly/2. + y(m1)-ipy*ny*dy
         tube_pos(3) = z(n1)-ipz*nz*dz
         idx = 1
@@ -391,14 +396,12 @@ module InitialCondition
                 enddo
                 circle_radius = circle_radius + delta_circle_radius
               enddo
-!
               tube_param = tube_param + delta_tube_param
             enddo
           else
           endif
           idx = idx + 1
         enddo
-!
       enddo
 !
 !     Transform the magnetic field into a vector potential
@@ -421,15 +424,6 @@ module InitialCondition
         ju=iaa-1+j
         f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
       enddo
-!
-!     communicate the core boundaries for taking the curl
-      call MPI_BARRIER(MPI_comm_world, ierr)
-      call boundconds_x(f)
-      call initiate_isendrcv_bdry(f)
-      call finalize_isendrcv_bdry(f)
-      call boundconds_y(f)
-      call boundconds_z(f)
-      call MPI_BARRIER(MPI_comm_world, ierr)
 !
 !     Add a background field to the braid
       do l=l1,l2
