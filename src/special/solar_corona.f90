@@ -2155,7 +2155,8 @@ module Special
     subroutine calc_heatcond_grad(df,p)
 !
 ! isotropic heat conduction that is proportional to rho |Grad(T)|
-! L = Div (rho |Grad(T)| Grad(T))
+! L = Div (K rho |Grad(T)| Grad(T))
+! K = chi [m/s^2] * cV [J/kg/K] = K_iso [m^3/s^4/K]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot,dot2
