@@ -2029,12 +2029,12 @@ module Special
 !    field-aligned heat conduction that is proportional to T^expo with b=B/|B|
 !    L = Div (b K T^expo b*Grad(T))
 !      = Div (b K T^(expo+1) b*Grad(lnT))
-!    Spitzer-type coronal parameters: expo=2.5, K=9e-12 [kg*m^4/s^3/K^3.5]
+!    Spitzer-type coronal parameters: expo=2.5, K=9e-12 [kg*m/s^3/K^3.5]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
-!--   use Io,              only : output_pencil
-!AB: output_pencil is not currently used and breaks the auto-test
+!      use Debug,           only : output_pencil
+!
       use EquationOfState, only : gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -2156,7 +2156,7 @@ module Special
 !
 ! isotropic heat conduction that is proportional to rho |Grad(T)|
 ! L = Div (K rho |Grad(T)| Grad(T))
-! K = chi [m/s^2] * cV [J/kg/K] = K_iso [m^3/s^4/K]
+! K = K_iso [m^5/s^3/K^2]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot,dot2
@@ -2206,7 +2206,7 @@ module Special
 !
 ! field-aligned heat conduction that is proportional to rho
 ! L = Div (b K rho b*Grad(T))
-! K = hcond1 [m^2/s]
+! K = chi [m^2/s] * cV [J/kg/K] = hcond1 [m^4/s^3/K]
 !
       use Diagnostics,     only : max_mn_name
       use Sub,             only : dot2,dot,multsv,multmv
