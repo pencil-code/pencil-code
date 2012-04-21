@@ -2196,30 +2196,27 @@ module Special
 ! field-aligned heat conduction that is proportional to rho
 ! L = Div (b K rho b*Grad(T))
 ! K = chi [m^2/s] * cV [J/kg/K] = hcond1 [m^4/s^3/K]
+! Define chi = K_0/rho
 !
-      use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv
-      use EquationOfState, only : gamma
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot2, dot, multsv, multmv
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      real, dimension (nx,3) :: bunit,hhh,tmpv
-      real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: b_abs,b_abs_1
-      real, dimension (nx) :: rhs,tmp,tmpi,tmpj,chix,fdiff
-      integer :: i,j,k
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
 !
-      intent(in) :: p
-      intent(inout) :: df
+      real, dimension (nx,3) :: bunit, hhh, tmpv
+      real, dimension (nx) :: hhh2, quenchfactor, b_abs_1, fdiff
+      real, dimension (nx) :: rhs, tmp, glnTT_b, glnrho_b, glnTT_H, hlnTT_Bij
+      real :: chi
+      integer :: i, j, k
 !
       if (headtt) print*,'solar_corona/calc_heatcond_chiconst',hcond1
 !
-!  Define chi= K_0/rho
-!
 !  calculate unit vector of bb
 !
-      call dot2(p%bb,b_abs,PRECISE_SQRT=.true.)
-      b_abs_1=1./max(tini,b_abs)
+      call dot2(p%bb,tmp,PRECISE_SQRT=.true.)
+      b_abs_1=1./max(tini,tmp)
       call multsv(b_abs_1,p%bb,bunit)
 !
 !  calculate first H_i
@@ -2227,11 +2224,11 @@ module Special
       do i=1,3
         hhh(:,i)=0.
         do j=1,3
-          tmpj(:)=0.
+          tmp(:)=0.
           do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+            tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
           enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
         enddo
       enddo
       call multsv(b_abs_1,hhh,tmpv)
@@ -2247,39 +2244,30 @@ module Special
 !
 !  dot H with Grad lnTT
 !
-      call dot(hhh,p%glnTT,tmp)
+      call dot(hhh,p%glnTT,glnTT_H)
 !
-!  dot Hessian matrix of lnTT with bi*bj, and add into tmp
+!  dot Hessian matrix of lnTT with bi*bj
 !
       call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,tmpj)
-      tmp = tmp+tmpj
+      call dot(tmpv,bunit,hlnTT_Bij)
 !
-!  calculate (Grad lnTT * bunit)^2 needed for lnecr form; also add into tmp
+!  calculate (Grad lnTT * bunit)^2 needed for lnecr form
 !
-      call dot(p%glnTT,bunit,tmpi)
-!
-      call dot(p%glnrho,bunit,tmpj)
-      tmp=tmp+(tmpj+tmpi)*tmpi
+      call dot(p%glnTT,bunit,glnTT_b)
+      call dot(p%glnrho,bunit,glnrho_b)
 !
 !  calculate rhs
 !
-      chix = hcond1 * get_hcond_fade_fact()
+      chi = hcond1 * get_hcond_fade_fact()
+      rhs = glnTT_H + hlnTT_Bij + (glnrho_b + glnTT_b)*glnTT_b * chi*gamma
 !
-      rhs = gamma*chix*tmp
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if ((.not. llast_proc_z) .or. (n < n2-3)) &
-          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+rhs
-!
-!      if (itsub == 3 .and. ip == 118) &
-!          call output_pencil(trim(directory)//'/tensor2.dat',rhs,1)
-!
-      if (lfirst.and.ldt) then
-        fdiff=chix*dxyz_2
-        advec_cs2=max(advec_cs2,maxval(fdiff))
-        fdiff=gamma*fdiff
+      if (lfirst .and. ldt) then
+        advec_cs2=max(advec_cs2,chi*maxval(dxyz_2))
+        fdiff=gamma*chi*dxyz_2
         diffus_chi=diffus_chi+fdiff
-        if (ldiagnos.and.idiag_dtchi2/=0) then
+        if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
