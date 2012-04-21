@@ -2043,7 +2043,7 @@ module Special
       real, dimension (nx) :: tmp, hhh2, quenchfactor, glnTT_cos_b, gKp_b
       real, dimension (nx) :: glnTT2, b2, b_abs_1, glnTT_b, glnTT_H, hlnTT_Bij
       real, dimension (nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
-      integer :: i,j,k
+      integer :: i, j, k
 !
 !  calculate unit vector of bb
 !
@@ -2135,10 +2135,10 @@ module Special
         glnTT_cos_b=glnTT_cos_b/sqrt(glnTT2*b2)
       endwhere
 !
-      if (lfirst.and.ldt) then
+      if (lfirst .and. ldt) then
         fdiff=gamma*abs(glnTT_cos_b)*chi_spitzer*dxyz_2
         diffus_chi=diffus_chi+fdiff
-        if (ldiagnos.and.idiag_dtspitzer/=0) then
+        if (ldiagnos .and. (idiag_dtspitzer/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtspitzer,l_dt=.true.)
         endif
       endif
@@ -2151,18 +2151,19 @@ module Special
 ! L = Div (K rho |Grad(T)| Grad(T))
 ! K = K_iso [m^5/s^3/K^2]
 !
-      use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot,dot2
-      use EquationOfState, only : gamma
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot, dot2
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: tmpj,tmpi
-      real, dimension (nx) :: rhs,g2,fdiff
-      integer :: i,j
-      type (pencil_case) :: p
+      real, dimension (nx) :: rhs, tmp, glnTT2, glnrho_glnTT, fdiff
+      integer :: i, j
 !
-      call dot2(p%glnTT,tmpi)
+      call dot2(p%glnTT,glnTT2)
+      call dot(p%glnrho,p%glnTT,glnrho_glnTT)
 !
       tmpv(:,:)=0.
       do i=1,3
@@ -2170,25 +2171,20 @@ module Special
             tmpv(:,i)=tmpv(:,i)+p%glnTT(:,j)*p%hlnTT(:,j,i)
          enddo
       enddo
-      call dot(tmpv,p%glnTT,tmpj)
+      call dot(tmpv,p%glnTT,tmp)
 !
-      call dot(p%glnrho,p%glnTT,g2)
+      rhs = p%TT*(glnTT2*(p%del2lnTT+2.*glnTT2 + glnrho_glnTT)+tmp)/max(tini,sqrt(glnTT2))
 !
-      rhs=p%TT*(tmpi*(p%del2lnTT+2.*tmpi + g2)+tmpj)/max(tini,sqrt(tmpi))
-!
-!      if (itsub == 3 .and. ip == 118) &
-!          call output_pencil(trim(directory)//'/tensor3.dat',rhs,1)
-!
-      if (.not.ltemperature_nolog) then
-        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+ K_iso * rhs
+      if (.not. ltemperature_nolog) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs * K_iso
       else
-        df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT)+ p%TT*K_iso * rhs
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + rhs * p%TT * K_iso
       endif
 !
-      if (lfirst.and.ldt) then
-        fdiff=gamma*K_iso*p%TT*sqrt(tmpi)*dxyz_2
+      if (lfirst .and. ldt) then
+        fdiff=gamma*K_iso*p%TT*sqrt(glnTT2)*dxyz_2
         diffus_chi=diffus_chi+fdiff
-        if (ldiagnos.and.idiag_dtchi2/=0) then
+        if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
