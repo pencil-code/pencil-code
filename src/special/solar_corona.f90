@@ -2031,25 +2031,24 @@ module Special
 !      = Div (b K T^(expo+1) b*Grad(lnT))
 !    Spitzer-type coronal parameters: expo=2.5, K=9e-12 [kg*m/s^3/K^3.5]
 !
-      use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv
-!      use Debug,           only : output_pencil
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot2, dot, multsv, multmv
 !
-      use EquationOfState, only : gamma
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+      real, intent(in) :: Kpara, expo
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: hhh,bunit,tmpv,gKp
-      real, dimension (nx) :: tmpj,hhh2,quenchfactor
-      real, dimension (nx) :: cosbgT,glnTT2,b2,b_abs,b_abs_1,tmpk
-      real, dimension (nx) :: chi_spitzer,chi_sat,chi_clight,rhs,fdiff
-      real :: Ksatb,Kpara,expo
+      real, dimension (nx,3) :: hhh, bunit, tmpv, gKp
+      real, dimension (nx) :: tmp, hhh2, quenchfactor, glnTT_cos_b, gKp_b
+      real, dimension (nx) :: glnTT2, b2, b_abs_1, glnTT_b, glnTT_H, hlnTT_Bij
+      real, dimension (nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
       integer :: i,j,k
-      type (pencil_case) :: p
 !
 !  calculate unit vector of bb
 !
-      call dot2(p%bb,b_abs,PRECISE_SQRT=.true.)
-      b_abs_1=1./max(tini,b_abs)
+      call dot2(p%bb,tmp,PRECISE_SQRT=.true.)
+      b_abs_1=1./max(tini,tmp)
       call multsv(b_abs_1,p%bb,bunit)
 !
 !  calculate H_i = Sum_jk ( (delta_ik - 2*bunit_i*bunit_k)*bunit_j * dB_k/dj / |B| )
@@ -2057,11 +2056,11 @@ module Special
       do i=1,3
         hhh(:,i)=0.
         do j=1,3
-          tmpj(:)=0.
+          tmp(:)=0.
           do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+            tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
           enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
         enddo
       enddo
       call multsv(b_abs_1,hhh,tmpv)
@@ -2075,7 +2074,7 @@ module Special
       quenchfactor=1./max(1.,3.*hhh2*dxmax)
       call multsv(quenchfactor,tmpv,hhh)
 !
-      call dot(hhh,p%glnTT,rhs)
+      call dot(hhh,p%glnTT,glnTT_H)
 !
       chi_spitzer =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
 !
@@ -2093,9 +2092,7 @@ module Special
 !  Limit heat condcution to a fraction of the available internal energy (Ksat)
 !
       if (Ksat /= 0.) then
-        Ksatb = Ksat * 7.28e7 / unit_velocity**3 * unit_temperature**1.5
-        chi_sat = Ksatb * sqrt(p%TT/max(tini,glnTT2)) * p%cp1
-!
+        chi_sat = sqrt(p%TT/max(tini,glnTT2)) * p%cp1 * Ksat * 7.28e7*unit_temperature**1.5/unit_velocity**3
         where (chi_spitzer > chi_sat)
           gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
           gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
@@ -2118,32 +2115,28 @@ module Special
         endwhere
       endif
 !
-      call dot(bunit,gKp,tmpj)
-      call dot(bunit,p%glnTT,tmpk)
-      rhs = rhs + tmpj*tmpk
+      call dot(bunit,gKp,gKp_b)
+      call dot(bunit,p%glnTT,glnTT_b)
 !
       call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,tmpj)
-      rhs = rhs + tmpj
+      call dot(tmpv,bunit,hlnTT_Bij)
 !
-      rhs = gamma*rhs*chi_spitzer
-!
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + (glnTT_H + gKp_b*glnTT_b + hlnTT_Bij) * chi_spitzer*gamma
 !
 !  for timestep extension multiply with the
 !  cosine between Grad(T) and bunit
 !
-      call dot(p%bb,p%glnTT,cosbgT)
+      call dot(p%bb,p%glnTT,glnTT_cos_b)
       call dot2(p%bb,b2)
 !
       where (glnTT2*b2 <= tini)
-        cosbgT=0.
+        glnTT_cos_b=0.
       elsewhere
-        cosbgT=cosbgT/sqrt(glnTT2*b2)
+        glnTT_cos_b=glnTT_cos_b/sqrt(glnTT2*b2)
       endwhere
 !
       if (lfirst.and.ldt) then
-        fdiff=gamma*abs(cosbgT)*chi_spitzer*dxyz_2
+        fdiff=gamma*abs(glnTT_cos_b)*chi_spitzer*dxyz_2
         diffus_chi=diffus_chi+fdiff
         if (ldiagnos.and.idiag_dtspitzer/=0) then
           call max_mn_name(fdiff/cdtv,idiag_dtspitzer,l_dt=.true.)
