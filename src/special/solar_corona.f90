@@ -2130,14 +2130,14 @@ module Special
       call dot2(p%bb,b2)
 !
       where (glnTT2*b2 <= tini)
-        glnTT_cos_b=0.
+        glnTT_cos_b = 0.
       elsewhere
-        glnTT_cos_b=glnTT_cos_b/sqrt(glnTT2*b2)
+        glnTT_cos_b = glnTT_cos_b/sqrt(glnTT2*b2)
       endwhere
 !
       if (lfirst .and. ldt) then
-        fdiff=gamma*abs(glnTT_cos_b)*chi_spitzer*dxyz_2
-        diffus_chi=diffus_chi+fdiff
+        fdiff = gamma*chi_spitzer * abs(glnTT_cos_b) * dxyz_2
+        diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtspitzer/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtspitzer,l_dt=.true.)
         endif
@@ -2182,8 +2182,8 @@ module Special
       endif
 !
       if (lfirst .and. ldt) then
-        fdiff=gamma*K_iso*p%TT*sqrt(glnTT2)*dxyz_2
-        diffus_chi=diffus_chi+fdiff
+        fdiff = gamma*K_iso * p%TT * sqrt(glnTT2) * dxyz_2
+        diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
@@ -2264,9 +2264,9 @@ module Special
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
       if (lfirst .and. ldt) then
-        advec_cs2=max(advec_cs2,chi*maxval(dxyz_2))
-        fdiff=gamma*chi*dxyz_2
-        diffus_chi=diffus_chi+fdiff
+        advec_cs2 = max(advec_cs2,chi*maxval(dxyz_2))
+        fdiff = gamma*chi * dxyz_2
+        diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
@@ -2292,7 +2292,8 @@ module Special
 !
       real, dimension (nx,3) :: bunit, hhh, tmpv, gflux
       real, dimension (nx) :: b_abs_1, hhh2, quenchfactor, fdiff
-      real, dimension (nx) :: tmp, rhs, chi, glnT2, glnTT_H, hlnTT_Bij, glnTT_b
+      real, dimension (nx) :: tmp, rhs, glnT2, glnTT_H, hlnTT_Bij, glnTT_b
+      real :: chi
       integer :: i, j, k
 !
 !  calculate unit vector of bb
@@ -2354,7 +2355,7 @@ module Special
 !
       if (lfirst .and. ldt) then
         fdiff = gamma*chi * glnT2 * dxyz_2
-        diffus_chi=diffus_chi+fdiff
+        diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
@@ -2368,22 +2369,21 @@ module Special
 !  L = Div (K rho Grad(lnT)^2 Grad(T))
 !  K = hcond3 [m^6/s^3/K]
 !
-      use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv
-      use EquationOfState, only : gamma
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot2, dot, multsv, multmv
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: glnT2,glnT_glnr
-      real, dimension (nx) :: tmp,rhs,chi,fdiff
+      real, dimension (nx) :: glnT2, glnT_glnrho
+      real, dimension (nx) :: rhs, tmp, fdiff
+      real :: chi
       integer :: i
 !
-      intent(in) :: p
-      intent(inout) :: df
-!
       call dot2(p%glnTT,glnT2)
-      call dot(p%glnTT,p%glnrho,glnT_glnr)
+      call dot(p%glnTT,p%glnrho,glnT_glnrho)
 !
       do i=1,3
         tmpv(:,i) = p%glnTT(:,1)*p%hlnTT(:,1,i) + &
@@ -2392,16 +2392,15 @@ module Special
       enddo
       call dot(p%glnTT,tmpv,tmp)
 !
-      chi = glnT2*hcond3 * get_hcond_fade_fact()
+      chi = hcond3 * get_hcond_fade_fact()
+      rhs = (2*tmp + glnT2 * (glnT2 + p%del2lnTT + glnT_glnrho)) * chi*gamma
 !
-      rhs = (2*tmp+glnT2*(glnT2+p%del2lnTT+glnT_glnr)) * get_hcond_fade_fact()
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs*gamma*hcond3
-!
-      if (lfirst.and.ldt) then
-        fdiff=gamma*chi*dxyz_2
-        diffus_chi=diffus_chi+fdiff
-        if (ldiagnos.and.idiag_dtchi2/=0) then
+      if (lfirst .and. ldt) then
+        fdiff = gamma*chi * glnT2*dxyz_2
+        diffus_chi = diffus_chi+fdiff
+        if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
