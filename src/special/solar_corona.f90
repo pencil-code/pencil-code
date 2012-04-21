@@ -2284,27 +2284,21 @@ module Special
 !  K = hcond2 [m^6/s^3/K]
 !
       use Diagnostics, only: max_mn_name
-      use Sub, only: dot2,dot,multsv,multmv
       use EquationOfState, only: gamma
+      use Sub, only: dot2, dot, multsv, multmv
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: glnT2
-      real, dimension (nx) :: tmp,rhs,chi,fdiff
-      real, dimension (nx,3) :: bunit,hhh,tmpv,gflux
-      real, dimension (nx) :: hhh2,quenchfactor
-      real, dimension (nx) :: b_abs,b_abs_1
-      real, dimension (nx) :: tmpj
-      integer :: i,j,k
-!
-      intent(in) :: p
-      intent(inout) :: df
+      real, dimension (nx,3) :: bunit, hhh, tmpv, gflux
+      real, dimension (nx) :: b_abs_1, hhh2, quenchfactor, fdiff
+      real, dimension (nx) :: tmp, rhs, chi, glnT2, glnTT_H, hlnTT_Bij, glnTT_b
+      integer :: i, j, k
 !
 !  calculate unit vector of bb
 !
-      call dot2(p%bb,b_abs,PRECISE_SQRT=.true.)
-      b_abs_1=1./max(tini,b_abs)
+      call dot2(p%bb,tmp,PRECISE_SQRT=.true.)
+      b_abs_1=1./max(tini,tmp)
       call multsv(b_abs_1,p%bb,bunit)
 !
 !  calculate first H_i
@@ -2312,11 +2306,11 @@ module Special
       do i=1,3
         hhh(:,i)=0.
         do j=1,3
-          tmpj(:)=0.
+          tmp(:)=0.
           do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*p%bij(:,k,j)
+            tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
           enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmpj(:))
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
         enddo
       enddo
       call multsv(b_abs_1,hhh,tmpv)
@@ -2332,43 +2326,36 @@ module Special
 !
 !  dot H with Grad lnTT
 !
-      call dot(hhh,p%glnTT,tmp)
+      call dot(hhh,p%glnTT,glnTT_H)
 !
 !  dot Hessian matrix of lnTT with bi*bj, and add into tmp
 !
       call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,tmpj)
-      tmp = tmp+tmpj
+      call dot(tmpv,bunit,hlnTT_Bij)
 !
       call dot2(p%glnTT,glnT2)
-!
-      tmpv = p%glnTT+p%glnrho
-!
-      call multsv(glnT2,tmpv,gflux)
+      call multsv(glnT2,p%glnTT + p%glnrho,gflux)
 !
       do i=1,3
-        tmpv(:,i) = 2.*(&
+        tmpv(:,i) = 2. * ( &
             p%glnTT(:,1)*p%hlnTT(:,i,1) + &
             p%glnTT(:,2)*p%hlnTT(:,i,2) + &
             p%glnTT(:,3)*p%hlnTT(:,i,3) )
       enddo
 !
-      gflux  = gflux +tmpv
+      call dot(gflux + tmpv,bunit,rhs)
+      call dot(p%glnTT,bunit,glnTT_b)
+      rhs = rhs*glnTT_b
 !
-      call dot(gflux,bunit,rhs)
-      call dot(p%glnTT,bunit,tmpj)
-      rhs = rhs*tmpj
+      chi = hcond2 * get_hcond_fade_fact()
+      rhs = (rhs + glnT2*(glnTT_H + hlnTT_Bij)) * chi*gamma
 !
-      chi = glnT2*hcond2 * get_hcond_fade_fact()
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      rhs = (rhs + glnT2*tmp)*hcond2 * get_hcond_fade_fact()
-!
-      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + rhs*gamma
-!
-      if (lfirst.and.ldt) then
-        fdiff=gamma*chi*dxyz_2
+      if (lfirst .and. ldt) then
+        fdiff = gamma*chi * glnT2 * dxyz_2
         diffus_chi=diffus_chi+fdiff
-        if (ldiagnos.and.idiag_dtchi2/=0) then
+        if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
