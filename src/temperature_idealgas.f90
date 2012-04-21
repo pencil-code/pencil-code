@@ -945,7 +945,7 @@ module Entropy
 !
       if (lanelastic) then
         if (lsphere_in_a_box) then
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*( &
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*(     &
           f(l1:l2,m,n,iux)*p%evr(:,1)+f(l1:l2,m,n,iuy)*p%evr(:,2)+ &
           f(l1:l2,m,n,iuz)*p%evr(:,3))
         else
