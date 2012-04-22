@@ -2259,7 +2259,7 @@ module Special
 !  calculate rhs
 !
       chi = hcond1 * get_hcond_fade_fact()
-      rhs = glnTT_H + hlnTT_Bij + (glnrho_b + glnTT_b)*glnTT_b * chi*gamma
+      rhs = (glnTT_H + hlnTT_Bij + (glnrho_b + glnTT_b)*glnTT_b) * chi*gamma
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
