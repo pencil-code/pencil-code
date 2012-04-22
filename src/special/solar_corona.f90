@@ -49,6 +49,8 @@ module Special
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
+  real, dimension(nx,3) :: b_unit
+  real, dimension(nx) :: b_abs_1, glnTT_H, hlnTT_Bij, glnTT2, glnTT_b
 !
   real, dimension(nx,ny,2) :: A_init
 !
@@ -931,12 +933,15 @@ module Special
 !  23-jun-08/bing: coded
 !  17-feb-10/bing: added hyperdiffusion for non-equidistant grid
 !
-      use Sub, only: del6, del4
+      use Sub, only: del6, del4, dot, dot2, multsv, multmv
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension (nx) :: hc
+!
+      real, dimension (nx) :: hc, tmp, quenchfactor
+      real, dimension (nx,3) :: hhh, tmpv
+      integer :: i, j, k
 !
       if (chi_hyper3/=0.0) then
         call del6(f,ilnTT,hc,IGNOREDX=.true.)
@@ -954,6 +959,45 @@ module Special
 !  due to ignoredx chi_hyperx has [1/s]
 !
         if (lfirst.and.ldt) diffus_chi3=diffus_chi3 + chi_hyper2
+      endif
+!
+      if ((K_spitzer /= 0.0) .or. (hcond1 /= 0.0) .or. (hcond2 /= 0.0)) then
+        ! calculate inverse absolute value of bb
+        call dot2(p%bb, tmp, PRECISE_SQRT=.true.)
+        b_abs_1 = 1./max(tini,tmp)
+!
+        ! calculate unit vector of bb
+        call multsv(b_abs_1, p%bb, b_unit)
+!
+        ! calculate H_i = Sum_jk ( (delta_ik - 2*b_unit_i*b_unit_k)*b_unit_j * dB_k/dj / |B| )
+        do i=1,3
+          hhh(:,i)=0.
+          do j=1,3
+            tmp(:)=0.
+            do k=1,3
+              tmp(:)=tmp(:)-2.*b_unit(:,k)*p%bij(:,k,j)
+            enddo
+            hhh(:,i)=hhh(:,i)+b_unit(:,j)*(p%bij(:,i,j)+b_unit(:,i)*tmp(:))
+          enddo
+        enddo
+        call multsv(b_abs_1,hhh,tmpv)
+        ! calculate abs(h) limiting
+        call dot2(tmpv,tmp,PRECISE_SQRT=.true.)
+        ! limit the length of h
+        quenchfactor=1./max(1.,3.*tmp*dxmax)
+        call multsv(quenchfactor,tmpv,hhh)
+        call dot(hhh,p%glnTT,glnTT_H)
+!
+        ! dot Hessian matrix of lnTT with bi*bj
+        call multmv(p%hlnTT,b_unit,tmpv)
+        call dot(tmpv,b_unit,hlnTT_Bij)
+!
+        ! calculate Grad lnTT * b_unit
+        call dot(p%glnTT,b_unit,glnTT_b)
+      endif
+!
+      if ((K_spitzer /= 0.0) .or. (K_iso /= 0.0) .or. (hcond2 /= 0.0) .or. (hcond3 /= 0.0)) then
+        call dot2(p%glnTT,glnTT2)
       endif
 !
       if (K_spitzer/=0.0) call calc_heatcond_tensor(df,p,K_spitzer,2.5)
@@ -2033,48 +2077,16 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot2, dot, multsv, multmv
+      use Sub, only: dot, dot2
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, intent(in) :: Kpara, expo
 !
-      real, dimension (nx,3) :: hhh, bunit, tmpv, gKp
-      real, dimension (nx) :: tmp, hhh2, quenchfactor, glnTT_cos_b, gKp_b
-      real, dimension (nx) :: glnTT2, b2, b_abs_1, glnTT_b, glnTT_H, hlnTT_Bij
+      real, dimension (nx,3) :: tmpv, gKp
+      real, dimension (nx) :: glnTT_cos_b, gKp_b, b2
       real, dimension (nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
-      integer :: i, j, k
-!
-!  calculate unit vector of bb
-!
-      call dot2(p%bb,tmp,PRECISE_SQRT=.true.)
-      b_abs_1=1./max(tini,tmp)
-      call multsv(b_abs_1,p%bb,bunit)
-!
-!  calculate H_i = Sum_jk ( (delta_ik - 2*bunit_i*bunit_k)*bunit_j * dB_k/dj / |B| )
-!
-      do i=1,3
-        hhh(:,i)=0.
-        do j=1,3
-          tmp(:)=0.
-          do k=1,3
-            tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
-          enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
-        enddo
-      enddo
-      call multsv(b_abs_1,hhh,tmpv)
-!
-!  calculate abs(h) limiting
-!
-      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
-!
-!  limit the length of h
-!
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv(quenchfactor,tmpv,hhh)
-!
-      call dot(hhh,p%glnTT,glnTT_H)
+      integer :: i, j
 !
       chi_spitzer =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
 !
@@ -2086,8 +2098,6 @@ module Special
       enddo
 !
       gKp = (expo+1.) * p%glnTT
-!
-      call dot2(p%glnTT,glnTT2)
 !
 !  Limit heat condcution to a fraction of the available internal energy (Ksat)
 !
@@ -2115,16 +2125,13 @@ module Special
         endwhere
       endif
 !
-      call dot(bunit,gKp,gKp_b)
-      call dot(bunit,p%glnTT,glnTT_b)
+      call dot(b_unit,gKp,gKp_b)
 !
-      call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,hlnTT_Bij)
-!
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + (glnTT_H + gKp_b*glnTT_b + hlnTT_Bij) * chi_spitzer*gamma
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
+          (glnTT_H + gKp_b*glnTT_b + hlnTT_Bij) * chi_spitzer*gamma
 !
 !  for timestep extension multiply with the
-!  cosine between Grad(T) and bunit
+!  cosine between Grad(T) and b_unit
 !
       call dot(p%bb,p%glnTT,glnTT_cos_b)
       call dot2(p%bb,b2)
@@ -2153,16 +2160,16 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot, dot2
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: rhs, tmp, glnTT2, glnrho_glnTT, fdiff
+      real, dimension (nx) :: rhs, tmp, glnTT_abs, glnrho_glnTT, fdiff
       integer :: i, j
 !
-      call dot2(p%glnTT,glnTT2)
+      glnTT_abs = sqrt(glnTT2)
       call dot(p%glnrho,p%glnTT,glnrho_glnTT)
 !
       tmpv(:,:)=0.
@@ -2173,7 +2180,7 @@ module Special
       enddo
       call dot(tmpv,p%glnTT,tmp)
 !
-      rhs = p%TT*(glnTT2*(p%del2lnTT+2.*glnTT2 + glnrho_glnTT)+tmp)/max(tini,sqrt(glnTT2))
+      rhs = p%TT*(glnTT2*(p%del2lnTT+2.*glnTT2 + glnrho_glnTT)+tmp)/max(tini,glnTT_abs)
 !
       if (.not. ltemperature_nolog) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs * K_iso
@@ -2182,7 +2189,7 @@ module Special
       endif
 !
       if (lfirst .and. ldt) then
-        fdiff = gamma*K_iso * p%TT * sqrt(glnTT2) * dxyz_2
+        fdiff = gamma*K_iso * p%TT * glnTT_abs * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
@@ -2200,61 +2207,19 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot2, dot, multsv, multmv
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: bunit, hhh, tmpv
-      real, dimension (nx) :: hhh2, quenchfactor, b_abs_1, fdiff
-      real, dimension (nx) :: rhs, tmp, glnTT_b, glnrho_b, glnTT_H, hlnTT_Bij
+      real, dimension (nx) :: rhs, glnrho_b, fdiff
       real :: chi
-      integer :: i, j, k
 !
       if (headtt) print*,'solar_corona/calc_heatcond_chiconst',hcond1
 !
-!  calculate unit vector of bb
+!  calculate Grad lnrho * b_unit
 !
-      call dot2(p%bb,tmp,PRECISE_SQRT=.true.)
-      b_abs_1=1./max(tini,tmp)
-      call multsv(b_abs_1,p%bb,bunit)
-!
-!  calculate first H_i
-!
-      do i=1,3
-        hhh(:,i)=0.
-        do j=1,3
-          tmp(:)=0.
-          do k=1,3
-            tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
-          enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
-        enddo
-      enddo
-      call multsv(b_abs_1,hhh,tmpv)
-!
-!  calculate abs(h) for limiting H vector
-!
-      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
-!
-!  limit the length of H
-!
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv(quenchfactor,tmpv,hhh)
-!
-!  dot H with Grad lnTT
-!
-      call dot(hhh,p%glnTT,glnTT_H)
-!
-!  dot Hessian matrix of lnTT with bi*bj
-!
-      call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,hlnTT_Bij)
-!
-!  calculate (Grad lnTT * bunit)^2 needed for lnecr form
-!
-      call dot(p%glnTT,bunit,glnTT_b)
-      call dot(p%glnrho,bunit,glnrho_b)
+      call dot(p%glnrho,b_unit,glnrho_b)
 !
 !  calculate rhs
 !
@@ -2285,57 +2250,17 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot2, dot, multsv, multmv
+      use Sub, only: dot, multsv
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: bunit, hhh, tmpv, gflux
-      real, dimension (nx) :: b_abs_1, hhh2, quenchfactor, fdiff
-      real, dimension (nx) :: tmp, rhs, glnT2, glnTT_H, hlnTT_Bij, glnTT_b
+      real, dimension (nx,3) :: tmpv, gflux
+      real, dimension (nx) :: tmp, rhs, fdiff
       real :: chi
-      integer :: i, j, k
+      integer :: i
 !
-!  calculate unit vector of bb
-!
-      call dot2(p%bb,tmp,PRECISE_SQRT=.true.)
-      b_abs_1=1./max(tini,tmp)
-      call multsv(b_abs_1,p%bb,bunit)
-!
-!  calculate first H_i
-!
-      do i=1,3
-        hhh(:,i)=0.
-        do j=1,3
-          tmp(:)=0.
-          do k=1,3
-            tmp(:)=tmp(:)-2.*bunit(:,k)*p%bij(:,k,j)
-          enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(p%bij(:,i,j)+bunit(:,i)*tmp(:))
-        enddo
-      enddo
-      call multsv(b_abs_1,hhh,tmpv)
-!
-!  calculate abs(h) for limiting H vector
-!
-      call dot2(tmpv,hhh2,PRECISE_SQRT=.true.)
-!
-!  limit the length of H
-!
-      quenchfactor=1./max(1.,3.*hhh2*dxmax)
-      call multsv(quenchfactor,tmpv,hhh)
-!
-!  dot H with Grad lnTT
-!
-      call dot(hhh,p%glnTT,glnTT_H)
-!
-!  dot Hessian matrix of lnTT with bi*bj, and add into tmp
-!
-      call multmv(p%hlnTT,bunit,tmpv)
-      call dot(tmpv,bunit,hlnTT_Bij)
-!
-      call dot2(p%glnTT,glnT2)
-      call multsv(glnT2,p%glnTT + p%glnrho,gflux)
+      call multsv(glnTT2,p%glnTT + p%glnrho,gflux)
 !
       do i=1,3
         tmpv(:,i) = 2. * ( &
@@ -2344,17 +2269,15 @@ module Special
             p%glnTT(:,3)*p%hlnTT(:,i,3) )
       enddo
 !
-      call dot(gflux + tmpv,bunit,rhs)
-      call dot(p%glnTT,bunit,glnTT_b)
-      rhs = rhs*glnTT_b
+      call dot(gflux + tmpv,b_unit,tmp)
 !
       chi = hcond2 * get_hcond_fade_fact()
-      rhs = (rhs + glnT2*(glnTT_H + hlnTT_Bij)) * chi*gamma
+      rhs = (tmp*glnTT_b + glnTT2*(glnTT_H + hlnTT_Bij)) * chi*gamma
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
       if (lfirst .and. ldt) then
-        fdiff = gamma*chi * glnT2 * dxyz_2
+        fdiff = gamma*chi * glnTT2 * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
@@ -2371,18 +2294,17 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot2, dot, multsv, multmv
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: glnT2, glnT_glnrho
+      real, dimension (nx) :: glnT_glnrho
       real, dimension (nx) :: rhs, tmp, fdiff
       real :: chi
       integer :: i
 !
-      call dot2(p%glnTT,glnT2)
       call dot(p%glnTT,p%glnrho,glnT_glnrho)
 !
       do i=1,3
@@ -2393,12 +2315,12 @@ module Special
       call dot(p%glnTT,tmpv,tmp)
 !
       chi = hcond3 * get_hcond_fade_fact()
-      rhs = (2*tmp + glnT2 * (glnT2 + p%del2lnTT + glnT_glnrho)) * chi*gamma
+      rhs = (2*tmp + glnTT2 * (glnTT2 + p%del2lnTT + glnT_glnrho)) * chi*gamma
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
       if (lfirst .and. ldt) then
-        fdiff = gamma*chi * glnT2*dxyz_2
+        fdiff = gamma*chi * glnTT2*dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
