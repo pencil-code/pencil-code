@@ -525,6 +525,11 @@ module Forcing
         endif
       elseif (iforcing_cont=='(0,0,cosx)') then
         cosx=cos(k1_ff*x)
+      elseif (iforcing_cont=='(sinz,cosz,0)') then
+        sinz=sin(k1_ff*z)
+        cosz=cos(k1_ff*z)
+      elseif (iforcing_cont=='(0,cosz,0)') then
+        cosz=cos(k1_ff*z)
       elseif (iforcing_cont=='J0_k1x') then
         do l=l1,l2
           profx_ampl(l-l1+1)=ampl_ff*bessj(0,k1bessel0*x(l))
@@ -4122,6 +4127,20 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=0.
           force(:,2)=0.
           force(:,3)=ampl_ff*cosx(l1:l2)
+!
+!  f=(0,cosz,0)
+!
+        case ('(0,cosz,0)')
+          force(:,1)=0.
+          force(:,2)=ampl_ff*cosz(n)
+          force(:,3)=0.
+!
+!  f=(sinz,cosz,0)
+!
+        case ('(sinz,cosz,0)')
+          force(:,1)=ampl_ff*sinz(n)
+          force(:,2)=ampl_ff*cosz(n)
+          force(:,3)=0.
 !
         case ('TG')
           fact=2.*ampl_ff
