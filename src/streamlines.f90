@@ -107,7 +107,7 @@ module Streamlines
       endif
     enddo
 !   check if the point lies outside the domain
-    if (delta > dx/2.) outside = 1
+    if (delta > (dx/(2-2.**(-15)))) outside = 1
 !
     delta = Ly
     do j=1,nygrid
@@ -117,7 +117,7 @@ module Streamlines
       endif
     enddo
 !   check if the point lies outside the domain
-    if (delta > dy/2.) outside = 1
+    if (delta > (dy/(2-2.**(-15)))) outside = 1
 !
     delta = Lz
     do j=1,nzgrid
@@ -127,7 +127,7 @@ module Streamlines
       endif
     enddo
 !   check if the point lies outside the domain
-    if (delta > dz/2.) outside = 1
+    if (delta > (dz/(2-2.**(-15)))) outside = 1
 !
 !   consider the processor indices
     grid_pos(1) = grid_pos(1) - nx*ipx
@@ -261,13 +261,13 @@ module Streamlines
 !   compute the array with the global xyz values
     call MPI_BARRIER(MPI_comm_world, ierr)
     do j=1,nxgrid
-      xg(j) = x(1+nghost) - ipx*nx*dx + (j-1)*dx
+      xg(j) = x(l1) - ipx*nx*dx + (j-1)*dx
     enddo
     do j=1,nygrid
-      yg(j) = y(1+nghost) - ipy*ny*dy + (j-1)*dy
+      yg(j) = y(m1) - ipy*ny*dy + (j-1)*dy
     enddo
     do j=1,nzgrid
-      zg(j) = z(1+nghost) - ipz*nz*dz + (j-1)*dz
+      zg(j) = z(n1) - ipz*nz*dz + (j-1)*dz
     enddo
 !
 !   make sure all threads are synchronized
@@ -403,6 +403,8 @@ module Streamlines
 !
         loop_count = loop_count + 1
       enddo
+!       if (tracers(tracer_idx, 5) < 6.0) &
+!           write(*,*) tracers(tracer_idx, :), dh, grid_pos
 !
     enddo    
 !
