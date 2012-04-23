@@ -558,7 +558,7 @@ module Entropy
               r_int=x(l1)
             else
             endif
-            TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
+            TT_int=TT_ext+beta1*(1./r_int-1./r_ext)
           endif
 !
 !  Set up cooling parameters for spherical shell in terms of sound speeds
@@ -1637,7 +1637,7 @@ module Entropy
 !
           where (r_mn >= r_ext) TT = TT_ext
           where (r_mn < r_ext .AND. r_mn > r_int) &
-            TT = TT_ext*(1.+beta1*(r_ext/r_mn-1))+pert_TT
+            TT = TT_ext+beta1*(1./r_mn-1./r_ext)+pert_TT
           where (r_mn <= r_int) TT = TT_int
 !
           lnrho=f(l1:l2,m,n,ilnrho)
@@ -5683,7 +5683,7 @@ module Entropy
       if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
 !
 !  beta is the temperature gradient
-!  1/beta = -(g/cp) /[(1-1/gamma)*(m+1)]
+!  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
       beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
