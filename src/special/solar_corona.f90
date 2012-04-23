@@ -50,7 +50,7 @@ module Special
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
   real, dimension(nx,3) :: b_unit
-  real, dimension(nx) :: b_abs_1, glnTT_H, hlnTT_Bij, glnTT2, glnTT_b
+  real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   real, dimension(nx,ny,2) :: A_init
 !
@@ -939,7 +939,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc, tmp, quenchfactor
+      real, dimension (nx) :: hc, tmp, quenchfactor, b_abs_inv
       real, dimension (nx,3) :: hhh, tmpv
       integer :: i, j, k
 !
@@ -964,10 +964,10 @@ module Special
       if ((K_spitzer /= 0.0) .or. (hcond1 /= 0.0) .or. (hcond2 /= 0.0)) then
         ! calculate inverse absolute value of bb
         call dot2(p%bb, tmp, PRECISE_SQRT=.true.)
-        b_abs_1 = 1./max(tini,tmp)
+        b_abs_inv = 1./max(tini,tmp)
 !
         ! calculate unit vector of bb
-        call multsv(b_abs_1, p%bb, b_unit)
+        call multsv(b_abs_inv, p%bb, b_unit)
 !
         ! calculate H_i = Sum_jk ( (delta_ik - 2*b_unit_i*b_unit_k)*b_unit_j * dB_k/dj / |B| )
         do i=1,3
@@ -980,7 +980,7 @@ module Special
             hhh(:,i)=hhh(:,i)+b_unit(:,j)*(p%bij(:,i,j)+b_unit(:,i)*tmp(:))
           enddo
         enddo
-        call multsv(b_abs_1,hhh,tmpv)
+        call multsv(b_abs_inv,hhh,tmpv)
         ! calculate abs(h) limiting
         call dot2(tmpv,tmp,PRECISE_SQRT=.true.)
         ! limit the length of h
@@ -998,6 +998,10 @@ module Special
 !
       if ((K_spitzer /= 0.0) .or. (K_iso /= 0.0) .or. (hcond2 /= 0.0) .or. (hcond3 /= 0.0)) then
         call dot2(p%glnTT,glnTT2)
+        if ((K_spitzer /= 0.0) .or. (K_iso /= 0.0)) then
+          glnTT_abs = sqrt(glnTT2)
+          glnTT_abs_inv = 1.0 / max(glnTT_abs, tini)
+        endif
       endif
 !
       if (K_spitzer/=0.0) call calc_heatcond_tensor(df,p,K_spitzer,2.5)
@@ -2084,7 +2088,7 @@ module Special
       real, intent(in) :: Kpara, expo
 !
       real, dimension (nx,3) :: tmpv, gKp
-      real, dimension (nx) :: glnTT_cos_b, gKp_b, b2
+      real, dimension (nx) :: cos_B_glnTT, gKp_b
       real, dimension (nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
       integer :: i, j
 !
@@ -2102,11 +2106,11 @@ module Special
 !  Limit heat condcution to a fraction of the available internal energy (Ksat)
 !
       if (Ksat /= 0.) then
-        chi_sat = sqrt(p%TT/max(tini,glnTT2)) * p%cp1 * Ksat * 7.28e7*unit_temperature**1.5/unit_velocity**3
+        chi_sat = sqrt(p%TT)*glnTT_abs_inv * p%cp1 * Ksat * 7.28e7*unit_temperature**1.5/unit_velocity**3
         where (chi_spitzer > chi_sat)
-          gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)/max(tini,glnTT2)
-          gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)/max(tini,glnTT2)
-          gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)/max(tini,glnTT2)
+          gKp(:,1)=p%glnrho(:,1) + 1.5*p%glnTT(:,1) - tmpv(:,1)*glnTT_abs_inv
+          gKp(:,2)=p%glnrho(:,2) + 1.5*p%glnTT(:,2) - tmpv(:,2)*glnTT_abs_inv
+          gKp(:,3)=p%glnrho(:,3) + 1.5*p%glnTT(:,3) - tmpv(:,3)*glnTT_abs_inv
           chi_spitzer =  chi_sat
         endwhere
       endif
@@ -2133,17 +2137,16 @@ module Special
 !  for timestep extension multiply with the
 !  cosine between Grad(T) and b_unit
 !
-      call dot(p%bb,p%glnTT,glnTT_cos_b)
-      call dot2(p%bb,b2)
+      call dot(b_unit,p%glnTT,cos_B_glnTT)
 !
-      where (glnTT2*b2 <= tini)
-        glnTT_cos_b = 0.
+      where (glnTT_abs <= tini)
+        cos_B_glnTT = 0.
       elsewhere
-        glnTT_cos_b = glnTT_cos_b/sqrt(glnTT2*b2)
+        cos_B_glnTT = cos_B_glnTT*glnTT_abs_inv
       endwhere
 !
       if (lfirst .and. ldt) then
-        fdiff = gamma*chi_spitzer * abs(glnTT_cos_b) * dxyz_2
+        fdiff = gamma*chi_spitzer * abs(cos_B_glnTT) * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtspitzer/=0)) then
           call max_mn_name(fdiff/cdtv,idiag_dtspitzer,l_dt=.true.)
@@ -2166,10 +2169,9 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: rhs, tmp, glnTT_abs, glnrho_glnTT, fdiff
+      real, dimension (nx) :: rhs, tmp, glnrho_glnTT, fdiff
       integer :: i, j
 !
-      glnTT_abs = sqrt(glnTT2)
       call dot(p%glnrho,p%glnTT,glnrho_glnTT)
 !
       tmpv(:,:)=0.
@@ -2180,7 +2182,7 @@ module Special
       enddo
       call dot(tmpv,p%glnTT,tmp)
 !
-      rhs = p%TT*(glnTT2*(p%del2lnTT+2.*glnTT2 + glnrho_glnTT)+tmp)/max(tini,glnTT_abs)
+      rhs = p%TT*(glnTT2*(p%del2lnTT+2.*glnTT2 + glnrho_glnTT)+tmp)*glnTT_abs_inv
 !
       if (.not. ltemperature_nolog) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs * K_iso
