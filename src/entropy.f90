@@ -333,7 +333,7 @@ module Entropy
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: hcond
       real, dimension(5) :: star_params
-      real :: beta1, cp1, beta0, TT_crit, star_cte
+      real :: beta1, cp1, beta0, TT_bcz, star_cte
       integer :: i, ierr, q
       logical :: lnothing
       type (pencil_case) :: p
@@ -538,12 +538,12 @@ module Entropy
           if (initss(1) == 'shell_layers') then
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
-            beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
-            beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
+            beta0=cp1*g0/(mpoly0+1)*gamma/gamma_m1
+            beta1=cp1*g0/(mpoly1+1)*gamma/gamma_m1
             T0=cs20/gamma_m1       ! T0 defined from cs20
             TT_ext=T0
-            TT_crit=TT_ext+beta0*(r_bcz-r_ext)
-            TT_int=TT_crit+beta1*(r_int-r_bcz)
+            TT_bcz=TT_ext+beta0*(1./r_bcz-1./r_ext)
+            TT_int=TT_bcz+beta1*(1./r_int-1./r_bcz)
             cs2top=cs20
             cs2bot=gamma_m1*TT_int
           else
@@ -5677,23 +5677,23 @@ module Entropy
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
-      real :: beta0,beta1,TT_crit,cp1
-      real :: lnrho_int,lnrho_ext,lnrho_crit
+      real :: beta0,beta1,TT_bcz,cp1
+      real :: lnrho_int,lnrho_ext,lnrho_bcz
 !
       if (headtt) print*,'r_bcz in entropy.f90=',r_bcz
 !
-!  beta is the temperature gradient
-!  beta = -(g/cp) /[(1-1/gamma)*(m+1)]
+!  The temperature gradient is dT/dr=beta/r with
+!  beta = (g/cp) /[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
-      TT_crit=TT_ext+beta0*(r_bcz-r_ext)
+      beta0=cp1*g0/(mpoly0+1)*gamma/gamma_m1
+      beta1=cp1*g0/(mpoly1+1)*gamma/gamma_m1
+      TT_bcz=TT_ext+beta0*(1./r_bcz-1./r_ext)
       lnrho_ext=lnrho0
-      lnrho_crit=lnrho0+ &
-            mpoly0*log(TT_ext+beta0*(r_bcz-r_ext))-mpoly0*log(TT_ext)
-      lnrho_int=lnrho_crit + &
-            mpoly1*log(TT_crit+beta1*(r_int-r_bcz))-mpoly1*log(TT_crit)
+      lnrho_bcz=lnrho0+ &
+            mpoly0*log(TT_ext+beta0*(1./r_bcz-1./r_ext))-mpoly0*log(TT_ext)
+      lnrho_int=lnrho_bcz + &
+            mpoly1*log(TT_bcz+beta1*(1./r_int-1./r_bcz))-mpoly1*log(TT_bcz)
 !
 !  Set initial condition.
 !
@@ -5706,15 +5706,15 @@ module Entropy
 !  Convective layer.
 !
         where (r_mn < r_ext .AND. r_mn > r_bcz)
-          TT = TT_ext+beta0*(r_mn-r_ext)
-          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly0*log(TT)-mpoly0*log(TT_ext)
+          TT = TT_ext+beta0*(1./r_mn-1./r_ext)
+          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly0*log(TT/TT_ext)
         endwhere
 !
 !  Radiative layer.
 !
         where (r_mn <= r_bcz .AND. r_mn > r_int)
-          TT = TT_crit+beta1*(r_mn-r_bcz)
-          f(l1:l2,m,n,ilnrho)=lnrho_crit+mpoly1*log(TT)-mpoly1*log(TT_crit)
+          TT = TT_bcz+beta1*(1./r_mn-1./r_bcz)
+          f(l1:l2,m,n,ilnrho)=lnrho_bcz+mpoly1*log(TT/TT_bcz)
         endwhere
         where (r_mn >= r_ext)
           TT = TT_ext

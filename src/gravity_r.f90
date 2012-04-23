@@ -171,10 +171,6 @@ module Gravity
             if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
             lpade=.false.
 !
-          case ('sph-const')
-            if (lroot) print*,'initialize_gravity: constant g_r in the sphere'
-            lpade=.false.
-!
           case ('no-smooth')
             if (lroot) print*,'initialize_gravity: non-smoothed newtonian gravity'
             lpade=.false.
@@ -246,9 +242,7 @@ module Gravity
                      / poly( (/ 1., 0., cpot(4,j), cpot(5,j), &
                      cpot(3,j) /), rr_mn)**2
               else
-                if (ipotential(j) == 'sph-const') then
-                  g_r=-g0
-                elseif (ipotential(j) == 'no-smooth') then
+                if (ipotential(j) == 'no-smooth') then
                   g_r=-g0/rr_mn**2
                 elseif (ipotential(j) == 'varying-q') then
                   g_r=-g0/rr_mn**(2*qgshear-1)
