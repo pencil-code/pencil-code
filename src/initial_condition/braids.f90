@@ -426,8 +426,8 @@ module InitialCondition
       enddo
 !
 !     Add a background field to the braid
-      do l=l1,l2
-        do m=m1,m2
+      do l=1,mx
+        do m=1,my
           f(l,m,:,iax) = f(l,m,:,iax) - y(m)*B_bkg/2.
           f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
         enddo
@@ -498,7 +498,7 @@ module InitialCondition
           tracers(j+(k-1)*(nx*trace_sub),2) = y(1+nghost) + (dy/trace_sub)*(k-1)
           tracers(j+(k-1)*(nx*trace_sub),3) = tracers(j+(k-1)*(nx*trace_sub),1)
           tracers(j+(k-1)*(nx*trace_sub),4) = tracers(j+(k-1)*(nx*trace_sub),2)
-          tracers(j+(k-1)*(nx*trace_sub),5) = z(1+nghost)-ipz*nz*dz+dz
+          tracers(j+(k-1)*(nx*trace_sub),5) = z(n1)-ipz*nz*dz+dz
           tracers(j+(k-1)*(nx*trace_sub),6) = 0.
           tracers(j+(k-1)*(nx*trace_sub),7) = 0.
         enddo
@@ -516,16 +516,18 @@ module InitialCondition
 !
 !     find the fixed points
 !
-      call get_fixed_points(f,tracers,vv)
-      write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
-      write(filename, *) 'data/proc', adjustl(trim(str_tmp))
-      open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
-      write(1) 0.
-      write(1) float(fidx)
-      do l=1,fidx
-        write(1) fixed_points(l,:)
-      enddo
-      close(1)
+      if (int_q == 'curlyA') then
+        call get_fixed_points(f,tracers,vv)
+        write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
+        write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+        open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
+        write(1) 0.
+        write(1) float(fidx)
+        do l=1,fidx
+          write(1) fixed_points(l,:)
+        enddo
+        close(1)
+      endif
 !
 !     free allocated memory
       deallocate(tracers)
