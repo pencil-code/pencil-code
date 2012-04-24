@@ -26,7 +26,8 @@ module InitialCondition
 ! ampl = amplitude of the magnetic field
 ! width_tube = width of the flux tube
 ! braid_margin = margin of outer most strands to the borders
-! braid_shift = right shift of the braiding configuration in x-direction
+! braid_shift_x = right shift of the braiding configuration in x-direction
+! braid_shift_y = right shift of the braiding configuration in y-direction
 ! l_sigma = length of the twist region
 ! steepnes = steepnes of the braiding
 ! B_bkg = strength of the background field in z-direction
@@ -39,7 +40,8 @@ module InitialCondition
 ! l_blob = length in z-direction of the blob
 ! blob_scale = scaling factor for the Gaussian
 !
-  real :: ampl = 1.0, width_tube = 0.3, braid_margin = -1., braid_shift = 0.
+  real :: ampl = 1.0, width_tube = 0.3, braid_margin = -1.
+  real :: braid_shift_x = 0., braid_shift_y = 0.
   real :: l_sigma = 0.3, steepnes = 1.0  
   real :: B_bkg = 0.0
   character (len=labellen) :: prof='gaussian'
@@ -50,7 +52,8 @@ module InitialCondition
   real :: blob_scale = 1.
 !
   namelist /initial_condition_pars/ &
-    ampl,width_tube,braid_margin,braid_shift,l_sigma,steepnes,B_bkg,word,prof, &
+    ampl,width_tube,braid_margin,braid_shift_x,braid_shift_y, &
+    l_sigma,steepnes,B_bkg,word,prof, &
 !   blob variables
     n_blobs,xc,yc,zc,blob_sgn,l_blob,blob_scale
 !
@@ -224,8 +227,8 @@ module InitialCondition
     if (n_blobs == 0) then
       do idx_strand = 1,n_strands
 !       compute the initial position of this strand
-        tube_pos(1) = x(l1)-ipx*nx*dx + (idx_strand-1)*distance_tubes + braid_margin + braid_shift
-        tube_pos(2) = Ly/2. + y(m1)-ipy*ny*dy
+        tube_pos(1) = x(l1)-ipx*nx*dx + (idx_strand-1)*distance_tubes + braid_margin + braid_shift_x
+        tube_pos(2) = Ly/2. + y(m1)-ipy*ny*dy + braid_shift_y
         tube_pos(3) = z(n1)-ipz*nz*dz
         idx = 1
 !
