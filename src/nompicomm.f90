@@ -1671,13 +1671,13 @@ module Mpicomm
 !***********************************************************************
     subroutine globalize_xy(in, out, dest_proc, source_pz)
 !
-!  Globalizes local 4D data in the xy-plane to the destination processor.
-!  The local data is supposed to include the ghost cells.
-!  Inner ghost layers are cut away during the combination of the data.
+!  Globalizes local 4D data first along the x, then along the y-direction to
+!  the destination processor. The local data is supposed to include the ghost
+!  cells. Inner ghost layers are cut away during the combination of the data.
 !  'dest_proc' is the destination iproc number relative to the first processor
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type globalize_xy
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out), optional :: out
@@ -1690,12 +1690,12 @@ module Mpicomm
 !***********************************************************************
     subroutine localize_xy(out, in, source_proc, dest_pz)
 !
-!  Localizes global 4D data to all processors in the xy-plane.
-!  The global data is supposed to include the outer ghost layers.
-!  The returned data will include inner ghost layers.
+!  Localizes global 4D data first along the y, then along the x-direction to
+!  the destination processor. The global data is supposed to include the outer
+!  ghost layers. The returned data will include inner ghost layers.
 !  Inner ghost layers are cut away during the combination of the data.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type localize_xy
 !
       real, dimension(:,:,:,:), intent(out) :: out
       real, dimension(:,:,:,:), intent(in), optional :: in
@@ -1705,43 +1705,6 @@ module Mpicomm
       if (present (in)) out = in
 !
     endsubroutine localize_xy
-!***********************************************************************
-    subroutine globalize_x_y(in, out, dest_proc, source_pz)
-!
-!  Globalizes local 4D data first along the x, then along the y-direction to
-!  the destination processor. The local data is supposed to include the ghost
-!  cells. Inner ghost layers are cut away during the combination of the data.
-!  'dest_proc' is the destination iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
-!
-!  23-Apr-2012/Bourdin.KIS: adapted from globalize_xy
-!
-      real, dimension(:,:,:,:), intent(in) :: in
-      real, dimension(:,:,:,:), intent(out), optional :: out
-      integer, intent(in), optional :: dest_proc, source_pz
-!
-      if (present (dest_proc) .or. present (source_pz)) continue
-      if (present (out)) out = in
-!
-    endsubroutine globalize_x_y
-!***********************************************************************
-    subroutine localize_x_y(out, in, source_proc, dest_pz)
-!
-!  Localizes global 4D data first along the y, then along the x-direction to
-!  the destination processor. The global data is supposed to include the outer
-!  ghost layers. The returned data will include inner ghost layers.
-!  Inner ghost layers are cut away during the combination of the data.
-!
-!  23-Apr-2012/Bourdin.KIS: adapted from localize_xy
-!
-      real, dimension(:,:,:,:), intent(out) :: out
-      real, dimension(:,:,:,:), intent(in), optional :: in
-      integer, intent(in), optional :: source_proc, dest_pz
-!
-      if (present (source_proc) .or. present (dest_pz)) continue
-      if (present (in)) out = in
-!
-    endsubroutine localize_x_y
 !***********************************************************************
     subroutine globalize_z(in, out, dest_proc)
 !

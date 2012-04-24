@@ -4287,149 +4287,6 @@ module Mpicomm
 !***********************************************************************
     subroutine globalize_xy(in, out, dest_proc, source_pz)
 !
-!  Globalizes local 4D data in the xy-plane to the destination processor.
-!  The local data is supposed to include the ghost cells.
-!  Inner ghost layers are cut away during the combination of the data.
-!  'dest_proc' is the destination iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
-!  'source_pz' specifies the source pz-layer (Default: ipz).
-!
-!  11-Feb-2012/Bourdin.KIS: adapted from collect_xy and globalize_z
-!
-      real, dimension(:,:,:,:), intent(in) :: in
-      real, dimension(:,:,:,:), intent(out), optional :: out
-      integer, intent(in), optional :: dest_proc, source_pz
-!
-      integer :: bnx, bny, bnz, bna ! transfer box sizes
-      integer :: cnx, cny ! transfer box sizes minus ghosts
-      integer :: px, py, pz, x_add, y_add, collector, partner, nbox, alloc_err
-      integer, parameter :: ytag=121
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      real, dimension(:,:,:,:), allocatable :: buffer
-!
-!
-      bnx = size (in, 1)
-      bny = size (in, 2)
-      bnz = size (in, 3)
-      bna = size (in, 4)
-      nbox = bnx*bny*bnz*bna
-      cnx = bnx - 2*nghost
-      cny = bny - 2*nghost
-!
-      collector = ipz * nprocxy
-      if (present (dest_proc)) collector = collector + dest_proc
-      pz = ipz
-      if (present (source_pz)) pz = source_pz
-!
-      if (iproc == collector) then
-        ! collect the data
-        if (cnx * nprocx + 2*nghost /= size (out, 1)) &
-            call stop_fatal ('globalize_xy: output x dim must be nprocx*input minus inner ghosts', .true.)
-        if (cny * nprocy + 2*nghost /= size (out, 2)) &
-            call stop_fatal ('globalize_xy: output y dim must be nprocy*input minus inner ghosts', .true.)
-        if (bnz /= size (out, 3)) &
-            call stop_fatal ('globalize_xy: z dim must equal between in and out', .true.)
-        if (bna /= size (out, 4)) &
-            call stop_fatal ('globalize_xy: 4th dim must equal between in and out', .true.)
-!
-        allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
-        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
-!
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            partner = px + py*nprocx + pz*nprocxy
-            x_add = nghost
-            y_add = nghost
-            if (px == 0) x_add = 0
-            if (py == 0) y_add = 0
-            if (iproc == partner) then
-              ! data is local
-              out(px*cnx+1+x_add:px*cnx+mx,py*cny+1+y_add:py*cny+my,:,:) = in(1+x_add:mx,1+y_add:my,:,:)
-            else
-              ! receive from partner
-              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-              out(px*cnx+1+x_add:px*cnx+mx,py*cny+1+y_add:py*cny+my,:,:) = buffer(1+x_add:mx,1+y_add:my,:,:)
-            endif
-          enddo
-        enddo
-!
-        deallocate (buffer)
-      else
-        ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
-      endif
-!
-    endsubroutine globalize_xy
-!***********************************************************************
-    subroutine localize_xy(out, in, source_proc, dest_pz)
-!
-!  Localizes global 4D data to all processors in the xy-plane.
-!  The global data is supposed to include the outer ghost layers.
-!  The returned data will include inner ghost layers.
-!  'source_proc' is the source iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
-!  'dest_pz' specifies the destination pz-layer (Default: ipz).
-!
-!  11-Feb-2012/Bourdin.KIS: adapted from collect_xy and globalize_z
-!
-      real, dimension(:,:,:,:), intent(out) :: out
-      real, dimension(:,:,:,:), intent(in), optional :: in
-      integer, intent(in), optional :: source_proc, dest_pz
-!
-      integer :: bnx, bny, bnz, bna ! transfer box sizes
-      integer :: cnx, cny ! transfer box sizes minus ghosts
-      integer :: px, py, pz, broadcaster, partner, nbox
-      integer, parameter :: ytag=122
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-!
-      bnx = size (out, 1)
-      bny = size (out, 2)
-      bnz = size (out, 3)
-      bna = size (out, 4)
-      nbox = bnx*bny*bnz*bna
-      cnx = bnx - 2*nghost
-      cny = bny - 2*nghost
-!
-      broadcaster = ipz * nprocxy
-      if (present (source_proc)) broadcaster = broadcaster + source_proc
-      pz = ipz
-      if (present (dest_pz)) pz = dest_pz
-!
-      if (iproc == broadcaster) then
-        ! distribute the data
-        if (cnx * nprocx + 2*nghost /= size (in, 1)) &
-            call stop_fatal ('localize_xy: input x dim must be nprocx*output minus inner ghosts', .true.)
-        if (cny * nprocy + 2*nghost /= size (in, 2)) &
-            call stop_fatal ('localize_xy: input y dim must be nprocy*output minus inner ghosts', .true.)
-        if (bnz /= size (in, 3)) &
-            call stop_fatal ('localize_xy: z dim must equal between in and out', .true.)
-        if (bna /= size (in, 4)) &
-            call stop_fatal ('localize_xy: 4th dim must equal between in and out', .true.)
-!
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            partner = px + py*nprocx + pz*nprocxy
-            if (iproc == partner) then
-              ! data is local
-              out = in(px*cnx+1:px*cnx+mx,py*cny+1:py*cny+my,:,:)
-            else
-              ! send to partner
-              call MPI_SEND (in(px*cnx+1:px*cnx+mx,py*cny+1:py*cny+my,:,:), &
-                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            endif
-          enddo
-        enddo
-      else
-        ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
-      endif
-!
-    endsubroutine localize_xy
-!***********************************************************************
-    subroutine globalize_x_y(in, out, dest_proc, source_pz)
-!
 !  Globalizes local 4D data first along the x, then along the y-direction to
 !  the destination processor. The local data is supposed to include the ghost
 !  cells. Inner ghost layers are cut away during the combination of the data.
@@ -4437,7 +4294,7 @@ module Mpicomm
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !  'source_pz' specifies the source pz-layer (Default: ipz).
 !
-!  23-Apr-2012/Bourdin.KIS: adapted from globalize_xy
+!  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type globalize_xy
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out), optional :: out
@@ -4471,19 +4328,19 @@ module Mpicomm
 !
       if (iproc == collector) then
         if (cnx * nprocx + 2*nghost /= size (out, 1)) &
-            call stop_fatal ('globalize_x_y: output x dim must be nprocx*input minus inner ghosts', .true.)
+            call stop_fatal ('globalize_xy: output x dim must be nprocx*input minus inner ghosts', .true.)
         if (cny * nprocy + 2*nghost /= size (out, 2)) &
-            call stop_fatal ('globalize_x_y: output y dim must be nprocy*input minus inner ghosts', .true.)
+            call stop_fatal ('globalize_xy: output y dim must be nprocy*input minus inner ghosts', .true.)
         if (bnz /= size (out, 3)) &
-            call stop_fatal ('globalize_x_y: z dim must equal between in and out', .true.)
+            call stop_fatal ('globalize_xy: z dim must equal between in and out', .true.)
         if (bna /= size (out, 4)) &
-            call stop_fatal ('globalize_x_y: 4th dim must equal between in and out', .true.)
+            call stop_fatal ('globalize_xy: 4th dim must equal between in and out', .true.)
       endif
 !
       if (lfirst_proc_y .and. (ipz == pz)) then
         ! collect the data of each y-row
         allocate (buffer(bnx,bny,bnz,bna), y_row(bnx,rny,bnz,bna), stat=alloc_err)
-        if (alloc_err > 0) call stop_fatal ('globalize_x_y: not enough memory for buffer and y_row!', .true.)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer and y_row!', .true.)
 !
         do py = 0, nprocy-1
           partner = ipx + py*nprocx + pz*nprocxy
@@ -4518,7 +4375,7 @@ module Mpicomm
       if (iproc == collector) then
         ! collect the y-rows into global data
         allocate (buffer(bnx,rny,bnz,bna), stat=alloc_err)
-        if (alloc_err > 0) call stop_fatal ('globalize_x_y: not enough memory for buffer!', .true.)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for buffer!', .true.)
 !
         do px = 0, nprocx-1
           partner = px + ipy*nprocx + pz*nprocxy
@@ -4540,9 +4397,9 @@ module Mpicomm
         deallocate (buffer)
       endif
 !
-    endsubroutine globalize_x_y
+    endsubroutine globalize_xy
 !***********************************************************************
-    subroutine localize_x_y(out, in, source_proc, dest_pz)
+    subroutine localize_xy(out, in, source_proc, dest_pz)
 !
 !  Localizes global 4D data first along the y, then along the x-direction to
 !  the destination processor. The global data is supposed to include the outer
@@ -4551,7 +4408,7 @@ module Mpicomm
 !  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
 !  'dest_pz' specifies the destination pz-layer (Default: ipz).
 !
-!  23-Apr-2012/Bourdin.KIS: adapted from localize_xy
+!  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type localize_xy
 !
       real, dimension(:,:,:,:), intent(out) :: out
       real, dimension(:,:,:,:), intent(in), optional :: in
@@ -4584,18 +4441,18 @@ module Mpicomm
 !
       if (iproc == broadcaster) then
         if (cnx * nprocx + 2*nghost /= size (in, 1)) &
-            call stop_fatal ('localize_x_y: input x dim must be nprocx*output minus inner ghosts', .true.)
+            call stop_fatal ('localize_xy: input x dim must be nprocx*output minus inner ghosts', .true.)
         if (cny * nprocy + 2*nghost /= size (in, 2)) &
-            call stop_fatal ('localize_x_y: input y dim must be nprocy*output minus inner ghosts', .true.)
+            call stop_fatal ('localize_xy: input y dim must be nprocy*output minus inner ghosts', .true.)
         if (bnz /= size (in, 3)) &
-            call stop_fatal ('localize_x_y: z dim must equal between in and out', .true.)
+            call stop_fatal ('localize_xy: z dim must equal between in and out', .true.)
         if (bna /= size (in, 4)) &
-            call stop_fatal ('localize_x_y: 4th dim must equal between in and out', .true.)
+            call stop_fatal ('localize_xy: 4th dim must equal between in and out', .true.)
       endif
 !
       if (ipz == pz) then
         allocate (y_row(bnx,rny,bnz,bna), stat=alloc_err)
-        if (alloc_err > 0) call stop_fatal ('globalize_x_y: not enough memory for y_row!', .true.)
+        if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for y_row!', .true.)
       endif
 !
       if (iproc == broadcaster) then
@@ -4639,7 +4496,7 @@ module Mpicomm
 !
       if (ipz == pz) deallocate (y_row)
 !
-    endsubroutine localize_x_y
+    endsubroutine localize_xy
 !***********************************************************************
     subroutine globalize_z(in, out, dest_proc)
 !

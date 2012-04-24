@@ -10,7 +10,8 @@
 !  The file written by output_snap() (and used e.g. for 'var.dat')
 !  consists of the followinig records (not using record markers):
 !    1. data(mxgrid,mygrid,mzlocal,nvar)
-!    2. t(1), x(mxgrid), y(mygrid), z(mzgrid), dx(1), dy(1), dz(1) [only root]
+!    2. t(1)
+!    3. x(mxgrid), y(mygrid), z(mzgrid), dx(1), dy(1), dz(1) [only in /proc0/]
 !  Where nvar denotes the number of variables to be saved,
 !  In the case of MHD with entropy, nvar is 8 for a 'var.dat' file.
 !  Only outer ghost-layers are written, so mzlocal is between nz and mz,
@@ -314,10 +315,18 @@ contains
           close (lun_output)
           open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = t
-          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+          write (lun_output) t_sp
+          write (lun_output) gx, gy, gz, dx, dy, dz
           deallocate (gx, gy, gz)
         else
           call collect_grid (x, y, z)
+!
+          if (lfirst_proc_xy) then
+            close (lun_output)
+            open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
+            t_sp = t
+            write (lun_output) t_sp
+          endif
         endif
       endif
 !
@@ -440,7 +449,7 @@ contains
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, localize_xy, mpisend_real, mpirecv_real, mpibcast_real
+      use Mpicomm, only: lroot, localize_xy, mpisend_real, mpirecv_real, mpibcast_real, stop_it_if_any
       use Syscalls, only: sizeof_real
 !
       character (len=*) :: file
@@ -454,7 +463,7 @@ contains
       integer :: io_len, alloc_err
       integer(kind=8) :: rec_len, num_rec
       logical :: lread_add
-      real :: t_sp   ! t in single precision for backwards compatibility
+      real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
@@ -492,13 +501,28 @@ contains
           close (lun_input)
           open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
           call fseek_pos (lun_input, rec_len, num_rec, 0)
-          read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+          read (lun_input) t_sp
+          read (lun_input) gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)
           deallocate (gx, gy, gz)
         else
           call distribute_grid (x, y, z)
+!
+          if (lfirst_proc_xy) then
+            rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
+            num_rec = int (mz, kind=8) * int (nv*sizeof_real(), kind=8)
+            close (lun_input)
+            open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
+            call fseek_pos (lun_input, rec_len, num_rec, 0)
+            read (lun_input) t_sp
+          endif
         endif
+        if (lfirst_proc_xy) t_test = t_sp
         call mpibcast_real (t_sp)
+        if (.not. lfirst_proc_xy) t_test = t_sp
+        if (t_test /= t_sp) &
+            write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)//' IS INCONSISTENT: t=', t_sp
+        call stop_it_if_any ((t_test /= t_sp), '')
         t = t_sp
       endif
 !

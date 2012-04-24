@@ -37,7 +37,6 @@
   public :: sum_xy, distribute_xy, collect_xy
   public :: distribute_z, collect_z
   public :: globalize_xy, localize_xy
-  public :: globalize_x_y, localize_x_y
   public :: globalize_z, localize_z
   public :: distribute_to_pencil_xy, collect_from_pencil_xy
   public :: remap_to_pencil_x, unmap_from_pencil_x
