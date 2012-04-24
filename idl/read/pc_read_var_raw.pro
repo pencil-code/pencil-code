@@ -297,15 +297,25 @@ COMPILE_OPT IDL2,HIDDEN
     endif else if (allprocs eq 2) then begin
       ; xy-collectively written files for each ipz-layer
       readu, file, buffer
-      if (i eq 0) then begin
-        if (f77 eq 0) then begin
-          close, file
-          openr, file, filename, /f77, swap_endian=swap_endian
-          if (precision eq 'D') then bytes=8 else bytes=4
-          point_lun, file, long64(dim.mx*dim.my)*long64(procdim.mz*dim.mvar*bytes)
-        endif
-        readu, file, t, x, y, z, dx, dy, dz
+      if (f77 eq 0) then begin
+        close, file
+        openr, file, filename, /f77, swap_endian=swap_endian
+        if (precision eq 'D') then bytes=8 else bytes=4
+        point_lun, file, long64(dim.mx*dim.my)*long64(procdim.mz*dim.mvar*bytes)
       endif
+      if (i eq 0) then begin
+        readu, file, t
+        readu, file, x, y, z, dx, dy, dz
+      endif else begin
+        t_test = zero
+        readu, file, t_test
+        if (t ne t_test) then begin
+          print, "ERROR: TIMESTAMP IS INCONSISTENT: ", filename
+          print, "t /= t_test: ", t, t_test
+          print, "Type '.c' to continue..."
+          stop
+        endif
+      endelse
       object[*,*,i0z:i1z,*] = buffer[*,*,i0zloc:i1zloc,*]
     endif else if (nprocs eq 1) then begin
       ; single processor distributed file
@@ -322,6 +332,17 @@ COMPILE_OPT IDL2,HIDDEN
         readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
       endif else begin
         readu, file, t, xloc, yloc, zloc, dx, dy, dz
+      endelse
+      if (i eq 0) then begin
+        t_test = t
+      endif else begin
+        if (t ne t_test) then begin
+          print, "ERROR: TIMESTAMP IS INCONSISTENT: ", filename
+          print, "t /= t_test: ", t, t_test
+          print, "Type '.c' to continue..."
+          stop
+          t = t_test
+        endif
       endelse
 ;
       x[i0x:i1x] = xloc[i0xloc:i1xloc]
