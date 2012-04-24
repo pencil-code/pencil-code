@@ -588,10 +588,8 @@ module Special
         endif
 !
         if (lfirst.and.ldt) then
-          call dot2(f(l1:l2,m,n,ispitzerx:ispitzerz),rhs,PRECISE_SQRT=.true.)
-!
-          rhs = rhs*exp(-p%lnTT-p%lnrho)*gamma*p%cp1
-          advec_uu = max(advec_uu,rhs)
+          rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*gamma*p%cp1*tau_inv_spitzer)
+          advec_uu = max(advec_uu,rhs/dxmax_pencil)
           if (idiag_dtspitzer/=0) call max_mn_name(rhs/cdt,idiag_dtspitzer,l_dt=.true.)
           !
           dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
