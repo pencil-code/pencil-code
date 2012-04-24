@@ -1232,8 +1232,8 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !
-!  Calculate the radiative diffusion term for chi=cte:
-!  lnTT version: cp*chi*Div(rho*T*glnTT)/(rho*cv*TT)
+!  Calculate the radiative diffusion term for constant chi:
+!  lnTT version: cp*chi*Div(rho*TT*glnTT)/(rho*cv*TT)
 !           = gamma*chi*(g2.glnTT+g2lnTT) where g2=glnrho+glnTT
 !    TT version: cp*chi*Div(rho*gTT)/(rho*cv)
 !           = gamma*chi*(g2.gTT+g2TT) where g2=glnrho
@@ -1276,9 +1276,9 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_constK(df,p)
 !
-!  Calculate the radiative diffusion term for K=cte:
+!  Calculate the radiative diffusion term for constant K:
 !
-!  lnTT version: gamma*K/rho/TT/cp*div(T*grad lnTT)
+!  lnTT version: gamma*K/rho/TT/cp*div(TT*grad lnTT)
 !                =gamma*K/rho/cp*(gradlnTT.gradlnTT + del2ln TT)
 !    TT version: gamma*K/rho/cp*del2(TT)=gamma*chi*del2(TT)
 !
