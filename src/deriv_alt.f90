@@ -1045,14 +1045,12 @@ module Deriv
         if ( i+j==3 ) then
           if (nxgrid/=1.and.nygrid/=1) then
             fac=(1./720.)*dx_1(1)*dy_1(1)
-            df=fac*( &
-                        270.*( f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n)  &
-                              +f(l1-1:l2-1,m-1,n)-f(l1+1:l2+1,m-1,n)) &
-                       - 27.*( f(l1+2:l2+2,m+2,n)-f(l1-2:l2-2,m+2,n)  &
-                              +f(l1-2:l2-2,m-2,n)-f(l1+2:l2+2,m-2,n)) &
-                       +  2.*( f(l1+3:l2+3,m+3,n)-f(l1-3:l2-3,m+3,n)  &
-                              +f(l1-3:l2-3,m-3,n)-f(l1+3:l2+3,m-3,n)) &
-                   )
+            df=fac*( 270.*( f(l1+1:l2+1,m+1,n)-f(l1-1:l2-1,m+1,n)  &
+                           +f(l1-1:l2-1,m-1,n)-f(l1+1:l2+1,m-1,n)) &
+                    - 27.*( f(l1+2:l2+2,m+2,n)-f(l1-2:l2-2,m+2,n)  &
+                           +f(l1-2:l2-2,m-2,n)-f(l1+2:l2+2,m-2,n)) &
+                    +  2.*( f(l1+3:l2+3,m+3,n)-f(l1-3:l2-3,m+3,n)  &
+                           +f(l1-3:l2-3,m-3,n)-f(l1+3:l2+3,m-3,n))  )
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
@@ -1060,14 +1058,12 @@ module Deriv
         elseif ( i+j==5 ) then
           if (nygrid/=1.and.nzgrid/=1) then
             fac=(1./720.)*dy_1(1)*dz_1(1)
-            df=fac*( &
-                        270.*( f(l1:l2,m+1,n+1)-f(l1:l2,m+1,n-1)  &
-                              +f(l1:l2,m-1,n-1)-f(l1:l2,m-1,n+1)) &
-                       - 27.*( f(l1:l2,m+2,n+2)-f(l1:l2,m+2,n-2)  &
-                              +f(l1:l2,m-2,n-2)-f(l1:l2,m-2,n+2)) &
-                       +  2.*( f(l1:l2,m+3,n+3)-f(l1:l2,m+3,n-3)  &
-                              +f(l1:l2,m-3,n-3)-f(l1:l2,m-3,n+3)) &
-                   )
+            df=fac*( 270.*( f(l1:l2,m+1,n+1)-f(l1:l2,m+1,n-1)  &
+                           +f(l1:l2,m-1,n-1)-f(l1:l2,m-1,n+1)) &
+                    - 27.*( f(l1:l2,m+2,n+2)-f(l1:l2,m+2,n-2)  &
+                           +f(l1:l2,m-2,n-2)-f(l1:l2,m-2,n+2)) &
+                    +  2.*( f(l1:l2,m+3,n+3)-f(l1:l2,m+3,n-3)  &
+                           +f(l1:l2,m-3,n-3)-f(l1:l2,m-3,n+3))  )
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
@@ -1075,14 +1071,12 @@ module Deriv
         elseif ( i+j==4 ) then
           if (nzgrid/=1.and.nxgrid/=1) then
             fac=(1./720.)*dz_1(1)*dx_1(1)
-            df=fac*( &
-                        270.*( f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1)  &
-                              +f(l1-1:l2-1,m,n-1)-f(l1+1:l2+1,m,n-1)) &
-                       - 27.*( f(l1+2:l2+2,m,n+2)-f(l1-2:l2-2,m,n+2)  &
-                              +f(l1-2:l2-2,m,n-2)-f(l1+2:l2+2,m,n-2)) &
-                       +  2.*( f(l1+3:l2+3,m,n+3)-f(l1-3:l2-3,m,n+3)  &
-                              +f(l1-3:l2-3,m,n-3)-f(l1+3:l2+3,m,n-3)) &
-                   )
+            df=fac*( 270.*( f(l1+1:l2+1,m,n+1)-f(l1-1:l2-1,m,n+1)  &
+                           +f(l1-1:l2-1,m,n-1)-f(l1+1:l2+1,m,n-1)) &
+                    - 27.*( f(l1+2:l2+2,m,n+2)-f(l1-2:l2-2,m,n+2)  &
+                           +f(l1-2:l2-2,m,n-2)-f(l1+2:l2+2,m,n-2)) &
+                    +  2.*( f(l1+3:l2+3,m,n+3)-f(l1-3:l2-3,m,n+3)  &
+                           +f(l1-3:l2-3,m,n-3)-f(l1+3:l2+3,m,n-3))  )
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
@@ -1384,10 +1378,10 @@ module Deriv
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
           df = fac*(-sgn*25*f(pos,m1:m2,n1:n2,k)&
-                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2,k)&
-                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2,k)&
-                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2,k)&
-                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2,k))
+                    +sgn*48*f(pos+sgn*1,m1:m2,n1:n2,k)&
+                    -sgn*36*f(pos+sgn*2,m1:m2,n1:n2,k)&
+                    +sgn*16*f(pos+sgn*3,m1:m2,n1:n2,k)&
+                    -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2,k))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
@@ -1396,10 +1390,10 @@ module Deriv
         if (nygrid/=1) then
           fac=1./12.*dy_1(pos)
           df = fac*(-sgn*25*f(l1:l2,pos,n1:n2,k)&
-                  +sgn*48*f(l1:l2,pos+sgn*1,n1:n2,k)&
-                  -sgn*36*f(l1:l2,pos+sgn*2,n1:n2,k)&
-                  +sgn*16*f(l1:l2,pos+sgn*3,n1:n2,k)&
-                  -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2,k))
+                    +sgn*48*f(l1:l2,pos+sgn*1,n1:n2,k)&
+                    -sgn*36*f(l1:l2,pos+sgn*2,n1:n2,k)&
+                    +sgn*16*f(l1:l2,pos+sgn*3,n1:n2,k)&
+                    -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2,k))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
@@ -1408,10 +1402,10 @@ module Deriv
         if (nzgrid/=1) then
           fac=1./12.*dz_1(pos)
           df = fac*(-sgn*25*f(l1:l2,m1:m2,pos,k)&
-                  +sgn*48*f(l1:l2,m1:m2,pos+sgn*1,k)&
-                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*2,k)&
-                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*3,k)&
-                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4,k))
+                    +sgn*48*f(l1:l2,m1:m2,pos+sgn*1,k)&
+                    -sgn*36*f(l1:l2,m1:m2,pos+sgn*2,k)&
+                    +sgn*16*f(l1:l2,m1:m2,pos+sgn*3,k)&
+                    -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4,k))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
@@ -1439,10 +1433,10 @@ module Deriv
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
           df = fac*(-sgn*25*f(pos,mmm,nnn,k)&
-                  +sgn*48*f(pos+sgn*1,mmm,nnn,k)&
-                  -sgn*36*f(pos+sgn*2,mmm,nnn,k)&
-                  +sgn*16*f(pos+sgn*3,mmm,nnn,k)&
-                  -sgn*3 *f(pos+sgn*4,mmm,nnn,k))
+                    +sgn*48*f(pos+sgn*1,mmm,nnn,k)&
+                    -sgn*36*f(pos+sgn*2,mmm,nnn,k)&
+                    +sgn*16*f(pos+sgn*3,mmm,nnn,k)&
+                    -sgn*3 *f(pos+sgn*4,mmm,nnn,k))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
@@ -1452,10 +1446,10 @@ module Deriv
         if (nygrid/=1) then
           fac=1./12.*dy_1(pos)
           df = fac*(-sgn*25*f(lll,pos,nnn,k)&
-                  +sgn*48*f(lll,pos+sgn*1,nnn,k)&
-                  -sgn*36*f(lll,pos+sgn*2,nnn,k)&
-                  +sgn*16*f(lll,pos+sgn*3,nnn,k)&
-                  -sgn*3 *f(lll,pos+sgn*4,nnn,k))
+                    +sgn*48*f(lll,pos+sgn*1,nnn,k)&
+                    -sgn*36*f(lll,pos+sgn*2,nnn,k)&
+                    +sgn*16*f(lll,pos+sgn*3,nnn,k)&
+                    -sgn*3 *f(lll,pos+sgn*4,nnn,k))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
@@ -1465,10 +1459,10 @@ module Deriv
         if (nzgrid/=1) then
           fac=1./12.*dz_1(pos)
           df = fac*(-sgn*25*f(lll,mmm,pos,k)&
-                  +sgn*48*f(lll,mmm,pos+sgn*1,k)&
-                  -sgn*36*f(lll,mmm,pos+sgn*2,k)&
-                  +sgn*16*f(lll,mmm,pos+sgn*3,k)&
-                  -sgn*3 *f(lll,mmm,pos+sgn*4,k))
+                    +sgn*48*f(lll,mmm,pos+sgn*1,k)&
+                    -sgn*36*f(lll,mmm,pos+sgn*2,k)&
+                    +sgn*16*f(lll,mmm,pos+sgn*3,k)&
+                    -sgn*3 *f(lll,mmm,pos+sgn*4,k))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
@@ -1502,10 +1496,10 @@ module Deriv
         if (nxgrid/=1) then
           fac=1./12.*dx_1(pos)
           df = fac*(-sgn*25*f(pos,m1:m2,n1:n2)&
-                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2)&
-                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2)&
-                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2)&
-                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2))
+                    +sgn*48*f(pos+sgn*1,m1:m2,n1:n2)&
+                    -sgn*36*f(pos+sgn*2,m1:m2,n1:n2)&
+                    +sgn*16*f(pos+sgn*3,m1:m2,n1:n2)&
+                    -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2))
         else
           df=0.
           if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-direction'
@@ -1794,7 +1788,7 @@ module Deriv
      integer                          , intent(IN)   :: topbot
 
      real, dimension(:,:), allocatable :: work_yz
-     integer                           :: i,ic,stat,ll, im
+     integer                           :: i,ic,stat,ll, im, ia, ie, is, ima
 
      heatflux_deriv_x = .false.
 
@@ -1803,51 +1797,52 @@ module Deriv
          'Could not allocate memory for work_yz')
 
      if (topbot==1) then
-       ll=l1
-       ic=1
-     elseif (topbot==1) then
+       ll=l1; ia=1; ie=3; is=1
+       ic=1;
+     elseif (topbot==2) then
        ll=l2
-       ic=nx
+       ic=nx; ia=-1; ie=-3; is=-1
      else
        call fatal_error('heatflux_boundcond_x', &
          'Illegal value for parameter "topbot"')
      endif
      
-     do im=1,3
+     do im=ia,ie,is
 
+       ima = abs(im)
        work_yz = inh                                                      ! Fbot/(K*cs2)
 
-       if (im<3) then
-         do i=-im,im                                                      ! dlnrho, 1st+2nd order
+       if (ima<3) then
+         do i=-ima,ima                                                    ! dlnrho, 2nd+4th order
            if (ldensity_nolog) then
-             work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,ilnrho)
+             work_yz = work_yz + coeffsx_1(i,ima,topbot)*log(f(ll+i,:,:,irho))
            else
-             work_yz = work_yz + coeffsx_1(i,im,topbot)*log(f(ll+i,:,:,irho))
+             work_yz = work_yz + coeffsx_1(i,ima,topbot)*f(ll+i,:,:,ilnrho)
            endif
          enddo
        else
-         do i=-im,im                                                      ! dlnrho, 3rd order
+         do i=-ima,ima                                                    ! dlnrho, 6th order
            if (ldensity_nolog) then
-             work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,ilnrho)
-           else
              work_yz = work_yz + coeffsx(i,1,ic)*log(f(ll+i,:,:,irho))
+           else
+             work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,ilnrho)
            endif
          enddo
        endif
 
        work_yz = fac*work_yz  
 
-       if (im<3) then
+       if (ima<3) then
 
-         do i=-im+1,im                                                    ! dss, 1st+2nd order
-           work_yz = work_yz + coeffsx_1(i,im,topbot)*f(ll+i,:,:,iss)
+         do i=-im+is,im,is                                                ! dss, 2nd+4th order
+           work_yz = work_yz + coeffsx_1(i,ima,topbot)*f(ll+i,:,:,iss)
          enddo
 
-         f(ll-im,:,:,iss) = -work_yz/coeffsx_1(-im,im,topbot)
+         f(ll-im,:,:,iss) = -work_yz/coeffsx_1(-im,ima,topbot)
 
        else
 
-         do i=-im+1,im                                                    ! dss, 3rd order
+         do i=-im+is,im,is                                                ! dss, 6th order
            work_yz = work_yz + coeffsx(i,1,ic)*f(ll+i,:,:,iss)
          enddo
 
