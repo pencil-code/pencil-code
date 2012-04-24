@@ -129,7 +129,7 @@ module Fixed_point
 !     if the gradient is 0 we have already reached the fixed points
       if (der(1) == 0 .and. der(2) == 0) then
         fixed_point = point
-!         exit
+        exit
       else
 !       der = der/sqrt(der(1)**2+der(2)**2)
 !       gradient descent method
@@ -352,7 +352,7 @@ module Fixed_point
 !
     call MPI_BARRIER(MPI_comm_world, ierr)
 !
-!   Find possible fixed points each grid cell.
+!   Find possible fixed points in each grid cell.
 !   index of the fixed point
     fidx = 1
     do j=1,(nx*trace_sub+addy-1)
