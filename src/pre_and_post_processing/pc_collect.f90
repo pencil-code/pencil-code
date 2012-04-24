@@ -31,7 +31,7 @@ program pc_collect
   real, dimension (ngx) :: gx, gdx_1, gdx_tilde
   real, dimension (ngy) :: gy, gdy_1, gdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
-  logical :: ex, lerror
+  logical :: ex
   integer :: mvar_in, bytes, pz, pa, start_pos, end_pos, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -284,17 +284,6 @@ program pc_collect
   open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
   t_sp = t
   write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-  if (lshear) write (lun_output) deltay
-!
-  if (.not. lseparate_persist) then
-    ! write persistent data:
-    call warning ('write_persistent', "Only the RANDOM_SEEDS are currently collected.")
-    lerror = init_write_persist()
-    if (lerror) call fatal_error ('write_persist', "IO-error")
-    lerror = write_persist_id ('RANDOM_SEEDS', id_record_RANDOM_SEEDS)
-    if (lerror) call fatal_error ('write_persist_id', "IO-error")
-    write (lun_output) gs
-  endif
 !
   call output_snap_finalize()
 !
