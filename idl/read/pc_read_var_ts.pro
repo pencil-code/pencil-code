@@ -12,7 +12,7 @@
 ;  
 pro pc_read_var_ts,t_arr=t_arr,array=array, $
                    snap_start=snap_start,snap_end=snap_end, $
-                   datadir=datadir,proc=proc,type=type, $
+                   datadir=datadir,proc=proc,type=type,allprocs=allprocs, $
                    HELP=HELP,QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
@@ -48,6 +48,7 @@ COMPILE_OPT IDL2,HIDDEN
 
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 default,proc,0
+default,allprocs,0
 default,snap_start,0
 default,snap_end,0
 
@@ -72,15 +73,15 @@ for nsnap=snap_start,snap_end do begin
   varfile='VAR'+strcompress(nsnap,/remove_all)
   if (type eq 'udxmean') then begin
     pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
-                QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
+                allprocs=allprocs,QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
     array(nsnap-snap_start)=mean(uud(*,*,*,0))
   end else if (type eq 'udymean') then begin
     pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
-                QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
+                allprocs=allprocs,QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
     array(nsnap-snap_start)=mean(uud(*,*,*,1))
   end else if (type eq 'udmean') then begin
     pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
-                QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
+                allprocs=allprocs,QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
     array(nsnap-snap_start)= $
         mean(sqrt(uud(*,*,*,0)^2+uud(*,*,*,1)^2+uud(*,*,*,2)^2))
   end
