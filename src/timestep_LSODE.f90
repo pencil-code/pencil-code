@@ -39,9 +39,8 @@ module Timestep
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: ds
-      real :: t0, t1
-      real :: dt1, dt1_local, dt1_last=0.0
+      real :: t0, t1, ds, dt1, dt1_local
+      real, save :: dt1_last=0.0
       integer :: j
 !
       if (lroot .and. headt .and. llsode) print*, 'timestep_LSODE: '// &

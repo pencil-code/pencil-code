@@ -39,8 +39,8 @@ module Timestep
       real, dimension (nx) :: diffarr,d2o,d2n,d2s,d2e,d2w
       real, dimension (nx) :: cdt1,cdt2,fold_tmp
       type (pencil_case) :: p
-      real :: ds
-      real :: dt1, dt1_local, dt1_last=0.0
+      real :: ds, dt1, dt1_local
+      real, save :: dt1_last=0.0
       integer :: j
 !
 !  Set up df and ds for each time sub.
