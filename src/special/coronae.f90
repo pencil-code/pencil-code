@@ -332,6 +332,7 @@ module Special
       if (tau_inv_spitzer /= 0.) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_b2)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -497,8 +498,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx) :: b2_1,qsat,qabs
-      real, dimension(nx) :: div_spitzer,rhs
-      real, dimension(nx,3) :: K1
+      real, dimension(nx) :: div_spitzer,rhs,cosgT_b
+      real, dimension(nx,3) :: K1,unit_glnTT
       real, dimension(nx,3) :: spitzer_vec
       real, dimension(nx) :: tmp,dt_1_8th,nu_coll,hc
       real, dimension(nx,3) :: q
@@ -588,9 +589,13 @@ module Special
         endif
 !
         if (lfirst.and.ldt) then
-          rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*gamma*p%cp1*tau_inv_spitzer)
+          call unit_vector(p%glnTT,unit_glnTT)
+          call dot(unit_glnTT,p%bunit,cosgT_b)
+          rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+              gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
           advec_uu = max(advec_uu,rhs/dxmax_pencil)
-          if (idiag_dtspitzer/=0) call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
+          if (idiag_dtspitzer/=0) &
+              call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
           !
           dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
         endif
@@ -3226,7 +3231,7 @@ module Special
         new_ypos =  current%data(2) + Uy_ext_global(xpos,ypos)*dt
 !
 ! test if positions outside domain and use periodicity
-
+!
         if (new_xpos < 0.5) new_xpos = new_xpos + nxgrid
         if (new_ypos < 0.5) new_ypos = new_ypos + nygrid
 !
@@ -3555,7 +3560,7 @@ module Special
         else
           call mpirecv_real(tl,1,0,tag_left)
           call mpirecv_real(tr,1,0,tag_right)
-        endif 
+        endif
 !
         if (lroot) then
           if (.not. allocated(global_left)) allocate(global_left(nxgrid,nygrid,4,8))
@@ -3569,7 +3574,7 @@ module Special
             frame = 1
             do j=1,8
               do i=1,4
-                read (unit,rec=frame,iostat=ierr) global_left(:,:,i,j) 
+                read (unit,rec=frame,iostat=ierr) global_left(:,:,i,j)
                 frame = frame+1
               enddo
             enddo
