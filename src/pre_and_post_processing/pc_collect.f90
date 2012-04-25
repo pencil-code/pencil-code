@@ -8,7 +8,6 @@ program pc_collect
   use Cparam, only: fnlen
   use Diagnostics
   use Filter
-  use General, only: random_seed_wrapper
   use Grid, only: initialize_grid
   use IO
   use Messages
@@ -16,10 +15,9 @@ program pc_collect
   use Register
   use Snapshot
   use Sub
+  use Syscalls, only: sizeof_real
 !
   implicit none
-!
-  include '../record_types.h'
 !
   character (len=fnlen) :: filename
   character (len=*), parameter :: directory_out = 'data/allprocs'
@@ -27,13 +25,13 @@ program pc_collect
   real, dimension (mx,my,mz,mfarray) :: f
   integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
   real, dimension (:,:,:,:), allocatable :: gf
-  integer, dimension (:,:,:,:), allocatable :: gs
   real, dimension (ngx) :: gx, gdx_1, gdx_tilde
   real, dimension (ngy) :: gy, gdy_1, gdy_tilde
   real, dimension (ngz) :: gz, gdz_1, gdz_tilde
   logical :: ex
-  integer :: mvar_in, bytes, pz, pa, start_pos, end_pos, alloc_err
-  real :: t_sp   ! t in single precision for backwards compatibility
+  integer :: mvar_in, io_len, pz, pa, start_pos, end_pos, alloc_err
+  integer(kind=8) :: rec_len, num_rec
+  real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lrun=.true.
   lmpicomm = .false.
@@ -51,10 +49,12 @@ program pc_collect
   uucorn = 0
   ulcorn = 0
 !
-  inquire (IOLENGTH=bytes) 1.0
+  inquire (IOLENGTH=io_len) 1.0
 !
-  if (lcollective_IO) call fatal_error ('pc_collect', &
-      "Collecting snapshots currently requires the distributed IO-module.")
+  if (IO_strategy == "collect") call fatal_error ('pc_collect', &
+      "Snapshots are already collected, when using the 'io_collect' module.")
+  if (IO_strategy == "MPI-IO") call fatal_error ('pc_collect', &
+      "Snapshots are already collected, when using the MPI-IO module.")
 !
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
@@ -126,14 +126,8 @@ program pc_collect
     mvar_in=mvar
   endif
 !
-!  Get state length of random number generator.
-!
-  call get_nseed(nseed)
-!
   allocate (gf (ngx,ngy,mz,mvar_io), stat=alloc_err)
   if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gf.', .true.)
-  allocate (gs (nprocx,nprocy,nprocz,nseed), stat=alloc_err)
-  if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gs.', .true.)
 !
 !  Print resolution and dimension of the simulation.
 !
@@ -146,7 +140,7 @@ program pc_collect
   call directory_names()
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
-  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=ngx*ngy*bytes)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=ngx*ngy*io_len)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -161,6 +155,7 @@ program pc_collect
   write (*,*) "IPZ-layer:"
 !
   gz = huge(1.0)
+  t_test = huge(1.0)
 !
   do ipz = 0, nprocz-1
 !
@@ -168,9 +163,60 @@ program pc_collect
 !
     f = huge(1.0)
     gf = huge(1.0)
+!
+    iproc = ipz * nprocx*nprocy
+    lroot = (iproc==root)
+    lfirst_proc_z = (ipz == 0)
+    llast_proc_z = (ipz == nprocz-1)
+!
+    if (IO_strategy == "collect_xy") then
+      ! Take the shortcut, files are well prepared for direct combination
+!
+      ! Set up directory names 'directory' and 'directory_snap'
+      call directory_names()
+!
+      ! Read the data
+      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
+      rec_len = rec_len * mvar_in * io_len
+      open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
+      read (lun_input, rec=1) gf
+      close (lun_input)
+!
+      ! Read additional information and check consistency of timestamp
+      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
+      num_rec = int (mz, kind=8) * int (mvar_in*sizeof_real(), kind=8)
+      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
+      call fseek_pos (lun_input, rec_len, num_rec, 0)
+      read (lun_input) t_sp
+      if (lroot) then
+        t_test = t_sp
+        read (lun_input) gx, gy, gz, dx, dy, dz
+      else
+        if (t_test /= t_sp) then
+          write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(filename)//' IS INCONSISTENT: t=', t_sp
+          stop 1
+        endif
+      endif
+      close (lun_input)
+      t = t_sp
+!
+      ! Write xy-layer
+      do pa = 1, mvar_io
+        start_pos = nghost + 1
+        end_pos = nghost + nz
+        if (lfirst_proc_z) start_pos = 1
+        if (llast_proc_z) end_pos = mz
+        do pz = start_pos, end_pos
+          write (lun_output, rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
+        enddo
+      enddo
+!
+      ! That is all we have to do
+      cycle
+    endif
+!
     gx = huge(1.0)
     gy = huge(1.0)
-    gs = -max_int
 !
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
@@ -182,7 +228,6 @@ program pc_collect
 !
         lfirst_proc_x = (ipx == 0)
         lfirst_proc_y = (ipy == 0)
-        lfirst_proc_z = (ipz == 0)
         lfirst_proc_xy = lfirst_proc_x .and. lfirst_proc_y
         lfirst_proc_yz = lfirst_proc_y .and. lfirst_proc_z
         lfirst_proc_xz = lfirst_proc_x .and. lfirst_proc_z
@@ -192,7 +237,6 @@ program pc_collect
 !
         llast_proc_x = (ipx == nprocx-1)
         llast_proc_y = (ipy == nprocy-1)
-        llast_proc_z = (ipz == nprocz-1)
         llast_proc_xy = llast_proc_x .and. llast_proc_y
         llast_proc_yz = llast_proc_y .and. llast_proc_z
         llast_proc_xz = llast_proc_x .and. llast_proc_z
@@ -241,13 +285,16 @@ program pc_collect
 !  This directory must exist, but may be linked to another disk.
 !
         call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
+        t_sp = t
+!
+        if (lroot) t_test = t_sp
+        if (t_test /= t_sp) then
+          write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(filename)//' IS INCONSISTENT: t=', t_sp
+          stop 1
+        endif
 !
         ! collect f in gf:
         gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:) = f(:,:,:,1:mvar_io)
-!
-        ! collect random seeds in gs:
-        call random_seed_wrapper(GET=seed)
-        gs(1+ipx,1+ipy,1+ipz,:) = seed(1:nseed)
 !
         ! collect x coordinates:
         gx(1+ipx*nx:mx+ipx*nx) = x
@@ -287,14 +334,16 @@ program pc_collect
 !
   call output_snap_finalize()
 !
-  ! write global grid:
-  open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
-  write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-  write (lun_output) dx, dy, dz
-  write (lun_output) Lx, Ly, Lz
-  write (lun_output) gdx_1, gdy_1, gdz_1
-  write (lun_output) gdx_tilde, gdy_tilde, gdz_tilde
-  close (lun_output)
+  if (IO_strategy == 'dist') then
+    ! write global grid:
+    open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
+    write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+    write (lun_output) dx, dy, dz
+    write (lun_output) Lx, Ly, Lz
+    write (lun_output) gdx_1, gdy_1, gdz_1
+    write (lun_output) gdx_tilde, gdy_tilde, gdz_tilde
+    close (lun_output)
+  endif
 !
   print *, 'Writing snapshot for time t =', t
 !
