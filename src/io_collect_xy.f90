@@ -307,26 +307,25 @@ contains
 !
       ! write additional data:
       if (lwrite_add) then
-        if (lroot) then
-          allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
-          call collect_grid (x, y, z, gx, gy, gz)
-!
+        if (lfirst_proc_xy) then
           close (lun_output)
+          if (lroot) then
+            allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
+            call collect_grid (x, y, z, gx, gy, gz)
+          else
+            call collect_grid (x, y, z)
+          endif
+!
           open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = t
           write (lun_output) t_sp
-          write (lun_output) gx, gy, gz, dx, dy, dz
-          deallocate (gx, gy, gz)
+          if (lroot) then
+            write (lun_output) gx, gy, gz, dx, dy, dz
+            deallocate (gx, gy, gz)
+          endif
         else
           call collect_grid (x, y, z)
-!
-          if (lfirst_proc_xy) then
-            close (lun_output)
-            open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
-            t_sp = t
-            write (lun_output) t_sp
-          endif
         endif
       endif
 !
@@ -492,30 +491,24 @@ contains
 !
       ! read additional data
       if (lread_add) then
-        if (lroot) then
-          allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
-!
+        if (lfirst_proc_xy) then
+          close (lun_input)
           rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
           num_rec = int (mz, kind=8) * int (nv*sizeof_real(), kind=8)
-          close (lun_input)
           open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
           call fseek_pos (lun_input, rec_len, num_rec, 0)
           read (lun_input) t_sp
-          read (lun_input) gx, gy, gz, dx, dy, dz
-          call distribute_grid (x, y, z, gx, gy, gz)
-          deallocate (gx, gy, gz)
+          if (lroot) then
+            allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
+            read (lun_input) gx, gy, gz, dx, dy, dz
+            call distribute_grid (x, y, z, gx, gy, gz)
+            deallocate (gx, gy, gz)
+          else
+            call distribute_grid (x, y, z)
+          endif
         else
           call distribute_grid (x, y, z)
-!
-          if (lfirst_proc_xy) then
-            rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
-            num_rec = int (mz, kind=8) * int (nv*sizeof_real(), kind=8)
-            close (lun_input)
-            open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
-            call fseek_pos (lun_input, rec_len, num_rec, 0)
-            read (lun_input) t_sp
-          endif
         endif
         if (lfirst_proc_xy) t_test = t_sp
         call mpibcast_real (t_sp)
