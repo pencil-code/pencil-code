@@ -590,7 +590,7 @@ module Special
         if (lfirst.and.ldt) then
           rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*gamma*p%cp1*tau_inv_spitzer)
           advec_uu = max(advec_uu,rhs/dxmax_pencil)
-          if (idiag_dtspitzer/=0) call max_mn_name(rhs/cdt,idiag_dtspitzer,l_dt=.true.)
+          if (idiag_dtspitzer/=0) call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
           !
           dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
         endif
@@ -3831,7 +3831,7 @@ module Special
           if (filter_strength(j)/=0.) then
             call del6(f,j,del6_fj,IGNOREDX=.true.)
             df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
-                filter_strength(j)*del6_fj/dt
+                filter_strength(j)*del6_fj/dt_beta_ts(itsub)
           endif
         enddo
       endif
