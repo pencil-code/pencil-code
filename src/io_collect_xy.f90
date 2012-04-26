@@ -79,13 +79,9 @@ contains
 !
 !  04-jul-2011/Boudin.KIS: coded
 !
-      use Mpicomm, only: lroot
-!
 !  identify version number
 !
       if (lroot) call svn_id ("$Id$")
-      if (.not. lseparate_persist) call fatal_error ('io_collect_xy', &
-          "This module only works with the setting lseparate_persist=.true.")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -98,7 +94,6 @@ contains
 !  02-oct-2002/wolf: coded
 !
       use General, only: safe_character_assign, itoa
-      use Mpicomm, only: lroot
 !
       character (len=intlen) :: chproc
 !
@@ -127,7 +122,7 @@ contains
 !
 !  05-jul-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx), intent(in) :: x
       real, dimension(my), intent(in) :: y
@@ -182,7 +177,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -268,7 +263,7 @@ contains
 !
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, globalize_xy, mpisend_real, mpirecv_real
+      use Mpicomm, only: globalize_xy, mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv
@@ -337,16 +332,16 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
+      if (lfirst_proc_xy) then
+        if (persist_initialized) then
+          if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
+          write (lun_output) id_block_PERSISTENT
+          persist_initialized = .false.
+          if (.not. lfirst_proc_xy) close (lun_input)
+        endif
 !
-      if (persist_initialized) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
-        write (lun_output) id_block_PERSISTENT
-        persist_initialized = .false.
-        if (.not. lfirst_proc_xy) close (lun_input)
+        close (lun_input)
       endif
-!
-      if (lfirst_proc_xy) close (lun_input)
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
@@ -357,7 +352,7 @@ contains
 !
 !  19-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: data
@@ -448,7 +443,7 @@ contains
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, localize_xy, mpisend_real, mpirecv_real, mpibcast_real, stop_it_if_any
+      use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real, stop_it_if_any
       use Syscalls, only: sizeof_real
 !
       character (len=*) :: file
@@ -510,7 +505,7 @@ contains
         else
           call distribute_grid (x, y, z)
         endif
-        if (lfirst_proc_xy) t_test = t_sp
+        t_test = t_sp
         call mpibcast_real (t_sp)
         if (.not. lfirst_proc_xy) t_test = t_sp
         if (t_test /= t_sp) &
@@ -528,7 +523,6 @@ contains
 !  11-Feb-2012/Bourdin.KIS: coded
 !
       if (persist_initialized) then
-        if (.not. lfirst_proc_xy) close (lun_input)
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
@@ -543,16 +537,14 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
-!
       character (len=*), intent(in), optional :: file
 !
       persist_last_id = -max_int
 !
-      if (present (file)) then
-        if (lfirst_proc_xy) close (lun_output)
-        open (lun_output, FILE=trim (directory_dist)//'/'//file, FORM='unformatted', status='replace')
-        if (ip <= 9) write (*,*) 'begin persistent block'
+      if (lfirst_proc_xy .and. present (file)) then
+        close (lun_output)
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
         write (lun_output) id_block_PERSISTENT
       endif
 !
@@ -567,19 +559,15 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
-!
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
       write_persist_id = .true.
       if (.not. persist_initialized) return
 !
-      if (persist_last_id /= id) then
-        if (lroot) then
-          if (ip <= 9) write (*,*) 'write persistent ID '//trim (label)
-          write (lun_output) id
-        endif
+      if (lfirst_proc_xy .and. (persist_last_id /= id)) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent ID '//trim (label)
+        write (lun_output) id
         persist_last_id = id
       endif
 !
@@ -593,43 +581,41 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       logical, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
+      integer :: px, py, partner, alloc_err
       integer, parameter :: tag_log_0D = 700
-      logical, dimension (:,:,:), allocatable :: global
+      logical, dimension (:,:), allocatable :: global
       logical :: buffer
 !
       write_persist_logical_0D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_logical_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        global(ipx+1,ipy+1,ipz+1) = value
+        global(ipx+1,ipy+1) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_logical (buffer, 1, partner, tag_log_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpirecv_logical (buffer, 1, partner, tag_log_0D)
+            global(px+1,py+1) = buffer
           enddo
         enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
         deallocate (global)
       else
-        call mpisend_logical (value, 1, 0, tag_log_0D)
+        call mpisend_logical (value, 1, ipz*nprocxy, tag_log_0D)
       endif
 !
       write_persist_logical_0D = .false.
@@ -642,15 +628,15 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       logical, dimension(:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
+      integer :: px, py, partner, nv, alloc_err
       integer, parameter :: tag_log_1D = 701
-      logical, dimension (:,:,:,:), allocatable :: global
+      logical, dimension (:,:,:), allocatable :: global
       logical, dimension (:), allocatable :: buffer
 !
       write_persist_logical_1D = .true.
@@ -659,28 +645,26 @@ contains
 !
       nv = size (value)
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy,nv), buffer(nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_logical_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        global(ipx+1,ipy+1,ipz+1,:) = value
+        global(ipx+1,ipy+1,:) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_logical (buffer, nv, partner, tag_log_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpirecv_logical (buffer, nv, partner, tag_log_1D)
+            global(px+1,py+1,:) = buffer
           enddo
         enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
         deallocate (global, buffer)
       else
-        call mpisend_logical (value, nv, 0, tag_log_1D)
+        call mpisend_logical (value, nv, ipz*nprocxy, tag_log_1D)
       endif
 !
       write_persist_logical_1D = .false.
@@ -693,43 +677,41 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       integer, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
+      integer :: px, py, partner, alloc_err
       integer, parameter :: tag_int_0D = 702
-      integer, dimension (:,:,:), allocatable :: global
+      integer, dimension (:,:), allocatable :: global
       integer :: buffer
 !
       write_persist_int_0D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_int_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        global(ipx+1,ipy+1,ipz+1) = value
+        global(ipx+1,ipy+1) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_int (buffer, 1, partner, tag_int_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpirecv_int (buffer, 1, partner, tag_int_0D)
+            global(px+1,py+1) = buffer
           enddo
         enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
         deallocate (global)
       else
-        call mpisend_int (value, 1, 0, tag_int_0D)
+        call mpisend_int (value, 1, ipz*nprocxy, tag_int_0D)
       endif
 !
       write_persist_int_0D = .false.
@@ -742,15 +724,15 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       integer, dimension (:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
+      integer :: px, py, partner, nv, alloc_err
       integer, parameter :: tag_int_1D = 703
-      integer, dimension (:,:,:,:), allocatable :: global
+      integer, dimension (:,:,:), allocatable :: global
       integer, dimension (:), allocatable :: buffer
 !
       write_persist_int_1D = .true.
@@ -759,28 +741,26 @@ contains
 !
       nv = size (value)
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy,nv), buffer(nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_int_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        global(ipx+1,ipy+1,ipz+1,:) = value
+        global(ipx+1,ipy+1,:) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_int (buffer, nv, partner, tag_int_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpirecv_int (buffer, nv, partner, tag_int_1D)
+            global(px+1,py+1,:) = buffer
           enddo
         enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
         deallocate (global, buffer)
       else
-        call mpisend_int (value, nv, 0, tag_int_1D)
+        call mpisend_int (value, nv, ipz*nprocxy, tag_int_1D)
       endif
 !
       write_persist_int_1D = .false.
@@ -793,43 +773,32 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: collect_xy
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       real, intent(in) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
+      integer :: alloc_err
       integer, parameter :: tag_real_0D = 704
-      real, dimension (:,:,:), allocatable :: global
-      real :: buffer
+      real, dimension (:,:), allocatable :: global
 !
       write_persist_real_0D = .true.
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_real_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        global(ipx+1,ipy+1,ipz+1) = value
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_real (buffer, 1, partner, tag_real_0D)
-              global(px+1,py+1,pz+1) = buffer
-            enddo
-          enddo
-        enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
+        call collect_xy (value, global)
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
         deallocate (global)
       else
-        call mpisend_real (value, 1, 0, tag_real_0D)
+        call collect_xy (value)
       endif
 !
       write_persist_real_0D = .false.
@@ -842,15 +811,15 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
       real, dimension (:), intent(in) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
+      integer :: px, py, partner, nv, alloc_err
       integer, parameter :: tag_real_1D = 705
-      real, dimension (:,:,:,:), allocatable :: global
+      real, dimension (:,:,:), allocatable :: global
       real, dimension (:), allocatable :: buffer
 !
       write_persist_real_1D = .true.
@@ -859,28 +828,26 @@ contains
 !
       nv = size (value)
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), buffer(nv), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy,nv), buffer(nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_real_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        global(ipx+1,ipy+1,ipz+1,:) = value
+        global(ipx+1,ipy+1,:) = value
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpirecv_real (buffer, nv, partner, tag_real_1D)
-              global(px+1,py+1,pz+1,:) = buffer
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpirecv_real (buffer, nv, partner, tag_real_1D)
+            global(px+1,py+1,:) = buffer
           enddo
         enddo
-        if (ip <= 9) write (*,*) 'write persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
         write (lun_output) global
 !
         deallocate (global, buffer)
       else
-        call mpisend_real (value, nv, 0, tag_real_1D)
+        call mpisend_real (value, nv, ipz*nprocxy, tag_real_1D)
       endif
 !
       write_persist_real_1D = .false.
@@ -893,14 +860,12 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
-!
       character (len=*), intent(in), optional :: file
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
-      if (present (file)) then
-        if (lfirst_proc_xy) close (lun_input)
-        open (lun_input, FILE=trim (directory_dist)//'/'//file, FORM='unformatted', status='old')
+      if (lfirst_proc_xy .and. present (file)) then
+        close (lun_input)
+        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
       endif
 !
       init_read_persist = .false.
@@ -914,7 +879,7 @@ contains
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int
+      use Mpicomm, only: mpibcast_int
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -926,8 +891,8 @@ contains
       lcatch_error = .false.
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
-      if (lroot) then
-        if (ip <= 9) write (*,*) 'read persistent ID '//trim (label)
+      if (lfirst_proc_xy) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent ID '//trim (label)
         if (lcatch_error) then
           read (lun_input, iostat=io_err) id
           if (io_err /= 0) id = -max_int
@@ -949,36 +914,34 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
+      integer :: px, py, partner, alloc_err
       integer, parameter :: tag_log_0D = 706
-      logical, dimension (:,:,:), allocatable :: global
+      logical, dimension (:,:), allocatable :: global
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_logical_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
         read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
+        value = global(ipx+1,ipy+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_logical (global(px+1,py+1,pz+1), 1, partner, tag_log_0D)
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpisend_logical (global(px+1,py+1), 1, partner, tag_log_0D)
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_logical (value, 1, 0, tag_log_0D)
+        call mpirecv_logical (value, 1, ipz*nprocxy, tag_log_0D)
       endif
 !
       read_persist_logical_0D = .false.
@@ -991,38 +954,36 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
+      integer :: px, py, partner, nv, alloc_err
       integer, parameter :: tag_log_1D = 707
-      logical, dimension (:,:,:,:), allocatable :: global
+      logical, dimension (:,:,:), allocatable :: global
 !
       nv = size (value)
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_logical_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
         read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
+        value = global(ipx+1,ipy+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_logical (global(px+1,py+1,pz+1,:), nv, partner, tag_log_1D)
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpisend_logical (global(px+1,py+1,:), nv, partner, tag_log_1D)
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_logical (value, nv, 0, tag_log_1D)
+        call mpirecv_logical (value, nv, ipz*nprocxy, tag_log_1D)
       endif
 !
       read_persist_logical_1D = .false.
@@ -1035,36 +996,34 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
+      integer :: px, py, partner, alloc_err
       integer, parameter :: tag_int_0D = 708
-      integer, dimension (:,:,:), allocatable :: global
+      integer, dimension (:,:), allocatable :: global
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_int_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
         read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
+        value = global(ipx+1,ipy+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_int (global(px+1,py+1,pz+1), 1, partner, tag_int_0D)
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpisend_int (global(px+1,py+1), 1, partner, tag_int_0D)
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_int (value, 1, 0, tag_int_0D)
+        call mpirecv_int (value, 1, ipz*nprocxy, tag_int_0D)
       endif
 !
       read_persist_int_0D = .false.
@@ -1077,38 +1036,36 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
+      integer :: px, py, partner, nv, alloc_err
       integer, parameter :: tag_int_1D = 709
-      integer, dimension (:,:,:,:), allocatable :: global
+      integer, dimension (:,:,:), allocatable :: global
 !
       nv = size (value)
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_int_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
         read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
+        value = global(ipx+1,ipy+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_int (global(px+1,py+1,pz+1,:), nv, partner, tag_int_1D)
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpisend_int (global(px+1,py+1,:), nv, partner, tag_int_1D)
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_int (value, nv, 0, tag_int_1D)
+        call mpirecv_int (value, nv, ipz*nprocxy, tag_int_1D)
       endif
 !
       read_persist_int_1D = .false.
@@ -1121,36 +1078,34 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
 !
-      integer :: px, py, pz, partner, alloc_err
+      integer :: px, py, partner, alloc_err
       integer, parameter :: tag_real_0D = 710
-      real, dimension (:,:,:), allocatable :: global
+      real, dimension (:,:), allocatable :: global
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_real_0D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
         read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1)
+        value = global(ipx+1,ipy+1)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_real (global(px+1,py+1,pz+1), 1, partner, tag_real_0D)
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpisend_real (global(px+1,py+1), 1, partner, tag_real_0D)
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_real (value, 1, 0, tag_real_0D)
+        call mpirecv_real (value, 1, ipz*nprocxy, tag_real_0D)
       endif
 !
       read_persist_real_0D = .false.
@@ -1163,38 +1118,36 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
 !
-      integer :: px, py, pz, partner, nv, alloc_err
+      integer :: px, py, partner, nv, alloc_err
       integer, parameter :: tag_real_1D = 711
-      real, dimension (:,:,:,:), allocatable :: global
+      real, dimension (:,:,:), allocatable :: global
 !
       nv = size (value)
 !
-      if (lroot) then
-        allocate (global(nprocx,nprocy,nprocz,nv), stat=alloc_err)
+      if (lfirst_proc_xy) then
+        allocate (global(nprocx,nprocy,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_real_1D', &
             'Could not allocate memory for global buffer', .true.)
 !
-        if (ip <= 9) write (*,*) 'read persistent '//trim (label)
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
         read (lun_input) global
-        value = global(ipx+1,ipy+1,ipz+1,:)
+        value = global(ipx+1,ipy+1,:)
         do px = 0, nprocx-1
           do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = px + py*nprocx + pz*nprocxy
-              if (iproc == partner) cycle
-              call mpisend_real (global(px+1,py+1,pz+1,:), nv, partner, tag_real_1D)
-            enddo
+            partner = px + py*nprocx + ipz*nprocxy
+            if (iproc == partner) cycle
+            call mpisend_real (global(px+1,py+1,:), nv, partner, tag_real_1D)
           enddo
         enddo
 !
         deallocate (global)
       else
-        call mpirecv_real (value, nv, 0, tag_real_1D)
+        call mpirecv_real (value, nv, ipz*nprocxy, tag_real_1D)
       endif
 !
       read_persist_real_1D = .false.
@@ -1269,8 +1222,6 @@ contains
 !
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
-      use Mpicomm, only: lroot
-!
       character (len=*) :: file
 !
       real, dimension (:), allocatable :: gx, gy, gz
@@ -1310,7 +1261,7 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpibcast_real
+      use Mpicomm, only: mpibcast_int, mpibcast_real
 !
       character (len=*) :: file
 !
