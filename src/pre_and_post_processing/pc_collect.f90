@@ -331,8 +331,7 @@ program pc_collect
   open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
   t_sp = t
   write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-!
-  call output_snap_finalize()
+  close (lun_output)
 !
   if (IO_strategy == 'dist') then
     ! write global grid:
