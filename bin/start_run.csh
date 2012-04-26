@@ -154,14 +154,17 @@ foreach dir ($procdirs $subdirs)
   set ddir = "$datadir/$dir"
   if (! -e $ddir) then
     mkdir $ddir
-  else
+  else if (! -e NOERASE) then
     # Clean up
-    # when used with lnowrite=T, for example, we don't want to remove var.dat:
-    set list = \
-        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice* $ddir/PVAR* $ddir/SPVAR*`
-    if (! -e NOERASE) then
+    rm -f $datadir/../driver/pts_[1-9].dat $datadir/../driver/seed_[1-9].dat >& /dev/null
+    if ($dir == "allprocs") then
+      rm -f $ddir/VAR[0-9]* $ddir/PERS[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list >& /dev/null
+    else
+      rm -f $ddir/VAR[0-9]* $ddir/PERS[0-9]* $ddir/TAVG[0-9]* $ddir/*.info $ddir/slice* $ddir/PVAR[0-9]* $ddir/SPVAR[0-9]* $ddir/varN.list >& /dev/null
+      # in some cases var.dat needs to be conserved (eg. lnowrite=T)
+      set list = `/bin/ls $ddir/*.dat`
       foreach rmfile ($list)
-        if ($rmfile != $ddir/var.dat) rm -f $rmfile >& /dev/null
+        if ($rmfile != $ddir/var.dat && $rmfile != $ddir/pers.dat) rm -f $rmfile >& /dev/null
       end
     endif
   endif
@@ -174,6 +177,7 @@ if (! -e NOERASE) then
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
         $datadir/averages/* >& /dev/null
   if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
+  rm -f ioerrors.log >& /dev/null
 endif
 
 # If local_binary is used, copy executable to $SCRATCH_DIR of master node
