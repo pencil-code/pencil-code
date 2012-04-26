@@ -82,6 +82,8 @@ contains
 !  identify version number
 !
       if (lroot) call svn_id ("$Id$")
+      if (ldistribute_persist .and. .not. lseparate_persist) &
+          call fatal_error ('io_collect_xy', "For distibuted persistent variables, this module needs lseparate_persist=T")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -332,15 +334,13 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist .or. lfirst_proc_xy) then
         if (persist_initialized) then
           if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
           write (lun_output) id_block_PERSISTENT
           persist_initialized = .false.
-          if (.not. lfirst_proc_xy) close (lun_input)
         endif
-!
-        close (lun_input)
+        close (lun_output)
       endif
 !
     endsubroutine output_snap_finalize
@@ -527,7 +527,7 @@ contains
         persist_last_id = -max_int
       endif
 !
-      if (lfirst_proc_xy) close (lun_input)
+      if (ldistribute_persist .or. lfirst_proc_xy) close (lun_input)
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
@@ -541,10 +541,12 @@ contains
 !
       persist_last_id = -max_int
 !
-      if (lfirst_proc_xy .and. present (file)) then
-        close (lun_output)
-        open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+      if (ldistribute_persist .or. lfirst_proc_xy) then
         if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
+        if (present (file)) then
+          if (lfirst_proc_xy) close (lun_output)
+          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+        endif
         write (lun_output) id_block_PERSISTENT
       endif
 !
@@ -565,7 +567,7 @@ contains
       write_persist_id = .true.
       if (.not. persist_initialized) return
 !
-      if (lfirst_proc_xy .and. (persist_last_id /= id)) then
+      if ((ldistribute_persist .or. lfirst_proc_xy) .and. (persist_last_id /= id)) then
         if (lroot .and. (ip <= 9)) write (*,*) 'write persistent ID '//trim (label)
         write (lun_output) id
         persist_last_id = id
@@ -596,7 +598,11 @@ contains
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
+        write (lun_output) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_logical_0D', &
             'Could not allocate memory for global buffer', .true.)
@@ -645,7 +651,11 @@ contains
 !
       nv = size (value)
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
+        write (lun_output) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy,nv), buffer(nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_logical_1D', &
             'Could not allocate memory for global buffer', .true.)
@@ -692,7 +702,11 @@ contains
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
+        write (lun_output) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_int_0D', &
             'Could not allocate memory for global buffer', .true.)
@@ -741,7 +755,11 @@ contains
 !
       nv = size (value)
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
+        write (lun_output) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy,nv), buffer(nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_int_1D', &
             'Could not allocate memory for global buffer', .true.)
@@ -787,7 +805,11 @@ contains
       if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
+        write (lun_output) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_real_0D', &
             'Could not allocate memory for global buffer', .true.)
@@ -828,7 +850,11 @@ contains
 !
       nv = size (value)
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'write persistent '//trim (label)
+        write (lun_output) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy,nv), buffer(nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('write_persist_real_1D', &
             'Could not allocate memory for global buffer', .true.)
@@ -862,10 +888,12 @@ contains
 !
       character (len=*), intent(in), optional :: file
 !
-      if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
-      if (lfirst_proc_xy .and. present (file)) then
-        close (lun_input)
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
+      if (ldistribute_persist .or. lfirst_proc_xy) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
+        if (present (file)) then
+          if (lfirst_proc_xy) close (lun_input)
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old')
+        endif
       endif
 !
       init_read_persist = .false.
@@ -891,11 +919,13 @@ contains
       lcatch_error = .false.
       if (present (lerror_prone)) lcatch_error = lerror_prone
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist .or. lfirst_proc_xy) then
         if (lroot .and. (ip <= 9)) write (*,*) 'read persistent ID '//trim (label)
         if (lcatch_error) then
-          read (lun_input, iostat=io_err) id
-          if (io_err /= 0) id = -max_int
+          if (lfirst_proc_xy) then
+            read (lun_input, iostat=io_err) id
+            if (io_err /= 0) id = -max_int
+          endif
         else
           read (lun_input) id
         endif
@@ -923,7 +953,11 @@ contains
       integer, parameter :: tag_log_0D = 706
       logical, dimension (:,:), allocatable :: global
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
+        read (lun_input) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_logical_0D', &
             'Could not allocate memory for global buffer', .true.)
@@ -965,7 +999,11 @@ contains
 !
       nv = size (value)
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
+        read (lun_input) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_logical_1D', &
             'Could not allocate memory for global buffer', .true.)
@@ -1005,7 +1043,11 @@ contains
       integer, parameter :: tag_int_0D = 708
       integer, dimension (:,:), allocatable :: global
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
+        read (lun_input) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_int_0D', &
             'Could not allocate memory for global buffer', .true.)
@@ -1047,7 +1089,11 @@ contains
 !
       nv = size (value)
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
+        read (lun_input) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_int_1D', &
             'Could not allocate memory for global buffer', .true.)
@@ -1087,7 +1133,11 @@ contains
       integer, parameter :: tag_real_0D = 710
       real, dimension (:,:), allocatable :: global
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
+        read (lun_input) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_real_0D', &
             'Could not allocate memory for global buffer', .true.)
@@ -1129,7 +1179,11 @@ contains
 !
       nv = size (value)
 !
-      if (lfirst_proc_xy) then
+      if (ldistribute_persist) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'read persistent '//trim (label)
+        read (lun_input) value
+!
+      elseif (lfirst_proc_xy) then
         allocate (global(nprocx,nprocy,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_persist_real_1D', &
             'Could not allocate memory for global buffer', .true.)

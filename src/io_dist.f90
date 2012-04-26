@@ -77,6 +77,7 @@ contains
 !  identify version number
 !
       if (lroot) call svn_id("$Id$")
+      ldistribute_persist = .true.
 !
     endsubroutine register_io
 !***********************************************************************
