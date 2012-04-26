@@ -846,7 +846,7 @@ module Special
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
-      if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
+      if (cool_RTV /= 0.) call calc_heat_cool_RTV(f,df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
       if (tau_inv_newton_mark /= 0.) call calc_newton_mark(f,df,p)
@@ -1651,7 +1651,7 @@ module Special
 !
     endsubroutine calc_heatcond_glnTT_iso
 !***********************************************************************
-    subroutine calc_heat_cool_RTV(df,p)
+    subroutine calc_heat_cool_RTV(f,df,p)
 !
 !  Computes the radiative loss in the optical thin corona.
 !  Zero order estimation for the electron number densities by
@@ -1666,6 +1666,7 @@ module Special
       use Diagnostics,     only: max_mn_name
       use Sub, only: cubic_step
 !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
@@ -1713,6 +1714,9 @@ module Special
         df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT)-rtv_cool
 !
       else if (ltemperature.and.(.not.ltemperature_nolog)) then
+!
+! limit rtv by hand to avoid temperatures below 6000. K
+        rtv_cool = min(rtv_cool,(f(l1:l2,m,n,ilnTT) -alog(6000./unit_temperature)/dt_beta_ts(itsub)))
         rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
 !
@@ -1799,7 +1803,7 @@ module Special
             ordinate=intlnQ(j) - slope*intlnT(j)
 !
             get_lnQ(i) = slope*lnTT(i) + ordinate
-            delta_lnTT(i) = intlnT(j+1) - intlnT(j)
+            delta_lnTT(i) = 0.5 !intlnT(j+1) - intlnT(j)
             notdone = .false.
           else
             j = j + sign(1.,lnTT(i)-intlnT(j))
