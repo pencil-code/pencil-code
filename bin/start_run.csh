@@ -156,7 +156,6 @@ foreach dir ($procdirs $subdirs)
     mkdir $ddir
   else if (! -e NOERASE) then
     # Clean up
-    rm -f $datadir/../driver/pts_[1-9].dat $datadir/../driver/seed_[1-9].dat >& /dev/null
     if ($dir == "allprocs") then
       rm -f $ddir/VAR[0-9]* $ddir/PERS[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list >& /dev/null
     else
@@ -172,6 +171,7 @@ end
 
 # Clean up previous runs
 if (! -e NOERASE) then
+  rm -f $datadir/../driver/pts_[1-9].dat $datadir/../driver/seed_[1-9].dat >& /dev/null
   if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) \
       mv $datadir/time_series.dat $datadir/time_series.`timestr`
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
