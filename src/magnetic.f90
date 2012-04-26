@@ -1010,7 +1010,9 @@ module Magnetic
               'there was a problem when sharing eta')
         endif
       endif
-!KK
+!
+!  precalculating fixed (on timescales larger than tau) vectorpotential
+!
   if (tau_relprof/=0.0) then
     tau_relprof1=1./tau_relprof
     select case (A_relaxprofile)
@@ -1032,7 +1034,7 @@ module Magnetic
       A_relprof(:,:,:,3)=0.
     endselect
   endif
-!KK
+!
 !
 !  write profile (uncomment for debugging)
 !
@@ -2999,14 +3001,12 @@ module Magnetic
 !
       if (tau_aa_exterior/=0.0) call calc_tau_aa_exterior(f,df)
 !
-!KK
 !  Relaxing A towards a given profile A_0 on a timescale tau_relprof, 
 !  note that tau_relprof*u_rms*kf>>1  for this relaxation to affect only the mean fields.
 !
       if (tau_relprof/=0.0) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
       endif
-!KK
 !
 !  Add ``va^2/dx^2'' contribution to timestep.
 !  Consider advective timestep only when lhydro=T.
