@@ -224,6 +224,24 @@ contains
 !
     endsubroutine output_form_int_0D
 !***********************************************************************
+    subroutine fseek_pos(unit, rec_len, num_rec, reference)
+!
+!  Non-functional dummy routine.
+!
+!  25-Apr-2012/Bourdin.KIS: coded
+!
+      use General, only: itoa
+!
+      integer, intent(in) :: unit
+      integer(kind=8), intent(in) :: rec_len, num_rec
+      integer, intent(in) :: reference
+!
+      if (lroot) write (*,*) 'fseek_pos:', unit, rec_len, num_rec, reference
+      call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
+          "not available for the distributed IO module.", .true.)
+!
+    endsubroutine fseek_pos
+!***********************************************************************
     logical function init_write_persist(file)
 !
 !  Initialize writing of persistent data to snapshot file.
