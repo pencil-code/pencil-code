@@ -2292,19 +2292,19 @@ k_loop:   do while (.not. (k>npar_loc))
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
 !
+          case ('const','plain')
+            if (lheader) print*, 'dvvp_dt: Constant gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + gravx
+!
           case ('linear')
             if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 nu_epicycle2*fp(1:npar_loc,ixp)
 !
-          case ('plain')
-            if (lheader) print*, 'dvvp_dt: Plain gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - gravx
-!
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + &
                 gravx*sin(kx_gg*fp(1:npar_loc,ixp))
 !
           case default
@@ -2326,19 +2326,19 @@ k_loop:   do while (.not. (k>npar_loc))
           case ('zero')
             if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
 !
+          case ('const','plain')
+            if (lheader) print*, 'dvvp_dt: Constant gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + gravz
+!
           case ('linear')
             if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
             dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
                 nu_epicycle2*fp(1:npar_loc,izp)
 !
-          case ('plain')
-            if (lheader) print*, 'dvvp_dt: Plain gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - gravz
-!
           case ('sinusoidal')
             if (lheader) &
                 print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + &
                 gravz*sin(kz_gg*fp(1:npar_loc,izp))
 !
           case default
