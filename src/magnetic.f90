@@ -199,8 +199,10 @@ module Magnetic
   real :: forcing_continuous_aa_phasefact=1.0
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
+  real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0 
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
+  real, dimension(nx,ny,nz,3) :: A_relprof
   real, dimension(mz) :: coskz,sinkz,eta_z
   real, dimension(mz,3) :: geta_z
   real, dimension(mx) :: eta_x
@@ -216,6 +218,7 @@ module Magnetic
   logical :: lmean_friction=.false.
   logical :: lhalox=.false.
   logical :: lrun_initaa=.false.
+  character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: xdep_profile='two-step'
   character (len=labellen) :: eta_xy_profile='schnack89'
@@ -242,7 +245,7 @@ module Magnetic
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
-      magnetic_xaver_range
+      magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof, k_relprof
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -729,7 +732,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      integer :: i,ierr
+      integer :: i,j,ierr
       real :: J_ext2
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
@@ -1007,6 +1010,29 @@ module Magnetic
               'there was a problem when sharing eta')
         endif
       endif
+!KK
+  if (tau_relprof/=0.0) then
+    tau_relprof1=1./tau_relprof
+    select case (A_relaxprofile)
+    case('0,coskz,0')
+      A_relprof(:,:,:,1)=0.
+      do i=1,nx
+        do j=1,ny      
+          A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
+        enddo
+      enddo
+      A_relprof(:,:,:,3)=0.
+    case('sinkz,coskz,0')
+      do i=1,nx
+        do j=1,ny      
+          A_relprof(i,j,:,1)=amp_relprof*sin(k_relprof*z(n1:n2))
+          A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
+        enddo
+      enddo
+      A_relprof(:,:,:,3)=0.
+    endselect
+  endif
+!KK
 !
 !  write profile (uncomment for debugging)
 !
@@ -1541,6 +1567,9 @@ module Magnetic
       if (lupw_aa) then
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_aij)=.true.
+      endif
+      if (tau_relprof/=0) then
+        lpenc_requested(i_aa)=.true.
       endif
       if (ladvective_gauge) then
         lpenc_requested(i_aa)=.true.
@@ -2969,6 +2998,15 @@ module Magnetic
 !  Possibility of relaxation of A in exterior region.
 !
       if (tau_aa_exterior/=0.0) call calc_tau_aa_exterior(f,df)
+!
+!KK
+!  Relaxing A towards a given profile A_0 on a timescale tau_relprof, 
+!  note that tau_relprof*u_rms*kf>>1  for this relaxation to affect only the mean fields.
+!
+      if (tau_relprof/=0.0) then
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
+      endif
+!KK
 !
 !  Add ``va^2/dx^2'' contribution to timestep.
 !  Consider advective timestep only when lhydro=T.
