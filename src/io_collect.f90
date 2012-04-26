@@ -76,8 +76,6 @@ contains
 !  identify version number
 !
       if (lroot) call svn_id ("$Id$")
-      if (lseparate_persist) call fatal_error ('io_collect', &
-          "This module only works with the setting lseparate_persist=.false.")
 !
     endsubroutine register_io
 !***********************************************************************
