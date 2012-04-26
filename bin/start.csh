@@ -87,13 +87,13 @@ foreach dir ($procdirs $subdirs)
     # Clean up
     rm -f $datadir/../driver/pts_[1-9].dat $datadir/../driver/seed_[1-9].dat >& /dev/null
     if ($dir == "allprocs") then
-      rm -f $ddir/VAR[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list >& /dev/null
+      rm -f $ddir/VAR[0-9]* $ddir/PERS[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list >& /dev/null
     else
-      rm -f $ddir/VAR[0-9]* $ddir/TAVG[0-9]* $ddir/*.info $ddir/slice* $ddir/PVAR[0-9]* $ddir/SPVAR[0-9]* $ddir/varN.list >& /dev/null
+      rm -f $ddir/VAR[0-9]* $ddir/PERS[0-9]* $ddir/TAVG[0-9]* $ddir/*.info $ddir/slice* $ddir/PVAR[0-9]* $ddir/SPVAR[0-9]* $ddir/varN.list >& /dev/null
       # in some cases var.dat needs to be conserved (eg. lnowrite=T)
       set list = `/bin/ls $ddir/*.dat`
       foreach rmfile ($list)
-        if ($rmfile != $ddir/var.dat) rm -f $rmfile >& /dev/null
+        if ($rmfile != $ddir/var.dat && $rmfile != $ddir/pers.dat) rm -f $rmfile >& /dev/null
       end
     endif
   endif
