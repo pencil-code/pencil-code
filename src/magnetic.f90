@@ -200,6 +200,7 @@ module Magnetic
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0 
+  real :: numag=impossible
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nx,ny,nz,3) :: A_relprof
@@ -217,7 +218,7 @@ module Magnetic
   logical :: luse_Bext_in_b2=.false.
   logical :: lmean_friction=.false.
   logical :: lhalox=.false.
-  logical :: lrun_initaa=.false.
+  logical :: lrun_initaa=.false.,lmagneto_friction=.false.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: xdep_profile='two-step'
@@ -245,7 +246,8 @@ module Magnetic
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
-      magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof, k_relprof
+      magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
+      k_relprof,lmagneto_friction,numag
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2237,6 +2239,7 @@ module Magnetic
       endif
 ! jxb
       if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
+
 ! cosjb
       if (lpencil(i_cosjb)) then
         do ix=1,nx
@@ -2437,7 +2440,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
-      real, dimension (nx,3) :: u0ga
+      real, dimension (nx,3) :: u0ga,magfric
       real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -2968,6 +2971,15 @@ module Magnetic
         endif
         if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
                                      maxval(advec_hall)
+      endif
+!
+! Add jxb/(b^2\nu) Magneto-Frictional velocity to uxb term
+!
+      if (lmagneto_friction) then
+        do ix=1, nx
+          magfric(ix,1:3)=p%jxbxb(ix,1:3)/(numag*p%b2(ix))
+        end do
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+magfric(1:nx,1:3)
       endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
