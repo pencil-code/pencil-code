@@ -224,7 +224,7 @@ else if ($hn =~ *.kis.uni-freiburg.de) then
   echo "KIS machines - Freiburg"
   set mpirun = /opt/local/mpich/bin/mpirun
 
-else if (($hn =~ curie[0-9]+) || ($hn =~ *.c-curie.tgcc.ccc.cea.fr)) then
+else if (($hn =~ curie[0-9]*) || ($hn =~ *.c-curie.tgcc.ccc.cea.fr)) then
   echo "Curie cluster - CEA France"
   set mpirun = ccc_mprun
 
