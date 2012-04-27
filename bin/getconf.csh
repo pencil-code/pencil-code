@@ -379,8 +379,8 @@ else if ($hn =~ compute-*.local ) then
 # echo "limit stacksize 524288"
 # echo "OMP_NUM_THREADS" $OMP_NUM_THREADS
   #
-  setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
-  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+  #setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
+  #set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
   set $mpirun=mpiexec
   set mpirunops = " -genv I_MPI_DEVICE rdssm:OpenIB-cma -machinefile $PBS_NODEFILE"
   cp $PBS_NODEFILE machines
