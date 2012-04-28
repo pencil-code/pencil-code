@@ -74,10 +74,12 @@ module Equ
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: df_iuu_pencil
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,maxdiffus,maxdiffus2,maxdiffus3
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
+      real, dimension(1)   :: mass_per_proc
       integer :: iv
       integer :: ivar1,ivar2
       real :: umax = 0.
@@ -337,11 +339,11 @@ module Equ
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
 !
-!        call timing('pde','before lanelastic',mnloop=.true.)
-!        if (lanelastic) then
-!          df_iuu_pencil = df(l1:l2,m,n,iuu:iuu+2)
-!          df(l1:l2,m,n,iuu:iuu+2)=0.0
-!        endif
+        call timing('pde','before lanelastic',mnloop=.true.)
+        if (lanelastic) then
+          df_iuu_pencil = df(l1:l2,m,n,iuu:iuu+2)
+          df(l1:l2,m,n,iuu:iuu+2)=0.0
+        endif
 !
 !        if (loptimise_ders) der_call_count=0 !DERCOUNT
 !
@@ -821,15 +823,15 @@ module Equ
 !  Fill in the rhs of the poisson equation and restore the df(:,:,:,iuu) array
 !  for anelastic case
 !
-!        if (lanelastic) then
-!!          call calc_pencils_density(f,p)
-!          f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
-!          f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
-!          f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
-!          df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
-!                                    df(l1:l2,m,n,iuu:iuu+2)
-!          call sum_mn(p%rho,mass_per_proc(1))
-!        endif
+        if (lanelastic) then
+!          call calc_pencils_density(f,p)
+          f(l1:l2,m,n,irhs) = p%rho*df(l1:l2,m,n,iuu)
+          f(l1:l2,m,n,irhs+1) = p%rho*df(l1:l2,m,n,iuu+1)
+          f(l1:l2,m,n,irhs+2) = p%rho*df(l1:l2,m,n,iuu+2)
+          df(l1:l2,m,n,iuu:iuu+2) = df_iuu_pencil(1:nx,1:3) +&
+                                    df(l1:l2,m,n,iuu:iuu+2)
+          call sum_mn(p%rho,mass_per_proc(1))
+        endif
         call timing('pde','end of mn loop',mnloop=.true.)
 !
 !  End of loops over m and n.
@@ -840,7 +842,7 @@ module Equ
 !
 !  Finish the job for the anelastic approximation
 !
-!      if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
+      if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 !
