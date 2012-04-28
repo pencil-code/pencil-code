@@ -10,6 +10,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lADI = .true.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
 ! COMMUNICATED AUXILIARIES 1

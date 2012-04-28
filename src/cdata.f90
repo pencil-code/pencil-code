@@ -550,7 +550,6 @@ module Cdata
 !
 !  Implicit advance of the radiative diffusion in the temperature equation.
 !
-  logical :: lADI=.false.
   real, dimension (mx) :: hcondADI
 !
 !  Particle-mesh schemes, such as drag force and particle self-gravity,
