@@ -575,7 +575,7 @@ program run
 !
     if (ltestperturb) call testperturb_finalize(f)
 !
-    if (lanelastic) call boussinesq(f)
+    if (lboussinesq) call boussinesq(f)
 !
     if (lroot) icount=icount+1  !  reliable loop count even for premature exit
 !

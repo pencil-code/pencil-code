@@ -584,7 +584,7 @@ module Entropy
       endif
 !
       if (lcalc_heat_cool) then
-        if (.not. lanelastic) then
+        if (ldensity) then
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_TT)=.true.
           lpenc_requested(i_TT1)=.true.
@@ -592,7 +592,7 @@ module Entropy
         endif
         if (lgravr) then
           lpenc_requested(i_r_mn)=.true.
-          if (lanelastic) lpenc_requested(i_evr)=.true.
+          if (lboussinesq) lpenc_requested(i_evr)=.true.
         endif
       endif
 !
@@ -941,9 +941,9 @@ module Entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
       endif
 !
-!  Boussinesq/Anelastic
+!  Boussinesq approximation
 !
-      if (lanelastic) then
+      if (lboussinesq) then
         if (lsphere_in_a_box) then
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*(     &
           f(l1:l2,m,n,iux)*p%evr(:,1)+f(l1:l2,m,n,iuy)*p%evr(:,2)+ &
@@ -1177,7 +1177,7 @@ module Entropy
       if (headtt) print*,'enter calc_heat_cool', rcool, wcool, cool, cs20
 !
       if (lgravr) then
-        if (lanelastic) then
+        if (lboussinesq) then
           prof = step(p%r_mn,r_ext,wcool)
           heat = -cool*prof
           prof = 1.-step(p%r_mn,r_int,wcool)

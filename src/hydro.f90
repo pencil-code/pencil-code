@@ -1421,7 +1421,7 @@ module Hydro
 !
       if (lisotropic_advection) lpenc_requested(i_u2)=.true.
 !
-      if (lanelastic.and.lsphere_in_a_box) lpenc_requested(i_evr)=.true.
+      if (lboussinesq.and.lsphere_in_a_box) lpenc_requested(i_evr)=.true.
 !
 !  video pencils
 !
@@ -1855,9 +1855,9 @@ module Hydro
      if (ekman_friction/=0) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ekman_friction*p%uu
 !
-!  Boussinesq or anelastic
+!  Boussinesq approximation
 !
-     if (lanelastic) then
+     if (lboussinesq) then
        if (lsphere_in_a_box) then
          do j=1,3
            ju=j+iuu-1
