@@ -8,6 +8,7 @@
 !
 ! CPARAM logical, parameter :: ldensity = .true.
 ! CPARAM logical, parameter :: lanelastic = .false.
+! CPARAM logical, parameter :: lboussinesq = .false.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
