@@ -1300,4 +1300,15 @@ module Density
 !
     endsubroutine impose_density_floor
 !***********************************************************************
+    subroutine boussinesq(f)
+!
+!  23-mar-2012/dintrans: coded
+!  dummy routine for the Boussinesq approximation
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine boussinesq
+!***********************************************************************
 endmodule Density
