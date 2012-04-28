@@ -70,7 +70,7 @@ module Gravity
   logical :: lnumerical_equilibrium=.false.
   logical :: lxyzdependence=.false.
   logical :: lcalc_zinfty=.false.
-  logical :: lboussinesq=.false.
+  logical :: lboussinesq_grav=.false.
   real :: g0=0.0
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
   real :: kappa_x1=0.0, kappa_x2=0.0, kappa_z1=0.0, kappa_z2=0.0
@@ -83,7 +83,7 @@ module Gravity
       ss_bot, ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
-      lboussinesq, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
+      lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const
 !
   namelist /grav_run_pars/ &
@@ -93,7 +93,7 @@ module Gravity
       lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
-      lboussinesq, n_pot, grav_tilt, grav_amp
+      lboussinesq_grav, n_pot, grav_tilt, grav_amp
 !
   integer :: idiag_epot=0
   integer :: idiag_epotmx=0
@@ -326,7 +326,7 @@ module Gravity
         if (lroot) print*,'initialize_gravity: boussinesq gravz=', gravz
         gravz_zpencil=gravz
         potz_zpencil=-gravz*(z-zinfty)
-        lboussinesq=.true.
+        lboussinesq_grav=.true.
 !
       case ('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
         if (headtt) print*,'initialize_gravity: const_zero gravz=', gravz
@@ -529,7 +529,7 @@ module Gravity
 !
 !  Add gravitational acceleration to gas and dust.
 !
-!  The special option lboussinesq=T is applicable when |z|/H  << 1.
+!  The special option lboussinesq_grav=T is applicable when |z|/H  << 1.
 !  However, in the present formulation the resulting equations,
 !  du/dt = -lnrho, and dlnrho/dt=-du/dz, lead to an instability
 !  with the growth rate lambda = (1+i)*sqrt(k/2).
@@ -551,13 +551,13 @@ module Gravity
 !  Add gravity acceleration on gas.
 !
       if (lhydro) then
-        if (lboussinesq) then
+        if (lboussinesq_grav) then
           if (lentropy) then
             if (lgravx_gas) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%ss*p%gg(:,1)
             if (lgravy_gas) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%ss*p%gg(:,2)
             if (lgravz_gas) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%ss*p%gg(:,3)
           else
-            if (headtt) print*,'duu_dt_grav: lboussinesq w/o lentropy not ok!'
+            if (headtt) print*,'duu_dt_grav: lboussinesq_grav w/o lentropy not ok!'
           endif
         else if (lanelastic) then
 ! Now works for the linear anelastic formulation only
