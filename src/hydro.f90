@@ -158,7 +158,8 @@ module Hydro
   character (len=labellen) :: interior_bc_hydro_profile='nothing'
   logical :: lhydro_bc_interior=.false.
   real :: z1_interior_bc_hydro=0.,kz_analysis=1.
-  real :: Shearx=0., rescale_uu=0., Ra=0.0
+  real :: Shearx=0., rescale_uu=0.
+  real :: Ra=0.0, Pr=0.0 ! Boussinesq approximation
 !
   namelist /hydro_run_pars/ &
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
@@ -179,7 +180,7 @@ module Hydro
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
-      hydro_xaver_range, Ra
+      hydro_xaver_range, Ra, Pr
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -743,6 +744,14 @@ module Hydro
         call put_shared_variable('w_forc', w_forc, ierr)
         call put_shared_variable('x_forc', x_forc, ierr)
         call put_shared_variable('dx_forc', dx_forc, ierr)
+      endif
+!
+! share the Prandtl number with the viscosity module
+!
+      if (lrun.and.lboussinesq) then
+        call put_shared_variable('Pr', Pr, ierr)
+        if (ierr/=0) call fatal_error('initialize_hydro:',&
+             'failed to share Pr')
       endif
 !
 ! check if we are solving the force-free equations in parts of domain
@@ -1861,10 +1870,10 @@ module Hydro
        if (lsphere_in_a_box) then
          do j=1,3
            ju=j+iuu-1
-           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+Ra*f(l1:l2,m,n,iTT)*p%evr(:,j)
+           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
          enddo
        else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*f(l1:l2,m,n,iTT)
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT)
        endif
      endif
 !

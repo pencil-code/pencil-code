@@ -46,6 +46,7 @@ module Viscosity
   real, dimension(:), pointer :: etat_z, detat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof
+  real, pointer :: Pr ! get Prandtl number from hydro
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
   logical :: lvisc_rho_nu_const=.false.
@@ -395,6 +396,16 @@ module Viscosity
       if (ierr/=0) call stop_it("initialize_viscosity: " &
           // "problem getting shared var lviscosity_heat")
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
+!
+      if (lrun.and.lboussinesq) then
+        call get_shared_variable('Pr',Pr,ierr)
+        if (ierr/=0) call stop_it("initialize_viscosity: " &
+          // "problem getting shared Pr from hydro")
+        nu=Pr
+        lvisc_simplified=.true.
+        if (lroot) print*,'viscosity: viscous force Pr*del2v with Pr=',Pr
+      endif
+!
 ! DM Note:
 ! initialization of lambda should come after sharing the llambda_effect
 ! variable because even if there is no lambda_effect that has to be
