@@ -1430,7 +1430,10 @@ module Hydro
 !
       if (lisotropic_advection) lpenc_requested(i_u2)=.true.
 !
-      if (lboussinesq.and.lsphere_in_a_box) lpenc_requested(i_evr)=.true.
+      if (lboussinesq.and.lsphere_in_a_box) then
+        lpenc_requested(i_evr)=.true.
+        lpenc_requested(i_r_mn)=.true.
+      endif
 !
 !  video pencils
 !
@@ -1870,7 +1873,8 @@ module Hydro
        if (lsphere_in_a_box) then
          do j=1,3
            ju=j+iuu-1
-           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
+           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+ &
+           p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
          enddo
        else
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT)

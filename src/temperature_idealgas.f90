@@ -945,8 +945,8 @@ module Entropy
 !
       if (lboussinesq) then
         if (lsphere_in_a_box) then
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*(     &
-          f(l1:l2,m,n,iux)*p%evr(:,1)+f(l1:l2,m,n,iuy)*p%evr(:,2)+ &
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - p%r_mn*beta_bouss*( &
+          f(l1:l2,m,n,iux)*p%evr(:,1)+f(l1:l2,m,n,iuy)*p%evr(:,2)+    &
           f(l1:l2,m,n,iuz)*p%evr(:,3))
         else
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*f(l1:l2,m,n,iuz)
