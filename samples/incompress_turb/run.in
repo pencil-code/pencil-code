@@ -3,8 +3,8 @@
 ! Runtime parameters for the anelastic approximation
 !
 &run_pars
-  cvsid='$Id: run.in 12570 2009-12-14 10:48:02Z boris.dintrans $',
-  nt=201, it1=5, itorder=3
+  cvsid='$Id$',
+  nt=101, it1=10, itorder=3
   dsnap=20.0, dvid=0.2
   lpencil_check=F
   lpencil_check_small=F

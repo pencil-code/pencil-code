@@ -3,7 +3,7 @@
 ! Initialisation parameters for the anelastic problem
 !
 &init_pars
-  cvsid='$Id: start.in 12570 2009-12-14 10:48:02Z boris.dintrans $'
+  cvsid='$Id$'
   lwrite_aux=T
 /
 &eos_init_pars
