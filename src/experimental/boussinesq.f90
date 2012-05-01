@@ -36,7 +36,7 @@ module Density
   logical :: lwrite_debug=.false.
   real, dimension (nz,3) :: glnrhomz
 !
-  include 'density.h'
+  include '../density.h'
 !
   integer :: iorder_z=4
 !
