@@ -197,7 +197,7 @@ module Entropy
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
-        if (llocal_iso)  lpencil_in(i_glnTT)=.true.
+        if (llocal_iso) lpencil_in(i_glnTT)=.true.
       endif
       if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
       if (lpencil_in(i_cs2) .and. gamma_m1/=0.) lpencil_in(i_lnrho)=.true.
