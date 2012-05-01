@@ -1,0 +1,19 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for the anelastic problem
+!
+&init_pars
+  cvsid='$Id: start.in 12570 2009-12-14 10:48:02Z boris.dintrans $'
+  lwrite_aux=T
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+  inituu='anelastic-lin', ampl_uy=-1.0e-1,kx_uu=1.0,kz_uu=1.0
+/
+&density_init_pars
+  initlnrho='anelastic'
+/
+&poisson_init_pars
+/
