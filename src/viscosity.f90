@@ -398,12 +398,14 @@ module Viscosity
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
 !
       if (lrun.and.lboussinesq) then
-        call get_shared_variable('Pr',Pr,ierr)
-        if (ierr/=0) call stop_it("initialize_viscosity: " &
-          // "problem getting shared Pr from hydro")
-        nu=Pr
+        if (lentropy) then
+          call get_shared_variable('Pr',Pr,ierr)
+          if (ierr/=0) call stop_it("initialize_viscosity: " &
+            // "problem getting shared Pr from hydro")
+          nu=Pr
+        endif
         lvisc_simplified=.true.
-        if (lroot) print*,'viscosity: viscous force Pr*del2v with Pr=',Pr
+        if (lroot) print*,'viscosity: viscous force nu*del2v with nu=',nu
       endif
 !
 ! DM Note:
