@@ -226,23 +226,6 @@ module Special
 !
       if (headtt) call identify_bcs('alpm',ialpm)
 !
-!  get meanfield_etat and eta. Leave df(l1:l2,m,n,ialpm) unchanged
-!  if lmagn_mf is false.
-!
-!DM: It seems to be that one cannot solve for alpm without simultaniously
-! solving the mean field equations. Hence I have put a fatal error in
-! the initialization part and removed the if condition from below.
-!      if (lmagn_mf) then
-! The sharing of variables is now done in the initialization part.
-! These commendted lines will be removed in a month from now(Feb 2011)
-!        call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
-!        if (ierr/=0) &
-!            call fatal_error("dspecial_dt: ", &
-!                "cannot get shared var meanfield_etat")
-!        call get_shared_variable('eta',eta,ierr)
-!        if (ierr/=0) &
-!            call fatal_error("dspecial_dt: ", "cannot get shared var eta")
-!
 !  Abbreviations
 !
       alpm=f(l1:l2,m,n,ialpm)
