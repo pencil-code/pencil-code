@@ -333,11 +333,13 @@ module Special
         endif
 !
         if (lfirst.and.ldt) then
-          dt1_max=max(dt1_max,abs(rhs)/cdts)
+          rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+              gamma*p%cp1*tau_inv_spitzer)
+          advec_uu = max(advec_uu,rhs/dxmax_pencil)
+          if (idiag_dtspitzer/=0) &
+              call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
+          !
           dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
-          if (ldiagnos.and.idiag_dtrad /= 0.) then
-            call max_mn_name(rhs/cdts,idiag_dtrad,l_dt=.true.)
-          endif
         endif
       endif
 !
