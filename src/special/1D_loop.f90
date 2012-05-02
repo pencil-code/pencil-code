@@ -33,6 +33,8 @@ module Special
   real :: bullets_x0=0.,bullets_dx=0.
   real :: bullets_t0=0.,bullets_dt=0.
   real :: bullets_h0=0.,hyper3_diffrho=0.
+  logical :: lfilter_farray=.false.
+  real, dimension(mvar) :: filter_strength=0.01
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
@@ -46,7 +48,8 @@ module Special
       lnTT0_chrom,width_lnTT_chrom,width_RTV, &
       exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc, &
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
-      bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho
+      bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho, &
+      lfilter_farray,filter_strength
 !
 ! variables for print.in
 !
@@ -163,8 +166,11 @@ module Special
 !  04-sep-10/bing: coded
 !
       if (tau_inv_spitzer/=0.) then
+        lpenc_requested(i_uglnrho)=.true.
+        lpenc_requested(i_divu)=.true.
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_lnrho)=.true.
+        lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
       endif
@@ -273,13 +279,13 @@ module Special
 !
       use EquationOfState, only: gamma
       use Diagnostics,     only : max_mn_name
-      use Sub, only: div, identify_bcs, multsv
+      use Sub, only: div, identify_bcs, multsv, dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: rhs,div_sp
-      real, dimension (nx,3) :: K1
+      real, dimension(nx) :: rhs,div_sp,tmp
+      real, dimension (nx,3) :: K1,q
       integer :: i
 !
       intent(in) :: p
@@ -293,20 +299,26 @@ module Special
         call identify_bcs('spitzer',ispitzer)
       endif
 !
+      if (lfilter_farray) call filter_farray(f,df)
+
       if (tau_inv_spitzer /= 0.) then
 !
-        call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
+        call multsv(Kspitzer_para*exp(-p%lnrho+3.5*p%lnTT),p%glnTT,K1)
+!
+        q = f(l1:l2,m,n,ispitzerx:ispitzerz)
 !
         do i=1,3
           df(l1:l2,m,n,ispitzer-1+i) = df(l1:l2,m,n,ispitzer-1+i) + &
-              tau_inv_spitzer*(-f(l1:l2,m,n,ispitzer-1+i)-K1(:,i) )
+              tau_inv_spitzer*(-q(:,i)-K1(:,i)) +  &
+              q(:,i)*(p%uglnrho + p%divu)
         enddo
 !
         call div(f,ispitzer,div_sp)
+        call dot(q,p%glnrho,tmp)
 !
-        rhs = gamma*p%cp1*exp(-p%lnrho-p%lnTT)*div_sp
+        rhs = gamma*p%cp1*exp(-p%lnTT)*(div_sp+tmp)
 !
-!        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
         if (lvideo) then
 !
@@ -445,8 +457,8 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p      
-!      
+      type (pencil_case), intent(in) :: p
+!
       real, dimension (nx) :: hc
 !
       if (hyper3_diffrho /= 0.) then
@@ -693,7 +705,7 @@ module Special
     else if (lentropy) then
       if (pretend_lnTT) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
-      else  
+      else
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool/(gamma*p%cp1)
       endif
     else
@@ -850,11 +862,11 @@ module Special
           normal_deviate
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: heatinput,heat_flux
+      real, dimension (nx) :: heatinput
       real, dimension (nx) :: x_Mm,heat_nano,rhs,height
       real, dimension (nx) :: heat_event,heat_event1D
       integer, dimension(mseed) :: global_rstate
-      real :: heat_unit
+      real :: heat_unit,heat_flux
       real :: nano_sigma_t,nano_time,nano_start,nano_sigma_z
       real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
       real :: nano_amplitude
@@ -862,6 +874,7 @@ module Special
       type (pencil_case) :: p
       integer :: i
 !
+! the unit W/m^3 is
       heat_unit= unit_density*unit_velocity**3/unit_length
 !
       x_Mm = x(l1:l2)*unit_length*1e-6
@@ -887,18 +900,22 @@ module Special
           !
           heat_flux=heat_flux - heat_par_exp(1)*heat_par_exp(2)*1e6
 !
-          if (headtt) print*,'Flux of exp heating: ',heat_flux(1),' [ W m^(-2)]'
+          if (headtt) print*,'Flux of exp heating: ',heat_flux,' [ W m^(-2)]'
 !
         case ('exp')
           ! heat_par_exp(1) should be 530 W/m^3 (amplitude)
           ! heat_par_exp(2) should be 0.3 Mm (scale height)
           !
           heatinput=heatinput + &
-              heat_par_exp(1)*exp(-height/heat_par_exp(2))/heat_unit
+              heat_par_exp(1)/heat_unit*exp(-height/heat_par_exp(2))
 !
-          heat_flux=heat_flux - heat_par_exp(1)*heat_par_exp(2)*1e6
-!
-          if (headtt) print*,'Flux of exp heating: ',heat_flux(1),' [ W m^(-2)]'
+!  add the flux at a ref height of 4 Mm
+          !
+          if (headtt) then
+            heat_flux = heat_par_exp(1)*heat_par_exp(2)*1e6*exp(-4./heat_par_exp(2))
+            write (*,*) 'Exp heating, scale height: ',heat_par_exp(2),' [ Mm ]'
+            write (*,*) 'Exp heating, flux at z=4 Mm: ', heat_flux
+          endif
 !
         case ('exp2')
           ! A second exponential function
@@ -1021,7 +1038,7 @@ module Special
         endselect
       enddo
       !
-      if (headtt) print*,'Total flux for all types:',heat_flux(1)
+      if (headtt) print*,'Total flux for all types:',heat_flux
 !
 ! Add to energy equation
 !
@@ -1180,6 +1197,33 @@ module Special
           p%cp1*gamma*exp(-p%lnrho -p%lnTT)
 !
     endsubroutine calc_bullets_heating
+!***********************************************************************
+    subroutine filter_farray(f,df)
+!
+!  Reduce noise of farray using mesh independend hyper diffusion.
+!  Filter strength is equal for all variables up to now and has
+!  to be smaller than 1/64 for numerical stability.
+!
+!  13-jan-12/bing: coded
+!
+      use Sub, only: del6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: del6_fj
+      integer :: j
+!
+      if (dt/=0.) then
+        do j=1,mvar
+          if (filter_strength(j)/=0.) then
+            call del6(f,j,del6_fj,IGNOREDX=.true.)
+            df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+                filter_strength(j)*del6_fj/dt_beta_ts(itsub)
+          endif
+        enddo
+      endif
+!
+    endsubroutine filter_farray
 !***********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
