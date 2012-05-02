@@ -331,7 +331,7 @@ program start
 !
   if (nzgrid/=1) then
     kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
-    ky_ny =nzgrid/2 * 2*pi/Lz
+    kz_ny =nzgrid/2 * 2*pi/Lz
   else
     kz_fft=0.0
     kz_ny =0.0
