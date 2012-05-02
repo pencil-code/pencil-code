@@ -398,7 +398,7 @@ module Viscosity
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
 !
       if (lrun.and.lboussinesq) then
-        if (lentropy) then
+        if (lentropy.or.ltemperature) then
           call get_shared_variable('Pr',Pr,ierr)
           if (ierr/=0) call stop_it("initialize_viscosity: " &
             // "problem getting shared Pr from hydro")
