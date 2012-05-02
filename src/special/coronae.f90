@@ -334,6 +334,8 @@ module Special
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_uglnrho)=.true.
+        lpenc_requested(i_divu)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_lnrho)=.true.
@@ -524,14 +526,17 @@ module Special
 !
         b2_1=1./(p%b2+tini)
 !
-        call multsv(Kspitzer_para*exp(3.5*p%lnTT),p%glnTT,K1)
+        call multsv(Kspitzer_para*exp(-p%lnrho+3.5*p%lnTT),p%glnTT,K1)
 !
         call dot(K1,p%bb,tmp)
         call multsv(-b2_1*tmp,p%bb,spitzer_vec)
 !
+! Reduce the heat conduction at places of low density or very
+! high temperatures
+!
         if (Ksat/=0.) then
           call dot2(spitzer_vec,qabs,FAST_SQRT=.true.)
-          qsat = Ksat*Ksaturation*exp(p%lnrho+1.5*p%lnTT)
+          qsat = Ksat*Ksaturation*exp(1.5*p%lnTT)
 !
           qsat = 1./(1./qsat +1./qabs)
           where (qabs > sqrt(tini))
@@ -545,39 +550,19 @@ module Special
 !
         do i=1,3
           df(l1:l2,m,n,ispitzer+i-1) = df(l1:l2,m,n,ispitzer+i-1) + &
-              tau_inv_spitzer*(-q(:,i)+spitzer_vec(:,i))
+              tau_inv_spitzer*(-q(:,i)+spitzer_vec(:,i))  +  &
+              q(:,i)*(p%uglnrho + p%divu)
         enddo
+ !
+        call div(f,ispitzer,rhs)
 !
-! add diffusion to heat conduction vector
+        call dot(q,p%glnrho,tmp)
 !
-        if (chi_spi /= 0.) then
-          call der2(f,ispitzerz,tmp,3)
-          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz) + chi_spi*tmp
-          if (lfirst.and.ldt) diffus_chi=diffus_chi+chi_spi*dxyz_2
-        endif
+        rhs = gamma*p%cp1*(rhs + tmp)*exp(-p%lnTT)
 !
-! Add hyper diffusion to heat conduction vector
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
-        if (hyper3_spi /= 0.) then
-          call del6(f,ispitzerz,hc,IGNOREDX=.true.)
-          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper3_spi*hc
-!
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_spi/0.01)
-       endif
-       if (hyper2_spi /= 0.) then
-          call del4(f,ispitzerz,hc,IGNOREDX=.true.)
-          df(l1:l2,m,n,ispitzerz) = df(l1:l2,m,n,ispitzerz)+hyper2_spi*hc
-!
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper2_spi/0.01)
-       endif
-!
-       call div(f,ispitzer,rhs)
-!
-       rhs = gamma*p%cp1* rhs * exp(-p%lnrho-p%lnTT)
-!
-       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
-!
-       if (lvideo) then
+        if (lvideo) then
 !
 ! slices
           spitzer_yz(m-m1+1,n-n1+1)=-rhs(ix_loc-l1+1)
