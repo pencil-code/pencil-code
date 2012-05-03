@@ -58,6 +58,7 @@ program run
   use Filter
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
+  use General,         only: random_seed_wrapper
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
@@ -260,9 +261,12 @@ program run
   if (lroot) print*, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-!  Get state length of random number generator.
+!  Get state length of random number generator and put the default value.
 !
   call get_nseed(nseed)
+  call random_seed_wrapper (GET=seed)
+  seed = seed0
+  call random_seed_wrapper (PUT=seed)
 !
 !  Write particle block dimensions to file (may have been changed for better
 !  load balancing).
