@@ -64,8 +64,8 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 default, quantities, { $
 	temperature:'Temp', $
 	currentdensity:'j', $
-;	ohmic_heating_rate:'HR_ohm', $
-;	viscous_heating_rate:'HR_viscous', $
+	ohmic_heating_rate:'HR_ohm', $
+	viscous_heating_rate:'HR_viscous', $
 ;	magnetic_energy:'rho_mag', $
 ;	magnetic_field_x:'bx', $
 ;	magnetic_field_y:'by', $
@@ -80,7 +80,7 @@ default, quantities, { $
 ;	viscous_Rn:'Rn_visc', $
 ;	magnetic_Rn:'Rn_mag', $
 ;	minimum_density:'rho_c', $
-;	Spitzer_heatflux:'Spitzer_q', $
+	Spitzer_heatflux:'Spitzer_q', $
 	logarithmic_density:'log_rho' $
 	}
 
@@ -200,6 +200,11 @@ if (not pc_gui_loaded) then BEGIN
                  2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + $
                  2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
 	correction = 1.0 - ghosts / double (dim.mxgrid*dim.mygrid*dim.mzgrid)
+	if (allprocs eq 1) then begin
+		subdomains = 1
+		correction = 1.0
+	end
+	if (allprocs eq 2) then subdomains = dim.nprocx * dim.nprocy
 	file_struct = file_info (procdir+varfile)
 	gb_per_file = (file_struct.size * subdomains * correction) / 1024. / 1024. / 1024.
 
