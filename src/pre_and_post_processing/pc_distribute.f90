@@ -1,6 +1,6 @@
 ! This tool distributes a global data cube in into the proc-directories.
 !
-! $Id: pc_distribute.f90 17157 2011-07-02 23:59:13Z Bourdin.KIS $
+! $Id$
 !***********************************************************************
 program pc_distribute
 !
@@ -61,7 +61,7 @@ program pc_distribute
 !  Identify version.
 !
   if (lroot) call svn_id( &
-      '$Id: pc_downscale.f90 17157 2011-07-02 23:59:13Z Bourdin.KIS $')
+      '$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
