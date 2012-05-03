@@ -29,7 +29,7 @@ program pc_distribute
   real, dimension (ngz) :: gz
   real :: dummy_dx, dummy_dy, dummy_dz
   logical :: ex
-  integer :: mvar_in, bytes, pz, pa, alloc_err
+  integer :: mvar_in, rec_len, pz, pa, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lrun=.true.
@@ -50,7 +50,7 @@ program pc_distribute
 !
   deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
 !
-  inquire (IOLENGTH=bytes) 1.0
+  inquire (IOLENGTH=rec_len) 1.0
 !
   if (lcollective_IO) call fatal_error ('pc_distribute', &
       "Distributing snapshots currently requires the distributed IO-module.")
@@ -147,7 +147,7 @@ program pc_distribute
   close (lun_input)
   t = t_sp
 !
-  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=ngx*ngy*bytes, status='old')
+  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=ngx*ngy*rec_len, status='old')
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
