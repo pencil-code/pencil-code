@@ -84,7 +84,7 @@ contains
 !
 !  04-jul-2011/Boudin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpi_precision
+      use Mpicomm, only: mpi_precision
 !
 !  identify version number
 !
@@ -164,7 +164,6 @@ contains
 !  02-oct-2002/wolf: coded
 !
       use General, only: safe_character_assign, itoa
-      use Mpicomm, only: lroot
 !
       character (len=intlen) :: chproc
 !
@@ -192,7 +191,7 @@ contains
 !
 !  05-jul-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx), intent(in) :: x
       real, dimension(my), intent(in) :: y
@@ -247,7 +246,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -333,7 +332,7 @@ contains
 !
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, globalize_xy, mpisend_real, mpirecv_real, mpi_precision
+      use Mpicomm, only: globalize_xy, mpisend_real, mpirecv_real, mpi_precision
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv
@@ -422,8 +421,6 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
-!
       if (persist_initialized) then
         if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
         write (lun_output) id_block_PERSISTENT
@@ -440,7 +437,7 @@ contains
 !
 !  19-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: data
@@ -531,7 +528,7 @@ contains
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, localize_xy, mpisend_real, mpirecv_real, mpibcast_real, mpi_precision
+      use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real, mpi_precision
       use Syscalls, only: sizeof_real
 !
       character (len=*) :: file
@@ -639,19 +636,24 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
-!
       character (len=*), intent(in), optional :: file
 !
+      character (len=fnlen), save :: filename=""
+!
       persist_last_id = -max_int
+      init_write_persist = .false.
 !
       if (present (file)) then
-        open (lun_output, FILE=trim (directory_dist)//'/'//file, FORM='unformatted', status='replace')
+        filename = file
+        persist_initialized = .false.
+        return
+      endif
+!
+      if (filename /= "") then
+        open (lun_output, FILE=trim (directory_dist)//'/'//filename, FORM='unformatted', status='replace')
         if (ip <= 9) write (*,*) 'begin persistent block'
         write (lun_output) id_block_PERSISTENT
-      else
-        if (lroot) call fatal_error ('init_write_persist', &
-            "Not possible with lseparate_persist=.true.")
+        filename = ""
       endif
 !
       init_write_persist = .false.
@@ -665,12 +667,11 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
-!
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
       write_persist_id = .true.
+      if (.not. persist_initialized) write_persist_id = init_write_persist ()
       if (.not. persist_initialized) return
 !
       if (persist_last_id /= id) then
@@ -691,7 +692,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -703,7 +704,6 @@ contains
       logical :: buffer
 !
       write_persist_logical_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       if (lroot) then
@@ -740,7 +740,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -752,7 +752,6 @@ contains
       logical, dimension (:), allocatable :: buffer
 !
       write_persist_logical_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       nv = size (value)
@@ -791,7 +790,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -803,7 +802,6 @@ contains
       integer :: buffer
 !
       write_persist_int_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       if (lroot) then
@@ -840,7 +838,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -852,7 +850,6 @@ contains
       integer, dimension (:), allocatable :: buffer
 !
       write_persist_int_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       nv = size (value)
@@ -891,7 +888,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -903,7 +900,6 @@ contains
       real :: buffer
 !
       write_persist_real_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       if (lroot) then
@@ -940,7 +936,7 @@ contains
 !
 !  12-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -952,7 +948,6 @@ contains
       real, dimension (:), allocatable :: buffer
 !
       write_persist_real_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       nv = size (value)
@@ -991,16 +986,22 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot
+      use Mpicomm, only: mpibcast_logical
+      use Syscalls, only: file_exists
 !
       character (len=*), intent(in), optional :: file
+!
+      init_read_persist = .true.
+!
+      if (present (file)) then
+        if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
+        call mpibcast_logical (init_read_persist)
+        if (init_read_persist) return
+      endif
 !
       if (present (file)) then
         if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
         open (lun_input, FILE=trim (directory_dist)//'/'//file, FORM='unformatted', status='old')
-      else
-        if (lroot) call fatal_error ('init_read_persist', &
-            "Not possible with lseparate_persist=.true.")
       endif
 !
       init_read_persist = .false.
@@ -1014,7 +1015,7 @@ contains
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpibcast_int
+      use Mpicomm, only: mpibcast_int
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -1049,7 +1050,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
@@ -1091,7 +1092,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_logical, mpirecv_logical
+      use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
@@ -1135,7 +1136,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
@@ -1177,7 +1178,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_int, mpirecv_int
+      use Mpicomm, only: mpisend_int, mpirecv_int
 !
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
@@ -1221,7 +1222,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       real, intent(out) :: value
@@ -1263,7 +1264,7 @@ contains
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: lroot, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_real, mpirecv_real
 !
       character (len=*), intent(in) :: label
       real, dimension(:), intent(out) :: value
@@ -1369,8 +1370,6 @@ contains
 !
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
-      use Mpicomm, only: lroot
-!
       character (len=*) :: file
 !
       real, dimension (:), allocatable :: gx, gy, gz
@@ -1410,7 +1409,7 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpibcast_real
+      use Mpicomm, only: mpibcast_int, mpibcast_real
 !
       character (len=*) :: file
 !

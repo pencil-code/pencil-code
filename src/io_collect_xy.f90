@@ -539,13 +539,23 @@ contains
 !
       character (len=*), intent(in), optional :: file
 !
+      character (len=fnlen), save :: filename=""
+!
       persist_last_id = -max_int
+      init_write_persist = .false.
+!
+      if (present (file)) then
+        filename = file
+        persist_initialized = .false.
+        return
+      endif
 !
       if (ldistribute_persist .or. lfirst_proc_xy) then
         if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
-        if (present (file)) then
+        if (filename /= "") then
           if (lfirst_proc_xy) close (lun_output)
-          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
+          open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='replace')
+          filename = ""
         endif
         write (lun_output) id_block_PERSISTENT
       endif
@@ -565,6 +575,7 @@ contains
       integer, intent(in) :: id
 !
       write_persist_id = .true.
+      if (.not. persist_initialized) write_persist_id = init_write_persist ()
       if (.not. persist_initialized) return
 !
       if ((ldistribute_persist .or. lfirst_proc_xy) .and. (persist_last_id /= id)) then
@@ -595,7 +606,6 @@ contains
       logical :: buffer
 !
       write_persist_logical_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       if (ldistribute_persist) then
@@ -646,7 +656,6 @@ contains
       logical, dimension (:), allocatable :: buffer
 !
       write_persist_logical_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       nv = size (value)
@@ -699,7 +708,6 @@ contains
       integer :: buffer
 !
       write_persist_int_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       if (ldistribute_persist) then
@@ -750,7 +758,6 @@ contains
       integer, dimension (:), allocatable :: buffer
 !
       write_persist_int_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       nv = size (value)
@@ -802,7 +809,6 @@ contains
       real, dimension (:,:), allocatable :: global
 !
       write_persist_real_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       if (ldistribute_persist) then
@@ -845,7 +851,6 @@ contains
       real, dimension (:), allocatable :: buffer
 !
       write_persist_real_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       nv = size (value)
@@ -886,7 +891,18 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
+      use Mpicomm, only: mpibcast_logical
+      use Syscalls, only: file_exists
+!
       character (len=*), intent(in), optional :: file
+!
+      init_read_persist = .true.
+!
+      if (present (file)) then
+        if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
+        call mpibcast_logical (init_read_persist)
+        if (init_read_persist) return
+      endif
 !
       if (ldistribute_persist .or. lfirst_proc_xy) then
         if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'

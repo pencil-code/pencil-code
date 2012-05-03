@@ -105,11 +105,7 @@ module Persist
           if (init_write_persist('pers_'//file)) return
         elseif (index (file, 'VAR') == 1) then
           if (init_write_persist('PERS_'//file(4:))) return
-        else
-          return
         endif
-      else
-        if (init_write_persist()) return
       endif
 !
       if (output_persistent_general()) return
@@ -132,9 +128,9 @@ module Persist
       integer, intent(in) :: id
       logical, intent(inout) :: done
 !
-      call random_seed_wrapper (GET=seed)
       select case (id)
         case (id_record_RANDOM_SEEDS)
+          call random_seed_wrapper (GET=seed)
           if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
           call random_seed_wrapper (PUT=seed)
           done = .true.
@@ -157,9 +153,12 @@ module Persist
 !
       output_persistent_general = .false.
 !
+      ! Don't write the seeds, if they are unchnaged from their default value.
       call random_seed_wrapper (GET=seed)
-      if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
-          output_persistent_general = .true.
+      if (any (seed(1:nseed) /= seed0)) then
+        if (write_persist ('RANDOM_SEEDS', id_record_RANDOM_SEEDS, seed(1:nseed))) &
+            output_persistent_general = .true.
+      endif
 !
       if (lshear) then
         if (write_persist ('DELTA_Y', id_record_DELTA_Y, deltay)) &

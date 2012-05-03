@@ -251,19 +251,29 @@ contains
 !
       character (len=*), intent(in), optional :: file
 !
+      character (len=fnlen), save :: filename=""
       integer :: io_err
 !
+      persist_last_id = -max_int
+      init_write_persist = .false.
+!
       if (present (file)) then
+        filename = file
+        persist_initialized = .false.
+        return
+      endif
+!
+      if (filename /= "") then
         close (lun_output)
         open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', IOSTAT=io_err, status='replace')
         init_write_persist = outlog (io_err, 'open persistent file for writing')
+        filename = ""
       endif
 !
       if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
       write (lun_output, iostat=io_err) id_block_PERSISTENT
       init_write_persist = outlog (io_err, 'write id_block_PERSISTENT')
       persist_initialized = .not. init_write_persist
-      persist_last_id = -max_int
 !
     endfunction init_write_persist
 !***********************************************************************
@@ -279,6 +289,7 @@ contains
       integer :: io_err
 !
       write_persist_id = .true.
+      if (.not. persist_initialized) write_persist_id = init_write_persist ()
       if (.not. persist_initialized) return
 !
       if (persist_last_id /= id) then
@@ -304,7 +315,6 @@ contains
       integer :: io_err
 !
       write_persist_logical_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
@@ -325,7 +335,6 @@ contains
       integer :: io_err
 !
       write_persist_logical_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
@@ -367,7 +376,6 @@ contains
       integer :: io_err
 !
       write_persist_int_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
@@ -388,7 +396,6 @@ contains
       integer :: io_err
 !
       write_persist_real_0D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
@@ -409,7 +416,6 @@ contains
       integer :: io_err
 !
       write_persist_real_1D = .true.
-      if (.not. persist_initialized) return
       if (write_persist_id (label, id)) return
 !
       write (lun_output, iostat=io_err) value
@@ -511,9 +517,20 @@ contains
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
+      use Mpicomm, only: mpibcast_logical
+      use Syscalls, only: file_exists
+!
       character (len=*), intent(in), optional :: file
 !
       integer :: io_err
+!
+      init_read_persist = .true.
+!
+      if (present (file)) then
+        if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
+        call mpibcast_logical (init_read_persist)
+        if (init_read_persist) return
+      endif
 !
       if (present (file)) then
         close (lun_input)
