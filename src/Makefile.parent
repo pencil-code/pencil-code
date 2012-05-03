@@ -75,6 +75,9 @@ pc_reduce:
 pc_distribute:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_distribute.x )
+pc_distribute_z:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_distribute_z.x )
 
 # Create Makefile.inc, but need this to be a `phony' target (i.e. not a
 # filename as target), so this file is always written.
