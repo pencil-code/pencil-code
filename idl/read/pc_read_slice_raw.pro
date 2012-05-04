@@ -68,11 +68,8 @@ COMPILE_OPT IDL2,HIDDEN
   default, cut_y, -1
   default, cut_z, -1
 ;
-  if (total([cut_x, cut_y, cut_z] < 0) ne -2) then begin
-    message, 'pc_read_slice_raw: Please set exactly one cut index.'
-    stop
-    return
-  endif
+  if (total([cut_x, cut_y, cut_z] < 0) ne -2) then $
+      message, 'pc_read_slice_raw: Please set exactly one cut index.'
 ;
 ; Default data directory.
 ;
@@ -95,6 +92,8 @@ COMPILE_OPT IDL2,HIDDEN
       print, 'Could not find '+datadir+'/param2.nml'
     endelse
   endif
+  if (n_elements(grid) eq 0) then $
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, /allprocs, /quiet
 ;
 ; Set the coordinate system.
 ;  
@@ -126,11 +125,8 @@ COMPILE_OPT IDL2,HIDDEN
     cut_nx = dim.mx
     px_start = 0
   endif else begin
-    if ((cut_x lt 0) or (cut_x ge dim.nx)) then begin
-      message, 'pc_read_slice_raw: cut_x is invalid, min/max: 0-'+strtrim(dim.nx-1, 2)
-      stop
-      return
-    endif
+    if ((cut_x lt 0) or (cut_x ge dim.nx)) then $
+        message, 'pc_read_slice_raw: cut_x is invalid, min/max: 0-'+strtrim(dim.nx-1, 2)
     cut_nx = 1 + 2*dim.nghostx
     px_start = cut_x
   endelse
@@ -140,11 +136,8 @@ COMPILE_OPT IDL2,HIDDEN
     cut_ny = dim.my
     py_start = 0
   endif else begin
-    if ((cut_y lt 0) or (cut_y ge dim.ny)) then begin
-      message, 'pc_read_slice_raw: cut_y is invalid, min/max: 0-'+strtrim(dim.ny-1, 2)
-      stop
-      return
-    endif
+    if ((cut_y lt 0) or (cut_y ge dim.ny)) then $
+        message, 'pc_read_slice_raw: cut_y is invalid, min/max: 0-'+strtrim(dim.ny-1, 2)
     cut_ny = 1 + 2*dim.nghosty
     py_start = cut_y
   endelse
@@ -154,11 +147,8 @@ COMPILE_OPT IDL2,HIDDEN
     cut_nz = dim.mz
     pz_start = 0
   endif else begin
-    if ((cut_z lt 0) or (cut_z ge dim.nz)) then begin
-      message, 'pc_read_slice_raw: cut_z is invalid, min/max: 0-'+strtrim(dim.nz-1, 2)
-      stop
-      return
-    endif
+    if ((cut_z lt 0) or (cut_z ge dim.nz)) then $
+        message, 'pc_read_slice_raw: cut_z is invalid, min/max: 0-'+strtrim(dim.nz-1, 2)
     cut_nz = 1 + 2*dim.nghostz
     pz_start = cut_z
   endelse
@@ -222,20 +212,12 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Build the full path and filename.
 ;
-  filename=datadir+'/allprocs/'+varfile
+  filename = datadir+'/allprocs/'+varfile
 ;
 ; Check for existence and read the data.
 ;
-  if (not file_test(filename)) then begin
-    if (arg_present(exit_status)) then begin
-      exit_status=1
-      print, 'ERROR: cannot find file '+ filename
-      close, /all
-      return
-    endif else begin
-      message, 'ERROR: cannot find file '+ filename
-    endelse
-  endif
+  if (not file_test(filename)) then $
+      message, 'ERROR: File not found "'+filename+'"'
 ;
 ; Open a varfile and read some data!
 ;
@@ -257,13 +239,42 @@ COMPILE_OPT IDL2,HIDDEN
   openr, lun, filename, /f77, swap_endian=swap_endian
   point_lun, lun, long64(dim.mx*dim.my)*long64(dim.mz*dim.mvar*bytes)
   readu, lun, t, x, y, z, dx, dy, dz
-
   close, lun
   free_lun, lun
 ;
 ; Tidy memory a little.
 ;
   undefine, buffer
+;
+; Crop grid and prepare for derivatives.
+;
+  if (cut_x eq -1) then Lx = x[px_end] - x[px_start]
+  if (cut_y eq -1) then Ly = y[py_end] - y[py_start]
+  if (cut_z eq -1) then Lz = z[pz_end] - z[pz_start]
+  x = x[px_start:px_end]
+  y = y[py_start:py_end]
+  z = z[pz_start:pz_end]
+  dim.mx = cut_nx
+  dim.my = cut_ny
+  dim.mz = cut_nz
+  dim.nx = cut_nx - 2*dim.nghostx
+  dim.ny = cut_ny - 2*dim.nghosty
+  dim.nz = cut_nz - 2*dim.nghostz
+  dim.mxgrid = dim.mx
+  dim.mygrid = dim.my
+  dim.mzgrid = dim.mz
+  dim.nxgrid = dim.nx
+  dim.nygrid = dim.ny
+  dim.nzgrid = dim.nz
+  dx_1 = grid.dx_1[px_start:px_end]
+  dy_1 = grid.dy_1[py_start:py_end]
+  dz_1 = grid.dz_1[pz_start:pz_end]
+  dx_tilde = grid.dx_tilde[px_start:px_end]
+  dy_tilde = grid.dy_tilde[py_start:py_end]
+  dz_tilde = grid.dz_tilde[pz_start:pz_end]
+  Lx = grid.Lx
+  Ly = grid.Lz
+  Lz = grid.Lz
 ;
 ; Remove ghost zones if requested.
 ;
@@ -277,6 +288,9 @@ COMPILE_OPT IDL2,HIDDEN
   endif
 ;
   time = t
-  grid = { t:t, x:x, y:y, z:z, dx:dx, dy:dy, dz:dz }
+  name = "pc_read_slice_raw_"+strtrim (cut_nx, 2)+"_"+strtrim (cut_ny, 2)+"_"+strtrim (cut_nz, 2)
+  grid = create_struct (name=name, $
+      ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde'], $
+      t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde)
 ;
 end
