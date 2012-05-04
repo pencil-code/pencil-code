@@ -391,6 +391,7 @@ module Diagnostics
 !  Finalize calculation of diagnostic quantities (0-D).
 !
 !   1-dec-09/dhruba+piyali: adapted from diagnostic
+!   3-may-12/axel+MR: to divide by box_volume, not nw
 !
       real, dimension(1) :: mass_per_proc,mass
       real:: average_density
@@ -401,7 +402,7 @@ module Diagnostics
 !
 !  The result is present everywhere
 !
-      average_density=mass(1)/nwgrid
+      average_density=mass(1)/box_volume
       call mpibcast_real(average_density,1)
 !
     endsubroutine get_average_density
