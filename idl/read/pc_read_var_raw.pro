@@ -34,6 +34,8 @@
 ;       pc_read_var_raw, obj=vars, tags=tags, proc=5    ;; read from data/proc5
 ;       pc_read_var_raw, obj=vars, tags=tags, /allprocs ;; read from data/allprocs
 ;
+;       cslice, vars
+; or:
 ;       cmp_cslice, { uz:vars[*,*,*,tags.uz], lnrho:vars[*,*,*,tags.lnrho] }
 ;
 ; MODIFICATION HISTORY:
