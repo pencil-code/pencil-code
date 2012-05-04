@@ -515,7 +515,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
 			wset, wcut_y
-			plot, cube[px,*,pz], xrange=[0,num_y], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			plot, cube[px,*,pz], xrange=[0,num_y-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			oplot, cube[px,*,pz], psym=3, color=200
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
@@ -548,7 +548,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
 			wset, wcut_x
-			plot, cube[*,py,pz], xrange=[0,num_x], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			plot, cube[*,py,pz], xrange=[0,num_x-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			oplot, cube[*,py,pz], psym=3, color=200
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
@@ -581,7 +581,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
 			wset, wcut_z
-			plot, cube[px,py,*], xrange=[0,num_z], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
+			plot, cube[px,py,*], xrange=[0,num_z-1], yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0]
 			oplot, cube[px,py,*], psym=3, color=200
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
