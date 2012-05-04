@@ -248,9 +248,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Crop grid and prepare for derivatives.
 ;
-  if (cut_x eq -1) then Lx = x[px_end] - x[px_start]
-  if (cut_y eq -1) then Ly = y[py_end] - y[py_start]
-  if (cut_z eq -1) then Lz = z[pz_end] - z[pz_start]
   x = x[px_start:px_end]
   y = y[py_start:py_end]
   z = z[pz_start:pz_end]
@@ -272,9 +269,9 @@ COMPILE_OPT IDL2,HIDDEN
   dx_tilde = grid.dx_tilde[px_start:px_end]
   dy_tilde = grid.dy_tilde[py_start:py_end]
   dz_tilde = grid.dz_tilde[pz_start:pz_end]
-  Lx = grid.Lx
-  Ly = grid.Lz
-  Lz = grid.Lz
+  if (cut_x eq -1) then Lx = 1.0/dx_1[dim.nghostx] else Lx = grid.Lx
+  if (cut_y eq -1) then Ly = 1.0/dy_1[dim.nghosty] else Ly = grid.Ly
+  if (cut_z eq -1) then Lz = 1.0/dz_1[dim.nghostz] else Lz = grid.Lz
 ;
 ; Remove ghost zones if requested.
 ;
