@@ -72,7 +72,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Check if allprocs is set.
 ;
   if (keyword_set(allprocs)) then begin
-    if (n_elements(proc) ne 0) then message, 'pc_read_var: /allproc and proc cannot be both set.'
+    if (n_elements(proc) ne 0) then message, 'pc_read_var_raw: /allproc and proc cannot be both set.'
     if (not keyword_set(f77)) then f77=0
   endif else begin
     allprocs = 0
