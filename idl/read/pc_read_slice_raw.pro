@@ -263,6 +263,10 @@ COMPILE_OPT IDL2,HIDDEN
   dim.nxgrid = dim.nx
   dim.nygrid = dim.ny
   dim.nzgrid = dim.nz
+  dim.mw = dim.mx * dim.my * dim.mz
+  if (cut_x ne -1) then dim.l2 = dim.mx - dim.nghostx - 1
+  if (cut_y ne -1) then dim.m2 = dim.my - dim.nghosty - 1
+  if (cut_z ne -1) then dim.n2 = dim.mz - dim.nghostz - 1
   dx_1 = grid.dx_1[px_start:px_end]
   dy_1 = grid.dy_1[py_start:py_end]
   dz_1 = grid.dz_1[pz_start:pz_end]
