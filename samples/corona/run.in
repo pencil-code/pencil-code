@@ -34,9 +34,13 @@
   nu=1e-3
 /
 &special_run_pars 
-  Kgpara=4e-10 ! Spitzer heat conduction
-  K_iso=1.e-4  ! isotropic heat conduction
-               ! prop. to |grad(T)|
+  K_spitzer=4e-10 ! Spitzer heat conduction
+  K_iso=1.e-4     ! isotropic heat conduction proptional to |grad(T)|
+!
+!  hcond1=0.5e-3
+!  hcond2=1.0e-1
+!  hcond3=1.0e-1
+!
   tdown=0.1    ! Newton cooling strength
   allp=1.5     !   and decay 
   cool_rtv=1.  ! Radiative loss
