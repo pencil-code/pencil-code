@@ -5,18 +5,21 @@
   cvsid='$Id$'
   xyz0 = 0., 0., 0.
   Lxyz = 5., 5. , 4.
-  !
+!
   unit_system  ='SI'
   unit_length  =1e7
   unit_velocity=1e4
   unit_density =1e-8
-  !
+!
   lperi = T,    T,   F,
   grid_func  =  ,  , 'sinh'
   coeff_grid =  ,  , 0.8
   xyz_star   =  ,  , 0.6
-  !
+!
   bcz = 's','s','a','a2','a2','a2','a2','a2'
+!
+  lseparate_persist = T
+  ldistribute_persist = F
 /
 &eos_init_pars
   cs0   = 1.12      ! cs0 =  sqrt((gamma-1)T/c_p) = 11.2 km/s
