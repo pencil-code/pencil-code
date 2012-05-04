@@ -85,13 +85,18 @@ void FTNIZE(is_nan_c)
 /* Determine if value is not a number.
    Returns:
    * 1, if value is not a number
-   * -1 on failure
+   * 0, if value is a number
+   * -1 on failure (value is neither float or double)
 */
 {
   *result = -1;
 
   if (sizeof (*value) == sizeof (double)) *result = isnan ((double) *value);
-  if (sizeof (*value) == sizeof (float)) *result = isnanf ((float) *value);
+  /*
+    isnanf() is sometimes not available
+    if (sizeof (*value) == sizeof (float)) *result = isnanf ((float) *value);
+  */
+  if (sizeof (*value) == sizeof (float)) *result = !(*value == *value);
 }
 
 /* ---------------------------------------------------------------------- */
