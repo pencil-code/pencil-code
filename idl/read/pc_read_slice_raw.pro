@@ -269,9 +269,9 @@ COMPILE_OPT IDL2,HIDDEN
   dx_tilde = grid.dx_tilde[px_start:px_end]
   dy_tilde = grid.dy_tilde[py_start:py_end]
   dz_tilde = grid.dz_tilde[pz_start:pz_end]
-  if (cut_x eq -1) then Lx = 1.0/dx_1[dim.nghostx] else Lx = grid.Lx
-  if (cut_y eq -1) then Ly = 1.0/dy_1[dim.nghosty] else Ly = grid.Ly
-  if (cut_z eq -1) then Lz = 1.0/dz_1[dim.nghostz] else Lz = grid.Lz
+  if (cut_x ne -1) then Lx = 1.0/dx_1[dim.nghostx] else Lx = grid.Lx
+  if (cut_y ne -1) then Ly = 1.0/dy_1[dim.nghosty] else Ly = grid.Ly
+  if (cut_z ne -1) then Lz = 1.0/dz_1[dim.nghostz] else Lz = grid.Lz
 ;
 ; Remove ghost zones if requested.
 ;
