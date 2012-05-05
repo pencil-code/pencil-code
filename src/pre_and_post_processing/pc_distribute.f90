@@ -261,6 +261,7 @@ program pc_distribute
 !
 !  Free any allocated memory.
 !
+  deallocate (gf)
   call fnames_clean_up()
   call vnames_clean_up()
 !

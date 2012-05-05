@@ -352,6 +352,7 @@ program pc_collect
 !
 !  Free any allocated memory.
 !
+  deallocate (gf)
   call fnames_clean_up()
   call vnames_clean_up()
 !

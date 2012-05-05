@@ -333,6 +333,7 @@ program pc_reduce
 !
 !  Free any allocated memory.
 !
+  deallocate (rf)
   call fnames_clean_up()
   call vnames_clean_up()
 !

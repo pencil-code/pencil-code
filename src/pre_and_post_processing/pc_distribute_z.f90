@@ -20,12 +20,12 @@ program pc_distribute_z
   character (len=fnlen) :: filename
   character (len=*), parameter :: directory_in = 'data/allprocs'
 !
-  real, dimension (mxgrid,mygrid,mz,mfarray) :: f
+  real, dimension (:,:,:,:), allocatable :: f
   real, dimension (mxgrid) :: gx
   real, dimension (mygrid) :: gy
   real, dimension (mzgrid) :: gz
   logical :: ex
-  integer :: mvar_in, pz, pa, rec_len_int
+  integer :: mvar_in, pz, pa, rec_len_int, alloc_err
   integer(kind=8) :: rec_len, num_rec
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -121,6 +121,9 @@ program pc_distribute_z
   else
     mvar_in=mvar
   endif
+!
+  allocate (f (mxgrid,mygrid,mz,mvar_io), stat=alloc_err)
+  if (alloc_err /= 0) call fatal_error ('pc_distribute_z', 'Failed to allocate memory for f.', .true.)
 !
 !  Print resolution and dimension of the simulation.
 !
@@ -223,6 +226,7 @@ program pc_distribute_z
 !
 !  Free any allocated memory.
 !
+  deallocate (f)
   call fnames_clean_up()
   call vnames_clean_up()
 !
