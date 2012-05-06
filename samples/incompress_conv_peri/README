@@ -1,0 +1,22 @@
+Directory:
+    ${PENCIL_HOME}/samples/incompress_conv_peri
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+    06-May-2012
+Status:
+    has been working since May 2012
+Recommended resolution:
+    32x32x32 (nu=eta=1e-3)
+Comments:
+    works with projection method
+References:
+    Biskamp, D., Hallatschek, K., & Schwarz, E., 2001, Phys. Rev. E, 63, 045302
+    Scaling laws in two-dimensional turbulent convection
+
+    Biskamp, D., Schwarz, E. 1997, Europhys. Lett., 40, 637-642
+    Scaling properties of turbulent convection in two-dimensional periodic systems
+
+

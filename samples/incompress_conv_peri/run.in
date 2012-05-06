@@ -1,0 +1,28 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Boussinesq convection in stratified atmosphere, but periodic
+!
+&run_pars
+  cvsid='$Id$',
+  nt=101, it1=10, isave=200, itorder=3, ialive=10
+  dsnap=20., dvid=0.2, cdtv=0.30, cdt=.6
+  lpencil_check=T
+  lread_aux=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  Ra=2e3, Pr=1.
+/
+&density_run_pars
+/
+&entropy_run_pars
+  iheatcond='K-const', hcond0=1e-3
+  lviscosity_heat=F
+  beta_bouss=1.
+/
+&poisson_run_pars
+/
+&viscosity_run_pars
+  ivisc='simplified', nu=1e-3
+/

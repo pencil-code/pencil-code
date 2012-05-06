@@ -1,0 +1,20 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = nompicomm
+IO        =   io_dist
+
+HYDRO     =   hydro
+DENSITY   =   experimental/boussinesq
+ENTROPY   =   temperature_idealgas
+MAGNETIC  = nomagnetic
+
+EOS       =   eos_idealgas
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHEAR     = noshear
+
+FOURIER  =   fourier_fftpack
+POISSON  =   poisson
