@@ -18,3 +18,5 @@ SHEAR     = noshear
 
 FOURIER  =   fourier_fftpack
 POISSON  =   poisson
+
+REAL_PRECISION = double
