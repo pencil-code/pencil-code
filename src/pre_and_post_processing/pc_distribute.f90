@@ -22,14 +22,13 @@ program pc_distribute
   character (len=*), parameter :: directory_in = 'data/allprocs'
 !
   real, dimension (mx,my,mz,mfarray) :: f
-  integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
   real, dimension (:,:,:,:), allocatable :: gf
-  real, dimension (ngx) :: gx
-  real, dimension (ngy) :: gy
-  real, dimension (ngz) :: gz
+  real, dimension (mxgrid) :: gx
+  real, dimension (mygrid) :: gy
+  real, dimension (mzgrid) :: gz
   real :: dummy_dx, dummy_dy, dummy_dz
   logical :: ex
-  integer :: mvar_in, rec_len, pz, pa, alloc_err
+  integer :: mvar_in, io_len, pz, pa, alloc_err
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lrun=.true.
@@ -50,7 +49,7 @@ program pc_distribute
 !
   deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
 !
-  inquire (IOLENGTH=rec_len) 1.0
+  inquire (IOLENGTH=io_len) 1.0
 !
   if (lcollective_IO) call fatal_error ('pc_distribute', &
       "Distributing snapshots currently requires the distributed IO-module.")
@@ -125,7 +124,7 @@ program pc_distribute
     mvar_in=mvar
   endif
 !
-  allocate (gf (ngx,ngy,mz,mvar_io), stat=alloc_err)
+  allocate (gf (mxgrid,mygrid,mz,mvar_io), stat=alloc_err)
   if (alloc_err /= 0) call fatal_error ('pc_distribute', 'Failed to allocate memory for gf.', .true.)
 !
 !  Print resolution and dimension of the simulation.
@@ -147,7 +146,7 @@ program pc_distribute
   close (lun_input)
   t = t_sp
 !
-  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=ngx*ngy*rec_len, status='old')
+  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -171,7 +170,7 @@ program pc_distribute
     ! read xy-layer:
     do pa = 1, mvar_io
       do pz = 1, mz
-        read (lun_input, rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
+        read (lun_input, rec=pz+ipz*nz+(pa-1)*mzgrid) gf(:,:,pz,pa)
       enddo
     enddo
 !
