@@ -23,11 +23,10 @@ program pc_collect
   character (len=*), parameter :: directory_out = 'data/allprocs'
 !
   real, dimension (mx,my,mz,mfarray) :: f
-  integer, parameter :: ngx=nxgrid+2*nghost, ngy=nygrid+2*nghost, ngz=nzgrid+2*nghost
   real, dimension (:,:,:,:), allocatable :: gf
-  real, dimension (ngx) :: gx, gdx_1, gdx_tilde
-  real, dimension (ngy) :: gy, gdy_1, gdy_tilde
-  real, dimension (ngz) :: gz, gdz_1, gdz_tilde
+  real, dimension (mxgrid) :: gx, gdx_1, gdx_tilde
+  real, dimension (mygrid) :: gy, gdy_1, gdy_tilde
+  real, dimension (mzgrid) :: gz, gdz_1, gdz_tilde
   logical :: ex
   integer :: mvar_in, io_len, pz, pa, start_pos, end_pos, alloc_err
   integer(kind=8) :: rec_len, num_rec
@@ -86,7 +85,7 @@ program pc_collect
 !
 ! Calculate dimensionality
 !
-  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
 !
 !  Register physics modules.
 !
@@ -126,7 +125,7 @@ program pc_collect
     mvar_in=mvar
   endif
 !
-  allocate (gf (ngx,ngy,mz,mvar_io), stat=alloc_err)
+  allocate (gf (mxgrid,mygrid,mz,mvar_io), stat=alloc_err)
   if (alloc_err /= 0) call fatal_error ('pc_collect', 'Failed to allocate memory for gf.', .true.)
 !
 !  Print resolution and dimension of the simulation.
@@ -140,7 +139,7 @@ program pc_collect
   call directory_names()
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
-  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=ngx*ngy*io_len)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -207,7 +206,7 @@ program pc_collect
         if (lfirst_proc_z) start_pos = 1
         if (llast_proc_z) end_pos = mz
         do pz = start_pos, end_pos
-          write (lun_output, rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
+          write (lun_output, rec=pz+ipz*nz+(pa-1)*mzgrid) gf(:,:,pz,pa)
         enddo
       enddo
 !
@@ -321,7 +320,7 @@ program pc_collect
       if (lfirst_proc_z) start_pos = 1
       if (llast_proc_z) end_pos = mz
       do pz = start_pos, end_pos
-        write (lun_output, rec=pz+ipz*nz+(pa-1)*ngz) gf(:,:,pz,pa)
+        write (lun_output, rec=pz+ipz*nz+(pa-1)*mzgrid) gf(:,:,pz,pa)
       enddo
     enddo
   enddo

@@ -85,7 +85,7 @@ program pc_distribute
 !
 ! Calculate dimensionality
 !
-  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
 !
 !  Register physics modules.
 !
@@ -93,7 +93,7 @@ program pc_distribute
 !
 !  Define the lenergy logical
 !
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then

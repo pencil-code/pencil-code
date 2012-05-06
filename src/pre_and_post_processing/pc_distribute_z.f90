@@ -25,7 +25,7 @@ program pc_distribute_z
   real, dimension (mygrid) :: gy
   real, dimension (mzgrid) :: gz
   logical :: ex
-  integer :: mvar_in, pz, pa, rec_len_int, alloc_err
+  integer :: mvar_in, pz, pa, io_len, alloc_err
   integer(kind=8) :: rec_len, num_rec
   real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -47,7 +47,7 @@ program pc_distribute_z
 !
   deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
 !
-  inquire (IOLENGTH=rec_len_int) 1.0
+  inquire (IOLENGTH=io_len) 1.0
 !
   if (IO_strategy /= "collect_xy") call fatal_error ('pc_distribute_z', &
       "This tool only makes sense together with the 'io_collect_xy' module.")
@@ -82,7 +82,7 @@ program pc_distribute_z
 !
 ! Calculate dimensionality
 !
-  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
 !
 !  Register physics modules.
 !
@@ -90,7 +90,7 @@ program pc_distribute_z
 !
 !  Define the lenergy logical
 !
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then
@@ -146,7 +146,7 @@ program pc_distribute_z
   close (lun_input)
   t = t_sp
 !
-  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*rec_len_int, status='old')
+  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -201,7 +201,7 @@ program pc_distribute_z
     call directory_names()
 !
     ! write data:
-    rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * int (mz, kind=8) * int (mvar_io*rec_len_int, kind=8)
+    rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * int (mz, kind=8) * int (mvar_io*io_len, kind=8)
     open (lun_output, FILE=trim(directory_snap)//'/'//filename, access='direct', recl=rec_len, status='replace')
     write (lun_output, rec=1) f(:,:,:,1:mvar_io)
     close (lun_output)

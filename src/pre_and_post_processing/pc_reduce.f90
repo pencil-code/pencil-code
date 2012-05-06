@@ -16,6 +16,7 @@ program pc_reduce
   use Register
   use Snapshot
   use Sub
+  use Syscalls, only: sizeof_real
 !
   implicit none
 !
@@ -24,15 +25,18 @@ program pc_reduce
   character (len=*), parameter :: directory_out = 'data/reduced'
 !
   real, dimension (mx,my,mz,mfarray) :: f
-  integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost, ngz=nzgrid+2*nghost
-  real, dimension (:,:,:,:), allocatable :: rf
+  integer, parameter :: nrx=nxgrid/reduce+2*nghost, nry=nygrid/reduce+2*nghost
+  real, dimension (:,:,:,:), allocatable :: rf, gf
   real, dimension (nrx) :: rx, rdx_1, rdx_tilde
   real, dimension (nry) :: ry, rdy_1, rdy_tilde
-  real, dimension (ngz) :: gz, gdz_1, gdz_tilde
+  real, dimension (mzgrid) :: gz, gdz_1, gdz_tilde
+  real, dimension (mxgrid) :: gx, gdx_1, gdx_tilde
+  real, dimension (mygrid) :: gy, gdy_1, gdy_tilde
   logical :: ex
-  integer :: mvar_in, bytes, px, py, pz, pa, start_pos, end_pos, alloc_err
+  integer :: mvar_in, io_len, px, py, pz, pa, start_pos, end_pos, alloc_err
+  integer(kind=8) :: rec_len, num_rec
   real, parameter :: inv_reduce = 1.0 / reduce, inv_reduce_2 = 1.0 / reduce**2
-  real :: t_sp   ! t in single precision for backwards compatibility
+  real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lrun=.true.
   lmpicomm = .false.
@@ -50,10 +54,32 @@ program pc_reduce
   uucorn = 0
   ulcorn = 0
 !
-  inquire (IOLENGTH=bytes) 1.0
+!  Set up flags for leading processors in each possible direction and plane
 !
-  if (lcollective_IO) call fatal_error ('pc_reduce', &
-      "Reducing snapshots currently requires the distributed IO-module.")
+  lfirst_proc_x = (ipx == 0)
+  lfirst_proc_y = (ipy == 0)
+  lfirst_proc_z = (ipz == 0)
+  lfirst_proc_xy = lfirst_proc_x .and. lfirst_proc_y
+  lfirst_proc_yz = lfirst_proc_y .and. lfirst_proc_z
+  lfirst_proc_xz = lfirst_proc_x .and. lfirst_proc_z
+  lfirst_proc_xyz = lfirst_proc_x .and. lfirst_proc_y .and. lfirst_proc_z
+!
+!  Set up flags for trailing processors in each possible direction and plane
+!
+  llast_proc_x = (ipx == nprocx-1)
+  llast_proc_y = (ipy == nprocy-1)
+  llast_proc_z = (ipz == nprocz-1)
+  llast_proc_xy = llast_proc_x .and. llast_proc_y
+  llast_proc_yz = llast_proc_y .and. llast_proc_z
+  llast_proc_xz = llast_proc_x .and. llast_proc_z
+  llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
+!
+  inquire (IOLENGTH=io_len) 1.0
+!
+  if (IO_strategy == 'collect') call fatal_error ('pc_reduce', &
+      "Reducing snapshots is not implemented for the 'io_collect'-module.")
+  if (IO_strategy == 'MPI-IO') call fatal_error ('pc_reduce', &
+      "Reducing snapshots is not implemented for the 'io_mpi2'-module.")
 !
   write (*,*) 'Please enter the filename to convert (eg. var.dat, VAR1, ...):'
   read (*,*) filename
@@ -90,7 +116,7 @@ program pc_reduce
 !
 ! Calculate dimensionality
 !
-  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
 !
 !  Register physics modules.
 !
@@ -98,7 +124,7 @@ program pc_reduce
 !
 !  Define the lenergy logical
 !
-  lenergy=lentropy.or.ltemperature.or.lthermal_energy
+  lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then
@@ -132,6 +158,10 @@ program pc_reduce
 !
   allocate (rf (nrx,nry,mz,mvar_io), stat=alloc_err)
   if (alloc_err /= 0) call fatal_error ('pc_reduce', 'Failed to allocate memory for rf.', .true.)
+  if (IO_strategy == 'collect_xy') then
+    allocate (gf (mxgrid,mygrid,mz,mvar_io), stat=alloc_err)
+    if (alloc_err /= 0) call fatal_error ('pc_reduce', 'Failed to allocate memory for gf.', .true.)
+  endif
 !
 !  Print resolution and dimension of the simulation.
 !
@@ -144,7 +174,7 @@ program pc_reduce
   call directory_names()
   inquire (file=trim(directory_snap)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_reduce', 'File not found: '//trim(directory_snap)//'/'//filename, .true.)
-  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=nrx*nry*bytes)
+  open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=nrx*nry*io_len)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -158,6 +188,9 @@ program pc_reduce
 !
   write (*,*) "IPZ-layer:"
 !
+  rx = huge(1.0)
+  ry = huge(1.0)
+!
   gz = huge(1.0)
 !
   do ipz = 0, nprocz-1
@@ -165,136 +198,213 @@ program pc_reduce
     write (*,*) ipz+1, " of ", nprocz
 !
     rf = huge(1.0)
-    rx = huge(1.0)
-    ry = huge(1.0)
 !
-    do ipy = 0, nprocy-1
-      do ipx = 0, nprocx-1
+    iproc = ipz * nprocx*nprocy
+    lroot = (iproc==root)
+    lfirst_proc_z = (ipz == 0)
+    llast_proc_z = (ipz == nprocz-1)
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+    if (IO_strategy == 'collect_xy') then
+      ! Take the shortcut, files are well prepared for direct reduction
+!
+      gf = huge(1.0)
+      gx = huge(1.0)
+      gy = huge(1.0)
+!
+      ! Set up directory names 'directory' and 'directory_snap'
+      call directory_names()
+!
+      ! Read the data
+      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz
+      rec_len = rec_len * mvar_in * io_len
+      open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
+      read (lun_input, rec=1) gf
+      close (lun_input)
+!
+      ! Read additional information and check consistency of timestamp
+      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
+      num_rec = int (mz, kind=8) * int (mvar_in*sizeof_real(), kind=8)
+      open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
+      call fseek_pos (lun_input, rec_len, num_rec, 0)
+      read (lun_input) t_sp
+      if (lroot) then
+        t_test = t_sp
+        read (lun_input) gx, gy, gz, dx, dy, dz
+      else
+        if (t_test /= t_sp) then
+          write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(filename)//' IS INCONSISTENT: t=', t_sp
+          stop 1
+        endif
+      endif
+      close (lun_input)
+      t = t_sp
+!
+      ! reduce f:
+      do pa = 1, mvar_io
+        start_pos = nghost + 1
+        end_pos = nghost + nz
+        if (lfirst_proc_z) start_pos = 1
+        if (llast_proc_z) end_pos = mz
+        do pz = start_pos, end_pos
+          do py = 0, nygrid-1, reduce
+            do px = 0, nxgrid-1, reduce
+              rf(nghost+1+(px+ipx*nxgrid)/reduce,nghost+1+(py+ipy*nygrid)/reduce,pz,pa) = &
+                  sum (gf(nghost+1+px:nghost+px+reduce,nghost+1+py:nghost+py+reduce,pz,pa)) * inv_reduce_2
+            enddo
+          enddo
+        enddo
+      enddo
+!
+      if (lroot) then
+!
+        ! read grid:
+        open (lun_input, FILE=trim(directory_collect)//'/grid.dat', FORM='unformatted', status='old')
+        read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+        read (lun_input) dx, dy, dz
+        read (lun_input) Lx, Ly, Lz
+        read (lun_input) gdx_1, gdy_1, gdz_1
+        read (lun_input) gdx_tilde, gdy_tilde, gdz_tilde
+        close (lun_input)
+!
+        ! reduce x coordinates:
+        do px = 0, nxgrid-1, reduce
+          rx(nghost+1+px/reduce) = sum (gx(nghost+1+px:nghost+px+reduce)) * inv_reduce
+          rdx_1(nghost+1+px/reduce) = 1.0 / sum (1.0/gdx_1(nghost+1+px:nghost+px+reduce))
+          rdx_tilde(nghost+1+px/reduce) = sum (1.0/gdx_1(nghost+1+px:nghost+px+reduce))
+        enddo
+!
+        ! reduce y coordinates:
+        do py = 0, nygrid-1, reduce
+          ry(nghost+1+py/reduce) = sum (gy(nghost+1+py:nghost+py+reduce)) * inv_reduce
+          rdy_1(nghost+1+py/reduce) = 1.0 / sum (1.0/gdy_1(nghost+1+py:nghost+py+reduce))
+          rdy_tilde(nghost+1+py/reduce) = sum (1.0/gdy_1(nghost+1+py:nghost+py+reduce))
+        enddo
+!
+      endif
+!
+    else
+!
+      do ipy = 0, nprocy-1
+        do ipx = 0, nprocx-1
+!
+          iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
+          lroot = (iproc==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
-        lfirst_proc_x = (ipx == 0)
-        lfirst_proc_y = (ipy == 0)
-        lfirst_proc_z = (ipz == 0)
-        lfirst_proc_xy = lfirst_proc_x .and. lfirst_proc_y
-        lfirst_proc_yz = lfirst_proc_y .and. lfirst_proc_z
-        lfirst_proc_xz = lfirst_proc_x .and. lfirst_proc_z
-        lfirst_proc_xyz = lfirst_proc_x .and. lfirst_proc_y .and. lfirst_proc_z
+          lfirst_proc_x = (ipx == 0)
+          lfirst_proc_y = (ipy == 0)
+          lfirst_proc_z = (ipz == 0)
+          lfirst_proc_xy = lfirst_proc_x .and. lfirst_proc_y
+          lfirst_proc_yz = lfirst_proc_y .and. lfirst_proc_z
+          lfirst_proc_xz = lfirst_proc_x .and. lfirst_proc_z
+          lfirst_proc_xyz = lfirst_proc_x .and. lfirst_proc_y .and. lfirst_proc_z
 !
 !  Set up flags for trailing processors in each possible direction and plane
 !
-        llast_proc_x = (ipx == nprocx-1)
-        llast_proc_y = (ipy == nprocy-1)
-        llast_proc_z = (ipz == nprocz-1)
-        llast_proc_xy = llast_proc_x .and. llast_proc_y
-        llast_proc_yz = llast_proc_y .and. llast_proc_z
-        llast_proc_xz = llast_proc_x .and. llast_proc_z
-        llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
+          llast_proc_x = (ipx == nprocx-1)
+          llast_proc_y = (ipy == nprocy-1)
+          llast_proc_z = (ipz == nprocz-1)
+          llast_proc_xy = llast_proc_x .and. llast_proc_y
+          llast_proc_yz = llast_proc_y .and. llast_proc_z
+          llast_proc_xz = llast_proc_x .and. llast_proc_z
+          llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
 !
 !  Set up directory names.
 !
-        call directory_names()
+          call directory_names()
 !
 !  Read coordinates.
 !
-        if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid ('grid.dat')
+          if (ip<=6.and.lroot) print*, 'reading grid coordinates'
+          call rgrid ('grid.dat')
 !
 ! Size of box at local processor. The if-statement is for 
 ! backward compatibility.
 !
-        if (all(lequidist)) then 
-          Lxyz_loc(1)=Lxyz(1)/nprocx
-          Lxyz_loc(2)=Lxyz(2)/nprocy
-          Lxyz_loc(3)=Lxyz(3)/nprocz
-          xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1) 
-          xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
-          xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
-          xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
-          xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
-          xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
-        else
-          xyz0_loc(1)=x(l1)
-          xyz0_loc(2)=y(m1)
-          xyz0_loc(3)=z(n1)
-          xyz1_loc(1)=x(l2)
-          xyz1_loc(2)=y(m2)
-          xyz1_loc(3)=z(n2)
-          Lxyz_loc(1)=xyz1_loc(1) - xyz0_loc(1)
-          Lxyz_loc(2)=xyz1_loc(2) - xyz0_loc(3)
-          Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
-        endif
+          if (all(lequidist)) then 
+            Lxyz_loc(1)=Lxyz(1)/nprocx
+            Lxyz_loc(2)=Lxyz(2)/nprocy
+            Lxyz_loc(3)=Lxyz(3)/nprocz
+            xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1) 
+            xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
+            xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
+            xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
+            xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
+            xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
+          else
+            xyz0_loc(1)=x(l1)
+            xyz0_loc(2)=y(m1)
+            xyz0_loc(3)=z(n1)
+            xyz1_loc(1)=x(l2)
+            xyz1_loc(2)=y(m2)
+            xyz1_loc(3)=z(n2)
+            Lxyz_loc(1)=xyz1_loc(1) - xyz0_loc(1)
+            Lxyz_loc(2)=xyz1_loc(2) - xyz0_loc(3)
+            Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
+          endif
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid()
+          call initialize_grid()
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-        call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
+          call rsnap (filename, f(:,:,:,1:mvar_in), mvar_in)
 !
-        ! reduce f:
-        do pa = 1, mvar_io
-          start_pos = nghost + 1
-          end_pos = nghost + nz
-          if (lfirst_proc_z) start_pos = 1
-          if (llast_proc_z) end_pos = mz
-          do pz = start_pos, end_pos
-            do py = 0, ny-1, reduce
-              do px = 0, nx-1, reduce
-                rf(nghost+1+(px+ipx*nx)/reduce,nghost+1+(py+ipy*ny)/reduce,pz,pa) = &
-                    sum (f(nghost+1+px:nghost+px+reduce,nghost+1+py:nghost+py+reduce,pz,pa)) * inv_reduce_2
+          ! reduce f:
+          do pa = 1, mvar_io
+            start_pos = nghost + 1
+            end_pos = nghost + nz
+            if (lfirst_proc_z) start_pos = 1
+            if (llast_proc_z) end_pos = mz
+            do pz = start_pos, end_pos
+              do py = 0, ny-1, reduce
+                do px = 0, nx-1, reduce
+                  rf(nghost+1+(px+ipx*nx)/reduce,nghost+1+(py+ipy*ny)/reduce,pz,pa) = &
+                      sum (f(nghost+1+px:nghost+px+reduce,nghost+1+py:nghost+py+reduce,pz,pa)) * inv_reduce_2
+                enddo
               enddo
             enddo
           enddo
-        enddo
 !
-        ! reduce x coordinates:
-        do px = 0, nx-1, reduce
-          rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) * inv_reduce
-          rdx_1(nghost+1+(px+ipx*nx)/reduce) = 1.0 / sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
-          rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
-        enddo
+          if (lfirst_proc_yz) then
+            ! reduce x coordinates:
+            do px = 0, nx-1, reduce
+              rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) * inv_reduce
+              rdx_1(nghost+1+(px+ipx*nx)/reduce) = 1.0 / sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
+              rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
+            enddo
+          endif
 !
-        ! reduce y coordinates:
-        do py = 0, ny-1, reduce
-          ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) * inv_reduce
-          rdy_1(nghost+1+(py+ipy*ny)/reduce) = 1.0 / sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
-          rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
-        enddo
+          if (lfirst_proc_xz) then
+            ! reduce y coordinates:
+            do py = 0, ny-1, reduce
+              ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) * inv_reduce
+              rdy_1(nghost+1+(py+ipy*ny)/reduce) = 1.0 / sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
+              rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
+            enddo
+          endif
 !
+        enddo
       enddo
-    enddo
 !
-    ! collect z coordinates:
-    gz(1+ipz*nz:mz+ipz*nz) = z
-    gdz_1(1+ipz*nz:mz+ipz*nz) = dz_1
-    gdz_tilde(1+ipz*nz:mz+ipz*nz) = dz_tilde
+      ! collect z coordinates:
+      gz(1+ipz*nz:mz+ipz*nz) = z
+      gdz_1(1+ipz*nz:mz+ipz*nz) = dz_1
+      gdz_tilde(1+ipz*nz:mz+ipz*nz) = dz_tilde
+!
+    endif
 !
     ! communicate ghost cells along the y direction:
     rf(nghost+1:nrx-nghost,           1:nghost,  :,:) = rf(nghost+1:nrx-nghost,nry-2*nghost+1:nry-nghost,:,:)
     rf(nghost+1:nrx-nghost,nry-nghost+1:nry,     :,:) = rf(nghost+1:nrx-nghost,      nghost+1:2*nghost,  :,:)
-    ry(           1:nghost) = ry(nry-2*nghost+1:nry-nghost) - Lxyz(2)
-    ry(nry-nghost+1:nry   ) = ry(      nghost+1:2*nghost  ) + Lxyz(2)
-    rdy_1(           1:nghost) = rdy_1(nry-2*nghost+1:nry-nghost)
-    rdy_1(nry-nghost+1:nry   ) = rdy_1(      nghost+1:2*nghost  )
-    rdy_tilde(           1:nghost) = rdy_tilde(nry-2*nghost+1:nry-nghost)
-    rdy_tilde(nry-nghost+1:nry   ) = rdy_tilde(      nghost+1:2*nghost  )
 !
     ! communicate ghost cells along the x direction:
     rf(           1:nghost,:,:,:) = rf(nrx-2*nghost+1:nrx-nghost,:,:,:)
     rf(nrx-nghost+1:nrx,   :,:,:) = rf(      nghost+1:2*nghost,  :,:,:)
-    rx(           1:nghost) = rx(nrx-2*nghost+1:nrx-nghost) - Lxyz(1)
-    rx(nrx-nghost+1:nrx   ) = rx(      nghost+1:2*nghost  ) + Lxyz(1)
-    rdx_1(           1:nghost) = rdx_1(nrx-2*nghost+1:nrx-nghost)
-    rdx_1(nrx-nghost+1:nrx   ) = rdx_1(      nghost+1:2*nghost  )
-    rdx_tilde(           1:nghost) = rdx_tilde(nrx-2*nghost+1:nrx-nghost)
-    rdx_tilde(nrx-nghost+1:nrx   ) = rdx_tilde(      nghost+1:2*nghost  )
 !
     ! write xy-layer:
     do pa = 1, mvar_io
@@ -303,7 +413,7 @@ program pc_reduce
       if (lfirst_proc_z) start_pos = 1
       if (llast_proc_z) end_pos = mz
       do pz = start_pos, end_pos
-        write (lun_output, rec=pz+ipz*nz+(pa-1)*ngz) rf(:,:,pz,pa)
+        write (lun_output, rec=pz+ipz*nz+(pa-1)*mzgrid) rf(:,:,pz,pa)
       enddo
     enddo
   enddo
@@ -315,6 +425,22 @@ program pc_reduce
   write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
   if (lshear) write (lun_output) deltay
   close (lun_output)
+!
+  ! communicate ghost cells along the y direction:
+  ry(           1:nghost) = ry(nry-2*nghost+1:nry-nghost) - Lxyz(2)
+  ry(nry-nghost+1:nry   ) = ry(      nghost+1:2*nghost  ) + Lxyz(2)
+  rdy_1(           1:nghost) = rdy_1(nry-2*nghost+1:nry-nghost)
+  rdy_1(nry-nghost+1:nry   ) = rdy_1(      nghost+1:2*nghost  )
+  rdy_tilde(           1:nghost) = rdy_tilde(nry-2*nghost+1:nry-nghost)
+  rdy_tilde(nry-nghost+1:nry   ) = rdy_tilde(      nghost+1:2*nghost  )
+!
+  ! communicate ghost cells along the x direction:
+  rx(           1:nghost) = rx(nrx-2*nghost+1:nrx-nghost) - Lxyz(1)
+  rx(nrx-nghost+1:nrx   ) = rx(      nghost+1:2*nghost  ) + Lxyz(1)
+  rdx_1(           1:nghost) = rdx_1(nrx-2*nghost+1:nrx-nghost)
+  rdx_1(nrx-nghost+1:nrx   ) = rdx_1(      nghost+1:2*nghost  )
+  rdx_tilde(           1:nghost) = rdx_tilde(nrx-2*nghost+1:nrx-nghost)
+  rdx_tilde(nrx-nghost+1:nrx   ) = rdx_tilde(      nghost+1:2*nghost  )
 !
   ! write global grid:
   open (lun_output, FILE=trim(directory_out)//'/grid.dat', FORM='unformatted', status='replace')
@@ -334,6 +460,7 @@ program pc_reduce
 !  Free any allocated memory.
 !
   deallocate (rf)
+  if (IO_strategy == 'collect_xy') deallocate (gf)
   call fnames_clean_up()
   call vnames_clean_up()
 !
