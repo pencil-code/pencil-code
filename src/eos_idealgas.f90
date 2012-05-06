@@ -187,7 +187,7 @@ module EquationOfState
           if (abs(cp-cp_reference)/cp > error_cp) then
             if (lroot) print*,'initialize_eos: consistency: cp=', cp , &
                 'while: cp_reference=', cp_reference
-            call fatal_error('initialize_eos','')
+            call fatal_error('units_eos','cp is not correctly calculated')
           endif
         endif
       endif
@@ -623,18 +623,18 @@ module EquationOfState
           endif
           if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
         else
-          if (lpencil_in(i_cs2)) then
-            lpencil_in(i_rho)=.true.
-            lpencil_in(i_pp)=.true.
-          endif
-          if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
-          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+          lpencil_in(i_rho)=.true.
+          lpencil_in(i_pp)=.true.
+          lpencil_in(i_ss)=.true.
+          if (lpencil_in(i_lnrho)) lpencil_in(i_rho)=.true.
           if (lpencil_in(i_lnTT)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_rho)) lpencil_in(i_lnrho)=.true.
-          if (lpencil_in(i_lnrho)) then
-            lpencil_in(i_pp)=.true.
-            lpencil_in(i_ss)=.true.
-          endif
+          if (lpencil_in(i_lnTT)) lpencil_in(i_ss)=.true.
+          if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
+          if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+!         if (lpencil_in(i_lnrho)) then
+!           lpencil_in(i_pp)=.true.
+!           lpencil_in(i_ss)=.true.
+!         endif
           if (lpencil_in(i_rho_anel)) then
               lpencil_in(i_pp)=.true.
               lpencil_in(i_ss)=.true.
@@ -900,8 +900,16 @@ module EquationOfState
             p%rho_anel=(f(l1:l2,m,n,ipp)/(f(l1:l2,m,n,irho_b)*p%cs2)- &
                  f(l1:l2,m,n,iss)*cp1)
           else
-            call fatal_error('calc_pencils_eos', &
-              'Not implemented yet')
+            if (lpencil(i_pp)) p%pp=f(l1:l2,m,n,ipp)
+            if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
+            if (lpencil(i_rho)) p%rho=f(l1:l2,m,n,irho)
+            !if (lpencil(i_rho)) p%rho=rho0*(gamma*p%pp/(rho0*cs20*exp(cv1*p%ss)))**gamma_inv
+            if (lpencil(i_lnrho)) p%lnrho=alog(p%rho)
+            if (lpencil(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
+            if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
+            if (lpencil(i_yH)) p%yH=impossible
+            if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+            if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
           endif
         endif
         if (leos_isentropic) then
@@ -3686,6 +3694,8 @@ module EquationOfState
 !
         if (lentropy) then
 !
+!  The following might work for anelastic
+!
           if (ldensity) then
             if (bcz1(iss)/='hs') then
               call fatal_error("bc_lnrho_hydrostatic_z", &
@@ -3719,7 +3729,7 @@ module EquationOfState
               f(:,:,n1-i,irho_b) = f(:,:,n1+i,irho_b) - 2*i*dz*dlnrhodz*f(:,:,n1+1,irho_b)
               f(:,:,n1-i,iss_b   ) = f(:,:,n1+i,iss_b   ) - 2*i*dz*dssdz
             enddo
-         endif
+          endif
 !
         elseif (ltemperature) then
 !
