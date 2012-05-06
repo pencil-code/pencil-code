@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED qq(3); q2
+! PENCILS PROVIDED qq(3); q2, divq
 !
 !***************************************************************
 !
@@ -38,7 +38,7 @@ module Special
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
-  logical :: coronae_fix=.false.,lfilter_farray=.false.,lreset_spitzer=.false.
+  logical :: coronae_fix=.false.,lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
@@ -255,7 +255,7 @@ module Special
         endif
       endif
 !
-      if (lreset_spitzer) f(:,:,:,iqx:iqz)=0.
+      if (lreset_heatflux) f(:,:,:,iqx:iqz)=0.
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -326,6 +326,7 @@ module Special
 !
       if (eighth_moment /= 0.) then
         lpenc_requested(i_qq)=.true.
+        lpenc_requested(i_divq)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_b2)=.true.
         lpenc_requested(i_cp1)=.true.
@@ -338,6 +339,7 @@ module Special
 !
       if (tau_inv_spitzer /= 0.) then
         lpenc_requested(i_qq)=.true.
+        lpenc_requested(i_divq)=.true.
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bunit)=.true.
@@ -447,14 +449,14 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-      use Sub, only: dot2_mn
+      use Sub, only: dot2_mn, div
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       if (lpencil(i_qq)) p%qq=f(l1:l2,m,n,iqx:iqz)
-!
       if (lpencil(i_q2)) call dot2_mn(p%qq,p%q2)
+      if (lpencil(i_divq)) call div(f,iqq,p%divq)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -531,11 +533,10 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx) :: b2_1,qsat,qabs
-      real, dimension(nx) :: div_spitzer,rhs,cosgT_b
+      real, dimension(nx) :: rhs,cosgT_b
       real, dimension(nx,3) :: K1,unit_glnTT
       real, dimension(nx,3) :: spitzer_vec
       real, dimension(nx) :: tmp,dt_1_8th,nu_coll
-      real, dimension(nx,3) :: q
       real :: coeff
       integer :: i
 !
@@ -577,19 +578,15 @@ module Special
           endwhere
         endif
 !
-        q = f(l1:l2,m,n,iqx:iqz)
-!
         do i=1,3
           df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) + &
-              tau_inv_spitzer*(-q(:,i)+spitzer_vec(:,i))  +  &
-              q(:,i)*(p%uglnrho + p%divu)
+              tau_inv_spitzer*(-p%qq(:,i)+spitzer_vec(:,i))  +  &
+              p%qq(:,i)*(p%uglnrho + p%divu)
         enddo
  !
-        call div(f,iqq,rhs)
+        call dot(p%qq,p%glnrho,tmp)
 !
-        call dot(q,p%glnrho,tmp)
-!
-        rhs = gamma*p%cp1*(rhs + tmp)*exp(-p%lnTT)
+        rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
 !
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
@@ -631,20 +628,16 @@ module Special
         call dot(K1,p%bb,tmp)
         call multsv(b2_1*tmp,p%bb,spitzer_vec)
 !
-        q = f(l1:l2,m,n,iqx:iqz)
-!
         nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)*eighth_moment
 !
         do i=1,3
           df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) &
-              -nu_coll*q(:,i)-spitzer_vec(:,i)
+              -nu_coll*p%qq(:,i)-spitzer_vec(:,i)
         enddo
 !
 !  Limit by saturation heat flux
 !
-        call div(f,iqq,div_spitzer)
-!
-        rhs = exp(-p%lnrho-p%lnTT)*div_spitzer
+        rhs = exp(-p%lnrho-p%lnTT)*p%divq
 !
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma*p%cp1*rhs
 !
