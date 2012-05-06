@@ -508,11 +508,11 @@ module Hydro
       call farray_register_pde('uu',iuu,vector=3)
       iux = iuu; iuy = iuu+1; iuz = iuu+2
 !
-!  Share lpressuregradient_gas so Entropy module knows whether to apply
+!  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  then density is computed, i.e. not even with lanelastic.
 !
-      if  (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
+      if  (.not.ldensity) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas',&
           lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_hydro',&
@@ -750,7 +750,7 @@ module Hydro
 !
 ! share the Prandtl number with the viscosity module
 !
-      if (lrun.and.lboussinesq) then
+      if (lrun.and.lboussinesq.and.ltemperature) then
         call put_shared_variable('Pr', Pr, ierr)
         if (ierr/=0) call fatal_error('initialize_hydro:',&
              'failed to share Pr')
@@ -1432,7 +1432,10 @@ module Hydro
 !
       if (lisotropic_advection) lpenc_requested(i_u2)=.true.
 !
-      if (lboussinesq.and.lsphere_in_a_box) then
+!  The following only play a role if lsphere_in_a_box
+!  and there is a buoyancy term. (If only hydro, there is no buoyancy.)
+!
+      if (lboussinesq.and.ltemperature.and.lsphere_in_a_box) then
         lpenc_requested(i_evr)=.true.
         lpenc_requested(i_r_mn)=.true.
       endif
@@ -1874,9 +1877,11 @@ module Hydro
      if (ekman_friction/=0) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ekman_friction*p%uu
 !
-!  Boussinesq approximation
+!  Boussinesq approximation. Use Rayleigh number only with ltemperature.
+!  Note: the buoyancy term is currently scaled with Ra*Pr, but Pr is also
+!  regulated though mu and K, so Pr should eventually be eliminated.
 !
-     if (lboussinesq) then
+     if (lboussinesq.and.ltemperature) then
        if (lsphere_in_a_box) then
          do j=1,3
            ju=j+iuu-1
@@ -2534,7 +2539,7 @@ module Hydro
 !
 !  calculate averages of rho*ux and rho*uy
 !
-      if (ldensity) then
+      if (ldensity.or.lanelastic) then
         if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
           ruxm=0.
           ruym=0.
@@ -4366,7 +4371,7 @@ module Hydro
 !
 !  check if ldensity=T. Otherwise switch to remove_mean_flow.
 !
-      if (ldensity) then
+      if (ldensity.or.lanelastic) then
 !
 !  initialize mean momentum, rum, to zero
 !
