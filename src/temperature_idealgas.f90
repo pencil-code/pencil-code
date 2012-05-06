@@ -167,7 +167,14 @@ module Entropy
 !
       integer :: ierr
 !
-      call farray_register_pde('lnTT',ilnTT)
+!  Register TT or lnTT, depending on whether or not ltemperature_nolog
+!
+      if (ltemperature_nolog) then
+        call farray_register_pde('TT',iTT)
+        ilnTT=iTT
+      else
+        call farray_register_pde('lnTT',ilnTT)
+      endif
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
@@ -217,8 +224,6 @@ module Entropy
       real :: star_cte
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
-!
-      if (ltemperature_nolog) iTT=ilnTT
 !
       if (.not. leos) then
          call fatal_error('initialize_entropy', &
@@ -567,7 +572,10 @@ module Entropy
 !
       if (dvid/=0.0) lpenc_video(i_pp)=.true.
 !
-      if (ldt) lpenc_requested(i_cs2)=.true.
+!  cs2 affects time step only if the continuity equation is being solved,
+!  i.e. not for boussinesq or anelastic.
+!
+      if (ldt.and.ldensity) lpenc_requested(i_cs2)=.true.
 !
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
 !
@@ -578,13 +586,13 @@ module Entropy
             lpenc_requested(i_TT1)=.true.
       endif
 !
-      if (ldensity) then
+      if (ldensity.or.lanelastic) then
         lpenc_requested(i_divu)=.true.
         if (ltemperature_nolog) lpenc_requested(i_TT)=.true.
       endif
 !
       if (lcalc_heat_cool) then
-        if (ldensity) then
+        if (ldensity.or.lboussinesq.or.lanelastic) then
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_TT)=.true.
           lpenc_requested(i_TT1)=.true.
@@ -609,7 +617,7 @@ module Entropy
       endif
 !
       if (lheatc_Kconst) then
-        if (ldensity) lpenc_requested(i_rho1)=.true.
+        if (ldensity.or.lboussinesq.or.lanelastic) lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_cp1)=.true.
         if (ltemperature_nolog) then
           lpenc_requested(i_del2TT)=.true.
@@ -863,10 +871,9 @@ module Entropy
         endif
       endif
 !
-!  Need to add left-hand-side of the continuity equation (see manual).
-!  Check this:
+!  Add divu term.
 !
-      if (ldensity) then
+      if (ldensity.or.lanelastic) then
         if (ltemperature_nolog) then
           df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - gamma_m1*p%TT*p%divu
         else
@@ -1296,11 +1303,12 @@ module Entropy
       intent(inout) :: df
 !
 !  Add heat conduction to RHS of temperature equation.
+!  Note that rho does not in general need to be unity, even with Boussinesq.
 !
-      if (ldensity) then
+      if (ldensity.or.lboussinesq.or.lanelastic) then
         chix=p%rho1*hcond0*p%cp1
       else
-        chix=hcond0*p%cp1
+        chix=hcond0
       endif
 !
       if (ltemperature_nolog) then
