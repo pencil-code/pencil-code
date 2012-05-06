@@ -68,6 +68,19 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
+!  Boussinesq not implemented for entropy
+!
+      if (lenergy) then
+        if (lentropy) call fatal_error("initialize_density", &
+          "Boussinesq not implemented for entropy")
+!
+!  Boussinesq only implemented for ltemperature_nolog
+!
+        if (.not.ltemperature_nolog) call fatal_error("initialize_density", &
+          "Boussinesq is only implemented for ltemperature_nolog")
+!
+      endif
+!
 !  Tell the equation of state that we're here and we don't have a
 !  variable => isochoric (constant density).
 !
@@ -321,7 +334,7 @@ module Density
       real :: s
       integer :: j, ju
 !
-!  Find the divergence of rhs
+!  Find the divergence of uu
 !
       call update_ghosts(f,iuu,iuu+2)
       do n=n1,n2; do m=m1,m2
