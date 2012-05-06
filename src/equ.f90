@@ -360,15 +360,16 @@ module Equ
 !  advec_XX and diffus_XX, which are essentially the inverse
 !  advective and diffusive timestep for that module.
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
+!  Note that advec_cs2 should always be initialized when leos.
 !
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
           if (lhydro.or.lhydro_kinematic) then
             advec_uu=0.0; advec_hypermesh_uu=0.0
           endif
-          if (ldensity) then
+          if (ldensity.or.lboussinesq.or.lanelastic) then
             diffus_diffrho=0.0; diffus_diffrho3=0.0; advec_hypermesh_rho=0.0
-            if (leos) advec_cs2=0.0
           endif
+          if (leos) advec_cs2=0.0
           if (lenergy) then
             diffus_chi=0.0; diffus_chi3=0.0; advec_hypermesh_ss=0.0
           endif
@@ -671,7 +672,6 @@ module Equ
           maxdiffus=0.0
           maxdiffus2=0.0
           maxdiffus3=0.0
-!--       if (lhydro) maxadvec=maxadvec+advec_uu
           if (lhydro.or.lhydro_kinematic) maxadvec=maxadvec+advec_uu
           if (lshear) maxadvec=maxadvec+advec_shear
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
