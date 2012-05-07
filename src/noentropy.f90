@@ -211,7 +211,7 @@ module Entropy
 !
 !  20-nov-04/anders: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -232,10 +232,6 @@ module Entropy
           else
             p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
           endif
-!
-!DM the profz_eos should be changed to profz_free
-!AB: should now be removed altogether, I guess.
-!--       if (profz_eos(n)/=1.0) p%fpres(:,j)=profz_eos(n)*p%fpres(:,j)
 !
 !  multiply previous p%fpres pencil with profiles
 !
