@@ -957,7 +957,10 @@ module General
 !***********************************************************************
     subroutine pendag(n,a,b,c,d,e,r,u)
 !
-!  10-avr-2012/dintrans: coded
+!  01-apr-00/John Crowe (Newcastle): written
+!  10-avr-12/dintrans: recoded entirely because the old version did
+!  not work (I realized that by inverting pentadiagonal systems with known 
+!  analytical solutions, e.g. laplacian of cos/sin functions)
 !
       real, dimension(:), intent(in)  :: a,b,c,d,e,r
       real, dimension(:), intent(out) :: u
