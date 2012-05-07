@@ -593,6 +593,17 @@ if (ilnTT gt 0) then begin
   endif
 endif
 ;
+default, iTT, 0
+if (iTT gt 0) then begin
+  if ((iTT le dim.mvar) or (param.lwrite_aux ne 0)) then begin
+    varcontent[iTT].variable   = 'Temperature (TT)'
+    varcontent[iTT].idlvar     = 'TT'
+    varcontent[iTT].idlinit    = INIT_SCALAR
+    varcontent[iTT].idlvarloc  = 'TT_loc'
+    varcontent[iTT].idlinitloc = INIT_SCALAR_LOC
+  endif
+endif
+;
 default, ieth, 0
 if (ieth gt 0) then begin
   varcontent[ieth].variable   = 'Thermal energy (eth)'
