@@ -3295,7 +3295,7 @@ module Special
 !***********************************************************************
     subroutine footpoint_quenching(f)
 !
-      use EquationofState, only: gamma_m1,gamma_inv,lnrho0,cs20,get_cp1
+      use EquationofState, only: gamma_m1,gamma1,lnrho0,cs20,get_cp1
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -3313,11 +3313,11 @@ module Special
           call fatal_error('solar_corona', &
               'uudriver only implemented for ltemperature=true')
         else
-          pp =gamma_m1*gamma_inv/cp1 * &
+          pp =gamma_m1*gamma1/cp1 * &
               exp(f(l1:l2,m1:m2,n1,ilnrho)+f(l1:l2,m1:m2,n1,ilnrho))
         endif
       else
-        pp=gamma_inv*cs20*exp(lnrho0)
+        pp=gamma1*cs20*exp(lnrho0)
       endif
 !
       beta =  pp/(B2+tini)*2.*mu0

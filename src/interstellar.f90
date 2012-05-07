@@ -1268,7 +1268,7 @@ module Interstellar
 !  01-aug-06/tony: coded
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: gamma, gamma_inv, eoscalc
+      use EquationOfState, only: gamma, gamma1, eoscalc
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -1515,7 +1515,7 @@ module Interstellar
 !  05-sep-10/fred: added TT_cutoff option, comments, revised diagnostics.
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: gamma, gamma_inv
+      use EquationOfState, only: gamma, gamma1
       use Sub, only: smooth_kernel, despike, dot2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f

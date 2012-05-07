@@ -108,7 +108,7 @@ module Special
 !
       use Cdata 
       use Mpicomm
-      use EquationOfState, only: rho0,gamma_m1,cs20,gamma_inv,get_cp1,gamma
+      use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: cp1
@@ -127,7 +127,7 @@ module Special
 !
 !  Shortcut for the initial pressure
 !
-      p0 =rho0*cs20*gamma_inv
+      p0 =rho0*cs20*gamma1
       p01=1./p0
 !
 !  Shortcut for normalization nxgrid*nygrid 
@@ -248,7 +248,7 @@ module Special
 !
       use Mpicomm
       use Sub
-      use EquationOfState, only: gamma_inv,gamma_m1,&
+      use EquationOfState, only: gamma1,gamma_m1,&
           cs20,lnrho0,rho0
       use Gravity
 !
@@ -289,7 +289,7 @@ module Special
 !  is xz dependent.
 !
             nn=n-n1+1
-            pp_tmp(:,nn) = pp_tmp(:,nn)+rho*cs2*gamma_inv
+            pp_tmp(:,nn) = pp_tmp(:,nn)+rho*cs2*gamma1
 !
           enddo
         enddo

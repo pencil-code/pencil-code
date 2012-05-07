@@ -20,7 +20,7 @@ module Entropy
 !
   use Cdata
   use Cparam
-  use EquationOfState, only: gamma, gamma_m1, gamma_inv, cs20, cs2top, cs2bot, &
+  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
   use Messages
@@ -381,7 +381,7 @@ module Entropy
 !
       if (mixinglength_flux/=0.0) then
         Fbot=mixinglength_flux
-        hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma_inv/gravz
+        hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma1/gravz
         hcond1 = (mpoly1+1.)/(mpoly0+1.)
         hcond2 = (mpoly2+1.)/(mpoly0+1.)
         Kbot=hcond0
@@ -582,7 +582,7 @@ module Entropy
 !
 !  Compute the gravity profile inside the star.
 !
-          star_cte=(mpoly0+1.)/hcond0*(1.-gamma_inv)
+          star_cte=(mpoly0+1.)/hcond0*(1.-gamma1)
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
         case ('cylind_layers')
@@ -1003,7 +1003,7 @@ module Entropy
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
           case ('mixinglength')
              call mixinglength(mixinglength_flux,f)
-             hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma_inv/gravz
+             hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma1/gravz
              print*,'init_ss : Fbot, hcond0=', Fbot, hcond0
           case ('sedov')
             if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
@@ -2458,7 +2458,7 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma_inv
+      use EquationOfState, only: gamma1
       use Sub, only: u_dot_grad, grad
       use WENO_transport, only: weno_transp
 !
@@ -2491,11 +2491,11 @@ module Entropy
         else
           if (leos_idealgas) then
             do j=1,3
-              p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma_inv
+              p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma1
             enddo
 !  TH: The following would work if one uncomments the intrinsic operator
 !  extensions in sub.f90. Please Test.
-!          p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma_inv
+!          p%fpres      =-p%cs2*(p%glnrho + p%glnTT)*gamma1
           else
             do j=1,3
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
@@ -2520,7 +2520,7 @@ module Entropy
 !
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 gamma_inv, cs0
+                                 gamma1, cs0
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_entropy
       use Sub
@@ -2780,7 +2780,7 @@ module Entropy
 !
 !  Calculate integrated temperature in in limited radial range.
 !
-        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma_inv,idiag_TTp,p)
+        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma1,idiag_TTp,p)
       endif
 !
 !  1-D averages.
@@ -4212,7 +4212,7 @@ module Entropy
 !
       if (tau_cool/=0.0) then
         if (.not.ltau_cool_variable) then
-          heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
+          heat=heat-p%rho*p%cp*gamma1*(p%TT-TTref_cool)/tau_cool
         else
           call calc_heat_cool_variable(heat,p)
         endif
@@ -4278,7 +4278,7 @@ module Entropy
 !
 ! Thermal relaxation for radially stratified global Keplerian disks
 !
-      use EquationOfState, only: rho0,gamma_inv
+      use EquationOfState, only: rho0,gamma1
 !
       real, dimension(nx), intent(inout) :: heat
       real, dimension (nx) :: rr1,TT_drive, OO
@@ -4315,7 +4315,7 @@ module Entropy
 !  tau_cool = tau_cool_0 * Omega0/Omega
 !  tau_cool1 = 1/tau_cool_0 * Omega/Omega0
 !
-      heat=heat-p%rho*p%cp*gamma_inv*&
+      heat=heat-p%rho*p%cp*gamma1*&
            (p%TT-TT_drive)*tau1_cool*OO
 !
     endsubroutine calc_heat_cool_variable

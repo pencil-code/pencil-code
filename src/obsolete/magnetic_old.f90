@@ -1213,7 +1213,7 @@ module Magnetic
                 cs2old=cs20*exp(gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0) &
                   +gamma*ssold)
                 cs2=cs2old-gamma*b2/(beq2*exp(f(l1:l2,m,n,ilnrho)-lnrho0))
-                f(l1:l2,m,n,iss)=ssold+gamma_inv*(log(cs2/cs20)-log(cs2old/cs20))
+                f(l1:l2,m,n,iss)=ssold+gamma1*(log(cs2/cs20)-log(cs2old/cs20))
               else
                 f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
               endif
@@ -1225,7 +1225,7 @@ module Magnetic
                   +gamma*f(l1:l2,m,n,iss))
                 f(l1:l2,m,n,ilnrho)=log(exp(lnrho_old)-b2*gamma/ &
                   (beq2*cs2(1:nx)))
-                f(l1:l2,m,n,iss)=gamma_inv*(log(cs2/cs20)-&
+                f(l1:l2,m,n,iss)=gamma1*(log(cs2/cs20)-&
                   gamma_m1*f(l1:l2,m,n,ilnrho))
               else
                 f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1

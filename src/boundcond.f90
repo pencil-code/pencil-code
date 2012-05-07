@@ -4239,7 +4239,7 @@ module Boundcond
 !  11-aug-06/axel: make it compile with nprocx>0, renamed quenching -> quen
 !  18-jun-08/bing: quenching depends on B^2, not only Bz^2
 !
-       use EquationOfState, only : gamma,gamma_m1,gamma_inv,cs20,lnrho0
+       use EquationOfState, only : gamma,gamma_m1,gamma1,cs20,lnrho0
        use Mpicomm, only : mpisend_real, mpirecv_real
        use Syscalls, only : file_exists
 !
@@ -4483,17 +4483,17 @@ module Boundcond
          bb2 = bb2/(2.*mu0)
 !
          if (ltemperature) then
-           pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+f(l1:l2,m1:m2,iref,ilnTT))
+           pp=gamma_m1*gamma1*exp(f(l1:l2,m1:m2,iref,ilnrho)+f(l1:l2,m1:m2,iref,ilnTT))
          else if (lentropy) then
            if (pretend_lnTT) then
-             pp=gamma_m1*gamma_inv*exp(f(l1:l2,m1:m2,iref,ilnrho)+f(l1:l2,m1:m2,iref,iss))
+             pp=gamma_m1*gamma1*exp(f(l1:l2,m1:m2,iref,ilnrho)+f(l1:l2,m1:m2,iref,iss))
            else
              pp=gamma*(f(l1:l2,m1:m2,iref,iss)+ &
                  f(l1:l2,m1:m2,iref,ilnrho))-gamma_m1*lnrho0
-             pp=exp(pp) * cs20*gamma_inv
+             pp=exp(pp) * cs20*gamma1
            endif
          else
-           pp=gamma_inv*cs20*exp(lnrho0)
+           pp=gamma1*cs20*exp(lnrho0)
          endif
 !
 !   limit plasma beta

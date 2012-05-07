@@ -59,7 +59,7 @@ module EquationOfState
   real :: gamma=5./3.
   real :: Rgas_cgs=0., Rgas, Rgas_unit_sys=1.,  error_cp=1e-6
   real :: gamma_m1    !(=gamma-1)
-  real :: gamma_inv   !(=1/gamma)
+  real :: gamma1   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
@@ -868,7 +868,7 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma_inv to make faster
+!   27-mar-06/tony: Introduces cv, cv1, gamma1 to make faster
 !                   + more explicit
 !   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.

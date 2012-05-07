@@ -395,7 +395,7 @@ module Entropy
 !
       if (lpencil(i_fpres)) then
         do j=1,3
-          p%fpres(:,j)=-gamma_m1*gamma_inv*(p%TT*p%glnrho(:,j) + p%glnTT(:,j))
+          p%fpres(:,j)=-gamma_m1*gamma1*(p%TT*p%glnrho(:,j) + p%glnTT(:,j))
         enddo
       endif
 !

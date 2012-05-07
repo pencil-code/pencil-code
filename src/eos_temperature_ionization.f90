@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED ss; ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma_inv
+! PENCILS PROVIDED yH; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma1
 ! PENCILS PROVIDED mu1; hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 ! PENCILS PROVIDED glnmumol(3); ppvap; csvap2; rho_anel
 !
@@ -70,7 +70,7 @@ module EquationOfState
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
-  real :: gamma=5./3., gamma_m1=impossible, gamma_inv=impossible
+  real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
   real :: cs2cool=impossible
@@ -196,7 +196,7 @@ module EquationOfState
       endif
 !
       if (lpencil_in(i_rho1gpp)) then
-        lpencil_in(i_gamma_inv)=.true.
+        lpencil_in(i_gamma1)=.true.
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_delta)=.true.
@@ -216,7 +216,7 @@ module EquationOfState
         lpencil_in(i_cv1)=.true.
       endif
 !
-      if (lpencil_in(i_gamma_inv)) then
+      if (lpencil_in(i_gamma1)) then
         lpencil_in(i_cv)=.true.
         lpencil_in(i_cp1)=.true.
       endif
@@ -349,7 +349,7 @@ module EquationOfState
 !  Polytropic index
 !
       if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-      if (lpencil(i_gamma_inv)) p%gamma_inv = p%cv*p%cp1
+      if (lpencil(i_gamma1)) p%gamma1 = p%cv*p%cp1
       if (lpencil(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
 !
 !  For the definition of delta, see Kippenhahn & Weigert
@@ -371,7 +371,7 @@ module EquationOfState
 !
       if (lpencil(i_rho1gpp)) then
         do i=1,3
-          p%rho1gpp(:,i) = p%gamma_inv*p%cs2*(p%glnrho(:,i)+p%delta*p%glnTT(:,i))
+          p%rho1gpp(:,i) = p%gamma1*p%cs2*(p%glnrho(:,i)+p%delta*p%glnTT(:,i))
         enddo
       endif
 !

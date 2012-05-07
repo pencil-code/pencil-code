@@ -59,7 +59,7 @@ module EquationOfState
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
-  real :: gamma_inv   !(=1/gamma)
+  real :: gamma1   !(=1/gamma)
   real :: cpdry=impossible, cpdry1=impossible
   real :: cvdry=impossible, cvdry1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
@@ -119,7 +119,7 @@ module EquationOfState
 !  (used currently for non-dimensional equation of state)
 !
       gamma_m1=gamma-1.0
-      gamma_inv=1/gamma
+      gamma1=1/gamma
 !
 !  Avoid floating overflow if cs0 was not set.
 !
@@ -149,7 +149,7 @@ module EquationOfState
         if (gamma_m1==0.0) then
           Rgas=mudry*cpdry
         else
-          Rgas=mudry*(1.0-gamma_inv)*cpdry
+          Rgas=mudry*(1.0-gamma1)*cpdry
         endif
         unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
       else
@@ -158,7 +158,7 @@ module EquationOfState
           if (gamma_m1==0.0) then
             cpdry=Rgas/mudry
           else
-            cpdry=Rgas/(mudry*gamma_m1*gamma_inv)
+            cpdry=Rgas/(mudry*gamma_m1*gamma1)
           endif
         else
 !
@@ -168,7 +168,7 @@ module EquationOfState
           if (gamma_m1==0.0) then
             cp_reference=Rgas/mudry
           else
-            cp_reference=Rgas/(mudry*gamma_m1*gamma_inv)
+            cp_reference=Rgas/(mudry*gamma_m1*gamma1)
           endif
           if (abs(cpdry-cp_reference)/cpdry > error_cp) then
             if (lroot) print*,'initialize_eos: consistency: cpdry=', cpdry , &
@@ -178,7 +178,7 @@ module EquationOfState
         endif
       endif
       cpdry1=1/cpdry
-      cvdry=gamma_inv*cpdry
+      cvdry=gamma1*cpdry
       cvdry1=gamma*cpdry1
 !
 !  Need to calculate the equivalent of cs0.
@@ -535,7 +535,7 @@ module EquationOfState
 ! cp1
       if (lpencil(i_cp1)) p%cp1=1/p%cp
 ! cv
-      if (lpencil(i_cv)) p%cv=gamma_inv*p%cp
+      if (lpencil(i_cv)) p%cv=gamma1*p%cp
 ! cv1
       if (lpencil(i_cv1)) p%cv1=gamma*p%cp1
 ! cp1tilde

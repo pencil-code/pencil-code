@@ -22,7 +22,7 @@ module Entropy
 !
   use Cdata
   use Cparam
-  use EquationOfState, only: gamma, gamma_m1, gamma_inv, cs20, cs2top, cs2bot, &
+  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
   use Interstellar
@@ -1597,7 +1597,7 @@ module Entropy
 !
 !   08-dec-09/piyali: adapted from entropy.f90
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma_inv, cs0
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma1, cs0
       use Special, only: special_calc_entropy
       use Sub
 !
@@ -1747,7 +1747,7 @@ module Entropy
 !
 !  calculate integrated temperature in in limited radial range
 !
-        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma_inv,idiag_TTp,p)
+        if (idiag_TTp/=0) call sum_lim_mn_name(p%rho*p%cs2*gamma1,idiag_TTp,p)
       endif
 !
 !  1-D averages.
@@ -1823,7 +1823,7 @@ module Entropy
         call get_cp1(cp1)
         call power_law(cs20,p%rcyl_mn,ptlaw,cs2,r_ref)
         f_target=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*lnrho0)
-         !f_target= gamma_inv*log(cs2_0) !- gamma_m1*gamma_inv*lnrho
+         !f_target= gamma1*log(cs2_0) !- gamma_m1*gamma1*lnrho
       case ('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_entropy: borderss='nothing'"
@@ -2511,7 +2511,7 @@ module Entropy
 !  Add cooling with constant time-scale to TTref_cool.
 !
       if (tau_cool/=0.0) &
-          heat=heat-p%rho*p%cp*gamma_inv*(p%TT-TTref_cool)/tau_cool
+          heat=heat-p%rho*p%cp*gamma1*(p%TT-TTref_cool)/tau_cool
 !
 !  Add "coronal" heating (to simulate a hot corona).
 !  Assume a linearly increasing reference profile.

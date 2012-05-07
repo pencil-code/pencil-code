@@ -213,7 +213,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: gamma,gamma_m1,gamma_inv,cs20,rho0,lnrho0
+      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,rho
@@ -224,7 +224,7 @@ module InitialCondition
 !
       cp=1.
       cp1=1/cp
-      cv=gamma_inv*cp
+      cv=gamma1*cp
 !
       TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
       pp0=(cp-cv)*TT0*rho0

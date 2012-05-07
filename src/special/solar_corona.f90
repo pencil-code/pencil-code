@@ -1652,7 +1652,7 @@ module Special
 !
 ! 30-oct-2011/Bourdin.KIS: extracted from gran_driver
 !
-      use EquationOfState, only: gamma_inv, get_cp1, gamma_m1, lnrho0, cs20
+      use EquationOfState, only: gamma1, get_cp1, gamma_m1, lnrho0, cs20
       use Sub, only: cubic_step
 !
       real, dimension(nx,ny), intent(in) :: BB2
@@ -1667,17 +1667,17 @@ module Special
       if (leos) call get_cp1(cp1)
       if (ltemperature) then
         if (ltemperature_nolog) then
-          pp_tmp = gamma_m1*gamma_inv/cp1*f(l1:l2,m1:m2,irefz,iTT)
+          pp_tmp = gamma_m1*gamma1/cp1*f(l1:l2,m1:m2,irefz,iTT)
         else
-          pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
+          pp_tmp = gamma_m1*gamma1/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
         endif
       elseif (lentropy .and. pretend_lnTT) then
-        pp_tmp = gamma_m1*gamma_inv/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
+        pp_tmp = gamma_m1*gamma1/cp1*exp(f(l1:l2,m1:m2,irefz,ilnTT))
       elseif (lthermal_energy .or. lentropy) then
         call fatal_error('vel_quench', &
             'quenching not implemented for lthermal_energy or lentropy', .true.)
       else
-        pp_tmp = gamma_inv*cs20
+        pp_tmp = gamma1*cs20
       endif
       if (ldensity) then
         if (ldensity_nolog) then

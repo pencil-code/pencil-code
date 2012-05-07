@@ -56,7 +56,7 @@ module EquationOfState
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
-  real :: gamma_inv   !(=1/gamma)
+  real :: gamma1   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
@@ -134,7 +134,7 @@ module EquationOfState
 !  (used currently for non-dimensional equation of state)
 !
       gamma_m1=gamma-1.0
-      gamma_inv=1/gamma
+      gamma1=1/gamma
       lnrho0=log(rho0)
       rho01 = 1./rho0
 !
@@ -165,7 +165,7 @@ module EquationOfState
         if (gamma_m1==0.0) then
           Rgas=mu*cp
         else
-          Rgas=mu*(1.0-gamma_inv)*cp
+          Rgas=mu*(1.0-gamma1)*cp
         endif
         unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
       else
@@ -174,7 +174,7 @@ module EquationOfState
           if (gamma_m1==0.0) then
             cp=Rgas/mu
           else
-            cp=Rgas/(mu*gamma_m1*gamma_inv)
+            cp=Rgas/(mu*gamma_m1*gamma1)
           endif
         else
 !
@@ -184,7 +184,7 @@ module EquationOfState
           if (gamma_m1==0.0) then
             cp_reference=Rgas/mu
           else
-            cp_reference=Rgas/(mu*gamma_m1*gamma_inv)
+            cp_reference=Rgas/(mu*gamma_m1*gamma1)
           endif
           if (abs(cp-cp_reference)/cp > error_cp) then
             if (lroot) print*,'initialize_eos: consistency: cp=', cp , &
@@ -194,7 +194,7 @@ module EquationOfState
         endif
       endif
       cp1=1/cp
-      cv=gamma_inv*cp
+      cv=gamma1*cp
       cv1=gamma*cp1
 !
 !  Need to calculate the equivalent of cs0.
@@ -883,7 +883,7 @@ module EquationOfState
           if (lpencil(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
           if (lpencil(i_gss)) p%gss=-(cp-cv)*p%glnrho
           if (lpencil(i_hss)) p%hss=-(cp-cv)*p%hlnrho
-          if (lpencil(i_pp)) p%pp=gamma_inv*p%rho*cs20
+          if (lpencil(i_pp)) p%pp=gamma1*p%rho*cs20
         elseif (leos_localisothermal) then
           if (lpencil(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
           if (lpencil(i_lnTT)) call fatal_error('calc_pencils_eos', &
@@ -924,7 +924,7 @@ module EquationOfState
             if (lpencil(i_pp)) p%pp=f(l1:l2,m,n,ipp)
             if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
             if (lpencil(i_rho)) p%rho=f(l1:l2,m,n,irho)
-            !if (lpencil(i_rho)) p%rho=rho0*(gamma*p%pp/(rho0*cs20*exp(cv1*p%ss)))**gamma_inv
+            !if (lpencil(i_rho)) p%rho=rho0*(gamma*p%pp/(rho0*cs20*exp(cv1*p%ss)))**gamma1
             if (lpencil(i_lnrho)) p%lnrho=alog(p%rho)
             if (lpencil(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
             if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
@@ -937,9 +937,9 @@ module EquationOfState
           if (lpencil(i_ss)) p%ss=0.0
           if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(rho0*cs20))/gamma
           if (lpencil(i_rho)) p%rho=exp(log(gamma*p%pp/(rho0*cs20))/gamma)
-          if (lpencil(i_TT)) p%TT=(p%pp/pp0)**(1.-gamma_inv)
-          if (lpencil(i_lnTT)) p%lnTT=(1.-gamma_inv)*log(gamma*p%pp/(rho0*cs0))
-          if (lpencil(i_cs2)) p%cs2=cs20*(p%pp/pp0)**(1.-gamma_inv)
+          if (lpencil(i_TT)) p%TT=(p%pp/pp0)**(1.-gamma1)
+          if (lpencil(i_lnTT)) p%lnTT=(1.-gamma1)*log(gamma*p%pp/(rho0*cs0))
+          if (lpencil(i_cs2)) p%cs2=cs20*(p%pp/pp0)**(1.-gamma1)
         elseif (leos_isothermal) then
           if (lpencil(i_lnrho)) p%lnrho=log(gamma*p%pp/(cs20*rho0))-p%lnTT
           if (lpencil(i_rho)) p%rho=exp(p%lnrho)
@@ -984,7 +984,7 @@ module EquationOfState
 !
         if (lpencil(i_ee)) then
           if (gamma_m1/=0.0) then
-            p%ee=(gamma_inv/gamma_m1)*p%cs2
+            p%ee=(gamma1/gamma_m1)*p%cs2
           else
             p%ee=p%cs2
           endif
@@ -1506,8 +1506,8 @@ module EquationOfState
 !
         if (present(lnrho)) lnrho=lnrho_
         if (present(lnTT)) lnTT=lnTT0+log(cs2_)
-        if (present(ee)) ee=gamma_inv*cs2_/gamma_m1
-        if (present(pp)) pp=gamma_inv*cs2_*exp(lnrho_)
+        if (present(ee)) ee=gamma1*cs2_/gamma_m1
+        if (present(pp)) pp=gamma1*cs2_*exp(lnrho_)
 !
       case default
         call fatal_error("eoscalc_farray",'Thermodynamic variable combination not implemented!')
@@ -1531,7 +1531,7 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma_inv to make faster
+!   27-mar-06/tony: Introduces cv, cv1, gamma1 to make faster
 !                   + more explicit
 !   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.
@@ -1626,7 +1626,7 @@ module EquationOfState
           else
             pp_=var1
             ss_=var2
-            cs2_=exp(ss_*cp1+gamma_inv*gamma_m1*log(pp_/pp0))*cs20
+            cs2_=exp(ss_*cp1+gamma1*gamma_m1*log(pp_/pp0))*cs20
             TT_=cs2_/(gamma_m1*cp)
             lnrho_=log(gamma*pp_/cs2_)
           endif
@@ -1654,7 +1654,7 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1 to
 !                   subroutine pressure_gradient
-!   27-mar-06/tony: Introduces cv, cv1, gamma_inv to make faster
+!   27-mar-06/tony: Introduces cv, cv1, gamma1 to make faster
 !                   + more explicit
 !   31-mar-06/tony: I removed messy lcalc_cp stuff completely. cp=1.
 !                   is just fine.

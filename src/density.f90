@@ -2329,7 +2329,7 @@ module Density
 !
 !  Change entropy to keep temperature constant.
 !
-      if (lentropy) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(gamma_inv-1.0)*dlnrhodt
+      if (lentropy) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(gamma1-1.0)*dlnrhodt
 !
     endsubroutine mass_source
 !***********************************************************************

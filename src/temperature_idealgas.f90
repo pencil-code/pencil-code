@@ -773,7 +773,7 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: gamma_inv
+      use EquationOfState, only: gamma1
       use Sub, only: u_dot_grad
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
@@ -790,7 +790,7 @@ module Entropy
 ! fpres
       if (lpencil(i_fpres)) then
         do j=1,3
-          p%fpres(:,j)=-gamma_inv*p%cs2* &
+          p%fpres(:,j)=-gamma1*p%cs2* &
               (p%glnrho(:,j)+p%glnTT(:,j)-p%glnmumol(:,j))
         enddo
       endif

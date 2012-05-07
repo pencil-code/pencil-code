@@ -18,7 +18,7 @@ module InitialCondition
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-  use EquationOfState, only: gamma_inv, mpoly0, mpoly1, mpoly2, gamma_m1, cs20
+  use EquationOfState, only: gamma1, mpoly0, mpoly1, mpoly2, gamma_m1, cs20
 !
   implicit none
 !
@@ -93,7 +93,7 @@ module InitialCondition
           endif
         endif
       enddo
-      Rgas=1.-gamma_inv
+      Rgas=1.-gamma1
       g=-flux*Rgas*(mpoly0+1.)/hcond0
 !
 !  The bottom density value we want at r=r_bcz, actually given by rho0.
@@ -198,10 +198,10 @@ module InitialCondition
 !  Needed for computing a MLT stratification.
 !
     polyad=1./gamma_m1
-    delad=1.-gamma_inv
+    delad=1.-gamma1
     fr_frac=delad*(mpoly0+1.)
     fc_frac=1.-fr_frac
-    Rgas=1.-gamma_inv
+    Rgas=1.-gamma1
 !
 !  Start from surface values for rho and temp.
 !

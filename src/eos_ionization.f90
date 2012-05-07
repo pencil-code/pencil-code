@@ -65,7 +65,7 @@ module EquationOfState
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp = .false.
-  real :: gamma=impossible, gamma_m1=impossible,gamma_inv=impossible
+  real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
 !ajwm  Not sure this should exist either...

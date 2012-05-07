@@ -48,7 +48,7 @@ module EquationOfState
   real :: cp=impossible, cp1=impossible
   real :: cs0=1.0, rho0=1.0
   real :: cs20=1.0, lnrho0=0.0
-  real :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma_inv=3.0/5.0
+  real :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma1=3.0/5.0
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1.0, cs2top=1.0
   real :: cs2cool=0.0
