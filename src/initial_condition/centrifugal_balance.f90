@@ -107,6 +107,7 @@ module InitialCondition
 !
   real :: r0_pot=0.,qgshear=1.5
   integer :: n_pot=10
+  logical :: lpressure_dust=.false.
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
@@ -115,7 +116,7 @@ module InitialCondition
        llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
        zmode_mag,rmode_mag,rm_int,rm_ext,amplbb,Bz_const, &
-       r0_pot,qgshear,n_pot,magnetic_power_law
+       r0_pot,qgshear,n_pot,magnetic_power_law,lpressure_dust
 !
   contains
 !***********************************************************************
@@ -289,35 +290,35 @@ module InitialCondition
 !
 !  Set the sound speed
 !
-      do m=1,my
-      do n=1,mz
-        lheader=((m==1).and.(n==1).and.lroot)
-        call get_radial_distance(rr_sph,rr_cyl)
-        if (lsphere_in_a_box.or.lspherical_coords) then
-          rr=rr_sph
-        elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
-          rr=rr_cyl
-        else
-          call fatal_error("initial_condition_lnrho",&
-               "no valid coordinate system")
-        endif
+      if (.not.lpressure_dust) then 
+        do m=1,my; do n=1,mz
+          lheader=((m==1).and.(n==1).and.lroot)
+          call get_radial_distance(rr_sph,rr_cyl)
+          if (lsphere_in_a_box.or.lspherical_coords) then
+            rr=rr_sph
+          elseif (lcylinder_in_a_box.or.lcylindrical_coords) then
+            rr=rr_cyl
+          else
+            call fatal_error("initial_condition_lnrho",&
+                 "no valid coordinate system")
+          endif
 !
-        call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
+          call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
 !
 !  Store cs2 in one of the free slots of the f-array
 !
-        if (llocal_iso) then
-          nullify(iglobal_cs2)
-          call farray_use_global('cs2',iglobal_cs2)
-          ics2=iglobal_cs2
-        elseif (ltemperature) then
-          ics2=ilnTT
-        elseif (lentropy) then
-          ics2=iss
-        endif
-        f(:,m,n,ics2)=cs2
-      enddo
-      enddo
+          if (llocal_iso) then
+            nullify(iglobal_cs2)
+            call farray_use_global('cs2',iglobal_cs2)
+            ics2=iglobal_cs2
+          elseif (ltemperature) then
+            ics2=ilnTT
+          elseif (lentropy) then
+            ics2=iss
+          endif
+          f(:,m,n,ics2)=cs2
+        enddo;enddo
+      endif
 !
 !  Stratification is only coded for 3D runs. But as
 !  cylindrical and spherical coordinates store the
@@ -420,7 +421,8 @@ module InitialCondition
 !
 !  Correct the velocities by this pressure gradient
 !
-      call correct_pressure_gradient(f,ics2,temperature_power_law)
+      if (.not.lpressure_dust) &
+           call correct_pressure_gradient(f,ics2,temperature_power_law)
 !
 !  Correct the velocities for self-gravity
 !
@@ -435,7 +437,7 @@ module InitialCondition
       if (llocal_iso) then
         call set_thermodynamical_quantities&
              (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
-      else
+      else if (.not.lpressure_dust) then
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
 !
