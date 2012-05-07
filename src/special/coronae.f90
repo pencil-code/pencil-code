@@ -62,7 +62,7 @@ module Special
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
-      lfilter_farray,filter_strength
+      lfilter_farray,filter_strength,lreset_heatflux
 !
 ! variables for print.in
 !
