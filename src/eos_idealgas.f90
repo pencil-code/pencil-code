@@ -44,14 +44,14 @@ module EquationOfState
   integer, parameter :: ilnrho_lnTT=4, ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12, irho_eth=13
-  integer, parameter :: ilnrho_eth=14
+  integer, parameter :: ilnrho_eth=14, irho_rhop=15
   integer :: iglobal_cs2, iglobal_glnTT
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
-  real :: lnTT0=impossible
+  real :: lnTT0=impossible, TT0=impossible
   real :: xHe=0.0
   real :: mu=1.0
-  real :: cs0=1.0, rho0=1.0, pp0=1.0
+  real :: cs0=1.0, rho0=1.0, rho01=1.0, pp0=1.0
   real :: cs20=1.0, lnrho0=0.0
   real :: gamma=5.0/3.0
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
@@ -65,6 +65,7 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real :: width_eos_prof=0.2
   real :: sigmaSBt=1.0
+  real :: TT_floor=impossible
   integer :: isothtop=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   logical :: leos_isothermal=.false., leos_isentropic=.false.
@@ -88,7 +89,7 @@ module EquationOfState
   namelist /eos_run_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini,           &
       dcs2top_ini, ieos_profile, width_eos_prof,pres_corr, sigmaSBt, &
-      lanelastic_lin
+      lanelastic_lin, TT_floor
 !
   contains
 !***********************************************************************
@@ -129,16 +130,17 @@ module EquationOfState
       real :: Rgas_unit_sys, cp_reference
       integer :: ierr
 !
-!  Set gamma_m1, cs20, and lnrho0.
+!  Set gamma_m1, cs20, and lnrho0, and rho01.
 !  (used currently for non-dimensional equation of state)
 !
       gamma_m1=gamma-1.0
       gamma_inv=1/gamma
+      lnrho0=log(rho0)
+      rho01 = 1./rho0
 !
 !  Avoid floating overflow if cs0 was not set.
 !
       cs20=cs0**2
-      lnrho0=log(rho0)
 !
 !  Initialize variable selection code (needed for RELOADing).
 !
@@ -204,6 +206,7 @@ module EquationOfState
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
       pp0=Rgas*exp(lnTT0)*rho0
+      TT0=exp(lnTT0)
 !
 ! Shared variables
 !
@@ -299,6 +302,7 @@ module EquationOfState
       integer, parameter :: ieosvar_cs2   = 2**5
       integer, parameter :: ieosvar_pp    = 2**6
       integer, parameter :: ieosvar_eth   = 2**7
+      integer, parameter :: ieosvar_rhop  = 2**8
 !
       if (ieosvar_count==0) ieosvar_selected=0
 !
@@ -347,6 +351,8 @@ module EquationOfState
         endif
       elseif (variable=='eth') then
         this_var=ieosvar_eth
+      elseif (variable=='rhop') then
+        this_var=ieosvar_rhop
       else
         call fatal_error('select_eos_variable','unknown thermodynamic variable')
       endif
@@ -402,6 +408,9 @@ module EquationOfState
         case (ieosvar_lnrho+ieosvar_eth)
           if (lroot) print*, 'select_eos_variable: Using lnrho and eth'
           ieosvars=ilnrho_eth
+        case (ieosvar_rho+ieosvar_rhop)
+          if (lroot) print*, 'select_eos_variable: Using rho and rhop'
+          ieosvars=irho_rhop
         case default
           if (lroot) print*, 'select_eos_variable: '// &
               'Thermodynamic variable combination, ieosvar_selected =', &
@@ -691,7 +700,19 @@ module EquationOfState
           lpencil_in(i_grho)=.true.
           lpencil_in(i_gTT)=.true.
         endif
-!
+      case (irho_rhop) 
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_rhop)=.true.
+        if (lpencil_in(i_lnTT)) lpencil_in(i_TT)=.true.
+        if (lpencil_in(i_pp)) lpencil_in(i_TT)=.true.
+        if (lpencil_in(i_cs2)) then 
+          lpencil_in(i_cp)=.true.
+          lpencil_in(i_TT)=.true.
+        endif
+        if (lpencil_in(i_ss)) then 
+          lpencil_in(i_cp)=.true.
+          lpencil_in(i_TT)=.true.
+        endif
       case default
         call fatal_error('pencil_interdep_eos','case not implemented yet')
       endselect
@@ -993,6 +1014,20 @@ module EquationOfState
         endif
         if (lpencil(i_del2TT)) p%del2TT= &
             p%rho1*(p%cv1*p%del2eth-p%TT*p%del2rho-2*sum(p%grho*p%gTT,2))
+!
+!  Work out thermodynamic quantities for given rho and rhop. 
+!  Check Lyra & Kuchner 2012 (arXiv:1204.6322) for details. 
+!
+      case (irho_rhop)
+        if (lpencil(i_TT)) then
+          p%TT=TT0*rho01*p%rhop
+          if (TT_floor /= impossible) &
+               where(p%TT < TT_floor) p%TT = TT_floor
+        endif
+        if (lpencil(i_lnTT)) p%lnTT=log(p%TT)
+        if (lpencil(i_pp))   p%pp=cv*gamma_m1*p%rho*p%TT
+        if (lpencil(i_ss))   p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
+        if (lpencil(i_cs2))  p%cs2=p%TT*p%cp*gamma_m1
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
       endselect
