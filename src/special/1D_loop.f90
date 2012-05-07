@@ -9,6 +9,8 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED qq(3); q2, divq
+!
 !***************************************************************
 !
 module Special
@@ -59,6 +61,8 @@ module Special
   integer :: idiag_dtspitzer=0    ! DIAG_DOC: Spitzer heat conduction
                                   ! DIAG_DOC: time step
   integer :: idiag_dtnewt=0
+  integer :: idiag_qmax=0     ! DIAG_DOC: max of heat flux vector
+  integer :: idiag_qrms=0     ! DIAG_DOC: rms of heat flux vector
 !
 ! variables for video.in
 !
@@ -89,8 +93,8 @@ module Special
 !
       use FArrayManager
 !
-      call farray_register_pde('spitzer',ispitzer,vector=3)
-      ispitzerx=ispitzer; ispitzery=ispitzer+1; ispitzerz=ispitzer+2
+      call farray_register_pde('spitzer',iqq,vector=3)
+      iqx=iqq; iqy=iqq+1; iqz=iqq+2
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -166,6 +170,8 @@ module Special
 !  04-sep-10/bing: coded
 !
       if (tau_inv_spitzer/=0.) then
+        lpenc_requested(i_qq)=.true.
+        lpenc_requested(i_divq)=.true.
         lpenc_requested(i_uglnrho)=.true.
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_cp1)=.true.
@@ -226,7 +232,30 @@ module Special
         lpenc_requested(i_cp1)=.true.
       endif
 !
+      if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
+!
     endsubroutine pencil_criteria_special
+!***********************************************************************
+    subroutine pencil_interdep_special(lpencil_in)
+!
+      logical, dimension (npencils) :: lpencil_in
+!
+      if (lpencil_in(i_q2)) lpencil_in(i_qq)=.true.
+!
+    endsubroutine pencil_interdep_special
+!***********************************************************************
+    subroutine calc_pencils_special(f,p)
+!
+      use Sub, only: dot2_mn, div
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      if (lpencil(i_qq)) p%qq=f(l1:l2,m,n,iqx:iqz)
+      if (lpencil(i_q2)) call dot2_mn(p%qq,p%q2)
+      if (lpencil(i_divq)) call div(f,iqq,p%divq)
+!
+    endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
@@ -251,6 +280,8 @@ module Special
         idiag_dtrad=0.
         idiag_dtnewt=0
         idiag_dtspitzer=0
+        idiag_qmax=0
+        idiag_qrms=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -260,6 +291,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
         call parse_name(iname,cname(iname),cform(iname),'dtspitzer',idiag_dtspitzer)
+        call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
+        call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
       enddo
 !
 !  write column where which variable is stored
@@ -269,6 +302,8 @@ module Special
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'i_dtnewt=',idiag_dtnewt
         write(3,*) 'i_dtspitzer=',idiag_dtspitzer
+        write(3,*) 'i_qmax=',idiag_qmax
+        write(3,*) 'i_qrms=',idiag_qrms
       endif
 !
     endsubroutine rprint_special
@@ -278,14 +313,14 @@ module Special
 !  12-may-11/bingert: coded
 !
       use EquationOfState, only: gamma
-      use Diagnostics,     only : max_mn_name
-      use Sub, only: div, identify_bcs, multsv, dot
+      use Diagnostics,     only : max_mn_name, sum_mn_name
+      use Sub, only: identify_bcs, multsv, dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension(nx) :: rhs,div_sp,tmp
-      real, dimension (nx,3) :: K1,q
+      real, dimension(nx) :: rhs,tmp
+      real, dimension (nx,3) :: K1
       integer :: i
 !
       intent(in) :: p
@@ -296,7 +331,7 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
       if (headtt) then
-        call identify_bcs('spitzer',ispitzer)
+        call identify_bcs('spitzer',iqq)
       endif
 !
       if (lfilter_farray) call filter_farray(f,df)
@@ -305,18 +340,15 @@ module Special
 !
         call multsv(Kspitzer_para*exp(-p%lnrho+3.5*p%lnTT),p%glnTT,K1)
 !
-        q = f(l1:l2,m,n,ispitzerx:ispitzerz)
-!
         do i=1,3
-          df(l1:l2,m,n,ispitzer-1+i) = df(l1:l2,m,n,ispitzer-1+i) + &
-              tau_inv_spitzer*(-q(:,i)-K1(:,i)) +  &
-              q(:,i)*(p%uglnrho + p%divu)
+          df(l1:l2,m,n,iqq-1+i) = df(l1:l2,m,n,iqq-1+i) + &
+              tau_inv_spitzer*(-p%qq(:,i)-K1(:,i)) +  &
+              p%qq(:,i)*(p%uglnrho + p%divu)
         enddo
 !
-        call div(f,ispitzer,div_sp)
-        call dot(q,p%glnrho,tmp)
+        call dot(p%qq,p%glnrho,tmp)
 !
-        rhs = gamma*p%cp1*exp(-p%lnTT)*(div_sp+tmp)
+        rhs = gamma*p%cp1*exp(-p%lnTT)*(p%divq+tmp)
 !
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
@@ -343,6 +375,9 @@ module Special
         endif
       endif
 !
+      if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
+      if (idiag_qrms/=0) call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -363,14 +398,14 @@ module Special
           slices%ready=.false.
         else
           slices%index=slices%index+1
-          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,ispitzerx-1+slices%index)
-          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,ispitzerx-1+slices%index)
-          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,ispitzerx-1+slices%index)
-          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,ispitzerx-1+slices%index)
+          slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iqx-1+slices%index)
+          slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iqx-1+slices%index)
+          slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iqx-1+slices%index)
+          slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iqx-1+slices%index)
           if (lwrite_slice_xy3) &
-              slices%xy3=f(l1:l2,m1:m2,iz3_loc,ispitzerx-1+slices%index)
+              slices%xy3=f(l1:l2,m1:m2,iz3_loc,iqx-1+slices%index)
           if (lwrite_slice_xy4) &
-              slices%xy4=f(l1:l2,m1:m2,iz4_loc,ispitzerx-1+slices%index)
+              slices%xy4=f(l1:l2,m1:m2,iz4_loc,iqx-1+slices%index)
           if (slices%index<=3) slices%ready=.true.
         endif
 !

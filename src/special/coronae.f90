@@ -486,6 +486,8 @@ module Special
         idiag_dtrad=0
         idiag_dtnewt=0
         idiag_dtgran=0
+        idiag_qmax=0
+        idiag_qrms=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -496,6 +498,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
         call parse_name(iname,cname(iname),cform(iname),'dtgran',idiag_dtgran)
+        call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
+        call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
       enddo
 !
 !  write column where which variable is stored
@@ -506,6 +510,8 @@ module Special
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'i_dtnewt=',idiag_dtnewt
         write(3,*) 'i_dtgran=',idiag_dtgran
+        write(3,*) 'i_qmax=',idiag_qmax
+        write(3,*) 'i_qrms=',idiag_qrms
       endif
 !
     endsubroutine rprint_special
