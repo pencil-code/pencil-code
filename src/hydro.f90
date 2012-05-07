@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3); qq1(3)
+! PENCILS PROVIDED divu; oo(3); o2; ou; u2; uij(3,3); uu(3); curlo(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3)
 ! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
@@ -1668,10 +1668,8 @@ module Hydro
           call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
         endif
         if (lpencil(i_del2u)) then
-          ! remove the following warning when fixed
-          call fatal_error('calc_pencils_hydro','qq1 is not computed')
-          call curl_mn(p%oij,p%qq1,p%oo)
-          p%del2u=p%graddivu-p%qq1
+          call curl_mn(p%oij,p%curlo,p%oo)
+          p%del2u=p%graddivu-p%curlo
        endif
 !
 !  Avoid warnings from pencil consistency check...
