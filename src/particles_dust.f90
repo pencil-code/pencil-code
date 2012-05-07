@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; epsp; rhop_swarm
+! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3)
 !
 !***************************************************************
 module Particles
@@ -2084,6 +2084,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine calc_pencils_particles(f,p)
 !
+      use Sub, only: grad
+!
 !  Calculate Particles pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -2108,6 +2110,8 @@ k_loop:   do while (.not. (k>npar_loc))
           p%rhop=p%rhop_swarm*p%np
         endif
       endif
+!
+      if (lpencil(i_grhop)) call grad(f,irhop,p%grhop)
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
