@@ -125,6 +125,7 @@ module Magnetic
   real :: th_spot=PI/4
   real :: non_ffree_factor=1.
   real :: etaB=0.
+  real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0 
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -181,7 +182,8 @@ module Magnetic
       lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
-      phase_ax, phase_ay, phase_az, magnetic_xaver_range
+      phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
+      tau_relprof
 !
 ! Run parameters
 !
@@ -199,7 +201,6 @@ module Magnetic
   real :: forcing_continuous_aa_phasefact=1.0
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
-  real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0 
   real :: numag=impossible
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
@@ -1395,6 +1396,8 @@ module Magnetic
         case ('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 !
         case ('torus-test'); call torus_test(amplaa(j),f)
+        case ('relprof')
+          f(l1:l2,m1:m2,n1:n2,iax:iay)=A_relprof
 !
         case default
 !
