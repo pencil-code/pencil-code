@@ -128,11 +128,11 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
                     mapping_core[l%(dim_core.nx*trace_sub),l/(dim_core.nx*trace_sub),j,:] = [1,1,1]
 
             # copy single core data into total data arrays
-            tracers[dim_core.ipx*dim_core.nx:(dim_core.ipx+1)*dim_core.nx, \
-                    dim_core.ipy*dim_core.ny:(dim_core.ipy+1)*dim_core.ny,j,:] = \
+            tracers[dim_core.ipx*dim_core.nx*trace_sub:(dim_core.ipx+1)*dim_core.nx*trace_sub, \
+                    dim_core.ipy*dim_core.ny*trace_sub:(dim_core.ipy+1)*dim_core.ny*trace_sub,j,:] = \
                     tracers_core[:,:,j,:]
-            mapping[dim_core.ipx*dim_core.nx:(dim_core.ipx+1)*dim_core.nx, \
-                    dim_core.ipy*dim_core.ny:(dim_core.ipy+1)*dim_core.ny,j,:] = \
+            mapping[dim_core.ipx*dim_core.nx*trace_sub:(dim_core.ipx+1)*dim_core.nx*trace_sub, \
+                    dim_core.ipy*dim_core.ny*trace_sub:(dim_core.ipy+1)*dim_core.ny*trace_sub,j,:] = \
                     mapping_core[:,:,j,:]
                     
     return tracers, mapping, t
@@ -183,31 +183,33 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     # read the data from all cores
     for i in range(n_proc):
         fixed_file = open(dataDir+'proc{0}/'.format(i)+fileName, 'rb')
-        tmp = fixed_file.read()
+        tmp = fixed_file.read(4)
         
         data.append(data_struct())
-        
-        # The index of the current value for t in the tmp array.
-        # Note that each entry has the length 4 bytes.
-        m = 4
         eof = 0
+        if tmp == '':
+            eof = 1
         while (eof == 0):
-            data[i].t.append(struct.unpack("<f", tmp[m:m+4])[0])
-            n_fixed_core = int(struct.unpack("<f", tmp[m+3*4:m+4*4])[0])
+            data[i].t.append(struct.unpack("<ff", fixed_file.read(8))[0])
+            n_fixed_core = int(struct.unpack("<fff", fixed_file.read(12))[1])
             n_fixed += n_fixed_core
             data[-1].fidx.append(n_fixed_core)
 
             x = list(np.zeros(n_fixed_core))
             y = list(np.zeros(n_fixed_core))
+            q = list(np.zeros(n_fixed_core))
             for j in range(n_fixed_core):
-                x[j] = struct.unpack("<f", tmp[m+6*4+j*4*6:m+7*4+j*4*6])[0]
-                y[j] = struct.unpack("<f", tmp[m+7*4+j*4*6:m+8*4+j*4*6])[0]
+                x[j] = struct.unpack("<ff", fixed_file.read(8))[1]
+                y[j] = struct.unpack("<f", fixed_file.read(4))[0]
+                q[j] = struct.unpack("<ff", fixed_file.read(8))[0]
             data[i].x.append(x)
             data[i].y.append(y)
                 
-            m = m + (n_fixed_core*4 + 7)*4
-            if m >= len(tmp):
-	        eof = 1
+            data[i].q.append(q)
+ 
+            tmp = fixed_file.read(4)
+            if tmp == '':
+                eof = 1
 
         fixed_file.close()
         
@@ -218,12 +220,15 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
         for proc in range(n_proc):
             x = x + data[proc].x[i]
             y = y + data[proc].y[i]
+            q = q + data[proc].q[i]
         fixed.x.append(x)
         fixed.y.append(y)
+        fixed.q.append(q)
     
     fixed.t = np.array(fixed.t)
     fixed.x = np.array(fixed.x)
     fixed.y = np.array(fixed.y)
+    fixed.q = np.array(fixed.q)
     
     return fixed
 
@@ -281,7 +286,20 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     
     # read the parameters for the domain boundaries
     params = pc.read_param(quiet = True)
-    domain = [params.xyz0[0], params.xyz0[1], params.xyz1[0], params.xyz1[1]]
+    domain = [params.xyz0[0], params.xyz1[0], params.xyz0[1], params.xyz1[1]]
+    
+    # determine the colors for the fixed points
+    colors = np.zeros(np.shape(fixed.q) + (3,))
+    colors[:,:,:] = 0.
+    print np.shape(colors)
+    for j in range(len(colors[:,0,0])):
+        for k in range(len(colors[0,:,0])):
+            if fixed.q[j,k] >= 0:
+                colors[j,k,1] = colors[j,k,2] = (1-fixed.q[j,k]/np.max(np.abs(fixed.q[:,k])))
+                colors[j,k,0] = fixed.q[j,k]/np.max(np.abs(fixed.q[:,k]))
+            else:
+                colors[j,k,0] = colors[j,k,1] = (1+fixed.q[j,k]/np.max(np.abs(fixed.q[:,k])))
+                colors[j,k,2] = -fixed.q[j,k]/np.max(np.abs(fixed.q[:,k]))
     
     # prepare the plot
     width = 6
@@ -292,8 +310,9 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     plt.rc("figure.subplot", top=(height-20/72.27)/height)
     figure = plt.figure(figsize=(width, height))
 
-    dots = plt.plot(fixed.x[0,:], fixed.y[0,:], 'o', c='white')
-    image = plt.imshow(mapping[::-1,:,0,:], interpolation = 'nearest', extent = domain)
+    for k in range(len(fixed.x[0,:])):
+        dots = plt.plot(fixed.x[0,k], fixed.y[0,k], 'o', c = colors[0,k,:])
+    image = plt.imshow(zip(*mapping[:,::-1,0,:]), interpolation = 'nearest', extent = domain)
     j = 0
     frameName = imageDir + 'images%06d.png'%j
     imageFiles = []
@@ -303,9 +322,9 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     for j in range(1,len(fixed.t)):
         #time.sleep(0.5)
         figure.clear()
-        dots = plt.plot(fixed.x[j,:], fixed.y[j,:], 'o', c = 'white')
-        image = plt.imshow(zip(*mapping[:,::-1,j,:]), interpolation = 'nearest', extent = [-4,4,-4,4])
-        #plt.show()
+        for k in range(len(fixed.x[j,:])):
+            dots = plt.plot(fixed.x[j,k], fixed.y[j,k], 'o', c = colors[j,k,:])
+        image = plt.imshow(zip(*mapping[:,::-1,j,:]), interpolation = 'nearest', extent = domain)
         frameName = imageDir + 'images%06d.png'%j
         imageFiles.append(frameName)
         figure.savefig(frameName)
