@@ -398,25 +398,10 @@ module Viscosity
       call put_shared_variable('llambda_effect',llambda_effect,ierr)
 !
 !  For Boussinesq, density is constant, so must use lvisc_simplified.
-!  Also, overwrite nu, but this is now removed to allow variable nu.
-!  Much of the block below can probably be removed.
 !
       if (lrun.and.lboussinesq) then
-        if (lentropy.or.ltemperature) then
-          call get_shared_variable('Pr',Pr,ierr)
-          if (ierr/=0) call stop_it("initialize_viscosity: " &
-            // "problem getting shared Pr from hydro")
-!AB: Boris, this seems very special and should be avoided
-!AB: in this extreme form, because it pushes the time step down
-!AB: for no good reason. It is then better to set nu=1 in run.
-          !nu=Pr
-        endif
-        !lvisc_simplified=.true.
-!AB: It must be set in run.in, because otherwise the default is also
-!AB: selected before one gets to this point. So, better set it in run.in
-!AB: and produce a fatal error here.
         if (.not.lvisc_simplified) call fatal_error("initialize_viscosity", &
-            "Boussinesq works only if lvisc_simplified=.true. in run.in")
+            "Boussinesq works only if ivisc='simplified' in run.in")
         if (lroot) print*,'viscosity: viscous force nu*del2v with nu=',nu
       endif
 !

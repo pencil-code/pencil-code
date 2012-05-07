@@ -748,14 +748,6 @@ module Hydro
         call put_shared_variable('dx_forc', dx_forc, ierr)
       endif
 !
-! share the Prandtl number with the viscosity module
-!
-      if (lrun.and.lboussinesq.and.ltemperature) then
-        call put_shared_variable('Pr', Pr, ierr)
-        if (ierr/=0) call fatal_error('initialize_hydro:',&
-             'failed to share Pr')
-      endif
-!
 ! check if we are solving the force-free equations in parts of domain
 !
       if (ldensity) then
