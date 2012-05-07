@@ -2992,41 +2992,43 @@ module Special
 !***********************************************************************
     subroutine read_points(level)
 !
+      use Syscalls, only: file_exists, file_size
+!
       integer, intent(in) :: level
-      integer :: unit=12,lend,rn,iostat
-      real :: dummy=1.
-      logical :: ex
+      integer :: unit=12,lend,lend_b8
+      integer :: i,iostat,npoints
 !
       character (len=64) :: filename
 !
-      inquire(IOLENGTH=lend) dummy
-!
+      inquire (IOLENGTH=lend) 1.0
+      inquire (IOLENGTH=lend_b8) 1.0d0
+
       write (filename,'("/points_",I1.1,".dat")') level
+
+      if (file_exists(trim(directory_snap)//trim(filename))) then
 !
-      inquire(file=trim(directory_snap)//trim(filename),exist=ex)
+! get number of points to be read
 !
-      if (ex) then
+        npoints=file_size(trim(directory_snap)//trim(filename))/(lend*8/lend_b8*6)
+!        
         open(unit,file=trim(directory_snap)//trim(filename), &
             access="direct",recl=6*lend)
 !
-        rn=1
-        do
-          read(unit,iostat=iostat,rec=rn) current%data
-          if (iostat == 0) then
-            call draw_update(level)
-            call add_point
-            rn=rn+1
-          else
-            nullify(previous%next)
-            deallocate(current)
-            current => previous
-            exit
-          endif
+! read points
+        do i=1,npoints 
+          read(unit,iostat=iostat,rec=i) current%data
+          call draw_update(level)
+          call add_point
         enddo
+!
+! fix end of the list
+        nullify(previous%next)
+        deallocate(current)
+        current => previous
         close(unit)
 !
         if (ip < 14) then
-          print*,'Proc',iproc,'read',rn-1
+          print*,'Proc',iproc,'read',i
           print*,'points for the granulation driver in level',level
         else
           print*,'Read driver points',iproc,level
@@ -3036,8 +3038,7 @@ module Special
 !
         if (level == n_gran_level) then
           write (filename,'("/seed_",I1.1,".dat")') level
-          inquire(file=trim(directory_snap)//trim(filename),exist=ex)
-          if (ex) then
+          if (file_exists(trim(directory_snap)//trim(filename))) then
             open(unit,file=trim(directory_snap)//trim(filename), &
                 status="unknown",access="direct",recl=mseed*lend)
             read(unit,rec=1) points_rstate
