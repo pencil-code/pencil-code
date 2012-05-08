@@ -107,7 +107,6 @@ module InitialCondition
 !
   real :: r0_pot=0.,qgshear=1.5
   integer :: n_pot=10
-  logical :: lpressure_dust=.false.
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
@@ -116,7 +115,7 @@ module InitialCondition
        llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
        zmode_mag,rmode_mag,rm_int,rm_ext,amplbb,Bz_const, &
-       r0_pot,qgshear,n_pot,magnetic_power_law,lpressure_dust
+       r0_pot,qgshear,n_pot,magnetic_power_law
 !
   contains
 !***********************************************************************
@@ -290,7 +289,7 @@ module InitialCondition
 !
 !  Set the sound speed
 !
-      if (.not.lpressure_dust) then 
+      if (.not.ldust_pressure) then 
         do m=1,my; do n=1,mz
           lheader=((m==1).and.(n==1).and.lroot)
           call get_radial_distance(rr_sph,rr_cyl)
@@ -421,7 +420,7 @@ module InitialCondition
 !
 !  Correct the velocities by this pressure gradient
 !
-      if (.not.lpressure_dust) &
+      if (.not.ldust_pressure) &
            call correct_pressure_gradient(f,ics2,temperature_power_law)
 !
 !  Correct the velocities for self-gravity
@@ -437,7 +436,7 @@ module InitialCondition
       if (llocal_iso) then
         call set_thermodynamical_quantities&
              (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
-      else if (.not.lpressure_dust) then
+      else if (.not.ldust_pressure) then
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
 !
