@@ -33,9 +33,9 @@ module Cdata
   real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6
   real :: dx,dy,dz,dxmin,dxmax
   real, dimension (nx) :: dxmax_pencil,dxmin_pencil
-  real, dimension (nxgrid) :: kx_fft, kx_fft2, xgrid
-  real, dimension (nygrid) :: ky_fft, ky_fft2, ygrid
-  real, dimension (nzgrid) :: kz_fft, kz_fft2, zgrid
+  real, dimension (nxgrid) :: kx_fft, kx_fft2, xgrid, dx1grid, dxtgrid
+  real, dimension (nygrid) :: ky_fft, ky_fft2, ygrid, dy1grid, dytgrid
+  real, dimension (nzgrid) :: kz_fft, kz_fft2, zgrid, dz1grid, dztgrid
   real :: kx_ny,ky_ny,kz_ny
   integer :: dimensionality
 !

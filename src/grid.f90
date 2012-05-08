@@ -1626,15 +1626,18 @@ module Grid
 !  piece of code called three times).
 !
 !  19-oct-10/wlad: coded
+!  08-may-12/ccyang: include dx_1, dx_tilde, ... arrays
 !
       use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
 !
-      real, dimension(nx) :: xrecv
-      real, dimension(ny) :: yrecv
-      real, dimension(nz) :: zrecv
+      real, dimension(nx) :: xrecv, x1recv, x2recv
+      real, dimension(ny) :: yrecv, y1recv, y2recv
+      real, dimension(nz) :: zrecv, z1recv, z2recv
       integer :: jx,jy,jz,iup,ido,iproc_recv
 !
       xrecv=0.; yrecv=0.; zrecv=0.
+      x1recv=0.; y1recv=0.; z1recv=0.
+      x2recv=0.; y2recv=0.; z2recv=0.
 !
 !  Serial x array
 !
@@ -1645,6 +1648,8 @@ module Grid
 !
         if ((ipy==0).and.(ipz==0)) then
           call mpisend_real(x(l1:l2),nx,root,111)
+          call mpisend_real(dx_1(l1:l2),nx,root,112)
+          call mpisend_real(dx_tilde(l1:l2),nx,root,113)
         endif
       else
 !
@@ -1661,13 +1666,19 @@ module Grid
 !
             iproc_recv=jx
             call mpirecv_real(xrecv,nx,iproc_recv,111)
+            call mpirecv_real(x1recv,nx,iproc_recv,112)
+            call mpirecv_real(x2recv,nx,iproc_recv,113)
 !
             ido=jx    *nx + 1
             iup=(jx+1)*nx
             xgrid(ido:iup)=xrecv
+            dx1grid(ido:iup)=x1recv
+            dxtgrid(ido:iup)=x2recv
           else
             !the root just copies its value to the serial array
             xgrid(1:nx)=x(l1:l2)
+            dx1grid(1:nx)=dx_1(l1:l2)
+            dxtgrid(1:nx)=dx_tilde(l1:l2)
           endif
         enddo
       endif
@@ -1676,48 +1687,70 @@ module Grid
 !  procedure for y and z arrays.
 !
       call mpibcast_real(xgrid,nxgrid)
+      call mpibcast_real(dx1grid,nxgrid)
+      call mpibcast_real(dxtgrid,nxgrid)
 !
 !  Serial y-array
 !
       if (iproc/=root) then
         if (ipx==0.and.ipz==0) then
-          call mpisend_real(y(m1:m2),ny,root,222)
+          call mpisend_real(y(m1:m2),ny,root,221)
+          call mpisend_real(dy_1(m1:m2),ny,root,222)
+          call mpisend_real(dy_tilde(m1:m2),ny,root,223)
         endif
       else
         do jy=0,nprocy-1
           if (jy/=root) then
             iproc_recv=nprocx*jy
-            call mpirecv_real(yrecv,ny,iproc_recv,222)
+            call mpirecv_real(yrecv,ny,iproc_recv,221)
+            call mpirecv_real(y1recv,ny,iproc_recv,222)
+            call mpirecv_real(y2recv,ny,iproc_recv,223)
             ido=jy    *ny + 1
             iup=(jy+1)*ny
             ygrid(ido:iup)=yrecv
+            dy1grid(ido:iup)=y1recv
+            dytgrid(ido:iup)=y2recv
           else
             ygrid(1:ny)=y(m1:m2)
+            dy1grid(1:ny)=dy_1(m1:m2)
+            dytgrid(1:ny)=dy_tilde(m1:m2)
           endif
         enddo
       endif
       call mpibcast_real(ygrid,nygrid)
+      call mpibcast_real(dy1grid,nygrid)
+      call mpibcast_real(dytgrid,nygrid)
 !
 !  Serial z-array
 !
       if (iproc/=root) then
         if (ipx==0.and.ipy==0) then
-          call mpisend_real(z(n1:n2),nz,root,333)
+          call mpisend_real(z(n1:n2),nz,root,331)
+          call mpisend_real(dz_1(n1:n2),nz,root,332)
+          call mpisend_real(dz_tilde(n1:n2),nz,root,333)
         endif
       else
         do jz=0,nprocz-1
           if (jz/=root) then
             iproc_recv=nprocx*nprocy*jz
-            call mpirecv_real(zrecv,nz,iproc_recv,333)
+            call mpirecv_real(zrecv,nz,iproc_recv,331)
+            call mpirecv_real(z1recv,nz,iproc_recv,332)
+            call mpirecv_real(z2recv,nz,iproc_recv,333)
             ido=jz    *nz + 1
             iup=(jz+1)*nz
             zgrid(ido:iup)=zrecv
+            dz1grid(ido:iup)=z1recv
+            dztgrid(ido:iup)=z2recv
           else
             zgrid(1:nz)=z(n1:n2)
+            dz1grid(1:nz)=dz_1(n1:n2)
+            dztgrid(1:nz)=dz_tilde(n1:n2)
           endif
         enddo
       endif
       call mpibcast_real(zgrid,nzgrid)
+      call mpibcast_real(dz1grid,nzgrid)
+      call mpibcast_real(dztgrid,nzgrid)
 !
     endsubroutine construct_serial_arrays
 !***********************************************************************
