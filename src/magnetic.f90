@@ -1268,6 +1268,7 @@ module Magnetic
         case ('sinxcosz'); call sinx_siny_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('sinycosz'); call cosx_siny_cosz(amplaa(j),f,iax,kx_aa(j),ky_aa(j),0.)
         case ('cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
+        case ('x3sinycosy'); call x3_siny_cosz(amplaa(j),f,iay,xyz0(1),xyz1(1),ky_aa(j),kz_aa(j))
         case ('x3cosycosz'); call x3_cosy_cosz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
         case ('Ax=cosysinz'); call cosy_sinz(amplaa(j),f,iax,ky_aa(j),kz_aa(j))
         case ('magnetogram'); call mag_init(f)

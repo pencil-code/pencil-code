@@ -41,7 +41,7 @@ module Initcond
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
   public :: x_siny_cosz, x1_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
   public :: sinx_siny_sinz, cosx_siny_cosz, sinx_siny_cosz
-  public :: sin2x_sin2y_cosz, cos2x_cos2y_cos2z, x3_cosy_cosz
+  public :: sin2x_sin2y_cosz, cos2x_cos2y_cos2z, x3_cosy_cosz, x3_siny_cosz
   public :: cosx_cosz, cosy_cosz, cosy_sinz
   public :: cosxz_cosz, cosyz_sinz
   public :: halfcos_x, magsupport, vfield
@@ -210,6 +210,36 @@ module Initcond
       endif
 !
     endsubroutine sinx_siny_cosz
+!***********************************************************************
+    subroutine x3_siny_cosz(ampl,f,i,x1,x2,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!   8-may-12/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: ky,kz
+      real :: ampl, ky1=0., kz1=pi/2., x1, x2
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  (x-x1)*(x2-x)*sin(kz*z)
+!
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'x3_siny_cosz: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'x3_siny_cosz: ampl,ky,kz=', &
+                                      ampl,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread((x-x1)*(x2-x),2,my),3,mz)&
+                                   *spread(spread(sin(ky1*y),1,mx),3,mz)&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine x3_siny_cosz
 !***********************************************************************
     subroutine x_siny_cosz(ampl,f,i,kx,ky,kz)
 !

@@ -1006,8 +1006,10 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## Axel on norlx55 (gfortran)
 ##
-#FC=${HOME}/Library/bin/mpif90 #(norlx55*)
-#FFLAGS= -O3 -fno-underscoring -L${HOME}/Library/lib -I${HOME}/Library/include#(norlx55*)
+##FC=${HOME}/Library/bin/mpif90 #(norlx55*)
+#FC=mpif90 #(norlx55*)
+##FC=${HOME}/Library/bin/mpif90 #(norlx55*)
+#FFLAGS= -O3 -fno-underscoring -L${HOME}/Library/lib -I${HOME}/Library/include #(norlx55*)
 #CC=mpicc #(norlx55*)
 #CFLAGS=-O3 #(norlx55*)
 #LD_MPI= #(norlx55*)
