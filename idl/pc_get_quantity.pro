@@ -24,25 +24,97 @@
 ;;;   HR_ohm           volumetric Ohmic heating rate
 ;;;   j                current density
 ;;;
-
+;;;  Example:
+;;;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, dim=dim, grid=grid, param=param, par2=run_param
+;;;   IDL> HR_ohm = pc_get_quantity (slice, tags, 'HR_ohm', dim=dim, grid=grid, param=param, run_param=run_param)
+;;;   IDL> tvscl, HR_ohm
+;;;
 
 ; Calculation of physical quantities.
-function pc_get_quantity, vars, index, quantity, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param
+function pc_get_quantity, vars, index, quantity, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir
 
-  ; First and last physical value, excluding ghost cells
-  l1 = dim.l1
-  l2 = dim.l2
-  m1 = dim.m1
-  m2 = dim.m2
-  n1 = dim.n1
-  n2 = dim.n2
+  common cdat, x, y, z, mx, my, mz, nw
+  common cdat_nonequidist, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist
+
+  if (size (vars, /type) eq 8) then begin
+    ; Create array out of given structure and pass recursively computed results
+    array = pc_convert_vars_struct (vars, index, tags)
+    return, pc_get_quantity (array, tags, quantity, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param)
+  end
   
   sources = tag_names (index)
 
-  if (n_elements(grid) eq 0) then begin
+  if (n_elements(unit) eq 0) then begin
+    ; Set default units
     print, "WARNING: using unity as unit."
     unit = { velocity:1, temperature:1, density:1, magnetic_field:1, time:1, length:1, mass:1 }
-  endif
+  end
+
+  ; Default data directory
+  if (not keyword_set (datadir)) then datadir = pc_get_datadir()
+
+  if (n_elements(dim) eq 0) then begin
+    ; Check consistency of dimensions
+    if (((size (vars))[1] ne mx) or ((size (vars))[2] ne my) or ((size (vars))[3] ne mz)) then $
+        message, "Data doesn't fit to the loaded dim structure, please pass the corresponding dim structure as parameter."
+    pc_read_dim, obj=glob_dim, datadir=datadir, /quiet
+    l1 = glob_dim.nprocx
+    l2 = mx - 1 - glob_dim.nprocx
+    m1 = glob_dim.nprocy
+    m2 = my - 1 - glob_dim.nprocy
+    n1 = glob_dim.nprocz
+    n2 = mz - 1 - glob_dim.nprocz
+  end else begin
+    ; Set dimensions in common block for derivative routines
+    mx = dim.mx
+    my = dim.my
+    mz = dim.mz
+    nw = dim.nx * dim.ny * dim.nz
+    l1 = dim.l1
+    l2 = dim.l2
+    m1 = dim.m1
+    m2 = dim.m2
+    n1 = dim.n1
+    n2 = dim.n2
+    if (((size (vars))[1] ne mx) or ((size (vars))[2] ne my) or ((size (vars))[3] ne mz)) then $
+        message, "Data doesn't fit to the given dim structure."
+  end
+
+  if (n_elements(param) eq 0) then begin
+    ; Load 'start.in' parameters
+    pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
+  end
+
+  if (n_elements(run_param) eq 0) then begin
+    ; Load 'run.in' parameters
+    pc_read_param, obj=run_param, dim=dim, datadir=datadir, /param2, /quiet
+  end
+
+  if (n_elements(grid) eq 0) then begin
+    ; Check consistency of grid
+    if (((size (x))[1] ne (size (vars))[1]) or ((size (y))[1] ne (size (vars))[2]) or ((size (z))[1] ne (size (vars))[3])) then $
+        message, "Data doesn't fit to the loaded grid structure, please pass the corresponding grid structure as parameter."
+  end else begin
+    ; Set grid in common block for derivative routines
+    x = grid.x
+    y = grid.y
+    z = grid.z
+    dx = grid.dx
+    dy = grid.dy
+    dz = grid.dz
+    dx_1 = grid.dx_1
+    dy_1 = grid.dy_1
+    dz_1 = grid.dz_1
+    dx_tilde = grid.dx_tilde
+    dy_tilde = grid.dy_tilde
+    dz_tilde = grid.dz_tilde
+    if (((size (x))[1] ne (size (vars))[1]) or ((size (y))[1] ne (size (vars))[2]) or ((size (z))[1] ne (size (vars))[3])) then $
+        message, "Data doesn't fit to the given grid structure."
+  end
+
+  if (n_elements(param) gt 0) then begin
+    lequidist = safe_get_tag (param, 'lequidist', default=[1,1,1])
+  end
 
   ; Absolute velocity
   if (strcmp (quantity, 'u_abs', /fold_case)) then begin
@@ -64,9 +136,8 @@ function pc_get_quantity, vars, index, quantity, unit=unit, dim=dim, grid=grid, 
       return, exp (vars[l1:l2,m1:m2,n1:n2,index.lnTT]) * unit.temperature
     end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
       return, vars[l1:l2,m1:m2,n1:n2,index.TT] * unit.temperature
-    end else begin
-      message, "Can't compute '"+quantity+"' without 'lnTT' or 'TT'"
     end
+    message, "Can't compute '"+quantity+"' without 'lnTT' or 'TT'"
   end
 
   ; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
@@ -82,25 +153,22 @@ function pc_get_quantity, vars, index, quantity, unit=unit, dim=dim, grid=grid, 
       return, alog (exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho]) * unit.density)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
       return, alog (vars[l1:l2,m1:m2,n1:n2,index.rho] * unit.density)
-    end else begin
-      message, "Can't compute '"+quantity+"' without 'lnrho' or 'rho'"
     end
+    message, "Can't compute '"+quantity+"' without 'lnrho' or 'rho'"
   end else if (strcmp (quantity, 'log_rho', /fold_case)) then begin
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
       return, alog10 (exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho]) * unit.density)
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
       return, alog10 (vars[l1:l2,m1:m2,n1:n2,index.rho] * unit.density)
-    end else begin
-      message, "Can't compute '"+quantity+"' without 'lnrho' or 'rho'"
     end
+    message, "Can't compute '"+quantity+"' without 'lnrho' or 'rho'"
   end else if (strcmp (quantity, 'rho', /fold_case)) then begin
     if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
       return, exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho]) * unit.density
     end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
       return, vars[l1:l2,m1:m2,n1:n2,index.rho] * unit.density
-    end else begin
-      message, "Can't compute '"+quantity+"' without 'lnrho' or 'rho'"
     end
+    message, "Can't compute '"+quantity+"' without 'lnrho' or 'rho'"
   end
 
   ; Pressure
