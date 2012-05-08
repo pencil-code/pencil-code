@@ -137,7 +137,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
 
   close,1
   gridfile=datadir+'/'+'grid.dat'
-  if (any(lequidist eq 0)) then begin
+  if (not any(lequidist)) then begin
     openr,1,gridfile,/F77
     point_lun,1,pos
     readu,1, dx_1_loc,     dy_1_loc,     dz_1_loc
