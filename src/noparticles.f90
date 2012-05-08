@@ -9,7 +9,7 @@
 !
 ! CPARAM logical, parameter :: lparticles=.false.
 !
-! PENCILS PROVIDED rhop
+! PENCILS PROVIDED rhop, grhop(3)
 !
 !***************************************************************
 module Particles
