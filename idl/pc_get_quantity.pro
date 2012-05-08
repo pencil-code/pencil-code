@@ -34,7 +34,7 @@
 function pc_get_quantity, vars, index, quantity, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir
 
   common cdat, x, y, z, mx, my, mz, nw
-  common cdat_nonequidist, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist
+  common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
   if (size (vars, /type) eq 8) then begin
     ; Create array out of given structure and pass recursively computed results

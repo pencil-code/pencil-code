@@ -15,7 +15,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common pc_precision, zero, one
   common cdat_coords,coord_system
 ;
@@ -72,7 +72,10 @@ endelse
 mx=dim.mx
 my=dim.my
 mz=dim.mz
-lequidist=safe_get_tag(param,'lequidist',default=[1,1,1])
+lequidist=safe_get_tag(param,'lequidist',default=[1,1,1]) ne 0
+lperi=param.lperi ne 0
+ldegenerated=[dim.nx,dim.ny,dim.nz] eq 1
+stop
 ;
 ;  Set coordinate system.
 ;
@@ -86,8 +89,8 @@ pc_set_precision, dim=dim, quiet=quiet
 ;
 t=zero
 x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
-dx=zero &  dy=zero &  dz=zero 
-Lx=zero &  Ly=zero &  Lz=zero 
+dx=zero & dy=zero & dz=zero 
+Lx=zero & Ly=zero & Lz=zero 
 dx_1=fltarr(dim.mx)*one & dy_1=fltarr(dim.my)*one & dz_1=fltarr(dim.mz)*one
 dx_tilde=fltarr(dim.mx)*one & dy_tilde=fltarr(dim.my)*one & dz_tilde=fltarr(dim.mz)*one
 ;
@@ -261,6 +264,8 @@ if (keyword_set(print)) then begin
   print, 'min(y), max(y) = ',min(y),', ',max(y)
   print, 'min(z), max(z) = ',min(z),', ',max(z)
   print, '    dx, dy, dz = ' , dx , ', ' , dy , ', ' , dz
+  print, '   periodicity = ' , lperi
+  print, '  degeneration = ' , ldegenerated
 endif
 ;
 end

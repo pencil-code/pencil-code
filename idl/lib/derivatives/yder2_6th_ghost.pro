@@ -10,7 +10,7 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
-  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
 ;
 ;  Default values.
 ;
@@ -25,7 +25,7 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   s=size(f) & d=make_array(size=s)
   mx=s[1] & my=s[2] & mz=s[3]
 ;
-;  Check for degenerate case (no x-extension)
+;  Check for degenerate case (no y-derivative)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
   if (my eq 1) then return, fltarr(mx,my,mz)
@@ -50,8 +50,8 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endelse
 ;
   if (s[0] eq 2) then begin
-    if (m2 gt m1) then begin
-      if (lequidist[1] eq 0) then begin
+    if (not ldegenerated[1]) then begin
+      if (not lequidist[1]) then begin
         dy2 =    spread(dy2,     0,nx)
         dd  = d1*spread(dy_tilde,0,mx)
         ; will also work on slices like yder2(ss[10,*,*])
@@ -66,8 +66,8 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     endelse
 ;
   endif else if (s[0] eq 3) then begin
-    if (m2 gt m1) then begin
-      if (lequidist[1] eq 0) then begin
+    if (not ldegenerated[1]) then begin
+      if (not lequidist[1]) then begin
         dy2 =    spread(dy2,     [0,2],[nx,nz])
         dd  = d1*spread(dy_tilde,[0,2],[mx,mz])
         ; will also work on slices like yder2(ss[10,*,*])
@@ -83,8 +83,8 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   endif else if (s[0] eq 4) then begin
 ;
-    if (m2 gt m1) then begin
-      if (lequidist[1] eq 0) then begin
+    if (not ldegenerated[1]) then begin
+      if (not lequidist[1]) then begin
         dy2 =    spread(dy2,     [0,2,3],[nx,nz,s[4]])
         dd  = d1*spread(dy_tilde,[0,2,3],[mx,mz,s[4]])
         ; will also work on slices like yder2(uu[10,*,*,*])

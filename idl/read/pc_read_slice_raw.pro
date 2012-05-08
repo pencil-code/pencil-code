@@ -57,7 +57,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; set them up properly.
 ;
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common pc_precision, zero, one
   common cdat_coords,coord_system
 ;

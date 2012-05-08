@@ -9,7 +9,7 @@ function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
-  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
 ;
 ;  Default values.
 ;
@@ -33,7 +33,7 @@ function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;  Calculate d2f/dxdy.
 ;
   if (s[0] eq 3) then begin
-    if ( (l1 ne l2) and (m1 ne m2) ) then begin
+    if (not ldegenerated[0] and not ldegenerated[1]) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
         ;
         ;  take care of nonuniform mesh
@@ -65,8 +65,10 @@ function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
                       +(f[l1+3:l2+3,m-3,n]-f[l1-3:l2-3,m-3,n]))) )
       endfor & endfor
     endif
+;
   endif else if (s[0] eq 4) then begin
-    if ( (l1 ne l2) and (m1 ne m2) ) then begin
+;
+    if (not ldegenerated[0] and not ldegenerated[1]) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
         ;
         ;  take care of nonuniform mesh

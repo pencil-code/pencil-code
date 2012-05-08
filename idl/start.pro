@@ -14,7 +14,7 @@ function param
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
 common cdat_coords, coord_system
 ;forward_function safe_get_tag
 ;
@@ -218,7 +218,7 @@ if (file_test(pfile)) then begin
   ;
   dx_1=fltarr(mx)*zero & dy_1=fltarr(my)*zero & dz_1=fltarr(mz)*zero
   dx_tilde=fltarr(mx)*zero& dy_tilde=fltarr(my)*zero& dz_tilde=fltarr(mz)*zero
-  if (any(lequidist eq 0)) then begin
+  if (not any(lequidist)) then begin
     openr,lun,gridfile,/F77,/get_lun
     point_lun,lun,pos
     readu,lun, dx_1,     dy_1,     dz_1

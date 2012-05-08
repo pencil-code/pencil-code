@@ -10,7 +10,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
-  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common cdat_coords,coord_system
 ;
 ;  Default values.
@@ -26,7 +26,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   s=size(f) & d=make_array(size=s)
   mx=s[1] & my=s[2] & mz=s[3]
 ;
-;  Check for degenerate case (no x-extension)
+;  Check for degenerate case (no z-derivative)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
   if (mz eq 1) then return, fltarr(mx,my,mz)
@@ -53,7 +53,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (s[0] eq 2) then begin
     if (n2 gt n1) then begin
-      if (lequidist[2] eq 0) then dz2=spread(dz2,0,nx)
+      if (not lequidist[2]) then dz2=spread(dz2,0,nx)
       d[l1:l2,n1:n2]=dz2* $
           ( +45.*(f[l1:l2,n1+1:n2+1]-f[l1:l2,n1-1:n2-1]) $
              -9.*(f[l1:l2,n1+2:n2+2]-f[l1:l2,n1-2:n2-2]) $
@@ -62,8 +62,8 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     endif else d[l1:l2,n1:n2]=0.
 ;
   endif else if (s[0] eq 3) then begin
-    if (n2 gt n1) then begin
-      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0],[ny,nx])
+    if (not ldegenerated[2]) then begin
+      if (not lequidist[2]) then dz2=spread(dz2,[0,0],[ny,nx])
       ; will also work on slices like zder(ss[10,20,*])
       d[l1:l2,m1:m2,n1:n2]=dz2* $
           ( +45.*(f[l1:l2,m1:m2,n1+1:n2+1]-f[l1:l2,m1:m2,n1-1:n2-1]) $
@@ -76,8 +76,8 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   endif else if (s[0] eq 4) then begin
 ;
-    if (n2 gt n1) then begin
-      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0,3],[nx,ny,s[4]])
+    if (not ldegenerated[2]) then begin
+      if (not lequidist[2]) then dz2=spread(dz2,[0,0,3],[nx,ny,s[4]])
       ; will also work on slices like zder(uu[10,20,*,*])
       d[l1:l2,m1:m2,n1:n2,*]=dz2* $
           ( +45.*(f[l1:l2,m1:m2,n1+1:n2+1,*]-f[l1:l2,m1:m2,n1-1:n2-1,*]) $

@@ -9,7 +9,7 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
-  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
 ;
 ;  Default values.
 ;
@@ -20,7 +20,7 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   s=size(f) & d=make_array(size=s)
   nx=s[1] & ny=s[2] & nz=s[3]
 ;
-;  Check for degenerate case (no x-extension).
+;  Check for degenerate case (no y-derivative)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
   if (ny eq 1) then return,fltarr(nx,ny,nz)
@@ -40,7 +40,7 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endelse
 ;
   if (s[0] eq 3) then begin
-    if (m2 gt m1) then begin
+    if (not ldegenerated[1]) then begin
       d[l1:l2,m1:m2,n1:n2]=dy6* $
           ( -20.*f[l1:l2,m1:m2,n1:n2] $
             +15.*(f[l1:l2,m1-1:m2-1,n1:n2]+f[l1:l2,m1+1:m2+1,n1:n2]) $
@@ -52,7 +52,7 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   endif else if (s[0] eq 4) then begin
 ;
-    if (m2 gt m1) then begin
+    if (not ldegenerated[1]) then begin
       d[l1:l2,m1:m2,n1:n2,*]=dy6* $
           ( -20.*f[l1:l2,m1:m2,n1:n2,*] $
             +15.*(f[l1:l2,m1-1:m2-1,n1:n2,*]+f[l1:l2,m1+1:m2+1,n1:n2,*]) $
