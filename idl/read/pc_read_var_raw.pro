@@ -94,6 +94,8 @@ COMPILE_OPT IDL2,HIDDEN
       print, 'Could not find '+datadir+'/param2.nml'
     endelse
   endif
+  if (n_elements(grid) eq 0) then $
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, /quiet
 ;
 ; Set the coordinate system.
 ;  

@@ -74,7 +74,7 @@ pro pc_read_var,                                                  $
     allprocs=allprocs,                                            $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
-    dim=dim, param=param, par2=par2, ivar=ivar,                   $
+    dim=dim, grid=grid, param=param, par2=par2, ivar=ivar,        $
     datadir=datadir, proc=proc, additional=additional,            $
     nxrange=nxrange, nyrange=nyrange, nzrange=nzrange,            $
     stats=stats, nostats=nostats, quiet=quiet, help=help,         $
@@ -157,6 +157,8 @@ COMPILE_OPT IDL2,HIDDEN
       if (magic) then print, 'This may give problems with magic variables.'
     endelse
   endif
+  if (n_elements(grid) eq 0) then $
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, /quiet
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;

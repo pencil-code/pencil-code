@@ -35,7 +35,8 @@
 ;-
 pro pc_read_var_time,                                                              $
     time=time, varfile=varfile_, allprocs=allprocs, datadir=datadir, param=param,  $
-    dim=dim, ivar=ivar, swap_endian=swap_endian, f77=f77, exit_status=exit_status, quiet=quiet
+    dim=dim, grid=grid, ivar=ivar, swap_endian=swap_endian, f77=f77,               $
+    exit_status=exit_status, quiet=quiet
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -84,6 +85,8 @@ COMPILE_OPT IDL2,HIDDEN
   endif
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
+  if (n_elements(grid) eq 0) then $
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, /quiet
 ;
 ; ... and check pc_precision is set for all Pencil Code tools.
 ;
