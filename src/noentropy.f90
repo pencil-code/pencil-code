@@ -95,6 +95,8 @@ module Entropy
 !
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
+      else if (ldust_pressure) then   
+        call select_eos_variable('rhop',-1) !isentropic => polytropic
       else
         if (gamma_m1 == 0.) then
           call select_eos_variable('cs2',-1) !isothermal
@@ -178,6 +180,14 @@ module Entropy
         lpenc_diagnos(i_ee)=.true.
       endif
 !
+      if (ldust_pressure) then 
+        lpenc_requested(i_grhop)=.true.
+        lpenc_requested(i_rhop)=.true.
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_grho)=.true.
+        lpenc_requested(i_cp)=.true.
+      endif
+!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -197,7 +207,7 @@ module Entropy
       if (lpencil_in(i_fpres)) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
-        if (llocal_iso) lpencil_in(i_glnTT)=.true.
+        if (llocal_iso)  lpencil_in(i_glnTT)=.true.
       endif
       if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
       if (lpencil_in(i_cs2) .and. gamma_m1/=0.) lpencil_in(i_lnrho)=.true.
@@ -210,8 +220,6 @@ module Entropy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-nov-04/anders: coded
-!
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -230,7 +238,11 @@ module Entropy
           if (llocal_iso) then
             p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
           else
-            p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+            if (ldust_pressure) then 
+              call calc_dust_pressure(f,p)
+            else
+              p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+            endif
           endif
 !
 !  multiply previous p%fpres pencil with profiles
@@ -375,46 +387,6 @@ module Entropy
 !
     endsubroutine write_entropy_run_pars
 !***********************************************************************
-    subroutine rprint_entropy(lreset,lwrite)
-!
-!  Reads and registers print parameters relevant to entropy.
-!
-      use Diagnostics, only: parse_name
-!
-      integer :: iname
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-        idiag_dtc=0; idiag_ugradpm=0; idiag_thermalpressure=0; idiag_ethm=0;
-        idiag_ufpresm=0; idiag_uduum=0
-      endif
-!
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
-        call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
-        call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_thermalpressure)
-        call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
-        call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
-        call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
-      enddo
-!
-!  Write column where which entropy variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iss=',iss
-        write(3,*) 'iyH=0'
-      endif
-!
-    endsubroutine rprint_entropy
-!***********************************************************************
     subroutine get_slices_entropy(f,slices)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -454,5 +426,70 @@ module Entropy
       call keep_compiler_quiet(umax)
 !
     endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
+    subroutine calc_dust_pressure(f,p)
+!
+      use EquationOfState, only: gamma1,gamma_m1,cs20,rho0,get_cp1
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      integer :: j
+      real, save :: rho01,TT0
+      logical, save :: lfirstcall=.true.
+      real :: cp1
+!
+      if (lfirstcall) then 
+        call get_cp1(cp1)
+        TT0=cs20*cp1/gamma_m1
+        rho01=1./rho0
+        lfirstcall=.false.
+      endif
+!
+      do j=1,3
+        p%fpres(:,j)=-p%cp*gamma_m1*gamma1*TT0*rho01*&
+             (p%rho*p%grhop(:,j) + p%rhop*p%grho(:,j))
+      enddo
+!
+    endsubroutine calc_dust_pressure
+!***********************************************************************
+    subroutine rprint_entropy(lreset,lwrite)
+!
+!  Reads and registers print parameters relevant to entropy.
+!
+      use Diagnostics, only: parse_name
+!
+      integer :: iname
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  Reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        idiag_dtc=0; idiag_ugradpm=0; idiag_thermalpressure=0; idiag_ethm=0;
+        idiag_ufpresm=0; idiag_uduum=0
+      endif
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
+        call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
+        call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_thermalpressure)
+        call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
+        call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
+        call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
+      enddo
+!
+!  Write column where which entropy variable is stored.
+!
+      if (lwr) then
+        write(3,*) 'nname=',nname
+        write(3,*) 'iss=',iss
+        write(3,*) 'iyH=0'
+      endif
+!
+    endsubroutine rprint_entropy
 !***********************************************************************
 endmodule Entropy
