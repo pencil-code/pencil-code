@@ -167,6 +167,8 @@ module Magnetic
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false.
+  logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
+             lbz_ext_global=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
@@ -183,7 +185,8 @@ module Magnetic
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
       ampl_az, kx_ax, kx_ay, kx_az, ky_ax, ky_ay, ky_az, kz_ax, kz_ay, kz_az, &
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
-      tau_relprof
+      tau_relprof,&
+      lbx_ext_global,lby_ext_global,lbz_ext_global
 !
 ! Run parameters
 !
@@ -248,7 +251,8 @@ module Magnetic
       lneutralion_heat, lreset_aa, daareset, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
-      k_relprof,lmagneto_friction,numag
+      k_relprof,lmagneto_friction,numag, &
+      lbx_ext_global,lby_ext_global,lbz_ext_global
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -432,6 +436,7 @@ module Magnetic
   integer :: idiag_bz2m=0       ! DIAG_DOC: $\left< B_z^2 \right>$
   integer :: idiag_uxbm=0       ! DIAG_DOC: $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$
   integer :: idiag_jxbm=0       ! DIAG_DOC: $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$
+  integer :: idiag_magfricmax=0    ! DIAG_DOC: Magneto-Frictional velocity $\left<\jv\times\Bv\right>\cdot\Bv^2$
   integer :: idiag_oxuxbm=0     ! DIAG_DOC:
   integer :: idiag_jxbxbm=0     ! DIAG_DOC:
   integer :: idiag_gpxbm=0      ! DIAG_DOC:
@@ -824,6 +829,15 @@ module Magnetic
 !
       if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
       if (lfreeze_aext) lfreeze_varext(iax:iaz) = .true.
+!
+!     Store spatially dependent external field in a global array 
+!
+      if (lbx_ext_global) &
+        call farray_register_global("bx_ext",iglobal_bx_ext)
+      if (lby_ext_global) &
+        call farray_register_global("by_ext",iglobal_by_ext)
+      if (lbz_ext_global) &
+        call farray_register_global("bz_ext",iglobal_bz_ext)
 !
 !  Initialize resistivity.
 !
@@ -1490,6 +1504,12 @@ module Magnetic
 !
       if (lconst_advection) lpenc_requested(i_aij)=.true.
 !
+      if (numag/=0.0) then 
+        lpenc_requested(i_jxb)=.true.
+        lpenc_requested(i_jxbxb)=.true.
+        lpenc_requested(i_b2)=.true.
+      endif
+!
       if (dvid/=0.0) then
         lpenc_video(i_b2)=.true.
         lpenc_video(i_jb)=.true.
@@ -2015,6 +2035,7 @@ module Magnetic
       use Sub
       use Diagnostics, only: sum_mn_name
       use SharedVariables, only: put_shared_variable
+      use EquationOfState, only: rho0
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2113,6 +2134,13 @@ module Magnetic
       else
         if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
       endif
+!
+! rho=(rho0/10+B^2)
+!
+      if (lmagneto_friction.and.lpencil(i_rho1)) then
+        p%rho=(rho0*0.1+p%b2)
+        p%rho1=1./(rho0*0.1+p%b2)
+      endif  
 ! bunit
       if (lpencil(i_bunit)) then
         quench = max(tini,sqrt(p%b2))
@@ -2443,7 +2471,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
-      real, dimension (nx,3) :: u0ga,magfric
+      real, dimension (nx,3) :: u0ga,magfric,vmagfric2
       real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -2978,9 +3006,11 @@ module Magnetic
 !
 ! Add jxb/(b^2\nu) Magneto-Frictional velocity to uxb term
 !
-      if (lmagneto_friction) then
+      if (lmagneto_friction.and..not.lhydro) then
         do ix=1, nx
-          magfric(ix,1:3)=p%jxbxb(ix,1:3)/(numag*p%b2(ix))
+            magfric(ix,1:3)=p%jxbxb(ix,1:3)/(numag*(1.e-1+p%b2(ix)))
+            vmagfric2(ix,1:3)=sqrt(p%jxb(ix,1:3)*p%jxb(ix,1:3))/&
+                              (numag*(1.e-1+p%b2(ix)))
         end do
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+magfric(1:nx,1:3)
       endif
@@ -3442,6 +3472,9 @@ module Magnetic
           if (idiag_jxbmx/=0) call sum_mn_name(jxbb(:,1),idiag_jxbmx)
           if (idiag_jxbmy/=0) call sum_mn_name(jxbb(:,2),idiag_jxbmy)
           if (idiag_jxbmz/=0) call sum_mn_name(jxbb(:,3),idiag_jxbmz)
+        endif
+        if (idiag_magfricmax/=0) then 
+          call max_mn_name(vmagfric2,idiag_magfricmax)
         endif
 !
 !  Magnetic triple correlation term (for imposed field).
@@ -6448,7 +6481,7 @@ module Magnetic
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
         idiag_cosjbm=0;idiag_jparallelm=0;idiag_jperpm=0
-        idiag_hjparallelm=0;idiag_hjperpm=0
+        idiag_hjparallelm=0;idiag_hjperpm=0;idiag_magfricmax=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -6556,6 +6589,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jxbmx',idiag_jxbmx)
         call parse_name(iname,cname(iname),cform(iname),'jxbmy',idiag_jxbmy)
         call parse_name(iname,cname(iname),cform(iname),'jxbmz',idiag_jxbmz)
+        call parse_name(iname,cname(iname),cform(iname),'magfricmax',& 
+                       idiag_magfricmax)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmx',idiag_uxbcmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmy',idiag_uxbcmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbsmx',idiag_uxbsmx)

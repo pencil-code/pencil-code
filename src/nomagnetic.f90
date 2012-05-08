@@ -45,6 +45,7 @@ module Magnetic
   integer :: idiag_bmxy_rms=0
   integer :: idiag_bsinphz=0
   integer :: idiag_bcosphz=0
+  integer :: idiag_magfricmax=0
 !
   contains
 !***********************************************************************
