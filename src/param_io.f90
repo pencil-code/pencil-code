@@ -88,7 +88,7 @@ module Param_IO
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
-      lconst_advection, u0_advec
+      lconst_advection, u0_advec, ldust_pressure
 !
   namelist /run_pars/ &
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &

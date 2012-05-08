@@ -588,6 +588,10 @@ module Cdata
 !
   logical :: llocal_iso=.false.
 !
+!  Switch for dust-dependent pressure approximation. 
+!
+  logical :: ldust_pressure=.false.
+!
 !  Switch for using the full speed in less-than-3D simulations
 !  when the velocity in the non-existent direction dominates. 
 !
