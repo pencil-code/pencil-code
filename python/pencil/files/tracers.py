@@ -43,7 +43,7 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
         to have reached the upper boundary.
     """
     
-    class data_struct():
+    class data_struct:
         def __init__(self):
             self.xi = []
             self.yi = []
@@ -159,7 +159,7 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     """
     
 
-    class data_struct():
+    class data_struct:
         def __init__(self):
             self.t = []
             self.fidx = [] # number of fixed points at this time
