@@ -12,6 +12,8 @@
 ! MAUX CONTRIBUTION 0
 ! MGLOBAL CONTRIBUTION 3
 !
+! PENCILS PROVIDED gg(3)
+!
 !***************************************************************
 module Gravity
 !
@@ -55,16 +57,21 @@ module Gravity
   character (len=labellen) :: gravz_profile='zero'
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
+  logical :: lgravity_neutrals=.true.
+  logical :: lgravity_dust=.true.
+  
 !
   integer :: iglobal_gg=0
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
-      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle
+      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
+      lgravity_neutrals
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle
+      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, & 
+      lgravity_neutrals
 !
   contains
 !***********************************************************************
@@ -81,6 +88,7 @@ module Gravity
       lgravr=.true.
       lgravr_gas =.true.
       lgravr_dust=.true.
+      lgravr_neutrals=.true.
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -380,6 +388,11 @@ module Gravity
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if ((lhydro.and.lgravity_gas).or.&
+          (lneutralvelocity.and.lgravity_neutrals).or.&
+          (ldustvelocity.and.lgravity_dust)) & 
+          lpencil_in(i_gg)=.true.
+!
       call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_gravity
@@ -391,13 +404,20 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
+      use FArrayManager, only: farray_use_global
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      integer, pointer :: iglobal_gg
 !
-      intent(in) :: f,p
+      intent(in) :: f
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+      call farray_use_global('global_gg',iglobal_gg)
+!
+      if (lpencil(i_gg)) then 
+        call farray_use_global('global_gg',iglobal_gg)
+        p%gg = f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+      endif
 !
     endsubroutine calc_pencils_gravity
 !***********************************************************************
@@ -407,29 +427,28 @@ module Gravity
 !
 !  10-jan-02/wolf: coded
 !
-      use FArrayManager, only: farray_use_global
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      integer, pointer :: iglobal_gg
-!
-      call farray_use_global('global_gg',iglobal_gg)
+      integer :: k
 !
 ! if statement for testing purposes
 !
       if (lgravity_gas) then
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-             + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%gg
       endif
 !
-      if (lneutralvelocity) then
-        df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) &
-             + f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
+      if (lneutralvelocity.and.lgravity_neutrals) then
+        df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) + p%gg
+      endif
+!
+      if (ldustvelocity.and.lgravity_dust) then
+        do k=1,ndustspec 
+          df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + p%gg
+        enddo
       endif
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
