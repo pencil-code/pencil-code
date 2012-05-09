@@ -1140,7 +1140,7 @@ module Dustvelocity
 !
 !  Apply border profile
 !
-      if (lborder_profiles) call set_border_dustvelocity(f,df,p,k)
+        if (lborder_profiles) call set_border_dustvelocity(f,df,p,k)
 !
 !  End loop over dust species
 !
