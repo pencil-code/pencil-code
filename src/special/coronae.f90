@@ -1734,8 +1734,6 @@ module Special
 !
       else if (ltemperature.and.(.not.ltemperature_nolog)) then
 !
-! limit rtv by hand to avoid temperatures below 6000. K
-        rtv_cool = min(rtv_cool,(f(l1:l2,m,n,ilnTT) -alog(6000./unit_temperature)/dt_beta_ts(itsub)))
         rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
 !
