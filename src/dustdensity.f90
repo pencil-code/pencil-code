@@ -249,7 +249,7 @@ module Dustdensity
 !
       select case(advec_ddensity)
       case('normal')
-        if (lroot) print*, 'advec_ddensity: plain vanila scheme'
+        if (lroot) print*, 'advec_ddensity: plain vanilla scheme'
         iadvec_ddensity=0
       case('upwind')
         if (lroot) print*, 'advec_ddensity: using upwinding'
