@@ -64,6 +64,7 @@ module Dustvelocity
   logical :: lviscd_hyper3_rhod_nud_const=.false.
   logical :: lviscd_hyper3_nud_const=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
+  character (len=labellen) :: borderuud='nothing'
   character (len=labellen), dimension(nvisc_max) :: iviscd=''
   character (len=labellen) :: draglaw='epstein_cst'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
@@ -80,7 +81,8 @@ module Dustvelocity
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, &
       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd, &
-      nud_shock, nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit
+      nud_shock, nud_hyper3, scaleHtaus, z0taus, widthtaus, shorttauslimit, &
+      borderuud
 !
   integer :: idiag_ekintot_dust=0
   integer, dimension(ndustspec) :: idiag_ud2m=0
@@ -148,6 +150,7 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use EquationOfState, only: cs0
+      use BorderProfiles, only: request_border_driving
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -331,6 +334,11 @@ module Dustvelocity
           call fatal_error('initialize_dustvelocity','')
         endselect
       enddo
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (borderuud/='nothing') call request_border_driving(borderuud)
 !
       call keep_compiler_quiet(f)
 !
@@ -884,7 +892,7 @@ module Dustvelocity
     endsubroutine calc_pencils_dustvelocity
 !***********************************************************************
     subroutine duud_dt(f,df,p)
-!
+
 !  Dust velocity evolution
 !  Calculate duud/dt = - uud.graduud - 2Omega x uud - 1/tausd*(uud-uu)
 !
@@ -1130,6 +1138,10 @@ module Dustvelocity
 !
         endif
 !
+!  Apply border profile
+!
+      if (lborder_profiles) call set_border_dustvelocity(f,df,p,k)
+!
 !  End loop over dust species
 !
       enddo
@@ -1212,6 +1224,52 @@ module Dustvelocity
       endif
 !
     endsubroutine duud_dt
+!***********************************************************************
+    subroutine set_border_dustvelocity(f,df,p,k)
+!
+!  Calculates the driving term for the border profile
+!  of the uud variable.
+!
+!  09-may-12/wlad: coded
+!
+      use BorderProfiles,  only: border_driving,set_border_initcond
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: f_target
+      integer :: j,ju,k
+!
+      select case (borderuud)
+!
+      case ('zero','0')
+        f_target=0.
+!
+      case ('initial-condition')
+        do j=1,3
+          ju=j+iuud(k)-1
+          call set_border_initcond(f,ju,f_target(:,j))
+        enddo
+!
+      case ('nothing')
+        if (lroot.and.ip<=5) &
+             print*,"set_border_dustvelocity: borderuud='nothing'"
+!
+      case default
+         write(unit=errormsg,fmt=*) &
+              'set_border_hydro: No such value for borderuud: ', &
+              trim(borderuud)
+         call fatal_error('set_border_dustvelocity',errormsg)
+      endselect
+!
+      if (borderuud/='nothing') then
+        do j=1,3
+          ju=j+iuud(k)-1
+          call border_driving(f,df,p,f_target(:,j),ju)
+        enddo
+      endif
+!
+    endsubroutine set_border_dustvelocity
 !***********************************************************************
     subroutine get_dustsurface
 !
