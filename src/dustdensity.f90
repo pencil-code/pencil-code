@@ -24,7 +24,7 @@
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
 ! PENCILS PROVIDED ppsf(ndustspec); mu1; udropav(3)
-! PENCILS PROVIDED glnrhod(3,ndustspec)
+! PENCILS PROVIDED glnrhod(3,ndustspec); rhodsum; grhodsum(3)
 !
 !***************************************************************
 module Dustdensity
@@ -76,11 +76,12 @@ module Dustdensity
   logical :: ldiffusion_dust=.true.
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
-  logical :: ldiffd_shock=.false.
+  logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
   logical :: latm_chemistry=.false.
   logical :: lresetuniform_dustdensity=.false.
   logical :: lnoaerosol=.false., lnocondens_term=.false.
   integer :: iadvec_ddensity=0
+  real    :: dustdensity_floor=-1
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, nd00, mdave0, Hnd, &
@@ -91,14 +92,14 @@ module Dustdensity
       dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
       r0, delta, delta0, lmdvar, lmice, ldcore, d0, &
       dsize0_min, dsize0_max, r0_core, Ntot, lnocondens_term, BB0,&
-      advec_ddensity
+      advec_ddensity, dustdensity_floor
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
-      lnocondens_term,advec_ddensity, bordernd
+      lnocondens_term,advec_ddensity, bordernd, dustdensity_floor
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
@@ -283,6 +284,7 @@ module Dustdensity
       ldiffd_simplified=.false.
       ldiffd_dusttogasratio=.false.
       ldiffd_hyper3=.false.
+      ldiffd_hyper3_polar=.false.
       ldiffd_shock=.false.
 !
       lnothing=.false.
@@ -298,6 +300,9 @@ module Dustdensity
         case ('hyper3')
           if (lroot) print*,'dust diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)nd'
           ldiffd_hyper3=.true.
+        case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
+          if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(nd))^6/Deltaq^2'
+          ldiffd_hyper3_polar=.true.
         case ('hyper3lnnd')
           if (lroot) print*,'dust diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)lnnd'
           ldiffd_hyper3lnnd=.true.
@@ -1010,6 +1015,12 @@ module Dustdensity
         lpencil_in(i_grhod)=.true.
         lpencil_in(i_rhod1)=.true.
       endif
+      if (lpencil_in(i_rhodsum)) then 
+        lpencil_in(i_rhod)=.true.
+      endif
+      if (lpencil_in(i_grhodsum)) then 
+        lpencil_in(i_grhod)=.true.
+      endif
 !
       if (latm_chemistry) then
         if (lpencil_in(i_gnd)) lpencil_in(i_nd)=.true.
@@ -1362,6 +1373,26 @@ module Dustdensity
           endif
         endif
 !
+        if (lpencil(i_rhodsum)) then 
+          do k=1,ndustspec
+            if (k==1) then
+              p%rhodsum=p%rhod(:,k)
+            else
+              p%rhodsum=p%rhodsum+p%rhod(:,k)
+            endif
+          enddo
+        endif
+!
+        if (lpencil(i_grhodsum)) then 
+          do k=1,ndustspec
+            if (k==1) then
+              p%grhodsum=p%grhod(:,:,k)
+            else
+              p%grhodsum=p%grhodsum+p%grhod(:,:,k)
+            endif
+          enddo
+        endif
+!
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
     subroutine dndmd_dt(f,df,p)
@@ -1375,14 +1406,15 @@ module Dustdensity
       use Sub, only: identify_bcs, dot_mn
       use Special, only: special_calc_dustdensity
       use General, only: spline_integral
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, sum_tmp
+      real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, sum_tmp, tmp
       real, dimension (nx,ndustspec) :: dndr_tmp
-      integer :: k,i
+      integer :: k,i,j
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -1514,6 +1546,15 @@ module Dustdensity
             fdiffd = fdiffd + diffnd_hyper3*p%del6nd(:,k)
           endif
           if (lfirst.and.ldt) diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*dxyz_6
+        endif
+!
+        if (ldiffd_hyper3_polar) then
+          do j=1,3
+            call der6(f,ind(k),tmp,j,IGNOREDX=.true.)
+            fdiffd = fdiffd + diffnd_hyper3*pi4_1*tmp*dline_1(:,j)**2
+          enddo
+          if (lfirst.and.ldt) &
+               diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1/dxyz_4
         endif
 !
         if (ldiffd_hyper3lnnd) then
@@ -1671,10 +1712,11 @@ module Dustdensity
       select case (bordernd)
 !
       case ('zero','0')
-        f_target=1.
-!
-      case ('constant')
-        f_target=nd_const
+        if (ldustdensity_log) then
+          f_target=0.
+        else
+          f_target=1.
+        endif
 !
       case ('initial-condition')
         call set_border_initcond(f,ind(k),f_target)
@@ -2632,5 +2674,37 @@ module Dustdensity
       endif
 !
     endsubroutine copy_bcs_dust_short
+!***********************************************************************
+    subroutine impose_dustdensity_floor(f)
+!
+!  Impose a minimum density by setting all lower densities to the minimum
+!  value (density_floor). Useful for debugging purposes.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, save :: dustdensity_floor_log
+      logical, save :: lfirstcall=.true.
+      integer :: i, j, k
+!
+!  Impose the density floor.
+!
+      if (dustdensity_floor>0.) then
+        if (lfirstcall) then
+          dustdensity_floor_log=alog(dustdensity_floor)
+          lfirstcall=.false.
+        endif
+!
+        do k=1,ndustspec
+          if (ldustdensity_log) then
+            where (f(:,:,:,ilnnd(k))<dustdensity_floor_log) &
+                 f(:,:,:,ilnnd(k))=dustdensity_floor_log
+          else
+            where (f(:,:,:,ind(k))<dustdensity_floor) &
+                 f(:,:,:,ind(k))=dustdensity_floor
+          endif
+        enddo
+      endif
+!
+    endsubroutine impose_dustdensity_floor
 !***********************************************************************
 endmodule Dustdensity
