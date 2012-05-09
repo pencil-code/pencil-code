@@ -67,6 +67,7 @@ module Dustdensity
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
+  character (len=labellen) :: bordernd=''
   character (len=labellen) :: advec_ddensity='normal'
   logical :: ludstickmax=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
@@ -97,7 +98,7 @@ module Dustdensity
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
-      lnocondens_term,advec_ddensity
+      lnocondens_term,advec_ddensity, bordernd
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
@@ -204,6 +205,7 @@ module Dustdensity
 !
 !  24-nov-02/tony: coded
 !
+      use BorderProfiles, only: request_border_driving
       use FArrayManager, only: farray_register_global
       use General, only: spline_integral
 !
@@ -424,6 +426,11 @@ module Dustdensity
         endif
 !
       endif
+!
+!  Tell the BorderProfiles module if we intend to use border driving, so
+!  that the module can request the right pencils.
+!
+      if (bordernd/='nothing') call request_border_driving(bordernd)
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -1535,6 +1542,11 @@ module Dustdensity
             df(l1:l2,m,n,imd(k)) + diffmd*p%del2md(:,k)
         if (lmice) df(l1:l2,m,n,imi(k)) = &
             df(l1:l2,m,n,imi(k)) + diffmi*p%del2mi(:,k)
+!
+!  Apply border profile
+!
+        if (lborder_profiles) call set_border_dustdensity(f,df,p,k)
+!
       enddo
 !
       if (lspecial) call special_calc_dustdensity(f,df,p)
@@ -1639,6 +1651,50 @@ module Dustdensity
       endif
 !
     endsubroutine dndmd_dt
+!***********************************************************************
+    subroutine set_border_dustdensity(f,df,p,k)
+!
+!  Calculates the driving term for the border profile
+!  of the lnrho variable.
+!
+!  28-jul-06/wlad: coded
+!
+      use BorderProfiles,  only: border_driving,set_border_initcond
+      use Mpicomm,         only: stop_it
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: f_target
+      type (pencil_case)  :: p
+      integer :: k
+!
+      select case (bordernd)
+!
+      case ('zero','0')
+        f_target=1.
+!
+      case ('constant')
+        f_target=nd_const
+!
+      case ('initial-condition')
+        call set_border_initcond(f,ind(k),f_target)
+!
+      case ('nothing')
+        if (lroot.and.ip<=5) &
+            print*,"set_border_dustdensity: borderlnrho='nothing'"
+!
+      case default
+        write(unit=errormsg,fmt=*) &
+             'set_border_dustdensity: No such value for borderlnrho: ', &
+             trim(bordernd)
+        call fatal_error('set_border_dustdensity',errormsg)
+      endselect
+!
+      if (bordernd/='nothing') then
+        call border_driving(f,df,p,f_target,ind(k))
+      endif
+!
+    endsubroutine set_border_dustdensity
 !***********************************************************************
     subroutine redist_mdbins(f)
 !
