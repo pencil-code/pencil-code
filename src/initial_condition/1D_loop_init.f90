@@ -57,10 +57,11 @@ contains
         write(*,*) "-------------------------------------------------------------"
         write(*,*) "Parameters to be set in run.in:"
         write(*,*)
-        write(*,*) "Kpara=",2e-11 /unit_density/unit_velocity**3./ &
+         write(*,'(A,ES10.2)') "Kpara=",2e-11 /unit_density/unit_velocity**3./ &
             unit_length*unit_temperature**3.5
 !
-        write(*,*) "hcond_grad=",1e9*dxmax**3*unit_temperature/unit_velocity**3
+        write(*,'(A,ES10.2)') "hcond_grad=",1e9*dxmax**3*unit_temperature/ &
+            unit_velocity**3
         write(*,*) "-------------------------------------------------------------"
       endif
 !
