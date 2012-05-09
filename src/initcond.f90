@@ -4364,7 +4364,7 @@ module Initcond
       real :: zref,Bzflux
       logical :: exists
       integer :: i,j,idx2,idy2,stat,iostat,lend
-      integer :: nxinit,nyinit
+      integer :: nxinit,nyinit,itmp
 !
       ! file location settings
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
@@ -4464,8 +4464,10 @@ module Initcond
 !  Calculate transformed vector potential for every z layer
 !
         zref = max(0.,z(i) - z0aa)
-        if (abs(z(i)-z0aa) <= dz/2. ) &
-            print*,'Height of reference irefz for run.in: ',i
+        if (abs(z(i)-z0aa) <= dz/2. ) then
+          itmp = i
+          print*,'Height of reference irefz for run.in: ',itmp
+        endif
 !
         if (nygrid > 1) then
           where (k2 /= 0 )
@@ -4511,6 +4513,19 @@ module Initcond
       if (allocated(Bz0_r)) deallocate(Bz0_r)
       if (allocated(A_r)) deallocate(A_r)
       if (allocated(A_i)) deallocate(A_i)
+!
+!  Save initial vector potential
+      if (ipz==0) then
+        open (11,file=trim(directory_snap)//trim('Ax_init.dat'),form='unformatted',status='new')
+        write (11) f(l1:l2,m1:m2,itmp,iax)
+        close (11)
+        open (11,file=trim(directory_snap)//trim('Ay_init.dat'),form='unformatted',status='new')
+        write (11) f(l1:l2,m1:m2,itmp,iay)
+        close (11)
+        open (11,file=trim(directory_snap)//trim('Az_init.dat'),form='unformatted',status='new')
+        write (11) f(l1:l2,m1:m2,itmp,iaz)
+        close (11)
+      endif
 !
     endsubroutine mdi_init
 !***********************************************************************
@@ -4621,6 +4636,19 @@ module Initcond
       call field_extrapol_z_parallel (Bz, f(l1:l2,m1:m2,:,iax:iay), exp_fact)
 !
       deallocate (Bz, exp_fact)
+!
+!  Save initial vector potential
+      if (ipz==0) then
+        open (11,file=trim(directory_snap)//trim('Ax_init.dat'),form='unformatted',status='new')
+        write (11) f(l1:l2,m1:m2,n1,iax)
+        close (11)
+        open (11,file=trim(directory_snap)//trim('Ay_init.dat'),form='unformatted',status='new')
+        write (11) f(l1:l2,m1:m2,n1,iay)
+        close (11)
+        open (11,file=trim(directory_snap)//trim('Az_init.dat'),form='unformatted',status='new')
+        write (11) f(l1:l2,m1:m2,n1,iaz)
+        close (11)
+      endif
 !
     endsubroutine mag_init
 !***********************************************************************

@@ -42,6 +42,7 @@ module Special
   real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
+  real :: aa_tau_inv=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -62,7 +63,7 @@ module Special
       heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
-      lfilter_farray,filter_strength,lreset_heatflux
+      lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv
 !
 ! variables for print.in
 !
@@ -3016,12 +3017,12 @@ module Special
 ! get number of points to be read
 !
         npoints=file_size(trim(directory_snap)//trim(filename))/(lend*8/lend_b8*6)
-!        
+!
         open(unit,file=trim(directory_snap)//trim(filename), &
             access="direct",recl=6*lend)
 !
 ! read points
-        do i=1,npoints 
+        do i=1,npoints
           read(unit,iostat=iostat,rec=i) current%data
           call draw_update(level)
           call add_point
@@ -3865,6 +3866,55 @@ module Special
       endif
 !
     endsubroutine filter_farray
+!***********************************************************************
+    subroutine update_aa(f,dt_)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, intent(in) :: dt_
+      real, dimension (nx,ny), save :: ax_init,ay_init,az_init
+      logical, save :: lfirstcall_update_aa=.true.
+!
+      intent (inout) :: f
+!
+      if (ipz == 0) then
+!
+        if (lfirstcall_update_aa) then
+          open (11,file=trim(directory_snap)//trim('Ax_init.dat'), &
+              form='unformatted',status='new')
+          read (11) ax_init
+          close (11)
+          open (11,file=trim(directory_snap)//trim('Ay_init.dat'), &
+              form='unformatted',status='new')
+          read (11) ay_init
+          close (11)
+          open (11,file=trim(directory_snap)//trim('Az_init.dat'), &
+              form='unformatted',status='new')
+          read (11) az_init
+          close (11)
+          lfirstcall_update_aa = .false.
+        endif
+
+        f(l1:l2,m1:m2,irefz,iax) = f(l1:l2,m1:m2,irefz,iax) * &
+            (1.-dt_*aa_tau_inv) + ax_init *dt_*aa_tau_inv
+        f(l1:l2,m1:m2,irefz,iay) = f(l1:l2,m1:m2,irefz,iay) * &
+            (1.-dt_*aa_tau_inv) + ay_init *dt_*aa_tau_inv
+        f(l1:l2,m1:m2,irefz,iaz) = f(l1:l2,m1:m2,irefz,iaz) * &
+            (1.-dt_*aa_tau_inv) + az_init *dt_*aa_tau_inv
+      endif
+!
+    endsubroutine update_aa
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt_)
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
+!
+      if (aa_tau_inv /=0.) call update_aa(f,dt_)
+!
+      call keep_compiler_quiet(df)
+!
+    endsubroutine  special_after_timestep
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
