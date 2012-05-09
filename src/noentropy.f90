@@ -95,7 +95,7 @@ module Entropy
 !
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
-      else if (ldust_pressure) then   
+      else if (ldust_pressure) then
         call select_eos_variable('rhop',-1) !isentropic => polytropic
       else
         if (gamma_m1 == 0.) then
@@ -180,7 +180,7 @@ module Entropy
         lpenc_diagnos(i_ee)=.true.
       endif
 !
-      if (ldust_pressure) then 
+      if (ldust_pressure) then
         lpenc_requested(i_grhop)=.true.
         lpenc_requested(i_rhop)=.true.
         lpenc_requested(i_rho)=.true.
@@ -238,8 +238,8 @@ module Entropy
           if (llocal_iso) then
             p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
           else
-            if (ldust_pressure) then 
-              call calc_dust_pressure(f,p)
+            if (ldust_pressure) then
+              call calc_dust_pressure(p)
             else
               p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
             endif
@@ -427,18 +427,17 @@ module Entropy
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
-    subroutine calc_dust_pressure(f,p)
+    subroutine calc_dust_pressure(p)
 !
       use EquationOfState, only: gamma1,gamma_m1,cs20,rho0,get_cp1
 !
-      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       integer :: j
       real, save :: rho01,TT0
       logical, save :: lfirstcall=.true.
       real :: cp1
 !
-      if (lfirstcall) then 
+      if (lfirstcall) then
         call get_cp1(cp1)
         TT0=cs20*cp1/gamma_m1
         rho01=1./rho0
