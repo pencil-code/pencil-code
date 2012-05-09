@@ -181,8 +181,13 @@ module Entropy
       endif
 !
       if (ldust_pressure) then
-        lpenc_requested(i_grhop)=.true.
-        lpenc_requested(i_rhop)=.true.
+        if (lparticles) then
+          lpenc_requested(i_grhop)=.true.
+          lpenc_requested(i_rhop)=.true.
+        else
+          lpenc_requested(i_grhodsum)=.true.
+          lpenc_requested(i_rhodsum)=.true.
+        endif
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_grho)=.true.
         lpenc_requested(i_cp)=.true.
@@ -444,10 +449,17 @@ module Entropy
         lfirstcall=.false.
       endif
 !
-      do j=1,3
-        p%fpres(:,j)=-p%cp*gamma_m1*gamma1*TT0*rho01*&
-             (p%rho*p%grhop(:,j) + p%rhop*p%grho(:,j))
-      enddo
+      if (lparticles) then 
+        do j=1,3
+          p%fpres(:,j)=-p%cp*gamma_m1*gamma1*TT0*rho01*&
+               (p%rho*p%grhop(:,j) + p%rhop*p%grho(:,j))
+        enddo
+      else
+        do j=1,3
+          p%fpres(:,j)=-p%cp*gamma_m1*gamma1*TT0*rho01*&
+               (p%rho*p%grhodsum(:,j) + p%rhodsum*p%grho(:,j))
+        enddo
+      endif
 !
     endsubroutine calc_dust_pressure
 !***********************************************************************

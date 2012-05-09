@@ -702,7 +702,11 @@ module EquationOfState
         endif
       case (irho_rhop) 
         lpencil_in(i_rho)=.true.
-        lpencil_in(i_rhop)=.true.
+        if (lparticles) then 
+          lpencil_in(i_rhop)=.true.
+        else
+          lpencil_in(i_rhodsum)=.true.
+        endif
         if (lpencil_in(i_lnTT)) lpencil_in(i_TT)=.true.
         if (lpencil_in(i_pp)) lpencil_in(i_TT)=.true.
         if (lpencil_in(i_cs2)) then 
@@ -1015,12 +1019,16 @@ module EquationOfState
         if (lpencil(i_del2TT)) p%del2TT= &
             p%rho1*(p%cv1*p%del2eth-p%TT*p%del2rho-2*sum(p%grho*p%gTT,2))
 !
-!  Work out thermodynamic quantities for given rho and rhop. 
+!  Work out thermodynamic quantities for given gas and dust densities.
 !  Check Lyra & Kuchner 2012 (arXiv:1204.6322) for details. 
 !
       case (irho_rhop)
         if (lpencil(i_TT)) then
-          p%TT=TT0*rho01*p%rhop
+          if (lparticles) then 
+            p%TT=TT0*rho01*p%rhop
+          else
+            p%TT=TT0*rho01*p%rhodsum
+          endif
           if (TT_floor /= impossible) &
                where(p%TT < TT_floor) p%TT = TT_floor
         endif
