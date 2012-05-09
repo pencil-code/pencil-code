@@ -574,7 +574,8 @@ module Equ
 !  Add gravity, if present
 !
         if (lgrav) then
-          if (lhydro.or.ldustvelocity) call duu_dt_grav(f,df,p)
+          if (lhydro.or.ldustvelocity.or.lneutralvelocity) &
+               call duu_dt_grav(f,df,p)
         endif
 !
 !  Self-gravity

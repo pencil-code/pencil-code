@@ -204,7 +204,8 @@ module Cdata
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
-  logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
+  logical :: lgravr=.false.,lgravr_gas=.false.
+  logical :: lgravr_neutrals=.false.,lgravr_dust=.false.
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
   logical :: lmodify=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
