@@ -472,7 +472,7 @@ module Dustvelocity
             f(l,m,n,iudz(1)) = &
                 ampluud*sin(kx_uud*x(l))*sin(ky_uud*y(m))*sin(kz_uud*z(n))
           enddo; enddo; enddo
-        case ('follow_gas')
+        case ('follow_gas','follow-gas')
           do k=1,ndustspec
             f(:,:,:,iudx(k):iudz(k))=f(:,:,:,iux:iuz)
           enddo
@@ -829,7 +829,14 @@ module Dustvelocity
         if (lpencil(i_divud)) &
             p%divud(:,k) = p%udij(:,1,1,k) + p%udij(:,2,2,k) + p%udij(:,3,3,k)
 ! udgud
-        if (lpencil(i_udgud)) call multmv_mn(p%udij(:,:,:,k),p%uud(:,:,k),p%udgud(:,:,k))
+        if (lpencil(i_udgud)) then 
+          if (lspherical_coords.or.lcylindrical_coords) then 
+            call u_dot_grad(f,iuud(k),p%udij(:,:,:,k),&
+                 p%uud(:,:,k),p%udgud(:,:,k))
+          else
+            call multmv_mn(p%udij(:,:,:,k),p%uud(:,:,k),p%udgud(:,:,k))
+          endif
+        endif
 ! ood
         if (lpencil(i_ood)) then
           p%ood(:,1,k)=p%udij(:,3,2,k)-p%udij(:,2,3,k)
