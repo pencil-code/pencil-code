@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 2
 ! MPVAR CONTRIBUTION 3
 !
-! PENCILS PROVIDED np; rhop; epsp; rhop_swarm
+! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3)
 !
 !***************************************************************
 module Particles

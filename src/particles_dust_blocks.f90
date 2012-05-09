@@ -19,7 +19,7 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; epsp; rhop_swarm
+! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3)
 !
 !***************************************************************
 module Particles
