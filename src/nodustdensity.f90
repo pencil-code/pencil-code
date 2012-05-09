@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED rhod(ndustspec); udropav(3)
+! PENCILS PROVIDED rhod(ndustspec); udropav(3), rhodsum, grhodsum(3)
 !
 !***************************************************************
 module Dustdensity
@@ -170,5 +170,13 @@ module Dustdensity
       call keep_compiler_quiet(f)
 !
    endsubroutine dustspec_normalization
+!***********************************************************************
+   subroutine impose_dustdensity_floor(f)
+!
+     real, dimension (mx,my,mz,mfarray) :: f
+!
+     call keep_compiler_quiet(f)
+!
+   endsubroutine impose_dustdensity_floor
 !***********************************************************************
 endmodule Dustdensity

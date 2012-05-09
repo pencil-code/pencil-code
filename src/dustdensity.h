@@ -8,6 +8,6 @@
   public :: init_nd, calc_pencils_dustdensity, dndmd_dt
   public :: pencil_criteria_dustdensity, pencil_interdep_dustdensity
 
-  public :: redist_mdbins,null_dust_vars
+  public :: redist_mdbins,null_dust_vars,impose_dustdensity_floor
 !  public :: dustspec_normalization
 !  public :: Ntot_i
