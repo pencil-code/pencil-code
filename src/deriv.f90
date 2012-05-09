@@ -1943,9 +1943,14 @@ module Deriv
      real, dimension(my,mz)           , intent(IN):: inh
      real                             , intent(IN):: fac
      integer                          , intent(IN):: topbot
+     real :: dummy
 !
      heatflux_deriv_x = .false.
- 
+! 
+!  Added very stupid line to avoid copmpiler warnings.
+!  If someone has a better idea please fix it.
+     if (heatflux_deriv_x) dummy = fac*inh(1,1)*topbot*f(1,1,1,1)
+!
     endfunction heatflux_deriv_x
 !***********************************************************************
  endmodule Deriv
