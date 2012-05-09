@@ -75,7 +75,6 @@ mz=dim.mz
 lequidist=safe_get_tag(param,'lequidist',default=[1,1,1]) ne 0
 lperi=param.lperi ne 0
 ldegenerated=[dim.nx,dim.ny,dim.nz] eq 1
-stop
 ;
 ;  Set coordinate system.
 ;
