@@ -2047,13 +2047,13 @@ module Density
 !
       case ('nothing')
         if (lroot.and.ip<=5) &
-            print*,"set_border_lnrho: borderlnrho='nothing'"
+            print*,"set_border_density: borderlnrho='nothing'"
 !
       case default
         write(unit=errormsg,fmt=*) &
-             'set_border_lnrho: No such value for borderlnrho: ', &
+             'set_border_density: No such value for borderlnrho: ', &
              trim(borderlnrho)
-        call fatal_error('set_border_lnrho',errormsg)
+        call fatal_error('set_border_density',errormsg)
       endselect
 !
       if (borderlnrho/='nothing') then
