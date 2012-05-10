@@ -46,7 +46,6 @@
   public :: remap_to_pencil_yz, unmap_from_pencil_yz
 
   public :: y2x, z2x
-  public :: MPI_adi_x, MPI_adi_z
 
   public :: parallel_open, parallel_close
   public :: parallel_file_exists

@@ -2245,32 +2245,6 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine MPI_adi_x(tmp1, tmp2, send_buf1, send_buf2)
-!
-!  Communications for the ADI solver
-!
-!  13-jan-10/dintrans+gastine: coded
-!
-      real, dimension(nx) :: tmp1, tmp2, send_buf1, send_buf2
-!
-      call stop_it("MPI_adi should not be used with nompicomm.f90")
-      if (NO_WARN) print*, tmp1, tmp2, send_buf1, send_buf2
-!
-    endsubroutine MPI_adi_x!
-!***********************************************************************
-    subroutine MPI_adi_z(tmp1, tmp2, send_buf1, send_buf2)
-!
-!  Communications for the ADI solver
-!
-!  13-jan-10/dintrans+gastine: coded
-!
-      real, dimension(nzgrid) :: tmp1, tmp2, send_buf1, send_buf2
-!
-      call stop_it("MPI_adi should not be used with nompicomm.f90")
-      if (NO_WARN) print*, tmp1, tmp2, send_buf1, send_buf2
-!
-    endsubroutine MPI_adi_z
-!***********************************************************************
     subroutine parallel_open(unit,file,form)
 !
 !  Read a global file.

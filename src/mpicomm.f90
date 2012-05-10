@@ -6222,55 +6222,6 @@ module Mpicomm
 !
     endsubroutine z2x
 !***********************************************************************
-    subroutine MPI_adi_x(tmp1, tmp2, send_buf1, send_buf2)
-!
-!  Communications for the ADI solver.
-!
-!  13-jan-10/dintrans+gastine: coded
-!
-      real, dimension(nx) :: tmp1, tmp2, send_buf1, send_buf2
-!
-! SEND : send_buf1=TT(:,1) and send_buf2=TT(:,nz)
-! RECV : tmp1 = TT(:,nz+1) and tmp2 = TT(:,1-1)
-!
-      call MPI_IRECV(tmp1,nx,MPI_REAL, &
-          zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
-      call MPI_IRECV(tmp2,nx,MPI_REAL, &
-          zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
-      call MPI_ISEND(send_buf1,nx,MPI_REAL, &
-          zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
-      call MPI_ISEND(send_buf2,nx,MPI_REAL, &
-          zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
-      call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
-      call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
-      call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
-      call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
-!
-    endsubroutine MPI_adi_x
-!***********************************************************************
-    subroutine MPI_adi_z(tmp1, tmp2, send_buf1, send_buf2)
-!
-!  Communications for the ADI solver.
-!
-!  13-jan-10/dintrans+gastine: coded
-!
-      real, dimension(nzgrid) :: tmp1, tmp2, send_buf1, send_buf2
-!
-      call MPI_IRECV(tmp1,nzgrid,MPI_REAL, &
-          zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
-      call MPI_IRECV(tmp2,nzgrid,MPI_REAL, &
-          zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
-      call MPI_ISEND(send_buf1,nzgrid,MPI_REAL, &
-          zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
-      call MPI_ISEND(send_buf2,nzgrid,MPI_REAL, &
-          zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
-      call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
-      call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
-      call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
-      call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
-!
-    endsubroutine MPI_adi_z
-!***********************************************************************
     subroutine parallel_open(unit,file,form)
 !
 !  Choose between two reading methods.
