@@ -106,6 +106,7 @@ module Dustdensity
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
+  integer, dimension(ndustspec) :: idiag_epsdm=0,idiag_epsdmax=0,idiag_epsdmin=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0,idiag_ndmz=0
   integer, dimension(ndustspec) :: idiag_rhodmin=0,idiag_rhodmax=0
 !
@@ -953,7 +954,12 @@ module Dustdensity
 !
       lpenc_diagnos(i_nd)=.true.
 !
-      if (maxval(idiag_epsdrms)/=0) lpenc_diagnos(i_rho1)=.true.
+      if (maxval(idiag_epsdrms)/=0.or.&
+          maxval(idiag_epsdm)  /=0.or.&
+          maxval(idiag_epsdmax)/=0.or.&
+          maxval(idiag_epsdmin)/=0)   &
+          lpenc_diagnos(i_epsd)=.true.
+!
       if (maxval(idiag_rhodm)/=0 .or. maxval(idiag_rhodmin)/=0 .or. &
           maxval(idiag_rhodmax)/=0) lpenc_diagnos(i_rhod)=.true.
 !
@@ -1606,15 +1612,27 @@ module Dustdensity
               call max_mn_name(-p%rhod(:,k),idiag_rhodmin(k),lneg=.true.)
           if (idiag_rhodmax(k)/=0) &
               call max_mn_name(p%rhod(:,k),idiag_rhodmax(k))
-          if (idiag_epsdrms(k)/=0) then
-            if (lmdvar) then
-              call sum_mn_name((p%nd(:,k)*f(l1:l2,m,n,imd(k))*p%rho1)**2, &
-                  idiag_epsdrms(k),lsqrt=.true.)
-            else
-              call sum_mn_name((p%nd(:,k)*md(k)*p%rho1)**2, &
-                  idiag_epsdrms(k),lsqrt=.true.)
-            endif
-          endif
+!
+!  rms of dust-to-gas ratio
+!
+          if (idiag_epsdrms(k)/=0) &
+              call sum_mn_name(p%epsd(:,k)**2,idiag_epsdrms(k),lsqrt=.true.)
+!
+!  mean of dust-to-gas ratio
+!
+          if (idiag_epsdm(k)/=0) &
+              call sum_mn_name(p%epsd(:,k),idiag_epsdm(k))
+!
+!  max of dust-to-gas ratio
+!
+          if (idiag_epsdmax(k)/=0) &
+              call max_mn_name(p%epsd(:,k),idiag_epsdmax(k))
+!
+!  min of dust-to-gas ratio
+!
+          if (idiag_epsdmin(k)/=0) &
+              call max_mn_name(-p%epsd(:,k),idiag_epsdmin(k),lneg=.true.)
+!
           if (idiag_ndmt/=0) then
             if (lfirstpoint .and. k/=1) then
               lfirstpoint = .false.
@@ -2131,6 +2149,7 @@ module Dustdensity
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
+        idiag_epsdm=0; idiag_epsdmax=0; idiag_epsdmin=0
         idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
         idiag_ndmz=0
       endif
@@ -2161,6 +2180,12 @@ module Dustdensity
               'rhodmax'//trim(sdust),idiag_rhodmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'epsdrms'//trim(sdust),idiag_epsdrms(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'epsdm'//trim(sdust),idiag_epsdm(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'epsdmax'//trim(sdust),idiag_epsdmax(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'epsdmin'//trim(sdust),idiag_epsdmin(k))
         enddo
 !
 !  check for those quantities for which we want xy-averages
