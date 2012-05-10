@@ -50,11 +50,17 @@ module Special
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
   real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
+  real, dimension(9) :: heat_par_full=(/0.,1.,0.,1.,0.,1.,0.,0.,0./)
+  real, dimension(1) :: heat_par_rappazzo=1.
+  real, dimension(1) :: heat_par_schrijver04=0.
+  real, dimension(1) :: heat_par_balleg=0.
 !
   namelist /special_run_pars/ &
       heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1,Ksat, &
       Kpara,Kperp,Kc,init_time2,twisttype,centerx,centery,centerz, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
+      heat_par_full,heat_par_rappazzo,heat_par_schrijver04, &
+      heat_par_balleg, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
@@ -127,6 +133,7 @@ module Special
   real, dimension(:,:), allocatable :: Uy_e_g_l,Uy_e_g_r
 !
   real, dimension(nx,ny) :: vx,vy,w,avoidarr
+  real, dimension(nx,ny,nz) :: Blength
   real, save :: tsnap_uu=0.
   integer, save :: isnap
   real :: dt_gran,t_gran
@@ -168,14 +175,16 @@ module Special
 !  13-sep-10/bing: coded
 !
       use EquationOfState, only: gamma,get_cp1
+      use Syscalls, only: file_exists
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       logical, intent(in) :: lstarting
       real, dimension (mz) :: ztmp
       character (len=*), parameter :: filename='/strat.dat'
-      integer :: lend,unit=12
+      integer :: lend,unit=12,i
       real :: dummy=1.,cp1=1.,eps0,unit_ampere,e_charge
       logical :: exists
+      real,dimension(:,:,:),allocatable :: ltemp
 !
       if (maxval(filter_strength) > 0.02) then
         call fatal_error('initialize_special', &
@@ -247,6 +256,27 @@ module Special
         endif
       endif
 !
+!  Check if I have to load the data for ballegooijen-heating or rapazzo.
+!
+      if (any(iheattype=='rappazzo') .or. any(iheattype=='balleg') .or. &
+           any(iheattype=='schrijver04')) then
+
+         allocate(ltemp(nxgrid,nygrid,nzgrid))
+         if (lroot) then
+            if (.not. file_exists ('looplength.dat')) call fatal_error ( &
+                    'heating', 'looplength file not found', .true.)
+         endif
+         inquire(IOLENGTH=lend) dummy
+         open(88,file='looplength.dat',recl=lend*nzgrid*nxgrid*nygrid,access='direct',form='unformatted')
+         !recl is nr of bytes of one record, now I hope that lend gives me the nr of bytes.
+         read(88,rec=1) ltemp
+         close (88)
+         Blength=ltemp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny ,ipz*nz+1:(ipz+1)*nz)
+         deallocate(ltemp)
+         print*,'Loaded loop length data for heattype: ',iheattype(i)
+      endif
+
+    !
       if (.not.lstarting.and.lgranulation.and.ipz == 0) then
         if (lhydro) then
           call set_driver_params()
@@ -1843,12 +1873,19 @@ module Special
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub, only: dot2, cubic_step
+      use Sub, only: dot2, cubic_step,gij,notanumber
+!      use Deriv, only der
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
-      real, dimension (nx) :: heatinput,rhs,b2
+      real,dimension (mx,my,mz) :: LoopLength
+      real, dimension (mx,my,mz,mfarray)::f
+      real,dimension (nx) :: LoopL,d2,h
+     real, dimension (nx) :: heatinput,rhs,b2 ,l_acc,l_2acc
+     real,dimension (nx,3,3) :: tmp1,tmp2
+     real :: tau=60.,vrms=2.
       type (pencil_case), intent(in) :: p
-      integer :: i
+      real ::  mp=1.6726E-27   !proton mass
+ integer :: i
 !
       heatinput=0.
 !
@@ -1885,11 +1922,142 @@ module Special
           endif
           heatinput=heatinput + &
               heat_par_exp2(1)*exp(-z(n)/heat_par_exp2(2))
+!
         case ('b2')
           if (headtt) print*,'Heating proportional to B^2'
           call dot2(p%bb,b2)
           heatinput=heatinput + &
               heat_par_b2(1) * b2
+!
+        case('schrijver04')
+          if (headtt) print*,'Heating according to Schrijver 04'
+          call dot2(p%bb,b2)
+          LoopLength=1.
+         heatinput= heatinput + &
+             heat_par_schrijver04(1)* &
+             Sqrt(b2)*unit_magnetic**(7./4.) * &
+             (exp(p%lnrho)*unit_density)**(1./8.) !*&
+!             LoopLength(:,m,n)**(-3./4.) <- should be added later
+!
+
+        case ('full')
+          if (headtt) then
+            print*,'Full heating function'
+            print*,'Heating in the form of (rho/rho0)^alpha etc.'
+            print*,'parameters set are: ', heat_par_full
+
+          endif
+          call dot2(p%bb,b2)
+          ! Heating, cubic step in z to prevent exessive heating from
+          ! rho at the bottom.
+     !     print*,heat_par_full(7)* &
+     !         cubic_step(-1.*real(p%lnrho),heat_par_full(8),heat_par_full(9) )* &
+     !         (((exp(p%lnrho)*unit_density)/heat_par_full(2))**heat_par_full(1)* &
+     !         ((exp(p%lnTT)*unit_temperature)/heat_par_full(4))**heat_par_full(3))
+          heatinput=heatinput + heat_par_full(7)* &
+              cubic_step(-1.*real(p%lnrho),heat_par_full(8),heat_par_full(9) )* &
+              (((exp(p%lnrho)*unit_density)/heat_par_full(2))**heat_par_full(1)* &
+              ((exp(p%lnTT)*unit_temperature)/heat_par_full(4))**heat_par_full(3))* &
+              ((b2/heat_par_full(6))**heat_par_full(5))
+          !not yet             (b2/heat_par_full(6))**heat_par_full(5))
+
+          !print*,heat_par_full(7)* &
+          !             cubic_step(real(z(n1:n2)),3000.,1000.)* &
+          !            ((exp(p%lnrho)/heat_par_full(2))**heat_par_full(1)* &
+          !           (exp(p%lnTT)/heat_par_full(4))**heat_par_full(3)  )
+          !
+!
+!
+        case ('rappazzo')
+          ! According to hardi it should be: H=B^(7/5) n^(1/8) L^(-3/4)
+          ! B is ofc. magnetic field, n is particle density, L is loop length.
+          ! L is difficult to get, so we will use an approximation of some sort.
+          if (headtt) then
+            print*,'Using rappazzo at al. approximation for heating'
+          endif
+          call dot2(p%bb,b2)
+          !      LoopL(:,:,:)=1.  !temporary make pencil
+          !-----------getting approx loop length-------------------
+          !assume loops follow a parabolic curve, given by: l(x)=h(1-(x/d)**2)
+          ! we need up to 2 derivatives of the magnetic field + height.
+          !l=x*unit_length
+          ! Calling    subroutine gij(f,k,g,nder) from sub.f90
+          !!!!call gij(f,ibb,tmp1,1)
+          !call gij(f,ibb,tmp2,2)
+
+
+          !!!!l_acc=p%bb(:,3)/sqrt(p%bb(l1:l2,1)**2+ p%bb(l1:l2,2)**2) !??  &
+          !dz/sqrt(dx**2*dy**2)
+          !!!!l_2acc=tmp1(:,3,3)/(sqrt(tmp1(:,1,1)**2+tmp1(:,2,2)**2))   !?? &
+          !How do we do this??? just some stupid assumption now
+          !if
+
+          !!!!!d2=(x(l1:l2)+sqrt(x(l1:l2)**2-l_2acc**3/(2.*x(l1:l2)**2)))/l_2acc
+
+          !else
+          !endif
+
+          !!!!!h=d2*l_2acc/2.
+          !!!!LoopL(:)=d2/(6.*h) * ((h/sqrt(d2)+1.)**(3./2.)-1.)
+          !!! NEEDS COSMETICS!!!!
+!
+!! turb_full=bb^1.75*(blength[*,*,*,0]*1000.)^(-0.75)*(exp(c.logn)*mu*mprot)^0.125
+
+          if ((m > nghost) .AND. (n > nghost) .AND. &
+              (n < mz-nghost) .AND. (m < my-nghost)) then
+!
+            call dot2(p%bb,b2)
+
+            heatinput = heatinput + &
+                (b2*1E4*unit_magnetic / 50.)**(1.75) * & !normalization term?
+                (Blength(:,m-3,n-3)/50.)**(-0.75) * &     !normalization?
+                (exp(p%lnrho)*unit_density*1.E8)**(0.125) !normalized by coronal density
+     endif
+          !-------------------------------------------------------
+
+          heatinput=heat_par_rappazzo(1)*b2**(7./10.)*&
+              (exp(p%lnrho)/(0.5*mp/unit_mass))**(1/8)!*LoopL**(-3/4)
+          !
+        case ('balleg')
+          !
+          if (headtt) then
+            print*,'Using Ballegooijen at al. 2011 approximation for heating'
+          endif
+
+          ! calculate heating in erg cm-3 s-1; erg== 10-7 Joules
+          !tau in seconds
+          !vrms in  km/sec
+          !magnetic field in gauss (=10^-4 tesla)
+
+          if ((m > nghost) .AND. (n > nghost) .AND. &
+              (n < mz-nghost) .AND. (m < my-nghost)) then
+!
+            call dot2(p%bb,b2)  ! what units? in tesla?
+!
+            heatinput = heatinput + &
+                (2.9D-3*(0.45+33./tau)*&
+                (vrms/1.48)**1.65 * &
+                (Blength(:,m-3,n-3)/50.)**(-0.92) * &
+                (b2*1E4*unit_magnetic / 50.))**(0.55) * &
+                1E-1 / & !erg to joules times cm-3 to m-3
+                (unit_density*unit_velocity**3/unit_length) !to pencil units
+
+            if (notanumber(heatinput)) then
+              print*,'-------------------------------'
+              print*,b2
+              print*,'-------------------------------'
+              print*,Blength(:,m,n)
+              print*,'-------------------------------'
+              print*,heatinput
+              print*,'-------------------------------'
+              print*,m,n
+              call fatal_error('update points','NaN found')
+              print*,'-------------------------------'
+            endif
+          endif
+          ! save
+
+          !
         case default
           call fatal_error('calc_artif_heating','no valid heating function')
         endselect
@@ -3007,9 +3175,9 @@ module Special
 !
       inquire (IOLENGTH=lend) 1.0
       inquire (IOLENGTH=lend_b8) 1.0d0
-
+!
       write (filename,'("/points_",I1.1,".dat")') level
-
+!
       if (file_exists(trim(directory_snap)//trim(filename))) then
 !
 ! get number of points to be read
@@ -3891,7 +4059,7 @@ module Special
           close (11)
           lfirstcall_update_aa = .false.
         endif
-
+!
         f(l1:l2,m1:m2,irefz,iax) = f(l1:l2,m1:m2,irefz,iax) * &
             (1.-dt_*aa_tau_inv) + ax_init *dt_*aa_tau_inv
         f(l1:l2,m1:m2,irefz,iay) = f(l1:l2,m1:m2,irefz,iay) * &
