@@ -1529,18 +1529,23 @@ module Initcond
       integer :: i
       integer :: ix,iy,iz
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kz,nfactor
+      real :: ampl,kz,nfactor,maxA,zmax,zmin
+      complex :: omega,Ax,Ay
+      real :: Pi
 !
 !
 !  set z-dependent Beltrami field
 !
+      omega=cmplx(1./2.,sqrt(3.)/2.)
+      zmin=xyz0(3)
+      zmax=xyz1(3)
+      Pi = 4.*atan(1.)
+      maxA= abs(cos(omega*kz*Pi)+cos(omega*omega*kz*Pi))
       do ix=1,mx; do iy=1,my;do iz=1,mz
-        f(ix,iy,iz,i) = ampl*((1-nfactor)*sin(kz*z(iz)) &
-            +nfactor*(sin(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
-                + sqrt(3.)*cos(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
-        f(ix,iy,iz,i+1) = ampl*((1-nfactor)*cos(kz*z(iz)) &
-            - nfactor*(cos(kz*z(iz)/2.)*cosh(kz*z(iz)*sqrt(3.)/2.) &
-              +sqrt(3.)*sin(kz*z(iz)/2.)*sinh(kz*z(iz)*sqrt(3.)/2.) ))
+        Ax = cos(kz*z(iz))+ (cos(omega*kz*z(iz))+cos(omega*omega*kz*z(iz)))/maxA
+        Ay = sin(kz*z(iz))+ (sin(omega*kz*z(iz))+sin(omega*omega*kz*z(iz)))/maxA
+        f(ix,iy,iz,i) = ampl*real(Ax)/kz
+        f(ix,iy,iz,i+1) = ampl*real(Ay)/kz
       enddo;enddo;enddo
 !
     endsubroutine bhyperz
