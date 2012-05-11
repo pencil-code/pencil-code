@@ -372,6 +372,9 @@ else if ($hn =~ gardar ) then
   echo "******************************"
   echo "GARDAR in Iceland "
   echo " ******************************"
+  setenv LD_LIBRARY_PATH "/global/apps/openmpi/1.4.4-gnu/lib:${LD_LIBRARY_PATH}"
+  setenv LD_LIBRARY_PATH "/usr/lib/gcc/x86_64-redhat-linux/4.1.1/:${LD_LIBRARY_PATH}"
+  setenv LD_LIBRARY_PATH "/global/apps/gcc/4.6.2/lib64:${LD_LIBRARY_PATH}"
   set mpirun =  'mpirun'
 #------------------------------------------
 else if ($hn =~ compute-*.local ) then
