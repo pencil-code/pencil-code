@@ -18,7 +18,7 @@ module General
   public :: setup_mm_nn
   public :: find_index_range, find_index
 !
-  public :: spline,tridag,ctridiag,pendag,complex_phase,erfcc
+  public :: spline,tridag,pendag,complex_phase,erfcc
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
@@ -954,123 +954,6 @@ module General
       enddo
 !
     endsubroutine tridag_double
-!***********************************************************************
-    subroutine ctridiag (aug, x, stat, msg)
-!
-! Solves the linear system M X = K for X, where M is a tridiagonal matrix with
-! non-zero corners.
-!
-! ccyang/11-may-12: coded
-!
-! Input Arguments:
-!   aug - augmented matrix for the linear system, corresponding to
-!
-!       [ b(1) c(1)                         a(1)   ]      [ k(1) ]
-!       [ a(2) b(2) c(2)                           ]      [ k(2) ]
-!       [      a(3) b(3) c(3)                      ]      [ k(3) ]
-!   M = [           a(4) b(4) c(4)                 ], K = [      ]
-!       [                ...  ...    ...           ]      [ ...  ]
-!       [                     a(n-1) b(n-1) c(n-1) ]      [      ]
-!       [ c(n)                       a(n)   b(n)   ]      [ k(n) ]
-!
-! where a(i) = aug(i,1), b(i) = aug(i,2), c(i) = aug(i,3), k(i) = aug(i,4),
-! and n is the number of unknowns.
-!
-! Output Arugments:
-!   x - elements of the solution vector X
-!
-! Optional Output Arguments:
-!   stat - nonzero if any error occurs
-!   msg - error message, if any
-!
-! Caveats:
-!   The accuracy of the solution depends on the ratio of the magnitude of the
-! diagonal to that of the off-diagonal.  The larger the ratio, the more accurate
-! the result is.
-!
-      use Cdata, only: tini
-!
-! Argument Declaration
-!
-      real, dimension(:,:), intent(in) :: aug
-      real, dimension(:), intent(out) :: x
-      integer, intent(out), optional :: stat
-      character(len=*), intent(out), optional :: msg
-!
-! Local Declaration
-!
-      real, dimension(size(x)) :: a, b
-      character(len=80) :: message
-      integer :: istat
-      integer :: n, i, im1
-      real :: c, r
-!
-! Check dimensions
-!
-      n = size(x)
-      dim: if (size(aug,1) /= n .or. size(aug,2) /= 4) then
-        istat = -1
-        message = 'The arrays are incompatible. '
-      else dim
-!
-! Initialization
-!
-        istat = 0
-        a(1) = aug(1,1)
-        b = aug(:,2)
-        x = aug(:,4)
-        c = aug(n,3)
-!
-! Gaussian elimination
-!
-        gauss: do i = 2, n
-!         Check singularity
-          im1 = i - 1
-          sing: if (abs(b(im1)) <= tini) then
-            istat = -2
-            message = 'The system may be singular; use a more general algorithm. '
-            exit gauss
-          else sing
-!           Eliminate leading non-zero element in the i-th row.
-            r = aug(i,1) / b(im1)
-            a(i) = -r * a(im1)
-            b(i) = b(i) - r * aug(im1,3)
-            x(i) = x(i) - r * x(im1)
-!           Eliminate leading non-zero element in the last row.
-            r = c / b(im1)
-            c = -r * aug(im1,3)
-            b(n) = b(n) - r * a(im1)
-            x(n) = x(n) - r * x(im1)
-          end if sing
-        end do gauss
-!
-! Backward substitution
-!
-        ok: if (istat == 0) then
-          r = a(n) + b(n)
-!         Check singularity
-          sing1: if (abs(r) <= tini) then
-            istat = -2
-            message = 'The system may be singular; use a more general algorithm. '
-          else sing1
-            x(n) = x(n) / r
-            do i = n - 1, 1, -1
-              x(i) = (x(i) - (a(i) * x(n) + aug(i,3) * x(i+1))) / b(i)
-            end do
-          end if sing1
-        end if ok
-      endif dim
-!
-! Error handling
-!
-      soft: if (present(stat)) then
-        stat = istat
-        if (present(msg)) msg = message
-      else if (istat /= 0) then soft
-        print *, 'ctridiag: ', trim(message)
-      end if soft
-!
-    end subroutine ctridiag
 !***********************************************************************
     subroutine pendag(n,a,b,c,d,e,r,u)
 !
