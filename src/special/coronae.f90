@@ -4052,15 +4052,15 @@ module Special
 !
         if (lfirstcall_update_aa) then
           open (11,file=trim(directory_snap)//trim('/Ax_init.dat'), &
-              form='unformatted',status='new')
+              form='unformatted')
           read (11) ax_init
           close (11)
           open (11,file=trim(directory_snap)//trim('/Ay_init.dat'), &
-              form='unformatted',status='new')
+              form='unformatted')
           read (11) ay_init
           close (11)
           open (11,file=trim(directory_snap)//trim('/Az_init.dat'), &
-              form='unformatted',status='new')
+              form='unformatted')
           read (11) az_init
           close (11)
           lfirstcall_update_aa = .false.
