@@ -11,6 +11,7 @@ module BorderProfiles
 !
   use Cparam
   use Cdata
+  use Messages
 !
   implicit none
 !
@@ -49,9 +50,6 @@ module BorderProfiles
 !  17-jun-10/wlad: moved r_int_border and r_ext_border to border drive
 !                  because r_int and r_ext are not set until after all
 !                  calls to initialize are done in Register.
-!
-      use Cdata
-      use Messages
 !
       real, dimension(nx) :: xi
       real, dimension(ny) :: eta
@@ -234,7 +232,6 @@ module BorderProfiles
 !***********************************************************************
     subroutine set_border_initcond(f,ivar,fborder)
 !
-      use Messages, only: fatal_error
       use Sub, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
@@ -412,6 +409,10 @@ module BorderProfiles
           uphi=p%uu(i,1)*p%phix(i)+p%uu(i,2)*p%phiy(i)
         elseif (lspherical_coords) then
           uphi=p%uu(i,3)
+        else
+          call fatal_error('get_drive_time', &
+          'not implemented for cartesian grid')
+          uphi=0.
         endif
         inverse_drive_time = .5*pi_1*uphi/rborder_mn(i)
 !
