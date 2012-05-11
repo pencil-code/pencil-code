@@ -1021,10 +1021,10 @@ module Dustdensity
         lpencil_in(i_grhod)=.true.
         lpencil_in(i_rhod1)=.true.
       endif
-      if (lpencil_in(i_rhodsum)) then 
+      if (lpencil_in(i_rhodsum)) then
         lpencil_in(i_rhod)=.true.
       endif
-      if (lpencil_in(i_grhodsum)) then 
+      if (lpencil_in(i_grhodsum)) then
         lpencil_in(i_grhod)=.true.
       endif
 !
@@ -1379,7 +1379,7 @@ module Dustdensity
           endif
         endif
 !
-        if (lpencil(i_rhodsum)) then 
+        if (lpencil(i_rhodsum)) then
           do k=1,ndustspec
             if (k==1) then
               p%rhodsum=p%rhod(:,k)
@@ -1389,7 +1389,7 @@ module Dustdensity
           enddo
         endif
 !
-        if (lpencil(i_grhodsum)) then 
+        if (lpencil(i_grhodsum)) then
           do k=1,ndustspec
             if (k==1) then
               p%grhodsum=p%grhod(:,:,k)
@@ -2709,7 +2709,7 @@ module Dustdensity
 !
       real, save :: dustdensity_floor_log
       logical, save :: lfirstcall=.true.
-      integer :: i, j, k
+      integer :: k
 !
 !  Impose the density floor.
 !
