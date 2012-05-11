@@ -895,7 +895,7 @@ module Special
       if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
-      if (cool_RTV /= 0.) call calc_heat_cool_RTV(f,df,p)
+      if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
       if (tau_inv_newton_mark /= 0.) call calc_newton_mark(f,df,p)
@@ -1700,7 +1700,7 @@ module Special
 !
     endsubroutine calc_heatcond_glnTT_iso
 !***********************************************************************
-    subroutine calc_heat_cool_RTV(f,df,p)
+    subroutine calc_heat_cool_RTV(df,p)
 !
 !  Computes the radiative loss in the optical thin corona.
 !  Zero order estimation for the electron number densities by
@@ -1715,7 +1715,6 @@ module Special
       use Diagnostics,     only: max_mn_name
       use Sub, only: cubic_step
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
@@ -1874,18 +1873,17 @@ module Special
 !
       use EquationOfState, only: gamma
       use Sub, only: dot2, cubic_step,gij,notanumber
-!      use Deriv, only der
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
       real,dimension (mx,my,mz) :: LoopLength
-      real, dimension (mx,my,mz,mfarray)::f
-      real,dimension (nx) :: LoopL,d2,h
-     real, dimension (nx) :: heatinput,rhs,b2 ,l_acc,l_2acc
-     real,dimension (nx,3,3) :: tmp1,tmp2
-     real :: tau=60.,vrms=2.
+      real, dimension (nx) :: heatinput,rhs,b2 
+!     real, dimension (nx) :: l_acc,l_2acc
+!     real,dimension (nx) :: LoopL,d2,h
+!     real,dimension (nx,3,3) :: tmp1,tmp2
+      real :: tau=60.,vrms=2.
       type (pencil_case), intent(in) :: p
       real ::  mp=1.6726E-27   !proton mass
- integer :: i
+      integer :: i
 !
       heatinput=0.
 !
@@ -2112,11 +2110,13 @@ module Special
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: newton,tau_inv_tmp
+      real, dimension (nx) :: rho0_rho,TT0_TT
 !
       if (headtt) print*,'special_calc_entropy: newton cooling',tau_inv_newton
 !
 !  Get reference temperature
-      newton  = exp(lnTT_init_prof(n)-p%lnTT)-1.
+      rho0_rho = exp(lnrho_init_prof(n)-p%lnrho)
+      TT0_TT = exp(lnTT_init_prof(n)-p%lnTT)
 !
 !  Multiply by density dependend time scale
       if (exp_newton /= 0.) then
@@ -2140,24 +2140,30 @@ module Special
         tau_inv_tmp = tau_inv_newton
       endif
 !
-      newton  = newton * tau_inv_tmp
-!
-      if (init_time2 /= 0.) &
-          newton=newton*(1.-cubic_step(real(t),init_time2,init_width))
-!
-!  Add newton cooling term to entropy
-!
-      if  (ltemperature .and. (.not. ltemperature_nolog)) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
-      else
-        call fatal_error('calc_heat_cool_newton','only for ltemperature')
-      endif
-!
-      if ((ipz == nprocz-1) .and. (n == n2) .and. (tau_inv_top /= 0.)) then
-        newton  = exp(lnTT_init_prof(n)-p%lnTT)-1.
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton*tau_inv_top
-        tau_inv_tmp=max(tau_inv_tmp,tau_inv_top)
-      endif
+      df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + tau_inv_tmp*(rho0_rho-1.)
+      df(l1:l2,m,n,ilnTT) =df(l1:l2,m,n,ilnTT)  + tau_inv_tmp*rho0_rho*(TT0_TT-1.)
+
+!       newton  = newton * tau_inv_tmp
+! !
+!       if (init_time2 /= 0.) &
+!           newton=newton*(1.-cubic_step(real(t),init_time2,init_width))
+! !
+! !  Add newton cooling term to entropy
+! !
+!       if  (ltemperature .and. (.not. ltemperature_nolog)) then
+!         newton = exp(lnrho_init_prof(n)-p%lnrho)-1.
+!         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+newton
+
+!         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
+!       else
+!         call fatal_error('calc_heat_cool_newton','only for ltemperature')
+!       endif
+! !
+!       if ((ipz == nprocz-1) .and. (n == n2) .and. (tau_inv_top /= 0.)) then
+!         newton = exp(lnTT_init_prof(n)-p%lnTT)-1.
+!         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton*tau_inv_top
+!         tau_inv_tmp=max(tau_inv_tmp,tau_inv_top)
+!       endif
 !
       if (lvideo) then
 !
@@ -4045,15 +4051,15 @@ module Special
       if (ipz == 0) then
 !
         if (lfirstcall_update_aa) then
-          open (11,file=trim(directory_snap)//trim('Ax_init.dat'), &
+          open (11,file=trim(directory_snap)//trim('/Ax_init.dat'), &
               form='unformatted',status='new')
           read (11) ax_init
           close (11)
-          open (11,file=trim(directory_snap)//trim('Ay_init.dat'), &
+          open (11,file=trim(directory_snap)//trim('/Ay_init.dat'), &
               form='unformatted',status='new')
           read (11) ay_init
           close (11)
-          open (11,file=trim(directory_snap)//trim('Az_init.dat'), &
+          open (11,file=trim(directory_snap)//trim('/Az_init.dat'), &
               form='unformatted',status='new')
           read (11) az_init
           close (11)

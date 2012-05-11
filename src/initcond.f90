@@ -4516,13 +4516,13 @@ module Initcond
 !
 !  Save initial vector potential
       if (ipz==0) then
-        open (11,file=trim(directory_snap)//trim('Ax_init.dat'),form='unformatted',status='new')
+        open (11,file=trim(directory_snap)//trim('/Ax_init.dat'),form='unformatted',status='new')
         write (11) f(l1:l2,m1:m2,itmp,iax)
         close (11)
-        open (11,file=trim(directory_snap)//trim('Ay_init.dat'),form='unformatted',status='new')
+        open (11,file=trim(directory_snap)//trim('/Ay_init.dat'),form='unformatted',status='new')
         write (11) f(l1:l2,m1:m2,itmp,iay)
         close (11)
-        open (11,file=trim(directory_snap)//trim('Az_init.dat'),form='unformatted',status='new')
+        open (11,file=trim(directory_snap)//trim('/Az_init.dat'),form='unformatted',status='new')
         write (11) f(l1:l2,m1:m2,itmp,iaz)
         close (11)
       endif
@@ -4639,13 +4639,13 @@ module Initcond
 !
 !  Save initial vector potential
       if (ipz==0) then
-        open (11,file=trim(directory_snap)//trim('Ax_init.dat'),form='unformatted',status='new')
+        open (11,file=trim(directory_snap)//trim('/Ax_init.dat'),form='unformatted',status='new')
         write (11) f(l1:l2,m1:m2,n1,iax)
         close (11)
-        open (11,file=trim(directory_snap)//trim('Ay_init.dat'),form='unformatted',status='new')
+        open (11,file=trim(directory_snap)//trim('/Ay_init.dat'),form='unformatted',status='new')
         write (11) f(l1:l2,m1:m2,n1,iay)
         close (11)
-        open (11,file=trim(directory_snap)//trim('Az_init.dat'),form='unformatted',status='new')
+        open (11,file=trim(directory_snap)//trim('/Az_init.dat'),form='unformatted',status='new')
         write (11) f(l1:l2,m1:m2,n1,iaz)
         close (11)
       endif
