@@ -1752,7 +1752,7 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine get_soundspeed(TT,cs2)
+    elemental subroutine get_soundspeed(TT,cs2)
 !
 !  Calculate sound speed for given temperature
 !

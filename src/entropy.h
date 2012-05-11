@@ -10,3 +10,4 @@
   public :: calc_pencils_entropy, fill_farray_pressure
   public :: impose_energy_floor
   public :: dynamical_thermal_diffusion
+  public :: split_update_energy

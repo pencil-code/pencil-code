@@ -503,4 +503,14 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
+    subroutine split_update_energy(f)
+!
+!  Dummy subroutine
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine
+!***********************************************************************
 endmodule Entropy

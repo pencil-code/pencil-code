@@ -32,10 +32,17 @@ module Entropy
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
   real :: chi=0.0, chi_shock=0.0, chi_shock_gradTT=0., chi_hyper3_mesh=0.
-  real :: energy_floor = 0.
+  real :: energy_floor = 0., temperature_floor = 0.
+  real :: rk_eps = 1.e-3
+  real :: nu_z=0., KI_csz=0.
+  integer :: rk_nmax = 100
+  integer :: njeans = 4
+  logical :: lsplit_update=.false.
   logical :: lviscosity_heat=.true.
   logical :: lupw_eth=.false.
   logical :: lcheck_negative_energy=.false.
+  logical :: lKI02=.false.
+  logical :: ljeans_floor=.false.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
 !
@@ -49,7 +56,9 @@ module Entropy
   namelist /entropy_run_pars/ &
       lviscosity_heat, lupw_eth, &
       chi, chi_shock, chi_shock_gradTT, chi_hyper3_mesh, &
-      energy_floor, lcheck_negative_energy
+      energy_floor, temperature_floor, lcheck_negative_energy, &
+      rk_eps, rk_nmax, lKI02, nu_z, KI_csz, &
+      ljeans_floor, njeans
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -96,6 +105,18 @@ module Entropy
   real, dimension(ny,nz) :: pp_yz
   real, dimension(nx,ny) :: pp_xy,pp_xy2,pp_xy3,pp_xy4
 !
+! Coefficients for the KI02 terms
+!
+  real, parameter :: KI_heat = 2.0e-26                             ! heating rate [erg/s]
+  real, parameter :: KI_v1 = 1.e7, KI_v2 = 1.4e-2                  ! coefficients of the two terms in Lambda / Gamma [cm^3]
+  real, parameter :: KI_T1 = 1.184e5, KI_T2 = 1.e3, KI_T3 = 92.    ! coefficients for the temperatures [K]
+  real :: KI_a0 = 0., KI_a1 = 0., KI_a2 = 0.
+  real :: cv1 = 0.
+!
+! Coefficient for Jeans energy floor
+!
+  real :: Jeans_c0 = 0.
+!
   contains
 !***********************************************************************
     subroutine register_entropy()
@@ -104,7 +125,7 @@ module Entropy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
       use SharedVariables, only: get_shared_variable
 !
       integer :: ierr
@@ -128,12 +149,16 @@ module Entropy
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
 !  04-nov-10/anders+evghenii: adapted
+!  03-oct-11/ccyang: add initialization for KI02
 !
-      use EquationOfState, only: select_eos_variable
+      use EquationOfState, only: select_eos_variable, get_cv1, getmu, gamma, gamma_m1
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       logical, intent (in) :: lstarting
+!
+      real :: mu, cs2
+      real :: c0
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -141,6 +166,41 @@ module Entropy
       call select_eos_variable('eth',ieth)
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
+!
+!  Decide if operator splitting is required.
+!
+      lsplit_update = lKI02
+!
+!  Initialize the KI02 terms.
+!
+      KI02: if (lKI02) then
+        if (.not. leos_idealgas) call fatal_error('initialize_entropy', 'KI02 currently assumes eos_idealgas')
+        call getmu(mu_tmp=mu)
+        call get_cv1(cv1)
+        cv1 = cv1 * unit_temperature
+        KI_a0 = (KI_heat * unit_time / unit_energy) / (mu * m_u)
+        c0 = KI_a0 / (mu * m_u * unit_length**3)
+        if (nzgrid == 1) then
+          c0 = c0 * nu_z / (2. * sqrtpi)
+          if (KI_csz > 0.) c0 = c0 / KI_csz
+        endif
+        KI_a1 = c0 * KI_v1
+        KI_a2 = c0 * KI_v2
+        if (unit_system == 'SI') then
+          KI_a0 = 1.e-7 * KI_a0
+          KI_a1 = 1.e-6 * KI_a1
+          KI_a2 = 1.e-6 * KI_a2
+        endif
+      endif KI02
+!
+!  Initialize the coefficient of the Jeans energy floor.
+!
+      Jeans: if (ljeans_floor) then
+        if (nzgrid /= 1) then
+        else
+          Jeans_c0 = real(njeans) * G_Newton * dxmax / (gamma * gamma_m1)
+        endif
+      endif Jeans
 !
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -650,6 +710,16 @@ module Entropy
 !
       if (energy_floor > 0.) where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor
 !
+!  Apply Jeans energy floor.
+!
+      if (ljeans_floor) then
+        if (ldensity_nolog) then
+          call jeans_floor(f(l1:l2,m1:m2,n1:n2,ieth), f(l1:l2,m1:m2,n1:n2,irho))
+        else
+          call jeans_floor(f(l1:l2,m1:m2,n1:n2,ieth), exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+        endif
+      endif
+!
     endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
@@ -665,5 +735,232 @@ module Entropy
       if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh
 !
     endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
+    subroutine split_update_energy(f)
+!
+!  Update the thermal energy by integrating the operator split energy
+!  terms.
+!
+!  07-aug-11/ccyang: coded
+!
+      use Density, only: impose_density_floor
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      integer, dimension(nx,ny,nz) :: status
+      real, dimension(nx,ny,nz) :: delta_eth
+      character(len=256) :: message
+!
+!  Impose density and energy floors.
+!
+      call impose_density_floor(f)
+      call impose_energy_floor(f)
+!
+!  Update the energy.
+!
+      split_update: if (lsplit_update) then
+        if (.not. ldensity) call fatal_error('split_update_energy', 'density is required')
+!
+        if (ldensity_nolog) then
+          call get_delta_eth(t, dt, f(l1:l2,m1:m2,n1:n2,ieth), f(l1:l2,m1:m2,n1:n2,irho), delta_eth, status)
+        else
+          call get_delta_eth(t, dt, f(l1:l2,m1:m2,n1:n2,ieth), exp(f(l1:l2,m1:m2,n1:n2,ilnrho)), delta_eth, status)
+        endif
+!
+        if (any(status < 0)) then
+          write(message,10) count(status == -1), ' cells had underflows and ', &
+                            count(status == -2), ' cells reached maximum iterations.'
+       10 format(1x, i3, a, i3, a)
+          call warning('split_update_energy', trim(message))
+        endif
+!
+        if (ldebug) then
+          where(status < 0) status = rk_nmax
+          print *, 'Minimum, maximum, and average numbers of iterations = ', &
+            minval(status), maxval(status), real(sum(status)) / real(nw)
+        endif
+!
+        f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta_eth
+      endif split_update
+!
+    endsubroutine
+!***********************************************************************
+    elemental subroutine get_delta_eth(t, dt, eth, rho, delta_eth, status)
+!
+!  Integrate the operator split energy terms that are local:
+!
+!    de/dt = H(e(t),rho)
+!
+!  08-aug-11/ccyang: coded
+!
+      real, intent(in) :: t, dt, eth, rho
+      real, intent(out) :: delta_eth
+      integer, intent(out), optional :: status
+!
+!  Cash-Karp parameters for embedded Runga-Kutta method
+!
+      real, parameter :: a2 = .2, a3 = .3, a4 = .6, a5 = 1., a6 = .875
+      real, parameter :: b2 = .2
+      real, dimension(2), parameter :: b3 = [.075, .225]
+      real, dimension(3), parameter :: b4 = [.3, -.9, 1.2]
+      real, dimension(4), parameter :: b5 = [-11./54., 2.5, -70./27., 35./27.]
+      real, dimension(5), parameter :: b6 = [1631./55296., 175./512., 575./13824., 44275./110592., 253./4096.]
+      real, dimension(6), parameter :: c = [37./378., 0., 250./621., 125./594., 0., 512./1771.]
+      real, dimension(6), parameter :: d = c - [2825./27648., 0., 18575./48384., 13525./55296., 277./14336., .25]
+!
+      real, dimension(6) :: de
+      logical :: last
+      integer :: nok, nbad, status1
+      real :: tf, t1, dt1, eth1, deth, error
+!
+!  Initialization
+!
+      delta_eth = 0.
+!
+      tf = abs(t + dt)
+      t1 = t
+      dt1 = dt
+      eth1 = eth
+      nok = 0
+      nbad = 0
+      last = .true.
+!
+      rkck: do
+!
+!  Embedded Runga-Kutta step
+!
+        de(1) = dt1 * calc_heat_split(t1, eth1, rho)
+        de(2) = dt1 * calc_heat_split(t1 + a2 * dt1, eth1 + b2 * de(1), rho)
+        de(3) = dt1 * calc_heat_split(t1 + a3 * dt1, eth1 + sum(b3 * de(:2)), rho)
+        de(4) = dt1 * calc_heat_split(t1 + a4 * dt1, eth1 + sum(b4 * de(:3)), rho)
+        de(5) = dt1 * calc_heat_split(t1 + a5 * dt1, eth1 + sum(b5 * de(:4)), rho)
+        de(6) = dt1 * calc_heat_split(t1 + a6 * dt1, eth1 + sum(b6 * de(:5)), rho)
+!
+        deth = sum(c * de)
+!
+!  Time step control
+!
+        if (eth1 + deth > 0.) then
+          error = abs(sum(d * de) / (rk_eps * eth1))
+        else
+          error = 32.
+        endif
+!
+        passed: if (error <= 1.) then
+          nok = nok + 1
+          delta_eth = delta_eth + deth
+!
+          done: if (last) then
+            status1 = 0
+            if (ldebug) status = nok + nbad
+            exit rkck
+          else if (t1 + dt1 == t1) then
+            status1 = -1
+            exit rkck
+          else if (nok + nbad > rk_nmax) then
+            status1 = -2
+            exit rkck
+          endif done
+!
+          t1 = t1 + dt1
+          eth1 = eth + delta_eth
+!
+          dt1 = dt1 * min(error**(-.2), 2.)
+          if (abs(t1 + dt1) >= tf) then 
+            dt1 = t + dt - t1
+            last = .true.
+          endif
+        else passed
+          nbad = nbad + 1
+          dt1 = dt1 * max(error**(-.2), .1)
+          last = .false.
+        endif passed
+!
+      enddo rkck
+!
+      if (present(status)) status = status1
+!
+    endsubroutine get_delta_eth
+!***********************************************************************
+    elemental function calc_heat_split(t, eth, rho) result(heat)
+!
+!  Calculate the total heat generated from the operator split energy
+!  terms.
+!
+!  06-aug-11/ccyang: coded
+!
+      real, intent(in) :: t, eth, rho
+      real :: heat
+!
+      if (t == t) &    ! keep the compiler quiet; can be later removed if t is ever used.
+!
+      heat = 0.
+      if (lKI02) heat = heat + heat_KI02(eth, rho)
+!
+    endfunction calc_heat_split
+!***********************************************************************
+    elemental real function heat_KI02(eth, rho)
+!
+!  Add Koyama & Inutsuka (2002) heating and cooling terms.
+!
+!  03-oct-11/ccyang: coded
+!
+      use EquationOfState, only: get_soundspeed
+!
+      real, intent(in) :: eth, rho
+!
+      real :: temp, cs2
+      real :: c0, c1, c2
+!
+!  Find the temperature and its derived values.
+!
+      if (cv1 > 0. .and. eth > 0. .and. rho > 0.) then
+        temp = cv1 * eth / rho
+        c1 = exp(-KI_T1 / (temp + KI_T2))
+        c2 = exp(-KI_T3 / temp)
+      else
+        heat_KI02 = 0.
+        return
+      endif
+!
+!  Calculate the net heat.
+!    For 3D run: rho is volume mass density
+!    For 2D run: rho is surface mass density
+!    KI_csz, if > 0, fix the disk vertical scale height
+!
+      c0 = rho
+      if (nzgrid == 1 .and. KI_csz <= 0.) then
+        call get_soundspeed(temp / unit_temperature, cs2)
+        c0 = rho / sqrt(cs2)
+      endif
+      heat_KI02 = rho * (KI_a0 - c0 * (KI_a1 * c1 + KI_a2 * sqrt(temp) * c2))
+!
+    endfunction
+!***********************************************************************
+    elemental subroutine jeans_floor(eth, rho)
+!
+!  Apply a floor to energy where Jeans length is unresolved.
+!
+!  29-aug-11/ccyang: coded.
+!
+      real, intent(inout) :: eth
+      real, intent(in) :: rho
+!
+      real :: eth_min
+!
+!  Find the Jeans energy floor.
+!
+      if (nzgrid /= 1) then
+!       3D run: rho is volume mass density
+      else
+!       2D run: rho is surface mass density
+        eth_min = Jeans_c0 * rho**2
+      endif
+!
+!  Impose the floor where needed.
+!
+      if (eth < eth_min) eth = eth_min
+!
+    endsubroutine
 !***********************************************************************
 endmodule Entropy

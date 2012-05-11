@@ -52,6 +52,7 @@ program run
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
+  use Entropy,         only: split_update_energy
   use Equ,             only: debug_imn_arrays,initialize_pencils
   use EquationOfState, only: ioninit,ioncalc
   use FArrayManager,   only: farray_clean_up
@@ -428,7 +429,7 @@ program run
         tsound = t
       endif
     endif
-    
+!
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
@@ -551,6 +552,10 @@ program run
 !  Time advance.
 !
     call time_step(f,df,p)
+!
+!  Integrate operator split terms.
+!
+    if (lenergy) call split_update_energy(f)
 !
 !  Print diagnostic averages to screen and file.
 !
