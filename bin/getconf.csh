@@ -372,10 +372,11 @@ else if ($hn =~ gardar ) then
   echo "******************************"
   echo "GARDAR in Iceland "
   echo " ******************************"
-  setenv LD_LIBRARY_PATH "/global/apps/openmpi/1.4.4-gnu/lib:${LD_LIBRARY_PATH}"
+  setenv LD_LIBRARY_PATH "/global/apps/openmpi/1.4.4-gnu/lib"
   setenv LD_LIBRARY_PATH "/usr/lib/gcc/x86_64-redhat-linux/4.1.1/:${LD_LIBRARY_PATH}"
   setenv LD_LIBRARY_PATH "/global/apps/gcc/4.6.2/lib64:${LD_LIBRARY_PATH}"
-  set mpirun =  'mpirun'
+#  set mpirun =  '/global/apps/openmpi/1.4.4/bin/mpirun'
+  set mpirun = '/global/apps/openmpi/1.4.4-gnu/bin/mpirun'
 #------------------------------------------
 else if ($hn =~ compute-*.local ) then
   echo "Warp cluster (warp) - Pittsburg"
