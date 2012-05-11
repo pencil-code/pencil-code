@@ -1,6 +1,6 @@
 #!/bin/csh
 # CVS: $Id$
-
+#
 #                       start.csh
 #                      -----------
 #   Run src/start.x (initialising f for src/run.x).

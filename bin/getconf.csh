@@ -140,7 +140,9 @@ if ($?PBS_O_HOST) then
   if ("$PBS_O_HOST" =~ hyades*) set masterhost = 'hyades'
   if ("$PBS_O_HOST" =~ master.cvos.cluster) set masterhost = 'vsl176'
   if ("$PBS_O_HOST" =~ pfe*.nas.nasa.gov) set masterhost = 'pfe'
+  if ("$PBS_O_HOST" =~ gardar*) set masterhost = 'gardar'
 endif
+if ("$masterhost" =~ gardar*) set hn = 'gardar'
 if ($?PBS_JOBID) then
   if ("$PBS_JOBID" =~ *.obelix*) set masterhost = 'obelix'
 endif
@@ -365,6 +367,12 @@ else if ($hn =~ t*.hpc2n.umu.se ) then
   set npops = ''
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
   set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+#------------------------------------------
+else if ($hn =~ gardar ) then
+  echo "******************************"
+  echo "GARDAR in Iceland "
+  echo " ******************************"
+  set mpirun =  'mpirun'
 #------------------------------------------
 else if ($hn =~ compute-*.local ) then
   echo "Warp cluster (warp) - Pittsburg"
