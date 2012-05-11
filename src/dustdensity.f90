@@ -67,7 +67,7 @@ module Dustdensity
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
-  character (len=labellen) :: bordernd=''
+  character (len=labellen) :: bordernd='nothing'
   character (len=labellen) :: advec_ddensity='normal'
   logical :: ludstickmax=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
