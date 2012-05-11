@@ -2144,15 +2144,15 @@ module Magnetic
       endif  
 ! bunit
       if (lpencil(i_bunit)) then
-        quench = max(tini,sqrt(p%b2))
+        quench = 1.0/max(tini,sqrt(p%b2))
         if (luse_Bext_in_b2) then
-          p%bunit(:,1) = p%bb(:,1)/quench
-          p%bunit(:,2) = p%bb(:,2)/quench
-          p%bunit(:,3) = p%bb(:,3)/quench
+          p%bunit(:,1) = p%bb(:,1)*quench
+          p%bunit(:,2) = p%bb(:,2)*quench
+          p%bunit(:,3) = p%bb(:,3)*quench
         else
-          p%bunit(:,1) = p%bbb(:,1)/quench
-          p%bunit(:,2) = p%bbb(:,2)/quench
-          p%bunit(:,3) = p%bbb(:,3)/quench
+          p%bunit(:,1) = p%bbb(:,1)*quench
+          p%bunit(:,2) = p%bbb(:,2)*quench
+          p%bunit(:,3) = p%bbb(:,3)*quench
         endif
       endif
 ! ab
