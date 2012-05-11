@@ -945,6 +945,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-r8 #(t-mn01.hpc2n.umu.se)
 #LIBMPISUFFIX=#(t-mn01.hpc2n.umu.se)
 ##
+## Axel on Gardar
+##
+#FC=mpif90 #(gardar*)
+#FFLAGS= -O3  #(gardar*)
+#CC=mpicc #(gardar*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(gardar*)
+#LD_MPI= #(gardar*)
+#FFLAGS_DOUBLE=-r8 #(gardar*)
+#LIBMPISUFFIX=#(gardar*)
+##
 ## Axel on Sanssouci (ifc 9.1)
 ##
 #FC=mpif90 #(sanssouci|belvedere|octopus)
