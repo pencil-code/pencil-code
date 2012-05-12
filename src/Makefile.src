@@ -1006,7 +1006,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LIBMPISUFFIX= #(warp.hpc1.cs.cmu.edu*)
 ##
 ## Axel on warp.hpc1.cs.cmu.edu (gfortran)
-##XX
 ##FC=ifort #(warp.hpc1.cs.cmu.edu*)
 ##FFLAGS= -O3 -fno-underscoring #(warp.hpc1.cs.cmu.edu*)
 ##CC=gcc #(warp.hpc1.cs.cmu.edu*)
@@ -1016,10 +1015,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## Axel on norlx55 (gfortran)
 ##
-##FC=${HOME}/Library/bin/mpif90 #(norlx55*)
-#FC=mpif90 #(norlx55*)
-##FC=${HOME}/Library/bin/mpif90 #(norlx55*)
-#FFLAGS= -O3 -fno-underscoring -L${HOME}/Library/lib -I${HOME}/Library/include #(norlx55*)
+#FC=/afs/physto.se/home/b/brandenb/Library/bin/mpif90 #(norlx55*)
+#FFLAGS= -O3 -fno-underscoring -L/afs/physto.se/home/b/brandenb/Library/lib -I/afs/physto.se/home/b/brandenb/Library/include#(norlx55*)
 #CC=mpicc #(norlx55*)
 #CFLAGS=-O3 #(norlx55*)
 #LD_MPI= #(norlx55*)
