@@ -1529,7 +1529,7 @@ module Initcond
       integer :: i
       integer :: ix,iy,iz
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kz,nfactor,maxA,zmax,zmin
+      real :: ampl,kz,nfactor,maxAx,maxAy,zmax,zmin,zzm,maxA
       complex :: omega,Ax,Ay
       real :: Pi
 !
@@ -1540,10 +1540,15 @@ module Initcond
       zmin=xyz0(3)
       zmax=xyz1(3)
       Pi = 4.*atan(1.)
-      maxA= abs(cos(omega*kz*Pi)+cos(omega*omega*kz*Pi))
+      zzm=max(abs(zmin),abs(zmax))
+      maxAx= abs(sin(omega*kz*zzm)+sin(omega*omega*kz*zzm))
+      maxAy= abs(cos(omega*kz*zzm)+cos(omega*omega*kz*zzm))
+      maxA = max(maxAx,maxAy)
       do ix=1,mx; do iy=1,my;do iz=1,mz
-        Ax = cos(kz*z(iz))+ (cos(omega*kz*z(iz))+cos(omega*omega*kz*z(iz)))/maxA
-        Ay = sin(kz*z(iz))+ (sin(omega*kz*z(iz))+sin(omega*omega*kz*z(iz)))/maxA
+        Ax = (1.-nfactor)*cos(kz*z(iz))+ nfactor*real(sin(omega*kz*z(iz)))
+        Ay = (1.-nfactor)*sin(kz*z(iz))+ nfactor*real(cos(omega*kz*z(iz)))
+!        Ax = real(sin(omega*kz*z(iz)))
+!        Ay = real(cos(omega*kz*z(iz)))
         f(ix,iy,iz,i) = ampl*real(Ax)/kz
         f(ix,iy,iz,i+1) = ampl*real(Ay)/kz
       enddo;enddo;enddo
