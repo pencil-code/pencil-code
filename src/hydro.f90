@@ -1869,7 +1869,8 @@ module Hydro
      if (ekman_friction/=0) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ekman_friction*p%uu
 !
-!  Boussinesq approximation. Use Rayleigh number only with ltemperature.
+!  Boussinesq approximation: -g_z*alpha*(T-T_0) added.
+!  Use Rayleigh number only with ltemperature.
 !  Note: the buoyancy term is currently scaled with Ra*Pr, but Pr is also
 !  regulated though mu and K, so Pr should eventually be eliminated.
 !
@@ -1881,7 +1882,7 @@ module Hydro
            p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
          enddo
        else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT)
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-Ra*Pr*f(l1:l2,m,n,iTT) ! gravity in z direction
        endif
      endif
 !
