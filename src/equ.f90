@@ -22,6 +22,8 @@ module Equ
 !  Call the different evolution equations.
 !
 !  10-sep-01/axel: coded
+!  12-may-12/MR: call of density_before_boundary added for boussinesq;
+!                moved call of timing after call of anelastic_after_mn
 !
       use Boundcond
       use BorderProfiles, only: calc_pencils_borderprofiles
@@ -83,6 +85,7 @@ module Equ
       integer :: iv
       integer :: ivar1,ivar2
       real :: umax = 0.
+!
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
       intent(out)    :: df, p
@@ -190,7 +193,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       if (linterstellar) call interstellar_before_boundary(f)
-      if (ldensity)      call density_before_boundary(f)
+      if (ldensity.or.lboussinesq)      call density_before_boundary(f)
       if (lhydro)        call hydro_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
       if (lchiral)       call chiral_before_boundary(f)
@@ -840,11 +843,12 @@ module Equ
 !
         headtt=.false.
       enddo mn_loop
-      call timing('pde','at the end of the mn_loop')
 !
 !  Finish the job for the anelastic approximation
 !
       if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
+!
+      call timing('pde','at the end of the mn_loop')
 !
 !  Integrate diagnostics related to solid cells (e.g. drag and lift).
 !
