@@ -700,8 +700,8 @@ module Entropy
       if (idiag_TTmin/=0) lpenc_diagnos(i_TT)  =.true.
       if (idiag_TTm/=0)   lpenc_diagnos(i_TT)  =.true.
       if (idiag_fradtop/=0) then
-        lpenc_diagnos(i_TT) =.true.  ! for hcond computation
-        lpenc_diagnos(i_glnTT) =.true.
+        lpenc_diagnos(i_TT) =.true.
+        lpenc_diagnos(i_gTT) =.true.
       endif
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
@@ -986,8 +986,12 @@ module Entropy
           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
         endif
         if (idiag_fradtop/=0.and.n==n2) then
-          call heatcond_TT(p%TT,hcond)
-          fradtop=sum(-hcond*p%glnTT(:,3))/nx
+          if (lADI) then
+            call heatcond_TT(p%TT,hcond)
+            fradtop=sum(-hcond*p%gTT(:,3))/nx
+          else
+            fradtop=sum(-p%gTT(:,3))/nx
+          endif
           call save_name(fradtop, idiag_fradtop)
         endif
       endif
