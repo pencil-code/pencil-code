@@ -992,11 +992,11 @@ module Entropy
             else
               hcond=1.
             endif
-            fradtop=sum(-hcond*p%gTT(:,3)*dsurfxy)
-            call save_name(fradtop, idiag_fradtop)
+            fradtop=sum(-hcond*p%gTT(:,3))/nx
           else
             fradtop=0.
           endif
+          call surf_mn_name(fradtop, idiag_fradtop)
         endif
       endif
 !
