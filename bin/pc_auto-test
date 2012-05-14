@@ -76,6 +76,7 @@ my %tests = (
                          2d-tests/chemistry_GrayScott
                          0d-tests/heating_ionize
                          dust-vortex
+                         2d-tests/boussinesq_convection
                     )],
              2 => [qw(
                          0d-tests/heating_noionize
