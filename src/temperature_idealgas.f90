@@ -27,6 +27,9 @@
 !***************************************************************
 module Entropy
 !
+! 12-may-12/MR: made ampl_lnTT a vector; added parameters for initialization
+!               by mode to input pars
+!
   use Cdata
   use Cparam
   use EquationOfState, only: mpoly0, mpoly1, mpoly2
@@ -37,7 +40,9 @@ module Entropy
 !
   include 'entropy.h'
 !
-  real :: radius_lnTT=0.1, ampl_lnTT=0.0, widthlnTT=2*epsi
+  real :: radius_lnTT=0.1, widthlnTT=2*epsi
+  real, dimension (ninit) :: ampl_lnTT=0.0
+
   real :: lnTT_const=0.0, TT_const=1.0
   real :: Kgperp=0.0, Kgpara=0.0
   real :: chi=impossible
@@ -64,7 +69,9 @@ module Entropy
   logical :: linitial_log=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
+  complex :: coef_lnTT=0.
   character (len=intlen) :: iinit_str
+  real    :: kx_lnTT=1.,ky_lnTT=1.,kz_lnTT=1.
   logical :: lADI_mixed=.false.
 !
 !  Input parameters.
@@ -73,7 +80,7 @@ module Entropy
       initlnTT, radius_lnTT, ampl_lnTT, widthlnTT, lnTT_const, TT_const, &
       center1_x, center1_y, center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, &
       Tbump, Kmin, Kmax, hole_slope, hole_width, ltemperature_nolog, &
-      linitial_log, hcond0, luminosity, wheat
+      linitial_log, hcond0, luminosity, wheat, coef_lnTT, kx_lnTT, ky_lnTT, kz_lnTT
 !
 !  Run parameters.
 !
@@ -434,8 +441,9 @@ module Entropy
 !  13-dec-2002/axel+tobi: adapted from init_ss
 !
 !  initialise entropy; called from start.f90
-!  07-nov-2001/wolf: coded
-!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
+!  07-nov-01/wolf: coded
+!  24-nov-02/tony: renamed for consistency (i.e. init_[variable name])
+!  12-may-12/MR: initialization with mode added
 !
       use General,  only: itoa
       use Sub,      only: blob
@@ -444,6 +452,7 @@ module Entropy
                                  lnrho0, get_cp1
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
+      use Initcond, only: modes
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
@@ -475,6 +484,14 @@ module Entropy
             cs2bot=gamma_m1*TT_const
             cs2top=gamma_m1*TT_const
 !
+          case ('mode')
+!
+            if (ltemperature_nolog) then
+              call modes(ampl_lnTT(j),coef_lnTT,f,iTT,kx_lnTT,ky_lnTT,kz_lnTT)
+            else
+              call modes(ampl_lnTT(j),coef_lnTT,f,ilnTT,kx_lnTT,ky_lnTT,kz_lnTT)
+            endif
+!
           case ('single_polytrope'); call single_polytrope(f)
 !
           case ('piecew-poly'); call piecew_poly(f)
@@ -492,16 +509,16 @@ module Entropy
 !
           case ('blob_hs')
             if (lroot) print*, 'init_lnTT: hydrostatic blob with ', &
-                radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
-            call blob(ampl_lnTT,f,ilnTT,radius_lnTT, &
+                radius_lnTT, ampl_lnTT(j), center1_x, center1_y, center1_z
+            call blob(ampl_lnTT(j),f,ilnTT,radius_lnTT, &
                 center1_x, center1_y,center1_z)
-            call blob(-ampl_lnTT,f,ilnrho,radius_lnTT, &
+            call blob(-ampl_lnTT(j),f,ilnrho,radius_lnTT, &
                 center1_x,center1_y,center1_z)
 !
           case ('blob')
             if (lroot) print*, 'init_lnTT: blob ', &
-                radius_lnTT, ampl_lnTT, center1_x, center1_y, center1_z
-            call blob(ampl_lnTT,f,ilnTT,radius_lnTT, &
+                radius_lnTT, ampl_lnTT(j), center1_x, center1_y, center1_z
+            call blob(ampl_lnTT(j),f,ilnTT,radius_lnTT, &
                 center1_x,center1_y,center1_z)
 !
           case ('isothermal')
@@ -835,7 +852,7 @@ module Entropy
 !
       intent(inout) :: f,p,df
 !
-! Initialization of thdiff in the declaration the
+! When initializating  thdiff in the declaration the
 ! variable gets the SAVE attribute,
 ! so in the next call thdiff is not initialized anymore.
 !
@@ -844,9 +861,16 @@ module Entropy
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*, 'SOLVE dlnTT_dt'
-      if (headtt) call identify_bcs('lnTT',ilnTT)
-      if (headtt) print*, 'dss_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
-!
+      if (headtt) then
+        if (ltemperature_nolog) then
+          print*, 'dss_dt: TT,cs2=', p%TT(1), p%cs2(1)
+          call identify_bcs('TT',iTT)
+        else
+          print*, 'dss_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
+          call identify_bcs('lnTT',ilnTT)
+        endif
+      endif
+! 
 !  Sound speed squared.
 !
       if (headtt) print*, 'dss_dt: cs20=', p%cs2(1)
@@ -948,7 +972,7 @@ module Entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + thdiff
       endif
 !
-!  Boussinesq approximation
+!  Boussinesq approximation: - u.grad T_0 added
 !
       if (lboussinesq) then
         if (lsphere_in_a_box) then
@@ -956,6 +980,9 @@ module Entropy
           f(l1:l2,m,n,iux)*p%evr(:,1)+f(l1:l2,m,n,iuy)*p%evr(:,2)+    &
           f(l1:l2,m,n,iuz)*p%evr(:,3))
         else
+!
+! background temperature gradient in z direction
+!
           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - beta_bouss*f(l1:l2,m,n,iuz)
         endif
       endif
