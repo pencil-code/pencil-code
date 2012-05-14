@@ -1,0 +1,23 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for the Rayleigh-Benard problem
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.4 2012/04/29 10:04:14 dintrans Exp $'
+  xyz0  =  0., 0., 0.,        ! first corner of box
+  xyz1  =  2.82842, 0., 1.,   ! second corner of box
+  lperi = T, T, F,
+  bcz   = 's','s','a','a','s',
+  lwrite_2d=T
+/
+&eos_init_pars
+/
+&hydro_init_pars
+  inituu='gaussian-noise', ampluu=1.e-3
+/
+&entropy_init_pars
+  ltemperature_nolog=T, 
+  initlnTT='const_TT', TT_const=0.
+/
+&poisson_init_pars
+/

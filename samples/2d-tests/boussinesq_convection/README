@@ -1,0 +1,15 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/boussinesq_convection
+SVN Id:
+    $Id:$
+Maintainer:
+    Boris Dintrans <boris.dintrans/irap[dot]omp[dot]eu>
+Added:
+    14-May-2012
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    2D Boussinesq convection (the Rayleigh-Benard problem)
+Reference:
+    Dintrans & Dubuffet 2012, in preparation
+

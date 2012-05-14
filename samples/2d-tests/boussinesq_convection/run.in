@@ -1,0 +1,25 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Runtime parameters for the Rayleigh-Benard problem
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.5 2012/05/07 10:00:00 dintrans Exp $'
+  nt=100, it1=10, itorder=3,
+  dsnap=1.e-2,
+  lpencil_check_small=F
+/
+&eos_run_pars
+/
+&density_run_pars
+/
+&hydro_run_pars
+  Ra=1.e3, Pr=1.
+/
+&entropy_run_pars
+  iheatcond='chi-const', chi=0.6, lviscosity_heat=F
+/
+&viscosity_run_pars
+  ivisc='simplified', nu=1.  !!! nu must be equal to Pr
+/
+&poisson_run_pars
+/
