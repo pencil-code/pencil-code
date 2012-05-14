@@ -1882,7 +1882,7 @@ module Hydro
            p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
          enddo
        else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-Ra*Pr*f(l1:l2,m,n,iTT) ! gravity in z direction
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
        endif
      endif
 !
