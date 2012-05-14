@@ -1,7 +1,7 @@
 Directory:
     ${PENCIL_HOME}/samples/2d-tests/boussinesq_convection
 SVN Id:
-    $Id:$
+    $Id$
 Maintainer:
     Boris Dintrans <boris.dintrans/irap[dot]omp[dot]eu>
 Added:
