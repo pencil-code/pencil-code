@@ -32,15 +32,18 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
+  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false., &
+             lremove_mean_temperature=.false.
+!
   logical :: lwrite_debug=.false.
+!
   real, dimension (nz,3) :: glnrhomz
 !
   include '../density.h'
 !
   integer :: iorder_z=4
 !
-  namelist /density_run_pars/ iorder_z, lwrite_debug
+  namelist /density_run_pars/ iorder_z, lwrite_debug, lremove_mean_temperature
 !
   contains
 !***********************************************************************
@@ -84,7 +87,7 @@ module Density
 !  Tell the equation of state that we're here and we don't have a
 !  variable => isochoric (constant density).
 !
-      call select_eos_variable('lnrho',-1)
+      call select_eos_variable('lnrho',-1)   ! the same for rho?
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -208,9 +211,11 @@ module Density
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      use Sub, only: remove_mean
 !
-      call keep_compiler_quiet(f)
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!     
+      if (lremove_mean_temperature) call remove_mean(f,iTT)
 !
     endsubroutine density_before_boundary
 !***********************************************************************
@@ -323,6 +328,9 @@ module Density
 !***********************************************************************
     subroutine boussinesq(f)
 !
+!  12-may-12/MR: factors dt removed; updating of ghosts zones 
+!                for non-periodicity in z direction added
+!
       use Poisson, only: inverse_laplacian
       use Sub, only: div, grad
       use Boundcond, only: update_ghosts
@@ -339,13 +347,14 @@ module Density
       call update_ghosts(f,iuu,iuu+2)
       do n=n1,n2; do m=m1,m2
         call div(f,iuu,phi_rhs_pencil)
-        f(l1:l2,m,n,ipp)=phi_rhs_pencil/dt
+        f(l1:l2,m,n,ipp)=phi_rhs_pencil
       enddo; enddo
       if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,ipp)
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
       else
+        call update_ghosts(f,ipp)         ! in fact only z direction necessary
         if (iorder_z==2) then
           call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,ipp))
         else
@@ -358,13 +367,13 @@ module Density
 !
       call update_ghosts(f,ipp)
 !
-!  Euler-advance of the velocity field with just the pressure gradient term
+!  Correct the velocity field with the gradient term
 !
       do n=n1,n2; do m=m1,m2
         call grad(f,ipp,gpp)
         do j=1,3
           ju=j+iuu-1
-          f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-dt*gpp(:,j)
+          f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-gpp(:,j)
         enddo
       enddo; enddo
 !
