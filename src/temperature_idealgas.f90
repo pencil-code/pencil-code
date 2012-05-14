@@ -985,14 +985,18 @@ module Entropy
           call dot2(p%glnTT,tmp)
           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
         endif
-        if (idiag_fradtop/=0.and.n==n2) then
-          if (lADI) then
-            call heatcond_TT(p%TT,hcond)
-            fradtop=sum(-hcond*p%gTT(:,3))/nx
+        if (idiag_fradtop/=0) then
+          if (llast_proc_z.and.n==n2) then
+            if (lADI) then
+              call heatcond_TT(p%TT,hcond)
+            else
+              hcond=1.
+            endif
+            fradtop=sum(-hcond*p%gTT(:,3)*dsurfxy)
+            call save_name(fradtop, idiag_fradtop)
           else
-            fradtop=sum(-p%gTT(:,3))/nx
+            fradtop=0.
           endif
-          call save_name(fradtop, idiag_fradtop)
         endif
       endif
 !
