@@ -86,6 +86,7 @@ module Sub
   public :: xlocation, ylocation, zlocation, location_in_proc
   public :: register_report_aux
   public :: fourier_single_mode
+  public :: remove_mean
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -5947,5 +5948,68 @@ nameloop: do
       endif
 !
     endsubroutine doupwind
+!***********************************************************************
+    subroutine remove_mean(f,inda,indep)
+!
+!  Substract mean from a (several) field(s) selected by the index inda
+!  (the index range inda - indep) in f.
+!
+!  08-may-12/MR: adapted from remove_mean_flow
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension (mx,my,mz,*), intent (inout)        :: f
+      integer,                      intent (in)           :: inda
+      integer,                      intent (in), optional :: indep
+!
+      real, allocatable, dimension(:) :: mean, mean_tmp
+      integer :: m,n,j, inde
+!
+      if (.not.present(indep) ) then
+        inde = inda
+      else
+        inde = indep
+      endif
+      allocate( mean(inda:inde), mean_tmp(inda:inde) )
+!      allocate( mean_tmp(inda:inde) )
+!
+!  initialize mean
+!
+        mean = 0.0
+!
+!  Go through all pencils.
+!
+        do n = n1,n2
+        do m = m1,m2
+!
+!  Compute mean for each field.
+!
+          do j=inda,inde
+            mean(j) = mean(j) + sum(f(l1:l2,m,n,j))
+          enddo
+        enddo
+        enddo
+!
+!  Compute total mean for all processors
+!
+        call mpiallreduce_sum(mean/nwgrid,mean_tmp,inde-inda+1)
+        mean = mean_tmp
+!
+!  Go through all pencils and subtract out the mean 
+!  separately for each field.
+!
+        do n = n1,n2
+        do m = m1,m2
+          do j=inda,inde
+            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - mean(j)
+          enddo
+        enddo
+        enddo
+!
+      deallocate( mean, mean_tmp )
+!
+        if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
+!
+    endsubroutine remove_mean
 !***********************************************************************
 endmodule Sub
