@@ -62,20 +62,6 @@ module Pencil_check
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
       lpencil_check_at_work=.true.
 !
-!  Check for empty lines in print.in (this confuses the allocation of
-!  fname_ref below).
-!
-      if (size(fname)/=nname) then
-        if (lroot) then
-          print*, 'pencil_consistency_check: fname does not have '// &
-              'the size nname - this could mean that there are empty lines '// &
-              'in print.in.'
-          print*, 'pencil_consistency_check: nname, size(fname)=', &
-              nname, size(fname)
-        endif
-        call fatal_error('pencil_consistency_check','')
-      endif
-!
 !  Prevent code from dying due to any errors.
 !
       call life_support_on('needed for pencil consistency check')
@@ -346,7 +332,7 @@ f_lop:  do iv=1,mvar
 !
       lpencil=(lpenc_diagnos.or.lpenc_requested)
       call pde(f_other,df,p)
-      fname_ref=fname
+      fname_ref=fname(1:nname)
 !
       if (lroot) &
           print*, 'pencil_consistency_check: checking diagnostics pencils'
