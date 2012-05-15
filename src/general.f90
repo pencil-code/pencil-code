@@ -964,7 +964,7 @@ module General
 !
       real, dimension(:), intent(in)  :: a,b,c,d,e,r
       real, dimension(:), intent(out) :: u
-      real, dimension(size(r)) :: w,beta,alpha,cg,h
+      real, dimension(size(r)+1) :: w,beta,alpha,cg,h
       integer :: k,n
 !
       w(1)=c(1)
