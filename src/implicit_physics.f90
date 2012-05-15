@@ -87,8 +87,8 @@ module ImplicitPhysics
       if (ierr/=0) call stop_it("implicit_physics: "//&
                 "there was a problem when getting the hole_params array")
       Tbump=hole_params(1)
-      Kmax=hole_params(2)
-      Kmin=hole_params(3)
+      Kmin=hole_params(2)
+      Kmax=hole_params(3)
       hole_slope=hole_params(4)
       hole_width=hole_params(5)
       hole_alpha=(Kmax-Kmin)/(pi/2.+atan(hole_slope*hole_width**2))

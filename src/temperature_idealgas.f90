@@ -50,6 +50,7 @@ module Entropy
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
+  real, dimension(5) :: hole_params
   real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
   real :: beta_bouss=-1.0
@@ -227,7 +228,6 @@ module Entropy
       real, dimension (nx) :: hcond, dhcond
       logical :: lnothing
       integer :: i, ierr
-      real, dimension(5) :: hole_params
       real :: star_cte
 !
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
@@ -395,7 +395,7 @@ module Entropy
 !  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
 !  problem).
 !
-      hole_params=(/Tbump,Kmax,Kmin,hole_slope,hole_width/)
+      hole_params=(/Tbump,Kmin,Kmax,hole_slope,hole_width/)
       call put_shared_variable('hole_params',hole_params,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting the hole_params array')
