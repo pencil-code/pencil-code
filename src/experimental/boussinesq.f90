@@ -330,8 +330,8 @@ module Density
 !
 !  12-may-12/MR: factors dt removed; updating of ghosts zones 
 !                for non-periodicity in z direction added
-!  14-may-12/dintrans: factors dt re-introduced for backward 
-!                compatibility
+!  15-may-12/dintrans: the updating of ghost zones before inverting the laplacian 
+!                is not needed as vertical BCs are hard-coded in the linear solver
 !
       use Poisson, only: inverse_laplacian
       use Sub, only: div, grad
@@ -349,14 +349,13 @@ module Density
       call update_ghosts(f,iuu,iuu+2)
       do n=n1,n2; do m=m1,m2
         call div(f,iuu,phi_rhs_pencil)
-        f(l1:l2,m,n,ipp)=phi_rhs_pencil/dt
+        f(l1:l2,m,n,ipp)=phi_rhs_pencil
       enddo; enddo
       if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,ipp)
 !
       if (lperi(3)) then
         call inverse_laplacian(f,f(l1:l2,m1:m2,n1:n2,ipp))
       else
-        call update_ghosts(f,ipp)         ! in fact only z direction necessary
         if (iorder_z==2) then
           call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,ipp))
         else
@@ -375,7 +374,7 @@ module Density
         call grad(f,ipp,gpp)
         do j=1,3
           ju=j+iuu-1
-          f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-dt*gpp(:,j)
+          f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-gpp(:,j)
         enddo
       enddo; enddo
 !
