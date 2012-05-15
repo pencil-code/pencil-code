@@ -12,7 +12,7 @@
 module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
-  use Cdata, only: nvar,naux,naux_com,datadir,lroot
+  use Cdata, only: nvar,naux,naux_com,datadir,lroot,lwrite_aux
   use Messages
 !
   implicit none
@@ -188,6 +188,9 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_variable(varname,ivar,vartype,vector,ierr)
 !
+! 12-may-12/MR: avoid writing of auxiliary variable index into index.pro if
+!               variable not written into var.dat 
+!
       character (len=*) :: varname
       integer, target   :: ivar
       integer           :: vartype
@@ -332,8 +335,12 @@ module FArrayManager
 !
       call save_analysis_info(new)
 !
-!  write varname into index.pro file (for idl)
-!
+!  write varname and index into index.pro file (for idl)
+!  except for auxiliary variables which are not written into var.dat
+! 
+      if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
+           vartype==iFARRAY_TYPE_AUXILIARY )) return 
+
       if (lroot) then 
         open(3,file=trim(datadir)//'/index.pro', POSITION='append')
         write(3,*) 'i'//varname, '=', ivar
