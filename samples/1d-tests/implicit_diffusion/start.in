@@ -28,5 +28,5 @@
   ltemperature_nolog=T,
   initlnTT(1)='rad_equil', Fbot=2e-2, Kmax=1e-2, Kmin=3e-3, Tbump=2.1,
   hole_slope=7.,hole_width=0.4,
-  initlnTT(2)='blob_hs', ampl_lnTT=0.1, center1_z=0.8
+  initlnTT(2)='blob_hs', ampl_lnTT(2)=0.1, center1_z=0.8
 /
