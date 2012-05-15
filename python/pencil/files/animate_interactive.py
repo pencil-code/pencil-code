@@ -317,7 +317,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         tmp = []
         
     # calibrate the displayed colors for the data range
-    image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax, **kwimshow)
+    image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax,origin='lower', **kwimshow)
     colorbar = fig.colorbar(image)
     
     # plot the arrows
