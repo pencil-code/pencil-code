@@ -2343,10 +2343,10 @@ module Mpicomm
 !  21-dec-10/MR: coded
 !  20-apr-11/MR: buffer dimensions corrected
 !
+      integer,                    intent(in)  :: n1
       real, dimension(n1,nz)    , intent(in)  :: sendbuf
       real, dimension(n1,nzgrid), intent(out) :: recvbuf
       integer, optional,          intent(in)  :: lproc
-      integer,                    intent(in)  :: n1
 !
       recvbuf(:,1:nz) = sendbuf
 !
@@ -2364,9 +2364,9 @@ module Mpicomm
 !
       implicit none
 !
+      integer,                                           intent(in) :: unit, ncomp
       real,    dimension(nxgrid,nygrid,nzgrid),          intent(in) :: sendbuf
       complex, dimension(nxgrid,nygrid,nzgrid,ncomp),    intent(in) :: sendbuf_cmplx
-      integer,                                           intent(in) :: unit, ncomp
       logical,                                 optional, intent(in) :: ltransp
       integer, dimension(3,*),                 optional, intent(in) :: kxrange, kyrange,zrange
 !
