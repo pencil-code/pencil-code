@@ -423,7 +423,9 @@ $t_run   &&= $t_start;
 $t_res   &&= ($t_run || $res_from_file);
 
 # Check for lock file and write one
-handle_lock_file() or exit(LOCK_FAILED) unless ($list_only);
+unless ($nolock or $list_only) {
+    handle_lock_file() or exit(LOCK_FAILED);
+}
 
 # Remember current directory
 my $cwd = `pwd`; chomp($cwd);
@@ -556,24 +558,22 @@ sub get_sampdirs {
 }
 # ---------------------------------------------------------------------- #
 sub handle_lock_file {
-
-    return 1 if ($nolock);     # skip it
+# Try to aquire a lock and write a lock file containing our pid.
+# Return true if that succeeded, false otherwise.
 
     my $got_lock = get_lock();
+    print STDERR "handle_lock_file: \$got_lock = $got_lock\n" if ($debug);
 
     # Write our own lock file
     if ($got_lock) {
         print STDERR "Writing <$$> to lock file $lockfile\n" if ($debug);
         write_to_file($lockfile, "$$", 0, 1);
         $remove_lock = 1;       # clean up lock at END
-    }
-
-    print STDERR "handle_lock_file: \$got_lock = $got_lock\n" if ($debug);
-
-    unless ($got_lock) {
+    } else {
         $failed++;
         $failure_message .= "Couldn't get lock file\n";
     }
+
     return $got_lock;
 }
 # ---------------------------------------------------------------------- #
