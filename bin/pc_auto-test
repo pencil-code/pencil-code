@@ -556,40 +556,10 @@ sub get_sampdirs {
 }
 # ---------------------------------------------------------------------- #
 sub handle_lock_file {
-# Check for existing lock file and exit (if there is one) or write one.
 
-    return(1) if ($nolock);     # skip it
+    return 1 if ($nolock);     # skip it
 
-    my $got_lock = 0;           # need to deserve this first..
-
-    if (-e $lockfile) {         # lock file exists -> get and check pid
-        open(LOCK,"< $lockfile") or die "Cannot read <$lockfile>";
-        my $pid = <LOCK>;
-        close LOCK;
-        $pid =~ s/^\s*([0-9]+)\s*$/$1/
-          or die "$lockfile contains garbage instead of pid: <$pid>\n";
-        my $pid_cmd = `ps -p $pid -o args=`;
-
-        # Who runs with pid from lockfile?
-        if ($pid_cmd =~ /^\S*$/) { # no process for this pid
-            print "Removing stale lock file (no process with pid $pid)\n";
-            unlink $lockfile or die "Cannot unlink <$lockfile>\n";
-            $got_lock = 1;
-        } elsif ($pid_cmd =~ /auto-test\s*$/) { # pid belongs to auto-test
-            print "Failed getting lock (lock file is $lockfile):\n"
-                  . "Another auto test is running as pid $pid\n"
-                  . "Use `pc_auto-test --nolock' to ignore the lock file\n";
-            $got_lock = 0;
-        } else {                # pid belongs to other process
-            print "Failed getting lock (lock file is <$lockfile>):\n"
-                  . "Another process runs as pid $pid (this is weird...)\n"
-                  . "Use `pc_auto-test --nolock' to ignore the lock file\n";
-            $got_lock = 0;
-        }
-    } else {
-        print STDERR "handle_lock_file: Found no lock file\n" if ($debug);
-        $got_lock = 1;
-    }
+    my $got_lock = get_lock();
 
     # Write our own lock file
     if ($got_lock) {
@@ -604,7 +574,47 @@ sub handle_lock_file {
         $failed++;
         $failure_message .= "Couldn't get lock file\n";
     }
-    return ($got_lock);
+    return $got_lock;
+}
+# ---------------------------------------------------------------------- #
+sub get_lock {
+# Check for existing lock file and return false if there is one, or
+# write one and return true.
+
+    if (-e $lockfile) {    # lock file exists -> get and check pid
+        if (-z $lockfile) {     # empty lock file (happened at least once)
+            print "Removing empty lock file\n";
+            unlink $lockfile or die "Cannot unlink <$lockfile>\n";
+            return 1;
+        }
+
+        open(LOCK,"< $lockfile") or die "Cannot read <$lockfile>";
+        my $pid = <LOCK>;
+        close LOCK;
+        $pid =~ s/^\s*([0-9]+)\s*$/$1/
+          or die "$lockfile contains garbage instead of pid: <$pid>\n";
+        my $pid_cmd = `ps -p $pid -o args=`;
+
+        # Who runs with pid from lockfile?
+        if ($pid_cmd =~ /^\S*$/) { # no process for this pid
+            print "Removing stale lock file (no process with pid $pid)\n";
+            unlink $lockfile or die "Cannot unlink <$lockfile>\n";
+            return 1;
+        } elsif ($pid_cmd =~ /auto-test\s*$/) { # pid belongs to auto-test
+            print "Failed getting lock (lock file is $lockfile):\n"
+                  . "Another auto test is running as pid $pid\n"
+                  . "Use `pc_auto-test --nolock' to ignore the lock file\n";
+            return 0;
+        } else {                # pid belongs to other process
+            print "Failed getting lock (lock file is <$lockfile>):\n"
+                  . "Another process runs as pid $pid (this is weird...)\n"
+                  . "Use `pc_auto-test --nolock' to ignore the lock file\n";
+            return 0;
+        }
+    } else {
+        print STDERR "handle_lock_file: Found no lock file\n" if ($debug);
+        return 1;
+    }
 }
 # ---------------------------------------------------------------------- #
 sub do_tests_in_parallel {
