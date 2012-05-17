@@ -28,6 +28,7 @@ module General
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
   public :: date_time_string
   public :: backskip
+  public :: lextend_vector
 !
   include 'record_types.h'
 !
@@ -56,6 +57,11 @@ module General
     module procedure write_by_ranges_1d_cmplx
     module procedure write_by_ranges_2d_real
     module procedure write_by_ranges_2d_cmplx
+  endinterface
+
+  interface lextend_vector    
+    module procedure lextend_vector_float
+    module procedure lextend_vector_char
   endinterface
 !
 !  State and default generator of random numbers.
@@ -2121,5 +2127,84 @@ module General
     backskip = .false.
 !
     endfunction backskip
+!***********************************************************************
+    logical function lextend_vector_float(vector,newlen)
+!     
+!  Extends vector of floats to length newlen if necessary.
+!  Returns .false. if allocation fails, .true. otherwise.
+!
+!  16-may-12/MR: coded
+!
+      real, dimension(:), allocatable, intent(INOUT) :: vector
+      integer           ,              intent(IN)    :: newlen
+!
+      integer :: len,stat
+      real, dimension(:), allocatable :: work
+!
+      lextend_vector_float=.true.
+!
+      if (.not.allocated(vector)) return
+      if (newlen<=len) return
+!      
+      allocate(work(len),STAT=stat)
+      if (stat>0) then
+        lextend_vector_float=.false.
+        return
+      endif
+!
+      work=vector
+      deallocate(vector)
+!
+      allocate(vector(newlen),STAT=stat)
+      if (stat>0) then
+        lextend_vector_float=.false.
+        allocate(vector(len))
+      endif
+!
+      vector(1:len)=work
+      deallocate(work)
+!
+    endfunction lextend_vector_float
+!***********************************************************************
+    logical function lextend_vector_char(vector,newlen)
+!     
+!   
+!  Extends vector of chars to length newlen if necessary.
+!  Returns .false. if allocation fails, .true. otherwise.
+!
+!  16-may-12/MR: coded
+!     
+      character (LEN=*), dimension(:), allocatable, intent(INOUT) :: vector
+      integer                        ,              intent(IN)    :: newlen
+!
+      integer :: len,stat
+      character (LEN=30), dimension(:), allocatable :: work
+!
+      lextend_vector_char=.true.
+!
+      if (.not.allocated(vector)) return    ! better: allocate if not allocated
+!   
+      len=size(vector)
+      if (newlen<=len) return
+!      
+      allocate(work(len),STAT=stat)
+      if (stat>0) then
+        lextend_vector_char=.false.
+        return
+      endif
+!
+      work=vector
+      deallocate(vector)
+!
+      allocate(vector(newlen),STAT=stat)
+      if (stat>0) then
+        lextend_vector_char=.false.
+        allocate(vector(len))
+      endif
+!
+      vector(1:len)=work
+      deallocate(work)
+!
+    endfunction lextend_vector_char
 !***********************************************************************
 endmodule General
