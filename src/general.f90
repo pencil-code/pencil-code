@@ -2128,4 +2128,32 @@ module General
 !
     endfunction backskip
 !***********************************************************************
+    logical function lextend_vector_float(vector,newlen)
+!
+!  Checks whether a vector of floats can be used up to length newlen.
+!  Surrogate for a real extension routine possible with FORTRAN 2003.
+!
+!  16-may-12/MR: coded
+!
+      real, dimension(:), intent(IN) :: vector
+      integer           , intent(IN) :: newlen
+!
+      lextend_vector_float = newlen<=size(vector)
+!
+    endfunction lextend_vector_float
+!***********************************************************************
+    logical function lextend_vector_char(vector,newlen)
+!
+!  Checks whether a vector of chars can be used up to length newlen.
+!  Surrogate for a real extension routine possible with FORTRAN 2003.
+!
+!  16-may-12/MR: coded
+!
+      character (LEN=*), dimension(:), intent(IN) :: vector
+      integer          , intent(IN) :: newlen
+!
+      lextend_vector_char = newlen<=size(vector)
+!
+    endfunction lextend_vector_char
+!***********************************************************************
 endmodule General
