@@ -360,6 +360,13 @@ module Hydro
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
+
+  integer :: idiag_udpxx=0, &   ! DIAG_DOC: components of symmetric tensor
+             idiag_udpyy=0, &   ! DIAG_DOC: $\left< u_i \partial_j p + u_j \partial_i p \right>$   
+             idiag_udpzz=0, &            
+             idiag_udpxy=0, &
+             idiag_udpyz=0, &
+             idiag_udpxz=0
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -1512,7 +1519,15 @@ module Hydro
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
           idiag_uguxmz/=0 .or. idiag_uguymz/=0 .or. idiag_uguzmz/=0) &
           lpenc_diagnos(i_ugu)=.true.
+!
+      if (idiag_udpxx/=0 .or. idiag_udpyy/=0 .or. idiag_udpzz/=0 .or. &
+          idiag_udpxy/=0 .or. idiag_udpyz/=0 .or. idiag_udpxz/=0) then
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_fpres)=.true.
+      endif
+!
 ! check whether right variables are set for half-box calculations.
+!
       if (idiag_urmsn/=0 .or. idiag_ormsn/=0 .or. idiag_oumn/=0) then
         if ((.not.lequatory).and.(.not.lequatorz)) then
           call fatal_error("pencil_criteria_hydro","You have to set either of"// &
@@ -2048,6 +2063,13 @@ module Hydro
         if (idiag_uzdivum/=0) call sum_mn_name(p%uu(:,3)*p%divu,idiag_uzdivum)
         if (idiag_uxuydivum/=0) &
             call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
+
+        if (idiag_udpxx/=0) call sum_mn_name(2.*(p%uu(:,1)*p%fpres(:,1)),idiag_udpxx)
+        if (idiag_udpyy/=0) call sum_mn_name(2.*(p%uu(:,2)*p%fpres(:,2)),idiag_udpyy)
+        if (idiag_udpzz/=0) call sum_mn_name(2.*(p%uu(:,3)*p%fpres(:,3)),idiag_udpzz)
+        if (idiag_udpxy/=0) call sum_mn_name(p%uu(:,1)*p%fpres(:,2)+p%uu(:,2)*p%fpres(:,1),idiag_udpxy)
+        if (idiag_udpyz/=0) call sum_mn_name(p%uu(:,2)*p%fpres(:,3)+p%uu(:,3)*p%fpres(:,2),idiag_udpyz)
+        if (idiag_udpxz/=0) call sum_mn_name(p%uu(:,1)*p%fpres(:,3)+p%uu(:,3)*p%fpres(:,1),idiag_udpxz)
 !
 !  Velocity components at one point (=pt).
 !
@@ -3627,6 +3649,8 @@ module Hydro
         idiag_urmsh=0;idiag_urmsn=0;idiag_urmss=0
         idiag_ormsh=0;idiag_ormsn=0;idiag_ormss=0
         idiag_oumh=0;idiag_oumn=0;idiag_oums=0
+        idiag_udpxx=0;idiag_udpyy=0;idiag_udpzz=0
+        idiag_udpxy=0;idiag_udpyz=0;idiag_udpxz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -4913,5 +4937,29 @@ module Hydro
       call mpiallreduce_max(umax1, umax)
 !
     endsubroutine find_umax
+!***********************************************************************
+    subroutine expand_shands_hydro()
+!
+!  Expands shorthand labels of hydro diagnostics.
+!
+!  16-may-12/MR: coded
+!
+      use Diagnostics, only : name_is_present, expand_cname
+!
+      if (nnamerz>0) then
+
+        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uumphi'),&
+                          'uumphi','urmphi','upmphi','uzmphi')
+
+        if (name_is_present(cnamerz,'upmphi')>0) then
+          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),&
+                            'uusphmphi','ursphmphi','uthmphi')
+        else
+          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),&
+                            'uusphmphi','ursphmphi','uthmphi','upmphi')
+        endif
+      endif
+!
+    endsubroutine expand_shands_hydro 
 !***********************************************************************
 endmodule Hydro
