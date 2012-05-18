@@ -327,4 +327,10 @@ module Magnetic
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************
+    subroutine expand_shands_magnetic()
+!
+!  Dummy
+!
+    endsubroutine expand_shands_magnetic
+!***********************************************************************
 endmodule Magnetic

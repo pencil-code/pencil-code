@@ -4086,6 +4086,7 @@ module Entropy
 !  Check for NaNs initially.
 !
       if (headt .and. (hcond0/=0.0)) then
+!
         if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
         if (notanumber(p%rho1))    print*,'calc_heatcond: NaNs in rho1'
         if (notanumber(hcond))     print*,'calc_heatcond: NaNs in hcond'
@@ -5964,5 +5965,11 @@ module Entropy
       call keep_compiler_quiet(f)
 !
     endsubroutine
+!***********************************************************************
+    subroutine expand_shands_entropy()
+!
+!  Presently dummy, for possible use
+!
+    endsubroutine expand_shands_entropy
 !***********************************************************************
 endmodule Entropy
