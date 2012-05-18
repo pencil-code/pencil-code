@@ -869,4 +869,10 @@ module Entropy
 !
     endsubroutine
 !***********************************************************************
+    subroutine expand_shands_entropy()
+!
+!  Presently dummy, for possible use
+!
+    endsubroutine expand_shands_entropy
+!***********************************************************************
 endmodule Entropy
