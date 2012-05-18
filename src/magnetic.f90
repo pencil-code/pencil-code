@@ -6994,4 +6994,33 @@ module Magnetic
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************
+    subroutine expand_shands_magnetic()
+!
+!  Expands shorthand labels of magnetic diagnostics.
+!
+!  16-may-12/MR: coded
+!
+      use Diagnostics, only : name_is_present, expand_cname
+!
+      if (nnamerz>0) then
+!
+        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbmphi'),&
+                          'bbmphi','brmphi','bpmphi','bzmphi')
+        if (name_is_present(cnamerz,'bpmphi')>0) then
+          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbsphmphi'),&
+                            'bbsphmphi','brsphmphi','bthmphi')
+        else
+          call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbsphmphi'),&
+                            'bbsphmphi','brsphmphi','bthmphi','bpmphi')
+        endif
+!
+        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uxbmphi'),&
+                          'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
+        call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'jxbmphi'),&
+                          'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
+!
+      endif
+!
+    endsubroutine expand_shands_magnetic
+!***********************************************************************
 endmodule Magnetic
