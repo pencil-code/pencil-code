@@ -26,7 +26,7 @@ module Diagnostics
   public :: write_2daverages_prepare, write_zaverages
   public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
   public :: save_name_sound
-  public :: lname_is_present
+  public :: name_is_present
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
   public :: integrate_mn
@@ -51,6 +51,11 @@ module Diagnostics
     module procedure max_name_int
     module procedure max_name_real
   endinterface max_name
+!
+  interface expand_cname
+    module procedure expand_cname_short
+    module procedure expand_cname_full
+  endinterface expand_cname
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   integer :: mnamer
@@ -1138,46 +1143,118 @@ module Diagnostics
 !
     endsubroutine parse_name
 !***********************************************************************
-    subroutine expand_cname(ccname,nname,vlabel,xlabel,ylabel,zlabel)
+    subroutine expand_cname_short(ccname,nname,vlabel,vname,lform)
+!
+!  Expand string array cname with entries up to index nname such that,
+!  if vlabel starts with <vname> or <vname><vname>, it is replaced by the three labels
+!  <vname>x..., <vname>y..., <vname>z..., or correspondingly for curvilinear coord systems;
+!  updates nname accordingly.
+!
+!  16-may-12/MR: coded 
+!
+      character (len=*), dimension(:) :: ccname    ! F2003: , allocatable
+      character (len=*) :: vlabel
+      character :: vname
+      integer :: nname
+      logical, optional :: lform
+!
+      intent(inout) :: ccname,nname
+      intent(in) :: vlabel, vname
+
+      character (len=intlen):: tail,form
+      integer :: ind, ic
+!
+      if (vlabel(1:1)/=vname) &
+        call fatal_error('expand_cname_short','vlabel does not start with vname')
+!
+      if (present(lform)) then
+        form='T'
+      else
+        form=''
+      endif
+
+      ic = name_is_present(ccname,trim(vlabel),form)
+      if (ic>0) then
+!
+        ind=2
+        if ( vlabel(2:2)==vname ) ind=3
+!
+        tail=vlabel(ind:len(vlabel))
+        if ( lspherical_coords ) then
+          call expand_cname_full(ccname,nname,ic,vlabel, &
+                                 vname//'r'//trim(tail), &
+                                 vname//'t'//trim(tail), &
+                                 vname//'p'//trim(tail),form)
+        elseif ( lcylindrical_coords ) then
+          call expand_cname_full(ccname,nname,ic,vlabel, &
+                                 vname//'r'//trim(tail), &
+                                 vname//'p'//trim(tail), &
+                                 vname//'z'//trim(tail),form)
+        else
+          call expand_cname_full(ccname,nname,ic,vlabel, &
+                                 vname//'x'//trim(tail), &
+                                 vname//'y'//trim(tail), &
+                                 vname//'z'//trim(tail),form)
+        endif
+      endif
+!        
+    endsubroutine expand_cname_short
+!***********************************************************************
+    subroutine expand_cname_full(ccname,nname,ic,vlabel,xlabel,ylabel,zlabel,form)
 !
 !  Expand string array cname with entries up to index nname such that
 !  vlabel is replaced by the three labels xlabel, ylabel, zlabel, and
-!  update nname accordingly.
+!  update nname accordingly. Appends format form if present.
 !
 !   1-apr-04/wolf: coded
+!  16-may-12/MR  : new parameters ic = position of vlabel in ccname and (optional)
+!                  form for a format specification append to the name (for use with
+!                  print.in
 !
-      character (len=*), dimension(:) :: ccname
+      use General, only : lextend_vector
+!
+      character (len=*), dimension(:) :: ccname   ! F2003: , allocatable
       character (len=*) :: vlabel,xlabel,ylabel
       character (len=*), optional :: zlabel
-      integer :: nname,mname,i,itot
+      character (len=intlen), optional :: form
+      integer :: nname,ic
 !
       intent(inout) :: ccname,nname
-      intent(in) :: vlabel,xlabel,ylabel,zlabel
+      intent(in) :: vlabel,xlabel,ylabel,zlabel,ic,form
 !
+      integer :: itot
+      logical :: lform
+!
+      lform=present(form)
+      if (lform) then
+        if (form=='') lform=.false.
+      endif
+!
+      if (ic<=0) return
+
       if (present(zlabel)) then
         itot=3
       else
         itot=2
       endif
 !
-      mname = size(ccname)
-      i = 1
-      do while (i <= nname)
-        if (ccname(i) == vlabel) then
-          if (nname+itot-1 > mname) then ! sanity check
-            call fatal_error('expand_cname','Too many labels in list')
-          endif
-          ccname(i+itot:nname+itot-1) = ccname(i+1:nname)
-          ccname(i) = xlabel
-          ccname(i+1) = ylabel
-          if (present(zlabel)) ccname(i+2) = zlabel
-          i = i+itot-1
-          nname = nname+itot-1
-        endif
-        i = i+1
-      enddo
+      if (.not.lextend_vector(ccname,nname+itot-1)) & ! sanity check
+        call fatal_error('expand_cname_full','Not enough memory')
+!      
+      ccname(ic+itot:nname+itot-1) = ccname(ic+1:nname)
+      if (lform) then 
+        ccname(ic) = xlabel//trim(form)
+        ccname(ic+1) = ylabel//trim(form)
+        if (present(zlabel)) ccname(ic+2) = zlabel//trim(form)
+      else
+        ccname(ic) = xlabel
+        ccname(ic+1) = ylabel
+        if (present(zlabel)) ccname(ic+2) = zlabel
+      endif
 !
-    endsubroutine expand_cname
+      nname = nname+itot-1
+!
+    endsubroutine expand_cname_full
 !***********************************************************************
     subroutine save_name(a,iname)
 !
@@ -2769,27 +2846,53 @@ module Diagnostics
 !
    endsubroutine init_xaver
 !*******************************************************************
-   logical function lname_is_present(ccname,vlabel)
+   integer function name_is_present(ccname,vlabel,form)
 !
-!  Verify if the string vlabel is present or not in the ccname array
+!  Verify if the string vlabel is present or not in the ccname array,
+!  return index, put format in form if requested and present
 !
 !  16-sep-10/dintrans: coded
+!  16-may-12/MR: changed function type in integer to return index of found name;
+!                new optional parameter form for use with print.in
+!                where the name vlabel comes with a format specification
 !
       character (len=*), dimension(:) :: ccname
-      character (len=*) :: vlabel
-      integer :: mname, i
+      character (len=*)               :: vlabel
+      character (len=*), optional     :: form
 !
-      intent(inout) :: ccname
+      intent(inout) :: ccname,form
       intent(in) :: vlabel
 !
+      integer :: mname, i, ind
+      logical :: lform
+      character (len=intlen) :: str
+!
+      if (present(form)) then
+        lform = form=='T'
+        form  = ''
+      else
+        lform = .false.
+      endif
+!
       mname = size(ccname)
-      lname_is_present=.false.
-      do i=1, mname
-        if (ccname(i) == vlabel) then
-          lname_is_present=.true.
+      name_is_present=0
+! 
+      do i=1,mname
+        
+        str=ccname(i)
+        if (lform) then
+          ind = index(str,'(')
+          if (ind>1) then
+            form=str(ind:)
+            str=str(1:ind-1)
+          endif
+        endif
+        if (str == vlabel) then
+          name_is_present=i
+          return
         endif
       enddo
 !
-    endfunction lname_is_present
+    endfunction name_is_present
 !***********************************************************************
 endmodule Diagnostics
