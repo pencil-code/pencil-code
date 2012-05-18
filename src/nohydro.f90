@@ -965,5 +965,11 @@ module Hydro
 !
     endsubroutine find_umax
 !***********************************************************************
+    subroutine expand_shands_hydro()
+!
+!  Dummy
+!
+    endsubroutine expand_shands_hydro 
+!***********************************************************************
 endmodule Hydro
 
