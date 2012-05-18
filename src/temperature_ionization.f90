@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec)
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3)
 !
 !***************************************************************
 module Entropy
@@ -459,6 +459,7 @@ module Entropy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
+!  16-05-12/MR: dead branch for calculation of pressure force added
 !
       use Sub, only: u_dot_grad
 !
@@ -479,6 +480,10 @@ module Entropy
       if (lpencil(i_ugTT)) then
         call u_dot_grad(f,iTT,p%gTT,p%uu,p%ugTT,UPWIND=lupw_lnTT)
       endif
+!
+      if (lpencil(i_fpres)) &
+        call fatal_error('calc_pencils_entropy', &
+                    'calculation of pressure force not yet implemented')
 !
     endsubroutine calc_pencils_entropy
 !***********************************************************************
