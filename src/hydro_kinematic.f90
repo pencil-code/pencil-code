@@ -2238,4 +2238,10 @@ module Hydro
 !
     endsubroutine find_umax
 !***********************************************************************
+    subroutine expand_shands_hydro()
+!
+!  Presently dummy, for later use
+!
+    endsubroutine expand_shands_hydro
+!***********************************************************************
 endmodule Hydro

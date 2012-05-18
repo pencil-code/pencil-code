@@ -2862,4 +2862,10 @@ module Magnetic
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
+    subroutine expand_shands_magnetic()
+!
+!  Presently dummy, for later use
+!
+    endsubroutine expand_shands_magnetic
+!***********************************************************************
 endmodule Magnetic
