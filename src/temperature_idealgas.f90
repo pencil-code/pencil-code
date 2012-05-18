@@ -821,7 +821,7 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use EquationOfState, only: gamma1
-      use Sub, only: u_dot_grad
+      use Sub, only: u_dot_grad,grad
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
