@@ -26,3 +26,4 @@
   public :: idiag_axmz,idiag_aymz
   public :: idiag_bxmz,idiag_bymz
   public :: dynamical_resistivity
+  public :: expand_shands_magnetic

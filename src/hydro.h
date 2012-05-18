@@ -16,6 +16,7 @@
   public :: kinematic_random_phase
   public :: hydro_before_boundary
   public :: find_umax
+  public :: expand_shands_hydro
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !

@@ -11,3 +11,4 @@
   public :: impose_energy_floor
   public :: dynamical_thermal_diffusion
   public :: split_update_energy
+  public :: expand_shands_entropy
