@@ -1019,9 +1019,14 @@ module Register
 !  Reads and registers *general* print parameters.
 !
 !   8-jun-02/axel: adapted from hydro
-!
+!  16-may-12/MR  : standardized expansion of names in print.in and similar
+!                  files by introducing calls to corresp. module routines
+! 
       use Cdata
       use Diagnostics
+      use Hydro,    only: expand_shands_hydro
+      use Magnetic, only: expand_shands_magnetic
+      use Entropy,  only: expand_shands_entropy
 !
       integer :: iname,irz
       logical :: lreset,lwr
@@ -1059,26 +1064,15 @@ module Register
             'timeperstep',idiag_timeperstep)
       enddo
 !
+!  Expand shorthand names
+!
+      if (lhydro                  ) call expand_shands_hydro()
+      if (lmagnetic               ) call expand_shands_magnetic()
+      if (lentropy.or.ltemperature) call expand_shands_entropy()
+!
 !  phi-averages
 !
       if (nnamerz>0) then
-!
-!  Expand some shorthand labels.
-!
-        call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
-        if (lname_is_present(cnamerz,'upmphi')) then
-          call expand_cname(cnamerz,nnamerz,'uusphmphi','ursphmphi','uthmphi')
-        else
-          call expand_cname(cnamerz,nnamerz,'uusphmphi','ursphmphi','uthmphi','upmphi')
-        endif
-        call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
-        if (lname_is_present(cnamerz,'bpmphi')) then
-          call expand_cname(cnamerz,nnamerz,'bbsphmphi','brsphmphi','bthmphi')
-        else
-          call expand_cname(cnamerz,nnamerz,'bbsphmphi','brsphmphi','bthmphi','bpmphi')
-        endif
-        call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
-        call expand_cname(cnamerz,nnamerz,'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
 !
 !  Some generic quantities (mostly coordinates for debugging).
 !
