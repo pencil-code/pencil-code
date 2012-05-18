@@ -18,7 +18,7 @@ from matplotlib.colors import LightSource
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
                         fontsize = 24, cBar = 0, sloppy = True,
-                        rangeMin = [], rangeMax = [],
+                        rangeMin = [], rangeMax = [], extent = [-1,1,-1,1],
                         shade = False, azdeg = 0, altdeg = 65,
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
@@ -33,7 +33,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
       animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
                         fontsize = 24, cBar = 0, sloppy = True,
-                        rangeMin = [], rangeMax = [],
+                        rangeMin = [], rangeMax = [], extent = [-1,1,-1,1],
                         shade = False, azdeg = 0, altdeg = 65,
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
@@ -75,6 +75,10 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
      
      *rangeMin*, *rangeMax*:
        Range of the colortable.
+       
+     *extent*: [ None | scalars (left, right, bottom, top) ]
+       Data limits for the axes. The default assigns zero-based row,
+       column indices to the *x*, *y* centers of the pixels.
        
      *shade*: [ False | True ]
        If True plot a shaded relief plot instead of the usual colormap.
@@ -317,14 +321,14 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         tmp = []
         
     # calibrate the displayed colors for the data range
-    image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax,origin='lower', **kwimshow)
+    image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax, origin='lower', extent = extent, **kwimshow)
     colorbar = fig.colorbar(image)
     
     # plot the arrows
     # TODO: add some more options
     if plotArrows:
         # prepare the mash grid where the arrows will be drawn
-        arrowGridX, arrowGridY = np.meshgrid(np.arange(0, len(data[0,:,0]), arrowsRes), np.arange(0, len(data[0,0,:]), arrowsRes))
+        arrowGridX, arrowGridY = np.meshgrid(np.arange(extent[0], extent[1], float(extent[1]-extent[0])*arrowsRes/len(data[0,:,0])), np.arange(extent[2], extent[3], float(extent[3]-extent[2])*arrowsRes/len(data[0,0,:])))        
         arrows = ax.quiver(arrowGridX, arrowGridY, arrowsX[0,::arrowsRes,::arrowsRes], arrowsY[0,::arrowsRes,::arrowsRes], units = 'width', pivot = arrowsPivot, width = arrowsWidth, scale = arrowsScale, color = arrowsColor)
         # plot the grid for the arrows
         if plotArrowsGrid == True:
