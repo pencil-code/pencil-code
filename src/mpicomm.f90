@@ -2065,8 +2065,8 @@ module Mpicomm
 !
 !  Calculate total sum for each array element and return to root.
 !
-      integer, dimension(nreduce) :: fsum_tmp,fsum
       integer :: nreduce
+      integer, dimension(nreduce) :: fsum_tmp,fsum
 !
       if (nprocs==1) then
         fsum=fsum_tmp
@@ -2158,8 +2158,8 @@ module Mpicomm
 !
 !  Calculate total sum for each array element and return to root.
 !
-      real, dimension(nreduce) :: fsum_tmp,fsum
       integer :: nreduce
+      real, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: idir
 !
       integer :: mpiprocs
@@ -6505,10 +6505,10 @@ module Mpicomm
 !
 !  25-nov-10/MR: coded
 !
+      integer,                    intent(in)  :: n1
       real, dimension(n1,nz)    , intent(in)  :: sendbuf
       real, dimension(n1,nzgrid), intent(out) :: recvbuf
       integer, optional,          intent(in)  :: lproc
-      integer,                    intent(in)  :: n1
 !
       integer lpx, lpy
 !
@@ -6581,9 +6581,9 @@ module Mpicomm
       use General, only: write_by_ranges_2d_cmplx, write_by_ranges_2d_real, &
                          write_by_ranges_1d_cmplx, write_by_ranges_1d_real
 !
+      integer,                               intent(in   ) :: unit, ncomp
       real,    dimension(nxgrid,ny,nz),      intent(inout) :: sendbuf
       complex, dimension(nxgrid,ny,nz,ncomp),intent(inout) :: sendbuf_cmplx
-      integer,                               intent(in   ) :: unit, ncomp
       logical,                      optional,intent(in   ) :: ltransp   ! if true, transposition x <-> y
       integer, dimension(3,*),      optional,intent(in   ) :: kxrange, kyrange, zrange
 !
@@ -6773,9 +6773,9 @@ module Mpicomm
 !
 !  22-nov-10/MR: coded
 !
+      integer,            intent(in)    :: n, type
       real, dimension(n), intent(inout) :: vec2
       real, dimension(n), intent(in)    :: vec1
-      integer,            intent(in)    :: n, type
 !
     ! merging
       where ((vec2 < 0.) .and. (vec1 >= 0.)) vec2=vec1
