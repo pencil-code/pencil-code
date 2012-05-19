@@ -483,7 +483,8 @@ module Entropy
 !
       if (lpencil(i_fpres)) &
         call fatal_error('calc_pencils_entropy', &
-                    'calculation of pressure force not yet implemented')
+                  'calculation of pressure force not yet implemented'//&
+                  ' for temperature_ionization')
 !
     endsubroutine calc_pencils_entropy
 !***********************************************************************
