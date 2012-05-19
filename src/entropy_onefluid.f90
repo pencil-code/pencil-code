@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1tilde; glnTT(3)
 ! PENCILS PROVIDED TT; TT1; Ma2; ugss; hss(3,3); hlnTT(3,3)
-! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1
+! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres
 !
 !***************************************************************
 module Entropy
@@ -426,6 +426,7 @@ module Entropy
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
+!  16-05-12/MR: dead branch for pressure force calculation added
 !
       use EquationOfState
       use Sub
@@ -498,6 +499,11 @@ module Entropy
       if (lpencil(i_uud)) p%uud(:,:,1)=p%uu
 ! divud (for dust continuity equation in one fluid approximation)
       if (lpencil(i_divud)) p%divud(:,1)=p%divu
+!
+      if (lpencil(i_fpres)) &
+        call fatal_error('calc_pencils_entropy', &
+                 'calculation of pressure force not yet implemented'//&
+                 ' for entropy_onefluid')
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
