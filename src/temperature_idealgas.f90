@@ -96,25 +96,25 @@ module Entropy
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
 !
-  integer :: idiag_TTmax=0        ! DIAG_DOC: $\max (T)$
-  integer :: idiag_gTmax=0        ! DIAG_DOC: $\max (|\nabla T|)$
-  integer :: idiag_TTmin=0        ! DIAG_DOC: $\min (T)$
-  integer :: idiag_TTm=0          ! DIAG_DOC: $\left< T \right>$
-  integer :: idiag_TugTm=0, &     ! DIAG_DOC: $\left< T\uv\cdot\nabla T \right>$
-             idiag_Trms=0,  &     ! DIAG_DOC: $\sqrt{\left< T^2 \right>}$
-             idiag_uxTm=0,  &     ! DIAG_DOC: $\left< u_x T \right>$
-             idiag_uyTm=0,  &     ! DIAG_DOC: $\left< u_y T \right>$
-             idiag_uzTm=0,  &     ! DIAG_DOC: $\left< u_z T \right>$
-             idiag_gT2m=0,  &     ! DIAG_DOC: $\left< (\nabla T)^2 \right>$
-             idiag_guxgTm=0,&     ! DIAG_DOC: $\left< \nabla u_x \cdot \nabla T \right>$
-             idiag_guygTm=0,&     ! DIAG_DOC: $\left< \nabla u_y \cdot \nabla T \right>$
-             idiag_guzgTm=0,&     ! DIAG_DOC: $\left< \nabla u_z \cdot \nabla T \right>$
-             idiag_Tugux_uxugT=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_x T) \right>$
-             idiag_Tuguy_uyugT=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_y T) \right>$
-             idiag_Tuguz_uzugT=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_z + u_z \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_z T) \right>$
-             idiag_Tdxp=0,       &! DIAG_DOC: $\left< T dp/dx \right>$
-             idiag_Tdyp=0,       &! DIAG_DOC: $\left< T dp/dy \right>$
-             idiag_Tdzp=0         ! DIAG_DOC: $\left< T dp/dz \right>$
+  integer :: idiag_TTmax=0         ! DIAG_DOC: $\max (T)$
+  integer :: idiag_gTmax=0         ! DIAG_DOC: $\max (|\nabla T|)$
+  integer :: idiag_TTmin=0         ! DIAG_DOC: $\min (T)$
+  integer :: idiag_TTm=0           ! DIAG_DOC: $\left< T \right>$
+  integer :: idiag_TugTm=0,       &! DIAG_DOC: $\left< T\uv\cdot\nabla T \right>$
+             idiag_Trms=0,        &! DIAG_DOC: $\sqrt{\left< T^2 \right>}$
+             idiag_uxTm=0,        &! DIAG_DOC: $\left< u_x T \right>$
+             idiag_uyTm=0,        &! DIAG_DOC: $\left< u_y T \right>$
+             idiag_uzTm=0,        &! DIAG_DOC: $\left< u_z T \right>$
+             idiag_gT2m=0,        &! DIAG_DOC: $\left< (\nabla T)^2 \right>$
+             idiag_guxgTm=0,      &! DIAG_DOC: $\left< \nabla u_x \cdot \nabla T \right>$
+             idiag_guygTm=0,      &! DIAG_DOC: $\left< \nabla u_y \cdot \nabla T \right>$
+             idiag_guzgTm=0,      &! DIAG_DOC: $\left< \nabla u_z \cdot \nabla T \right>$
+             idiag_Tugux_uxugTm=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_x T) \right>$
+             idiag_Tuguy_uyugTm=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_y T) \right>$
+             idiag_Tuguz_uzugTm=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_z + u_z \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_z T) \right>$
+             idiag_Tdxpm=0,       &! DIAG_DOC: $\left< T dp/dx \right>$
+             idiag_Tdypm=0,       &! DIAG_DOC: $\left< T dp/dy \right>$
+             idiag_Tdzpm=0         ! DIAG_DOC: $\left< T dp/dz \right>$
 
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$
                               ! DIAG_DOC: \quad(radiative flux at the top)
@@ -734,11 +734,11 @@ module Entropy
 
       if ( idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_uij)=.true.
 
-      if ( idiag_Tugux_uxugT/=0 .or. idiag_Tuguy_uyugT/=0 .or. idiag_Tuguz_uzugT/=0 ) then
+      if ( idiag_Tugux_uxugTm/=0 .or. idiag_Tuguy_uyugTm/=0 .or. idiag_Tuguz_uzugTm/=0 ) then
         lpenc_diagnos(i_ugu)=.true.; lpenc_requested(i_ugTT)=.true.
       endif
 !
-      if ( idiag_Tdxp/=0 .or. idiag_Tdyp/=0 .or. idiag_Tdzp/=0 ) then
+      if ( idiag_Tdxpm/=0 .or. idiag_Tdypm/=0 .or. idiag_Tdzpm/=0 ) then
         lpenc_diagnos(i_fpres)=.true.
         lpenc_diagnos(i_TT)=.true.
       endif
@@ -804,7 +804,7 @@ module Entropy
         lpencil_in(i_uu)=.true.
       endif
 !
-      if (lpencil_in(i_fpres)) then
+      if (lpencil_in(i_fpres).and. .not.lboussinesq) then
         lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_glnTT)=.true.
@@ -845,8 +845,11 @@ module Entropy
 ! timestep, hence p.dt
 !
             call grad(f,ipp,gpp)
-            p%fpres=gpp/dt
- 
+            if (dt==0.) then
+              p%fpres=gpp   
+            else
+              p%fpres=gpp/dt   
+            endif
         else
           do j=1,3
             p%fpres(:,j)=-gamma1*p%cs2* &
@@ -1054,12 +1057,12 @@ module Entropy
         if (idiag_uxTm/=0)  call sum_mn_name(p%uu(:,1)*p%TT,idiag_uxTm)
         if (idiag_uyTm/=0)  call sum_mn_name(p%uu(:,2)*p%TT,idiag_uyTm)
         if (idiag_uzTm/=0)  call sum_mn_name(p%uu(:,3)*p%TT,idiag_uzTm)
-        if (idiag_Tugux_uxugT/=0) call sum_mn_name(p%TT*p%ugu(:,1)+p%uu(:,1)*p%ugTT,idiag_Tugux_uxugT)
-        if (idiag_Tuguy_uyugT/=0) call sum_mn_name(p%TT*p%ugu(:,2)+p%uu(:,2)*p%ugTT,idiag_Tuguy_uyugT)
-        if (idiag_Tuguz_uzugT/=0) call sum_mn_name(p%TT*p%ugu(:,3)+p%uu(:,3)*p%ugTT,idiag_Tuguz_uzugT)
-        if (idiag_Tdxp/=0)  call sum_mn_name(p%TT*p%fpres(:,1),idiag_Tdxp)
-        if (idiag_Tdyp/=0)  call sum_mn_name(p%TT*p%fpres(:,2),idiag_Tdyp)
-        if (idiag_Tdzp/=0)  call sum_mn_name(p%TT*p%fpres(:,3),idiag_Tdzp)
+        if (idiag_Tugux_uxugTm/=0) call sum_mn_name(p%TT*p%ugu(:,1)+p%uu(:,1)*p%ugTT,idiag_Tugux_uxugTm)
+        if (idiag_Tuguy_uyugTm/=0) call sum_mn_name(p%TT*p%ugu(:,2)+p%uu(:,2)*p%ugTT,idiag_Tuguy_uyugTm)
+        if (idiag_Tuguz_uzugTm/=0) call sum_mn_name(p%TT*p%ugu(:,3)+p%uu(:,3)*p%ugTT,idiag_Tuguz_uzugTm)
+        if (idiag_Tdxpm/=0)  call sum_mn_name(p%TT*p%fpres(:,1),idiag_Tdxpm) 
+        if (idiag_Tdypm/=0)  call sum_mn_name(p%TT*p%fpres(:,2),idiag_Tdypm)
+        if (idiag_Tdzpm/=0)  call sum_mn_name(p%TT*p%fpres(:,3),idiag_Tdzpm)
 !
         if (idiag_gT2m/=0) then
           call dot(p%gTT,p%gTT,tmp)
@@ -1686,8 +1689,8 @@ module Entropy
         idiag_TugTm=0; idiag_Trms=0 
         idiag_uxTm=0; idiag_uyTm=0; idiag_uzTm=0; idiag_gT2m=0 
         idiag_guxgTm=0; idiag_guygTm=0; idiag_guzgTm=0
-        idiag_Tugux_uxugT=0; idiag_Tuguy_uyugT=0; idiag_Tuguz_uzugT=0
-        idiag_Tdxp=0; idiag_Tdyp=0; idiag_Tdzp=0
+        idiag_Tugux_uxugTm=0; idiag_Tuguy_uyugTm=0; idiag_Tuguz_uzugTm=0
+        idiag_Tdxpm=0; idiag_Tdypm=0; idiag_Tdzpm=0
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0; idiag_gTmax=0
         idiag_ethm=0; idiag_ssm=0; idiag_thcool=0
         idiag_dtchi=0; idiag_dtc=0
@@ -1715,12 +1718,12 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'guxgTm',idiag_guxgTm)
         call parse_name(iname,cname(iname),cform(iname),'guygTm',idiag_guygTm)
         call parse_name(iname,cname(iname),cform(iname),'guzgTm',idiag_guzgTm)
-        call parse_name(iname,cname(iname),cform(iname),'Tugux_uxugT',idiag_Tugux_uxugT)
-        call parse_name(iname,cname(iname),cform(iname),'Tuguy_uyugT',idiag_Tuguy_uyugT)
-        call parse_name(iname,cname(iname),cform(iname),'Tuguz_uzugT',idiag_Tuguz_uzugT)
-        call parse_name(iname,cname(iname),cform(iname),'Tdxp',idiag_Tdxp)
-        call parse_name(iname,cname(iname),cform(iname),'Tdyp',idiag_Tdyp)
-        call parse_name(iname,cname(iname),cform(iname),'Tdzp',idiag_Tdzp)
+        call parse_name(iname,cname(iname),cform(iname),'Tugux_uxugT',idiag_Tugux_uxugTm)
+        call parse_name(iname,cname(iname),cform(iname),'Tuguy_uyugT',idiag_Tuguy_uyugTm)
+        call parse_name(iname,cname(iname),cform(iname),'Tuguz_uzugT',idiag_Tuguz_uzugTm)
+        call parse_name(iname,cname(iname),cform(iname),'Tdxpm',idiag_Tdxpm)
+        call parse_name(iname,cname(iname),cform(iname),'Tdypm',idiag_Tdypm)
+        call parse_name(iname,cname(iname),cform(iname),'Tdzpm',idiag_Tdzpm)
         call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
@@ -2142,6 +2145,8 @@ module Entropy
 !
       if (nname>0) then
         call expand_cname(cname,nname,'uuTm','u',.true.)
+        call expand_cname(cname,nname,'gugTm','gu',.true.)
+        call expand_cname(cname,nname,'Tdpm','Td',.true.)
       endif
 !
     endsubroutine expand_shands_entropy
