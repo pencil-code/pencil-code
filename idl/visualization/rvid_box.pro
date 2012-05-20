@@ -49,7 +49,7 @@ pro rvid_box, field, $
   xlabel=xlabel, ylabel=ylabel, tlabel=tlabel, label=label, $
   size_label=size_label, $
   monotonous_scaling=monotonous_scaling, symmetric_scaling=symmetric_scaling, $
-  roundup=roundup, $
+  automatic_scaling=automatic_scaling,roundup=roundup, $
   nobottom=nobottom, oversaturate=oversaturate, cylinder=cylinder, $
   tunit=tunit, qswap=qswap, bar=bar, nolabel=nolabel, norm=norm, $
   divbar=divbar, blabel=blabel, bsize=bsize, bformat=bformat, thlabel=thlabel, $
@@ -326,6 +326,9 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       amin1=min([amin,min(xy2),min(xy),min(xz),min(yz)])
       amax=(4.*amax+amax1)/5.
       amin=(4.*amin+amin1)/5.
+    endif else if(keyword_set(automatic_scaling)) then begin
+      amax=max([max(xy2),max(xy),max(xz),max(yz)])
+      amin=min([min(xy2),min(xy),min(xz),min(yz)])
     endif
 ;
 ;  Symmetric scaling about zero.
