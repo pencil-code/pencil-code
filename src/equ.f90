@@ -193,7 +193,7 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       if (linterstellar) call interstellar_before_boundary(f)
-      if (ldensity.or.lboussinesq)      call density_before_boundary(f)
+      if (ldensity.or.lboussinesq) call density_before_boundary(f)
       if (lhydro)        call hydro_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
       if (lchiral)       call chiral_before_boundary(f)
