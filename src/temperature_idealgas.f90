@@ -74,6 +74,7 @@ module Entropy
   character (len=intlen) :: iinit_str
   real    :: kx_lnTT=1.,ky_lnTT=1.,kz_lnTT=1.
   logical :: lADI_mixed=.false.
+  real, pointer :: PrRa   ! preliminary
 !
 !  Input parameters.
 !
@@ -185,6 +186,7 @@ module Entropy
 !  equation: ilnTT, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
+! 18-may-12/MR: shared variable PrRa fetched from hydro
 !
       use FArrayManager, only: farray_register_pde
       use SharedVariables, only: get_shared_variable
@@ -204,6 +206,13 @@ module Entropy
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+!
+!  real variable PrRa shared with hydro modules, used for Boussinesq
+!
+      if (lboussinesq.and.lviscosity_heat) then
+        call get_shared_variable('PrRa',PrRa,ierr)
+        if (ierr/=0) call fatal_error('register_entropy','PrRa')
+      endif
 !
 !  Identify version number.
 !
@@ -879,6 +888,7 @@ module Entropy
 !    TT version:   DTT/Dt = -gamma_m1*TT*divu + gamma*cp1*rho1*RHS
 !
 !  13-dec-02/axel+tobi: adapted from entropy
+!  18-may-12/MR: compression work as heat sink added for boussinesq
 !
       use Deriv, only: der6
       use Diagnostics
@@ -948,6 +958,15 @@ module Entropy
           df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - gamma_m1*p%TT*p%divu
         else
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - gamma_m1*p%divu
+        endif
+!
+! if viscous heating is allowed, compression work must be taken into account, too
+!
+      elseif (lboussinesq.and.lviscosity.and.lviscosity_heat) then
+        if (ltemperature_nolog) then
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - PrRa*f(l1:l2,m,n,iTT)*p%uu(:,3)
+        else
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - PrRa*p%uu(:,3)
         endif
       endif
 !
