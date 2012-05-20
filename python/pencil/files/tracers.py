@@ -204,7 +204,6 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
                 q[j] = struct.unpack("<ff", fixed_file.read(8))[0]
             data[i].x.append(x)
             data[i].y.append(y)
-                
             data[i].q.append(q)
  
             tmp = fixed_file.read(4)
@@ -216,7 +215,7 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     fixed = data_struct()
     for i in range(len(data[0].t)):
         fixed.t.append(data[0].t[i])
-        x = []; y = []
+        x = []; y = []; q = []
         for proc in range(n_proc):
             x = x + data[proc].x[i]
             y = y + data[proc].y[i]
