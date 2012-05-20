@@ -108,6 +108,7 @@ module Hydro
   logical :: loutest,ldiffrot_test=.false.
   real :: r_cyl = 1.0, skin_depth = 1e-1
   real :: rnoise_int=impossible,rnoise_ext=impossible
+  real, target :: PrRa  !preliminary
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -524,6 +525,13 @@ module Hydro
           lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_hydro',&
           'there was a problem sharing lpressuregradient_gas')
+
+      if  (lboussinesq) then
+        PrRa=Pr*Ra
+        call put_shared_variable('PrRa',PrRa,ierr)
+        if (ierr/=0) call fatal_error('register_hydro',&
+            'there was a problem sharing PrRa')
+      endif
 !
 !  Identify version number (generated automatically by SVN).
 !
