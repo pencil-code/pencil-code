@@ -4631,7 +4631,7 @@ nameloop: do
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: xblob,yblob,zblob
+      real, optional :: xblob,yblob,zblob
       real :: ampl,radius,x01=0.,y01=0.,z01=0.
 !
 !  Single  blob.
@@ -5971,44 +5971,41 @@ nameloop: do
         inde = indep
       endif
       allocate( mean(inda:inde), mean_tmp(inda:inde) )
-!      allocate( mean_tmp(inda:inde) )
 !
 !  initialize mean
 !
-        mean = 0.0
+      mean = 0.0
 !
 !  Go through all pencils.
 !
-        do n = n1,n2
-        do m = m1,m2
+      do n = n1,n2
+      do m = m1,m2
 !
 !  Compute mean for each field.
 !
-          do j=inda,inde
-            mean(j) = mean(j) + sum(f(l1:l2,m,n,j))
-          enddo
+        do j=inda,inde
+          mean(j) = mean(j) + sum(f(l1:l2,m,n,j))
         enddo
-        enddo
+      enddo
+      enddo
 !
 !  Compute total mean for all processors
 !
-        call mpiallreduce_sum(mean/nwgrid,mean_tmp,inde-inda+1)
-        mean = mean_tmp
+      call mpiallreduce_sum(mean/nwgrid,mean_tmp,inde-inda+1)
+      mean = mean_tmp
 !
 !  Go through all pencils and subtract out the mean 
 !  separately for each field.
 !
-        do n = n1,n2
-        do m = m1,m2
-          do j=inda,inde
-            f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - mean(j)
-          enddo
+      do n = n1,n2
+      do m = m1,m2
+        do j=inda,inde
+          f(l1:l2,m,n,j) = f(l1:l2,m,n,j) - mean(j)
         enddo
-        enddo
+      enddo
+      enddo
 !
-      deallocate( mean, mean_tmp )
-!
-        if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
+      if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
 !
     endsubroutine remove_mean
 !***********************************************************************
