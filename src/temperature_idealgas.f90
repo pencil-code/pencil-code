@@ -1268,10 +1268,10 @@ module Entropy
         print*,'--> write the initial setup in data/proc0/setup.dat'
         open(unit=11,file=trim(directory)//'/setup.dat')
         write(11,'(5a14)') 'z','rho','temp','ss','hcond'
-        do i=n2,n1,-1
+        do i=nzgrid,1,-1
           call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
           call heatcond_TT(temp(i), hcond)
-          write(11,'(5e14.5)') z(i),exp(lnrho(i)),temp(i),ss,hcond
+          write(11,'(5e14.5)') z(i+nghost),exp(lnrho(i)),temp(i),ss,hcond
         enddo
         close(11)
       endif
