@@ -1876,7 +1876,7 @@ module Special
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
       real,dimension (mx,my,mz) :: LoopLength
-      real, dimension (nx) :: heatinput,rhs,b2 
+      real, dimension (nx) :: heatinput,rhs,b2
 !     real, dimension (nx) :: l_acc,l_2acc
 !     real,dimension (nx) :: LoopL,d2,h
 !     real,dimension (nx,3,3) :: tmp1,tmp2
@@ -3651,6 +3651,12 @@ module Special
 !
           read (unit,rec=2*i)   Uy_e_g_l
           read (unit,rec=2*i+2) Uy_e_g_r
+!
+! convert to pencil units
+          Ux_e_g_l = Ux_e_g_l / unit_velocity
+          Ux_e_g_r = Ux_e_g_r / unit_velocity
+          Uy_e_g_l = Uy_e_g_l / unit_velocity
+          Uy_e_g_r = Uy_e_g_r / unit_velocity
 !
           close (unit)
 !
