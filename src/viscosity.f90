@@ -650,6 +650,8 @@ module Viscosity
 !  All pencils that the Viscosity module depends on are specified here.
 !
 !  20-11-04/anders: coded
+!  18-05-12/MR: request of sij2 for lvisc_simplified.and.lboussinesq added
+!                       of graddivu for lboussinesq diasabled
 !
       if ((lentropy.or.ltemperature) .and. &
           (lvisc_rho_nu_const .or. &
@@ -663,7 +665,8 @@ module Viscosity
           lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_therm .or. &
           lvisc_nu_prof.or.lvisc_nu_profx.or.lvisc_spitzer .or. &
           lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
-          lvisc_nut_from_magnetic.or.lvisc_mu_therm) then
+          lvisc_nut_from_magnetic.or.lvisc_mu_therm.or. &
+          (lvisc_simplified.and.lboussinesq) ) then
         if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
@@ -782,6 +785,7 @@ module Viscosity
         lpenc_diagnos2d(i_rho)=.true.
         lpenc_diagnos2d(i_sij)=.true.
       endif
+      if (lboussinesq) lpenc_requested(i_graddivu)=.false.
 !
     endsubroutine pencil_criteria_viscosity
 !***********************************************************************
@@ -803,6 +807,7 @@ module Viscosity
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-nov-04/anders: coded
+!  18-may-12/MR: calculation of viscous heat for boussinesq added
 !
       use Deriv, only: der5i1j,der6
       use Diagnostics, only: max_mn_name, sum_mn_name
@@ -833,13 +838,19 @@ module Viscosity
 !
 !  viscous force: nu*del2v
 !  -- not physically correct (no momentum conservation), but
-!  numerically easy and in most cases qualitatively OK
+!  numerically easy and in most cases qualitatively OK,
+!  for boussinesq (divu=0) yet exact
 !
         p%fvisc=p%fvisc+nu*p%del2u
-        if (lpencil(i_visc_heat)) then  ! Heating term not implemented
-          if (headtt) then
-            call warning('calc_pencils_viscosity', 'viscous heating term '// &
-              'is not implemented for lvisc_simplified')
+        if (lpencil(i_visc_heat)) then 
+
+          if (lboussinesq) then
+            p%visc_heat=p%visc_heat+2.*nu*p%sij2
+          else                                  ! Heating term not implemented
+            if (headtt) then
+              call warning('calc_pencils_viscosity', 'viscous heating term '// &
+                'is not implemented for lvisc_simplified')
+            endif
           endif
         endif
 !
