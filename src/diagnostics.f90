@@ -1154,7 +1154,7 @@ module Diagnostics
 !
       character (len=*), dimension(:) :: ccname    ! F2003: , allocatable
       character (len=*) :: vlabel
-      character :: vname
+      character (len=*) :: vname
       integer :: nname
       logical, optional :: lform
 !
@@ -1162,9 +1162,10 @@ module Diagnostics
       intent(in) :: vlabel, vname
 
       character (len=intlen):: tail,form
-      integer :: ind, ic
+      integer :: ind, ic,lvn
 !
-      if (vlabel(1:1)/=vname) &
+      lvn = len(trim(vname))
+      if (vlabel(1:lvn)/=trim(vname)) &
         call fatal_error('expand_cname_short','vlabel does not start with vname')
 !
       if (present(lform)) then
@@ -1176,25 +1177,25 @@ module Diagnostics
       ic = name_is_present(ccname,trim(vlabel),form)
       if (ic>0) then
 !
-        ind=2
-        if ( vlabel(2:2)==vname ) ind=3
+        ind=lvn+1
+        if ( lvn==1 .and. vlabel(2:2)==vname ) ind=3
 !
         tail=vlabel(ind:len(vlabel))
         if ( lspherical_coords ) then
           call expand_cname_full(ccname,nname,ic,vlabel, &
-                                 vname//'r'//trim(tail), &
-                                 vname//'t'//trim(tail), &
-                                 vname//'p'//trim(tail),form)
+                                 trim(vname)//'r'//trim(tail), &
+                                 trim(vname)//'t'//trim(tail), &
+                                 trim(vname)//'p'//trim(tail),form)
         elseif ( lcylindrical_coords ) then
           call expand_cname_full(ccname,nname,ic,vlabel, &
-                                 vname//'r'//trim(tail), &
-                                 vname//'p'//trim(tail), &
-                                 vname//'z'//trim(tail),form)
+                                 trim(vname)//'r'//trim(tail), &
+                                 trim(vname)//'p'//trim(tail), &
+                                 trim(vname)//'z'//trim(tail),form)
         else
           call expand_cname_full(ccname,nname,ic,vlabel, &
-                                 vname//'x'//trim(tail), &
-                                 vname//'y'//trim(tail), &
-                                 vname//'z'//trim(tail),form)
+                                 trim(vname)//'x'//trim(tail), &
+                                 trim(vname)//'y'//trim(tail), &
+                                 trim(vname)//'z'//trim(tail),form)
         endif
       endif
 !        
