@@ -833,11 +833,11 @@ module Magnetic
 !     Store spatially dependent external field in a global array 
 !
       if (lbx_ext_global) &
-        call farray_register_global("bx_ext",iglobal_bx_ext)
+        call farray_register_global("global_bx_ext",iglobal_bx_ext)
       if (lby_ext_global) &
-        call farray_register_global("by_ext",iglobal_by_ext)
+        call farray_register_global("global_by_ext",iglobal_by_ext)
       if (lbz_ext_global) &
-        call farray_register_global("bz_ext",iglobal_bz_ext)
+        call farray_register_global("global_bz_ext",iglobal_bz_ext)
 !
 !  Initialize resistivity.
 !
@@ -2139,8 +2139,8 @@ module Magnetic
 ! rho=(rho0/10+B^2)
 !
       if (lmagneto_friction.and.lpencil(i_rho1)) then
-        p%rho=(rho0*0.1+p%b2)
-        p%rho1=1./(rho0*0.1+p%b2)
+        p%rho=(rho0*1.0e-2+p%b2)
+        p%rho1=1./(rho0*1.0e-2+p%b2)
       endif  
 ! bunit
       if (lpencil(i_bunit)) then

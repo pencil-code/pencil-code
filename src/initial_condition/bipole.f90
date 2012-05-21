@@ -77,7 +77,6 @@ module InitialCondition
   use Cparam
   use Messages
   use Sub, only: keep_compiler_quiet
-  use EquationOfState
 !
   implicit none
 !
@@ -85,10 +84,10 @@ module InitialCondition
 !
 !!  integer :: dummy
 !
-  real :: amplaa=1e-3,r0=0.2,beta=0.0
+  real :: amplaa=1e-3,r0=0.2,beta=0.0,rho0
   character (len=8) :: extfieldfile
 !
-  namelist /initial_condition_pars/ amplaa, r0, beta, extfieldfile
+  namelist /initial_condition_pars/ amplaa, r0, beta, extfieldfile,rho0
 !
   contains
 !***********************************************************************
@@ -115,6 +114,30 @@ module InitialCondition
 !
     endsubroutine initialize_initial_condition
 !***********************************************************************
+    subroutine initial_condition_lnrho(f)
+!
+!  Initialize the magnetic vector potential.
+!
+!  02-may-12/piyali: coded
+!
+      use Sub, only: curl
+      use IO,  only: input_snap,input_snap_finalize
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx,3) :: bb
+      real :: xi
+      integer :: l
+!
+      call initial_condition_aa(f) 
+      do m=m1,m2
+        do n=n1,n2
+          call curl(f,iaa,bb)
+          f(l1:l2,m,n,ilnrho)=log(rho0+bb(:,1)**2+bb(:,2)**2+bb(:,3)**2)
+        end do
+      end do
+    endsubroutine initial_condition_lnrho  
+!
+!***********************************************************************
     subroutine initial_condition_aa(f)
 !
 !  Initialize the magnetic vector potential.
@@ -134,16 +157,13 @@ module InitialCondition
 !
       do n=1,mz
         do m=1,my
-          do l=l1,l2
+          do l=1,mx
 !
             if (lcartesian_coords) then 
               xi=((x(l)**2+z(n)**2)/2.+y(m)**2)/r0**2
               f(l,m,n,iax) = amplaa*beta*z(n)*exp(-2*xi)
               f(l,m,n,iay) = amplaa*r0*exp(-xi)
               f(l,m,n,iaz) = -amplaa*beta*x(l)*exp(-2*xi)
-              f(l,m,n,iglobal_bx_ext) = 0.0
-              f(l,m,n,iglobal_by_ext) = 0.0
-              f(l,m,n,iglobal_bz_ext) = 0.0
             else if (lcylindrical_coords) then 
               call fatal_error('initial_condition_aa','Bipoles not coded  &
               for cylindrical coordinates')
@@ -167,11 +187,11 @@ module InitialCondition
 !  Then set up the helical field
 !
           if (lspherical_coords) then 
-            do l=l1, l2
-              xi=((log(x(l))**2+z(n)**2)/2.+log(tan(y(m)/2.))**2)/r0**2
+            do l=1, mx
+              xi=(((x(l)-xyz0(1))**2+z(n)**2)/2.+log(tan(y(m)/2.))**2)/r0**2
               f(l,m,n,iax) = -amplaa*beta*z(n)*exp(-2*xi)
-              f(l,m,n,iay) = amplaa*r0*exp(-xi)
-              f(l,m,n,iaz) = amplaa*beta*log(x(l))*exp(-2*xi)
+              f(l,m,n,iay) = amplaa*r0*exp(-xi)/x(l)
+              f(l,m,n,iaz) = amplaa*beta*(x(l)-xyz0(1))*exp(-2*xi)/x(l)
             enddo
           endif
         enddo
