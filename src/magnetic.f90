@@ -7005,19 +7005,19 @@ module Magnetic
       if (nnamerz>0) then
 !
         call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbmphi'),&
-                          'bbmphi','brmphi','bpmphi','bzmphi')
+                          'brmphi','bpmphi','bzmphi')
         if (name_is_present(cnamerz,'bpmphi')>0) then
           call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbsphmphi'),&
-                            'bbsphmphi','brsphmphi','bthmphi')
+                            'brsphmphi','bthmphi')
         else
           call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'bbsphmphi'),&
-                            'bbsphmphi','brsphmphi','bthmphi','bpmphi')
+                            'brsphmphi','bthmphi','bpmphi')
         endif
 !
         call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uxbmphi'),&
-                          'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
+                          'uxbrmphi','uxbpmphi','uxbzmphi')
         call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'jxbmphi'),&
-                          'jxbmphi','jxbrmphi','jxbpmphi','jxbzmphi')
+                          'jxbrmphi','jxbpmphi','jxbzmphi')
 !
       endif
 !
