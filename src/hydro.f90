@@ -505,6 +505,8 @@ module Hydro
 !  equations: iuu, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
+! 18-may-12/MR: put Pr*Ra as a shared variable for use in 
+!               temperature_idealgas
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
@@ -4963,14 +4965,14 @@ module Hydro
       if (nnamerz>0) then
 
         call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uumphi'),&
-                          'uumphi','urmphi','upmphi','uzmphi')
+                          'urmphi','upmphi','uzmphi')
 
         if (name_is_present(cnamerz,'upmphi')>0) then
           call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),&
-                            'uusphmphi','ursphmphi','uthmphi')
+                            'ursphmphi','uthmphi')
         else
           call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),&
-                            'uusphmphi','ursphmphi','uthmphi','upmphi')
+                            'ursphmphi','uthmphi','upmphi')
         endif
       endif
 !
