@@ -43,7 +43,7 @@ $(DIAGNOSTICS_OBJ): $(DIAGNOSTICS_SRC) $(SUB_OBJ)
 #
 nolorenz_gauge.o: lorenz_gauge.h nolorenz_gauge.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(FARRAY_OBJ)
 #
-noimplicit_physics.o: implicit_physics.h noimplicit_physics.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ)
+$(IMPLICIT_PHYSICS_OBJ): implicit_physics.h $(IMPLICIT_PHYSICS_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ)
 #
 nosignal_handling.o: nosignal_handling.f90 $(CDATA_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ)
 #
