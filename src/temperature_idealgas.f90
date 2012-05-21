@@ -964,9 +964,9 @@ module Entropy
 !
       elseif (lboussinesq.and.lviscosity.and.lviscosity_heat) then
         if (ltemperature_nolog) then
-          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - PrRa*f(l1:l2,m,n,iTT)*p%uu(:,3)
+          df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   - p%cv1*PrRa*f(l1:l2,m,n,iTT)*p%uu(:,3)
         else
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - PrRa*p%uu(:,3)
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*PrRa*p%uu(:,3)
         endif
       endif
 !
