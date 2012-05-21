@@ -1182,17 +1182,17 @@ module Diagnostics
 !
         tail=vlabel(ind:len(vlabel))
         if ( lspherical_coords ) then
-          call expand_cname_full(ccname,nname,ic,vlabel, &
+          call expand_cname_full(ccname,nname,ic, &
                                  trim(vname)//'r'//trim(tail), &
                                  trim(vname)//'t'//trim(tail), &
                                  trim(vname)//'p'//trim(tail),form)
         elseif ( lcylindrical_coords ) then
-          call expand_cname_full(ccname,nname,ic,vlabel, &
+          call expand_cname_full(ccname,nname,ic, &
                                  trim(vname)//'r'//trim(tail), &
                                  trim(vname)//'p'//trim(tail), &
                                  trim(vname)//'z'//trim(tail),form)
         else
-          call expand_cname_full(ccname,nname,ic,vlabel, &
+          call expand_cname_full(ccname,nname,ic, &
                                  trim(vname)//'x'//trim(tail), &
                                  trim(vname)//'y'//trim(tail), &
                                  trim(vname)//'z'//trim(tail),form)
@@ -1201,27 +1201,27 @@ module Diagnostics
 !        
     endsubroutine expand_cname_short
 !***********************************************************************
-    subroutine expand_cname_full(ccname,nname,ic,vlabel,xlabel,ylabel,zlabel,form)
+    subroutine expand_cname_full(ccname,nname,ic,xlabel,ylabel,zlabel,form)
 !
 !  Expand string array cname with entries up to index nname such that
-!  vlabel is replaced by the three labels xlabel, ylabel, zlabel, and
+!  label at position ic is replaced by the three labels xlabel, ylabel, zlabel;
 !  update nname accordingly. Appends format form if present.
 !
 !   1-apr-04/wolf: coded
-!  16-may-12/MR  : new parameters ic = position of vlabel in ccname and (optional)
+!  16-may-12/MR  : new parameters ic = position of label to be expanded in ccname and (optional)
 !                  form for a format specification append to the name (for use with
 !                  print.in
 !
       use General, only : lextend_vector
 !
       character (len=*), dimension(:) :: ccname   ! F2003: , allocatable
-      character (len=*) :: vlabel,xlabel,ylabel
+      character (len=*) :: xlabel,ylabel
       character (len=*), optional :: zlabel
       character (len=intlen), optional :: form
       integer :: nname,ic
 !
       intent(inout) :: ccname,nname
-      intent(in) :: vlabel,xlabel,ylabel,zlabel,ic,form
+      intent(in) :: xlabel,ylabel,zlabel,ic,form
 !
       integer :: itot
       logical :: lform
