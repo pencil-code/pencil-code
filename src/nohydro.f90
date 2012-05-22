@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3)
-! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
+! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3)
 !
 !***************************************************************
 module Hydro
