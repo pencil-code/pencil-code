@@ -374,7 +374,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Remove ghost zones if requested.
 ;
-  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
+  if (keyword_set(trimall)) then object = pc_noghost (object, dim=dim)
 ;
   if (not keyword_set(quiet)) then begin
     print, ' t = ', t
