@@ -24,7 +24,20 @@
 ;;;   HR_ohm           volumetric Ohmic heating rate
 ;;;   j                current density
 ;;;
-;;;  Example:
+;;;  Examples: (in ascending order of efficiency)
+;;;  ============================================
+;;;
+;;;   Load the most recent varfile and calculate viscous heating rate using a data structure:
+;;;   IDL> pc_read_var, obj=vars, dim=dim, grid=grid, param=param, par2=run_param
+;;;   IDL> HR_ohm = pc_get_quantity (vars, tags, 'HR_viscous', dim=dim, grid=grid, param=param, run_param=run_param)
+;;;   IDL> tvscl, HR_ohm[*,*,20]
+;;;
+;;;   Load the most recent varfile and calculate viscous heating rate using a data array:
+;;;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
+;;;   IDL> HR_ohm = pc_get_quantity (var, tags, 'HR_viscous', dim=dim, grid=grid, param=param, run_param=run_param)
+;;;   IDL> tvscl, HR_ohm[*,*,20]
+;;;
+;;;   Load only a slice from the most recent varfile and calculate Ohmic heating rate:
 ;;;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, dim=dim, grid=grid, param=param, par2=run_param
 ;;;   IDL> HR_ohm = pc_get_quantity (slice, tags, 'HR_ohm', dim=dim, grid=grid, param=param, run_param=run_param)
 ;;;   IDL> tvscl, HR_ohm
