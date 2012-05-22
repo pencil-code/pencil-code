@@ -103,45 +103,50 @@ module Fixed_point
 !   the points for the extrapolation
     real :: der(2)
     real, pointer, dimension (:,:) :: tracers
-    real :: diff(5)
+    real :: diff(13)
     integer :: iter
     real :: lambda, dl
 !
     intent(out) :: fixed_point, q
 !
-    allocate(tracers(5,7))
+    allocate(tracers(13,7))
 !
     iter = 0
     dl = min(dx,dy)/30.
     do
 !     trace the necessary field lines for the gradient
       tracers(1,:) = (/point(1),point(2),point(1),point(2),z(1+nghost)-ipz*nz*dz+dz,0.,1./)
-      tracers(2,:) = (/point(1)-dl,point(2),point(1)-dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
-      tracers(3,:) = (/point(1)+dl,point(2),point(1)+dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,3./)
-      tracers(4,:) = (/point(1),point(2)-dl,point(1),point(2)-dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      tracers(5,:) = (/point(1),point(2)+dl,point(1),point(2)+dl,z(1+nghost)-ipz*nz*dz+dz,0.,5./)
-      call trace_streamlines(f,tracers,5,vv)
-      diff(1:5) = sqrt((tracers(1:5,3) - tracers(1:5,1))**2 + (tracers(1:5,4) - tracers(1:5,2))**2)
+      tracers(2,:) = (/point(1)-3*dl,point(2),point(1)-3*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(3,:) = (/point(1)-2*dl,point(2),point(1)-2*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(4,:) = (/point(1)-1*dl,point(2),point(1)-1*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(5,:) = (/point(1)+1*dl,point(2),point(1)+1*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(6,:) = (/point(1)+2*dl,point(2),point(1)+2*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(7,:) = (/point(1)+3*dl,point(2),point(1)+3*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(8,:) = (/point(1),point(2)-3*dl,point(1),point(2)-3*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      tracers(9,:) = (/point(1),point(2)-2*dl,point(1),point(2)-2*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      tracers(10,:) = (/point(1),point(2)-1*dl,point(1),point(2)-1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      tracers(11,:) = (/point(1),point(2)+1*dl,point(1),point(2)+1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      tracers(12,:) = (/point(1),point(2)+2*dl,point(1),point(2)+2*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      tracers(13,:) = (/point(1),point(2)+3*dl,point(1),point(2)+3*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      call trace_streamlines(f,tracers,13,vv)
+      diff(1:13) = sqrt((tracers(1:13,3) - tracers(1:13,1))**2 + (tracers(1:13,4) - tracers(1:13,2))**2)
       q = tracers(1,7)
-!     determine the gradient at this point
-      der(1) = (diff(3)-diff(2))/(2*dl)
-      der(2) = (diff(5)-diff(4))/(2*dl)
+!     determine the 6th order gradient at this point
+      der(1) = (-diff(2)/60. + 3./20.*diff(3) - 3./4.*diff(4) + 3./4.*diff(5) - 3./20.*diff(6) +diff(7)/60.)/dl
+      der(2) = (-diff(8)/60. + 3./20.*diff(9) - 3./4.*diff(10) + 3./4.*diff(11) - 3./20.*diff(12) +diff(13)/60.)/dl
 !     if the gradient is 0 we have already reached the fixed points
-      if (der(1) == 0 .and. der(2) == 0) then
+      if ((der(1) == 0 .and. der(2) == 0) .or. (der(1)**2+der(2)**2 == 0)) then
         fixed_point = point
         exit
       else
-!       der = der/sqrt(der(1)**2+der(2)**2)
 !       gradient descent method
         point_old = point
-!         lambda = diff(1)/(sqrt(der(1)**2+der(2)**2))*sqrt(1/(der(1)**2+der(2)**2)+1)
-        lambda = diff(1)/((der(1)**2+der(2)**2))
+        lambda = diff(1)/(der(1)**2+der(2)**2)
 !       avoid that the step length becomes too large
         if (lambda > min(dx,dy)) lambda = min(dx,dy)
-        point = point - lambda*der
-!         if (((point_old(1)-point(1))**2+(point_old(2)-point(2))**2 < (5e-2)**2) .or. (iter > 50)) then
+        point = point - der*lambda
       endif
-      if (iter > 20) then
+      if (iter > 50) then
         fixed_point = point
         exit
       endif
@@ -185,12 +190,13 @@ module Fixed_point
 !     trace intermediate field line
       tracer(1,:) = (/xm,ym,xm,ym,z(1+nghost)-ipz*nz*dz+dz,0.,0./)
       call trace_streamlines(f,tracer,1,vv)
-      if ((tracer(1,6) >= 1000.) .or. (tracer(1,5) < zt(nzgrid)-dz)) then
+      if ((tracer(1,6) >= l_max) .or. (tracer(1,5) < zt(nzgrid)-dz)) then
 !       discard any streamline which does not converge or hits the boundary
         dtot = 0.
       else
         diffm = (/tracer(1,3)-tracer(1,1), tracer(1,4)-tracer(1,2)/)
-        diffm = diffm / sqrt(diffm(1)**2 + diffm(2)**2)
+        if (diffm(1)**2 + diffm(2)**2 .ne. 0) &
+            diffm = diffm / sqrt(diffm(1)**2 + diffm(2)**2)
         dtot = edge(f,(/sx(1),xm/), (/sy(1),ym/), diff1, diffm, phi_min, vv, rec+1) + &
             edge(f,(/xm,sx(2)/), (/ym,sy(2)/), diffm, diff2, phi_min, vv, rec+1)
       endif
@@ -239,7 +245,6 @@ module Fixed_point
     real, pointer, dimension (:,:) :: tracers, tracers2, tracer_tmp
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the fixed point output
-!    character(len=1024) :: filename, str_tmp
     real :: poincare, diff(4,2), phi_min
     integer :: j, l, addx, addy, proc_idx, ierr, flag
     integer, dimension (MPI_STATUS_SIZE) :: status
@@ -257,7 +262,7 @@ module Fixed_point
     allocate(yt(nygrid*trace_sub))
     allocate(zt(nz))
 !
-    phi_min = pi/2.
+    phi_min = pi/2.-2.**(-15)
 !
 !   compute the array with the global xyz values
     do j=1,(nxgrid*trace_sub)
@@ -359,16 +364,20 @@ module Fixed_point
       do l=1,(ny*trace_sub+addx-1)
         diff(1,:) = (/(tracers2(j+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+(l-1)*(nx*trace_sub+addx),1)) , &
             (tracers2(j+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+(l-1)*(nx*trace_sub+addx),2))/)
-        diff(1,:) = diff(1,:) / sqrt(diff(1,1)**2+diff(1,2)**2)
+        if (diff(1,1)**2+diff(1,2)**2 .ne. 0) &
+            diff(1,:) = diff(1,:) / sqrt(diff(1,1)**2+diff(1,2)**2)
         diff(2,:) = (/(tracers2(j+1+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)) , &
             (tracers2(j+1+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),2))/)
-        diff(2,:) = diff(2,:) / sqrt(diff(2,1)**2+diff(2,2)**2)
+        if (diff(2,1)**2+diff(2,2)**2 .ne. 0) &
+            diff(2,:) = diff(2,:) / sqrt(diff(2,1)**2+diff(2,2)**2)
         diff(3,:) = (/(tracers2(j+1+l*(nx*trace_sub+addx),3)-tracers2(j+1+l*(nx*trace_sub+addx),1)) , &
             (tracers2(j+1+l*(nx*trace_sub+addx),4)-tracers2(j+1+l*(nx*trace_sub+addx),2))/)
-        diff(3,:) = diff(3,:) / sqrt(diff(3,1)**2+diff(3,2)**2)
+        if (diff(3,1)**2+diff(3,2)**2 .ne. 0) &
+            diff(3,:) = diff(3,:) / sqrt(diff(3,1)**2+diff(3,2)**2)
         diff(4,:) = (/(tracers2(j+l*(nx*trace_sub+addx),3)-tracers2(j+l*(nx*trace_sub+addx),1)) , &
             (tracers2(j+l*(nx*trace_sub+addx),4)-tracers2(j+l*(nx*trace_sub+addx),2))/)
-        diff(4,:) = diff(4,:) / sqrt(diff(4,1)**2+diff(4,2)**2)
+        if (diff(4,1)**2+diff(4,2)**2 .ne. 0) &
+            diff(4,:) = diff(4,:) / sqrt(diff(4,1)**2+diff(4,2)**2)
 !       Get the Poincare index for this grid cell
         call pindex(f, xt(j:j+1)+ipx*nx*dx, yt(l:l+1)+ipy*ny*dy, diff, phi_min, vv, poincare)
 !       find the fixed point in this cell
