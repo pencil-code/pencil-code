@@ -83,58 +83,125 @@ module Streamlines
 !
   endsubroutine tracers_prepare
 !***********************************************************************
-  subroutine get_grid_pos(phys_pos, grid_pos, outside)
+  subroutine get_grid_pos(phys_pos, grid_pos, n_int, outside)
 !
 ! Determines the grid cell in this core for the physical location.
 !
 ! 13-feb-12/simon: coded
 !
     real, dimension(3) :: phys_pos
-    integer, dimension(3) :: grid_pos
+    integer, dimension(8,3) :: grid_pos
     real :: delta
-    integer :: j, outside
+    integer :: j, n_int, outside
+!   number of adjacent points in each direction which lie within the physical domain
+    integer :: x_adj, y_adj, z_adj
 !
     intent(in) :: phys_pos
-    intent(out) :: grid_pos, outside
+    intent(out) :: grid_pos, n_int, outside
 !
     outside = 0
+    n_int = 0
 !
     delta = Lx
+    x_adj = 1
     do j=1,nxgrid
+      if ((abs(phys_pos(1) - xg(j)) <= dx) .and. x_adj <= 2) then
+        grid_pos(1:8:x_adj,1) = j
+        x_adj = x_adj + 1
+      endif
       if (abs(phys_pos(1) - xg(j)) < delta) then
-        grid_pos(1) = j
         delta = abs(phys_pos(1) - xg(j))
       endif
     enddo
+    x_adj = x_adj - 1
 !   check if the point lies outside the domain
     if (delta > (dx/(2-2.**(-15)))) outside = 1
 !
     delta = Ly
+    y_adj = 1
+    if (outside == 0) then
     do j=1,nygrid
+      if ((abs(phys_pos(2) - yg(j)) <= dy) .and. y_adj <= 2) then
+        grid_pos(1:8:x_adj*y_adj,2) = j
+        grid_pos(x_adj:8:x_adj*y_adj,2) = j
+        y_adj = y_adj + 1
+      endif
       if (abs(phys_pos(2) - yg(j)) < delta) then
-        grid_pos(2) = j
         delta = abs(phys_pos(2) - yg(j))
       endif
     enddo
+    y_adj = y_adj - 1
 !   check if the point lies outside the domain
     if (delta > (dy/(2-2.**(-15)))) outside = 1
+    endif
 !
     delta = Lz
+    z_adj = 1
+    if (outside == 0) then
     do j=1,nzgrid
+      if ((abs(phys_pos(3) - zg(j)) <= dz) .and. z_adj <= 2) then
+        if (z_adj == 1) then
+          grid_pos(1:8,3) = j
+        else
+          grid_pos(1:8:x_adj*y_adj*z_adj,3) = j
+          grid_pos(x_adj:8:x_adj*y_adj*z_adj,3) = j
+          grid_pos(y_adj:8:x_adj*y_adj*z_adj,3) = j
+          grid_pos(x_adj*y_adj:8:x_adj*y_adj*z_adj,3) = j
+          grid_pos(x_adj+y_adj-1:8:x_adj*y_adj*z_adj,3) = j
+        endif
+        z_adj = z_adj + 1
+      endif
       if (abs(phys_pos(3) - zg(j)) < delta) then
-        grid_pos(3) = j
         delta = abs(phys_pos(3) - zg(j))
       endif
     enddo
+    z_adj = z_adj - 1
 !   check if the point lies outside the domain
     if (delta > (dz/(2-2.**(-15)))) outside = 1
+    endif
+!
+    n_int = x_adj * y_adj * z_adj
 !
 !   consider the processor indices
-    grid_pos(1) = grid_pos(1) - nx*ipx
-    grid_pos(2) = grid_pos(2) - ny*ipy
-    grid_pos(3) = grid_pos(3) - nz*ipz
+    grid_pos(:,1) = grid_pos(:,1) - nx*ipx
+    grid_pos(:,2) = grid_pos(:,2) - ny*ipy
+    grid_pos(:,3) = grid_pos(:,3) - nz*ipz
+!
+    if ((n_int == 0) .and. (outside == 0)) write(*,*) iproc, &
+        "error: n_int == 0", phys_pos, delta, dz/(2-2.**(-15))
 !
   endsubroutine get_grid_pos
+!***********************************************************************
+  subroutine interpolate_vv(phys_pos, grid_pos, vv_adj, n_int, vv_int)
+!
+! Interpolates the vector field by taking the adjacent values.
+!
+! 27-apr-12/simon: coded
+!
+    real, dimension(3) :: phys_pos
+    integer, dimension(8,3) :: grid_pos
+    real, dimension(8,3+mfarray) :: vv_adj
+    integer :: n_int, j
+    real, dimension(3+mfarray) :: vv_int
+    real, dimension(8) :: weight
+!
+    intent(in) :: phys_pos, grid_pos, vv_adj, n_int
+    intent(out) :: vv_int
+!
+    vv_int(:) = 0
+    do j=1,n_int
+      weight(j) = (dx-abs(phys_pos(1)-xg(grid_pos(j,1)+ipx*nx)))* &
+          (dy-abs(phys_pos(2)-yg(grid_pos(j,2)+ipy*ny)))* &
+          (dz-abs(phys_pos(3)-zg(grid_pos(j,3)+ipz*nz)))
+      vv_int = vv_int + weight(j)*vv_adj(j,:)
+    enddo
+    if (sum(weight(1:n_int)) == 0) then
+      vv_int = vv_int
+    else
+      vv_int = vv_int/sum(weight(1:n_int))
+    endif
+!
+  endsubroutine interpolate_vv
 !***********************************************************************
   subroutine get_vector(f, grid_pos, vvb, vv)
 !
@@ -239,15 +306,21 @@ module Streamlines
     integer :: n_tracers, tracer_idx, j, ierr, proc_idx
 !   the "borrowed" vector from the other core
     real, dimension (3+mfarray) :: vvb
+!   the vector from the other adjacent grid points
+    real, dimension (8,3+mfarray) :: vv_adj
+!   the interpolated vector from the adjacent value
+    real, dimension (3+mfarray) :: vv_int
 !   the "borrowed" f-array at a given point for the field line integration
     real, dimension (mfarray) :: fb
 !     real :: h_max, h_min, l_max, tol
     real :: dh, dist2
 !   auxilliary vectors for the tracing
     real, dimension(3) :: x_mid, x_single, x_half, x_double
-!   current position on the grid
-    integer :: grid_pos(3)
+!   adjacent grid point around this position
+    integer :: grid_pos(8,3)
     integer :: loop_count, outside = 0
+!   number of adjacent grid points for the field interpolation
+    integer :: n_int
 !   array with all finished cores
     integer :: finished_tracing(nprocx*nprocy*nprocz)
 !   variables for the final non-blocking mpi communication
@@ -317,68 +390,97 @@ module Streamlines
         enddo
 !
 !       (a) Single step (midpoint method):
-        call get_grid_pos(tracers(tracer_idx,3:5),grid_pos,outside)
+        call get_grid_pos(tracers(tracer_idx,3:5),grid_pos,n_int,outside)
         if (outside == 1) exit
-        if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
-            (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(f, grid_pos, vvb, vv)
-          x_mid = tracers(tracer_idx,3:5) + 0.5*dh*vvb(1:3)
-        else
-          x_mid = tracers(tracer_idx,3:5) + 0.5*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
-        endif
+        do j=1,n_int
+          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+            call get_vector(f, grid_pos(j,:), vvb, vv)
+            vv_adj(j,:) = vvb
+          else
+            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          endif
+        enddo
+        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        x_mid = tracers(tracer_idx,3:5) + 0.5*dh*vv_int(1:3)
 !
-        call get_grid_pos(x_mid,grid_pos,outside)
+        call get_grid_pos(x_mid,grid_pos,n_int,outside)
         if (outside == 1) exit
-        if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
-            (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(f, grid_pos, vvb, vv)
-          x_single = tracers(tracer_idx,3:5) + dh*vvb(1:3)
-        else
-          x_single = tracers(tracer_idx,3:5) + dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
-        endif
+        do j=1,n_int
+          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+            call get_vector(f, grid_pos(j,:), vvb, vv)
+            vv_adj(j,:) = vvb
+          else
+            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          endif
+        enddo
+        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        x_single = tracers(tracer_idx,3:5) + dh*vv_int(1:3)
 !
 !       (b) Two steps with half stepsize:
-        call get_grid_pos(tracers(tracer_idx,3:5),grid_pos,outside)
+        call get_grid_pos(tracers(tracer_idx,3:5),grid_pos,n_int,outside)
         if (outside == 1) exit
-        if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
-            (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(f, grid_pos, vvb, vv)
-          x_mid = tracers(tracer_idx,3:5) + 0.25*dh*vvb(1:3)
-        else
-          x_mid = tracers(tracer_idx,3:5) + 0.25*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
-        endif
+        do j=1,n_int
+          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+            call get_vector(f, grid_pos(j,:), vvb, vv)
+            vv_adj(j,:) = vvb
+          else
+            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          endif
+        enddo
+        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        x_mid = tracers(tracer_idx,3:5) + 0.25*dh*vv_int(1:3)
 !
-        call get_grid_pos(x_mid,grid_pos,outside)
+        call get_grid_pos(x_mid,grid_pos,n_int,outside)
         if (outside == 1) exit
-        if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
-            (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(f, grid_pos, vvb, vv)
-          x_half = tracers(tracer_idx,3:5) + 0.5*dh*vvb(1:3)
-        else
-          x_half = tracers(tracer_idx,3:5) + 0.5*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
-        endif
+        do j=1,n_int
+          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+            call get_vector(f, grid_pos(j,:), vvb, vv)
+            vv_adj(j,:) = vvb
+          else
+            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          endif
+        enddo
+        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        x_half = tracers(tracer_idx,3:5) + 0.5*dh*vv_int(1:3)
 !
-        call get_grid_pos(x_half,grid_pos,outside)
+        call get_grid_pos(x_half,grid_pos,n_int,outside)
         if (outside == 1) exit
-        if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
-            (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(f, grid_pos, vvb, vv)
-          x_mid = x_half + 0.25*dh*vvb(1:3)
-        else
-          x_mid = x_half + 0.25*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
-        endif
+        do j=1,n_int
+          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+            call get_vector(f, grid_pos(j,:), vvb, vv)
+            vv_adj(j,:) = vvb
+          else
+            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          endif
+        enddo
+        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        x_mid = x_half + 0.25*dh*vv_int(1:3)
 !
-        call get_grid_pos(x_mid,grid_pos,outside)
+        call get_grid_pos(x_mid,grid_pos,n_int,outside)
         if (outside == 1) exit
-        if (any(grid_pos <= 0) .or. (grid_pos(1) > nx) .or. &
-            (grid_pos(2) > ny) .or. (grid_pos(3) > nz)) then
-          call get_vector(f, grid_pos, vvb, vv)
-          x_double = x_half + 0.5*dh*vvb(1:3)
-          fb = vvb(4:)
-        else
-          x_double = x_half + 0.5*dh*vv(grid_pos(1),grid_pos(2),grid_pos(3),:)
-          fb = f(grid_pos(1),grid_pos(2),grid_pos(3),:)
-        endif
+        do j=1,n_int
+          if (any(grid_pos(j,:) <= 0) .or. (grid_pos(j,1) > nx) .or. &
+              (grid_pos(j,2) > ny) .or. (grid_pos(j,3) > nz)) then
+            call get_vector(f, grid_pos(j,:), vvb, vv)
+            vv_adj(j,:) = vvb
+          else
+            vv_adj(j,1:3) = vv(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+            vv_adj(j,4:) = f(grid_pos(j,1),grid_pos(j,2),grid_pos(j,3),:)
+          endif
+        enddo
+        call interpolate_vv(tracers(tracer_idx,3:5),grid_pos,vv_adj,n_int,vv_int)
+        x_double = x_half + 0.5*dh*vv_int(1:3)
+        fb = vv_int(4:)
 !
 !       (c) Check error (difference between methods):
         dist2 = dot_product((x_single-x_double),(x_single-x_double))
@@ -403,8 +505,6 @@ module Streamlines
 !
         loop_count = loop_count + 1
       enddo
-!       if (tracers(tracer_idx, 5) < 6.0) &
-!           write(*,*) tracers(tracer_idx, :), dh, grid_pos
 !
     enddo    
 !
