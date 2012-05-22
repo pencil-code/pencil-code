@@ -1271,29 +1271,26 @@ module Entropy
         lnrho(i-1)=lnrho(i+1)+2.*dz*dlnrho
       enddo
 !
+!  Fill in the density and temperature f-arrays and each z-processor
+!  writes its own setup in the file data/proc#/setup.dat
+!
+      open(unit=11,file=trim(directory)//'/setup.dat')
+      write(11,'(5a14)') 'z','rho','temp','ss','hcond'
       do n=1,nz
         iz=ipz*nz+n
-        f(:,:,nghost+n,ilnTT)=temp(iz)
         f(:,:,nghost+n,ilnrho)=lnrho(iz)
+        f(:,:,nghost+n,ilnTT)=temp(iz)
+        call eoscalc(ilnrho_TT,lnrho(iz),temp(iz),ss=ss)
+        call heatcond_TT(temp(iz), hcond)
+        write(11,'(5e14.5)') z(nghost+n),exp(lnrho(iz)),temp(iz),ss,hcond
       enddo
+      close(11)
 !
 !  Initialize cs2bot by taking into account the new bottom value of temperature
 !  Note: cs2top=cs20 already defined in eos_idealgas.
 !
       cs2bot=gamma_m1*temp(1)
       print*,'cs2top, cs2bot=', cs2top, cs2bot
-!
-      if (lroot) then
-        print*,'--> write the initial setup in data/proc0/setup.dat'
-        open(unit=11,file=trim(directory)//'/setup.dat')
-        write(11,'(5a14)') 'z','rho','temp','ss','hcond'
-        do i=nzgrid,1,-1
-          call eoscalc(ilnrho_TT,lnrho(i),temp(i),ss=ss)
-          call heatcond_TT(temp(i), hcond)
-          write(11,'(5e14.5)') z(i+nghost),exp(lnrho(i)),temp(i),ss,hcond
-        enddo
-        close(11)
-      endif
 !
     endsubroutine rad_equil
 !***********************************************************************
