@@ -70,7 +70,6 @@ default, quantities, { $
 ;	magnetic_field_x:'bx', $
 ;	magnetic_field_y:'by', $
 	magnetic_field_z:'bz', $
-;	spitzer_ratio:'spitzer_ratio', $
 	velocity:'u_abs', $
 ;	velocity_x:'u_x', $
 ;	velocity_y:'u_y', $
@@ -311,8 +310,7 @@ if (not pc_gui_loaded) then BEGIN
 
 	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, dx:congrid (1.0/grid.dx_1, disp_size_x, 1, 1, /center, /interp)*unit.length, dy:congrid (1.0/grid.dy_1, disp_size_y, 1, 1, /center, /interp)*unit.length, dz:congrid (1.0/grid.dz_1, disp_size_z, 1, 1, /center, /interp)*unit.length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
 
-	if ((n_elements (dt) le 0) and file_test (datadir+"/time_series.dat")) then pc_read_ts, obj=ts, datadir=datadir, /quiet
-	pc_show_ts, ts, units=units, param=param, run_param=run_param
+	pc_show_ts, obj=ts, units=units, param=param, run_param=run_param, datadir=datadir
 
 
 	print, "Allocating memory..."

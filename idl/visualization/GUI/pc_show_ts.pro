@@ -281,16 +281,25 @@ end
 
 
 ; Show timeseries analysis window
-pro pc_show_ts, time_series, units=units_struct, param=param, run_param=run_param, start_time=start_time, end_time=end_time
+pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=run_param, start_time=start_time, end_time=end_time, datadir=datadir
 
 	common timeseries_common, time_start, time_end, ts, units, run_par, start_par
 
-	ts = time_series
-	if (keyword_set (units_struct)) then units = units_struct
+	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 
-	if (n_elements (ts) le 0) then pc_read_ts, obj=ts, /quiet
-	if (not keyword_set (param)) then pc_read_param, obj=param, /quiet
-	if (not keyword_set (run_param)) then pc_read_param, obj=run_param, /param2, /quiet
+	if (keyword_set (units_struct)) then units = units_struct
+	if (n_elements (units) le 0) then begin
+		pc_units, obj=unit, datadir=datadir, /quiet
+		units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:1, default_time:1, default_velocity:1, default_density:1, default_mass:1, default_magnetic_field:1, default_length_str:'m', default_time_str:'s', default_velocity_str:'m/s', default_density_str:'kg/m^3', default_mass_str:'kg', default_magnetic_field_str:'Tesla' }
+	end
+	units_struct = units
+
+	if (keyword_set (time_series)) then ts = time_series
+	if (n_elements (ts) le 0) then pc_read_ts, obj=ts, datadir=datadir, /quiet
+	time_series = ts
+
+	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, /quiet
+	if (not keyword_set (run_param)) then pc_read_param, obj=run_param, datadir=datadir, /param2, /quiet
 	if (not keyword_set (start_time)) then start_time = min (ts.t) * units.time
 	if (not keyword_set (end_time)) then end_time = max (ts.t) * units.time
 

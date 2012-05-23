@@ -88,8 +88,7 @@ pro cslice_event, event
 		break
 	end
 	'SHOW_TIME': begin
-		pc_read_ts, obj=ts, datadir=datadir, /quiet
-		pc_show_ts, ts, units=unit, param=param, run_param=run_param
+		pc_show_ts, units=unit, param=param, run_param=run_param, datadir=datadir
 		break
 	end
 	'COX': begin
