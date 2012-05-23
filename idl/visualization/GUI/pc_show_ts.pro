@@ -116,7 +116,7 @@ pro draw_timeseries
 		time = ts.it
 	endelse
 	x_minmax = minmax (time > time_start)
-	if (time_end > 0) then x_minmax = minmax (x_minmax < time_end)
+	if (time_end gt 0) then x_minmax = minmax (x_minmax < time_end)
 	y_minmax = minmax (ts.dt)
 	if (any (strcmp (tags, 'dtu', /fold_case)))       then y_minmax = minmax ([y_minmax, ts.dtu])
 	if (any (strcmp (tags, 'dtv', /fold_case)))       then y_minmax = minmax ([y_minmax, ts.dtv])
