@@ -741,10 +741,12 @@ module Entropy
       if ( idiag_TugTm/=0 .or. idiag_gT2m/=0 .or. &
            idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_gTT)=.true.
 
-      if ( idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_uij)=.true.
+      if ( lhydro .or. lhydro_kinematic ) then
+        if ( idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_uij)=.true.
 
-      if ( idiag_Tugux_uxugTm/=0 .or. idiag_Tuguy_uyugTm/=0 .or. idiag_Tuguz_uzugTm/=0 ) then
-        lpenc_requested(i_ugu)=.true.; lpenc_requested(i_ugTT)=.true.
+        if ( idiag_Tugux_uxugTm/=0 .or. idiag_Tuguy_uyugTm/=0 .or. idiag_Tuguz_uzugTm/=0 ) then
+          lpenc_requested(i_ugu)=.true.; lpenc_requested(i_ugTT)=.true.
+        endif
       endif
 !
       if ( idiag_Tdxpm/=0 .or. idiag_Tdypm/=0 .or. idiag_Tdzpm/=0 ) then
