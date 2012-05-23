@@ -410,21 +410,6 @@ module Grid
                            'No such x grid function - '//grid_func(1))
         endselect
 !
-        if ( .not.lequidist(1) ) then
-          if (lfirst_proc_x) then
-            do i=1,nghost
-              x(l1-i)=2.*x(l1)-x(l1+i)
-              xprim(l1-i)=x(l1-i+1)-x(l1-i)           !!???
-            enddo
-          endif
-          if (llast_proc_x) then
-            do i=1,nghost
-              x(l2+i)=2.*x(l2)-x(l2-i)
-              xprim(l2+i)= x(l2+i)-x(l2+i-1)          !!???
-            enddo
-          endif
-        endif
-!
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
 !
@@ -569,21 +554,6 @@ module Grid
 !
         endselect
 !
-        if ( .not.lequidist(2) ) then
-          if (lfirst_proc_y) then
-            do i=1,nghost
-              y(m1-i)=2.*y(m1)-y(m1+i)
-              yprim(m1-i)=y(m1-i+1)-y(m1-i)           !!???
-            enddo
-          endif
-          if (llast_proc_y) then
-            do i=1,nghost
-              y(m2+i)=2.*y(m2)-y(m2-i)
-              yprim(m2+i)= y(m2+i)-y(m2+i-1)          !!???
-            enddo
-          endif
-        endif
-!
 ! Added parts for spherical coordinates and cylindrical coordinates.
 ! From now on dy = d\theta but dy_1 = 1/rd\theta and similarly for \phi.
 ! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
@@ -717,21 +687,6 @@ module Grid
           call fatal_error('construct_grid', &
                            'No such z grid function - '//grid_func(3))
         endselect
-!
-        if (.not.lequidist(3)) then
-          if (lfirst_proc_z) then
-            do i=1,nghost
-              z(n1-i)=2.*z(n1)-z(n1+i)
-              zprim(n1-i)=z(n1-i+1)-z(n1-i)           !!???
-            enddo
-          endif
-          if (llast_proc_z) then
-            do i=1,nghost
-              z(n2+i)=2.*z(n2)-z(n2-i)
-              zprim(n2+i)= z(n2+i)-z(n2+i-1)          !!???
-            enddo
-          endif
-        endif
 !
         dz_1=1./zprim
         dz_tilde=-zprim2/zprim**2
