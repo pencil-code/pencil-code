@@ -338,10 +338,8 @@ module Density
       use Boundcond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
-      real :: s
       integer :: j, ju
 !
 !  Find the divergence of uu

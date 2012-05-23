@@ -123,7 +123,6 @@ module ImplicitPhysics
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: ierr
 !
       if (hcond0 /= impossible) then
         if (nx == 1) then
@@ -913,7 +912,7 @@ module ImplicitPhysics
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: source, hcond, dhcond, finter, val, TT, &
-                                rho, chi, dLnhcond
+                                chi, dLnhcond
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
@@ -1140,7 +1139,7 @@ module ImplicitPhysics
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz) :: source, finter, val, TT, rho
+      real, dimension(mx,mz) :: source, finter, TT, rho
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
