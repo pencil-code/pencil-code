@@ -3826,7 +3826,10 @@ module Chemistry
 !  Allocate binary diffusion coefficient array
 !
       if (.not.lreloading) then
-        if (ldiffusion .and. .not. lfix_Sc) then
+!Natalia:
+!this does not work for ldiffusion=F
+!        if (ldiffusion .and. .not. lfix_Sc) then
+        if (.not. lfix_Sc) then
 !NILS: Since Bin_diff_coeff is such a huge array we must check if it
 !NILS: required to define it for the full domain!!!!!!
           allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
