@@ -260,7 +260,7 @@ module Special
 !
       if (any(iheattype=='rappazzo') .or. any(iheattype=='balleg') .or. &
            any(iheattype=='schrijver04')) then
-
+!
          allocate(ltemp(nxgrid,nygrid,nzgrid))
          if (lroot) then
             if (.not. file_exists ('looplength.dat')) call fatal_error ( &
@@ -275,7 +275,7 @@ module Special
          deallocate(ltemp)
          print*,'Loaded loop length data for heattype: ',iheattype(i)
       endif
-
+!
     !
       if (.not.lstarting.and.lgranulation.and.ipz == 0) then
         if (lhydro) then
@@ -1937,13 +1937,13 @@ module Special
              (exp(p%lnrho)*unit_density)**(1./8.) !*&
 !             LoopLength(:,m,n)**(-3./4.) <- should be added later
 !
-
+!
         case ('full')
           if (headtt) then
             print*,'Full heating function'
             print*,'Heating in the form of (rho/rho0)^alpha etc.'
             print*,'parameters set are: ', heat_par_full
-
+!
           endif
           call dot2(p%bb,b2)
           ! Heating, cubic step in z to prevent exessive heating from
@@ -1958,7 +1958,7 @@ module Special
               ((exp(p%lnTT)*unit_temperature)/heat_par_full(4))**heat_par_full(3))* &
               ((b2/heat_par_full(6))**heat_par_full(5))
           !not yet             (b2/heat_par_full(6))**heat_par_full(5))
-
+!
           !print*,heat_par_full(7)* &
           !             cubic_step(real(z(n1:n2)),3000.,1000.)* &
           !            ((exp(p%lnrho)/heat_par_full(2))**heat_par_full(1)* &
@@ -1982,37 +1982,37 @@ module Special
           ! Calling    subroutine gij(f,k,g,nder) from sub.f90
           !!!!call gij(f,ibb,tmp1,1)
           !call gij(f,ibb,tmp2,2)
-
-
+!
+!
           !!!!l_acc=p%bb(:,3)/sqrt(p%bb(l1:l2,1)**2+ p%bb(l1:l2,2)**2) !??  &
           !dz/sqrt(dx**2*dy**2)
           !!!!l_2acc=tmp1(:,3,3)/(sqrt(tmp1(:,1,1)**2+tmp1(:,2,2)**2))   !?? &
           !How do we do this??? just some stupid assumption now
           !if
-
+!
           !!!!!d2=(x(l1:l2)+sqrt(x(l1:l2)**2-l_2acc**3/(2.*x(l1:l2)**2)))/l_2acc
-
+!
           !else
           !endif
-
+!
           !!!!!h=d2*l_2acc/2.
           !!!!LoopL(:)=d2/(6.*h) * ((h/sqrt(d2)+1.)**(3./2.)-1.)
           !!! NEEDS COSMETICS!!!!
 !
 !! turb_full=bb^1.75*(blength[*,*,*,0]*1000.)^(-0.75)*(exp(c.logn)*mu*mprot)^0.125
-
+!
           if ((m > nghost) .AND. (n > nghost) .AND. &
               (n < mz-nghost) .AND. (m < my-nghost)) then
 !
             call dot2(p%bb,b2)
-
+!
             heatinput = heatinput + &
                 (b2*1E4*unit_magnetic / 50.)**(1.75) * & !normalization term?
                 (Blength(:,m-3,n-3)/50.)**(-0.75) * &     !normalization?
                 (exp(p%lnrho)*unit_density*1.E8)**(0.125) !normalized by coronal density
      endif
           !-------------------------------------------------------
-
+!
           heatinput=heat_par_rappazzo(1)*b2**(7./10.)*&
               (exp(p%lnrho)/(0.5*mp/unit_mass))**(1/8)!*LoopL**(-3/4)
           !
@@ -2021,12 +2021,12 @@ module Special
           if (headtt) then
             print*,'Using Ballegooijen at al. 2011 approximation for heating'
           endif
-
+!
           ! calculate heating in erg cm-3 s-1; erg== 10-7 Joules
           !tau in seconds
           !vrms in  km/sec
           !magnetic field in gauss (=10^-4 tesla)
-
+!
           if ((m > nghost) .AND. (n > nghost) .AND. &
               (n < mz-nghost) .AND. (m < my-nghost)) then
 !
@@ -2039,7 +2039,7 @@ module Special
                 (b2*1E4*unit_magnetic / 50.))**(0.55) * &
                 1E-1 / & !erg to joules times cm-3 to m-3
                 (unit_density*unit_velocity**3/unit_length) !to pencil units
-
+!
             if (notanumber(heatinput)) then
               print*,'-------------------------------'
               print*,b2
@@ -2054,7 +2054,7 @@ module Special
             endif
           endif
           ! save
-
+!
           !
         case default
           call fatal_error('calc_artif_heating','no valid heating function')
@@ -2142,7 +2142,7 @@ module Special
 !
       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + tau_inv_tmp*(rho0_rho-1.)
       df(l1:l2,m,n,ilnTT) =df(l1:l2,m,n,ilnTT)  + tau_inv_tmp*rho0_rho*(TT0_TT-1.)
-
+!
 !       newton  = newton * tau_inv_tmp
 ! !
 !       if (init_time2 /= 0.) &
@@ -2153,7 +2153,7 @@ module Special
 !       if  (ltemperature .and. (.not. ltemperature_nolog)) then
 !         newton = exp(lnrho_init_prof(n)-p%lnrho)-1.
 !         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+newton
-
+!
 !         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton
 !       else
 !         call fatal_error('calc_heat_cool_newton','only for ltemperature')
@@ -2258,11 +2258,10 @@ module Special
       logical :: ex
 !
       real, dimension (:,:), allocatable :: Bz0l,Bz0r
-      real, dimension (:,:), allocatable :: Bz0l_i,Bz0r_i
-      real, dimension (:,:), allocatable :: Ax,Ay
-      real, dimension (:,:), allocatable :: Al_i,Al_r,Ar_i,Ar_r
-      real, dimension (:,:), allocatable, save :: Axl,Axr,Ayl,Ayr
+      real, dimension (:,:), allocatable :: Bz0_i
+      real, dimension (:,:), allocatable :: A_i,A_r
       real, dimension (:,:), allocatable :: kx,ky,k2
+      real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr
 !
       real :: mu0_SI,u_b,time_SI
 !
@@ -2271,12 +2270,6 @@ module Special
 !
       ierr = 0
       stat = 0
-      if (.not.allocated(Axl))  allocate(Axl(nxgrid,nygrid),stat=ierr)
-      if (.not.allocated(Axr))  allocate(Axr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      if (.not.allocated(Ayl))  allocate(Ayl(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      if (.not.allocated(Ayr))  allocate(Ayr(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
-      allocate(Ax(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)
-      allocate(Ay(nxgrid,nygrid),stat=stat)                           ;  ierr=max(stat,ierr)
 !
       if (ierr > 0) call fatal_error('bc_force_aa_time', &
           'Could not allocate memory for all variables, please check')
@@ -2296,13 +2289,10 @@ module Special
       if (tr+delta_t <= time_SI) then
 !
         allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-        allocate(Bz0l_i(nxgrid,nygrid),stat=stat); ierr=max(stat,ierr)
         allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-        allocate(Bz0r_i(nxgrid,nygrid),stat=stat); ierr=max(stat,ierr)
-        allocate(Al_r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-        allocate(Al_i(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-        allocate(Ar_r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-        allocate(Ar_i(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+        allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
+        allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
+        allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
         allocate(kx(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         allocate(ky(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
         allocate(k2(nxgrid,nygrid),stat=stat);     ierr=max(stat,ierr)
@@ -2348,77 +2338,74 @@ module Special
         u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
 !
         Bz0l = Bz0l *  1e-4 / u_b  ! left real part
-        Bz0l_i = 0.                !   imaginary part
-!
         Bz0r = Bz0r *  1e-4 / u_b  ! right real part
-        Bz0r_i = 0.                !   imaginary part
 !
-        call fourier_transform_other(Bz0l,Bz0l_i)
-        call fourier_transform_other(Bz0r,Bz0r_i)
+! first point in time
 !
-! First the Ax component:
+        Bz0_i = 0.
+        call fourier_transform_other(Bz0l,Bz0_i)
+!
         where (k2 /= 0 )
-          Al_r = -Bz0l_i*ky/k2
-          Al_i =  Bz0l  *ky/k2
-!
-          Ar_r = -Bz0r_i*ky/k2
-          Ar_i =  Bz0r  *ky/k2
+          A_r = -Bz0_i*ky/k2
+          A_i =  Bz0l *ky/k2
         elsewhere
-          Al_r = -Bz0l_i*ky/ky(1,idy2)
-          Al_i =  Bz0l  *ky/ky(1,idy2)
-!
-          Ar_r = -Bz0r_i*ky/ky(1,idy2)
-          Ar_i =  Bz0r  *ky/ky(1,idy2)
+          A_r = -Bz0_i*ky/ky(1,idy2)
+          A_i =  Bz0l *ky/ky(1,idy2)
         endwhere
 !
-        call fourier_transform_other(Al_r,Al_i,linv=.true.)
-        call fourier_transform_other(Ar_r,Ar_i,linv=.true.)
-        Axl = Al_r
-        Axr = Ar_r
+        call fourier_transform_other(A_r,A_i,linv=.true.)
+        Axl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-! Then the Ay component:
         where (k2 /= 0 )
-          Al_r =  Bz0l_i*kx/k2
-          Al_i = -Bz0l  *kx/k2
-!
-          Ar_r =  Bz0r_i*kx/k2
-          Ar_i = -Bz0r  *kx/k2
+          A_r =  Bz0_i*kx/k2
+          A_i = -Bz0l *kx/k2
         elsewhere
-          Al_r =  Bz0l_i*kx/kx(idx2,1)
-          Al_i = -Bz0l  *kx/kx(idx2,1)
-!
-          Ar_r =  Bz0r_i*kx/kx(idx2,1)
-          Ar_i = -Bz0r  *kx/kx(idx2,1)
+          A_r =  Bz0_i*kx/kx(idx2,1)
+          A_i = -Bz0l *kx/kx(idx2,1)
         endwhere
 !
-        call fourier_transform_other(Al_r,Al_i,linv=.true.)
-        call fourier_transform_other(Ar_r,Ar_i,linv=.true.)
+        call fourier_transform_other(A_r,A_i,linv=.true.)
+        Ayl = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-        Ayl = Al_r
-        Ayr = Ar_r
+! second point in time
+!
+        Bz0_i = 0.
+        call fourier_transform_other(Bz0r,Bz0_i)
+        where (k2 /= 0 )
+          A_r = -Bz0_i*ky/k2
+          A_i =  Bz0r *ky/k2
+        elsewhere
+          A_r = -Bz0_i*ky/ky(1,idy2)
+          A_i =  Bz0r *ky/ky(1,idy2)
+        endwhere
+!
+        call fourier_transform_other(A_r,A_i,linv=.true.)
+        Axr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+!
+        where (k2 /= 0 )
+          A_r =  Bz0_i*kx/k2
+          A_i = -Bz0r *kx/k2
+        elsewhere
+          A_r =  Bz0_i*kx/kx(idx2,1)
+          A_i = -Bz0r *kx/kx(idx2,1)
+        endwhere
+!
+        call fourier_transform_other(A_r,A_i,linv=.true.)
+        Ayr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
         if (allocated(Bz0l)) deallocate(Bz0l)
-        if (allocated(Bz0l_i)) deallocate(Bz0l_i)
         if (allocated(Bz0r)) deallocate(Bz0r)
-        if (allocated(Bz0r_i)) deallocate(Bz0r_i)
-        if (allocated(Al_r)) deallocate(Al_r)
-        if (allocated(Al_i)) deallocate(Al_i)
-        if (allocated(Ar_r)) deallocate(Ar_r)
-        if (allocated(Ar_i)) deallocate(Ar_i)
+        if (allocated(Bz0_i)) deallocate(Bz0_i)
+        if (allocated(A_r)) deallocate(A_r)
+        if (allocated(A_i)) deallocate(A_i)
         if (allocated(kx)) deallocate(kx)
         if (allocated(ky)) deallocate(ky)
         if (allocated(k2)) deallocate(k2)
 !
       endif
 !
-      Ax  = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
-      Ay  = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
-!
-      f(l1:l2,m1:m2,n1,iax) = Ax(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-      f(l1:l2,m1:m2,n1,iay) = Ay(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
-!
-      if (allocated(Ax)) deallocate(Ax)
-      if (allocated(Ay)) deallocate(Ay)
+      f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
+      f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
 !
     endsubroutine mag_time_bound
 !***********************************************************************
