@@ -6007,6 +6007,8 @@ nameloop: do
 !
       if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
 !
+      deallocate( mean, mean_tmp )
+
     endsubroutine remove_mean
 !***********************************************************************
 endmodule Sub
