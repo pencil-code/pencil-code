@@ -2255,7 +2255,6 @@ module Special
 !
       real, save :: tl=0.,tr=0.,delta_t=0.
       integer :: ierr,lend,i,idx2,idy2,stat
-      logical :: ex
 !
       real, dimension (:,:), allocatable :: Bz0l,Bz0r
       real, dimension (:,:), allocatable :: Bz0_i
@@ -2274,11 +2273,9 @@ module Special
       if (ierr > 0) call fatal_error('bc_force_aa_time', &
           'Could not allocate memory for all variables, please check')
 !
-      inquire (file=mag_field_dat,exist=ex)
-      if (.not. ex) call stop_it_if_any(.true., &
+      if (.not. file_exists(mag_field_dat)) call stop_it_if_any(.true., &
           'bc_force_aa_time: File does not exists: '//trim(mag_field_dat))
-      inquire (file=mag_times_dat,exist=ex)
-      if (.not. ex) call stop_it_if_any(.true., &
+      if (.not. file_exists(mag_times_dat)) call stop_it_if_any(.true., &
           'bc_force_aa_time: File does not exists: '//trim(mag_times_dat))
 !
       time_SI = t*unit_time
