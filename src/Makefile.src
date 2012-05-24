@@ -1465,6 +1465,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #F90=$(FC) #(emil*)
 #CC=cc #(emil*)
 #FFLAGS=-O3 #(emil*)
+#FFLAGS_DOUBLE=-r8 #(emil)
 #CFLAGS=-DFUNDERSC=1 -O3 #(emil*)
 ##
 ##HP CP4000 BL Proliant supercluster
