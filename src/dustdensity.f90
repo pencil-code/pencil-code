@@ -46,7 +46,7 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: dsize0, BB, dds0
-  real, dimension(ndustspec) :: dsize,dds,init_distr,init_distr_log
+  real, dimension(ndustspec) :: dsize,dds,init_distr,init_distr2,init_distr_log
   real, dimension(0:5) :: coeff_smooth=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0
@@ -57,11 +57,11 @@ module Dustdensity
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   real :: dsize_min=0., dsize_max=0., dsize0_min=1e-6, dsize0_max=5e-6
-  real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2, r0, r0_core=2.4e-6
+  real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2, r0, r02=0., r0_core=2.4e-6
   real :: delta=1.2, delta0=1.2
   real :: Rgas=8.31e7, Rgas_unit_sys, m_w=18., m_s=60., Ntot=1e3
   real :: AA=0.66e-4, d0=2.4e-6, BB0=1.5e-16
-  real :: nd_reuni,nd00=1.
+  real :: nd_reuni,nd00=1.,init_x1, init_x2
   integer :: ind_extra
   integer :: iglobal_nd=0
   integer :: spot_number=1
@@ -90,9 +90,9 @@ module Dustdensity
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       dsize_min, dsize_max, latm_chemistry, spot_number, lnoaerosol, &
-      r0, delta, delta0, lmdvar, lmice, ldcore, d0, &
+      r0, r02, delta, delta0, lmdvar, lmice, ldcore, d0, &
       dsize0_min, dsize0_max, r0_core, Ntot, lnocondens_term, BB0,&
-      advec_ddensity, dustdensity_floor
+      advec_ddensity, dustdensity_floor, init_x1, init_x2
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -381,6 +381,10 @@ module Dustdensity
           do k=1,ndustspec
             init_distr(k)=nd00*Ntot/0.856E-03/(2.*pi)**0.5/dsize(k)/alog(delta) &
               *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+            if (r02 /= 0.) then
+              init_distr2(k)=nd00*Ntot/0.856E-03/(2.*pi)**0.5/dsize(k)/alog(delta) &
+              *exp(-(alog(2.*dsize(k))-alog(2.*r02))**2/(2.*(alog(delta))**2))
+            endif             
             if (ldustdensity_log) then
               init_distr_log(k)=log(init_distr(k))
             endif
@@ -457,7 +461,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: eps
-      real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt
+      real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt, del
       real, pointer :: rhs_poisson_const
       integer :: j, k, l, i, ierr
       logical :: lnothing
@@ -670,6 +674,17 @@ module Dustdensity
               f(:,:,:,idcj(k,i))=init_distr_ki(k,i)
             enddo; enddo
           endif
+        case ('atm_drop_gauss2')
+          del=(init_x2-init_x1)*0.002
+          do k=1,ndustspec
+          do i=1,mx
+            f(i,:,:,ind(k))=(init_distr2(k)+init_distr(k))*0.5  &
+              + ((init_distr2(k)-init_distr(k))*0.5 )  &
+              *(exp(x(i)/del)-exp(-x(i)/del)) &
+              /(exp(x(i)/del)+exp(-x(i)/del))
+          enddo
+          enddo
+
           if (lroot) print*, &
               'init_nd: Distribution of the water droplets in the atmosphere'
         case default
