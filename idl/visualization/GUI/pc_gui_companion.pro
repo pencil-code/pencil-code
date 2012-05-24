@@ -51,11 +51,7 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par,
     default, varfile, "var.dat"
     if (n_elements (vars) eq 0) then begin
       print, 'Reading: ', varfile, ' ... please wait!'
-      if (i eq 0) then begin
-        pc_read_var_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time
-      endif else begin
-        pc_read_var_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, /quiet
-      endelse
+      pc_read_var_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0)
       sources = varcontent.idlvar
       sources = sources[where (varcontent.idlvar ne 'dummy')]
       precalc_data, number, vars, tags
