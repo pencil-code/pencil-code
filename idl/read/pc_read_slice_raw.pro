@@ -280,7 +280,16 @@ COMPILE_OPT IDL2,HIDDEN
 ; Remove ghost zones if requested.
 ;
   if (keyword_set(trimall)) then begin
-    object = reform (object[dim.nghostx:dim.nghostx+cut_nx-1-2*dim.nghostx,dim.nghosty:dim.nghosty+cut_ny-1-2*dim.nghosty,dim.nghostz:dim.nghostz+cut_nz-1-2*dim.nghostz,*])
+    object = reform (object[dim.l1:dim.l2,dim.m1:dim.m2,dim.n1:dim.n2,*])
+    x = x[dim.l1:dim.l2]
+    y = y[dim.m1:dim.m2]
+    z = z[dim.n1:dim.n2]
+    dx_1 = dx_1[dim.l1:dim.l2]
+    dy_1 = dy_1[dim.m1:dim.m2]
+    dz_1 = dz_1[dim.n1:dim.n2]
+    dx_tilde = dx_tilde[dim.l1:dim.l2]
+    dy_tilde = dy_tilde[dim.m1:dim.m2]
+    dz_tilde = dz_tilde[dim.n1:dim.n2]
   endif
 ;
   if (not keyword_set(quiet)) then begin
