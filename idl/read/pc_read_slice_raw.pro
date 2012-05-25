@@ -67,6 +67,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, cut_x, -1
   default, cut_y, -1
   default, cut_z, -1
+  addname = ""
 ;
   if (total([cut_x, cut_y, cut_z] < 0) ne -2) then $
       message, 'pc_read_slice_raw: Please set exactly one cut index.'
@@ -246,7 +247,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   undefine, buffer
 ;
-; Crop grid and prepare for derivatives.
+; Crop grid.
 ;
   x = x[px_start:px_end]
   y = y[py_start:py_end]
@@ -267,6 +268,9 @@ COMPILE_OPT IDL2,HIDDEN
   if (cut_x ne -1) then dim.l2 = dim.mx - dim.nghostx - 1
   if (cut_y ne -1) then dim.m2 = dim.my - dim.nghosty - 1
   if (cut_z ne -1) then dim.n2 = dim.mz - dim.nghostz - 1
+;
+; Prepare for derivatives.
+;
   dx_1 = grid.dx_1[px_start:px_end]
   dy_1 = grid.dy_1[py_start:py_end]
   dz_1 = grid.dz_1[pz_start:pz_end]
@@ -290,6 +294,7 @@ COMPILE_OPT IDL2,HIDDEN
     dx_tilde = dx_tilde[dim.l1:dim.l2]
     dy_tilde = dy_tilde[dim.m1:dim.m2]
     dz_tilde = dz_tilde[dim.n1:dim.n2]
+    addname += "trimmed_"
   endif
 ;
   if (not keyword_set(quiet)) then begin
@@ -298,7 +303,7 @@ COMPILE_OPT IDL2,HIDDEN
   endif
 ;
   time = t
-  name = "pc_read_slice_raw_"+strtrim (cut_nx, 2)+"_"+strtrim (cut_ny, 2)+"_"+strtrim (cut_nz, 2)
+  name = "pc_read_slice_raw_"+addname+strtrim (cut_nx, 2)+"_"+strtrim (cut_ny, 2)+"_"+strtrim (cut_nz, 2)
   grid = create_struct (name=name, $
       ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde'], $
       t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde)
