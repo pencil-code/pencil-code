@@ -43,6 +43,7 @@ module Special
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.
+  real :: t_start_mark=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -51,7 +52,7 @@ module Special
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
   real, dimension(3) :: heat_par_exp3=(/0.,1.,0./)
   real, dimension(9) :: heat_par_full=(/0.,1.,0.,1.,0.,1.,0.,0.,0./)
-  real, dimension(1) :: heat_par_rappazzo=1.
+  real, dimension(1) :: heat_par_rappazzo=0.
   real, dimension(1) :: heat_par_schrijver04=0.
   real, dimension(1) :: heat_par_balleg=0.
 !
@@ -60,7 +61,7 @@ module Special
       Kpara,Kperp,Kc,init_time2,twisttype,centerx,centery,centerz, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       heat_par_full,heat_par_rappazzo,heat_par_schrijver04, &
-      heat_par_balleg, &
+      heat_par_balleg,t_start_mark, &
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
@@ -3710,7 +3711,7 @@ module Special
 !
       inquire(IOLENGTH=lend) tl
 !
-      if (t .ge. tr) then
+      if (t*unit_time+t_start_mark .ge. tr) then
 !
         if (lroot) then
           open (unit,file=time_dat,form='unformatted',status='unknown',recl=lend,access='direct')
