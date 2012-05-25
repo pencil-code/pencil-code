@@ -17,6 +17,7 @@
 ;;;   IDL> scaling = (0,+oo]            ; magnification factor
 ;;;   IDL> datadir = "my_data_dir"      ; alternative data directory
 ;;;   IDL> varfile = "VAR123"           ; default is "var.dat"
+;;;   IDL> cut_y = 511                  ; only read an xz-slice at y-pos. 511
 ;;;   IDL> default_length = 1           ; default length display unit
 ;;;   IDL> default_length_str = '...'   ; default length string
 ;;;   IDL> default_velocity = 1         ; default velocity display unit
@@ -130,6 +131,9 @@ default, datadir, pc_get_datadir()
 ;;;
 ;;; Default technical parameters
 ;;;
+default, cut_x, -1
+default, cut_y, -1
+default, cut_z, -1
 default, data_reduction, 1.0
 if (n_elements (data_reduction) eq 1) then data_reduction = replicate (data_reduction, 3)
 if (any (data_reduction lt 1.0)) then begin
@@ -183,7 +187,13 @@ if (not pc_gui_loaded) then BEGIN
 		nghost_y = nghost
 		nghost_z = nghost
 	end
-	pc_read_dim, obj=dim, datadir=datadir, /quiet
+	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
+		pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
+		pc_read_slice_raw, varfile=varfile, dim=dim, grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, /trim, /quiet
+	end else begin
+		pc_read_dim, obj=dim, datadir=datadir, /quiet
+		pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, /trim, /quiet
+	end
 	default, nghost_x, dim.nghostx
 	default, nghost_y, dim.nghosty
 	default, nghost_z, dim.nghostz
@@ -195,17 +205,26 @@ if (not pc_gui_loaded) then BEGIN
 	disp_size_z = round ((dim.mz - 2*dim.nghostz) / data_reduction[2]) > 1
 
 	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
-	ghosts = 2*nghost_x*(dim.nprocx-1)*dim.mygrid*dim.mzgrid + $
-                 2*nghost_y*(dim.nprocy-1)*(dim.mxgrid-2*nghost_y*(dim.nprocy-1))*dim.mzgrid + $
-                 2*nghost_z*(dim.nprocz-1)*(dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(dim.mygrid-2*nghost_y*(dim.nprocy-1))
-	correction = 1.0 - ghosts / double (dim.mxgrid*dim.mygrid*dim.mzgrid)
+	ghosts = 2*nghost_x*(dim.nprocx-1)*orig_dim.mygrid*orig_dim.mzgrid + $
+                 2*nghost_y*(dim.nprocy-1)*(orig_dim.mxgrid-2*nghost_y*(dim.nprocy-1))*orig_dim.mzgrid + $
+                 2*nghost_z*(dim.nprocz-1)*(orig_dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(orig_dim.mygrid-2*nghost_y*(dim.nprocy-1))
+	correction = 1.0 - ghosts / double (orig_dim.mxgrid*orig_dim.mygrid*orig_dim.mzgrid)
 	if (allprocs eq 1) then begin
 		subdomains = 1
 		correction = 1.0
 	end
 	if (allprocs eq 2) then subdomains = dim.nprocx * dim.nprocy
+	if (cut_x ne -1) then begin
+		cut_correction = 7.0 / orig_dim.mxgrid
+	end else if (cut_y ne -1) then begin
+		cut_correction = 7.0 / orig_dim.mygrid
+	end else if (cut_z ne -1) then begin
+		cut_correction = 7.0 / orig_dim.mzgrid
+	end else begin
+		cut_correction = 1.0
+	end
 	file_struct = file_info (procdir+varfile)
-	gb_per_file = (file_struct.size * subdomains * correction) / 1024. / 1024. / 1024.
+	gb_per_file = (file_struct.size * subdomains * correction * cut_correction) / 1073741824.
 
 	snapfiles = file_search (procdir, "VAR[0-9]*")
 	num_snapshots = n_elements (snapfiles)
@@ -264,7 +283,7 @@ if (not pc_gui_loaded) then BEGIN
 						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (max_files, 2)+"): "
 					end until ((files_total ge 0) and (files_total le max_files))
 					if (files_total eq 0) then files_total = max_files
-					if (files_total lt max_files) then begin
+					if (files_total le max_files) then begin
 						print, "You selected to load less files than availabe."
 						addquestion = ""
 						if (num_additional gt 0) then addquestion = " and '"+addfile+"'"
@@ -304,7 +323,6 @@ if (not pc_gui_loaded) then BEGIN
 
 	pc_units, obj=unit, datadir=datadir
 	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_time:default_time, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_time_str:default_time_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
-	pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, /trim, /quiet
 	pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=dim, datadir=datadir, /quiet
 
@@ -352,26 +370,26 @@ if (not pc_gui_loaded) then BEGIN
 
 	if (addfile) then begin
 		; Precalculate additional timestep
-		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 	end
 
 	if (load_varfile) then begin
 		; Precalculate initial timestep
-		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 	end
 
 	if (num_selected gt 0) then begin
 		; Precalculate first selected timestep
-		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 		if (num_selected gt 1) then begin
 			; Precalculate last selected timestep
 			pos_last = skipping + (num_selected-1)*stepping
-			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 			if (num_selected gt 2) then begin
 				for i = 2, num_selected-1 do begin
 					; Precalculate selected timesteps
 					pos = skipping + (i-1)*stepping
-					precalc, load_varfile+num_additional+num_selected-i, varfile=snapshots[pos], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs
+					precalc, load_varfile+num_additional+num_selected-i, varfile=snapshots[pos], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 				end
 			end
 		end

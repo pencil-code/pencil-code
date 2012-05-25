@@ -32,12 +32,15 @@ end
 
 
 ; Precalculates a data set and loads data, if necessary
-pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, show_aver=show_aver, time=time
+pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, show_aver=show_aver, time=time, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
   
   common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 
   ; Default settings
   default, show_aver, 0
+  default, cut_x, -1
+  default, cut_y, -1
+  default, cut_z, -1
   default, number, i
   default, dir, pc_get_datadir()
   default, datadir, dir
@@ -51,7 +54,11 @@ pro precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par,
     default, varfile, "var.dat"
     if (n_elements (vars) eq 0) then begin
       print, 'Reading: ', varfile, ' ... please wait!'
-      pc_read_var_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0)
+      if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
+        pc_read_slice_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, param=param, par2=run_param, varcontent=varcontent, time=time, quiet=(i ne 0), cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
+      end else begin
+        pc_read_var_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0)
+      end
       sources = varcontent.idlvar
       sources = sources[where (varcontent.idlvar ne 'dummy')]
       precalc_data, number, vars, tags
