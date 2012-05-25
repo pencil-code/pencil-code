@@ -192,6 +192,7 @@ if (not pc_gui_loaded) then BEGIN
 		pc_read_slice_raw, varfile=varfile, dim=dim, grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, /trim, /quiet
 	end else begin
 		pc_read_dim, obj=dim, datadir=datadir, /quiet
+		orig_dim = dim
 		pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, /trim, /quiet
 	end
 	default, nghost_x, dim.nghostx
