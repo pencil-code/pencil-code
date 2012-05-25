@@ -79,9 +79,10 @@ module Hydro
   real, dimension (3) :: uu_const=(/0.,0.,0./)
   complex, dimension (3) :: coefuu=(/0.,0.,0./)
   real, dimension(nx) :: xmask_hyd
+  real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real :: u_out_kep=0.0, velocity_ceiling=-1.0
-  real :: mu_omega=0., gap=0.
+  real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   integer :: nb_rings=0
   integer :: neddy=0
   real, dimension (5) :: om_rings=0.
@@ -113,7 +114,7 @@ module Hydro
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
-      relhel_uu, coefuu, &
+      relhel_uu, coefuu, r_omega, w_omega,&
       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, &
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, initpower, cutoff, u_out_kep, &
@@ -172,7 +173,7 @@ module Hydro
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       utop, ubot, omega_out, omega_in, lprecession, omega_precession, &
-      alpha_precession, lshear_rateofstrain, &
+      alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
       lalways_use_gij_etc, amp_centforce, &
       lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
@@ -567,6 +568,7 @@ module Hydro
       use FArrayManager
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
+      use Sub, only: step
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
@@ -616,6 +618,16 @@ module Hydro
           write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
         endif
       endif
+!
+!  defining a r-depend profile for Omega. The coriolis force will be suppressed
+!  in r < r_omega with the width w_omega, for having the supression for r> r_omega,
+!  choose a negativ w_omega. 
+!     
+      prof_om = 1.0
+      if (r_omega /= 0.0) then
+        prof_om = step(x(l1:l2),r_omega,w_omega)
+      endif
+!
 !
 !  damping parameters for damping velocities outside an embedded sphere
 !  04-feb-2008/dintrans: corriged because otherwise rdampext=r_ext all the time
@@ -3032,21 +3044,27 @@ module Hydro
 !  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
 !
 !                    ( costh)   (u1)      (+sinth*u3)
-!  -2Omega x U = -2O*(-sinth) X (u2) = 2O*(+costh*u3)
+!  -2*Omega x U = -2*(-sinth) X (u2) = 2*(+costh*u3)
 !                    (   0  )   (u3)      (-costh*u2-sinth*u1)
 !
 !  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
 !
 !                (-s2*u3)
-!  -2Omega x U = (+c2*u3)
+!  -2*Omega x U = (+c2*u3)
 !                (-c2*u2+s2*u1)
 !
       if (lcoriolis_force) then
         c2= 2*Omega*costh(m)
         s2=-2*Omega*sinth(m)
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+        if (r_omega /= 0.) then
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)*prof_om
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)*prof_om
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(c2*p%uu(:,2)+s2*p%uu(:,1))*prof_om
+        else
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+        endif
       endif
 !
 !  Centrifugal force
@@ -3084,13 +3102,13 @@ module Hydro
 !  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
 !
 !                    ( costh)   (u1)      (+sinth*u3)
-!  -2Omega x U = -2O*(-sinth) X (u2) = 2O*(+costh*u3)
+!  -2*Omega x U = -2*(-sinth) X (u2) = 2*(+costh*u3)
 !                    (   0  )   (u3)      (-costh*u2-sinth*u1)
 !
 !  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
 !
 !                (-s2*u3)
-!  -2Omega x U = (+c2*u3)
+!  -2*Omega x U = (+c2*u3)
 !                (-c2*u2+s2*u1)
 !
 !
