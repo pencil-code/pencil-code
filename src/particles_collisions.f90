@@ -333,7 +333,6 @@ module Particles_collisions
                     prob=dt*tau_coll1
                     call random_number_wrapper(r)
                     if (r<=prob) then
-                      print*, it, itsub, j, k
                       call particle_collision(xpj,xpk,vpj,vpk,j,k)
                       if (lshear .and. lshear_in_vp) then
                         vpk(2)=vpk(2)+qshear*Omega*xpk(1)
