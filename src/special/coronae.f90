@@ -2263,7 +2263,7 @@ module Special
       real, dimension (:,:), allocatable :: kx,ky,k2
       real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr
 !
-      real :: mu0_SI,u_b,time_SI
+      real :: time_SI
 !
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
@@ -2320,7 +2320,7 @@ module Special
             read (10,rec=i+1,iostat=ierr) tr
             ierr=-1
           else
-            if (tl+delta_t < time_SI .and. tr+delta_t > time_SI ) ierr=-1
+            if (tl+delta_t <= time_SI .and. tr+delta_t > time_SI ) ierr=-1
             ! correct time step is reached
           endif
         enddo
@@ -2332,11 +2332,8 @@ module Special
         read (10,rec=i+1) Bz0r
         close (10)
 !
-        mu0_SI = 4.*pi*1.e-7
-        u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
-!
-        Bz0l = Bz0l *  1e-4 / u_b  ! left real part
-        Bz0r = Bz0r *  1e-4 / u_b  ! right real part
+        Bz0l = Bz0l *  1e-4 / unit_magnetic  ! left real part
+        Bz0r = Bz0r *  1e-4 / unit_magnetic  ! right real part
 !
 ! first point in time
 !
