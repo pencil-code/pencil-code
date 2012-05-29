@@ -17,11 +17,17 @@ module Boundcond
 !
   public :: update_ghosts, finalize_boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
+  public :: bc_pencil
   public :: bc_per_x, bc_per_y, bc_per_z
 !
   interface update_ghosts
      module procedure update_ghosts_all
      module procedure update_ghosts_range
+  endinterface
+!
+  interface bc_pencil
+    module procedure bc_pencil_scalar
+    module procedure bc_pencil_vector
   endinterface
 !
   contains
@@ -888,6 +894,93 @@ module Boundcond
       endselect
 !
     endsubroutine boundconds_z
+!***********************************************************************
+    subroutine bc_pencil_scalar(penc, ncell, nghost, bc1, bc2)
+!
+! Apply boundary conditions to a 1D scalar of arbitrary size.
+!
+! 29-may-12/ccyang: coded
+!
+! Input/Output Arguments
+!   penc - a scalar array to be applied boundary conditions
+!
+! Input Arguments
+!   ncell - number of active cells in penc
+!   nghost - number of ghost cells in penc
+!   bc1 - boundary condition for the lower boundary
+!   bc2 - boundary condition for the upper boundary
+!
+      integer, intent(in) :: ncell, nghost
+      real, dimension(1-nghost:ncell+nghost), intent(inout) :: penc
+      character(len=*), intent(in) :: bc1, bc2
+!
+! Apply lower boundary condition.
+!
+      lower: select case (bc1)
+!     Nothing
+      case ('') lower
+!     Periodic
+      case ('p') lower
+        penc(1-nghost:0) = penc(ncell-nghost+1:ncell)
+!     Zero
+      case ('0') lower
+        penc(1-nghost:0) = 0.0
+!     Zeroth-order extrapolation
+      case ('cop') lower
+        penc(1-nghost:0) = penc(1)
+!     Unknown boundary condition
+      case default lower
+        call fatal_error('bc_pencil_scalar', 'unknown lower boundary condition')
+      endselect lower
+!
+! Apply upper boundary condition.
+!
+      upper: select case (bc2)
+!     Nothing
+      case ('') upper
+!     Periodic
+      case ('p') upper
+        penc(ncell+1:ncell+nghost) = penc(1:nghost)
+!     Zero
+      case ('0') upper
+        penc(ncell+1:ncell+nghost) = 0.0
+!     Zeroth-order extrapolation
+      case ('cop') upper
+        penc(ncell+1:ncell+nghost) = penc(ncell)
+!     Unknown boundary condition
+      case default upper
+        call fatal_error('bc_pencil_scalar', 'unknown upper boundary condition')
+      endselect upper
+!
+    endsubroutine bc_pencil_scalar
+!***********************************************************************
+    subroutine bc_pencil_vector(penc, ncell, nghost, ncomp, bc1, bc2)
+!
+! Apply boundary conditions to a 1D vector of arbitrary size.
+!
+! 22-may-12/ccyang: coded
+!
+! Input/Output Arguments
+!   penc - a vector array to be applied boundary conditions
+!
+! Input Arguments
+!   ncell - number of active cells in penc
+!   nghost - number of ghost cells in penc
+!   ncomp - number of components of the vector
+!   bc1 - boundary condition for the lower boundary
+!   bc2 - boundary condition for the upper boundary
+!
+      integer, intent(in) :: ncell, nghost, ncomp
+      real, dimension(1-nghost:ncell+nghost, ncomp), intent(inout) :: penc
+      character(len=*), dimension(ncomp), intent(in) :: bc1, bc2
+!
+      integer :: j
+!
+      comp: do j = 1, ncomp
+        call bc_pencil_scalar(penc(:,j), ncell, nghost, bc1(j), bc2(j))
+      enddo comp
+!
+    endsubroutine bc_pencil_vector
 !***********************************************************************
     subroutine bc_per_x(f,topbot,j)
 !
