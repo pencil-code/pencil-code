@@ -32,7 +32,7 @@ module Particles
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: tausp_species=0.0
   real, target, dimension (npar_species) :: tausp1_species=0.0
-  real, dimension (3) :: temp_grad0=0.0
+  real, dimension (3) :: temp_grad0=(/0.0,0.0,0.0/)
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
@@ -4417,10 +4417,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !   Henrik Lutro, testing
 !
       use Viscosity, only: getnu
+
       real, dimension(mpar_loc,mpvar) :: fp
       real, dimension(3), intent(out) :: force
       real, dimension(3) :: temp_grad
-      real TT,mu,nu,Kn,phi,mass_p
+      real TT,mu,nu_,Kn,phi_therm,mass_p
       real Ktc,Ce,Cm,Cint
       character (len=labellen) :: ivis=''
       integer, dimension(3) :: ineark
@@ -4431,25 +4432,28 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       Ktc=1.10
       Cm=1.13
-      Ce=2.17
-      !Find dynamic viscosity
-      call getnu(nu_input=nu,ivis=ivis)
-      if (ivis=='nu-const') then
-        mu=nu*interp_rho(k)
-      elseif (ivis=='rho-nu-const') then
-        mu=nu
-      elseif (ivis=='sqrtrho-nu-const') then
-        mu=nu*sqrt(interp_rho(k))
-      else
-        call fatal_error('calc_pencil_rep','No such ivis!')
-      endif
-      Cint=0.5
-!
+      Ce=2.17 
       if (interp%lTT) then
         TT=interp_TT(k)
       else
         TT=thermophoretic_T0
       endif
+      !Find dynamic viscosity
+      call getnu(nu_input=nu_,ivis=ivis)
+      if (ivis=='nu-const') then
+        mu=nu_*interp_rho(k)
+      elseif (ivis=='rho-nu-const') then
+        mu=nu_
+      elseif (ivis=='sqrtrho-nu-const') then
+        mu=nu_*sqrt(interp_rho(k))
+      elseif (ivis=='nu-therm') then
+        mu=nu_*interp_rho(k)*sqrt(TT)
+      elseif (ivis=='mu-therm') then
+        mu=nu_*sqrt(TT)
+      else
+        call fatal_error('calc_pencil_rep','No such ivis!')
+      endif
+      Cint=0.5    
       if (interp%lgradTT) then
         temp_grad=interp_gradTT(k,:)
       else
@@ -4460,17 +4464,17 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       mass_p=(4.0*pi/3.0)*rhopmat*fp(k,iap)**3
       if (thermophoretic_eq=='near_continuum') then
-        phi=-9*pi/cond_ratio
+        phi_therm=-9*pi/cond_ratio
       elseif (thermophoretic_eq=='transition') then
-        phi=-12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn))&
+        phi_therm=-12.0*pi*(Ktc*(1.0+cond_ratio*Ce*Kn)+3.0*Cm*Kn*(1.0-cond_ratio+cond_ratio*Ce*Kn))&
             /((1.0+3.0*Kn*exp(-Cint/Kn))*(1.0+3.0*Cm*Kn)*(2.0+cond_ratio+2.0*cond_ratio*Ce*Kn))
       elseif (thermophoretic_eq=='free_molecule') then
-        phi=0.0
+        phi_therm=0.0
       else
         call fatal_error('calc_pencil_rep','No thermoporetic range chosen')
       endif
 !
-      force=(fp(k,iap)*temp_grad*mu**2*phi)/(TT*interp_rho(k)*mass_p)
+      force=(fp(k,iap)*temp_grad*mu**2*phi_therm)/(TT*interp_rho(k)*mass_p)
 !
     endsubroutine calc_thermophoretic_force
 !***********************************************************************
