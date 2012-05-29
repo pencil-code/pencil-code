@@ -591,18 +591,19 @@ module ImplicitPhysics
 !
       TT=f(4,4,:,iTT)
 !
-      wz(:)=dt*gamma*hcond0*cp1/exp(f(4,4,n1:n2,ilnrho))
-      az(:)=-wz*dz_2/2.
-      bz(:)=1.+wz*dz_2
+      wz(:)=dt*dz_2*gamma*hcond0*cp1/exp(f(4,4,n1:n2,ilnrho))
+      az(:)=-wz/2.
+      bz(:)=1.+wz
       cz(:)=az
       do n=n1,n2
-        rhsz(n-nghost)=TT(n)+wz(n-nghost)*dz_2/2.*(TT(n+1)-2.*TT(n)+TT(n-1))
+        rhsz(n-nghost)=TT(n)+wz(n-nghost)/2.*(TT(n+1)-2.*TT(n)+TT(n-1))
       enddo
       bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1 ! T = Ttop
       if (bcz1(iTT)=='cT') then
         bz(1)=1. ; cz(1)=0.  ; rhsz(1)=cs2bot/gamma_m1 ! T = Tbot
       else
-        bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0  ! T' = Fbot
+        cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(1)*dz*Fbot/hcond0  ! T' = -Fbot/K
+!        bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0  ! T' = -Fbot/K
       endif
       call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT))
 !
