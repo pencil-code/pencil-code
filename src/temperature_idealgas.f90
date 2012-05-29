@@ -64,6 +64,7 @@ module Entropy
   logical :: lfreeze_lnTTint=.false., lfreeze_lnTText=.false.
   logical :: lhcond_global=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3_polar=.false.
+  logical :: lheatc_Ktherm=.false.
   logical :: lviscosity_heat=.true.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -322,6 +323,10 @@ module Entropy
           lheatc_chiconst=.true.
           if (lroot) call information('initialize_entropy', &
               ' heat conduction: constant chi')
+        case('K-therm')
+          lheatc_Ktherm=.true.
+          if (lroot) call information('initialize_entropy', &
+              ' heat conduction: temperature dependent K')
         case ('chi-hyper3')
           lheatc_hyper3=.true.
           if (lroot) call information('initialize_entropy','hyper conductivity')
@@ -429,6 +434,9 @@ module Entropy
 !
       if (lheatc_Kconst .and. hcond0==0.0) then
         call warning('initialize_entropy', 'hcond0 is zero!')
+      endif
+      if (lheatc_Ktherm .and. hcond0==0.0) then
+        call warning('initialize_entropy','hcond0 is zero!')
       endif
       if (lheatc_Kprof .and. hcond0==0.0) then
         call warning('initialize_entropy', 'hcond0 is zero!')
@@ -660,6 +668,17 @@ module Entropy
 !
       if (lheatc_Kconst) then
         if (ldensity.or.lboussinesq.or.lanelastic) lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_cp1)=.true.
+        if (ltemperature_nolog) then
+          lpenc_requested(i_del2TT)=.true.
+        else
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2lnTT)=.true.
+        endif
+      endif
+!
+      if (lheatc_Ktherm) then
+        if (ldensity) lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_cp1)=.true.
         if (ltemperature_nolog) then
           lpenc_requested(i_del2TT)=.true.
@@ -981,12 +1000,13 @@ module Entropy
       if (lcalc_heat_cool)  call calc_heat_cool(f,df,p)
 !
 !  Thermal conduction
-!
+!     
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Karctan)  call calc_heatcond_arctan(df,p)
       if (lheatc_tensordiffusion) call calc_heatcond_tensor(df,p)
+      if (lheatc_Ktherm) call calc_heatcond_Ktherm (df,p)
 !
 !  Hyper diffusion.
 !
@@ -1460,6 +1480,54 @@ module Entropy
       endif
 !
     endsubroutine calc_heatcond_constK
+!***********************************************************************
+    subroutine calc_heatcond_Ktherm(df,p)
+!
+!  Calculate the radiative diffusion term for K=cte:
+!
+!  lnTT version: gamma*K/rho/TT/cp*div(T*grad lnTT)
+!                =gamma*K/rho/cp*(gradlnTT.gradlnTT + del2ln TT)
+!    TT version: gamma*K/rho/cp*del2(TT)=gamma*chi*del2(TT)
+!
+!  Note: if ldensity=.false. then rho=1 and chi=K/cp
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub, only: dot
+!
+      real, dimension(mx,my,mz,mvar) :: df
+      type (pencil_case)  :: p
+      real, dimension(nx) :: g2, chix,hcondTT
+!
+      intent(in) :: p
+      intent(inout) :: df
+      hcondTT=hcond0*sqrt(exp(p%lnTT))
+!
+!  Add heat conduction to RHS of temperature equation.
+!
+      if (ldensity) then
+        chix=p%rho1*hcondTT*p%cp1
+      else
+        chix=hcondTT*p%cp1
+      endif
+!
+      if (ltemperature_nolog) then
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT)   + gamma*chix*p%del2TT
+      else
+        call dot(p%glnTT,p%glnTT,g2)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chix*(g2 + p%del2lnTT)
+      endif
+!
+!  Check maximum diffusion from thermal diffusion.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_Ktherm
 !***********************************************************************
     subroutine calc_heatcond_arctan(df,p)
 !
