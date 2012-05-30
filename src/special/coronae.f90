@@ -1002,7 +1002,7 @@ module Special
 !
       use Sub, only: del6
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
@@ -4037,7 +4037,7 @@ module Special
       real, dimension (nx,ny), save :: ax_init,ay_init,az_init
       logical, save :: lfirstcall_update_aa=.true.
 !
-     intent (inout) :: f
+     intent (in) :: f
 !
      if (ipz == 0) then
 !
