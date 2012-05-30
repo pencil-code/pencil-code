@@ -251,11 +251,11 @@ if (not pc_gui_loaded) then BEGIN
 		print, "There are > ", strtrim (num_snapshots, 2), " < snapshot files available."
 		print, "(This corresponds to ", strtrim (round (num_snapshots * gb_per_file * 10) / 10., 2), " GB.)"
 		if ((stepping eq 1) and (skipping eq 0)) then begin
-			print, "'"+procdir+varfile+"' will be read anyways."
+			print, "'"+procdir+varfile+"' will be loaded anyways."
 			print, "Do you want to load additional files into the cache?"
 			repeat begin
 				answer = "n"
-				read, answer, format="(A)", prompt="Read (A)ll / (S)elected / (N)o additional files: "
+				read, answer, format="(A)", prompt="Load (A)ll / (S)elected / (N)o additional files: "
 			end until (any (strcmp (answer, ['n', 'a', 's'], /fold_case)))
 			if (strcmp (answer, 'n', /fold_case)) then begin
 				stepping = 0
@@ -271,24 +271,25 @@ if (not pc_gui_loaded) then BEGIN
 					end until ((skipping ge 0) and (skipping le num_snapshots-1))
 				end
 				if ((num_snapshots-skipping) gt 1) then begin
-					print, "Please enter a stepping for reading files:"
-					print, "(0=do not read any more files, 1=each file, 2=every 2nd, ...)"
+					print, "Please enter a stepping for loading files:"
+					print, "(0=do not load any more files, 1=each file, 2=every 2nd, ...)"
 					repeat begin
 						read, stepping, format="(I)", prompt="(0..."+strtrim (num_snapshots-skipping, 2)+"): "
 					end until ((stepping ge 0) and (stepping le num_snapshots-skipping))
 				end
 				max_files = floor ((num_snapshots-1-skipping)/stepping) + 1
 				if ((max_files gt 1) and (stepping ge 1)) then begin
-					print, "How many files do you want to read in total?"
+					print, "How many files do you want to load in total?"
 					repeat begin
 						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (max_files, 2)+"): "
 					end until ((files_total ge 0) and (files_total le max_files))
-					if (files_total eq 0) then files_total = max_files
-					if (files_total le max_files) then begin
-						print, "You selected to load less files than availabe."
+					if (files_total eq 0) then begin
+						files_total = max_files
+					end else if (files_total le max_files) then begin
+						print, "You have selected to load less files than availabe."
 						addquestion = ""
 						if (num_additional gt 0) then addquestion = " and '"+addfile+"'"
-						print, "Do you want to skip reading of '"+varfile+"'"+addquestion+"?"
+						print, "Do you want to skip loading of '"+varfile+"'"+addquestion+"?"
 						repeat begin
 							answer = "n"
 							read, answer, format="(A)", prompt="(Y)es / (N)o: "
