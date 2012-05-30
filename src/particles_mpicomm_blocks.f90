@@ -42,6 +42,7 @@ module Particles_mpicomm
   integer, dimension (0:nbricks-1) :: iproc_foster_brick
   integer, dimension (ncpus) :: iproc_parent_list, iproc_foster_list
 !
+  real :: xref_par=0.0, yref_par=0.0, zref_par=0.0
   integer :: it1_loadbalance=100
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
   logical :: lfill_blocks_gpotself=.false., lfill_bricks_velocity=.false.
@@ -182,6 +183,18 @@ module Particles_mpicomm
 !
         call input_blocks(trim(directory_dist)//'/blocks.dat')
       endif
+!
+!  For placing particles in blocks the CPUs need a common reference point that
+!  is not affected by round off errors or representation noise.
+!
+      if (lroot) then
+        xref_par=x(l1)
+        yref_par=y(m1)
+        zref_par=z(n1)
+      endif
+      call mpibcast_real(xref_par,1)
+      call mpibcast_real(yref_par,1)
+      call mpibcast_real(zref_par,1)
 !
       call keep_compiler_quiet(f)
 !
@@ -2304,7 +2317,7 @@ module Particles_mpicomm
 !
     endsubroutine find_index_by_bisection
 !***********************************************************************
-    subroutine get_brick_index(xxp, iproc, ibrick, ineargrid, status)
+    subroutine get_brick_index(xxp, iproc_rec, ibrick_rec, ineargrid, status)
 !
 !  Find the parent processor and brick of a given position.
 !
@@ -2312,20 +2325,19 @@ module Particles_mpicomm
 !                    routines migrate_particles_*_to_*
 !
       real, dimension(3), intent(in) :: xxp
-      integer, intent(out) :: iproc, ibrick
+      integer, intent(out) :: iproc_rec, ibrick_rec
       integer, dimension(3), intent(out), optional :: ineargrid
       integer, intent(out), optional :: status
 !
       logical :: lfirstcall = .true.
       integer, save :: nbxy, npxy
       real, save :: dx1, dy1, dz1
-      real, save :: xref_par, yref_par, zref_par
 !
       integer :: ix0, iy0, iz0
       integer :: ibx0, iby0, ibz0
       integer :: ipx0, ipy0, ipz0
 !
-      init: if (lfirstcall) then
+      if (lfirstcall) then
 !
 !  Save the inverse grid spacing.
 !
@@ -2335,20 +2347,8 @@ module Particles_mpicomm
         dy1 = 1. / dy
         dz1 = 1. / dz
 !
-!  For placing particles in blocks the CPUs need a common reference point that
-!  is not affected by round off errors or representation noise.
-!
-        if (lroot) then
-          xref_par=x(l1)
-          yref_par=y(m1)
-          zref_par=z(n1)
-        endif
-        call mpibcast_real(xref_par,1)
-        call mpibcast_real(yref_par,1)
-        call mpibcast_real(zref_par,1)
-!
         lfirstcall = .false.
-      endif init
+      endif
 !
 !  Find processor and brick x-coordinate
 !
@@ -2422,8 +2422,8 @@ module Particles_mpicomm
 !
 !  Calculate processor and brick index.
 !
-      ibrick = ibx0 + iby0 * nbx + ibz0 * nbxy
-      iproc  = ipx0 + ipy0 * nprocx + ipz0 * npxy
+      ibrick_rec = ibx0 + iby0 * nbx + ibz0 * nbxy
+      iproc_rec  = ipx0 + ipy0 * nprocx + ipz0 * npxy
 !
 !  Save the nearest grid point.
 !
