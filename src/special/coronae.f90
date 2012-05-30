@@ -996,7 +996,7 @@ module Special
     subroutine special_calc_magnetic(f,df,p)
 !
 ! Additional terms to the right hand side of the
-! density equation
+! induction equation
 !
 !  17-jun-11/bing: coded
 !
@@ -1010,6 +1010,8 @@ module Special
       integer :: i
 !
       call keep_compiler_quiet(p)
+!
+      if (aa_tau_inv /=0.) call update_aa(f,df)
 !
       if (hyper3_diffrho /= 0.) then
         do i=0,2
@@ -4027,54 +4029,50 @@ module Special
 !
     endsubroutine filter_farray
 !***********************************************************************
-    subroutine update_aa(f,dt_)
+    subroutine update_aa(f,df)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, intent(in) :: dt_
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+!
       real, dimension (nx,ny), save :: ax_init,ay_init,az_init
       logical, save :: lfirstcall_update_aa=.true.
 !
-      intent (inout) :: f
+     intent (inout) :: f
 !
-      if (ipz == 0) then
+     if (ipz == 0) then
 !
-        if (lfirstcall_update_aa) then
-          open (11,file=trim(directory_snap)//trim('/Ax_init.dat'), &
-              form='unformatted')
-          read (11) ax_init
-          close (11)
-          open (11,file=trim(directory_snap)//trim('/Ay_init.dat'), &
-              form='unformatted')
-          read (11) ay_init
-          close (11)
-          open (11,file=trim(directory_snap)//trim('/Az_init.dat'), &
-              form='unformatted')
-          read (11) az_init
-          close (11)
-          lfirstcall_update_aa = .false.
-        endif
+       if (lfirstcall_update_aa) then
+         open (11,file=trim(directory_snap)//trim('/Ax_init.dat'), &
+             form='unformatted')
+         read (11) ax_init
+         close (11)
+         open (11,file=trim(directory_snap)//trim('/Ay_init.dat'), &
+             form='unformatted')
+         read (11) ay_init
+         close (11)
+         open (11,file=trim(directory_snap)//trim('/Az_init.dat'), &
+             form='unformatted')
+         read (11) az_init
+         close (11)
+         lfirstcall_update_aa = .false.
+       endif
 !
-        f(l1:l2,m1:m2,irefz,iax) = f(l1:l2,m1:m2,irefz,iax) * &
-            (1.-dt_*aa_tau_inv) + ax_init *dt_*aa_tau_inv
-        f(l1:l2,m1:m2,irefz,iay) = f(l1:l2,m1:m2,irefz,iay) * &
-            (1.-dt_*aa_tau_inv) + ay_init *dt_*aa_tau_inv
-        f(l1:l2,m1:m2,irefz,iaz) = f(l1:l2,m1:m2,irefz,iaz) * &
-            (1.-dt_*aa_tau_inv) + az_init *dt_*aa_tau_inv
-      endif
+       if (n == irefz) then
+         df(l1:l2,m,irefz,iax) = (ax_init(:,m-nghost)-f(l1:l2,m,irefz,iax)) &
+             * aa_tau_inv
+         df(l1:l2,m,irefz,iay) = (ay_init(:,m-nghost)-f(l1:l2,m,irefz,iay)) &
+             * aa_tau_inv
+         df(l1:l2,m,irefz,iaz) = (az_init(:,m-nghost)-f(l1:l2,m,irefz,iaz)) &
+             * aa_tau_inv
+       endif
 !
-    endsubroutine update_aa
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
+       if (lfirst.and.ldt) then
+         dt1_max=max(dt1_max,aa_tau_inv/cdts)
+       endif
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
+     endif
 !
-      if (aa_tau_inv /=0.) call update_aa(f,dt_)
-!
-      call keep_compiler_quiet(df)
-!
-    endsubroutine  special_after_timestep
+   endsubroutine update_aa
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
