@@ -1052,7 +1052,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	if (num_snapshots ge 2) then snap_active = 1 else snap_active = 0
 	if (num_snapshots ge 2) then prev_active = 1 else prev_active = 0
 	next_active = 0
-	if (file_test (settings_file, /read)) then load_active = 1 else load_active = 0
+	if (file_test ('GUI_settings.xdr', /read)) then load_active = 1 else load_active = 0
 
 	if (num_x gt 1) then coord_x_active = 1 else coord_x_active = 0
 	if (num_y gt 1) then coord_y_active = 1 else coord_y_active = 0
