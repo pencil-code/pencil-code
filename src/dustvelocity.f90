@@ -320,13 +320,13 @@ module Dustvelocity
           lviscd_shock=.true.
         case ('shock_simplified','nud-shock_simplified')
           lviscd_shock_simplified=.true.
-        case ('hyper3_simplified')
+        case ('hyper3_simplified','hyper3-simplified')
           if (lroot) print*, 'Viscous force (dust): nud*del6ud'
           lviscd_hyper3_simplified=.true.
-        case ('hyper3_rhod_nud-const')
+        case ('hyper3_rhod_nud-const','hyper3-rhod-nud-const')
           if (lroot) print*, 'Viscous force (dust): mud/rhod*del6ud'
           lviscd_hyper3_rhod_nud_const=.true.
-        case ('hyper3_nud-const')
+        case ('hyper3_nud-const','hyper3-nud-const')
           if (lroot) print*, 'Viscous force (dust): nud*(del6ud+S.glnnd)'
           lviscd_hyper3_nud_const=.true.
         case default
