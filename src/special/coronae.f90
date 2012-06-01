@@ -43,7 +43,7 @@ module Special
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.
-  real :: t_start_mark=0.
+  real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -3701,12 +3701,26 @@ module Special
       character (len=fnlen) :: data_dat
       character (len=intlen) :: llabel,rlabel
       integer :: frame,unit=1,lend=0,ierr=0,i,j,tag_left=350,tag_right=351,ipt
-      real :: delta_t=0.
-      logical :: init_left=.true.
+      real :: delta_t=0.,coeff
+      logical, save :: init_left=.true.,lfirstcall=.true.
       real, dimension(:,:,:,:), allocatable :: global_left,global_right
       real, dimension(nx,ny,4,8) :: left,right=0.,inte
+      real, dimension (nx,ny,4), save :: ax_init,ay_init
 !
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
+!
+      if (lfirstcall .and. lmagnetic) then
+        ax_init =  f(l1:l2,m1:m2,1:4,iax)
+        ay_init =  f(l1:l2,m1:m2,1:4,iay)
+        lfirstcall =.false.
+      endif
+!
+! parameter to have a smooth transition from
+! a potential field to the boundary data
+!
+      if (t_mid_mark * t_width_mark .gt. 0. .and. lmagnetic) then
+        coeff  =  cubic_step(t,t_mid_mark,t_width_mark)
+      endif
 !
       inquire(IOLENGTH=lend) tl
 !
@@ -3727,7 +3741,8 @@ module Special
               read (unit,rec=frame+1,iostat=ierr) tr
               ierr=-1
             else
-              if (t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t) ierr=-1
+              if (t*unit_time + t_start_mark >=tl+delta_t .and. &
+                  t*unit_time + t_start_mark < tr+delta_t) ierr=-1
               ! correct time step is reached
             endif
           enddo
@@ -3807,7 +3822,7 @@ module Special
 !
 ! Linear interpolate data
 !
-      inte = (t*unit_time - (tl+delta_t))*(right-left)/(tr-tl)+left
+      inte = (t*unit_time + t_start_mark - (tl+delta_t))*(right-left)/(tr-tl)+left
 !
 ! Use cubic step to interpolate the data.
 !
@@ -3832,12 +3847,12 @@ module Special
           f(l1:l2,m1:m2,n1+1-i,ilnTT)=inte(:,:,n1+1-i,5)-log(unit_temperature)
         endif
 !
-        if (lmagnetic) then
+        if (lmagnetic)  then
           if (nygrid /= 1) then
-            f(l1:l2,m1:m2,n1+1-i,iax)=inte(:,:,n1+1-i,6)/(unit_magnetic*unit_length)
+            f(l1:l2,m1:m2,n1+1-i,iax)=ax_init(:,:,n1+1-i)*(1.-coeff)+coeff*inte(:,:,n1+1-i,6)/(unit_magnetic*unit_length)
           endif
           if (nxgrid /= 1) then
-            f(l1:l2,m1:m2,n1+1-i,iay)=inte(:,:,n1+1-i,7)/(unit_magnetic*unit_length)
+            f(l1:l2,m1:m2,n1+1-i,iay)=ay_init(:,:,n1+1-i)*(1.-coeff)+coeff*inte(:,:,n1+1-i,7)/(unit_magnetic*unit_length)
           endif
           f(l1:l2,m1:m2,n1+1-i,iaz)=0.
         endif
