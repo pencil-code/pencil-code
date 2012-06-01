@@ -675,7 +675,7 @@ module Dustdensity
             enddo; enddo
           endif
         case ('atm_drop_gauss2')
-          del=(init_x2-init_x1)*0.002
+          del=(init_x2-init_x1)*0.2
           do k=1,ndustspec
           do i=1,mx
             f(i,:,:,ind(k))=(init_distr2(k)+init_distr(k))*0.5  &
