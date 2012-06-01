@@ -915,8 +915,8 @@ module Hydro
           do m=m1,m2; do n=n1,n2
             f(:,m,n,iuz)=f(:,m,n,iuz)+ampluu(j)*sin(kx_uu*x)*exp(-10*z(n)**2)
           enddo; enddo
-        case ('coswave-x'); call coswave(ampluu(j),f,iux,kx=kx_uu)
-        case ('coswave-y'); call coswave(ampluu(j),f,iuy,ky=ky_uu)
+        case ('coswave-x'); call coswave(ampluu(j),f,iux,kx=kx_uu,ky=ky_uu,kz=kz_uu)
+        case ('coswave-y'); call coswave(ampluu(j),f,iuy,kx=kx_uu,ky=ky_uu,kz=kz_uu)
         case ('coswave-z'); call coswave(ampluu(j),f,iuz,kz=kz_uu)
         case ('coswave-x-z'); call coswave(ampluu(j),f,iux,kz=kz_uu)
         case ('coswave-z-x'); call coswave(ampluu(j),f,iuz,kx=kx_uu)
@@ -2965,6 +2965,8 @@ module Hydro
 !
           if (headtt) &
               print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+!
+!  Note the minus sign in front of the sin_theta term!
 !
           c2= 2*Omega*cos(theta*pi/180.)
           s2=-2*Omega*sin(theta*pi/180.)
