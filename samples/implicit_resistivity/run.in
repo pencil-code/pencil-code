@@ -1,0 +1,13 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Runtime parameters for the test of the implicit resistivity.
+!
+&run_pars
+  cvsid = '$Id$'
+  nt = 1000000, it1 = 10
+  tmax = 1., dtmax = 0.01
+/
+&magnetic_run_pars
+  iresistivity = 'eta-const', eta = .1
+  limplicit_resistivity = .true.
+/

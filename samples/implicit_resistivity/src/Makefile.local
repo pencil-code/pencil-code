@@ -1,0 +1,15 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+
+INITIAL_CONDITION = init_delta
+
+VISCOSITY = noviscosity
+EOS       = noeos
+
+MAGNETIC  =   magnetic
+
+REAL_PRECISION = double

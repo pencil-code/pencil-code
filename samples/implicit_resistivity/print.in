@@ -1,0 +1,8 @@
+it(i4)
+t(f6.2)
+dt(e9.2)
+bxmax(e13.6)
+bymax(e13.6)
+bzmax(e13.6)
+arms(e13.6)
+amax(e13.6)

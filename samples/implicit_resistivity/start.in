@@ -1,0 +1,15 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialization parameters for the test of the implicit resistivity.
+!
+&init_pars
+  cvsid = '$Id$'
+  xyz0 = -1., -1., -1.
+  xyz1 =  1.,  1.,  1.
+  grid_func = 'sinh', 'sinh', 'sinh'
+  coeff_grid = 4., 4., 4.
+/
+&magnetic_init_pars
+/
+&initial_condition_pars
+/
