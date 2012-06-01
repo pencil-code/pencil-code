@@ -327,6 +327,16 @@ module Magnetic
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************
+    subroutine split_update_magnetic(f)
+!
+!  dummy
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_magnetic
+!***********************************************************************
     subroutine expand_shands_magnetic()
 !
 !  Dummy

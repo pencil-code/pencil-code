@@ -1038,4 +1038,14 @@ if (ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
     endsubroutine bb_unitvec_shock
 !***********************************************************************
+    subroutine split_update_magnetic(f)
+!
+!  dummy
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_magnetic
+!***********************************************************************
 endmodule Magnetic

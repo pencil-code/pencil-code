@@ -64,7 +64,7 @@ program run
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
   use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, output_form
-  use Magnetic,        only: rescaling_magnetic
+  use Magnetic,        only: rescaling_magnetic, split_update_magnetic
   use Messages
   use Mpicomm
   use NSCBC,           only: NSCBC_clean_up
@@ -556,6 +556,7 @@ program run
 !  Integrate operator split terms.
 !
     if (lenergy) call split_update_energy(f)
+    if (lmagnetic) call split_update_magnetic(f)
 !
 !  Print diagnostic averages to screen and file.
 !
