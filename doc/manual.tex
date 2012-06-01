@@ -4136,11 +4136,34 @@ for options to \cmd{structure}.
 
 \subsection{Particles}
 
+%---------------------------------
+%DM
+% This part is possibly quite obsolete as this does not mention particles_main at all. 
+% Now the particles module in primarily particles_main() which then calls other particles
+% modules. I have added a little bit below which might be actually wrong. Could the
+% particle experts (Anders, Wlad, Nils )  add/correct . 
+%---------------------------------
 The {\sc Pencil Code} has modules for tracer particles and for dust particles (see
-Sect.~\ref{S-particles-equations}). The particle modules are chosen by setting
-the value of the variable \code{PARTICLES} in \code{Makefile.local} to either
-\code{particles_dust} or \code{particles_tracers}. In addition one must define
-a few parameters in \code{cparam.local}. Here is a sample of
+Sect.~\ref{S-particles-equations}). 
+% DM commented, see comments above
+%The particle modules are chosen by setting
+%the value of the variable \code{PARTICLES} in \code{Makefile.local} to either
+%\code{particles_dust} or \code{particles_tracers}. 
+The particles modules are chosen first by setting the value of the variable \code{PARTICES_MAIN}
+and \code{PARTICES_SUB} to \code{particles_main} and \code{particles_sub} respectively. 
+in \code{Makefile.local}. 
+This however still does not specify which equations for the particles we are going to integrate. 
+One need to additionally set either (or both) \code{PARTICLES_DUST} or \code{PARTICLES_TRACER} variables 
+to \code{particles_dust} or \code{particles_tracers} to tell the code whether we are solving
+for dust particles or tracer particles (which follows the instantanious streamlines). 
+For the former case each particle has six degrees of freedom (if the space is three dimensional),
+three positions and three velocities. For the latter it suffices to have only three position variables
+as the velocity of the particles are equal to the instantanious fluid velocity at that point. 
+In addition one choose to have several internal degrees of freedoms for the particles. 
+For example one can solve for particles with spin, in that case one sets \code{PARTICLES_SPIN} to
+\code{particles_spin}.  
+ 
+In addition one must define a few parameters in \code{cparam.local}. Here is a sample of
 \code{cparam.local} for a parallel run with 2,000,000 particles:
 \begin{verbatim}
 integer, parameter :: ncpus=16, nprocy=4, nprocz=4, nprocx=1
@@ -6505,6 +6528,55 @@ of type real.  In fact the ghost zones
 of df are not required or calculated but having f- and df-arrays of the same
 size make the coding more transparent.  For $\rm{mx}$, $\rm{my}$ and
 $\rm{mz}$ large the wasted storage becomes negligible.
+
+%-----------------------------------------------------------
+% DM added a discussion of the fp-array. Could the particle experts please add/correct ?
+%
+\subsection{The fp-array}
+\label{fp-array}
+\index{fp-array}
+
+Similar to the `f' array the code also has a 'fp' array which contains current states of 
+all the particles. Like the f-array the fp-array also has a counter part, the dfp-array. 
+the code. 
+The dimension of the fp-array is $mpar_local\times mpvar$ where $mpar_local$ is the number of particles
+in the local processor (or serial runs this is the total number of particles)
+and $mpvar$ depends on the problem at hand.  
+For example if we are solving for only tracer particles then $mpvar=3$, for 
+dust particles $mpvar=6$. 
+The sequence in which the slots in the fp-array are filled up depends on the
+sequence in which different particle modules are called from the \code{particles_main.f90}. 
+The following are the relevant lines from \code{particles_main.f90}. 
+\begin{verbatim}
+
+!***********************************************************************
+    subroutine particles_register_modules()
+!
+!  Register particle modules.
+!
+!  07-jan-05/anders: coded
+!
+      call register_particles              ()
+      call register_particles_radius       ()
+      call register_particles_spin         ()
+      call register_particles_number       ()
+      call register_particles_mass         ()
+      call register_particles_selfgrav     ()
+      call register_particles_nbody        ()
+      call register_particles_viscosity    ()
+      call register_pars_diagnos_state     ()
+!
+    endsubroutine particles_register_modules
+!***********************************************************************
+\end{verbatim} 
+
+The subroutine \code{resister_particles} can mean either the tracer particles
+or dust particles. For the former the first three slots of the fp-array are
+the three coordinates. For the latter the first six slots of the
+fp-array are the three coordinates followed by the three velocities. 
+The seventh slot (or the fourth if we are use tracer particles) is the radius of
+the particle which can also change as a function of time as particles collide and
+might fuse together to form bigger particles.  
 
 \subsection{The pencil case}
 \label{pencil-case}
