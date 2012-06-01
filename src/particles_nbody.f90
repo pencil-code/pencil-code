@@ -85,6 +85,7 @@ module Particles_nbody
 !  used by positions and velocities.
 !
       imass=npvar+1
+      pvarname(npvar+1)='imass'
 !
 !  No need to solve the N-body equations for non-N-body problems.
 !

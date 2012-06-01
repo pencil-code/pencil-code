@@ -75,8 +75,11 @@ module Particles
 !  Indices for particle position.
 !
       ixp=npvar+1
+      pvarname(npvar+1)='ixp'
       iyp=npvar+2
+      pvarname(npvar+2)='iyp'
       izp=npvar+3
+      pvarname(npvar+3)='izp'
 !
 !  Increase npvar accordingly.
 !

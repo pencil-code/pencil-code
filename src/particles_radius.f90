@@ -72,6 +72,7 @@ module Particles_radius
 !  Index for particle radius.
 !
       iap=npvar+1
+      pvarname(npvar+1)='iap'
 !
 !  Increase npvar accordingly.
 !

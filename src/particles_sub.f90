@@ -744,12 +744,6 @@ module Particles_sub
       write(20) fp(k,:)
       close(20)
 !
-      open(20,file=trim(directory)//'/rmv_par_vel.dat', &
-          position='append',form='unformatted')
-! write down the velocities of the particles that are being removed. 
-      if (present(dfp)) write(20) dfp(k,:)
-      close(20)
-!
       if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(k)
 !
 !  Switch the removed particle with the last particle present in the processor

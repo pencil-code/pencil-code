@@ -49,6 +49,7 @@ module Particles_mass
 !  Index for particle mass.
 !
       irhopswarm=npvar+1
+      pvarname(npvar+1)='irhopswarm'
 !
 !  Increase npvar accordingly.
 !

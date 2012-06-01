@@ -55,6 +55,7 @@ module Particles_number
 !  Index for particle internal number.
 !
       inpswarm=npvar+1
+      pvarname(npvar+1)='inpswarm'
 !
 !  Increase npvar accordingly.
 !

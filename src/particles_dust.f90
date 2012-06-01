@@ -229,14 +229,20 @@ module Particles
 !  Indices for particle position.
 !
       ixp=npvar+1
+      pvarname(npvar+1)='ixp'
       iyp=npvar+2
+      pvarname(npvar+2)='iyp'
       izp=npvar+3
+      pvarname(npvar+3)='izp'
 !
 !  Indices for particle velocity.
 !
       ivpx=npvar+4
+      pvarname(npvar+4)='ivpx'
       ivpy=npvar+5
+      pvarname(npvar+5)='ivpy'
       ivpz=npvar+6
+      pvarname(npvar+6)='ivpz'
 !
 !  Increase npvar accordingly.
 !

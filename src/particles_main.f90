@@ -41,6 +41,8 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
+   integer :: ipvar
+!
       call register_particles              ()
       call register_particles_radius       ()
       call register_particles_spin         ()
@@ -50,6 +52,18 @@ module Particles_main
       call register_particles_nbody        ()
       call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
+!
+!
+!  print summary of variable names
+!
+      write(*,*) 'DM',pvarname
+      if (lroot) then
+        open(3,file=trim(datadir)//'/pvarname.dat',status='replace')
+        do ipvar=1,mpvar
+          write(3,"(i4,2x,a)") ipvar,pvarname(ipvar)
+        enddo
+        close(3)
+      endif
 !
     endsubroutine particles_register_modules
 !***********************************************************************

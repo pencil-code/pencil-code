@@ -73,9 +73,14 @@ module Particles_spin
 !
 !  Indices for particle spin
 !
+!DM why are the following commented out ?
+!
 !     ipsx=npvar+1
+!     pvarname(npvar+1)='ipsx'
 !     ipsy=npvar+2
+!     pvarname(npvar+1)='ipsx'
 !     ipsz=npvar+3
+!     pvarname(npvar+1)='ipsx'
 !
 !     npvar=npvar+3
 !
