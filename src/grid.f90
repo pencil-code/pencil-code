@@ -84,39 +84,33 @@ module Grid
 !
       lequidist=(grid_func=='linear')
 !
-      if (lperi(1)) then
-        dx=Lx/nxgrid
-        x00=x0+.5*dx
-        if (lshift_origin(1)) x00=x0+dx
-      else
-        dx=Lx/(nxgrid-1)
-        x00=x0
-        if (lshift_origin(1)) x00=x0+.5*dx
-      endif
-      if (lperi(2)) then
-        dy=Ly/nygrid
-        y00=y0+.5*dy
-        if (lshift_origin(2)) y00=y0+dy
-      else
-        dy=Ly/(nygrid-1)
-        y00=y0
-        if (lshift_origin(2)) y00=y0+.5*dy
-      endif
-      if (lperi(3)) then
-        dz=Lz/nzgrid
-        z00=z0+.5*dz
-        if (lshift_origin(3)) z00=z0+dz
-      else
-        dz=Lz/(nzgrid-1)
-        z00=z0
-        if (lshift_origin(3)) z00=z0+.5*dz
-      endif
+!  Set the lower boundary and the grid size.
 !
-!  produce index arrays xi1, xi2, and xi3
+      x00 = x0
+      y00 = y0
+      z00 = z0
+!
+      dx = Lx / merge(nxgrid, max(nxgrid-1,1), lperi(1))
+      dy = Ly / merge(nygrid, max(nygrid-1,1), lperi(2))
+      dz = Lz / merge(nzgrid, max(nzgrid-1,1), lperi(3))
+!
+!  Shift the lower boundary if requested.
+!
+      if (lshift_origin(1)) x00 = x0 + 0.5 * dx
+      if (lshift_origin(2)) y00 = y0 + 0.5 * dy
+      if (lshift_origin(3)) z00 = z0 + 0.5 * dz
+!
+!  Produce index arrays xi1, xi2, and xi3:
+!    xi = 0, 1, 2, ..., N-1 for non-periodic grid
+!    xi = 0.5, 1.5, 2.5, ..., N-0.5 for periodic grid
 !
       do i=1,mx; xi1(i)=i-nghost-1+ipx*nx; enddo
       do i=1,my; xi2(i)=i-nghost-1+ipy*ny; enddo
       do i=1,mz; xi3(i)=i-nghost-1+ipz*nz; enddo
+!
+      if (lperi(1)) xi1 = xi1 + 0.5
+      if (lperi(2)) xi2 = xi2 + 0.5
+      if (lperi(3)) xi3 = xi3 + 0.5
 !
 !  Produce index arrays for processor boundaries, which are needed for
 !  particle migration (see redist_particles_bounds). The select cases
@@ -137,7 +131,13 @@ module Grid
         enddo
       endif
 !
+      if (lperi(1)) xi1proc = xi1proc + 0.5
+      if (lperi(2)) xi2proc = xi2proc + 0.5
+      if (lperi(3)) xi3proc = xi3proc + 0.5
+!
 !  The following is correct for periodic and non-periodic case
+!    Periodic: x(xi=0) = x0 and x(xi=N) = x1
+!    Non-periodic: x(xi=0) = x0 and x(xi=N-1) = x1
 !
       xi1lo=0.; xi1up=nxgrid-merge(0.,1.,lperi(1))
       xi2lo=0.; xi2up=nygrid-merge(0.,1.,lperi(2))
@@ -148,7 +148,7 @@ module Grid
 !  x coordinate
 !
       if (nxgrid==1) then
-        x = x00
+        x = x00 + 0.5 * dx
         ! hopefully, we will only ever multiply by the following quantities:
         xprim = 0.
         xprim2 = 0.
@@ -418,7 +418,7 @@ module Grid
 !  y coordinate
 !
       if (nygrid==1) then
-        y = y00
+        y = y00 + 0.5 * dy
         ! hopefully, we will only ever multiply by the following quantities:
         yprim = 0.
         yprim2 = 0.
@@ -565,7 +565,7 @@ module Grid
 !  z coordinate
 !
       if (nzgrid==1) then
-        z = z00
+        z = z00 + 0.5 * dz
         ! hopefully, we will only ever multiply by the following quantities:
         zprim = 0.
         zprim2 = 0.
@@ -591,27 +591,6 @@ module Grid
           if (lparticles .or. lsolid_cells) then
             call grid_profile(a*(xi3proc-xi3star),grid_func(3),g3proc)
             g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
-          endif
-!
-        case ('sinh2')
-!
-          a = coeff_grid(3) / nzgrid
-          if (lperi(3)) then
-            xi3 = xi3 + .5
-            xi3proc = xi3proc + .5
-          endif
-          xi3star = find_star(a*xi3lo, a*xi3up, z0, z0+Lz, xyz_star(3), grid_func(3)) / a
-          call grid_profile(a*(xi3  -xi3star), grid_func(3), g3, g3der1, g3der2)
-          call grid_profile(a*(xi3lo-xi3star), grid_func(3), g3lo)
-          call grid_profile(a*(xi3up-xi3star), grid_func(3), g3up)
-!
-          z = z0 + Lz * (g3 - g3lo) / (g3up - g3lo)
-          zprim  = Lz * (g3der1*a   ) / (g3up - g3lo)
-          zprim2 = Lz * (g3der2*a**2) / (g3up - g3lo)
-!
-          if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi3proc-xi3star), grid_func(3), g3proc)
-            g3proc = z0 + Lz * (g3proc - g3lo) / (g3up - g3lo)
           endif
 !
         case ('cos','tanh')
