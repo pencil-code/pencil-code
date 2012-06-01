@@ -146,6 +146,8 @@
                     \quad(mean Reynolds stress) \\
   \var{ruyuzm}    & $\left<\varrho u_y u_z\right>$
                     \quad(mean Reynolds stress) \\
+  \var{divrhourms} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm rms}$ \\
+  \var{divrhoumax} & $\left|\nabla\cdot(\varrho\uv)\right|_{\rm max}$ \\
   \var{rlxm}      & $\left< \rho y u_z - z u_y \right>$ \\
   \var{rlym}      & $\left< \rho z u_x - x u_z \right>$ \\
   \var{rlzm}      & $\left< \rho x u_y - y u_x \right>$ \\
@@ -193,6 +195,8 @@
   \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
   \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
   \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{udpxxm}    & components of symmetric tensor
+                    $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
@@ -421,6 +425,7 @@
   \var{bz2m}      & $\left< B_z^2 \right>$ \\
   \var{uxbm}      & $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
   \var{jxbm}      & $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
+  \var{magfricmax} & Magneto-Frictional velocity $\left<\jv\times\Bv\right>\cdot\Bv^2$ \\
   \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
   \var{b1b32m}    & $\left<B_1 B_{3,2} \right>$ \\
   \var{b2b13m}    & $\left<B_2 B_{1,3} \right>$ \\
@@ -486,6 +491,8 @@
   \var{dtrad}     & radiative loss from RTV \\
   \var{dtspitzer} & Spitzer heat conduction
                     time step \\
+  \var{qmax}      & max of heat flux vector \\
+  \var{qrms}      & rms of heat flux vector \\
 \midrule
   \multicolumn{2}{c}{Module \file{advective_gauge.f90}} \\
 \midrule
@@ -623,6 +630,8 @@
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{dtrad}     & radiative loss from RTV \\
+  \var{qmax}      & max of heat flux vector \\
+  \var{qrms}      & rms of heat flux vector \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule
@@ -753,6 +762,21 @@
   \var{gTmax}     & $\max (|\nabla T|)$ \\
   \var{TTmin}     & $\min (T)$ \\
   \var{TTm}       & $\left< T \right>$ \\
+  \var{TugTm}     & $\left< T\uv\cdot\nabla T \right>$
+                    $\sqrt{\left< T^2 \right>}$
+                    $\left< u_x T \right>$
+                    $\left< u_y T \right>$
+                    $\left< u_z T \right>$
+                    $\left< (\nabla T)^2 \right>$
+                    $\left< \nabla u_x \cdot \nabla T \right>$
+                    $\left< \nabla u_y \cdot \nabla T \right>$
+                    $\left< \nabla u_z \cdot \nabla T \right>$
+                    $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_x T) \right>$
+                    $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_y T) \right>$
+                    $\left< T \uv\cdot\nabla u_z + u_z \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_z T) \right>$
+                    $\left< T dp/dx \right>$
+                    $\left< T dp/dy \right>$
+                    $\left< T dp/dz \right>$ \\
   \var{fradtop}   & $<-K{dT\over dz}>_{\text{top}}$
                     \quad(radiative flux at the top) \\
   \var{ethm}      & $\left< e_{\text{th}}\right> =

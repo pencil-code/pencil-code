@@ -4136,35 +4136,28 @@ for options to \cmd{structure}.
 
 \subsection{Particles}
 
-%---------------------------------
-%DM
-% This part is possibly quite obsolete as this does not mention particles_main at all. 
-% Now the particles module in primarily particles_main() which then calls other particles
-% modules. I have added a little bit below which might be actually wrong. Could the
-% particle experts (Anders, Wlad, Nils )  add/correct . 
-%---------------------------------
-The {\sc Pencil Code} has modules for tracer particles and for dust particles (see
-Sect.~\ref{S-particles-equations}). 
-% DM commented, see comments above
-%The particle modules are chosen by setting
-%the value of the variable \code{PARTICLES} in \code{Makefile.local} to either
-%\code{particles_dust} or \code{particles_tracers}. 
-The particles modules are chosen first by setting the value of the variable \code{PARTICES_MAIN}
-and \code{PARTICES_SUB} to \code{particles_main} and \code{particles_sub} respectively. 
-in \code{Makefile.local}. 
-This however still does not specify which equations for the particles we are going to integrate. 
-One need to additionally set either (or both) \code{PARTICLES_DUST} or \code{PARTICLES_TRACER} variables 
-to \code{particles_dust} or \code{particles_tracers} to tell the code whether we are solving
-for dust particles or tracer particles (which follows the instantanious streamlines). 
-For the former case each particle has six degrees of freedom (if the space is three dimensional),
-three positions and three velocities. For the latter it suffices to have only three position variables
-as the velocity of the particles are equal to the instantanious fluid velocity at that point. 
-In addition one choose to have several internal degrees of freedoms for the particles. 
-For example one can solve for particles with spin, in that case one sets \code{PARTICLES_SPIN} to
-\code{particles_spin}.  
+The {\sc Pencil Code} has modules for tracer particles and for dust particles
+(see Sect.~\ref{S-particles-equations}). The particle modules are chosen by
+setting the value of the variable \code{PARTICLES} in \code{Makefile.local} to
+either \code{particles_dust} or \code{particles_tracers}. For the former case
+each particle has six degrees of freedom, three positions and three
+velocities. For the latter it suffices to have only three position variables
+as the velocity of the particles are equal to the instantanious fluid velocity
+at that point. In addition one can choose to have several additional internal
+degrees of freedoms for the particles. For example one can temporally evolve
+the particles radius by setting \code{PARTICLES_RADIUS} to
+\code{particles_radius} in \code{Makefile.local}.  
+
+All particle infrastructure is controlled and organised by the
+\code{Particles_main} module. This module is automatically selected by
+\code{Makefile.src} if \code{PARTICLES} is different from \code{noparticles}.
+Particle modules are compiled as a separate library. This way the main part of
+the Pencil Code only needs to know about the \code{particles_main.a} library,
+but not of the individual particle modules.
  
-In addition one must define a few parameters in \code{cparam.local}. Here is a sample of
-\code{cparam.local} for a parallel run with 2,000,000 particles:
+For a simulation with particles one must in addition define a few parameters in
+\code{cparam.local}. Here is a sample of \code{cparam.local} for a parallel run
+with 2,000,000 particles:
 \begin{verbatim}
 integer, parameter :: ncpus=16, nprocy=4, nprocz=4, nprocx=1
 integer, parameter :: nxgrid=128, nygrid=256, nzgrid=128
@@ -4176,10 +4169,9 @@ The parameter \code{npar} is the number of particles in the simulation,
 and \code{npar_mig} is the number of particles that are allowed to migrate from
 one processor to another in any time-step. For a non-parallel run it is enough
 to specify \code{npar}. The number of particle species is set through
-\code{npar_species} (assumed to be one if not set).
-The particle input parameters are given in \code{start.in} and
-\code{run.in}. Here is a sample of the particle part of \code{start.in} for
-dust particles:
+\code{npar_species} (assumed to be one if not set). The particle input
+parameters are given in \code{start.in} and \code{run.in}. Here is a sample of
+the particle part of \code{start.in} for dust particles:
 \begin{verbatim}
 /
 &particles_init_pars
@@ -4192,9 +4184,10 @@ The initial positions and velocities of the dust particles are set in
 \code{initxxp} and \code{initvvp}. The next four input parameters are further
 specifications of the initial condition. Interaction between the particles and
 the mesh, e.g.\ through drag force or self-gravity, require a mapping of the
-particles on the mesh. The {\sc Pencil Code} currently supports NGP (Nearest Grid
-Point, default), CIC (Cloud in Cell, set \code{lparticlemesh_cic=T}) and TSC
-(Triangular Shaped Cloud, set \code{lparticlemesh_tsc=T}).
+particles on the mesh. The {\sc Pencil Code} currently supports NGP (Nearest
+Grid Point, default), CIC (Cloud in Cell, set \code{lparticlemesh_cic=T}) and
+TSC (Triangular Shaped Cloud, set \code{lparticlemesh_tsc=T}). See Youdin \&
+Johansen (2007) for details.
 
 Here is a sample of the particle part of \code{run.in} (also for dust
 particles):
@@ -4214,11 +4207,11 @@ particles.
 
 \subsubsection{Particles in parallel}
 
-The particle variables (e.g. $\vec{x}_i$ and $\vec{v}_i$) are kept in the arrays
-\code{fp} and \code{dfp}.  For parallel runs, particles must be able to move
-from processor to processor as they pass out of the $(x,y,z)$-interval of the
-local processor. Since not all particles are present at the same processor at
-the same time (hopefully), there is some memory optimization in making
+The particle variables (e.g. $\vec{x}_i$ and $\vec{v}_i$) are kept in the
+arrays \code{fp} and \code{dfp}. For parallel runs, particles must be able to
+move from processor to processor as they pass out of the $(x,y,z)$-interval of
+the local processor. Since not all particles are present at the same processor
+at the same time (hopefully), there is some memory optimization in making
 \code{fp} not big enough to contain all the particles at once. This is achieved
 by setting the code variable \code{mpar_loc} less than \code{npar} in
 \code{cparam.local} for parallel runs. When running with millions of particles,
@@ -4229,51 +4222,101 @@ follows (see the subroutine \code{redist_particles_procs} in
 \code{particles_sub.f90}):
 \begin{enumerate}
   \item In the beginning of each time-step all processors check if any of their
-      particles have crossed the local $(x,y,z)$-interval. These particles are
-      called migrating particles. A run can have a maximum of \code{npar_mig}
-      migrating particles in each time-step. The value of \code{npar_mig} must
-      be set in \code{cparam.local}. The number should (of course) be slightly
-      larger than the maximum number of migrating particles at any time-step
-      during the run. The diagnostic variable \code{nmigmax} can be used to
-      output the maximum number of migrating particles at a given time-step.
-      One can set\\ \code{lmigration_redo=T} in \code{\&particles_run_pars} to
-      force the code to redo the migration step if more than \code{npar_mig}
-      want to migrate. This does slow the code down somewhat, but has the
-      benefit that the code does not stop when more than \code{npar_mig}
-      particles want to migrate.
+  particles have crossed the local $(x,y,z)$-interval. These particles are
+  called migrating particles. A run can have a maximum of \code{npar_mig}
+  migrating particles in each time-step. The value of \code{npar_mig} must be
+  set in \code{cparam.local}. The number should (of course) be slightly larger
+  than the maximum number of migrating particles at any time-step during the
+  run. The diagnostic variable \code{nmigmax} can be used to output the maximum
+  number of migrating particles at a given time-step. One can set
+  \code{lmigration_redo=T} in \code{\&particles_run_pars} to force the code to
+  redo the migration step if more than \code{npar_mig} want to migrate. This
+  does slow the code down somewhat, but has the benefit that the code does not
+  stop when more than \code{npar_mig} particles want to migrate.
   \item The index number of the receiving processor is then calculated. This
-      requires some assumption about the grid on other processors and will
-      currently not work for nonequidistant grids. Particles don't always pass
-      to neighboring processors as the global boundary conditions may send
-      them to the other side of the global domains (periodic boundary
-      conditions).
+  requires some assumption about the grid on other processors and will
+  currently not work for nonequidistant grids. Particles do not always pass to
+  neighboring processors as the global boundary conditions may send them to the
+  other side of the global domains (periodic or shear periodic boundary
+  conditions).
   \item The migrating particle information is copied to the end of $\code{fp}$,
-      and the empty spot left behind is filled up with the particle of the
-      highest index number currently present at the processor.
+  and the empty spot left behind is filled up with the particle of the highest
+  index number currently present at the processor.
   \item Once the number of migrating particles is known, this information is
-      shared between the processors so that they all know how may particles
-      they have to receive and from which processors.
+  shared with neighbouring processors (including neighbours over periodic
+  boundaries) so that they all know how many particles they have to receive and
+  from which processors.
   \item The communication happens as directed MPI communication. That means
-      that processors 0 and 1 can share migrating particles at the
-      same time as processors 2 and 3 do it. The communication happens from a
-      chunk at the end of \code{fp} (migrating particles) to a chunk that is
-      present just after the particle of the highest index number that is
-      currently at the receiving processor. Thus the particles are put directly
-      at their final destination, and the migrating particle information at
-      the source processor is simply overwritten by other migrating particles
-      at the next time-step.
+  that processors 0 and 1 can share migrating particles at the same time as
+  processors 2 and 3 do it. The communication happens from a chunk at the end
+  of \code{fp} (migrating particles) to a chunk that is present just after the
+  particle of the highest index number that is currently at the receiving
+  processor. Thus the particles are put directly at their final destination,
+  and the migrating particle information at the source processor is simply
+  overwritten by other migrating particles at the next time-step.
   \item Each processor keeps track of the number of particles that it is
-      responsible for. This number is stored in the variable \code{npar_loc}.
-      It must never be larger than \code{mpar_loc} (see above). When a
-      particles leaves a processor, \code{npar_loc} is reduced by one, and then
-      increased by one at the processor that receives that particle. The
-      maximum number of particles at any processor is stored in the diagnostic
-      variable \code{nparmax}. If this value is not close to
-      \code{npar}/\code{ncpus}, the particles have piled up in such a way that
-      computations are not evenly shared between the processors. One can then
-      try to change the parallelization architecture (\code{nprocy} and
-      \code{nprocz}) to avoid this problem.
+  responsible for. This number is stored in the variable \code{npar_loc}.  It
+  must never be larger than \code{mpar_loc} (see above). When a particle
+  leaves a processor, \code{npar_loc} is reduced by one, and then increased by
+  one at the processor that receives that particle. The maximum number of
+  particles at any processor is stored in the diagnostic variable
+  \code{nparmax}. If this value is not close to \code{npar}/\code{ncpus}, the
+  particles have piled up in such a way that computations are not evenly shared
+  between the processors. One can then try to change the parallelisation
+  architecture (\code{nprocy} and \code{nprocz}) to avoid this problem.
 \end{enumerate}
+
+In simulations with many particles (comparable to or more than the number of
+grid cells), it is crucial that particles are shared relatively evenly among
+the processors. One can as a first approach attempt to not parallelise
+directions with strong particle density variations. However, this is often not
+enough, especially if particles clump locally.
+
+Alternatively one can use Particle Block Domain Decomposition (PBDD, see
+Johansen et al.\ 2011). The steps in Particle Block Domain Decomposition scheme
+are as follows:
+\begin{enumerate}
+  \item The fixed mesh points are domain-decomposed in the usual way (with
+  \code{ncpus}=\code{nprocx}$\times$\code{nprocy}$\times$\code{nprocz}).
+  \item Particles on each processor are counted in {\it bricks} of size \code{
+  nbx}$\times$\code{nby}$\times$\code{nbz} (typically \code{nbx}$=$\code{
+  nby}$=$\code{nbz}$=$\code{4}).
+  \item Bricks are distributed among the processors so that each processor has
+  approximately the same number of particles
+  \item Adopted bricks are referred to as {\it blocks}.
+  \item The Pencil Code uses a third order Runge-Kutta time-stepping scheme. In
+  the beginning of each sub-time-step particles are counted in blocks and the
+  block counts communicated to the bricks on the parent processors. The
+  particle density assigned to ghost cells is folded across the grid, and the
+  final particle density (defined on the bricks) is communicated back to the
+  adopted blocks. This step is necessary because the drag force time-step
+  depends on the particle density, and each particle assigns density not just
+  to the nearest grid point, but also to the neighbouring grid points.
+  \item In the beginning of each sub-time-step the gas density and gas velocity
+  field is communicated from the main grid to the adopted particle blocks.
+  \item Drag forces are added to particles and back to the gas grid points in
+  the adopted blocks. This partition aims at load balancing the calculation of
+  drag forces.
+  \item At the end of each sub-time-step the drag force contribution to the gas
+  velocity field is communicated from the adopted blocks back to the main grid.
+\end{enumerate}
+Particle Block Domain Decomposition is activated by setting \code{PARTICLES =
+particles_dust_blocks} and \code{PARTICLES_MAP = particles_map_blocks} in
+\code{Makefile.local}. A sample of \code{cparam.local} for Particle Block
+Domain Decomposition can be found in \code{samples/sedimentation/blocks}:
+\begin{verbatim}
+integer, parameter :: ncpus=4, nprocx=2, nprocy=2, nprocz=1
+integer, parameter :: nxgrid=32, nygrid=32, nzgrid=32
+integer, parameter :: npar=10000, mpar_loc=5000, npar_mig=100
+integer, parameter :: npar_species=4
+integer, parameter :: nbrickx=4, nbricky=4, nbrickz=4, nblockmax=32
+\end{verbatim}
+The last line defines the number of bricks in the total domain -- here we
+divide the grid into $4\times4\times4$ bricks each of size $8\times8\times8$
+grid points. The parameter \code{nblockmax} tells the code the maximum number
+of blocks any processor may adopt. This should not be so low that there is not
+room for all the bricks with particles, nor so high that the code runs out of
+memory.
 
 % ---------------------------------------------------------------------- %
 
@@ -6536,17 +6579,16 @@ $\rm{mz}$ large the wasted storage becomes negligible.
 \label{fp-array}
 \index{fp-array}
 
-Similar to the `f' array the code also has a 'fp' array which contains current states of 
-all the particles. Like the f-array the fp-array also has a counter part, the dfp-array. 
-the code. 
-The dimension of the fp-array is $mpar_local\times mpvar$ where $mpar_local$ is the number of particles
-in the local processor (or serial runs this is the total number of particles)
-and $mpvar$ depends on the problem at hand.  
-For example if we are solving for only tracer particles then $mpvar=3$, for 
-dust particles $mpvar=6$. 
-The sequence in which the slots in the fp-array are filled up depends on the
-sequence in which different particle modules are called from the \code{particles_main.f90}. 
-The following are the relevant lines from \code{particles_main.f90}. 
+Similar to the `f' array the code also has a 'fp' array which contains current
+states of all the particles. Like the f-array the fp-array also has a time
+derivative part, the dfp-array. The dimension of the fp-array is
+$mpar_local\times mpvar$ where $mpar_local$ is the number of particles in the
+local processor (for serial runs this is the total number of particles) and
+$mpvar$ depends on the problem at hand. For example if we are solving for only
+tracer particles then $mpvar=3$, for dust particles $mpvar=6$  The sequence in
+which the slots in the fp-array are filled up depends on the sequence in which
+different particle modules are called from the \code{particles_main.f90}. The
+following are the relevant lines from \code{particles_main.f90}.
 \begin{verbatim}
 
 !***********************************************************************
@@ -6571,12 +6613,12 @@ The following are the relevant lines from \code{particles_main.f90}.
 \end{verbatim} 
 
 The subroutine \code{resister_particles} can mean either the tracer particles
-or dust particles. For the former the first three slots of the fp-array are
-the three coordinates. For the latter the first six slots of the
-fp-array are the three coordinates followed by the three velocities. 
-The seventh slot (or the fourth if we are use tracer particles) is the radius of
-the particle which can also change as a function of time as particles collide and
-might fuse together to form bigger particles.  
+or dust particles. For the former the first three slots of the fp-array are the
+three spatial coordinates. For the latter the first six slots of the fp-array
+are the three spatial coordinates followed by the three velocity components.
+The seventh slot (or the fourth if we are use tracer particles) is the radius
+of the particle which can also change as a function of time as particles
+collide and fuse together to form bigger particles.  
 
 \subsection{The pencil case}
 \label{pencil-case}
