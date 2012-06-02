@@ -7,16 +7,17 @@
 ;;;   GUI for selecting a subset of available snapshot files.
 ;;;   The returned array contains a list of selected filenames.
 ;;;   Optional parameters are:
+;;;   * num_selected (returns the number of selected files)
 ;;;   * pattern (contains the file-search pattern, default: "VAR[0-9]*")
 ;;;   * varfile (contains the varfile loaded by default, default: "var.dat")
 ;;;   * addfile (contains an additional filename, default: "crash.dat")
 ;;;   * datadir (contains the datadir, default: pc_get_datadir)
 ;;;   * allprocs (contains the IO-strategy parameter, default: automatic)
 ;;;   * procdir (contains procdir based on the chosen IO-strategy)
-;;;   If an optional parameter is given as undefined, the default is returned.
+;;;   If an optional parameter is given as undefined, its default is returned.
 ;;;
 ;;;   Examples:
-;;;   IDL> pc_select_files, obj=files
+;;;   IDL> pc_select_files, obj=files, num_selected=num_selected
 ;;;   IDL> pc_select_files, obj=files, pattern="PVAR1[5-9]*"
 ;;;   IDL> pc_select_files, obj=files, varfile="myvar.dat", datadir=datadir
 ;;;   IDL> pc_select_files, obj=files, datadir="mydata", procdir=procdir
@@ -116,7 +117,7 @@ pro select_files_event, event
 end
 
 
-pro pc_select_files, files=files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, param=param, run_param=run_param
+pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, param=param, run_param=run_param
 
 	common select_files_gui_common, b_var, b_add, c_list, i_skip, i_step, f_gb
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file
@@ -209,7 +210,7 @@ pro pc_select_files, files=files, pattern=pattern, varfile=varfile, addfile=addf
 	c_list	= WIDGET_LIST (SEL, value=files, uvalue='LIST', YSIZE=num_files<24, /multiple)
 
 	if (var_selected eq 1) then begin
-		pc_read_var_time, t=var_time, varfile=varfile, datadir=datadir, allprocs=allprocs
+		pc_read_var_time, t=var_time, varfile=varfile, datadir=datadir, allprocs=allprocs, /quiet
 		b_var	= CW_BGROUP (SEL, varfile+' ('+strtrim (var_time*units.time, 2)+' s)', /nonexcl, uvalue='VAR', set_value=1)
 	end else if (varfile ne "") then begin
 		b_var	= WIDGET_LABEL (SEL, value='"'+varfile+'" not found', frame=0)
@@ -220,7 +221,7 @@ pro pc_select_files, files=files, pattern=pattern, varfile=varfile, addfile=addf
 	if (addfile eq varfile) then begin
 		b_add	= WIDGET_LABEL (SEL, value='Additional file is identical to "'+varfile+'"', frame=0)
 	end else if (add_selected eq 1) then begin
-		pc_read_var_time, t=add_time, varfile=addfile, datadir=datadir, allprocs=allprocs
+		pc_read_var_time, t=add_time, varfile=addfile, datadir=datadir, allprocs=allprocs, /quiet
 		b_add	= CW_BGROUP (SEL, addfile+' ('+strtrim (add_time*units.time, 2)+' s)', /nonexcl, uvalue='ADD', set_value=1)
 	end else begin
 		b_add	= WIDGET_LABEL (SEL, value='No "'+addfile+'" found', frame=0)
@@ -256,5 +257,6 @@ pro pc_select_files, files=files, pattern=pattern, varfile=varfile, addfile=addf
 	end
 	print, ""
 
+	num = num_selected
 end
 
