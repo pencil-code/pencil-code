@@ -182,7 +182,7 @@ pro pc_select_files, files=files, pattern=pattern, varfile=varfile, addfile=addf
 	CTRL	= WIDGET_BASE (BASE, /col)
 
 	tmp	= WIDGET_LABEL (CTRL, value='File Selection:', frame=0)
-	EDIT	= WIDGET_BASE (CTRL, /row)
+	EDIT	= WIDGET_BASE (CTRL, /row, /align_center)
 	tmp	= WIDGET_BUTTON (EDIT, xsize=60, value='ALL', uvalue='ALL')
 	tmp	= WIDGET_BUTTON (EDIT, xsize=60, value='NONE', uvalue='NONE')
 
@@ -193,7 +193,8 @@ pro pc_select_files, files=files, pattern=pattern, varfile=varfile, addfile=addf
 
 	XTRA	= WIDGET_BASE (CTRL, /col, /align_center)
 	tmp	= WIDGET_LABEL (XTRA, value='Analysis:', frame=0)
-	timeser	= WIDGET_BUTTON (XTRA, value='show timeseries', uvalue='SHOW_TIME')
+	BUT	= WIDGET_BASE (XTRA, /row, /align_center)
+	timeser	= WIDGET_BUTTON (BUT, value='show timeseries', uvalue='SHOW_TIME')
 
 	tmp	= CW_FIELD (XTRA, title='GB per file', /column, value=gb_per_file, /float)
 	f_gb	= CW_FIELD (XTRA, title='Total GB selected', /column, value=gb_per_file*(add_selected+var_selected), /float)
