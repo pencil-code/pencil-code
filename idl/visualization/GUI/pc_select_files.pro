@@ -52,10 +52,9 @@ pro select_files_event, event
 	end
 	'SKIP': begin
 		skipping = event.value
-		if (skipping ge num_files) then begin
-			skipping = num_files - 1
-			WIDGET_CONTROL, i_skip, SET_VALUE = skipping
-		end
+		if (skipping lt 0) then skipping = 0
+		if (skipping ge num_files) then skipping = num_files - 1
+		WIDGET_CONTROL, i_skip, SET_VALUE = skipping
 		if (stepping gt num_files - skipping) then begin
 			stepping = num_files - skipping
 			WIDGET_CONTROL, i_step, SET_VALUE = stepping
@@ -64,10 +63,9 @@ pro select_files_event, event
 	end
 	'STEP': begin
 		stepping = event.value
-		if (stepping gt num_files - skipping) then begin
-			stepping = num_files - skipping
-			WIDGET_CONTROL, i_step, SET_VALUE = stepping
-		end
+		if (stepping lt 1) then stepping = 1
+		if (stepping gt num_files - skipping) then stepping = num_files - skipping
+		WIDGET_CONTROL, i_step, SET_VALUE = stepping
 		break
 	end
 	'APPLY': begin
