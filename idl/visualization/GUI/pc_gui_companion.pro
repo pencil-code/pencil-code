@@ -231,6 +231,19 @@ pro precalc_data, i, vars, index
       ; Magnetic energy density
       varsets[i].rho_mag = dot2 (bb[l1:l2,m1:m2,n1:n2,*])
     end
+    if (any (strcmp (tags, 'Spitzer_dt', /fold_case)) and any (tag_names (run_param) eq "K_SPITZER")) then begin
+      ; Spitzer heat flux timestep [s]
+      if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
+        glnTT = (grad (vars[*,*,*,index.lnTT]))[l1:l2,m1:m2,n1:n2,*]
+      end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
+        glnTT = (grad (alog (vars[*,*,*,index.lnTT])))[l1:l2,m1:m2,n1:n2,*]
+      end
+      varsets[i].Spitzer_dt = (run_param.K_spitzer / run_param.cdtv) * abs (dot (bb[l1:l2,m1:m2,n1:n2,*], glnTT)) / sqrt (dot2 (bb[l1:l2,m1:m2,n1:n2,*] * glnTT)) * unit.time
+      glnTT = 0
+      ; The z-direction may have a non-uniform gird, but not the x- and y-direction
+      dxy_1 = (unit.length/coord.dx[0])^2 + (unit.length/coord.dy[0])^2
+      for pz = 0, coord.nz - 1 do varsets[i].Spitzer_dt[*,*,pz] *= dxy_1 + (unit.length/coord.dz[pz])^2
+    end
     if (any (strcmp (tags, 'spitzer_ratio', /fold_case))) then begin
       ; Ratio of perpendicular and parallel Spitzer heat conduction coefficients
       m_p = 1.6726218e-27 ; [kg]
