@@ -7036,6 +7036,8 @@ module Magnetic
 !
 ! Sanity check
 !
+      if (.not. lcartesian_coords) &
+        call fatal_error('initialize_implicit_resistivity', 'currently only works in Cartesian coordinates.')
       if (nprocx /= 1) call fatal_error('initialize_implicit_resistivity', 'nprocx /= 1')
       if (nygrid > 1 .and. nxgrid /= nygrid) call fatal_error('initialize_implicit_resistivity', 'nxgrid /= nygrid')
 !
