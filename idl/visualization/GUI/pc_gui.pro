@@ -81,6 +81,7 @@ default, quantities, { $
 ;	magnetic_Rn:'Rn_mag', $
 ;	minimum_density:'rho_c', $
 	Spitzer_heatflux:'Spitzer_q', $
+	Spitzer_timestep:'Spitzer_dt', $
 	logarithmic_density:'log_rho' $
 	}
 
@@ -120,6 +121,7 @@ default, default_magnetic_field_str , 'Gauß'
 ;;;
 default, varfile, 'var.dat'
 default, crashfile, 'crash.dat'
+default, pattern, 'VAR[0-9]*'
 
 
 ;;;
@@ -151,48 +153,27 @@ default, pc_gui_loaded, 0
 
 if (not pc_gui_loaded) then BEGIN
 
-	default, load_varfile, 1
-	if (n_elements (allprocs) eq 0) then begin
-		allprocs = 1
-		procdir = datadir+"/allprocs/"
-		if (load_varfile and not file_test (procdir+varfile)) then begin
-			allprocs = 0
-			procdir = datadir+"/proc0/"
-			if (not file_test (procdir+varfile)) then begin
-				print, "No '"+varfile+"' file found."
-				load_varfile = 0
-				stop
-			endif
-		endif
-	end else begin
-		if (allprocs eq 2) then procdir = datadir+"/proc0/"
-	end
-
 	default, addfile, crashfile
-	if ((addfile ne varfile) and file_test (procdir+addfile)) then begin
-		print, "A '"+addfile+"' exists, do you want to load it instead of '"+varfile+"'? / as additional file?"
-		repeat begin
-			answer = "y"
-			read, answer, format="(A)", prompt="(Y)es / (N)o / (A)dditional: "
-		end until (any (strcmp (answer, ['n', 'y', 'a'], /fold_case)))
-		if (strcmp (answer, 'y', /fold_case)) then varfile = addfile
-		if (not strcmp (answer, 'a', /fold_case)) then addfile = ""
-	end else begin
-		addfile = ""
-	end
-	if (addfile) then num_additional = 1 else num_additional = 0
 
 	if (n_elements (nghost) gt 0) then begin
 		nghost_x = nghost
 		nghost_y = nghost
 		nghost_z = nghost
 	end
+
+	pc_units, obj=unit, datadir=datadir
+	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_time:default_time, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_time_str:default_time_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
+	pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
+	pc_read_param, obj=param, dim=orig_dim, datadir=datadir, /quiet
+	pc_read_param, obj=run_param, /param2, dim=orig_dim, datadir=datadir, /quiet
+
+	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param
+	if (num_files eq 0) then stop
+
 	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
-		pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
 		pc_read_slice_raw, varfile=varfile, dim=dim, grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, /trim, /quiet
 	end else begin
-		pc_read_dim, obj=dim, datadir=datadir, /quiet
-		orig_dim = dim
+		dim = orig_dim
 		pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, /trim, /quiet
 	end
 	default, nghost_x, dim.nghostx
@@ -205,132 +186,7 @@ if (not pc_gui_loaded) then BEGIN
 	disp_size_y = round ((dim.my - 2*dim.nghosty) / data_reduction[1]) > 1
 	disp_size_z = round ((dim.mz - 2*dim.nghostz) / data_reduction[2]) > 1
 
-	subdomains = dim.nprocx * dim.nprocy * dim.nprocz
-	ghosts = 2*nghost_x*(dim.nprocx-1)*orig_dim.mygrid*orig_dim.mzgrid + $
-                 2*nghost_y*(dim.nprocy-1)*(orig_dim.mxgrid-2*nghost_y*(dim.nprocy-1))*orig_dim.mzgrid + $
-                 2*nghost_z*(dim.nprocz-1)*(orig_dim.mxgrid-2*nghost_x*(dim.nprocx-1))*(orig_dim.mygrid-2*nghost_y*(dim.nprocy-1))
-	correction = 1.0 - ghosts / double (orig_dim.mxgrid*orig_dim.mygrid*orig_dim.mzgrid)
-	if (allprocs eq 1) then begin
-		subdomains = 1
-		correction = 1.0
-	end
-	if (allprocs eq 2) then subdomains = dim.nprocx * dim.nprocy
-	if (cut_x ne -1) then begin
-		cut_correction = 7.0 / orig_dim.mxgrid
-	end else if (cut_y ne -1) then begin
-		cut_correction = 7.0 / orig_dim.mygrid
-	end else if (cut_z ne -1) then begin
-		cut_correction = 7.0 / orig_dim.mzgrid
-	end else begin
-		cut_correction = 1.0
-	end
-	file_struct = file_info (procdir+varfile)
-	gb_per_file = (file_struct.size * subdomains * correction * cut_correction) / 1073741824.
-
-	snapfiles = file_search (procdir, "VAR[0-9]*")
-	num_snapshots = n_elements (snapfiles)
-	for pos = 0, num_snapshots - 1 do begin
-		snapfiles[pos] = strmid (snapfiles[pos], strpos (snapfiles[pos], "VAR"))
-	end
-	snapshots = strarr (1)
-	for len = min (strlen (snapfiles)), max (strlen (snapfiles)) do begin
-		indices = where (strlen (snapfiles) eq len)
-		if (n_elements (indices) eq 1) then if (indices eq -1) then continue
-		sub = snapfiles[indices]
-		reorder = sort (sub)
-		snapshots = [ snapshots, sub[reorder] ]
-	end
-	snapshots = snapshots[1:*]
-
-	files_total = num_snapshots
-	skipping = 0
-	stepping = 1
-	if (num_snapshots gt 0) then begin
-		print, ""
-		print, "============================================================================="
-		print, "There are > ", strtrim (num_snapshots, 2), " < snapshot files available."
-		print, "(This corresponds to ", strtrim (round (num_snapshots * gb_per_file * 10) / 10., 2), " GB.)"
-		if ((stepping eq 1) and (skipping eq 0)) then begin
-			print, "'"+procdir+varfile+"' will be loaded anyways."
-			print, "Do you want to load additional files into the cache?"
-			repeat begin
-				answer = "n"
-				read, answer, format="(A)", prompt="Load (A)ll / (S)elected / (N)o additional files: "
-			end until (any (strcmp (answer, ['n', 'a', 's'], /fold_case)))
-			if (strcmp (answer, 'n', /fold_case)) then begin
-				stepping = 0
-				skipping = num_snapshots
-				files_total = 0
-			end
-			print, "Available snapshots: ", snapshots
-			if (strcmp (answer, 's', /fold_case)) then begin
-				if (num_snapshots gt 1) then begin
-					print, "How many files do you want to skip at start?"
-					repeat begin
-						read, skipping, format="(I)", prompt="(0..."+strtrim (num_snapshots-1, 2)+"): "
-					end until ((skipping ge 0) and (skipping le num_snapshots-1))
-				end
-				if ((num_snapshots-skipping) gt 1) then begin
-					print, "Please enter a stepping for loading files:"
-					print, "(0=do not load any more files, 1=each file, 2=every 2nd, ...)"
-					repeat begin
-						read, stepping, format="(I)", prompt="(0..."+strtrim (num_snapshots-skipping, 2)+"): "
-					end until ((stepping ge 0) and (stepping le num_snapshots-skipping))
-				end
-				max_files = floor ((num_snapshots-1-skipping)/stepping) + 1
-				if ((max_files gt 1) and (stepping ge 1)) then begin
-					print, "How many files do you want to load in total?"
-					repeat begin
-						read, files_total, format="(I)", prompt="(0=all, 1..."+strtrim (max_files, 2)+"): "
-					end until ((files_total ge 0) and (files_total le max_files))
-					if (files_total eq 0) then begin
-						files_total = max_files
-					end else if (files_total le max_files) then begin
-						print, "You have selected to load less files than availabe."
-						addquestion = ""
-						if (num_additional gt 0) then addquestion = " and '"+addfile+"'"
-						print, "Do you want to skip loading of '"+varfile+"'"+addquestion+"?"
-						repeat begin
-							answer = "n"
-							read, answer, format="(A)", prompt="(Y)es / (N)o: "
-						end until (any (strcmp (answer, ['y', 'n'], /fold_case)))
-						if (strcmp (answer, 'y', /fold_case)) then begin
-							load_varfile = 0
-							addfile = ""
-							num_additional = 0
-						end
-					end
-				end
-				if (stepping eq 0) then begin
-					files_total = 1
-					stepping = 1
-				end
-			end
-		end
-	end
-
-	num_selected = num_snapshots
-	if (skipping ge 1) then num_selected -= skipping
-	if (stepping ge 1) then num_selected = (num_selected - 1) / stepping + 1 else num_selected = 0
-	if (num_selected lt 0) then num_selected = 0
-	if (files_total gt num_selected) then files_total = num_selected
-	if (files_total lt num_selected) then num_selected = files_total
-	ignore_end = num_snapshots - skipping - (files_total * stepping)
-
-	print, ""
-	print, "Selected snapshots: skipping the first ", strtrim (skipping, 2), " with stepping=", strtrim (stepping, 2)
-	print, "(This corresponds to ", strtrim (num_selected * gb_per_file, 2), " GB = ", strtrim (num_selected, 2), " files.)"
-	print, ""
-
-
-	pc_units, obj=unit, datadir=datadir
-	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_time:default_time, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_time_str:default_time_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
-	pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
-	pc_read_param, obj=run_param, /param2, dim=dim, datadir=datadir, /quiet
-
 	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, dx:congrid (1.0/grid.dx_1, disp_size_x, 1, 1, /center, /interp)*unit.length, dy:congrid (1.0/grid.dy_1, disp_size_y, 1, 1, /center, /interp)*unit.length, dz:congrid (1.0/grid.dz_1, disp_size_z, 1, 1, /center, /interp)*unit.length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
-
-	pc_show_ts, obj=ts, units=units, param=param, run_param=run_param, datadir=datadir
 
 
 	print, "Allocating memory..."
@@ -368,33 +224,11 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	prepare_varset, load_varfile+num_additional+num_selected, units, coords, varset, overplot, datadir, param, run_param
+	prepare_varset, num_files, units, coords, varset, overplot, datadir, param, run_param
 
-	if (addfile) then begin
-		; Precalculate additional timestep
-		precalc, 0, varfile=addfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
-	end
-
-	if (load_varfile) then begin
-		; Precalculate initial timestep
-		precalc, num_additional, varfile=varfile, datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
-	end
-
-	if (num_selected gt 0) then begin
-		; Precalculate first selected timestep
-		precalc, load_varfile+num_additional+num_selected-1, varfile=snapshots[skipping], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
-		if (num_selected gt 1) then begin
-			; Precalculate last selected timestep
-			pos_last = skipping + (num_selected-1)*stepping
-			precalc, load_varfile+num_additional, varfile=snapshots[pos_last], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
-			if (num_selected gt 2) then begin
-				for i = 2, num_selected-1 do begin
-					; Precalculate selected timesteps
-					pos = skipping + (i-1)*stepping
-					precalc, load_varfile+num_additional+num_selected-i, varfile=snapshots[pos], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
-				end
-			end
-		end
+	; Precalculate selected timesteps
+	for i = 1, num_files do begin
+		precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 	end
 
 	; Mark completition of preparational work
