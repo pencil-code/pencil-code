@@ -156,5 +156,6 @@ COMPILE_OPT IDL2,HIDDEN
 ; If requested print a summary (actually the default - unless being quiet).
 ;
   if (not quiet) then print, ' t = ', t
+  time = t
 ;
 end
