@@ -241,6 +241,16 @@ if (iemf gt 0) then begin
   varcontent[iemf].skip       = 2
 endif
 ;
+default, igij, 0
+if (igij gt 0) then begin
+  varcontent[igij].variable   = 'Gravitational Metric (gij)'
+  varcontent[igij].idlvar     = 'gij'
+  varcontent[igij].idlinit    = INIT_3VECTOR
+  varcontent[igij].idlvarloc  = 'gij_loc'
+  varcontent[igij].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[igij].skip       = 2
+endif
+;
 default, iuut, 0
 if (iuut gt 0) then begin
   varcontent[iuut].variable   = 'Integrated velocity (uut)'
