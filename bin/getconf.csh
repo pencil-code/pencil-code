@@ -417,6 +417,12 @@ else if ($hn =~ norlx5*) then
   source ${HOME}/.cshrc
   set $mpirun=${HOME}/Library/bin/mpirun
 #------------------------------------------------
+else if ($hn =~ lakshmi) then
+  echo "******************************"
+  echo "Dhruba's mac (2012)"
+  echo " ******************************"
+  set $mpirun='/opt/local/lib/openmpi/bin/mpirun'
+#------------------------------------------------
 # For North-West Grid UK
 else if ($hn =~ lv1*) then
   echo "Liverpool Grid - NW-grid"
