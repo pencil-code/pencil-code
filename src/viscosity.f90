@@ -33,7 +33,8 @@ module Viscosity
   real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
-  real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, C_smag=0.0
+  real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1
+  real :: C_smag=0.0, gamma_smag=0.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
   real :: rzero_lambda=impossible,wlambda=0.,rmax_lambda=impossible
@@ -86,7 +87,7 @@ module Viscosity
 !
   namelist /viscosity_run_pars/ &
       nu, nu_tdep_exponent, nu_tdep_t0, &
-      nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock, &
+      nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
@@ -102,6 +103,7 @@ module Viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
   integer :: idiag_visc_heatm=0 ! DIAG_DOC: Mean value of viscous heating
+  integer :: idiag_Sij2m=0      ! DIAG_DOC: $\left<\Strain^2\right>$
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
   integer :: idiag_dtnu=0       ! DIAG_DOC: $\delta t/[c_{\delta t,{\rm v}}\,
@@ -587,7 +589,7 @@ module Viscosity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtnu=0; idiag_nu_LES=0; idiag_epsK=0; idiag_epsK_LES=0
+        idiag_dtnu=0; idiag_nu_LES=0; idiag_Sij2m=0; idiag_epsK=0; idiag_epsK_LES=0
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0
@@ -610,6 +612,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'visc_heatm', &
             idiag_visc_heatm)
+        call parse_name(iname,cname(iname),cform(iname),'Sij2m',idiag_Sij2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'epsK_LES',idiag_epsK_LES)
         call parse_name(iname,cname(iname),cform(iname),'meshRemax',idiag_meshRemax)
@@ -757,6 +760,7 @@ module Viscosity
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
       endif
+      if (idiag_Sij2m/=0.) lpenc_diagnos(i_sij2)=.true.
       if (idiag_epsK/=0.or.idiag_epsKmz/=0) then
         lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_uu)=.true.
@@ -1400,9 +1404,13 @@ module Viscosity
 !
         if (ldensity) then
 !
-! Find nu_smag
+!  Find nu_smag
 !
           nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
+!
+!  with quenching term
+!
+          if (gamma_smag/=0.) nu_smag=nu_smag/sqrt(1.+gamma_smag*p%sij2)
 !
 ! Calculate viscous force
 !
@@ -1613,6 +1621,7 @@ module Viscosity
           call max_mn_name(Reshock,idiag_Reshock)
         endif
         if (idiag_visc_heatm/=0) call sum_mn_name(p%visc_heat,idiag_visc_heatm)
+        if (idiag_Sij2m/=0) call sum_mn_name(p%sij2,idiag_Sij2m)
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
 !  Viscous heating for Smagorinsky viscosity.
         if (idiag_epsK_LES/=0) then
