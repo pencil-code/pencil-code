@@ -7,6 +7,7 @@ from pencil.files.param import *
 from pencil.files.grid import read_grid
 from pencil.files.var import read_var
 from pencil.files.index import *
+from pencil.files.rrmv_par import *
 from pencil.files.slices import *
 from pencil.files.xyaver import *
 from pencil.files.yzaver import *
