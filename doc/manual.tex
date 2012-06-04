@@ -3491,7 +3491,12 @@ So the first call after starting \name{GDL} should be
 \end{alltt}
 
 \paragraph{Starting visualization}
-We use the \code{pc_read} family of IDL routines to read the data.
+There are mainly two possibilities for visualization: using a simple GUI
+or loading the data with \code{pc_read} and work with it interactively.
+Please note that the GUI was written and tested only with IDL, see
+\S\ref{S-IDL-visualization}.
+
+Here, the \code{pc_read} family of IDL routines to read the data is described.
 Try
 \begin{alltt}
   \prompt{GDL> } pc_read
@@ -3564,10 +3569,27 @@ useful for visualizing results from numerical simulations.
 In fact, for many applications, the 7-minute demo version of \name{IDL} is
 sufficient.
 
-\bigskip
+\paragraph{Visualization in IDL}
+\label{S-IDL-visualization}
+To use the Pencil Code GUI, it is sufficient to run:
+\begin{alltt}
+  \prompt{unix> } idl
+  \prompt{IDL> }  .r pc_gui
+\end{alltt}
+If you like to load only 2D-slices from the given data snapshots,
+instead of using previously written video files (see \ref{S-slices}),
+you can also type:
+\begin{alltt}
+  \prompt{unix> } idl
+  \prompt{IDL> }  cut_z = 27
+  \prompt{IDL> }  .r pc_gui
+\end{alltt}
+The Pencil Code GUI offers many more options to be set on the command-line,
+please refer to the description in the source code.
 
-To see the time evolution of velocity and magnetic field (if they are
-present in you run), start \name{IDL}\footnote{
+Alternatively, by using the command-line to see the time evolution of e.g.
+velocity and magnetic field (if they are present in you run), start \name{IDL}
+\footnote{
   If you run IDL from the command line, you will highly appreciate the
   following tip:
   IDL's command line editing is broken beyond hope.
