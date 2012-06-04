@@ -34,9 +34,11 @@ module Polymer
 !  Start parameters.
 !
   character (len=labellen), dimension(ninit) :: initpoly='nothing'
+  real, dimension(3) :: rod_dirn=(/0.0,0.0,0.0/)
+  real :: pamp=1.
 !
   namelist /polymer_init_pars/ &
-     initpoly
+     initpoly,rod_dirn,pamp
 !
 !  Run parameters.
 !
@@ -124,12 +126,25 @@ module Polymer
           case('nothing'); if (lroot .and. j==1) print*,'init_poly: nothing'
           case('zero', '0'); f(:,:,:,ipoly:ipoly+5) = 0.
           case('sphere')
+            if (lroot .and. j==1) print*,'init_poly: sphere'
             f(:,:,:,ip11) = 1.
             f(:,:,:,ip12) = 0.
             f(:,:,:,ip13) = 0.
             f(:,:,:,ip22) = 1.
             f(:,:,:,ip23) = 0.
             f(:,:,:,ip33) = 1.
+          case('rods')
+            if (lroot .and. j==1) then
+               print*,'init_poly: rods'
+               print*, 'The rods point along the vector:',rod_dirn
+            endif
+            f(:,:,:,ip11) = rod_dirn(1)*rod_dirn(1) 
+            f(:,:,:,ip12) = rod_dirn(1)*rod_dirn(2) 
+            f(:,:,:,ip13) = rod_dirn(1)*rod_dirn(3) 
+            f(:,:,:,ip22) = rod_dirn(2)*rod_dirn(2) 
+            f(:,:,:,ip23) = rod_dirn(2)*rod_dirn(3) 
+            f(:,:,:,ip33) = rod_dirn(3)*rod_dirn(3)
+            f(:,:,:,ipoly:ipoly+5) = pamp*f(:,:,:,ipoly:ipoly+5) 
           case default
 !
 !  Catch unknown values.
