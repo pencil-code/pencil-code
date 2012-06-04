@@ -29,7 +29,7 @@
 ; Event handling of file dialog window
 pro select_files_event, event
 
-	common select_files_gui_common, b_var, b_add, c_list, i_skip, i_step, f_gb
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -90,7 +90,9 @@ pro select_files_event, event
 		break
 	end
 	'SHOW_TIME': begin
+		WIDGET_CONTROL, b_ts, SENSITIVE = 0
 		pc_show_ts, obj=ts, units=units, param=start_par, run_param=run_par, datadir=data_dir
+		WIDGET_CONTROL, b_ts, SENSITIVE = 1
 		break
 	end
 	'OK': begin
@@ -117,7 +119,7 @@ end
 
 pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, param=param, run_param=run_param
 
-	common select_files_gui_common, b_var, b_add, c_list, i_skip, i_step, f_gb
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file
 
 	; Default settings
@@ -125,8 +127,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (varfile)) then varfile = "var.dat"
 	if (not keyword_set (addfile)) then addfile = "crash.dat"
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir ()
-	default, skipping, 1
-	default, stepping, 2
+	default, skipping, 0
+	default, stepping, 10
 
 	if (datadir eq "") then datadir = "."
 	data_dir = datadir
@@ -155,6 +157,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	files = file_search (procdir, pattern)
 	num_files = n_elements (files)
+	stepping = stepping < (num_files - skipping)
 	for pos = 0, num_files - 1 do begin
 		files[pos] = strmid (files[pos], strpos (procdir, "/", /REVERSE_SEARCH) - 1)
 	end
@@ -175,7 +178,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if ((varfile ne "") and file_test (procdir+varfile)) then var_selected = 1 else var_selected = 0
 
 
-	MOTHER	= WIDGET_BASE (title='PC file-dialog', EVENT_PRO=select_files_event)
+	MOTHER	= WIDGET_BASE (title='PC file selector', EVENT_PRO=select_files_event)
 	BASE	= WIDGET_BASE (MOTHER, /row)
 
 	CTRL	= WIDGET_BASE (BASE, /col)
@@ -193,7 +196,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	XTRA	= WIDGET_BASE (CTRL, /col, /align_center)
 	tmp	= WIDGET_LABEL (XTRA, value='Analysis:', frame=0)
 	BUT	= WIDGET_BASE (XTRA, /row, /align_center)
-	timeser	= WIDGET_BUTTON (BUT, value='show timeseries', uvalue='SHOW_TIME')
+	b_ts	= WIDGET_BUTTON (BUT, value='show timeseries', uvalue='SHOW_TIME')
 
 	tmp	= CW_FIELD (XTRA, title='GB per file', /column, value=gb_per_file, /float)
 	f_gb	= CW_FIELD (XTRA, title='Total GB selected', /column, value=gb_per_file*(add_selected+var_selected), /float)
