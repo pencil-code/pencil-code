@@ -13,8 +13,8 @@
 ; Event handling of visualisation window
 pro timeseries_event, event
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy
-	common timeseries_gui_common, l_x, l_y, r_x, r_y, ls_min, ls_max, rs_min, rs_max, ls_fr, rs_fr, ls_xy, rs_xy, l_coupled, r_coupled, lx_range, ly_range, rx_range, ry_range
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
+	common timeseries_gui_common, l_x, l_y, r_x, r_y, ls_min, ls_max, rs_min, rs_max, ls_fr, rs_fr, ls_xy, rs_xy, l_coupled, r_coupled, lx_range, ly_range, rx_range, ry_range, s_line
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -35,6 +35,7 @@ pro timeseries_event, event
 			if (l_xy eq 0) then val_max=[lvx_max,lx_range] else val_max=[lvy_max,ly_range]
 			WIDGET_CONTROL, ls_min, SET_VALUE = val_min
 			WIDGET_CONTROL, ls_max, SET_VALUE = val_max
+			if (l_coupled ge 0) then if (l_xy eq 0) then l_coupled = lvx_max-lvx_min else l_coupled = lvy_max-lvy_min
 		end
 		break
 	end
@@ -45,64 +46,93 @@ pro timeseries_event, event
 			if (r_xy eq 0) then val_max=[rvx_max,rx_range] else val_max=[rvy_max,ry_range]
 			WIDGET_CONTROL, rs_min, SET_VALUE = val_min
 			WIDGET_CONTROL, rs_max, SET_VALUE = val_max
+			if (r_coupled ge 0) then if (r_xy eq 0) then r_coupled = rvx_max-rvx_min else r_coupled = rvy_max-rvy_min
 		end
 		break
 	end
 	'LS_MIN': begin
-		if (l_xy eq 0) then val_max = lx_range[1] else val_max = ly_range[1]
 		WIDGET_CONTROL, ls_min, GET_VALUE = val_min
-		if (val_min gt val_max-l_coupled) then begin
-			val_min = val_max-l_coupled
-			WIDGET_CONTROL, ls_min, SET_VALUE = val_min
-		end
-		if (l_coupled gt 0.0) then begin
-			lvx_max = val_min+l_coupled
-			WIDGET_CONTROL, ls_max, SET_VALUE = lvx_max
+		if (l_coupled lt 0) then begin
+			if (l_xy eq 0) then val_max = lvx_max else val_max = lvy_max
+			if (val_min gt val_max) then begin
+				val_min = val_max
+				WIDGET_CONTROL, ls_min, SET_VALUE = val_min
+			end
+		end else begin
+			if (l_xy eq 0) then val_max = lx_range[1] else val_max = ly_range[1]
+			if (val_min gt val_max-l_coupled) then begin
+				val_min = val_max-l_coupled
+				WIDGET_CONTROL, ls_min, SET_VALUE = val_min
+			end
+			val_max = val_min+l_coupled
+			WIDGET_CONTROL, ls_max, SET_VALUE = val_max
+			if (l_xy eq 0) then lvx_max = val_max else lvy_max = val_max
 		end
 		if (l_xy eq 0) then lvx_min = val_min else lvy_min = val_min
 		L_DRAW_TS = 1
 		break
 	end
 	'LS_MAX': begin
-		if (l_xy eq 0) then val_min = lx_range[0] else val_min = ly_range[0]
 		WIDGET_CONTROL, ls_max, GET_VALUE = val_max
-		if (val_max lt val_min+l_coupled) then begin
-			val_max = val_min+l_coupled
-			WIDGET_CONTROL, ls_max, SET_VALUE = val_max
-		end
-		if (l_coupled gt 0.0) then begin
-			lvx_min = val_max-l_coupled
-			WIDGET_CONTROL, ls_min, SET_VALUE = lvx_min
+		if (l_coupled lt 0) then begin
+			if (l_xy eq 0) then val_min = lvx_min else val_min = lvy_min
+			if (val_max lt val_min) then begin
+				val_max = val_min
+				WIDGET_CONTROL, ls_max, SET_VALUE = val_max
+			end
+		end else begin
+			if (l_xy eq 0) then val_min = lx_range[0] else val_min = ly_range[0]
+			if (val_max lt val_min+l_coupled) then begin
+				val_max = val_min+l_coupled
+				WIDGET_CONTROL, ls_max, SET_VALUE = val_max
+			end
+			val_min = val_max-l_coupled
+			WIDGET_CONTROL, ls_min, SET_VALUE = val_min
+			if (l_xy eq 0) then lvx_min = val_min else lvy_min = val_min
 		end
 		if (l_xy eq 0) then lvx_max = val_max else lvy_max = val_max
 		L_DRAW_TS = 1
 		break
 	end
 	'RS_MIN': begin
-		if (r_xy eq 0) then val_max = rx_range[1] else val_max = ry_range[1]
 		WIDGET_CONTROL, rs_min, GET_VALUE = val_min
-		if (val_min gt val_max-r_coupled) then begin
-			val_min = val_max-r_coupled
-			WIDGET_CONTROL, rs_min, SET_VALUE = val_min
-		end
-		if (r_coupled gt 0.0) then begin
-			rvx_max = val_min+r_coupled
-			WIDGET_CONTROL, rs_max, SET_VALUE = rvx_max
+		if (r_coupled lt 0) then begin
+			if (r_xy eq 0) then val_max = rvx_max else val_max = rvy_max
+			if (val_min gt val_max) then begin
+				val_min = val_max
+				WIDGET_CONTROL, rs_min, SET_VALUE = val_min
+			end
+		end else begin
+			if (r_xy eq 0) then val_max = rx_range[1] else val_max = ry_range[1]
+			if (val_min gt val_max-r_coupled) then begin
+				val_min = val_max-r_coupled
+				WIDGET_CONTROL, rs_min, SET_VALUE = val_min
+			end
+			val_max = val_min+r_coupled
+			WIDGET_CONTROL, rs_max, SET_VALUE = val_max
+			if (r_xy eq 0) then rvx_max = val_max else rvy_max = val_max
 		end
 		if (r_xy eq 0) then rvx_min = val_min else rvy_min = val_min
 		R_DRAW_TS = 1
 		break
 	end
 	'RS_MAX': begin
-		if (r_xy eq 0) then val_min = rx_range[0] else val_min = ry_range[0]
 		WIDGET_CONTROL, rs_max, GET_VALUE = val_max
-		if (val_max lt val_min+r_coupled) then begin
-			val_max = val_min+r_coupled
-			WIDGET_CONTROL, rs_max, SET_VALUE = val_max
-		end
-		if (r_coupled gt 0.0) then begin
-			rvx_min = val_max-r_coupled
-			WIDGET_CONTROL, rs_min, SET_VALUE = rvx_min
+		if (r_coupled lt 0) then begin
+			if (r_xy eq 0) then val_min = rvx_min else val_min = rvy_min
+			if (val_max lt val_min) then begin
+				val_max = val_min
+				WIDGET_CONTROL, rs_max, SET_VALUE = val_max
+			end
+		end else begin
+			if (r_xy eq 0) then val_min = rx_range[0] else val_min = ry_range[0]
+			if (val_max lt val_min+r_coupled) then begin
+				val_max = val_min+r_coupled
+				WIDGET_CONTROL, rs_max, SET_VALUE = val_max
+			end
+			val_min = val_max-r_coupled
+			WIDGET_CONTROL, rs_min, SET_VALUE = val_min
+			if (r_xy eq 0) then rvx_min = val_min else rvy_min = val_min
 		end
 		if (r_xy) eq 0 then rvx_max = val_max else rvy_max = val_max
 		R_DRAW_TS = 1
@@ -164,28 +194,36 @@ pro timeseries_event, event
 		end
 		break
 	end
+	'STYLE': begin
+		if (plot_style ne event.index) then begin
+			plot_style = event.index
+			L_DRAW_TS = 1
+			R_DRAW_TS = 1
+		end
+		break
+	end
 	'RESET': begin
 		; reset_ts_GUI
 		break
 	end
 	'L_COUPLE': begin
 		WIDGET_CONTROL, ls_fr, set_value='<= RELEASE =>', set_uvalue='L_RELEASE'
-		l_coupled = lvx_max - lvx_min
+		if (l_xy eq 0) then l_coupled = lvx_max - lvx_min else l_coupled = lvy_max - lvy_min
 		break
 	end
 	'L_RELEASE': begin
 		WIDGET_CONTROL, ls_fr, set_value='<= COUPLE =>', set_uvalue='L_COUPLE'
-		l_coupled = 0
+		l_coupled = -1
 		break
 	end
 	'R_COUPLE': begin
 		WIDGET_CONTROL, rs_fr, set_value='<= RELEASE =>', set_uvalue='R_RELEASE'
-		r_coupled = rvx_max - rvx_min
+		if (r_xy eq 0) then r_coupled = rvx_max - rvx_min else r_coupled = rvy_max - rvy_min
 		break
 	end
 	'R_RELEASE': begin
 		WIDGET_CONTROL, rs_fr, set_value='<= COUPLE =>', set_uvalue='R_COUPLE'
-		r_coupled = 0
+		r_coupled = -1
 		break
 	end
 	'QUIT': begin
@@ -207,18 +245,24 @@ end
 ; Draw the timeseries plots
 pro draw_timeseries, l_draw, r_draw
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 
 	if (l_draw ne 0) then begin
 		wset, l_plot
-		plot, ts.(l_sx), ts.(l_sy), xr=[lvx_min,lvx_max], yr=[lvy_min/1.05,lvy_max*1.05], /xs, /ys
-		oplot, ts.(l_sx), ts.(l_sy), psym=3, color=200
+		xr = [lvx_min,lvx_max]
+		if (lvx_min eq lvx_max) then xr[1] = lvx_min * (1.0 + 1.e-14)
+		if (plot_style le 1) then plot, ts.(l_sx), ts.(l_sy), xr=xr, yr=[lvy_min*0.95,lvy_max*1.05], /xs, /ys
+		if (plot_style eq 1) then oplot, ts.(l_sx), ts.(l_sy), psym=3, color=200
+		if (plot_style eq 2) then plot, ts.(l_sx), ts.(l_sy), xr=xr, yr=[lvy_min*0.95,lvy_max*1.05], /xs, /ys, psym=3
 	end
 
 	if (r_draw ne 0) then begin
 		wset, r_plot
-		plot, ts.(r_sx), ts.(r_sy), xr=[rvx_min,rvx_max], yr=[rvy_min/1.05,rvy_max*1.05], /xs, /ys
-		oplot, ts.(r_sx), ts.(r_sy), psym=3, color=200
+		xr = [rvx_min,rvx_max]
+		if (rvx_min eq rvx_max) then xr[1] = rvx_min * (1.0 + 1.e-14)
+		if (plot_style le 1) then plot, ts.(r_sx), ts.(r_sy), xr=xr, yr=[rvy_min*0.95,rvy_max*1.05], /xs, /ys
+		if (plot_style eq 1) then oplot, ts.(r_sx), ts.(r_sy), psym=3, color=200
+		if (plot_style eq 2) then plot, ts.(r_sx), ts.(r_sy), xr=xr, yr=[rvy_min*0.95,rvy_max*1.05], /xs, /ys, psym=3
 	end
 end
 
@@ -226,7 +270,7 @@ end
 ; Analyze the timeseries plots
 pro analyze_timeseries
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 
 	charsize = 1.25
 	old_x_margin = !X.margin
@@ -414,8 +458,14 @@ end
 ; Show timeseries analysis window
 pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=run_param, start_time=start_time, end_time=end_time, datadir=datadir
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 	common timeseries_gui_common, l_x, l_y, r_x, r_y, ls_min, ls_max, rs_min, rs_max, ls_fr, rs_fr, ls_xy, rs_xy, l_coupled, r_coupled, lx_range, ly_range, rx_range, ry_range
+
+	; GUI settings
+	col_width = 220
+	plot_width = 2 * col_width
+	plot_height = plot_width
+	sl_width = col_width - 52
 
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 
@@ -461,8 +511,9 @@ pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=r
 	rvx_max = rx_range[1]
 	rvy_min = ry_range[0]
 	rvy_max = ry_range[1]
-	l_coupled = 0
-	r_coupled = 0
+	l_coupled = -1
+	r_coupled = -1
+	plot_style = 0
 
 	MOTHER	= WIDGET_BASE (title='PC timeseries analysis')
 	APP	= WIDGET_BASE (MOTHER, /col)
@@ -471,46 +522,46 @@ pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=r
 
 	tmp	= WIDGET_BASE (BASE, /row)
 	BUT	= WIDGET_BASE (tmp, /col)
-	L_X	= WIDGET_DROPLIST (BUT, xsize=380, value=plots, uvalue='L_X', title='LEFT plot:')
-	L_Y	= WIDGET_LIST (BUT, value=plots, uvalue='L_Y', ysize=num_plots<12); , /multiple
+	L_X	= WIDGET_DROPLIST (BUT, xsize=plot_width-60, value=plots, uvalue='L_X', title='LEFT plot:')
+	L_Y	= WIDGET_LIST (BUT, value=plots, uvalue='L_Y', ysize=(num_plots<12)>4); , /multiple
 	WIDGET_CONTROL, L_X, SET_DROPLIST_SELECT = l_sx
 	WIDGET_CONTROL, L_Y, SET_LIST_SELECT = l_sy
 
-	tmp	= WIDGET_BASE (BASE, /row)
-	BUT	= WIDGET_BASE (tmp, /col, frame=1, /align_center)
+	CTRL	= WIDGET_BASE (BASE, /col)
+	BUT	= WIDGET_BASE (CTRL, /col, frame=1, /align_center)
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='RESET', uvalue='RESET', sensitive=0)
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='REFRESH', uvalue='REFRESH', sensitive=0)
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='ANALYZE', uvalue='ANALYZE')
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='QUIT', uvalue='QUIT')
+	BUT	= WIDGET_BASE (CTRL, /col, /align_center)
+	tmp	= WIDGET_LABEL (CTRL, value='plotting style:', frame=0)
+	tmp	= WIDGET_DROPLIST (CTRL, value=['line', 'line+dots', 'dots'], uvalue='STYLE')
+	WIDGET_CONTROL, tmp, SET_DROPLIST_SELECT = plot_style
 
 	tmp	= WIDGET_BASE (BASE, /row)
 	BUT	= WIDGET_BASE (tmp, /col)
-	R_X	= WIDGET_DROPLIST (BUT, xsize=380, value=plots, uvalue='R_X', title='RIGHT plot:')
-	R_Y	= WIDGET_LIST (BUT, value=plots, uvalue='R_Y', ysize=num_plots<12) ; , /multiple
+	R_X	= WIDGET_DROPLIST (BUT, xsize=plot_width-60, value=plots, uvalue='R_X', title='RIGHT plot:')
+	R_Y	= WIDGET_LIST (BUT, value=plots, uvalue='R_Y', ysize=(num_plots<12)>4) ; , /multiple
 	WIDGET_CONTROL, R_X, SET_DROPLIST_SELECT = r_sx
 	WIDGET_CONTROL, R_Y, SET_LIST_SELECT = r_sy
 
 	BASE	= WIDGET_BASE (APP, /row)
 
-	xsize = 220
 	BUT	= WIDGET_BASE (BASE, /row)
-	ls_min	= CW_FSLIDER (BUT, xsize=xsize-52, title='minimum value', uvalue='LS_MIN', /double, /edit, min=lx_range[0], max=lx_range[1], drag=1, value=lvx_min)
+	ls_min	= CW_FSLIDER (BUT, xsize=sl_width, title='minimum value', uvalue='LS_MIN', /double, /edit, min=lx_range[0], max=lx_range[1], drag=1, value=lvx_min)
 	CTRL	= WIDGET_BASE (BUT, /col, frame=0)
 	tmp	= WIDGET_DROPLIST (CTRL, value=['X', 'Y'], uvalue='L_XY', title='axis:')
 	ls_fr	= WIDGET_BUTTON (CTRL, value='<= COUPLE =>', uvalue='L_COUPLE')
-	ls_max	= CW_FSLIDER (BUT, xsize=xsize-52, title='maximum value', uvalue='LS_MAX', /double, /edit, min=lx_range[0], max=lx_range[1], drag=1, value=lvx_max)
+	ls_max	= CW_FSLIDER (BUT, xsize=sl_width, title='maximum value', uvalue='LS_MAX', /double, /edit, min=lx_range[0], max=lx_range[1], drag=1, value=lvx_max)
 
 	BUT	= WIDGET_BASE (BASE, /row)
-	rs_min	= CW_FSLIDER (BUT, xsize=xsize-52, title='minimum value', uvalue='RS_MIN', /double, /edit, min=rx_range[0], max=rx_range[1], drag=1, value=rvx_min)
+	rs_min	= CW_FSLIDER (BUT, xsize=sl_width, title='minimum value', uvalue='RS_MIN', /double, /edit, min=rx_range[0], max=rx_range[1], drag=1, value=rvx_min)
 	CTRL	= WIDGET_BASE (BUT, /col)
 	tmp	= WIDGET_DROPLIST (CTRL, value=['X', 'Y'], uvalue='R_XY', title='axis:')
 	rs_fr	= WIDGET_BUTTON (CTRL, value='<= COUPLE =>', uvalue='R_COUPLE')
-	rs_max	= CW_FSLIDER (BUT, xsize=xsize-52, title='maximum value', uvalue='RS_MAX', /double, /edit, min=rx_range[0], max=rx_range[1], drag=1, value=rvx_max)
+	rs_max	= CW_FSLIDER (BUT, xsize=sl_width, title='maximum value', uvalue='RS_MAX', /double, /edit, min=rx_range[0], max=rx_range[1], drag=1, value=rvx_max)
 
 	BASE	= WIDGET_BASE (APP, /row)
-
-	plot_width = 2 * xsize
-	plot_height = plot_width
 
 	tmp	= WIDGET_BASE (BASE, /col)
 	PLOTS	= WIDGET_BASE (tmp, /row)
