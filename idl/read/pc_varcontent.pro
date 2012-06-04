@@ -241,6 +241,60 @@ if (iemf gt 0) then begin
   varcontent[iemf].skip       = 2
 endif
 ;
+default, ip11, 0
+if (ip11 gt 0) then begin
+  varcontent[ip11].variable   = 'Polymer Tensor 11 (p11)'
+  varcontent[ip11].idlvar     = 'p11'
+  varcontent[ip11].idlinit    = INIT_SCALAR
+  varcontent[ip11].idlvarloc  = 'p11_loc'
+  varcontent[ip11].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, ip12, 0
+if (ip12 gt 0) then begin
+  varcontent[ip12].variable   = 'Polymer Tensor 12 (p11)'
+  varcontent[ip12].idlvar     = 'p12'
+  varcontent[ip12].idlinit    = INIT_SCALAR
+  varcontent[ip12].idlvarloc  = 'p12_loc'
+  varcontent[ip12].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, ip13, 0
+if (ip13 gt 0) then begin
+  varcontent[ip13].variable   = 'Polymer Tensor 13 (p13)'
+  varcontent[ip13].idlvar     = 'p13'
+  varcontent[ip13].idlinit    = INIT_SCALAR
+  varcontent[ip13].idlvarloc  = 'p13_loc'
+  varcontent[ip13].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, ip22, 0
+if (ip22 gt 0) then begin
+  varcontent[ip22].variable   = 'Polymer Tensor 22 (p22)'
+  varcontent[ip22].idlvar     = 'p22'
+  varcontent[ip22].idlinit    = INIT_SCALAR
+  varcontent[ip22].idlvarloc  = 'p22_loc'
+  varcontent[ip22].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, ip23, 0
+if (ip23 gt 0) then begin
+  varcontent[ip23].variable   = 'Polymer Tensor 23 (p23)'
+  varcontent[ip23].idlvar     = 'p23'
+  varcontent[ip23].idlinit    = INIT_SCALAR
+  varcontent[ip23].idlvarloc  = 'p23_loc'
+  varcontent[ip23].idlinitloc = INIT_SCALAR_LOC
+endif
+;
+default, ip33, 0
+if (ip33 gt 0) then begin
+  varcontent[ip33].variable   = 'Polymer Tensor 23 (p33)'
+  varcontent[ip33].idlvar     = 'p33'
+  varcontent[ip33].idlinit    = INIT_SCALAR
+  varcontent[ip33].idlvarloc  = 'p33_loc'
+  varcontent[ip33].idlinitloc = INIT_SCALAR_LOC
+endif
+;
 default, igij, 0
 if (igij gt 0) then begin
   varcontent[igij].variable   = 'Gravitational Metric (gij)'
