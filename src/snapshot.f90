@@ -225,7 +225,7 @@ module Snapshot
 !  30-sep-97/axel: coded
 !  07-oct-02/nils: adapted from wsnap
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
-!  28-dec-02/axel: call structure from herel; allow optional lwrite_only
+!  28-dec-02/axel: call structure from here; allow optional lwrite_only
 !  22-apr-11/MR: added possibility to get quantity for xy-power-spectrum from xy_specs
 !
       use Boundcond, only: update_ghosts
