@@ -937,7 +937,9 @@ module Magnetic_meanfield
 !
       if (l2davgfirst) then
         if (idiag_peffmxz/=0)  then
-          Beq21=p%rho1/(uturb**2+p%u2)
+!         Beq21=p%rho1/(uturb**2+p%u2)
+!AB: Koen, why should the mean flow (in a mean-field model) enter here.
+          Beq21=p%rho1/uturb**2
           mf_qp=meanfield_qp/(1.+p%b2*Beq21/meanfield_Bp**2)
 !         y-averaged effective magnetic pressure, only makes sense for the 'uturbconst' profile
           call ysum_mn_name_xz((1.-mf_qp)*p%b2/2*Beq21,idiag_peffmxz)
