@@ -419,17 +419,13 @@ module Shear
 !  This formulation works also when Sshear is changed during the run.
 !
 !  18-aug-02/axel: incorporated from nompicomm.f90
+!  05-jun-12/ccyang: move SAFI to subroutine sheared_advection_fft
 !
       use Diagnostics, only: save_name
-      use Fourier, only: fourier_shift_y
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
-!
-      real, dimension (nx,ny,nz) :: tmp
-      real, dimension (nx) :: uy0
-      integer :: ivar
 !
 !  Must currently use lshearadvection_as_shift=T when Sshear is positive.
 !
@@ -451,25 +447,10 @@ module Shear
 !  time derivative (following Gammie 2001). Removes time-step constraint
 !  from shear motion.
 !
-      if (lshearadvection_as_shift) then
-        if (nprocx == 1) then 
-          uy0=Sshear*(x(l1:l2)-x0_shear)
-          do ivar=1,mvar
-            tmp=f(l1:l2,m1:m2,n1:n2,ivar)
-            call fourier_shift_y(tmp,uy0*dt_shear)
-            f(l1:l2,m1:m2,n1:n2,ivar)=tmp
-          enddo
-          if (.not. llast) then
-            do ivar=1,mvar
-              tmp=df(l1:l2,m1:m2,n1:n2,ivar)
-              call fourier_shift_y(tmp,uy0*dt_shear)
-              df(l1:l2,m1:m2,n1:n2,ivar)=tmp
-            enddo
-          endif
-        else
-          call advect_shear_xparallel(f,df,uy0,dt_shear)
-        endif
-      endif
+      safi: if (lshearadvection_as_shift) then
+        call sheared_advection_fft(f(l1:l2,m1:m2,n1:n2,:), mvar, dt_shear)
+        if (.not. llast) call sheared_advection_fft(df(l1:l2,m1:m2,n1:n2,:), mvar, dt_shear)
+      endif safi
 !
 !  Print identifier.
 !
@@ -484,36 +465,46 @@ module Shear
 !
     endsubroutine advance_shear
 !***********************************************************************
-    subroutine advect_shear_xparallel(f,df,uy0,dt_shear)
+    subroutine sheared_advection_fft(a, ncomp, dt_shear)
 !
-      use Fourier, only: fft_y_parallel
+!  Uses Fourier interpolation to integrate the shearing terms.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real :: dt_shear
+!  05-jun-12/ccyang: modularized from advance_shear and advect_shear_xparallel
 !
-      real, dimension (nx,ny) :: a_re,a_im
-      real, dimension (nx) :: uy0
-      integer :: ivar
+!  Input/Ouput Argument
+!    a: field to be sheared
+!  Input Argument
+!    ncomp: number of components in a
+!    dt_shear: time increment
 !
-      do n=n1,n2
-        do ivar=1,mvar
-          a_re=f(l1:l2,m1:m2,n,ivar) ; a_im=0.
-          call fft_y_parallel(a_re,a_im,SHIFT_Y=uy0*dt_shear,lneed_im=.false.)
-          call fft_y_parallel(a_re,a_im,linv=.true.)
-          f(l1:l2,m1:m2,n,ivar)=a_re
-        enddo
-        if (.not.llast) then
-          do ivar=1,mvar
-            a_re=df(l1:l2,m1:m2,n,ivar) ; a_im=0.
-            call fft_y_parallel(a_re,a_im,SHIFT_Y=uy0*dt_shear,lneed_im=.false.)
-            call fft_y_parallel(a_re,a_im,linv=.true.)
-            df(l1:l2,m1:m2,n,ivar)=a_re
-          enddo
-        endif
-    enddo
+      use Fourier, only: fourier_shift_y, fft_y_parallel
 !
-    endsubroutine advect_shear_xparallel
+      integer, intent(in) :: ncomp
+      real, dimension(nx,ny,nz,ncomp), intent(inout) :: a
+      real, intent(in) :: dt_shear
+!
+      real, dimension(nx,ny,nz) :: a_im
+      real, dimension(nx) :: shift
+      integer :: ic
+!
+!  Find the sheared length as a function of x.
+!
+      shift = Sshear * (x(l1:l2) - x0_shear) * dt_shear
+      shift = shift - int(shift / Ly) * Ly
+!
+!  Conduct the Fourier interpolation.
+!
+      comp: do ic = 1, ncomp
+        serial: if (nprocx == 1) then
+          call fourier_shift_y(a(:,:,:,ic), shift)
+        else serial
+          a_im = 0.
+          call fft_y_parallel(a(:,:,:,ic), a_im, SHIFT_Y=shift, lneed_im=.false.)
+          call fft_y_parallel(a(:,:,:,ic), a_im, linv=.true.)
+        endif serial
+      enddo comp
+!
+    endsubroutine sheared_advection_fft
 !***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
 !

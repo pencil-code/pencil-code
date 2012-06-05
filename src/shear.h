@@ -9,3 +9,4 @@
   public :: pencil_criteria_shear, pencil_interdep_shear
   public :: calc_pencils_shear
   public :: shear_variables
+  public :: sheared_advection_fft

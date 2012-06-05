@@ -165,6 +165,20 @@ module Shear
 !
     endsubroutine advance_shear
 !***********************************************************************
+    subroutine sheared_advection_fft(a, ncomp, dt_shear)
+!
+!  dummy
+!
+      integer, intent(in) :: ncomp
+      real, dimension(nx,ny,nz,ncomp), intent(inout) :: a
+      real, intent(in) :: dt_shear
+!
+      call keep_compiler_quiet(a)
+      call keep_compiler_quiet(ncomp)
+      call keep_compiler_quiet(dt_shear)
+!
+    endsubroutine sheared_advection_fft
+!***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
 !
 !  Dummy routine.

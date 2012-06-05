@@ -333,12 +333,13 @@ module Fourier
 !
     endsubroutine fft_y_parallel_2D
 !***********************************************************************
-    subroutine fft_y_parallel_3D(a_re,a_im,linv,lneed_im)
+    subroutine fft_y_parallel_3D(a_re,a_im,linv,lneed_im,shift_y)
 !
 !  Subroutine to do FFT of distributed 3D data in the y-direction.
 !
       real, dimension (:,:,:), intent(inout) :: a_re, a_im
       logical, optional, intent(in) :: linv, lneed_im
+      real, dimension(nx), optional :: shift_y
 !
       call fatal_error('fft_y_parallel_3D', &
           'this sub is not available in nofourier.f90!')
