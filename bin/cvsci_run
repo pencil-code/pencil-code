@@ -51,6 +51,14 @@ if ( ! $status ) then
   cvs add power*.dat
 endif
 #
+#  add structure functions, if they exist
+#  (for the time being, test existence only on a few such files)
+#
+\ls | egrep 'sf.*\.dat' >/dev/null
+if ( ! $status ) then
+  cvs add sf*.dat
+endif
+#
 #  add testfield_info.dat file if it exists
 #
 \ls | egrep 'testfield_info\.dat' >/dev/null
