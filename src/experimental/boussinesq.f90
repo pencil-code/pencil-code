@@ -620,8 +620,8 @@ module Density
 !
 !  rows dealt implicitly
 !
-      ax(:)=-dt*dx_2/2.
-      bx(:)=1.+dt*dx_2
+      ax(:)=-cdiff*dt*dx_2/2.
+      bx(:)=1.+cdiff*dt*dx_2
       cx(:)=ax
       aalpha=cx(nx) ; bbeta=ax(1)  ! x-direction periodic
       do n=n1,n2
@@ -634,8 +634,8 @@ module Density
 !
 !  columns dealt implicitly
 !
-      az(:)=-dt*dz_2/2.
-      bz(:)=1.+dt*dz_2
+      az(:)=-cdiff*dt*dz_2/2.
+      bz(:)=1.+cdiff*dt*dz_2
       cz(:)=az
       if (ivar.eq.iTT .or. ivar.eq.iuz) then
         bz(1)=1.  ; cz(1)=0.  ; rhsz(1)=0.               ! T = uz = 0
