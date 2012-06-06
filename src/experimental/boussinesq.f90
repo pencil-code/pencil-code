@@ -368,9 +368,17 @@ module Density
 !
         do j=1,3
           ju=j+iuu-1
-          call implicit_diffusion(f,ju,Pr)
+          if (nprocz>1) then
+            call implicit_diffusion_MPI(f,ju,Pr)
+          else
+            call implicit_diffusion(f,ju,Pr)
+          endif
         enddo
-        call implicit_diffusion(f,iTT,1.)
+        if (nprocz>1) then
+          call implicit_diffusion_MPI(f,iTT,1.)
+        else
+          call implicit_diffusion(f,iTT,1.)
+        endif
       endif
 !
 !  Find the divergence of uu
@@ -602,6 +610,58 @@ module Density
 !  Peaceman & Rachford one.
 !
       use General, only: tridag, cyclic
+!
+      implicit none
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz) :: TT, finter
+      real, dimension(nx)    :: ax, bx, cx, rhsx
+      real, dimension(nz)    :: az, bz, cz, rhsz
+      real    :: aalpha, bbeta
+      integer :: l, n, ivar
+      real    :: cdiff
+!
+      TT=f(:,4,:,ivar)
+!
+!  rows dealt implicitly
+!
+      ax(:)=-cdiff*dt*dx_2/2.
+      bx(:)=1.+cdiff*dt*dx_2
+      cx(:)=ax
+      aalpha=cx(nx) ; bbeta=ax(1)  ! x-direction periodic
+      do n=n1,n2
+        rhsx=TT(l1:l2,n)+     &
+             cdiff*dt*dz_2/2.*(TT(l1:l2,n+1)-2.*TT(l1:l2,n)+TT(l1:l2,n-1))
+        rhsx=rhsx+cdiff*dt*dx_2/2.* &
+             (TT(l1+1:l2+1,n)-2.*TT(l1:l2,n)+TT(l1-1:l2-1,n))
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finter(l1:l2,n),nx)
+      enddo
+!
+!  columns dealt implicitly
+!
+      az(:)=-cdiff*dt*dz_2/2.
+      bz(:)=1.+cdiff*dt*dz_2
+      cz(:)=az
+      if (ivar.eq.iTT .or. ivar.eq.iuz) then
+        bz(1)=1.  ; cz(1)=0.  ; rhsz(1)=0.   ! T = uz = 0
+        bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=0.  ! T = uz = 0
+      else
+        cz(1)=2.*cz(1)    ! ux' = 0
+        az(nz)=2.*az(nz)  ! ux' = 0
+      endif
+      do l=l1,l2
+        rhsz=finter(l,n1:n2)
+        call tridag(az,bz,cz,rhsz,f(l,4,n1:n2,ivar))
+      enddo
+!
+    endsubroutine implicit_diffusion
+!***********************************************************************
+    subroutine implicit_diffusion_MPI(f,ivar,cdiff)
+!
+!  06-June-2012/dintrans: coded
+!  parallel version of implicit_diffusion
+!
+      use General, only: tridag, cyclic
       use Mpicomm, only: transp_xz, transp_zx
 !
       implicit none
@@ -644,20 +704,14 @@ module Density
         cz(1)=2.*cz(1)            ! ux' = 0
         az(nzgrid)=2.*az(nzgrid)  ! ux' = 0
       endif
-      if (nprocz>1) then
-        call transp_xz(finter(l1:l2,n1:n2), fintert)
-        do l=1,nxt
-          rhsz=fintert(:,l)
-          call tridag(az,bz,cz,rhsz,wtmp(:,l))
-        enddo
-        call transp_zx(wtmp, f(l1:l2,4,n1:n2,ivar))
-      else
-        do l=l1,l2
-          rhsz=finter(l,n1:n2)
-          call tridag(az,bz,cz,rhsz,f(l,4,n1:n2,ivar))
-        enddo
-      endif
 !
-    endsubroutine implicit_diffusion
+      call transp_xz(finter(l1:l2,n1:n2), fintert)
+      do l=1,nxt
+        rhsz=fintert(:,l)
+        call tridag(az,bz,cz,rhsz,wtmp(:,l))
+      enddo
+      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ivar))
+!
+    endsubroutine implicit_diffusion_MPI
 !***********************************************************************
 endmodule Density
