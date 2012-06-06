@@ -38,6 +38,8 @@ module Density
   logical :: lwrite_debug=.false.
 !
   real, dimension (nz,3) :: glnrhomz
+  real :: dx_2, dz_2
+  real, pointer :: chi
 !
   include '../density.h'
 !
@@ -88,6 +90,11 @@ module Density
 !  variable => isochoric (constant density).
 !
       call select_eos_variable('lnrho',-1)   ! the same for rho?
+!
+!  For the implicit solver
+!
+      dx_2=1./dx**2
+      dz_2=1./dz**2
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -336,15 +343,38 @@ module Density
       use Poisson, only: inverse_laplacian
       use Sub, only: div, grad
       use Boundcond, only: update_ghosts
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: gpp
       real, dimension (nx) :: phi_rhs_pencil
-      integer :: j, ju
+      integer :: j, ju, ierr
+      real, pointer, save :: Pr
+      logical, save :: l1st=.true.
+!
+      if (lviscosity) then
+        call update_ghosts(f,iuu,iuu+2)
+      else
+        call update_ghosts(f)
+        if (l1st) then
+          call get_shared_variable('Pr',Pr,ierr)
+          if (ierr/=0) call fatal_error('implicit_diffusion',&
+              'pb to get Pr')
+          print*, 'get Pr=', Pr
+          l1st=.false.
+        endif
+!
+!  Implicit advance of both viscous and radiative diffusion terms
+!
+        do j=1,3
+          ju=j+iuu-1
+          call implicit_diffusion(f,ju,Pr)
+        enddo
+        call implicit_diffusion(f,iTT,1.)
+      endif
 !
 !  Find the divergence of uu
 !
-      call update_ghosts(f,iuu,iuu+2)
       do n=n1,n2; do m=m1,m2
         call div(f,iuu,phi_rhs_pencil)
         f(l1:l2,m,n,ipp)=phi_rhs_pencil
@@ -557,5 +587,77 @@ module Density
       return
 !
     endsubroutine inverse_laplacian_z_2nd
+!***********************************************************************
+    subroutine implicit_diffusion(f,ivar,cdiff)
+!
+!  06-June-2012/dintrans: coded
+!  2-D ADI scheme for a laplacian-like diffusion term and a constant
+!  diffusion coefficient cdiff. The ADI scheme is of Yakonov's form:
+!
+!    (1-dt/2*Lamba_x)*T^(n+1/2) = T^n + Lambda_x(T^n) + Lambda_z(T^n)
+!    (1-dt/2*Lamba_z)*T^(n+1)   = T^(n+1/2)
+!
+!  where Lambda_x and Lambda_z denote diffusion operators.
+!  Note: this form is more adapted for a parallelisation compared the 
+!  Peaceman & Rachford one.
+!
+      use General, only: tridag, cyclic
+      use Mpicomm, only: transp_xz, transp_zx
+!
+      implicit none
+!
+      integer, parameter :: nxt=nx/nprocz
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,mz)      :: TT, finter
+      real, dimension(nzgrid,nxt) :: fintert, wtmp
+      real, dimension(nx)         :: ax, bx, cx, rhsx
+      real, dimension(nzgrid)     :: az, bz, cz, rhsz
+      real    :: aalpha, bbeta
+      integer :: l, n, ivar
+      real    :: cdiff
+!
+      TT=f(:,4,:,ivar)
+!
+!  rows dealt implicitly
+!
+      ax(:)=-dt*dx_2/2.
+      bx(:)=1.+dt*dx_2
+      cx(:)=ax
+      aalpha=cx(nx) ; bbeta=ax(1)  ! x-direction periodic
+      do n=n1,n2
+        rhsx=TT(l1:l2,n)+     &
+             cdiff*dt*dz_2/2.*(TT(l1:l2,n+1)-2.*TT(l1:l2,n)+TT(l1:l2,n-1))
+        rhsx=rhsx+cdiff*dt*dx_2/2.* &
+             (TT(l1+1:l2+1,n)-2.*TT(l1:l2,n)+TT(l1-1:l2-1,n))
+        call cyclic(ax,bx,cx,aalpha,bbeta,rhsx,finter(l1:l2,n),nx)
+      enddo
+!
+!  columns dealt implicitly
+!
+      az(:)=-dt*dz_2/2.
+      bz(:)=1.+dt*dz_2
+      cz(:)=az
+      if (ivar.eq.iTT .or. ivar.eq.iuz) then
+        bz(1)=1.  ; cz(1)=0.  ; rhsz(1)=0.               ! T = uz = 0
+        bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=0.  ! T = uz = 0
+      else
+        cz(1)=2.*cz(1)            ! ux' = 0
+        az(nzgrid)=2.*az(nzgrid)  ! ux' = 0
+      endif
+      if (nprocz>1) then
+        call transp_xz(finter(l1:l2,n1:n2), fintert)
+        do l=1,nxt
+          rhsz=fintert(:,l)
+          call tridag(az,bz,cz,rhsz,wtmp(:,l))
+        enddo
+        call transp_zx(wtmp, f(l1:l2,4,n1:n2,ivar))
+      else
+        do l=l1,l2
+          rhsz=finter(l,n1:n2)
+          call tridag(az,bz,cz,rhsz,f(l,4,n1:n2,ivar))
+        enddo
+      endif
+!
+    endsubroutine implicit_diffusion
 !***********************************************************************
 endmodule Density

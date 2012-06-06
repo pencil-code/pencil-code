@@ -534,6 +534,9 @@ module Hydro
         call put_shared_variable('PrRa',PrRa,ierr)
         if (ierr/=0) call fatal_error('register_hydro',&
             'there was a problem sharing PrRa')
+        call put_shared_variable('Pr',Pr,ierr)
+        if (ierr/=0) call fatal_error('register_hydro',&
+            'there was a problem sharing Pr')
       endif
 !
 !  Identify version number (generated automatically by SVN).
