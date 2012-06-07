@@ -239,6 +239,8 @@ module Hydro
       if (lpencil(i_uij5)) p%uij5=0.0
 ! graddivu
       if (lpencil(i_graddivu)) p%graddivu=0.0
+! ugu
+      if (lpencil(i_ugu)) p%ugu=0.0
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
