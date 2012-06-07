@@ -154,6 +154,11 @@ module Entropy
   integer :: idiag_fpresymz=0   ! XYAVG_DOC: $\left<(\nabla p)_y\right>_{xy}$
   integer :: idiag_fpreszmz=0   ! XYAVG_DOC: $\left<(\nabla p)_z\right>_{xy}$
 !
+  integer :: idiag_TT2mz=0      ! XYAVG_DOC: $\left<T^2\right>_{xy}$
+  integer :: idiag_uxTmz=0      ! XYAVG_DOC: $\left<u_x T\right>_{xy}$
+  integer :: idiag_uyTmz=0      ! XYAVG_DOC: $\left<u_y T\right>_{xy}$
+  integer :: idiag_uzTmz=0      ! XYAVG_DOC: $\left<u_z T\right>_{xy}$
+!
 ! xz averaged diagnostics given in xzaver.in
 !
   integer :: idiag_ppmy=0       ! XZAVG_DOC: $\left<p\right>_{xz}$
@@ -753,8 +758,9 @@ module Entropy
 !
 !  Diagnostic pencils.
 !
-      if ( idiag_TTmax/=0.or.idiag_TTmin/=0.or.idiag_TTm/=0 .or.idiag_TugTm/=0 .or.&
-           idiag_Trms/=0 .or.idiag_uxTm/=0 .or.idiag_uyTm/=0.or.idiag_uzTm/=0 ) &
+      if ( idiag_TTmax/=0.or.idiag_TTmin/=0 .or.idiag_TTm/=0  .or.idiag_TugTm/=0 .or. &
+           idiag_Trms/=0 .or.idiag_uxTm/=0  .or.idiag_uyTm/=0 .or.idiag_uzTm/=0  .or. &
+           idiag_TT2mz/=0 .or.idiag_uxTmz/=0.or.idiag_uyTmz/=0.or.idiag_uzTmz/=0 ) &
          lpenc_diagnos(i_TT)=.true.
 
       if ( idiag_TugTm/=0 .or. idiag_gT2m/=0 .or. &
@@ -793,6 +799,8 @@ module Entropy
         lpenc_diagnos(i_ee) =.true.
         lpenc_diagnos(i_uu) =.true.
       endif
+      if (idiag_uxTmz/=0.or.idiag_uyTmz/=0.or.idiag_uzTmz/=0) &
+        lpenc_diagnos(i_uu) =.true.
       if (idiag_ssm/=0)    lpenc_diagnos(i_ss)  =.true.
       if (idiag_dtchi/=0)  lpenc_diagnos(i_cs2)=.true.
       if (idiag_csm/=0)    lpenc_diagnos(i_cs2)=.true.
@@ -1165,6 +1173,12 @@ module Entropy
         call xysum_mn_name_z(p%fpres(:,1),idiag_fpresxmz)
         call xysum_mn_name_z(p%fpres(:,2),idiag_fpresymz)
         call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
+!
+        call xysum_mn_name_z(p%TT**2,       idiag_TT2mz)
+        call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTmz)
+        call xysum_mn_name_z(p%uu(:,2)*p%TT,idiag_uyTmz)
+        call xysum_mn_name_z(p%uu(:,3)*p%TT,idiag_uzTmz)
+!
       endif
 !
 !  2-D averages.
@@ -1783,6 +1797,7 @@ module Entropy
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
         idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0; idiag_ppuzmz=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_ethuxmx=0
+        idiag_TT2mz=0; idiag_uxTmz=0; idiag_uyTmz=0; idiag_uzTmz=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
         idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0;
@@ -1858,6 +1873,12 @@ module Entropy
             idiag_fpresymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fpreszmz', &
             idiag_fpreszmz)
+!
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TT2mz',idiag_TT2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTmz',idiag_uxTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTmz',idiag_uyTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTmz',idiag_uzTmz)
+!      
       enddo
 !
 !  Check for those quantities for which we want z-averages.
