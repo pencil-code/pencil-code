@@ -41,7 +41,7 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-   integer :: ipvar
+      integer :: ipvar
 !
       call register_particles              ()
       call register_particles_radius       ()
