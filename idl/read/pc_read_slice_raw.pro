@@ -238,7 +238,7 @@ COMPILE_OPT IDL2,HIDDEN
   close, lun
 ;
   openr, lun, filename, /f77, swap_endian=swap_endian
-  point_lun, lun, long64(dim.mx*dim.my)*long64(dim.mz*dim.mvar*bytes)
+  point_lun, lun, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(dim.mvar*bytes)
   readu, lun, t, x, y, z, dx, dy, dz
   close, lun
   free_lun, lun
