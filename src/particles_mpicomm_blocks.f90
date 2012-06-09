@@ -1824,9 +1824,13 @@ module Particles_mpicomm
         call MPI_IRECV(xb_recv(:,iblock:iblock), mxb, &
             MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         call MPI_IRECV(dx1b_recv(:,iblock:iblock), mxb, &
             MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         call MPI_IRECV(dVol1xb_recv(:,iblock:iblock), mxb, &
              MPI_DOUBLE_PRECISION, iproc_recv, &
              tag_id3+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
@@ -1844,9 +1848,13 @@ module Particles_mpicomm
           call MPI_ISEND(xb(:,iblock:iblock), mxb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
           call MPI_ISEND(dx1b(:,iblock:iblock), mxb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
           call MPI_ISEND(dVol1xb(:,iblock:iblock), mxb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id3+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
@@ -1875,9 +1883,13 @@ module Particles_mpicomm
         call MPI_IRECV(yb_recv(:,iblock:iblock), &
             myb, MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         call MPI_IRECV(dy1b_recv(:,iblock:iblock), &
             myb, MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         call MPI_IRECV(dVol1yb_recv(:,iblock:iblock), &
             myb, MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id3+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
@@ -1895,9 +1907,13 @@ module Particles_mpicomm
           call MPI_ISEND(yb(:,iblock:iblock), myb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
           call MPI_ISEND(dy1b(:,iblock:iblock), myb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
           call MPI_ISEND(dVol1yb(:,iblock:iblock), myb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id3+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
@@ -1926,9 +1942,13 @@ module Particles_mpicomm
         call MPI_IRECV(zb_recv(:,iblock:iblock), mzb, &
             MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         call MPI_IRECV(dz1b_recv(:,iblock:iblock), mzb, &
             MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+        nreq=nreq+1
+        ireq_array(nreq)=ireq
         call MPI_IRECV(dVol1zb_recv(:,iblock:iblock), mzb, &
             MPI_DOUBLE_PRECISION, iproc_recv, &
             tag_id3+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
@@ -1946,16 +1966,20 @@ module Particles_mpicomm
           call MPI_ISEND(zb(:,iblock:iblock), mzb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
           call MPI_ISEND(dz1b(:,iblock:iblock), mzb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id2+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
+          nreq=nreq+1
+          ireq_array(nreq)=ireq
           call MPI_ISEND(dVol1zb(:,iblock:iblock), mzb, &
               MPI_DOUBLE_PRECISION, iproc_send, &
               tag_id3+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
           nreq=nreq+1
           ireq_array(nreq)=ireq
         endif
-         iblock=iblock+1
+        iblock=iblock+1
       enddo
 !
       do ireq=1,nreq
