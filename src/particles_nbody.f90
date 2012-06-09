@@ -396,8 +396,9 @@ module Particles_nbody
 !
         do k=1,npar_loc
           if (ipar(k) <= mspar) then
-            print*,'initparticles_nbody. Slot for nbody particle ',ipar(k),&
-                ' was at fp position ',k,' at processor ',iproc
+            if (ldebug) &
+                 print*,'initparticles_nbody. Slot for nbody particle ',&
+                 ipar(k),' was at fp position ',k,' at processor ',iproc
 !
             fp(k,ixp:izp)=position(ipar(k),1:3)
 !
@@ -407,8 +408,9 @@ module Particles_nbody
             if (nygrid==1) fp(k,iyp)=y(nghost+1)
             if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !
-            print*,'initparticles_nbody. Nbody particle ',ipar(k),&
-                ' located at ixp=',fp(k,ixp)
+            if (ldebug) &
+                 print*,'initparticles_nbody. Nbody particle ',&
+                 ipar(k),' located at ixp=',fp(k,ixp)
           endif
         enddo
 !
@@ -450,9 +452,9 @@ module Particles_nbody
         endif
 !
         if (lroot) then
-          print*,'fixed-cm: redefining the mass of the last nbody particle'
-          print*,'fixed-cm: it assumes that the sum of the mass'//&
-              ' of the particles is always g0'
+          print*,'init_particles_nbody: fixed-cm - mass and position arranged'
+          print*,'                      so that the center of mass is at rest'
+          print*,'                      at the center of the grid.'
         endif
 !
         if (lspherical_coords) then
@@ -502,7 +504,7 @@ module Particles_nbody
           position(istar,3)=pi
         endif
 !
-        if (lroot) then
+        if (ldebug) then
           print*,'pmass =',pmass
           print*,'position (x)=',position(:,1)
           print*,'position (y)=',position(:,2)
@@ -514,8 +516,9 @@ module Particles_nbody
         do k=1,npar_loc
           if (ipar(k) <= mspar) then
 !
-            print*,'initparticles_nbody. Slot for nbody particle ',ipar(k),&
-                ' was at fp position ',k,' at processor ',iproc
+            if (ldebug) &
+                 print*,'initparticles_nbody. Slot for nbody particle ',&
+                 ipar(k),' was at fp position ',k,' at processor ',iproc
 !
 !  Here I substitute the first mspar dust particles by massive ones,
 !  since the first ipars are less than mspar
@@ -528,8 +531,9 @@ module Particles_nbody
             if (nygrid==1) fp(k,iyp)=y(nghost+1)
             if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !
-            print*,'init_particles_nbody. Nbody particle ',ipar(k),&
-                ' located at ixp=',fp(k,ixp)
+            if (ldebug) & 
+                 print*,'init_particles_nbody. Nbody particle ',ipar(k),&
+                 ' located at ixp=',fp(k,ixp)
           endif
         enddo
 !
@@ -606,14 +610,16 @@ module Particles_nbody
 !
          do k=1,npar_loc
            if (ipar(k)<=mspar) then
-             print*,&
-                 'init_particles_nbody. Slot for nbody particle ',ipar(k),&
-                 ' was at fp position ', k, ' at processor ', iproc
+             if (ldebug) & 
+                  print*,&
+                  'init_particles_nbody. Slot for nbody particle ',ipar(k),&
+                  ' was at fp position ', k, ' at processor ', iproc
 !
              fp(k,ivpx:ivpz) = velocity(ipar(k),1:3)
 !
-             print*,'init_particles_nbody. Nbody particle ',ipar(k),&
-                 ' has velocity y=',fp(k,ivpy)
+             if (ldebug) &
+                  print*,'init_particles_nbody. Nbody particle ',ipar(k),&
+                  ' has velocity y=',fp(k,ivpy)
 !
            endif
          enddo
