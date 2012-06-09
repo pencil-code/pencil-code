@@ -1815,6 +1815,12 @@ module Particles_mpicomm
 !  Communicate xb, yb, zb arrays. We allow self-communication here, although
 !  transfer within a processor could be done by some intelligent copying.
 !
+!  It is IMPORTANT that all communication calls get a request ID and that we
+!  wait for all requests to finish before reusing the tags.
+!
+!  There may be a speed advantage in packing xb, dx1b, and dVolx1b into one
+!  array and send in one communication. To consider in the future.
+!
       nreq=0
       iblock=0
       do while (iblock<nblock_loc)
