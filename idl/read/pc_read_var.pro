@@ -462,7 +462,7 @@ COMPILE_OPT IDL2,HIDDEN
         if (precision eq 'D') then bytes=8 else bytes=4
         mvar_io=dim.mvar
         if (param.lwrite_aux) then mvar_io=mvar_io+dim.maux
-        point_lun, file, long64(dim.mx*dim.my)*long64(dim.mz*mvar_io*bytes)
+        point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*bytes)
       endif
       readu, file, t, x, y, z, dx, dy, dz
     endif else if (nprocs eq 1) then begin
@@ -479,7 +479,7 @@ COMPILE_OPT IDL2,HIDDEN
           close, file
           openr, file, filename, /f77, swap_endian=swap_endian
           if (precision eq 'D') then bytes=8 else bytes=4
-          point_lun, file, long64(dim.mx*dim.my)*long64(procdim.mz*dim.mvar*bytes)
+          point_lun, file, long64(dim.mx)*long64(dim.my)*long64(procdim.mz)*long64(dim.mvar*bytes)
         endif
         if (i eq 0) then begin
           readu, file, t
