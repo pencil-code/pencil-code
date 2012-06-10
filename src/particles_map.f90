@@ -625,6 +625,7 @@ module Particles_map
                         367, 251, 163, 109, 73, 37, 19, 11, 7, 5, 3, 1 /)
       logical, save :: lrunningsort=.false.
       character (len=fnlen) :: filename
+      logical :: lnbody
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
@@ -650,9 +651,14 @@ module Particles_map
 !  Calculate integer value to sort after.
 !
       do k=1,npar_loc
-        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-        ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
-        ipark_sorted(k)=k
+        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+        if (.not.lnbody) then 
+           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+           ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
+           ipark_sorted(k)=k
+        else
+           ipark_sorted(k)=ipar_nbody(k)
+        endif
       enddo
 !
 !  Sort using either straight insertion (1), shell sorting (2) or counting
@@ -662,43 +668,46 @@ module Particles_map
 !  Straight insertion.
       case (1)
         do k=2,npar_loc
+          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+          if (.not.lnbody) then
 !
-          j=k
+            j=k
 !
-          do while ( ilmn_par(k)<ilmn_par(j-1) )
-            j=j-1
-            if (j==1) exit
-          enddo
+            do while ( ilmn_par(k)<ilmn_par(j-1) )
+              j=j-1
+              if (j==1) exit
+            enddo
 !
-          if (j/=k) then
-            ncount=ncount+k-j
+            if (j/=k) then
+              ncount=ncount+k-j
 !
-            ilmn_par_tmp=ilmn_par(k)
-            ilmn_par(j+1:k)=ilmn_par(j:k-1)
-            ilmn_par(j)=ilmn_par_tmp
-            ipark_sorted_tmp=ipark_sorted(k)
-            ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
-            ipark_sorted(j)=ipark_sorted_tmp
+              ilmn_par_tmp=ilmn_par(k)
+              ilmn_par(j+1:k)=ilmn_par(j:k-1)
+              ilmn_par(j)=ilmn_par_tmp
+              ipark_sorted_tmp=ipark_sorted(k)
+              ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
+              ipark_sorted(j)=ipark_sorted_tmp
 !  Sort particle data on the fly (practical for almost ordered arrays).
-            if (lrunningsort) then
-              fp_tmp=fp(k,:)
-              fp(j+1:k,:)=fp(j:k-1,:)
-              fp(j,:)=fp_tmp
+              if (lrunningsort) then
+                fp_tmp=fp(k,:)
+                fp(j+1:k,:)=fp(j:k-1,:)
+                fp(j,:)=fp_tmp
 !
-              if (present(dfp)) then
-                dfp_tmp=dfp(k,:)
-                dfp(j+1:k,:)=dfp(j:k-1,:)
-                dfp(j,:)=dfp_tmp
+                if (present(dfp)) then
+                  dfp_tmp=dfp(k,:)
+                  dfp(j+1:k,:)=dfp(j:k-1,:)
+                  dfp(j,:)=dfp_tmp
+                endif
+!
+                ineargrid_tmp=ineargrid(k,:)
+                ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
+                ineargrid(j,:)=ineargrid_tmp
+!
+                ipar_tmp=ipar(k)
+                ipar(j+1:k)=ipar(j:k-1)
+                ipar(j)=ipar_tmp
+!
               endif
-!
-              ineargrid_tmp=ineargrid(k,:)
-              ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
-              ineargrid(j,:)=ineargrid_tmp
-!
-              ipar_tmp=ipar(k)
-              ipar(j+1:k)=ipar(j:k-1)
-              ipar(j)=ipar_tmp
-!
             endif
           endif
         enddo
@@ -707,26 +716,32 @@ module Particles_map
 !
         do ih=1,21
           do k=1+hshellsort(ih),npar_loc
-            ilmn_par_tmp=ilmn_par(k)
-            ipark_sorted_tmp=ipark_sorted(k)
-            j=k
-            do while (ilmn_par(j-hshellsort(ih)) > ilmn_par_tmp)
-              ncount=ncount+1
-              ilmn_par(j)=ilmn_par(j-hshellsort(ih))
-              ilmn_par(j-hshellsort(ih))=ilmn_par_tmp
-              ipark_sorted(j)=ipark_sorted(j-hshellsort(ih))
-              ipark_sorted(j-hshellsort(ih))=ipark_sorted_tmp
-              j=j-hshellsort(ih)
-              if (j-hshellsort(ih)<1) exit
-            enddo
+            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+            if (.not.lnbody) then 
+              ilmn_par_tmp=ilmn_par(k)
+              ipark_sorted_tmp=ipark_sorted(k)
+              j=k
+              do while (ilmn_par(j-hshellsort(ih)) > ilmn_par_tmp)
+                ncount=ncount+1
+                ilmn_par(j)=ilmn_par(j-hshellsort(ih))
+                ilmn_par(j-hshellsort(ih))=ilmn_par_tmp
+                ipark_sorted(j)=ipark_sorted(j-hshellsort(ih))
+                ipark_sorted(j-hshellsort(ih))=ipark_sorted_tmp
+                j=j-hshellsort(ih)
+                if (j-hshellsort(ih)<1) exit
+              enddo
+            endif
           enddo
         enddo
 !  Counting sort.
       case (3)
         kk=k1_imn
         do k=1,npar_loc
-          ipark_sorted(kk(ilmn_par(k)))=k
-          kk(ilmn_par(k))=kk(ilmn_par(k))+1
+          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+          if (.not.lnbody) then 
+             ipark_sorted(kk(ilmn_par(k)))=k
+             kk(ilmn_par(k))=kk(ilmn_par(k))+1
+          endif
         enddo
         ncount=npar_loc
       endselect
@@ -1176,8 +1191,11 @@ module Particles_map
 !  Nearest Grid Point (NGP) method.
 !
             do k=1,npar_loc
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
+              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+              if (.not.lnbody) then 
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+                f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
+              endif
             enddo
           endif
 !
@@ -1210,6 +1228,7 @@ module Particles_map
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       integer :: k, ix0, iy0, iz0
+      logical :: lnbody
 !
       intent(in)  :: ineargrid
 !
@@ -1218,8 +1237,11 @@ module Particles_map
 !  Calculate the number of particles in each pencil.
 !
       do k=1,npar_loc
-        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-        npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
+        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
+        if (.not.lnbody) then 
+           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+           npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
+        endif
       enddo
 !
 !  Calculate beginning and ending particle index for each pencil.
