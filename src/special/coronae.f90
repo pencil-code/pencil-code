@@ -493,8 +493,8 @@ module Special
       use EquationOfState, only: gamma
       use Sub, only: dot2_mn, div
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      type (pencil_case), intent(inout) :: p
 !
       if (lpencil(i_qq)) p%qq=f(l1:l2,m,n,iqx:iqz)
       if (lpencil(i_q2)) call dot2_mn(p%qq,p%q2)
@@ -574,9 +574,9 @@ module Special
 !  06-oct-03/tony: coded
 !
       use EquationOfState, only: gamma
-      use Deriv, only: der4, der2, der
-      use Diagnostics, only : max_mn_name, sum_mn_name
-      use Sub
+      use Deriv, only: der2, der
+      use Diagnostics, only: max_mn_name, sum_mn_name
+      use Sub, only: multsv, dot, dot2, unit_vector, identify_bcs
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1051,7 +1051,7 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-      use Diagnostics,     only : max_mn_name
+      use Diagnostics,     only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot2_mn, multsv_mn, cubic_step, dot_mn
 !
@@ -1211,7 +1211,7 @@ module Special
 !
 !  04-sep-10/bing: coded
 !
-      use Diagnostics,     only : max_mn_name
+      use Diagnostics,     only: max_mn_name
       use EquationOfState, only: gamma
       use Sub, only: dot2_mn, multsv_mn, cubic_step, dot_mn
 !
@@ -1376,9 +1376,9 @@ module Special
 !    Div K T Grad ln T
 !      =Grad(KT).Grad(lnT)+KT DivGrad(lnT)
 !
-      use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv,unit_vector
-      use EquationOfState, only : gamma
+      use Diagnostics,     only: max_mn_name
+      use Sub,             only: dot2,dot,multsv,multmv,unit_vector
+      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -1641,9 +1641,9 @@ module Special
 !
 !  L = Div( Grad(lnT)^2 *rho Grad(T))
 !
-      use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv
-      use EquationOfState, only : gamma
+      use Diagnostics,     only: max_mn_name
+      use Sub,             only: dot2,dot,multsv,multmv
+      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -2267,8 +2267,8 @@ module Special
 !  15-jan-11/bing: coded
 !
       use Syscalls, only: file_exists
-      use Fourier, only : fourier_transform_other
-      use Mpicomm, only : mpibcast_real, stop_it_if_any
+      use Fourier, only: fourier_transform_other
+      use Mpicomm, only: mpibcast_real, stop_it_if_any
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -3880,9 +3880,9 @@ module Special
 !
 ! L = Div( K rho b*(b*Grad(T))
 !
-      use Diagnostics,     only : max_mn_name
-      use Sub,             only : dot2,dot,multsv,multmv
-      use EquationOfState, only : gamma
+      use Diagnostics,     only: max_mn_name
+      use Sub,             only: dot2,dot,multsv,multmv
+      use EquationOfState, only: gamma
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
