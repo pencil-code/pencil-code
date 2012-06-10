@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED qq(3); q2, divq
+! PENCILS PROVIDED qq(3); q2; divq; cVTrho1
 !
 !***************************************************************
 !
@@ -182,7 +182,7 @@ module Special
       logical, intent(in) :: lstarting
       real, dimension (mz) :: ztmp
       character (len=*), parameter :: filename='/strat.dat'
-      integer :: lend,unit=12,i
+      integer :: lend,unit=12
       real :: dummy=1.,cp1=1.,eps0,unit_ampere,e_charge
       logical :: exists
       real,dimension(:,:,:),allocatable :: ltemp
@@ -274,7 +274,7 @@ module Special
          close (88)
          Blength=ltemp(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny ,ipz*nz+1:(ipz+1)*nz)
          deallocate(ltemp)
-         print*,'Loaded loop length data for heattype: ',iheattype(i)
+         print*,'Loaded loop length data for heattype: ',iheattype
       endif
 !
     !
@@ -355,6 +355,8 @@ module Special
 !  All pencils that this special module depends on are specified here.
 !
 !  04-sep-10/bing: coded
+!
+      lpenc_requested(i_cVTrho1)=.true.
 !
       if (eighth_moment /= 0.) then
         lpenc_requested(i_qq)=.true.
@@ -469,6 +471,8 @@ module Special
 !
       if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
 !
+      if (hyper3_eta/=0.) lpenc_requested(i_jj) =.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
@@ -476,11 +480,17 @@ module Special
       logical, dimension (npencils) :: lpencil_in
 !
       if (lpencil_in(i_q2)) lpencil_in(i_qq)=.true.
+      if (lpencil_in(i_cVTrho1)) then
+        lpencil_in(i_lnrho)=.true.
+        lpencil_in(i_lnTT)=.true.
+        lpencil_in(i_cp1)=.true.
+      endif
 !
     endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
+      use EquationOfState, only: gamma
       use Sub, only: dot2_mn, div
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -489,6 +499,7 @@ module Special
       if (lpencil(i_qq)) p%qq=f(l1:l2,m,n,iqx:iqz)
       if (lpencil(i_q2)) call dot2_mn(p%qq,p%q2)
       if (lpencil(i_divq)) call div(f,iqq,p%divq)
+      if (lpencil(i_cVTrho1)) p%cVTrho1=gamma*p%cp1*exp(-p%lnrho-p%lnTT)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -1006,18 +1017,23 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc
+      real, dimension (nx) :: hc,hyper3_heat
       integer :: i
-!
-      call keep_compiler_quiet(p)
 !
       if (aa_tau_inv /=0.) call update_aa(f,df)
 !
-      if (hyper3_diffrho /= 0.) then
+      if (hyper3_eta /= 0.) then
+        hyper3_heat = 0.
+! apply hyper resistivity to the magnetic field
         do i=0,2
           call del6(f,iax+i,hc,IGNOREDX=.true.)
+          hyper3_heat = hyper3_heat + p%jj(:,i+1)*hc*hyper3_eta
           df(l1:l2,m,n,iax+i) = df(l1:l2,m,n,iax+i) + hyper3_eta*hc
         enddo
+! add the energy difference to the internal energy
+        if (ltemperature .and. (.not.ltemperature_nolog)) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - hyper3_heat*p%cVTrho1
+        endif
 !
 !  due to ignoredx hyper3_eta has [1/s]
 !
@@ -1077,7 +1093,7 @@ module Special
               vKperp*glnT2_1*p%glnTT(:,i)*p%glnTT(:,j)
         enddo
       enddo
-      chi_spitzer = chi_spitzer*exp(-p%lnTT-p%lnrho)*p%cp1*gamma
+      chi_spitzer = chi_spitzer*p%cVTrho1
 !
 !  Calculate gradient of variable diffusion coefficients.
 !
@@ -1125,11 +1141,11 @@ module Special
           thdiff = thdiff*exp(-p%lnrho)*gamma*p%cp1
           df(l1:l2,m,n,iTT)=df(l1:l2,m,n,iTT) + thdiff
         else
-          thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
+          thdiff = thdiff*p%cVTrho1
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
         endif
       else if (lentropy.and.pretend_lnTT) then
-        thdiff = thdiff*exp(-p%lnrho-p%lnTT)*gamma*p%cp1
+        thdiff = thdiff*p%cVTrho1
         df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + thdiff
       else if (lthermal_energy) then
         df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + thdiff
@@ -1766,11 +1782,11 @@ module Special
 !
       else if (ltemperature.and.(.not.ltemperature_nolog)) then
 !
-        rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
+        rtv_cool=rtv_cool*p%cVTrho1
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
 !
       else if (lentropy.and.pretend_lnTT) then
-        rtv_cool=rtv_cool*gamma*p%cp1*exp(-p%lnTT-p%lnrho)
+        rtv_cool=rtv_cool*p%cVTrho1
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT)-rtv_cool
 !
       else if (lentropy.and. (.not.pretend_lnTT)) then
