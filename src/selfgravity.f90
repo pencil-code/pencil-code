@@ -32,6 +32,7 @@ module Selfgravity
 !
   real, target :: rhs_poisson_const=1.0
   real, target :: tstart_selfgrav=0.0
+  real :: tselfgrav_gentle=0.0
   real :: gravitational_const=0.0
   real :: kappa=0.
 !
@@ -51,7 +52,7 @@ module Selfgravity
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa, &
-      ljeans_stiffening, nj_stiff, stiff_gamma
+      ljeans_stiffening, nj_stiff, stiff_gamma, tselfgrav_gentle
 !
 !  Diagnostic Indices
 !
@@ -368,7 +369,11 @@ module Selfgravity
 !
 !  Put potential into f array.
 !
-        f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const * rhs_poisson
+        if (tselfgrav_gentle > 0. .and. t < tselfgrav_gentle) then
+          f(l1:l2,m1:m2,n1:n2,ipotself) = .5 * rhs_poisson_const * (1. - cos(pi * t / tselfgrav_gentle)) * rhs_poisson
+        else
+          f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const * rhs_poisson
+        endif
 !
       endif ! if (t>=tstart_selfgrav) then
 !
