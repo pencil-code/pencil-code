@@ -565,19 +565,16 @@ pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=r
 
 	tmp	= WIDGET_BASE (BASE, /col)
 	PLOTS	= WIDGET_BASE (tmp, /row)
-	tmp	= WIDGET_DRAW (PLOTS, xsize=plot_width, ysize=plot_height, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	l_plot = !d.window
+	dplot_l	= WIDGET_DRAW (PLOTS, xsize=plot_width, ysize=plot_height, retain=2)
 
 	tmp	= WIDGET_BASE (BASE, /col)
 	PLOTS	= WIDGET_BASE (tmp, /row)
-	tmp	= WIDGET_DRAW (PLOTS, xsize=plot_width, ysize=plot_height, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	r_plot = !d.window
+	dplot_r	= WIDGET_DRAW (PLOTS, xsize=plot_width, ysize=plot_height, retain=2)
 
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
-	wimg = !d.window
+	WIDGET_CONTROL, dplot_l, GET_VALUE = l_plot
+	WIDGET_CONTROL, dplot_r, GET_VALUE = r_plot
 
 	WIDGET_CONTROL, BASE
 

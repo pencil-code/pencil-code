@@ -1070,10 +1070,10 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	button_pressed_xy = 0
 
 	MOTHER	= WIDGET_BASE (title='compare cube-slices')
-	BASE    = WIDGET_BASE (MOTHER, /col)
-	CTRL    = WIDGET_BASE (BASE, /row)
+	BASE	= WIDGET_BASE (MOTHER, /col)
+	CTRL	= WIDGET_BASE (BASE, /row)
 
-	bcol    = WIDGET_BASE (CTRL, /col)
+	bcol	= WIDGET_BASE (CTRL, /col)
 	tmp	= WIDGET_BUTTON (bcol, value='RESET', uvalue='RESET', xsize=100)
 	b_load	= WIDGET_BUTTON (bcol, value='LOAD SETTINGS', uvalue='LOAD', xsize=100, sensitive=load_active)
 	tmp	= WIDGET_BUTTON (bcol, value='SAVE SETTINGS', uvalue='SAVE', xsize=100)
@@ -1082,25 +1082,25 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	image	= WIDGET_BUTTON (bcol, value=save_str, uvalue='IMAGE', xsize=100)
 	tmp	= WIDGET_BUTTON (bcol, value='QUIT', uvalue='QUIT', xsize=100)
 
-	bcol    = WIDGET_BASE (CTRL, /col)
-	bcot    = WIDGET_BASE (bcol, /row)
-	snap    = WIDGET_DROPLIST (bcot, value=snaps, uvalue='SNAP', sensitive=snap_active, EVENT_PRO=cslice_event, title='file')
-	prev    = WIDGET_BUTTON (bcot, value='-', uvalue='PREV', sensitive=prev_active, EVENT_PRO=cslice_event)
-	next    = WIDGET_BUTTON (bcot, value='+', uvalue='NEXT', sensitive=next_active, EVENT_PRO=cslice_event)
-	bcot    = WIDGET_BASE (bcol, /row)
-	vars    = WIDGET_DROPLIST (bcot, value=tags, uvalue='VAR', sensitive=vars_active, EVENT_PRO=cslice_event, title='quantity')
-	bcot    = WIDGET_BASE (bcol, /row)
-	over    = WIDGET_DROPLIST (bcot, value=overs, uvalue='OVER', sensitive=over_active, EVENT_PRO=cslice_event, title='overplot')
+	bcol	= WIDGET_BASE (CTRL, /col)
+	bcot	= WIDGET_BASE (bcol, /row)
+	snap	= WIDGET_DROPLIST (bcot, value=snaps, uvalue='SNAP', sensitive=snap_active, EVENT_PRO=cslice_event, title='file')
+	prev	= WIDGET_BUTTON (bcot, value='-', uvalue='PREV', sensitive=prev_active, EVENT_PRO=cslice_event)
+	next	= WIDGET_BUTTON (bcot, value='+', uvalue='NEXT', sensitive=next_active, EVENT_PRO=cslice_event)
+	bcot	= WIDGET_BASE (bcol, /row)
+	vars	= WIDGET_DROPLIST (bcot, value=tags, uvalue='VAR', sensitive=vars_active, EVENT_PRO=cslice_event, title='quantity')
+	bcot	= WIDGET_BASE (bcol, /row)
+	over	= WIDGET_DROPLIST (bcot, value=overs, uvalue='OVER', sensitive=over_active, EVENT_PRO=cslice_event, title='overplot')
 
-	bcol    = WIDGET_BASE (CTRL, /col)
-	b_abs   = CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCALE', set_value=abs_scale)
-	b_sub   = CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
-	b_cro   = CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
-	aver    = WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')
-	timeser = WIDGET_BUTTON (bcol, value='timeseries analysis', uvalue='SHOW_TIME')
+	bcol	= WIDGET_BASE (CTRL, /col)
+	b_abs	= CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCALE', set_value=abs_scale)
+	b_sub	= CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
+	b_cro	= CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
+	aver	= WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')
+	timeser	= WIDGET_BUTTON (bcol, value='timeseries analysis', uvalue='SHOW_TIME')
 
-	scol    = WIDGET_BASE (CTRL, /col)
-	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
+	scol	= WIDGET_BASE (CTRL, /col)
+	scot	= WIDGET_BASE (scol, /row, /base_align_bottom)
 	if (unit.default_length_str) then begin
 		title_add = ' ['+unit.default_length_str+']:'
 		co_int = 0
@@ -1110,58 +1110,53 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 		co_int = 1
 		co_float = 0
 	end
-	co_x    = CW_FIELD (scot, title='X'+title_add, uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, integer=co_int, floating=co_float, /return_events, xsize=12)
-	sl_x    = WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=coord_x_active)
-	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
-	co_y    = CW_FIELD (scot, title='Y'+title_add, uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, integer=co_int, floating=co_float, /return_events, xsize=12)
-	sl_y    = WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=coord_y_active)
-	scot    = WIDGET_BASE (scol, /row, /base_align_bottom)
-	co_z    = CW_FIELD (scot, title='Z'+title_add, uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, integer=co_int, floating=co_float, /return_events, xsize=12)
-	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=coord_z_active)
+	co_x	= CW_FIELD (scot, title='X'+title_add, uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, integer=co_int, floating=co_float, /return_events, xsize=12)
+	sl_x	= WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=(num_x*bin_x>128)+10, /drag, sensitive=coord_x_active)
+	scot	= WIDGET_BASE (scol, /row, /base_align_bottom)
+	co_y	= CW_FIELD (scot, title='Y'+title_add, uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, integer=co_int, floating=co_float, /return_events, xsize=12)
+	sl_y	= WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=(num_y*bin_y>128)+10, /drag, sensitive=coord_y_active)
+	scot	= WIDGET_BASE (scol, /row, /base_align_bottom)
+	co_z	= CW_FIELD (scot, title='Z'+title_add, uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, integer=co_int, floating=co_float, /return_events, xsize=12)
+	sl_z	= WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=coord_z_active)
 
-	DISP    = WIDGET_BASE (BASE, xsize=num_y*bin_y+num_x*bin_x+num_x*bin_x+9, ysize=max([num_z*bin_z,num_y*bin_y])+3, /row)
-;	DISP    = WIDGET_BASE (BASE, /row)
-	MID     = WIDGET_BASE (BASE, /col)
-	bcot    = WIDGET_BASE (MID, /row)
+	DISP	= WIDGET_BASE (BASE, /row)
+	MID	= WIDGET_BASE (BASE, /col)
+	bcot	= WIDGET_BASE (MID, /row)
 
-	sl_size = ((2*num_x*bin_x+num_y*bin_y)/2.5 > (400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2) < 500
-	sl_min  = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='SCALE_BOT', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_min, xsize=sl_size)
-	bcol    = WIDGET_BASE (bcot, /col)
+	sl_size	= ((2*num_x*bin_x+num_y*bin_y)/2.5 > (400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2) < 500
+	sl_min	= CW_FSLIDER (bcot, title='lower value (black level)', uvalue='SCALE_BOT', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_min, xsize=sl_size)
+	bcol	= WIDGET_BASE (bcot, /col)
 	min_max	= WIDGET_BUTTON (bcol, value='<= min SET max =>', uvalue='MIN_MAX', xsize=120)
 	freeze	= WIDGET_BUTTON (bcol, value='FREEZE RANGE', uvalue='FREEZE', xsize=120)
 	range	= WIDGET_DROPLIST (bcol, value=['data set', 'overplot'], uvalue='RANGE', sensitive=0, EVENT_PRO=cslice_event, title='values')
-	sl_max  = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_max, xsize=sl_size)
+	sl_max	= CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_max, xsize=sl_size)
 
-	bsubcol = WIDGET_BASE (bcot, /col)
+	bsubcol	= WIDGET_BASE (bcot, /col)
 	tmp	= WIDGET_LABEL (bsubcol, value='Jump to:', frame=0)
-	bsubrow = WIDGET_BASE (bsubcol, /row)
+	bsubrow	= WIDGET_BASE (bsubcol, /row)
 	jump_min= WIDGET_BUTTON (bsubrow, value='MIN', uvalue='JUMP_MIN')
 	jump_max= WIDGET_BUTTON (bsubrow, value='MAX', uvalue='JUMP_MAX')
 
 	cut_height = min ([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
-	CUTS    = WIDGET_BASE (BASE, xsize=num_y*bin_y+num_x*bin_x+(num_z*bin_z>128)+9, ysize=cut_height+3, /row)
+	CUTS	= WIDGET_BASE (BASE, /row)
 
-	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wimg_yz = !d.window
-	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wimg_xz = !d.window
-	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wimg_xy = !d.window
+	dimg_yz	= WIDGET_DRAW (DISP, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	dimg_xz	= WIDGET_DRAW (DISP, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	dimg_xy	= WIDGET_DRAW (DISP, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
 
-	tmp     = WIDGET_DRAW (CUTS, xsize=num_y*bin_y, ysize=cut_height, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wcut_y  = !d.window
-	tmp     = WIDGET_DRAW (CUTS, xsize=num_x*bin_x, ysize=cut_height, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wcut_x  = !d.window
-	tmp     = WIDGET_DRAW (CUTS, xsize=num_z*bin_z>128, ysize=cut_height, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wcut_z  = !d.window
+	dcut_y	= WIDGET_DRAW (CUTS, xsize=num_y*bin_y, ysize=cut_height, retain=2)
+	dcut_x	= WIDGET_DRAW (CUTS, xsize=num_x*bin_x, ysize=cut_height, retain=2)
+	dcut_z	= WIDGET_DRAW (CUTS, xsize=num_z*bin_z>128, ysize=cut_height, retain=2)
 
 	WIDGET_CONTROL, BASE
+
+	WIDGET_CONTROL, MOTHER, /REALIZE
+	WIDGET_CONTROL, dimg_yz, GET_VALUE = wimg_yz
+	WIDGET_CONTROL, dimg_xz, GET_VALUE = wimg_xz
+	WIDGET_CONTROL, dimg_xy, GET_VALUE = wimg_xy
+	WIDGET_CONTROL, dcut_y, GET_VALUE = wcut_y
+	WIDGET_CONTROL, dcut_x, GET_VALUE = wcut_x
+	WIDGET_CONTROL, dcut_z, GET_VALUE = wcut_z
 
 	XMANAGER, "cslice", MOTHER, /no_block
 
