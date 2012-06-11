@@ -1119,16 +1119,8 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	co_z    = CW_FIELD (scot, title='Z'+title_add, uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, integer=co_int, floating=co_float, /return_events, xsize=12)
 	sl_z    = WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=(num_z*bin_z>128)+10, /drag, sensitive=coord_z_active)
 
-	DISP    = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wimg_yz = !d.window
-	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wimg_xz = !d.window
-	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wimg_xy = !d.window
+	DISP    = WIDGET_BASE (BASE, xsize=num_y*bin_y+num_x*bin_x+num_x*bin_x+9, ysize=max([num_z*bin_z,num_y*bin_y])+3, /row)
+;	DISP    = WIDGET_BASE (BASE, /row)
 	MID     = WIDGET_BASE (BASE, /col)
 	bcot    = WIDGET_BASE (MID, /row)
 
@@ -1146,11 +1138,19 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	jump_min= WIDGET_BUTTON (bsubrow, value='MIN', uvalue='JUMP_MIN')
 	jump_max= WIDGET_BUTTON (bsubrow, value='MAX', uvalue='JUMP_MAX')
 
-	WIDGET_CONTROL, MOTHER, /REALIZE
-	wimg = !d.window
-
 	cut_height = min ([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
-	CUTS    = WIDGET_BASE (BASE, /row)
+	CUTS    = WIDGET_BASE (BASE, xsize=num_y*bin_y+num_x*bin_x+(num_z*bin_z>128)+9, ysize=cut_height+3, /row)
+
+	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_YZ', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	WIDGET_CONTROL, tmp, /REALIZE
+	wimg_yz = !d.window
+	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	WIDGET_CONTROL, tmp, /REALIZE
+	wimg_xz = !d.window
+	tmp     = WIDGET_DRAW (DISP, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
+	WIDGET_CONTROL, tmp, /REALIZE
+	wimg_xy = !d.window
+
 	tmp     = WIDGET_DRAW (CUTS, xsize=num_y*bin_y, ysize=cut_height, retain=2)
 	WIDGET_CONTROL, tmp, /REALIZE
 	wcut_y  = !d.window
