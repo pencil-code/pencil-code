@@ -53,7 +53,7 @@ module Particles_potential
 !
     endsubroutine pencil_criteria_par_potential
 !***********************************************************************
-    subroutine get_interparticle_acceleration(fp,k,interparticle_acceleration)
+    subroutine get_interparticle_accn(fp,k,interparticle_acceleration)
 
 !
 !  dhruba: 
@@ -67,7 +67,7 @@ module Particles_potential
       call keep_compiler_quiet(k)
       call keep_compiler_quiet(interparticle_acceleration)
 !
-    endsubroutine get_interparticle_acceleration
+    endsubroutine get_interparticle_accn
 !***********************************************************************
     subroutine read_particles_pot_init_pars(unit,iostat)
 !

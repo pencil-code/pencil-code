@@ -2670,7 +2670,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup,interparticle_accelaration
+      real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup, interparticle_accn
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
@@ -2812,10 +2812,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 ! If interaction between particles are considered (not gravitatiional but short--range)
 ! then effect of all other parrticles on each particle is calculated here. 
-!DM
+!
               if (lparticles_potential) then
-                call get_interparticle_acceleration(fp,k,interparticle_accelaration)
-                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accelaration
+                call get_interparticle_accn(fp,k,interparticle_accn)
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accn
               endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
