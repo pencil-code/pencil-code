@@ -155,7 +155,7 @@ module Syscalls
 !
       get_PID = -1
 !
-      print *, 'get_PID: Not available in the F95 standard, please use the syscalls module.'
+      print *, 'get_PID: Not available in nosyscalls.'
       stop
 !
     endfunction get_PID
@@ -175,7 +175,7 @@ module Syscalls
 !
       value = char(0)
 !
-      print *, 'get_env_var('//name//'): Not available in the F95 standard, please use the syscalls module.'
+      print *, 'get_env_var('//name//'): Not available in nosyscalls'
       stop
 !
     endsubroutine get_env_var
@@ -206,7 +206,7 @@ module Syscalls
 !
       character(len=*) :: command
 !
-      print *, 'system: Not available in the F95 standard, please use the syscalls module.'
+      print *, 'system: Not available in nosyscalls.'
       stop
 !
     endsubroutine system_cmd
@@ -222,7 +222,7 @@ module Syscalls
 !
       integer :: sizeof_real
 !
-      print *, 'sizeof_real: Not available in the F95 standard, please use the syscalls module.'
+      print *, 'sizeof_real: Not available in nosyscalls'
       stop
 !
     endfunction sizeof_real
