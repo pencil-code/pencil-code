@@ -890,10 +890,14 @@ if (exist_specialvar eq 1) then begin
   close, 1
 endif
 ;
+;  Remove empty entry at position 0:
+;
+varcontent=varcontent[1:*]
+;
 ;  Turn vector quantities into scalars if requested.
 ;
 if (keyword_set(scalar)) then begin
-  for i=1,totalvars do begin
+  for i=0L,totalvars-1L do begin
     if (varcontent[i].skip eq 2) then begin
       varcontent[i+2].variable  = varcontent[i].variable + ' 3rd component' 
       varcontent[i+1].variable  = varcontent[i].variable + ' 2nd component' 
@@ -911,10 +915,6 @@ if (keyword_set(scalar)) then begin
     endif   
   endfor
 endif
-;
-;  Remove empty entry at position 0:
-;
-varcontent=varcontent[1:*]
 ;
 return, varcontent
 ;
