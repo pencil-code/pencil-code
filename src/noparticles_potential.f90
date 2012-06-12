@@ -53,7 +53,7 @@ module Particles_potential
 !
     endsubroutine pencil_criteria_par_potential
 !***********************************************************************
-    subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !
 !  Dummy module
 !
@@ -62,7 +62,6 @@ module Particles_potential
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       call keep_compiler_quiet(f)
