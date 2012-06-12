@@ -69,7 +69,6 @@ module Particles_potential
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
-      call keep_compiler_quiet(p)
 !
     endsubroutine dvvp_dt_potential_pencil
 !***********************************************************************
