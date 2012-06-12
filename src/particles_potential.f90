@@ -1,7 +1,7 @@
 ! $Id: particles_potential.f90  $
 !
 !  This module calculates the additional force on each particle due to 
-!   particle-particle interatction through a short--range force.
+!  particle-particle interaction through a short-range force.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -9,7 +9,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles_potential=.true.
-!
 !
 !***************************************************************
 module Particles_potential
