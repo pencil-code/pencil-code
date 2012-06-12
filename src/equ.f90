@@ -382,8 +382,7 @@ module Equ
             diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
           endif
           if (lpolymer) then
-            advec_poly=0.0
-            diffus_eta_poly=0.0
+            advec_poly=0.0;diffus_eta_poly=0.0
           endif
           if (ltestfield) then
             diffus_eta=0.0; diffus_eta3=0.0
@@ -423,9 +422,6 @@ module Equ
           endif
           if (lneutralvelocity) then
             advec_uun=0.0; advec_csn2=0.0; diffus_nun=0.0; diffus_nun3=0.0
-          endif
-          if (lpolymer) then
-            advec_poly=0.0; diffus_eta_poly=0.0
           endif
           if (lspecial) then
             diffus_special=0.0
