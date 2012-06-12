@@ -16,6 +16,7 @@ module Particles_main
   use Particles_nbody
   use Particles_number
   use Particles_radius
+  use Particles_potential
   use Particles_spin
   use Particles_selfgravity
   use Particles_stalker
@@ -693,7 +694,7 @@ module Particles_main
       if (lparticles_viscosity) &
           call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
       if (lparticles_potential) & 
-          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
+          call dvvp_dt_potential_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Time-step contribution from discrete particle collisions.
 !
