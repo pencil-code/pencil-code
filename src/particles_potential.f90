@@ -37,6 +37,7 @@ module Particles_potential
   integer,allocatable,dimension(:,:),save :: neighbour_list
   character (len=labellen) :: ppotential='nothing'
   real :: psigma,ppowerby2
+  integer :: ysteps_int,zsteps_int
 !
   namelist /particles_potential_init_pars/ &
     ppotential,psigma,ppowerby2
@@ -167,10 +168,27 @@ module Particles_potential
 ! 
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: k
+      real :: xi,yi,zi
+      integer :: iz,iy,iz_neighbour,iy_neighbour
 !
-! DM : at present does nothings 
+! We have selected the k-th particle in a pencil, so we know its coordinates
 !
-
+      xi=fp(k,ixp)
+      yi=fp(k,iyp)
+      zi=fp(k,izp)
+!
+! we then loop over all the particles in this pencil (this is not optimal )
+! and also all the particles in neighbouring pencils. How many neighbouring pencils
+! we need depends on the length scale of the interaction potential. This is fixed in
+! the initialize_particle_potential subroutine. The number of steps we need to take
+! along y and z are callced ysteps_int and zsteps_int. If such steps are more than
+! nghosts then we may get need more communication than usual. At present the code
+! would exit from the initialize_particles_potential routine if that happens. 
+!
+      do iz=-zsteps_int,zsteps_int; do iy=-ysteps_int,ysteps_int
+        iz_neighbour=n+iz;iy_neighbour=m+iy
+!        imn_neighbour=
+      enddo;enddo
 !
     endsubroutine update_neighbour_list
 !***********************************************************************
