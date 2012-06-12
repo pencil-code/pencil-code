@@ -136,7 +136,6 @@ module Particles_potential
       xi=fp(k,ixp)
       yi=fp(k,iyp)
       zi=fp(k,izp)
-      call foldback(xi,yi,zi)
       if (lcalculate_neighbour_list) call update_neighbour_list(fp,k)
       kneighbour=neighbour_list(k,1)
       do ineighbour=1,kneighbour
@@ -144,7 +143,6 @@ module Particles_potential
         xj=fp(nindex,ixp)
         yj=fp(nindex,iyp)
         zj=fp(nindex,izp)
-        call foldback(xj,yj,zj)
 !
 ! Note about the sign of the unit vector below: The force is *negative*
 ! derivative of the potential. Also the unit vector is not normalized. 
@@ -176,21 +174,6 @@ module Particles_potential
 
 !
     endsubroutine update_neighbour_list
-!***********************************************************************
-    subroutine foldback(xi,yi,zi)
-!
-!  Find the corresponding positions of the image particles back into the domain (depends on the boundary 
-! conditions we use)
-!
-! DM : at present does nothings 
-!
-      real :: xi,yi,zi
-!
-      xi=xi
-      yi=yi
-      zi=zi
-!
-    endsubroutine foldback  
 !***********************************************************************
     subroutine get_interaction_force(rij_sqr,force)
 !
