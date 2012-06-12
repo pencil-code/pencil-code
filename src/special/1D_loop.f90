@@ -819,8 +819,8 @@ module Special
           if (j <= 0) then
             j=1
             notdone=.false.
-          elseif (j >= 36) then
-            j = 36
+          elseif (j >= 35) then
+            j = 35
             !call fatal_error('get_lnQ','lnTT to large')
             notdone=.false.
           endif
