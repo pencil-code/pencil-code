@@ -118,11 +118,10 @@ module Particles_potential
 !
 !  Loop over all particles in current pencil.
 !
-          do k=k1_imn(imn),k2_imn(imn)
-            call get_interparticle_accn(fp,k,interparticle_accn)
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accn
-          enddo
-
+      do k=k1_imn(imn),k2_imn(imn)
+        call get_interparticle_accn(fp,k,interparticle_accn)
+        dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accn
+      enddo
 !
     endsubroutine dvvp_dt_potential_pencil
 !***********************************************************************
