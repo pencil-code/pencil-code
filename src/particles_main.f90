@@ -692,6 +692,8 @@ module Particles_main
           call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_viscosity) &
           call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
+      if (lparticles_potential) & 
+          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !
 !  Time-step contribution from discrete particle collisions.
 !

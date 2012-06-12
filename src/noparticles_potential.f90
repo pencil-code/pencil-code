@@ -53,21 +53,26 @@ module Particles_potential
 !
     endsubroutine pencil_criteria_par_potential
 !***********************************************************************
-    subroutine get_interparticle_accn(fp,k,interparticle_acceleration)
-
+    subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  dhruba: 
+!  Dummy module
 !
+!  21-nov-06/anders: dummy
 !
-      real, dimension (mpar_loc,mpvar) :: fp
-      integer :: k
-      real, dimension(3) :: interparticle_acceleration
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(k)
-      call keep_compiler_quiet(interparticle_acceleration)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+      call keep_compiler_quiet(p)
 !
-    endsubroutine get_interparticle_accn
+    endsubroutine dvvp_dt_potential_pencil
 !***********************************************************************
     subroutine read_particles_pot_init_pars(unit,iostat)
 !

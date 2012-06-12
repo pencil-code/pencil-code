@@ -93,11 +93,40 @@ module Particles_potential
       deallocate(neighbour_list)
     endsubroutine cleanup_particles_potential
 !***********************************************************************
+    subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
+!
+!  Contribution to dvvp_dt from the interaction potential between particles.
+!  (called from main pencil loop).
+!
+!  12-jun-12/dhruba: aped from the similar subroutine in particles_dust
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(3) :: interparticle_accn
+      integer :: k
+!
+      intent (inout) :: f, df, dfp, fp, ineargrid
+!
+!  Identify module.
+!
+      if (headtt) then
+        if (lroot) print*,'dvvp_dt_potential_pencil: calculate dvvp_dt from potential'
+      endif
+!
+!  Loop over all particles in current pencil.
+!
+          do k=k1_imn(imn),k2_imn(imn)
+            call get_interparticle_accn(fp,k,interparticle_accn)
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accn
+          enddo
+
+!
+    endsubroutine dvvp_dt_potential_pencil
+!***********************************************************************
     subroutine get_interparticle_accn(fp,k,interparticle_accn)
-!
-!  get interparticle acceleration 
-!
-!
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: k
       integer :: ineighbour,kneighbour,nindex

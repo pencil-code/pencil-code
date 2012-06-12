@@ -2808,15 +2808,6 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
-
-!
-! If interaction between particles are considered (not gravitatiional but short--range)
-! then effect of all other parrticles on each particle is calculated here. 
-!
-              if (lparticles_potential) then
-                call get_interparticle_accn(fp,k,interparticle_accn)
-                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accn
-              endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
