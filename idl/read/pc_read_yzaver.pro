@@ -62,14 +62,14 @@ for i=0,nvar-1 do begin
   if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
 endfor
 var=fltarr(nx*nvar)*one
-tt =fltarr(nit)*one
+times =fltarr(nit)*one
 ;;
 ;;  Read xy-averages and put in arrays.
 ;;
 for it=0L,nit-1 do begin
 ;; Read time
   readf, file, t
-  tt[it]=t
+  times[it]=t
 ;; Read data
   readf, file, var
   for i=0,nvar-1 do begin
@@ -84,11 +84,11 @@ close, file
 free_lun, file
 ;;
 ;;  Make time monotonous and crop all variables accordingly.
-;;  
+;;
 if (monotone) then begin
-  ii=monotone_array(tt)
+  ii=monotone_array(times)
 endif else begin
-  ii=lindgen(n_elements(tt))
+  ii=lindgen(n_elements(times))
 endelse
 ;;
 ;;  Read x array from file.
@@ -99,7 +99,7 @@ pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
 ;;
 makeobject="object = create_struct(name=objectname,['t','x'," + $
     arraytostring(varnames,quote="'",/noleader) + "]," + $
-    "tt[ii],grid.x,"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
+    "times[ii],grid.x,"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
 ;
 if (execute(makeobject) ne 1) then begin
   message, 'Error evaluating variables: ' + makeobject, /info
