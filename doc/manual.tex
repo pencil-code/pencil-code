@@ -5226,6 +5226,28 @@ filing a bug report to us:
 
 \subsection{Compilation}
 
+\subsubsection[Problems compiling syscalls]
+              {Linker can't find the syscalls functions:}
+
+\begin{Verbatim}
+      ld: 0711-317 ERROR: Undefined symbol: .is_nan_c
+      ld: 0711-317 ERROR: Undefined symbol: .sizeof_real_c
+      ld: 0711-317 ERROR: Undefined symbol: .system_c
+      ld: 0711-317 ERROR: Undefined symbol: .get_env_var_c
+      ld: 0711-317 ERROR: Undefined symbol: .get_pid_c
+      ld: 0711-317 ERROR: Undefined symbol: .file_size_c
+\end{Verbatim}
+
+\medskip
+
+{\bf A}: The Pencil Code needs a working combination of a Fortran- and a
+C-compiler. If this is not correctly set up, usually the linker won't find
+the functions inside the \name{syscalls} module. If that happens, either the
+combination of C- and Fortran-compiler is inappropriate (e.g. \name{ifort}
+needs \name{icc}), or the compiler needs additional flags, like \name{g95}
+might need the option \option{-fno-second-underscore} and \name{xlf} might
+neeed the option \option{-qextname}.
+
 \subsubsection[Unable to open include file: chemistry.h]
               {Make gives the following error now:}
 \begin{Verbatim}
