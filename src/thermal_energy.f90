@@ -743,8 +743,6 @@ module Entropy
 !
 !  07-aug-11/ccyang: coded
 !
-      use Density, only: impose_density_floor
-!
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       integer, dimension(nx,ny,nz) :: status
@@ -753,7 +751,6 @@ module Entropy
 !
 !  Impose density and energy floors.
 !
-      call impose_density_floor(f)
       call impose_energy_floor(f)
 !
 !  Update the energy.

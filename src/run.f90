@@ -555,7 +555,11 @@ program run
 !
 !  Integrate operator split terms.
 !
-    if (lenergy) call split_update_energy(f)
+    if (lenergy.and.lsplit_update) then
+      call impose_density_floor(f)
+      call split_update_energy(f)
+    endif
+!
     if (lmagnetic) call split_update_magnetic(f)
 !
 !  Print diagnostic averages to screen and file.
