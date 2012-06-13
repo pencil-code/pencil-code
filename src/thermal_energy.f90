@@ -157,7 +157,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       logical, intent (in) :: lstarting
 !
-      real :: mu, cs2
+      real :: mu
       real :: c0
 !
       call keep_compiler_quiet(f)
@@ -866,7 +866,7 @@ module Entropy
           eth1 = eth + delta_eth
 !
           dt1 = dt1 * min(error**(-.2), 2.)
-          if (abs(t1 + dt1) >= tf) then 
+          if (abs(t1 + dt1) >= tf) then
             dt1 = t + dt - t1
             last = .true.
           endif
