@@ -555,10 +555,7 @@ program run
 !
 !  Integrate operator split terms.
 !
-    if (lenergy) then
-      call split_update_energy(f)
-    endif
-!
+    if (lenergy) call split_update_energy(f)
     if (lmagnetic) call split_update_magnetic(f)
 !
 !  Print diagnostic averages to screen and file.
