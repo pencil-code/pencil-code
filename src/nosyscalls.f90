@@ -133,9 +133,9 @@ module Syscalls
       count_lines=-1
       if (.not. file_exists(file)) return
 !
-      count_lines=0
       open(unit, FILE=file, STATUS='old', IOSTAT=ierr)
       if (ierr/=0) return
+      count_lines=0
       do while (ierr == 0)
         read(unit,*,iostat=ierr)
         if (ierr==0) count_lines=count_lines+1
