@@ -48,7 +48,7 @@ program run
   use Boundcond,       only: update_ghosts
   use Cdata
   use Chemistry,       only: chemistry_clean_up, write_net_reaction, lchemistry_diag
-  use Density,         only: boussinesq
+  use Density,         only: boussinesq, impose_density_floor
   use Diagnostics
   use Dustdensity,     only: init_nd
   use Dustvelocity,    only: init_uud
@@ -144,14 +144,14 @@ program run
   if (ip<=6.and.lroot) print*, 'reading grid coordinates'
   call rgrid('grid.dat')
 !
-! Size of box at local processor. The if-statement is for 
+! Size of box at local processor. The if-statement is for
 ! backward compatibility.
 !
-  if (all(lequidist)) then 
+  if (all(lequidist)) then
     Lxyz_loc(1)=Lxyz(1)/nprocx
     Lxyz_loc(2)=Lxyz(2)/nprocy
     Lxyz_loc(3)=Lxyz(3)/nprocz
-    xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1) 
+    xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
     xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
     xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
     xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
@@ -569,8 +569,8 @@ program run
       if (lchemistry_diag) call write_net_reaction
     endif
     if (l1davg) call write_1daverages()
-    if (l2davg) call write_2daverages()  
-! 
+    if (l2davg) call write_2daverages()
+!
     if (lout_sound) then
       call write_sound(tsound)
       lout_sound = .false.
