@@ -146,8 +146,8 @@ contains
   subroutine setup_vert_profiles(f)
 !
 !  Read and set vertical profiles for initial temperature and density.
-!  Initial temperature profile is given in ln(T) [K] over z [Mm]
-!  Initial density profile is given in ln(rho) [kg/m^3] over z [Mm]
+!  Initial temperature profile is given in ln(T) [K] over z [m]
+!  Initial density profile is given in ln(rho) [kg/m^3] over z [m]
 !
 !  04-sep-10/bing: coded
 !
