@@ -125,7 +125,7 @@ module Magnetic
   real :: th_spot=PI/4
   real :: non_ffree_factor=1.
   real :: etaB=0.
-  real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0 
+  real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -839,7 +839,7 @@ module Magnetic
       if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
       if (lfreeze_aext) lfreeze_varext(iax:iaz) = .true.
 !
-!     Store spatially dependent external field in a global array 
+!     Store spatially dependent external field in a global array
 !
       if (lbx_ext_global) &
         call farray_register_global("global_bx_ext",iglobal_bx_ext)
@@ -1045,14 +1045,14 @@ module Magnetic
     case('0,coskz,0')
       A_relprof(:,:,:,1)=0.
       do i=1,nx
-        do j=1,ny      
+        do j=1,ny
           A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
         enddo
       enddo
       A_relprof(:,:,:,3)=0.
     case('sinkz,coskz,0')
       do i=1,nx
-        do j=1,ny      
+        do j=1,ny
           A_relprof(i,j,:,1)=amp_relprof*sin(k_relprof*z(n1:n2))
           A_relprof(i,j,:,2)=amp_relprof*cos(k_relprof*z(n1:n2))
         enddo
@@ -1522,7 +1522,7 @@ module Magnetic
 !
       if (lconst_advection) lpenc_requested(i_aij)=.true.
 !
-      if (numag/=0.0) then 
+      if (numag/=0.0) then
         lpenc_requested(i_jxb)=.true.
         lpenc_requested(i_jxbxb)=.true.
         lpenc_requested(i_b2)=.true.
@@ -2160,7 +2160,7 @@ module Magnetic
       if (lmagneto_friction.and.lpencil(i_rho1)) then
         p%rho=(rho0*1.0e-2+p%b2)
         p%rho1=1./(rho0*1.0e-2+p%b2)
-      endif  
+      endif
 ! bunit
       if (lpencil(i_bunit)) then
         quench = 1.0/max(tini,sqrt(p%b2))
@@ -2290,7 +2290,7 @@ module Magnetic
       endif
 ! jxb
       if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
-
+!
 ! cosjb
       if (lpencil(i_cosjb)) then
         do ix=1,nx
@@ -2997,7 +2997,7 @@ module Magnetic
                 uxb_upw(:,j)=uxb_upw(:,j)+p%uu(:,k)*(p%aij(:,k,j)-p%aij(:,j,k))
               endif
             enddo
-!            
+!
             call doupwind(f,iaa+j-1,p%uu,uxb_upw(1,j),mask=j)
 !
           enddo
@@ -3066,7 +3066,7 @@ module Magnetic
 !
       if (tau_aa_exterior/=0.0) call calc_tau_aa_exterior(f,df)
 !
-!  Relaxing A towards a given profile A_0 on a timescale tau_relprof, 
+!  Relaxing A towards a given profile A_0 on a timescale tau_relprof,
 !  note that tau_relprof*u_rms*kf>>1  for this relaxation to affect only the mean fields.
 !
       if (tau_relprof/=0.0) then
@@ -3493,7 +3493,7 @@ module Magnetic
           if (idiag_jxbmy/=0) call sum_mn_name(jxbb(:,2),idiag_jxbmy)
           if (idiag_jxbmz/=0) call sum_mn_name(jxbb(:,3),idiag_jxbmz)
         endif
-        if (idiag_magfricmax/=0) then 
+        if (idiag_magfricmax/=0) then
           call max_mn_name(vmagfric2,idiag_magfricmax)
         endif
 !
@@ -6609,7 +6609,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jxbmx',idiag_jxbmx)
         call parse_name(iname,cname(iname),cform(iname),'jxbmy',idiag_jxbmy)
         call parse_name(iname,cname(iname),cform(iname),'jxbmz',idiag_jxbmz)
-        call parse_name(iname,cname(iname),cform(iname),'magfricmax',& 
+        call parse_name(iname,cname(iname),cform(iname),'magfricmax',&
                        idiag_magfricmax)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmx',idiag_uxbcmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbcmy',idiag_uxbcmy)
@@ -7092,7 +7092,6 @@ module Magnetic
       character(len=bclen), dimension(3), intent(in) :: bcx1, bcx2
       real, intent(in) :: dt
 !
-      real, dimension(0:nxgrid+1) :: penc
       real, dimension(nxgrid) :: a, opb, omb, c
       integer :: j, k, l
 !
