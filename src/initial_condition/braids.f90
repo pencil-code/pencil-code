@@ -219,7 +219,8 @@ module InitialCondition
 !   to avoid discretization issues, like mesh points without magnetic field
     delta_tube_param = min(dx, dy, dz)
 !   correct for the braid steepnes
-    delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi * distance_tubes * 8)
+!     delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi * distance_tubes * 8)
+    delta_tube_param = delta_tube_param * l_sigma / (1 * pi * distance_tubes * 8)
     delta_circle_radius = delta_tube_param*8
     delta_circle_param = delta_circle_radius/(width_tube/2.)
 !
@@ -263,16 +264,16 @@ module InitialCondition
 !                 Write the magnetic field B.
 !                 Note that B is written in the f-array where A is stored.
 !                 This is corrected further in the code.
-                    if (prof == 'gaussian') then
-                      new_bb = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
-                    else if (prof == 'constant') then
-                      new_bb = tangent*ampl
-                    endif
-!                   Avoid issues in spots with high curvature.
-                    if ((f(l,m,n,iax)**2 + f(l,m,n,iay)**2 + f(l,m,n,iaz)**2) < &
-                        (new_bb(1)**2 + new_bb(2)**2 + new_bb(3)**2)) &
-                        f(l,m,n,iax:iaz) = new_bb
+                  if (prof == 'gaussian') then
+                    new_bb = tangent*ampl*(exp(-(2*circle_radius/width_tube)**2)-exp(-1.)) / (1-exp(-1.))
+                  else if (prof == 'constant') then
+                    new_bb = tangent*ampl
                   endif
+!                 Avoid issues in spots with high curvature.
+                  if ((f(l,m,n,iax)**2 + f(l,m,n,iay)**2 + f(l,m,n,iaz)**2) < &
+                      (new_bb(1)**2 + new_bb(2)**2 + new_bb(3)**2)) &
+                      f(l,m,n,iax:iaz) = new_bb
+                endif
                 circle_param = circle_param + delta_circle_param
               enddo
               circle_radius = circle_radius + delta_circle_radius
@@ -411,6 +412,15 @@ module InitialCondition
 !
 !     Transform the magnetic field into a vector potential
 !
+!     communicate the core boundaries for taking the curl
+      call MPI_BARRIER(MPI_comm_world, ierr)
+      call boundconds_x(f)
+      call boundconds_y(f)
+      call boundconds_z(f)
+      call initiate_isendrcv_bdry(f)
+      call finalize_isendrcv_bdry(f)
+      call MPI_BARRIER(MPI_comm_world, ierr)
+
 !     Compute curl(B) = J for the Poisson solver
       do m=m1,m2
         do n=n1,n2
@@ -497,8 +507,8 @@ module InitialCondition
 !     allocate the memory for the tracers
       allocate(tracers(nx*ny*trace_sub**2,7))
 !     create the initial seeds at z(1+nghost)-ipz*nz*dz+dz
-      do j=1,nx*trace_sub
-        do k=1,ny*trace_sub
+      do k=1,ny*trace_sub
+        do j=1,nx*trace_sub
           tracers(j+(k-1)*(nx*trace_sub),1) = x(1+nghost) + (dx/trace_sub)*(j-1)
           tracers(j+(k-1)*(nx*trace_sub),2) = y(1+nghost) + (dy/trace_sub)*(k-1)
           tracers(j+(k-1)*(nx*trace_sub),3) = tracers(j+(k-1)*(nx*trace_sub),1)
