@@ -308,8 +308,10 @@ module Entropy
         lpenc_diagnos(i_pp)=.true.
         lpenc_diagnos(i_divu)=.true.
       endif
-      if (idiag_TTm/=0 .or. idiag_TTmin/=0 .or. idiag_TTmax/=0) &
-          lpenc_diagnos(i_TT)=.true.
+!
+      if (idiag_TTm/=0   .or. idiag_TTmin/=0 .or. idiag_TTmax/=0 .or. &
+          idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_TTmx/=0  .or. &
+          idiag_TTmy/=0  .or. idiag_TTmz/=0 ) lpenc_diagnos(i_TT)=.true.
 !
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
