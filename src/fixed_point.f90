@@ -158,7 +158,7 @@ module Fixed_point
 !***********************************************************************
   recursive function edge(f, sx, sy, diff1, diff2, phi_min, vv, rec) result(dtot)
 !
-! Computes rotation along one edge (recursively to phi_min).
+! Computes rotation along one edge (recursively until phi_min is reached).
 !
 ! 01-mar-12/simon: coded
 !
@@ -266,10 +266,10 @@ module Fixed_point
 !
 !   compute the array with the global xyz values
     do j=1,(nxgrid*trace_sub)
-      xt(j) = x(1+nghost)-ipx*nx*dx + (j-1)*dx/trace_sub
+      xt(j) = x(1+nghost) - ipx*nx*dx + (j-1)*dx/trace_sub
     enddo
     do j=1,(nygrid*trace_sub)
-      yt(j) = y(1+nghost)-ipy*ny*dy + (j-1)*dy/trace_sub
+      yt(j) = y(1+nghost) - ipy*ny*dy + (j-1)*dy/trace_sub
     enddo
     do j=1,nzgrid
       zt(j) = z(1+nghost) - ipz*nz*dz + (j-1)*dz
@@ -280,9 +280,9 @@ module Fixed_point
     if (addx == 1 .or. addy == 1) then
       allocate(tracers2(nx*ny*trace_sub**2+trace_sub*(ny*addx+nx*addy)+addx*addy,7))
 !     Assign the values without the core boundaries.
-      do j=1,nx*trace_sub
-        do l=1,ny*trace_sub
-            tracers2(j+(l-1)*(nx*trace_sub+addx),:) = tracers(j+(l-1)*nx*trace_sub,:)
+      do l=1,ny*trace_sub
+        do j=1,nx*trace_sub
+          tracers2(j+(l-1)*(nx*trace_sub+addx),:) = tracers(j+(l-1)*nx*trace_sub,:)
         enddo
       enddo
 !     Recompute values at the x-boundaries of the core.
@@ -358,14 +358,15 @@ module Fixed_point
     call MPI_BARRIER(MPI_comm_world, ierr)
 !
 !   Find possible fixed points in each grid cell.
+!
 !   index of the fixed point
     fidx = 1
-    do j=1,(nx*trace_sub+addy-1)
-      do l=1,(ny*trace_sub+addx-1)
+    do j=1,(nx*trace_sub+addx-1)
+      do l=1,(ny*trace_sub+addy-1)
         diff(1,:) = (/(tracers2(j+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+(l-1)*(nx*trace_sub+addx),1)) , &
-            (tracers2(j+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+(l-1)*(nx*trace_sub+addx),2))/)
+            (tracers2(j+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+(l-1)*(nx*trace_sub+addx),2))/)            
         if (diff(1,1)**2+diff(1,2)**2 .ne. 0) &
-            diff(1,:) = diff(1,:) / sqrt(diff(1,1)**2+diff(1,2)**2)
+            diff(1,:) = diff(1,:) / sqrt(diff(1,1)**2+diff(1,2)**2)            
         diff(2,:) = (/(tracers2(j+1+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)) , &
             (tracers2(j+1+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),2))/)
         if (diff(2,1)**2+diff(2,2)**2 .ne. 0) &
@@ -381,7 +382,7 @@ module Fixed_point
 !       Get the Poincare index for this grid cell
         call pindex(f, xt(j:j+1)+ipx*nx*dx, yt(l:l+1)+ipy*ny*dy, diff, phi_min, vv, poincare)
 !       find the fixed point in this cell
-        if (poincare >= 3) then
+        if (poincare >= 6.2) then
           call get_fixed_point(f,(/(tracers2(j+(l-1)*(nx*trace_sub+addx),1)+tracers2(j+1+(l-1)*(nx*trace_sub+addx),1))/2., &
               (tracers2(j+(l-1)*(nx*trace_sub+addx),2)+tracers2(j+l*(nx*trace_sub+addx),2))/2./), &
               fixed_points(fidx,1:2), fixed_points(fidx,3), vv)
@@ -478,6 +479,12 @@ module Fixed_point
     allocate(tracer_tmp(1,7))
 !
     call keep_compiler_quiet(path)
+!
+! !   mpi debug output for finding dead locks
+!     write(str_tmp, "(I10.1,A)") iproc, '/mpi_debug.out'
+!     write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+!     open(unit = 11, file = adjustl(trim(filename)), access="sequential", form="formatted")
+!
 !   TODO: include other fields as well
     if (trace_field == 'bb' .and. ipz == 0) then
 !     convert the magnetic vector potential into the magnetic field
@@ -488,12 +495,18 @@ module Fixed_point
       enddo
     endif
 !
+! !   mpi debug output for finding dead locks
+!     rewind(11)
+!     write(11,*) iproc, "fixed_points: starting fixedp oint finding at", fixed_points(:,1:2)
     do j=1,fidx
       point = fixed_points(j,1:2)
       call get_fixed_point(f, point, fixed_points(j,1:2), fixed_points(j,3), vv)
     enddo
 !
 !   Tell every other core that we have finished.
+! !   mpi debug output for finding dead locks
+!     rewind(11)
+!     write(11,*) iproc, "fixed_points: we have finished"
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)
@@ -510,6 +523,9 @@ module Fixed_point
     enddo
 !
 !   Wait for all cores to compute their missing stream lines.
+! !   mpi debug output for finding dead locks
+!     rewind(11)
+!     write(11,*) iproc, "fixed_points: wait for other cores"
     do
 !     Trace a dummy field line to start a field receive request.
       tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
@@ -531,10 +547,16 @@ module Fixed_point
         exit
       endif
     enddo
+! !   mpi debug output for finding dead locks
+!     rewind(11)
+!     write(11,*) iproc, "fixed_points: other cores have finished"
 !
 !   Wait for other cores. This ensures that uncomplete fixed points wont get written out.
     call MPI_BARRIER(MPI_comm_world, ierr)
-
+! !   mpi debug output for finding dead locks
+!     rewind(11)
+!     write(11,*) iproc, "fixed_points: MPI_BARRIER passed"
+!
     write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
     write(filename, *) 'data/proc', adjustl(trim(str_tmp))
     open(unit = 1, file = adjustl(trim(filename)), form = "unformatted", position = "append")
@@ -544,6 +566,7 @@ module Fixed_point
       write(1) fixed_points(j,:)
     enddo
     close(1)
+!     close(11)
 !
     deallocate(tracer_tmp)
     deallocate(vv)
