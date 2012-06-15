@@ -27,7 +27,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "               /param2"
     print, ""
     print, "Returns the parameters of a Pencil-Code run."
-    print, "Returns zeros and empty in all variables on failure."
+    print, "Returns an empty object on failure."
     print, ""
     print, "   datadir: specify the root data directory. Default is './data'        [string]"
     print, ""
@@ -49,21 +49,28 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory.
 ;
   if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-  if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, $
-      quiet=quiet
+  if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, quiet=quiet
 ;
-; Build the full path and filename.
+; Build the full path and filename and check for existence.
 ;
+  undefine, object
   if (keyword_set(param2)) then begin
-    filename=datadir+'/param2.nml'
+    filename = datadir+'/param2.nml'
+    if (not file_test(filename)) then begin
+      if (not keyword_set(quiet)) then $
+          print, "WARNING: 'run.csh' not yet executed, 'run_pars' are unavailable."
+      return
+    end
   endif else begin
-    filename=datadir+'/param.nml'
+    filename = datadir+'/param.nml'
+    if (not file_test(filename)) then $
+        message, "ERROR: datadir is not initialized, please execute 'start.csh' first."
   endelse
 ;
 ; Check that precision is set.
 ;
   pc_set_precision, dim=dim, quiet=quiet
-  precision=dim.precision
+  precision = dim.precision
 ;
 ; If double precision, force input from params.nml to be doubles.
 ;
@@ -73,39 +80,34 @@ COMPILE_OPT IDL2,HIDDEN
     nl2idl_d_opt = '-d'
   endif
 ;
-; Check for existence and read the data.
+; Read the data.
 ;
-  if (file_test(filename)) then begin
-    if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
-    tmpfile = './param.pro'
+  if (not keyword_set(quiet)) then print, 'Reading '+filename+'...'
+  tmpfile = './param.pro'
 ;
 ; Write content of param.nml to temporary file.
 ;
-    spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m '+filename+'> ' $
-        + tmpfile, result
+  spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m '+filename+'> '+tmpfile, result
 ;
 ; Save old path.
 ;
-    _path = !path
-    if (not running_gdl()) then begin
-      !path = datadir+':'
-      resolve_routine, 'param', /is_function
-    endif
-    object = param()
+  _path = !path
+  if (not running_gdl()) then begin
+    !path = datadir+':'
+    resolve_routine, 'param', /is_function
+  endif
+  object = param()
 ;
 ; Restore old path.
 ;
-    !path = _path
+  !path = _path
 ;
 ; Delete temporary file.
 ;
-    if (not nodelete) then begin
+  if (not nodelete) then begin
 ;      file_delete, tmpfile      ; not in IDL <= 5.3
-      spawn, 'rm -f '+tmpfile, /sh
-    endif
-  endif else begin
-    message, 'Warning: cannot find file '+ filename
-  endelse
+    spawn, 'rm -f '+tmpfile, /sh
+  endif
 ;
 ; If requested print a summary
 ;
