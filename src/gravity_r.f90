@@ -901,4 +901,19 @@ module Gravity
 !
     endsubroutine get_xgravity
 !***********************************************************************
+    subroutine set_consistent_gravity(ginput,gtype,gprofile,lsuccess)
+      real :: ginput
+      character (len=labellen) :: gtype,gprofile
+      character (len=labellen) :: gprof
+      logical :: lsuccess
+      logical :: lconsistent=.true.
+!
+! This routine should never be called in the way it is written now.
+!
+      lsuccess=.false.
+!
+! gravity parameters set consistently.
+!
+    endsubroutine set_consistent_gravity
+!***********************************************************************
 endmodule Gravity

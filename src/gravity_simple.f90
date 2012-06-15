@@ -455,6 +455,53 @@ module Gravity
 !
     endsubroutine initialize_gravity
 !***********************************************************************
+    subroutine set_consistent_gravity(ginput,gtype,gprofile,lsuccess)
+      real :: ginput
+      character (len=labellen) :: gtype,gprofile
+      character (len=labellen) :: gprof
+      logical :: lsuccess
+      logical :: lconsistent=.true.
+!
+! check for consistency
+!
+      gprof=trim(gprofile)
+      select case(trim(gtype))
+        case('gravx')
+          if (gprof.ne.gravx_profile) then
+            lconsistent=.false.
+            gravx_profile=gprof
+          endif
+          if (gravx.ne.ginput) then
+            lconsistent=.false.
+            gravx=ginput
+          endif
+        case('gravy')
+          if (gprof.ne.gravy_profile) then
+            lconsistent=.false.
+            gravy_profile=gprof
+          endif
+          if (gravy.ne.ginput) then
+            lconsistent=.false.
+            gravy=ginput
+          endif
+        case('gravz')
+          if (gprof.ne.gravz_profile) then
+            lconsistent=.false.
+            gravz_profile=gprof
+          endif
+          if (gravz.ne.ginput) then
+            lconsistent=.false.
+            gravz=ginput
+          endif
+      case default
+        call fatal_error('set_consistent_gravity','gtype does not match any, aborting')
+      endselect
+      lsuccess=.true.
+!
+! gravity parameters set consistently.
+!
+    endsubroutine set_consistent_gravity
+!***********************************************************************
     subroutine init_gg(f)
 !
 !  Initialise gravity; called from start.f90.
@@ -464,6 +511,7 @@ module Gravity
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  Don't do anything
+!
 !
       call keep_compiler_quiet(f)
 !

@@ -11,7 +11,7 @@
   public :: compute_gravity_star
   public :: get_xgravity
   public :: potential,acceleration
-
+  public :: set_consistent_gravity
 !ajwm SHOULDN'T BE SHARED
   public :: gravz,nu_epicycle,g0,gravz_const
   public :: gravz_profile

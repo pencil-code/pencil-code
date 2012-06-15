@@ -1278,4 +1278,11 @@ module Param_IO
 !
    endsubroutine write_pencil_info
 !***********************************************************************
+   subroutine reset_density_bcx(topbot,bcx_new,fbcx_new,lsuccess)
+     character (len=3) :: topbot
+     character (len=bclen)  :: bcx_new
+     real :: fbcx_new
+     logical :: lsuccess
+   endsubroutine reset_density_bcx
+!***********************************************************************
 endmodule Param_IO

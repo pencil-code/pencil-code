@@ -76,7 +76,7 @@ module InitialCondition
       integer :: iy, iz
 !
       if (.not. lanelastic) then
-        call parker_wind_iteration(vv,den)
+        call parker_wind_iteration(f,vv,den)
         do iy=m1,m2;do iz=n1,n2
           f(:,iy,iy,ilnrho)=log(den)
           f(:,iy,iz,iuu)=vv
@@ -103,7 +103,7 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
 !      
       if (lanelastic) then
-        call parker_wind_iteration(vv,den)
+        call parker_wind_iteration(f,vv,den)
       do iy=m1,m2;do iz=n1,n2
           f(:,iy,iy,ilnrho)=log(den)
           f(:,iy,iz,iux)=vv
@@ -118,7 +118,7 @@ module InitialCondition
 !********************************************************************
     subroutine initial_condition_aa(f)
 !
-!  Initialize entropy.
+!  Initialize magnetic vector potential
 !
 !  07-sep-11/simon: coded
 !
@@ -175,16 +175,21 @@ module InitialCondition
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************
-    subroutine parker_wind_iteration(vel,rho)
+    subroutine parker_wind_iteration(f,vel,rho)
 !
       use SharedVariables
       use EquationOfState
+      use Gravity, only: set_consistent_gravity,initialize_gravity
 !     
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       real, dimension (mx), intent(out) :: vel
       real, dimension (mx), intent(out) :: rho
       real, dimension (mx) :: cs20logx,GM_r
       real :: Ecrit
       integer :: j
+      real :: GM
+      logical :: lsuccess=.false.
+      character (len=labellen) :: gtype,gprofile
 !
       Ecrit=0.5*cs20-cs20*log(cs0)-2*cs20*log(rcrit)-2*cs20
       cs20logx=2*cs20*log(x)
@@ -200,13 +205,27 @@ module InitialCondition
           -cs20logx-GM_r)
         endwhere
       enddo
+      GM = 2.*rcrit*cs20
 !
       rho=Mdot/(4*pi*x**2*vel)
       if (lroot) then 
         print*,'Ecrit=',Ecrit
-        print*, 'GM=', 2.*rcrit*cs20
+        print*, 'GM=', GM
         print*,'lnrho0=',log(rho(l1))
       endif
+!
+! check if consistent values of gravity 
+!
+      gtype='gravx'
+      gprofile='kepler'
+      call set_consistent_gravity(GM,gtype,gprofile,lsuccess)
+      if(lsuccess) then
+        if (lroot) print*,'Gravity set consistently'
+        call initialize_gravity(f,lstarting=.true.)
+      else
+        call fatal_error('initial_condition/parker_wind:','gravity not set consistently')
+      endif
+!
 !
     endsubroutine parker_wind_iteration 
 !***********************************************************************
