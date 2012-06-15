@@ -167,7 +167,7 @@ if (not pc_gui_loaded) then BEGIN
 	pc_read_param, obj=param, dim=orig_dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=orig_dim, datadir=datadir, /quiet
 
-	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param
+	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param, varcontent=varcontent, quantities=quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
 	if (num_files eq 0) then stop
 
 	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
