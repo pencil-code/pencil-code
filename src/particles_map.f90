@@ -653,11 +653,11 @@ module Particles_map
       do k=1,npar_loc
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (.not.lnbody) then 
-           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-           ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
-           ipark_sorted(k)=k
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
+          ipark_sorted(k)=k
         else
-           ipark_sorted(k)=ipar_nbody(k)
+          ipark_sorted(k)=ipar_nbody(k)
         endif
       enddo
 !
@@ -755,10 +755,10 @@ module Particles_map
       endif
 !
       if ( (.not. lrunningsort) .and. (ncount/=0) ) then
-         fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
-         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
-         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
-         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
+        fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
+        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
+        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+        ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
       endif
 !
       if (lroot.and.ldiagnos) then
