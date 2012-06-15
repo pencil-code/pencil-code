@@ -97,20 +97,12 @@ pro select_files_event, event
 			if (slice eq 2) then max_pos = ny-1
 			if (slice eq 3) then max_pos = nz-1
 			if (max_pos lt 1) then cut_pos = -1 else cut_pos = max_pos/2
-			WIDGET_CONTROL, cut_co, SENSITIVE = 1
-			WIDGET_CONTROL, cut_sl, SENSITIVE = 1
-			WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos
-			WIDGET_CONTROL, cut_sl, SET_VALUE = cut_pos
+			WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos>0
 			WIDGET_CONTROL, cut_sl, SET_SLIDER_MIN = 0<max_pos
-			WIDGET_CONTROL, cut_sl, SET_SLIDER_MAX = max_pos
-			; Due to a bug in IDL 7, we have to set everything twice:
+			WIDGET_CONTROL, cut_sl, SET_SLIDER_MAX = max_pos>1
 			WIDGET_CONTROL, cut_sl, SET_VALUE = cut_pos
-			WIDGET_CONTROL, cut_sl, SET_SLIDER_MIN = 0<max_pos
-			WIDGET_CONTROL, cut_sl, SET_SLIDER_MAX = max_pos
-			if (cut_pos eq -1) then begin
-				WIDGET_CONTROL, cut_co, SENSITIVE = 0
-				WIDGET_CONTROL, cut_sl, SENSITIVE = 0
-			end
+			WIDGET_CONTROL, cut_co, SENSITIVE = 1-(cut_pos eq -1)
+			WIDGET_CONTROL, cut_sl, SENSITIVE = 1-(cut_pos eq -1)
 		end
 		break
 	end
@@ -299,10 +291,11 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	max_pos = -1
 	if ((dimensionality eq 3) and (allprocs eq 1)) then begin
 		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
-		d_slice	= WIDGET_DROPLIST (CONT, value=load_list, uvalue='SLICE')
-		cut_co	= CW_FIELD (CONT, title='Cut position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
+		SLICE	= WIDGET_BASE (CONT, frame=1, /col)
+		d_slice	= WIDGET_DROPLIST (SLICE, value=load_list, /align_center, uvalue='SLICE')
+		cut_co	= CW_FIELD (SLICE, title='Slice position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
 		WIDGET_CONTROL, cut_co, SENSITIVE = 0
-		cut_sl	= WIDGET_SLIDER (CONT, uvalue='CUT_SL', value=0, min=-1, max=0, xsize=128, /drag, /suppress_value, sensitive=0)
+		cut_sl	= WIDGET_SLIDER (SLICE, uvalue='CUT_SL', value=0, min=0, max=1, /drag, /suppress_value, sensitive=0)
 	end else begin
 		d_slice	= WIDGET_LABEL (CONT, value='Full '+strtrim (dimensionality, 2)+'D dataset', frame=1)
 	end
