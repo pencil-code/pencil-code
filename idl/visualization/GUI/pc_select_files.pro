@@ -291,6 +291,22 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	CONT	= WIDGET_BASE (BASE, /col)
 
+	IO_scheme = ["distributed files", "collective files", "collect_xy files"]
+	tmp	= WIDGET_LABEL (CONT, value='Load '+IO_scheme[allprocs]+":", frame=0)
+	dimensionality = 0 + ((dim.nx gt 1) + (dim.ny gt 1) + (dim.nz gt 1))
+	slice = 0
+	cut_pos = -1
+	max_pos = -1
+	if ((dimensionality eq 3) and (allprocs eq 1)) then begin
+		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
+		d_slice	= WIDGET_DROPLIST (CONT, value=load_list, uvalue='SLICE')
+		cut_co	= CW_FIELD (CONT, title='Cut position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
+		WIDGET_CONTROL, cut_co, SENSITIVE = 0
+		cut_sl	= WIDGET_SLIDER (CONT, uvalue='CUT_SL', value=0, min=-1, max=0, xsize=128, /drag, /suppress_value, sensitive=0)
+	end else begin
+		d_slice	= WIDGET_LABEL (CONT, value='Full '+strtrim (dimensionality, 2)+'D dataset', frame=1)
+	end
+
 	tmp	= WIDGET_LABEL (CONT, value='Available content:', frame=0)
 	content = varcontent.variable
 	indices = where (content ne "UNKNOWN")
@@ -299,21 +315,6 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	cont_selected = indgen (num_content)
 	c_cont	= WIDGET_LIST (CONT, value=content, uvalue='CONT', YSIZE=num_content<max_display, /multiple)
 	WIDGET_CONTROL, c_cont, SET_LIST_SELECT = cont_selected
-
-	tmp	= WIDGET_LABEL (CONT, value='Load:', frame=0)
-	dimensionality = (dim.nx gt 1) + (dim.ny gt 1) + (dim.nz gt 1)
-	slice = 0
-	cut_pos = -1
-	max_pos = -1
-	if (dimensionality eq 3) then begin
-		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
-		d_slice	= WIDGET_DROPLIST (CONT, value=load_list, uvalue='SLICE')
-		cut_co	= CW_FIELD (CONT, title='Cut position:', uvalue='CUT_CO', value=-1, /integer, /return_events, xsize=8)
-		WIDGET_CONTROL, cut_co, SENSITIVE = 0
-		cut_sl	= WIDGET_SLIDER (CONT, uvalue='CUT_SL', value=0, min=-1, max=0, xsize=128, /drag, /suppress_value, sensitive=0)
-	end else begin
-		d_slice	= WIDGET_LABEL (CONT, value='Full '+strtrim (dimensionality, 2)+'D dataset', frame=0)
-	end
 
 	QUANT	= WIDGET_BASE (BASE, /col)
 
