@@ -289,15 +289,17 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	slice = 0
 	cut_pos = -1
 	max_pos = -1
+	SLICE	= WIDGET_BASE (CONT, frame=1, /align_center, /col)
 	if ((dimensionality eq 3) and (allprocs eq 1)) then begin
 		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
-		SLICE	= WIDGET_BASE (CONT, frame=1, /col)
+		tmp	= WIDGET_LABEL (SLICE, value="From: "+procdir, frame=0)
 		d_slice	= WIDGET_DROPLIST (SLICE, value=load_list, /align_center, uvalue='SLICE')
 		cut_co	= CW_FIELD (SLICE, title='Slice position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
 		WIDGET_CONTROL, cut_co, SENSITIVE = 0
 		cut_sl	= WIDGET_SLIDER (SLICE, uvalue='CUT_SL', value=0, min=0, max=1, /drag, /suppress_value, sensitive=0)
 	end else begin
-		d_slice	= WIDGET_LABEL (CONT, value='Full '+strtrim (dimensionality, 2)+'D dataset', frame=1)
+		tmp	= WIDGET_LABEL (SLICE, value="From: "+datadir+"/proc*/", frame=0)
+		tmp	= WIDGET_LABEL (SLICE, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
 	end
 
 	tmp	= WIDGET_LABEL (CONT, value='Available content:', frame=0)
