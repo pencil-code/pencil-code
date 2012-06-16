@@ -15,7 +15,7 @@
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); del2eth
+! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); del2eth; heth(3,3)
 !
 !***************************************************************
 module EquationOfState
@@ -684,11 +684,12 @@ module EquationOfState
         endif
         if (lpencil_in(i_lnTT)) lpencil_in(i_TT)=.true.
         if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
-        if (lpencil_in(i_gTT)) then
+        if (lpencil_in(i_gTT).or.lpencil_in(i_glnTT)) then
           lpencil_in(i_rho1)=.true.
           lpencil_in(i_cv1)=.true.
           lpencil_in(i_geth)=.true.
           lpencil_in(i_TT)=.true.
+          lpencil_in(i_TT1)=.true.
           lpencil_in(i_rho)=.true.
         endif
         if (lpencil_in(i_del2TT)) then
@@ -700,20 +701,20 @@ module EquationOfState
           lpencil_in(i_grho)=.true.
           lpencil_in(i_gTT)=.true.
         endif
-      case (irho_rhop) 
+      case (irho_rhop)
         lpencil_in(i_rho)=.true.
-        if (lparticles) then 
+        if (lparticles) then
           lpencil_in(i_rhop)=.true.
         else
           lpencil_in(i_rhodsum)=.true.
         endif
         if (lpencil_in(i_lnTT)) lpencil_in(i_TT)=.true.
         if (lpencil_in(i_pp)) lpencil_in(i_TT)=.true.
-        if (lpencil_in(i_cs2)) then 
+        if (lpencil_in(i_cs2)) then
           lpencil_in(i_cp)=.true.
           lpencil_in(i_TT)=.true.
         endif
-        if (lpencil_in(i_ss)) then 
+        if (lpencil_in(i_ss)) then
           lpencil_in(i_cp)=.true.
           lpencil_in(i_TT)=.true.
         endif
@@ -1011,20 +1012,23 @@ module EquationOfState
         if (lpencil(i_TT)) p%TT=p%cv1*p%rho1*p%eth
         if (lpencil(i_lnTT)) p%lnTT=alog(p%TT)
         if (lpencil(i_TT1)) p%TT1=1/p%TT
-        if (lpencil(i_gTT)) then
+        if (lpencil(i_gTT).or.lpencil(i_glnTT)) then
           do i=1,3
             p%gTT(:,i)=p%rho1*(p%cv1*p%geth(:,i)-p%TT*p%grho(:,i))
+            p%glnTT(:,i)=p%TT1*p%gTT(:,i)
           enddo
         endif
         if (lpencil(i_del2TT)) p%del2TT= &
             p%rho1*(p%cv1*p%del2eth-p%TT*p%del2rho-2*sum(p%grho*p%gTT,2))
+        if (lpencil(i_hlnTT)) call fatal_error('calc_pencil_eos', &
+            'hlnTT not yet implemented for ilnrho_eth or irho_eth')
 !
 !  Work out thermodynamic quantities for given gas and dust densities.
-!  Check Lyra & Kuchner 2012 (arXiv:1204.6322) for details. 
+!  Check Lyra & Kuchner 2012 (arXiv:1204.6322) for details.
 !
       case (irho_rhop)
         if (lpencil(i_TT)) then
-          if (lparticles) then 
+          if (lparticles) then
             p%TT=TT0*rho01*p%rhop
           else
             p%TT=TT0*rho01*p%rhodsum
@@ -1298,7 +1302,7 @@ module EquationOfState
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp,ss)
 !
-!  Set f(l1:l2,m,n,iss), depending on the valyes of ee and pp
+!  Set f(l1:l2,m,n,iss), depending on the values of ee and pp
 !  Adding pressure perturbations is not implemented
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
