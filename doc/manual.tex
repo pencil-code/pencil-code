@@ -1249,7 +1249,7 @@ running on and (soft-)link it to \file[data/]{./data}.
 Even if the link is part of an NFS directory, all the IO operations will
 be local.
 For example, if you have a local disc \file[/scratch/]{/scratch}, you can
-do the following\footnote{This is done automatically by the \cmd{mkdatadir}
+do the following\footnote{This is done automatically by the \cmd{pc_mkdatadir}
 command which, in turn, is invoked when making a new run directory with
 the \cmd{pc_newrun} command, for example.}
 \begin{alltt}
@@ -2536,6 +2536,10 @@ for a $y$-$z$ slice):
 \subsubsection{One-dimensional output averaged in two dimensions}
 \label{S-1d-averages}
 
+In the file \file{xyaver.in}, $z$-dependent (horizontal) averages are listed.
+They are written to the file \file[xyaverages.dat]{data/xyaverages.dat}.
+A new line of averages is written every \var{it1}th time steps.
+
 There is the possibility to output two-dimensional averages.
 The result then depends on the remaining dimension.
 The averages are listed in the files  \file{xyaver.in}, \file{xzaver.in},
@@ -2546,11 +2550,17 @@ directions. The output is then stored to the files
 \file[yzaverages.dat]{data/yzaverages.dat}.
 The output is written every  \var{it1d}th time steps.
 
+The rms values of the so defined mean magnetic fields
+are referred to as \var{bmz}, \var{bmy} and \var{bmx}, respectively,
+and the rms values of the so defined mean velocity fields
+are referred to as \var{umz}, \var{umy}, and \var{umx}.
+(The last letter indicates the direction on which the averaged
+quantity still depends.)
+
 See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
 
 In \code{idl} such $xy$-averages can be read using the procedure
 \file{pc_read_xyaver}.
-
 
 \subsubsection{Two-dimensional output averaged in one dimension}
 \label{S-2d-averages}
@@ -2566,9 +2576,9 @@ direction. The output is then stored to the files
 
 See Sect.~\ref{S-new-output-diagnostics} on how to add new averages.
 
-{\it Disadvantage}: The files,
-e.g. \file[zaverages.dat]{data/zaverages.dat}, can be rather big because
-each average is just append to the file.
+{\it Disadvantage}: The output files,
+e.g.\ \file[zaverages.dat]{data/zaverages.dat}, can be rather big because
+each average is just appended to the file.
 
 \subsubsection{Azimuthal averages}
 \label{S-phi-averages}
@@ -2750,7 +2760,7 @@ Here is a list of the more important ones.
   generate \file[cparam.inc]{src/cparam.inc}, which specifies the number
   \var{mvar} of fundamental variables, and \var{maux} of auxiliary
   variables. Called by the \file{Makefile}.
-\item[mkdatadir] Creates a link to a data directory in a suitable workspace.
+\item[pc_mkdatadir] Creates a link to a data directory in a suitable workspace.
   By default this is on \samp{/var/tmp/}, but different locations
   are specified for different machines.
 \item[mkdotin] Generate minimal \file{start.in}, \file{run.in} files
@@ -4164,13 +4174,13 @@ setting the value of the variable \code{PARTICLES} in \code{Makefile.local} to
 either \code{particles_dust} or \code{particles_tracers}. For the former case
 each particle has six degrees of freedom, three positions and three
 velocities. For the latter it suffices to have only three position variables
-as the velocity of the particles are equal to the instantanious fluid velocity
+as the velocity of the particles are equal to the instantaneous fluid velocity
 at that point. In addition one can choose to have several additional internal
 degrees of freedoms for the particles. For example one can temporally evolve
 the particles radius by setting \code{PARTICLES_RADIUS} to
 \code{particles_radius} in \code{Makefile.local}.  
 
-All particle infrastructure is controlled and organised by the
+All particle infrastructure is controlled and organized by the
 \code{Particles_main} module. This module is automatically selected by
 \code{Makefile.src} if \code{PARTICLES} is different from \code{noparticles}.
 Particle modules are compiled as a separate library. This way the main part of
@@ -4265,7 +4275,7 @@ follows (see the subroutine \code{redist_particles_procs} in
   and the empty spot left behind is filled up with the particle of the highest
   index number currently present at the processor.
   \item Once the number of migrating particles is known, this information is
-  shared with neighbouring processors (including neighbours over periodic
+  shared with neighboring processors (including neighbors over periodic
   boundaries) so that they all know how many particles they have to receive and
   from which processors.
   \item The communication happens as directed MPI communication. That means
@@ -4284,13 +4294,13 @@ follows (see the subroutine \code{redist_particles_procs} in
   particles at any processor is stored in the diagnostic variable
   \code{nparmax}. If this value is not close to \code{npar}/\code{ncpus}, the
   particles have piled up in such a way that computations are not evenly shared
-  between the processors. One can then try to change the parallelisation
+  between the processors. One can then try to change the parallelization
   architecture (\code{nprocy} and \code{nprocz}) to avoid this problem.
 \end{enumerate}
 
 In simulations with many particles (comparable to or more than the number of
 grid cells), it is crucial that particles are shared relatively evenly among
-the processors. One can as a first approach attempt to not parallelise
+the processors. One can as a first approach attempt to not parallelize
 directions with strong particle density variations. However, this is often not
 enough, especially if particles clump locally.
 
@@ -4313,7 +4323,7 @@ are as follows:
   final particle density (defined on the bricks) is communicated back to the
   adopted blocks. This step is necessary because the drag force time-step
   depends on the particle density, and each particle assigns density not just
-  to the nearest grid point, but also to the neighbouring grid points.
+  to the nearest grid point, but also to the neighboring grid points.
   \item In the beginning of each sub-time-step the gas density and gas velocity
   field is communicated from the main grid to the adopted particle blocks.
   \item Drag forces are added to particles and back to the gas grid points in
@@ -9010,10 +9020,11 @@ This means (as the name says) that one reads an old snapshot that
 did not have test fields in it.
 
 Reset boundary conditions and add stuff for the newly added fields, e.g.,
-\code{bcz='a:s','a','a:s','a2','p','p','p','p','p','p','p','p','p','p','p','p'}
+\code{bcz='a:s','a','a:s','a2','a','a','s','a','a','s','a','a','s','a','a','s'}
 in \name{run_pars}.
-If you don't do this, that's fine too, because it only produces warnings
-that you can ignore.
+If you don't do this, you would effectively use periodic boundary
+conditions for the response to the test field, which is hardly correct
+once you set non-periodic boundary conditions for the other variables.
 
 Add something like the following text fragments in the right position
 (after \name{grav_run_pars} and \name{magnetic_run_pars},
@@ -11645,7 +11656,7 @@ $ $Id$ $}
 % LocalWords:  lupw Collatz Mehrstellen Verfahren hyperviscosity Galsgaard radi
 % LocalWords:  Raphson trans Ylm rrr Coord diag Stegun acroread cgs avg mtavg
 % LocalWords:  visc walltime ekintot ethtot sedov Abramowitz Harri GNG tavg tst
-% LocalWords:  BJNRST Ferri cleanf rundir cvsci gpgrowth mkdatadir mkdotin pacx
+% LocalWords:  BJNRST Ferri cleanf rundir cvsci gpgrowth pc_mkdatadir mkdotin pacx
 % LocalWords:  mkinpars mkproc mkwww scpdatadir backtick pTTss gcc glibc LD IGG
 % LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff NEWDIR copson ks
 % LocalWords:  hyperviscous geodynamo DM coords substeps dec noionization pc ll
