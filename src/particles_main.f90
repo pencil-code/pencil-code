@@ -54,14 +54,12 @@ module Particles_main
       call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
 !
+!  Print summary of variable names.
 !
-!  print summary of variable names
-!
-      write(*,*) 'DM',pvarname
       if (lroot) then
         open(3,file=trim(datadir)//'/pvarname.dat',status='replace')
         do ipvar=1,mpvar
-          write(3,"(i4,2x,a)") ipvar,pvarname(ipvar)
+          write(3,"(i4,2x,a)") ipvar, pvarname(ipvar)
         enddo
         close(3)
       endif
