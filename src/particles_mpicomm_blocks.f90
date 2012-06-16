@@ -1455,7 +1455,7 @@ module Particles_mpicomm
       integer, dimension (0:nblockmax-1) :: npblock, ibrick_give, ibrick_recv
       integer, dimension (0:nblockmax-1) :: iproc_grandparent, iproc_grandchild
       integer, dimension (0:nblockmax-1) :: iproc_parent_old, ibrick_parent_old
-      integer, dimension (2*nblockmax) :: ireq_array
+      integer, dimension (6*nblockmax) :: ireq_array
       integer :: npar_sum, npar_target, npar_recv, npar_requ
       integer :: npar_brick_taken, npar_want, npar_give
       integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
