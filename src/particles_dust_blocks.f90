@@ -131,7 +131,7 @@ module Particles
   integer :: idiag_sigmap=0
   integer :: idiag_dvpx2m=0, idiag_dvpy2m=0, idiag_dvpz2m=0
   integer :: idiag_dvpm=0, idiag_dvpmax=0, idiag_epotpm=0
-  integer :: idiag_nparbmax=0
+  integer :: idiag_nparbmax=0, idiag_nblockmin=0, idiag_nblockmax=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
 !
@@ -1941,6 +1941,9 @@ k_loop:   do while (.not. (k>npar_loc))
       if (ldiagnos) then
         if (idiag_nparbmax/=0) &
             call max_name(maxval(npar_iblock(0:nblock_loc-1)),idiag_nparbmax)
+        if (idiag_nblockmin/=0) &
+            call max_name(-nblock_loc,idiag_nblockmin,lneg=.true.)
+        if (idiag_nblockmax/=0) call max_name(nblock_loc,idiag_nblockmax)
       endif
 !
       call keep_compiler_quiet(df)
@@ -2217,6 +2220,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0; idiag_sigmap=0
         idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
         idiag_dvpmax=0; idiag_dvpm=0; idiag_nparbmax=0
+        idiag_nblockmin=0; idiag_nblockmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0
@@ -2228,7 +2232,6 @@ k_loop:   do while (.not. (k>npar_loc))
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
-        call parse_name(iname,cname(iname),cform(iname),'nparbmax',idiag_nparbmax)
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
@@ -2290,6 +2293,12 @@ k_loop:   do while (.not. (k>npar_loc))
             'epotpm',idiag_epotpm)
         call parse_name(iname,cname(iname),cform(iname), &
             'npargone',idiag_npargone)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'nparbmax',idiag_nparbmax)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'nblockmin',idiag_nblockmin)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'nblockmax',idiag_nblockmax)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
