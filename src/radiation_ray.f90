@@ -321,6 +321,16 @@ module Radiation
         print*, 'initialize_radiation: sigmaSB=', sigmaSB
       endif
 !
+!  Write constants to disk.
+!
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,*) 'arad_normal=',arad_normal
+        write (1,*) 'arad=',arad
+        write (1,*) 'sigmaSB=',sigmaSB
+        close (1)
+      endif
+!
 !  Calculate weights.
 !
       call calc_angle_weights
