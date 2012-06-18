@@ -20,4 +20,7 @@
 /
 &viscosity_run_pars
   nu=0.0
+  !ivisc='shock', nu_shock=6.0  ! to use with shock viscosity module
+/
+&shock_run_pars
 /
