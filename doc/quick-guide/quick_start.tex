@@ -219,18 +219,19 @@ Three basic files: print.in, run.in and start.in.
 \section{Running the code.}
 
 In order to use the code, a compilation in each of the working directories is
-needed. Basicly there are two ways of compiling and running the code.
+needed. Basically there are two ways of compiling and running the code.
 The only way of using the Makefile config file created before is using the new
 way:
 
-Compile the code:
-\begin{verbatim}
-pc_build
-\end{verbatim}
-Running the code:
-\begin{verbatim}
-pc_run
-\end{verbatim}
+The standard way:
+\begin{enumerate}
+  \item \verb|pc_build| compile the code
+  \item \verb|pc_run| run the code
+    \begin{enumeate}
+      \item \verb|pc_run start| can be run before \verb|pc_run|, to construct
+        the initial condition.
+    \end{enumeate}
+\end{enumerate}
 
 The old way of doing it was:
 \begin{verbatim}
