@@ -532,15 +532,12 @@ program start
 !
   call mpifinalize
 !
-  if (lroot) print*
-  if (lroot) print*,'start.x has completed successfully'
-  if (lroot) print* ! (finish with an empty line)
-!
 !  Free any allocated memory.
 !
   call farray_clean_up()
   call sharedvars_clean_up()
   call initial_condition_clean_up()
+  if (lparticles) call particles_cleanup()
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
@@ -555,5 +552,11 @@ program start
   if (lwrite_phizaverages) call phizaverages_clean_up()
   if (lwrite_phiaverages)  call phiaverages_clean_up()
   if (lwrite_sound)        call sound_clean_up()
+!
+! announce completion.
+!
+  if (lroot) print*
+  if (lroot) print*,'start.x has completed successfully'
+  if (lroot) print* ! (finish with an empty line)
 !
 endprogram

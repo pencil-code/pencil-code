@@ -341,4 +341,10 @@ module Particles
 !
     endsubroutine rprint_particles
 !***********************************************************************
+    subroutine particles_cleanup
+!
+! dummy subroutine. 
+!
+    endsubroutine particles_cleanup
+!***********************************************************************
 endmodule Particles

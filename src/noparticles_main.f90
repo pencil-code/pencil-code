@@ -418,4 +418,10 @@ module Particles_main
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************
+    subroutine particles_cleanup
+!
+! dummy subroutine
+!
+    endsubroutine particles_cleanup
+!***********************************************************************
 endmodule Particles_main

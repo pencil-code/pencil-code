@@ -45,6 +45,7 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
+      call register_particles_potential    ()
       call register_particles_radius       ()
       call register_particles_spin         ()
       call register_particles_number       ()
@@ -85,6 +86,7 @@ module Particles_main
       call rprint_particles_nbody        (lreset,LWRITE=lroot)
       call rprint_particles_viscosity    (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
+      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_dv   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_state(lreset,LWRITE=lroot)
@@ -181,6 +183,7 @@ module Particles_main
       call initialize_particles_stalker      (f,lstarting)
       call initialize_particles_diagnos_dv   (f,lstarting)
       call initialize_pars_diagnos_state     (f,lstarting)
+      call initialize_particles_potential    (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
@@ -693,6 +696,8 @@ module Particles_main
           call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
       if (lparticles_potential) & 
           call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
+!      if (lparticles_polymer) & 
+!          call dRR_dt_pencil(f,df,fp,dfp,ineargrid)
 !
 !  Time-step contribution from discrete particle collisions.
 !
@@ -821,6 +826,15 @@ module Particles_main
         endif
       endif
 !
+      if (lparticles_potential) then
+        call read_particles_pot_init_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_startpars('particles_potential_init_pars',iostat); return
+          endif
+        endif
+      endif
+!
       if (lparticles_spin) then
         call read_particles_spin_init_pars(unit,iostat)
         if (present(iostat)) then
@@ -897,6 +911,7 @@ module Particles_main
 !
       call read_particles_init_pars(unit)
       if (lparticles_radius)      call read_particles_rad_init_pars(unit)
+      if (lparticles_potential)   call read_particles_pot_init_pars(unit)
       if (lparticles_spin)        call read_particles_spin_init_pars(unit)
       if (lparticles_number)      call read_particles_num_init_pars(unit)
       if (lparticles_mass)        call read_particles_mass_init_pars(unit)
@@ -923,6 +938,8 @@ module Particles_main
             print*,'&particles_init_pars         /'
         if (lparticles_radius) &
             print*,'&particles_radius_init_pars  /'
+        if (lparticles_potential) &
+            print*,'&particles_potential_init_pars  /'
         if (lparticles_spin) &
             print*,'&particles_spin_init_pars    /'
         if (lparticles_number) &
@@ -956,6 +973,7 @@ module Particles_main
 !
       call write_particles_init_pars(unit)
       if (lparticles_radius)      call write_particles_rad_init_pars(unit)
+      if (lparticles_potential)   call write_particles_pot_init_pars(unit)
       if (lparticles_spin)        call write_particles_spin_init_pars(unit)
       if (lparticles_number)      call write_particles_num_init_pars(unit)
       if (lparticles_mass)        call write_particles_mass_init_pars(unit)
@@ -985,6 +1003,15 @@ module Particles_main
         if (present(iostat)) then
           if (iostat/=0) then
             call samplepar_runpars('particles_radius_run_pars',iostat); return
+          endif
+        endif
+      endif
+!
+      if (lparticles_potential) then
+        call read_particles_pot_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('particles_potential_run_pars',iostat); return
           endif
         endif
       endif
@@ -1111,6 +1138,7 @@ module Particles_main
         print*,'-----BEGIN sample particle namelist ------'
         if (lparticles)                print*,'&particles_run_pars         /'
         if (lparticles_radius)         print*,'&particles_radius_run_pars  /'
+        if (lparticles_potential)         print*,'&particles_potential_run_pars  /'
         if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
         if (lparticles_number)         print*,'&particles_number_run_pars  /'
         if (lparticles_mass)           print*,'&particles_mass_run_pars    /'
@@ -1142,6 +1170,7 @@ module Particles_main
 !
       if (lparticles)                call write_particles_run_pars(unit)
       if (lparticles_radius)         call write_particles_rad_run_pars(unit)
+      if (lparticles_potential)      call write_particles_pot_run_pars(unit)
       if (lparticles_spin)           call write_particles_spin_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)
       if (lparticles_mass)           call write_particles_mass_run_pars(unit)
@@ -1360,5 +1389,12 @@ module Particles_main
       endif
 !
     endsubroutine particles_insert_continuously
+!***********************************************************************
+    subroutine particles_cleanup
+!
+!
+      if (lparticles_potential) call particles_potential_clean_up()
+
+    endsubroutine particles_cleanup
 !***********************************************************************
 endmodule Particles_main

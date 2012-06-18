@@ -45,6 +45,12 @@ module Particles_potential
 !
     endsubroutine initialize_particles_potential
 !***********************************************************************
+    subroutine particles_potential_clean_up
+!
+! dummy subroutine
+!
+    endsubroutine particles_potential_clean_up
+!***********************************************************************
     subroutine pencil_criteria_par_potential()
 !
 !  All pencils that the Particles_radius module depends on are specified here.

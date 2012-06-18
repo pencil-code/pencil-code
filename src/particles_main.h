@@ -18,3 +18,4 @@
   public :: particles_doprepencil_calc, particles_insert_continuously
   public :: write_snapshot_particles,read_snapshot_particles
   public :: write_dim_particles
+  public :: particles_cleanup
