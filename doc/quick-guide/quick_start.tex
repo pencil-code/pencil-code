@@ -163,22 +163,29 @@ run.csh & launch the main code that advances the equations in time\\\hline
 \end{tabular}
 \end{center}
 
-\section{Configure the run.}
+\section{Configure the run}
+The structure of the Pencil code consists of different modules, containing
+different physics that you may or may not need for your problem. 
 
 \subsection{Makefile}
-Try:
+
 \begin{verbatim}
 pc_setupsrc
 \end{verbatim}
+This sets up the linking to the root \verb|src| directory and makes a
+\verb|data| directory that will contain the data produced by your simulation.
 
 Basic configuration files for the make:
 \begin{verbatim}
 src/Makefile.local
 src/cparam.local
 \end{verbatim}
-The file \texttt{src/Makefile.local} is used to set on/off the mpi running and
-some parameters about the fisical propertios of the run. Example of my file
-without mpi:
+
+The structure of the Pencil code consists of different modules, containing
+different physics that you may or may not need for your problem. These are set
+in \verb|Makefile.local|. 
+
+Example of a file without mpi:
 \begin{verbatim}
 ###                             -*-Makefile-*-
 ### Makefile for modular pencil code -- local part
@@ -216,7 +223,7 @@ integer, parameter :: nxgrid=128,nygrid=1,nzgrid=128
 Three basic files: print.in, run.in and start.in.
 
 
-\section{Running the code.}
+\section{Running the code}
 
 In order to use the code, a compilation in each of the working directories is
 needed. Basically there are two ways of compiling and running the code.
@@ -287,7 +294,5 @@ pc.animate\_interactive &  Assemble a 2D animation from a 3D array. \\\hline
 %× & ×\\\hline
 \end{tabular}
 \end{center}
-
-
 
 \end{document}
