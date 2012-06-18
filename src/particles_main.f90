@@ -1392,9 +1392,8 @@ module Particles_main
 !***********************************************************************
     subroutine particles_cleanup
 !
-!
       if (lparticles_potential) call particles_potential_clean_up()
-
+!
     endsubroutine particles_cleanup
 !***********************************************************************
 endmodule Particles_main
