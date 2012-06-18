@@ -5065,7 +5065,7 @@ module Boundcond
         call get_shared_variable('FbotKbot',FbotKbot,ierr)
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
              "there was a problem when getting FbotKbot")
-        if (headtt) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
+        if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FbotKbot=',FbotKbot
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FbotKbot/T
@@ -5094,7 +5094,7 @@ module Boundcond
             call get_shared_variable('Fbot',Fbot,ierr)
             if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
                "there was a problem when getting Fbot")
-            if (headtt) print*,'bc_ss_flux_x: Fbot=',Fbot
+            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
 !
             tmp_yz = Fbot*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
@@ -5118,7 +5118,7 @@ module Boundcond
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
             "there was a problem when getting FtopKtop")
 !
-         if (headtt) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
+         if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: FtopKtop=',FtopKtop
 !
 !  Deal with the simpler pretend_lnTT=T case first. Now ss is actually
 !  lnTT and the boundary condition reads glnTT=FtopKtop/T
@@ -5143,7 +5143,7 @@ module Boundcond
             call get_shared_variable('Ftop',Ftop,ierr)
             if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
             "there was a problem when getting Ftop")
-            if (headtt) print*,'bc_ss_flux_x: Ftop=',Ftop
+            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
 
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
