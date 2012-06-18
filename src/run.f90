@@ -801,6 +801,7 @@ program run
   call xyaverages_clean_up()
   call xzaverages_clean_up()
   call yzaverages_clean_up()
+  if (lparticles) call particles_cleanup()
   if (lwrite_phizaverages) call phizaverages_clean_up()
   if (lwrite_yaverages)    call yaverages_clean_up()
   if (lwrite_zaverages)    call zaverages_clean_up()
