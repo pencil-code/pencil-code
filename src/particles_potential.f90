@@ -14,11 +14,11 @@
 module Particles_potential
 !
   use Cdata
+  use Diagnostics
   use Messages
   use Particles_cdata
   use Particles_sub
   use Sub, only: keep_compiler_quiet
-  use Diagnostics
 !
   implicit none
 !
