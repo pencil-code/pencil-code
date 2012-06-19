@@ -1,6 +1,8 @@
 ! $Id$
 !
-!  This module takes care of everything related to particle self-gravity.
+!  This module takes care of everything related to particle self-gravity
+!  by inverting the Poisson equation of the particle density mapped on the
+!  grid.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -33,10 +35,10 @@ module Particles_selfgravity
   logical :: lselfgravity_nbodyparticles=.false.
 !
   namelist /particles_selfgrav_init_pars/ &
-      lselfgravity_particles,lselfgravity_nbodyparticles
+      lselfgravity_particles, lselfgravity_nbodyparticles
 !
   namelist /particles_selfgrav_run_pars/ &
-      lselfgravity_particles,lselfgravity_nbodyparticles
+      lselfgravity_particles, lselfgravity_nbodyparticles
 !
   integer :: idiag_gpotenp=0, idiag_potselfpm=0
 !
