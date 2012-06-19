@@ -1370,26 +1370,20 @@ module Diagnostics
     subroutine sum_name(a,iname)
 !
 !  Calculate the summation of a, which is supplied at each call.
-!  In subroutine 'diagnostic', the mean is calculated.
-!  TODO: rename 'ilabel_sum' as 'ilabel_mean'.
 !
+!  19-jun-11/anders: changed to sum single number of all cores
 !  17-jun-09/ccyang: adapted from max_name
 !  03-sep-09/MR: corrected to real sum
 !
       real, intent(in) :: a
       integer, intent(in) :: iname
 !
-     if (lfirstpoint) then
-!
-       fname(iname)=a
+      fname(iname)=a
 !
 !  Set corresponding entry in itype_name.
+!  Need to set ilabel_surf to avoid multiplication by volume later (to fix).
 !
-       itype_name(iname)=ilabel_sum
-!
-     else
-       fname(iname)=fname(iname)+a
-     endif
+      itype_name(iname)=ilabel_surf
 !
     endsubroutine sum_name
 !***********************************************************************
