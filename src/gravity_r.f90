@@ -59,7 +59,6 @@ module Gravity
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
-  
 !
   integer :: iglobal_gg=0
 !
@@ -70,7 +69,7 @@ module Gravity
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
-      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, & 
+      qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals
 !
   contains
@@ -390,7 +389,7 @@ module Gravity
 !
       if ((lhydro.and.lgravity_gas).or.&
           (lneutralvelocity.and.lgravity_neutrals).or.&
-          (ldustvelocity.and.lgravity_dust)) & 
+          (ldustvelocity.and.lgravity_dust)) &
           lpencil_in(i_gg)=.true.
 !
       call keep_compiler_quiet(lpencil_in)
@@ -414,7 +413,7 @@ module Gravity
 !
       call farray_use_global('global_gg',iglobal_gg)
 !
-      if (lpencil(i_gg)) then 
+      if (lpencil(i_gg)) then
         call farray_use_global('global_gg',iglobal_gg)
         p%gg = f(l1:l2,m,n,iglobal_gg:iglobal_gg+2)
       endif
@@ -443,7 +442,7 @@ module Gravity
       endif
 !
       if (ldustvelocity.and.lgravity_dust) then
-        do k=1,ndustspec 
+        do k=1,ndustspec
           df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + p%gg
         enddo
       endif
@@ -902,11 +901,15 @@ module Gravity
     endsubroutine get_xgravity
 !***********************************************************************
     subroutine set_consistent_gravity(ginput,gtype,gprofile,lsuccess)
+!
+! Dummy routine
+!
       real :: ginput
       character (len=labellen) :: gtype,gprofile
-      character (len=labellen) :: gprof
       logical :: lsuccess
-      logical :: lconsistent=.true.
+!
+      call keep_compiler_quiet(ginput)
+      call keep_compiler_quiet(gtype,gprofile)
 !
 ! This routine should never be called in the way it is written now.
 !
