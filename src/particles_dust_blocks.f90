@@ -134,6 +134,7 @@ module Particles
   integer :: idiag_nparbmax=0, idiag_nblockmin=0, idiag_nblockmax=0
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
+  integer :: idiag_deshearbcsm=0
 !
   contains
 !***********************************************************************
@@ -328,6 +329,10 @@ module Particles
 !
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
       endif
+!
+!  Initialize storage of energy gain released by shearing boundaries.
+!
+      if (idiag_deshearbcsm/=0) energy_gain_shear_bcs=0.0
 !
 !  Drag force on gas right now assumed rhop_swarm is the same for all particles.
 !
@@ -1532,6 +1537,9 @@ k_loop:   do while (.not. (k>npar_loc))
           if (idiag_npargone/=0) &
               call save_name(float(npar-npar_found),idiag_npargone)
         endif
+        if (idiag_deshearbcsm/=0) then
+          call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
+        endif
       endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -2223,7 +2231,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_nblockmin=0; idiag_nblockmax=0
         idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
-        idiag_npargone=0
+        idiag_npargone=0; idiag_deshearbcsm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -2299,6 +2307,8 @@ k_loop:   do while (.not. (k>npar_loc))
             'nblockmin',idiag_nblockmin)
         call parse_name(iname,cname(iname),cform(iname), &
             'nblockmax',idiag_nblockmax)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'deshearbcsm',idiag_deshearbcsm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
