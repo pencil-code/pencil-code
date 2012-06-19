@@ -348,6 +348,7 @@ module Fourier
       call keep_compiler_quiet(a_im)
       call keep_compiler_quiet(present(linv))
       call keep_compiler_quiet(present(lneed_im))
+      call keep_compiler_quiet(present(shift_y))
 !
     endsubroutine fft_y_parallel_3D
 !***********************************************************************
