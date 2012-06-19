@@ -254,7 +254,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
     call signature::
     
-      pc2vtk(ti = 0, tf = 1, datadir = 'data/', proc = -1,
+      pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
            variables = ['rho','uu','bb'], magic = ['vort','bb'],
            destination = 'animation')
     
