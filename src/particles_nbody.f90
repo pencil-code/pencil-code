@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This module takes care of everything related to massive particles.
+!  This module takes care of direct N-body gravity between particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
