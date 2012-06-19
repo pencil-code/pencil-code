@@ -2304,17 +2304,13 @@ k_loop:   do while (.not. (k>npar_loc))
             if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
 !
           case ('const','plain')
-            if (lheader) print*, 'dvvp_dt: Constant gravity field in x-direction.'
+            if (lheader) print*, 'dvvp_dt: Constant gravity field in x-direction'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + gravx
 !
           case ('linear')
             if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 nu_epicycle2*fp(1:npar_loc,ixp)
-!
-          case ('const','plain')
-            if (lheader) print*, 'dvvp_dt: Plain gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - gravx
 !
           case ('sinusoidal')
             if (lheader) &
