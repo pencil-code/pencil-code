@@ -7125,8 +7125,8 @@ module Magnetic
       character(len=bclen), dimension(3), intent(in) :: bcy1, bcy2
       real, intent(in) :: dt
 !
-      real, dimension(nx,ny) :: axy
-      real, dimension(0:nygrid+1) :: penc
+      real, dimension(nx,ny) :: axy      ! assuming nxgrid = nygrid and nprocx = 1
+      real, dimension(0:nx+1) :: penc    ! assuming nxgrid = nygrid and nprocx = 1
       real, dimension(nygrid) :: a, opb, omb, c
       integer :: j, k, l, la
 !
@@ -7138,9 +7138,9 @@ module Magnetic
             axy = f(l1:l2,m1:m2,k,la)
             call transp_xy(axy)  ! assuming nxgrid = nygrid
             xscan: do j = 1, ny
-              penc(1:nygrid) = axy(1:nygrid,j)
+              penc(1:nx) = axy(:,j)
               call implicit_pencil(penc, nygrid, a, opb, omb, c, bcy1(l), bcy2(l))
-              axy(1:nygrid,j) = penc(1:nygrid)
+              axy(:,j) = penc(1:nx)
             enddo xscan
             call transp_xy(axy)
             f(l1:l2,m1:m2,k,la) = axy
