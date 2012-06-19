@@ -2588,7 +2588,7 @@ k_loop:   do while (.not. (k>npar_loc))
               call save_name(float(npar-npar_found),idiag_npargone)
         endif
         if (idiag_deshearbcsm/=0) then
-          call save_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
+          call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
         endif
       endif
 !
