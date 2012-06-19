@@ -1,5 +1,6 @@
 ! $Id$
-!  This module takes care of everything related to dust particles.
+!
+!  This module takes care of everything related to inertial particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -2310,6 +2311,10 @@ k_loop:   do while (.not. (k>npar_loc))
             if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
             dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
                 nu_epicycle2*fp(1:npar_loc,ixp)
+!
+          case ('const','plain')
+            if (lheader) print*, 'dvvp_dt: Plain gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - gravx
 !
           case ('sinusoidal')
             if (lheader) &
