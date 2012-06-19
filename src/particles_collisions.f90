@@ -362,7 +362,7 @@ module Particles_collisions
                 if (idiag_npartpm/=0) &
                     call sum_par_name((/float(npart_par)/),idiag_npartpm)
                 if (idiag_decollpm/=0) &
-                    call save_name(energy_gain_inelastic/npar,idiag_decollpm)
+                    call sum_name(energy_gain_inelastic/npar,idiag_decollpm)
               endif
 !
             enddo
