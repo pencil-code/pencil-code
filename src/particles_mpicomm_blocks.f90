@@ -1207,6 +1207,15 @@ module Particles_mpicomm
               iproc_foster_list(nproc_foster)=iproc
             endif
             nblock_loc=nblock_loc+1
+            if (ip<=6) print*, 'migrate_particles_ptob: iproc, nblock_loc=', &
+                iproc, nblock_loc
+            if (nblock_loc > nblockmax) then
+              print*, 'migrate_particles_ptob: too many blocks at processor', &
+                  iproc
+              print*, 'migrate_particles_ptob: nblock_loc, nblock_max=', &
+                  nblock_loc, nblockmax
+              STOP
+            endif
             iproc_parent_block(nblock_loc-1)=iproc
             ibrick_parent_block(nblock_loc-1)=ibrick_rec
 !
