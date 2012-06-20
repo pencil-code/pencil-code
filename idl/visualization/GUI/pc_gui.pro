@@ -63,26 +63,26 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ; 'Rn_mag'                  ; magnetic mesh Reynolds number
 ; (more quantities can be defined in 'precalc_data', see pc_gui_companion.pro)
 default, quantities, { $
-	temperature:'Temp', $
-	currentdensity:'j', $
-	ohmic_heating_rate:'HR_ohm', $
-	viscous_heating_rate:'HR_viscous', $
-;	magnetic_energy:'rho_mag', $
-;	magnetic_field_x:'bx', $
-;	magnetic_field_y:'by', $
-	magnetic_field_z:'bz', $
-	velocity:'u_abs', $
-;	velocity_x:'u_x', $
-;	velocity_y:'u_y', $
-	velocity_z:'u_z', $
-;	thermal_pressure:'P_therm', $
-	impulse_density_z:'rho_u_z', $
-;	viscous_Rn:'Rn_visc', $
-;	magnetic_Rn:'Rn_mag', $
-;	minimum_density:'rho_c', $
-	Spitzer_heatflux:'Spitzer_q', $
-	Spitzer_timestep:'Spitzer_dt', $
-	logarithmic_density:'log_rho' $
+	Temp:'temperature', $
+	j:'currentdensity', $
+	HR_ohm:'ohmic heating rate', $
+	HR_viscous:'viscous heating rate', $
+;	rho_mag:'magnetic energy', $
+;	bx:'magnetic field x', $
+;	by:'magnetic field y', $
+	bz:'magnetic field z', $
+	u_abs:'velocity', $
+;	u_x:'velocity x', $
+;	u_y:'velocity y', $
+	u_z:'velocity z', $
+;	P_therm:'thermal pressure', $
+	rho_u_z:'impulse density z', $
+;	Rn_visc:'viscous Rn', $
+;	Rn_mag:'magnetic Rn', $
+;	rho_c:'minimum density', $
+	Spitzer_q:'Spitzer heatflux', $
+	Spitzer_dt:'Spitzer timestep', $
+	log_rho:'logarithmic density' $
 	}
 
 
@@ -92,10 +92,10 @@ default, quantities, { $
 ; Available quantities for overplotting are:
 ; 'b', 'a_contour', 'grad_P_therm', and 'u'
 default, overplot_quantities, { $
-;	magnetic_field:'b', $
-	fieldlines:'a_contour', $
-;	thermal_pressure_gradient:'grad_P_therm', $
-	velocities:'u' $
+;	b:'magnetic_field', $
+	a_contour:'fieldlines', $
+;	grad_P_therm:'thermal pressure gradient', $
+	u:'velocities' $
 	}
 
 
@@ -197,7 +197,7 @@ if (not pc_gui_loaded) then BEGIN
 	exec_str = "varset = { "
 	for i = 0, n_tags (quantities) - 1 do begin
 		if (i gt 0) then exec_str += ", "
-		exec_str += quantities.(i)+":dummy"
+		exec_str += (tag_names (quantities))[i]+":dummy"
 	end
 	exec_str += " }"
 	res = execute (exec_str)
@@ -210,7 +210,7 @@ if (not pc_gui_loaded) then BEGIN
 	exec_str = "overplot = { "
 	for i = 0, n_tags (overplot_quantities) - 1 do begin
 		if (i gt 0) then exec_str += ", "
-		exec_str += overplot_quantities.(i)+":dummy_3D"
+		exec_str += (tag_names (overplot_quantities))[i]+":dummy_3D"
 	end
 	exec_str += " }"
 	res = execute (exec_str)

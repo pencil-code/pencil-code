@@ -14,6 +14,11 @@
 ;;;   * datadir (contains the datadir, default: pc_get_datadir)
 ;;;   * allprocs (contains the IO-strategy parameter, default: automatic)
 ;;;   * procdir (contains procdir based on the chosen IO-strategy)
+;;;   * varcontent (contains or returns the varcontent structure)
+;;;   * quantities (contains or returns the selected physical quantities)
+;;;   * cut_x (contains the pixel value in x of the yz-slice)
+;;;   * cut_y (contains the pixel value in y of the xz-slice)
+;;;   * cut_z (contains the pixel value in z of the xy-slice)
 ;;;   If an optional parameter is given as undefined, its default is returned.
 ;;;
 ;;;   Examples:
@@ -23,6 +28,8 @@
 ;;;   IDL> pc_select_files, obj=files, datadir="mydata", procdir=procdir
 ;;;   IDL> pc_select_files, obj=files, addfile="crash.dat", /allprocs
 ;;;   IDL> pc_select_files, obj=files, pattern="VAR[1-9]*", allprocs=allprocs
+;;;   IDL> pc_select_files, obj=files, varcontent=varcontent, quantities=quantities
+;;;   IDL> pc_select_files, obj=files, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 ;;;
 
 
@@ -30,7 +37,7 @@
 pro select_files_event, event
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, d_slice, cut_co, cut_sl
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, cont_selected, quant_selected, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -120,6 +127,39 @@ pro select_files_event, event
 		WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos
 		break
 	end
+	'Q_DEF':
+	'CONT': begin
+		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
+		quant_avail = quant_list
+		quant_avail[*] = "[N/A]"
+		quant_selected = -1
+		if (any (cont_selected ge 0)) then begin
+			avail = pc_check_quantities (check=all_quant, sources=sources[cont_selected], /indices)
+			if (any (avail ge 0)) then begin
+				num = n_elements (avail)
+				for pos=0, num-1 do begin
+					quant_avail[avail[pos]] = all_quant.(avail[pos])
+					tag = (tag_names (all_quant))[avail[pos]]
+					if (any (strcmp (tag_names (quant), tag, /fold_case))) then quant_selected = [ quant_selected, avail[pos] ]
+				end
+				indices = where (quant_selected ge 0)
+				if (any (indices ge 0)) then quant_selected = quant_selected[indices]
+			end
+		end
+		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
+		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		break
+	end
+	'Q_ALL': begin
+		quant_selected = where (quant_avail ne "[N/A]")
+		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		break
+	end
+	'Q_NONE': begin
+		quant_selected = -1
+		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		break
+	end
 	'SHOW_TIME': begin
 		WIDGET_CONTROL, b_ts, SENSITIVE = 0
 		pc_show_ts, obj=ts, units=units, param=start_par, run_param=run_par, datadir=data_dir
@@ -128,6 +168,8 @@ pro select_files_event, event
 	end
 	'OK': begin
 		selected = WIDGET_INFO (c_list, /LIST_SELECT)
+		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
+		quant_selected = WIDGET_INFO (c_quant, /LIST_SELECT)
 		quit = event.top
 		break
 	end
@@ -151,7 +193,7 @@ end
 pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, varcontent=varcontent, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, d_slice, cut_co, cut_sl
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, cont_selected, quant_selected, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
 
 	; Default settings
 	default, pattern, "VAR[0-9]*"
@@ -162,8 +204,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	default, cut_x, -1
 	default, cut_y, -1
 	default, cut_z, -1
-	default, min_display, 12
-	default, max_display, 24
+	default, min_display, 25
+	default, max_display, 25
 	if (max_display lt 1) then max_display = 100
 	if (min_display gt max_display) then min_display = max_display
 	if (min_display lt 1) then min_display = 100 < max_display
@@ -173,6 +215,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, /quiet
 	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, dim=dim, /quiet
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
+	all_quant = pc_check_quantities (sources=varcontent, /all)
+	if (keyword_set (quantities)) then quant = quantities else quant = all_quant
+	sources = varcontent.idlvar
+	sources = sources[where (sources ne "dummy")]
 
 	; Fill common blocks
 	if (datadir eq "") then datadir = "."
@@ -181,7 +227,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	ny = dim.ny
 	nz = dim.nz
 	if (not keyword_set (units_struct)) then units = units_struct
-	if (n_elements (units) le 0) then pc_units, obj=units, datadir=datadir, dim=dim, param=param, /quiet
+	if (n_elements (units) le 0) then begin
+		pc_units, obj=unit, datadir=datadir, dim=dim, param=param, /quiet
+		units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:1, default_time:1, default_velocity:1, default_density:1, default_mass:1, default_magnetic_field:1, default_length_str:'m', default_time_str:'s', default_velocity_str:'m/s', default_density_str:'kg/m^3', default_mass_str:'kg', default_magnetic_field_str:'Tesla' }
+	end
 	start_par = param
 	if (keyword_set (run_param)) then run_par = run_param
 
@@ -281,19 +330,35 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		b_add	= WIDGET_LABEL (SEL, value='No "'+addfile+'" found', frame=0)
 	end
 
-	CONT	= WIDGET_BASE (BASE, /col)
+	VC	= WIDGET_BASE (BASE, /col)
 
 	IO_scheme = ["distributed files", "collective files", "collect_xy files"]
-	tmp	= WIDGET_LABEL (CONT, value='Load '+IO_scheme[allprocs]+":", frame=0)
+	tmp	= WIDGET_LABEL (VC, value='Load '+IO_scheme[allprocs]+":", frame=0)
 	dimensionality = 0 + ((dim.nx gt 1) + (dim.ny gt 1) + (dim.nz gt 1))
 	slice = 0
-	cut_pos = -1
 	max_pos = -1
-	SLICE	= WIDGET_BASE (CONT, frame=1, /align_center, /col)
+	cut_pos = -1
+	SLICE	= WIDGET_BASE (VC, frame=1, /align_center, /col)
 	if ((dimensionality eq 3) and (allprocs eq 1)) then begin
 		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
+		if (cut_x ge 0) then begin
+			slice = 1
+			max_pos = dim.nx
+			cut_pos = cut_x < max_pos
+		end
+		if (cut_y ge 0) then begin
+			slice = 2
+			max_pos = dim.ny
+			cut_pos = cut_y < max_pos
+		end
+		if (cut_z ge 0) then begin
+			slice = 3
+			max_pos = dim.nz
+			cut_pos = cut_z < max_pos
+		end
 		tmp	= WIDGET_LABEL (SLICE, value="From: "+procdir, frame=0)
 		d_slice	= WIDGET_DROPLIST (SLICE, value=load_list, /align_center, uvalue='SLICE')
+		WIDGET_CONTROL, d_slice, SET_LIST_SELECT = slice
 		cut_co	= CW_FIELD (SLICE, title='Slice position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
 		WIDGET_CONTROL, cut_co, SENSITIVE = 0
 		cut_sl	= WIDGET_SLIDER (SLICE, uvalue='CUT_SL', value=0, min=0, max=1, /drag, /suppress_value, sensitive=0)
@@ -302,23 +367,33 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		tmp	= WIDGET_LABEL (SLICE, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
 	end
 
-	tmp	= WIDGET_LABEL (CONT, value='Available content:', frame=0)
+	tmp	= WIDGET_LABEL (VC, value='Available content:', frame=0)
 	content = varcontent.variable
-	indices = where (content ne "UNKNOWN")
-	if (any (indices ne -1)) then content = content[indices]
+	content = content[where (content ne "UNKNOWN")]
 	num_content = n_elements (content)
 	cont_selected = indgen (num_content)
-	c_cont	= WIDGET_LIST (CONT, value=content, uvalue='CONT', YSIZE=num_content<max_display, /multiple)
+	c_cont	= WIDGET_LIST (VC, value=content, uvalue='CONT', YSIZE=num_content<max_display, /multiple)
 	WIDGET_CONTROL, c_cont, SET_LIST_SELECT = cont_selected
 
-	QUANT	= WIDGET_BASE (BASE, /col)
+	QU	= WIDGET_BASE (BASE, /col)
 
-	tmp	= WIDGET_LABEL (QUANT, value='Derivable quantities:', frame=0)
-	quant_list = tag_names (quantities)
-	num_quantities = n_elements (quant_list)
-	quant_selected = indgen (num_quantities)
-	c_quant	= WIDGET_LIST (QUANT, value=quant_list, uvalue='QUANT', YSIZE=(num_quantities<max_display)>min_display, /multiple)
+	tmp	= WIDGET_LABEL (QU, value='Derivable quantities:', frame=0)
+	num_all_quant = n_tags (all_quant)
+	quant_list = strarr (num_all_quant)
+	num_quant = n_tags (quant)
+	for pos=0, num_all_quant-1 do quant_list[pos] = all_quant.(pos)
+	quant_avail = quant_list
+	quant_selected = intarr (num_quant)
+	for pos=0, num_quant-1 do begin
+		index = where (tag_names (all_quant) eq (tag_names (quant))[pos])
+		if (any (index ge 0)) then quant_selected[pos] = index
+	end
+	c_quant	= WIDGET_LIST (QU, value=quant_list, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
 	WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+	SEL	= WIDGET_BASE (QU, /row, /align_center)
+	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='Q_ALL')
+	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='Q_DEF')
+	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='Q_NONE')
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
@@ -343,6 +418,19 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (slice eq 1) then cut_x = cut_pos else cut_x = -1
 	if (slice eq 2) then cut_y = cut_pos else cut_y = -1
 	if (slice eq 3) then cut_z = cut_pos else cut_z = -1
+
+	; Build list of selected quantities
+	if (any (quant_selected ge 0)) then begin
+		num = n_elements (quant_selected)
+		for pos=0, num-1 do begin
+			tag = (tag_names (all_quant))[quant_selected[pos]]
+			if (pos eq 0) then begin
+				quantities = create_struct (tag, all_quant.(quant_selected[pos]))
+			end else begin
+				quantities = create_struct (quantities, tag, all_quant.(quant_selected[pos]))
+			end
+		end
+	end
 
 	if (not keyword_set (quiet)) then begin
 		; Print summary

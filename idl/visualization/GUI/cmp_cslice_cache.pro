@@ -10,17 +10,16 @@
 
 
 ; Check value range and extend it, if necessary (for sliders or plotting)
-function get_range, data
+function cslice_get_range, data
 
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	if (abs_scale) then begin
 		min = val_min
 		max = val_max
 	end else begin
-		min = min (data)
-		max = max (data)
+		cslice_get_minmax_value, min, max
 	end
 
 	if (min eq max) then begin
@@ -39,6 +38,29 @@ function get_range, data
 end
 
 
+; Get values for minimum and maximum of the selected data
+pro cslice_get_minmax_value, min, max
+
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
+
+	if (selected_adjust eq 0) then begin
+		tmp_minmax = minmax (cube)
+	end else begin
+		tag = (tag_names (overset))[selected_overplot]
+		res = execute ("tmp_minmax = minmax (oversets[selected_snapshot]."+tag)
+		if (not res) then begin
+			print, "Could not find minmax of selected overplot dataset!"
+			stop
+		end
+	end
+
+	min = min (tmp_minmax)
+	max = max (tmp_minmax)
+end
+
+
 ; Event handling of visualisation window
 pro cslice_event, event
 
@@ -46,8 +68,8 @@ pro cslice_event, event
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, range, jump_min, jump_max
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 
@@ -71,10 +93,10 @@ pro cslice_event, event
 		break
 	end
 	'SUB_AVER': begin
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_b[selected_cube,sub_aver,selected_adjust] = val_min
+		pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 		sub_aver = event.select
-		prepare_cube, -1
+		cslice_prepare_cube, -1
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -84,7 +106,7 @@ pro cslice_event, event
 		break
 	end
 	'SHOW_AVER': begin
-		draw_averages, selected_snapshot
+		cslice_draw_averages, selected_snapshot
 		break
 	end
 	'SHOW_TIME': begin
@@ -196,7 +218,7 @@ pro cslice_event, event
 			val_min = val_max
 			WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		end
-		pos_b[selected_cube,sub_aver] = val_min
+		pos_b[selected_cube,sub_aver,selected_adjust] = val_min
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -206,18 +228,31 @@ pro cslice_event, event
 			val_max = val_min
 			WIDGET_CONTROL, sl_max, SET_VALUE = val_max
 		end
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
 	'MIN_MAX': begin
-		val_min = min (cube)
-		val_max = max (cube)
+		cslice_get_minmax_value, val_min, val_max
 		WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		WIDGET_CONTROL, sl_max, SET_VALUE = val_max
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_b[selected_cube,sub_aver,selected_adjust] = val_min
+		pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		break
+	end
+	'ADJUST': begin
+		if (selected_adjust ne event.index) then begin
+			cslice_get_minmax_value, val_min, val_max
+			pos_b[selected_cube,sub_aver,selected_adjust] = val_min
+			pos_t[selected_cube,sub_aver,selected_adjust] = val_max
+			selected_adjust = event.index
+			val_min = pos_b[selected_cube,sub_aver,selected_adjust]
+			val_max = pos_t[selected_cube,sub_aver,selected_adjust]
+			WIDGET_CONTROL, sl_min, SET_VALUE = min (cube)
+			WIDGET_CONTROL, sl_max, SET_VALUE = max (cube)
+			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		end
 		break
 	end
 	'JUMP_MIN': begin
@@ -256,8 +291,8 @@ pro cslice_event, event
 		WIDGET_CONTROL, sl_min, SENSITIVE = 0
 		WIDGET_CONTROL, sl_max, SENSITIVE = 0
 		WIDGET_CONTROL, freeze, set_value='RELEASE RANGE', set_uvalue='RELEASE'
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_b[selected_cube,sub_aver,selected_adjust] = val_min
+		pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 		frozen = 1
 		break
 	end
@@ -266,22 +301,22 @@ pro cslice_event, event
 		WIDGET_CONTROL, sl_max, SENSITIVE = 1
 		WIDGET_CONTROL, freeze, set_value='FREEZE RANGE', set_uvalue='FREEZE'
 		frozen = 0
-		prepare_cube, -1
+		cslice_prepare_cube, -1
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
 	'VAR': begin
 		if (selected_cube ne event.index) then begin
-			prepare_cube, event.index
+			cslice_prepare_cube, event.index
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		end
 		break
 	end
 	'SNAP': begin
 		if (selected_snapshot ne event.index) then begin
-			prepare_set, event.index
-			prepare_cube, -1
-			prepare_overplot
+			cslice_prepare_set, event.index
+			cslice_prepare_cube, -1
+			cslice_prepare_overplot
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			if (selected_snapshot lt num_snapshots - 1) then prev_active = 1 else prev_active = 0
 			if (selected_snapshot gt 0) then next_active = 1 else next_active = 0
@@ -302,9 +337,9 @@ pro cslice_event, event
 		end
 		WIDGET_CONTROL, prev, SENSITIVE = 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
-		prepare_set, selected_snapshot
-		prepare_cube, -1
-		prepare_overplot
+		cslice_prepare_set, selected_snapshot
+		cslice_prepare_cube, -1
+		cslice_prepare_overplot
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -316,22 +351,22 @@ pro cslice_event, event
 		end
 		WIDGET_CONTROL, next, SENSITIVE = 1
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
-		prepare_set, selected_snapshot
-		prepare_cube, -1
-		prepare_overplot
+		cslice_prepare_set, selected_snapshot
+		cslice_prepare_cube, -1
+		cslice_prepare_overplot
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
 	'OVER': begin
 		if (selected_overplot ne event.index) then begin
 			selected_overplot = event.index
-			prepare_overplot
+			cslice_prepare_overplot
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		end
 		break
 	end
 	'RESET': begin
-		reset_GUI
+		cslice_reset_GUI
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -344,8 +379,8 @@ pro cslice_event, event
 		if (px gt (num_x - 1)) then px = num_x - 1
 		if (py gt (num_y - 1)) then py = num_y - 1
 		if (pz gt (num_z - 1)) then pz = num_z - 1
-		prepare_cube, -1
-		prepare_overplot
+		cslice_prepare_cube, -1
+		cslice_prepare_overplot
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
 		WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
@@ -356,16 +391,16 @@ pro cslice_event, event
 		WIDGET_CONTROL, sl_x, SET_VALUE = px
 		WIDGET_CONTROL, sl_y, SET_VALUE = py
 		WIDGET_CONTROL, sl_z, SET_VALUE = pz
-		WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver]
-		WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver]
+		WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver,selected_adjust]
+		WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver,selected_adjust]
 		WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
 		WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 		break
 	end
 	'SAVE': begin
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
+		pos_b[selected_cube,sub_aver,selected_adjust] = val_min
+		pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 		save, filename=settings_file, num_cubes, selected_cube, selected_overplot, abs_scale, sub_aver, show_cross, px, py, pz, pos_b, pos_t
 		WIDGET_CONTROL, b_load, SENSITIVE = 1
 		break
@@ -383,7 +418,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, timeser, SENSITIVE = 0
 		WIDGET_CONTROL, min_max, SENSITIVE = 0
 		WIDGET_CONTROL, freeze, SENSITIVE = 0
-		WIDGET_CONTROL, range, SENSITIVE = 0
+		WIDGET_CONTROL, adjust, SENSITIVE = 0
 		WIDGET_CONTROL, sl_min, SENSITIVE = 0
 		WIDGET_CONTROL, sl_max, SENSITIVE = 0
 		WIDGET_CONTROL, jump_min, SENSITIVE = 0
@@ -392,25 +427,26 @@ pro cslice_event, event
 		frozen = 1
 		previous_snapshot = selected_snapshot
 		if (num_snapshots gt 1) then begin
+			; last_snapshot = 1
+			; if (selected_snapshot ne 0) then last_snapshot = 0
 			last_snapshot = 1
-			if (selected_snapshot ne 0) then last_snapshot = 0
 			for i = num_snapshots-1, last_snapshot, -1 do begin
-				prepare_set, i
-				prepare_cube, -1
-				prepare_overplot
-				draw_images, 1, 1, 1
+				cslice_prepare_set, i
+				cslice_prepare_cube, -1
+				cslice_prepare_overplot
+				cslice_draw, 1, 1, 1
 				if (eventval eq "IMAGE") then begin
-					save_images, "PNG"
+					cslice_save_images, "PNG", movie_frame=i
 				end else begin
 					wait, min_wait_time[dimensionality-1]
 				end
 			end
 		end else begin
-			if (eventval eq "IMAGE") then save_images, "PNG"
+			if (eventval eq "IMAGE") then cslice_save_images, "PNG", /slices
 		end
-		prepare_set, previous_snapshot
-		prepare_cube, -1
-		prepare_overplot
+		cslice_prepare_set, previous_snapshot
+		cslice_prepare_cube, -1
+		cslice_prepare_overplot
 		frozen = orig_frozen
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		if (num_cubes ge 2) then vars_active = 1 else vars_active = 0
@@ -429,7 +465,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, timeser, SENSITIVE = 1
 		WIDGET_CONTROL, min_max, SENSITIVE = 1
 		WIDGET_CONTROL, freeze, SENSITIVE = 1
-		WIDGET_CONTROL, range, SENSITIVE = 0 ; 1
+		WIDGET_CONTROL, adjust, SENSITIVE = over_active and (selected_overplot ne 0)
 		if (not frozen) then begin
 			WIDGET_CONTROL, sl_min, SENSITIVE = 1
 			WIDGET_CONTROL, sl_max, SENSITIVE = 1
@@ -450,7 +486,7 @@ pro cslice_event, event
 	end
 	endswitch
 
-	draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
+	cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 
@@ -461,13 +497,13 @@ end
 
 
 ; Draws the slices into the window
-pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
+pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, range, jump_min, jump_max
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	; stepping of crosshairs
 	step = 4
@@ -491,7 +527,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		data = reform ((cube[px,*,*] > val_min) < val_max, num_y, num_z)
 		if ((bin_y ne 1) or (bin_z ne 1)) then data = congrid (data, fix (num_y*bin_y), fix (num_z*bin_z), cubic=0)
-		val_range = get_range (data)
+		val_range = cslice_get_range (data)
 		wset, wimg_yz
 		if (show_cross) then begin
 			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do data[i:i+1, pz*bin_z+oz] = val_range
@@ -524,7 +560,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		data = reform ((cube[*, py, *] > val_min) < val_max, num_x, num_z)
 		if ((bin_x ne 1) or (bin_z ne 1)) then data = congrid (data, fix (num_x*bin_x), fix (num_z*bin_z), cubic=0)
-		val_range = get_range (data)
+		val_range = cslice_get_range (data)
 		wset, wimg_xz
 		if (show_cross) then begin
 			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do data[i:i+1, pz*bin_z+oz] = val_range
@@ -557,7 +593,7 @@ pro draw_images, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
 		data = reform ((cube[*, *, pz] > val_min) < val_max, num_x, num_y)
 		if ((bin_x ne 1) or (bin_y ne 1)) then data = congrid (data, fix (num_x*bin_x), fix (num_y*bin_y), cubic=0)
-		val_range = get_range (data)
+		val_range = cslice_get_range (data)
 		wset, wimg_xy
 		if (show_cross) then begin
 			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do data[i:i+1, py*bin_y+oy] = val_range
@@ -590,15 +626,15 @@ end
 
 
 ; Saves images of the slices with the given format
-pro save_images, img_type
+pro cslice_save_images, img_type, slices=slices
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, range, jump_min, jump_max
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
 
-	quantity = set.(selected_cube)
+	quantity = (tag_names (set))[selected_cube]
 	prefix = varfiles[selected_snapshot].title + "_" + quantity
-	if (selected_overplot gt 0) then prefix += "_overplot-" + overplot.(selected_overplot)
+	if (selected_overplot gt 0) then prefix += "_overplot-" + (tag_names (overplot))[selected_overplot]
 	suffix = "." + strlowcase (img_type)
 
 	wset, wimg_xy
@@ -614,19 +650,19 @@ pro save_images, img_type
 	wset, wcut_z
 	save_image, prefix+"_z"+suffix
 
-	save_slices
+	if (keyword_set (slices)) then cslice_save_slices
 end
 
 
 ; Saves the slices into a XDR file
-pro save_slices
+pro cslice_save_slices
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
-        quantity = set.(selected_cube)
+        quantity = (tag_names (set))[selected_cube]
 
 	cut_xy = reform (cube[*,*,pz], num_x, num_y)
 	cut_xz = reform (cube[*,py,*], num_x, num_z)
@@ -650,10 +686,10 @@ end
 
 
 ; Draws horizontally averaged vertical profiles into a second window
-pro draw_averages, number
+pro cslice_draw_averages, number
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	tags = tag_names (varsets[number])
@@ -713,11 +749,11 @@ end
 
 
 ; Prepares a data set for visualisation
-pro prepare_set, i
+pro cslice_prepare_set, i
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	selected_snapshot = i
 
@@ -730,13 +766,13 @@ end
 
 
 ; Prepares a cube for visualisation
-pro prepare_cube, cube_index
+pro cslice_prepare_cube, cube_index
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, range, jump_min, jump_max
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	; SETTINGS:
 	; fraction of box width to keep free of crosshairs at center
@@ -747,7 +783,7 @@ pro prepare_cube, cube_index
 
 	; get selected cube from set
 	if (cube_index ge 0) then selected_cube = cube_index
-	tag = set.(selected_cube)
+	tag = (tag_names (set))[selected_cube]
 	res = execute ("dims = size (varsets[selected_snapshot]."+tag+")")
 	if (not res) then begin
 		print, "Could not determine dimension of selected dataset!"
@@ -766,35 +802,34 @@ pro prepare_cube, cube_index
 	; substract horizontal averages
 	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= mean (cube [*,*,z])
 
-	if (frozen) then begin
-		; find intermediate minimum and maximum values
-		tmp_min = min (cube)
-		tmp_max = max (cube)
+	; find minimum and maximum values
+	cslice_get_minmax_value, tmp_min, tmp_max
 
+	if (frozen) then begin
 		; update slider to intermediate min/max values
 		WIDGET_CONTROL, sl_min, SET_VALUE = [ val_min, (tmp_min < val_min), tmp_max ]
 		WIDGET_CONTROL, sl_max, SET_VALUE = [ val_max, tmp_min, (tmp_max > val_max) ]
 	end else begin
 		; find minimum and maximum values
-		val_min = min (cube)
-		val_max = max (cube)
-		val_range = get_range (cube)
+		val_min = tmp_min
+		val_max = tmp_max
+		val_range = cslice_get_range ([tmp_min, tmp_max])
 
 		; set default slider positions (min/max)
-		if (finite (pos_b[selected_cube,sub_aver], /NaN)) then pos_b[selected_cube,sub_aver] = val_min
-		if (finite (pos_t[selected_cube,sub_aver], /NaN)) then pos_t[selected_cube,sub_aver] = val_max
+		if (finite (pos_b[selected_cube,sub_aver,selected_adjust], /NaN)) then pos_b[selected_cube,sub_aver,selected_adjust] = val_min
+		if (finite (pos_t[selected_cube,sub_aver,selected_adjust], /NaN)) then pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 
 		; adjust slider positions to fit inside value range
-		if (pos_b[selected_cube,sub_aver] lt val_min) then pos_b[selected_cube,sub_aver] = val_min
-		if (pos_t[selected_cube,sub_aver] gt val_max) then pos_t[selected_cube,sub_aver] = val_max
+		if (pos_b[selected_cube,sub_aver,selected_adjust] lt val_min) then pos_b[selected_cube,sub_aver,selected_adjust] = val_min
+		if (pos_t[selected_cube,sub_aver,selected_adjust] gt val_max) then pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 
 		; update slider
-		if (sl_min ne 0) then WIDGET_CONTROL, sl_min, SET_VALUE = [ pos_b[selected_cube,sub_aver], val_range ]
-		if (sl_max ne 0) then WIDGET_CONTROL, sl_max, SET_VALUE = [ pos_t[selected_cube,sub_aver], val_range ]
+		if (sl_min ne 0) then WIDGET_CONTROL, sl_min, SET_VALUE = [ pos_b[selected_cube,sub_aver,selected_adjust], val_range ]
+		if (sl_max ne 0) then WIDGET_CONTROL, sl_max, SET_VALUE = [ pos_t[selected_cube,sub_aver,selected_adjust], val_range ]
 
 		; get desired min/max values from sliders
-		val_min = pos_b[selected_cube,sub_aver]
-		val_max = pos_t[selected_cube,sub_aver]
+		val_min = pos_b[selected_cube,sub_aver,selected_adjust]
+		val_max = pos_t[selected_cube,sub_aver,selected_adjust]
 	end
 
 	; setup crosshairs parameters
@@ -807,14 +842,14 @@ end
 
 
 ; Prepares an overplot for visualisation
-pro prepare_overplot
+pro cslice_prepare_overplot
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, range, jump_min, jump_max
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	; SETTINGS:
 	; distance of vector footpoint locations
@@ -827,7 +862,7 @@ pro prepare_overplot
 	if (selected_overplot le 0) then return
 
 	; get selected overplot from set
-	tag = overplot.(selected_overplot)
+	tag = (tag_names (overplot))[selected_overplot]
 	res_x = execute ("field_x = oversets[selected_snapshot]."+tag+"[*,*,*,0]")
 	res_y = execute ("field_y = oversets[selected_snapshot]."+tag+"[*,*,*,1]")
 	res_z = execute ("field_z = oversets[selected_snapshot]."+tag+"[*,*,*,2]")
@@ -846,8 +881,7 @@ pro prepare_overplot
 	field_y = reform (field_y[cut], size_field_y[1], size_field_y[2], size_field_y[3])
 	field_z = reform (field_z[cut], size_field_z[1], size_field_z[2], size_field_z[3])
 
-	if (strpos (tag, "_velovect") gt 0) then overplot_contour = 0
-	if (strpos (tag, "_contour") gt 0) then overplot_contour = 1
+	if (strpos (strlowcase (tag), "_contour") gt 0) then overplot_contour = 1
 
 	if (overplot_contour eq 1) then begin
 		; setup contour plot
@@ -882,16 +916,18 @@ end
 
 
 ; Resets everything and redraws the window
-pro reset_GUI
+pro cslice_reset_GUI
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, range, jump_min, jump_max
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	selected_cube = 0
 	selected_overplot = 0
+	selected_snapshot = 0
+	selected_adjust = 0
 	abs_scale = 1
 	sub_aver = 0
 	show_cross = 1
@@ -899,11 +935,11 @@ pro reset_GUI
 	px = num_x / 2
 	py = num_y / 2
 	pz = num_z / 2
-	pos_b = replicate (!VALUES.D_NAN, num_cubes, 2)
-	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2)
+	pos_b = replicate (!VALUES.D_NAN, num_cubes, 2, 2)
+	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2, 2)
 
-	prepare_cube, -1
-	prepare_overplot
+	cslice_prepare_cube, -1
+	cslice_prepare_overplot
 
 	WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
 	WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
@@ -914,11 +950,12 @@ pro reset_GUI
 	WIDGET_CONTROL, sl_x, SET_VALUE = px
 	WIDGET_CONTROL, sl_y, SET_VALUE = py
 	WIDGET_CONTROL, sl_z, SET_VALUE = pz
-	WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver]
-	WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver]
+	WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver,selected_adjust]
+	WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver,selected_adjust]
 	WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
 	WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
 	WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
+	WIDGET_CONTROL, adjust, SET_DROPLIST_SELECT = selected_adjust
 
 	if (num_snapshots ge 2) then prev_active = 1 else prev_active = 0
 	next_active = 0
@@ -926,7 +963,7 @@ pro reset_GUI
 	WIDGET_CONTROL, next, SENSITIVE = next_active
 	WIDGET_CONTROL, min_max, SENSITIVE = 1
 	WIDGET_CONTROL, freeze, SENSITIVE = 1
-	WIDGET_CONTROL, range, SENSITIVE = 0 ; 1
+	WIDGET_CONTROL, adjust, SENSITIVE = 0
 end
 
 
@@ -937,8 +974,8 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, range, jump_min, jump_max
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	; DEFAULT SETTINGS:
 	abs_scale = 1
@@ -949,6 +986,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	selected_cube = 0
 	selected_overplot = 0
 	selected_snapshot = 0
+	selected_adjust = 0
 	af_x = 0
 	af_y = 0
 	af_z = 0
@@ -1014,23 +1052,25 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	sl_max = 0
 	min_max = 0
 	freeze = 0
-	range = 0
+	adjust = 0
 
 	num_snapshots = n_elements (varfiles)
 	snaps = varfiles[*].title + " (" + strtrim (varfiles[*].time, 2) + " " + unit.default_time_str + ")"
 
-	tags = tag_names (set)
 	num_cubes = n_tags (set)
+	tags = strarr (num_cubes)
+	for pos=0, num_cubes-1 do tags[pos] = set.(pos)
 
-	overs = tag_names (overplot)
 	num_overs = n_tags (overplot)
+	overs = strarr (num_overs)
+	for pos=0, num_overs-1 do overs[pos] = overplot.(pos)
 
-	pos_b = replicate (!VALUES.D_NAN, num_cubes, 2)
-	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2)
+	pos_b = replicate (!VALUES.D_NAN, num_cubes, 2, 2)
+	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2, 2)
 
 
-	prepare_set, 0
-	prepare_cube, -1
+	cslice_prepare_set, 0
+	cslice_prepare_cube, -1
 
 
 	if (num_x*scaling[0] lt min_size) then scaling[0] = min_size / num_x
@@ -1128,7 +1168,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	bcol	= WIDGET_BASE (bcot, /col)
 	min_max	= WIDGET_BUTTON (bcol, value='<= min SET max =>', uvalue='MIN_MAX', xsize=120)
 	freeze	= WIDGET_BUTTON (bcol, value='FREEZE RANGE', uvalue='FREEZE', xsize=120)
-	range	= WIDGET_DROPLIST (bcol, value=['data set', 'overplot'], uvalue='RANGE', sensitive=0, EVENT_PRO=cslice_event, title='values')
+	adjust	= WIDGET_DROPLIST (bcol, value=['quantity', 'overplot'], uvalue='ADJUST', sensitive=0, EVENT_PRO=cslice_event, title='adjust:')
 	sl_max	= CW_FSLIDER (bcot, title='upper value (white level)', uvalue='SCALE_TOP', /double, /edit, min=val_range[0], max=val_range[1], drag=1, value=val_max, xsize=sl_size)
 
 	bsubcol	= WIDGET_BASE (bcot, /col)
@@ -1160,7 +1200,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	XMANAGER, "cslice", MOTHER, /no_block
 
-	reset_GUI
-	draw_images, 1, 1, 1
+	cslice_reset_GUI
+	cslice_draw, 1, 1, 1
 end
 
