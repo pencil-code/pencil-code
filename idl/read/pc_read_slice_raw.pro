@@ -190,8 +190,10 @@ COMPILE_OPT IDL2,HIDDEN
   content = ''
   for iv=0L, totalvars-1L do begin
     if (varcontent[iv].idlvar eq "uu") then begin
+      tag_str += ', uu:[' + strtrim (iv, 2) + ',' + strtrim (iv+1, 2) + ',' + strtrim (iv+2, 2) + ']'
       tag_str += ', ux:' + strtrim (iv, 2) + ', uy:' + strtrim (iv+1, 2) + ', uz:' + strtrim (iv+2, 2)
     endif else if (varcontent[iv].idlvar eq "aa") then begin
+      tag_str += ', aa:[' + strtrim (iv, 2) + ',' + strtrim (iv+1, 2) + ',' + strtrim (iv+2, 2) + ']'
       tag_str += ', ax:' + strtrim (iv, 2) + ', ay:' + strtrim (iv+1, 2) + ', az:' + strtrim (iv+2, 2)
     endif else begin
       tag_str += ', ' + varcontent[iv].idlvar + ':' + strtrim (iv, 2)
