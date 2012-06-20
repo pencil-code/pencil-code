@@ -35,7 +35,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc', 'ss' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -241,6 +241,18 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     except:
         pass
     
+    try:
+        index = variables.index('ss')
+        print 'writing ss'
+        fd.write('SCALARS ss float\n')
+        fd.write('LOOKUP_TABLE default\n')    
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", var.ss[k,j,i]))                    
+    except:
+        pass
+      
     fd.close()
 
 
@@ -254,7 +266,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
     call signature::
     
-      pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
+      pc2vtk(ti = 0, tf = 1, datadir = 'data/', proc = -1,
            variables = ['rho','uu','bb'], magic = ['vort','bb'],
            destination = 'animation')
     
@@ -275,7 +287,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc', 'ss' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -484,7 +496,19 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         except:
             pass
         
-        fd.close()
+    try:
+        index = variables.index('ss')
+        print 'writing ss'
+        fd.write('SCALARS ss float\n')
+        fd.write('LOOKUP_TABLE default\n')    
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", var.ss[k,j,i]))                    
+    except:
+        pass
+      
+    fd.close()
 
 
 
