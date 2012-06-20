@@ -18,12 +18,13 @@ from matplotlib.colors import LightSource
 def animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
                         fontsize = 24, cBar = 0, sloppy = True,
-                        rangeMin = [], rangeMax = [],
+                        rangeMin = [], rangeMax = [], extent = [-1,1,-1,1],
                         shade = False, azdeg = 0, altdeg = 65,
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
                         arrowsColor = 'black', plotArrowsGrid = False,
                         movieFile = '', bitrate = 1800, keepImages = False,
+                        figsize = (8, 7), dpi = None,
                         **kwimshow):
     """
     Assemble a 2D animation from a 3D array.
@@ -33,12 +34,13 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
       animate_interactive(data, t = [], dimOrder = (0,1,2),
                         fps = 10.0, title = '', xlabel = 'x', ylabel = 'y',
                         fontsize = 24, cBar = 0, sloppy = True,
-                        rangeMin = [], rangeMax = [],
+                        rangeMin = [], rangeMax = [], extent = [-1,1,-1,1],
                         shade = False, azdeg = 0, altdeg = 65,
                         arrowsX = np.array(0), arrowsY = np.array(0), arrowsRes = 10,
                         arrowsPivot = 'mid', arrowsWidth = 0.002, arrowsScale = 5,
                         arrowsColor = 'black', plotArrowsGrid = False,
                         movieFile = '', bitrate = 1800, keepImages = False,
+                        figsize = (8, 7), dpi = None,
                         **kwimshow)
     
     Assemble a 2D animation from a 3D array. *data* has to be a 3D array who's
@@ -64,6 +66,8 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
        
      *fontsize*:
        Font size of the title, x and y label.
+       The size of the x- and y-ticks is 0.7*fontsize and the colorbar ticks's
+       font size is 0.5*fontsize.
        
      *cBar*: [ 0 | 1 | 2 ]
        Determines how the colorbar changes:
@@ -75,6 +79,10 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
      
      *rangeMin*, *rangeMax*:
        Range of the colortable.
+       
+     *extent*: [ None | scalars (left, right, bottom, top) ]
+       Data limits for the axes. The default assigns zero-based row,
+       column indices to the *x*, *y* centers of the pixels.
        
      *shade*: [ False | True ]
        If True plot a shaded relief plot instead of the usual colormap.
@@ -119,6 +127,12 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
        
      *keepImages*: [ False | True ]
        If 'True' the images for the movie creation are not deleted.
+     
+     *figsize*:
+       Size of the figure in inches.
+      
+     *dpi*:
+       Dots per inch of the frame.
      
      **kwimshow:
        Remaining arguments are identical to those of pylab.imshow. Refer to that help.
@@ -165,7 +179,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
             if movieFile:
                 plotFrame()
                 frameName = movieFile + '%06d.png'%tStep
-                fig.savefig(frameName)
+                fig.savefig(frameName, dpi = dpi)
                 movieFiles.append(frameName)
             else:
                 start = time.clock()
@@ -273,28 +287,29 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     
     # setup the plot
     if movieFile:
-        width = 8
-        height = 7
-        plt.rc("figure.subplot", left=(90/72.27)/width)
-        plt.rc("figure.subplot", right=(width-20/72.27)/width)
-        plt.rc("figure.subplot", bottom=(60/72.27)/height)
-        plt.rc("figure.subplot", top=(height-20/72.27)/height)
-        fig = plt.figure(figsize=(width, height))        
-        ax = plt.axes([0.11, 0.1, .90, .85])
+        width = figsize[0]
+        height = figsize[1]
+        plt.rc("figure.subplot", bottom=0.15)
+        plt.rc("figure.subplot", top=0.95)
+        plt.rc("figure.subplot", right=0.95)
+        plt.rc("figure.subplot", left=0.15)
+        fig = plt.figure(figsize = figsize)
+        ax = plt.axes([0.1, 0.1, .90, .85])
     else:
-        width = 8
-        height = 7
-        plt.rc("figure.subplot", left=(90/72.27)/width)
-        plt.rc("figure.subplot", right=(width-20/72.27)/width)
-        plt.rc("figure.subplot", bottom=(60/72.27)/height)
-        plt.rc("figure.subplot", top=(height-20/72.27)/height)
-        fig = plt.figure(figsize=(width, height))
+        width = figsize[0]
+        height = figsize[1]
+        plt.rc("figure.subplot", bottom=0.05)
+        plt.rc("figure.subplot", top=0.95)
+        plt.rc("figure.subplot", right=0.95)
+        plt.rc("figure.subplot", left=0.15)
+        fig = plt.figure(figsize = figsize)
         ax = plt.axes([0.1, 0.25, .85, .70])
-        #ax = fig.add_subplot(111)
     
     ax.set_title(title, fontsize = fontsize)
     ax.set_xlabel(xlabel, fontsize = fontsize)
     ax.set_ylabel(ylabel, fontsize = fontsize)
+    plt.xticks(fontsize = 0.7*fontsize)
+    plt.yticks(fontsize = 0.7*fontsize)
     if shade:
         plane = np.zeros((nX,nY,3))
     else:
@@ -304,7 +319,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     if shade:
         ls = LightSource(azdeg = azdeg, altdeg = altdeg)
         rgb = []
-        # shading can be only used with cBar = 2 or cBar = 3 at the moment
+        # shading can be only used with cBar = 1 or cBar = 2 at the moment
         if cBar == 0:
             cBar = 1
         # check if colormap is set, if not set it to 'copper'
@@ -317,14 +332,17 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         tmp = []
         
     # calibrate the displayed colors for the data range
-    image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax,origin='lower', **kwimshow)
+    image = ax.imshow(plane, vmin=rangeMin, vmax=rangeMax, origin='lower', extent = extent, **kwimshow)
     colorbar = fig.colorbar(image)
+    # change the font size of the colorbar's ytickslabels
+    cbytick_obj = plt.getp(colorbar.ax.axes, 'yticklabels')
+    plt.setp(cbytick_obj, fontsize = 0.5*fontsize)
     
     # plot the arrows
     # TODO: add some more options
     if plotArrows:
         # prepare the mash grid where the arrows will be drawn
-        arrowGridX, arrowGridY = np.meshgrid(np.arange(0, len(data[0,:,0]), arrowsRes), np.arange(0, len(data[0,0,:]), arrowsRes))
+        arrowGridX, arrowGridY = np.meshgrid(np.arange(extent[0], extent[1], float(extent[1]-extent[0])*arrowsRes/len(data[0,:,0])), np.arange(extent[2], extent[3], float(extent[3]-extent[2])*arrowsRes/len(data[0,0,:])))        
         arrows = ax.quiver(arrowGridX, arrowGridY, arrowsX[0,::arrowsRes,::arrowsRes], arrowsY[0,::arrowsRes,::arrowsRes], units = 'width', pivot = arrowsPivot, width = arrowsWidth, scale = arrowsScale, color = arrowsColor)
         # plot the grid for the arrows
         if plotArrowsGrid == True:
