@@ -130,8 +130,7 @@ pro select_files_event, event
 	'Q_DEF':
 	'CONT': begin
 		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
-		quant_avail = quant_list
-		quant_avail[*] = "[N/A]"
+		quant_avail = "[N/A] ("+quant_list+")"
 		quant_selected = -1
 		if (any (cont_selected ge 0)) then begin
 			avail = pc_check_quantities (check=all_quant, sources=sources[cont_selected], /indices)
