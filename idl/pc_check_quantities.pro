@@ -82,17 +82,20 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Temp:'temperature', $
 		ln_Temp:'ln temperature', $
 		log_Temp:'log temperature', $
-		j:'currentdensity', $
+		j_abs:'currentdensity', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_viscous:'viscous heating rate', $
 		rho_mag:'magnetic energy', $
-		bx:'magnetic field x', $
-		by:'magnetic field y', $
-		bz:'magnetic field z', $
-		u_abs:'velocity', $
+		A_x:'magnetic vector potential x', $
+		A_y:'magnetic vector potential y', $
+		A_z:'magnetic vector potential z', $
+		B_x:'magnetic field x', $
+		B_y:'magnetic field y', $
+		B_z:'magnetic field z', $
 		u_x:'velocity x', $
 		u_y:'velocity y', $
 		u_z:'velocity z', $
+		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
 		rho_u_z:'impulse density z', $
 		Rn_visc:'viscous Rn', $
@@ -100,9 +103,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho_c:'minimum density', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_dt:'Spitzer timestep', $
+		Spitzer_ratio:'Spitzer par./perp. heatflux', $
 		rho:'density', $
 		ln_rho:'ln density', $
-		log_rho:'log density' $
+		log_rho:'log density', $
+		n_rho:'particle density' $
 	}
 
 	; List of dependencies.
@@ -111,28 +116,33 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_Temp:'Temp', $
 		log_Temp:'Temp', $
 		B:'aa', $
-		j:'B', $
-		HR_ohm:'B', $
-		HR_viscous:'rho', $
+		jj:'aa', $
+		j_abs:'jj', $
+		HR_ohm:'jj', $
+		HR_viscous:['u', 'rho'], $
 		rho_mag:'B', $
-		bx:'B', $
-		by:'B', $
-		bz:'B', $
+		A_x:'aa', $
+		A_y:'aa', $
+		A_z:'aa', $
+		B_x:'B', $
+		B_y:'B', $
+		B_z:'B', $
 		u:'uu', $
-		u_abs:'u', $
 		u_x:'u', $
 		u_y:'u', $
 		u_z:'u', $
+		u_abs:'u', $
 		P_therm:['Temp', 'rho'], $
 		rho_u_z:['u', 'rho'], $
 		Rn_visc:'u', $
 		Rn_mag:'u', $
 		rho_c:'rho', $
-		Spitzer_q:'Temp', $
-		Spitzer_dt:'Temp', $
+		Spitzer_q:['Temp', 'B'], $
+		Spitzer_dt:['Temp', 'B', 'n_rho'], $
 		rho:{ rho:['lnrho', 'rho'] }, $
 		ln_rho:'rho', $
-		log_rho:'rho' $
+		log_rho:'rho', $
+		n_rho:'rho' $
 	}
 
 	; Fill default values
