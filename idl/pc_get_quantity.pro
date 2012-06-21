@@ -184,7 +184,7 @@ function pc_compute_quantity, vars, index, quantity
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			grad_ln_Temp = (grad (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*]
 		end
-		dt = run_par.cdtv / (start_par.gamma * start_par.cp * run_par.K_spitzer) * rho / (Temp^2.5) * (unit.time * unit.temperature^2.5 / unit.density)
+		dt = run_par.cdtv / (start_par.gamma * start_par.cp * run_par.K_spitzer) * rho * sqrt (dot2 (bb) * dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
 		; The z-direction may have a non-uniform gird, but not the x- and y-direction
 		dxy_1 = dx_1[0]^2 + dy_1[0]^2
 		for pz = 0, nz - 1 do dt[*,*,pz] /= dxy_1 + dz_1[pz]^2
