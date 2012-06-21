@@ -104,9 +104,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho_u_z:'impulse density z', $
 		Rn_visc:'viscous Rn', $
 		Rn_mag:'magnetic Rn', $
+		q_sat:'saturation heatflux', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_dt:'Spitzer timestep', $
-		Spitzer_ratio:'Spitzer par./perp. heatflux', $
+		Spitzer_ratio:'Spitzer perp./par. heatflux', $
 		rho_c:'minimum density (Alfven < c)', $
 		rho:'density', $
 		ln_rho:'ln density', $
@@ -143,6 +144,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho_u_z:['u', 'rho'], $
 		Rn_visc:'u', $
 		Rn_mag:['u','B'], $
+		q_sat:['Temp', 'rho'], $
 		Spitzer_q:['Temp'], $
 		Spitzer_dt:['Temp', 'rho', 'B'], $
 		Spitzer_ratio:['Temp', 'B', 'n_rho'], $

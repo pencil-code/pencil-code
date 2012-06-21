@@ -167,11 +167,18 @@ function pc_compute_quantity, vars, index, quantity
 		end
 	end
 
+	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
+		; Absolute value of the saturation heat flux density vector q [W/m^2] = [kg/s^3]
+		if (not any (tag_names (run_par) eq "KSAT")) then message, "Can't compute '"+quantity+"' without parameter 'Ksat'"
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		return, run_par.Ksat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
+	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
 		; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
 		if (not any (tag_names (run_par) eq "K_SPITZER")) then message, "Can't compute '"+quantity+"' without parameter 'K_SPITZER'"
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, run_par.K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^2.5)
+		return, run_par.K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
 	end
 	if (strcmp (quantity, 'Spitzer_dt', /fold_case)) then begin
 		; Spitzer heat flux timestep [s]
@@ -191,11 +198,11 @@ function pc_compute_quantity, vars, index, quantity
 		return, dt
 	end
 	if (strcmp (quantity, 'Spitzer_ratio', /fold_case)) then begin
-		; Ratio of perpendicular and parallel Spitzer heat conduction coefficients
+		; Ratio of perpendicular to parallel Spitzer heat conduction coefficients
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
-		return, 2.e-31 * n_rho^2 / (Temp^3 * dot2 (bb))
+		return, 2.e-31 * n_rho^2 / (Temp^3 * dot2 (bb)) ; [Solar MHD, E. Priest (1982/1984), p. 86]
 	end
 
 	if (strcmp (quantity, 'rho', /fold_case)) then begin
