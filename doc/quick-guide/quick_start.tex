@@ -110,7 +110,7 @@ if [ -e $PENCIL_HOME/sourceme.sh ]; then
 fi
 \end{verbatim}
 
- Also add the following useful alias:
+Also add the following useful alias:
 
 With tcsh: \texttt{alias pc 'cd \$PENCIL\_HOME'}
 With bash: \texttt{alias pc='cd \$PENCIL\_HOME'}
@@ -125,14 +125,16 @@ With bash: \texttt{source .bashrc}
 
 \section{Configure makefile.}
 
-Get host-id:
+In order to run the code a proper configuration file is needed. This file should contain all the information related with the compilers and their special options.
+
+The configuration files should be located in the \verb|config| directory and should have a special name related with the host-id. This id is easyly obtained by:  
 \begin{verbatim}
 pc_build --debug
 \end{verbatim}
-Create a new config file in:
-\texttt{config/hosts/illa/host-veto-GNU\_Linux-Fedora.conf}
+And now create a new config file in:
+\texttt{config/hosts/illa/HOST-ID.conf}
 
-My config file:
+The next step is customize this file, for example:
 \begin{verbatim}
 # Linux.conf
 #
@@ -236,7 +238,14 @@ integer, parameter :: nxgrid=128,nygrid=1,nzgrid=128
 \end{verbatim}
 
 \subsection{Run configuration files}
-Three basic files: print.in, run.in and start.in.
+
+There are three basic configuration files where all the physics and outputs are specify: print.in, run.in and start.in.
+\begin{itemize}
+ \item \verb|print.in|: write here all the input magnitudes you need.
+  \item \verb|run.in|: parameters values, number of timesteps,...
+  \item \verb|start.in|: Initialisation parameters
+\end{itemize}
+
 
 
 \section{Running the code}
