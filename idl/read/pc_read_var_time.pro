@@ -85,7 +85,7 @@ COMPILE_OPT IDL2,HIDDEN
       pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
     endif else begin
       pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-      procdim = dim
+      dim = procdim
     end
   endif
   if (n_elements(param) eq 0) then $
