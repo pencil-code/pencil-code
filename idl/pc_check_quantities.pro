@@ -144,7 +144,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Rn_visc:'u', $
 		Rn_mag:['u','B'], $
 		Spitzer_q:['Temp'], $
-		Spitzer_dt:['Temp', 'B'], $
+		Spitzer_dt:['Temp', 'rho', 'B'], $
 		Spitzer_ratio:['Temp', 'B', 'n_rho'], $
 		rho_c:['rho', 'B'], $
 		rho:{ rho:['lnrho', 'rho'] }, $
