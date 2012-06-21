@@ -77,11 +77,16 @@ COMPILE_OPT IDL2,HIDDEN
 ; Get necessary dimensions quietly.
 ;
   if (n_elements(dim) eq 0) then begin
-    if (allprocs gt 0) then begin
+    if (allprocs ge 1) then begin
       pc_read_dim, object=dim, datadir=datadir, /quiet
     endif else begin
       pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
     endelse
+    if (allprocs eq 2) then begin
+      pc_read_dim, object=procdim, datadir=datadir, /quiet
+    end else begin
+      procdim = dim
+    end
   endif
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
@@ -134,7 +139,7 @@ COMPILE_OPT IDL2,HIDDEN
   openr, file, filename, /f77, swap_endian=swap_endian
   if (precision eq 'D') then bytes=8 else bytes=4
   if (f77 eq 0) then markers=0 else markers=2
-  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(dim.mvar*bytes)+long64(markers*4)
+  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(procdim.mz)*long64(dim.mvar*bytes)+long64(markers*4)
   if (allprocs eq 1) then begin
     ; collectively written files
     readu, file, t, x, y, z, dx, dy, dz
