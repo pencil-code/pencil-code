@@ -1022,29 +1022,68 @@ sub handle_rerun {
     my ($action) = @_;
 
     if (-e $rerunfile) {
+        my $separator_line = '=' x 70 . "\n";
         unlink $rerunfile;
         if ($action == \&run_cmd) {
+            print $separator_line;
+            print "Found RERUN file\n";
+            print "Rerunning in same directory\n";
+            print $separator_line;
             &$action();
         }
     }
 }
 # ---------------------------------------------------------------------- #
 sub handle_newdir {
-# If a NEWDIR file exists:
-# Read its first line into $newdir.
-# Remove NEWDIR.
+# If a NEWDIR file exists, try to rerun 'run' action there.
+# If this doesn't make sense, rerun 'run' action here.
     my ($action) = @_;
 
     if (-e $newdirfile) {
+        my $separator_line = '=' x 70 . "\n";
+        my $new_dir = (get_file_content($newdirfile))[0];
+        clear_lock();
         unlink $newdirfile;
+        my $old_dir = getcwd();
         if ($action == \&run_cmd) {
-            my $newdir = (get_file_content($newdirfile))[0];
-            if (-d $newdir && is_run_directory($newdir)) {
-                chdir $newdir;
+            if (-d $new_dir && is_run_directory($new_dir)) {
+                chdir $new_dir;
+                append_to_file_with_timestamp(
+                    "$old_dir/$data_dir/directory_change.log",
+                    ("Stopped run",
+                     "New run directory: $new_dir"
+                    ));
+                append_to_file_with_timestamp(
+                    "$new_dir/$data_dir/directory_change.log",
+                    ("Transferred here via NEWDIR",
+                     "Old run directory: $new_dir"
+                    ));
+                print $separator_line;
+                print "Found NEWDIR file\n";
+                print "Rerunning in new directory <$new_dir>\n";
+
+                # Run start.x if necessary
+                if (requires_start()) {
+                    print "Didn't find a var.dat file => running start.x\n";
+                    print $separator_line;
+                    my $start_action = $dispatch_table{'start'};
+                    &$start_action();
+                } else {
+                    print $separator_line;
+                }
                 &$action();
             } else {
-                print STDERR
-                  "NEWDIR directory <$newdir> is not a run directory\n";
+                my $message = "NEWDIR directory <$new_dir>";
+                if (-e $new_dir) {
+                    $message .= " is not a run directory.\n";
+                } else {
+                    $message .= " does not exist.\n";
+                }
+                $message .= "Rerunning in original directory <$old_dir>\n";
+                print $separator_line;
+                print $message;
+                print $separator_line;
+
                 &$action();
             }
         }
@@ -1054,9 +1093,11 @@ sub handle_newdir {
 sub is_run_directory {
     my ($dir) = @_;
 
-    for my $f ('run.in', 'src/run.x') {
-        return 0 unless (-e "$dir/$f");
+    foreach my $f ('run.in', 'src/run.x') {
+        return 0 unless -e "$dir/$f";
     }
+
+    return 1;
 }
 # ---------------------------------------------------------------------- #
 sub kill_remote_processes {
@@ -1291,6 +1332,25 @@ sub append_to_file {
 # Append @text (line-wise) to the given file
     my ($filename, @text) = @_;
 
+    open my $fh, ">> $filename"
+      or die "Cannot open $filename for appending: $!\n";
+
+    foreach my $line (@text) {
+        chomp $line;
+        print $fh $line, "\n";
+    }
+
+    close $fh or die "Cannot close $filename: $!\n";
+}
+# ---------------------------------------------------------------------- #
+sub append_to_file_with_timestamp {
+# Append @text (line-wise) to the given file, prepending a timestamp to
+# each line
+    my ($filename, @text) = @_;
+
+    my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
+    my @new_text = map { $_ = $timestamp . " " . $_ } @text;
+    append_to_file($filename, @text);
     open my $fh, ">> $filename"
       or die "Cannot open $filename for appending: $!\n";
 
