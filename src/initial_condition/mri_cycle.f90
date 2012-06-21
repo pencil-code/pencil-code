@@ -1,12 +1,12 @@
 !  
 !
 !  Initial condition (magnetic field, velocity) 
-!  for MRI wave as described in 
-! "Periodic magnetorotational dynamo action as a prototype of nonlinear magnetic field generation in shear flows"
-! J. Herault (IRAP Toulouse, ENS Paris), F. Rincon (IRAP Toulouse), C. Cossu (IMFT Toulouse), 
-! G. Lesur (IPAG Grenoble, DAMTP Cambridge), G. I. Ogilvie (DAMTP Cambridge), P.-Y. Longaretti (IPAG Grenoble)
-! (arXiv:1109.1811)
+!   for the MRI cycle described in 
 !
+!  "Periodic magnetorotational dynamo action as a prototype 
+!   of nonlinear magnetic field generation in shear flows"
+!   by Herault, Rincon, Cossu, Lesur, Ogilvie & Longaretti
+!   (arXiv:1109.1811)
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -29,7 +29,7 @@ module InitialCondition
 !
   real :: kx,ky,kz0,ampl_norm=0.3,power_kz=0.
   real,dimension(:),allocatable,save :: ampl_kz
-  integer :: nikz=16
+  integer :: nikz=1
   character (len=labellen) :: kzspec='none'
   real :: ampl_kz0
 !
@@ -97,9 +97,12 @@ module InitialCondition
           kz0=kz
           if (ikz.eq.0) kz0=1.
           kvec=sqrt(kx*kx+ky*ky+kz*kz)
-          f(:,m,n,iux) = f(:,m,n,iux) + ampl_kz(ikz)*(kx/kvec)*cos(kx*x+ky*y(m)+kz*z(n))
-          f(:,m,n,iuy) = f(:,m,n,iuy) + ampl_kz(ikz)*(ky/kvec)*cos(kx*x+ky*y(m)+kz*z(n))
-          f(:,m,n,iuz) = f(:,m,n,iuz) + ampl_kz(ikz)*(kz/kvec)*cos(kx*x+ky*y(m)+kz*z(n))
+          f(:,m,n,iux) = f(:,m,n,iux) + ampl_kz(ikz)*(kx/kvec) &
+              *cos(kx*x+ky*y(m)+kz*z(n))
+          f(:,m,n,iuy) = f(:,m,n,iuy) + ampl_kz(ikz)*(ky/kvec) &
+              *cos(kx*x+ky*y(m)+kz*z(n))
+          f(:,m,n,iuz) = f(:,m,n,iuz) + ampl_kz(ikz)*(kz/kvec) &
+              *cos(kx*x+ky*y(m)+kz*z(n))
         enddo
       enddo;enddo
 !
@@ -130,15 +133,31 @@ module InitialCondition
       kx=-2*pi/Lx
       ky=2*pi/Ly
       do m=1,my;do n=1,mz
+!
+! full spectrum (in kz) of leading (in x,y) shearing-wave packets
+!
         do ikz=0,nikz-1
           kz=(2*pi/Lz)*ikz
           kz0=kz
           if (ikz.eq.0) kz0=1.
           kvec=sqrt(kx*kx+ky*ky+kz*kz)
-          f(:,m,n,iax) = f(:,m,n,iax) + ampl_kz(ikz)*(sqrt(ky*ky+kz*kz)/(kz0*ky))*sin(kx*x+ky*y(m)+kz*z(n))
-          f(:,m,n,iay) = f(:,m,n,iay) + ampl_kz(ikz)*(sqrt(kx*kx+kz*kz)/(kz0*kx))*sin(kx*x+ky*y(m)+kz*z(n))
-          f(:,m,n,iaz) = f(:,m,n,iaz) + ampl_kz(ikz)*(sqrt(ky*ky+kx*kx)/(kx*ky))*sin(kx*x+ky*y(m)+kz*z(n))
+          f(:,m,n,iax) = f(:,m,n,iax) + ampl_kz(ikz) &
+              *(sqrt(ky*ky+kz*kz)/(kz0*ky))*sin(kx*x+ky*y(m)+kz*z(n))
+          f(:,m,n,iay) = f(:,m,n,iay) + ampl_kz(ikz) &
+              *(sqrt(kx*kx+kz*kz)/(kz0*kx))*sin(kx*x+ky*y(m)+kz*z(n))
+          f(:,m,n,iaz) = f(:,m,n,iaz) + ampl_kz(ikz) &
+              *(sqrt(ky*ky+kx*kx)/(kx *ky))*sin(kx*x+ky*y(m)+kz*z(n))
         enddo
+!
+! fundamental mode B_{0x}
+!
+        kz = 2*pi/Lz
+        f(:,m,n,iay) = f(:,m,n,iay) - 0.046*qshear*sin(kz*z(n))/kz
+!
+! modulation B_{mod y}
+!
+        kx = 2*pi/Lx
+        f(:,m,n,iax) = f(:,m,n,iax) + 0.110*qshear*sin(kz*z(n))/kz *cos(kx*x)
       enddo;enddo
 !
     endsubroutine initial_condition_aa
