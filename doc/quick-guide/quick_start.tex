@@ -32,11 +32,9 @@
 \setlength{\textheight}{10.0in}
 
 \title{Pencil-code: quick reference guide.}
-%\dedicatory{pa mi}
 
+\author{Illa R. Losada, Michiel Lambrechts, Elizabeth Cole }
 
-\author{Illa R. Losada}
-\date{}
 
 \begin{document}
 \maketitle
@@ -393,23 +391,10 @@ the time series data.
 \begin{verbatim}
 IDL> pc_read_ts, obj=ts
 \end{verbatim}
-The object \verb|ts| contains several variables, which can be inspected
-\begin{verbatim}
-IDL> print, tag_names(ts.t)
-IT T UMAX RHOMAX
-\end{verbatim}
-In fact, the maximal density is available because it was set in
-\verb|jeans-x/print.in| which contains the so-called diagnostic output
-(for more, see manual section 5.4). 
-We can plot the exponential growth rate of the mode we excited
-\begin{verbatim}
-IDL> plot, ts.t, alog(ts.umax)
-\end{verbatim}
-Here we plotted the evolution of the maximal velocity as a function of physical
-time $t$.
 
-% TODO Insert a screen shot of the IDL window
+\section{Another example: helically forced turbulence.}
 
-Another sample is illustrated in the manual in section 3.1.6.
+\input{example2}
+
 
 \end{document}
