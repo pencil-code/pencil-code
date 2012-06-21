@@ -77,14 +77,14 @@ COMPILE_OPT IDL2,HIDDEN
 ; Get necessary dimensions quietly.
 ;
   if (n_elements(dim) eq 0) then begin
-    if (allprocs ge 1) then begin
+    if (allprocs eq 1) then begin
       pc_read_dim, object=dim, datadir=datadir, /quiet
+      procdim = dim
+    endif else if (allprocs eq 2) then begin
+      pc_read_dim, object=dim, datadir=datadir, /quiet
+      pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
     endif else begin
-      pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
-    endelse
-    if (allprocs eq 2) then begin
-      pc_read_dim, object=procdim, datadir=datadir, /quiet
-    end else begin
+      pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
       procdim = dim
     end
   endif
