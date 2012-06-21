@@ -6,7 +6,8 @@
 # Default settings for gfortran compiler
 #
 
-FC=gfortran
+#FC=gfortran
+FC=mpif90
 FFLAGS=-O3
 FFLAGS_DOUBLE=-fdefault-real-8
 F77=$(FC)

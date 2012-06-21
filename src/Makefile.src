@@ -103,7 +103,7 @@ REAL_PRECISION = default
 # Default compiler settings.
 #
 AR           = ar
-FC           = f90
+FC           = mpif90
 FFLAGS       =
 F90FLAGS     =
 F77          = f90
