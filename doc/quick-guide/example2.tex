@@ -1,10 +1,21 @@
 
 %\section{Question 1}
-\textbf{Simulate the saturation behaviour of a dynamo from helically forced turbulence with forcing wave-number $k_f = 3$ in units of the box wave-number $k_1 = 1$.}
+\textbf{Question:} Simulate the saturation behaviour of a dynamo from helically forced turbulence with forcing wave-number $k_f = 3$ in units of the box wave-number $k_1 = 1$. Use the sample  \texttt{samples/helical-MHDturb}.
+\begin{enumerate}
+ \item Determine the critical value of the magnetic diffusivity above which there is a growth of the rms magnetic filed, \verb|brms|, in the file \verb|data/time\_series.data|
+\item Determine the corresponding value of the magnetic Reynolds number, $Re_M = u_{rms}/\eta \kappa_f$
+\item Determine the growth rate of the magnetic fiedl for a choseen value of the magnetic diffusivity about half the critical vaule. 
+\item Determine the estructure of the magnetic field. Consider the evolution of 3 different magnetic field averages: the \verb|xy| average \verb|bmz|, the \verb|yz| average \verb|bmx| and the \verb|xz| average \verb|bmy|. Run until saturation and determine which of the three averages dominates in the end.
+\item Fit the resulting ($\bar{B^2}$) to the expression:
+\begin{equation}
+ F(t;B_0,t_s)=B_0^2[1-\exp^{-2\eta\kappa_1^2(t-t_s)}]
+\label{eq:fitB}
+\end{equation}
+\end{enumerate}
 
-I will use the example configuration \texttt{samples/helical-MHDturb}.
+\subsection{Solution.}
 
-\subsection{Critical value for the magnetic diffusivity.}
+\subsubsection{Critical value for the magnetic diffusivity.}
 
 Calculation of the critical value for the magnetic diffusivity implies running the code for different values of the magnetic diffusivity and checking up at which value the field starts growing.
 
@@ -19,7 +30,7 @@ In figure \ref{fig:brmst} the growth of the rms magnetic field versus time can b
 
 Using these results, I set the critical value for the magnetic diffusivity in $\eta = 22e-3$.
 
-\subsection{Magnetic Reynolds number}
+\subsubsection{Magnetic Reynolds number}
 \begin{figure}[h]
 \begin{minipage}{.70\textwidth}
 The magnetic Reynolds number is defined as:
@@ -56,7 +67,7 @@ $\eta$ & $Re_M$\\\hline
 
 
 
-\subsection{Growth rate of the magnetic field}
+\subsubsection{Growth rate of the magnetic field}
 
 In order to determine the growth rate of the magnetic field for a value of the magnetic diffusivity, one must fit the sloped part of the logarithm of $brms$ vs time curve, as shown in the figures \ref{fig:growth2} and \ref{fig:growth10}.
 
@@ -85,7 +96,7 @@ $\eta$ & a & b\\\hline
 \end{tabular}
 \end{center}
 
-\subsection{Structure of the magnetic field.}
+\subsubsection{Structure of the magnetic field.}
 
 \begin{figure}[h]
 \begin{minipage}{.45\textwidth}
@@ -103,7 +114,7 @@ From the figure one can see that the $zx$ average dominates in the end.
 \end{minipage}
  \end{figure}
 
-\subsection{Fitting $B_{zx}$}
+\subsubsection{Fitting $B_{zx}$}
 Fitting the strongest of the three field averages $<\bar{B^2}>$ to the expression:
 \begin{equation}
  F(t;B_0,t_s)=B_0^2[1-\exp^{-2\eta\kappa_1^2(t-t_s)}]

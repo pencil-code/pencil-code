@@ -85,7 +85,6 @@ It is recommend to use cshell instead of bash.
 Under the tcsh shell, put in your \$HOME/.cshrc file the following lines:
 >>>>>>> .r19030
 \begin{verbatim}
-
 #
 #  path for pencil code
 #
@@ -138,37 +137,9 @@ The configuration files should be located in the \verb|config| directory and sho
 pc_build --debug
 \end{verbatim}
 And now create a new config file in:
-\texttt{config/hosts/illa/HOST-ID.conf}
+\texttt{config/hosts/YOUR-NAME/HOST-ID.conf}
 
-The next step is customize this file, for example:
-\begin{verbatim}
-# Linux.conf
-#
-# Default settings for Linux systems
-#
-# $Id$
-
-%section Makefile
-# %include compilers/gfortran
- %include compilers/ifort
- %include compilers/mpif90
- %include compilers/gcc
-
-FC=mpif90 
-FFLAGS= -O3  
-CC=mpicc 
-CFLAGS=-O3 -DFUNDERSC=1 
-LD_MPI= 
-FFLAGS_DOUBLE=-r8 
-%endsection Makefile
-
-%section runtime
-mpiexec=/usr/pkg/intel/2011.8.273/composer_xe_2011_sp1.8.273/mpirt/bin/intel64/m
-pirun
-%endsection runtime
-# End of file
-\end{verbatim}
-
+The next step is customize this file, there are several examples in \verb|$PENCIL_HOME/config/hosts|. 
 
 
 \section{Useful commands.}
