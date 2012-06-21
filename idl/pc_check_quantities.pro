@@ -80,30 +80,34 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	; List of available quantities.
 	available = { $
 		Temp:'temperature', $
+		grad_Temp:'grad temperature', $
 		ln_Temp:'ln temperature', $
 		log_Temp:'log temperature', $
-		j_abs:'currentdensity', $
+		j_abs:'current density', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_viscous:'viscous heating rate', $
 		rho_mag:'magnetic energy', $
+		A:'magnetic vector potential', $
 		A_x:'magnetic vector potential x', $
 		A_y:'magnetic vector potential y', $
 		A_z:'magnetic vector potential z', $
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
+		u:'velocity vector', $
 		u_x:'velocity x', $
 		u_y:'velocity y', $
 		u_z:'velocity z', $
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
+		grad_P_therm:'grad thermal pressure', $
 		rho_u_z:'impulse density z', $
 		Rn_visc:'viscous Rn', $
 		Rn_mag:'magnetic Rn', $
-		rho_c:'minimum density', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_dt:'Spitzer timestep', $
 		Spitzer_ratio:'Spitzer par./perp. heatflux', $
+		rho_c:'minimum density (Alfven < c)', $
 		rho:'density', $
 		ln_rho:'ln density', $
 		log_rho:'log density', $
@@ -113,12 +117,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	; List of dependencies.
 	depend = { $
 		Temp:{ Temp:['lnTT', 'TT'] }, $
+		grad_Temp:'Temp', $
 		ln_Temp:'Temp', $
 		log_Temp:'Temp', $
+		A:'aa', $
 		B:'aa', $
-		jj:'aa', $
-		j_abs:'jj', $
-		HR_ohm:'jj', $
+		j:'aa', $
+		j_abs:'j', $
+		HR_ohm:'j', $
 		HR_viscous:['u', 'rho'], $
 		rho_mag:'B', $
 		A_x:'aa', $
@@ -133,12 +139,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_z:'u', $
 		u_abs:'u', $
 		P_therm:['Temp', 'rho'], $
+		grad_P_therm:'P_therm', $
 		rho_u_z:['u', 'rho'], $
 		Rn_visc:'u', $
-		Rn_mag:'u', $
-		rho_c:'rho', $
-		Spitzer_q:['Temp', 'B'], $
-		Spitzer_dt:['Temp', 'B', 'n_rho'], $
+		Rn_mag:['u','B'], $
+		Spitzer_q:['Temp'], $
+		Spitzer_dt:['Temp', 'B'], $
+		Spitzer_ratio:['Temp', 'B', 'n_rho'], $
+		rho_c:['rho', 'B'], $
 		rho:{ rho:['lnrho', 'rho'] }, $
 		ln_rho:'rho', $
 		log_rho:'rho', $

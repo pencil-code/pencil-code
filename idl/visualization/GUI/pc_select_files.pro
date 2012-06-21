@@ -228,7 +228,9 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (units_struct)) then units = units_struct
 	if (n_elements (units) le 0) then begin
 		pc_units, obj=unit, datadir=datadir, dim=dim, param=param, /quiet
-		units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:1, default_time:1, default_velocity:1, default_density:1, default_mass:1, default_magnetic_field:1, default_length_str:'m', default_time_str:'s', default_velocity_str:'m/s', default_density_str:'kg/m^3', default_mass_str:'kg', default_magnetic_field_str:'Tesla' }
+		mu0_SI = 4.0 * !Pi * 1.e-7
+		unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+		units = { length:unit.length, default_length:1, default_length_str:'m', velocity:unit.velocity, default_velocity:1, default_velocity_str:'m/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1, default_magnetic_field_str:'Tesla', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
 	end
 	start_par = param
 	if (keyword_set (run_param)) then run_par = run_param

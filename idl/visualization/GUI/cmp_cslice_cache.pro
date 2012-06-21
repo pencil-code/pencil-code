@@ -19,7 +19,7 @@ function cslice_get_range, data
 		min = val_min
 		max = val_max
 	end else begin
-		cslice_get_minmax_value, min, max
+		cslice_get_minmax_value, data, min, max
 	end
 
 	if (min eq max) then begin
@@ -39,14 +39,13 @@ end
 
 
 ; Get values for minimum and maximum of the selected data
-pro cslice_get_minmax_value, min, max
+pro cslice_get_minmax_value, data, min, max
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
-	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	if (selected_adjust eq 0) then begin
-		tmp_minmax = minmax (cube)
+		tmp_minmax = minmax (data)
 	end else begin
 		tag = (tag_names (overset))[selected_overplot]
 		res = execute ("tmp_minmax = minmax (oversets[selected_snapshot]."+tag)
@@ -87,7 +86,7 @@ pro cslice_event, event
 
 
 	SWITCH eventval of
-	'SCALE': begin
+	'ABS_SCALE': begin
 		abs_scale = event.select
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
@@ -233,7 +232,7 @@ pro cslice_event, event
 		break
 	end
 	'MIN_MAX': begin
-		cslice_get_minmax_value, val_min, val_max
+		cslice_get_minmax_value, cube, val_min, val_max
 		WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		WIDGET_CONTROL, sl_max, SET_VALUE = val_max
 		pos_b[selected_cube,sub_aver,selected_adjust] = val_min
@@ -243,7 +242,7 @@ pro cslice_event, event
 	end
 	'ADJUST': begin
 		if (selected_adjust ne event.index) then begin
-			cslice_get_minmax_value, val_min, val_max
+			cslice_get_minmax_value, cube, val_min, val_max
 			pos_b[selected_cube,sub_aver,selected_adjust] = val_min
 			pos_t[selected_cube,sub_aver,selected_adjust] = val_max
 			selected_adjust = event.index
@@ -757,7 +756,7 @@ pro cslice_prepare_set, i
 
 	selected_snapshot = i
 
-	precalc, i
+	pc_gui_precalc, i
 
 	num_cubes = n_tags (set)
 
@@ -803,7 +802,7 @@ pro cslice_prepare_cube, cube_index
 	if (sub_aver) then for z=0, num_z-1 do cube[*,*,z] -= mean (cube [*,*,z])
 
 	; find minimum and maximum values
-	cslice_get_minmax_value, tmp_min, tmp_max
+	cslice_get_minmax_value, cube, tmp_min, tmp_max
 
 	if (frozen) then begin
 		; update slider to intermediate min/max values
@@ -1007,7 +1006,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	if (n_elements (units) ge 1) then unit = units
 	if (n_elements (unit) eq 0) then begin
 		print, "WARNING: setting units to unity."
-		unit = { velocity:1.0, temperature:1.0, length:1.0, time:1.0, density:1.0, default_length:1.0, default_length_str:'-', default_time:1.0, default_time_str:'-', default_velocity:1.0, default_velocity_str:'-', default_density:1.0, default_density_str:'-', default_mass:1.0, default_mass_str:'-' }
+		units = { length:1, default_length:1, default_length_str:'-', velocity:1, default_velocity:1, default_velocity_str:'-', time:1, default_time:1, default_time_str:'-', temperature:1, default_temperature:1, default_temperature_str:'-', density:1, default_density:1, default_density_str:'-', mass:1, default_mass:1, default_mass_str:'-', magnetic_field:1, default_magnetic_field:1, default_magnetic_field_str:'-', current_density:1, default_current_density:1, default_current_density_str:'-' }
 	end
 
 	if (n_elements (scaling) eq 0) then scaling = 1
@@ -1133,7 +1132,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	over	= WIDGET_DROPLIST (bcot, value=overs, uvalue='OVER', sensitive=over_active, EVENT_PRO=cslice_event, title='overplot')
 
 	bcol	= WIDGET_BASE (CTRL, /col)
-	b_abs	= CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='SCALE', set_value=abs_scale)
+	b_abs	= CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='ABS_SCALE', set_value=abs_scale)
 	b_sub	= CW_BGROUP (bcol, 'substract averages', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
 	b_cro	= CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
 	aver	= WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')

@@ -47,30 +47,17 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 ;;;
 ;;; Physical quantities to be visualized
+;;; Available quantities can be found and defined in 'pc_get_quantity'.
 ;;;
-; Available quantities for visualization are:
-; 'Temp', 'rho'             ; temperature and density
-; 'ln_rho', 'log_rho'       ; logarithmic densities
-; 'ux', 'uy', 'uz', 'u_abs' ; velocity components and the absolute value
-; 'Ax', 'Ay', 'Az'          ; vector potential components
-; 'Bx', 'By', 'Bz'          ; magnetic field components
-; 'rho_mag'                 ; magnetic energy density
-; 'j'                       ; absolute value of the current density
-; 'HR_ohm'                  ; ohmic heating rate per volume (eta*mu0*j^2)
-; 'rho_u_z'                 ; vertical component of the impulse density
-; 'P_therm'                 ; thermal pressure
-; 'Rn_visc'                 ; viscous mesh Reynolds number
-; 'Rn_mag'                  ; magnetic mesh Reynolds number
-; (more quantities can be defined in 'precalc_data', see pc_gui_companion.pro)
 default, quantities, { $
 	Temp:'temperature', $
-	j:'currentdensity', $
+	j_abs:'current density', $
 	HR_ohm:'ohmic heating rate', $
 	HR_viscous:'viscous heating rate', $
 ;	rho_mag:'magnetic energy', $
-;	bx:'magnetic field x', $
-;	by:'magnetic field y', $
-	bz:'magnetic field z', $
+;	b_x:'magnetic field x', $
+;	b_y:'magnetic field y', $
+	b_z:'magnetic field z', $
 	u_abs:'velocity', $
 ;	u_x:'velocity x', $
 ;	u_y:'velocity y', $
@@ -82,21 +69,19 @@ default, quantities, { $
 ;	rho_c:'minimum density', $
 	Spitzer_q:'Spitzer heatflux', $
 	Spitzer_dt:'Spitzer timestep', $
-	log_rho:'logarithmic density' $
-	}
+	log_rho:'logarithmic density', $
+	n_rho:'particle density' }
 
 
 ;;;
-;;; Quantities to be overplotted (calculated in 'precalc_data')
+;;; Quantities to be overplotted
+;;; Available quantities can be found and defined in 'pc_get_quantity'.
 ;;;
-; Available quantities for overplotting are:
-; 'b', 'a_contour', 'grad_P_therm', and 'u'
 default, overplot_quantities, { $
 ;	b:'magnetic_field', $
-	a_contour:'fieldlines', $
+	A_contour:'fieldlines', $
 ;	grad_P_therm:'thermal pressure gradient', $
-	u:'velocities' $
-	}
+	u:'velocities' }
 
 
 ;;;
@@ -161,11 +146,13 @@ if (not pc_gui_loaded) then BEGIN
 		nghost_z = nghost
 	end
 
-	pc_units, obj=unit, datadir=datadir
-	units = { velocity:unit.velocity, time:unit.time, temperature:unit.temperature, length:unit.length, density:unit.density, mass:unit.density*unit.length^3, magnetic_field:unit.magnetic_field, default_length:default_length, default_time:default_time, default_velocity:default_velocity, default_density:default_density, default_mass:default_mass, default_magnetic_field:default_magnetic_field, default_length_str:default_length_str, default_time_str:default_time_str, default_velocity_str:default_velocity_str, default_density_str:default_density_str, default_mass_str:default_mass_str, default_magnetic_field_str:default_magnetic_field_str }
 	pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
 	pc_read_param, obj=param, dim=orig_dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=orig_dim, datadir=datadir, /quiet
+	pc_units, obj=unit, datadir=datadir
+	mu0_SI = 4.0 * !Pi * 1.e-7
+	unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+	units = { length:unit.length, default_length:1, default_length_str:'m', velocity:unit.velocity, default_velocity:1, default_velocity_str:'m/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1, default_magnetic_field_str:'Tesla', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
 
 	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param, varcontent=varcontent, quantities=quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
 	if (num_files eq 0) then stop
@@ -224,11 +211,11 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	prepare_varset, num_files, units, coords, varset, overplot, datadir, param, run_param
+	pc_gui_prepare_varset, num_files, units, coords, varset, overplot, datadir, param, run_param
 
 	; Precalculate selected timesteps
 	for i = 1, num_files do begin
-		precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
+		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 	end
 
 	; Mark completition of preparational work
