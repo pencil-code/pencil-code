@@ -154,11 +154,11 @@ if (not pc_gui_loaded) then BEGIN
 	unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
 	units = { length:unit.length, default_length:1, default_length_str:'m', velocity:unit.velocity, default_velocity:1, default_velocity_str:'m/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1, default_magnetic_field_str:'Tesla', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
 
-	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param, varcontent=varcontent, quantities=quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
+	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
 	if (num_files eq 0) then stop
 
 	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
-		pc_read_slice_raw, varfile=varfile, dim=dim, grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, /trim, /quiet
+		pc_read_slice_raw, varfile=varfile, var_list=var_list, dim=dim, grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, /trim, /quiet
 	end else begin
 		dim = orig_dim
 		pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, /trim, /quiet
@@ -211,7 +211,7 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	pc_gui_prepare_varset, num_files, units, coords, varset, overplot, datadir, param, run_param
+	pc_gui_prepare_varset, num_files, units, coords, varset, overplot, datadir, param, run_param, var_list
 
 	; Precalculate selected timesteps
 	for i = 1, num_files do begin

@@ -41,7 +41,7 @@ end
 ; Get values for minimum and maximum of the selected data
 pro cslice_get_minmax_value, data, min, max
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
 	if (selected_adjust eq 0) then begin
@@ -63,7 +63,7 @@ end
 ; Event handling of visualisation window
 pro cslice_event, event
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
@@ -627,7 +627,7 @@ end
 ; Saves images of the slices with the given format
 pro cslice_save_images, img_type, slices=slices
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
 
@@ -657,7 +657,7 @@ end
 pro cslice_save_slices
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
@@ -687,7 +687,7 @@ end
 ; Draws horizontally averaged vertical profiles into a second window
 pro cslice_draw_averages, number
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
@@ -750,7 +750,7 @@ end
 ; Prepares a data set for visualisation
 pro cslice_prepare_set, i
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_adjust, af_x, af_y, af_z
 
@@ -767,7 +767,7 @@ end
 ; Prepares a cube for visualisation
 pro cslice_prepare_cube, cube_index
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
@@ -843,7 +843,7 @@ end
 ; Prepares an overplot for visualisation
 pro cslice_prepare_overplot
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
@@ -917,7 +917,7 @@ end
 ; Resets everything and redraws the window
 pro cslice_reset_GUI
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_abs, b_sub, b_cro, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, min_max, freeze, adjust, jump_min, jump_max
@@ -969,7 +969,7 @@ end
 ; Sophisticated interface with caching of VAR-files
 pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, limits=limits, units=units, coords=coords, scaling=scaling, overplots=overplots
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen

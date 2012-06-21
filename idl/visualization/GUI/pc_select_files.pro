@@ -189,7 +189,7 @@ pro select_files_event, event
 end
 
 
-pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, varcontent=varcontent, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
+pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, d_slice, cut_co, cut_sl
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
@@ -419,6 +419,15 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (slice eq 1) then cut_x = cut_pos else cut_x = -1
 	if (slice eq 2) then cut_y = cut_pos else cut_y = -1
 	if (slice eq 3) then cut_z = cut_pos else cut_z = -1
+
+	; Build list of selected variables
+	if (any (cont_selected ge 0)) then begin
+		content = varcontent.idlvar
+		content = content[where (content ne "dummy")]
+		var_list = content[cont_selected]
+	end else begin
+		var_list = -1
+	end
 
 	; Build list of selected quantities
 	if (any (quant_selected ge 0)) then begin

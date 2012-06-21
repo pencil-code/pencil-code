@@ -12,9 +12,9 @@
 
 
 ; Prepares the varset
-pro pc_gui_prepare_varset, num, units, coords, varset, overset, dir, params, run_params
+pro pc_gui_prepare_varset, num, units, coords, varset, overset, dir, params, run_params, idlvar_list
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 
 	datadir = dir
 
@@ -22,6 +22,7 @@ pro pc_gui_prepare_varset, num, units, coords, varset, overset, dir, params, run
 	coord = coords
 	param = params
 	run_param = run_params
+	var_list = idlvar_list
 
 	varfiles = { title:"-", time:0.0d0, loaded:0, number:-1, precalc_done:0 }
 	varfiles = replicate (varfiles, num)
@@ -34,7 +35,7 @@ end
 ; Precalculates a data set and loads data, if necessary
 pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, show_aver=show_aver, time=time, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 
 	; Default settings
 	default, show_aver, 0
@@ -55,7 +56,7 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, par
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
 			if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
-				pc_read_slice_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, param=param, par2=run_param, varcontent=varcontent, time=time, quiet=(i ne 0), cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
+				pc_read_slice_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, param=param, par2=run_param, varcontent=varcontent, time=time, quiet=(i ne 0), cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 			end else begin
 				pc_read_var_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0)
 			end
@@ -80,7 +81,7 @@ end
 ; Precalculates a data set
 pro pc_gui_precalc_data, i, vars, index, dim, gird
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 
 	; First and last physical value, excluding ghost cells
 	l1 = coord.l1
