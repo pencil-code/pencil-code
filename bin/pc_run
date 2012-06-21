@@ -729,15 +729,21 @@ sub expand_cmd_sequence {
             }
         }
     } else {                    # `pc_run' without subcommands
-        my $lastproc = $Ncpus - 1;
-        if (-s "data/proc${lastproc}/var.dat") { # exists & non-empty
-            push @sequence, 'run';
-        } else {
+        if (requires_start()) {
             push @sequence, 'start', 'run';
+        } else {
+            push @sequence, 'run';
         }
     }
 
     return @sequence;
+}
+# ---------------------------------------------------------------------- #
+sub requires_start {
+# Does the cwd require start.x before running?
+
+    my $lastproc = $Ncpus - 1;
+    return ! -s "data/proc${lastproc}/var.dat";
 }
 # ---------------------------------------------------------------------- #
 sub cd_to_wordir {
