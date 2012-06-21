@@ -935,14 +935,18 @@ module Particles_nbody
 !
 !  If there is accretion, remove the accreted particles from the simulation.
 !
-          if (laccretion(ks).and.(r2_ij<=rs2)) then
+          if (laccretion(ks) .and. (r2_ij<=rs2)) then
             call remove_particle(fp,ipar,k,dfp,ineargrid,ks)
             !add mass of the removed particle to the accreting particle
             if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
             goto 99
           else
             r2_ij=r2_ij+r_smooth(ks)**2
-            invr3_ij = r2_ij**(-1.5)
+            if (r2_ij > 0) then
+              invr3_ij = r2_ij**(-1.5)
+            else                ! can happen during pencil_check
+              invr3_ij = 0.0
+            endif
 !
 !  Gravitational acceleration: g=g0/|r-r0|^3 (r-r0)
 !
