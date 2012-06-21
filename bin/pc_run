@@ -881,7 +881,7 @@ sub default_qs_handler {
 
     my $content;
     if (-e $env_var) {
-        $content = get_file_content($env_var);
+        $content = join(' ', get_file_content($env_var));
     } else {
         $content = $env_var;
     }
@@ -1053,7 +1053,7 @@ sub match_line_ix {
 # ---------------------------------------------------------------------- #
 sub get_file_content {
 # Read all lines from file (queuing-sytem specific), stripping whitespace
-# comments and return result as space-separated string
+# (inculding trailing newlines) and comments and return result as array
     my ($file) = @_;
 
     my @content;
@@ -1066,7 +1066,7 @@ sub get_file_content {
         last if $line =~ /^\s*\[/;     # stop at mpich's [CS] tag
         push @content, $line;
     }
-    return "@content";
+    return @content;
 }
 # ---------------------------------------------------------------------- #
 sub archive_time_series {
