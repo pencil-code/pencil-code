@@ -249,6 +249,7 @@ Options:
   -N,  --nice=<n>          \tRun tests with nice value <n>
        --no-pencil-check   \tSuppress pencil consistency check, irrespective
                            \tof &run_pars.lpencil_check
+       --notify            \tTell us (audibly and visually) when test is done.
   -j,  --jobs=<n>          \tPass through -j option to make
   -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /tmp
   -s,  --short             \tPrint short directory names only
@@ -309,6 +310,7 @@ GetOptions(\%opts,
                -D=s --pencil-home=s
                -N=s --nice=s
                     --no-pencil-check
+                    --notify
                -j=n --jobs=n
                -d   --datadir
                -s   --short
@@ -363,6 +365,7 @@ my $rsh         = (              $opts{'rsh'}             || 'ssh');
 my $nodelist    = (              $opts{'nodelist'}        || 0    );
 my $nosummary   = (              $opts{'no-summary'}      || 0    );
 my $suppress_check = (           $opts{'no-pencil-check'} || 0    );
+my $notify      = (              $opts{'notify'}          || ''   );
 my $nolock      = (              $opts{'nolock'}          || $opts{'no-lock'}
                                                              || 0 );
 my $fast        = (              $opts{'fast'}            || ''   );
@@ -1557,6 +1560,9 @@ END {
     if ($remove_lock) {
         unlink $lockfile or warn "Couldn't remove lockfile <$lockfile>\n";
     }
+
+    # Tell user we are done
+    Pencil::Util::notify('with auto test') if $notify;
 }
 
 # End of file pc_auto-test
