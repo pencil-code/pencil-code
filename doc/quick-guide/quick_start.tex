@@ -69,12 +69,13 @@ wget http://pencil-code.googlecode.com/files/pencil-code-r18525.tar.gz
 The downloaded \verb|pencil-code| directory contains several sub-directories
 \begin{enumerate}
   \item \verb|samples|:  many sample problems
-  \item \verb|doc|: full-length manual and other documentation
   \item \verb|config|: all the configuration files.
   \item \verb|doc| a very important directory containing the pencil-code
     \verb|manual.tex|
   \item \dots
 \end{enumerate}
+For example, the code structure can be further explored in Section 4 of the
+manual.
 
 \section{Configure the shell}
 
@@ -255,34 +256,34 @@ There are three basic configuration files where all the physics and outputs are 
 
 
 
-\section{Running the code}
+%\section{Running the code}
+%
+%In order to use the code, a compilation in each of the working directories is
+%needed. Basically there are two ways of compiling and running the code.
+%The only way of using the Makefile config file created before is using the new
+%way:
+%
+%The standard way:
+%\begin{enumerate}
+%  \item \verb|pc_build| compile the code
+%  \item \verb|pc_run| run the code
+%    \begin{enumerate}
+%      \item \verb|pc_run start| can be run before \verb|pc_run|, to construct
+%        the initial condition.
+%    \end{enumerate}
+%\end{enumerate}
 
-In order to use the code, a compilation in each of the working directories is
-needed. Basically there are two ways of compiling and running the code.
-The only way of using the Makefile config file created before is using the new
-way:
-
-The standard way:
-\begin{enumerate}
-  \item \verb|pc_build| compile the code
-  \item \verb|pc_run| run the code
-    \begin{enumerate}
-      \item \verb|pc_run start| can be run before \verb|pc_run|, to construct
-        the initial condition.
-    \end{enumerate}
-\end{enumerate}
-
-The old way of doing it was:
-\begin{verbatim}
-make
-./start.csh
-./run.csh
-\end{verbatim}
-But one usually need to specify some options by hand in the make command. In my
-case, to use mpi:
-\begin{verbatim}
-make FC=mpif90
-\end{verbatim}
+%The old way of doing it was:
+%\begin{verbatim}
+%make
+%./start.csh
+%./run.csh
+%\end{verbatim}
+%But one usually need to specify some options by hand in the make command. In my
+%case, to use mpi:
+%\begin{verbatim}
+%make FC=mpif90
+%\end{verbatim}
     
 \section{Setting up python.}
 \subsection{Python modules requirements.}
@@ -328,9 +329,10 @@ pc.animate\_interactive &  Assemble a 2D animation from a 3D array. \\\hline
 \end{center}
 
 \section{Run a sample: an example}
-% Searching in the pencil code
+% TODO Searching in the pencil code
 % 1D Jeans sample?
-We will illustrate the workflow method 
+% Please feel free to change this sample if it is not to your liking. 
+
 Construct a folder in which you would like to run the sample
 \begin{verbatim}
  > mkdir sample_test_jeans
@@ -363,6 +365,16 @@ The code is compiled by
 \end{verbatim}
 and this may take some time.
 
+The initial conditions are set in
+\begin{verbatim}
+ /jeans-x> vi start.in
+\end{verbatim}
+
+and parameters necessary to run the code in time can be found in
+\begin{verbatim}
+ /jeans-x> vi run.in
+\end{verbatim}
+
 Time to run the code. 
 \begin{verbatim}
  /jeans-x> pc_run
@@ -370,9 +382,34 @@ Time to run the code.
 
 Visualizing the output can be either done with \verb|idl| or \verb|python|.
 
-\subsection{IDL workflow}
-Start \verb|idl|.
+\subsection{IDL visualisation}
+% The goal of this section is to demonstrate the general workflow with a very
+% simple example.
+
+Start \verb|idl| from the command line. Several \verb|idl| have been written (you can find them in
+\verb|pencil-code/idl| ) to facilitate inspecting the data (which can be found
+in raw format in \verb|jeans-x/data| directory).  For example, let us inspect
+the time series data.
 \begin{verbatim}
-IDL>
+IDL> pc_read_ts, obj=ts
 \end{verbatim}
+The object \verb|ts| contains several variables, which can be inspected
+\begin{verbatim}
+IDL> print, tag_names(ts.t)
+IT T UMAX RHOMAX
+\end{verbatim}
+In fact, the maximal density is available because it was set in
+\verb|jeans-x/print.in| which contains the so-called diagnostic output
+(for more, see manual section 5.4). 
+We can plot the exponential growth rate of the mode we excited
+\begin{verbatim}
+IDL> plot, ts.t, alog(ts.umax)
+\end{verbatim}
+Here we plotted the evolution of the maximal velocity as a function of physical
+time $t$.
+
+% TODO Insert a screen shot of the IDL window
+
+Another sample is illustrated in the manual in section 3.1.6.
+
 \end{document}
