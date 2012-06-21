@@ -14,10 +14,10 @@
 ;       Pencil Code, File I/O
 ;
 ; CALLING SEQUENCE:
-;       pc_read_slice_raw, object=object, varfile=varfile, tags=tags, $
-;                    datadir=datadir, trimall=trimall, /quiet,        $
-;                    swap_endian=swap_endian, time=time, grid=grid,   $
-;                    cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
+;       pc_read_slice_raw, object=object, varfile=varfile, tags=tags,         $
+;                    datadir=datadir, trimall=trimall, /quiet,                $
+;                    swap_endian=swap_endian, time=time, grid=grid,           $
+;                    cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, var_list=var_list
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
 ;    varfile: Name of the collective snapshot. Default: 'var.dat'.   [string]
@@ -29,12 +29,13 @@
 ;
 ;     object: Optional structure in which to return the loaded data. [4D-array]
 ;       tags: Array of tag names inside the object array.            [string(*)]
+;   var_list: Array of varcontent idlvars to read (default = all).   [string(*)]
 ;
 ;   /trimall: Remove ghost points from the returned data.
 ;     /quiet: Suppress any information messages and summary statistics.
 ;
 ; EXAMPLES:
-;       pc_read_slice_raw, obj=vars, tags=tags
+;       pc_read_slice_raw, obj=vars, tags=tags, var_list=["lnrho","uu"]
 ;
 ;       cslice, vars
 ; or:
@@ -45,11 +46,11 @@
 ;       Adapted from: pc_read_var_raw.pro, 4th May 2012
 ;
 ;-
-pro pc_read_slice_raw,                                                $
-    object=object, varfile=varfile, datadir=datadir, tags=tags,       $
-    dim=dim, param=param, par2=par2, varcontent=varcontent,           $
-    trimall=trimall, quiet=quiet, swap_endian=swap_endian, time=time, $
-    grid=grid, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
+pro pc_read_slice_raw,                                                  $
+    object=object, varfile=varfile, datadir=datadir, tags=tags,         $
+    dim=dim, param=param, par2=par2, varcontent=varcontent,             $
+    trimall=trimall, quiet=quiet, swap_endian=swap_endian, time=time,   $
+    grid=grid, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, var_list=var_list
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -171,47 +172,59 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(varcontent) eq 0) then $
       varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
   totalvars=(size(varcontent))[1]
-;
-; Initialise read buffers.
-;
-  if (precision eq 'D') then begin
-    bytes = 8
-    object = dblarr (cut_nx, cut_ny, cut_nz, totalvars)
-    buffer = dblarr (cut_nx)
-  endif else begin
-    bytes = 4
-    object = fltarr (cut_nx, cut_ny, cut_nz, totalvars)
-    buffer = fltarr (cut_nx)
-  endelse
+  if (n_elements(var_list) eq 0) then begin
+    var_list = varcontent[*].idlvar
+    var_list = var_list[where (var_list ne "dummy")]
+  endif
 ;
 ; Display information about the files contents.
 ;
-  tag_str = ''
   content = ''
   for iv=0L, totalvars-1L do begin
-    if (varcontent[iv].idlvar eq "uu") then begin
-      tag_str += ', uu:[' + strtrim (iv, 2) + ',' + strtrim (iv+1, 2) + ',' + strtrim (iv+2, 2) + ']'
-      tag_str += ', ux:' + strtrim (iv, 2) + ', uy:' + strtrim (iv+1, 2) + ', uz:' + strtrim (iv+2, 2)
-    endif else if (varcontent[iv].idlvar eq "aa") then begin
-      tag_str += ', aa:[' + strtrim (iv, 2) + ',' + strtrim (iv+1, 2) + ',' + strtrim (iv+2, 2) + ']'
-      tag_str += ', ax:' + strtrim (iv, 2) + ', ay:' + strtrim (iv+1, 2) + ', az:' + strtrim (iv+2, 2)
-    endif else begin
-      tag_str += ', ' + varcontent[iv].idlvar + ':' + strtrim (iv, 2)
-    endelse
     content += ', '+varcontent[iv].variable
     ; For vector quantities skip the required number of elements of the f array.
     iv += varcontent[iv].skip
   endfor
-  tag_str = 'tags = { ' + strmid (tag_str, 2) + ' }'
   content = strmid (content, 2)
+;
+  tags = { time:0.0d0 }
+  read_content = ''
+  indices = [ -1 ]
+  num_read = 0
+  num = n_elements (var_list)
+  for ov=0L, num-1L do begin
+    tag = var_list[ov]
+    iv = where (varcontent[*].idlvar eq tag)
+    if (iv ge 0) then begin
+      if (tag eq "uu") then begin
+        tags = create_struct (tags, "uu", [num_read, num_read+1, num_read+2])
+        tags = create_struct (tags, "ux", num_read, "uy", num_read+1, "uz", num_read+2)
+        indices = [ indices, iv, iv+1, iv+2 ]
+        num_read += 3
+      endif else if (tag eq "aa") then begin
+        tags = create_struct (tags, "aa", [num_read, num_read+1, num_read+2])
+        tags = create_struct (tags, "ax", num_read, "ay", num_read+1, "az", num_read+2)
+        indices = [ indices, iv, iv+1, iv+2 ]
+        num_read += 3
+      endif else begin
+        tags = create_struct (tags, tag, num_read)
+        indices = [ indices, iv ]
+        num_read++
+      endelse
+      read_content += ', '+varcontent[iv].variable
+    endif
+  endfor
+  read_content = strmid (read_content, 2)
   if (not keyword_set(quiet)) then begin
     print, ''
     print, 'The file '+varfile+' contains: ', content
+    if (strlen (read_content) lt strlen (content)) then print, 'Will read only: ', read_content
     print, ''
     print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
     print, ''
   endif
-  if (execute (tag_str) ne 1) then message, 'Error executing: ' + tag_str
+  if (not any (indices ge 0)) then message, 'Error: nothing to read!'
+  indices = indices[where (indices ge 0)]
 ;
 ; Build the full path and filename.
 ;
@@ -222,18 +235,31 @@ COMPILE_OPT IDL2,HIDDEN
   if (not file_test(filename)) then $
       message, 'ERROR: File not found "'+filename+'"'
 ;
+; Initialise read buffers.
+;
+  if (precision eq 'D') then begin
+    bytes = 8
+    object = dblarr (cut_nx, cut_ny, cut_nz, num_read)
+    buffer = dblarr (cut_nx)
+  endif else begin
+    bytes = 4
+    object = fltarr (cut_nx, cut_ny, cut_nz, num_read)
+    buffer = fltarr (cut_nx)
+  endelse
+;
 ; Open a varfile and read some data!
 ;
   openr, lun, filename, swap_endian=swap_endian, /get_lun
   mx = long64(dim.mx)
   mxy = mx * dim.my
   mxyz = mxy * dim.mz
-  for pa = 0, totalvars-1 do begin
+  for pos = 0, num_read-1 do begin
+    pa = indices[pos]
     for pz = pz_start, pz_end do begin
       for py = py_start, py_end do begin
         point_lun, lun, bytes * (px_start + py*mx + pz*mxy + pa*mxyz)
         readu, lun, buffer
-        object[0:px_end-px_start,py-py_start,pz-pz_start,pa] = buffer
+        object[0:px_end-px_start,py-py_start,pz-pz_start,pos] = buffer
       endfor
     endfor
   endfor
@@ -305,6 +331,7 @@ COMPILE_OPT IDL2,HIDDEN
   endif
 ;
   time = t
+  tags.time = t
   name = "pc_read_slice_raw_"+addname+strtrim (cut_nx, 2)+"_"+strtrim (cut_ny, 2)+"_"+strtrim (cut_nz, 2)
   grid = create_struct (name=name, $
       ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde'], $
