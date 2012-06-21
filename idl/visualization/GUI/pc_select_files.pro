@@ -16,6 +16,7 @@
 ;;;   * procdir (contains procdir based on the chosen IO-strategy)
 ;;;   * varcontent (contains or returns the varcontent structure)
 ;;;   * quantities (contains or returns the selected physical quantities)
+;;;   * overplots (contains or returns the selected overplot quantities)
 ;;;   * cut_x (contains the pixel value in x of the yz-slice)
 ;;;   * cut_y (contains the pixel value in y of the xz-slice)
 ;;;   * cut_z (contains the pixel value in z of the xy-slice)
@@ -36,8 +37,8 @@
 ; Event handling of file dialog window
 pro select_files_event, event
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, d_slice, cut_co, cut_sl
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -127,19 +128,22 @@ pro select_files_event, event
 		WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos
 		break
 	end
+	'O_DEF':
 	'Q_DEF':
 	'CONT': begin
 		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
 		quant_avail = "[N/A] ("+quant_list+")"
 		quant_selected = -1
+		tags = tag_names (all_quant)
+		tags_quant = tag_names (quant)
 		if (any (cont_selected ge 0)) then begin
 			avail = pc_check_quantities (check=all_quant, sources=sources[cont_selected], /indices)
 			if (any (avail ge 0)) then begin
 				num = n_elements (avail)
 				for pos=0, num-1 do begin
 					quant_avail[avail[pos]] = all_quant.(avail[pos])
-					tag = (tag_names (all_quant))[avail[pos]]
-					if (any (strcmp (tag_names (quant), tag, /fold_case))) then quant_selected = [ quant_selected, avail[pos] ]
+					tag = tags[avail[pos]]
+					if (any (strcmp (tags_quant, tag, /fold_case))) then quant_selected = [ quant_selected, avail[pos] ]
 				end
 				indices = where (quant_selected ge 0)
 				if (any (indices ge 0)) then quant_selected = quant_selected[indices]
@@ -147,6 +151,30 @@ pro select_files_event, event
 		end
 		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
 		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		over_avail = "[N/A] ("+over_list+")"
+		over_selected = -1
+		tags = tag_names (all_over)
+		tags_over = tag_names (over)
+		if (any (cont_selected ge 0)) then begin
+			avail = pc_check_quantities (check=all_over, sources=sources[cont_selected], /indices)
+			if (any (avail ge 0)) then begin
+				num = n_elements (tags_over)
+				for pos=0, num-1 do begin
+					contour_pos = strpos (strlowcase (tags_over[pos]), "_contour")
+					if (contour_pos gt 0) then tags_over[pos] = strmid (tags_over[pos], 0, contour_pos)
+				end
+				num = n_elements (avail)
+				for pos=0, num-1 do begin
+					over_avail[avail[pos]] = all_over.(avail[pos])
+					tag = tags[avail[pos]]
+					if (any (strcmp (tags_over, tag, /fold_case))) then over_selected = [ over_selected, avail[pos] ]
+				end
+				indices = where (over_selected ge 0)
+				if (any (indices ge 0)) then over_selected = over_selected[indices]
+			end
+		end
+		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
+		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 		break
 	end
 	'Q_ALL': begin
@@ -157,6 +185,16 @@ pro select_files_event, event
 	'Q_NONE': begin
 		quant_selected = -1
 		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		break
+	end
+	'O_ALL': begin
+		over_selected = where (over_avail ne "[N/A]")
+		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
+		break
+	end
+	'O_NONE': begin
+		over_selected = -1
+		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 		break
 	end
 	'SHOW_TIME': begin
@@ -189,10 +227,10 @@ pro select_files_event, event
 end
 
 
-pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
+pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, d_slice, cut_co, cut_sl
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
 
 	; Default settings
 	default, pattern, "VAR[0-9]*"
@@ -216,6 +254,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 	all_quant = pc_check_quantities (sources=varcontent, /all)
 	if (keyword_set (quantities)) then quant = quantities else quant = all_quant
+	all_over = pc_check_quantities (sources=varcontent, /overplots)
+	if (keyword_set (overplots)) then over = overplots else over = all_over
 	sources = varcontent.idlvar
 	sources = sources[where (sources ne "dummy")]
 
@@ -385,8 +425,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	for pos=0, num_all_quant-1 do quant_list[pos] = all_quant.(pos)
 	quant_avail = quant_list
 	quant_selected = intarr (num_quant)
+	tags = tag_names (all_quant)
+	tags_quant = tag_names (quant)
 	for pos=0, num_quant-1 do begin
-		index = where (tag_names (all_quant) eq (tag_names (quant))[pos])
+		index = where (tags eq tags_quant[pos])
 		if (any (index ge 0)) then quant_selected[pos] = index
 	end
 	c_quant	= WIDGET_LIST (QU, value=quant_list, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
@@ -395,6 +437,31 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='Q_ALL')
 	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='Q_DEF')
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='Q_NONE')
+
+	OV	= WIDGET_BASE (BASE, /col)
+
+	tmp	= WIDGET_LABEL (OV, value='Overplottable quantities:', frame=0)
+	num_all_over = n_tags (all_over)
+	over_list = strarr (num_all_over)
+	num_over = n_tags (over)
+	for pos=0, num_all_over-1 do over_list[pos] = all_over.(pos)
+	over_avail = over_list
+	over_selected = intarr (num_over)
+	tags = tag_names (all_over)
+	tags_over = tag_names (over)
+	for pos=0, num_over-1 do begin
+		tag = tags_over[pos]
+		contour_pos = strpos (strlowcase (tag), "_contour")
+		if (contour_pos gt 0) then tag = strmid (tag, 0, contour_pos)
+		index = where (tags eq tag)
+		if (any (index ge 0)) then over_selected[pos] = index
+	end
+	c_over	= WIDGET_LIST (OV, value=over_list, uvalue='OVER', YSIZE=(num_over<max_display)>min_display, /multiple)
+	WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
+	SEL	= WIDGET_BASE (OV, /row, /align_center)
+	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='O_ALL')
+	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='O_DEF')
+	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='O_NONE')
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
@@ -432,12 +499,27 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	; Build list of selected quantities
 	if (any (quant_selected ge 0)) then begin
 		num = n_elements (quant_selected)
+		tags = tag_names (all_quant)
 		for pos=0, num-1 do begin
-			tag = (tag_names (all_quant))[quant_selected[pos]]
+			tag = tags[quant_selected[pos]]
 			if (pos eq 0) then begin
 				quantities = create_struct (tag, all_quant.(quant_selected[pos]))
 			end else begin
 				quantities = create_struct (quantities, tag, all_quant.(quant_selected[pos]))
+			end
+		end
+	end
+
+	; Build list of selected overplots
+	if (any (over_selected ge 0)) then begin
+		num = n_elements (over_selected)
+		tags = tag_names (all_over)
+		for pos=0, num-1 do begin
+			tag = tags[over_selected[pos]]
+			if (pos eq 0) then begin
+				overplots = create_struct (tag, all_over.(over_selected[pos]))
+			end else begin
+				overplots = create_struct (overplots, tag, all_over.(over_selected[pos]))
 			end
 		end
 	end

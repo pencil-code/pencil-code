@@ -75,32 +75,28 @@ function dependency_ok, tag, depend, sources
 end
 
 ; Return available quantities.
-function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, warn=warn, indices=indices
+function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, overplots=overplots, warn=warn, indices=indices
 
 	; List of available quantities.
 	available = { $
 		Temp:'temperature', $
-		grad_Temp:'grad temperature', $
 		ln_Temp:'ln temperature', $
 		log_Temp:'log temperature', $
 		j_abs:'current density', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_viscous:'viscous heating rate', $
 		rho_mag:'magnetic energy', $
-		A:'magnetic vector potential', $
 		A_x:'magnetic vector potential x', $
 		A_y:'magnetic vector potential y', $
 		A_z:'magnetic vector potential z', $
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
-		u:'velocity vector', $
 		u_x:'velocity x', $
 		u_y:'velocity y', $
 		u_z:'velocity z', $
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
-		grad_P_therm:'grad thermal pressure', $
 		rho_u_z:'impulse density z', $
 		Rn_visc:'viscous Rn', $
 		Rn_mag:'magnetic Rn', $
@@ -113,6 +109,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_rho:'ln density', $
 		log_rho:'log density', $
 		n_rho:'particle density' $
+	}
+
+	; List of available overplot quantities.
+	available_overplots = { $
+		u:'velocity vector', $
+		j:'current density vector', $
+		A:'magnetic vector potential', $
+		B:'magnetic field vector', $
+		grad_Temp:'grad temperature', $
+		grad_P_therm:'grad thermal pressure' $
 	}
 
 	; List of dependencies.
@@ -157,6 +163,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 
 	; Fill default values
 	if (keyword_set (all)) then return, available
+	if (keyword_set (overplots)) then return, available_overplots
 	if (not keyword_set (check)) then check = available
 	if (not keyword_set (sources)) then sources = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 
@@ -179,12 +186,17 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	list = ""
 	pos_list = -1
 	num_list = 0
+	avail = create_struct (available, available_overplots)
+	avail_list = tag_names (avail)
+	tags = tag_names (check)
 	for pos = 0, num-1 do begin
-		tag = (tag_names (check))[pos]
-		index = where (tag_names (available) eq tag)
+		tag = tags[pos]
+		contour_pos = strpos (strlowcase (tag), "_contour")
+		if (contour_pos gt 0) then tag = strmid (tag, 0, contour_pos)
+		index = where (avail_list eq tag)
 		if (index ge 0) then begin
 			if (dependency_ok (tag, depend, sources)) then begin
-				label = available.(index)
+				label = avail.(index)
 				if (num_list eq 0) then begin
 					list = create_struct (tag, label)
 					pos_list = [ pos ]
