@@ -376,9 +376,9 @@ module Magnetic
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
                                 ! DIAG_DOC:   \quad(maximum inverse plasma beta)
-  integer :: idiag_bxm=0        ! DIAG_DOC: $\left<\left<B\right>_{yz}^2\right>_x^{1/2}$
-  integer :: idiag_bym=0        ! DIAG_DOC: $\left<\left<B\right>_{zx}^2\right>_y^{1/2}$
-  integer :: idiag_bzm=0        ! DIAG_DOC: $\left<\left<B\right>_{xy}^2\right>_z^{1/2}$
+  integer :: idiag_bxm=0        ! DIAG_DOC: $\left<B_x\right>$
+  integer :: idiag_bym=0        ! DIAG_DOC: $\left<B_y\right>$
+  integer :: idiag_bzm=0        ! DIAG_DOC: $\left<B_z\right>$
   integer :: idiag_bxbym=0      ! DIAG_DOC: $\left<B_x B_y\right>$
   integer :: idiag_bxbzm=0      ! DIAG_DOC:
   integer :: idiag_bybzm=0      ! DIAG_DOC:
@@ -3266,7 +3266,7 @@ module Magnetic
           call sum_mn_name(uj,idiag_ujm)
         endif
 !
-!  rms values of mean field.
+!  mean field <B_i>, and mean components of the correlation matrix <B_i B_j>.
 !
         if (idiag_bxm/=0) call sum_mn_name(p%bbb(:,1),idiag_bxm)
         if (idiag_bym/=0) call sum_mn_name(p%bbb(:,2),idiag_bym)
