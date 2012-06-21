@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  This module incorporates all the modules used for Natalia's
-!  aerosol simulations 
+!  aerosol simulations. 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
