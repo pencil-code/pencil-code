@@ -72,7 +72,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Add a --notify option that starts zenity/xmessage if available and
 #   under X11, or beeps.
 
-# Copyright (C) 2009  Wolfgang Dobler
+# Copyright (C) 2009-2012 The Pencil Code Team
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the same conditions as Perl or under the GNU General Public
@@ -162,6 +162,8 @@ my $runtime_dir = './runtime';
 my $lockfile = './LOCK';
 my $errorfile = './ERROR';
 my $noerasefile = './NOERASE';
+my $rerunfile = './RERUN';
+my $newdirfile = './NEWDIR';
 my $copy_snapshots = 'copy-snapshots';
 my $copy_snapshots_log = './copy-snapshots.log';
 my $start_x = 'src/start.x';
@@ -243,6 +245,8 @@ for my $subcmd (@subcmds) {
     if (defined($action)) {
         print STDERR "Subcommand: $subcmd\n" unless ($quiet);
         &$action();
+        handle_rerun($action);
+        handle_newdir($action);
     } else {
         warn "No such subcommand: <$subcmd>\n\n";
         die usage();
@@ -1006,6 +1010,49 @@ sub copy_snapshots {
 # Run $copy_snapshots and append the output to a log file
     my ($logfile, @args) = @_;
     run_system_cmd("$copy_snapshots -v @args >> $logfile 2>&1");
+}
+# ---------------------------------------------------------------------- #
+sub handle_rerun {
+# If a RERUN file exists and $action is 'run', do $action again.
+# Remove RERUN.
+    my ($action) = @_;
+
+    if (-e $rerunfile) {
+        unlink $rerunfile;
+        if ($action == \&run_cmd) {
+            &$action();
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub handle_newdir {
+# If a NEWDIR file exists:
+# Read its first line into $newdir.
+# Remove NEWDIR.
+    my ($action) = @_;
+
+    if (-e $newdirfile) {
+        unlink $newdirfile;
+        if ($action == \&run_cmd) {
+            my $newdir = (get_file_content($newdirfile))[0];
+            if (-d $newdir && is_run_directory($newdir)) {
+                chdir $newdir;
+                &$action();
+            } else {
+                print STDERR
+                  "NEWDIR directory <$newdir> is not a run directory\n";
+                &$action();
+            }
+        }
+    }
+}
+# ---------------------------------------------------------------------- #
+sub is_run_directory {
+    my ($dir) = @_;
+
+    for my $f ('run.in', 'src/run.x') {
+        return 0 unless (-e "$dir/$f");
+    }
 }
 # ---------------------------------------------------------------------- #
 sub kill_remote_processes {
