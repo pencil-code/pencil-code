@@ -2096,7 +2096,7 @@ module Special
       ! thermal diffusivity: chi = gamma * kappa / (rho * cp)
       ! chi = gamma * chi_spitzer
       ! chi_spitzer = kappa / (rho * cp) ; kappa = K_spitzer * T^2.5
-      chi_spitzer =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
+      chi_spitzer = Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
 !
       tmpv(:,:)=0.
       do i=1,3
