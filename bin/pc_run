@@ -38,7 +38,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
-#       --notify    Tell us (audibly and visually) when compilation is done.
+#       --notify    Tell us (audibly and visually) when the run is done.
 #   -N, --no-pencil-check
 #                   Suppress pencil consistency check, irrespective of
 #                   &run_pars.lpencil_check.
@@ -69,8 +69,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Extract common code for finding and parsing config file from here
 #   and pc_run and put it into Pencil::ConfigFinder (or some 3rd module,
 #   or Pencil::Util).
-# - Add a --notify option that starts zenity/xmessage if available and
-#   under X11, or beeps.
 
 # Copyright (C) 2009-2012 The Pencil Code Team
 #
@@ -127,7 +125,7 @@ if ($opts{'last'}) { die get_last(); }
 my $config_files   = ($opts{'f'} || $opts{'config-files'}    || undef);
 my $host_id        = ($opts{'H'} || $opts{'host-id'}         || undef);
 my $suppress_check = ($opts{'N'} || $opts{'no-pencil-check'} || '');
-my $notify       = (              $opts{'notify'}       || '');
+my $notify         = (              $opts{'notify'}          || '');
 my $quiet          = ($opts{'q'} || $opts{'quiet'}           || '');
 
 my @config_files;
@@ -1389,7 +1387,7 @@ END {
 
     system('env | sort') if ($debug);
 
-    Pencil::Util::notify('building') if $notify;
+    Pencil::Util::notify('running') if $notify;
 
 }
 
