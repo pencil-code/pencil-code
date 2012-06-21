@@ -2092,6 +2092,10 @@ module Special
       real, dimension (nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
       integer :: i, j
 !
+      ! heatflux density vector: q = kappa * grad_T [W/m^2]
+      ! thermal diffusivity: chi = gamma * kappa / (rho * cp)
+      ! chi = gamma * chi_spitzer
+      ! chi_spitzer = kappa / (rho * cp) ; kappa = K_spitzer * T^2.5
       chi_spitzer =  Kpara * p%rho1 * p%TT**expo * p%cp1 * get_hcond_fade_fact()
 !
       tmpv(:,:)=0.
