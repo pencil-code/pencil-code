@@ -254,7 +254,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 	all_quant = pc_check_quantities (sources=varcontent, /all)
 	if (keyword_set (quantities)) then quant = quantities else quant = all_quant
-	all_over = pc_check_quantities (sources=varcontent, /overplots)
+	all_over = pc_check_quantities (sources=varcontent, /vectorfiels)
 	if (keyword_set (overplots)) then over = overplots else over = all_over
 	sources = varcontent.idlvar
 	sources = sources[where (sources ne "dummy")]
