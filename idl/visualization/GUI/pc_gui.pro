@@ -52,9 +52,6 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 default, quantities, { $
 	Temp:'temperature', $
 	j_abs:'current density', $
-	HR_ohm:'ohmic heating rate', $
-	HR_viscous:'viscous heating rate', $
-;	rho_mag:'magnetic energy', $
 ;	B_x:'magnetic field x', $
 ;	B_y:'magnetic field y', $
 	B_z:'magnetic field z', $
@@ -62,14 +59,10 @@ default, quantities, { $
 ;	u_x:'velocity x', $
 ;	u_y:'velocity y', $
 	u_z:'velocity z', $
-;	P_therm:'thermal pressure', $
-	rho_u_z:'impulse density z', $
+	P_therm:'thermal pressure', $
+	grad_P_therm_abs:'thermal pressure gradient', $
 ;	Rn_visc:'viscous Rn', $
 ;	Rn_mag:'magnetic Rn', $
-;	rho_c:'minimum density', $
-	Spitzer_q:'Spitzer heatflux', $
-	Spitzer_dt:'Spitzer timestep', $
-;	n_rho:'particle density', $
 	log_rho:'logarithmic density' $
 }
 
