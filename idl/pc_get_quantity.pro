@@ -36,48 +36,49 @@
 ;;;  Examples: (in ascending order of efficiency)
 ;;;  ============================================
 ;;;
-;;;   Load varfile and calculate separate quantities using a data structure:
-;;;   IDL> pc_read_var, obj=vars, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> HR_viscous = pc_get_quantity (vars, tags, 'HR_viscous', dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> HR_ohm = pc_get_quantity (vars, tags, 'HR_ohm', dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> B_z = pc_get_quantity (vars, tags, 'B_z', dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> tvscl, HR_viscous[*,*,20], 0
-;;;   IDL> tvscl, HR_ohm[*,*,20], 1
-;;;   IDL> tvscl, B_z[*,*,20], 2
+;;;  * Using 'pc_read_var':
 ;;;
-;;;   Load varfile and calculate separate quantities using a data array:
+;;;   Load varfile and calculate separate quantities, simplest version:
+;;;   IDL> pc_read_var, obj=vars
+;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', vars)
+;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', vars)
+;;;   IDL> B_z = pc_get_quantity ('B_z', vars)
+;;;   IDL> tvscl, HR_viscous[*,*,20]
+;;;
+;;;   Load varfile and calculate an array of quantities: (RECOMMENDED)
+;;;   IDL> pc_read_var, obj=vars
+;;;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], vars)
+;;;   IDL> tvscl, result.HR_viscous[*,*,20]
+;;;
+;;;  * Using 'pc_read_var_raw':
+;;;
+;;;   Load varfile and calculate separate quantities, using a data array:
+;;;   IDL> pc_read_var_raw, obj=var, tags=tags
+;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags)
+;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags)
+;;;   IDL> B_z = pc_get_quantity ('B_z', var, tags)
+;;;   IDL> tvscl, HR_viscous[*,*,20]
+;;;
+;;;   Load varfile and calculate an array of quantities: (RECOMMENDED)
 ;;;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> HR_viscous = pc_get_quantity (var, tags, 'HR_viscous', dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> HR_ohm = pc_get_quantity (var, tags, 'HR_ohm', dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> B_z = pc_get_quantity (var, tags, 'B_z', dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> tvscl, HR_viscous[*,*,20], 0
-;;;   IDL> tvscl, HR_ohm[*,*,20], 1
-;;;   IDL> tvscl, B_z[*,*,20], 2
+;;;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], var, tags, dim=dim, grid=grid, param=param, run_param=run_param)
+;;;   IDL> tvscl, result.HR_viscous[*,*,20]
 ;;;
-;;;   Load varfile and calculate an array of quantities using the cache: (RECOMMENDED)
+;;;   Load varfile and separately calculate quantities, using the cache manually:
 ;;;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> result = pc_get_quantity (var, tags, ['HR_viscous', 'HR_ohm', 'B_z'], dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> tvscl, result.HR_viscous[*,*,20], 0
-;;;   IDL> tvscl, result.HR_ohm[*,*,20], 1
-;;;   IDL> tvscl, result.B_z[*,*,20], 2
+;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;;;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
+;;;   IDL> tvscl, HR_viscous[*,*,20]
 ;;;
-;;;   Load varfile and calculate separate quantities using the cache: (RECOMMENDED FOR LARGE DATASETS)
-;;;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> HR_viscous = pc_get_quantity (var, tags, 'HR_viscous', dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> HR_ohm = pc_get_quantity (var, tags, 'HR_ohm', dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> B_z = pc_get_quantity (var, tags, 'B_z', dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
-;;;   IDL> tvscl, HR_viscous[*,*,20], 0
-;;;   IDL> tvscl, HR_ohm[*,*,20], 1
-;;;   IDL> tvscl, B_z[*,*,20], 2
+;;;  * Using 'pc_read_slice_raw':
 ;;;
-;;;   Load 2D-slice and calculate separate quantities using the cache: (RECOMMENDED FOR SLICES OF LARGE DATASETS)
+;;;   Load 2D-slice and calculate separate quantities, using the cache manually:
 ;;;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> HR_viscous = pc_get_quantity (var, tags, 'HR_viscous', dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> HR_ohm = pc_get_quantity (var, tags, 'HR_ohm', dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> B_z = pc_get_quantity (var, tags, 'B_z', dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
-;;;   IDL> tvscl, HR_viscous, 0
-;;;   IDL> tvscl, HR_ohm, 1
-;;;   IDL> tvscl, B_z, 2
+;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;;;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
+;;;   IDL> tvscl, HR_viscous
 ;;;
 
 
@@ -88,7 +89,7 @@ function pc_compute_quantity, vars, index, quantity
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, bb, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
-	common cdat, x, y, z, mx, my, mz, nw
+	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
 	if (strcmp (quantity, 'u', /fold_case)) then begin
@@ -425,31 +426,71 @@ end
 
 
 ; Calculation of physical quantities.
-function pc_get_quantity, vars, index, quantity, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
+function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, bb, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
-	common cdat, x, y, z, mx, my, mz, nw
+	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
 
-	if (size (vars, /type) eq 8) then begin
-		; Create array out of given structure and pass recursively computed results
-		vars = pc_convert_vars_struct (vars, index, tags)
+	if (n_elements (quantity) eq 0) then quantity = ""
+	if (not any (quantity ne "")) then begin
+		; Print usage
+		print, "USAGE:"
+		print, "======"
+		print, "* using var-structures:"
+		print, "-----------------------"
+		print, "pc_read_var, obj=vars"
+		print, "HR = pc_get_quantity ('HR_viscous', vars)"
+		print, ""
+		print, "* using var-arrays:"
+		print, "-------------------"
+		print, "pc_read_var_raw, obj=var, tags=tags"
+		print, "HR = pc_get_quantity ('HR_viscous', var, tags)"
+		print, ""
+		print, "* using 2D-slices:"
+		print, "------------------"
+		print, "pc_read_slice_raw, obj=var, tags=tags, cut_x=20"
+		print, "HR = pc_get_quantity ('HR_viscous', var, tags)"
+		print, ""
+		print, "* to get a list of available quantities:"
+		print, "----------------------------------------"
+		print, "help, pc_check_quantities (/all), /str"
+		print, ""
+		return, -1
 	end
 
-	sources = tag_names (index)
+	; Default data directory
+	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 
+	; Load 'start.in' parameters
+	if (n_elements (param) eq 0) then pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
+	start_par = param
+	lequidist = safe_get_tag (param, 'lequidist', default=[1,1,1])
+
+	; Load 'run.in' parameters
+	if (n_elements (run_param) eq 0) then pc_read_param, obj=run_param, dim=dim, datadir=datadir, /param2, /quiet
+	run_par = run_param
+
+	; Set default units
 	if (n_elements (units) eq 0) then begin
-		; Set default units
 		print, "WARNING: using unity as unit."
 		units = { length:1, velocity:1, time:1, temperature:1, density:1, mass:1, magnetic_field:1, current_density:1 }
 	end
 	unit = units
 
-	; Default data directory
-	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
+	if (size (vars, /type) eq 8) then begin
+		; Need to have a valid varcontent
+		if (size (index, /type) eq 8) then varcontent = index
+		if (n_elements (varcontent) eq 0) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param)
+		; Create array out of given structure and pass recursively computed results
+		array = pc_convert_vars_struct (vars, varcontent, index)
+		return, pc_get_quantity (quantity, array, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup)
+	end
+
+	sources = tag_names (index)
 
 	if (n_elements (dim) eq 0) then begin
 		; Check consistency of dimensions
@@ -483,19 +524,6 @@ function pc_get_quantity, vars, index, quantity, units=units, dim=dim, grid=grid
 		if (((size (vars))[1] ne mx) or ((size (vars))[2] ne my) or ((size (vars))[3] ne mz)) then $
 			message, "Data doesn't fit to the given dim structure."
 	end
-
-	if (n_elements (param) eq 0) then begin
-		; Load 'start.in' parameters
-		pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
-	end
-	start_par = param
-	lequidist = safe_get_tag (param, 'lequidist', default=[1,1,1])
-
-	if (n_elements (run_param) eq 0) then begin
-		; Load 'run.in' parameters
-		pc_read_param, obj=run_param, dim=dim, datadir=datadir, /param2, /quiet
-	end
-	run_par = run_param
 
 	if (n_elements (grid) eq 0) then begin
 		; Check consistency of grid

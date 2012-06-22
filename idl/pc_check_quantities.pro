@@ -75,7 +75,7 @@ function dependency_ok, tag, depend, sources
 end
 
 ; Return available quantities.
-function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, overplots=overplots, warn=warn, indices=indices
+function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, vectorfields=vectorfields, warn=warn, indices=indices
 
 	; List of available quantities.
 	available = { $
@@ -112,7 +112,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	}
 
 	; List of available overplot quantities.
-	available_overplots = { $
+	available_vectorfields = { $
 		u:'velocities', $
 		j:'current density', $
 		A_contour:'fieldlines', $
@@ -164,7 +164,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 
 	; Fill default values
 	if (keyword_set (all)) then return, available
-	if (keyword_set (overplots)) then return, available_overplots
+	if (keyword_set (vectorfields)) then return, available_vectorfields
 	if (not keyword_set (check)) then check = available
 	if (not keyword_set (sources)) then sources = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 
@@ -187,7 +187,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	list = ""
 	pos_list = -1
 	num_list = 0
-	avail = create_struct (available, available_overplots)
+	avail = create_struct (available, available_vectorfields)
 	avail_list = tag_names (avail)
 	tags = tag_names (check)
 	for pos = 0, num-1 do begin

@@ -97,7 +97,7 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 	for pos = 0, num-1 do begin
 		tag = tags[pos]
 		last = (pos eq num-1)
-		varsets[i].(pos) = pc_get_quantity (vars, index, tag, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last)
+		varsets[i].(pos) = pc_get_quantity (tag, vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last)
 
 		; Divide by default units, where applicable.
 		if (any (strcmp (tag, ['u_abs', 'u_x', 'u_y', 'u_z'], /fold_case))) then $
@@ -125,7 +125,7 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 	num = n_elements (tags)
 	for pos = 0, num-1 do begin
 		last = (pos eq num-1)
-		oversets[i].(pos) = float (pc_get_quantity (vars, index, tags[pos], unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
+		oversets[i].(pos) = float (pc_get_quantity (tags[pos], vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
 
 		; Divide by default units, where applicable.
 		if (any (strcmp (tag, ['uu'], /fold_case))) then $
