@@ -75,7 +75,7 @@ function dependency_ok, tag, depend, sources
 end
 
 ; Return available quantities.
-function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, vectorfields=vectorfields, warn=warn, indices=indices
+function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, aliases=aliases, vectorfields=vectorfields, warn=warn, indices=indices
 
 	; List of available quantities.
 	available = { $
@@ -111,6 +111,15 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_rho:'ln density', $
 		log_rho:'log density', $
 		n_rho:'particle density' $
+	}
+
+	; List of code variable aliases.
+	alias = { $
+		TT:'Temp', $
+		uu:'u', $
+		AA:'A', $
+		lnrho:'ln_rho', $
+		lnTT:'ln_Temp' $
 	}
 
 	; List of available overplot quantities.
@@ -167,9 +176,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	}
 
 	; Fill default values
-	if (keyword_set (all)) then return, available
+	if (keyword_set (all)) then return, create_struct (available, alias)
+	if (keyword_set (aliases)) then return, alias
 	if (keyword_set (vectorfields)) then return, available_vectorfields
-	if (not keyword_set (check)) then check = available
+	if (not keyword_set (check)) then check = create_struct (available, alias)
 	if (not keyword_set (sources)) then sources = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 
 	if (size (sources, /type) eq 8) then begin
@@ -193,10 +203,18 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	num_list = 0
 	avail = create_struct (available, available_vectorfields)
 	avail_list = tag_names (avail)
+	alias_list = tag_names (alias)
 	tags = tag_names (check)
 	for pos = 0, num-1 do begin
 		tag = tags[pos]
 		index = where (avail_list eq tag)
+		if (index lt 0) then begin
+			index = where (alias_list eq tag)
+			if (index ge 0) then begin
+				tag = alias.(index)
+				index = where (strcmp (avail_list, tag, /fold_case))
+			end
+		end
 		if (index ge 0) then begin
 			if (dependency_ok (tag, depend, sources)) then begin
 				label = avail.(index)
@@ -213,6 +231,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 			end
 		end else if (keyword_set (warn)) then begin
 			print, "WARNING: '"+tag+"' is not in availablility list."
+stop
 		end
 	end
 

@@ -88,7 +88,7 @@
 function pc_compute_quantity, vars, index, quantity
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
-	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
+	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
@@ -393,6 +393,12 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (jj))
 	end
 
+	; Check for Pencil Code alias names
+	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)
+	tags = strlowcase (tag_names (alias))
+	pos = where (tags eq strlowcase (quantity))
+	if (any (pos ge 0)) then return, pc_compute_quantity (vars, index, alias.(pos))
+
 	message, "Unknown quantity '"+quantity+"'"
 	return, !Values.D_NaN
 end
@@ -402,7 +408,7 @@ end
 pro pc_quantity_cache_cleanup
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
-	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
+	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 
 	undefine, uu
 	undefine, rho
@@ -436,14 +442,14 @@ end
 function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
-	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
+	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
 
 	if (n_elements (quantity) eq 0) then quantity = ""
-	if (not any (quantity ne "")) then begin
+	if (not any (quantity ne "") or (n_elements (vars) eq 0) or ((n_elements (index) eq 0) and (size (vars, /type) ne 8))) then begin
 		; Print usage
 		print, "USAGE:"
 		print, "======"
@@ -466,6 +472,9 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 		print, "----------------------------------------"
 		print, "help, pc_check_quantities (/all), /str"
 		print, ""
+		if (not any (quantity ne "")) then print, "ERROR: no quantity selected"
+		if (n_elements (vars) eq 0) then print, "ERROR: no data source given"
+		if (n_elements (index) eq 0) then print, "ERROR: data source has no associated index structure"
 		return, -1
 	end
 
