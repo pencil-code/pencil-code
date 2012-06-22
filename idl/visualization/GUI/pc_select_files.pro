@@ -252,7 +252,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, /quiet
 	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, dim=dim, /quiet
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
-	all_quant = pc_check_quantities (sources=varcontent, /all)
+	all_quant = pc_check_quantities (sources=varcontent, /available)
 	if (keyword_set (quantities)) then quant = quantities else quant = all_quant
 	all_over = pc_check_quantities (sources=varcontent, /vectorfields)
 	if (keyword_set (overplots)) then over = overplots else over = all_over

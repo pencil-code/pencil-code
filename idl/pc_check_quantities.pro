@@ -75,7 +75,7 @@ function dependency_ok, tag, depend, sources
 end
 
 ; Return available quantities.
-function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, aliases=aliases, vectorfields=vectorfields, warn=warn, indices=indices
+function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, available=avail, aliases=aliases, vectorfields=vectorfields, warn=warn, indices=indices
 
 	; List of available quantities.
 	available = { $
@@ -177,6 +177,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 
 	; Fill default values
 	if (keyword_set (all)) then return, create_struct (available, alias)
+	if (keyword_set (avail)) then return, available
 	if (keyword_set (aliases)) then return, alias
 	if (keyword_set (vectorfields)) then return, available_vectorfields
 	if (not keyword_set (check)) then check = create_struct (available, alias)
