@@ -204,7 +204,7 @@ module Magnetic
   real :: forcing_continuous_aa_phasefact=1.0
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
-  real :: numag=impossible
+  real :: numag=0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nx,ny,nz,3) :: A_relprof
@@ -3026,11 +3026,11 @@ module Magnetic
 !
 ! Add jxb/(b^2\nu) Magneto-Frictional velocity to uxb term
 !
-      if (lmagneto_friction.and..not.lhydro) then
-        do ix=1, nx
-            magfric(ix,1:3)=p%jxbxb(ix,1:3)/(numag*(1.e-1+p%b2(ix)))
-            vmagfric2(ix,1:3)=sqrt(p%jxb(ix,1:3)*p%jxb(ix,1:3))/&
-                              (numag*(1.e-1+p%b2(ix)))
+      if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
+        do ix=1,nx
+          magfric(ix,1:3)=p%jxbxb(ix,1:3)/(numag*(1.e-1+p%b2(ix)))
+          vmagfric2(ix,1:3)=sqrt(p%jxb(ix,1:3)*p%jxb(ix,1:3))/&
+              (numag*(1.e-1+p%b2(ix)))
         end do
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+magfric(1:nx,1:3)
       endif
