@@ -384,6 +384,5 @@ COMPILE_OPT IDL2,HIDDEN
   endif
 ;
   time = t
-  grid = { t:t, x:x, y:y, z:z, dx:dx, dy:dy, dz:dz }
 ;
 end
