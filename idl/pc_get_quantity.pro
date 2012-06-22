@@ -309,7 +309,7 @@ function pc_compute_quantity, vars, index, quantity
 		return, run_par.nu * rho * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.density * unit.velocity^3 / unit.length
 	end
 
-	if (strcmp (quantity, 'A', /fold_case)) then begin
+	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential
 		return, vars[l1:l2,m1:m2,n1:n2,index.aa] * unit.magnetic_field
 	end

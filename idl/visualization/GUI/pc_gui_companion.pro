@@ -124,11 +124,8 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 	tags = tag_names (oversets[i])
 	num = n_elements (tags)
 	for pos = 0, num-1 do begin
-		tag = tags[pos]
 		last = (pos eq num-1)
-		contour_pos = strpos (strlowcase (tag), "_contour")
-		if (contour_pos gt 0) then tag = strmid (tag, 0, contour_pos)
-		oversets[i].(pos) = float (pc_get_quantity (vars, index, tag, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
+		oversets[i].(pos) = float (pc_get_quantity (vars, index, tags[pos], unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
 
 		; Divide by default units, where applicable.
 		if (any (strcmp (tag, ['uu'], /fold_case))) then $

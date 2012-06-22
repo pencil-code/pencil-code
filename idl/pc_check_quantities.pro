@@ -113,10 +113,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 
 	; List of available overplot quantities.
 	available_overplots = { $
-		u:'velocity vector', $
-		j:'current density vector', $
-		A:'magnetic vector potential', $
-		B:'magnetic field vector', $
+		u:'velocities', $
+		j:'current density', $
+		A_contour:'fieldlines', $
+		B:'magnetic field', $
 		grad_Temp:'grad temperature', $
 		grad_P_therm:'grad thermal pressure' $
 	}
@@ -128,15 +128,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_Temp:'Temp', $
 		log_Temp:'Temp', $
 		A:'aa', $
-		B:'aa', $
-		j:'aa', $
+		A_contour:'A', $
+		B:'A', $
+		j:'A', $
 		j_abs:'j', $
 		HR_ohm:'j', $
 		HR_viscous:['u', 'rho'], $
 		rho_mag:'B', $
-		A_x:'aa', $
-		A_y:'aa', $
-		A_z:'aa', $
+		A_x:'A', $
+		A_y:'A', $
+		A_z:'A', $
 		B_x:'B', $
 		B_y:'B', $
 		B_z:'B', $
@@ -191,8 +192,6 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	tags = tag_names (check)
 	for pos = 0, num-1 do begin
 		tag = tags[pos]
-		contour_pos = strpos (strlowcase (tag), "_contour")
-		if (contour_pos gt 0) then tag = strmid (tag, 0, contour_pos)
 		index = where (avail_list eq tag)
 		if (index ge 0) then begin
 			if (dependency_ok (tag, depend, sources)) then begin

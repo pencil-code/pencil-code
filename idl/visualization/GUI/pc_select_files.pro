@@ -34,11 +34,37 @@
 ;;;
 
 
+; Update a list of given quantities.
+pro pc_select_files_update_list, list, all, indices, default=default, avail=avail_list
+
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
+
+	if (not keyword_set (default)) then default = all
+
+	avail_list = "[N/A] ("+list+")"
+	indices = -1
+	tags = tag_names (all)
+	tags_default = tag_names (default)
+	if (any (cont_selected lt 0)) then return
+
+	avail = pc_check_quantities (check=all, sources=sources[cont_selected], /indices)
+	if (any (avail lt 0)) then return
+
+	num = n_elements (avail)
+	for pos = 0, num-1 do begin
+		avail_list[avail[pos]] = all.(avail[pos])
+		if (any (strcmp (tags_default, tags[avail[pos]], /fold_case))) then indices = [ indices, avail[pos] ]
+	end
+	active = where (indices ge 0)
+	if (any (active ge 0)) then indices = indices[active]
+end
+
+
 ; Event handling of file dialog window
 pro select_files_event, event
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -49,13 +75,13 @@ pro select_files_event, event
 	'ALL': begin
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = indgen (num_files)
 		num_selected = num_files
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*(num_selected+var_selected+add_selected)
+		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
 		break
 	end
 	'NONE': begin
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = -1
 		num_selected = 0
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*(var_selected+add_selected)
+		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(var_selected+add_selected)
 		break
 	end
 	'SKIP': begin
@@ -84,17 +110,17 @@ pro select_files_event, event
 	'LIST': begin
 		selected = WIDGET_INFO (c_list, /LIST_SELECT)
 		if (any (selected ne -1)) then num_selected = n_elements (selected) else num_selected = 0
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*(num_selected+var_selected+add_selected)
+		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
 		break
 	end
 	'ADD': begin
 		add_selected = event.select
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*(num_selected+var_selected+add_selected)
+		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
 		break
 	end
 	'VAR': begin
 		var_selected = event.select
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*(num_selected+var_selected+add_selected)
+		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
 		break
 	end
 	'SLICE': begin
@@ -104,6 +130,8 @@ pro select_files_event, event
 			if (slice eq 1) then max_pos = nx-1
 			if (slice eq 2) then max_pos = ny-1
 			if (slice eq 3) then max_pos = nz-1
+			slice_corr = 1
+			if (max_pos ge 1) then slice_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
 			if (max_pos lt 1) then cut_pos = -1 else cut_pos = max_pos/2
 			WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos>0
 			WIDGET_CONTROL, cut_sl, SET_SLIDER_MIN = 0<max_pos
@@ -111,6 +139,7 @@ pro select_files_event, event
 			WIDGET_CONTROL, cut_sl, SET_VALUE = cut_pos
 			WIDGET_CONTROL, cut_co, SENSITIVE = 1-(cut_pos eq -1)
 			WIDGET_CONTROL, cut_sl, SENSITIVE = 1-(cut_pos eq -1)
+			WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
 		end
 		break
 	end
@@ -132,47 +161,17 @@ pro select_files_event, event
 	'Q_DEF':
 	'CONT': begin
 		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
-		quant_avail = "[N/A] ("+quant_list+")"
-		quant_selected = -1
-		tags = tag_names (all_quant)
-		tags_quant = tag_names (quant)
-		if (any (cont_selected ge 0)) then begin
-			avail = pc_check_quantities (check=all_quant, sources=sources[cont_selected], /indices)
-			if (any (avail ge 0)) then begin
-				num = n_elements (avail)
-				for pos=0, num-1 do begin
-					quant_avail[avail[pos]] = all_quant.(avail[pos])
-					tag = tags[avail[pos]]
-					if (any (strcmp (tags_quant, tag, /fold_case))) then quant_selected = [ quant_selected, avail[pos] ]
-				end
-				indices = where (quant_selected ge 0)
-				if (any (indices ge 0)) then quant_selected = quant_selected[indices]
-			end
+		num = 0
+		for pos = 0, num_cont-1 do begin
+			if (not any (pos eq cont_selected)) then continue
+			if (any (strcmp (sources[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
 		end
+		cont_corr = num / float (num_cont)
+		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+		pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
 		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
 		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
-		over_avail = "[N/A] ("+over_list+")"
-		over_selected = -1
-		tags = tag_names (all_over)
-		tags_over = tag_names (over)
-		if (any (cont_selected ge 0)) then begin
-			avail = pc_check_quantities (check=all_over, sources=sources[cont_selected], /indices)
-			if (any (avail ge 0)) then begin
-				num = n_elements (tags_over)
-				for pos=0, num-1 do begin
-					contour_pos = strpos (strlowcase (tags_over[pos]), "_contour")
-					if (contour_pos gt 0) then tags_over[pos] = strmid (tags_over[pos], 0, contour_pos)
-				end
-				num = n_elements (avail)
-				for pos=0, num-1 do begin
-					over_avail[avail[pos]] = all_over.(avail[pos])
-					tag = tags[avail[pos]]
-					if (any (strcmp (tags_over, tag, /fold_case))) then over_selected = [ over_selected, avail[pos] ]
-				end
-				indices = where (over_selected ge 0)
-				if (any (indices ge 0)) then over_selected = over_selected[indices]
-			end
-		end
+		pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
 		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
 		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 		break
@@ -227,10 +226,11 @@ pro select_files_event, event
 end
 
 
+; File selection dialog GUI.
 pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, nx, ny, nz
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
 
 	; Default settings
 	default, pattern, "VAR[0-9]*"
@@ -265,7 +265,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	nx = dim.nx
 	ny = dim.ny
 	nz = dim.nz
-	if (not keyword_set (units_struct)) then units = units_struct
+	nghost = max ([dim.nghostx, dim.nghosty, dim.nghostz])
+	if (keyword_set (units_struct)) then units = units_struct
 	if (n_elements (units) le 0) then begin
 		pc_units, obj=unit, datadir=datadir, dim=dim, param=param, /quiet
 		mu0_SI = 4.0 * !Pi * 1.e-7
@@ -294,6 +295,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	; Get file size
 	file_struct = file_info (procdir+varfile)
 	gb_per_file = file_struct.size / 1073741824.
+	cont_corr = 1.0
+	slice_corr = 1.0
 
 	; Get list of available snapshots
 	files = file_search (procdir, pattern)
@@ -379,7 +382,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	slice = 0
 	max_pos = -1
 	cut_pos = -1
-	SLICE	= WIDGET_BASE (VC, frame=1, /align_center, /col)
+	SEL	= WIDGET_BASE (VC, frame=1, /align_center, /col)
 	if ((dimensionality eq 3) and (allprocs eq 1)) then begin
 		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
 		if (cut_x ge 0) then begin
@@ -397,19 +400,20 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 			max_pos = dim.nz
 			cut_pos = cut_z < max_pos
 		end
-		tmp	= WIDGET_LABEL (SLICE, value="From: "+procdir, frame=0)
-		d_slice	= WIDGET_DROPLIST (SLICE, value=load_list, /align_center, uvalue='SLICE')
+		tmp	= WIDGET_LABEL (SEL, value="From: "+procdir, frame=0)
+		d_slice	= WIDGET_DROPLIST (SEL, value=load_list, /align_center, uvalue='SLICE')
 		WIDGET_CONTROL, d_slice, SET_LIST_SELECT = slice
-		cut_co	= CW_FIELD (SLICE, title='Slice position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
+		cut_co	= CW_FIELD (SEL, title='Slice position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
 		WIDGET_CONTROL, cut_co, SENSITIVE = 0
-		cut_sl	= WIDGET_SLIDER (SLICE, uvalue='CUT_SL', value=0, min=0, max=1, /drag, /suppress_value, sensitive=0)
+		cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=0, min=0, max=1, /drag, /suppress_value, sensitive=0)
 	end else begin
-		tmp	= WIDGET_LABEL (SLICE, value="From: "+datadir+"/proc*/", frame=0)
-		tmp	= WIDGET_LABEL (SLICE, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
+		tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+"/proc*/", frame=0)
+		tmp	= WIDGET_LABEL (SEL, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
 	end
 
 	tmp	= WIDGET_LABEL (VC, value='Available content:', frame=0)
 	content = varcontent.variable
+	num_cont = n_elements (content)
 	content = content[where (content ne "UNKNOWN")]
 	num_content = n_elements (content)
 	cont_selected = indgen (num_content)
@@ -418,19 +422,12 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	QU	= WIDGET_BASE (BASE, /col)
 
-	tmp	= WIDGET_LABEL (QU, value='Derivable quantities:', frame=0)
+	tmp	= WIDGET_LABEL (QU, value='Available quantities:', frame=0)
 	num_all_quant = n_tags (all_quant)
 	quant_list = strarr (num_all_quant)
 	num_quant = n_tags (quant)
 	for pos=0, num_all_quant-1 do quant_list[pos] = all_quant.(pos)
-	quant_avail = quant_list
-	quant_selected = intarr (num_quant)
-	tags = tag_names (all_quant)
-	tags_quant = tag_names (quant)
-	for pos=0, num_quant-1 do begin
-		index = where (tags eq tags_quant[pos])
-		if (any (index ge 0)) then quant_selected[pos] = index
-	end
+	pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
 	c_quant	= WIDGET_LIST (QU, value=quant_list, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
 	WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
 	SEL	= WIDGET_BASE (QU, /row, /align_center)
@@ -440,22 +437,12 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	OV	= WIDGET_BASE (BASE, /col)
 
-	tmp	= WIDGET_LABEL (OV, value='Overplottable quantities:', frame=0)
+	tmp	= WIDGET_LABEL (OV, value='Available overplots:', frame=0)
 	num_all_over = n_tags (all_over)
 	over_list = strarr (num_all_over)
 	num_over = n_tags (over)
 	for pos=0, num_all_over-1 do over_list[pos] = all_over.(pos)
-	over_avail = over_list
-	over_selected = intarr (num_over)
-	tags = tag_names (all_over)
-	tags_over = tag_names (over)
-	for pos=0, num_over-1 do begin
-		tag = tags_over[pos]
-		contour_pos = strpos (strlowcase (tag), "_contour")
-		if (contour_pos gt 0) then tag = strmid (tag, 0, contour_pos)
-		index = where (tags eq tag)
-		if (any (index ge 0)) then over_selected[pos] = index
-	end
+	pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
 	c_over	= WIDGET_LIST (OV, value=over_list, uvalue='OVER', YSIZE=(num_over<max_display)>min_display, /multiple)
 	WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 	SEL	= WIDGET_BASE (OV, /row, /align_center)
@@ -508,6 +495,9 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 				quantities = create_struct (quantities, tag, all_quant.(quant_selected[pos]))
 			end
 		end
+	end else begin
+		undefine, quantities
+		print, "No physical quantities have been selected for computation."
 	end
 
 	; Build list of selected overplots
@@ -532,7 +522,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 			print, "none"
 		end else begin
 			print, files
-			print, "This corresponds to ", strtrim (num_selected * gb_per_file, 2), " GB = ", strtrim (num_selected, 2), " files"
+			print, "This corresponds to ", strtrim (num_selected * gb_per_file * cont_corr * slice_corr, 2), " GB = ", strtrim (num_selected, 2), " files"
 		end
 		print, ""
 	end
