@@ -87,7 +87,7 @@
 ; And update the availability and dependency list in "pc_check_quantities.pro".
 function pc_compute_quantity, vars, index, quantity
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, bb, jj
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
@@ -124,7 +124,7 @@ function pc_compute_quantity, vars, index, quantity
 		end
 	end
 	if (strcmp (quantity, 'u_abs', /fold_case)) then begin
-		; Absolute velocity
+		; Absolute value of the velocity
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		return, sqrt (dot2 (uu))
 	end
@@ -150,6 +150,11 @@ function pc_compute_quantity, vars, index, quantity
 			end
 		end
 		return, grad_Temp
+	end
+	if (strcmp (quantity, 'grad_Temp_abs', /fold_case)) then begin
+		; Absolute value of temperature gradient
+		if (n_elements (grad_Temp) eq 0) then grad_Temp = pc_compute_quantity (vars, index, 'grad_Temp')
+		return, sqrt (dot2 (grad_Temp))
 	end
 	if (strcmp (quantity, 'log_Temp', /fold_case)) then begin
 		; Logarithmic temperature
@@ -267,16 +272,17 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		if (n_elements (grad_rho) eq 0) then grad_rho = pc_compute_quantity (vars, index, 'grad_rho')
 		if (n_elements (grad_Temp) eq 0) then grad_Temp = pc_compute_quantity (vars, index, 'grad_Temp')
-		if (any (strcmp (sources, 'lnrho', /fold_case)) and any (strcmp (sources, 'lnTT', /fold_case))) then begin
-			varsets[i].grad_P = float (grad_P_fact * (grad (exp (vars[*,*,*,index.lnrho])) * exp (vars[*,*,*,index.lnTT]) + exp (vars[*,*,*,index.lnrho]) * grad (exp (vars[*,*,*,index.lnTT])))[l1:l2,m1:m2,n1:n2])
-		end else if (any (strcmp (sources, 'rho', /fold_case)) and any (strcmp (sources, 'lnTT', /fold_case))) then begin
-			varsets[i].grad_P = float (grad_P_fact * (grad (vars[*,*,*,index.rho]) * exp (vars[*,*,*,index.lnTT]) + vars[*,*,*,index.rho] * grad (exp (vars[*,*,*,index.lnTT])))[l1:l2,m1:m2,n1:n2])
-		end else if (any (strcmp (sources, 'lnrho', /fold_case)) and any (strcmp (sources, 'TT', /fold_case))) then begin
-			varsets[i].grad_P = float (grad_P_fact * (grad (exp (vars[*,*,*,index.lnrho])) * vars[*,*,*,index.TT] + exp (vars[*,*,*,index.lnrho]) * grad (vars[*,*,*,index.TT]))[l1:l2,m1:m2,n1:n2])
-		end else if (any (strcmp (sources, 'rho', /fold_case)) and any (strcmp (sources, 'TT', /fold_case))) then begin
-			varsets[i].grad_P = float (grad_P_fact * (grad (vars[*,*,*,index.rho]) * vars[*,*,*,index.TT] + vars[*,*,*,index.rho] * grad (vars[*,*,*,index.TT]))[l1:l2,m1:m2,n1:n2])
-		endif
-		return, start_par.cp * (start_par.gamma - 1.0) / start_par.gamma * (grad_rho * Temp + rho * grad_Temp) * unit.density * unit.temperature / unit.length
+		if (n_elements (grad_P_therm) eq 0) then begin
+			fact = start_par.cp * (start_par.gamma - 1.0) / start_par.gamma * unit.density * unit.temperature / unit.length
+			grad_P_therm = grad_rho
+			for pa = 0, 2 do grad_P_therm[*,*,*,pa] = fact * (grad_rho[*,*,*,pa] * Temp + rho * grad_Temp[*,*,*,pa])
+		end
+		return, grad_P_therm
+	end
+	if (strcmp (quantity, 'grad_P_therm_abs', /fold_case)) then begin
+		; Absolute value of thermal pressure gradient
+		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
+		return, sqrt (dot2 (grad_P_therm))
 	end
 
 	if (strcmp (quantity, 'rho_u_z', /fold_case)) then begin
@@ -395,7 +401,7 @@ end
 ; Clean up cache for computation of physical quantities.
 pro pc_quantity_cache_cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, bb, jj
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
 
 	undefine, uu
@@ -404,6 +410,7 @@ pro pc_quantity_cache_cleanup
 	undefine, n_rho
 	undefine, Temp
 	undefine, grad_Temp
+	undefine, grad_P_therm
 	undefine, bb
 	undefine, jj
 
@@ -428,7 +435,7 @@ end
 ; Calculation of physical quantities.
 function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, bb, jj
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
@@ -476,8 +483,10 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 
 	; Set default units
 	if (n_elements (units) eq 0) then begin
-		print, "WARNING: using unity as unit."
-		units = { length:1, velocity:1, time:1, temperature:1, density:1, mass:1, magnetic_field:1, current_density:1 }
+		pc_units, obj=unit, datadir=datadir, dim=dim, param=param, /quiet
+		mu0_SI = 4.0 * !Pi * 1.e-7
+		unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
+		units = { length:unit.length, default_length:1, default_length_str:'m', velocity:unit.velocity, default_velocity:1, default_velocity_str:'m/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1, default_magnetic_field_str:'Tesla', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
 	end
 	unit = units
 

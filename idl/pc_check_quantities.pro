@@ -82,6 +82,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Temp:'temperature', $
 		ln_Temp:'ln temperature', $
 		log_Temp:'log temperature', $
+		grad_Temp_abs:'grad temperature', $
 		j_abs:'current density', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_viscous:'viscous heating rate', $
@@ -97,6 +98,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_z:'velocity z', $
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
+		grad_P_therm_abs:'grad thermal pressure', $
 		rho_u_z:'impulse density z', $
 		Rn_visc:'viscous Rn', $
 		Rn_mag:'magnetic Rn', $
@@ -125,6 +127,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	depend = { $
 		Temp:{ Temp:['lnTT', 'TT'] }, $
 		grad_Temp:'Temp', $
+		grad_Temp_abs:'grad_Temp', $
 		ln_Temp:'Temp', $
 		log_Temp:'Temp', $
 		A:'aa', $
@@ -148,6 +151,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_abs:'u', $
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:'P_therm', $
+		grad_P_therm_abs:'grad_P_therm', $
 		rho_u_z:['u', 'rho'], $
 		Rn_visc:'u', $
 		Rn_mag:['u','B'], $
