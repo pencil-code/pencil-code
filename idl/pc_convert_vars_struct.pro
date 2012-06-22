@@ -27,6 +27,10 @@ function pc_convert_vars_struct, vars, varcontent, tags
       tag_str += ', aa:[' + strtrim (iv, 2) + ',' + strtrim (iv+1, 2) + ',' + strtrim (iv+2, 2) + ']'
       tag_str += ', ax:' + strtrim (iv, 2) + ', ay:' + strtrim (iv+1, 2) + ', az:' + strtrim (iv+2, 2)
       arr_str += ' & array[*,*,*,tags.aa] = vars.aa'
+    endif else if (varcontent[iv].idlvar eq "spitzer") then begin
+      tag_str += ', spitzer:[' + strtrim (iv, 2) + ',' + strtrim (iv+1, 2) + ',' + strtrim (iv+2, 2) + ']'
+      tag_str += ', spitzerx:' + strtrim (iv, 2) + ', spitzery:' + strtrim (iv+1, 2) + ', spitzerz:' + strtrim (iv+2, 2)
+      arr_str += ' & array[*,*,*,tags.spitzer] = vars.spitzer'
     endif else begin
       tag_str += ', ' + varcontent[iv].idlvar + ':' + strtrim (iv, 2)
       arr_str += ' & array[*,*,*,tags.' + varcontent[iv].idlvar + '] = vars.' + varcontent[iv].idlvar
