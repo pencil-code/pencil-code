@@ -79,15 +79,17 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(dim) eq 0) then begin
     if (allprocs eq 1) then begin
       pc_read_dim, object=dim, datadir=datadir, /quiet
-      procdim = dim
     endif else if (allprocs eq 2) then begin
       pc_read_dim, object=dim, datadir=datadir, /quiet
-      pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
     endif else begin
-      pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-      dim = procdim
-    end
+      pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
+    endelse
   endif
+  if (allprocs eq 2) then begin
+    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
+  endif else begin
+    procdim = dim
+  endelse
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(grid) eq 0) then $
