@@ -171,13 +171,6 @@ my $locked = 0;
 my $booted_lam = 0;
 my $booted_mpd = 0;
 
-my %dispatch_table = (
-                      start  => \&start_cmd,
-                      run    => \&run_cmd,
-                      stop   => \&stop_cmd,
-                      reload => \&reload_cmd,
-                     );
-
 ## Variables
 # ..extracted from config:
 my $local_disc          = $runtime_params{'local_disc'         } || 0;
@@ -239,6 +232,20 @@ cd_to_wordir();
 $ENV{PENCIL_WORKDIR} = getcwd();
 
 while (my $subcmd  = shift @subcmds) {
+    dispatch_subcommand($subcmd);
+}
+
+# ---------------------------------------------------------------------- #
+sub dispatch_subcommand {
+    my ($subcmd) = @_;
+
+    my %dispatch_table = (
+        start  => \&start_cmd,
+        run    => \&run_cmd,
+        stop   => \&stop_cmd,
+        reload => \&reload_cmd,
+        );
+
     my $action = $dispatch_table{$subcmd};
     if (defined($action)) {
         print STDERR "Subcommand: $subcmd\n" unless ($quiet);
@@ -250,7 +257,6 @@ while (my $subcmd  = shift @subcmds) {
         die usage();
     }
 }
-
 # ---------------------------------------------------------------------- #
 sub start_cmd {
 # Run start.x
@@ -1066,8 +1072,7 @@ sub handle_newdir {
                 if (requires_start()) {
                     print "Didn't find a var.dat file => running start.x\n";
                     print $separator_line;
-                    my $start_action = $dispatch_table{'start'};
-                    &$start_action();
+                    dispatch_subcommand('start');
                 } else {
                     print $separator_line;
                 }
