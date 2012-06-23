@@ -36,13 +36,7 @@ function yderzder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     if (not ldegenerated[1] and not ldegenerated[2]) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
         ;
-        ;  take care of nonuniform mesh
-        ;
-        if (lequidist[0]) then begin
-          fac=1/(60.^2*(y[4]-y[3])*(z[4]-z[3]))
-        endif else begin
-          fac=(1/60.^2)*dy_1[m]*dz_1[n]
-        endelse
+        fac=1/60.^2*dy_1[m]*dz_1[n]
         ;
         d[l1:l2,m,n]=fac*( $
             45.*( (45.*(f[l1:l2,m+1,n+1]-f[l1:l2,m-1,n+1])  $
@@ -71,13 +65,7 @@ function yderzder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     if (not ldegenerated[1] and not ldegenerated[2]) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
         ;
-        ;  take care of nonuniform mesh
-        ;
-        if (lequidist[0]) then begin
-          fac=1/(60.^2*(y[4]-y[3])*(z[4]-z[3]))
-        endif else begin
-          fac=(1/60.^2)*dy_1[m]*dz_1[n]
-        endelse
+        fac=1/60.^2*dy_1[m]*dz_1[n]
         ;
         d[l1:l2,m,n,*]=fac*( $
             45.*( (45.*(f[l1:l2,m+1,n+1,*]-f[l1:l2,m-1,n+1,*])  $

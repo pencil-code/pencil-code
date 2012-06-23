@@ -36,12 +36,12 @@ function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     if (not ldegenerated[0] and not ldegenerated[1]) then begin
       for n=n1,n2 do begin & for m=m1,m2 do begin
         ;
-        ;  take care of nonuniform mesh
+        ;  take care of nonuniform mesh in the x-direction
         ;
         if (lequidist[0]) then begin
-          fac=1/(60.^2*(x[4]-x[3])*(y[4]-y[3]))
+          fac=1/60.^2*dx_1[l1]*dy_1[m]
         endif else begin
-          fac=(1/60.^2)*dx_1[l1:l2]*dy_1[m]
+          fac=1/60.^2*dx_1[l1:l2]*dy_1[m]
         endelse
         ;
         d[l1:l2,m,n]=fac*( $
@@ -74,9 +74,9 @@ function xderyder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
         ;  take care of nonuniform mesh
         ;
         if (lequidist[0]) then begin
-          fac=1/(60.^2*(x[4]-x[3])*(y[4]-y[3]))
+          fac=1/60.^2*dx_1[l1]*dy_1[m]
         endif else begin
-          fac=(1/60.^2)*dx_1[l1:l2]*dy_1[m]
+          fac=1/60.^2*dx_1[l1:l2]*dy_1[m]
         endelse
         ;
         d[l1:l2,m,n,*]=fac*( $
