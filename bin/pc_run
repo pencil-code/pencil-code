@@ -90,6 +90,7 @@ use Pencil::Util;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
 
+use POSIX qw(strftime);
 use Cwd;
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
@@ -1326,7 +1327,6 @@ sub write_to_file {
       or die "Cannot open $filename for writing: $!\n";
 
     unless (@text) {
-        use POSIX qw(strftime);
         push @text,
           "File: $filename\n"
           . "Generator: $cmdname\n"
