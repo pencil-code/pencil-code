@@ -1,85 +1,85 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   pc_get_quantity.pro     ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;  $Id$
-;;;
-;;;  Description:
-;;;   Calculation of physical quantities. If the unit-structure is given,
-;;;   this unit system is chosen, otherwise the result is in Pencil-units.
-;;;
-;;;  Parameters:
-;;;   * vars           Data array or data structure as load by pc_read_*.
-;;;   * index          Indices or tags of the given variables inside data.
-;;;   * quantity       Name of physical quantity to be computed.
-;;;                    (If an array is given, a structure is returned.)
-;;;   * /cache         If activated, a chache is used to optimize computation.
-;;;
-;;;   Label            Description
-;;;  ===============================================================
-;;;   Temp             temperature
-;;;   u_abs            absolute velocity
-;;;   u_z              velocity z-component
-;;;   rho              density
-;;;   log_rho          decatic logarithm of density
-;;;   ln_rho           natural logarithm of density
-;;;   n_rho            particle density
-;;;   P                thermal pressure
-;;;   HR_ohm           volumetric Ohmic heating rate
-;;;   HR_viscous       volumetric viscous heating rate
-;;;   B_z              magnetic field z-component
-;;;   Spitzer_q        absolute value of Spitzer heat flux vector
-;;;   HR_ohm           volumetric Ohmic heating rate
-;;;   j_abs            current density
-;;;   [...]            more are listed in "pc_check_quantities.pro":
-;;;                    IDL> help, pc_check_quantities (/all), /str
-;;;
-;;;  Examples: (in ascending order of efficiency)
-;;;  ============================================
-;;;
-;;;  * Using 'pc_read_var':
-;;;
-;;;   Load varfile and calculate separate quantities, simplest version:
-;;;   IDL> pc_read_var, obj=vars
-;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', vars)
-;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', vars)
-;;;   IDL> B_z = pc_get_quantity ('B_z', vars)
-;;;   IDL> tvscl, HR_viscous[*,*,20]
-;;;
-;;;   Load varfile and calculate an array of quantities: (RECOMMENDED)
-;;;   IDL> pc_read_var, obj=vars
-;;;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], vars)
-;;;   IDL> tvscl, result.HR_viscous[*,*,20]
-;;;
-;;;  * Using 'pc_read_var_raw':
-;;;
-;;;   Load varfile and calculate separate quantities, using a data array:
-;;;   IDL> pc_read_var_raw, obj=var, tags=tags
-;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags)
-;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags)
-;;;   IDL> B_z = pc_get_quantity ('B_z', var, tags)
-;;;   IDL> tvscl, HR_viscous[*,*,20]
-;;;
-;;;   Load varfile and calculate an array of quantities: (RECOMMENDED)
-;;;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], var, tags, dim=dim, grid=grid, param=param, run_param=run_param)
-;;;   IDL> tvscl, result.HR_viscous[*,*,20]
-;;;
-;;;   Load varfile and separately calculate quantities, using the cache manually:
-;;;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
-;;;   IDL> tvscl, HR_viscous[*,*,20]
-;;;
-;;;  * Using 'pc_read_slice_raw':
-;;;
-;;;   Load 2D-slice and calculate separate quantities, using the cache manually:
-;;;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, dim=dim, grid=grid, param=param, par2=run_param
-;;;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;;;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
-;;;   IDL> tvscl, HR_viscous
-;;;
+;  $Id$
+;
+;  Description:
+;   Calculation of physical quantities. If the unit-structure is given,
+;   this unit system is chosen, otherwise the result is in Pencil-units.
+;
+;  Parameters:
+;   * quantity       Name of physical quantity to be computed.
+;                    (If an array is given, a structure is returned.)
+;   * vars           Data array or data structure as load by pc_read_*.
+;   * index          Indices or tags of the given variables inside data.
+;   * /cache         If activated, a chache is used to optimize computation.
+;
+;   Label            Description
+;  ===============================================================
+;   Temp             temperature
+;   u_abs            absolute velocity
+;   u_z              velocity z-component
+;   rho              density
+;   log_rho          decatic logarithm of density
+;   ln_rho           natural logarithm of density
+;   n_rho            particle density
+;   P                thermal pressure
+;   HR_ohm           volumetric Ohmic heating rate
+;   HR_viscous       volumetric viscous heating rate
+;   B_z              magnetic field z-component
+;   Spitzer_q        absolute value of Spitzer heat flux vector
+;   HR_ohm           volumetric Ohmic heating rate
+;   j_abs            current density
+;   [...]            more are listed in "pc_check_quantities.pro":
+;                    IDL> help, pc_check_quantities (/all), /str
+;
+;  Examples: (in ascending order of efficiency)
+;  ============================================
+;
+;  * Using 'pc_read_var':
+;
+;   Load varfile and calculate separate quantities, simplest version:
+;   IDL> pc_read_var, obj=vars
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', vars)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', vars)
+;   IDL> B_z = pc_get_quantity ('B_z', vars)
+;   IDL> tvscl, HR_viscous[*,*,20]
+;
+;   Load varfile and calculate an array of quantities: (RECOMMENDED)
+;   IDL> pc_read_var, obj=vars
+;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], vars)
+;   IDL> tvscl, result.HR_viscous[*,*,20]
+;
+;  * Using 'pc_read_var_raw':
+;
+;   Load varfile and calculate separate quantities, using a data array:
+;   IDL> pc_read_var_raw, obj=var, tags=tags
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags)
+;   IDL> B_z = pc_get_quantity ('B_z', var, tags)
+;   IDL> tvscl, HR_viscous[*,*,20]
+;
+;   Load varfile and calculate an array of quantities: (RECOMMENDED)
+;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
+;   IDL> result = pc_get_quantity (['HR_viscous', 'HR_ohm', 'B_z'], var, tags, dim=dim, grid=grid, param=param, run_param=run_param)
+;   IDL> tvscl, result.HR_viscous[*,*,20]
+;
+;   Load varfile and separately calculate quantities, using the cache manually:
+;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, param=param, par2=run_param
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
+;   IDL> tvscl, HR_viscous[*,*,20]
+;
+;  * Using 'pc_read_slice_raw':
+;
+;   Load 2D-slice and calculate separate quantities, using the cache manually:
+;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, slice_dim=dim, grid=grid, param=param, par2=run_param
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
+;   IDL> tvscl, HR_viscous
+;
 
 
 ; Computation of physical quantities.
@@ -175,20 +175,29 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
 		; Absolute value of the saturation heat flux density vector q [W/m^2] = [kg/s^3]
-		if (not any (tag_names (run_par) eq "KSAT")) then message, "Can't compute '"+quantity+"' without parameter 'Ksat'"
+		if (not any (tag_names (run_par) eq "KSAT")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'Ksat'"
+			return, -1
+		end
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		return, run_par.Ksat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
 		; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
-		if (not any (tag_names (run_par) eq "K_SPITZER")) then message, "Can't compute '"+quantity+"' without parameter 'K_SPITZER'"
+		if (not any (tag_names (run_par) eq "K_SPITZER")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER'"
+			return, -1
+		end
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		return, run_par.K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
 	end
 	if (strcmp (quantity, 'Spitzer_dt', /fold_case)) then begin
 		; Spitzer heat flux timestep [s]
-		if (not any (tag_names (run_par) eq "K_SPITZER")) then message, "Can't compute '"+quantity+"' without parameter 'K_SPITZER'"
+		if (not any (tag_names (run_par) eq "K_SPITZER")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER'"
+			return, -1
+		end
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
@@ -261,7 +270,10 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'P_therm', /fold_case)) then begin
 		; Thermal pressure
-		if (not any (tag_names (run_par) eq "CP") or not any (tag_names (run_par) eq "GAMMA")) then message, "Can't compute '"+quantity+"' without parameter 'CP' or 'GAMMA'"
+		if (not any (tag_names (run_par) eq "CP") or not any (tag_names (run_par) eq "GAMMA")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'CP' or 'GAMMA'"
+			return, -1
+		end
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		return, start_par.cp * (start_par.gamma - 1.0) / start_par.gamma * rho * Temp * unit.density * unit.velocity^2
@@ -301,7 +313,10 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'HR_viscous', /fold_case)) then begin
 		; Viscous heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
-		if (not any (tag_names (run_par) eq "NU")) then message, "Can't compute '"+quantity+"' without parameter 'NU'"
+		if (not any (tag_names (run_par) eq "NU")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'NU'"
+			return, -1
+		end
 		u_xx = (xder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
 		u_xy = (yder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
 		u_xz = (zder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
@@ -362,7 +377,10 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'Rn_mag', /fold_case)) then begin
 		; Magnetic mesh Reynolds number
-		if (not any (tag_names (run_par) eq "ETA")) then message, "Can't compute '"+quantity+"' without parameter 'ETA'"
+		if (not any (tag_names (run_par) eq "ETA")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'ETA'"
+			return, -1
+		end
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'B')
 		bb_abs_1 = 1.0 / sqrt (dot2 (bb))
@@ -382,7 +400,10 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
-		if (not any (tag_names (run_par) eq "ETA")) then message, "Can't compute '"+quantity+"' without parameter 'ETA'"
+		if (not any (tag_names (run_par) eq "ETA")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'ETA'"
+			return, -1
+		end
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, run_par.eta * start_par.mu0 * dot2 (jj / unit.current_density) * unit.density * unit.velocity^3 / unit.length
 	end
@@ -399,7 +420,7 @@ function pc_compute_quantity, vars, index, quantity
 	pos = where (tags eq strlowcase (quantity))
 	if (any (pos ge 0)) then return, pc_compute_quantity (vars, index, alias.(pos))
 
-	message, "Unknown quantity '"+quantity+"'"
+	print, "ERROR: Unknown quantity '"+quantity+"'"
 	return, !Values.D_NaN
 end
 
@@ -512,8 +533,10 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 
 	if (n_elements (dim) eq 0) then begin
 		; Check consistency of dimensions
-		if (((size (vars))[1] ne mx) or ((size (vars))[2] ne my) or ((size (vars))[3] ne mz)) then $
-			message, "Data doesn't fit to the loaded dim structure, please pass the corresponding dim structure as parameter."
+		if (((size (vars))[1] ne mx) or ((size (vars))[2] ne my) or ((size (vars))[3] ne mz)) then begin
+			print, "ERROR: Data doesn't fit to the loaded dim structure, please pass the corresponding dim structure as parameter."
+			return, -1
+		end
 		pc_read_dim, obj=glob_dim, datadir=datadir, /quiet
 		l1 = glob_dim.nprocx
 		l2 = mx - 1 - glob_dim.nprocx
@@ -539,14 +562,18 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 		nx = mx - 2*dim.nghostx
 		ny = my - 2*dim.nghosty
 		nz = mz - 2*dim.nghostz
-		if (((size (vars))[1] ne mx) or ((size (vars))[2] ne my) or ((size (vars))[3] ne mz)) then $
-			message, "Data doesn't fit to the given dim structure."
+		if (((size (vars))[1] ne mx) or ((size (vars))[2] ne my) or ((size (vars))[3] ne mz)) then begin
+			print, "ERROR: Data doesn't fit to the given dim structure."
+			return, -1
+		end
 	end
 
 	if (n_elements (grid) eq 0) then begin
 		; Check consistency of grid
-		if (((size (x))[1] ne (size (vars))[1]) or ((size (y))[1] ne (size (vars))[2]) or ((size (z))[1] ne (size (vars))[3])) then $
-			message, "Data doesn't fit to the loaded grid structure, please pass the corresponding grid structure as parameter."
+		if (((size (x))[1] ne (size (vars))[1]) or ((size (y))[1] ne (size (vars))[2]) or ((size (z))[1] ne (size (vars))[3])) then begin
+			print, "ERROR: Data doesn't fit to the loaded grid structure, please pass the corresponding grid structure as parameter."
+			return, -1
+		end
 	end else begin
 		; Set grid in common block for derivative routines
 		x = grid.x
@@ -561,8 +588,10 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 		dx_tilde = grid.dx_tilde
 		dy_tilde = grid.dy_tilde
 		dz_tilde = grid.dz_tilde
-		if (((size (x))[1] ne (size (vars))[1]) or ((size (y))[1] ne (size (vars))[2]) or ((size (z))[1] ne (size (vars))[3])) then $
-			message, "Data doesn't fit to the given grid structure."
+		if (((size (x))[1] ne (size (vars))[1]) or ((size (y))[1] ne (size (vars))[2]) or ((size (z))[1] ne (size (vars))[3])) then begin
+			print, "Data doesn't fit to the given grid structure."
+			return, -1
+		end
 	end
 
 	; Check availability of requested quantities

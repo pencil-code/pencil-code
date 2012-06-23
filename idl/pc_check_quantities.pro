@@ -126,6 +126,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	available_vectorfields = { $
 		u:'velocities', $
 		j:'current density', $
+		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
 		B:'magnetic field', $
 		grad_Temp:'grad temperature', $
@@ -232,7 +233,6 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 			end
 		end else if (keyword_set (warn)) then begin
 			print, "WARNING: '"+tag+"' is not in availablility list."
-stop
 		end
 	end
 
