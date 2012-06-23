@@ -238,7 +238,7 @@ if ($suppress_check) {
 cd_to_wordir();
 $ENV{PENCIL_WORKDIR} = getcwd();
 
-for my $subcmd (@subcmds) {
+while (my $subcmd  = shift @subcmds) {
     my $action = $dispatch_table{$subcmd};
     if (defined($action)) {
         print STDERR "Subcommand: $subcmd\n" unless ($quiet);
