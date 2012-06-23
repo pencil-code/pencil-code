@@ -323,19 +323,21 @@ endelse
 ;
 if (not keyword_set(nit)) then begin
 ;
-;  Test if the file that stores the time and 
-;  number of 2d-averages, t2davg, exists.
+;  Test if the file that stores the time and number of 2d-averages, t2davg,
+;  exists.
 ;
-   file_t2davg=datadir+'/t2davg.dat'
-   if (not file_test(file_t2davg)) then begin
-      print, 'ERROR: cannot find file '+ file_t2davg
-      stop
-   endif
-   openr,9,file_t2davg
-   dummy_real=0d0 & dummy_int=0
-   readf,9,dummy_real,dummy_int
-   close,9
-   nit=dummy_int-1
+  file_t2davg=datadir+'/t2davg.dat'
+  if (not file_test(file_t2davg)) then begin
+    print, 'ERROR: cannot find file '+ file_t2davg
+    stop
+  endif
+  get_lun, filelun
+  close, filelun
+  openr, filelun, file_t2davg
+  dummy_real=0.0d0 & dummy_int=0L
+  readf, filelun, dummy_real, dummy_int
+  close, filelun
+  nit=dummy_int-1
 endif
 ;
 if (nit gt 0) then begin
