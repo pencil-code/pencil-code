@@ -1355,15 +1355,6 @@ sub append_to_file_with_timestamp {
     my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
     my @new_text = map { $_ = $timestamp . " " . $_ } @text;
     append_to_file($filename, @text);
-    open my $fh, ">> $filename"
-      or die "Cannot open $filename for appending: $!\n";
-
-    foreach my $line (@text) {
-        chomp $line;
-        print $fh $line, "\n";
-    }
-
-    close $fh or die "Cannot close $filename: $!\n";
 }
 # ---------------------------------------------------------------------- #
 sub unlink_if_exist {
