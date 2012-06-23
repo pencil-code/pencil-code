@@ -635,6 +635,16 @@ sub local_settings {
     identify_setting('hostname', %settings);
 
     # Compiled with MPI?
+    my $executable = 'src/start.x';
+    if (! -r $executable) {
+        my $cwd = getcwd();
+        die "Cannot read $executable"
+            . "\ncwd is $cwd"
+            . "\nls gives\n\n"
+            . `ls`
+            . "\nls src/start* gives\n\n"
+            . `ls src/start*`;
+    }
     $settings{'mpi'}
       = `fgrep -c 'initialize_mpicomm: MPICOMM neighbors' src/start.x` + 0;
     unless ($quiet) {
