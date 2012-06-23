@@ -243,8 +243,8 @@ while (my $subcmd  = shift @subcmds) {
     if (defined($action)) {
         print STDERR "Subcommand: $subcmd\n" unless ($quiet);
         &$action();
-        handle_rerun($action);
-        handle_newdir($action);
+        handle_rerun($subcmd);
+        handle_newdir($subcmd);
     } else {
         warn "No such subcommand: <$subcmd>\n\n";
         die usage();
@@ -1019,17 +1019,17 @@ sub copy_snapshots {
 sub handle_rerun {
 # If a RERUN file exists and $action is 'run', do $action again.
 # Remove RERUN.
-    my ($action) = @_;
+    my ($subcmd) = @_;
 
     if (-e $rerunfile) {
         my $separator_line = '=' x 70 . "\n";
         unlink $rerunfile;
-        if ($action == \&run_cmd) {
+        if ($subcmd eq 'run') {
             print $separator_line;
             print "Found RERUN file\n";
             print "Rerunning in same directory\n";
             print $separator_line;
-            &$action();
+            unshift @subcmds, $subcmd;
         }
     }
 }
@@ -1037,7 +1037,7 @@ sub handle_rerun {
 sub handle_newdir {
 # If a NEWDIR file exists, try to rerun 'run' action there.
 # If this doesn't make sense, rerun 'run' action here.
-    my ($action) = @_;
+    my ($subcmd) = @_;
 
     if (-e $newdirfile) {
         my $separator_line = '=' x 70 . "\n";
@@ -1045,7 +1045,7 @@ sub handle_newdir {
         clear_lock();
         unlink $newdirfile;
         my $old_dir = getcwd();
-        if ($action == \&run_cmd) {
+        if ($subcmd eq 'run') {
             if (-d $new_dir && is_run_directory($new_dir)) {
                 chdir $new_dir;
                 append_to_file_with_timestamp(
@@ -1071,7 +1071,6 @@ sub handle_newdir {
                 } else {
                     print $separator_line;
                 }
-                &$action();
             } else {
                 my $message = "NEWDIR directory <$new_dir>";
                 if (-e $new_dir) {
@@ -1083,9 +1082,9 @@ sub handle_newdir {
                 print $separator_line;
                 print $message;
                 print $separator_line;
-
-                &$action();
             }
+
+            unshift @subcmds, $subcmd;
         }
     }
 }
