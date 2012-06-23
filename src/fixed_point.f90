@@ -1,5 +1,7 @@
 ! $Id$
 !
+!  DOCUMENT ME OR MOVE ME TO EXPERIMENTAL
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -195,7 +197,7 @@ module Fixed_point
         dtot = 0.
       else
         diffm = (/tracer(1,3)-tracer(1,1), tracer(1,4)-tracer(1,2)/)
-        if (diffm(1)**2 + diffm(2)**2 .ne. 0) &
+        if (diffm(1)**2 + diffm(2)**2 /= 0) &
             diffm = diffm / sqrt(diffm(1)**2 + diffm(2)**2)
         dtot = edge(f,(/sx(1),xm/), (/sy(1),ym/), diff1, diffm, phi_min, vv, rec+1) + &
             edge(f,(/xm,sx(2)/), (/ym,sy(2)/), diffm, diff2, phi_min, vv, rec+1)
@@ -255,8 +257,8 @@ module Fixed_point
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
 !
     addx = 0; addy = 0
-    if (ipx .ne. nprocx-1) addx = 1
-    if (ipy .ne. nprocy-1) addy = 1
+    if (ipx /= nprocx-1) addx = 1
+    if (ipy /= nprocy-1) addy = 1
 !
     allocate(xt(nxgrid*trace_sub))
     allocate(yt(nygrid*trace_sub))
@@ -317,14 +319,14 @@ module Fixed_point
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)
-      if (proc_idx .ne. iproc) then
+      if (proc_idx /= iproc) then
         call MPI_ISEND(finished_rooting(iproc+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
             MPI_comm_world, request_finished_send(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_ISEND could not send")
         call MPI_IRECV(finished_rooting(proc_idx+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
             MPI_comm_world, request_finished_rcv(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
       endif
     enddo
@@ -338,10 +340,10 @@ module Fixed_point
     do
 !     Check if a core has finished and update finished_rooting array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
-        if ((proc_idx .ne. iproc) .and. (finished_rooting(proc_idx+1) == 0)) then
+        if ((proc_idx /= iproc) .and. (finished_rooting(proc_idx+1) == 0)) then
           flag = 0
           call MPI_TEST(request_finished_rcv(proc_idx+1),flag,status,ierr)
-          if (ierr .ne. MPI_SUCCESS) &
+          if (ierr /= MPI_SUCCESS) &
               call fatal_error("fixed_points", "MPI_TEST failed")
           if (flag == 1) then
             finished_rooting(proc_idx+1) = 1
@@ -365,19 +367,19 @@ module Fixed_point
       do l=1,(ny*trace_sub+addy-1)
         diff(1,:) = (/(tracers2(j+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+(l-1)*(nx*trace_sub+addx),1)) , &
             (tracers2(j+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+(l-1)*(nx*trace_sub+addx),2))/)            
-        if (diff(1,1)**2+diff(1,2)**2 .ne. 0) &
+        if (diff(1,1)**2+diff(1,2)**2 /= 0) &
             diff(1,:) = diff(1,:) / sqrt(diff(1,1)**2+diff(1,2)**2)            
         diff(2,:) = (/(tracers2(j+1+(l-1)*(nx*trace_sub+addx),3)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)) , &
             (tracers2(j+1+(l-1)*(nx*trace_sub+addx),4)-tracers2(j+1+(l-1)*(nx*trace_sub+addx),2))/)
-        if (diff(2,1)**2+diff(2,2)**2 .ne. 0) &
+        if (diff(2,1)**2+diff(2,2)**2 /= 0) &
             diff(2,:) = diff(2,:) / sqrt(diff(2,1)**2+diff(2,2)**2)
         diff(3,:) = (/(tracers2(j+1+l*(nx*trace_sub+addx),3)-tracers2(j+1+l*(nx*trace_sub+addx),1)) , &
             (tracers2(j+1+l*(nx*trace_sub+addx),4)-tracers2(j+1+l*(nx*trace_sub+addx),2))/)
-        if (diff(3,1)**2+diff(3,2)**2 .ne. 0) &
+        if (diff(3,1)**2+diff(3,2)**2 /= 0) &
             diff(3,:) = diff(3,:) / sqrt(diff(3,1)**2+diff(3,2)**2)
         diff(4,:) = (/(tracers2(j+l*(nx*trace_sub+addx),3)-tracers2(j+l*(nx*trace_sub+addx),1)) , &
             (tracers2(j+l*(nx*trace_sub+addx),4)-tracers2(j+l*(nx*trace_sub+addx),2))/)
-        if (diff(4,1)**2+diff(4,2)**2 .ne. 0) &
+        if (diff(4,1)**2+diff(4,2)**2 /= 0) &
             diff(4,:) = diff(4,:) / sqrt(diff(4,1)**2+diff(4,2)**2)
 !       Get the Poincare index for this grid cell
         call pindex(f, xt(j:j+1)+ipx*nx*dx, yt(l:l+1)+ipy*ny*dy, diff, phi_min, vv, poincare)
@@ -401,14 +403,14 @@ module Fixed_point
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)
-      if (proc_idx .ne. iproc) then
+      if (proc_idx /= iproc) then
         call MPI_ISEND(finished_rooting(iproc+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
             MPI_comm_world, request_finished_send(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_ISEND could not send")
         call MPI_IRECV(finished_rooting(proc_idx+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
             MPI_comm_world, request_finished_rcv(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
       endif
     enddo
@@ -421,10 +423,10 @@ module Fixed_point
       call trace_streamlines(f,tracer_tmp,1,vv)
 !     Check if a core has finished and update finished_rooting array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
-        if (proc_idx .ne. iproc) then
+        if (proc_idx /= iproc) then
           flag = 0
           call MPI_TEST(request_finished_rcv(proc_idx+1),flag,status,ierr)
-          if (ierr .ne. MPI_SUCCESS) &
+          if (ierr /= MPI_SUCCESS) &
               call fatal_error("fixed_points", "MPI_TEST failed")
           if (flag == 1) then
             finished_rooting(proc_idx+1) = 1
@@ -510,14 +512,14 @@ module Fixed_point
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)
-      if (proc_idx .ne. iproc) then
+      if (proc_idx /= iproc) then
         call MPI_ISEND(finished_rooting(iproc+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
             MPI_comm_world, request_finished_send(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_ISEND could not send")
         call MPI_IRECV(finished_rooting(proc_idx+1), 1, MPI_integer, proc_idx, FINISHED_FIXED, &
             MPI_comm_world, request_finished_rcv(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
       endif
     enddo
@@ -533,10 +535,10 @@ module Fixed_point
       call trace_streamlines(f,tracer_tmp,1,vv)
 !     Check if a core has finished and update finished_rooting array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
-        if (proc_idx .ne. iproc) then
+        if (proc_idx /= iproc) then
           flag = 0
           call MPI_TEST(request_finished_rcv(proc_idx+1),flag,status,ierr)
-          if (ierr .ne. MPI_SUCCESS) &
+          if (ierr /= MPI_SUCCESS) &
               call fatal_error("fixed_points", "MPI_TEST failed")
           if (flag == 1) then
             finished_rooting(proc_idx+1) = 1

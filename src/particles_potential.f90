@@ -95,11 +95,11 @@ module Particles_potential
 !
 ! Abort is ysteps_int or zsteps_int are too big
 !        
-      if (ysteps_int.gt.nghost) then
+      if (ysteps_int>nghost) then
         if (lroot) print*,'nghost,ysteps_int=',nghost,ysteps_int
         call fatal_error('initialize_particles_potential:','ysteps_int must be smaller than nghost')
       endif
-      if (zsteps_int.gt.nghost) then
+      if (zsteps_int>nghost) then
         if (lroot) print*,'nghost,zsteps_int=',nghost,zsteps_int
         call fatal_error('initialize_particles_potential:','zsteps_int must be smaller than nghost')
       endif
@@ -122,7 +122,8 @@ module Particles_potential
 !
 !  cleanup after the particles_potential module
 !
-      if(lallocated_neighbour_list) deallocate(neighbour_list)
+      if (lallocated_neighbour_list) deallocate(neighbour_list)
+!
     endsubroutine particles_potential_clean_up
 !***********************************************************************
     subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
@@ -159,7 +160,7 @@ module Particles_potential
         call get_interparticle_accn(fp,k,interparticle_accn,Vij)
         dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accn
         if (ldiagnos) then
-          if (idiag_particles_vijm.ne.0) call sum_name(Vij,idiag_particles_vijm)
+          if (idiag_particles_vijm/=0) call sum_name(Vij,idiag_particles_vijm)
         endif
       enddo
 !
@@ -234,7 +235,7 @@ module Particles_potential
           yj=fp(kneighbour,iyp)
           zj=fp(kneighbour,izp)
           rij_sqr=(xj-xi)**2+(yj-yi)**2+(zj-zi)**2
-          if (rij_sqr .le. (skin_factor*psigma)**2) then
+          if (rij_sqr <= (skin_factor*psigma)**2) then
 ! If the distance of between the particles are less than a skin_factor multiplied by the 
 ! effective radius (psigma) of the particles then they are included in the neighbour list
             kn=kn+1

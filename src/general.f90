@@ -984,7 +984,7 @@ module General
       do k=2,n
         cg(k)=b(k)-a(k)*beta(k-1)
         w(k)=c(k)-a(k)*alpha(k-1)-cg(k)*beta(k)
-        if (w(k).eq.0.0) then
+        if (w(k)==0.0) then
           print*,"w(k)=0.0 in pendag"
           stop
         endif

@@ -243,7 +243,7 @@ module Streamlines
 !         create a receive request
           grid_pos_b(:) = 0
           call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
-          if (ierr .ne. MPI_SUCCESS) then
+          if (ierr /= MPI_SUCCESS) then
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
             exit
           endif
@@ -259,7 +259,7 @@ module Streamlines
             vvb_send(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
             vvb_send(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
             call MPI_SEND(vvb_send,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
-            if (ierr .ne. MPI_SUCCESS) then
+            if (ierr /= MPI_SUCCESS) then
               call fatal_error("streamlines", "MPI_SEND could not send")
               exit
             endif
@@ -274,18 +274,18 @@ module Streamlines
 !     start blocking send and non-blocking receive
       if (sent == 0) then
         call MPI_SEND(grid_pos_send,3,MPI_integer,proc_id,VV_RQST,MPI_comm_world,ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_SEND could not send request")
         sent = 1
       endif
       if (receiving == 0) then
         call MPI_IRECV(vvb,3+mfarray,MPI_REAL,proc_id,VV_RCV,MPI_comm_world,request_rcv,ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
         receiving = 1
       else
         call MPI_TEST(request_rcv,flag_rcv,status_recv,ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_TEST failed")
       endif
 !
@@ -345,7 +345,7 @@ module Streamlines
 !
 !   make sure all threads are synchronized
     call MPI_BARRIER(MPI_comm_world, ierr)
-    if (ierr .ne. MPI_SUCCESS) then
+    if (ierr /= MPI_SUCCESS) then
       call fatal_error("streamlines", "MPI_BARRIER could not be invoced")
     endif
 !
@@ -362,7 +362,7 @@ module Streamlines
 !           create a receive request
             grid_pos_b(:) = 0
             call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
-            if (ierr .ne. MPI_SUCCESS) then
+            if (ierr /= MPI_SUCCESS) then
               call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
               exit
             endif
@@ -378,7 +378,7 @@ module Streamlines
               vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
               vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
               call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
-              if (ierr .ne. MPI_SUCCESS) then
+              if (ierr /= MPI_SUCCESS) then
                 call fatal_error("streamlines", "MPI_SEND could not send")
                 exit
               endif
@@ -512,14 +512,14 @@ module Streamlines
     finished_tracing(:) = 0
     finished_tracing(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)
-      if (proc_idx .ne. iproc) then
+      if (proc_idx /= iproc) then
         call MPI_ISEND(finished_tracing(iproc+1), 1, MPI_integer, proc_idx, FINISHED, &
             MPI_comm_world, request_finished_send(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_ISEND could not send")
         call MPI_IRECV(finished_tracing(proc_idx+1), 1, MPI_integer, proc_idx, FINISHED, &
             MPI_comm_world, request_finished_rcv(proc_idx+1), ierr)
-        if (ierr .ne. MPI_SUCCESS) &
+        if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
       endif
     enddo
@@ -530,7 +530,7 @@ module Streamlines
 !       create a receive request
         grid_pos_b(:) = 0
         call MPI_IRECV(grid_pos_b,3,MPI_integer,MPI_ANY_SOURCE,VV_RQST,MPI_comm_world,request,ierr)
-        if (ierr .ne. MPI_SUCCESS) then
+        if (ierr /= MPI_SUCCESS) then
           call fatal_error("streamlines", "MPI_IRECV could not create a receive request")
           exit
         endif
@@ -546,7 +546,7 @@ module Streamlines
           vvb(1:3) = vv(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
           vvb(4:) = f(grid_pos_b(1),grid_pos_b(2),grid_pos_b(3),:)
           call MPI_SEND(vvb,3+mfarray,MPI_REAL,status(MPI_SOURCE),VV_RCV,MPI_comm_world,ierr)
-          if (ierr .ne. MPI_SUCCESS) then
+          if (ierr /= MPI_SUCCESS) then
             call fatal_error("streamlines", "MPI_SEND could not send")
             exit
           endif
@@ -556,10 +556,10 @@ module Streamlines
 !
 !     Check if a core has finished and update finished_tracing array.
       do proc_idx=0,(nprocx*nprocy*nprocz-1)
-        if ((proc_idx .ne. iproc) .and. (finished_tracing(proc_idx+1) == 0)) then
+        if ((proc_idx /= iproc) .and. (finished_tracing(proc_idx+1) == 0)) then
           flag = 0
           call MPI_TEST(request_finished_rcv(proc_idx+1),flag,status,ierr)
-          if (ierr .ne. MPI_SUCCESS) &
+          if (ierr /= MPI_SUCCESS) &
               call fatal_error("streamlines", "MPI_TEST failed")
           if (flag == 1) then
             finished_tracing(proc_idx+1) = 1

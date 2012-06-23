@@ -456,6 +456,11 @@ module Gravity
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine set_consistent_gravity(ginput,gtype,gprofile,lsuccess)
+!
+!  DOCUMENT ME AND FILL IN AUTHOR
+!  
+!  01-jan-00/jesus: coded
+!
       real :: ginput
       character (len=labellen) :: gtype,gprofile
       character (len=labellen) :: gprof
@@ -467,29 +472,29 @@ module Gravity
       gprof=trim(gprofile)
       select case(trim(gtype))
         case('gravx')
-          if (gprof.ne.gravx_profile) then
+          if (gprof/=gravx_profile) then
             lconsistent=.false.
             gravx_profile=gprof
           endif
-          if (gravx.ne.ginput) then
+          if (gravx/=ginput) then
             lconsistent=.false.
             gravx=ginput
           endif
         case('gravy')
-          if (gprof.ne.gravy_profile) then
+          if (gprof/=gravy_profile) then
             lconsistent=.false.
             gravy_profile=gprof
           endif
-          if (gravy.ne.ginput) then
+          if (gravy/=ginput) then
             lconsistent=.false.
             gravy=ginput
           endif
         case('gravz')
-          if (gprof.ne.gravz_profile) then
+          if (gprof/=gravz_profile) then
             lconsistent=.false.
             gravz_profile=gprof
           endif
-          if (gravz.ne.ginput) then
+          if (gravz/=ginput) then
             lconsistent=.false.
             gravz=ginput
           endif
