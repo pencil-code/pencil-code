@@ -36,16 +36,21 @@
 ; Check if a dependency is fulfilled.
 function dependency_ok, tag, depend, sources
 
+	; Check for dependencies
+	if (all (tag eq "")) then return, 1
+
 	if (size (depend, /type) ne 8) then begin
-		; Iterate through array of alternative sources without dependencies
+		; Iterate through array of alternative sources
 		num = n_elements (tag)
 		or_flags = bytarr (num)
 		for pos = 0, num-1 do or_flags[pos] = any (strcmp (tag[pos], sources, /fold_case))
 		return, any (or_flags)
 	end
 
+	; If no dependency is found, check against sources
 	index = where (strcmp (tag, tag_names (depend), /fold_case))
-	if (any (index eq -1)) then return, dependency_ok (tag, -1, sources)
+	if (all (index eq -1)) then return, dependency_ok (tag, -1, sources)
+
 	dependency = depend.(index)
 
 	if (size (dependency, /type) eq 8) then begin
@@ -70,12 +75,12 @@ function dependency_ok, tag, depend, sources
 		return, all (and_flags)
 	end
 
-	; Check dependency agains sources
+	; Check dependency against sources
 	return, any (strcmp (dependency, sources, /fold_case))
 end
 
 ; Return available quantities.
-function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, available=avail, aliases=aliases, vectorfields=vectorfields, warn=warn, indices=indices
+function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim=dim, param=param, all=all, available=avail, aliases=aliases, additionals=add_quant, vectorfields=vectorfields, warn=warn, indices=indices
 
 	; List of available quantities.
 	available = { $
@@ -133,6 +138,19 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_P_therm:'grad thermal pressure' $
 	}
 
+	; Additional quantities without dependencies.
+	additional = { $
+		x:'x coordinates', $
+		y:'y coordinates', $
+		z:'z coordinates', $
+		dx:'grid distance x', $
+		dy:'grid distance y', $
+		dz:'grid distance z', $
+		inv_dx:'inverse grid distance x', $
+		inv_dy:'inverse grid distance y', $
+		inv_dz:'inverse grid distance z' $
+	}
+
 	; List of dependencies.
 	depend = { $
 		Temp:{ Temp:['lnTT', 'TT'] }, $
@@ -173,15 +191,25 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho:{ rho:['lnrho', 'rho'] }, $
 		ln_rho:'rho', $
 		log_rho:'rho', $
-		n_rho:'rho' $
+		n_rho:'rho', $
+		x:'', $
+		y:'', $
+		z:'', $
+		dx:'', $
+		dy:'', $
+		dz:'', $
+		inv_dx:'', $
+		inv_dy:'', $
+		inv_dz:'' $
 	}
 
 	; Fill default values
-	if (keyword_set (all)) then return, create_struct (available, available_vectorfields, alias)
+	if (keyword_set (all)) then return, create_struct (available, available_vectorfields, alias, additional)
 	if (keyword_set (avail)) then return, available
 	if (keyword_set (aliases)) then return, alias
+	if (keyword_set (add_quant)) then return, additional
 	if (keyword_set (vectorfields)) then return, available_vectorfields
-	if (not keyword_set (check)) then check = create_struct (available, alias)
+	if (not keyword_set (check)) then check = create_struct (available)
 	if (not keyword_set (sources)) then sources = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 
 	if (size (sources, /type) eq 8) then begin
@@ -206,6 +234,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	avail = create_struct (available, available_vectorfields)
 	avail_list = tag_names (avail)
 	alias_list = tag_names (alias)
+	additional_list = tag_names (additional)
 	tags = tag_names (check)
 	for pos = 0, num-1 do begin
 		tag = tags[pos]
@@ -217,9 +246,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 				index = where (strcmp (avail_list, tag, /fold_case))
 			end
 		end
+		if (index lt 0) then begin
+			index = where (additional_list eq tag)
+			if (index ge 0) then label = additional.(index)
+		end else begin
+			label = avail.(index)
+		end
 		if (index ge 0) then begin
 			if (dependency_ok (tag, depend, sources)) then begin
-				label = avail.(index)
 				if (num_list eq 0) then begin
 					list = create_struct (tag, label)
 					pos_list = [ pos ]

@@ -94,34 +94,23 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'u', /fold_case)) then begin
 		; Velocity
-		if (n_elements (uu) eq 0) then begin
-			uu = vars[l1:l2,m1:m2,n1:n2,index.uu] * unit.velocity
-		end
+		if (n_elements (uu) eq 0) then uu = vars[l1:l2,m1:m2,n1:n2,index.uu] * unit.velocity
 		return, uu
 	end
 	if (strcmp (quantity, 'u_x', /fold_case)) then begin
 		; Velocity x-component
-		if (n_elements (uu) eq 0) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.ux] * unit.velocity
-		end else begin
-			return, uu[*,*,*,0]
-		end
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		return, uu[*,*,*,0]
 	end
 	if (strcmp (quantity, 'u_y', /fold_case)) then begin
 		; Velocity y-component
-		if (n_elements (uu) eq 0) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.uy] * unit.velocity
-		end else begin
-			return, uu[*,*,*,1]
-		end
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		return, uu[*,*,*,1]
 	end
 	if (strcmp (quantity, 'u_z', /fold_case)) then begin
 		; Velocity z-component
-		if (n_elements (uu) eq 0) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.uz] * unit.velocity
-		end else begin
-			return, uu[*,*,*,2]
-		end
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		return, uu[*,*,*,2]
 	end
 	if (strcmp (quantity, 'u_abs', /fold_case)) then begin
 		; Absolute value of the velocity
@@ -350,9 +339,7 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'B', /fold_case)) then begin
 		; Magnetic field vector
-		if (n_elements (bb) eq 0) then begin
-			bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
-		end
+		if (n_elements (bb) eq 0) then bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
 		return, bb
 	end
 	if (strcmp (quantity, 'B_x', /fold_case)) then begin
@@ -392,9 +379,7 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'j', /fold_case)) then begin
 		; Current density
-		if (n_elements (jj) eq 0) then begin
-			jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / start_par.mu0 * unit.current_density
-		end
+		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / start_par.mu0 * unit.current_density
 		return, jj
 	end
 
@@ -419,6 +404,21 @@ function pc_compute_quantity, vars, index, quantity
 	tags = strlowcase (tag_names (alias))
 	pos = where (tags eq strlowcase (quantity))
 	if (any (pos ge 0)) then return, pc_compute_quantity (vars, index, alias.(pos))
+
+	; Coordinates
+	if (strcmp (quantity, 'x', /fold_case)) then return, x[l1:l2] * unit.length
+	if (strcmp (quantity, 'y', /fold_case)) then return, y[m1:m2] * unit.length
+	if (strcmp (quantity, 'z', /fold_case)) then return, z[n1:n2] * unit.length
+
+	; Grid distances
+	if (strcmp (quantity, 'dx', /fold_case)) then return, 1.0 / dx_1[l1:l2] * unit.length
+	if (strcmp (quantity, 'dy', /fold_case)) then return, 1.0 / dy_1[m1:m2] * unit.length
+	if (strcmp (quantity, 'dz', /fold_case)) then return, 1.0 / dz_1[n1:n2] * unit.length
+
+	; Inverse grid distances
+	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[l1:l2] / unit.length
+	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[m1:m2] / unit.length
+	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[n1:n2] / unit.length
 
 	print, "ERROR: Unknown quantity '"+quantity+"'"
 	return, !Values.D_NaN
