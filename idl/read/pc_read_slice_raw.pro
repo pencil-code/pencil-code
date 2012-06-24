@@ -166,7 +166,6 @@ COMPILE_OPT IDL2,HIDDEN
   mx=dim.mx
   my=dim.my
   mz=dim.mz
-  mvar=dim.mvar
   precision=dim.precision
 ;
 ; Set cut parameters.
@@ -212,10 +211,10 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read meta data and set up variable/tag lists.
 ;
-  if (n_elements(varcontent) eq 0) then $
-      varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
-  totalvars=(size(varcontent))[1]
-  if (n_elements(var_list) eq 0) then begin
+  if (n_elements (varcontent) eq 0) then $
+      varcontent = pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+  totalvars = (size(varcontent))[1]
+  if (n_elements (var_list) eq 0) then begin
     var_list = varcontent[*].idlvar
     var_list = var_list[where (var_list ne "dummy")]
   endif
