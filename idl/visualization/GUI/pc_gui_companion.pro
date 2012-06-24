@@ -58,7 +58,7 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, par
 			if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
 				pc_read_slice_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, param=param, par2=run_param, varcontent=varcontent, time=time, quiet=(i ne 0), cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 			end else begin
-				pc_read_var_raw, varfile=varfile, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0)
+				pc_read_var_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0)
 			end
 			sources = varcontent.idlvar
 			sources = sources[where (varcontent.idlvar ne 'dummy')]
@@ -124,12 +124,12 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 	tags = tag_names (oversets[i])
 	num = n_elements (tags)
 	for pos = 0, num-1 do begin
+		tag = tags[pos]
 		last = (pos eq num-1)
-		oversets[i].(pos) = float (pc_get_quantity (tags[pos], vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
-
+		oversets[i].(pos) = float (pc_get_quantity (tag, vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
 		; Divide by default units, where applicable.
-		if (any (strcmp (tag, ['uu'], /fold_case))) then $
-			oversets[i].(pos) /= float (unit.default_velocity)
+		if (any (strcmp (tag, ['u'], /fold_case))) then $
+			oversets[i].(pos) /= unit.default_velocity
 		if (any (strcmp (tag, ['b'], /fold_case))) then $
 			oversets[i].(pos) /= float (unit.default_magnetic_field)
 	end
