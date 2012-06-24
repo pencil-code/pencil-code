@@ -6222,7 +6222,6 @@ module Chemistry
       real, dimension (:,:), allocatable :: a
       real, dimension (:), allocatable :: grid
       real, dimension (:), allocatable :: cc
-      real  :: sum
       integer :: j,k,i,ii, imid, ipos
       integer :: is, js
       integer :: nsp, npts
@@ -6351,11 +6350,8 @@ module Chemistry
 !
 !  Renormalize the species mass fractions
 !
-            sum = 0.
-            do ii = 1, nchemspec
-              sum = sum + f(i,j,k,iuz+2+ii)
-            enddo
-            f(i,j,k,iuz+3:iuz+3+nchemspec) = f(i,j,k,iuz+3:iuz+3+nchemspec)/sum
+            f(i,j,k,iuz+3:iuz+3+nchemspec) = f(i,j,k,iuz+3:iuz+3+nchemspec) &
+                 / sum(f(i,j,k,iuz+3:iuz+2+nchemspec))
 !
           enddo
         enddo
