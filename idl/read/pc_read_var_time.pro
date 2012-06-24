@@ -87,7 +87,7 @@ COMPILE_OPT IDL2,HIDDEN
       dim.my = dim.mygrid
       dim.mw = dim.mx * dim.my * dim.mz
     endif else begin
-      pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
+      pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
     endelse
   endif
   if (n_elements(param) eq 0) then $
@@ -104,9 +104,9 @@ COMPILE_OPT IDL2,HIDDEN
 ; Initialize / set default returns for ALL variables.
 ;
   t=zero
-  x=fltarr(dim.mxgrid)*one
-  y=fltarr(dim.mygrid)*one
-  z=fltarr(dim.mzgrid)*one
+  x=fltarr(dim.mx)*one
+  y=fltarr(dim.my)*one
+  z=fltarr(dim.mz)*one
   dx=zero
   dy=zero
   dz=zero
