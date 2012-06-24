@@ -6350,7 +6350,7 @@ module Chemistry
 !
 !  Renormalize the species mass fractions
 !
-            f(i,j,k,iuz+3:iuz+3+nchemspec) = f(i,j,k,iuz+3:iuz+3+nchemspec) &
+            f(i,j,k,iuz+3:iuz+2+nchemspec) = f(i,j,k,iuz+3:iuz+2+nchemspec) &
                  / sum(f(i,j,k,iuz+3:iuz+2+nchemspec))
 !
           enddo
