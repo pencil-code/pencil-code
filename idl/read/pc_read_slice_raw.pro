@@ -344,7 +344,6 @@ COMPILE_OPT IDL2,HIDDEN
   x = grid.x[x_off:x_off+cut_nx-1]
   y = grid.y[y_off:y_off+cut_ny-1]
   z = grid.z[z_off:z_off+cut_nz-1]
-stop
 ;
 ; Generate dim structure of the 2D-slice.
 ;
