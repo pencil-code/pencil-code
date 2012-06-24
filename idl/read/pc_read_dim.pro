@@ -137,7 +137,6 @@ if (file_test(filename)) then begin
   readf,file,nghostx,nghosty,nghostz
   if (n_elements(proc) eq 1) then begin
     readf,file,ipx,ipy,ipz
-    nprocx=1L & nprocy=1L & nprocz=1L
   endif else begin
     readf,file,nprocx,nprocy,nprocz
   endelse
@@ -158,16 +157,23 @@ m1 = nghosty & m2 = my-nghosty-1
 n1 = nghostz & n2 = mz-nghostz-1
 
 if (n_elements(proc) ne 1) then begin
-  nxgrid=nx
-  nygrid=ny
-  nzgrid=nz
+  nxgrid = nx
+  nygrid = ny
+  nzgrid = nz
   mxgrid = nxgrid + (2 * nghostx)
   mygrid = nygrid + (2 * nghosty)
   mzgrid = nzgrid + (2 * nghostz)
 endif else begin
-; The specific processors don't know the global array
-  nxgrid=0L & nygrid=0L & nzgrid=0L
-  mxgrid=0L & mygrid=0L & mzgrid=0L
+  pc_read_dim, obj=globdim, datadir=datadir, /quiet
+  nprocx = globdim.nprocx
+  nprocy = globdim.nprocy
+  nprocz = globdim.nprocz
+  nxgrid = globdim.nxgrid
+  nygrid = globdim.nygrid
+  nzgrid = globdim.nzgrid
+  mxgrid = globdim.mxgrid
+  mygrid = globdim.mygrid
+  mzgrid = globdim.mzgrid
 endelse
 
 
