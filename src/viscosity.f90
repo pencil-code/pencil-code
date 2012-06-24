@@ -33,8 +33,8 @@ module Viscosity
   real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
-  real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1
-  real :: C_smag=0.0, gamma_smag=0.0
+  real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
+  real :: C_smag=0.0, gamma_smag=0.0, nu_jump2=1.0
   real :: pnlaw=0.0, Lambda_V0=0.,Lambda_V1=0.,Lambda_H1=0.
   real :: Lambda_V0t=0.,Lambda_V1t=0.,Lambda_V0b=0.,Lambda_V1b=0.
   real :: rzero_lambda=impossible,wlambda=0.,rmax_lambda=impossible
@@ -60,6 +60,7 @@ module Viscosity
   logical :: lvisc_nu_profx=.false.
   logical :: lvisc_nu_profr=.false.
   logical :: lvisc_nu_profr_powerlaw=.false.
+  logical :: lvisc_nu_profr_twosteps=.false.
   logical :: lvisc_nut_from_magnetic=.false.
   logical :: lvisc_nu_shock=.false.
   logical :: lvisc_hyper2_simplified=.false.
@@ -88,11 +89,11 @@ module Viscosity
   namelist /viscosity_run_pars/ &
       nu, nu_tdep_exponent, nu_tdep_t0, &
       nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
-      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu, &
+      nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
-      PrM_turb, roffset_lambda, nu_spitzer
+      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -179,6 +180,7 @@ module Viscosity
       lvisc_nu_profx=.false.
       lvisc_nu_profr=.false.
       lvisc_nu_profr_powerlaw=.false.
+      lvisc_nu_profr_twosteps=.false.
       lvisc_nut_from_magnetic=.false.
       lvisc_nu_shock=.false.
       lvisc_hyper2_simplified=.false.
@@ -239,6 +241,10 @@ module Viscosity
           if (lroot) print*,'viscous force with a radial profile for nu'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_nu_profr=.true.
+       case ('nu-profr-twosteps')
+          if (lroot) print*,'viscous force with a radial profile for nu'
+          if (nu/=0.) lpenc_requested(i_sij)=.true.
+          lvisc_nu_profr_twosteps=.true.
         case ('nu-profr-powerlaw','powerlaw','power-law')
           if (lroot) print*,'viscous force with a power law profile'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
@@ -661,13 +667,15 @@ module Viscosity
            lvisc_sqrtrho_nu_const .or. lvisc_nu_therm .or.&
            lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
-           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
+           lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. & 
+           lvisc_nu_profr_twosteps .or. &
            lvisc_nut_from_magnetic .or. lvisc_mu_therm))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const.or.lvisc_sqrtrho_nu_const.or. &
           lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_therm .or. &
           lvisc_nu_prof.or.lvisc_nu_profx.or.lvisc_spitzer .or. &
           lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
+          lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic.or.lvisc_mu_therm.or. &
           (lvisc_simplified.and.lboussinesq) ) then
         if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
@@ -683,7 +691,7 @@ module Viscosity
       if (lvisc_smag_cross_simplified) lpenc_requested(i_ss12)=.true.
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
       if (lvisc_nu_profx) lpenc_requested(i_x_mn)=.true.
-      if (lvisc_nu_profr) then
+      if (lvisc_nu_profr .or. lvisc_nu_profr_twosteps) then
         if (lsphere_in_a_box.or.lspherical_coords) then
           lpenc_requested(i_r_mn)=.true.
         else
@@ -697,6 +705,7 @@ module Viscosity
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
+          lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic .or. lvisc_nu_therm .or. lvisc_mu_therm) &
           lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
@@ -725,6 +734,7 @@ module Viscosity
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
+          lvisc_nu_profr_twosteps .or. &
           lvisc_nut_from_magnetic.or.lvisc_nu_therm .or.  &
           lvisc_mu_therm .or. lvisc_spitzer) &
           lpenc_requested(i_sglnrho)=.true.
@@ -822,7 +832,7 @@ module Viscosity
       type (pencil_case) :: p
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu
       real, dimension (nx) :: murho1,muTT,nu_smag,tmp3,tmp4,pnu
-      real, dimension (nx) :: lambda_phi
+      real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2
 !
       integer :: i,j,ju
 !
@@ -1085,6 +1095,43 @@ module Viscosity
           call fatal_error("calc_pencils_viscosity","")
         endif
 !
+        call multmv(p%sij,gradnu,sgradnu)
+        call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
+        p%fvisc=p%fvisc+tmp+2*sgradnu
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+pnu
+      endif
+!
+!  Radial viscosity profile with two steps
+!  very similar to nu_profr
+!
+      if (lvisc_nu_profr_twosteps) then
+!
+!  Viscous force: nu(x)*(del2u+graddivu/3+2S.glnrho)+2S.gnu
+!  -- here the nu viscosity depends on r; nu_jump=nu2/nu1
+        if (lspherical_coords.or.lsphere_in_a_box) then
+          tmp3=p%r_mn
+        else
+          tmp3=p%rcyl_mn
+        endif
+        if (lvisc_nu_profx.and.lvisc_nu_profr_twosteps) then
+          print*,'You are using both radial and horizontal '
+          print*,'profiles for a viscosity jump. Are you sure '
+          print*,'this is reasonable? Better stop and check.'
+          call fatal_error("","")
+        endif
+        prof2    = step(tmp3,xnu2,widthnu2)
+        prof     = step(tmp3,xnu,widthnu)-prof2
+        derprof2 = der_step(tmp3,xnu2,widthnu2)
+        derprof  = der_step(tmp3,xnu,widthnu)-prof2
+!
+        pnu  = nu + nu*(nu_jump-1.)*prof+nu*(nu_jump2-1.)*prof2
+        tmp4 = nu + nu*(nu_jump-1.)*derprof+nu*(nu_jump2-1.)*derprof2
+!
+!  Initialize gradnu before calculating it, otherwise gfortran complains.
+!
+        gradnu=0.
+        call get_gradnu(tmp4,lvisc_nu_profx,lvisc_nu_profr_twosteps,p,gradnu)
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         p%fvisc=p%fvisc+tmp+2*sgradnu
