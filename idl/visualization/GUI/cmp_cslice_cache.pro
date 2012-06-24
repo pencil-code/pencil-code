@@ -1006,7 +1006,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	if (n_elements (units) ge 1) then unit = units
 	if (n_elements (unit) eq 0) then begin
 		print, "WARNING: setting units to unity."
-		units = { length:1, default_length:1, default_length_str:'-', velocity:1, default_velocity:1, default_velocity_str:'-', time:1, default_time:1, default_time_str:'-', temperature:1, default_temperature:1, default_temperature_str:'-', density:1, default_density:1, default_density_str:'-', mass:1, default_mass:1, default_mass_str:'-', magnetic_field:1, default_magnetic_field:1, default_magnetic_field_str:'-', current_density:1, default_current_density:1, default_current_density_str:'-' }
+		unit = { length:1, default_length:1, default_length_str:'-', velocity:1, default_velocity:1, default_velocity_str:'-', time:1, default_time:1, default_time_str:'-', temperature:1, default_temperature:1, default_temperature_str:'-', density:1, default_density:1, default_density_str:'-', mass:1, default_mass:1, default_mass_str:'-', magnetic_field:1, default_magnetic_field:1, default_magnetic_field_str:'-', current_density:1, default_current_density:1, default_current_density_str:'-' }
 	end
 
 	if (n_elements (scaling) eq 0) then scaling = 1
