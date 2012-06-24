@@ -5049,7 +5049,7 @@ module Chemistry
 !
 !  Calculate viscosity
 !
-     if (visc_const==impossible) then
+!     if (visc_const==impossible) then
       omega='Omega22'
       tmp_local=5./16.*sqrt(k_B_cgs/(Na*pi))
 !
@@ -5079,7 +5079,7 @@ module Chemistry
           enddo
           enddo
       enddo
-      endif
+!      endif
      !
     endsubroutine calc_diff_visc_coef
 !***********************************************************************
