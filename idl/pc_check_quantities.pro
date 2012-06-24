@@ -177,7 +177,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	}
 
 	; Fill default values
-	if (keyword_set (all)) then return, create_struct (available, alias)
+	if (keyword_set (all)) then return, create_struct (available, available_vectorfields, alias)
 	if (keyword_set (avail)) then return, available
 	if (keyword_set (aliases)) then return, alias
 	if (keyword_set (vectorfields)) then return, available_vectorfields
