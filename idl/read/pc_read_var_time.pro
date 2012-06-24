@@ -35,7 +35,7 @@
 ;-
 pro pc_read_var_time,                                                              $
     time=time, varfile=varfile_, allprocs=allprocs, datadir=datadir, param=param,  $
-    dim=dim, grid=grid, ivar=ivar, swap_endian=swap_endian, f77=f77,               $
+    procdim=dim, ivar=ivar, swap_endian=swap_endian, f77=f77,                      $
     exit_status=exit_status, quiet=quiet
 
 COMPILE_OPT IDL2,HIDDEN
@@ -80,20 +80,18 @@ COMPILE_OPT IDL2,HIDDEN
     if (allprocs eq 1) then begin
       pc_read_dim, object=dim, datadir=datadir, /quiet
     endif else if (allprocs eq 2) then begin
-      pc_read_dim, object=dim, datadir=datadir, /quiet
-    endif else begin
       pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
+      dim.nx = dim.nxgrid
+      dim.ny = dim.nygrid
+      dim.mx = dim.mxgrid
+      dim.my = dim.mygrid
+      dim.mw = dim.mx * dim.my * dim.mz
+    endif else begin
+      pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
     endelse
   endif
-  if (allprocs eq 2) then begin
-    pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-  endif else begin
-    procdim = dim
-  endelse
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
-  if (n_elements(grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, /quiet
 ;
 ; ... and check pc_precision is set for all Pencil Code tools.
 ;
@@ -101,14 +99,14 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Local shorthand for some parameters.
 ;
-  precision=dim.precision
+  precision = dim.precision
 ;
 ; Initialize / set default returns for ALL variables.
 ;
   t=zero
-  x=fltarr(dim.mx)*one
-  y=fltarr(dim.my)*one
-  z=fltarr(dim.mz)*one
+  x=fltarr(dim.mxgrid)*one
+  y=fltarr(dim.mygrid)*one
+  z=fltarr(dim.mzgrid)*one
   dx=zero
   dy=zero
   dz=zero
@@ -141,7 +139,7 @@ COMPILE_OPT IDL2,HIDDEN
   openr, file, filename, /f77, swap_endian=swap_endian
   if (precision eq 'D') then bytes=8 else bytes=4
   if (f77 eq 0) then markers=0 else markers=2
-  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(procdim.mz)*long64(dim.mvar*bytes)+long64(markers*4)
+  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(dim.mvar*bytes)+long64(markers*4)
   if (allprocs eq 1) then begin
     ; collectively written files
     readu, file, t, x, y, z, dx, dy, dz
