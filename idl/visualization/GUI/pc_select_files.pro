@@ -407,7 +407,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		WIDGET_CONTROL, cut_co, SENSITIVE = 0
 		cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=0, min=0, max=1, /drag, /suppress_value, sensitive=0)
 	end else begin
-		tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+"/proc*/", frame=0)
+		if (allprocs eq 1) then dir_str = "/allprocs/" else dir_str = "/proc*/"
+		tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+dir_str, frame=0)
 		tmp	= WIDGET_LABEL (SEL, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
 	end
 
