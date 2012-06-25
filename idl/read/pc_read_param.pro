@@ -87,7 +87,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Write content of param.nml to temporary file.
 ;
-  spawn, 'echo $PENCIL_HOME', pencil_home
+  pencil_home = getenv ('PENCIL_HOME')
   if (pencil_home eq "") then $
       message, "ERROR: please 'source sourceme.sh', before using this function."
   spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m '+filename+'> '+tmpfile, result
