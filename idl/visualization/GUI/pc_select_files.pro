@@ -413,10 +413,22 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	tmp	= WIDGET_LABEL (VC, value='Available content:', frame=0)
 	content = varcontent.variable
+	content_idl = varcontent.idlvar
 	num_cont = n_elements (content)
-	content = content[where (content ne "UNKNOWN")]
+	indices = where (content ne "UNKNOWN")
+	if (any (indices ne -1)) then begin
+		content = content[indices]
+		content_idl = content_idl[indices]
+	end
 	num_content = n_elements (content)
 	cont_selected = indgen (num_content)
+	if (n_elements (var_list) gt 0) then begin
+		for pos = 0, num_content-1 do begin
+			if (not any (strcmp (content_idl[pos], var_list, /fold_case))) then cont_selected[pos] = -1
+		end
+		indices = where (cont_selected ge 0)
+		if (any (indices ne -1)) then cont_selected = cont_selected[indices]
+	end
 	c_cont	= WIDGET_LIST (VC, value=content, uvalue='CONT', YSIZE=num_content<max_display, /multiple)
 	WIDGET_CONTROL, c_cont, SET_LIST_SELECT = cont_selected
 
