@@ -326,10 +326,10 @@ function pc_compute_quantity, vars, index, quantity
 			return, -1
 		end
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
-		Rx = reform (pc_compute_quantity (vars, index, 'dx'), nx, 1, 1) * abs (uu[*,*,*,0])
-		Ry = reform (pc_compute_quantity (vars, index, 'dy'), 1, ny, 1) * abs (uu[*,*,*,1])
-		Rz = reform (pc_compute_quantity (vars, index, 'dz'), 1, 1, nz) * abs (uu[*,*,*,2])
-		varsets[i].Rn_viscous = ((Rx > Ry) > Rz) / (run_par.nu * unit.length^2/unit.time)
+		Rx = spread (pc_compute_quantity (vars, index, 'dx'), [1,2], [ny,nz]) * abs (uu[*,*,*,0])
+		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * abs (uu[*,*,*,1])
+		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * abs (uu[*,*,*,2])
+		return, ((Rx > Ry) > Rz) / (run_par.nu * unit.length^2/unit.time)
 	end
 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
@@ -383,10 +383,10 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		bb_abs_1 = 1.0 / sqrt (dot2 (bb))
-		Rx = reform (pc_compute_quantity (vars, index, 'dx'), nx, 1, 1) * abs (uu[0]) * (1 - abs (bb[0] * bb_abs_1))
-		Ry = reform (pc_compute_quantity (vars, index, 'dy'), 1, ny, 1) * abs (uu[1]) * (1 - abs (bb[1] * bb_abs_1))
-		Rz = reform (pc_compute_quantity (vars, index, 'dz'), 1, 1, nz) * abs (uu[1]) * (1 - abs (bb[2] * bb_abs_1))
-		varsets[i].Rn_mag = ((Rx > Ry) > Rz) / (run_par.eta * unit.length^2/unit.time)
+		Rx = spread (pc_compute_quantity (vars, index, 'dx'), [1,2], [ny,nz]) * abs (uu[0]) * (1 - abs (bb[0] * bb_abs_1))
+		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * abs (uu[1]) * (1 - abs (bb[1] * bb_abs_1))
+		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * abs (uu[1]) * (1 - abs (bb[2] * bb_abs_1))
+		return, ((Rx > Ry) > Rz) / (run_par.eta * unit.length^2/unit.time)
 	end
 
 	if (strcmp (quantity, 'j', /fold_case)) then begin
