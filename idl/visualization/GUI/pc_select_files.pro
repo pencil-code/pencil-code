@@ -137,8 +137,8 @@ pro select_files_event, event
 			WIDGET_CONTROL, cut_sl, SET_SLIDER_MIN = 0<max_pos
 			WIDGET_CONTROL, cut_sl, SET_SLIDER_MAX = max_pos>1
 			WIDGET_CONTROL, cut_sl, SET_VALUE = cut_pos
-			WIDGET_CONTROL, cut_co, SENSITIVE = 1-(cut_pos eq -1)
-			WIDGET_CONTROL, cut_sl, SENSITIVE = 1-(cut_pos eq -1)
+			WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
+			WIDGET_CONTROL, cut_sl, SENSITIVE = (cut_pos ge 0)
 			WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
 		end
 		break
@@ -402,10 +402,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		end
 		tmp	= WIDGET_LABEL (SEL, value="From: "+procdir, frame=0)
 		d_slice	= WIDGET_DROPLIST (SEL, value=load_list, /align_center, uvalue='SLICE')
-		WIDGET_CONTROL, d_slice, SET_LIST_SELECT = slice
-		cut_co	= CW_FIELD (SEL, title='Slice position:', uvalue='CUT_CO', value="", /integer, /return_events, xsize=8)
-		WIDGET_CONTROL, cut_co, SENSITIVE = 0
-		cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=0, min=0, max=1, /drag, /suppress_value, sensitive=0)
+		WIDGET_CONTROL, d_slice, SET_DROPLIST_SELECT = slice
+		cut_co	= CW_FIELD (SEL, title='Slice position:', uvalue='CUT_CO', value=cut_pos>0, /integer, /return_events, xsize=8)
+		WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
+		cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=cut_pos, min=0<max_pos, max=max_pos>1, /drag, /suppress_value, sensitive=(cut_pos ge 0))
 	end else begin
 		if (allprocs eq 1) then dir_str = "/allprocs/" else dir_str = "/proc*/"
 		tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+dir_str, frame=0)
