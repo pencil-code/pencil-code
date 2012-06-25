@@ -383,7 +383,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	max_pos = -1
 	cut_pos = -1
 	SEL	= WIDGET_BASE (VC, frame=1, /align_center, /col)
-	if ((dimensionality eq 3) and (allprocs eq 1)) then begin
+	if (dimensionality eq 3) then begin
 		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
 		if (cut_x ge 0) then begin
 			slice = 1
