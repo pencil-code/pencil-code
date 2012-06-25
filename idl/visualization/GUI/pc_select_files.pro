@@ -345,7 +345,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	b_ts	= WIDGET_BUTTON (BUT, value='show timeseries', uvalue='SHOW_TIME')
 
 	tmp	= CW_FIELD (XTRA, title='GB per file', /column, value=gb_per_file, /float)
-	f_gb	= CW_FIELD (XTRA, title='Total GB selected', /column, value=gb_per_file*(add_selected+var_selected), /float)
+	f_gb	= CW_FIELD (XTRA, title='Total GB selected', /column, value=gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected), /float)
 
 	BUT	= WIDGET_BASE (XTRA, /row, /align_center, frame=1)
 	tmp	= WIDGET_BUTTON (BUT, xsize=60, value='CANCEL', uvalue='CANCEL')
@@ -428,6 +428,13 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		end
 		indices = where (cont_selected ge 0)
 		if (any (indices ne -1)) then cont_selected = cont_selected[indices]
+		num = 0
+		for pos = 0, num_cont-1 do begin
+			if (not any (pos eq cont_selected)) then continue
+			if (any (strcmp (content_idl[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
+		end
+		cont_corr = num / float (num_cont)
+		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
 	end
 	c_cont	= WIDGET_LIST (VC, value=content, uvalue='CONT', YSIZE=num_content<max_display, /multiple)
 	WIDGET_CONTROL, c_cont, SET_LIST_SELECT = cont_selected
@@ -461,6 +468,15 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='O_ALL')
 	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='O_DEF')
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='O_NONE')
+
+	if (n_elements (var_list)) then begin
+		pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
+		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
+		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
+		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
+		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
+	end
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
