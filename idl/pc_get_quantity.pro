@@ -319,6 +319,18 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		return, run_par.nu * rho * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.density * unit.velocity^3 / unit.length
 	end
+	if (strcmp (quantity, 'Rn_viscous', /fold_case)) then begin
+		; Viscous mesh Reynolds number
+		if (not any (tag_names (run_par) eq "NU")) then begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'NU'"
+			return, -1
+		end
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		Rx = reform (pc_compute_quantity (vars, index, 'dx'), nx, 1, 1) * abs (uu[*,*,*,0])
+		Ry = reform (pc_compute_quantity (vars, index, 'dy'), 1, ny, 1) * abs (uu[*,*,*,1])
+		Rz = reform (pc_compute_quantity (vars, index, 'dz'), 1, 1, nz) * abs (uu[*,*,*,2])
+		varsets[i].Rn_viscous = ((Rx > Ry) > Rz) / (run_par.nu * unit.length^2/unit.time)
+	end
 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential
@@ -363,18 +375,18 @@ function pc_compute_quantity, vars, index, quantity
 		return, dot2 (bb)
 	end
 	if (strcmp (quantity, 'Rn_mag', /fold_case)) then begin
-		; Magnetic mesh Reynolds number
+		; Magnetic mesh Reynolds number of velocities perpendicular to the magnetic field
 		if (not any (tag_names (run_par) eq "ETA")) then begin
 			print, "ERROR: Can't compute '"+quantity+"' without parameter 'ETA'"
 			return, -1
 		end
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		bb_abs_1 = 1.0 / sqrt (dot2 (bb))
-		Rx = reform (1.0/dx_1, nx, 1, 1) * abs (uu[0]) * (1 - abs (bb[0] * bb_abs_1))
-		Ry = reform (1.0/dy_1, 1, ny, 1) * abs (uu[1]) * (1 - abs (bb[1] * bb_abs_1))
-		Rz = reform (1.0/dz_1, 1, 1, nz) * abs (uu[1]) * (1 - abs (bb[2] * bb_abs_1))
-		varsets[i].Rn_mag = ((Rx > Ry) > Rz) / run_par.eta / unit.length
+		Rx = reform (pc_compute_quantity (vars, index, 'dx'), nx, 1, 1) * abs (uu[0]) * (1 - abs (bb[0] * bb_abs_1))
+		Ry = reform (pc_compute_quantity (vars, index, 'dy'), 1, ny, 1) * abs (uu[1]) * (1 - abs (bb[1] * bb_abs_1))
+		Rz = reform (pc_compute_quantity (vars, index, 'dz'), 1, 1, nz) * abs (uu[1]) * (1 - abs (bb[2] * bb_abs_1))
+		varsets[i].Rn_mag = ((Rx > Ry) > Rz) / (run_par.eta * unit.length^2/unit.time)
 	end
 
 	if (strcmp (quantity, 'j', /fold_case)) then begin

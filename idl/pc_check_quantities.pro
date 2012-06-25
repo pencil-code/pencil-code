@@ -105,8 +105,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
 		rho_u_z:'impulse density z', $
-		Rn_visc:'viscous Rn', $
-		Rn_mag:'magnetic Rn', $
+		Rn_viscous:'viscous Reynolds number', $
+		Rn_mag:'magnetic Reynolds number', $
 		q_sat:'saturation heatflux', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_dt:'Spitzer timestep', $
@@ -152,6 +152,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	}
 
 	; List of dependencies.
+	; Arrays list a set of mandatory dependencies (e.g. 'HR_viscous').
+	; The elements of structures are all mandatory dependencies,
+	; while contained arrays list alternative data sources (e.g. 'Temp').
 	depend = { $
 		Temp:{ Temp:['lnTT', 'TT'] }, $
 		grad_Temp:'Temp', $
@@ -181,7 +184,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_P_therm:'P_therm', $
 		grad_P_therm_abs:'grad_P_therm', $
 		rho_u_z:['u', 'rho'], $
-		Rn_visc:'u', $
+		Rn_viscous:'u', $
 		Rn_mag:['u','B'], $
 		q_sat:['Temp', 'rho'], $
 		Spitzer_q:['Temp'], $
@@ -192,6 +195,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_rho:'rho', $
 		log_rho:'rho', $
 		n_rho:'rho', $
+		; Additional quantities without dependencies:
 		x:'', $
 		y:'', $
 		z:'', $
