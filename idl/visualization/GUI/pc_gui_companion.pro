@@ -56,7 +56,7 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, par
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
 			if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
-				pc_read_slice_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, param=param, par2=run_param, varcontent=varcontent, time=time, quiet=(i ne 0), cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
+				pc_read_slice_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, slice_dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0), cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
 			end else begin
 				pc_read_var_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, time=time, quiet=(i ne 0)
 			end
