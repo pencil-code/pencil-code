@@ -43,7 +43,11 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Settings that can be changed by the user:
+;;; Settings that can be changed by the user
+;;;
+;;; Load file with user-defined defaults, if available:
+;;;
+@pc_gui_settings
 
 ;;;
 ;;; Physical quantities to be visualized
@@ -52,18 +56,16 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 default, quantities, { $
 	Temp:'temperature', $
 	j_abs:'current density', $
-;	B_x:'magnetic field x', $
-;	B_y:'magnetic field y', $
+	B_x:'magnetic field x', $
+	B_y:'magnetic field y', $
 	B_z:'magnetic field z', $
 	u_abs:'velocity', $
-;	u_x:'velocity x', $
-;	u_y:'velocity y', $
+	u_x:'velocity x', $
+	u_y:'velocity y', $
 	u_z:'velocity z', $
 	P_therm:'thermal pressure', $
 	grad_P_therm_abs:'thermal pressure gradient', $
-;	Rn_visc:'viscous Rn', $
-;	Rn_mag:'magnetic Rn', $
-	log_rho:'logarithmic density' $
+	rho:'density' $
 }
 
 
@@ -73,18 +75,18 @@ default, quantities, { $
 ;;;
 default, overplot_quantities, { $
 	u:'velocities', $
-;	grad_Temp:'temperature gradient', $
-;	grad_P_therm:'thermal pressure gradient', $
+	grad_Temp:'temperature gradient', $
+	grad_P_therm:'thermal pressure gradient', $
 ;	B:'magnetic_field', $
 	A_contour:'fieldlines' $
 }
 
 
 ;;;
-;;; Preferred units for display
+;;; Preferred units for display [SI]
 ;;;
-default, default_length             , 1.e6
-default, default_length_str         , 'Mm'
+default, default_length             , 1.0
+default, default_length_str         , 'm'
 default, default_time               , 1.0
 default, default_time_str           , 's'
 default, default_velocity           , 1.e3
@@ -93,8 +95,8 @@ default, default_density            , 1.0
 default, default_density_str        , 'kg/m^3'
 default, default_mass               , 1.0
 default, default_mass_str           , 'kg'
-default, default_magnetic_field     , 1e-4
-default, default_magnetic_field_str , 'Gauß'
+default, default_magnetic_field     , 1.0
+default, default_magnetic_field_str , 'Tesla'
 
 
 ;;;
