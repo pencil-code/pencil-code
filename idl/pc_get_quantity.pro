@@ -174,17 +174,25 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
 		; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
-		if (not any (tag_names (run_par) eq "K_SPITZER")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER'"
+		if (any (tag_names (run_par) eq "K_SPITZER")) then begin
+			K_spitzer = run_par.K_spitzer
+		end else if (any (tag_names (run_par) eq "KPARA")) then begin
+			K_spitzer = run_par.Kpara
+		end else begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER' or 'KPARA'"
 			return, -1
 		end
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, run_par.K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
+		return, K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
 	end
 	if (strcmp (quantity, 'Spitzer_dt', /fold_case)) then begin
 		; Spitzer heat flux timestep [s]
-		if (not any (tag_names (run_par) eq "K_SPITZER")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER'"
+		if (any (tag_names (run_par) eq "K_SPITZER")) then begin
+			K_spitzer = run_par.K_spitzer
+		end else if (any (tag_names (run_par) eq "KPARA")) then begin
+			K_spitzer = run_par.Kpara
+		end else begin
+			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER' or 'KPARA'"
 			return, -1
 		end
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
@@ -195,7 +203,7 @@ function pc_compute_quantity, vars, index, quantity
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			grad_ln_Temp = (grad (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*]
 		end
-		dt = run_par.cdtv / (start_par.gamma * start_par.cp * run_par.K_spitzer) * rho * sqrt (dot2 (bb) * dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
+		dt = run_par.cdtv / (start_par.gamma * start_par.cp * K_spitzer) * rho * sqrt (dot2 (bb) * dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
 		; The z-direction may have a non-uniform gird, but not the x- and y-direction
 		dxy_1 = dx_1[0]^2 + dy_1[0]^2
 		for pz = 0, nz - 1 do dt[*,*,pz] /= dxy_1 + dz_1[pz]^2
@@ -382,10 +390,11 @@ function pc_compute_quantity, vars, index, quantity
 		end
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
-		bb_abs_1 = 1.0 / sqrt (dot2 (bb))
-		Rx = spread (pc_compute_quantity (vars, index, 'dx'), [1,2], [ny,nz]) * abs (uu[0]) * (1 - abs (bb[0] * bb_abs_1))
-		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * abs (uu[1]) * (1 - abs (bb[1] * bb_abs_1))
-		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * abs (uu[1]) * (1 - abs (bb[2] * bb_abs_1))
+		fact = 1.0 / (sqrt (dot2 (uu)) * dot2 (bb))
+		BxUxB = cross (cross (bb, uu), bb)
+		Rx = spread (pc_compute_quantity (vars, index, 'dx'), [1,2], [ny,nz]) * fact * uu[*,*,*,0] * BxUxB[*,*,*,0]
+		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * fact * uu[*,*,*,1] * BxUxB[*,*,*,1]
+		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * fact * uu[*,*,*,2] * BxUxB[*,*,*,2]
 		return, ((Rx > Ry) > Rz) / (run_par.eta * unit.length^2/unit.time)
 	end
 
