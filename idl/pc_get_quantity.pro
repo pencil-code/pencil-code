@@ -325,7 +325,7 @@ function pc_compute_quantity, vars, index, quantity
 		u_zz = (zder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
 		div_u3 = (u_xx + u_yy + u_zz) / 3.0
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		return, run_par.nu * rho * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.density * unit.velocity^3 / unit.length
+		return, run_par.nu * rho * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.velocity^3 / unit.length
 	end
 	if (strcmp (quantity, 'Rn_viscous', /fold_case)) then begin
 		; Viscous mesh Reynolds number
