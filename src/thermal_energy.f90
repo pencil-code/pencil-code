@@ -692,6 +692,20 @@ module Entropy
 !
       integer :: i, j, k
 !
+!  Impose the energy floor.
+!
+      if (energy_floor > 0.) where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor
+!
+!  Apply Jeans energy floor.
+!
+      if (ljeans_floor) then
+        if (ldensity_nolog) then
+          call jeans_floor(f(l1:l2,m1:m2,n1:n2,ieth), f(l1:l2,m1:m2,n1:n2,irho))
+        else
+          call jeans_floor(f(l1:l2,m1:m2,n1:n2,ieth), exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+        endif
+      endif
+!
 !  Stop the code if negative energy exists.
 !
       if (lcheck_negative_energy) then
@@ -705,20 +719,6 @@ module Entropy
             enddo
           enddo
           call fatal_error('impose_energy_floor', 'negative energy detected')
-        endif
-      endif
-!
-!  Impose the energy floor.
-!
-      if (energy_floor > 0.) where(f(:,:,:,ieth) < energy_floor) f(:,:,:,ieth) = energy_floor
-!
-!  Apply Jeans energy floor.
-!
-      if (ljeans_floor) then
-        if (ldensity_nolog) then
-          call jeans_floor(f(l1:l2,m1:m2,n1:n2,ieth), f(l1:l2,m1:m2,n1:n2,irho))
-        else
-          call jeans_floor(f(l1:l2,m1:m2,n1:n2,ieth), exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
         endif
       endif
 !
