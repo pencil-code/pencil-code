@@ -476,7 +476,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	QU	= WIDGET_BASE (BASE, /col)
 
 	tmp	= WIDGET_LABEL (QU, value='Available quantities:', frame=0)
-	c_quant	= WIDGET_LIST (QU, value=quant_list, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
+	c_quant	= WIDGET_LIST (QU, value=quant_avail, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
 	WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
 	SEL	= WIDGET_BASE (QU, /row, /align_center)
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='Q_ALL')
@@ -486,7 +486,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	OV	= WIDGET_BASE (BASE, /col)
 
 	tmp	= WIDGET_LABEL (OV, value='Available overplots:', frame=0)
-	c_over	= WIDGET_LIST (OV, value=over_list, uvalue='OVER', YSIZE=(num_over<max_display)>min_display, /multiple)
+	c_over	= WIDGET_LIST (OV, value=over_avail, uvalue='OVER', YSIZE=(num_over<max_display)>min_display, /multiple)
 	WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 	SEL	= WIDGET_BASE (OV, /row, /align_center)
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='O_ALL')
