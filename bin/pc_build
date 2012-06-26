@@ -89,6 +89,7 @@ use Pencil::Util;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
 
+use POSIX qw(strftime);
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
@@ -125,6 +126,8 @@ my $host_id      = ($opts{'H'} || $opts{'host-id'}      || undef);
 my $notify       = (              $opts{'notify'}       || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}        || '');
 my $fast         = (              $opts{'fast'}         || '');
+
+log_command_line($0, \@ARGV);
 
 if ($fast) {
     push @ARGV, 'FFLAGS+=-O0';
@@ -190,6 +193,35 @@ sub mention {
 # Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
 # once'' warning
     my @args = @_;
+}
+# ---------------------------------------------------------------------- #
+sub log_command_line {
+# Write the current command line to log file that can be run in order to
+# compile with exactly the same parameters.
+    my ($cmd, $args_ref) = @_;
+    my @args = @$args_ref;
+
+    my $log_file = '.pc_build_history';
+    my $log;
+    unless (open($log, "> $log_file")) {
+        warn "Could not open $log_file for writing\n";
+        return;
+    }
+
+    (my $header = <<'HERE') =~ s/^\s{4}//gm;
+    # This file is automatically updated each time you run pc_build.
+    # Use
+    #   pc_build --previous-flags
+    # or
+    #   ./.pc_build_history
+    # to compile with the same flags as you used the previous time.
+    #
+HERE
+    print $log $header;
+
+    my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
+    print $log "# ", $timestamp, "\n";
+    print $log "$cmd @args", "\n";
 }
 # ---------------------------------------------------------------------- #
 sub printopts {
