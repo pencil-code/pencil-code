@@ -64,20 +64,21 @@ wget http://pencil-code.googlecode.com/files/pencil-code-r18525.tar.gz
 
 The downloaded \verb|pencil-code| directory contains several sub-directories
 \begin{enumerate}
-  \item \verb|samples|:  many sample problems
-  \item \verb|config|: all the configuration files.
-  \item \verb|doc| a very important directory containing the pencil-code
-    \verb|manual.tex|
+  \item \verb|doc|: a very important directory containing the pencil-code
+    \verb|manual.tex|. The pdf of the latest version of the manual is created
+    simply by typing \verb|make| in the \verb|pencil-code/doc| directory. For
+    example, the code structure can be further explored in Section 4 of the
+    manual.
+  \item \verb|samples|: contains many sample problems
+  \item \verb|config|: has all the configuration files
   \item \dots
 \end{enumerate}
-For example, the code structure can be further explored in Section 4 of the
-manual.
-
 
 \section{Configure the shell}
 
-It is recommend to use cshell instead of bash.
+%It is recommend to use cshell instead of bash.
 %AB: I'm not sure we should really say this, because many of us use bash, no?
+\subsection{tcsh shell}
 
 Under the tcsh shell, put in your \$HOME/.cshrc file the following lines:
 \begin{verbatim}
@@ -99,6 +100,12 @@ Note: If you want to change your default \$SHELL to tcsh, type
 
 The first command prompts you for your normal unix password.
 
+Source your updated \$HOME/.cshrc file by typing:
+\begin{verbatim}
+  source .cshrc
+\end{verbatim}
+
+\subsection{bash shell}
 If you are under the bash shell, put in your \$HOME/.bashrc file the following
 lines:
 \begin{verbatim}
@@ -111,6 +118,13 @@ if [ -e $PENCIL_HOME/sourceme.sh ]; then
 fi
 \end{verbatim}
 
+Source your updated \$HOME/.bashrc file by typing:
+\begin{verbatim}
+  source .bashrc
+\end{verbatim}
+
+\subsection{Handy aliases}
+%ML Do we really need this subsection
 Also add the following useful alias:
 
 With tcsh: \texttt{alias pc 'cd \$PENCIL\_HOME'}
@@ -119,14 +133,10 @@ With bash: \texttt{alias pc='cd \$PENCIL\_HOME'}
 such that you will directly move to the Pencil Code directory wherever you are
 by typing 'pc'.
 
-Source your updated \$HOME/.cshrc or \$HOME/.bashrc file by typing:
-
-With tcsh: \texttt{source .cshrc}
-With bash: \texttt{source .bashrc}
 
 
 \section{Fortran}
-Fortran is needed to compile the code. 
+A fortran compiler is needed to compile the code. 
 \subsection{Fortran on a mac machine}
 For Mac, you first need to install \verb|Xcode| from the \verb|AppleDeveloper|
 site \url{http://developer.apple.com/}. This requires you to first register as a
