@@ -231,6 +231,8 @@ sub comment_out_all_lines {
 # If $log_file exists, copy each line from $log_file to the new file,
 # commenting out all non-empty, non-commented lines.
 # Otherwise write a descriptive header to the new file.
+# Access permissions of the new files are the same as for the old file,
+# or determined from the user's umask.
 # Return a file handle and the file name for the new file.
     my ($log_file) = @_;
 
@@ -238,9 +240,9 @@ sub comment_out_all_lines {
 
     my ($out, $tmp_file) = mkstemp('pc_build_tmp_XXXXX');
 
+    my $permissions;
     if (-e $log_file) {
-        my $permissions =  (stat "$log_file")[2] & 07777;
-        chmod($permissions, $out);
+        $permissions =  (stat "$log_file")[2] & 07777;
         open(my $in, '<', $log_file)
           or return warn_politely("Cannot read from $log_file");
         while (defined(my $line = <$in>)) {
@@ -251,6 +253,8 @@ sub comment_out_all_lines {
         }
         close $in;
     } else {
+        # r--r--r-- is 0666, but umask may disallow some of those bits
+        $permissions = 0666 & ~umask();
         (my $header = <<'HERE') =~ s/^\s{8}//gm;
         # This file is automatically updated each time you run pc_build.
         # Use
@@ -258,10 +262,11 @@ sub comment_out_all_lines {
         # or
         #   sh .pc_build_history
         # to compile with the same flags as you used the previous time.
-        #
 HERE
         print $out $header;
     }
+
+    chmod($permissions, $out);
 
     return ($out, $tmp_file);
 }
