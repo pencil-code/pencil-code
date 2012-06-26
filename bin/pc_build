@@ -213,7 +213,7 @@ sub log_command_line {
     # Use
     #   pc_build --previous-flags
     # or
-    #   ./.pc_build_history
+    #   sh .pc_build_history
     # to compile with the same flags as you used the previous time.
     #
 HERE
