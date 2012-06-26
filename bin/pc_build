@@ -206,7 +206,7 @@ sub log_command_line {
 # Write the current command line to log file that can be run in order to
 # compile with exactly the same parameters.
     my ($cmd, $args_ref) = @_;
-    my @args = @$args_ref;
+    my @args = quote_spaces(@$args_ref);
 
     my $log;
     unless (open($log, "> $log_file")) {
@@ -230,6 +230,23 @@ HERE
     print $log "$cmd @args", "\n";
 }
 # ---------------------------------------------------------------------- #
+sub quote_spaces {
+# Put any string containing spaces in ''.
+# This is primitive and won't help for command line arguments containing
+# the single quote character.
+    my @strings = @_;
+
+    my @quoted = ();
+    foreach my $string (@strings) {
+        if ($string =~ /\s/) {
+            $string = "'$string'";
+        }
+        push @quoted, $string;
+    }
+
+    return @quoted;
+}
+# ---------------------------------------------------------------------- #
 sub printopts {
 # Print command line options
     my ($optsref) = @_;
@@ -243,7 +260,7 @@ sub usage {
 # Extract description and usage information from this file's header.
     my $thisfile = __FILE__;
     local $/ = '';              # Read paragraphs
-    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    open(FILE, "< $thisfile") or die "Cannot open $thisfile\n";
     while (<FILE>) {
         # Paragraph _must_ contain `Description:' or `Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
