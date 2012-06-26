@@ -135,10 +135,11 @@ my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
 my $fast         = (              $opts{'fast'}           || '');
 
 my $log_file = '.pc_build_history';
+my $new_log_file;
 if ($prev_flags) {
-    system('sh', $log_file);
+    exec('sh', $log_file);
 } else {
-    log_command_line($cmd_name, \@all_arguments);
+    $new_log_file = log_command_line($cmd_name, \@all_arguments);
 }
 
 if ($fast) {
@@ -199,6 +200,7 @@ print STDERR "Running make '", join("' '", @make_args), "'\n"
 system('make', @make_args) == 0
   or die "Make failed: <$!>\n";
 
+
 # ---------------------------------------------------------------------- #
 sub mention {
 # Reference a variable without doing anything.
@@ -213,10 +215,42 @@ sub log_command_line {
     my ($cmd, $args_ref) = @_;
     my @args = quote_spaces(@$args_ref);
 
-    my $needs_header = -e $log_file ? 0 : 1;
-    my $log = comment_out_all_lines($log_file);
+    my ($out, $tmp_file) = comment_out_all_lines($log_file);
 
-    if ($needs_header) {
+    print $out "#\n";
+    my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
+    print $out "# ", $timestamp, "\n";
+    print $out "$cmd @args", "\n";
+    close $out;
+
+    return $tmp_file
+}
+# ---------------------------------------------------------------------- #
+sub comment_out_all_lines {
+# Create a new file.
+# If $log_file exists, copy each line from $log_file to the new file,
+# commenting out all non-empty, non-commented lines.
+# Otherwise write a descriptive header to the new file.
+# Return a file handle and the file name for the new file.
+    my ($log_file) = @_;
+
+    use File::Temp qw/ :mktemp /;
+
+    my ($out, $tmp_file) = mkstemp('pc_build_tmp_XXXXX');
+
+    if (-e $log_file) {
+        my $permissions =  (stat "$log_file")[2] & 07777;
+        chmod($permissions, $out);
+        open(my $in, '<', $log_file)
+          or return warn_politely("Cannot read from $log_file");
+        while (defined(my $line = <$in>)) {
+            if ($line =~ /^\s*[^#\s]/) {
+                $line = "# $line";
+            }
+            print $out $line;
+        }
+        close $in;
+    } else {
         (my $header = <<'HERE') =~ s/^\s{8}//gm;
         # This file is automatically updated each time you run pc_build.
         # Use
@@ -226,48 +260,10 @@ sub log_command_line {
         # to compile with the same flags as you used the previous time.
         #
 HERE
-        print $log $header;
+        print $out $header;
     }
 
-    my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
-    print $log "# ", $timestamp, "\n";
-    print $log "$cmd @args", "\n";
-}
-# ---------------------------------------------------------------------- #
-sub comment_out_all_lines {
-# Comment out all non-empty, non-commented lines in $file.
-# Return a file handle to that new version of the file.
-    my ($file) = @_;
-
-    use File::Copy;
-
-    if (! -e $log_file) {
-        open(my $log, '>', $log_file)
-          or return warn_politely("Could not open $log_file for writing");
-        return $log;
-    }
-
-
-    my $tmpfile = POSIX::tmpnam();
-    unless (copy($file, $tmpfile)) {
-        return '';
-    }
-
-    open(my $in, '<', $tmpfile)
-      or return warn_politely("Cannot read from $tmpfile");
-    open(my $out, '>', $file)
-      or return warn_politely("Cannot write to $file\n");
-
-    while (defined(my $line = <$in>)) {
-        if ($line =~ /^\s*[^#\s]/) {
-            $line = "# $line";
-        }
-        print $out $line;
-    }
-
-    close $in;
-
-    return $out;
+    return ($out, $tmp_file);
 }
 # ---------------------------------------------------------------------- #
 sub warn_politely {
@@ -335,6 +331,11 @@ sub version {
 }
 # ---------------------------------------------------------------------- #
 END {
+    if (defined $new_log_file) {
+        rename $new_log_file, $log_file
+          or warn "Cannot rename $new_log_file to $log_file\n";
+    }
+
     Pencil::Util::notify('building') if $notify;
 }
 # ---------------------------------------------------------------------- #
