@@ -253,7 +253,20 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, dim=dim, /quiet
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 	all_quant = pc_check_quantities (sources=varcontent, /available)
-	if (keyword_set (quantities)) then quant = quantities else quant = all_quant
+	quant = all_quant
+	if (keyword_set (quantities)) then begin
+		quant = quantities
+		if (size (quantities, /type) eq 7) then begin
+			num = n_elements (quantities)
+			for pos = 0, num-1 do begin
+				if (pos eq 0) then begin
+					quant = create_struct (quantities[pos], quantities[pos])
+				end else begin
+					quant = create_struct (quant, quantities[pos], quantities[pos])
+				end
+			end
+		end
+	end
 	all_over = pc_check_quantities (sources=varcontent, /vectorfields)
 	if (keyword_set (overplots)) then over = overplots else over = all_over
 	sources = varcontent.idlvar
