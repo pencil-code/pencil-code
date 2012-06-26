@@ -308,8 +308,6 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	; Get file size
 	file_struct = file_info (procdir+varfile)
 	gb_per_file = file_struct.size / 1073741824.
-	cont_corr = 1.0
-	slice_corr = 1.0
 
 	; Get list of available snapshots
 	files = file_search (procdir, pattern)
@@ -334,6 +332,71 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	num_selected = 0
 	if ((addfile ne "") and file_test (procdir+addfile)) then add_selected = 1 else add_selected = 0
 	if ((varfile ne "") and file_test (procdir+varfile)) then var_selected = 1 else var_selected = 0
+
+	; Pre-defined slice settings
+	dimensionality = 0 + ((dim.nx gt 1) + (dim.ny gt 1) + (dim.nz gt 1))
+	slice = 0
+	max_pos = -1
+	cut_pos = -1
+	slice_corr = 1.0
+	if (dimensionality eq 3) then begin
+		if (cut_x ge 0) then begin
+			slice = 1
+			max_pos = dim.nx
+			cut_pos = cut_x < max_pos
+		end
+		if (cut_y ge 0) then begin
+			slice = 2
+			max_pos = dim.ny
+			cut_pos = cut_y < max_pos
+		end
+		if (cut_z ge 0) then begin
+			slice = 3
+			max_pos = dim.nz
+			cut_pos = cut_z < max_pos
+		end
+		if (max_pos ge 1) then slice_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
+	end
+
+	; Pre-defined varcontent settings
+	content = varcontent.variable
+	content_idl = varcontent.idlvar
+	num_cont = n_elements (content)
+	indices = where (content ne "UNKNOWN")
+	if (any (indices ne -1)) then begin
+		content = content[indices]
+		content_idl = content_idl[indices]
+	end
+	num_content = n_elements (content)
+	cont_selected = indgen (num_content)
+	cont_corr = 1.0
+	if (n_elements (var_list) gt 0) then begin
+		for pos = 0, num_content-1 do begin
+			if (not any (strcmp (content_idl[pos], var_list, /fold_case))) then cont_selected[pos] = -1
+		end
+		indices = where (cont_selected ge 0)
+		if (any (indices ne -1)) then cont_selected = cont_selected[indices]
+		num = 0
+		for pos = 0, num_cont-1 do begin
+			if (not any (pos eq cont_selected)) then continue
+			if (any (strcmp (content_idl[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
+		end
+		cont_corr = num / float (num_cont)
+	end
+
+	; Pre-defined quantities settings
+	num_all_quant = n_tags (all_quant)
+	quant_list = strarr (num_all_quant)
+	num_quant = n_tags (quant)
+	for pos = 0, num_all_quant-1 do quant_list[pos] = all_quant.(pos)
+	pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
+
+	; Pre-defined overplot settings
+	num_all_over = n_tags (all_over)
+	over_list = strarr (num_all_over)
+	num_over = n_tags (over)
+	for pos = 0, num_all_over-1 do over_list[pos] = all_over.(pos)
+	pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
 
 
 	; Build GUI
@@ -391,28 +454,9 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	IO_scheme = ["distributed files", "collective files", "collect_xy files"]
 	tmp	= WIDGET_LABEL (VC, value='Load '+IO_scheme[allprocs]+":", frame=0)
-	dimensionality = 0 + ((dim.nx gt 1) + (dim.ny gt 1) + (dim.nz gt 1))
-	slice = 0
-	max_pos = -1
-	cut_pos = -1
 	SEL	= WIDGET_BASE (VC, frame=1, /align_center, /col)
 	if (dimensionality eq 3) then begin
 		load_list = ['full 3D data', 'yz-slice', 'xz-slice', 'xy-slice']
-		if (cut_x ge 0) then begin
-			slice = 1
-			max_pos = dim.nx
-			cut_pos = cut_x < max_pos
-		end
-		if (cut_y ge 0) then begin
-			slice = 2
-			max_pos = dim.ny
-			cut_pos = cut_y < max_pos
-		end
-		if (cut_z ge 0) then begin
-			slice = 3
-			max_pos = dim.nz
-			cut_pos = cut_z < max_pos
-		end
 		tmp	= WIDGET_LABEL (SEL, value="From: "+procdir, frame=0)
 		d_slice	= WIDGET_DROPLIST (SEL, value=load_list, /align_center, uvalue='SLICE')
 		WIDGET_CONTROL, d_slice, SET_DROPLIST_SELECT = slice
@@ -426,41 +470,12 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	end
 
 	tmp	= WIDGET_LABEL (VC, value='Available content:', frame=0)
-	content = varcontent.variable
-	content_idl = varcontent.idlvar
-	num_cont = n_elements (content)
-	indices = where (content ne "UNKNOWN")
-	if (any (indices ne -1)) then begin
-		content = content[indices]
-		content_idl = content_idl[indices]
-	end
-	num_content = n_elements (content)
-	cont_selected = indgen (num_content)
-	if (n_elements (var_list) gt 0) then begin
-		for pos = 0, num_content-1 do begin
-			if (not any (strcmp (content_idl[pos], var_list, /fold_case))) then cont_selected[pos] = -1
-		end
-		indices = where (cont_selected ge 0)
-		if (any (indices ne -1)) then cont_selected = cont_selected[indices]
-		num = 0
-		for pos = 0, num_cont-1 do begin
-			if (not any (pos eq cont_selected)) then continue
-			if (any (strcmp (content_idl[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
-		end
-		cont_corr = num / float (num_cont)
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
-	end
 	c_cont	= WIDGET_LIST (VC, value=content, uvalue='CONT', YSIZE=num_content<max_display, /multiple)
 	WIDGET_CONTROL, c_cont, SET_LIST_SELECT = cont_selected
 
 	QU	= WIDGET_BASE (BASE, /col)
 
 	tmp	= WIDGET_LABEL (QU, value='Available quantities:', frame=0)
-	num_all_quant = n_tags (all_quant)
-	quant_list = strarr (num_all_quant)
-	num_quant = n_tags (quant)
-	for pos=0, num_all_quant-1 do quant_list[pos] = all_quant.(pos)
-	pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
 	c_quant	= WIDGET_LIST (QU, value=quant_list, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
 	WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
 	SEL	= WIDGET_BASE (QU, /row, /align_center)
@@ -471,26 +486,12 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	OV	= WIDGET_BASE (BASE, /col)
 
 	tmp	= WIDGET_LABEL (OV, value='Available overplots:', frame=0)
-	num_all_over = n_tags (all_over)
-	over_list = strarr (num_all_over)
-	num_over = n_tags (over)
-	for pos=0, num_all_over-1 do over_list[pos] = all_over.(pos)
-	pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
 	c_over	= WIDGET_LIST (OV, value=over_list, uvalue='OVER', YSIZE=(num_over<max_display)>min_display, /multiple)
 	WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 	SEL	= WIDGET_BASE (OV, /row, /align_center)
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='O_ALL')
 	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='O_DEF')
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='O_NONE')
-
-	if (n_elements (var_list)) then begin
-		pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
-		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
-		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
-		pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
-		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
-		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
-	end
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
