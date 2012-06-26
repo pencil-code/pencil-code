@@ -1147,7 +1147,9 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	vars	= WIDGET_DROPLIST (bcot, value=tags, uvalue='VAR', sensitive=vars_active, EVENT_PRO=cslice_event, title='quantity')
 	bcot	= WIDGET_BASE (bcol, /col, frame=1, /base_align_center)
 	over	= WIDGET_DROPLIST (bcot, value=overs, uvalue='OVER', sensitive=over_active, EVENT_PRO=cslice_event, title='overplot')
-	sl_over	= CW_FSLIDER (bcot, uvalue='SCALE_OVER', /double, /edit, min=0.0, max=over_max, drag=1, value=0.0, xsize=sl_size/2)
+	bsubrow	= WIDGET_BASE (bcot, /row)
+	tmp	= WIDGET_LABEL (bsubrow, value='vector length:', frame=0)
+	sl_over	= CW_FSLIDER (bsubrow, uvalue='SCALE_OVER', /double, /edit, /suppress_value, min=0.0, max=over_max, drag=1, value=0.0, xsize=150)
 	WIDGET_CONTROL, sl_over, SENSITIVE = (selected_overplot gt 0)
 
 	bcol	= WIDGET_BASE (CTRL, /col)
