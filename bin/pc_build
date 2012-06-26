@@ -39,7 +39,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
 #       --notify    Tell us (audibly and visually) when compilation is done.
-#       --fast      Shortcut for the option FFLAGS+='-O0'
+#       --fast      Shortcut for the option FFLAGS+='-O0'.
+#       --previous-flags
+#                   Build with the same flags as the prvious time.
 #   -q, --quiet     Be quiet.
 #   -v, --version   Print version number.
 # Examples:
