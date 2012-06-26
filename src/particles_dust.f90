@@ -630,7 +630,7 @@ module Particles
 !
       use EquationOfState, only: beta_glnrho_global, cs20
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpireduce_sum
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp,&
                                   initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
@@ -1223,10 +1223,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         case ('average-to-zero')
           call mpireduce_sum(sum(fp(1:npar_loc,ivpx)),vpx_sum)
-          fp(1:npar_loc,ivpx)=fp(1:npar_loc,ivpx)-vpx_sum/npar
           call mpireduce_sum(sum(fp(1:npar_loc,ivpy)),vpy_sum)
-          fp(1:npar_loc,ivpy)=fp(1:npar_loc,ivpy)-vpy_sum/npar
           call mpireduce_sum(sum(fp(1:npar_loc,ivpz)),vpz_sum)
+          call mpibcast_real(vpx_sum)
+          call mpibcast_real(vpy_sum)
+          call mpibcast_real(vpz_sum)
+          fp(1:npar_loc,ivpx)=fp(1:npar_loc,ivpx)-vpx_sum/npar
+          fp(1:npar_loc,ivpy)=fp(1:npar_loc,ivpy)-vpy_sum/npar
           fp(1:npar_loc,ivpz)=fp(1:npar_loc,ivpz)-vpz_sum/npar
 !
         case ('follow-gas')
