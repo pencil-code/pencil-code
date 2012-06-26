@@ -94,6 +94,9 @@ use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
 
+my $cmd_name = $0;
+my @all_arguments = @ARGV;
+
 my (%opts);                     # Options hash for GetOptions
 
 ## Process command line
@@ -133,7 +136,7 @@ my $log_file = '.pc_build_history';
 if ($prev_flags) {
     system('sh', $log_file);
 } else {
-    log_command_line($0, \@ARGV);
+    log_command_line($cmd_name, \@all_arguments);
 }
 
 if ($fast) {
