@@ -89,7 +89,7 @@ use Pencil::Util;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigFinder') or die;
 Pencil::Util::use_pencil_perl_module('Pencil::ConfigParser') or die;
 
-use POSIX qw(strftime);
+use POSIX qw(strftime tmpnam);
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
@@ -208,26 +208,70 @@ sub log_command_line {
     my ($cmd, $args_ref) = @_;
     my @args = quote_spaces(@$args_ref);
 
-    my $log;
-    unless (open($log, "> $log_file")) {
-        warn "Could not open $log_file for writing\n";
-        return;
-    }
+    my $needs_header = -e $log_file ? 0 : 1;
+    my $log = comment_out_all_lines($log_file);
 
-    (my $header = <<'HERE') =~ s/^\s{4}//gm;
-    # This file is automatically updated each time you run pc_build.
-    # Use
-    #   pc_build --previous-flags
-    # or
-    #   sh .pc_build_history
-    # to compile with the same flags as you used the previous time.
-    #
+    if ($needs_header) {
+        (my $header = <<'HERE') =~ s/^\s{8}//gm;
+        # This file is automatically updated each time you run pc_build.
+        # Use
+        #   pc_build --previous-flags
+        # or
+        #   sh .pc_build_history
+        # to compile with the same flags as you used the previous time.
+        #
 HERE
-    print $log $header;
+        print $log $header;
+    }
 
     my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
     print $log "# ", $timestamp, "\n";
     print $log "$cmd @args", "\n";
+}
+# ---------------------------------------------------------------------- #
+sub comment_out_all_lines {
+# Comment out all non-empty, non-commented lines in $file.
+# Return a file handle to that new version of the file.
+    my ($file) = @_;
+
+    use File::Copy;
+
+    if (! -e $log_file) {
+        open(my $log, '>', $log_file)
+          or return warn_politely("Could not open $log_file for writing");
+        return $log;
+    }
+
+
+    my $tmpfile = POSIX::tmpnam();
+    unless (copy($file, $tmpfile)) {
+        return '';
+    }
+
+    open(my $in, '<', $tmpfile)
+      or return warn_politely("Cannot read from $tmpfile");
+    open(my $out, '>', $file)
+      or return warn_politely("Cannot write to $file\n");
+
+    while (defined(my $line = <$in>)) {
+        if ($line =~ /^\s*[^#\s]/) {
+            $line = "# $line";
+        }
+        print $out $line;
+    }
+
+    close $in;
+
+    return $out;
+}
+# ---------------------------------------------------------------------- #
+sub warn_politely {
+# Print a warning and return ''
+    my ($warning) = @_;
+
+    chomp $warning;
+    warn "$warning\n";
+    return '';
 }
 # ---------------------------------------------------------------------- #
 sub quote_spaces {
