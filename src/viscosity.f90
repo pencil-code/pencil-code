@@ -1123,7 +1123,7 @@ module Viscosity
         prof2    = step(tmp3,xnu2,widthnu2)
         prof     = step(tmp3,xnu,widthnu)-prof2
         derprof2 = der_step(tmp3,xnu2,widthnu2)
-        derprof  = der_step(tmp3,xnu,widthnu)-prof2
+        derprof  = der_step(tmp3,xnu,widthnu)-derprof2
 !
         pnu  = nu + nu*(nu_jump-1.)*prof+nu*(nu_jump2-1.)*prof2
         tmp4 = nu + nu*(nu_jump-1.)*derprof+nu*(nu_jump2-1.)*derprof2
