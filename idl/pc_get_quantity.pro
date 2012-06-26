@@ -413,6 +413,11 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, run_par.eta * start_par.mu0 * dot2 (jj / unit.current_density) * unit.density * unit.velocity^3 / unit.length
 	end
+	if (strcmp (quantity, 'HR_ohm_particle', /fold_case)) then begin
+		; Ohming heating rate per particle [W]
+		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
+		return, pc_compute_quantity (vars, index, 'HR_ohm') / n_rho
+	end
 
 	if (strcmp (quantity, 'j_abs', /fold_case)) then begin
 		; Current density [A / m^2]
