@@ -84,7 +84,6 @@ module Viscosity
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
   logical :: llambda_effect=.false.
-  logical :: lnu_const_add=.false.
   logical, pointer:: lviscosity_heat
 !
   namelist /viscosity_run_pars/ &
@@ -94,7 +93,7 @@ module Viscosity
       pnlaw,llambda_effect,Lambda_V0,Lambda_V1,Lambda_H1, nu_hyper3_mesh, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda,&
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
-      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2, lnu_const_add
+      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -1455,12 +1454,6 @@ module Viscosity
 !  Find nu_smag
 !
           nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
-!
-! adding the constant value to the smagorinski viscosity
-!
-          if (lnu_const_add) then
-            nu_smag=nu_smag+nu
-          endif
 !
 !  with quenching term
 !
