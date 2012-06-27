@@ -437,9 +437,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	BUT	= WIDGET_BASE (XTRA, /row, /align_center)
 	b_ts	= WIDGET_BUTTON (BUT, value='show timeseries', uvalue='SHOW_TIME')
 
-	tmp	= CW_FIELD (XTRA, title='GB per file', /column, value=gb_per_file, /float)
-	f_load	= CW_FIELD (XTRA, title='Total GB to load', /column, /float)
-	f_comp	= CW_FIELD (XTRA, title='Total GB to compute', /column, /float)
+	tmp	= WIDGET_LABEL (XTRA, value='GB per snapshot:', frame=0)
+	tmp	= WIDGET_LABEL (XTRA, value=strtrim (gb_per_file, 2), frame=1, xsize=100)
+	f_load	= CW_FIELD (XTRA, title='Total GB to load:', /column, /float)
+	f_comp	= CW_FIELD (XTRA, title='Total GB to compute:', /column, /float)
 
 	BUT	= WIDGET_BASE (XTRA, /row, /align_center, frame=1)
 	tmp	= WIDGET_BUTTON (BUT, xsize=60, value='CANCEL', uvalue='CANCEL')
