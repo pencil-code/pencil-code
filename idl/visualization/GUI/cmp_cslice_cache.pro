@@ -938,6 +938,7 @@ pro cslice_reset_GUI
 	pos_b = replicate (!VALUES.D_NAN, num_cubes, 2, 2)
 	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2, 2)
 	pos_over = replicate (1.0, num_overs)
+	over_max = 0.0
 
 	cslice_prepare_cube, -1
 	cslice_prepare_overplot
