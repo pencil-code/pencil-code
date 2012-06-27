@@ -63,7 +63,7 @@ end
 ; Event handling of file dialog window
 pro select_files_event, event
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -75,13 +75,13 @@ pro select_files_event, event
 	'ALL': begin
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = indgen (num_files)
 		num_selected = num_files
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+		pc_select_files_update
 		break
 	end
 	'NONE': begin
 		WIDGET_CONTROL, c_list, SET_LIST_SELECT = -1
 		num_selected = 0
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(var_selected+add_selected)
+		pc_select_files_update
 		break
 	end
 	'SKIP': begin
@@ -110,17 +110,17 @@ pro select_files_event, event
 	'LIST': begin
 		selected = WIDGET_INFO (c_list, /LIST_SELECT)
 		if (any (selected ne -1)) then num_selected = n_elements (selected) else num_selected = 0
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+		pc_select_files_update
 		break
 	end
 	'ADD': begin
 		add_selected = event.select
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+		pc_select_files_update
 		break
 	end
 	'VAR': begin
 		var_selected = event.select
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+		pc_select_files_update
 		break
 	end
 	'SLICE': begin
@@ -130,8 +130,6 @@ pro select_files_event, event
 			if (slice eq 1) then max_pos = nx-1
 			if (slice eq 2) then max_pos = ny-1
 			if (slice eq 3) then max_pos = nz-1
-			slice_corr = 1
-			if (max_pos ge 1) then slice_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
 			if (max_pos lt 1) then cut_pos = -1 else cut_pos = max_pos/2
 			WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos>0
 			WIDGET_CONTROL, cut_sl, SET_SLIDER_MIN = 0<max_pos
@@ -139,7 +137,7 @@ pro select_files_event, event
 			WIDGET_CONTROL, cut_sl, SET_VALUE = cut_pos
 			WIDGET_CONTROL, cut_co, SENSITIVE = (cut_pos ge 0)
 			WIDGET_CONTROL, cut_sl, SENSITIVE = (cut_pos ge 0)
-			WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+			pc_select_files_update
 		end
 		break
 	end
@@ -157,43 +155,51 @@ pro select_files_event, event
 		WIDGET_CONTROL, cut_co, SET_VALUE = cut_pos
 		break
 	end
+	'QUANT': begin
+		quant_selected = WIDGET_INFO (c_quant, /LIST_SELECT)
+		pc_select_files_update
+		break
+	end
+	'OVER': begin
+		over_selected = WIDGET_INFO (c_over, /LIST_SELECT)
+		pc_select_files_update
+		break
+	end
 	'O_DEF':
 	'Q_DEF':
 	'CONT': begin
 		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
-		num = 0
-		for pos = 0, num_cont-1 do begin
-			if (not any (pos eq cont_selected)) then continue
-			if (any (strcmp (sources[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
-		end
-		cont_corr = num / float (num_cont)
-		WIDGET_CONTROL, f_gb, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
-		pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
+		if (eventval ne 'O_DEF') then pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
 		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
 		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
-		pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
+		if (eventval ne 'Q_DEF') then pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
 		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
 		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
+		pc_select_files_update
 		break
 	end
 	'Q_ALL': begin
 		quant_selected = where (quant_avail ne "[N/A]")
 		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		pc_select_files_update
 		break
 	end
 	'Q_NONE': begin
 		quant_selected = -1
 		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+		pc_select_files_update
 		break
 	end
 	'O_ALL': begin
 		over_selected = where (over_avail ne "[N/A]")
 		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
+		pc_select_files_update
 		break
 	end
 	'O_NONE': begin
 		over_selected = -1
 		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
+		pc_select_files_update
 		break
 	end
 	'SHOW_TIME': begin
@@ -226,10 +232,34 @@ pro select_files_event, event
 end
 
 
+; Update file size and memory consumption display.
+pro pc_select_files_update
+
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
+
+	num = 0
+	for pos = 0, num_cont-1 do begin
+		if (not any (pos eq cont_selected)) then continue
+		if (any (strcmp (sources[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
+	end
+	cont_corr = num / float (num_cont)
+
+	slice_corr = 1
+	if (max_pos ge 1) then slice_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
+	
+	if (any (quant_selected ne -1)) then num_quant = n_elements (quant_selected) else num_quant = 0
+	if (any (over_selected ne -1)) then num_over = n_elements (over_selected) else num_over = 0
+
+	WIDGET_CONTROL, f_load, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+	WIDGET_CONTROL, f_comp, SET_VALUE = gb_per_file/num_cont*slice_corr*(num_selected+var_selected+add_selected)*(num_quant+num_over*3)
+end
+
+
 ; File selection dialog GUI.
 pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_gb, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
 
 	; Default settings
@@ -338,7 +368,6 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	slice = 0
 	max_pos = -1
 	cut_pos = -1
-	slice_corr = 1.0
 	if (dimensionality eq 3) then begin
 		if (cut_x ge 0) then begin
 			slice = 1
@@ -355,33 +384,21 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 			max_pos = dim.nz
 			cut_pos = cut_z < max_pos
 		end
-		if (max_pos ge 1) then slice_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
 	end
 
 	; Pre-defined varcontent settings
 	content = varcontent.variable
-	content_idl = varcontent.idlvar
 	num_cont = n_elements (content)
 	indices = where (content ne "UNKNOWN")
-	if (any (indices ne -1)) then begin
-		content = content[indices]
-		content_idl = content_idl[indices]
-	end
+	if (any (indices ne -1)) then content = content[indices]
 	num_content = n_elements (content)
 	cont_selected = indgen (num_content)
-	cont_corr = 1.0
 	if (n_elements (var_list) gt 0) then begin
 		for pos = 0, num_content-1 do begin
-			if (not any (strcmp (content_idl[pos], var_list, /fold_case))) then cont_selected[pos] = -1
+			if (not any (strcmp (sources[pos], var_list, /fold_case))) then cont_selected[pos] = -1
 		end
 		indices = where (cont_selected ge 0)
 		if (any (indices ne -1)) then cont_selected = cont_selected[indices]
-		num = 0
-		for pos = 0, num_cont-1 do begin
-			if (not any (pos eq cont_selected)) then continue
-			if (any (strcmp (content_idl[pos], ["uu", "aa"], /fold_case))) then num += 3 else num++
-		end
-		cont_corr = num / float (num_cont)
 	end
 
 	; Pre-defined quantities settings
@@ -421,7 +438,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	b_ts	= WIDGET_BUTTON (BUT, value='show timeseries', uvalue='SHOW_TIME')
 
 	tmp	= CW_FIELD (XTRA, title='GB per file', /column, value=gb_per_file, /float)
-	f_gb	= CW_FIELD (XTRA, title='Total GB selected', /column, value=gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected), /float)
+	f_load	= CW_FIELD (XTRA, title='Total GB to load', /column, /float)
+	f_comp	= CW_FIELD (XTRA, title='Total GB to compute', /column, /float)
 
 	BUT	= WIDGET_BASE (XTRA, /row, /align_center, frame=1)
 	tmp	= WIDGET_BUTTON (BUT, xsize=60, value='CANCEL', uvalue='CANCEL')
@@ -492,6 +510,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='O_ALL')
 	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='O_DEF')
 	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='O_NONE')
+
+	pc_select_files_update
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
