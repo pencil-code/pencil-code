@@ -457,9 +457,15 @@ module Gravity
 !***********************************************************************
     subroutine set_consistent_gravity(ginput,gtype,gprofile,lsuccess)
 !
-!  DOCUMENT ME AND FILL IN AUTHOR
+!  This subroutine checks, if the gravity paramters as type, profile and values
+!  are set consistently with initial condittion for example.
 !  
-!  01-jan-00/jesus: coded
+!  ginput     =     value for the gravity, GM    : 4, 10, 200
+!  gtype      =     type of gravity              : 'gravx','gravy','gravz'
+!  gprofile   =     profile of the gravity       : 'kepler','const'
+!  lsuccess   =     switch, if it was successful : .true., .false.
+!
+!  13-jun-12/dhruba+joern: coded
 !
       real :: ginput
       character (len=labellen) :: gtype,gprofile
