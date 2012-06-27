@@ -27,7 +27,8 @@ module Viscosity
 !
   include 'viscosity.h'
 !
-  character (len=labellen) :: ivisc=''
+  integer, parameter :: nvisc_max=4
+  character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
   real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
@@ -165,7 +166,7 @@ module Viscosity
 !
 !  Default viscosity.
 !
-      if ( (nu/=0.0).and.(ivisc=='') ) ivisc='nu-const'
+      if ( (nu/=0.0).and.(ivisc(1)=='') ) ivisc(1)='nu-const'
 !
 !  Some viscosity types need the rate-of-strain tensor and grad(lnrho)
 !
@@ -200,7 +201,8 @@ module Viscosity
       lvisc_snr_damp=.false.
       lvisc_spitzer=.false.
 !
-        select case (ivisc)
+      do i=1,nvisc_max
+        select case (ivisc(i))
         case ('simplified', '0')
           if (lroot) print*,'viscous force: nu*del2v'
           lvisc_simplified=.true.
@@ -330,9 +332,10 @@ module Viscosity
         case ('')
           ! do nothing
         case default
-          if (lroot) print*, 'No such value for ivisc: ', ivisc
+          if (lroot) print*, 'No such value for ivisc(',i,'): ', trim(ivisc(i))
           call stop_it('calc_viscous_forcing')
         endselect
+      enddo
 !
 !  If we're timestepping, die or warn if the viscosity coefficient that
 !  corresponds to the chosen viscosity type is not set.
@@ -1773,7 +1776,7 @@ module Viscosity
       character (len=labellen), optional :: ivis
 !
       if (present(nu_input)) nu_input=nu
-      if (present(ivis))     ivis=ivisc
+      if (present(ivis))     ivis=ivisc(1)
       if (present(nu_pencil)) then
         if (.not. present(p)) then
           call fatal_error('getnu',&
