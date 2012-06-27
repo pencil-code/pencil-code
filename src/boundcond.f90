@@ -7295,7 +7295,7 @@ module Boundcond
                 bcx1(ilnrho)=btyp
                 fbcx1(ilnrho)=boundrho
                 call boundconds_x(f,ilnrho,ilnrho)
-                if (lroot) print*,'boundcond: density in x at the bottom at set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
+                if (lroot) print*,'boundcond: density in x at the bottom set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
               endif
             case('top')
               if ((btyp/=bcx2(ilnrho)) .or. (rhob/=fbcx2(ilnrho))) then
@@ -7303,7 +7303,7 @@ module Boundcond
                 bcx2(ilnrho)=btyp
                 fbcx2(ilnrho)=boundrho
                 call boundconds_x(f,ilnrho,ilnrho)
-                if (lroot) print*,'boundcond: density in x at the top at set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
+                if (lroot) print*,'boundcond: density in x at the top set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
               endif
             case default
               call fatal_error('set_consistent_density_boundary','topbot does not match any, aborting')
