@@ -360,6 +360,23 @@ pro cslice_event, event
 			break
 		end
 		restore, settings_file
+		selected_var = (where (tag_names (varsets) eq var_names[selected_var]))[0]
+		if (selected_var ge 0) then selected_cube = selected_var
+		num = n_elements (var_names)
+		for pos = 0, num-1 do begin
+			insert = (where (tag_names (varsets) eq var_names[pos]))[0]
+			if (insert ge 0) then begin
+				pos_b[insert] = pos_bot[pos]
+				pos_t[insert] = pos_top[pos]
+			end
+		end
+		selected_over = (where (tag_names (overplot) eq var_names[selected_over]))[0]
+		if (selected_over ge 0) then selected_overplot = selected_over
+		num = n_elements (over_names)
+		for pos = 0, num-1 do begin
+			insert = (where (tag_names (overplot) eq over_names[pos]))[0]
+			if (insert ge 0) then pos_over[insert] = pos_overplot[pos]
+		end
 		if (px gt (num_x - 1)) then px = num_x - 1
 		if (py gt (num_y - 1)) then py = num_y - 1
 		if (pz gt (num_z - 1)) then pz = num_z - 1
@@ -384,9 +401,16 @@ pro cslice_event, event
 		break
 	end
 	'SAVE': begin
-		pos_b[selected_cube,sub_aver] = val_min
-		pos_t[selected_cube,sub_aver] = val_max
-		save, filename=settings_file, num_cubes, selected_cube, selected_overplot, abs_scale, sub_aver, show_cross, px, py, pz, pos_b, pos_t, pos_over
+		var_names = tag_names (varsets)
+		over_names = tag_names (overplot)
+		pos_bot = pos_b
+		pos_top = pos_t
+		pos_overplot = pos_over
+		pos_bot[selected_cube,sub_aver] = val_min
+		pos_top[selected_cube,sub_aver] = val_max
+		selected_var = selected_cube
+		selected_over = selected_overplot
+		save, filename=settings_file, var_names, over_names, selected_var, selected_over, abs_scale, sub_aver, show_cross, px, py, pz, pos_bot, pos_top, pos_overplot
 		WIDGET_CONTROL, b_load, SENSITIVE = 1
 		break
 	end
