@@ -495,6 +495,8 @@ module Cdata
   real, dimension(mcom) :: fbcx_bot=0., fbcx_top=0.
   real, dimension(mcom) :: fbcy_bot=0., fbcy_top=0.
   real, dimension(mcom) :: fbcz_bot=0., fbcz_top=0.
+  ! Switch, if you wanna reset the boundary conditions
+  logical :: lreset_boundary_values=.false.
 !
   real :: Udrift_bc=0.
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'

@@ -24,6 +24,7 @@ module Sub
   public :: kronecker_delta
 !
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
+  public :: inverse_parse_bc
 !
   public :: poly, notanumber
   public :: keep_compiler_quiet
@@ -4208,6 +4209,31 @@ module Sub
       enddo
 !
     endsubroutine parse_bc
+!***********************************************************************
+    subroutine inverse_parse_bc(bc,bc1,bc2)
+!
+!
+!  27-jun-12/joern+dhruba: coded
+!
+      character (len=2*bclen+1), dimension(mcom) :: bc
+      character (len=bclen), dimension(mcom) :: bc1,bc2
+      integer :: j,isep
+!
+      intent(out) :: bc
+      intent(in) :: bc1,bc2
+!
+      do j=1,mcom
+        if (bc(j) == '') then ! will probably never happen due to default='p'
+          if (lroot) print*, 'Empty boundary condition No. ', &
+              j, 'in (x, y, or z)'
+          call fatal_error('inverse_parse_bc','')
+        endif
+        bc(j)(1:bclen) = bc1(j)
+        bc(j)(bclen+1:bclen+1) = ':'
+        bc(j)(bclen+2:2*bclen+1)=bc2(j)
+      enddo
+!
+    endsubroutine inverse_parse_bc
 !***********************************************************************
     subroutine parse_bc_rad(bc,bc1,bc2)
 !

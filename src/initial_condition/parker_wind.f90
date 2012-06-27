@@ -12,14 +12,9 @@
 !
 !
 !!!!!!!
-!! NB: This is a very early stage of the initial condition. DO NOT USE IT!!!
-!! dhruba+ joern: very much a work in progress. 
+!! Should work now, but need further testing.
+!! dhruba+ joern: work still in progress. 
 !!
-!! You still have to set in start.in
-!! 1) Density at the lower boundary with set and fbcx1
-!! 2) gravx_profile='kepler' with gravx
-!! Just run start.csh once, set density and gravity
-!! and then start.csh again.
 !!!!!!!
 
 module InitialCondition
@@ -180,6 +175,7 @@ module InitialCondition
       use SharedVariables
       use EquationOfState
       use Gravity, only: set_consistent_gravity,initialize_gravity
+      use Boundcond, only: set_consistent_density_boundary
 !     
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       real, dimension (mx), intent(out) :: vel
@@ -187,9 +183,9 @@ module InitialCondition
       real, dimension (mx) :: cs20logx,GM_r
       real :: Ecrit
       integer :: j
-      real :: GM
+      real :: GM,rhob
       logical :: lsuccess=.false.
-      character (len=labellen) :: gtype,gprofile
+      character (len=labellen) :: gtype,gprofile,boundtype,bot,direction
 !
       Ecrit=0.5*cs20-cs20*log(cs0)-2*cs20*log(rcrit)-2*cs20
       cs20logx=2*cs20*log(x)
@@ -224,6 +220,21 @@ module InitialCondition
         call initialize_gravity(f,lstarting=.true.)
       else
         call fatal_error('initial_condition/parker_wind:','gravity not set consistently')
+      endif
+!
+!
+! check if consistent values of density at the boundary
+!
+      direction='x'
+      boundtype='set'  
+      rhob=rho(l1)
+      bot='bottom'
+      call set_consistent_density_boundary(f,direction,boundtype,bot,rhob,lsuccess)
+      if(lsuccess) then
+         lreset_boundary_values=lsuccess
+        if (lroot) print*,'density set consistently at the boundaries'
+      else
+        call fatal_error('initial_condition/parker_wind:','density in fbcx1 not set consistently')
       endif
 !
 !

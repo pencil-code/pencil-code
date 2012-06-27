@@ -19,6 +19,7 @@ module Boundcond
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_pencil
   public :: bc_per_x, bc_per_y, bc_per_z
+  public :: set_consistent_density_boundary
 !
   interface update_ghosts
      module procedure update_ghosts_all
@@ -7255,5 +7256,69 @@ module Boundcond
       endselect
 !
     endsubroutine bc_cdz
+!***********************************************************************
+    subroutine set_consistent_density_boundary(f,dirn,boundtype,tb,rhob,lsuccess)
+!
+!  This subroutine checks, if the density paramters as type, topbottom 
+!  and values  are set consistently with initial condittion for example.
+!  
+!  26-jun-12/dhruba+joern: coded
+!
+!  dirn       =     direction                    : 'x','y','z'
+!  boundtype  =     type of boundary condition   : 'set','a'.....
+!  tb         =     topbot                       : 'top','bottom'
+!  rhob       =     value at the boundary        : 4.04, 8.35, 10.1
+!  lsuccess   =     switch, if it was successful : .true., .false.
+!      
+!  At the moment only the x-direction is implemented
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: rhob,boundrho
+      character (len=labellen) :: boundtype,btyp,tb,dirn
+      logical :: lsuccess
+      logical :: lconsistent=.true.
+!
+! check for consistency
+!
+      if (ldensity_nolog) then
+        boundrho=rhob
+      else
+        boundrho=log(rhob)
+      endif
+      btyp=trim(boundtype)
+      select case (dirn)
+        case ('x')
+          select case (tb)
+            case('bottom')
+              if ((btyp/=bcx1(ilnrho)) .or. (rhob/=fbcx1(ilnrho))) then
+                lconsistent=.false.
+                bcx1(ilnrho)=btyp
+                fbcx1(ilnrho)=boundrho
+                call boundconds_x(f,ilnrho,ilnrho)
+                if (lroot) print*,'boundcond: density in x at the bottom at set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
+              endif
+            case('top')
+              if ((btyp/=bcx2(ilnrho)) .or. (rhob/=fbcx2(ilnrho))) then
+                lconsistent=.false.
+                bcx2(ilnrho)=btyp
+                fbcx2(ilnrho)=boundrho
+                call boundconds_x(f,ilnrho,ilnrho)
+                if (lroot) print*,'boundcond: density in x at the top at set to: ',bcx1(ilnrho),', with the value ',fbcx1(ilnrho)
+              endif
+            case default
+              call fatal_error('set_consistent_density_boundary','topbot does not match any, aborting')
+          endselect
+        case ('y')
+          call fatal_error('set_consistent_density_boundary','y direction not implemented yet')
+        case ('z')
+          call fatal_error('set_consistent_density_boundary','z direction not implemented yet')
+        case default
+          call fatal_error('set_consistent_density_boundary','you have to choose either x,y or z direction')
+      endselect
+      lsuccess=.true.
+
+! density set consistently at the boundary.
+!
+    endsubroutine set_consistent_density_boundary
 !***********************************************************************
 endmodule Boundcond

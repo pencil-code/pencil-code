@@ -1023,6 +1023,16 @@ module Param_IO
           lvisc_hyper, lchiral, leos, leos_temperature_ionization, &
           lneutralvelocity, lneutraldensity, ltemperature,lpolymer
 !
+! If the boundary condition has been changed by subroutines then 
+! corresponding bc arrays need to be changed too. At present (june 2012) 
+! it is done only for the bcx array because parker_wind.f90 is the only 
+! subroutine that changes boundary conditions and it does it only for
+! the density in the x direction. 
+!
+        if  (lreset_boundary_values) then
+          call inverse_parse_bc(bcx,bcx1,bcx2)
+        endif
+!
 !  Write the param.nml file only from root processor.
 !  However, for pacx-MPI (grid-style computations across different platforms)
 !  we'd need this on each site separately (not done yet).
