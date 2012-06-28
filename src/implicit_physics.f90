@@ -147,11 +147,7 @@ module ImplicitPhysics
           endif
         else
           if (nprocz>1) then
-            if (lADI_mixed) then
-              call ADI_Kprof_MPI_mixed(f)
-            else
-              call ADI_Kprof_MPI(f)
-            endif
+            call ADI_Kprof_MPI(f)
           else
             if (lADI_mixed) then
               call ADI_Kprof_mixed(f)
@@ -983,127 +979,6 @@ module ImplicitPhysics
       call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
 !
     endsubroutine ADI_Kprof_mixed
-!***********************************************************************
-    subroutine ADI_Kprof_MPI_mixed(f)
-!
-!  01-mar-2010/dintrans: coded
-!  parallel version of the ADI_Kprof_mixed subroutine
-!
-      use EquationOfState, only: gamma
-      use Mpicomm, only: transp_xz, transp_zx
-      use Boundcond, only: update_ghosts
-!
-      implicit none
-!
-      integer, parameter :: mxt=nx/nprocz+2*nghost, mzt=nzgrid+2*nghost
-      integer, parameter :: n1t=nghost+1, n2t=n1t+nzgrid-1
-      integer :: i, j, ibox, ll1, ll2
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)  :: source, hcond, dhcond, finter, val, TT, &
-                                 chi, dLnhcond
-      real, dimension(mzt,mz) :: fintert, TTt, chit, dLnhcondt, valt
-      real, dimension(nx)     :: ax, bx, cx, wx, rhsx, workx
-      real, dimension(nzgrid) :: az, bz, cz, wz, rhsz, workz
-      real :: aalpha, bbeta
-!
-! needed for having the correct ghost zones for ilnTT
-!
-      call update_ghosts(f)
-!
-      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-! BC important not for the x-direction (always periodic) but for 
-! the z-direction as we must impose the 'c3' BC at the 2nd-order
-! before going in the implicit stuff
-      TT=f(:,4,:,iTTold)
-      call heatcond_TT(TT, hcond, dhcond)
-      call boundary_ADI(TT, hcond(:,n1))
-      if (ldensity) then
-        chi=cp1*hcond/exp(f(:,4,:,ilnrho))
-!        chi=cp1*hcond0/exp(f(:,4,:,ilnrho))
-      else
-        chi=cp1*hcond
-      endif
-      dLnhcond=dhcond/hcond
-!      dLnhcond=0.
-!
-! rows in the x-direction dealt implicitly
-!
-      do j=n1,n2
-        wx=gamma*chi(l1:l2,j)
-        ax=-dt/2.*wx*dx_2
-        bx=1.-dt/2.*wx*dx_2*(-2.+dLnhcond(l1:l2,j)* &
-           (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)))
-        cx=-dt/2.*wx*dx_2
-! rhsx=f_x(T^n) + f_z(T^n) + source
-! do first f_z(T^n)
-        rhsx=wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
-! then add f_x(T^n) + source
-        rhsx=rhsx+wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-             +source(l1:l2,j)
-!
-! periodic boundary conditions in x --> cyclic matrix
-!
-        aalpha=cx(nx) ; bbeta=ax(1)
-        call cyclic(ax, bx, cx, aalpha, bbeta, rhsx, workx, nx)
-        finter(l1:l2,j)=workx
-      enddo
-!
-! do the transpositions x <--> z
-!
-      do ibox=1,nxgrid/nzgrid
-        ll1=l1+(ibox-1)*nzgrid
-        ll2=l1+ibox*nzgrid-1
-
-!        call transp_xz(finter(ll1:ll2,n1:n2), fintert(n1t:n2t,n1:n2))
-!        call transp_xz(chi(ll1:ll2,n1:n2), chit(n1t:n2t,n1:n2))
-!        call transp_xz(dLnhcond(ll1:ll2,n1:n2), dLnhcondt(n1t:n2t,n1:n2))
-!        call transp_xz(TT(ll1:ll2,n1:n2), TTt(n1t:n2t,n1:n2))
-!
-! columns in the z-direction dealt implicitly
-! be careful! we still play with the l1,l2 and n1,n2 indices but that applies
-! on *transposed* arrays
-!
-        do i=n1,n2
-          wz=dt*gamma*dz_2*chit(n1t:n2t,i)
-          az=-wz/2.
-          bz=1.-wz/2.*(-2.+dLnhcondt(n1t:n2t,i)*    &
-             (TTt(n1t+1:n2t+1,i)-2.*TTt(n1t:n2t,i)+TTt(n1t-1:n2t-1,i)))
-          cz=-wz/2.
-          rhsz=fintert(n1t:n2t,i)
-!
-! z boundary conditions
-! Constant temperature at the top: T^(n+1)-T^n=0
-!
-          bz(nzgrid)=1. ; az(nzgrid)=0.
-          rhsz(nzgrid)=0.
-! bottom
-          select case (bcz1(ilnTT))
-! Constant temperature at the bottom: T^(n+1)-T^n=0
-            case ('cT')
-              bz(1)=1. ; cz(1)=0.
-              rhsz(1)=0.
-! Constant flux at the bottom
-            case ('c3')
-              bz(1)=1. ; cz(1)=-1.
-              rhsz(1)=0.
-            case default 
-              call fatal_error('ADI_Kprof_MPI_mixed','bcz on TT must be cT or c3')
-          endselect
-          call tridag(az, bz, cz, rhsz, workz)
-          valt(n1t:n2t,i)=workz
-        enddo ! i
-!
-! come back on the grid (x,z)
-!
-!        call transp_xz(valt(n1t:n2t,n1:n2), val(ll1:ll2,n1:n2))
-        f(ll1:ll2,4,n1:n2,ilnTT)=f(ll1:ll2,4,n1:n2,iTTold)+dt*val(ll1:ll2,n1:n2)
-      enddo ! ibox
-!
-! update hcond used for the 'c3' condition in boundcond.f90
-!
-      if (iproc==0) call heatcond_TT(f(:,4,n1,ilnTT), hcondADI)
-!
-    endsubroutine ADI_Kprof_MPI_mixed
 !***********************************************************************
     subroutine ADI_Kconst_yakonov(f)
 !
