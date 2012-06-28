@@ -105,8 +105,6 @@ module InitialCondition
         endif
         if ((init_uy /=0.) .and. (X_wind /= impossible)) then
           do j=1,mx
-           
-               
              f(j,:,:,iuy)=f(j,:,:,iuy) &
               +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
               *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
@@ -119,20 +117,35 @@ module InitialCondition
 !            endif
           enddo
         endif
+!
+        if ((init_uz /=0.) .and. (X_wind /= impossible)) then
+          do j=1,mx
+             f(j,:,:,iuz)=f(j,:,:,iuz) &
+              +(init_uz+0.)*0.5+((init_uz-0.)*0.5)  &
+              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
+              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
+          enddo
+         endif
+!
         if ((init_uy /=0.) .and. (X_wind == impossible)) then
           f(:,:,:,iuy)=f(:,:,:,iuy)+init_uy
         endif
-        if (init_uz /=0.) then
-          do i=1,mz
-          if (z(i)>0) then
-            f(:,:,i,iuz)=f(:,:,i,iuz) &
-                        +init_uz*(2.*z(i)/Lxyz(3))**2
-          else
-            f(:,:,i,iuz)=f(:,:,i,iuz) &
-                        -init_uz*(2.*z(i)/Lxyz(3))**2
-          endif
-          enddo
+        if ((init_uz /=0.) .and. (X_wind == impossible)) then
+          f(:,:,:,iuz)=f(:,:,:,iuz)+init_uz
         endif
+
+!
+!        if (init_uz /=0.) then
+!          do i=1,mz
+!          if (z(i)>0) then
+!            f(:,:,i,iuz)=f(:,:,i,iuz) &
+!                        +init_uz*(2.*z(i)/Lxyz(3))**2
+!          else
+!            f(:,:,i,iuz)=f(:,:,i,iuz) &
+!                        -init_uz*(2.*z(i)/Lxyz(3))**2
+!          endif
+!          enddo
+!        endif
 !
       call keep_compiler_quiet(f)
 !
