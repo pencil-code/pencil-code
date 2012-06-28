@@ -43,16 +43,14 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Settings that can be changed by the user
+;;; Settings that can be changed by the user:
 ;;;
-;;; Load file with user-defined defaults, if available:
-;;;
+;;; Load file with user-defined defaults, if available.
+;;; All of the following default-settings can be overridden, there.
 @pc_gui_settings
 
-;;;
 ;;; Physical quantities to be visualized
 ;;; Available quantities can be found and defined in 'pc_get_quantity'.
-;;;
 default, quantities, { $
 	Temp:'temperature', $
 	j_abs:'current density', $
@@ -68,11 +66,8 @@ default, quantities, { $
 	rho:'density' $
 }
 
-
-;;;
 ;;; Quantities to be overplotted
 ;;; Available quantities can be found and defined in 'pc_get_quantity'.
-;;;
 default, overplot_quantities, { $
 	u:'velocities', $
 	grad_Temp:'temperature gradient', $
@@ -81,13 +76,10 @@ default, overplot_quantities, { $
 	A_contour:'fieldlines' $
 }
 
-
-;;;
 ;;; Preferred units for display [SI]
-;;;
 default, display_units, { $
 			default_length:1, default_length_str:'m', $
-			default_velocity:1, default_velocity_str:'m/s',
+			default_velocity:1, default_velocity_str:'m/s', $
 			default_time:1, default_time_str:'s', $
 			default_temperature:1, default_temperature_str:'K', $
 			default_density:1, default_density_str:'kg/m^3', $
@@ -95,24 +87,15 @@ default, display_units, { $
 			default_magnetic_field:1, default_magnetic_field_str:'Tesla', $
 			default_current_density:1, default_current_density_str:'A/m^2' }
 
-
-;;;
 ;;; Initial varfile
-;;;
 default, varfile, 'var.dat'
 default, crashfile, 'crash.dat'
 default, pattern, 'VAR[0-9]*'
 
-
-;;;
 ;;; Default data directory
-;;;
 default, datadir, pc_get_datadir()
 
-
-;;;
 ;;; Default technical parameters
-;;;
 default, cut_x, -1
 default, cut_y, -1
 default, cut_z, -1
@@ -166,7 +149,7 @@ if (not pc_gui_loaded) then BEGIN
 	disp_size_y = round ((dim.my - 2*dim.nghosty) / data_reduction[1]) > 1
 	disp_size_z = round ((dim.mz - 2*dim.nghostz) / data_reduction[2]) > 1
 
-	coords = {
+	coords = { $
 			x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp) * unit.length/unit.default_length, $
 			y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp) * unit.length/unit.default_length, $
 			z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp) * unit.length/unit.default_length, $
@@ -214,7 +197,7 @@ if (not pc_gui_loaded) then BEGIN
 	print, "...finished."
 
 
-	pc_gui_prepare_varset, num_files, units, coords, varset, overplot, datadir, param, run_param, var_list
+	pc_gui_prepare_varset, num_files, unit, coords, varset, overplot, datadir, param, run_param, var_list
 
 	; Precalculate selected timesteps
 	for i = 1, num_files do begin
