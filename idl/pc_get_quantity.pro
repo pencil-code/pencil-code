@@ -431,6 +431,9 @@ function pc_compute_quantity, vars, index, quantity
 	pos = where (tags eq strlowcase (quantity))
 	if (any (pos ge 0)) then return, pc_compute_quantity (vars, index, alias.(pos))
 
+	; Timestamp
+	if (strcmp (quantity, 'time', /fold_case)) then return, index.time * unit.time
+
 	; Coordinates
 	if (strcmp (quantity, 'x', /fold_case)) then return, x[l1:l2] * unit.length
 	if (strcmp (quantity, 'y', /fold_case)) then return, y[m1:m2] * unit.length

@@ -121,6 +121,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 
 	; List of code variable aliases.
 	alias = { $
+		t:'time', $
 		TT:'Temp', $
 		uu:'u', $
 		AA:'A', $
@@ -141,6 +142,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 
 	; Additional quantities without dependencies.
 	additional = { $
+		time:'timestamp', $
 		x:'x coordinates', $
 		y:'y coordinates', $
 		z:'z coordinates', $
@@ -198,6 +200,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		log_rho:'rho', $
 		n_rho:'rho', $
 		; Additional quantities without dependencies:
+		time:'', $
 		x:'', $
 		y:'', $
 		z:'', $
