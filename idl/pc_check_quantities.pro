@@ -256,7 +256,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 			end
 		end
 		if (index lt 0) then begin
-			index = where (additional_list eq tag)
+			index = where (strcmp (additional_list, tag, /fold_case))
 			if (index ge 0) then label = additional.(index)
 		end else begin
 			label = avail.(index)
