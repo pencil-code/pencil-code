@@ -8,127 +8,96 @@
 ;  26-jul-04/tony: coded 
 ;  
 pro pc_units, object=object, symbols=symbols, param=param, dim=dim, $
-                   datadir=datadir,QUIET=QUIET,HELP=HELP
+              datadir=datadir, QUIET=QUIET, HELP=HELP
 ;
 COMPILE_OPT IDL2,HIDDEN
 ; 
-  IF ( keyword_set(HELP) ) THEN BEGIN
-    print, "Usage: "
+  if (keyword_set(HELP)) then begin
+    print, "Usage:"
     print, ""
-    print, "pc_units, object=object,                                                                   "
-    print, "               datadir=datadir, proc=proc,                                                 "
-    print, "               /PRINT, /QUIET, /HELP                                                       "
-    print, "                                                                                           "
-    print, "Returns a structure containing the effective units for various quantities in a neat        "
-    print, "structure.                                                                                 "
-    print, "                                                                                           "
-    print, "    datadir: specify the root data directory. Default is './data'                  [string]"
+    print, "pc_units, object=object, datadir=datadir, proc=proc, /PRINT, /QUIET, /HELP"
     print, ""
-    print, "   object: structure in which to return all the units                          [structure] "
+    print, "Returns a structure containing the effective units for various quantities."
     print, ""
-    print, "   /QUIET: instruction not to print any 'helpful' information                              "
-    print, "    /HELP: display this usage information, and exit                                        "
+    print, "   object: structure that contains some commonly used units."
+    print, "  symbols: structure that contains the unit symbols as strings."
+    print, "  datadir: string that specifies the data directory."
+    print, ""
+    print, "   /QUIET: instruction not to print any 'helpful' information."
+    print, "    /HELP: display this usage information, and exit."
     return
-  ENDIF
+  end
 ;
 ; Default data directory
 ;
-pc_check_math,location='before entry to pc_units'
-default, datadir, 'data'
-if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, $
-    quiet=quiet
-if (n_elements(param) eq 0) then pc_read_param, datadir=datadir, object=param, $
-    dim=dim,quiet=quiet
+  pc_check_math,location='before entry to pc_units'
+  if (not keyword_set(datadir)) then datadir = pc_get_datadir()
+  if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, $
+      quiet=quiet
+  if (n_elements(param) eq 0) then pc_read_param, object=param, $
+      datadir=datadir, dim=dim, quiet=quiet
 ;
-length=param.unit_length*1D0
-temperature=param.unit_temperature*1D0
-density=param.unit_density*1D0
-velocity=param.unit_velocity*1D0
-magnetic=param.unit_magnetic*1D0
+  temperature = double(param.unit_temperature)
+  density = double(param.unit_density)
+  length = double(param.unit_length)
+  velocity = double(param.unit_velocity)
+  magnetic = double(param.unit_magnetic)
 ;
-if param.unit_system eq "cgs" then begin
+  if (param.unit_system eq "cgs") then begin
 ;
-  object=create_struct(['temperature',         $
-                        'density',             $
-                        'length',              $
-                        'velocity',            $
-                        'time',                $
-                        'energy',              $
-                        'specific_energy',     $
-                        'magnetic_field'],     $
-                        temperature,           $
-                        density,               $
-                        length,                $
-                        velocity,              $
-                        length/velocity,       $
-                        1D0*density*velocity^2*length^3, $
-                        velocity^2,            $
-                        magnetic               $
-                      )
-  pc_check_math,location='pc_units - cgs unit calculation'
-  tex=texsyms()
-  symbols=create_struct(['temperature',        $
-                         'density',            $
-                         'length',             $
-                         'velocity',           $
-                         'time',               $
-                         'energy',             $
-                         'specific_energy',    $
-                         'magnetic_field'],    $
-                         'T',                  $
-                         tex.varrho,           $
-                         'cm',                 $
-                         'cm/s',               $
-                         's',                  $
-                         'ergs',               $
-                         'ergs/g',             $
-                         'G'                   $
-                      )
-  
-end else if param.unit_system eq "SI" then begin
+    object = { temperature:temperature, $
+               density:density, $
+               mass:param.unit_density*param.unit_length^3, $
+               length:length, $
+               velocity:velocity, $
+               time:length/velocity, $
+               energy:density*velocity^2*length^3, $
+               specific_energy:velocity^2, $
+               magnetic_field:magnetic, $
+               current_density:!Values.D_NaN } ; needs definition
+    pc_check_math,location='pc_units - cgs unit calculation'
+    tex=texsyms()
+    symbols = { temperature:'T', $
+                density:tex.varrho, $
+                mass:'g', $
+                length:'cm', $
+                velocity:'cm/s', $
+                time:'s', $
+                energy:'ergs', $
+                specific_energy:'ergs/g', $
+                magnetic_field:'G', $
+                current_density:'-undefined-' } ; needs definition
 ;
-  object=create_struct(['temperature',         $
-                        'density',             $
-                        'length',              $
-                        'velocity',            $
-                        'time',                $
-                        'energy',              $
-                        'specific_energy',     $
-                        'magnetic_field'],     $
-                        temperature,           $
-                        density,               $
-                        length,                $
-                        velocity,              $
-                        length/velocity,       $
-                        1D0*density*velocity^2*length^3, $
-                        velocity^2,            $
-                        magnetic               $
-                      )
-  pc_check_math,location='pc_units - SI unit calculation'
-  tex=texsyms()
-  symbols=create_struct(['temperature',        $
-                         'density',            $
-                         'length',             $
-                         'velocity',           $
-                         'time',               $
-                         'energy',             $
-                         'specific_energy',    $
-                         'magnetic_field'],    $
-                         'K',                  $
-                         tex.varrho,           $
-                         'm',                  $
-                         's',                  $
-                         'm/s',                $
-                         'J',                  $
-                         'J/kg',               $
-                         'T'                   $
-                      )
+  end else if (param.unit_system eq "SI") then begin
 ;
-end else begin
+    object = { temperature:temperature, $
+               density:density, $
+               mass:param.unit_density*param.unit_length^3, $
+               length:length, $
+               velocity:velocity, $
+               time:length/velocity, $
+               energy:density*velocity^2*length^3, $
+               specific_energy:velocity^2, $
+               magnetic_field:magnetic, $
+               current_density:velocity*sqrt(param.mu0*0.25/double(!Pi)*1.e7*density)/length }
+    pc_check_math,location='pc_units - SI unit calculation'
+    tex=texsyms()
+    symbols = { temperature:'K', $
+                density:tex.varrho, $
+                mass:'kg', $
+                length:'m', $
+                velocity:'m/s', $
+                time:'s', $
+                energy:'J', $
+                specific_energy:'J/kg', $
+                magnetic_field:'T', $
+                current_density:'A/m^2' }
 ;
-  print,"pc_units: Unit system tranformations for unit_system=",param.unit_system," are not implemented."
+  end else begin
 ;
-end
+    print,"pc_units: Unit system tranformations for unit_system='",param.unit_system,"' are not implemented."
+;
+  end
 ;
 end
 
