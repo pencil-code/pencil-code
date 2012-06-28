@@ -100,23 +100,19 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 		varsets[i].(pos) = pc_get_quantity (tag, vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last)
 
 		; Divide by default units, where applicable.
-		if (any (strcmp (tag, ['u_abs', 'u_x', 'u_y', 'u_z'], /fold_case))) then $
+		if (any (strcmp (tag, ['u_abs', 'u_x', 'u_y', 'u_z'], /fold_case)) and (unit.default_velocity ne 1)) then $
 			varsets[i].(pos) /= unit.default_velocity
-		if (any (strcmp (tag, ['Temp'], /fold_case))) then $
+		if (any (strcmp (tag, ['Temp'], /fold_case)) and (unit.default_temperature ne 1)) then $
 			varsets[i].(pos) /= unit.default_temperature
-		if (any (strcmp (tag, ['rho'], /fold_case))) then $
+		if (any (strcmp (tag, ['rho'], /fold_case)) and (unit.default_density ne 1)) then $
 			varsets[i].(pos) /= unit.default_density
-		if (any (strcmp (tag, ['ln_rho'], /fold_case))) then $
+		if (any (strcmp (tag, ['ln_rho'], /fold_case)) and (unit.default_density ne 1)) then $
 			varsets[i].(pos) -= alog (unit.default_density)
-		if (any (strcmp (tag, ['log_rho'], /fold_case))) then $
+		if (any (strcmp (tag, ['log_rho'], /fold_case)) and (unit.default_density ne 1)) then $
 			varsets[i].(pos) -= alog10 (unit.default_density)
-		if (any (strcmp (tag, ['rho_u_z'], /fold_case))) then $
-			varsets[i].(pos) /= unit.default_density * unit.default_velocity
-		if (any (strcmp (tag, ['b_x', 'b_y', 'b_z'], /fold_case))) then $
+		if (any (strcmp (tag, ['b_x', 'b_y', 'b_z'], /fold_case)) and (unit.default_magnetic_field ne 1)) then $
 			varsets[i].(pos) /= unit.default_magnetic_field
-		if (any (strcmp (tag, ['Spitzer_dt'], /fold_case))) then $
-			varsets[i].(pos) /= unit.default_time
-		if (any (strcmp (tag, ['j_abs'], /fold_case))) then $
+		if (any (strcmp (tag, ['j_abs'], /fold_case)) and (unit.default_current_density ne 1)) then $
 			varsets[i].(pos) /= unit.default_current_density
 	end
 
