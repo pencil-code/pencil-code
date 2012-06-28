@@ -170,35 +170,27 @@ pro select_files_event, event
 	'CONT': begin
 		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
 		if (eventval ne 'O_DEF') then pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
-		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
-		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
 		if (eventval ne 'Q_DEF') then pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
-		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
-		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 		pc_select_files_update
 		break
 	end
 	'Q_ALL': begin
 		quant_selected = where (quant_avail ne "[N/A]")
-		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
 		pc_select_files_update
 		break
 	end
 	'Q_NONE': begin
 		quant_selected = -1
-		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
 		pc_select_files_update
 		break
 	end
 	'O_ALL': begin
 		over_selected = where (over_avail ne "[N/A]")
-		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 		pc_select_files_update
 		break
 	end
 	'O_NONE': begin
 		over_selected = -1
-		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 		pc_select_files_update
 		break
 	end
@@ -211,7 +203,8 @@ pro select_files_event, event
 	'OK': begin
 		selected = WIDGET_INFO (c_list, /LIST_SELECT)
 		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
-		quant_selected = WIDGET_INFO (c_quant, /LIST_SELECT)
+		if (not finite (c_quant, /NaN)) then quant_selected = WIDGET_INFO (c_quant, /LIST_SELECT)
+		if (not finite (c_over, /NaN)) then over_selected = WIDGET_INFO (c_over, /LIST_SELECT)
 		quit = event.top
 		break
 	end
@@ -252,12 +245,22 @@ pro pc_select_files_update
 	if (any (over_selected ne -1)) then num_over = n_elements (over_selected) else num_over = 0
 
 	WIDGET_CONTROL, f_load, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
-	WIDGET_CONTROL, f_comp, SET_VALUE = gb_per_file/num_cont*slice_corr*(num_selected+var_selected+add_selected)*(num_quant+num_over*3)
+	if (not finite (f_comp, /NaN)) then $
+		WIDGET_CONTROL, f_comp, SET_VALUE = gb_per_file/num_cont*slice_corr*(num_selected+var_selected+add_selected)*(num_quant+num_over*3)
+
+	if (not finite (c_quant, /NaN)) then begin
+		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
+		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
+	end
+	if (not finite (c_over, /NaN)) then begin
+		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
+		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
+	end
 end
 
 
 ; File selection dialog GUI.
-pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display
+pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
@@ -276,6 +279,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (max_display lt 1) then max_display = 100
 	if (min_display gt max_display) then min_display = max_display
 	if (min_display lt 1) then min_display = 100 < max_display
+	if (keyword_set (hide_quantities)) then hide_quant = hide_quantities else hide_quant = 0
+	if (keyword_set (hide_overplots)) then hide_over = hide_overplots else hide_over = 0
 
 	; Load needed objects
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir ()
@@ -318,6 +323,9 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	end
 	start_par = param
 	if (keyword_set (run_param)) then run_par = run_param
+	f_comp = !VALUES.D_NAN
+	c_quant = !VALUES.D_NAN
+	c_over = !VALUES.D_NAN
 
 	; Determine procdir
 	if (n_elements (allprocs) eq 0) then begin
@@ -440,7 +448,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	tmp	= WIDGET_LABEL (XTRA, value='GB per snapshot:', frame=0)
 	tmp	= WIDGET_LABEL (XTRA, value=strtrim (gb_per_file, 2), frame=1, xsize=100)
 	f_load	= CW_FIELD (XTRA, title='Total GB to load:', /column, /float)
-	f_comp	= CW_FIELD (XTRA, title='Total GB to compute:', /column, /float)
+	if (not hide_quant or not hide_over) then $
+		f_comp	= CW_FIELD (XTRA, title='Total GB to compute:', /column, /float)
 
 	BUT	= WIDGET_BASE (XTRA, /row, /align_center, frame=1)
 	tmp	= WIDGET_BUTTON (BUT, xsize=60, value='CANCEL', uvalue='CANCEL')
@@ -492,25 +501,25 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	c_cont	= WIDGET_LIST (VC, value=content, uvalue='CONT', YSIZE=num_content<max_display, /multiple)
 	WIDGET_CONTROL, c_cont, SET_LIST_SELECT = cont_selected
 
-	QU	= WIDGET_BASE (BASE, /col)
+	if (not hide_quant) then begin
+		QU	= WIDGET_BASE (BASE, /col)
+		tmp	= WIDGET_LABEL (QU, value='Available quantities:', frame=0)
+		c_quant	= WIDGET_LIST (QU, value=quant_avail, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
+		SEL	= WIDGET_BASE (QU, /row, /align_center)
+		tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='Q_ALL')
+		tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='Q_DEF')
+		tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='Q_NONE')
+	end
 
-	tmp	= WIDGET_LABEL (QU, value='Available quantities:', frame=0)
-	c_quant	= WIDGET_LIST (QU, value=quant_avail, uvalue='QUANT', YSIZE=(num_quant<max_display)>min_display, /multiple)
-	WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
-	SEL	= WIDGET_BASE (QU, /row, /align_center)
-	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='Q_ALL')
-	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='Q_DEF')
-	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='Q_NONE')
-
-	OV	= WIDGET_BASE (BASE, /col)
-
-	tmp	= WIDGET_LABEL (OV, value='Available overplots:', frame=0)
-	c_over	= WIDGET_LIST (OV, value=over_avail, uvalue='OVER', YSIZE=(num_over<max_display)>min_display, /multiple)
-	WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
-	SEL	= WIDGET_BASE (OV, /row, /align_center)
-	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='O_ALL')
-	tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='O_DEF')
-	tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='O_NONE')
+	if (not hide_over) then begin
+		OV	= WIDGET_BASE (BASE, /col)
+		tmp	= WIDGET_LABEL (OV, value='Available overplots:', frame=0)
+		c_over	= WIDGET_LIST (OV, value=over_avail, uvalue='OVER', YSIZE=(num_over<max_display)>min_display, /multiple)
+		SEL	= WIDGET_BASE (OV, /row, /align_center)
+		tmp	= WIDGET_BUTTON (SEL, xsize=40, value='ALL', uvalue='O_ALL')
+		tmp	= WIDGET_BUTTON (SEL, xsize=60, value='DEFAULT', uvalue='O_DEF')
+		tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='O_NONE')
+	end
 
 	pc_select_files_update
 
