@@ -541,12 +541,7 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 	run_par = run_param
 
 	; Set default units
-	if (n_elements (units) eq 0) then begin
-		pc_units, obj=unit, datadir=datadir, dim=dim, param=param, /quiet
-		mu0_SI = 4.0 * !Pi * 1.e-7
-		unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-		units = { length:unit.length, default_length:1, default_length_str:'m', velocity:unit.velocity, default_velocity:1, default_velocity_str:'m/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1, default_magnetic_field_str:'Tesla', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
-	end
+	if (n_elements (units) eq 0) then pc_units, obj=units, datadir=datadir, dim=dim, param=param, /quiet
 	unit = units
 
 	if (size (vars, /type) eq 8) then begin
