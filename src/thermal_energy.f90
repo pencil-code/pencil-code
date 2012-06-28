@@ -811,9 +811,9 @@ module Entropy
       real, dimension(6), parameter :: d = c - [2825./27648., 0., 18575./48384., 13525./55296., 277./14336., .25]
 !
       real, dimension(6) :: de
-      logical :: last
+      logical :: last, lovershoot
       integer :: nok, nbad, status1
-      real :: tf, t1, dt1, eth1, deth, error
+      real :: tf, t1, dt1, eth1, ethj, deth, error
 !
 !  Initialization
 !
@@ -840,13 +840,27 @@ module Entropy
 !
         deth = sum(c * de)
 !
-!  Time step control
+!  Check overshoot towards negative energy.
 !
-        if (eth1 + deth > 0.) then
-          error = abs(sum(d * de) / (rk_eps * eth1))
-        else
+        lovershoot = .false.
+        floor: if (ljeans_floor) then
+          ethj = eth1 + deth
+          call jeans_floor(ethj, rho)
+          if (ethj > eth1 + deth) then
+            lovershoot = .true.
+            deth = ethj - eth1
+            error = 0.03125
+          endif
+        elseif (eth1 + deth <= 0.) then floor
+          lovershoot = .true.
           error = 32.
-        endif
+        endif floor
+!
+!  Estimate the error.
+!
+        if (.not. lovershoot) error = abs(sum(d * de) / (rk_eps * eth1))
+!
+!  Time step control
 !
         passed: if (error <= 1.) then
           nok = nok + 1
@@ -854,13 +868,9 @@ module Entropy
 !
           done: if (last) then
             status1 = 0
-            if (ldebug) status = nok + nbad
             exit rkck
           else if (t1 + dt1 == t1) then
             status1 = -1
-            exit rkck
-          else if (nok + nbad > rk_nmax) then
-            status1 = -2
             exit rkck
           endif done
 !
@@ -878,9 +888,20 @@ module Entropy
           last = .false.
         endif passed
 !
+        too_long: if (nok + nbad > rk_nmax) then
+          status1 = -2
+          exit rkck
+        endif too_long
+!
       enddo rkck
 !
-      if (present(status)) status = status1
+      status_code: if (present(status)) then
+        if (ldebug) then
+          status = nok + nbad
+        else
+          status = status1
+        endif
+      endif status_code
 !
     endsubroutine get_delta_eth
 !***********************************************************************
@@ -894,10 +915,15 @@ module Entropy
       real, intent(in) :: t, eth, rho
       real :: heat
 !
+      real :: eth1
+!
       if (t == t) &    ! keep the compiler quiet; can be later removed if t is ever used.
 !
+      eth1 = eth
+      if (ljeans_floor) call jeans_floor(eth1, rho)
+!
       heat = 0.
-      if (lKI02) heat = heat + heat_KI02(eth, rho)
+      if (lKI02) heat = heat + heat_KI02(eth1, rho)
 !
     endfunction calc_heat_split
 !***********************************************************************
