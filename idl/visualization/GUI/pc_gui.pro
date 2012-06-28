@@ -85,18 +85,15 @@ default, overplot_quantities, { $
 ;;;
 ;;; Preferred units for display [SI]
 ;;;
-default, default_length             , 1.0
-default, default_length_str         , 'm'
-default, default_time               , 1.0
-default, default_time_str           , 's'
-default, default_velocity           , 1.e3
-default, default_velocity_str       , 'km/s'
-default, default_density            , 1.0
-default, default_density_str        , 'kg/m^3'
-default, default_mass               , 1.0
-default, default_mass_str           , 'kg'
-default, default_magnetic_field     , 1.0
-default, default_magnetic_field_str , 'Tesla'
+default, display_units, { $
+			default_length:1, default_length_str:'m', $
+			default_velocity:1, default_velocity_str:'m/s',
+			default_time:1, default_time_str:'s', $
+			default_temperature:1, default_temperature_str:'K', $
+			default_density:1, default_density_str:'kg/m^3', $
+			default_mass:1, default_mass_str:'kg', $
+			default_magnetic_field:1, default_magnetic_field_str:'Tesla', $
+			default_current_density:1, default_current_density_str:'A/m^2' }
 
 
 ;;;
@@ -147,10 +144,8 @@ if (not pc_gui_loaded) then BEGIN
 	pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
 	pc_read_param, obj=param, dim=orig_dim, datadir=datadir, /quiet
 	pc_read_param, obj=run_param, /param2, dim=orig_dim, datadir=datadir, /quiet
-	pc_units, obj=unit, datadir=datadir
-	mu0_SI = 4.0 * !Pi * 1.e-7
-	unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-	units = { length:unit.length, default_length:1e6, default_length_str:'Mm', velocity:unit.velocity, default_velocity:1e3, default_velocity_str:'km/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1e-4, default_magnetic_field_str:'Gauß', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
+	pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
+	unit = create_struct (unit, display_units)
 
 	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
 	if ((num_files le 0) or (n_elements (quantities) le 0)) then stop
@@ -171,7 +166,17 @@ if (not pc_gui_loaded) then BEGIN
 	disp_size_y = round ((dim.my - 2*dim.nghosty) / data_reduction[1]) > 1
 	disp_size_z = round ((dim.mz - 2*dim.nghostz) / data_reduction[2]) > 1
 
-	coords = { x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp)*unit.length/default_length, y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp)*unit.length/default_length, z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp)*unit.length/default_length, dx:congrid (1.0/grid.dx_1, disp_size_x, 1, 1, /center, /interp)*unit.length, dy:congrid (1.0/grid.dy_1, disp_size_y, 1, 1, /center, /interp)*unit.length, dz:congrid (1.0/grid.dz_1, disp_size_z, 1, 1, /center, /interp)*unit.length, nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, m1:dim.nghosty, m2:dim.my-dim.nghosty-1, n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
+	coords = {
+			x:congrid (grid.x, disp_size_x, 1, 1, /center, /interp) * unit.length/unit.default_length, $
+			y:congrid (grid.y, disp_size_y, 1, 1, /center, /interp) * unit.length/unit.default_length, $
+			z:congrid (grid.z, disp_size_z, 1, 1, /center, /interp) * unit.length/unit.default_length, $
+			dx:congrid (1.0/grid.dx_1, disp_size_x, 1, 1, /center, /interp) * unit.length, $
+			dy:congrid (1.0/grid.dy_1, disp_size_y, 1, 1, /center, /interp) * unit.length, $
+			dz:congrid (1.0/grid.dz_1, disp_size_z, 1, 1, /center, /interp) * unit.length, $
+			nx:disp_size_x, ny:disp_size_y, nz:disp_size_z, $
+			l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, $
+			m1:dim.nghosty, m2:dim.my-dim.nghosty-1, $
+			n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
 
 
 	print, "Allocating memory..."
