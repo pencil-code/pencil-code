@@ -709,7 +709,7 @@ module Entropy
 !  Stop the code if negative energy exists.
 !
       if (lcheck_negative_energy) then
-        if (any(f(:,:,:,ieth) <= 0.)) then
+        if (any(f(l1:l2,m1:m2,n1:n2,ieth) <= 0.)) then
           do k = n1, n2
             do j = m1, m2
               do i = l1, l2
