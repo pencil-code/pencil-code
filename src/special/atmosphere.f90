@@ -73,6 +73,7 @@ module Special
   real :: dsize0_max=0.,dsize0_min=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
+  logical :: llog_distribution=.true.
 
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, delta, uy_bz, ux_bz, Ntot=1e3
@@ -189,12 +190,20 @@ module Special
       enddo
 !    
       if (dsize_max/=0.0) then
- 
+! 
+       if (llog_distribution) then
          ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
           do i=0,(ndustspec-1)
             lnds(i+1)=alog(dsize_min)+i*ddsize
             dsize(i+1)=exp(lnds(i+1))
           enddo
+       else
+         ddsize=(dsize_max-dsize_min)/(ndustspec-1)
+          do i=0,(ndustspec-1)
+            lnds(i+1)=dsize_min+i*ddsize
+            dsize(i+1)=lnds(i+1)
+          enddo
+       endif
 !
           do k=1,ndustspec
           if ((k>1) .and. (k<ndustspec)) then
