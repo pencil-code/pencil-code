@@ -2552,7 +2552,7 @@ module Sub
 !
       call dot_mn(uu,gradf,ugradf,ladd1)
 !
-!  Upwind correction 
+!  Upwind correction
 !
       if (present(upwind)) then
         if (upwind) call doupwind(f,k,uu,ugradf)
@@ -4212,12 +4212,11 @@ module Sub
 !***********************************************************************
     subroutine inverse_parse_bc(bc,bc1,bc2)
 !
-!
 !  27-jun-12/joern+dhruba: coded
 !
       character (len=2*bclen+1), dimension(mcom) :: bc
       character (len=bclen), dimension(mcom) :: bc1,bc2
-      integer :: j,isep
+      integer :: j
 !
       intent(out) :: bc
       intent(in) :: bc1,bc2
@@ -5926,8 +5925,8 @@ nameloop: do
       integer                                           :: k
       real, dimension (nx,3),             intent(IN)    :: uu
       real, dimension (nx),               intent(INOUT) :: ugradf
-      integer,                            intent(IN), optional :: mask 
-!      
+      integer,                            intent(IN), optional :: mask
+!
       real, dimension (nx,3) :: del6f
       integer                :: ii,msk
       integer, dimension(nx) :: indxs
@@ -5936,29 +5935,29 @@ nameloop: do
       if (present(mask)) then
         if ( mask>=1 .and. mask <=3 ) msk=mask
       endif
-
+!
       do ii=1,3
 !
         if (ii==msk) then
           del6f(:,ii) = 0.
         else
 !
-          if ( lequidist(ii) ) then 
+          if ( lequidist(ii) ) then
             call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
           else
-            where( uu(:,ii)>=0 ) 
+            where( uu(:,ii)>=0 )
               indxs = 7
             elsewhere
               indxs = 8
             endwhere
-            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)  
+            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)
           endif
 !
-          del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii) 
+          del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)
 !
         endif
       enddo
-!     
+!
       if (lcylindrical_coords) &
         del6f(:,2) = rcyl_mn1*del6f(:,2)
 !
@@ -6020,7 +6019,7 @@ nameloop: do
       call mpiallreduce_sum(mean/nwgrid,mean_tmp,inde-inda+1)
       mean = mean_tmp
 !
-!  Go through all pencils and subtract out the mean 
+!  Go through all pencils and subtract out the mean
 !  separately for each field.
 !
       do n = n1,n2
@@ -6034,7 +6033,7 @@ nameloop: do
       if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
 !
       deallocate( mean, mean_tmp )
-
+!
     endsubroutine remove_mean
 !***********************************************************************
 endmodule Sub
