@@ -54,6 +54,7 @@ module InitialCondition
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false., lcurved=.false.!, linit_density=.false.
      logical :: ltanh_prof=.false.
+     logical :: llog_distribution=.true.
 
 !
     namelist /initial_condition_pars/ &
@@ -101,8 +102,13 @@ module InitialCondition
          do i=1,my
            f(:,i,:,iux)=cos(Period*PI*y(i)/Lxyz(2))*init_ux
          enddo
-!
         endif
+        if ((init_uz /=0.) .and. (nzgrid>1)) then
+         do i=1,mz
+           f(:,:,i,iux)=cos(Period*PI*z(i)/Lxyz(3))*init_ux
+         enddo
+        endif
+!
         if ((init_uy /=0.) .and. (X_wind /= impossible)) then
           do j=1,mx
              f(j,:,:,iuy)=f(j,:,:,iuy) &
@@ -196,10 +202,20 @@ module InitialCondition
       logical :: lstop=.true., lstart1=.false., lstart2=.false.
 !
 
-      ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+      if (llog_distribution) then
+        ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
+      else
+        ddsize=(dsize_max-dsize_min)/(max(ndustspec,2)-1) 
+      endif
+
       do i=0,(ndustspec-1)
-        lnds(i+1)=alog(dsize_min)+i*ddsize
-        dsize(i+1)=exp(lnds(i+1))
+        if (llog_distribution) then
+          lnds(i+1)=alog(dsize_min)+i*ddsize
+          dsize(i+1)=exp(lnds(i+1))
+        else
+          lnds(i+1)=dsize_min+i*ddsize
+          dsize(i+1)=lnds(i+1)
+        endif
         if (lstop) then
           if (dsize(i+1)>r0) then
             ii_max=i+1; lstop=.false.
@@ -599,7 +615,7 @@ module InitialCondition
            f(:,:,:,ilnrho)=alog(tmp) 
          endif
 !
-         if ((nxgrid>1) .and. (nygrid==1)) then
+         if ((nxgrid>1) .and. (nygrid==1).and. (nzgrid==1)) then
             f(:,:,:,iux)=f(:,:,:,iux)+init_ux
          endif
 !       
@@ -608,6 +624,12 @@ module InitialCondition
 !         if (lroot) print*, 'New Air density, g/cm^3:'
 !         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*maxval(air_mass_ar)/TT
          if (lroot) print*, 'New Air mean weight, g/mol', maxval(air_mass_ar)
+         if  ((lroot) .and. (nx >1 )) then
+            print*, 'density', exp(f(l1,4,4,ilnrho)), exp(f(l2,4,4,ilnrho))
+          endif
+         if  ((lroot) .and. (nx >1 )) then
+            print*, 'temperature', exp(f(l1,4,4,ilnTT)), exp(f(l2,4,4,ilnTT))
+          endif
        endif
 !
     endsubroutine reinitialization
