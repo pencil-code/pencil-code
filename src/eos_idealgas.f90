@@ -1020,7 +1020,7 @@ module EquationOfState
         endif
         if (lpencil(i_del2TT)) p%del2TT= &
             p%rho1*(p%cv1*p%del2eth-p%TT*p%del2rho-2*sum(p%grho*p%gTT,2))
-        if (lpencil(i_hlnTT)) call fatal_error('calc_pencil_eos', &
+        if (lpencil(i_hlnTT)) call fatal_error('calc_pencils_eos', &
             'hlnTT not yet implemented for ilnrho_eth or irho_eth')
 !
 !  Work out thermodynamic quantities for given gas and dust densities.
