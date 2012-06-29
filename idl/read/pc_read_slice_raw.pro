@@ -282,7 +282,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, 'The file '+varfile+' contains: ', content
     if (strlen (read_content) lt strlen (content)) then print, 'Will read only: ', read_content
     print, ''
-    print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
+    print, 'The slice dimension is ', slice_dim.mx, slice_dim.my, slice_dim.mz
     print, ''
   endif
   if (num_read le 0) then begin
