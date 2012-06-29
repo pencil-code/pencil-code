@@ -209,6 +209,26 @@ COMPILE_OPT IDL2,HIDDEN
   endelse
   pz_end = pz_start + pz_delta - 1
 ;
+; Generate dim structure of the 2D-slice.
+;
+  slice_dim = dim
+  slice_dim.mx = cut_nx
+  slice_dim.my = cut_ny
+  slice_dim.mz = cut_nz
+  slice_dim.nx = cut_nx - 2*dim.nghostx
+  slice_dim.ny = cut_ny - 2*dim.nghosty
+  slice_dim.nz = cut_nz - 2*dim.nghostz
+  slice_dim.mxgrid = slice_dim.mx
+  slice_dim.mygrid = slice_dim.my
+  slice_dim.mzgrid = slice_dim.mz
+  slice_dim.nxgrid = slice_dim.nx
+  slice_dim.nygrid = slice_dim.ny
+  slice_dim.nzgrid = slice_dim.nz
+  slice_dim.mw = slice_dim.mx * slice_dim.my * slice_dim.mz
+  if (cut_x ne -1) then slice_dim.l2 = slice_dim.mx - dim.nghostx - 1
+  if (cut_y ne -1) then slice_dim.m2 = slice_dim.my - dim.nghosty - 1
+  if (cut_z ne -1) then slice_dim.n2 = slice_dim.mz - dim.nghostz - 1
+;
 ;  Read meta data and set up variable/tag lists.
 ;
   if (n_elements (varcontent) eq 0) then $
@@ -265,7 +285,10 @@ COMPILE_OPT IDL2,HIDDEN
     print, 'The grid dimension is ', dim.mx, dim.my, dim.mz
     print, ''
   endif
-  if (not any (indices ge 0)) then message, 'Error: nothing to read!'
+  if (num_read le 0) then begin
+    if (not keyword_set(quiet)) then message, 'ERROR: nothing to read!'
+    return
+  end
   indices = indices[where (indices ge 0)]
 ;
 ; Initialise read buffers.
@@ -344,26 +367,6 @@ COMPILE_OPT IDL2,HIDDEN
   y = grid.y[y_off:y_off+cut_ny-1]
   z = grid.z[z_off:z_off+cut_nz-1]
 ;
-; Generate dim structure of the 2D-slice.
-;
-  slice_dim = dim
-  slice_dim.mx = cut_nx
-  slice_dim.my = cut_ny
-  slice_dim.mz = cut_nz
-  slice_dim.nx = cut_nx - 2*dim.nghostx
-  slice_dim.ny = cut_ny - 2*dim.nghosty
-  slice_dim.nz = cut_nz - 2*dim.nghostz
-  slice_dim.mxgrid = slice_dim.mx
-  slice_dim.mygrid = slice_dim.my
-  slice_dim.mzgrid = slice_dim.mz
-  slice_dim.nxgrid = slice_dim.nx
-  slice_dim.nygrid = slice_dim.ny
-  slice_dim.nzgrid = slice_dim.nz
-  slice_dim.mw = slice_dim.mx * slice_dim.my * slice_dim.mz
-  if (cut_x ne -1) then slice_dim.l2 = slice_dim.mx - dim.nghostx - 1
-  if (cut_y ne -1) then slice_dim.m2 = slice_dim.my - dim.nghosty - 1
-  if (cut_z ne -1) then slice_dim.n2 = slice_dim.mz - dim.nghostz - 1
-;
 ; Prepare for derivatives.
 ;
   dx = grid.dx
@@ -382,16 +385,22 @@ COMPILE_OPT IDL2,HIDDEN
 ; Remove ghost zones if requested.
 ;
   if (keyword_set(trimall)) then begin
-    object = reform (object[dim.l1:dim.l2,dim.m1:dim.m2,dim.n1:dim.n2,*])
-    x = x[dim.l1:dim.l2]
-    y = y[dim.m1:dim.m2]
-    z = z[dim.n1:dim.n2]
-    dx_1 = dx_1[dim.l1:dim.l2]
-    dy_1 = dy_1[dim.m1:dim.m2]
-    dz_1 = dz_1[dim.n1:dim.n2]
-    dx_tilde = dx_tilde[dim.l1:dim.l2]
-    dy_tilde = dy_tilde[dim.m1:dim.m2]
-    dz_tilde = dz_tilde[dim.n1:dim.n2]
+    l1 = slice_dim.l1
+    l2 = slice_dim.l2
+    m1 = slice_dim.m1
+    m2 = slice_dim.m2
+    n1 = slice_dim.n1
+    n2 = slice_dim.n2
+    object = reform (object[l1:l2,m1:m2,n1:n2,*])
+    x = x[l1:l2]
+    y = y[m1:m2]
+    z = z[n1:n2]
+    dx_1 = dx_1[l1:l2]
+    dy_1 = dy_1[m1:m2]
+    dz_1 = dz_1[n1:n2]
+    dx_tilde = dx_tilde[l1:l2]
+    dy_tilde = dy_tilde[m1:m2]
+    dz_tilde = dz_tilde[n1:n2]
     addname += "trimmed_"
   endif
 ;
