@@ -2665,6 +2665,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Particles_spin, only: calc_liftforce
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
+      use Particles_dragforce
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
