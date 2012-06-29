@@ -552,7 +552,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, data
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				if (((size(field_x_y))[2] gt 1) and ((size(field_x_y))[3] gt 1)) then begin
+				if ((n_elements (field_y_indices) gt 1) and (n_elements (field_z_indices) gt 1)) then begin
 					contour, reform (field_x_y[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 				endif
 			end else begin
@@ -586,7 +586,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, data
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				if (((size(field_x_y))[1] gt 1) and ((size(field_x_y))[3] gt 1)) then begin
+				if ((n_elements (field_x_indices) gt 1) and (n_elements (field_z_indices) gt 1)) then begin
 					contour, reform (field_y_x[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 				endif
 			end else begin
@@ -620,7 +620,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		tvscl, data
 		if (selected_overplot gt 0) then begin
 			if (overplot_contour eq 1) then begin
-				if (((size(field_x_y))[1]) gt 1 and ((size(field_x_y))[2] gt 1)) then begin
+				if ((n_elements (field_x_indices) gt 1) and (n_elements (field_y_indices) gt 1)) then begin
 					contour, reform (field_z_x[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 				endif
 			end else begin
