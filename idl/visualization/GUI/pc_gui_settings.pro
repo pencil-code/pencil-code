@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   pc_gui_settings.pro     ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;  $Id $
+;;;  $Id$
 ;;;
 ;;;  Description:
 ;;;   User settings for the Pencil Code GUI..
