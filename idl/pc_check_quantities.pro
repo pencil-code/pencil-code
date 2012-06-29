@@ -275,7 +275,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 				print, "WARNING: dependency '"+tag+"' not available."
 			end
 		end else if (keyword_set (warn)) then begin
-			print, "WARNING: '"+tag+"' is not in availablility list."
+			print, "WARNING: '"+tag+"' is not in the availability list."
 		end
 	end
 
@@ -284,4 +284,3 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	return, list
 
 end
-
