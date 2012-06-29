@@ -82,6 +82,12 @@
 ;
 
 
+;  Known issues:
+;  =============
+;  'q_sat' is untested
+;  'rho_c' is untested, only available in SI
+
+
 ; Computation of physical quantities.
 ; PLEASE ADD MORE PHYSICAL QUANTITIES IN THIS FUNCTION.
 ; And update the availability and dependency list in "pc_check_quantities.pro".
@@ -365,17 +371,17 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'B_x', /fold_case)) then begin
 		; Magnetic field x-component
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		return, bb[*,*,*,0] * unit.magnetic_field
+		return, bb[*,*,*,0]
 	end
 	if (strcmp (quantity, 'B_y', /fold_case)) then begin
 		; Magnetic field y-component
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		return, bb[*,*,*,1] * unit.magnetic_field
+		return, bb[*,*,*,1]
 	end
 	if (strcmp (quantity, 'B_z', /fold_case)) then begin
 		; Magnetic field z-component
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		return, bb[*,*,*,2] * unit.magnetic_field
+		return, bb[*,*,*,2]
 	end
 	if (strcmp (quantity, 'rho_mag', /fold_case)) then begin
 		; Magnetic energy density [WORK HERE: unfinished, currently only computes B^2]
