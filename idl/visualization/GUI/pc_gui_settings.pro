@@ -4,7 +4,18 @@
 ;;;  $Id$
 ;;;
 ;;;  Description:
-;;;   User settings for the Pencil Code GUI..
+;;;   Default settings for the Pencil Code GUI
+;;;   If you like to have different settings, please make a copy of this file
+;;;   and name it: "pc_gui_user_settings.pro". There, you can make your changes.
+
+;;; Load user-defined settings, if available.
+pencil_home = getenv ('PENCIL_HOME')
+if (pencil_home eq "") then begin
+	message, "ERROR: please 'source sourceme.sh', before using this function."
+end
+if (file_test (pencil_home+"/idl/visualization/GUI/pc_gui_user_settings.pro")) then begin
+	@pc_gui_user_settings
+end
 
 ;;; Physical quantities to be visualized
 ;;; Available quantities can be found and defined in 'pc_get_quantity'.
@@ -33,7 +44,7 @@ default, overplot_quantities, { $
 	A_contour:'fieldlines' $
 }
 
-;;; Initial varfile
+;;; Default filenames
 default, varfile, 'var.dat'
 default, crashfile, 'crash.dat'
 default, pattern, 'VAR[0-9]*'
