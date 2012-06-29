@@ -100,7 +100,7 @@ pro cslice_event, event
 		break
 	end
 	'SHOW_TIME': begin
-		pc_show_ts, units=unit, param=param, run_param=run_param, datadir=datadir
+		pc_show_ts, unit=unit, param=param, run_param=run_param, datadir=datadir
 		break
 	end
 	'COX': begin
@@ -1019,25 +1019,26 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 
 	set = set_names
-	if (n_elements (set_content) ge 1) then varsets = set_content
-	if (n_elements (set_files) ge 1) then varfiles = set_files
-	if (n_elements (overplots) eq 0) then overplots = {none:'none'} $
-	else begin
+	if (keyword_set (set_content)) then varsets = set_content
+	if (keyword_set (set_files)) then varfiles = set_files
+	if (not keyword_set (overplots)) then begin
+		overplots = {none:'none'}
+	end else begin
 		if (not any (strlowcase (tag_names (overplots)) eq 'none')) then begin
 			overplots = create_struct ({none:'none'}, overplots)
 		end
 	end
 	overplot = overplots
 
-	if (n_elements (units) ge 1) then unit = units
-	if (n_elements (unit) eq 0) then begin
+	if (keyword_set (units)) then unit = units
+	if (not keyword_set (unit) ) then begin
 		print, "WARNING: setting units to unity."
 		unit = { length:1, default_length:1, default_length_str:'-', velocity:1, default_velocity:1, default_velocity_str:'-', time:1, default_time:1, default_time_str:'-', temperature:1, default_temperature:1, default_temperature_str:'-', density:1, default_density:1, default_density_str:'-', mass:1, default_mass:1, default_mass_str:'-', magnetic_field:1, default_magnetic_field:1, default_magnetic_field_str:'-', current_density:1, default_current_density:1, default_current_density_str:'-' }
 	end
 
-	if (n_elements (scaling) eq 0) then scaling = 1
+	if (not keyword_set (scaling)) then scaling = 1
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
-	if (n_elements (coords) ge 1) then coord = coords
+	if (keyword_set (coords)) then coord = coords
 
 	; setup dimensions
 	dims = size (varsets[0].(0))
@@ -1047,7 +1048,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	if (dimensionality ge 3) then num_z = dims[3] else num_z = 1
 
 	; setup limits, if necessary
-	if (n_elements (limits) eq 0) then begin
+	if (not keyword_set (limits)) then begin
 		nghost_x = (dims[1] - num_x) / 2
 		if (dimensionality ge 2) then nghost_y = (dims[2] - num_y) / 2 else nghost_y = 0
 		if (dimensionality ge 3) then nghost_z = (dims[3] - num_z) / 2 else nghost_z = 0
@@ -1057,7 +1058,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	cut = reform (limits, num_x, num_y, num_z)
 
 	; setup coordinate system, if necessary
-	if (n_elements (coord) eq 0) then begin
+	if (not keyword_set (coord)) then begin
 		print, "WARNING: setting the pixel size to default length."
 		nghost_x = (dims[1] - num_x) / 2
 		if (dimensionality ge 2) then nghost_y = (dims[2] - num_y) / 2 else nghost_y = 0

@@ -45,52 +45,8 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Settings that can be changed by the user:
 ;;;
-;;; Load file with user-defined defaults, if available.
-;;; All of the following default-settings can be overridden, there.
+;;; Load file with user-defined default settings.
 @pc_gui_settings
-
-;;; Physical quantities to be visualized
-;;; Available quantities can be found and defined in 'pc_get_quantity'.
-default, quantities, { $
-	Temp:'temperature', $
-	j_abs:'current density', $
-	B_x:'magnetic field x', $
-	B_y:'magnetic field y', $
-	B_z:'magnetic field z', $
-	u_abs:'velocity', $
-	u_x:'velocity x', $
-	u_y:'velocity y', $
-	u_z:'velocity z', $
-	P_therm:'thermal pressure', $
-	grad_P_therm_abs:'thermal pressure gradient', $
-	rho:'density' $
-}
-
-;;; Quantities to be overplotted
-;;; Available quantities can be found and defined in 'pc_get_quantity'.
-default, overplot_quantities, { $
-	u:'velocities', $
-	grad_Temp:'temperature gradient', $
-	grad_P_therm:'thermal pressure gradient', $
-;	B:'magnetic_field', $
-	A_contour:'fieldlines' $
-}
-
-;;; Preferred units for display [SI]
-default, display_units, { $
-			default_length:1, default_length_str:'m', $
-			default_velocity:1, default_velocity_str:'m/s', $
-			default_time:1, default_time_str:'s', $
-			default_temperature:1, default_temperature_str:'K', $
-			default_density:1, default_density_str:'kg/m^3', $
-			default_mass:1, default_mass_str:'kg', $
-			default_magnetic_field:1, default_magnetic_field_str:'Tesla', $
-			default_current_density:1, default_current_density_str:'A/m^2' }
-
-;;; Initial varfile
-default, varfile, 'var.dat'
-default, crashfile, 'crash.dat'
-default, pattern, 'VAR[0-9]*'
 
 ;;; Default data directory
 default, datadir, pc_get_datadir()
@@ -130,7 +86,7 @@ if (not pc_gui_loaded) then BEGIN
 	pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
 	unit = create_struct (unit, display_units)
 
-	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
+	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, unit=unit, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
 	if ((num_files le 0) or (n_elements (quantities) le 0)) then stop
 
 	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin

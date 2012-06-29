@@ -483,12 +483,13 @@ end
 
 
 ; Show timeseries analysis window
-pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=run_param, start_time=start_time, end_time=end_time, datadir=datadir
+pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param, start_time=start_time, end_time=end_time, datadir=datadir
 
 	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 	common timeseries_gui_common, l_x, l_y, r_x, r_y, ls_min, ls_max, rs_min, rs_max, ls_fr, rs_fr, ls_xy, rs_xy, l_coupled, r_coupled, lx_range, ly_range, rx_range, ry_range
 
 	; GUI settings
+	@pc_gui_settings
 	col_width = 220
 	plot_width = 2 * col_width
 	plot_height = plot_width
@@ -496,14 +497,9 @@ pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=r
 
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 
-	if (keyword_set (units_struct)) then units = units_struct
-	if (n_elements (units) le 0) then begin
-		pc_units, obj=unit, datadir=datadir, /quiet
-		mu0_SI = 4.0 * !Pi * 1.e-7
-		unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-		units = { length:unit.length, default_length:1, default_length_str:'m', velocity:unit.velocity, default_velocity:1, default_velocity_str:'m/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1, default_magnetic_field_str:'Tesla', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
-	end
-	units_struct = units
+	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
+	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
+	units = unit
 
 	if (keyword_set (time_series)) then ts = time_series
 	if (n_elements (ts) le 0) then pc_read_ts, obj=ts, datadir=datadir, /quiet
@@ -511,8 +507,8 @@ pro pc_show_ts, object=time_series, units=units_struct, param=param, run_param=r
 
 	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, /quiet
 	if (not keyword_set (run_param)) then pc_read_param, obj=run_param, datadir=datadir, /param2, /quiet
-	if (not keyword_set (start_time)) then start_time = min (ts.t) * units.time
-	if (not keyword_set (end_time)) then end_time = max (ts.t) * units.time
+	if (not keyword_set (start_time)) then start_time = min (ts.t) * unit.time
+	if (not keyword_set (end_time)) then end_time = max (ts.t) * unit.time
 
 	time_start = start_time
 	time_end = end_time

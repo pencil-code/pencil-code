@@ -196,7 +196,7 @@ pro select_files_event, event
 	end
 	'SHOW_TIME': begin
 		WIDGET_CONTROL, b_ts, SENSITIVE = 0
-		pc_show_ts, obj=ts, units=units, param=start_par, run_param=run_par, datadir=data_dir
+		pc_show_ts, obj=ts, unit=units, param=start_par, run_param=run_par, datadir=data_dir
 		WIDGET_CONTROL, b_ts, SENSITIVE = 1
 		break
 	end
@@ -260,12 +260,13 @@ end
 
 
 ; File selection dialog GUI.
-pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, units=units_struct, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots
+pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, unit=unit, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
 
 	; Default settings
+	@pc_gui_settings
 	default, pattern, "VAR[0-9]*"
 	default, varfile, "var.dat"
 	default, addfile, "crash.dat"
@@ -314,13 +315,9 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	ny = dim.ny
 	nz = dim.nz
 	nghost = max ([dim.nghostx, dim.nghosty, dim.nghostz])
-	if (keyword_set (units_struct)) then units = units_struct
-	if (n_elements (units) le 0) then begin
-		pc_units, obj=unit, datadir=datadir, dim=dim, param=param, /quiet
-		mu0_SI = 4.0 * !Pi * 1.e-7
-		unit_current_density = unit.velocity * sqrt (param.mu0 / mu0_SI * unit.density) / unit.length
-		units = { length:unit.length, default_length:1, default_length_str:'m', velocity:unit.velocity, default_velocity:1, default_velocity_str:'m/s', time:unit.time, default_time:1, default_time_str:'s', temperature:unit.temperature, default_temperature:1, default_temperature_str:'K', density:unit.density, default_density:1, default_density_str:'kg/m^3', mass:unit.density*unit.length^3, default_mass:1, default_mass_str:'kg', magnetic_field:unit.magnetic_field, default_magnetic_field:1, default_magnetic_field_str:'Tesla', current_density:unit_current_density, default_current_density:1, default_current_density_str:'A/m^2' }
-	end
+	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
+	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
+	units = unit
 	start_par = param
 	if (keyword_set (run_param)) then run_par = run_param
 	f_comp = !VALUES.D_NAN
@@ -462,7 +459,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	if (var_selected eq 1) then begin
 		pc_read_var_time, t=var_time, varfile=varfile, datadir=datadir, allprocs=allprocs, /quiet
-		b_var	= CW_BGROUP (SEL, varfile+' ('+strtrim (var_time*units.time, 2)+' s)', /nonexcl, uvalue='VAR', set_value=1)
+		b_var	= CW_BGROUP (SEL, varfile+' ('+strtrim (var_time*unit.time, 2)+' s)', /nonexcl, uvalue='VAR', set_value=1)
 	end else if (varfile ne "") then begin
 		b_var	= WIDGET_LABEL (SEL, value='"'+varfile+'" not found', frame=0)
 	end else begin
@@ -473,7 +470,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		b_add	= WIDGET_LABEL (SEL, value='Additional file is identical to "'+varfile+'"', frame=0)
 	end else if (add_selected eq 1) then begin
 		pc_read_var_time, t=add_time, varfile=addfile, datadir=datadir, allprocs=allprocs, /quiet
-		b_add	= CW_BGROUP (SEL, addfile+' ('+strtrim (add_time*units.time, 2)+' s)', /nonexcl, uvalue='ADD', set_value=1)
+		b_add	= CW_BGROUP (SEL, addfile+' ('+strtrim (add_time*unit.time, 2)+' s)', /nonexcl, uvalue='ADD', set_value=1)
 	end else begin
 		b_add	= WIDGET_LABEL (SEL, value='No "'+addfile+'" found', frame=0)
 	end
