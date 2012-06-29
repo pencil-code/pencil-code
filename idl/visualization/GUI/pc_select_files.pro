@@ -171,27 +171,27 @@ pro select_files_event, event
 		cont_selected = WIDGET_INFO (c_cont, /LIST_SELECT)
 		if (eventval ne 'O_DEF') then pc_select_files_update_list, quant_list, all_quant, quant_selected, default=quant, avail=quant_avail
 		if (eventval ne 'Q_DEF') then pc_select_files_update_list, over_list, all_over, over_selected, default=over, avail=over_avail
-		pc_select_files_update
+		pc_select_files_update, quant=(eventval ne 'O_DEF'), over=(eventval ne 'Q_DEF')
 		break
 	end
 	'Q_ALL': begin
 		quant_selected = where (quant_avail ne "[N/A]")
-		pc_select_files_update
+		pc_select_files_update, /quant
 		break
 	end
 	'Q_NONE': begin
 		quant_selected = -1
-		pc_select_files_update
+		pc_select_files_update, /quant
 		break
 	end
 	'O_ALL': begin
 		over_selected = where (over_avail ne "[N/A]")
-		pc_select_files_update
+		pc_select_files_update, /over
 		break
 	end
 	'O_NONE': begin
 		over_selected = -1
-		pc_select_files_update
+		pc_select_files_update, /over
 		break
 	end
 	'SHOW_TIME': begin
@@ -226,7 +226,7 @@ end
 
 
 ; Update file size and memory consumption display.
-pro pc_select_files_update
+pro pc_select_files_update, quant_update=quant_update, over_update=over_update
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, nx, ny, nz, nghost
@@ -248,11 +248,11 @@ pro pc_select_files_update
 	if (not finite (f_comp, /NaN)) then $
 		WIDGET_CONTROL, f_comp, SET_VALUE = gb_per_file/num_cont*slice_corr*(num_selected+var_selected+add_selected)*(num_quant+num_over*3)
 
-	if (not finite (c_quant, /NaN)) then begin
+	if (not finite (c_quant, /NaN) and keyword_set (quant_update)) then begin
 		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
 		WIDGET_CONTROL, c_quant, SET_LIST_SELECT = quant_selected
 	end
-	if (not finite (c_over, /NaN)) then begin
+	if (not finite (c_over, /NaN) and keyword_set (over_update)) then begin
 		WIDGET_CONTROL, c_over, SET_VALUE = over_avail
 		WIDGET_CONTROL, c_over, SET_LIST_SELECT = over_selected
 	end
@@ -518,7 +518,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		tmp	= WIDGET_BUTTON (SEL, xsize=40, value='NONE', uvalue='O_NONE')
 	end
 
-	pc_select_files_update
+	pc_select_files_update, /quant, /over
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
 	wimg = !d.window
