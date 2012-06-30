@@ -460,12 +460,9 @@ pro cslice_event, event
 		WIDGET_CONTROL, jump_max, SENSITIVE = 0
 		orig_frozen = frozen
 		frozen = 1
-		previous_snapshot = selected_snapshot
 		if (num_snapshots gt 1) then begin
-			; last_snapshot = 1
-			; if (selected_snapshot ne 0) then last_snapshot = 0
-			last_snapshot = 1
-			for i = num_snapshots-1, last_snapshot, -1 do begin
+			previous_snapshot = selected_snapshot
+			for i = num_snapshots-1, 0, -1 do begin
 				cslice_prepare_set, i
 				cslice_prepare_cube, -1
 				cslice_prepare_overplot
@@ -476,12 +473,14 @@ pro cslice_event, event
 					wait, min_wait_time[dimensionality-1]
 				end
 			end
+			if (previous_snapshot ne 0) then begin
+				cslice_prepare_set, previous_snapshot
+				cslice_prepare_cube, -1
+				cslice_prepare_overplot
+			end
 		end else begin
 			if (eventval eq "IMAGE") then cslice_save_images, "PNG", /slices
 		end
-		cslice_prepare_set, previous_snapshot
-		cslice_prepare_cube, -1
-		cslice_prepare_overplot
 		frozen = orig_frozen
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		WIDGET_CONTROL, vars, SENSITIVE = (num_cubes ge 2)
