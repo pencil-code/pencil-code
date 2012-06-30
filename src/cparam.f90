@@ -78,13 +78,16 @@ module Cparam
   real, parameter :: max_real=huge(0.0)
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
-!  during a meaningful run: use the highest possible number.
-!  TODO: 'impossible' should be deleted. Initialization with NaNs should be
-!        activated via a compiler flag. Then testing against NaN can be done
-!        by using the 'is_nan' function found in the syscalls module.
-!        This will require many changes in many files. Any current usage of
-!        'impossible' for integers must be replaced eg. by '...=-max_int'.
-!        (Bourdin.KIS)
+!  during a meaningful run: use a very large number.
+!  We use numbers ~ 2 orders of magnitude below the maximum possible
+!  values, as they may still get multiplied by some moderate numbers.
+!
+!  This value is a marker for some variable being uninitialized, and it is
+!  tempting to replace the mechanism used here by NaN.
+!  This may or may not work (need to reliably create NaN [including
+!  REAL_PRECISION=double], some compilers seem to trap assignment of NaN
+!  values, etc.
+!  Also, there is no NaN concept for integers.
 !
   real, parameter :: impossible=3.9085e37
   integer, parameter :: impossible_int=max_int/100
