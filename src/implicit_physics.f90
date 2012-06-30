@@ -109,8 +109,16 @@ module ImplicitPhysics
 ! variables that are needed everywhere in this module
 !
       call get_cp1(cp1)
-      if (dx>0.) dx_2=1./dx**2
-      if (dz>0.) dz_2=1./dz**2
+      if (dx>0.) then 
+         dx_2 = 1.0 / dx**2
+      else
+         dx_2 = 0.0
+      endif
+      if (dz>0.) then
+         dz_2 = 1.0 / dz**2
+      else
+         dz_2 = 0.0
+      endif
 !
     endsubroutine initialize_implicit_physics
 !***********************************************************************
