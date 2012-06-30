@@ -483,12 +483,12 @@ module General
       optional ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_r', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_r: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
         if (present(v3)) print*, v3
         if (present(v4)) print*, v4
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_r
@@ -504,12 +504,12 @@ module General
       optional           ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_r1d', &
-            '91 is a prime, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_r1d: Never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
         if (present(v3)) print*, minval(v3)
         if (present(v4)) print*, minval(v4)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_r1d
@@ -525,12 +525,12 @@ module General
       optional             ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_r2d', &
-            '91 is a prime, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_r2d: Never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
         if (present(v3)) print*, minval(v3)
         if (present(v4)) print*, minval(v4)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_r2d
@@ -546,12 +546,12 @@ module General
       optional               ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_r3d', &
-            '91 is a prime, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_r3d: Never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
         if (present(v3)) print*, minval(v3)
         if (present(v4)) print*, minval(v4)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_r3d
@@ -567,12 +567,12 @@ module General
       optional                 ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_r4d', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_r4d: never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
         if (present(v3)) print*, minval(v3)
         if (present(v4)) print*, minval(v4)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_r4d
@@ -588,12 +588,12 @@ module General
       optional           ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_p', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_p: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
         if (present(v3)) print*, v3
         if (present(v4)) print*, v4
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_p
@@ -609,12 +609,12 @@ module General
       optional                  ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_bc', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_bc: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
         if (present(v3)) print*, v3
         if (present(v4)) print*, v4
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_bc
@@ -630,12 +630,12 @@ module General
       optional          ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_sl', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_sl: Never got here...'
         print*,                  v1%index
         if (present(v2)) print*, v2%index
         if (present(v3)) print*, v3%index
         if (present(v4)) print*, v4%index
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_sl
@@ -651,12 +651,12 @@ module General
       optional ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_i', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_i: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
         if (present(v3)) print*, v3
         if (present(v4)) print*, v4
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_i
@@ -672,12 +672,12 @@ module General
       optional               ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_i1d', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_i1d: Never got here...'
         print*,                  v1(1)
         if (present(v2)) print*, v2(1)
         if (present(v3)) print*, v3(1)
         if (present(v4)) print*, v4(1)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_i1d
@@ -693,12 +693,12 @@ module General
       optional                 ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_i2d', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_i2d: Never got here...'
         print*,                  v1(1,1)
         if (present(v2)) print*, v2(1,1)
         if (present(v3)) print*, v3(1,1)
         if (present(v4)) print*, v4(1,1)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_i2d
@@ -714,12 +714,12 @@ module General
       optional                   ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_i3d', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_i3d: Never got here...'
         print*,                  v1(1,1,1)
         if (present(v2)) print*, v2(1,1,1)
         if (present(v3)) print*, v3(1,1,1)
         if (present(v4)) print*, v4(1,1,1)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_i3d
@@ -735,12 +735,12 @@ module General
       optional               ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_l1d', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_l1d: Never got here...'
         print*,                  v1(1)
         if (present(v2)) print*, v2(1)
         if (present(v3)) print*, v3(1)
         if (present(v4)) print*, v4(1)
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_l1d
@@ -756,12 +756,12 @@ module General
       optional ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_l', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_l: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
         if (present(v3)) print*, v3
         if (present(v4)) print*, v4
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_l
@@ -777,12 +777,12 @@ module General
       optional          ::     v2, v3, v4
 !
       if (NO_WARN) then
-        call error('keep_compiler_quiet_c', &
-            'The world is a disk, and we never got here...')
+        write(0,*) 'keep_compiler_quiet_c: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
         if (present(v3)) print*, v3
         if (present(v4)) print*, v4
+        STOP 1
       endif
 !
     endsubroutine keep_compiler_quiet_c
