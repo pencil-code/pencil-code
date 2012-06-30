@@ -107,15 +107,15 @@ module Viscosity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
                                                                                                    
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
+      if (present(iostat).and.ALWAYS_FALSE) print*,iostat
+      if (ALWAYS_FALSE) print*,unit
                                                                                                    
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
     subroutine write_viscosity_init_pars(unit)
       integer, intent(in) :: unit
                                                                                                    
-      if (NO_WARN) print*,unit
+      if (ALWAYS_FALSE) print*,unit
                                                                                                    
     endsubroutine write_viscosity_init_pars
 !***********************************************************************
@@ -199,7 +199,7 @@ module Viscosity
 !
       logical, dimension (npencils) :: lpencil_in
 !      
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*, lpencil_in !(keep compiler quiet)
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -217,7 +217,7 @@ module Viscosity
 !
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*, f, p !(keep compiler quiet)
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
@@ -463,7 +463,7 @@ module Viscosity
 !        endif
       endif
 !
-!      if(NO_WARN) print*,divu,shock,gshock !(to keep compiler quiet)
+!      if(ALWAYS_FALSE) print*,divu,shock,gshock !(to keep compiler quiet)
 !        
     end subroutine calc_viscous_force
 !***********************************************************************

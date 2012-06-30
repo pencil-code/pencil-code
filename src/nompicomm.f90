@@ -296,7 +296,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt
+      if (ALWAYS_FALSE) print*, f, ivar1_opt, ivar2_opt
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
@@ -307,7 +307,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt
+      if (ALWAYS_FALSE) print*, f, ivar1_opt, ivar2_opt
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
@@ -316,7 +316,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*, f, ivar1_opt, ivar2_opt
+      if (ALWAYS_FALSE) print*, f, ivar1_opt, ivar2_opt
 !
     endsubroutine initiate_shearing
 !***********************************************************************
@@ -370,7 +370,7 @@ module Mpicomm
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qrecv_zx
 !
-      if (NO_WARN) print*,mrad,idir,Qrecv_zx(1,1)
+      if (ALWAYS_FALSE) print*,mrad,idir,Qrecv_zx(1,1)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
@@ -379,7 +379,7 @@ module Mpicomm
       integer :: nrad,idir
       real, dimension(mx,my) :: Qrecv_xy
 !
-      if (NO_WARN) print*,nrad,idir,Qrecv_xy(1,1)
+      if (ALWAYS_FALSE) print*,nrad,idir,Qrecv_xy(1,1)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
@@ -388,7 +388,7 @@ module Mpicomm
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qsend_zx
 !
-      if (NO_WARN) print*,mrad,idir,Qsend_zx(1,1)
+      if (ALWAYS_FALSE) print*,mrad,idir,Qsend_zx(1,1)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
@@ -397,7 +397,7 @@ module Mpicomm
       integer :: nrad,idir
       real, dimension(mx,my) :: Qsend_xy
 !
-      if (NO_WARN) print*,nrad,idir,Qsend_xy(1,1)
+      if (ALWAYS_FALSE) print*,nrad,idir,Qsend_xy(1,1)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
@@ -406,7 +406,7 @@ module Mpicomm
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qsend_zx,Qrecv_zx
 !
-      if (NO_WARN) print*,mrad,idir,Qsend_zx(1,1),Qrecv_zx(1,1)
+      if (ALWAYS_FALSE) print*,mrad,idir,Qsend_zx(1,1),Qrecv_zx(1,1)
 !
     endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
@@ -431,7 +431,7 @@ module Mpicomm
       logical :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_logical_scl
 !***********************************************************************
@@ -441,7 +441,7 @@ module Mpicomm
       logical, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_logical_arr
 !***********************************************************************
@@ -451,7 +451,7 @@ module Mpicomm
       real :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_real_scl
 !***********************************************************************
@@ -461,7 +461,7 @@ module Mpicomm
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_real_arr
 !***********************************************************************
@@ -471,7 +471,7 @@ module Mpicomm
       real, dimension(nbcast_array(1), nbcast_array(2)) :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
@@ -481,7 +481,7 @@ module Mpicomm
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nb, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
@@ -491,7 +491,7 @@ module Mpicomm
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nb, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
@@ -501,7 +501,7 @@ module Mpicomm
       integer :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
@@ -511,7 +511,7 @@ module Mpicomm
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_int_arr
 !***********************************************************************
@@ -521,7 +521,7 @@ module Mpicomm
       logical :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_logical_scl
 !***********************************************************************
@@ -531,7 +531,7 @@ module Mpicomm
       logical, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_logical_arr
 !***********************************************************************
@@ -541,7 +541,7 @@ module Mpicomm
       real :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_real_scl
 !***********************************************************************
@@ -551,7 +551,7 @@ module Mpicomm
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_real_arr
 !***********************************************************************
@@ -561,7 +561,7 @@ module Mpicomm
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_real_arr2
 !***********************************************************************
@@ -571,7 +571,7 @@ module Mpicomm
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nb, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
@@ -581,7 +581,7 @@ module Mpicomm
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nb, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id
 !
     endsubroutine mpisend_real_arr4
 !***********************************************************************
@@ -591,7 +591,7 @@ module Mpicomm
       integer :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
@@ -601,7 +601,7 @@ module Mpicomm
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
@@ -610,7 +610,7 @@ module Mpicomm
       logical :: lbcast_array
       integer, optional :: nbcast_array, proc
 !
-      if (NO_WARN) print*, lbcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
@@ -620,7 +620,7 @@ module Mpicomm
       logical, dimension(nbcast_array) :: lbcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, lbcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_arr
 !***********************************************************************
@@ -630,7 +630,7 @@ module Mpicomm
       logical, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_arr2
 !***********************************************************************
@@ -639,7 +639,7 @@ module Mpicomm
       integer :: ibcast_array
       integer, optional :: nbcast_array, proc
 !
-      if (NO_WARN) print*, ibcast_array,nbcast_array,proc
+      if (ALWAYS_FALSE) print*, ibcast_array,nbcast_array,proc
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
@@ -649,7 +649,7 @@ module Mpicomm
       integer, dimension(nbcast_array) :: ibcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, ibcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, ibcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
@@ -658,7 +658,7 @@ module Mpicomm
       real :: bcast_array
       integer, optional :: nbcast_array, proc
 !
-      if (NO_WARN) print*, bcast_array,nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array,nbcast_array, proc
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
@@ -668,7 +668,7 @@ module Mpicomm
       real, dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
@@ -678,7 +678,7 @@ module Mpicomm
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_real_arr2
 !***********************************************************************
@@ -688,7 +688,7 @@ module Mpicomm
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, bcast_array, nb, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc
 !
     endsubroutine mpibcast_real_arr3
 !***********************************************************************
@@ -698,7 +698,7 @@ module Mpicomm
       real, dimension(nb(1),nb(2),nb(3),nb(4)) :: bcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, bcast_array, nb, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc
 !
     endsubroutine mpibcast_real_arr4
 !***********************************************************************
@@ -707,7 +707,7 @@ module Mpicomm
       double precision :: bcast_array
       integer, optional :: nbcast_array, proc
 !
-      if (NO_WARN) print*, bcast_array,nbcast_array,proc
+      if (ALWAYS_FALSE) print*, bcast_array,nbcast_array,proc
 !
     endsubroutine mpibcast_double_scl
 !***********************************************************************
@@ -717,7 +717,7 @@ module Mpicomm
       double precision, dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
@@ -726,7 +726,7 @@ module Mpicomm
       character :: cbcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, cbcast_array,proc
+      if (ALWAYS_FALSE) print*, cbcast_array,proc
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
@@ -736,7 +736,7 @@ module Mpicomm
       character, dimension(nbcast_array) :: cbcast_array
       integer, optional :: proc
 !
-      if (NO_WARN) print*, cbcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, cbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
@@ -746,7 +746,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
@@ -757,7 +757,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
@@ -768,7 +768,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
@@ -779,7 +779,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpiallreduce_sum_arr3
 !***********************************************************************
@@ -892,7 +892,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpireduce_sum_int_arr3
 !***********************************************************************
@@ -911,7 +911,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
@@ -922,7 +922,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
@@ -933,7 +933,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpireduce_sum_arr2
 !***********************************************************************
@@ -944,7 +944,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpireduce_sum_arr3
 !***********************************************************************
@@ -955,7 +955,7 @@ module Mpicomm
       integer, optional :: idir
 !
       fsum=fsum_tmp
-      if (present(idir).and.NO_WARN) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpireduce_sum_arr4
 !***********************************************************************
@@ -2226,7 +2226,7 @@ module Mpicomm
       integer, intent(in) :: xi,zj,zproc_no
 !
       ay(:)=a(xi,:,zj)
-      if (NO_WARN) print*,zproc_no
+      if (ALWAYS_FALSE) print*,zproc_no
 !
     endsubroutine y2x
 !***********************************************************************
@@ -2241,7 +2241,7 @@ module Mpicomm
       integer, intent(in) :: xi,yj,yproc_no
 !
       az(:)=a(xi,yj,:)
-      if (NO_WARN) print*,yproc_no
+      if (ALWAYS_FALSE) print*,yproc_no
 !
     endsubroutine z2x
 !***********************************************************************
@@ -2334,7 +2334,7 @@ module Mpicomm
 !
       recvbuf(:,1:ny) = sendbuf
 !
-      if (NO_WARN) print*,lpz
+      if (ALWAYS_FALSE) print*,lpz
 !
     endsubroutine mpigather_xy
 !***********************************************************************
@@ -2350,7 +2350,7 @@ module Mpicomm
 !
       recvbuf(:,1:nz) = sendbuf
 !
-      if (NO_WARN) print*,n1,present(lproc)
+      if (ALWAYS_FALSE) print*,n1,present(lproc)
 !
     endsubroutine mpigather_z
 !***********************************************************************
@@ -2423,7 +2423,7 @@ module Mpicomm
         enddo
       enddo
 !
-      if (NO_WARN) print*,unit,present(ltransp)
+      if (ALWAYS_FALSE) print*,unit,present(ltransp)
 !
     endsubroutine mpigather_and_out_real
 !***********************************************************************
@@ -2435,7 +2435,7 @@ module Mpicomm
       real, dimension(nk), intent(inout) :: vector
       integer, optional,   intent(in)    :: idir
 !
-      if (NO_WARN) print*,vector,nk,present(idir)
+      if (ALWAYS_FALSE) print*,vector,nk,present(idir)
 !
       return
 !
@@ -2449,7 +2449,7 @@ module Mpicomm
     message = ''
     report_clean_output = .false.
 !
-    if (NO_WARN) print*,flag,message
+    if (ALWAYS_FALSE) print*,flag,message
 !
   end function report_clean_output
 !***********************************************************************

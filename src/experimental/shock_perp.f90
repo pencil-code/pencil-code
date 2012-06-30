@@ -197,15 +197,15 @@ module Shock
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
+      if (present(iostat).and.ALWAYS_FALSE) print*,iostat
+      if (ALWAYS_FALSE) print*,unit
 !
     endsubroutine read_shock_init_pars
 !***********************************************************************
     subroutine write_shock_init_pars(unit)
       integer, intent(in) :: unit
 !
-      if (NO_WARN) print*,unit
+      if (ALWAYS_FALSE) print*,unit
 !
     endsubroutine write_shock_init_pars
 !***********************************************************************
@@ -272,7 +272,7 @@ module Shock
         endif
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (ALWAYS_FALSE) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_shock
 !***********************************************************************
     subroutine get_slices_shock(f,slices)
@@ -333,7 +333,7 @@ module Shock
 !
       logical, dimension (npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*, lpencil_in !(keep compiler quiet)
 !
     endsubroutine pencil_interdep_shock
 !***********************************************************************

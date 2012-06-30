@@ -146,7 +146,7 @@ module Cparam
   double precision, parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
   double precision, parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
 !
-  logical, parameter :: NO_WARN=.false.
+  logical, parameter :: ALWAYS_FALSE=.false.
 !
 !  Data structure used to gather slice information from the various modules.
 !

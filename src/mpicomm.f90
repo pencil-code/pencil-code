@@ -6605,7 +6605,7 @@ module Mpicomm
       lcomplex = .true.
       ncompl = ncomp
 !
-1     if (NO_WARN) print*,unit
+1     if (ALWAYS_FALSE) print*,unit
 !
       if ( .not.present(ltransp) ) then
         ltrans=.false.
@@ -6780,7 +6780,7 @@ module Mpicomm
     ! merging
       where ((vec2 < 0.) .and. (vec1 >= 0.)) vec2=vec1
 !
-      if (NO_WARN) print *,type
+      if (ALWAYS_FALSE) print *,type
 !
     endsubroutine merge_1d
 !***********************************************************************
@@ -6808,7 +6808,7 @@ module Mpicomm
       call MPI_REDUCE(vector, recvbuf, nk, MPI_REAL, merge, root, mpiprocs, mpierr)
       vector = recvbuf
 !
-      if (NO_WARN) print*,status
+      if (ALWAYS_FALSE) print*,status
 !
     endsubroutine mpimerge_1d
 !***********************************************************************

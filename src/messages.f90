@@ -237,7 +237,7 @@ module Messages
 !
       endif
 !
-      if (NO_WARN) print*, ip
+      if (ALWAYS_FALSE) print*, ip
 !
     endsubroutine warning
 !***********************************************************************

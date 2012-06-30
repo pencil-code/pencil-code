@@ -77,22 +77,22 @@ module Viscosity
          lneed_sij=.true.
       endif
 
-      if (NO_WARN) print*,lstarting
+      if (ALWAYS_FALSE) print*,lstarting
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine read_viscosity_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
+      if (present(iostat).and.ALWAYS_FALSE) print*,iostat
+      if (ALWAYS_FALSE) print*,unit
 
     endsubroutine read_viscosity_init_pars
 !***********************************************************************
     subroutine write_viscosity_init_pars(unit)
       integer, intent(in) :: unit
 
-      if (NO_WARN) print*,unit
+      if (ALWAYS_FALSE) print*,unit
 
     endsubroutine write_viscosity_init_pars
 !***********************************************************************
@@ -155,12 +155,12 @@ module Viscosity
         endif
       endif
 !
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (ALWAYS_FALSE) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !!***********************************************************************
     subroutine calc_viscosity(f)
       real, dimension (mx,my,mz,mfarray) :: f
-      if (NO_WARN) print*,f  !(to keep compiler quiet)
+      if (ALWAYS_FALSE) print*,f  !(to keep compiler quiet)
     endsubroutine calc_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
@@ -200,7 +200,7 @@ module Viscosity
 
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*heat
       if (lfirst.and.ldt) Hmax=Hmax+heat
-      if (NO_WARN) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -325,7 +325,7 @@ module Viscosity
         call max_mn_name(spread(nu,1,nx)/dxmin**2,idiag_dtnu,l_dt=.true.)
       endif
 !
-      if (NO_WARN) print*,divu  !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*,divu  !(keep compiler quiet)
     end subroutine calc_viscous_force
 
 !***********************************************************************

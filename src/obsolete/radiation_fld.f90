@@ -119,7 +119,7 @@ module Radiation
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if(NO_WARN) print*,f !(keep compiler quiet)
+      if(ALWAYS_FALSE) print*,f !(keep compiler quiet)
     endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
@@ -145,7 +145,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+      if(ALWAYS_FALSE) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine radiative_cooling
 !***********************************************************************
@@ -161,7 +161,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+      if(ALWAYS_FALSE) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine radiative_pressure
 !***********************************************************************
@@ -240,7 +240,7 @@ module Radiation
          
       endselect
 !
-      if(NO_WARN) print*,yy !(keep compiler quiet)
+      if(ALWAYS_FALSE) print*,yy !(keep compiler quiet)
     endsubroutine init_rad
 !***********************************************************************
     subroutine pencil_criteria_radiation()
@@ -267,7 +267,7 @@ module Radiation
 ! 
       logical, dimension (npencils) :: lpencil_in
 ! 
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*, lpencil_in  !(keep compiler quiet)
 ! 
     endsubroutine pencil_interdep_radiation
 !***********************************************************************
@@ -283,7 +283,7 @@ module Radiation
 !      
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*, f !(keep compiler quiet)
 ! 
     endsubroutine calc_pencils_radiation
 !********************************************************************
@@ -523,7 +523,7 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+      if (ALWAYS_FALSE) print*, f(1,1,1,1), slices%ready
 !
     endsubroutine get_slices_radiation
 !***********************************************************************

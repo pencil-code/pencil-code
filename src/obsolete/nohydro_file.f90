@@ -81,7 +81,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: f
 !
-      if (NO_WARN) print*,f  !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*,f  !(keep compiler quiet)
 !
     endsubroutine init_uu
 !***********************************************************************
@@ -146,7 +146,7 @@ module Hydro
         if (idiag_um2/=0) call max_mn_name(u2,idiag_um2)
       endif
 !
-      if (NO_WARN) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
     subroutine time_integrals_hydro(f,p)
@@ -172,7 +172,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       intent(in) :: f
 !
-      if (NO_WARN) print*, f     !(keep compiler quiet)
+      if (ALWAYS_FALSE) print*, f     !(keep compiler quiet)
 !
     endsubroutine calc_lhydro_pars
 !***********************************************************************
@@ -180,15 +180,15 @@ module Hydro
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
+      if (present(iostat) .and. (ALWAYS_FALSE)) print*,iostat
+      if (ALWAYS_FALSE) print*,unit
 
     endsubroutine read_hydro_init_pars
 !***********************************************************************
     subroutine write_hydro_init_pars(unit)
       integer, intent(in) :: unit
 
-      if (NO_WARN) print*,unit
+      if (ALWAYS_FALSE) print*,unit
 
     endsubroutine write_hydro_init_pars
 !***********************************************************************
@@ -196,15 +196,15 @@ module Hydro
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
+      if (present(iostat) .and. (ALWAYS_FALSE)) print*,iostat
+      if (ALWAYS_FALSE) print*,unit
 
     endsubroutine read_hydro_run_pars
 !***********************************************************************
     subroutine write_hydro_run_pars(unit)
       integer, intent(in) :: unit
 
-      if (NO_WARN) print*,unit
+      if (ALWAYS_FALSE) print*,unit
     endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)

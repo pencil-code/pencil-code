@@ -2,7 +2,7 @@
 #
 #  $Id$
 #
-#  A small program to replace all instances of NO_WARN with keep_compiler_quiet.
+#  A small program to replace all instances of ALWAYS_FALSE with keep_compiler_quiet.
 #  Use with extreme care, not all cases are handled automatically.
 #
 foreach $file (@ARGV){
@@ -15,7 +15,7 @@ foreach $file (@ARGV){
 #
   $i=0;
   foreach $line (@lines){
-    if ($line =~ /NO_WARN/){
+    if ($line =~ /ALWAYS_FALSE/){
       $indent=index($line,'if');
       $then  =index($line,'then');
       if ($indent ge 1 and $then eq -1) {

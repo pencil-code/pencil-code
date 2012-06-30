@@ -297,7 +297,7 @@ module Entropy
 !
       if (lfirst.and.ldt) diffus_chi=diffus_chi+(gamma*chi+chi_t)*dxyz_2
 !
-      if (NO_WARN) print*,rho1 !(to keep compiler quiet)
+      if (ALWAYS_FALSE) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)

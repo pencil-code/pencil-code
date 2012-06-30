@@ -482,7 +482,7 @@ module General
       real     :: v1, v2, v3, v4
       optional ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_r: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
@@ -503,7 +503,7 @@ module General
       real, dimension(:) :: v1, v2, v3, v4
       optional           ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_r1d: Never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
@@ -524,7 +524,7 @@ module General
       real, dimension(:,:) :: v1, v2, v3, v4
       optional             ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_r2d: Never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
@@ -545,7 +545,7 @@ module General
       real, dimension(:,:,:) :: v1, v2, v3, v4
       optional               ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_r3d: Never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
@@ -566,7 +566,7 @@ module General
       real, dimension(:,:,:,:) :: v1, v2, v3, v4
       optional                 ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_r4d: never got here...'
         print*,                  minval(v1)
         if (present(v2)) print*, minval(v2)
@@ -587,7 +587,7 @@ module General
       type (pencil_case) :: v1, v2, v3, v4
       optional           ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_p: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
@@ -608,7 +608,7 @@ module General
       type (boundary_condition) :: v1, v2, v3, v4
       optional                  ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_bc: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
@@ -629,7 +629,7 @@ module General
       type (slice_data) :: v1, v2, v3, v4
       optional          ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_sl: Never got here...'
         print*,                  v1%index
         if (present(v2)) print*, v2%index
@@ -650,7 +650,7 @@ module General
       integer  :: v1, v2, v3, v4
       optional ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_i: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
@@ -671,7 +671,7 @@ module General
       integer, dimension(:)  :: v1, v2, v3, v4
       optional               ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_i1d: Never got here...'
         print*,                  v1(1)
         if (present(v2)) print*, v2(1)
@@ -692,7 +692,7 @@ module General
       integer, dimension(:,:)  :: v1, v2, v3, v4
       optional                 ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_i2d: Never got here...'
         print*,                  v1(1,1)
         if (present(v2)) print*, v2(1,1)
@@ -713,7 +713,7 @@ module General
       integer, dimension(:,:,:)  :: v1, v2, v3, v4
       optional                   ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_i3d: Never got here...'
         print*,                  v1(1,1,1)
         if (present(v2)) print*, v2(1,1,1)
@@ -734,7 +734,7 @@ module General
       logical, dimension(:)  :: v1, v2, v3, v4
       optional               ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_l1d: Never got here...'
         print*,                  v1(1)
         if (present(v2)) print*, v2(1)
@@ -755,7 +755,7 @@ module General
       logical  :: v1, v2, v3, v4
       optional ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_l: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
@@ -776,7 +776,7 @@ module General
       character (len=*) :: v1, v2, v3, v4
       optional          ::     v2, v3, v4
 !
-      if (NO_WARN) then
+      if (ALWAYS_FALSE) then
         write(0,*) 'keep_compiler_quiet_c: Never got here...'
         print*,                  v1
         if (present(v2)) print*, v2
