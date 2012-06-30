@@ -21,7 +21,6 @@ module Forcing
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use General
   use Messages
 !
   implicit none
@@ -144,9 +143,6 @@ module Forcing
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
 !
-      use Mpicomm
-      use Sub
-!
 !  identify version number
 !
       if (lroot) call svn_id( &
@@ -162,6 +158,7 @@ module Forcing
       use General, only: bessj
       use Mpicomm, only: stop_it
       use Sub, only: step_scalar,erfunc
+!
       real :: zstar
       integer :: l
 !
@@ -750,6 +747,7 @@ module Forcing
 !
 !  10-sep-01/axel: coded
 !
+      use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -867,9 +865,8 @@ module Forcing
 !   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
 !  23-feb-10/axel: added helicity profile with finite second derivative.
 !
-      use Diagnostics
       use EquationOfState, only: cs0
-      use General
+      use General, only: random_number_wrapper
       use Mpicomm
       use Sub
 !
@@ -1379,10 +1376,10 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
 !
 !  30-jan-11/axel: adapted from forcing_hel and added z-dependent scaling of k
 !
-      use Diagnostics
+      use Diagnostics, only: sum_mn_name
       use EquationOfState, only: cs0
-      use General
-      use Mpicomm
+      use General, only: random_number_wrapper
+      use Mpicomm, only: mpifinalize
       use Sub
 !
       real :: phase,ffnorm,irufm
@@ -1798,10 +1795,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  22-sep-08/dhruba: adapted from forcing_hel
 !   6-oct-09/MR: according to Axel, this routine is now superseded by forcing_hel and should be deleted
 !
-      use Mpicomm
-      use General
-      use Sub
       use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Mpicomm, only: mpifinalize
+      use Sub
 !
       real :: phase,ffnorm
       real, save :: kav
@@ -2025,11 +2022,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  Add helical forcing function in spherical polar coordinate system.
 !  25-jul-07/dhruba: adapted from forcing_hel
 !
-      use Mpicomm
-      use General
-      use Sub
       use EquationOfState, only: cs0
-!      use SpecialFunctions
+      use General, only: random_number_wrapper
+      use Mpicomm, only: stop_it
+      use Sub
 !
       logical, save :: lfirst_call=.true.
       real, dimension(3) :: ee
@@ -2210,11 +2206,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 ! Testing the Chandrasekhar-Kendall forcing function
 !  22-june-08/dhruba: adapted from forcing_chandrasekhar_kendall
 !
-      use Mpicomm
-      use General
-      use Sub
       use EquationOfState, only: cs0
-!      use SpecialFunctions
+      use General, only: random_number_wrapper
+      use Mpicomm, only: stop_it
+      use Sub
 !
       logical, save :: lfirst_call=.true.
       real, dimension(3) :: ee
@@ -2378,7 +2373,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  24-jul-06/axel: coded
 !
       use Mpicomm
-      use General
       use Sub
 !
       real :: irufm
@@ -2464,7 +2458,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !   9-oct-04/axel: coded
 !
       use Mpicomm
-      use General
       use Sub
 !
       real :: irufm
@@ -2562,7 +2555,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  17-jul-06/axel: coded
 !
       use Diagnostics
-      use General
       use Mpicomm
       use Sub
 !
@@ -2667,7 +2659,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  27-oct-04/axel: coded
 !
       use Mpicomm
-      use General
       use Sub
 !
       real :: irufm
@@ -2763,10 +2754,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  19-dec-05/tony: coded, adapted from forcing_nocos
 !  14-jul-10/axel: in less then 3-D, project forcing to computational domain
 !
-      use Mpicomm
-      use General
-      use Sub
       use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Mpicomm
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: force_ampl, force_tmp
@@ -2959,8 +2950,8 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
 !   7-sep-02/axel: coded
 !
-      use Sub
       use Mpicomm
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
@@ -3015,10 +3006,10 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
 !  10-apr-00/axel: coded
 !
-      use Mpicomm
-      use General
-      use Sub
       use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Mpicomm
+      use Sub
 !
       real :: phase,ffnorm
       real, save :: kav
@@ -3523,7 +3514,6 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
 !  28-jul-02/axel: coded
 !
-      !use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3557,6 +3547,7 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !***********************************************************************
     subroutine forcing_hel_smooth(f)
 !
+      use General, only: random_number_wrapper
       use Mpicomm
       use Sub
 !
@@ -3702,10 +3693,10 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
 !  17-jan-03/nils: adapted from forcing_hel
 !
-      use Mpicomm
-      use General
-      use Sub
       use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Mpicomm
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: kx0,ky,kz
@@ -4004,10 +3995,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
 ! one must also set  lforcing_cont_uu = T in hydro for the continious is time
 ! forcing to be added to velocity.
 !
-      use Sub, only: quintic_step, quintic_der_step
-      use Mpicomm, only: stop_it
       use Gravity, only: gravz
+      use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
+      use Sub, only: quintic_step, quintic_der_step
       use Viscosity, only: getnu
 !
       real, dimension (nx,3), intent(out) :: force
