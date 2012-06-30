@@ -300,6 +300,7 @@ pro pc_show_ts_analyze
 	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 
 	charsize = 1.25
+	old_multi = !P.MULTI
 	old_x_margin = !X.margin
 	!X.margin[0] += 3
 	x_margin_both = (!X.margin > max (old_x_margin))
@@ -478,7 +479,9 @@ pro pc_show_ts_analyze
 			oplot, time, u2m, linestyle=3, color=115100200
 		end
 	end
+
 	!X.margin = old_x_margin
+	!P.MULTI = old_multi
 end
 
 
