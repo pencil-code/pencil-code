@@ -20,6 +20,7 @@ module Polymer
 !
   use Cdata
   use Cparam
+  use General, only: keep_compiler_quiet
   use Messages
   use Sub
 !
