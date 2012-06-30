@@ -109,7 +109,7 @@ module ImplicitPhysics
 ! variables that are needed everywhere in this module
 !
       call get_cp1(cp1)
-      dx_2=1./dx**2
+      dx_2=1./dx**2             ! THIS WILL FAIL WHEN dx = 0.0
       dz_2=1./dz**2
 !
     endsubroutine initialize_implicit_physics
