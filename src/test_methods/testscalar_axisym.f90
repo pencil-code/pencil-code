@@ -290,14 +290,16 @@ module Testscalar
 !  Normalize such that the average over the full domain
 !  gives still unity.
 !
-      where (z>=testscalar_zaver_range(1) .and. z<=testscalar_zaver_range(2))
-        zmask=1.
+      where (z >= testscalar_zaver_range(1) .and. z <= testscalar_zaver_range(2))
+        zmask = 1.
       elsewhere
-        zmask=0.
+        zmask = 0.
       endwhere
-      testscalar_zaver_range(1)=max(testscalar_zaver_range(1),xyz0(3))
-      testscalar_zaver_range(2)=min(testscalar_zaver_range(2),xyz1(3))
-      zmask=zmask*Lxyz(3)/(testscalar_zaver_range(2)-testscalar_zaver_range(1))
+      testscalar_zaver_range(1) = max(testscalar_zaver_range(1), xyz0(3))
+      testscalar_zaver_range(2) = min(testscalar_zaver_range(2), xyz1(3))
+      if (testscalar_zaver_range(2) > testscalar_zaver_range(1)) then
+        zmask = zmask * Lxyz(3) / &
+            (testscalar_zaver_range(2) - testscalar_zaver_range(1))
 !
 !  debug output
 !

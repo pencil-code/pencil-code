@@ -253,14 +253,16 @@ module Testfield
 !  Normalize such that the average over the full domain
 !  gives still unity.
 !
-      where (z>=testfield_zaver_range(1) .and. z<=testfield_zaver_range(2))
-        zmask=1.
+      where (z >= testfield_zaver_range(1) .and. z <= testfield_zaver_range(2))
+        zmask = 1.
       elsewhere
-        zmask=0.
+        zmask = 0.
       endwhere
-      testfield_zaver_range(1)=max(testfield_zaver_range(1),xyz0(3))
-      testfield_zaver_range(2)=min(testfield_zaver_range(2),xyz1(3))
-      zmask=zmask*Lxyz(3)/(testfield_zaver_range(2)-testfield_zaver_range(1))
+      testfield_zaver_range(1) = max(testfield_zaver_range(1), xyz0(3))
+      testfield_zaver_range(2) = min(testfield_zaver_range(2), xyz1(3))
+      if (testfield_zaver_range(2) > testfield_zaver_range(1)) then
+        zmask = zmask * Lxyz(3) / (testfield_zaver_range(2) - testfield_zaver_range(1))
+      endif
 !
 !  debug output
 !
