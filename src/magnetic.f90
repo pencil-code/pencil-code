@@ -756,19 +756,27 @@ module Magnetic
 !  Normalize such that the average over the full domain
 !  gives still unity.
 !
-      where (x(l1:l2)>=magnetic_xaver_range(1) .and. x(l1:l2)<=magnetic_xaver_range(2))
-        xmask_mag=1.
-      elsewhere
-        xmask_mag=0.
-      endwhere
-      magnetic_xaver_range(1)=max(magnetic_xaver_range(1),xyz0(1))
-      magnetic_xaver_range(2)=min(magnetic_xaver_range(2),xyz1(1))
-      if (lspherical_coords) then
-        xmask_mag=xmask_mag*(xyz1(1)**3-xyz0(1)**3)/(magnetic_xaver_range(2)**3-magnetic_xaver_range(1)**3)
-      elseif (lcylindrical_coords) then
-        xmask_mag=xmask_mag*(xyz1(1)**2-xyz0(1)**2)/(magnetic_xaver_range(2)**2-magnetic_xaver_range(1)**2)
+      if (l1 == l2) then
+        xmask_den = 1.
       else
-        xmask_mag=xmask_mag*Lxyz(1)/(magnetic_xaver_range(2)-magnetic_xaver_range(1))
+        where (x(l1:l2) >= magnetic_xaver_range(1) &
+            .and. x(l1:l2) < =magnetic_xaver_range(2))
+          xmask_mag = 1.
+        elsewhere
+          xmask_mag = 0.
+        endwhere
+        magnetic_xaver_range(1) = max(magnetic_xaver_range(1), xyz0(1))
+        magnetic_xaver_range(2) = min(magnetic_xaver_range(2), xyz1(1))
+        if (lspherical_coords) then
+          xmask_mag = xmask_mag * (xyz1(1)**3 - xyz0(1)**3) &
+              / (magnetic_xaver_range(2)**3 - magnetic_xaver_range(1)**3)
+        elseif (lcylindrical_coords) then
+          xmask_mag = xmask_mag * (xyz1(1)**2 - xyz0(1)**2)&
+              / (magnetic_xaver_range(2)**2 - magnetic_xaver_range(1)**2)
+        else
+          xmask_mag = xmask_mag*Lxyz(1) &
+              / (magnetic_xaver_range(2) - magnetic_xaver_range(1))
+        endif
       endif
 !
 !  debug output
