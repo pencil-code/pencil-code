@@ -51,6 +51,9 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 ;;; Default data directory
 default, datadir, pc_get_datadir()
 
+;;; Default minimum size of the data display
+default, min_display_size, 256
+
 ;;; Default technical parameters
 default, cut_x, -1
 default, cut_y, -1
@@ -86,7 +89,11 @@ if (not pc_gui_loaded) then BEGIN
 	pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
 	unit = create_struct (unit, display_units)
 
-	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, unit=unit, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim
+	; Scaling factor for visualisation
+	default, scaling, fix (min_display_size / max ([orig_dim.nx, orig_dim.ny, orig_dim.nz]))
+	if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
+
+	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, unit=unit, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, dim=orig_dim, scaling=scaling
 	if ((num_files le 0) or (n_elements (quantities) le 0)) then stop
 
 	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
@@ -164,10 +171,6 @@ if (not pc_gui_loaded) then BEGIN
 	pc_gui_loaded = 1
 
 END
-
-; scaling factor for visualisation
-default, scaling, fix (256.0 / max ([coords.nx, coords.ny, coords.nz]))
-if (n_elements (scaling) eq 1) then if (scaling le 0) then scaling = 1
 
 
 cmp_cslice_cache, quantities, limits=limits, scaling=scaling, coords=coords, overplots=overplot_quantities
