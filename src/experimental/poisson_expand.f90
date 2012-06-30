@@ -78,7 +78,7 @@ module Poisson
 !
 !  17-jul-2007/wolf: coded wrapper
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi
@@ -609,7 +609,7 @@ module Poisson
 !
 !  15-may-2006/anders+jeff: dummy
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi

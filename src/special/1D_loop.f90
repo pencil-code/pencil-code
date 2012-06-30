@@ -15,10 +15,10 @@
 !
 module Special
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet,cubic_step
   use Messages, only: svn_id, fatal_error
-  use Sub, only: keep_compiler_quiet,cubic_step
 !
   implicit none
 !

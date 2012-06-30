@@ -24,14 +24,15 @@
 !***************************************************************
 module Particles
 !
+  use Cparam, only: lparticles_spin
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
   use Particles_radius
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -1580,7 +1581,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-apr-06/anders: coded
 !
-      use Cparam, only: lparticles_spin
       use Diagnostics
       use EquationOfState, only: cs20, gamma
       use Particles_spin, only: calc_liftforce

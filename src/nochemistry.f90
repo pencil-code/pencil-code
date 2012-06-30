@@ -16,9 +16,9 @@ module Chemistry
 !
   use Cparam
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use EquationOfState
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

@@ -18,7 +18,7 @@
 module Testflow
 !
   use Cparam
-  use Sub, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !

@@ -15,10 +15,10 @@
 !***************************************************************
 module Pscalar
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

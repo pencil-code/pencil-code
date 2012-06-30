@@ -1768,7 +1768,7 @@ module Deriv
 !
 !  26-mar-12/MR: coded
 !
-!      use Sub, only: keep_compiler_quiet
+!      use General, only: keep_compiler_quiet
 
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df

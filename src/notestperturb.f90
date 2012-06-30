@@ -11,7 +11,7 @@
 !***************************************************************
 module TestPerturb
 !
-  use Sub, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !

@@ -5,8 +5,8 @@
 module Fourier
 !
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages, only: fatal_error
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

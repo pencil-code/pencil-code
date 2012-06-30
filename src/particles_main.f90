@@ -5,6 +5,7 @@
 module Particles_main
 !
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use Particles
   use Particles_cdata
@@ -25,7 +26,6 @@ module Particles_main
   use Particles_viscosity
   use Particles_diagnos_dv
   use Particles_diagnos_state
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

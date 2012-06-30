@@ -20,10 +20,10 @@
 
 module Poisson
 
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -58,7 +58,7 @@ module Poisson
 !
 !  18-may-2007/wolf: adapted from IDL prototype
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx,ny,nz) :: phi,rhs

@@ -23,8 +23,8 @@
 module Testfield
 
   use Cparam
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
   implicit none
 
   include '../testfield.h'

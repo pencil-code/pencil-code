@@ -19,10 +19,10 @@
 !***************************************************************
 module ImplicitPhysics
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
-  use Sub, only: keep_compiler_quiet
   use General, only: tridag, cyclic
 !
   implicit none

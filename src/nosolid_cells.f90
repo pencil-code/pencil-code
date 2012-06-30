@@ -12,10 +12,10 @@
 !***************************************************************
 module Solid_Cells
 !
-  use Cdata
   use Cparam
-  use Sub, only: keep_compiler_quiet
-  use messages, only: warning
+  use Cdata
+  use General, only: keep_compiler_quiet
+  use Messages, only: warning
 !
   implicit none
 !

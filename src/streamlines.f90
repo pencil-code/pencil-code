@@ -579,7 +579,7 @@ module Streamlines
 !
 !   12-mar-12/simon: coded
 !
-    use Sub, only: keep_compiler_quiet, curl
+    use General, only: keep_compiler_quiet, curl
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path

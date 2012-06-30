@@ -1183,7 +1183,7 @@ include 'NSCBC.h'
 !  2010.07.26/Julien Savre: coded
 !
       use EquationOfState
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension(:,:,:), intent(inout) :: YYi_full
       real, dimension(:), intent(in) :: YYi

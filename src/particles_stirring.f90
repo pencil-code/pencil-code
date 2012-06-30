@@ -14,14 +14,14 @@
 !***************************************************************
 module Particles_stirring
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

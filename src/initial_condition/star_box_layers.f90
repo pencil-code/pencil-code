@@ -14,10 +14,10 @@
 !
 module InitialCondition
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
   use EquationOfState, only: gamma1, mpoly0, mpoly1, mpoly2, gamma_m1, cs20
 !
   implicit none

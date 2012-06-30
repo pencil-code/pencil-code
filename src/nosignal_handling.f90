@@ -14,8 +14,8 @@ module Signal_handling
 !
   use Cparam
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
 !  Signal handling in run.f90
 !
   implicit none

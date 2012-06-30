@@ -15,10 +15,10 @@
 module Particles_mass
 !
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
   use Particles_sub
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

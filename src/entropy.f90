@@ -18,13 +18,13 @@
 !***************************************************************
 module Entropy
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot, &
                          isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global, cs2top_ini, dcs2top_ini
   use Messages
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

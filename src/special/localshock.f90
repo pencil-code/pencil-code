@@ -47,11 +47,11 @@
 
 module Special
 
-  use Cdata
-  use EquationOfState
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
+  use EquationOfState
 
   implicit none
 

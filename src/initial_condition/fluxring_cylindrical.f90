@@ -16,10 +16,10 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: erfunc,keep_compiler_quiet
   use Messages
-  use Sub, only: erfunc,keep_compiler_quiet
 !
   implicit none
 !

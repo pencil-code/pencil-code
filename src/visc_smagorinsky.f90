@@ -17,9 +17,9 @@ module Viscosity
 !
   use Cparam
   use Cdata
+  use General, only: keep_compiler_quiet
   use Density
   use Messages
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

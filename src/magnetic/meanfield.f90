@@ -17,11 +17,11 @@
 !***************************************************************
 module Magnetic_meanfield
 !
-  use Cdata
   use Cparam
-  use Magnetic_meanfield_demfdt
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages, only: fatal_error,inevitably_fatal_error,svn_id
-  use Sub, only: keep_compiler_quiet
+  use Magnetic_meanfield_demfdt
 !
   implicit none
 !

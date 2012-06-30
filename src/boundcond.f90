@@ -6109,7 +6109,7 @@ module Boundcond
 !
 ! 15-aug-2011/Bourdin.KIS: adapted from finalize_modules
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension(mx,my,mz,mfarray) :: f
       logical :: lstarting

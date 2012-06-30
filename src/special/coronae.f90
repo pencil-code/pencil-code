@@ -16,8 +16,8 @@
 module Special
 !
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages, only: fatal_error, warning, svn_id
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

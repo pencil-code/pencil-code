@@ -534,7 +534,7 @@ module Testfield
 !
 !  26-jun-05/anders: adapted from magnetic
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -1163,7 +1163,7 @@ module Testfield
 !
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices

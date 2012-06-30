@@ -24,10 +24,10 @@
 !
 module Hydro
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
   use Viscosity, only: calc_viscous_force
 !
   implicit none

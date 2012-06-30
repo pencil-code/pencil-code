@@ -24,12 +24,12 @@
 !***************************************************************
 module Chemistry
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use EquationOfState
   use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error
   use Mpicomm, only: stop_it
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

@@ -30,8 +30,8 @@ module Radiation
 !  in visible wavelengths and re-radiates all the energy in infrared.
 !
   use Cparam
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 

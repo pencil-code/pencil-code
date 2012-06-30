@@ -10,14 +10,14 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet  
+  use Mpicomm
   use Messages
   use Streamlines
   use Fixed_point
-  use Sub, only: keep_compiler_quiet  
   use Boundcond ! for the core boundary communication
-  use mpicomm
 !
   implicit none
 !

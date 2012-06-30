@@ -22,9 +22,9 @@ module EquationOfState
 !
   use Cparam
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use Mpicomm, only: stop_it
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

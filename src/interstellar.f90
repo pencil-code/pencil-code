@@ -15,10 +15,10 @@
 !*****************************************************************************
 module Interstellar
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -2688,7 +2688,7 @@ module Interstellar
                                  ilnrho_ss, irho_ss
       use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double,&
                          mpireduce_sum_double, mpibcast_int, mpireduce_sum
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR

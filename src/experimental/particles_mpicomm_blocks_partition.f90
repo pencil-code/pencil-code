@@ -8,10 +8,10 @@
 module Particles_mpicomm
 !
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use Mpicomm
   use Particles_cdata
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

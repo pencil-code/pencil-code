@@ -9,9 +9,9 @@
 !***************************************************************
 module BorderProfiles
 !
-  use Cdata
   use Cparam
-  use Sub, only: keep_compiler_quiet
+  use Cdata
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !

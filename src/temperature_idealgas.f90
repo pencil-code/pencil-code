@@ -30,11 +30,11 @@ module Entropy
 ! 12-may-12/MR: made ampl_lnTT a vector; added parameters for initialization
 !               by mode to input pars
 !
-  use Cdata
   use Cparam
-  use EquationOfState, only: mpoly0, mpoly1, mpoly2
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
+  use EquationOfState, only: mpoly0, mpoly1, mpoly2
 !
   implicit none
 !

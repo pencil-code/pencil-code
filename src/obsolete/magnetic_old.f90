@@ -28,11 +28,11 @@
 !***************************************************************
 module Magnetic
 !
-  use Cdata
   use Cparam
+  use Cdata
+  use General, only: keep_compiler_quiet
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

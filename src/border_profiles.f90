@@ -213,7 +213,7 @@ module BorderProfiles
 !  rborder_mn is an "internal" pencil to BorderProfiles, that does not
 !  need to be put in the pencil case.
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -232,7 +232,7 @@ module BorderProfiles
 !***********************************************************************
     subroutine set_border_initcond(f,ivar,fborder)
 !
-      use Sub, only: keep_compiler_quiet
+      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (nx), intent(out) :: fborder

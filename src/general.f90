@@ -15,6 +15,8 @@ module General
   public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
 !
+  public :: keep_compiler_quiet
+!
   public :: setup_mm_nn
   public :: find_index_range, find_index
 !
@@ -36,6 +38,24 @@ module General
     module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
     module procedure random_number_wrapper_3
+  endinterface
+!
+  interface keep_compiler_quiet ! Overload `keep_compiler_quiet' function
+    module procedure keep_compiler_quiet_r
+    module procedure keep_compiler_quiet_r1d
+    module procedure keep_compiler_quiet_r2d
+    module procedure keep_compiler_quiet_r3d
+    module procedure keep_compiler_quiet_r4d
+    module procedure keep_compiler_quiet_p
+    module procedure keep_compiler_quiet_bc
+    module procedure keep_compiler_quiet_sl
+    module procedure keep_compiler_quiet_i
+    module procedure keep_compiler_quiet_i1d
+    module procedure keep_compiler_quiet_i2d
+    module procedure keep_compiler_quiet_i3d
+    module procedure keep_compiler_quiet_l
+    module procedure keep_compiler_quiet_l1d
+    module procedure keep_compiler_quiet_c
   endinterface
 !
   interface safe_character_append
@@ -451,6 +471,321 @@ module General
       nr_ran=am*ior(iand(im,ieor(ix,iy)),1) ! Combine the two generators with
 !                                           ! masking to ensure nonzero value.
     endfunction nr_ran
+!***********************************************************************
+    subroutine keep_compiler_quiet_r(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      real     :: v1, v2, v3, v4
+      optional ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
+!
+    endsubroutine keep_compiler_quiet_r
+!***********************************************************************
+    subroutine keep_compiler_quiet_r1d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      real, dimension(:) :: v1, v2, v3, v4
+      optional           ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r1d', &
+            '91 is a prime, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
+!
+    endsubroutine keep_compiler_quiet_r1d
+!***********************************************************************
+    subroutine keep_compiler_quiet_r2d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      real, dimension(:,:) :: v1, v2, v3, v4
+      optional             ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r2d', &
+            '91 is a prime, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
+!
+    endsubroutine keep_compiler_quiet_r2d
+!***********************************************************************
+    subroutine keep_compiler_quiet_r3d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      real, dimension(:,:,:) :: v1, v2, v3, v4
+      optional               ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r3d', &
+            '91 is a prime, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
+!
+    endsubroutine keep_compiler_quiet_r3d
+!***********************************************************************
+    subroutine keep_compiler_quiet_r4d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      real, dimension(:,:,:,:) :: v1, v2, v3, v4
+      optional                 ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_r4d', &
+            'The world is a disk, and we never got here...')
+        print*,                  minval(v1)
+        if (present(v2)) print*, minval(v2)
+        if (present(v3)) print*, minval(v3)
+        if (present(v4)) print*, minval(v4)
+      endif
+!
+    endsubroutine keep_compiler_quiet_r4d
+!***********************************************************************
+    subroutine keep_compiler_quiet_p(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      type (pencil_case) :: v1, v2, v3, v4
+      optional           ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_p', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
+!
+    endsubroutine keep_compiler_quiet_p
+!***********************************************************************
+    subroutine keep_compiler_quiet_bc(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      type (boundary_condition) :: v1, v2, v3, v4
+      optional                  ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_bc', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
+!
+    endsubroutine keep_compiler_quiet_bc
+!***********************************************************************
+    subroutine keep_compiler_quiet_sl(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      type (slice_data) :: v1, v2, v3, v4
+      optional          ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_sl', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1%index
+        if (present(v2)) print*, v2%index
+        if (present(v3)) print*, v3%index
+        if (present(v4)) print*, v4%index
+      endif
+!
+    endsubroutine keep_compiler_quiet_sl
+!***********************************************************************
+    subroutine keep_compiler_quiet_i(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      integer  :: v1, v2, v3, v4
+      optional ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_i', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
+!
+    endsubroutine keep_compiler_quiet_i
+!***********************************************************************
+    subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      integer, dimension(:)  :: v1, v2, v3, v4
+      optional               ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_i1d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1)
+        if (present(v2)) print*, v2(1)
+        if (present(v3)) print*, v3(1)
+        if (present(v4)) print*, v4(1)
+      endif
+!
+    endsubroutine keep_compiler_quiet_i1d
+!***********************************************************************
+    subroutine keep_compiler_quiet_i2d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      integer, dimension(:,:)  :: v1, v2, v3, v4
+      optional                 ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_i2d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1,1)
+        if (present(v2)) print*, v2(1,1)
+        if (present(v3)) print*, v3(1,1)
+        if (present(v4)) print*, v4(1,1)
+      endif
+!
+    endsubroutine keep_compiler_quiet_i2d
+!***********************************************************************
+    subroutine keep_compiler_quiet_i3d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      integer, dimension(:,:,:)  :: v1, v2, v3, v4
+      optional                   ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_i3d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1,1,1)
+        if (present(v2)) print*, v2(1,1,1)
+        if (present(v3)) print*, v3(1,1,1)
+        if (present(v4)) print*, v4(1,1,1)
+      endif
+!
+    endsubroutine keep_compiler_quiet_i3d
+!***********************************************************************
+    subroutine keep_compiler_quiet_l1d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      logical, dimension(:)  :: v1, v2, v3, v4
+      optional               ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_l1d', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1(1)
+        if (present(v2)) print*, v2(1)
+        if (present(v3)) print*, v3(1)
+        if (present(v4)) print*, v4(1)
+      endif
+!
+    endsubroutine keep_compiler_quiet_l1d
+!***********************************************************************
+    subroutine keep_compiler_quiet_l(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      logical  :: v1, v2, v3, v4
+      optional ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_l', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
+!
+    endsubroutine keep_compiler_quiet_l
+!***********************************************************************
+    subroutine keep_compiler_quiet_c(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      character (len=*) :: v1, v2, v3, v4
+      optional          ::     v2, v3, v4
+!
+      if (NO_WARN) then
+        call error('keep_compiler_quiet_c', &
+            'The world is a disk, and we never got here...')
+        print*,                  v1
+        if (present(v2)) print*, v2
+        if (present(v3)) print*, v3
+        if (present(v4)) print*, v4
+      endif
+!
+    endsubroutine keep_compiler_quiet_c
 !***********************************************************************
     character (len=intlen) function itoa(n)
 !

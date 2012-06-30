@@ -17,9 +17,9 @@ module Particles_diagnos_dv
 !
   use Cparam
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !

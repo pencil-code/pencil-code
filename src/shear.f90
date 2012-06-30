@@ -16,9 +16,10 @@
 !***************************************************************
 module Shear
 !
+  use Cparam, only: ltestflow
   use Cdata
+  use General, only: keep_compiler_quiet
   use Messages, only: svn_id
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -234,7 +235,6 @@ module Shear
 !
       use Deriv, only: der
       use Diagnostics, only: max_mn_name
-      use Cparam, only: ltestflow
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
