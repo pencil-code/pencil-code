@@ -1933,23 +1933,25 @@ module Deriv
 !
     endsubroutine deri_3d_inds
 !************************************************************************
-    logical function heatflux_deriv_x( f, inh, fac, topbot )
+    logical function heatflux_deriv_x(f, inh, fac, topbot)
 !
 !   dummy routine
 !
 !  17-apr-12/MR: coded
-!   
-     real, dimension(mx,my,mz,mfarray), intent(IN):: f
-     real, dimension(my,mz)           , intent(IN):: inh
-     real                             , intent(IN):: fac
-     integer                          , intent(IN):: topbot
-     real :: dummy
 !
-     heatflux_deriv_x = .false.
-! 
-!  Added very stupid line to avoid copmpiler warnings.
-!  If someone has a better idea please fix it.
-     if (heatflux_deriv_x) dummy = fac*inh(1,1)*topbot*f(1,1,1,1)
+      use General, only: keep_compiler_quiet
+!
+      real, dimension(mx,my,mz,mfarray), intent(IN):: f
+      real, dimension(my,mz)           , intent(IN):: inh
+      real                             , intent(IN):: fac
+      integer                          , intent(IN):: topbot
+      real :: dummy
+!
+      heatflux_deriv_x = .true.
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(inh)
+      call keep_compiler_quiet(fac)
+      call keep_compiler_quiet(topbot)
 !
     endfunction heatflux_deriv_x
 !***********************************************************************
