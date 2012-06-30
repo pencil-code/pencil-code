@@ -2675,7 +2675,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup, interparticle_accn
+      real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
