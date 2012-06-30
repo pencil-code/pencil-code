@@ -757,10 +757,10 @@ module Magnetic
 !  gives still unity.
 !
       if (l1 == l2) then
-        xmask_den = 1.
+        xmask_mag = 1.
       else
         where (x(l1:l2) >= magnetic_xaver_range(1) &
-            .and. x(l1:l2) < =magnetic_xaver_range(2))
+            .and. x(l1:l2) <= magnetic_xaver_range(2))
           xmask_mag = 1.
         elsewhere
           xmask_mag = 0.
