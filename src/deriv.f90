@@ -1945,7 +1945,6 @@ module Deriv
       real, dimension(my,mz)           , intent(IN):: inh
       real                             , intent(IN):: fac
       integer                          , intent(IN):: topbot
-      real :: dummy
 !
       heatflux_deriv_x = .true.
       call keep_compiler_quiet(f)
