@@ -90,7 +90,7 @@ module Cparam
 !  Also, there is no NaN concept for integers.
 !
   real, parameter :: impossible=3.9085e37
-  integer, parameter :: impossible_int=max_int/100
+  integer, parameter :: impossible_int=-max_int/100
 !
 !  Diagnostic variable types.
 !
