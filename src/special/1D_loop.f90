@@ -17,7 +17,7 @@ module Special
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet,cubic_step
+  use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -523,7 +523,7 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma
-      use Sub, only: dot2,dot
+      use Sub, only: dot2,dot,cubic_step
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -693,6 +693,7 @@ module Special
     use EquationOfState, only: gamma
     use Diagnostics,     only: max_mn_name
     use Messages, only: warning
+    use Sub, only: cubic_step
 !
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
@@ -899,6 +900,7 @@ module Special
       use Diagnostics, only: max_mn_name
       use General, only: random_number_wrapper,random_seed_wrapper, &
           normal_deviate
+      use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput
