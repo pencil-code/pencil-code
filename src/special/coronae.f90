@@ -397,10 +397,10 @@ module Special
       if (Kpara /= 0.) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_b2)=.true.
         lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_rho1)=.true.
@@ -1483,7 +1483,7 @@ module Special
       else if (lentropy .and. (.not. pretend_lnTT)) then
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + chi_spitzer * rhs /p%cp1/gamma
       else if (lthermal_energy) then
-        df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + chi_spitzer * rhs *exp(p%lnrho+p%lnTT)
+        df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + chi_spitzer *rhs / p%cVTrho1 
       else
         call fatal_error('calc_heatcond_tensor', &
             'not implemented for current set of thermodynamic variables')
@@ -1620,7 +1620,6 @@ module Special
         if (n == iz4_loc) hgrad_xy4(:,m-m1+1)= rhs
       endif
 !
-!
 !  for timestep extension multiply with the
 !  cosine between grad T and bunit
 !
@@ -1631,6 +1630,7 @@ module Special
         chi = gamma*chi*dxyz_2*abs(cosbgT)
         diffus_chi=diffus_chi+chi
         if (ldiagnos.and.idiag_dtchi2 /= 0.) then
+          itype_name(idiag_dtchi2)=ilabel_max_dt
           call max_mn_name(chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
@@ -3735,7 +3735,7 @@ module Special
 ! a potential field to the boundary data
 !
       if (t_mid_mark * t_width_mark .gt. 0. .and. lmagnetic) then
-        coeff  =  cubic_step(t,t_mid_mark,t_width_mark)
+        coeff  =  cubic_step(real(t),t_mid_mark,t_width_mark)
       endif
 !
       inquire(IOLENGTH=lend) tl
