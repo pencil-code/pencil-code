@@ -177,6 +177,13 @@ module Particles_mpicomm
           dVol1yb(:,iblock) = dVol1ybrick(:,ibrick)
           dVol1zb(:,iblock) = dVol1zbrick(:,ibrick)
         enddo
+!
+!  AJ NOTE: This is not always optimal, because for concentrated initial
+!  conditions some particle-loaded processors may not have room for all the
+!  particles placed there initially. One solution would be to immediately
+!  after defining the bricks to distribute blocks in columns (along either
+!  x, y, or z).
+!
       else
 !
 !  Read block domain decomposition from file.
