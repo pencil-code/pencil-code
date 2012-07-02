@@ -173,4 +173,11 @@ module Cparam
     real :: value2
   endtype boundary_condition
 !
+  integer, parameter :: iBC_X_TOP=1
+  integer, parameter :: iBC_X_BOT=-1
+  integer, parameter :: iBC_Y_TOP=2
+  integer, parameter :: iBC_Y_BOT=-2
+  integer, parameter :: iBC_Z_TOP=3
+  integer, parameter :: iBC_Z_BOT=-3
+!
 endmodule Cparam
