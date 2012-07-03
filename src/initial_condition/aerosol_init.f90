@@ -553,8 +553,7 @@ module InitialCondition
 ! Recalculation of the air_mass for different boundary conditions
 !
 !
-        iter=0
-        if (iter<3) then
+        do iter=1,3
            air_mass_1=0
            do k=1,nchemspec
              air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
@@ -578,11 +577,13 @@ module InitialCondition
             endif
            enddo
 !
-           init_Yk_1(ichemspec(index_N2))=1.-sum1
-           init_Yk_2(ichemspec(index_N2))=1.-sum2
+           init_Yk_1(index_N2)=1.-sum1
+           init_Yk_2(index_N2)=1.-sum2
 ! 
-        iter=iter+1
-        endif
+!
+!print*,'init', air_mass_1, init_Yk_1(index_H2O), iter
+!
+        enddo
 !
            init_water_1=init_Yk_1(index_H2O)
            init_water_2=init_Yk_2(index_H2O)
@@ -610,13 +611,9 @@ module InitialCondition
                  air_mass_ar=1./air_mass_ar
            endif 
 !
-           if (iter < 3) then
+           if (iter== 3) then
 !
 !  Different profiles
-!
-!           if (lline_profile) then
-!             call line_profile(f,PP,psf(:,:,:,ii_max),air_mass_ar, &
-!                            init_x1,init_x2,del,init_water_1,init_water_2)
 !
            if (ltanh_prof) then
              do i=l1,l2
@@ -631,8 +628,15 @@ module InitialCondition
 !         
            elseif (.not. lwet_spots) then
 ! Initial conditions for the  0dcase: cond_evap
-             f(l1,:,:,ichemspec(index_H2O))=psf(1,:,:,ii_max)/(PP*air_mass_ar(l1,:,:)/18.)*dYw
+             f(:,:,:,ichemspec(index_H2O))=init_Yk_1(index_H2O)
            endif
+           sum_Y=0.
+           do k=1,nchemspec
+             if (ichemspec(k)/=ichemspec(index_N2)) &
+               sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+           enddo
+             f(:,:,:,ichemspec(index_N2))=1.-sum_Y
+
 !
            endif
 ! end of loot do iter=1,2
