@@ -38,7 +38,7 @@ module Special
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   real, dimension(3) :: B_ext_special
-  logical :: coronae_fix=.false.,lfilter_farray=.false.,lreset_heatflux=.false.
+  logical :: lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
@@ -67,7 +67,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,B_ext_special,irefz,coronae_fix,tau_inv_spitzer, &
+      heat_par_b2,B_ext_special,irefz,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv
@@ -912,15 +912,6 @@ module Special
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
       if (tau_inv_newton_mark /= 0.) call calc_newton_mark(f,df,p)
 !
-! WARNING this is temporary
-!      if (coronae_fix) then
-!        where (f(l1:l2,m,n,ilnrho) < log(1e-13/unit_density) )
-!          f(l1:l2,m,n,ilnrho) = log(1e-13/unit_density)
-!        endwhere
-!        if (ipz == nprocz-1) &
-!            f(:,:,n2,ilnTT)=sum(f(l1:l2,m1:m2,n2-16:n2-3,ilnTT))/(14.*nx*ny)
-!      endif
-!
       if (hyper3_chi /= 0.) then
         if (lentropy) then
           itemp = iss
@@ -1131,9 +1122,6 @@ module Special
       thdiff = 0.
       call tensor_diffusion(p,vKperp,vKpara,thdiff, &
           GVKPERP=gvKperp,GVKPARA=gvKpara)
-!
-!      if (coronae_fix .and. llast_proc_z) &
-!          thdiff = thdiff*(1.-cubic_step(1.*n,n2-12.,9.))
 !
 !  Add to energy equation.
       if (ltemperature) then
