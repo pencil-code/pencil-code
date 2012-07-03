@@ -147,7 +147,7 @@ module Syscalls
     function get_PID()
 !
 !  The Fortran95 standard has no means to fetch the real PID.
-!  If one need the real PID, please use the 'syscalls' module.
+!  If one needs the real PID, please use the 'syscalls' module.
 !
 !   4-aug-10/Bourdin.KIS: coded
 !
@@ -155,7 +155,8 @@ module Syscalls
 !
       get_PID = -1
 !
-      print *, 'get_PID: Not available in nosyscalls.'
+      ! There is no way how to get this within strict F95.
+      print *, 'get_PID: nosyscalls is obsolete, please use syscalls'
       stop
 !
     endfunction get_PID
@@ -175,7 +176,8 @@ module Syscalls
 !
       value = char(0)
 !
-      print *, 'get_env_var('//name//'): Not available in nosyscalls'
+      ! There is no way how to get this within strict F95.
+      print *, 'get_env_var: nosyscalls is obsolete, please use syscalls'
       stop
 !
     endsubroutine get_env_var
@@ -194,19 +196,22 @@ module Syscalls
 !
       character(len=fnlen) :: get_tmp_prefix
 !
+      ! This "solution" (=hack) would be very risky for multiple processor runs
+      ! or on systems, where one hasn't write permission to /tmp.
       get_tmp_prefix = '/tmp/pencil-'
 !
     endfunction get_tmp_prefix
 !***********************************************************************
     subroutine system_cmd(command)
 !
-!  dummy for system command.
+!  Executes a system command.
 !
 !  3-nov-11/MR: coded
 !
       character(len=*) :: command
 !
-      print *, 'system: Not available in nosyscalls.'
+      ! There is no way how to do this within strict F95.
+      print *, 'system: nosyscalls is obsolete, please use syscalls'
       stop
 !
     endsubroutine system_cmd
@@ -222,7 +227,7 @@ module Syscalls
 !
       integer :: sizeof_real
 !
-      print *, 'sizeof_real: Not available in nosyscalls'
+      print *, 'sizeof_real: nosyscalls is obsolete, please use syscalls'
       stop
 !
     endfunction sizeof_real

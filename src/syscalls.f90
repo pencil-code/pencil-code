@@ -183,7 +183,7 @@ module Syscalls
 !***********************************************************************
     subroutine system_cmd(command)
 !
-!  launches system command.
+!  Executes a system command.
 !
 !  3-nov-11/MR: coded
 !
