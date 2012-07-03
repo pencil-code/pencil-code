@@ -1386,31 +1386,22 @@ subroutine bc_satur_x(f,bc)
 !
         enddo
 !
-
-
            init_water_1=init_Yk_1(ind_H2O)
            init_water_2=init_Yk_2(ind_H2O)
-
-
 !
 ! End of Recalculation of the air_mass for different boundary conditions
 !
-
         endif
 
-
         if (vr==ichemspec(ind_H2O)) then 
- !        pp_sat(:,:)=6.035e12*exp(-5938./TT1)
- !        f(l1,:,:,ichemspec(ind_H2O))=pp_sat(:,:)/pp_init
           f(l1,:,:,ichemspec(ind_H2O))=init_water_1
         elseif (vr==ichemspec(ind_N2)) then 
- !         sum_Y=0.
- !         do k=1,nchemspec
- !          if (k/=ind_N2) sum_Y=sum_Y+f(l1,:,:,ichemspec(k))
- !         enddo
- !          f(l1,:,:,ichemspec(ind_N2))=1.-sum_Y
- !
-           f(l1,:,:,ichemspec(ind_N2))=init_Yk_1(ind_N2)
+          f(l1,:,:,ichemspec(ind_N2))=init_Yk_1(ind_N2)
+        elseif (vr==ind(1)) then
+          do k=1,ndustspec
+           f(l1,:,:,ind(k))=Ntot/0.856E-03/(2.*pi)**0.5/dsize(k)/alog(delta) &
+              *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+          enddo
         endif
 !
         do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
