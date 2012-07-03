@@ -366,9 +366,9 @@
                     \quad(mean inverse plasma beta) \\
   \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
                     \quad(maximum inverse plasma beta) \\
-  \var{bxm}       & $\left<\left<B\right>_{yz}^2\right>_x^{1/2}$ \\
-  \var{bym}       & $\left<\left<B\right>_{zx}^2\right>_y^{1/2}$ \\
-  \var{bzm}       & $\left<\left<B\right>_{xy}^2\right>_z^{1/2}$ \\
+  \var{bxm}       & $\left<B_x\right>$ \\
+  \var{bym}       & $\left<B_y\right>$ \\
+  \var{bzm}       & $\left<B_z\right>$ \\
   \var{bxbym}     & $\left<B_x B_y\right>$ \\
   \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
                     \right>^{1/2}$
@@ -762,23 +762,29 @@
   \var{gTmax}     & $\max (|\nabla T|)$ \\
   \var{TTmin}     & $\min (T)$ \\
   \var{TTm}       & $\left< T \right>$ \\
-  \var{TugTm}     & $\left< T\uv\cdot\nabla T \right>$
-                    $\sqrt{\left< T^2 \right>}$
-                    $\left< u_x T \right>$
-                    $\left< u_y T \right>$
-                    $\left< u_z T \right>$
-                    $\left< (\nabla T)^2 \right>$
-                    $\left< \nabla u_x \cdot \nabla T \right>$
-                    $\left< \nabla u_y \cdot \nabla T \right>$
-                    $\left< \nabla u_z \cdot \nabla T \right>$
-                    $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_x T) \right>$
-                    $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_y T) \right>$
-                    $\left< T \uv\cdot\nabla u_z + u_z \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_z T) \right>$
-                    $\left< T dp/dx \right>$
-                    $\left< T dp/dy \right>$
-                    $\left< T dp/dz \right>$ \\
+  \var{TugTm}     & $\left< T\uv\cdot\nabla T \right>$ \\
+  \var{Trms}      & $\sqrt{\left< T^2 \right>}$ \\
+  \var{uxTm}      & $\left< u_x T \right>$ \\
+  \var{uyTm}      & $\left< u_y T \right>$ \\
+  \var{uzTm}      & $\left< u_z T \right>$ \\
+  \var{gT2m}      & $\left< (\nabla T)^2 \right>$ \\
+  \var{guxgTm}    & $\left< \nabla u_x \cdot \nabla T \right>$ \\
+  \var{guygTm}    & $\left< \nabla u_y \cdot \nabla T \right>$ \\
+  \var{guzgTm}    & $\left< \nabla u_z \cdot \nabla T \right>$ \\
+  \var{Tugux_uxugTm} & $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right>
+                    =\left< \uv\cdot\nabla(u_x T) \right>$ \\
+  \var{Tuguy_uyugTm} & $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>
+                    =\left< \uv\cdot\nabla(u_y T) \right>$ \\
+  \var{Tuguz_uzugTm} & $\left< T \uv\cdot\nabla u_z + u_z \uv\cdot\nabla T \right>
+                    =\left< \uv\cdot\nabla(u_z T) \right>$ \\
+  \var{Tdxpm}     & $\left< T dp/dx \right>$ \\
+  \var{Tdypm}     & $\left< T dp/dy \right>$ \\
+  \var{Tdzpm}     & $\left< T dp/dz \right>$ \\
   \var{fradtop}   & $<-K{dT\over dz}>_{\text{top}}$
                     \quad(radiative flux at the top) \\
+  \var{yHmax}     & DOCUMENT ME \\
+  \var{yHmin}     & DOCUMENT ME \\
+  \var{yHm}       & DOCUMENT ME \\
   \var{ethm}      & $\left< e_{\text{th}}\right> =
                     \left< c_v \rho T \right> $
                     \quad(mean thermal energy) \\
