@@ -1315,7 +1315,7 @@ subroutine bc_satur_x(f,bc)
       real :: value1, value2, air_mass_1, air_mass_2
       real :: psat1, psat2, sum1, sum2, init_water_1, init_water_2
       real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
-      real, dimension(2,my,mz,nchemspec) :: psf 
+      real, dimension(2,my,mz,ndustspec) :: psf 
 !
       vr=bc%ivar
       value1=bc%value1
@@ -1326,6 +1326,14 @@ subroutine bc_satur_x(f,bc)
 ! bottom boundary
 !        
 !
+
+     if ((vr==ichemspec(ind_H2O)) .or. (vr==ichemspec(ind_N2))) then
+
+       do j=1,nchemspec
+         init_Yk_1(j)=f(l1,m1,n1,ichemspec(j))
+         init_Yk_2(j)=f(l1,m1,n1,ichemspec(j))
+       enddo
+
        psat1=6.035e12*exp(-5938./TT1)
        psat2=6.035e12*exp(-5938./TT2)
          do k=1,ndustspec
@@ -1336,17 +1344,20 @@ subroutine bc_satur_x(f,bc)
                *exp(AA/TT2/2./dsize(k) &
                 -BB0/(8.*dsize(k)**3))
          enddo
+
+
 !
 ! Recalculation of the air_mass for different boundary conditions
 !
 !
-        iter=0
-        if (iter<3) then
-           air_mass_1=0
+        do iter=1,3
+!
+           air_mass_1=0.
            do k=1,nchemspec
              air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
            enddo
            air_mass_1=1./air_mass_1
+!
            air_mass_2=0
            do k=1,nchemspec
              air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
@@ -1356,26 +1367,36 @@ subroutine bc_satur_x(f,bc)
            init_Yk_1(ind_H2O)=psat1/(PP*air_mass_1/18.)*dYw1
            init_Yk_2(ind_H2O)=psat2/(PP*air_mass_2/18.)*dYw2
 !
+
+
            sum1=0.
            sum2=0.
            do k=1,nchemspec
-            if (ichemspec(k)/=ichemspec(ind_N2)) then
+            if (k/=ind_N2) then
               sum1=sum1+init_Yk_1(k)
               sum2=sum2+init_Yk_2(k)
             endif
            enddo
 !
-           init_Yk_1(ichemspec(ind_N2))=1.-sum1
-           init_Yk_2(ichemspec(ind_N2))=1.-sum2
+           init_Yk_1(ind_N2)=1.-sum1
+           init_Yk_2(ind_N2)=1.-sum2
 ! 
-        iter=iter+1
-        endif
 !
+!print*,'special', air_mass_1, init_Yk_1(ind_H2O), iter, vr, ichemspec(ind_H2O)
+!
+        enddo
+!
+
+
            init_water_1=init_Yk_1(ind_H2O)
            init_water_2=init_Yk_2(ind_H2O)
+
+
 !
 ! End of Recalculation of the air_mass for different boundary conditions
 !
+
+        endif
 
 
         if (vr==ichemspec(ind_H2O)) then 
@@ -1389,7 +1410,7 @@ subroutine bc_satur_x(f,bc)
  !         enddo
  !          f(l1,:,:,ichemspec(ind_N2))=1.-sum_Y
  !
-           f(l1,:,:,ichemspec(ind_N2))=init_Yk_1(ichemspec(ind_N2))
+           f(l1,:,:,ichemspec(ind_N2))=init_Yk_1(ind_N2)
         endif
 !
         do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
