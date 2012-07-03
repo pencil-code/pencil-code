@@ -49,7 +49,6 @@ module Special
   real :: swamp_fade_start=0.0, swamp_fade_end=0.0
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
-  real, dimension(nx,3) :: b_unit
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
 !
   real, dimension(nx,ny,2) :: A_init
@@ -617,6 +616,7 @@ module Special
       if (hcond1/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
@@ -628,6 +628,7 @@ module Special
       if (hcond2/=0.0) then
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -653,6 +654,7 @@ module Special
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
@@ -966,18 +968,15 @@ module Special
         call dot2(p%bb, tmp, PRECISE_SQRT=.true.)
         b_abs_inv = 1./max(tini,tmp)
 !
-        ! calculate unit vector of bb
-        call multsv(b_abs_inv, p%bb, b_unit)
-!
-        ! calculate H_i = Sum_jk ( (delta_ik - 2*b_unit_i*b_unit_k)*b_unit_j * dB_k/dj / |B| )
+        ! calculate H_i = Sum_jk ( (delta_ik - 2*bunit_i*bunit_k)*bunit_j * dB_k/dj / |B| )
         do i=1,3
           hhh(:,i)=0.
           do j=1,3
             tmp(:)=0.
             do k=1,3
-              tmp(:)=tmp(:)-2.*b_unit(:,k)*p%bij(:,k,j)
+              tmp(:)=tmp(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
             enddo
-            hhh(:,i)=hhh(:,i)+b_unit(:,j)*(p%bij(:,i,j)+b_unit(:,i)*tmp(:))
+            hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmp(:))
           enddo
         enddo
         call multsv(b_abs_inv,hhh,tmpv)
@@ -989,11 +988,11 @@ module Special
         call dot(hhh,p%glnTT,glnTT_H)
 !
         ! dot Hessian matrix of lnTT with bi*bj
-        call multmv(p%hlnTT,b_unit,tmpv)
-        call dot(tmpv,b_unit,hlnTT_Bij)
+        call multmv(p%hlnTT,p%bunit,tmpv)
+        call dot(tmpv,p%bunit,hlnTT_Bij)
 !
-        ! calculate Grad lnTT * b_unit
-        call dot(p%glnTT,b_unit,glnTT_b)
+        ! calculate Grad lnTT * bunit
+        call dot(p%glnTT,p%bunit,glnTT_b)
       endif
 !
       if ((K_spitzer /= 0.0) .or. (K_iso /= 0.0) .or. (hcond2 /= 0.0) .or. (hcond3 /= 0.0)) then
@@ -2133,15 +2132,15 @@ module Special
         endwhere
       endif
 !
-      call dot(b_unit,gKp,gKp_b)
+      call dot(p%bunit,gKp,gKp_b)
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
           (glnTT_H + gKp_b*glnTT_b + hlnTT_Bij) * chi_spitzer*gamma
 !
 !  for timestep extension multiply with the
-!  cosine between Grad(T) and b_unit
+!  cosine between Grad(T) and bunit
 !
-      call dot(b_unit,p%glnTT,cos_B_glnTT)
+      call dot(p%bunit,p%glnTT,cos_B_glnTT)
 !
       where (glnTT_abs <= tini)
         cos_B_glnTT = 0.
@@ -2223,9 +2222,9 @@ module Special
 !
       if (headtt) print*,'solar_corona/calc_heatcond_chiconst',hcond1
 !
-!  calculate Grad lnrho * b_unit
+!  calculate Grad lnrho * bunit
 !
-      call dot(p%glnrho,b_unit,glnrho_b)
+      call dot(p%glnrho,p%bunit,glnrho_b)
 !
 !  calculate rhs
 !
@@ -2275,7 +2274,7 @@ module Special
             p%glnTT(:,3)*p%hlnTT(:,i,3) )
       enddo
 !
-      call dot(gflux + tmpv,b_unit,tmp)
+      call dot(gflux + tmpv,p%bunit,tmp)
 !
       chi = hcond2 * get_hcond_fade_fact()
       rhs = (tmp*glnTT_b + glnTT2*(glnTT_H + hlnTT_Bij)) * chi*gamma
