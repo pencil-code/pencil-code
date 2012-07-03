@@ -37,13 +37,14 @@ module Special
   real :: u_amplifier=1.
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
-  real, dimension(3) :: B_ext_special
+  real, dimension(3) :: B_ext_special=(/0.,0.,0./)
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.
+  logical :: sub_step_hcond=.false.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -61,7 +62,7 @@ module Special
       Kpara,Kperp,Kc,init_time2,twisttype,centerx,centery,centerz, &
       cool_RTV,exp_RTV,cubic_RTV,tanh_RTV,width_RTV,gauss_newton, &
       heat_par_full,heat_par_rappazzo,heat_par_schrijver04, &
-      heat_par_balleg,t_start_mark, &
+      heat_par_balleg,t_start_mark,t_mid_mark,t_width_mark,&
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
       lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
@@ -70,7 +71,8 @@ module Special
       heat_par_b2,B_ext_special,irefz,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
-      lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv
+      lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
+      sub_step_hcond
 !
 ! variables for print.in
 !
@@ -903,9 +905,9 @@ module Special
 !
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
       if (Kiso /= 0.) call calc_heatcond_spitzer_iso(df,p)
-      if (Kpara /= 0.) call calc_heatcond_tensor(f,df,p)
-      if (hcond_grad /= 0.) call calc_heatcond_glnTT(df,p)
-      if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
+      if (Kpara /= 0.          .and. (.not. sub_step_hcond)) call calc_heatcond_tensor(f,df,p)
+      if (hcond_grad /= 0.     .and. (.not. sub_step_hcond)) call calc_heatcond_glnTT(df,p)
+      if (hcond_grad_iso /= 0. .and. (.not. sub_step_hcond)) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
       if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
@@ -1471,7 +1473,7 @@ module Special
       else if (lentropy .and. (.not. pretend_lnTT)) then
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + chi_spitzer * rhs /p%cp1/gamma
       else if (lthermal_energy) then
-        df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + chi_spitzer *rhs / p%cVTrho1 
+        df(l1:l2,m,n,ieth)=df(l1:l2,m,n,ieth) + chi_spitzer * rhs /p%cVTrho1
       else
         call fatal_error('calc_heatcond_tensor', &
             'not implemented for current set of thermodynamic variables')
@@ -3709,13 +3711,14 @@ module Special
       logical, save :: init_left=.true.,lfirstcall=.true.
       real, dimension(:,:,:,:), allocatable :: global_left,global_right
       real, dimension(nx,ny,4,8) :: left,right=0.,inte
-      real, dimension (nx,ny,4), save :: ax_init,ay_init
+      real, dimension (nx,ny,4), save :: ax_init,ay_init,az_init
 !
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
 !
       if (lfirstcall .and. lmagnetic) then
         ax_init =  f(l1:l2,m1:m2,1:4,iax)
         ay_init =  f(l1:l2,m1:m2,1:4,iay)
+        az_init =  f(l1:l2,m1:m2,1:4,iaz)
         lfirstcall =.false.
       endif
 !
@@ -3858,7 +3861,7 @@ module Special
           if (nxgrid /= 1) then
             f(l1:l2,m1:m2,n1+1-i,iay)=ay_init(:,:,n1+1-i)*(1.-coeff)+coeff*inte(:,:,n1+1-i,7)/(unit_magnetic*unit_length)
           endif
-          f(l1:l2,m1:m2,n1+1-i,iaz)=0.
+          f(l1:l2,m1:m2,n1+1-i,iaz)=az_init(:,:,n1+1-i)*(1.-coeff)+coeff*inte(:,:,n1+1-i,8)/(unit_magnetic*unit_length)
         endif
       enddo
 !
@@ -4047,6 +4050,118 @@ module Special
       endif
 !
     endsubroutine filter_farray
+!***********************************************************************
+    subroutine calc_hcond_timestep(f,p,dt1_hcond_max)
+!
+      use Sub,             only : dot2,dot,grad,gij,curl_mn,dot2_mn,unit_vector
+      use EquationOfState, only : gamma
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      real, dimension (nx) :: quench
+      real, dimension (nx) :: cosbgT,glnTT2
+      real, dimension (nx) :: chi_spitzer,chi_grad,chi_grad_iso
+      real, dimension (nx,3) :: unit_glnTT
+      real, dimension (nx) :: diffus_hcond,dt1_hcond_max
+      real :: B2_ext
+!
+      dt1_hcond_max = 0d0
+!
+      IF (sub_step_hcond) then
+!
+!  Do loop over m and n.
+!
+      mn_loop: do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+!
+! grid spacing for time step
+!
+      dline_1(:,1)=dx_1(l1:l2)
+      dline_1(:,2)=dy_1(m)
+      dline_1(:,3)=dz_1(n)
+      dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+!
+! initial thermal diffusion
+      diffus_hcond=0d0
+!--------------------------------------------
+! 1.1) calculate pencils
+!
+! lnrho
+      p%lnrho=f(l1:l2,m,n,ilnrho)
+! lntt
+      p%lnTT=f(l1:l2,m,n,ilnTT)
+! glntt
+      call grad(f,ilnTT,p%glnTT)
+! aa
+      p%aa=f(l1:l2,m,n,iax:iaz)
+! aij
+      call gij(f,iaa,p%aij,1)
+! bb
+      call curl_mn(p%aij,p%bb,p%aa)
+      B2_ext=B_ext_special(1)**2+B_ext_special(2)**2+B_ext_special(3)**2
+!
+      if (B2_ext/=0.0) then
+!
+!  Add the external field.
+!
+        if (B_ext_special(1)/=0.0) p%bb(:,1)=p%bb(:,1)+B_ext_special(1)
+        if (B_ext_special(2)/=0.0) p%bb(:,2)=p%bb(:,2)+B_ext_special(2)
+        if (B_ext_special(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext_special(3)
+      endif
+!
+      if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+! bunit
+      quench = 1.0/max(tini,sqrt(p%b2))
+      p%bunit(:,1) = p%bb(:,1)*quench
+      p%bunit(:,2) = p%bb(:,2)*quench
+      p%bunit(:,3) = p%bb(:,3)*quench
+!
+! 1.2) other assistant varible
+!
+!  for timestep extension multiply with the
+!  cosine between grad T and bunit
+!
+      call unit_vector(p%glnTT,unit_glnTT)
+      call dot(p%bunit,unit_glnTT,cosbgT)
+!
+      call dot2(p%glnTT,glnTT2)
+!-------------------------------------------------
+! 2) calculate chi_spitzer (for the most simple case no Kc, Ksat)
+!
+      if (Kpara /= 0.) then
+        chi_spitzer =  Kpara * p%cp1 * gamma * exp(2.5*p%lnTT-p%lnrho)
+!
+        chi_spitzer=chi_spitzer*abs(cosbgT)
+        diffus_hcond=diffus_hcond + chi_spitzer*dxyz_2
+      endif
+!--------------------------------------------------
+! 3) calculate chi_hcond_glntt (for the most simple case no Kc, Ksat)
+!
+      if (hcond_grad /= 0.) then
+        chi_grad = glnTT2*hcond_grad*p%cp1
+!
+        chi_grad = gamma*chi_grad*dxyz_2*abs(cosbgT)
+        diffus_hcond=diffus_hcond+chi_grad
+      endif
+!---------------------------------------------------
+! 4) calculate chi_hcond_glntt_iso (for the most simple case no Kc, Ksat)
+!
+      if (hcond_grad_iso /= 0.) then
+        chi_grad_iso =  hcond_grad_iso*glnTT2 * gamma*p%cp1
+!
+        diffus_hcond=diffus_hcond+chi_grad_iso*dxyz_2
+      endif
+!----------------------------------------------------
+! 5) calculate max diffus -> dt1_hcond -> max
+!
+      dt1_hcond_max = max(dt1_hcond_max,diffus_hcond/cdtv)
+!
+      enddo mn_loop
+!
+    ENDIF
+!
+    endsubroutine
 !***********************************************************************
     subroutine update_aa(f,df)
 !
