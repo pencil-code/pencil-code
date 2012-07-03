@@ -10,3 +10,7 @@ of kinematic flows. It is now no longer necessary.
 magnetic_old.f90 still contains the mean-field stuff that is now
 moved to magnetic/meanfield.f90. However, because of some differences
 between the latest version, I keep this one still in place.
+
+nosyscalls.f90 was a transitional package during the development of syscalls.
+It is dysfunctional and can't be used any more to replace the syscalls module.
+
