@@ -67,7 +67,7 @@ module Special
   real, dimension(ndustspec0) :: dsize0, dds0
   real, dimension(ndustspec0) :: Ntot_i
   real :: Rgas, Rgas_unit_sys=1.
-  integer :: ind_H2O, ind_N2! ind_cloud=0
+  integer :: ind_H2O, ind_N2, imass=1! ind_cloud=0
   real :: sigma=1., Period=1.
   real :: dsize_max=0.,dsize_min=0.
   real :: dsize0_max=0.,dsize0_min=0.
@@ -76,15 +76,15 @@ module Special
   logical :: llog_distribution=.true.
 
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
-  real :: nd0, r0, delta, uy_bz, ux_bz, Ntot=1e3
+  real :: nd0, r0, delta, uy_bz, ux_bz, Ntot=1e3, BB0, dYw1, dYw2, PP
    
 ! Keep some over used pencils
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
-      TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, &
-      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot
+      TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
+      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -1310,28 +1310,86 @@ subroutine bc_satur_x(f,bc)
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (boundary_condition) :: bc
       real, dimension (my,mz) :: sum_Y, pp_sat
-      integer :: i,j,vr,k
+      integer :: i,j,vr,k, iter
       integer :: jjj,kkk
-      real :: value1, value2
+      real :: value1, value2, air_mass_1, air_mass_2
+      real :: psat1, psat2, sum1, sum2, init_water_1, init_water_2
+      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
+      real, dimension(2,my,mz,nchemspec) :: psf 
 !
       vr=bc%ivar
       value1=bc%value1
       value2=bc%value2
 !
       if (bc%location==iBC_X_BOT) then
+!
 ! bottom boundary
 !        
-        if (vr==ilnTT) then 
-          f(l1,m1:m2,n1:n2,ilnTT)=alog(TT1)
-        elseif (vr==ichemspec(ind_H2O)) then 
+!
+       psat1=6.035e12*exp(-5938./TT1)
+       psat2=6.035e12*exp(-5938./TT2)
+         do k=1,ndustspec
+           psf(1,:,:,k)=psat1 &
+               *exp(AA/TT1/2./dsize(k) &
+                -BB0/(8.*dsize(k)**3))
+           psf(2,:,:,k)=psat2 &
+               *exp(AA/TT2/2./dsize(k) &
+                -BB0/(8.*dsize(k)**3))
+         enddo
+!
+! Recalculation of the air_mass for different boundary conditions
+!
+!
+        iter=0
+        if (iter<3) then
+           air_mass_1=0
+           do k=1,nchemspec
+             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
+           enddo
+           air_mass_1=1./air_mass_1
+           air_mass_2=0
+           do k=1,nchemspec
+             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
+           enddo
+           air_mass_2=1./air_mass_2
+!
+           init_Yk_1(ind_H2O)=psat1/(PP*air_mass_1/18.)*dYw1
+           init_Yk_2(ind_H2O)=psat2/(PP*air_mass_2/18.)*dYw2
+!
+           sum1=0.
+           sum2=0.
+           do k=1,nchemspec
+            if (ichemspec(k)/=ichemspec(ind_N2)) then
+              sum1=sum1+init_Yk_1(k)
+              sum2=sum2+init_Yk_2(k)
+            endif
+           enddo
+!
+           init_Yk_1(ichemspec(ind_N2))=1.-sum1
+           init_Yk_2(ichemspec(ind_N2))=1.-sum2
+! 
+        iter=iter+1
+        endif
+!
+           init_water_1=init_Yk_1(ind_H2O)
+           init_water_2=init_Yk_2(ind_H2O)
+!
+! End of Recalculation of the air_mass for different boundary conditions
+!
+
+
+        if (vr==ichemspec(ind_H2O)) then 
  !        pp_sat(:,:)=6.035e12*exp(-5938./TT1)
  !        f(l1,:,:,ichemspec(ind_H2O))=pp_sat(:,:)/pp_init
+          f(l1,:,:,ichemspec(ind_H2O))=init_water_1
         elseif (vr==ichemspec(ind_N2)) then 
  !         sum_Y=0.
  !         do k=1,nchemspec
  !          if (k/=ind_N2) sum_Y=sum_Y+f(l1,:,:,ichemspec(k))
  !         enddo
  !          f(l1,:,:,ichemspec(ind_N2))=1.-sum_Y
+ !
+           f(l1,:,:,ichemspec(ind_N2))=init_Yk_1(ichemspec(ind_N2))
         endif
 !
         do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
