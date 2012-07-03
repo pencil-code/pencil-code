@@ -98,29 +98,34 @@ module Entropy
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
 !
-  integer :: idiag_TTmax=0         ! DIAG_DOC: $\max (T)$
-  integer :: idiag_gTmax=0         ! DIAG_DOC: $\max (|\nabla T|)$
-  integer :: idiag_TTmin=0         ! DIAG_DOC: $\min (T)$
-  integer :: idiag_TTm=0           ! DIAG_DOC: $\left< T \right>$
-  integer :: idiag_TugTm=0,       &! DIAG_DOC: $\left< T\uv\cdot\nabla T \right>$
-             idiag_Trms=0,        &! DIAG_DOC: $\sqrt{\left< T^2 \right>}$
-             idiag_uxTm=0,        &! DIAG_DOC: $\left< u_x T \right>$
-             idiag_uyTm=0,        &! DIAG_DOC: $\left< u_y T \right>$
-             idiag_uzTm=0,        &! DIAG_DOC: $\left< u_z T \right>$
-             idiag_gT2m=0,        &! DIAG_DOC: $\left< (\nabla T)^2 \right>$
-             idiag_guxgTm=0,      &! DIAG_DOC: $\left< \nabla u_x \cdot \nabla T \right>$
-             idiag_guygTm=0,      &! DIAG_DOC: $\left< \nabla u_y \cdot \nabla T \right>$
-             idiag_guzgTm=0,      &! DIAG_DOC: $\left< \nabla u_z \cdot \nabla T \right>$
-             idiag_Tugux_uxugTm=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_x T) \right>$
-             idiag_Tuguy_uyugTm=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_y T) \right>$
-             idiag_Tuguz_uzugTm=0,&! DIAG_DOC: $\left< T \uv\cdot\nabla u_z + u_z \uv\cdot\nabla T \right>=\left< \uv\cdot\nabla(u_z T) \right>$
-             idiag_Tdxpm=0,       &! DIAG_DOC: $\left< T dp/dx \right>$
-             idiag_Tdypm=0,       &! DIAG_DOC: $\left< T dp/dy \right>$
-             idiag_Tdzpm=0         ! DIAG_DOC: $\left< T dp/dz \right>$
-
+  integer :: idiag_TTmax=0        ! DIAG_DOC: $\max (T)$
+  integer :: idiag_gTmax=0        ! DIAG_DOC: $\max (|\nabla T|)$
+  integer :: idiag_TTmin=0        ! DIAG_DOC: $\min (T)$
+  integer :: idiag_TTm=0          ! DIAG_DOC: $\left< T \right>$
+  integer :: idiag_TugTm=0        ! DIAG_DOC: $\left< T\uv\cdot\nabla T \right>$
+  integer :: idiag_Trms=0         ! DIAG_DOC: $\sqrt{\left< T^2 \right>}$
+  integer :: idiag_uxTm=0         ! DIAG_DOC: $\left< u_x T \right>$
+  integer :: idiag_uyTm=0         ! DIAG_DOC: $\left< u_y T \right>$
+  integer :: idiag_uzTm=0         ! DIAG_DOC: $\left< u_z T \right>$
+  integer :: idiag_gT2m=0         ! DIAG_DOC: $\left< (\nabla T)^2 \right>$
+  integer :: idiag_guxgTm=0       ! DIAG_DOC: $\left< \nabla u_x \cdot \nabla T \right>$
+  integer :: idiag_guygTm=0       ! DIAG_DOC: $\left< \nabla u_y \cdot \nabla T \right>$
+  integer :: idiag_guzgTm=0       ! DIAG_DOC: $\left< \nabla u_z \cdot \nabla T \right>$
+  integer :: idiag_Tugux_uxugTm=0 ! DIAG_DOC: $\left< T \uv\cdot\nabla u_x + u_x \uv\cdot\nabla T \right> 
+                                  ! DIAG_DOC:  =\left< \uv\cdot\nabla(u_x T) \right>$
+  integer :: idiag_Tuguy_uyugTm=0 ! DIAG_DOC: $\left< T \uv\cdot\nabla u_y + u_y \uv\cdot\nabla T \right>
+                                  ! DIAG_DOC:  =\left< \uv\cdot\nabla(u_y T) \right>$
+  integer :: idiag_Tuguz_uzugTm=0 ! DIAG_DOC: $\left< T \uv\cdot\nabla u_z + u_z \uv\cdot\nabla T \right>
+                                  ! DIAG_DOC:  =\left< \uv\cdot\nabla(u_z T) \right>$
+  integer :: idiag_Tdxpm=0        ! DIAG_DOC: $\left< T dp/dx \right>$
+  integer :: idiag_Tdypm=0        ! DIAG_DOC: $\left< T dp/dy \right>$
+  integer :: idiag_Tdzpm=0        ! DIAG_DOC: $\left< T dp/dz \right>$
+!
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$
                               ! DIAG_DOC: \quad(radiative flux at the top)
-  integer :: idiag_yHmax=0, idiag_yHmin=0, idiag_yHm=0
+  integer :: idiag_yHmax=0    ! DIAG_DOC: DOCUMENT ME
+  integer :: idiag_yHmin=0    ! DIAG_DOC: DOCUMENT ME 
+  integer :: idiag_yHm=0      ! DIAG_DOC: DOCUMENT ME 
   integer :: idiag_ethm=0     ! DIAG_DOC: $\left< e_{\text{th}}\right> =
                               ! DIAG_DOC:  \left< c_v \rho T \right> $
                               ! DIAG_DOC: \quad(mean thermal energy)
