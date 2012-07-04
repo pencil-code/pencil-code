@@ -2092,22 +2092,21 @@ Table~\ref{Tab-make-flags} summarizes flags we use for common compilers.
     elaborate settings; also, if you use MPI, you will have to set
     \texttt{LDMPI}.}
   \label{Tab-make-flags}
-  \begin{tabular}{llll}
+  \begin{tabular}{lllll}
   \toprule
-    \emph{Compiler}       & \texttt{FC}    & \texttt{FFLAGS}                     & \texttt{CFLAGS} \\
+    \emph{Compiler}       & \texttt{FC}       & \texttt{FFLAGS}                     & \texttt{CC}        & \texttt{CFLAGS} \\
   \midrule
-    \emph{Linux defaults} & \texttt{f95}   & \texttt{-O3}                        & \texttt{-O3 -DFUNDERSC=1}\\
-    Intel ifort           & \texttt{ifort} & \texttt{-O3}                        & \texttt{-O3 -DFUNDERSC=1}\\
-    Absoft                & \texttt{f90}   & \texttt{-O3 -YEXT_NAMES=LCS}        & \texttt{-O3 -DFUNDERSC=0}\\
-    Portland group        & \texttt{pgf90} & \texttt{-O4}                        & \texttt{-O3 -DFUNDERSC=1}\\
-    Gnu F95               & \texttt{g95}   & \texttt{-O3 -fno-second-underscore} & \texttt{-O3 -DFUNDERSC=1}\\
-                          & \texttt{g95}   & \texttt{-O3}                        & \texttt{-O3 -DFUNDERSC=2}\\
+    \emph{Unix/POSIX:}     &                   &                                     &                    & \\
+    GNU                   & \texttt{gfortran} & \texttt{-O3}                        & \texttt{gcc}       & \texttt{-O3 -DFUNDERSC=1}\\
+    Intel                 & \texttt{ifort}    & \texttt{-O3}                        & \texttt{icc}       & \texttt{-O3 -DFUNDERSC=1}\\
+    PGI                   & \texttt{pgf95}    & \texttt{-O4}                        & \texttt{pgcc}      & \texttt{-O3 -DFUNDERSC=1}\\
+    G95                   & \texttt{g95}      & \texttt{-O3 -fno-second-underscore} & \texttt{gcc}       & \texttt{-O3 -DFUNDERSC=1}\\
+    Absoft                & \texttt{f95}      & \texttt{-O3 -N15}                   & \texttt{gcc}       & \texttt{-O3 -DFUNDERSC=1}\\
+    IBM XL                & \texttt{xlf95}    & \texttt{-qsuffix=f=f90 -O3}         & \texttt{xlc}       & \texttt{-O3 -DFUNDERSC=0}\\
   \midrule
-    IRIX Mips             & \texttt{f90}   & \texttt{-64 -O3 -mips4}             & \texttt{-O3 -64 -DFUNDERSC=1}\\
-  \midrule
-    Compaq                & \texttt{f90}   & \texttt{-fast -O5 }                 & \texttt{-O3 -DFUNDERSC=1}\\
-  \midrule
-    IBM                   & \texttt{xlf90} & \texttt{-qsuffix=f=f90 -O5 -w}      & \texttt{-O3 -DFUNDERSC=0}\\
+    \emph{outdated:}       &                   &                                     &                    & \\
+    IRIX Mips             & \texttt{f90}      & \texttt{-64 -O3 -mips4}             & \texttt{cc}        & \texttt{-O3 -64 -DFUNDERSC=1}\\
+    Compaq                & \texttt{f90}      & \texttt{-fast -O5 }                 & \texttt{cc}        & \texttt{-O3 -DFUNDERSC=1}\\
   \bottomrule
   \end{tabular}
 \end{table}
