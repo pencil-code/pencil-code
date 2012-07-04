@@ -1219,7 +1219,7 @@ take here.
 we have, you may be able to skip this step; but blame yourself if things
 don't compile, then.
 If not, you can run \cmd{make} with explicit flags, see
-Sect.~\ref{S-make-flags} and in particular Table~\ref{Tab-make-flags}.
+Sect.~\ref{S-make-flags} and in particular Table~\ref{Tab-compiler-options}.
 
 
 \subsubsection{Running \cmd{make}}
@@ -2083,7 +2083,7 @@ command line in the usual manner:
 \end{alltt}
 will use the compiler \cmd{f90} and the flags
 \option[-fast]{-fast -u} for both compilation and linking.
-Table~\ref{Tab-make-flags} summarizes flags we use for common compilers.
+Table~\ref{Tab-compiler-options} summarizes flags we use for common compilers.
 
 \begin{table}
   \centering
@@ -2091,7 +2091,7 @@ Table~\ref{Tab-make-flags} summarizes flags we use for common compilers.
     Note that some combinations of OS and compiler require much more
     elaborate settings; also, if you use MPI, you will have to set
     \texttt{LDMPI}.}
-  \label{Tab-make-flags}
+  \label{Tab-compiler-options}
   \begin{tabular}{lllll}
   \toprule
     \emph{Compiler}       & \texttt{FC}       & \texttt{FFLAGS}                     & \texttt{CC}        & \texttt{CFLAGS} \\
@@ -5256,6 +5256,7 @@ combination of C- and Fortran-compiler is inappropriate (e.g. \name{ifort}
 needs \name{icc}), or the compiler needs additional flags, like \name{g95}
 might need the option \option{-fno-second-underscore} and \name{xlf} might
 neeed the option \option{-qextname}.
+Please refert to Sect.~\ref{S-make-flags}, Table~\ref{Tab-compiler-options}.
 
 \subsubsection[Unable to open include file: chemistry.h]
               {Make gives the following error now:}
