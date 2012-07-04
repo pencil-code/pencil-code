@@ -614,7 +614,7 @@ module Special
       endif
 !
       if (hcond1/=0.0) then
-        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_lnTT)=.true.
@@ -626,7 +626,7 @@ module Special
       endif
 !
       if (hcond2/=0.0) then
-        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -652,7 +652,7 @@ module Special
 !
       if (K_spitzer/=0.0) then
         lpenc_requested(i_cp1)=.true.
-        lpenc_requested(i_bb)=.true.
+        lpenc_requested(i_b2)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_bunit)=.true.
         lpenc_requested(i_TT)=.true.
@@ -965,8 +965,7 @@ module Special
 !
       if ((K_spitzer /= 0.0) .or. (hcond1 /= 0.0) .or. (hcond2 /= 0.0)) then
         ! calculate inverse absolute value of bb
-        call dot2(p%bb, tmp, PRECISE_SQRT=.true.)
-        b_abs_inv = 1./max(tini,tmp)
+        b_abs_inv = 1./max(tini,sqrt(p%b2))
 !
         ! calculate H_i = Sum_jk ( (delta_ik - 2*bunit_i*bunit_k)*bunit_j * dB_k/dj / |B| )
         do i=1,3
