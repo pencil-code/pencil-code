@@ -545,7 +545,7 @@ module Shock
               enddo scan_y
             enddo scan_z
             call mpiallreduce_max(a1, a)
-            a = a / (pi * shock_max)
+            a = a / (re_mesh * pi * shock_max)
           else shock
             a = dxmax**2
           endif shock
