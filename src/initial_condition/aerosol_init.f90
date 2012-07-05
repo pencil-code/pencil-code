@@ -537,6 +537,8 @@ module InitialCondition
 !
        if (lreinit_water) then
 !
+       if (init_TT2==0) init_TT2=init_TT1
+!
        psat1=6.035e12*exp(-5938./init_TT1)
        psat2=6.035e12*exp(-5938./init_TT2)
          do k=1,ndustspec
@@ -624,7 +626,7 @@ module InitialCondition
                    /(exp(x(i)/del)+exp(-x(i)/del))
              enddo
            elseif (lwet_spots) then
-              call spot_init(f,PP,air_mass_ar,psf(:,:,:,ii_max),lmake_spot)
+!              call spot_init(f,PP,air_mass_ar,psf(:,:,:,ii_max),lmake_spot)
 !         
            elseif (.not. lwet_spots) then
 ! Initial conditions for the  0dcase: cond_evap
