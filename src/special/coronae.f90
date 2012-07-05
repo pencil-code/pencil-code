@@ -84,7 +84,6 @@ module Special
   integer :: idiag_dtspitzer=0 ! DIAG_DOC: Spitzer heat conduction time step
   integer :: idiag_dtrad=0    ! DIAG_DOC: radiative loss from RTV
   integer :: idiag_dtnewt=0
-  integer :: idiag_dtgran=0
   integer :: idiag_qmax=0     ! DIAG_DOC: max of heat flux vector
   integer :: idiag_qrms=0     ! DIAG_DOC: rms of heat flux vector
 !
@@ -530,7 +529,6 @@ module Special
         idiag_dtchi2=0
         idiag_dtrad=0
         idiag_dtnewt=0
-        idiag_dtgran=0
         idiag_qmax=0
         idiag_qrms=0
       endif
@@ -542,7 +540,6 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtchi2',idiag_dtchi2)
         call parse_name(iname,cname(iname),cform(iname),'dtrad',idiag_dtrad)
         call parse_name(iname,cname(iname),cform(iname),'dtnewt',idiag_dtnewt)
-        call parse_name(iname,cname(iname),cform(iname),'dtgran',idiag_dtgran)
         call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
         call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
       enddo
@@ -554,7 +551,6 @@ module Special
         write(3,*) 'i_dtchi2=',idiag_dtchi2
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'i_dtnewt=',idiag_dtnewt
-        write(3,*) 'i_dtgran=',idiag_dtgran
         write(3,*) 'i_qmax=',idiag_qmax
         write(3,*) 'i_qrms=',idiag_qrms
       endif
@@ -1620,7 +1616,6 @@ module Special
         chi = gamma*chi*dxyz_2*abs(cosbgT)
         diffus_chi=diffus_chi+chi
         if (ldiagnos.and.idiag_dtchi2 /= 0.) then
-          itype_name(idiag_dtchi2)=ilabel_max_dt
           call max_mn_name(chi/cdtv,idiag_dtchi2,l_dt=.true.)
         endif
       endif
@@ -1808,7 +1803,6 @@ module Special
         endif
         dt1_max=max(dt1_max,rtv_cool/max(tini,delta_lnTT))
         if (ldiagnos.and.idiag_dtrad /= 0.) then
-          itype_name(idiag_dtrad)=ilabel_max_dt
           call max_mn_name(rtv_cool/max(tini,delta_lnTT),idiag_dtrad,l_dt=.true.)
         endif
       endif
@@ -2188,7 +2182,6 @@ module Special
       if (lfirst.and.ldt) then
         dt1_max=max(dt1_max,tau_inv_tmp/cdts)
         if (ldiagnos.and.idiag_dtnewt /= 0.) then
-          itype_name(idiag_dtnewt)=ilabel_max_dt
           call max_mn_name(tau_inv_tmp,idiag_dtnewt,l_dt=.true.)
         endif
       endif
@@ -2238,7 +2231,6 @@ module Special
         if (lfirst.and.ldt) then
           dt1_max=max(dt1_max,tau_inv_tmp/cdts)
           if (ldiagnos.and.idiag_dtnewt /= 0.) then
-            itype_name(idiag_dtnewt)=ilabel_max_dt
             call max_mn_name(tau_inv_tmp,idiag_dtnewt,l_dt=.true.)
           endif
         endif
