@@ -59,9 +59,9 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 
 	; setup a scaling factor to have a minimum size, if necessary
 	default, scaling, 1
-	dims = (size (varsets.(0)))[1:size (varsets.(0), /n_dimensions)]
+	dims = (size (varsets.(0)))[1:size (varsets.(0), /n_dimensions)] * scaling
 	if (not any (dims ge min_size)) then begin
-		scaling = ceil (min_size / double (max (dims)))
+		scaling *= ceil (min_size / double (max (dims)))
 	end
 	if (n_elements (scaling) eq 1) then scaling = [ scaling, scaling, scaling ]
 
