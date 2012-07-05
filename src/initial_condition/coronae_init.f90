@@ -22,7 +22,7 @@ module InitialCondition
   character (len=labellen) :: lnTT_init='nothing'
   character (len=labellen) :: aa_init='nothing'
   logical :: set_lnTT_first =.true.
-  real :: rho_init=0.
+  real :: rho_init=0.,const_alfven=1.
   real :: T0=6000.,T1=1e6,z0_tanh=4e6,width_tanh=1e6
   character (len=labellen) :: direction='z'
   real, dimension(4) :: mpoly_special = (/1.3,1000.,-1.04,500./)
@@ -30,7 +30,8 @@ module InitialCondition
 !
   namelist /initial_condition_pars/ &
       lnrho_init,lnTT_init,stratitype,rho_init,direction, &
-      set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly_special,zpoly
+      set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly_special,zpoly, &
+      const_alfven
 !
 contains
 !***********************************************************************
@@ -134,6 +135,8 @@ contains
       call setup_vert_profiles(f)
     case ('hydrostatic')
       call hydrostatic_lnTT(f)
+    case ('alfven-const')
+      ! do nothing, will be done after init_aa
     case default
       call fatal_error('initial_condition_lnrho', &
           'no such value for lnTT_init')
@@ -142,6 +145,14 @@ contains
     call write_stratification_dat(f)
 !
   endsubroutine initial_condition_lnrho
+!***********************************************************************
+  subroutine initial_condition_aa(f)
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (lnrho_init=='alfven-const') call const_alfven_speed(f)
+!
+  endsubroutine initial_condition_aa
 !***********************************************************************
   subroutine setup_vert_profiles(f)
 !
@@ -842,6 +853,41 @@ contains
 !
   endsubroutine piecewice_poly
 !***********************************************************************
+  subroutine const_alfven_speed(f)
+!
+!  routine to set the alfven constant everywhere in the box
+!
+    use Boundcond, only: boundconds_x, boundconds_y, boundconds_z 
+    use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+    use Sub, only: gij,curl_mn,dot2_mn
+!
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+    real, dimension(nx) :: b2
+    real, dimension(nx,3) :: aa,bb
+    real, dimension(nx,3,3) :: aij
+!
+    call boundconds_x(f,iax,iaz)
+    call initiate_isendrcv_bdry(f,iax,iaz)
+    call finalize_isendrcv_bdry(f,iax,iaz)
+    call boundconds_y(f,iax,iaz)
+    call boundconds_z(f,iax,iaz)
+!
+    do m=m1,m2
+      do n=n1,n2
+        aa=f(l1:l2,m,n,iax:iaz)
+        call gij(f,iaa,aij,1)
+        call curl_mn(aij,bb,aa)
+!
+        call dot2_mn(bb,b2)
+!
+        f(l1:l2,m,n,ilnrho) = alog(b2/(mu0*const_alfven))
+!
+      enddo
+    enddo
+!
+  endsubroutine const_alfven_speed
+!***********************************************************************
 !
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
@@ -852,4 +898,4 @@ contains
 !**                                                                **
     include '../initial_condition_dummies.inc'
 !********************************************************************
-  endmodule InitialCondition
+endmodule InitialCondition
