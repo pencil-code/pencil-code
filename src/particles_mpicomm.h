@@ -20,3 +20,4 @@
   public :: lfill_blocks_density, lfill_blocks_velocity
   public :: lfill_blocks_gpotself, lfill_bricks_velocity
   public :: lreblock_particles_run, it1_loadbalance, lbrick_partition
+  public :: ladopt_own_light_bricks

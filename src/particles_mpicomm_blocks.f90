@@ -47,6 +47,7 @@ module Particles_mpicomm
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
   logical :: lfill_blocks_gpotself=.false., lfill_bricks_velocity=.false.
   logical :: lreblock_particles_run=.false., lbrick_partition=.false.
+  logical :: ladopt_own_light_bricks=.false.
 !
   include 'mpif.h'
 !
@@ -1468,18 +1469,19 @@ module Particles_mpicomm
       real, dimension (mzb,0:nblockmax-1) :: zb_recv,dz1b_recv,dVol1zb_recv
       integer, dimension (MPI_STATUS_SIZE) :: stat
       integer, dimension (0:nbricks-1) :: npbrick, iproc_foster_old
+      integer, dimension (0:nbricks-1) :: ibrick_not_adopted
       integer, dimension (0:nblockmax-1) :: npblock, ibrick_give, ibrick_recv
       integer, dimension (0:nblockmax-1) :: iproc_grandparent, iproc_grandchild
       integer, dimension (0:nblockmax-1) :: iproc_parent_old, ibrick_parent_old
       integer, dimension (6*nblockmax) :: ireq_array
-      integer :: npar_sum, npar_target, npar_recv, npar_requ
-      integer :: npar_brick_taken, npar_want, npar_give
-      integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
-      integer :: nbrick_give, nbrick_recv, ibrick_global
-      integer :: iproc_left, iproc_right
       integer, parameter :: tag_id=100
       integer, parameter :: tag_id2=tag_id+nbrickx*nbricky*nbrickz
       integer, parameter :: tag_id3=tag_id2+nbrickx*nbricky*nbrickz
+      integer :: npar_sum, npar_target, npar_recv, npar_requ
+      integer :: npar_brick_taken, npar_want, npar_give, nplight
+      integer :: ibrick, iblock, ibx, iby, ibz, di, nblock_loc_old
+      integer :: nbrick_give, nbrick_recv, ibrick_global, ibrick2
+      integer :: iproc_left, iproc_right
       integer :: ierr, ireq, nreq
       integer :: iproc_recv, iproc_send
       integer :: ipvar, nblock_send, npar_loc_tmp
@@ -1518,8 +1520,31 @@ module Particles_mpicomm
       iproc_foster_brick=-1
       iproc_parent_block=-1
       ibrick_parent_block=-1
+!
+!  Fill up first with light bricks, as it is better to keep those at their
+!  parent processor.
+!
+      if (ladopt_own_light_bricks) then
+        nplight=nxb*nyb*nzb
+        do while ( (npar_sum<npar_target) .and. (ibrick<nbricks) )
+          if (npbrick(ibrick)/=0 .and. npbrick(ibrick)<=nplight) then
+            iproc_parent_block(iblock)=iproc
+            ibrick_parent_block(iblock)=ibrick
+            iproc_foster_brick(ibrick)=iproc
+            npar_sum=npar_sum+npbrick(ibrick)
+            npblock(iblock)=npbrick(ibrick)
+            iblock=iblock+1
+          endif
+          ibrick=ibrick+1
+        enddo
+      endif
+!
+!  After filling up with light bricks, we cycle through the bricks from the
+!  beginning and fill up with heavy bricks.
+!
+      ibrick=0
       do while ( (npar_sum<npar_target) .and. (ibrick<nbricks) )
-        if (npbrick(ibrick)/=0) then
+        if (npbrick(ibrick)/=0 .and. iproc_foster_brick(ibrick)==-1) then
           iproc_parent_block(iblock)=iproc
           ibrick_parent_block(iblock)=ibrick
           iproc_foster_brick(ibrick)=iproc
@@ -1530,8 +1555,25 @@ module Particles_mpicomm
         ibrick=ibrick+1
       enddo
       nblock_loc=iblock
-      nbrick_foster=ibrick
+      nbrick_foster=iblock
       npar_brick_taken=npar_sum
+!
+!  Create a list of bricks that have not yet been adopted. The brick indices
+!  are not necessarily contiguous, e.g. if we have adopted all of the local
+!  processor's own light bricks.
+!
+      ibrick=0
+      ibrick2=nbrick_foster
+      do while (ibrick<nbricks)
+        if (iproc_foster_brick(ibrick)==-1) then
+          ibrick_not_adopted(ibrick2)=ibrick
+          ibrick2=ibrick2+1
+        endif
+        ibrick=ibrick+1
+      enddo
+!      if (iproc==5) print*, 'AAAA', iproc, nbrick_foster, &
+!          ibrick_not_adopted(nbrick_foster:nbricks-1)
+!      call fatal_error('','')
 !
 !  Communicate with processors left and right, in increments of one.
 !    - give particles to left processor
@@ -1563,7 +1605,8 @@ module Particles_mpicomm
         npar_give=0
         nbrick_give=0
         if (npar_requ>0) then
-          do ibrick=nbrick_foster,nbricks-1
+          do ibrick2=nbrick_foster,nbricks-1
+            ibrick=ibrick_not_adopted(ibrick2)
             if (npbrick(ibrick)/=0) then
               npar_give=npar_give+npbrick(ibrick)
               ibrick_give(nbrick_give)=ibrick
@@ -1574,7 +1617,7 @@ module Particles_mpicomm
           if (nbrick_give>0) then
             iproc_foster_brick(ibrick_give(0:nbrick_give-1))=iproc_left
           endif
-          nbrick_foster=ibrick+1
+          nbrick_foster=ibrick2+1
         endif
 !
 !  Inform the left processor of which bricks it may adopt.
