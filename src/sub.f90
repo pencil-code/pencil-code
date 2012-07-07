@@ -250,8 +250,8 @@ module Sub
 !  endinterface
 !
 !  interface operator (-)
-!    module procedure pencil_substract1
-!    module procedure pencil_substract2
+!    module procedure pencil_subtract1
+!    module procedure pencil_subtract2
 !  endinterface
 !
 !ajwm Commented pending a C replacement
@@ -4731,39 +4731,39 @@ nameloop: do
 !
     endfunction pencil_divide2
 !***********************************************************************
-    function pencil_substract1(s,v)
+    function pencil_subtract1(s,v)
 !
 !  The `-' operator may be extended through this function to allow
-!  elementwise substraction of a `pencil-vector' from a `pencil-scalar'.
+!  elementwise subtraction of a `pencil-vector' from a `pencil-scalar'.
 !
 !   6-Sep-05/tobi: coded
 !
       real, dimension(nx), intent(in) :: s
       real, dimension(nx,3), intent(in) :: v
-      real, dimension(nx,3) :: pencil_substract1
+      real, dimension(nx,3) :: pencil_subtract1
 !
       integer :: i
 !
-      do i=1,3; pencil_substract1(:,i) = s(:) - v(:,i); enddo
+      do i=1,3; pencil_subtract1(:,i) = s(:) - v(:,i); enddo
 !
-    endfunction pencil_substract1
+    endfunction pencil_subtract1
 !***********************************************************************
-    function pencil_substract2(v,s)
+    function pencil_subtract2(v,s)
 !
 !  The `-' operator may be extended through this function to allow
-!  elementwise substraction of a `pencil-scalar' from a `pencil-vector'.
+!  elementwise subtraction of a `pencil-scalar' from a `pencil-vector'.
 !
 !   6-Sep-05/tobi: coded
 !
       real, dimension(nx,3), intent(in) :: v
       real, dimension(nx), intent(in) :: s
-      real, dimension(nx,3) :: pencil_substract2
+      real, dimension(nx,3) :: pencil_subtract2
 !
       integer :: i
 !
-      do i=1,3; pencil_substract2(:,i) = v(:,i) - s(:); enddo
+      do i=1,3; pencil_subtract2(:,i) = v(:,i) - s(:); enddo
 !
-    endfunction pencil_substract2
+    endfunction pencil_subtract2
 !***********************************************************************
     function erfunc_pt(x)
 !
