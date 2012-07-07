@@ -7068,6 +7068,9 @@ module Magnetic
 ! Implicitly integrate the resistivity terms.
 !
 ! 22-may-12/ccyang: coded
+! 05-jun-12/ccyang: included shear
+!
+      use Shear, only: sheared_advection_fft
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -7075,13 +7078,28 @@ module Magnetic
 !
       dth = 0.5 * dt
 !
-      call implicit_resistivity_xsweep(f, bcx1(iax:iaz), bcx2(iax:iaz), dth)
-      call implicit_resistivity_ysweep(f, bcy1(iax:iaz), bcy2(iax:iaz), dth)
-      call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
+      shearing: if (lshear) then
+!       Shear is present: Work in unsheared frame.
+        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
+        call implicit_resistivity_ysweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
 !
-      call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
-      call implicit_resistivity_ysweep(f, bcy1(iax:iaz), bcy2(iax:iaz), dth)
-      call implicit_resistivity_xsweep(f, bcx1(iax:iaz), bcx2(iax:iaz), dth)
+        call sheared_advection_fft(f(l1:l2,m1:m2,n1:n2,iax:iaz), 3, real(-t))
+        call implicit_resistivity_xsweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
+        call implicit_resistivity_xsweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
+        call sheared_advection_fft(f(l1:l2,m1:m2,n1:n2,iax:iaz), 3, real(t))
+!
+        call implicit_resistivity_ysweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
+        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
+      else shearing
+!       No shear is present.
+        call implicit_resistivity_xsweep(f, bcx1(iax:iaz), bcx2(iax:iaz), dth)
+        call implicit_resistivity_ysweep(f, bcy1(iax:iaz), bcy2(iax:iaz), dth)
+        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
+!
+        call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
+        call implicit_resistivity_ysweep(f, bcy1(iax:iaz), bcy2(iax:iaz), dth)
+        call implicit_resistivity_xsweep(f, bcx1(iax:iaz), bcx2(iax:iaz), dth)
+      endif shearing
 !
     endsubroutine implicit_resistivity
 !***********************************************************************
@@ -7097,7 +7115,7 @@ module Magnetic
 !   dt: time step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=bclen), dimension(3), intent(in) :: bcx1, bcx2
+      character(len=*), dimension(3), intent(in) :: bcx1, bcx2
       real, intent(in) :: dt
 !
       real, dimension(nxgrid) :: a, opb, omb, c
@@ -7130,7 +7148,7 @@ module Magnetic
       use Mpicomm, only: transp_xy
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=bclen), dimension(3), intent(in) :: bcy1, bcy2
+      character(len=*), dimension(3), intent(in) :: bcy1, bcy2
       real, intent(in) :: dt
 !
       real, dimension(nx,ny) :: axy      ! assuming nxgrid = nygrid and nprocx = 1
@@ -7172,7 +7190,7 @@ module Magnetic
       use Mpicomm, only: transp_xz, transp_zx
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=bclen), dimension(3), intent(in) :: bcz1, bcz2
+      character(len=*), dimension(3), intent(in) :: bcz1, bcz2
       real, intent(in) :: dt
 !
       integer, parameter :: nxt = nx / nprocz
@@ -7269,7 +7287,7 @@ module Magnetic
       integer, intent(in) :: n
       real, dimension(0:n+1), intent(inout) :: q
       real, dimension(n), intent(in) :: a, opb, omb, c
-      character(len=bclen), intent(in) :: bc1, bc2
+      character(len=*), intent(in) :: bc1, bc2
 !
       real, dimension(n) :: r, omb1
       logical :: lcyclic
