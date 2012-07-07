@@ -12,7 +12,7 @@ BORDER_PROFILES   = noborder_profiles
 BOUNDCOND         =   boundcond
 DEBUG             = nodebug
 GHOST_CHECK       =   ghost_check
-SYSCALLS          =   syscalls
+SYSCALLS          = nosyscalls
 DERIV             =   deriv
 FOURIER           = nofourier
 GHOSTFOLD         = noghostfold
@@ -2106,7 +2106,7 @@ distclean: cleanall
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.
 #
-COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(DIAGNOSTICS_OBJ) $(MESSAGES_OBJ)
+COMMON_DEPS=$(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(DIAGNOSTICS_OBJ) $(MESSAGES_OBJ)
 #
 #  Dependencies and rules for library files.
 #
