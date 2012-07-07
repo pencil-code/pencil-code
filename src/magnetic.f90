@@ -1167,7 +1167,7 @@ module Magnetic
 !
 !  Check if operator splitting is requested.
 !
-      lsplit_update = limplicit_resistivity .and. lresi_eta_const
+      lsplit_update = limplicit_resistivity .and. (lresi_eta_const .or. lresi_zdep)
       implicit: if (limplicit_resistivity) then
         if (lroot) print *, 'Using implicit algorithm to integrate resistivity terms. '
         call initialize_implicit_resistivity
@@ -1547,6 +1547,16 @@ module Magnetic
         lpenc_video(i_ab)=.true.
       endif
 !
+      explicit: if (.not. limplicit_resistivity) then
+        lorentz: if (.not. lweyl_gauge) then
+          if (lresi_eta_const) lpenc_requested(i_del2a) = .true.
+          if (lresi_zdep) then
+            lpenc_requested(i_del2a) = .true.
+            lpenc_requested(i_diva) = .true.
+          endif
+        endif lorentz
+      endif explicit
+!
 !  jj pencil always needed when in Weyl gauge
 !
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
@@ -1554,11 +1564,9 @@ module Magnetic
           lpenc_requested(i_jj)=.true.
       if (.not.lweyl_gauge.and.lcartesian_coords) &
           lpenc_requested(i_del2a)=.true.
-      if (lresi_eta_const .and. .not.limplicit_resistivity .and. .not.lweyl_gauge) &
-        lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_shell.or. &
           lresi_eta_shock.or.lresi_smagorinsky.or. &
-          lresi_zdep.or.lresi_xdep.or.lresi_xydep.or. &
+          lresi_xdep.or.lresi_xydep.or. &
           lresi_smagorinsky_cross.or.lresi_spitzer)) &
           lpenc_requested(i_del2a)=.true.
       if (lresi_sqrtrhoeta_const) then
@@ -1632,7 +1640,7 @@ module Magnetic
         lpenc_requested(i_aij)=.true.
         lpenc_requested(i_uij)=.true.
       endif
-      if (lresi_shell.or.lresi_zdep.or.lresi_xdep.or.lresi_xydep) &
+      if (lresi_shell.or.lresi_xdep.or.lresi_xydep) &
            lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
@@ -2558,15 +2566,32 @@ module Magnetic
       fres=0.0
       etatotal=0.0
 !
-      if (lresi_eta_const .and. .not. limplicit_resistivity) then
-        if (lweyl_gauge) then
-          fres=fres-eta*mu0*p%jj
-        else
-          fres=fres+eta*p%del2a
-        endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta
-        etatotal=etatotal+eta
-      endif
+      explicit: if (.not. limplicit_resistivity) then
+!
+        eta_const: if (lresi_eta_const) then
+          if (lweyl_gauge) then
+            fres=fres-eta*mu0*p%jj
+          else
+            fres=fres+eta*p%del2a
+          endif
+          if (lfirst.and.ldt) diffus_eta=diffus_eta+eta
+          etatotal=etatotal+eta
+        endif eta_const
+!
+        eta_zdep: if (lresi_zdep) then
+          if (lweyl_gauge) then
+            fres=fres-eta_z(n)*mu0*p%jj
+          else
+            do j=1,3
+              fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
+            enddo
+          endif
+          if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
+          etatotal=etatotal+eta_z(n)
+        endif eta_zdep
+!
+      endif explicit
+!
       if (lresi_sqrtrhoeta_const) then
         if (lweyl_gauge) then
           do j=1,3
@@ -2611,18 +2636,6 @@ module Magnetic
         enddo
         if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_x(l1:l2)
         etatotal=etatotal+eta_x(l1:l2)
-      endif
-!
-      if (lresi_zdep) then
-        if (lweyl_gauge) then
-          fres=fres-eta_z(n)*mu0*p%jj
-        else
-          do j=1,3
-            fres(:,j)=fres(:,j)+eta_z(n)*p%del2a(:,j)+geta_z(n,j)*p%diva
-          enddo
-        endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+eta_z(n)
-        etatotal=etatotal+eta_z(n)
       endif
 !
       if (lresi_hyper2) then
@@ -7048,6 +7061,7 @@ module Magnetic
         call fatal_error('initialize_implicit_resistivity', 'currently only works in Cartesian coordinates.')
       if (nprocx /= 1) call fatal_error('initialize_implicit_resistivity', 'nprocx /= 1')
       if (nygrid > 1 .and. nxgrid /= nygrid) call fatal_error('initialize_implicit_resistivity', 'nxgrid /= nygrid')
+      if (lresi_zdep) call fatal_error('initialize_implicit_resistivity', 'zdep under construction')
 !
 ! Calculate one-time variables
 !
