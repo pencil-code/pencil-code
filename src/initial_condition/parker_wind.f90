@@ -73,7 +73,7 @@ module InitialCondition
       if (.not. lanelastic) then
         call parker_wind_iteration(f,vv,den)
         do iy=m1,m2;do iz=n1,n2
-          f(:,iy,iy,ilnrho)=log(den)
+          f(:,iy,iz,ilnrho)=log(den)
           f(:,iy,iz,iuu)=vv
           f(:,iy,iz,iuu+1)=0.
           f(:,iy,iz,iuu+2)=0.
@@ -100,7 +100,7 @@ module InitialCondition
       if (lanelastic) then
         call parker_wind_iteration(f,vv,den)
       do iy=m1,m2;do iz=n1,n2
-          f(:,iy,iy,ilnrho)=log(den)
+          f(:,iy,iz,ilnrho)=log(den)
           f(:,iy,iz,iux)=vv
           f(:,iy,iz,iuy)=0.
           f(:,iy,iz,iuz)=0.
