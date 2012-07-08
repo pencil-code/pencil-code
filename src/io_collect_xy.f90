@@ -1,9 +1,5 @@
 ! $Id$
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!   io_collect_xy.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
 !  I/O via MPI by collecting data from all processors in the xy-plane.
 !  (storing data into files, e.g. data/proc(0,7,15,...)/var.dat)
 !
@@ -69,7 +65,7 @@ module Io
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
-contains
+  contains
 !***********************************************************************
     subroutine register_io()
 !

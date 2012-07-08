@@ -1,9 +1,5 @@
 ! $Id$
 !
-!!!!!!!!!!!!!!!!!!!!!!
-!!   io_dist.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!
-!
 !  Distributed IO (i.e. each process writes its own file data/procX)
 !
 !  The file format written by output_snap() (and used, e.g. in var.dat)
@@ -62,7 +58,7 @@ module Io
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
-contains
+  contains
 !***********************************************************************
     subroutine register_io()
 !

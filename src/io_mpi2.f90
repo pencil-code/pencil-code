@@ -1,9 +1,5 @@
 ! $Id$
 !
-!!!!!!!!!!!!!!!!!!!!!!!
-!!!   io_mpi2.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!
-!
 !  I/O via the MPI v2 standard IO routines.
 !  (storing data into one file, e.g. data/allprocs/var.dat)
 !
@@ -74,7 +70,7 @@ module Io
   integer, dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer, dimension(n_dims+1) :: global_size, global_subsize, global_start
 !
-contains
+  contains
 !***********************************************************************
     subroutine register_io()
 !

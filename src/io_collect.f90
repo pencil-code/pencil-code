@@ -1,9 +1,5 @@
 ! $Id$
 !
-!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!   io_collect.f90   !!!
-!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
 !  I/O via MPI root rank by collecting data from all processors.
 !  (storing data into one file, e.g. data/allprocs/var.dat)
 !
@@ -61,7 +57,7 @@ module Io
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
-contains
+  contains
 !***********************************************************************
     subroutine register_io()
 !
