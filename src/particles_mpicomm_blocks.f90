@@ -1571,9 +1571,6 @@ module Particles_mpicomm
         endif
         ibrick=ibrick+1
       enddo
-!      if (iproc==5) print*, 'AAAA', iproc, nbrick_foster, &
-!          ibrick_not_adopted(nbrick_foster:nbricks-1)
-!      call fatal_error('','')
 !
 !  Communicate with processors left and right, in increments of one.
 !    - give particles to left processor
