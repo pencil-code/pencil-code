@@ -1522,7 +1522,21 @@ module Particles_mpicomm
       ibrick_parent_block=-1
 !
 !  Fill up first with light bricks, as it is better to keep those at their
-!  parent processor.
+!  parent processor. Setting ladopt_own_light_bricks avoids that some
+!  processors adopt many, many light bricks.
+!
+!  One can show that the maximum number of blocks, Nmax, will be
+!
+!    Nmax = (npar/ncpus)/nmin = (npar/ncpus)/(nxb*nyb*nzb)
+!                             = (npar/ncpus)/(nw/nbricks)
+!                             = (npar/nw)*(nbricks/ncpus)
+!
+!  Here nmin is the threshold particle number to be considered a light brick.
+!  We ignored here the contribution from own, light blocks, which is maximum
+!  nbricks/ncpus, so that finally Nmax = (npar/nw+1)*(nbricks/ncpus).
+!
+!  This method is currently being tested, but will be made default if tests
+!  are all positive.
 !
       if (ladopt_own_light_bricks) then
         nplight=nxb*nyb*nzb
