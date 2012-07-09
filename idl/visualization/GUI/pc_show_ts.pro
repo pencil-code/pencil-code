@@ -13,7 +13,7 @@
 ; Event handling of visualisation window
 pro pc_show_ts_event, event
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, orig_dim, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 	common timeseries_gui_common, l_x, l_y, r_x, r_y, ls_min, ls_max, rs_min, rs_max, ls_fr, rs_fr, ls_xy, rs_xy, l_coupled, r_coupled, lx_range, ly_range, rx_range, ry_range, s_line
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -268,7 +268,7 @@ end
 ; Draw the timeseries plots
 pro pc_show_ts_draw, l_draw, r_draw
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, orig_dim, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 
 	if (l_draw ne 0) then begin
 		wset, l_plot
@@ -297,7 +297,7 @@ end
 ; Analyze the timeseries plots
 pro pc_show_ts_analyze
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, orig_dim, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 
 	charsize = 1.25
 	old_multi = !P.MULTI
@@ -385,19 +385,35 @@ pro pc_show_ts_analyze
 	max_subplots = 4
 	num_subplots = 0
 
-	if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ethm', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
+	N_grid = orig_dim.nx * orig_dim.ny * orig_dim.nz
+	volume = start_par.Lxyz[0] * start_par.Lxyz[1] * start_par.Lxyz[2]
+
+	if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and any (strcmp (tags, 'ethm', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		num_subplots += 1
+		energy_int = (ts.eem*N_grid + ts.ekintot) * units.mass / units.velocity^2
+		energy_therm = (ts.ethm + ts.ekintot/volume) * units.mass / (units.velocity^2 * units.length^3)
+		plot, time, energy_int, title = 'Energy {w} and E/V {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='<E> [J]', ys=10, /noerase
+		plot, time, energy_therm, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
+		axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='<E/V> [J/kg]'
+		plot, time, energy_int, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
+		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
+	end else if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		mass = ts.totmass * units.mass / units.default_mass
-		energy = (ts.eem + ts.ekintot/ts.totmass) * units.mass / units.velocity^2
+		energy = (ts.eem*N_grid + ts.ekintot) / ts.totmass / units.velocity^2
 		plot, time, energy, title = 'Energy {w} and mass {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='<E>_m [J/kg]', ys=10, /noerase
 		plot, time, mass, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='total mass ['+units.default_mass_str+']'
 		plot, time, energy, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
-	end else if (any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
+	end else if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
-		mass = ts.totmass * units.mass / units.default_mass
-		plot, time, mass, title = 'Mass conservation', xrange=x_minmax, /xs, xc=charsize, yc=charsize
+		energy = (ts.eem*N + ts.ekintot) * units.mass / units.velocity^2
+		plot, time, energy, title = 'Energy conservation', xrange=x_minmax, /xs, xc=charsize, yc=charsize, ytitle='<E> [J]'
+	end else if (any (strcmp (tags, 'ethm', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		num_subplots += 1
+		energy = (ts.ethm + ts.ekintot/volume) * units.mass / (units.velocity^2 * units.length^3)
+		plot, time, energy, title = 'Energy conservation', xrange=x_minmax, /xs, xc=charsize, yc=charsize, ytitle='<E/V> [J/m^3]'
 	end
 	if (any (strcmp (tags, 'TTmax', /fold_case)) and any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
@@ -479,6 +495,11 @@ pro pc_show_ts_analyze
 			oplot, time, u2m, linestyle=3, color=115100200
 		end
 	end
+	if (any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
+		num_subplots += 1
+		mass = ts.totmass * units.mass / units.default_mass
+		plot, time, mass, title = 'Mass conservation', xrange=x_minmax, /xs, xc=charsize, yc=charsize
+	end
 
 	!X.margin = old_x_margin
 	!P.MULTI = old_multi
@@ -488,7 +509,7 @@ end
 ; Show timeseries analysis window
 pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param, start_time=start_time, end_time=end_time, datadir=datadir
 
-	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
+	common timeseries_common, time_start, time_end, ts, units, run_par, start_par, orig_dim, lvx_min, lvx_max, lvy_min, lvy_max, rvx_min, rvx_max, rvy_min, rvy_max, l_plot, r_plot, l_xy, r_xy, l_sx, l_sy, r_sx, r_sy, plot_style
 	common timeseries_gui_common, l_x, l_y, r_x, r_y, ls_min, ls_max, rs_min, rs_max, ls_fr, rs_fr, ls_xy, rs_xy, l_coupled, r_coupled, lx_range, ly_range, rx_range, ry_range
 
 	; GUI settings
@@ -499,7 +520,7 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 	sl_width = col_width - 52
 
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
-
+	pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
 	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
 	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
 	units = unit
@@ -527,9 +548,9 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 	r_sy = 2 < (num_plots-1)
 	l_xy = 0
 	r_xy = 0
-	lx_range = minmax (ts.(l_sx))/2.0
+	lx_range = minmax (ts.(l_sx))
 	ly_range = minmax (ts.(l_sy))
-	rx_range = minmax (ts.(r_sx))/2.0
+	rx_range = minmax (ts.(r_sx))
 	ry_range = minmax (ts.(r_sy))
 	lvx_min = lx_range[0]
 	lvx_max = lx_range[1]
