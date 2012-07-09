@@ -392,7 +392,7 @@ pro pc_show_ts_analyze
 		num_subplots += 1
 		energy_int = (ts.eem*N_grid + ts.ekintot) * units.mass / units.velocity^2
 		energy_therm = (ts.ethm + ts.ekintot/volume) * units.mass / (units.velocity^2 * units.length^3)
-		plot, time, energy_int, title = 'Energy {w} and E/V {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='<E> [J]', ys=10, /noerase
+		plot, time, energy_int, title = 'Total energy {w} and E/V {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='E_total [J]', ys=10, /noerase
 		plot, time, energy_therm, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='<E/V> [J/m^3]'
 		plot, time, energy_int, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
