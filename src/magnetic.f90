@@ -915,7 +915,7 @@ module Magnetic
         case ('zdep','eta-zdep')
           if (lroot) print*, 'resistivity: z-dependent'
           lresi_zdep=.true.
-          call eta_zdep(eta_z,geta_z,zdep_profile)
+          call eta_zdep(zdep_profile, mz, z, eta_z, geta_z)
         case ('dust')
           if (lroot) print*, 'resistivity: depending on dust density'
           lresi_dust=.true.
@@ -6064,21 +6064,32 @@ module Magnetic
 !
     endsubroutine eta_xy_dep
 !***********************************************************************
-    subroutine eta_zdep(eta_z,geta_z,zdep_profile)
+    subroutine eta_zdep(zdep_profile, nz, z, eta_z, geta_z)
 !
 !  creates a z-dependent resistivity for protoplanetary disk studies
 !
 !  12-jul-2005/joishi: coded
 !
+!  Input Arguments
+!    zdep_profile: name/code of the z-dependent profile
+!    nz: number of elements in array z
+!    z: z coordinates
+!  Output Arguments
+!    eta_z: resistivity at the corresponding z
+!  Optional Output Arguments
+!    geta_z: gradient of resistivity at the corresponding z
+!
       use General, only: erfcc
       use Sub, only: step, der_step, cubic_step, cubic_der_step
       use EquationOfState, only: cs0
 !
-      real, dimension(mz), intent(out) :: eta_z
-      real, dimension(mz,3), intent(out) :: geta_z
       character(len=labellen), intent(in) :: zdep_profile
+      integer, intent(in) :: nz
+      real, dimension(nz), intent(in) :: z
+      real, dimension(nz), intent(out) :: eta_z
+      real, dimension(nz,3), intent(out), optional :: geta_z
 !
-      real, dimension(mz) :: zoh, z2
+      real, dimension(nz) :: zoh, z2
       real :: h
 !
       select case (zdep_profile)
@@ -6095,23 +6106,26 @@ module Magnetic
           eta_z = eta * exp(-0.5 * z2 + 0.25 * sigma_ratio * erfcc(abs(zoh)))
 !
 ! its gradient:
-          geta_z(:,1) = 0.
-          geta_z(:,2) = 0.
-!          geta_z(:,3) = eta_z*(-z-sign(1.,z)*sigma_ratio*exp(-z2)/(2.*sqrt(pi)))
-          geta_z(:,3) = -eta_z * (zoh + (0.5 * sigma_ratio / sqrt(pi)) * sign(1.,z) * exp(-z2)) / h
+          if (present(geta_z)) then
+            geta_z(:,1) = 0.
+            geta_z(:,2) = 0.
+            geta_z(:,3) = -eta_z * (zoh + (0.5 * sigma_ratio / sqrt(pi)) * sign(1.,z) * exp(-z2)) / h
+          endif
 !
         case ('tanh')
 !  default to spread gradient over ~5 grid cells.
-           if (eta_width == 0.) eta_width = 5.*dz
-           eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) &
-             - tanh((z - eta_z0)/eta_width))
+          if (eta_width == 0.) eta_width = 5.*dz
+          eta_z = eta*0.5*(tanh((z + eta_z0)/eta_width) &
+                - tanh((z - eta_z0)/eta_width))
 !
 ! its gradient:
-           geta_z(:,1) = 0.
-           geta_z(:,2) = 0.
-           geta_z(:,3) = -eta/(2.*eta_width) * &
+          if (present(geta_z)) then
+             geta_z(:,1) = 0.
+             geta_z(:,2) = 0.
+             geta_z(:,3) = -eta/(2.*eta_width) * &
                ((tanh((z + eta_z0)/eta_width))**2. &
                -(tanh((z - eta_z0)/eta_width))**2.)
+          endif
 !
 !  Single tanh step function
 !
@@ -6119,25 +6133,29 @@ module Magnetic
 !
 !  default to spread gradient over ~5 grid cells.
 !
-           if (eta_width == 0.) eta_width = 5.*dz
-           eta_z = eta + eta*(eta_jump-1.)*step(z,eta_z0,-eta_width)
+          if (eta_width == 0.) eta_width = 5.*dz
+          eta_z = eta + eta*(eta_jump-1.)*step(z,eta_z0,-eta_width)
 !
 ! its gradient:
-           geta_z(:,1) = 0.
-           geta_z(:,2) = 0.
-           geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_width)
+          if (present(geta_z)) then
+            geta_z(:,1) = 0.
+            geta_z(:,2) = 0.
+            geta_z(:,3) = eta*(eta_jump-1.)*der_step(z,eta_z0,-eta_width)
+          endif
 !
         case ('cubic_step')
 !
 !  Cubic-step profile
 !
-           if (eta_width == 0.) eta_width = 5.*dz
-           eta_z = eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_width)
+          if (eta_width == 0.) eta_width = 5.*dz
+          eta_z = eta + eta*(eta_jump-1.)*cubic_step(z,eta_z0,-eta_width)
 !
 ! its gradient:
-           geta_z(:,1) = 0.
-           geta_z(:,2) = 0.
-           geta_z(:,3) = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_width)
+          if (present(geta_z)) then
+            geta_z(:,1) = 0.
+            geta_z(:,2) = 0.
+            geta_z(:,3) = eta*(eta_jump-1.)*cubic_der_step(z,eta_z0,-eta_width)
+          endif
 !
 !  Two-step function
 !
@@ -6145,17 +6163,19 @@ module Magnetic
 !
 !  Default to spread gradient over ~5 grid cells,
 !
-           if (eta_width == 0.) eta_width = 5.*dz
-           eta_z = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
-             (step(z,eta_z0,eta_width)-step(z,eta_z1,eta_width))
+          if (eta_width == 0.) eta_width = 5.*dz
+          eta_z = eta*eta_jump-eta*(eta_jump-two_step_factor)* &
+            (step(z,eta_z0,eta_width)-step(z,eta_z1,eta_width))
 !
 !  ... and its gradient. Note that the sign of the second term enters
 !  with the opposite sign, because we have used negative eta_width.
 !
-           geta_z(:,1) = 0.
-           geta_z(:,2) = 0.
-           geta_z(:,3) = eta*(eta_jump-two_step_factor)*( &
-             der_step(z,eta_z0,-eta_width)+der_step(z,eta_z1,eta_width))
+          if (present(geta_z)) then
+            geta_z(:,1) = 0.
+            geta_z(:,2) = 0.
+            geta_z(:,3) = eta*(eta_jump-two_step_factor)*( &
+              der_step(z,eta_z0,-eta_width)+der_step(z,eta_z1,eta_width))
+          endif
 !
       endselect
 !
