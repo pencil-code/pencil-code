@@ -69,7 +69,7 @@ end
 pro pc_read_ts, $
     filename=filename, datadir=datadir, object=object, double=double, $ 
     print=print, quiet=quiet, help=help, verbose=verbose, $
-    num=n, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
+    num=num, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
     ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
     movingaverage=movingaverage, monotone=monotone, njump=njump
 COMPILE_OPT IDL2,HIDDEN
@@ -99,7 +99,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "               be ignored.                                        "
     print, "    njump: return time series data every njump lines     [integer]"
     print, "                                                                  "
-    print, "        n: number of entries (valid - not commented out)    [long]"
+    print, "      num: number of entries (valid - not commented out)    [long]"
     print, "       it: array of time step numbers                    [long(n)]"
     print, "        t: array containing time in code units          [float(n)]"
     print, "       dt: array of time step sizes                     [float(n)]"
@@ -137,7 +137,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Initialize / set default returns for ALL variables.
 ;
-  n=0L
+  num=0L
   it=0L
   t=0.
   dt=0.
@@ -322,7 +322,7 @@ stop
 ;
 ;  Unwrap and quantities that may have been separately requested from object.
 ;
-  n = (size(data))[1]
+  num = (size(data))[1]
   if (in_list('t',full_labels))    then t = object.t
   if (in_list('dt',full_labels))   then dt = object.dt
   if (in_list('dtc',full_labels))  then dtc = object.dtc
