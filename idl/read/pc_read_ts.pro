@@ -188,7 +188,6 @@ COMPILE_OPT IDL2,HIDDEN
  
     data = input_table(fullfilename,double=double,  $
            stop_at=newheader,fileposition=fileposition,verbose=verbose)
-stop
     if ((size(data))[1] ne ncols) then begin
       message, /INFO, 'Inconsistency: label number different from column number'
     endif
