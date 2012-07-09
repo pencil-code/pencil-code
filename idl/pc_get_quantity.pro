@@ -333,6 +333,11 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		return, run_par.nu * rho * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.velocity^3 / unit.length
 	end
+	if (strcmp (quantity, 'HR_viscous_particle', /fold_case)) then begin
+		; Viscous heating rate per particle [W]
+		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
+		return, pc_compute_quantity (vars, index, 'HR_viscous') / n_rho
+	end
 	if (strcmp (quantity, 'Rn_viscous', /fold_case)) then begin
 		; Viscous mesh Reynolds number
 		if (not any (tag_names (run_par) eq "NU")) then begin
