@@ -69,7 +69,7 @@ end
 pro pc_read_ts, $
     filename=filename, datadir=datadir, object=object, double=double, $ 
     print=print, quiet=quiet, help=help, verbose=verbose, $
-    n=n, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
+    num=n, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
     ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
     movingaverage=movingaverage, monotone=monotone, njump=njump
 COMPILE_OPT IDL2,HIDDEN
@@ -99,16 +99,16 @@ COMPILE_OPT IDL2,HIDDEN
     print, "               be ignored.                                        "
     print, "    njump: return time series data every njump lines     [integer]"
     print, "                                                                  "
-    print, "        n: number of entries (valid - not commented out) [integer]"
-    print, "       it: array of time step numbers                  [float(it)]"
-    print, "        t: array containing time in code units         [float(it)]"
-    print, "       dt: array of time step sizes                    [float(it)]"
-    print, "      dtc: time step limit by CFL condition            [float(it)]"
-    print, "     urms: RMS velocity                                [float(it)]"
-    print, "     ekin: total kinetic energy                        [float(it)]"
-    print, "      eth: total thermal energy                        [float(it)]"
-    print, "     rhom:                                             [float(it)]"
-    print, "      ssm:                                             [float(it)]"
+    print, "        n: number of entries (valid - not commented out)    [long]"
+    print, "       it: array of time step numbers                    [long(n)]"
+    print, "        t: array containing time in code units          [float(n)]"
+    print, "       dt: array of time step sizes                     [float(n)]"
+    print, "      dtc: time step limit by CFL condition             [float(n)]"
+    print, "     urms: RMS velocity                                 [float(n)]"
+    print, "     ekin: total kinetic energy                         [float(n)]"
+    print, "      eth: total thermal energy                         [float(n)]"
+    print, "     rhom:                                              [float(n)]"
+    print, "      ssm:                                              [float(n)]"
     print, ""
     print, "   object: optional structure in which to return all   [structure]"
     print, "           the above as tags   "
@@ -137,8 +137,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Initialize / set default returns for ALL variables.
 ;
-  n=0
-  it=0.
+  n=0L
+  it=0L
   t=0.
   dt=0.
   dtc=0.
@@ -188,6 +188,7 @@ COMPILE_OPT IDL2,HIDDEN
  
     data = input_table(fullfilename,double=double,  $
            stop_at=newheader,fileposition=fileposition,verbose=verbose)
+stop
     if ((size(data))[1] ne ncols) then begin
       message, /INFO, 'Inconsistency: label number different from column number'
     endif
@@ -304,9 +305,15 @@ COMPILE_OPT IDL2,HIDDEN
   cmd = 'object = {'            ; build a command to execute
   for i=0,ncols-1 do begin
     if (i eq 0) then pref=' ' else pref=', '
-    cmd = cmd + pref + full_labels[i] $
-                     + ': reform(full_data[' $
-                     + strtrim(i,2) + ',ii])'
+    if (strcmp (full_labels[i], 'it', /fold_case)) then begin
+      cmd = cmd + pref + full_labels[i] $
+                       + ': long(reform(full_data[' $
+                       + strtrim(i,2) + ',ii]))'
+    endif else begin
+      cmd = cmd + pref + full_labels[i] $
+                       + ': reform(full_data[' $
+                       + strtrim(i,2) + ',ii])'
+    endelse
   endfor
   cmd = cmd + ' }'
 ;
