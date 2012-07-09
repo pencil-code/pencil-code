@@ -1353,7 +1353,7 @@ include 'NSCBC.h'
 !
 ! 2010.01.21/Nils Erland: coded
 !
-        Use Chemistry
+        use Chemistry
         use Viscosity
         use EquationOfState, only: cs0, cs20, eoscalc, irho_TT, gamma
 !
@@ -1475,7 +1475,7 @@ include 'NSCBC.h'
         real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
 !        real, dimension (my,mz) :: tmp1,tmp2,tmp3,tmp_lnrho
-        real, dimension (:,:), allocatable :: tmp1,tmp2,tmp3,tmp_lnrho
+        real, dimension (:,:), allocatable :: tmp1,tmp2,tmp3,tmp_lnrho,tmp_lnT
         integer :: i,stat
 !
 !  Allocate arrays
@@ -1489,6 +1489,8 @@ include 'NSCBC.h'
         if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")
         allocate(tmp_lnrho(my,mz),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")
+        allocate(tmp_lnT(my,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnT ")
       elseif (dir == 2) then
         allocate(tmp1(mx,mz),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")
@@ -1498,6 +1500,8 @@ include 'NSCBC.h'
         if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")
         allocate(tmp_lnrho(mx,mz),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")
+        allocate(tmp_lnT(mx,mz),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnT ")
       elseif (dir == 3) then
         allocate(tmp1(mx,my),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for tmp1 ")
@@ -1507,6 +1511,8 @@ include 'NSCBC.h'
         if (stat>0) call stop_it("Couldn't allocate memory for tmp3 ")
         allocate(tmp_lnrho(mx,my),STAT=stat)
         if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnrho ")
+        allocate(tmp_lnT(mx,my),STAT=stat)
+        if (stat>0) call stop_it("Couldn't allocate memory for tmp_lnT ")
       else
         call fatal_error('bc_nscbc_prf_x','No such dir!')
       endif
@@ -1536,11 +1542,19 @@ include 'NSCBC.h'
               call der_pencil(2,f(lll,:,i,iuy),tmp2(:,i))
               call der_pencil(2,f(lll,:,i,iuz),tmp3(:,i))
               call der_pencil(2,f(lll,:,i,ilnrho),tmp_lnrho(:,i))
+              if (ilnTT>0) call der_pencil(2,f(lll,:,i,ilnTT),tmp_lnT(:,i))
             enddo
             dui_dxj(:,:,1,2)=tmp1(m1:m2,n1:n2)
             dui_dxj(:,:,2,2)=tmp2(m1:m2,n1:n2)
             dui_dxj(:,:,3,2)=tmp3(m1:m2,n1:n2)
             grad_rho(:,:,2)=tmp_lnrho(m1:m2,n1:n2)
+            if (ilnTT>0) grad_T(:,:,2)=tmp_lnT(m1:m2,n1:n2)
+          else 
+            dui_dxj(:,:,1,2)=0
+            dui_dxj(:,:,2,2)=0
+            dui_dxj(:,:,3,2)=0
+            grad_rho(:,:,2)=0
+            if (ilnTT>0) grad_T(:,:,2)=0
           endif
           if (nzgrid /= 1) then
             do i=m1,m2
@@ -1548,11 +1562,19 @@ include 'NSCBC.h'
               call der_pencil(3,f(lll,i,:,iuy),tmp2(i,:))
               call der_pencil(3,f(lll,i,:,iuz),tmp3(i,:))
               call der_pencil(3,f(lll,i,:,ilnrho),tmp_lnrho(i,:))
+              if (ilnTT>0) call der_pencil(3,f(lll,i,:,ilnTT),tmp_lnT(i,:))
             enddo
             dui_dxj(:,:,1,3)=tmp1(m1:m2,n1:n2)
             dui_dxj(:,:,2,3)=tmp2(m1:m2,n1:n2)
             dui_dxj(:,:,3,3)=tmp3(m1:m2,n1:n2)
             grad_rho(:,:,3)=tmp_lnrho(m1:m2,n1:n2)
+            if (ilnTT>0) grad_T(:,:,3)=tmp_lnT(m1:m2,n1:n2)
+          else
+            dui_dxj(:,:,1,3)=0
+            dui_dxj(:,:,2,3)=0
+            dui_dxj(:,:,3,3)=0
+            grad_rho(:,:,3)=0
+            if (ilnTT>0) grad_T(:,:,3)=0
           endif
         elseif (dir == 2) then
           if (nxgrid /= 1) then
@@ -1561,11 +1583,19 @@ include 'NSCBC.h'
               call der_pencil(1,f(:,lll,i,iuy),tmp2(:,i))
               call der_pencil(1,f(:,lll,i,iuz),tmp3(:,i))
               call der_pencil(1,f(:,lll,i,ilnrho),tmp_lnrho(:,i))
+              if (ilnTT>0) call der_pencil(1,f(:,lll,i,ilnTT),tmp_lnT(:,i))
             enddo
             dui_dxj(:,:,1,1)=tmp1(l1:l2,n1:n2)
             dui_dxj(:,:,2,1)=tmp2(l1:l2,n1:n2)
             dui_dxj(:,:,3,1)=tmp3(l1:l2,n1:n2)
             grad_rho(:,:,1)=tmp_lnrho(l1:l2,n1:n2)
+            if (ilnTT>0) grad_T(:,:,1)=tmp_lnT(l1:l2,n1:n2)
+          else
+            dui_dxj(:,:,1,1)=0
+            dui_dxj(:,:,2,1)=0
+            dui_dxj(:,:,3,1)=0
+            grad_rho(:,:,1)=0
+            if (ilnTT>0) grad_T(:,:,1)=0
           endif
           if (nzgrid /= 1) then
             do i=l1,l2
@@ -1573,11 +1603,19 @@ include 'NSCBC.h'
               call der_pencil(3,f(i,lll,:,iuy),tmp2(i,:))
               call der_pencil(3,f(i,lll,:,iuz),tmp3(i,:))
               call der_pencil(3,f(i,lll,:,ilnrho),tmp_lnrho(i,:))
+              if (ilnTT>0) call der_pencil(3,f(i,lll,:,ilnTT),tmp_lnT(i,:))
             enddo
             dui_dxj(:,:,1,3)=tmp1(l1:l2,n1:n2)
             dui_dxj(:,:,2,3)=tmp2(l1:l2,n1:n2)
             dui_dxj(:,:,3,3)=tmp3(l1:l2,n1:n2)
             grad_rho(:,:,3)=tmp_lnrho(l1:l2,n1:n2)
+            if (ilnTT>0) grad_T(:,:,3)=tmp_lnT(l1:l2,n1:n2) 
+          else
+            dui_dxj(:,:,1,3)=0
+            dui_dxj(:,:,2,3)=0
+            dui_dxj(:,:,3,3)=0
+            grad_rho(:,:,3)=0
+            if (ilnTT>0) grad_T(:,:,3)=0
           endif
         elseif (dir == 3) then
           if (nxgrid /= 1) then
@@ -1586,11 +1624,19 @@ include 'NSCBC.h'
               call der_pencil(1,f(:,i,lll,iuy),tmp2(:,i))
               call der_pencil(1,f(:,i,lll,iuz),tmp3(:,i))
               call der_pencil(1,f(:,i,lll,ilnrho),tmp_lnrho(:,i))
+              if (ilnTT>0) call der_pencil(1,f(:,i,lll,ilnTT),tmp_lnT(:,i))
             enddo
             dui_dxj(:,:,1,1)=tmp1(l1:l2,m1:m2)
             dui_dxj(:,:,2,1)=tmp2(l1:l2,m1:m2)
             dui_dxj(:,:,3,1)=tmp3(l1:l2,m1:m2)
             grad_rho(:,:,1)=tmp_lnrho(l1:l2,m1:m2)
+            if (ilnTT>0) grad_T(:,:,1)=tmp_lnT(l1:l2,m1:m2)
+          else
+            dui_dxj(:,:,1,1)=0
+            dui_dxj(:,:,2,1)=0
+            dui_dxj(:,:,3,1)=0
+            grad_rho(:,:,1)=0
+            if (ilnTT>0) grad_T(:,:,1)=0
           endif
           if (nygrid /= 1) then
             do i=l1,l2
@@ -1598,11 +1644,19 @@ include 'NSCBC.h'
               call der_pencil(2,f(i,:,lll,iuy),tmp2(i,:))
               call der_pencil(2,f(i,:,lll,iuz),tmp3(i,:))
               call der_pencil(2,f(i,:,lll,ilnrho),tmp_lnrho(i,:))
+              if (ilnTT>0) call der_pencil(2,f(i,:,lll,ilnTT),tmp_lnT(i,:))
             enddo
             dui_dxj(:,:,1,2)=tmp1(l1:l2,m1:m2)
             dui_dxj(:,:,2,2)=tmp2(l1:l2,m1:m2)
             dui_dxj(:,:,3,2)=tmp3(l1:l2,m1:m2)
             grad_rho(:,:,2)=tmp_lnrho(l1:l2,m1:m2)
+            if (ilnTT>0) grad_T(:,:,2)=tmp_lnT(l1:l2,m1:m2)
+          else
+            dui_dxj(:,:,1,2)=0
+            dui_dxj(:,:,2,2)=0
+            dui_dxj(:,:,3,2)=0
+            grad_rho(:,:,2)=0
+            if (ilnTT>0) grad_T(:,:,2)=0
           endif
         endif
 !
