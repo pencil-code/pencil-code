@@ -3312,11 +3312,11 @@ module Hydro
           endif
 !
           if (dampu > 0.0) then
-            ! absolute damping
+            ! absolute damping per time unit
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
                                     - fade_fact*dampu*f(l1:l2,m,n,iux:iuz)
           else
-            ! damping relative to time step (dampu < 0)
+            ! dampu < 0: damping per time-step (dt is multiplied in timestep)
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
                                     + fade_fact*dampu/dt*f(l1:l2,m,n,iux:iuz)
           endif
