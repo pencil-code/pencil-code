@@ -390,8 +390,8 @@ pro pc_show_ts_analyze
 
 	if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and any (strcmp (tags, 'ethm', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
-		energy_int = (ts.eem*N_grid + ts.ekintot) * units.mass / units.velocity^2
-		energy_therm = (ts.ethm + ts.ekintot/volume) * units.mass / (units.velocity^2 * units.length^3)
+		energy_int = (ts.eem*N_grid + ts.ekintot) * units.mass * units.velocity^2
+		energy_therm = (ts.ethm + ts.ekintot/volume) * units.mass * units.velocity^2 / units.length^3
 		plot, time, energy_int, title = 'Total energy {w} and E/V {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='E_total [J]', ys=10, /noerase
 		plot, time, energy_therm, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='<E/V> [J/m^3]'
@@ -400,19 +400,19 @@ pro pc_show_ts_analyze
 	end else if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and any (strcmp (tags, 'totmass', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		mass = ts.totmass * units.mass / units.default_mass
-		energy = (ts.eem*N_grid + ts.ekintot) / ts.totmass / units.velocity^2
-		plot, time, energy, title = 'Energy {w} and mass {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='<E>_m [J/kg]', ys=10, /noerase
+		energy = (ts.eem*N_grid + ts.ekintot) / ts.totmass * units.velocity^2
+		plot, time, energy, title = 'Energy {w} and mass {r} conservation', xrange=x_minmax, /xs, xmar=x_margin_both, xc=charsize, yc=charsize, ytitle='<E/M> [J/kg]', ys=10, /noerase
 		plot, time, mass, color=200, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		axis, xc=charsize, yc=charsize, yaxis=1, yrange=!Y.CRANGE, /ys, ytitle='total mass ['+units.default_mass_str+']'
 		plot, time, energy, linestyle=2, xrange=x_minmax, xs=5, xmar=x_margin_both, xc=charsize, yc=charsize, ys=6, /noerase
 		!P.MULTI = [max_subplots-num_subplots, 2, 2, 0, 0]
 	end else if (any (strcmp (tags, 'eem', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
-		energy = (ts.eem*N + ts.ekintot) * units.mass / units.velocity^2
+		energy = (ts.eem*N + ts.ekintot) * units.mass * units.velocity^2
 		plot, time, energy, title = 'Energy conservation', xrange=x_minmax, /xs, xc=charsize, yc=charsize, ytitle='<E> [J]'
 	end else if (any (strcmp (tags, 'ethm', /fold_case)) and any (strcmp (tags, 'ekintot', /fold_case)) and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
-		energy = (ts.ethm + ts.ekintot/volume) * units.mass / (units.velocity^2 * units.length^3)
+		energy = (ts.ethm + ts.ekintot/volume) * units.mass * units.velocity^2 / units.length^3
 		plot, time, energy, title = 'Energy conservation', xrange=x_minmax, /xs, xc=charsize, yc=charsize, ytitle='<E/V> [J/m^3]'
 	end
 	if (any (strcmp (tags, 'TTmax', /fold_case)) and any (strcmp (tags, 'rhomin', /fold_case)) and (num_subplots lt max_subplots)) then begin
