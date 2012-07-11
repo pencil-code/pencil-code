@@ -14,15 +14,17 @@ To get started, run one of the samples:
   unix>  cd pencil-code
   unix>  source sourceme.csh  [or . sourceme.sh]
   unix>  cd samples/conv-slab
-  unix>  pc_setupsrc
-  Then edit src/Makefile such that it uses the right compiler and switches
-  unix>  make
-  unix>  mkdir data  [I/O will be slow if you are in an NFS directory]
-  unix>  start.csh
-  unix>  run.csh
 
-For more details, see the manual in the doc/ directory (also available
-from the URL above).
+  unix>  mkdir data     [I/O will be slow if you are in an NFS directory]
+
+  unix>  pc_setupsrc
+  unix>  pc_build  [ -f /path/to/config/file.conf ]
+  unix>  pc_start  [ -f /path/to/config/file.conf ]
+  unix>  pc_run    [ -f /path/to/config/file.conf ]
+
+
+See pencil-code/config/hosts/*/*.conf for sample config files. For more details,
+see the manual in the doc/ directory (also available from the URL above).
 
 =============================================================================
 
