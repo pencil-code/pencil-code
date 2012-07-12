@@ -76,7 +76,7 @@ module Special
   logical :: llog_distribution=.true.
 
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
-  real :: nd0, r0, delta, uy_bz, ux_bz, Ntot=1e3, BB0, dYw1, dYw2, PP
+  real :: nd0, r0, r02, delta, uy_bz, ux_bz, Ntot=1e3, BB0, dYw1, dYw2, PP
    
 ! Keep some over used pencils
 !
@@ -84,7 +84,7 @@ module Special
   namelist /atmosphere_init_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
-      nd0, r0, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP
+      nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP
          
 ! run parameters
   namelist /atmosphere_run_pars/  &
@@ -1315,7 +1315,9 @@ subroutine bc_satur_x(f,bc)
       real :: value1, value2, air_mass_1, air_mass_2
       real :: psat1, psat2, sum1, sum2, init_water_1, init_water_2
       real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
-      real, dimension(2,my,mz,ndustspec) :: psf 
+      real, dimension(2,my,mz,ndustspec) :: psf
+      real :: psf_1, psf_2 
+      real ::  Rgas_loc=8.314472688702992E+7
 !
       vr=bc%ivar
       value1=bc%value1
@@ -1345,29 +1347,34 @@ subroutine bc_satur_x(f,bc)
                 -BB0/(8.*dsize(k)**3))
          enddo
 
+      psf_1=psat1*exp(AA/TT1/2./r0-BB0/(8.*r0**3))
+      if (r0/=0.) then
+       psf_2=psat2*exp(AA/TT2/2./r02-BB0/(8.*r02**3))
+      else
+       psf_2=psat2*exp(AA/TT2/2./r0-BB0/(8.*r0**3))
+      endif
 
 !
 ! Recalculation of the air_mass for different boundary conditions
 !
 !
-        do iter=1,3
+!        do iter=1,3
 !
-           air_mass_1=0.
-           do k=1,nchemspec
-             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
-           enddo
-           air_mass_1=1./air_mass_1
+!           air_mass_1=0.
+!           do k=1,nchemspec
+!             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
+!           enddo
+!           air_mass_1=1./air_mass_1
 !
-           air_mass_2=0
-           do k=1,nchemspec
-             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
-           enddo
-           air_mass_2=1./air_mass_2
+!           air_mass_2=0
+!           do k=1,nchemspec
+!             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
+!           enddo
+!           air_mass_2=1./air_mass_2
 !
-           init_Yk_1(ind_H2O)=psat1/(PP*air_mass_1/18.)*dYw1
-           init_Yk_2(ind_H2O)=psat2/(PP*air_mass_2/18.)*dYw2
+           init_Yk_1(ind_H2O)=psf_1/(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*TT1/18.)*dYw1
+           init_Yk_2(ind_H2O)=psf_2/(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*TT2/18.)*dYw2
 !
-
 
            sum1=0.
            sum2=0.
@@ -1384,7 +1391,7 @@ subroutine bc_satur_x(f,bc)
 !
 !print*,'special', air_mass_1, init_Yk_1(ind_H2O), iter, vr, ichemspec(ind_H2O)
 !
-        enddo
+!        enddo
 !
            init_water_1=init_Yk_1(ind_H2O)
            init_water_2=init_Yk_2(ind_H2O)
@@ -1397,8 +1404,9 @@ subroutine bc_satur_x(f,bc)
           f(l1,:,:,ichemspec(ind_H2O))=init_water_1
         elseif (vr==ichemspec(ind_N2)) then 
           f(l1,:,:,ichemspec(ind_N2))=init_Yk_1(ind_N2)
-        elseif (vr==ind(1)) then
-          do k=1,ndustspec
+        elseif ((vr>=ind(1)) .and. (vr<=ind(ndustspec))) then
+!    
+      do k=1,ndustspec
            f(l1,:,:,ind(k))=Ntot/0.856E-03/(2.*pi)**0.5/dsize(k)/alog(delta) &
               *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
           enddo
