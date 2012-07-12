@@ -856,6 +856,16 @@ module Boundcond
                 ! BCZ_DOC: forces ghost cells and boundary to not point inwards
                 ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
                 call bc_outflow_zero_deriv_z(f,topbot,j)
+              case ('ind')
+                ! BCZ_DOC: allow inflow, but no outflow
+                ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+                ! BCZ_DOC: creates inwards pointing or zero 1st derivative at boundary
+                call bc_inflow_inwards_deriv_z(f,topbot,j)
+              case ('oud')
+                ! BCZ_DOC: allow outflow, but no inflow
+                ! BCZ_DOC: forces ghost cells and boundary to not point inwards
+                ! BCZ_DOC: creates outwards pointing or zero 1st derivative at boundary
+                call bc_outflow_outwards_deriv_z(f,topbot,j)
               case ('ubs')
                 ! BCZ_DOC: copy boundary outflow,
                 ! but limit inflow +ve inward gradient (experimental)
@@ -5803,6 +5813,98 @@ module Boundcond
       endselect
 !
     endsubroutine bc_outflow_zero_deriv_z
+!***********************************************************************
+    subroutine bc_inflow_inwards_deriv_z(f,topbot,j)
+!
+!  Inflow boundary condition with inwards 1st derivative at boundary.
+!
+!  The velocity boundary condition is set to 's'.
+!  The boundary and ghost cell values are forced to not point outwards.
+!
+!  10-jul-2012/Bourdin.KIS: adapted from 'bc_inflow_zero_deriv_z'
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i, ix, iy
+!
+      select case (topbot)
+!
+      ! bottom boundary
+      case ('bot')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition with forced inflow
+            do i = 1, nghost
+              f(ix,iy,n1-i,j) = abs (f(ix,iy,n1+i,j))
+            enddo
+          enddo
+        enddo
+!
+      ! top boundary
+      case ('top')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition with forced inflow
+            do i = 1, nghost
+              f(ix,iy,n2+i,j) = -abs (f(ix,iy,n2-i,j))
+            enddo
+          enddo
+        enddo
+!
+      case default
+        print*, "bc_inflow_inwards_deriv_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_inflow_inwards_deriv_z
+!***********************************************************************
+    subroutine bc_outflow_outwards_deriv_z(f,topbot,j)
+!
+!  Outflow boundary condition with outwards 1st derivative at boundary.
+!
+!  The velocity boundary condition is set to 's'.
+!  The boundary and ghost cell values are forced to not point inwards.
+!
+!  10-jul-2012/Bourdin.KIS: adapted from 'bc_outflow_zero_deriv_z'
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      integer :: i, ix, iy
+!
+      select case (topbot)
+!
+      ! bottom boundary
+      case ('bot')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition with forced outflow
+            do i = 1, nghost
+              f(ix,iy,n1-i,j) = -abs (f(ix,iy,n1+i,j))
+            enddo
+          enddo
+        enddo
+!
+      ! top boundary
+      case ('top')
+        do iy = 1, my
+          do ix = 1, mx
+            ! 's' boundary condition with forced outflow
+            do i = 1, nghost
+              f(ix,iy,n2+i,j) = abs (f(ix,iy,n2-i,j))
+            enddo
+          enddo
+        enddo
+!
+      case default
+        print*, "bc_outflow_outwards_deriv_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_outflow_outwards_deriv_z
 !***********************************************************************
     subroutine bc_steady_z(f,topbot,j)
 !
