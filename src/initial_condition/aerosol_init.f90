@@ -50,7 +50,7 @@ module InitialCondition
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
      real :: X_wind=impossible, spot_size=1.
      real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16
-     real :: dsize_min=0., dsize_max=0., r0=0., Period=2. 
+     real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2. 
      real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false., lcurved=.false.!, linit_density=.false.
@@ -61,7 +61,7 @@ module InitialCondition
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
-     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, d0, lcurved, &
+     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved, &
      ltanh_prof, Period, BB0
 !
   contains
@@ -199,8 +199,8 @@ module InitialCondition
       !real, dimension (mx,my,mz), intent(inout) :: f
       real, dimension (ndustspec) ::  lnds
       real :: ddsize, ddsize0, del, air_mass, PP
-      integer :: i, ii, ii_max
-      logical :: lstop=.true., lstart1=.false., lstart2=.false.
+      integer :: i, ii
+      logical ::  lstart1=.false., lstart2=.false.
 !
 
       if (llog_distribution) then
@@ -217,16 +217,11 @@ module InitialCondition
           lnds(i+1)=dsize_min+i*ddsize
           dsize(i+1)=lnds(i+1)
         endif
-        if (lstop) then
-          if (dsize(i+1)>r0) then
-            ii_max=i+1; lstop=.false.
-          endif
-        endif
       enddo
 !
       call air_field_local(f, air_mass, PP)
 !
-      call reinitialization(f, air_mass, PP, ii_max)
+      call reinitialization(f, air_mass, PP)
 !
     endsubroutine initial_condition_chemistry
 !***********************************************************************
@@ -319,7 +314,6 @@ module InitialCondition
 !      logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
 !      real, dimension (ndustspec) ::  lnds
 !      real :: ddsize,ddsize0,del
-!      integer :: ii_max
 !
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
       integer :: iostat, i1,i2,i3
@@ -459,8 +453,7 @@ module InitialCondition
 !!
     endsubroutine air_field_local
 !*************************************!***********************************************************************
-!    subroutine reinitialization(f, air_mass, PP, ii_max,init_water1_min,init_water2_max)
-    subroutine reinitialization(f, air_mass, PP, ii_max)
+    subroutine reinitialization(f, air_mass, PP)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, air_mass_ar, tmp
@@ -469,10 +462,11 @@ module InitialCondition
       real, dimension (2,my,mz,ndustspec) :: psf
       real , dimension (my) :: init_x1_ar, init_x2_ar, del_ar, del_ar1, del_ar2
 !
-      integer :: i,j,k, j1,j2,j3, iter, ii_max
-      real :: YY_k, air_mass,  PP, del, psat1, psat2 
+      integer :: i,j,k, j1,j2,j3, iter
+      real :: YY_k, air_mass,  PP, del, psat1, psat2, psf_1, psf_2 
       real :: air_mass_1, air_mass_2, sum1, sum2, init_water_1, init_water_2 
       logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
+      real ::  Rgas_loc=8.314472688702992E+7
 !
 
 !  Reinitialization of T, water => rho
@@ -551,24 +545,22 @@ module InitialCondition
 !               -10.7*d0**3/(8.*dsize(k)**3))
                 -BB0/(8.*dsize(k)**3))
          enddo
+        psf_1=psat1*exp(AA/init_TT1/2./r0 &
+             -BB0/(8.*r0**3))
+        if (r02 /= 0) then
+          psf_2=psat2*exp(AA/init_TT2/2./r02 &
+            -BB0/(8.*r02**3))        
+        else
+          psf_2=psat2*exp(AA/init_TT2/2./r0 &
+            -BB0/(8.*r0**3))
+        endif
 !
 ! Recalculation of the air_mass for different boundary conditions
 !
-!
-        do iter=1,3
-           air_mass_1=0
-           do k=1,nchemspec
-             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
-           enddo
-           air_mass_1=1./air_mass_1
-           air_mass_2=0
-           do k=1,nchemspec
-             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
-           enddo
-           air_mass_2=1./air_mass_2
-!
-           init_Yk_1(index_H2O)=psat1/(PP*air_mass_1/18.)*dYw1
-           init_Yk_2(index_H2O)=psat2/(PP*air_mass_2/18.)*dYw2
+           init_Yk_1(index_H2O)=psf_1 &
+               /(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*init_TT1/18.)*dYw1
+           init_Yk_2(index_H2O)=psf_2  & 
+               /(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*init_TT2/18.)*dYw2
 !
            sum1=0.
            sum2=0.
@@ -582,10 +574,7 @@ module InitialCondition
            init_Yk_1(index_N2)=1.-sum1
            init_Yk_2(index_N2)=1.-sum2
 ! 
-!
-!print*,'init', air_mass_1, init_Yk_1(index_H2O), iter
-!
-        enddo
+!        enddo
 !
            init_water_1=init_Yk_1(index_H2O)
            init_water_2=init_Yk_2(index_H2O)
@@ -657,7 +646,9 @@ module InitialCondition
             f(:,:,:,iux)=f(:,:,:,iux)+init_ux
          endif
 !       
-         if (lroot) print*, ' Saturation Pressure, Pa   ', psat1, psat2
+         if (lroot) print*, ' Saturation Pressure, Pa   ', psf_1, psf_2
+         if (lroot) print*, ' psf, Pa   ',  psf_1, psf_2
+         if (lroot) print*, ' pw, Pa   ', (exp(f(l1,m1,n1,ilnrho))*Rgas_loc*init_TT1/18.) 
          if (lroot) print*, ' saturated water mass fraction', psat1/PP, psat2/PP
 !         if (lroot) print*, 'New Air density, g/cm^3:'
 !         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*maxval(air_mass_ar)/TT
