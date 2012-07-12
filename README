@@ -14,32 +14,26 @@ To get started, run one of the samples:
   unix>  cd pencil-code
   unix>  source sourceme.csh  [or . sourceme.sh]
   unix>  cd samples/conv-slab
+  unix>  mkdir data
 
-  unix>  mkdir data     [I/O will be slow if you are in an NFS directory]
+I/O can be slow on remote filesystems like NFS or Lustre:
 
   unix>  pc_setupsrc
   unix>  pc_build  [ -f /path/to/config/file.conf ]
+
+To create the initial condition and run the code:
+
   unix>  pc_start  [ -f /path/to/config/file.conf ]
   unix>  pc_run    [ -f /path/to/config/file.conf ]
-
 
 See pencil-code/config/hosts/*/*.conf for sample config files. For more details,
 see the manual in the doc/ directory (also available from the URL above).
 
 =============================================================================
 
-If you are using bash, insert the following into your .bashrc file:
-
-  #
-  #  path for pencil code 
-  #
-  export PENCIL_HOME=$HOME/pencil-code
-  _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet 
-
-and in .bash_profile, add:
+If you are using bash and you don't want to "source sourceme.sh" on each
+session, you can insert the following into your .bashrc and/or .bash_profile:
 
   export PENCIL_HOME=$HOME/pencil-code
   _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
-
   alias pc='cd $PENCIL_HOME'
-
