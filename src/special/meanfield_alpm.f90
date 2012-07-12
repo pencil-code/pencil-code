@@ -43,14 +43,14 @@ module Special
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
 !
   ! run parameters
-  real :: kf_alpm=1., alpmdiff=0.,deltat_alpm=1.
-  logical :: ladvect_alpm=.false.,lupw_alpm=.false.,&
-      lflux_from_Omega=.false.
+  real :: kf_alpm=1., alpmdiff=0., deltat_alpm=1.
+  logical :: ladvect_alpm=.false., lupw_alpm=.false., &
+      lflux_from_Omega=.false., lvariable_params=.false.
 !
   namelist /special_run_pars/ &
-       kf_alpm,ladvect_alpm,alpmdiff, &
-       VC_Omega_profile,VC_Omega_ampl,lupw_alpm,deltat_alpm,&
-       lflux_from_Omega
+       kf_alpm, ladvect_alpm, alpmdiff, &
+       VC_Omega_profile, VC_Omega_ampl, lupw_alpm, deltat_alpm, &
+       lflux_from_Omega, lvariable_params
 !
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpm_int=0, idiag_gatop=0, idiag_gabot=0
@@ -58,6 +58,9 @@ module Special
   integer :: idiag_alpmmz=0, idiag_galpmmz3=0
 !
   real, pointer :: meanfield_etat,eta
+  real, dimension(:), pointer :: etat_x, kf_x, kf_x1
+  real, dimension(:), pointer :: etat_y, kf_y
+  real, dimension(:), pointer :: etat_z, kf_z
 !
   contains
 !
@@ -106,7 +109,7 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
-      integer :: ierr
+      integer :: l,ierr
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -114,21 +117,54 @@ module Special
       if (lmagn_mf) then
         if (lrun) then
           call get_shared_variable('eta',eta,ierr)
-          if (ierr/=0) &
-              call fatal_error("initialize_special: ", "cannot get shared var eta")
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var eta")
           call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
-          if (ierr/=0) &
-              call fatal_error("initialize_special: ", &
+          if (ierr/=0) call fatal_error("initialize_special: ", &
               "cannot get shared var meanfield_etat")
+          call get_shared_variable('kf_x',kf_x,ierr)
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var kf_x")
+          call get_shared_variable('kf_y',kf_y,ierr)
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var kf_y")
+          call get_shared_variable('kf_z',kf_z,ierr)
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var kf_z")
+          call get_shared_variable('kf_x1',kf_x1,ierr)
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var kf_x1")
+          call get_shared_variable('etat_x',etat_x,ierr)
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var etat_x")
+          call get_shared_variable('etat_y',etat_y,ierr)
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var etat_y")
+          call get_shared_variable('etat_z',etat_z,ierr)
+          if (ierr/=0) call fatal_error("initialize_special: ", &
+              "cannot get shared var etat_z")
         endif
-        else
-          call fatal_error('init_special','You must turn on magn_mf to use this module')
+      else
+        call fatal_error("init_special", &
+            "You must turn on magn_mf to use this module")
       endif
-! Also check the consistency between flux from Omega effect and inclusion
-! of Omega effect itself
-      if(lroot.and.(VC_Omega_ampl.ne.0).and.(.not.lflux_from_Omega)) &
+!
+!  Also check the consistency between flux from Omega effect and inclusion
+!  of Omega effect itself
+!
+      if (lroot.and.(VC_Omega_ampl.ne.0).and.(.not.lflux_from_Omega)) &
           call warning('root:initialize_special', &
-            'Omega effect included but flux is not')
+              'Omega effect included but flux is not')
+!
+!  debug output (currently only on root processor)
+!
+      if (lroot.and.lrun) then
+        print*
+        print*,'initialize_special: x, kf_x, kf_x1'
+        do l=1,nx
+          write(*,'(1p,3e11.3)') x(l1-1+l),kf_x(l),kf_x1(l)
+        enddo
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -213,13 +249,11 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm,alpm_divu
+      real, dimension (nx) :: kf_tmp,meanfield_etat_tmp
       double precision :: dtalpm_double
       type (pencil_case) :: p
       integer :: modulot
-!     integer :: ierr
 !
-! next line commented out temporarily
-!      intent(in)  :: f
       intent(inout) :: df
 !
 !  identify module and boundary conditions
@@ -230,13 +264,23 @@ module Special
 !
       alpm=f(l1:l2,m,n,ialpm)
 !
-!  dynamical quenching equation
-!  with advection flux proportional to uu
+!  Solve dynamical quenching equation with advection flux proportional to uu.
+!  Read first kf profile; use kf_alpm as additional scaling factor.
 !
       if (lmagnetic) then
+        if (lvariable_params) then
+          kf_tmp=kf_alpm*kf_x*kf_y(m)*kf_z(n)
+          meanfield_etat_tmp=etat_x*etat_y(m)*etat_z(n)
+        else
+          kf_tmp=kf_alpm
+          meanfield_etat_tmp=meanfield_etat
+        endif
+!
+!  Solve evolution equation for alp_M.
+!
         df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
-            -2*meanfield_etat*kf_alpm**2*p%mf_EMFdotB &
-            -2*eta*kf_alpm**2*alpm
+            -2*meanfield_etat*kf_tmp**2*p%mf_EMFdotB &
+            -2*eta*kf_tmp**2*alpm
         if(lflux_from_Omega) then
           call divflux_from_Omega_effect(p,divflux)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
