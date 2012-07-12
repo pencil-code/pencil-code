@@ -16,7 +16,7 @@ To get started, run one of the samples:
   unix>  cd samples/conv-slab
   unix>  mkdir data
 
-I/O can be slow on remote filesystems like NFS or Lustre:
+To set up the symbolic links and compile the code:
 
   unix>  pc_setupsrc
   unix>  pc_build  [ -f /path/to/config/file.conf ]
@@ -31,9 +31,13 @@ see the manual in the doc/ directory (also available from the URL above).
 
 =============================================================================
 
-If you are using bash and you don't want to "source sourceme.sh" on each
+If you are using bash and you do not want to "source sourceme.sh" on each
 session, you can insert the following into your .bashrc and/or .bash_profile:
 
-  export PENCIL_HOME=$HOME/pencil-code
+  export PENCIL_HOME=$HOME/pencil-code  [or wherever you have the code]
   _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
-  alias pc='cd $PENCIL_HOME'
+
+If you are using csh insert the following into your .cshrc:
+
+  setenv PENCIL_HOME $HOME/pencil-code  [or wherever you have the code]
+  source $PENCIL_HOME/sourceme.csh
