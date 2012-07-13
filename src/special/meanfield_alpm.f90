@@ -122,27 +122,29 @@ module Special
           call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
           if (ierr/=0) call fatal_error("initialize_special: ", &
               "cannot get shared var meanfield_etat")
-          call get_shared_variable('kf_x',kf_x,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
+          if (lmagn_mf_demfdt.or.lalpm_alternate) then
+            call get_shared_variable('kf_x',kf_x,ierr)
+            if (ierr/=0) call fatal_error("initialize_special: ", &
               "cannot get shared var kf_x")
-          call get_shared_variable('kf_y',kf_y,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
-              "cannot get shared var kf_y")
-          call get_shared_variable('kf_z',kf_z,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
-              "cannot get shared var kf_z")
-          call get_shared_variable('kf_x1',kf_x1,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
-              "cannot get shared var kf_x1")
-          call get_shared_variable('etat_x',etat_x,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
-              "cannot get shared var etat_x")
-          call get_shared_variable('etat_y',etat_y,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
-              "cannot get shared var etat_y")
-          call get_shared_variable('etat_z',etat_z,ierr)
-          if (ierr/=0) call fatal_error("initialize_special: ", &
-              "cannot get shared var etat_z")
+            call get_shared_variable('kf_y',kf_y,ierr)
+            if (ierr/=0) call fatal_error("initialize_special: ", &
+               "cannot get shared var kf_y")
+            call get_shared_variable('kf_z',kf_z,ierr)
+            if (ierr/=0) call fatal_error("initialize_special: ", &
+               "cannot get shared var kf_z")
+            call get_shared_variable('kf_x1',kf_x1,ierr)
+            if (ierr/=0) call fatal_error("initialize_special: ", &
+               "cannot get shared var kf_x1")
+            call get_shared_variable('etat_x',etat_x,ierr)
+            if (ierr/=0) call fatal_error("initialize_special: ", &
+               "cannot get shared var etat_x")
+            call get_shared_variable('etat_y',etat_y,ierr)
+            if (ierr/=0) call fatal_error("initialize_special: ", &
+               "cannot get shared var etat_y")
+            call get_shared_variable('etat_z',etat_z,ierr)
+            if (ierr/=0) call fatal_error("initialize_special: ", &
+               "cannot get shared var etat_z")
+          endif
         endif
       else
         call fatal_error("init_special", &
