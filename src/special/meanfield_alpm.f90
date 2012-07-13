@@ -114,6 +114,8 @@ module Special
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
+!  read various profiles needed for mean-field treatment
+!
       if (lmagn_mf) then
         if (lrun) then
           call get_shared_variable('eta',eta,ierr)
@@ -122,7 +124,7 @@ module Special
           call get_shared_variable('meanfield_etat',meanfield_etat,ierr)
           if (ierr/=0) call fatal_error("initialize_special: ", &
               "cannot get shared var meanfield_etat")
-          if (lmagn_mf_demfdt.or.lalpm_alternate) then
+          if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate ) then
             call get_shared_variable('kf_x',kf_x,ierr)
             if (ierr/=0) call fatal_error("initialize_special: ", &
               "cannot get shared var kf_x")
