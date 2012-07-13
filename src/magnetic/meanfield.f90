@@ -155,7 +155,6 @@ module Magnetic_meanfield
 !
 !  Perform any post-parameter-read initialization
 !
-!  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !
       use Sub, only: erfunc
