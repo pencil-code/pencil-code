@@ -130,7 +130,7 @@ module Magnetic_meanfield_demfdt
 !
         if (lroot) then
           print*
-          print*,'x, kf_x, kf_x1'
+          print*,'initialize_magn_mf_demfdt: x, kf_x, kf_x1'
           do l=1,nx
             write(*,'(1p,3e11.3)') x(l1-1+l),kf_x(l),kf_x1(l)
           enddo

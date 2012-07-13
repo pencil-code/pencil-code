@@ -349,7 +349,7 @@ module Magnetic_meanfield
 !
 !  initialize secondary mean-field modules
 !
-      if (lmagn_mf_demfdt.or.lalpm_alternate) then
+      if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate ) then
         call put_shared_variable('kf_x',kf_x,ierr)
         call put_shared_variable('kf_y',kf_y,ierr)
         call put_shared_variable('kf_z',kf_z,ierr)
@@ -698,8 +698,12 @@ module Magnetic_meanfield
             meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
           endif
 !
-!  Possibility of dynamical alpha.
 !  Here we initialize alpha_total.
+!  Allow for the possibility of dynamical alpha.
+!  By default, lmeanfield_noalpm=F, so normally treat
+!  alpha_tmp as a general profile in front of the total alpha.
+!  Invoke lmeanfield_noalpm to treat magnetic alpha separately
+!  (which makes more phyiscal sense!)
 !
         if (lalpm.and..not.lmeanfield_noalpm) then
           if (lalpha_profile_total) then
@@ -708,7 +712,7 @@ module Magnetic_meanfield
              alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
            endif
 !
-!  Possibility of dynamical alpha.
+!  Possibility of *alternate* dynamical alpha.
 !  Here we initialize alpha_total.
 !
         elseif (lalpm_alternate.and..not.lmeanfield_noalpm) then
