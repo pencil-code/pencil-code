@@ -111,7 +111,7 @@ GetOptions(\%opts,
                -H=s --host-id=s
                     --notify
                     --fast
-                    --previous-flags
+               -p   --previous-flags
                -q   --quiet
                -v   --version )
           ) or die "Aborting.\n";
@@ -130,7 +130,7 @@ my $cleanall     = (              $opts{'cleanall'}       || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
 my $notify       = (              $opts{'notify'}         || '');
-my $prev_flags   = (              $opts{'previous-flags'} || '');
+my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
 my $fast         = (              $opts{'fast'}           || '');
 
