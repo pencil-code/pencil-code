@@ -956,7 +956,7 @@ module Special
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
       endif
-      if (it == 20000) then
+      if (it == 50000) then
         open(file_id,file=output_file3)
             write(file_id,'(7E12.4)') t
         if (lmdvar) then
@@ -982,7 +982,7 @@ module Special
 !        print*,ttt(ndustspec)
       endif
 
-      if (it == 40000) then
+      if (it == 100000) then
         open(file_id,file=output_file4)
             write(file_id,'(7E12.4)') t
         if (lmdvar) then
@@ -1358,13 +1358,13 @@ subroutine bc_satur_x(f,bc)
 ! Recalculation of the air_mass for different boundary conditions
 !
 !
-!        do iter=1,3
+        do iter=1,3
 !
-!           air_mass_1=0.
-!           do k=1,nchemspec
-!             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
-!           enddo
-!           air_mass_1=1./air_mass_1
+           air_mass_1=0.
+           do k=1,nchemspec
+             air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
+           enddo
+           air_mass_1=1./air_mass_1
 !
 !           air_mass_2=0
 !           do k=1,nchemspec
@@ -1372,8 +1372,12 @@ subroutine bc_satur_x(f,bc)
 !           enddo
 !           air_mass_2=1./air_mass_2
 !
-           init_Yk_1(ind_H2O)=psf_1/(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*TT1/18.)*dYw1
-           init_Yk_2(ind_H2O)=psf_2/(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*TT2/18.)*dYw2
+!           init_Yk_1(ind_H2O)=psf_1/(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*TT1/18.)*dYw1
+!           init_Yk_2(ind_H2O)=psf_2/(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*TT2/18.)*dYw2
+
+           init_Yk_1(ind_H2O)=psf_1/(PP*air_mass_1/18.)*dYw1
+           init_Yk_2(ind_H2O)=psf_2/(PP*air_mass_1/18.)*dYw2
+
 !
 
            sum1=0.
@@ -1391,7 +1395,7 @@ subroutine bc_satur_x(f,bc)
 !
 !print*,'special', air_mass_1, init_Yk_1(ind_H2O), iter, vr, ichemspec(ind_H2O)
 !
-!        enddo
+        enddo
 !
            init_water_1=init_Yk_1(ind_H2O)
            init_water_2=init_Yk_2(ind_H2O)
