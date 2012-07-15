@@ -45,6 +45,8 @@ module InitialCondition
      integer :: imass=1, spot_number=0
      integer :: index_H2O=3
      integer :: index_N2=4
+     integer :: index_O2=3
+     integer :: index_H2=1
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
      real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
@@ -467,6 +469,8 @@ module InitialCondition
       real :: air_mass_1, air_mass_2, sum1, sum2, init_water_1, init_water_2 
       logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
       real ::  Rgas_loc=8.314472688702992E+7
+
+      intent(in) :: air_mass
 !
 
 !  Reinitialization of T, water => rho
@@ -557,10 +561,18 @@ module InitialCondition
 !
 ! Recalculation of the air_mass for different boundary conditions
 !
-           init_Yk_1(index_H2O)=psf_1 &
-               /(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*init_TT1/18.)*dYw1
-           init_Yk_2(index_H2O)=psf_2  & 
-               /(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*init_TT2/18.)*dYw2
+!           init_Yk_1(index_H2O)=psf_1 &
+!               /(exp(f(l1,m1,n1,ilnrho))*Rgas_loc*init_TT1/18.)*dYw1
+!           init_Yk_2(index_H2O)=psf_2  & 
+!               /(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*init_TT2/18.)*dYw2
+!
+        air_mass_1=air_mass
+        air_mass_2=air_mass
+
+        do iter=1,3
+!
+          init_Yk_1(index_H2O)=psf_1/(PP*air_mass_1/18.)*dYw1
+          init_Yk_2(index_H2O)=psf_2/(PP*air_mass_2/18.)*dYw2
 !
            sum1=0.
            sum2=0.
@@ -573,9 +585,28 @@ module InitialCondition
 !
            init_Yk_1(index_N2)=1.-sum1
            init_Yk_2(index_N2)=1.-sum2
-! 
-!        enddo
 !
+!  Recalculation of air_mass 
+!
+           sum_Y=0.
+             do k=1,nchemspec
+               if (ichemspec(k)/=ichemspec(index_N2)) &
+                 sum_Y=sum_Y+init_Yk_1(k)
+             enddo
+               init_Yk_1(index_N2)=1.-sum1
+               init_Yk_2(index_N2)=1.-sum2
+               air_mass_1=0.
+               air_mass_2=0.
+             do k=1,nchemspec
+               air_mass_1=air_mass_1 + init_Yk_1(k)&
+                  /species_constants(k,imass)
+               air_mass_2=air_mass_2 + init_Yk_1(k)&
+                  /species_constants(k,imass)
+             enddo
+               air_mass_1=1./air_mass_1
+               air_mass_2=1./air_mass_2
+        enddo
+
            init_water_1=init_Yk_1(index_H2O)
            init_water_2=init_Yk_2(index_H2O)
 !
