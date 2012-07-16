@@ -1027,7 +1027,11 @@ module Entropy
             else
               pp=pp_const
               do n=n1,n2; do m=m1,m2
-                lnrho=f(l1:l2,m,n,ilnrho)
+                if (ldensity_nolog) then
+                  lnrho=alog(f(l1:l2,m,n,irho))
+                else
+                  lnrho=f(l1:l2,m,n,ilnrho)
+                endif
                 call eoscalc(ilnrho_pp,lnrho,pp,ss=ss)
                 f(l1:l2,m,n,iss)=ss
               enddo; enddo

@@ -130,7 +130,7 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl,&
        ampl_diffrot,omega_exponent
 ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
+  integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_qfm=0, idiag_ffm=0
   integer :: idiag_ruxfxm=0, idiag_ruyfym=0, idiag_ruzfzm=0
   integer :: idiag_ruxfym=0, idiag_ruyfxm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
@@ -748,15 +748,18 @@ module Forcing
 !  10-sep-01/axel: coded
 !
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpifinalize
+      use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
+      use Sub, only: del2v_etc,dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: force_ampl
 !
-      real :: phase,ffnorm
+      real :: phase,ffnorm,iqfm
       real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: rho1
+      real, dimension (nx) :: rho1,qf
+      real, dimension (nx,3) :: forcing_rhs,curlo
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -823,30 +826,53 @@ module Forcing
 !
 !  Loop over all directions, but skip over directions with no extent.
 !
-      do j=1,3
-        if (extent(j)) then
-          jf=j+ifff-1
-          do n=n1,n2
-          do m=m1,m2
+      iqfm=0.
+      do n=n1,n2
+      do m=m1,m2
 !
-!  Can force either velocity (default) or momentum (slightly more physical).
+!  Can force either velocity (default) or momentum (perhaps more physical).
 !
-            if (lmomentum_ff) then
-              if (ldensity_nolog) then
-                rho1=1/f(l1:l2,m,n,ilnrho)
-              else
-                rho1=exp(-f(l1:l2,m,n,ilnrho))
-              endif
-            else
-              rho1=1.
-            endif
-            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
-          enddo
-          enddo
+        if (lmomentum_ff) then
+          if (ldensity_nolog) then
+            rho1=1./f(l1:l2,m,n,irho)
+          else
+            rho1=exp(-f(l1:l2,m,n,ilnrho))
+          endif
+        else
+          rho1=1.
+        endif
+        do j=1,3
+          if (extent(j)) then
+            jf=j+ifff-1
+            forcing_rhs(:,j)=rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
+            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+          endif
+        enddo
+        if (lout) then
+          if (idiag_qfm/=0) then
+            call del2v_etc(f,iuu,curlcurl=curlo)
+            call dot(curlo,forcing_rhs,qf)
+            iqfm=iqfm+sum(qf)
+          endif
         endif
       enddo
+      enddo
 !
-      call keep_compiler_quiet(force_ampl)
+!  For printouts
+!  On different processors, irufm needs to be communicated
+!  to other processors.
+!
+      if (lout) then
+        if (idiag_qfm/=0) then
+          fsum_tmp(1)=iqfm/(nwgrid)
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          iqfm=fsum(1)
+          call mpibcast_real(iqfm,1)
+          fname(idiag_qfm)=iqfm
+          itype_name(idiag_qfm)=ilabel_sum
+        endif
+!
+      endif
 !
     endsubroutine forcing_irro
 !***********************************************************************
@@ -1125,7 +1151,11 @@ module Forcing
 !
       if (ldensity) then
         if (lmomentum_ff) then
-          rho1=exp(-f(l1:l2,m,n,ilnrho))
+          if (ldensity_nolog) then
+            rho1=1./f(l1:l2,m,n,irho)
+          else
+            rho1=exp(-f(l1:l2,m,n,ilnrho))
+          endif
           rho=1./rho1
         else
           rho1=1.
@@ -1247,10 +1277,12 @@ module Forcing
 !  Compute rhs and density.
 !
                 variable_rhs=f(l1:l2,m,n,iffx:iffz)
-                if (ldensity_nolog) then
-                  rho=f(l1:l2,m,n,irho)
-                else
-                  rho=exp(f(l1:l2,m,n,ilnrho))
+                if (ldensity) then
+                  if (ldensity_nolog) then
+                    rho=f(l1:l2,m,n,irho)
+                  else
+                    rho=exp(f(l1:l2,m,n,ilnrho))
+                  endif
                 endif
 !
 !  Evaluate the various choices.
@@ -1380,15 +1412,15 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize
-      use Sub
+      use Sub, only: del2v_etc,curl,cross,dot,dot2
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (nx) :: rho1,ff,uf,of,rho
+      real, dimension (nx) :: rho1,ff,uf,of,qf,rho
       real, dimension (mz) :: tmpz,kfscl
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
-      real, dimension (nx,3) :: fda,uu,oo,bb,fxb
+      real, dimension (nx,3) :: fda,uu,oo,bb,fxb,curlo
       real, dimension (mx,my,mz,mfarray) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -1759,6 +1791,11 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
           call curl(f,iuu,oo)
           call dot(oo,forcing_rhs,of)
           call sum_mn_name(of,idiag_ofm)
+        endif
+        if (idiag_qfm/=0) then
+          call del2v_etc(f,iuu,curlcurl=curlo)
+          call dot(curlo,forcing_rhs,qf)
+          call sum_mn_name(of,idiag_qfm)
         endif
         if (idiag_ffm/=0) then
           call dot2(forcing_rhs,ff)
@@ -4314,7 +4351,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rufm=0; idiag_ufm=0; idiag_ofm=0; idiag_ffm=0
+        idiag_rufm=0; idiag_ufm=0; idiag_ofm=0; idiag_qfm=0; idiag_ffm=0
         idiag_ruxfxm=0; idiag_ruyfym=0; idiag_ruzfzm=0
         idiag_ruxfym=0; idiag_ruyfxm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
@@ -4332,6 +4369,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
         call parse_name(iname,cname(iname),cform(iname),'ruzfzm',idiag_ruzfzm)
         call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)
         call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
+        call parse_name(iname,cname(iname),cform(iname),'qfm',idiag_qfm)
         call parse_name(iname,cname(iname),cform(iname),'ffm',idiag_ffm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
         call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)

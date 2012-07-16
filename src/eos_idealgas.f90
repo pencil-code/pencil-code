@@ -931,6 +931,7 @@ module EquationOfState
             if (lpencil(i_rho)) p%rho=f(l1:l2,m,n,irho)
             !if (lpencil(i_rho)) p%rho=rho0*(gamma*p%pp/(rho0*cs20*exp(cv1*p%ss)))**gamma1
             if (lpencil(i_lnrho)) p%lnrho=alog(p%rho)
+            if (lpencil(i_cs2)) p%cs2=gamma*p%pp/p%rho
             if (lpencil(i_lnTT)) p%lnTT=lnTT0+cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
             if (lpencil(i_ee)) p%ee=cv*exp(p%lnTT)
             if (lpencil(i_yH)) p%yH=impossible

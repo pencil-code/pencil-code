@@ -1796,6 +1796,8 @@ module Sub
               'implemented for non-cartesian coordinates')
       endif
 !
+!  del2
+!
       if (present(del2)) then
         do i=1,3
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
@@ -1837,6 +1839,8 @@ module Sub
             'coords - use gij_etc')
       endif
 !
+!  curlcurl
+!
       if (present(curlcurl)) then
         curlcurl(:,1)=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
         curlcurl(:,2)=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
@@ -1847,6 +1851,8 @@ module Sub
             'curlcurl not implemented for non-cartesian coordinates - '// &
             'use gij_etc')
       endif
+!
+!  gradcurl (as tensor)
 !
       if (present(gradcurl)) then
          gradcurl(:,1,1) = fjik(:,3)   - fjik(:,2)

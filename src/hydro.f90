@@ -203,6 +203,7 @@ module Hydro
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
   integer :: idiag_urmsx=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the hydro_xaver_range
+  integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_uzrms=0      ! DIAG_DOC: $\left<u_z^2\right>^{1/2}$
   integer :: idiag_uzrmaxs=0    ! DIAG_DOC:
@@ -303,7 +304,6 @@ module Hydro
   integer :: idiag_rlz2m=0      ! DIAG_DOC: $\left<(\rho x u_y-y u_x)^2\right>$
   integer :: idiag_tot_ang_mom=0! DIAG_DOC: Total angular momentum in spherical
                                 ! DIAG_DOC: coordinates about the axis.
-  integer :: idiag_rufm=0       ! DIAG_DOC:
   integer :: idiag_dtu=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
                                 ! DIAG_DOC:  /\max|\mathbf{u}|]$
                                 ! DIAG_DOC:  \quad(time step relative to
@@ -315,8 +315,7 @@ module Hydro
   integer :: idiag_odel2um=0    ! DIAG_DOC: $\left<\boldsymbol{\omega}\nabla^2\uv\right>$
   integer :: idiag_o2m=0        ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>
                                 ! DIAG_DOC:   \equiv \left<(\curl\uv)^2\right>$
-  integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2
-                                ! DIAG_DOC:   \right>^{1/2}$
+  integer :: idiag_orms=0       ! DIAG_DOC: $\left<\boldsymbol{\omega}^2\right>^{1/2}$
   integer :: idiag_omax=0       ! DIAG_DOC: $\max(|\boldsymbol{\omega}|)$
   integer :: idiag_ox2m=0       ! DIAG_DOC: $\left<\omega_x^2\right>$
   integer :: idiag_oy2m=0       ! DIAG_DOC: $\left<\omega_y^2\right>$
@@ -327,6 +326,11 @@ module Hydro
   integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
   integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
   integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
+  integer :: idiag_q2m=0        ! DIAG_DOC: $\left<\bm{q}^2\right>$
+  integer :: idiag_qrms=0       ! DIAG_DOC: $\left<\bm{q}^2\right>^{1/2}$
+  integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\bm{q}|)$
+  integer :: idiag_qom=0        ! DIAG_DOC: $\left<\bm{q}\cdot\bm{\omega}\right>$
+  integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\bm{q}\cdot(\bm{u}\times\bm{\omega})\right>$
   integer :: idiag_pvzm=0       ! DIAG_DOC: $\left<\omega_z + 2\Omega/\varrho\right>$
                                 ! DIAG_DOC: \quad(z component of potential vorticity)
   integer :: idiag_oumphi=0     ! DIAG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
@@ -521,14 +525,16 @@ module Hydro
 !
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
-!  then density is computed, i.e. not even with lanelastic.
+!  the density is computed, i.e. not with lboussinesq nor lanelastic.
 !
-      if  (.not.ldensity) lpressuregradient_gas=.false.
+      if  (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas',&
           lpressuregradient_gas,ierr)
       if (ierr/=0) call fatal_error('register_hydro',&
           'there was a problem sharing lpressuregradient_gas')
-
+!
+!  Special settings for lboussinesq.
+!
       if  (lboussinesq) then
         PrRa=Pr*Ra
         call put_shared_variable('PrRa',PrRa,ierr)
@@ -787,7 +793,9 @@ module Hydro
         call put_shared_variable('dx_forc', dx_forc, ierr)
       endif
 !
-! check if we are solving the force-free equations in parts of domain
+!  Check if we are solving the force-free equations in parts of domain.
+!  This is currently possible with density (including anelastic, but not
+!  boussinesq).
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
@@ -1493,7 +1501,10 @@ module Hydro
           idiag_pvzm /=0) &
           lpenc_diagnos(i_oo)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
-          idiag_ormsh/=0 .or. idiag_o2mz/=0 )  lpenc_diagnos(i_o2)=.true.
+          idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
+      if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 .or. &
+          idiag_qom/=0 .or. idiag_quxom/=0) &
+          lpenc_diagnos(i_curlo)=.true.
       if (idiag_divu2m/=0 .or. idiag_divu2mz/=0 .or. idiag_divru2mz/=0 .or. &
           idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
@@ -1510,7 +1521,8 @@ module Hydro
       if (idiag_u2u31m/=0 .or. idiag_u2u31mz/=0) lpenc_diagnos(i_u2u31)=.true.
       if (idiag_u3u12m/=0 .or. idiag_u3u12mz/=0) lpenc_diagnos(i_u3u12)=.true.
       if (idiag_u1u23m/=0 .or. idiag_u1u23mz/=0) lpenc_diagnos(i_u1u23)=.true.
-      if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
+      if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
+          idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsh/=0 .or. idiag_urmsx/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
@@ -1582,14 +1594,14 @@ module Hydro
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
-      if (lalways_use_gij_etc) lpencil_in(i_oo)=.true.
+!     if (lalways_use_gij_etc) lpencil_in(i_oo)=.true.
       if (lpencil_in(i_sij)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_divu)=.true.
       endif
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
         if (lpencil_in(i_del2u))    lpencil_in(i_graddivu)=.true.
-        if (lpencil_in(i_graddivu)) lpencil_in(i_oo)=.true.
+!       if (lpencil_in(i_graddivu)) lpencil_in(i_oo)=.true.
       endif
       if (lpencil_in(i_oo)) lpencil_in(i_uij)=.true.
       if (lpencil_in(i_o2)) lpencil_in(i_oo)=.true.
@@ -1610,7 +1622,14 @@ module Hydro
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
       endif
+!
+!  other general interdependencies
+!
       if (lpencil_in(i_sij2)) lpencil_in(i_sij)=.true.
+      if (lpencil_in(i_del2u)) lpencil_in(i_curlo)=.true.
+      if (lpencil_in(i_curlo)) lpencil_in(i_oij)=.true.
+      if (lpencil_in(i_oij).and.(.not.lcartesian_coords)) &
+          lpencil_in(i_oo)=.true.
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
@@ -1629,6 +1648,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
+      real, dimension (nx,3,3) :: oij
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: tmp, tmp2
       integer :: i, j, ju
@@ -1707,36 +1727,35 @@ module Hydro
         call der6(f,iuz,tmp,3)
         p%del6u_bulk(:,3)=tmp
       endif
-! del2u, graddivu
-      if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
+!
+!  del2u, graddivu, oij, etc
+!
+      if (.not.lcartesian_coords .or. lalways_use_gij_etc .or. &
+          lpencil(i_oij)) then
         if (lpencil(i_graddivu)) then
           if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
-          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+          call gij_etc(f,iuu,p%uu,p%uij,oij,GRADDIV=p%graddivu)
         endif
-        if (lpencil(i_del2u)) then
-          call curl_mn(p%oij,p%curlo,p%oo)
-          p%del2u=p%graddivu-p%curlo
-       endif
 !
-!  Avoid warnings from pencil consistency check...
-!  WL: WHY SHOULD WE WANT TO AVOID WARNINGS FROM THE PENCIL CHECK??
-!  AB: should return to this problem when we have a good spherical
-!  problem at hand.
+!  oij, curlo=curl(omega), del2u
 !
-        !if (.not. lpencil(i_uij)) p%uij=0.0
-        !if (.not. lpencil(i_graddivu)) p%graddivu=0.0
+        if (lpencil(i_oij)) p%oij=oij
+        if (lpencil(i_curlo)) call curl_mn(p%oij,p%curlo,p%oo)
+        if (lpencil(i_del2u)) p%del2u=p%graddivu-p%curlo
       else
         if (lpencil(i_del2u)) then
           if (lpencil(i_graddivu)) then
             call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
           else
-             call del2v(f,iuu,p%del2u)
+            call del2v(f,iuu,p%del2u)
           endif
         else
           if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
         endif
       endif
+!
 ! grad5divu
+!
       if (lpencil(i_grad5divu)) then
         do i=1,3
           tmp=0.0
@@ -1796,9 +1815,9 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: uu,curlru
+      real, dimension (nx,3) :: uu,curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx) :: odel2um,curlru2
+      real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo
       real :: kx
       integer :: j, ju
 !
@@ -2016,6 +2035,10 @@ module Hydro
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (idiag_dtu/=0) call max_mn_name(advec_uu/cdt,idiag_dtu,l_dt=.true.)
         if (idiag_urms/=0) call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
+        if (idiag_durms/=0) then
+          uref=ampluu(1)*cos(kx_uu*x(l1:l2))
+          call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
+        endif
         if (idiag_urmsh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%u2,idiag_urmsh)
           if (lequatorz) call sum_mn_name_halfz(p%u2,idiag_urmsh)
@@ -2214,6 +2237,30 @@ module Hydro
         if (idiag_oxozm/=0) call sum_mn_name(p%oo(:,1)*p%oo(:,3),idiag_oxozm)
         if (idiag_oyozm/=0) call sum_mn_name(p%oo(:,2)*p%oo(:,3),idiag_oyozm)
         if (idiag_pvzm/=0) call sum_mn_name((p%oo(:,3) + 2.*Omega)/p%rho,idiag_pvzm)
+!
+!  diagnostics involving curlo [ =curl(omega) ]
+!
+        if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 ) then
+          call dot2(p%curlo,curlo2)
+          if (idiag_q2m/=0)  call sum_mn_name(curlo2,idiag_q2m)
+          if (idiag_qrms/=0) call sum_mn_name(curlo2,idiag_qrms,lsqrt=.true.)
+          if (idiag_qmax/=0) call max_mn_name(curlo2,idiag_qmax,lsqrt=.true.)
+        endif
+!
+!  <q.o>
+!
+        if (idiag_qom/=0) then
+          call dot(p%curlo,p%oo,qo)
+          call sum_mn_name(qo,idiag_qom)
+        endif
+!
+!  <q.(uxo)>
+!
+        if (idiag_quxom/=0) then
+          call cross(p%uu,p%oo,uxo)
+          call dot(p%curlo,uxo,quxo)
+          call sum_mn_name(quxo,idiag_quxom)
+        endif
 !
 !  Mach number, rms and max
 !
@@ -2585,7 +2632,9 @@ module Hydro
 !
 !  calculate averages of rho*ux and rho*uy
 !
-      if (ldensity.or.lanelastic) then
+!AB: ldensity is now sufficient
+      !if (ldensity.or.lanelastic) then
+      if (ldensity) then
         if (tau_damp_ruxm/=0. .or. tau_damp_ruym/=0. .or. tau_damp_ruzm/=0.) then
           ruxm=0.
           ruym=0.
@@ -3474,6 +3523,7 @@ module Hydro
         idiag_uyp2=0
         idiag_uzp2=0
         idiag_urms=0
+        idiag_durms=0
         idiag_urmsx=0
         idiag_umax=0
         idiag_uzrms=0
@@ -3616,7 +3666,6 @@ module Hydro
         idiag_rlz2m=0
         idiag_tot_ang_mom=0
         idiag_rumax=0
-        idiag_rufm=0
         idiag_dtu=0
         idiag_oum=0
         idiag_fum=0
@@ -3633,6 +3682,11 @@ module Hydro
         idiag_oxoym=0
         idiag_oxozm=0
         idiag_oyozm=0
+        idiag_q2m=0
+        idiag_qrms=0
+        idiag_qmax=0
+        idiag_qom=0
+        idiag_quxom=0
         idiag_pvzm=0
         idiag_oumx=0
         idiag_oumy=0
@@ -3711,6 +3765,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'oums',idiag_oums)
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
+        call parse_name(iname,cname(iname),cform(iname),'durms',idiag_durms)
         call parse_name(iname,cname(iname),cform(iname),'urmsx',idiag_urmsx)
         call parse_name(iname,cname(iname),cform(iname),'urmsn',idiag_urmsn)
         call parse_name(iname,cname(iname),cform(iname),'urmss',idiag_urmss)
@@ -3754,6 +3809,11 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'oyozm',idiag_oyozm)
         call parse_name(iname,cname(iname),cform(iname),'pvzm',idiag_pvzm)
         call parse_name(iname,cname(iname),cform(iname),'orms',idiag_orms)
+        call parse_name(iname,cname(iname),cform(iname),'q2m',idiag_q2m)
+        call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
+        call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
+        call parse_name(iname,cname(iname),cform(iname),'qom',idiag_qom)
+        call parse_name(iname,cname(iname),cform(iname),'quxom',idiag_quxom)
         call parse_name(iname,cname(iname),cform(iname),'ormsn',idiag_ormsn)
         call parse_name(iname,cname(iname),cform(iname),'ormss',idiag_ormss)
         call parse_name(iname,cname(iname),cform(iname),'omax',idiag_omax)
@@ -3805,7 +3865,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'duxdzma',idiag_duxdzma)
         call parse_name(iname,cname(iname),cform(iname),'duydzma',idiag_duydzma)
         call parse_name(iname,cname(iname),cform(iname),'totangmom',idiag_totangmom)
-        call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'uxfampm',idiag_uxfampm)
         call parse_name(iname,cname(iname),cform(iname),'uyfampm',idiag_uyfampm)
         call parse_name(iname,cname(iname),cform(iname),'uzfampm',idiag_uzfampm)
@@ -4433,7 +4492,9 @@ module Hydro
 !
 !  check if ldensity=T. Otherwise switch to remove_mean_flow.
 !
-      if (ldensity.or.lanelastic) then
+      !if (ldensity.or.lanelastic) then
+!AB: ldensity is now sufficient
+      if (ldensity) then
 !
 !  initialize mean momentum, rum, to zero
 !
