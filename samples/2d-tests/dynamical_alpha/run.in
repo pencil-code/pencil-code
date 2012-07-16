@@ -9,10 +9,10 @@
 &eos_run_pars
 /
 &magnetic_run_pars
-  lmeanfield_theory=T
+!  lmeanfield_theory=T
   eta=.01, llorentzforce=F
 /
-&magnetic_mf_run_pars
+&magn_mf_run_pars
   meanfield_etat=1.
   alpha_effect=3., alpha_quenching=0.
   lOmega_effect=T

@@ -16,7 +16,7 @@
 &magnetic_init_pars
   initaa='gaussian-noise', amplaa=1e-3
 /
-&magnetic_mf_init_pars
+&magn_mf_init_pars
 /
 &special_init_pars
   initalpm='constant', amplalpm=0.
