@@ -548,10 +548,10 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 	r_sy = 2 < (num_plots-1)
 	l_xy = 0
 	r_xy = 0
-	lx_range = minmax (ts.(l_sx))
-	ly_range = minmax (ts.(l_sy))
-	rx_range = minmax (ts.(r_sx))
-	ry_range = minmax (ts.(r_sy))
+	lx_range = float (minmax (ts.(l_sx)))
+	ly_range = float (minmax (ts.(l_sy)))
+	rx_range = float (minmax (ts.(r_sx)))
+	ry_range = float (minmax (ts.(r_sy)))
 	lvx_min = lx_range[0]
 	lvx_max = lx_range[1]
 	lvy_min = ly_range[0]
