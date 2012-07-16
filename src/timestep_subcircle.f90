@@ -157,7 +157,7 @@ module Timestep
       if ((dt_energy /= dt) .and. lroot .and. (mod(it,isave) == 0)) &
       write(*,'(a,I3,a,ES10.2)') 'Nsub = ',Nsub,' | dt_energy = ',dt_energy
 !
-      IF (Nsub > 1) THEN ! Turn of the subcircle when dt1_energy actully = 0.
+      IF (Nsub > 1) THEN ! Turn of the subcycle when dt1_energy actully = 0.
 !
       do n=n1,n2; do m=m1,m2
         ftmp(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
