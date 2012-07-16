@@ -613,6 +613,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 				overplots = create_struct (overplots, tag, all_over.(over_selected[pos]))
 			end
 		end
+	end else begin
+		overplots = { none:'none' }
 	end
 
 	if (not keyword_set (quiet)) then begin

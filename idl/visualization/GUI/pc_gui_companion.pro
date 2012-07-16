@@ -121,6 +121,7 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 	num = n_elements (tags)
 	for pos = 0, num-1 do begin
 		tag = tags[pos]
+		if (strcmp (tag, "none", /fold_case)) then continue
 		last = (pos eq num-1)
 		oversets[i].(pos) = float (pc_get_quantity (tag, vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
 		; Divide by default units, where applicable.
