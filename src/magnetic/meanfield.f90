@@ -74,6 +74,7 @@ module Magnetic_meanfield
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
   real :: rhs_term_amplz=0.0, rhs_term_amplphi=0.0
+  real :: mf_qJ2=0.0
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(nx) :: rhs_termz, rhs_termy
   real, dimension(nx) :: etat_x, detat_x, rhs_term
@@ -84,6 +85,7 @@ module Magnetic_meanfield
   logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
   logical :: ldelta_profile=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
+  logical :: lqpcurrent=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
@@ -103,6 +105,7 @@ module Magnetic_meanfield
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
+      lqpcurrent,mf_qJ2, &
       meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
@@ -428,6 +431,15 @@ module Magnetic_meanfield
 !
       if (lmagn_mf_demfdt) call pencil_criteria_magn_mf_demfdt()
 !
+!  Nempi model C requires currents
+
+      if (lqpcurrent) then
+        lpenc_requested(i_jj)=.true.
+        lpenc_requested(i_j2)=.true.
+        lpenc_requested(i_jij)=.true.
+      endif
+
+!
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
     subroutine pencil_interdep_magn_mf(lpencil_in)
@@ -517,7 +529,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_etaB2, Beq21
-      real, dimension (nx,3) :: Bk_Bki, exa_meanfield
+      real, dimension (nx,3) :: Bk_Bki, exa_meanfield,Jk_Jki
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact
       integer :: j,l
@@ -594,7 +606,13 @@ module Magnetic_meanfield
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !
           call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+          if (lqpcurrent) then 
+            call multmv_transp(p%jij,p%jj,Jk_Jki) !=1/2 grad J^2
+            call multsv_mn((1+p%j2*mf_qJ2)*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
+            call multsv_mn(meanfield_qp_func*p%b2*mf_qJ2,Jk_Jki,p%jxb_mf)
+          else
           call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
+          endif
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
 !
