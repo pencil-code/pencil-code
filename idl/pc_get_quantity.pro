@@ -170,37 +170,23 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
 		; Absolute value of the saturation heat flux density vector q [W/m^2] = [kg/s^3]
-		if (not any (tag_names (run_par) eq "KSAT")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'Ksat'"
-			return, -1
-		end
+		K_sat = pc_get_parameter ('K_sat', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, run_par.Ksat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
+		return, K_sat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
 		; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
-		if (any (tag_names (run_par) eq "K_SPITZER")) then begin
-			K_spitzer = run_par.K_spitzer
-		end else if (any (tag_names (run_par) eq "KPARA")) then begin
-			K_spitzer = run_par.Kpara
-		end else begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER' or 'KPARA'"
-			return, -1
-		end
+		K_spitzer = pc_get_parameter ('K_spitzer', label=quantity)
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		return, K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
 	end
 	if (strcmp (quantity, 'Spitzer_dt', /fold_case)) then begin
 		; Spitzer heat flux timestep [s]
-		if (any (tag_names (run_par) eq "K_SPITZER")) then begin
-			K_spitzer = run_par.K_spitzer
-		end else if (any (tag_names (run_par) eq "KPARA")) then begin
-			K_spitzer = run_par.Kpara
-		end else begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'K_SPITZER' or 'KPARA'"
-			return, -1
-		end
+		K_spitzer = pc_get_parameter ('K_spitzer', label=quantity)
+		cp = pc_get_parameter ('cp', label=quantity)
+		gamma = pc_get_parameter ('gamma', label=quantity)
+		cdtv = pc_get_parameter ('cdtv', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
@@ -209,7 +195,7 @@ function pc_compute_quantity, vars, index, quantity
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			grad_ln_Temp = (grad (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*]
 		end
-		dt = run_par.cdtv / (start_par.gamma * start_par.cp * K_spitzer) * rho * sqrt (dot2 (bb) * dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
+		dt = cdtv / (gamma * cp * K_spitzer) * rho * sqrt (dot2 (bb) * dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
 		; The z-direction may have a non-uniform gird, but not the x- and y-direction
 		dxy_1 = dx_1[0]^2 + dy_1[0]^2
 		for pz = 0, nz - 1 do dt[*,*,pz] /= dxy_1 + dz_1[pz]^2
@@ -263,32 +249,30 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'n_rho', /fold_case)) then begin
 		; Particle density
+		mu = pc_get_parameter ('mu', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		if (n_elements (n_rho) eq 0) then begin
-			m_p = 1.6726218e-27 ; Mass of a proton [kg]
-			n_rho = rho / (m_p * start_par.mu)
-		end
+		if (n_elements (n_rho) eq 0) then n_rho = rho / (pc_get_parameter ('m_proton', label=quantity) * mu)
 		return, n_rho
 	end
 
 	if (strcmp (quantity, 'P_therm', /fold_case)) then begin
 		; Thermal pressure
-		if (not any (tag_names (run_par) eq "CP") or not any (tag_names (run_par) eq "GAMMA")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'CP' or 'GAMMA'"
-			return, -1
-		end
+		cp = pc_get_parameter ('cp', label=quantity)
+		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, start_par.cp * (start_par.gamma - 1.0) / start_par.gamma * rho * Temp * unit.density * unit.velocity^2
+		return, cp * (gamma - 1.0) / gamma * rho * Temp * unit.density * unit.velocity^2
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
 		; Gradient of thermal pressure
+		cp = pc_get_parameter ('cp', label=quantity)
+		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		if (n_elements (grad_rho) eq 0) then grad_rho = pc_compute_quantity (vars, index, 'grad_rho')
 		if (n_elements (grad_Temp) eq 0) then grad_Temp = pc_compute_quantity (vars, index, 'grad_Temp')
 		if (n_elements (grad_P_therm) eq 0) then begin
-			fact = start_par.cp * (start_par.gamma - 1.0) / start_par.gamma * unit.density * unit.temperature / unit.length
+			fact = cp * (gamma - 1.0) / gamma * unit.density * unit.temperature / unit.length
 			grad_P_therm = grad_rho
 			for pa = 0, 2 do grad_P_therm[*,*,*,pa] = fact * (grad_rho[*,*,*,pa] * Temp + rho * grad_Temp[*,*,*,pa])
 		end
@@ -308,18 +292,16 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'rho_c', /fold_case)) then begin
 		; Minimum density for an Alfvén speed below the speed of light
+		cdtv = pc_get_parameter ('cdtv', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'bb')
-		mu0_SI = 4.0 * !Pi * 1.e-7
-		return, rho - dot2 (bb) / (2 * mu0_SI * (299792458.0 * run_par.cdtv)^2)
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		return, rho - dot2 (bb) / (2 * mu0_SI * (pc_get_parameter ('c', label=quantity) * cdtv)^2)
 	end
 
 	if (strcmp (quantity, 'HR_viscous', /fold_case)) then begin
 		; Viscous heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
-		if (not any (tag_names (run_par) eq "NU")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'NU'"
-			return, -1
-		end
+		nu = pc_get_parameter ('nu', label=quantity)
 		u_xx = (xder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
 		u_xy = (yder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
 		u_xz = (zder (vars[*,*,*,index.ux]))[l1:l2,m1:m2,n1:n2]
@@ -331,7 +313,7 @@ function pc_compute_quantity, vars, index, quantity
 		u_zz = (zder (vars[*,*,*,index.uz]))[l1:l2,m1:m2,n1:n2]
 		div_u3 = (u_xx + u_yy + u_zz) / 3.0
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		return, run_par.nu * rho * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.velocity^3 / unit.length
+		return, nu * rho * ( 2*((u_xx - div_u3)^2 + (u_yy - div_u3)^2 + (u_zz - div_u3)^2) + (u_xy + u_yx)^2 + (u_xz + u_zx)^2 + (u_yz + u_zy)^2 ) * unit.velocity^3 / unit.length
 	end
 	if (strcmp (quantity, 'HR_viscous_particle', /fold_case)) then begin
 		; Viscous heating rate per particle [W]
@@ -340,15 +322,12 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'Rn_viscous', /fold_case)) then begin
 		; Viscous mesh Reynolds number
-		if (not any (tag_names (run_par) eq "NU")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'NU'"
-			return, -1
-		end
+		nu = pc_get_parameter ('nu', label=quantity)
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		Rx = spread (pc_compute_quantity (vars, index, 'dx'), [1,2], [ny,nz]) * abs (uu[*,*,*,0])
 		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * abs (uu[*,*,*,1])
 		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * abs (uu[*,*,*,2])
-		return, ((Rx > Ry) > Rz) / (run_par.nu * unit.length^2/unit.time)
+		return, ((Rx > Ry) > Rz) / (nu * unit.length^2/unit.time)
 	end
 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
@@ -395,10 +374,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'Rn_mag', /fold_case)) then begin
 		; Magnetic mesh Reynolds number of velocities perpendicular to the magnetic field
-		if (not any (tag_names (run_par) eq "ETA")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'ETA'"
-			return, -1
-		end
+		eta = pc_get_parameter ('eta', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		fact = 1.0 / (sqrt (dot2 (uu)) * dot2 (bb))
@@ -406,23 +382,22 @@ function pc_compute_quantity, vars, index, quantity
 		Rx = spread (pc_compute_quantity (vars, index, 'dx'), [1,2], [ny,nz]) * fact * uu[*,*,*,0] * BxUxB[*,*,*,0]
 		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * fact * uu[*,*,*,1] * BxUxB[*,*,*,1]
 		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * fact * uu[*,*,*,2] * BxUxB[*,*,*,2]
-		return, ((Rx > Ry) > Rz) / (run_par.eta * unit.length^2/unit.time)
+		return, ((Rx > Ry) > Rz) / (eta * unit.length^2/unit.time)
 	end
 
 	if (strcmp (quantity, 'j', /fold_case)) then begin
 		; Current density
-		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / start_par.mu0 * unit.current_density
+		mu0 = pc_get_parameter ('mu0', label=quantity)
+		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / mu0 * unit.current_density
 		return, jj
 	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
-		if (not any (tag_names (run_par) eq "ETA")) then begin
-			print, "ERROR: Can't compute '"+quantity+"' without parameter 'ETA'"
-			return, -1
-		end
+		mu0 = pc_get_parameter ('mu0', label=quantity)
+		eta = pc_get_parameter ('eta', label=quantity)
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		return, run_par.eta * start_par.mu0 * dot2 (jj / unit.current_density) * unit.density * unit.velocity^3 / unit.length
+		return, eta * mu0 * dot2 (jj / unit.current_density) * unit.density * unit.velocity^3 / unit.length
 	end
 	if (strcmp (quantity, 'HR_ohm_particle', /fold_case)) then begin
 		; Ohming heating rate per particle [W]
@@ -539,16 +514,10 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 		return, -1
 	end
 
-	; Default data directory
-	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
-
-	; Load 'start.in' parameters
-	if (n_elements (param) eq 0) then pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
+	; Setup 'start.in' and 'run.in' parameters
+	dummy = pc_get_parameter ('', start_param=param, run_param=run_param, dim=dim, datadir=datadir)
 	start_par = param
 	lequidist = safe_get_tag (param, 'lequidist', default=[1,1,1])
-
-	; Load 'run.in' parameters
-	if (n_elements (run_param) eq 0) then pc_read_param, obj=run_param, dim=dim, datadir=datadir, /param2, /quiet
 	run_par = run_param
 
 	; Set default units
