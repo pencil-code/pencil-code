@@ -18,18 +18,14 @@
 function safe_get_tag,object,tag,DEFAULT=DEFAULT
 COMPILE_OPT IDL2,HIDDEN
 
-  result=!VALUES.F_NAN
   found = where(tag_names(object) eq strupcase(tag))
 
   if (found[0] eq -1) then begin
-    if (n_elements(DEFAULT) ne 0) then return,DEFAULT
-    return, result
-endif
-  res=execute("result=object."+strtrim(tag),1)
+    if (n_elements(DEFAULT) ne 0) then return, DEFAULT
+    return, !VALUES.F_NAN
+  endif
 
-  if (not res) and (n_elements(DEFAULT) ne 0) then return,DEFAULT
-
-  return,result
+  return, object.(found[0])
 end
 
 
