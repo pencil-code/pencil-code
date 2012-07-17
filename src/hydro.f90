@@ -248,6 +248,7 @@ module Hydro
   integer :: idiag_ruz2m=0      ! DIAG_DOC: $\left<\rho u_z^2\right>$
   integer :: idiag_divum=0      ! DIAG_DOC: $\left<{\rm div}\uv)\right>$
   integer :: idiag_divu2m=0     ! DIAG_DOC: $\left<({\rm div}\uv)^2\right>$
+  integer :: idiag_gdivu2m=0    ! DIAG_DOC: $\left<({\rm grad\,div}\uv)^2\right>$
   integer :: idiag_u3u21m=0     ! DIAG_DOC: $\left<u_3 u_{2,1}\right>$
   integer :: idiag_u1u32m=0     ! DIAG_DOC: $\left<u_1 u_{3,2}\right>$
   integer :: idiag_u2u13m=0     ! DIAG_DOC: $\left<u_2 u_{1,3}\right>$
@@ -1507,6 +1508,7 @@ module Hydro
           lpenc_diagnos(i_curlo)=.true.
       if (idiag_divu2m/=0 .or. idiag_divu2mz/=0 .or. idiag_divru2mz/=0 .or. &
           idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_gdivu2m/=0) lpenc_diagnos(i_graddivu)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
            idiag_oumh/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_divrhourms/=0.or.idiag_divrhoumax/=0) then
@@ -1831,7 +1833,7 @@ module Hydro
 !
       real, dimension (nx,3) :: uu,curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo
+      real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
       real :: kx
       integer :: j, ju
 !
@@ -2083,6 +2085,10 @@ module Hydro
         if (idiag_um2/=0)     call max_mn_name(p%u2,idiag_um2)
         if (idiag_divum/=0)   call sum_mn_name(p%divu,idiag_divum)
         if (idiag_divu2m/=0)  call sum_mn_name(p%divu**2,idiag_divu2m)
+        if (idiag_gdivu2m/=0) then
+          call dot2(p%graddivu,graddivu2)
+          call sum_mn_name(graddivu2,idiag_gdivu2m)
+        endif
         if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%ugrho)**2,idiag_divrhourms,lsqrt=.true.)
         if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoumax)
         if (idiag_uxm/=0)     call sum_mn_name(p%uu(:,1),idiag_uxm)
@@ -3609,6 +3615,7 @@ module Hydro
         idiag_umxbmz=0
         idiag_divum=0
         idiag_divu2m=0
+        idiag_gdivu2m=0
         idiag_u3u21m=0
         idiag_u1u32m=0
         idiag_u2u13m=0
@@ -3854,6 +3861,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'Mamax',idiag_Mamax)
         call parse_name(iname,cname(iname),cform(iname),'divum',idiag_divum)
         call parse_name(iname,cname(iname),cform(iname),'divu2m',idiag_divu2m)
+        call parse_name(iname,cname(iname),cform(iname),'gdivu2m',idiag_gdivu2m)
         call parse_name(iname,cname(iname),cform(iname),'drurms',idiag_divrhourms)
         call parse_name(iname,cname(iname),cform(iname),'drumax',idiag_divrhoumax)
         call parse_name(iname,cname(iname),cform(iname),'u3u21m',idiag_u3u21m)
