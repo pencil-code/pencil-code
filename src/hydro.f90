@@ -1594,14 +1594,16 @@ module Hydro
 !
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
-!     if (lalways_use_gij_etc) lpencil_in(i_oo)=.true.
       if (lpencil_in(i_sij)) then
         lpencil_in(i_uij)=.true.
         lpencil_in(i_divu)=.true.
       endif
+      !if (.not.lcartesian_coords.or.lalways_use_gij_etc.or.lpencil(i_oij)) then
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
-        if (lpencil_in(i_del2u))    lpencil_in(i_graddivu)=.true.
-!       if (lpencil_in(i_graddivu)) lpencil_in(i_oo)=.true.
+        if (lpencil_in(i_del2u)) then
+          lpencil_in(i_graddivu)=.true.
+          lpencil_in(i_curlo)=.true.
+        endif
       endif
       if (lpencil_in(i_oo)) lpencil_in(i_uij)=.true.
       if (lpencil_in(i_o2)) lpencil_in(i_oo)=.true.
@@ -1626,7 +1628,7 @@ module Hydro
 !  other general interdependencies
 !
       if (lpencil_in(i_sij2)) lpencil_in(i_sij)=.true.
-      if (lpencil_in(i_del2u)) lpencil_in(i_curlo)=.true.
+!     if (lpencil_in(i_del2u)) lpencil_in(i_curlo)=.true.
       if (lpencil_in(i_curlo)) lpencil_in(i_oij)=.true.
       if (lpencil_in(i_oij).and.(.not.lcartesian_coords)) &
           lpencil_in(i_oo)=.true.
@@ -1649,7 +1651,7 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension (nx,3,3) :: oij
-      real, dimension (nx,3) :: uu
+      real, dimension (nx,3) :: uu,graddivu
       real, dimension (nx) :: tmp, tmp2
       integer :: i, j, ju
 !
@@ -1727,36 +1729,9 @@ module Hydro
         call der6(f,iuz,tmp,3)
         p%del6u_bulk(:,3)=tmp
       endif
-!-------------------------new method --------------------------------------
 !
-!  del2u, graddivu, oij, etc
-!
-   !  if (.not.lcartesian_coords .or. lalways_use_gij_etc .or. &
-   !      lpencil(i_oij)) then
-   !    if (lpencil(i_graddivu)) then
-   !      if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
-   !      call gij_etc(f,iuu,p%uu,p%uij,oij,GRADDIV=p%graddivu)
-   !    endif
-!
-!  oij, curlo=curl(omega), del2u
-!
-   !    if (lpencil(i_oij)) p%oij=oij
-   !    if (lpencil(i_curlo)) call curl_mn(p%oij,p%curlo,p%oo)
-   !    if (lpencil(i_del2u)) p%del2u=p%graddivu-p%curlo
-   !  else
-   !    if (lpencil(i_del2u)) then
-   !      if (lpencil(i_graddivu)) then
-   !        call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
-   !      else
-   !        call del2v(f,iuu,p%del2u)
-   !      endif
-   !    else
-   !      if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
-   !    endif
-   !  endif
-!
-!-------------------------old method --------------------------------------
 ! del2u, graddivu
+!
       if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
         if (lpencil(i_graddivu)) then
           if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
@@ -1765,27 +1740,33 @@ module Hydro
         if (lpencil(i_del2u)) then
           call curl_mn(p%oij,p%curlo,p%oo)
           p%del2u=p%graddivu-p%curlo
-       endif
-!
-!  Avoid warnings from pencil consistency check...
-!  WL: WHY SHOULD WE WANT TO AVOID WARNINGS FROM THE PENCIL CHECK??
-!  AB: should return to this problem when we have a good spherical
-!  problem at hand.
-!
-        !if (.not. lpencil(i_uij)) p%uij=0.0
-        !if (.not. lpencil(i_graddivu)) p%graddivu=0.0
+        endif
       else
-        if (lpencil(i_del2u)) then
-          if (lpencil(i_graddivu)) then
-            call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
-          else
-             call del2v(f,iuu,p%del2u)
-          endif
-        else
-          if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+!
+!  all 3 together
+!
+        if (lpencil(i_del2u).and.lpencil(i_graddivu).and.lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu,CURLCURL=p%curlo)
+!
+!  all 3 possible pairs
+!
+        elseif (lpencil(i_del2u).and.lpencil(i_graddivu)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
+        elseif (lpencil(i_del2u).and.lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,CURLCURL=p%curlo)
+        elseif (lpencil(i_graddivu).and.lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,GRADDIV=p%graddivu,CURLCURL=p%curlo)
+!
+!  all 3 individually
+!
+        elseif (lpencil(i_del2u)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u)
+        elseif (lpencil(i_graddivu)) then
+          call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+        elseif (lpencil(i_curlo)) then
+          call del2v_etc(f,iuu,CURLCURL=p%curlo)
         endif
       endif
-!-------------------------end old method --------------------------------------
 !
 ! grad5divu
 !
