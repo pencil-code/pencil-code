@@ -3404,9 +3404,14 @@ module Special
 ! shift positions
         if (xpos==0) xpos=1
         if (ypos==0) ypos=1
+        if (xpos > nxgrid ) xpos = nxgrid
+        if (ypos > nygrid ) ypos = nygrid
 !
-        new_xpos =  current%data(1) + Ux_ext_global(xpos,ypos)*dt
-        new_ypos =  current%data(2) + Uy_ext_global(xpos,ypos)*dt
+! We do not interpolate the exact position of the granule
+! in the external velocity field. Latter is asumed to vary only a bit.
+!
+        new_xpos =  current%data(1) + ipx*nx + Ux_ext_global(xpos,ypos)*dt
+        new_ypos =  current%data(2) + ipy*ny + Uy_ext_global(xpos,ypos)*dt
 !
 ! test if positions outside domain and use periodicity
 !
