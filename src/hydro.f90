@@ -1727,32 +1727,65 @@ module Hydro
         call der6(f,iuz,tmp,3)
         p%del6u_bulk(:,3)=tmp
       endif
+!-------------------------new method --------------------------------------
 !
 !  del2u, graddivu, oij, etc
 !
-      if (.not.lcartesian_coords .or. lalways_use_gij_etc .or. &
-          lpencil(i_oij)) then
-        if (lpencil(i_graddivu)) then
-          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
-          call gij_etc(f,iuu,p%uu,p%uij,oij,GRADDIV=p%graddivu)
-        endif
+   !  if (.not.lcartesian_coords .or. lalways_use_gij_etc .or. &
+   !      lpencil(i_oij)) then
+   !    if (lpencil(i_graddivu)) then
+   !      if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+   !      call gij_etc(f,iuu,p%uu,p%uij,oij,GRADDIV=p%graddivu)
+   !    endif
 !
 !  oij, curlo=curl(omega), del2u
 !
-        if (lpencil(i_oij)) p%oij=oij
-        if (lpencil(i_curlo)) call curl_mn(p%oij,p%curlo,p%oo)
-        if (lpencil(i_del2u)) p%del2u=p%graddivu-p%curlo
+   !    if (lpencil(i_oij)) p%oij=oij
+   !    if (lpencil(i_curlo)) call curl_mn(p%oij,p%curlo,p%oo)
+   !    if (lpencil(i_del2u)) p%del2u=p%graddivu-p%curlo
+   !  else
+   !    if (lpencil(i_del2u)) then
+   !      if (lpencil(i_graddivu)) then
+   !        call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
+   !      else
+   !        call del2v(f,iuu,p%del2u)
+   !      endif
+   !    else
+   !      if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+   !    endif
+   !  endif
+!
+!-------------------------old method --------------------------------------
+! del2u, graddivu
+      if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
+        if (lpencil(i_graddivu)) then
+          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+        endif
+        if (lpencil(i_del2u)) then
+          call curl_mn(p%oij,p%curlo,p%oo)
+          p%del2u=p%graddivu-p%curlo
+       endif
+!
+!  Avoid warnings from pencil consistency check...
+!  WL: WHY SHOULD WE WANT TO AVOID WARNINGS FROM THE PENCIL CHECK??
+!  AB: should return to this problem when we have a good spherical
+!  problem at hand.
+!
+        !if (.not. lpencil(i_uij)) p%uij=0.0
+        !if (.not. lpencil(i_graddivu)) p%graddivu=0.0
       else
         if (lpencil(i_del2u)) then
           if (lpencil(i_graddivu)) then
             call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
           else
-            call del2v(f,iuu,p%del2u)
+             call del2v(f,iuu,p%del2u)
           endif
         else
           if (lpencil(i_graddivu)) call del2v_etc(f,iuu,GRADDIV=p%graddivu)
         endif
       endif
+!-------------------------end old method --------------------------------------
 !
 ! grad5divu
 !
