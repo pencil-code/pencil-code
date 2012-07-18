@@ -514,6 +514,11 @@ module Forcing
           siny=embedy*siny; cosy=embedy*cosy
           cosz=embedz*cosz
         endif
+      elseif (iforcing_cont=='cosx*cosy*cosz') then
+        if (lroot) print*,'forcing_cont: cosx*cosy*cosz'
+        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
       elseif (iforcing_cont=='sinx') then
         sinx=sin(k1_ff*x)
         if (tgentle > 0.) then
@@ -721,7 +726,7 @@ module Forcing
       integer :: imode=1
       logical :: lonly_total
 !
-!   15-feb-2011 : dhruba/coded
+!  15-feb-2011/dhruba: coded
 !
       imode=1
       do ik1=0,random2d_kmax
@@ -870,6 +875,7 @@ module Forcing
           call mpibcast_real(iqfm,1)
           fname(idiag_qfm)=iqfm
           itype_name(idiag_qfm)=ilabel_sum
+print*,'AXEL: iproc,fsum_tmp(1),fname(idiag_qfm)=',iproc,fsum_tmp(1),fname(idiag_qfm)
         endif
 !
       endif
@@ -4170,11 +4176,21 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=ampl_ff*cosz(n)
           force(:,3)=0.
 !
+!  Taylor-Green forcing
+!
         case ('TG')
           fact=2.*ampl_ff
           force(:,1)=+fact*sinx(l1:l2)*cosy(m)*cosz(n)
           force(:,2)=-fact*cosx(l1:l2)*siny(m)*cosz(n)
           force(:,3)=0.
+!
+!  Compressive u=-grad(phi) with phi=cos(x+y+z) forcing
+!
+        case ('cosx*cosy*cosz')
+          fact=-ampl_ff
+          force(:,1)=fact*sinx(l1:l2)*cosy(m)*cosz(n)
+          force(:,2)=fact*cosx(l1:l2)*siny(m)*cosz(n)
+          force(:,3)=fact*cosx(l1:l2)*cosy(m)*sinz(n)
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
 !
@@ -4216,7 +4232,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: fxb
-      real, dimension (nx) :: uf
+      real, dimension (nx) :: uf,of,qf
       type (pencil_case) :: p
 !
 !  diagnostics
@@ -4225,8 +4241,23 @@ call fatal_error('hel_vec','radial profile should be quenched')
         if (idiag_rufm/=0) then
           call dot_mn(p%uu,p%fcont,uf)
           call sum_mn_name(p%rho*uf,idiag_rufm)
-!
         endif
+!
+        if (idiag_ufm/=0) then
+          call dot_mn(p%uu,p%fcont,uf)
+          call sum_mn_name(uf,idiag_ufm)
+        endif
+!
+        if (idiag_ofm/=0) then
+          call dot_mn(p%oo,p%fcont,of)
+          call sum_mn_name(of,idiag_ofm)
+        endif
+!
+        if (idiag_qfm/=0) then
+          call dot_mn(p%curlo,p%fcont,qf)
+          call sum_mn_name(qf,idiag_qfm)
+        endif
+!
         if (lmagnetic) then
           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
             call cross(p%fcont,p%bb,fxb)
