@@ -437,6 +437,16 @@ f_lop:  do iv=1,mvar
         endif
       enddo
 !
+!  By default the pencil check does not report optimisation of diagnostics
+!  pencils.
+!
+      if (lroot .and. .not. lpencil_check_diagnos_opti) then
+        print*, 'pencil_consistency_check: '// &
+            'set lpencil_check_diagnos_opti=T in run.in to report'
+        print*, 'pencil_consistency_check: '// &
+            'optimisation possibilities for diagnostics pencils'
+      endif
+!
 !  Clean up.
 !
       if (lpencil_check_no_zeros) call random_seed_wrapper(put=iseed_org)
