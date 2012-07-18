@@ -167,9 +167,11 @@ ifeq ($(PARTICLES_MAP),particles_map_blocks)
   PARTICLES_MPICOMM = noparticles_mpicomm
   ifeq ($(MPICOMM),mpicomm)
     PARTICLES_MPICOMM = particles_mpicomm_blocks
+#    PARTICLES_MPICOMM = experimental/particles_mpicomm_blocks_partition
   endif
   ifeq ($(MPICOMM),mpicomm_double)
     PARTICLES_MPICOMM = particles_mpicomm_blocks
+#    PARTICLES_MPICOMM = experimental/particles_mpicomm_blocks_partition
   endif
 endif
 # 
@@ -448,9 +450,6 @@ PARTICLES_COAGULATION_SRC=$(PARTICLES_COAGULATION).f90
 #
 PARTICLES_COLLISIONS_OBJ=$(PARTICLES_COLLISIONS).o
 PARTICLES_COLLISIONS_SRC=$(PARTICLES_COLLISIONS).f90
-#
-PARTICLES_DRAGFORCE_OBJ=$(PARTICLES_DRAGFORCE).o
-PARTICLES_DRAGFORCE_SRC=$(PARTICLES_DRAGFORCE).f90
 #
 PARTICLES_MAIN_OBJ=$(PARTICLES_MAIN).o
 PARTICLES_MAIN_SRC=$(PARTICLES_MAIN).f90
