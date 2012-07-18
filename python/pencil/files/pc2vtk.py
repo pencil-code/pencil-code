@@ -10,7 +10,7 @@ import struct
 
 # Convert var files into vtk format
 def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
-           variables = ['rho','uu','bb'], magic = ['vort','bb'],
+           variables = ['rho','uu','bb'], magic = [],
            destination = 'work', quiet = True):
     """
     Convert data from PencilCode format to vtk.
@@ -18,7 +18,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     call signature::
     
       pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
-           variables = ['rho','uu','bb'], magic = ['vort','bb'],
+           variables = ['rho','uu','bb'], magic = [],
            destination = 'work.vtk')
     
     Read *varfile* and convert its content into vtk format. Write the result
@@ -35,7 +35,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc', 'ss' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc', 'ss', 'vort' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -77,7 +77,19 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     if (len(magic) > 0):
         if (len(magic[0]) == 1):
             magic = [magic]
-            
+
+    # make sure magic is set when writing 'vort' or 'bb'
+    try:
+        index = variables.index('vort')
+        magic.append('vort')
+    except:
+        pass      
+    try:
+        index = variables.index('bb')
+        magic.append('bb')
+    except:
+        pass
+      
     try:
         index = variables.index('rho')
         print 'writing rho'
@@ -272,7 +284,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
 
 # Convert var files into vtk format and make video
 def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
-           variables = ['rho','uu','bb'], magic = ['vort','bb'],
+           variables = ['rho','uu','bb'], magic = [],
            destination = 'animation', quiet = True):
     """
     Convert data from PencilCode format to vtk.
@@ -280,7 +292,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
     call signature::
     
       pc2vtk(ti = 0, tf = 1, datadir = 'data/', proc = -1,
-           variables = ['rho','uu','bb'], magic = ['vort','bb'],
+           variables = ['rho','uu','bb'], magic = [],
            destination = 'animation')
     
     Read *varfile* and convert its content into vtk format. Write the result
@@ -300,7 +312,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
       *proc*:
         Processor which should be read. Set to -1 for all processors.
       
-      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc', 'ss' ]
+      *variables* = [ 'rho' , 'lnrho' , 'uu' , 'bb', 'b_mag', 'jj', 'j_mag', 'aa', 'ab', 'TT', 'lnTT', 'cc', 'lncc', 'ss', 'vort' ]
         Variables which should be written.
         
       *magic*: [ 'vort' , 'bb' ]
@@ -346,6 +358,18 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             if (len(magic[0]) == 1):
                 magic = [magic]
             
+        # make sure magic is set when writing 'vort' or 'bb'
+        try:
+            index = variables.index('vort')
+            magic.append('vort')
+        except:
+            pass      
+        try:
+            index = variables.index('bb')
+            magic.append('bb')
+        except:
+            pass
+      
         try:
             index = variables.index('rho')
             print 'writing rho'
@@ -509,32 +533,32 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         except:
             pass
         
-    try:
-        index = variables.index('ss')
-        print 'writing ss'
-        fd.write('SCALARS ss float\n')
-        fd.write('LOOKUP_TABLE default\n')    
-        for k in range(dimz):
-            for j in range(dimy):
-                for i in range(dimx):
-                    fd.write(struct.pack(">f", var.ss[k,j,i]))                    
-    except:
-        pass
+        try:
+            index = variables.index('ss')
+            print 'writing ss'
+            fd.write('SCALARS ss float\n')
+            fd.write('LOOKUP_TABLE default\n')    
+            for k in range(dimz):
+                for j in range(dimy):
+                    for i in range(dimx):
+                        fd.write(struct.pack(">f", var.ss[k,j,i]))                    
+        except:
+            pass
 
-    try:
-        index = variables.index('vort')
-        print 'writing vort'
-        fd.write('VECTORS vorticity float\n')
-        for k in range(dimz):
-            for j in range(dimy):
-                for i in range(dimx):
-                    fd.write(struct.pack(">f", var.vort[0,k,j,i]))
-                    fd.write(struct.pack(">f", var.vort[1,k,j,i]))
-                    fd.write(struct.pack(">f", var.vort[2,k,j,i]))
-    except:
-        pass
+        try:
+            index = variables.index('vort')
+            print 'writing vort'
+            fd.write('VECTORS vorticity float\n')
+            for k in range(dimz):
+                for j in range(dimy):
+                    for i in range(dimx):
+                        fd.write(struct.pack(">f", var.vort[0,k,j,i]))
+                        fd.write(struct.pack(">f", var.vort[1,k,j,i]))
+                        fd.write(struct.pack(">f", var.vort[2,k,j,i]))
+        except:
+            pass
       
-    fd.close()
+        fd.close()
 
 
 
