@@ -253,6 +253,19 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     except:
         pass
       
+    try:
+        index = variables.index('vort')
+        print 'writing vort'
+        fd.write('VECTORS vorticity float\n')
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", var.vort[0,k,j,i]))
+                    fd.write(struct.pack(">f", var.vort[1,k,j,i]))
+                    fd.write(struct.pack(">f", var.vort[2,k,j,i]))
+    except:
+        pass
+
     fd.close()
 
 
@@ -505,6 +518,19 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
             for j in range(dimy):
                 for i in range(dimx):
                     fd.write(struct.pack(">f", var.ss[k,j,i]))                    
+    except:
+        pass
+
+    try:
+        index = variables.index('vort')
+        print 'writing vort'
+        fd.write('VECTORS vorticity float\n')
+        for k in range(dimz):
+            for j in range(dimy):
+                for i in range(dimx):
+                    fd.write(struct.pack(">f", var.vort[0,k,j,i]))
+                    fd.write(struct.pack(">f", var.vort[1,k,j,i]))
+                    fd.write(struct.pack(">f", var.vort[2,k,j,i]))
     except:
         pass
       
