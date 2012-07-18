@@ -447,6 +447,59 @@ f_lop:  do iv=1,mvar
             'optimisation possibilities for diagnostics pencils'
       endif
 !
+!  Check pencil initialization for diagnostics.
+!
+      if (lroot) print*, 'pencil_consistency_check: '// &
+          'checking dependence on pencil initialization'
+      df=0.0
+      if (lpencil_check_no_zeros) then
+        call random_seed_wrapper(PUT=iseed_org)
+        do i=1,mvar+maux
+          if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
+            call random_number_wrapper(f_other(:,:,:,i))
+          else
+            f_other(:,:,:,i)=f(:,:,:,i)
+          endif
+        enddo
+      else
+        f_other=f
+      endif
+      call initialize_pencils(p,0.5*penc0)
+!
+      lpencil=(lpenc_diagnos.or.lpenc_requested)
+      call pde(f_other,df,p)
+!
+!  Compare results.
+!
+      lconsistent=.true.
+      lconsistent_allproc=.false.
+      do k=1,nname
+        if (fname(k)/=fname_ref(k)) then
+          lconsistent=.false.
+          exit
+        endif
+      enddo
+!
+      call mpireduce_and(lconsistent,lconsistent_allproc)
+      if (lroot) then
+        if (.not. lconsistent_allproc) then
+          print*, 'pencil_consistency_check: '// &
+              'diagnostics depend on pencil initialization'
+          print*, '                          This is a serious problem '// &
+              'that may show the use of'
+          print*, '                          uninitialized pencils. Check '// &
+              'carefully that all'
+          print*, '                          pencils are calculated and '// &
+              'that conjugate pencils are'
+          print*, '                          calculated *after* the '// &
+              'individual components'
+          ldie=.true.
+        else
+          print*, 'pencil_consistency_check: '// &
+              'diagnostics are independent of pencil initialization'
+        endif
+      endif
+!
 !  Clean up.
 !
       if (lpencil_check_no_zeros) call random_seed_wrapper(put=iseed_org)
