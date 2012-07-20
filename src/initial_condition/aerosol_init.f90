@@ -574,6 +574,9 @@ module InitialCondition
 
         do iter=1,3
 !
+!
+!print*,'air_mass_1', air_mass_1,iter,PP*air_mass_1/18.
+!
           init_Yk_1(index_H2O)=psf_1/(PP*air_mass_1/18.)*dYw1
           init_Yk_2(index_H2O)=psf_2/(PP*air_mass_2/18.)*dYw2
 !
@@ -591,52 +594,34 @@ module InitialCondition
 !
 !  Recalculation of air_mass 
 !
-           sum_Y=0.
+             sum1=0.
+             sum2=0.
              do k=1,nchemspec
-               if (ichemspec(k)/=ichemspec(index_N2)) &
-                 sum_Y=sum_Y+init_Yk_1(k)
-             enddo
-               init_Yk_1(index_N2)=1.-sum1
-               init_Yk_2(index_N2)=1.-sum2
-               air_mass_1=0.
-               air_mass_2=0.
-             do k=1,nchemspec
-               air_mass_1=air_mass_1 + init_Yk_1(k)&
+               sum1=sum1 + init_Yk_1(k)&
                   /species_constants(k,imass)
-               air_mass_2=air_mass_2 + init_Yk_1(k)&
+               sum2=sum2 + init_Yk_2(k)&
                   /species_constants(k,imass)
              enddo
-               air_mass_1=1./air_mass_1
-               air_mass_2=1./air_mass_2
+               air_mass_1=1./sum1
+               air_mass_2=1./sum2
         enddo
 
            init_water_1=init_Yk_1(index_H2O)
            init_water_2=init_Yk_2(index_H2O)
+
+
+!print*,'NATA', init_Yk_1(index_H2O),psf_2, (PP*air_mass_2/18.), dYw1
+!
 !
 ! End of Recalculation of the air_mass for different boundary conditions
 !
-         do iter=1,3
-           if (iter==1) then
-             lmake_spot=.true.
-             air_mass_ar=air_mass
-           elseif (iter>1) then
-             lmake_spot=.false.
-!  Recalculation of air_mass becuase of changing of N2
-               sum_Y=0.
-               do k=1,nchemspec
-                 if (ichemspec(k)/=ichemspec(index_N2)) &
-                   sum_Y=sum_Y+f(:,:,:,ichemspec(k))
-               enddo
-                 f(:,:,:,ichemspec(index_N2))=1.-sum_Y
-                 air_mass_ar=0.
-               do k=1,nchemspec
-                 air_mass_ar(:,:,:)=air_mass_ar(:,:,:)+f(:,:,:,ichemspec(k)) &
-                    /species_constants(k,imass)
-               enddo
-                 air_mass_ar=1./air_mass_ar
-           endif 
-!
-           if (iter== 3) then
+!         do iter=1,3
+!           if (iter==1) then
+!             lmake_spot=.true.
+!             air_mass_ar=air_mass
+!           elseif (iter>1) then
+!             lmake_spot=.false.
+!           endif 
 !
 !  Different profiles
 !
@@ -660,12 +645,17 @@ module InitialCondition
              if (ichemspec(k)/=ichemspec(index_N2)) &
                sum_Y=sum_Y+f(:,:,:,ichemspec(k))
            enddo
-             f(:,:,:,ichemspec(index_N2))=1.-sum_Y
-
+           f(:,:,:,ichemspec(index_N2))=1.-sum_Y
 !
-           endif
+           sum_Y=0.
+           do k=1,nchemspec
+             sum_Y=sum_Y+f(:,:,:,ichemspec(k)) &
+               /species_constants(k,imass)
+           enddo
+           air_mass_ar=1./sum_Y
+!
 ! end of loot do iter=1,2
-         enddo
+!         enddo
 !
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)&
@@ -682,7 +672,8 @@ module InitialCondition
 !       
          if (lroot) print*, ' Saturation Pressure, Pa   ', psf_1, psf_2
          if (lroot) print*, ' psf, Pa   ',  psf_1, psf_2
-         if (lroot) print*, ' pw, Pa   ', (exp(f(l1,m1,n1,ilnrho))*Rgas_loc*init_TT1/18.) 
+         if (lroot) print*, ' pw1, Pa   ', (exp(f(l1,m1,n1,ilnrho))*Rgas_loc*init_TT1/18.), PP*air_mass_1/18.
+         if (lroot) print*, ' pw2, Pa   ', (exp(f(l2,m1,n1,ilnrho))*Rgas_loc*init_TT2/18.), PP*air_mass_2/18.
          if (lroot) print*, ' saturated water mass fraction', psat1/PP, psat2/PP
 !         if (lroot) print*, 'New Air density, g/cm^3:'
 !         if (lroot) print '(E10.3)',  PP/(k_B_cgs/m_u_cgs)*maxval(air_mass_ar)/TT
