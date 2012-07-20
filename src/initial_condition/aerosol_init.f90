@@ -461,14 +461,16 @@ module InitialCondition
       real, dimension (mx,my,mz) :: sum_Y, air_mass_ar, tmp
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
       real, dimension (my,mz) :: init_water1_min,init_water2_max
-      real, dimension (2,my,mz,ndustspec) :: psf
       real , dimension (my) :: init_x1_ar, init_x2_ar, del_ar, del_ar1, del_ar2
 !
       integer :: i,j,k, j1,j2,j3, iter
       real :: YY_k, air_mass,  PP, del, psat1, psat2, psf_1, psf_2 
       real :: air_mass_1, air_mass_2, sum1, sum2, init_water_1, init_water_2 
       logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
-      real ::  Rgas_loc=8.314472688702992E+7
+      real ::  Rgas_loc=8.314472688702992E+7, T_tmp
+      real :: aa0= 6.107799961, aa1= 4.436518521e-1
+      real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
+      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
 
       intent(in) :: air_mass
 !
@@ -537,26 +539,27 @@ module InitialCondition
 !
        if (init_TT2==0) init_TT2=init_TT1
 !
-       psat1=6.035e12*exp(-5938./init_TT1)
-       psat2=6.035e12*exp(-5938./init_TT2)
-         do k=1,ndustspec
-           psf(1,:,:,k)=psat1 &
-               *exp(AA/init_TT1/2./dsize(k) &
-!               -10.7*d0**3/(8.*dsize(k)**3))
-                -BB0/(8.*dsize(k)**3))
-           psf(2,:,:,k)=psat2 &
-               *exp(AA/init_TT2/2./dsize(k) &
-!               -10.7*d0**3/(8.*dsize(k)**3))
-                -BB0/(8.*dsize(k)**3))
-         enddo
-        psf_1=psat1*exp(AA/init_TT1/2./r0 &
-             -BB0/(8.*r0**3))
+ 
+!       psat1=6.035e12*exp(-5938./init_TT1)
+!       psat2=6.035e12*exp(-5938./init_TT2)
+!
+        T_tmp=init_TT1-273.15
+        psat1=(aa0 + aa1*T_tmp    + aa2*T_tmp**2  &
+                   + aa3*T_tmp**3 + aa4*T_tmp**4  &
+                   + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
+        T_tmp=init_TT2-273.15
+        psat2=(aa0 + aa1*T_tmp    + aa2*T_tmp**2  &
+                   + aa3*T_tmp**3 + aa4*T_tmp**4  &
+                   + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
+!
+        psf_1=psat1 
+!          *exp(AA/init_TT1/2./r0-BB0/(8.*r0**3))
         if (r02 /= 0) then
-          psf_2=psat2*exp(AA/init_TT2/2./r02 &
-            -BB0/(8.*r02**3))        
+          psf_2=psat2
+!            *exp(AA/init_TT2/2./r02-BB0/(8.*r02**3))        
         else
-          psf_2=psat2*exp(AA/init_TT2/2./r0 &
-            -BB0/(8.*r0**3))
+          psf_2=psat2
+!            *exp(AA/init_TT2/2./r0-BB0/(8.*r0**3))
         endif
 !
 ! Recalculation of the air_mass for different boundary conditions
