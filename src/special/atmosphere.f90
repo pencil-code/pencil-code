@@ -956,7 +956,7 @@ module Special
         ttt= spline_integral(dsize,f(l1,m1,n1,ind))
 !        print*,ttt(ndustspec)
       endif
-      if (it == 40000) then
+      if (it == 20000) then
         open(file_id,file=output_file3)
             write(file_id,'(7E12.4)') t
         if (lmdvar) then
@@ -1315,7 +1315,7 @@ subroutine bc_satur_x(f,bc)
       real :: value1, value2, air_mass_1, air_mass_2
       real :: psat1, psat2, sum1, sum2, init_water_1, init_water_2
       real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
-      real :: psf_1, psf_2, T_tmp 
+      real :: psf_1, psf_2, T_tmp, tmp
       real ::  Rgas_loc=8.314472688702992E+7
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
@@ -1361,13 +1361,20 @@ subroutine bc_satur_x(f,bc)
 ! Recalculation of the air_mass for different boundary conditions
 !
 !
-        do iter=1,3
-!
-           air_mass_1=0.
+
+           air_mass_1=0
            do k=1,nchemspec
              air_mass_1=air_mass_1+init_Yk_1(k)/species_constants(k,imass)
            enddo
            air_mass_1=1./air_mass_1
+
+           air_mass_2=0
+           do k=1,nchemspec
+             air_mass_2=air_mass_2+init_Yk_2(k)/species_constants(k,imass)
+           enddo
+           air_mass_2=1./air_mass_2
+        do iter=1,3
+!
 !
 !           air_mass_2=0
 !           do k=1,nchemspec
@@ -1379,7 +1386,7 @@ subroutine bc_satur_x(f,bc)
 !           init_Yk_2(ind_H2O)=psf_2/(exp(f(l2,m2,n2,ilnrho))*Rgas_loc*TT2/18.)*dYw2
 
            init_Yk_1(ind_H2O)=psf_1/(PP*air_mass_1/18.)*dYw1
-           init_Yk_2(ind_H2O)=psf_2/(PP*air_mass_1/18.)*dYw2
+           init_Yk_2(ind_H2O)=psf_2/(PP*air_mass_2/18.)*dYw2
 
 !
 
@@ -1394,6 +1401,20 @@ subroutine bc_satur_x(f,bc)
 !
            init_Yk_1(ind_N2)=1.-sum1
            init_Yk_2(ind_N2)=1.-sum2
+
+           
+           tmp=0.
+           do k=1,nchemspec
+             tmp=tmp+init_Yk_1(k)/species_constants(k,imass)
+           enddo
+           air_mass_1=1./tmp
+
+           tmp=0.
+           do k=1,nchemspec
+             tmp=tmp+init_Yk_2(k)/species_constants(k,imass)
+           enddo
+           air_mass_2=1./tmp
+
 ! 
 !
 !print*,'special', air_mass_1, init_Yk_1(ind_H2O), iter, vr, ichemspec(ind_H2O)
