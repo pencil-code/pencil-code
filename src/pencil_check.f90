@@ -493,7 +493,6 @@ f_lop:  do iv=1,mvar
               'that conjugate pencils are'
           print*, '                          calculated *after* the '// &
               'individual components'
-          ldie=.true.
         else
           print*, 'pencil_consistency_check: '// &
               'diagnostics are independent of pencil initialization'
