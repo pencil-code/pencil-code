@@ -2813,7 +2813,7 @@ module Mpicomm
               call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zrtag,MPI_COMM_WORLD,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
               call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zstag,MPI_COMM_WORLD,stat,mpierr)
-              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,zrtag,MPI_COMM_WORLD,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,zrtag,MPI_COMM_WORLD,mpierr)
             endif
             a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
           endif
@@ -3212,7 +3212,7 @@ module Mpicomm
               call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
               call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
-              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
             endif
             a(px*nz_other+1:(px+1)*nz_other,:,:)=recv_buf_z
           endif
@@ -3231,10 +3231,6 @@ module Mpicomm
         if (lroot) print*,'transp_other: No clue what var=', var, &
              'is supposed to mean'
       endif
-!
-!  Synchronize; not strictly necessary, so Axel will prabably remove it..
-!
-      call mpibarrier()
 !
     endsubroutine transp_other
 !***********************************************************************
