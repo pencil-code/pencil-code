@@ -11,8 +11,9 @@ Status:
 Recommended resolution:
     64x64x1 for zeta=1., nu=.1, etc works, but more resolution is better.
 Comments:
-    Needs to be tested further.
+    At the moment, variable ionization is ignored. The factor battery_term
+    corresponds to 1/(1+chi), where chi is the degree of ionization.
 References:
     Brandenburg, A., & Subramanian, K.: 2005, ``Astrophysical magnetic
     fields and nonlinear dynamo theory,'' Phys. Rep. 417, 1-209
-    (astro-ph:0405052)
+    (astro-ph:0405052), see especially Eq.(3.74).
