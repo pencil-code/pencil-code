@@ -665,7 +665,7 @@ module Density
                 (2*radius_lnrho(j)**2))))
           enddo
         case ('gaussian-noise')
-          If (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
+          if (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampllnrho(j),f,ilnrho,rnoise_int,rnoise_ext)
