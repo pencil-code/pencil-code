@@ -109,7 +109,7 @@ module Magnetic
   real :: mu012=0.5 !(=1/2mu0)
   real :: rescale_aa=0.0
   real :: ampl_B0=0.0, D_smag=0.17, B_ext21, B_ext11
-  real :: nu_ni=0.0, nu_ni1,hall_term=0.0
+  real :: nu_ni=0.0, nu_ni1, hall_term=0.0, battery_term=0.0
   real :: initpower_aa=0.0, cutoff_aa=0.0, brms_target=1.0
   real :: rescaling_fraction=1.0
   real :: phase_beltrami=0.0, ampl_beltrami=0.0
@@ -232,7 +232,8 @@ module Magnetic
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, J_ext, &
-      J_ext_quench, omega_Bz_ext, nu_ni, hall_term, eta_hyper3_mesh, &
+      J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
+      eta_hyper3_mesh, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
@@ -738,7 +739,7 @@ module Magnetic
 !
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
-!  13-jan-11/MR: calls to new subroutine 'register_report_aux' instead of repeated code
+!  13-jan-11/MR: use subroutine 'register_report_aux' instead of repeated code
 !
       use Sub, only: register_report_aux
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -1173,8 +1174,6 @@ module Magnetic
         call initialize_implicit_resistivity
       endif implicit
 !
-      call keep_compiler_quiet(lstarting)
-!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -1562,6 +1561,10 @@ module Magnetic
       if ((hall_term/=0.0.and.ldt).or.height_eta/=0.0.or.ip<=4.or. &
           lweyl_gauge.or.lspherical_coords.or.lJ_ext.or.ljj_as_aux) &
           lpenc_requested(i_jj)=.true.
+      if (battery_term/=0.0) then
+        lpenc_requested(i_fpres)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
       if (.not.lweyl_gauge.and.lcartesian_coords) &
           lpenc_requested(i_del2a)=.true.
       if ((.not.lweyl_gauge).and.(lresi_shell.or. &
@@ -2507,7 +2510,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
-      real, dimension (nx,3) :: u0ga,magfric,vmagfric2
+      real, dimension (nx,3) :: u0ga,magfric,vmagfric2, baroclinic
       real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -3043,6 +3046,16 @@ module Magnetic
         endif
         if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
                                      maxval(advec_hall)
+      endif
+!
+!  Add Battery term.
+!
+      if (battery_term/=0.0) then
+        if (headtt) print*,'daa_dt: battery_term=',battery_term
+        call cross_mn(p%fpres,p%glnrho,baroclinic)
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+battery_term*baroclinic
+        if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
+            battery_term*maxval(baroclinic)
       endif
 !
 ! Add jxb/(b^2\nu) Magneto-Frictional velocity to uxb term
