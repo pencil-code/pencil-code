@@ -604,12 +604,13 @@ module Magnetic_meanfield
           endif
 !
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
+!  Note: p%jij is not J_i,j; omit extra term for the time being.
 !
           call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
           if (lqpcurrent) then 
-            call multmv_transp(p%jij,p%jj,Jk_Jki) !=1/2 grad J^2
+!--         call multmv_transp(p%jij,p%jj,Jk_Jki) !=1/2 grad J^2
             call multsv_mn((1+p%j2*mf_qJ2)*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
-            call multsv_mn(meanfield_qp_func*p%b2*mf_qJ2,Jk_Jki,p%jxb_mf)
+!--         call multsv_mn(meanfield_qp_func*p%b2*mf_qJ2,Jk_Jki,p%jxb_mf)
           else
           call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
           endif
