@@ -30,8 +30,22 @@
 ;
 
 
+; Cleanup parameter cache, if requested, and return selected parameter.
+function pc_get_parameter_cleanup, param, cleanup=cleanup
+
+	common pc_get_parameter_common, start_par, run_par
+
+	if (keyword_set (cleanup)) then begin
+		undefine, start_par
+		undefine, run_par
+	endif
+
+	return, param
+end
+
+
 ; Get a parameter and look for alternatives.
-function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir=datadir, start_param=start_param, run_param=run_param
+function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir=datadir, start_param=start_param, run_param=run_param, cleanup=cleanup
 
 	common pc_get_parameter_common, start_par, run_par
 
@@ -42,7 +56,7 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	start_param = start_par
 	run_param = run_par
 
-	if (param eq '') then return, !Values.D_NaN
+	if (param eq '') then return, pc_get_parameter_cleanup (!Values.D_NaN, cleanup=cleanup)
 
 	; run.in parameters
 	run_names = tag_names (run_par)
@@ -57,19 +71,23 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 		if (not keyword_set (missing)) then missing = "'Ksat'"
 	end
 	index = where (run_names eq strupcase (param))
-	if (index[0] ge 0) then return, run_par.(index[0])
+	if (index[0] ge 0) then return, pc_get_parameter_cleanup (run_par.(index[0]), cleanup=cleanup)
 
 	; start.in parameters
 	start_names = tag_names (start_par)
 	index = where (start_names eq strupcase (param))
-	if (index[0] ge 0) then return, start_par.(index[0])
+	if (index[0] ge 0) then return, pc_get_parameter_cleanup (start_par.(index[0]), cleanup=cleanup)
+
+	; Cleanup parameter cache, if requested
+	dummy = pc_get_parameter_cleanup ('', cleanup=cleanup)
 
 	; Some additional useful constants
 	if (strcmp (param, 'q_electron', /fold_case)) then return, 1.6021766e-19 ; Electron charge [A*s]
 	if (strcmp (param, 'm_electron', /fold_case)) then return, 9.109383e-31 ; Electron mass [kg]
 	if (strcmp (param, 'm_proton', /fold_case)) then return, 1.6726218e-27 ; Proton mass [kg]
 	if (strcmp (param, 'c', /fold_case)) then return, 299792458. ; Speed of light [m/s]
-	if (strcmp (param, 'mu0_SI', /fold_case)) then return, 4.0 * !Pi * 1.e-7 ; magnetic vacuum permeability in SI units [V*s/(A*m)]
+	if (strcmp (param, 'mu0_SI', /fold_case)) then return, 4.0 * double (!Pi) * 1.e-7 ; Magnetic vacuum permeability in SI units [V*s/(A*m)]
+	if (strcmp (param, 'pi', /fold_case)) then return, double (!Pi) ; Precise value of pi
 
 	message = "find"
 	if (keyword_set (label)) then message = "compute '"+label+"' without"
