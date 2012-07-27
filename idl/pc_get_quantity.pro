@@ -75,9 +75,9 @@
 ;
 ;   Load 2D-slice and calculate separate quantities, using the cache manually:
 ;   IDL> pc_read_slice_raw, obj=slice, tags=tags, cut_z=20, slice_dim=dim, grid=grid, param=param, par2=run_param
-;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
-;   IDL> B_z = pc_get_quantity ('B_z', var, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
+;   IDL> HR_viscous = pc_get_quantity ('HR_viscous', slice, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;   IDL> HR_ohm = pc_get_quantity ('HR_ohm', slice, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache)
+;   IDL> B_z = pc_get_quantity ('B_z', slice, tags, dim=dim, grid=grid, param=param, run_param=run_param, /cache, /cleanup)
 ;   IDL> tvscl, HR_viscous
 ;
 

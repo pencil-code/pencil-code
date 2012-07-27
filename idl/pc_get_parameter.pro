@@ -38,7 +38,7 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	if (keyword_set (start_param)) then start_par = start_param
 	if (keyword_set (run_param)) then run_par = run_param
 	if (not keyword_set (start_par)) then pc_read_param, obj=start_par, dim=dim, datadir=datadir, /quiet
-	if (not keyword_set (run_par)) then pc_read_param, obj=start_par, dim=dim, datadir=datadir, /param2, /quiet
+	if (not keyword_set (run_par)) then pc_read_param, obj=run_par, dim=dim, datadir=datadir, /param2, /quiet
 	start_param = start_par
 	run_param = run_par
 
