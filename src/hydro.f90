@@ -328,6 +328,7 @@ module Hydro
   integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
   integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
   integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
+  integer :: idiag_qfm=0        ! DIAG_DOC: $\left<\qv\cdot\fv\right>$
   integer :: idiag_q2m=0        ! DIAG_DOC: $\left<\qv^2\right>$
   integer :: idiag_qrms=0       ! DIAG_DOC: $\left<\qv^2\right>^{1/2}$
   integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
@@ -1505,7 +1506,7 @@ module Hydro
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
       if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 .or. &
-          idiag_qom/=0 .or. idiag_quxom/=0) &
+          idiag_qfm/=0 .or. idiag_qom/=0 .or. idiag_quxom/=0) &
           lpenc_diagnos(i_curlo)=.true.
       if (idiag_divu2m/=0 .or. idiag_divu2mz/=0 .or. idiag_divru2mz/=0 .or. &
           idiag_divum/=0 .or. idiag_rdivum/=0) lpenc_diagnos(i_divu)=.true.
@@ -2209,13 +2210,19 @@ module Hydro
         if (idiag_tot_ang_mom/=0) call integrate_mn_name( &
             p%rho*x(l1:l2)*sin(y(m))*p%uu(:,3),idiag_tot_ang_mom)
 !
-!
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
         if (idiag_fum/=0) then
           call dot(p%fcont,p%uu,fu)
-          call sum_mn_name(fu,idiag_fum)
+          call sum_mn_name(ampl_fcont_uu*fu,idiag_fum)
         endif
+!
+!  Mean dot product of forcing and velocity field, <f.u>.
+!
+  !     if (idiag_rufm/=0) then
+  !       call dot(p%fcont,p%uu,fu)
+  !       call sum_mn_name(ampl_fcont_uu*fu,idiag_rufm)
+  !     endif
 !
 !  Things related to vorticity.
 !
@@ -3706,6 +3713,7 @@ module Hydro
         idiag_oxoym=0
         idiag_oxozm=0
         idiag_oyozm=0
+        idiag_qfm=0
         idiag_q2m=0
         idiag_qrms=0
         idiag_qmax=0
@@ -3833,6 +3841,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'oyozm',idiag_oyozm)
         call parse_name(iname,cname(iname),cform(iname),'pvzm',idiag_pvzm)
         call parse_name(iname,cname(iname),cform(iname),'orms',idiag_orms)
+        call parse_name(iname,cname(iname),cform(iname),'qfm',idiag_qfm)
         call parse_name(iname,cname(iname),cform(iname),'q2m',idiag_q2m)
         call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
         call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)

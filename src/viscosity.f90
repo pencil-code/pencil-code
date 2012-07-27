@@ -1457,7 +1457,8 @@ module Viscosity
       if (lvisc_smag_simplified) then
 !
 !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
-!  where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS)
+!  ??? where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS)
+!  where nu_smag=(C_smag*dxmax)**2*sqrt(SS^2)
 !
         if (ldensity) then
 !
