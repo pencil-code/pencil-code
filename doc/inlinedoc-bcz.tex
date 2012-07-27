@@ -91,6 +91,12 @@
   \var{ou0}       & allow outflow, but no inflow
                     forces ghost cells and boundary to not point inwards
                     relaxes to vanishing 1st derivative at boundary \\
+  \var{ind}       & allow inflow, but no outflow
+                    forces ghost cells and boundary to not point outwards
+                    creates inwards pointing or zero 1st derivative at boundary \\
+  \var{oud}       & allow outflow, but no inflow
+                    forces ghost cells and boundary to not point inwards
+                    creates outwards pointing or zero 1st derivative at boundary \\
   \var{ubs}       & copy boundary outflow, \\
   \var{win}       & forces massflux given as
                     $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$ \\

@@ -81,6 +81,7 @@
   \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
   \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
                     the hydro_xaver_range \\
+  \var{durms}     & $\left<\delta\uv^2\right>^{1/2}$ \\
   \var{umax}      & $\max(|\uv|)$ \\
   \var{uzrms}     & $\left<u_z^2\right>^{1/2}$ \\
   \var{uxmin}     & $\min(|u_x|)$ \\
@@ -123,7 +124,9 @@
   \var{ruy2m}     & $\left<\rho u_y^2\right>$ \\
   \var{ruz2m}     & $\left<\rho u_z^2\right>$ \\
   \var{divum}     & $\left<{\rm div}\uv)\right>$ \\
+  \var{rdivum}    & $\left<\varrho{\rm div}\uv)\right>$ \\
   \var{divu2m}    & $\left<({\rm div}\uv)^2\right>$ \\
+  \var{gdivu2m}   & $\left<({\rm grad\,div}\uv)^2\right>$ \\
   \var{u3u21m}    & $\left<u_3 u_{2,1}\right>$ \\
   \var{u1u32m}    & $\left<u_1 u_{3,2}\right>$ \\
   \var{u2u13m}    & $\left<u_2 u_{1,3}\right>$ \\
@@ -167,8 +170,7 @@
   \var{odel2um}   & $\left<\boldsymbol{\omega}\nabla^2\uv\right>$ \\
   \var{o2m}       & $\left<\boldsymbol{\omega}^2\right>
                     \equiv \left<(\curl\uv)^2\right>$ \\
-  \var{orms}      & $\left<\boldsymbol{\omega}^2
-                    \right>^{1/2}$ \\
+  \var{orms}      & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax}      & $\max(|\boldsymbol{\omega}|)$ \\
   \var{ox2m}      & $\left<\omega_x^2\right>$ \\
   \var{oy2m}      & $\left<\omega_y^2\right>$ \\
@@ -176,6 +178,11 @@
   \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
   \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
   \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{q2m}       & $\left<\qv^2\right>$ \\
+  \var{qrms}      & $\left<\qv^2\right>^{1/2}$ \\
+  \var{qmax}      & $\max(|\qv|)$ \\
+  \var{qom}       & $\left<\qv\cdot\omv\right>$ \\
+  \var{quxom}     & $\left<\qv\cdot(\uv\times\omv)\right>$ \\
   \var{pvzm}      & $\left<\omega_z + 2\Omega/\varrho\right>$
                     \quad(z component of potential vorticity) \\
   \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
@@ -1557,6 +1564,8 @@
   \var{nusmagmin} & Min value of Smagorinsky viscosity \\
   \var{nusmagmax} & Max value of Smagorinsky viscosity \\
   \var{visc_heatm} & Mean value of viscous heating \\
+  \var{qfviscm}   & $\left<\qv\cdot
+                    \fv_{\rm visc}\right>$ \\
   \var{Sij2m}     & $\left<\Strain^2\right>$ \\
   \var{epsK}      & $\left<2\nu\varrho\Strain^2\right>$ \\
   \var{dtnu}      & $\delta t/[c_{\delta t,{\rm v}}\,
