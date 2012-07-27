@@ -27,12 +27,12 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: b0,s0,width,p0,eps=1.,mphi=1.,ampl=0.,om=1.,b1=0.,b2=0.,bz=0.,hel=1.,nohel=0.
-  real :: omega_exponent=0.,ampl_diffrot=0.
+  real :: omega_exponent=0.,ampl_diffrot=0.,rbreak=0.
   logical :: linitial_diffrot=.false.
 !
   namelist /initial_condition_pars/ &
       b0,s0,width,p0,eps,mphi,ampl,om,b1,b2,linitial_diffrot,omega_exponent,&
-     ampl_diffrot,hel,nohel
+     ampl_diffrot,hel,nohel,rbreak
 !
   contains
 !***********************************************************************
@@ -114,7 +114,7 @@ module InitialCondition
 !  23-feb-12/fabio: added costant bz to the initial setup
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: argum,term1,term2,ax,az,ay
+      real, dimension (mx) :: argum,term1,term2,ax,az,ay,fp,fm,f0
 !
 !  vector potential for the magnetic flux ring
 !
@@ -135,17 +135,37 @@ module InitialCondition
 !
 !   perturbation for the initial field
 !
-print*,'ampl=',ampl
-
-     do n=1,mz
-      do m=1,my
-        ax=ampl*x*(hel*cos(om*z(n))*sin(mphi*y(m))+nohel*sin(om*z(n))*sin(mphi*y(m)))
-        az=ampl*x*cos(om*z(n))*cos(mphi*y(m))
-        f(:,m,n,iax)=f(:,m,n,iax)+ax
-        f(:,m,n,iaz)=f(:,m,n,iaz)+az
+     print*,'ampl,rbreak=',ampl,rbreak
+     if (rbreak==0) then
+       do n=1,mz
+         do m=1,my
+           ax=ampl*x*(hel*cos(om*z(n))*sin(mphi*y(m))+nohel*sin(om*z(n))*sin(mphi*y(m)))
+           az=ampl*x*cos(om*z(n))*cos(mphi*y(m))
+           f(:,m,n,iax)=f(:,m,n,iax)+ax
+           f(:,m,n,iaz)=f(:,m,n,iaz)+az
+         enddo
        enddo
-     enddo
-
+     else
+       f0=x-x
+       fp=x-rbreak
+       fm=rbreak-x
+       print*,'iproc,f0=',iproc,f0
+       print*,'iproc,fp=',iproc,fp
+       print*,'iproc,fm=',iproc,fm
+       fp=max(x-rbreak,x-x)
+       fm=max(rbreak-x,x-x)
+       print*,'iproc,x=',iproc,x
+       print*,'iproc,fp=',iproc,fp
+       print*,'iproc,fm=',iproc,fm
+       do n=1,mz
+         do m=1,my
+           ax=ampl*cos(om*z(n))*sin(mphi*y(m))
+           az=ampl*cos(om*z(n))*cos(mphi*y(m))
+           f(:,m,n,iax)=f(:,m,n,iax)+ax*fp-ax*fm
+           f(:,m,n,iaz)=f(:,m,n,iaz)+az*fp+az*fm
+         enddo
+       enddo
+     endif
 
     endsubroutine initial_condition_aa
 !***********************************************************************
