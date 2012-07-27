@@ -328,11 +328,11 @@ module Hydro
   integer :: idiag_oxoym=0      ! DIAG_DOC: $\left<\omega_x\omega_y\right>$
   integer :: idiag_oxozm=0      ! DIAG_DOC: $\left<\omega_x\omega_z\right>$
   integer :: idiag_oyozm=0      ! DIAG_DOC: $\left<\omega_y\omega_z\right>$
-  integer :: idiag_q2m=0        ! DIAG_DOC: $\left<\bm{q}^2\right>$
-  integer :: idiag_qrms=0       ! DIAG_DOC: $\left<\bm{q}^2\right>^{1/2}$
-  integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\bm{q}|)$
-  integer :: idiag_qom=0        ! DIAG_DOC: $\left<\bm{q}\cdot\bm{\omega}\right>$
-  integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\bm{q}\cdot(\bm{u}\times\bm{\omega})\right>$
+  integer :: idiag_q2m=0        ! DIAG_DOC: $\left<\qv^2\right>$
+  integer :: idiag_qrms=0       ! DIAG_DOC: $\left<\qv^2\right>^{1/2}$
+  integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
+  integer :: idiag_qom=0        ! DIAG_DOC: $\left<\qv\cdot\omv\right>$
+  integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\qv\cdot(\uv\times\omv)\right>$
   integer :: idiag_pvzm=0       ! DIAG_DOC: $\left<\omega_z + 2\Omega/\varrho\right>$
                                 ! DIAG_DOC: \quad(z component of potential vorticity)
   integer :: idiag_oumphi=0     ! DIAG_DOC: $\left<\omv\cdot\uv\right>_\varphi$
