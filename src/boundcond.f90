@@ -7376,7 +7376,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: rhob,boundrho
-      character (len=labellen) :: boundtype,btyp,tb,dirn
+      character (len=bclen) :: boundtype,btyp,tb,dirn
       logical :: lsuccess
       logical :: lconsistent=.true.
 !
