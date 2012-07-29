@@ -36,7 +36,7 @@ module Cdata
   real, dimension (nxgrid) :: kx_fft, kx_fft2, xgrid, dx1grid, dxtgrid
   real, dimension (nygrid) :: ky_fft, ky_fft2, ygrid, dy1grid, dytgrid
   real, dimension (nzgrid) :: kz_fft, kz_fft2, zgrid, dz1grid, dztgrid
-  real :: kx_ny,ky_ny,kz_ny
+  real :: kx_nyq,ky_nyq,kz_nyq
   integer :: dimensionality
 !
 !  Alternative coordinate systems: spherical, cylindric.

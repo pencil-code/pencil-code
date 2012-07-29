@@ -74,7 +74,7 @@ module Poisson
 !  the largest circular region that is present in both the square and the
 !  parallellogram. The circle has radius kmax=kNy/sqrt(2). See Gammie (2001).
 !
-      if (lklimit_shear) kmax = kx_ny/sqrt(2.0)
+      if (lklimit_shear) kmax = kx_nyq/sqrt(2.0)
 !
 !  Dimensionality
 !

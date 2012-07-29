@@ -3518,7 +3518,7 @@ module Special
       call fft_xy_parallel(fvy_r,fvy_i)
 !
 ! Reference frequency is half the Nyquist frequency.
-      k20 = (kx_ny/2.)**2.
+      k20 = (kx_nyq/2.)**2.
 !
       kx =spread(kx_fft(ipx*nx+1:(ipx+1)*nx),2,ny)
       ky =spread(ky_fft(ipy*ny+1:(ipy+1)*ny),1,nx)

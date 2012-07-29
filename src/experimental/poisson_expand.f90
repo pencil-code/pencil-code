@@ -67,7 +67,7 @@ module Poisson
       r2_ext=r_ext**2
       r2_int=r_int**2
 !
-      if (lklimit_shear) kmax = kx_ny/sqrt(2.0)
+      if (lklimit_shear) kmax = kx_nyq/sqrt(2.0)
 !
     endsubroutine initialize_poisson
 !***********************************************************************

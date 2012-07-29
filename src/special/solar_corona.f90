@@ -3322,12 +3322,12 @@ module Special
       call fourier_transform_other(fvy_r,fvy_i)
 !
 ! Reference frequency is half the Nyquist frequency.
-      k20 = (kx_ny/2.)**2.
+      k20 = (kx_nyq/2.)**2.
 !
-      kx =spread(kx_fft,2,nygrid)
-      ky =spread(ky_fft,1,nxgrid)
+      kx = spread(kx_fft,2,nygrid)
+      ky = spread(ky_fft,1,nxgrid)
 !
-      k2 =kx**2 + ky**2 + tini
+      k2 = max (kx**2 + ky**2, tini)
 !
       frx_r = +ky*(ky*fvx_r - kx*fvy_r)/k2
       frx_i = +ky*(ky*fvx_i - kx*fvy_i)/k2
