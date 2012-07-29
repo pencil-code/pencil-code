@@ -186,6 +186,10 @@ module Special
       if (((nglevel < 1) .or. (nglevel > max_gran_levels))) &
           call fatal_error ('solar_corona/gran_driver', &
               "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
+      ! Using vorticity increase, the x- and y-directions must be equidistant.
+      if ((nvor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
+          call fatal_error ('solar_corona/gran_driver', &
+              "If 'nvor' is active, the grid must be equidistant in x and y.")
       ! For only one granulation level, no parallelization is required.
       if (lgran_parallel .and. (nglevel == 1)) &
           call fatal_error ('solar_corona/gran_driver', &
@@ -3322,6 +3326,7 @@ module Special
       call fourier_transform_other(fvy_r,fvy_i)
 !
 ! Reference frequency is half the Nyquist frequency.
+! This expression is only correct for grids with dx=dy.
       k20 = (kx_nyq/2.)**2.
 !
       kx = spread(kx_fft,2,nygrid)
