@@ -7361,24 +7361,27 @@ module Boundcond
 !***********************************************************************
     subroutine set_consistent_density_boundary(f,dirn,boundtype,tb,rhob,lsuccess)
 !
-!  This subroutine checks, if the density paramters as type, topbottom 
-!  and values  are set consistently with initial condittion for example.
+!  This subroutine checks, if the density paramters like type, topbot
+!  and boundary value are set consistently with eg. the initial condition.
 !  
 !  26-jun-12/dhruba+joern: coded
 !
 !  dirn       =     direction                    : 'x','y','z'
-!  boundtype  =     type of boundary condition   : 'set','a'.....
-!  tb         =     topbot                       : 'top','bottom'
+!  boundtype  =     type of boundary condition   : 'set','a',...
+!  tb         =     top or bottom boundary       : 'top','bot'
 !  rhob       =     value at the boundary        : 4.04, 8.35, 10.1
 !  lsuccess   =     switch, if it was successful : .true., .false.
 !      
 !  At the moment only the x-direction is implemented
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: rhob,boundrho
-      character (len=bclen) :: boundtype,btyp,tb,dirn
-      logical :: lsuccess
+      real, intent(in) :: rhob
+      character (len=bclen), intent(in) :: boundtype,tb,dirn
+      logical, intent(out) :: lsuccess
+!
+      character (len=bclen) :: btyp
       logical :: lconsistent=.true.
+      real :: boundrho
 !
 ! check for consistency
 !
@@ -7418,7 +7421,7 @@ module Boundcond
           call fatal_error('set_consistent_density_boundary','you have to choose either x,y or z direction')
       endselect
       lsuccess=.true.
-
+!
 ! density set consistently at the boundary.
 !
     endsubroutine set_consistent_density_boundary
