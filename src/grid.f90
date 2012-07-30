@@ -129,11 +129,10 @@ module Grid
           xi3proc(2*i)  =i*nz-1
           xi3proc(2*i+1)=i*nz
         enddo
+        if (lperi(1)) xi1proc = xi1proc + 0.5
+        if (lperi(2)) xi2proc = xi2proc + 0.5
+        if (lperi(3)) xi3proc = xi3proc + 0.5
       endif
-!
-      if (lperi(1)) xi1proc = xi1proc + 0.5
-      if (lperi(2)) xi2proc = xi2proc + 0.5
-      if (lperi(3)) xi3proc = xi3proc + 0.5
 !
 !  The following is correct for periodic and non-periodic case
 !    Periodic: x(xi=0) = x0 and x(xi=N) = x1
