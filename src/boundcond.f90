@@ -116,7 +116,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k, one
       logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
       if (ldebug) print*, 'boundconds_x: ENTER: boundconds_x'
@@ -386,7 +386,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
       if (ldebug) print*,'boundconds_y: ENTER: boundconds_y'
@@ -590,7 +590,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       type (boundary_condition) :: bc
 !
       if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
@@ -1001,7 +1001,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       select case (topbot)
 !
@@ -1026,7 +1026,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       select case (topbot)
 !
@@ -1051,7 +1051,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,nhalf
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       nhalf=(n1+n2)/2
       select case (topbot)
@@ -1091,7 +1091,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,nhalf
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       nhalf=(n1+n2)/2
       select case (topbot)
@@ -1121,7 +1121,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       select case (topbot)
 !
@@ -1148,7 +1148,7 @@ module Boundcond
 !
 !  11-nov-02/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: sgn,i,j
@@ -1199,7 +1199,7 @@ module Boundcond
 !
 !  11-nov-09/axel+koen: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: extra1,extra2
       integer :: i,j
@@ -1242,7 +1242,7 @@ module Boundcond
 !
 !  28-feb-11/koen: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: f1_co,f2_co
       integer :: i,j
@@ -1284,7 +1284,7 @@ module Boundcond
 !
 !  28-feb-11/koen: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: f1_co,f2_co
       integer :: i,j
@@ -1327,7 +1327,7 @@ module Boundcond
 !
 !  11-nov-02/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: sgn,i,j
@@ -1369,7 +1369,7 @@ module Boundcond
 !
 !  30-may-11/axel: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: i,j
@@ -1397,7 +1397,7 @@ module Boundcond
 !
 !  12-nov-09/axel+koen: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
@@ -1444,7 +1444,7 @@ module Boundcond
 !
 !  25-feb-07/axel: adapted from bc_sym_x
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       real, dimension (mcom) :: slope
@@ -1503,7 +1503,7 @@ module Boundcond
 !
 !  25-feb-07/axel: adapted from bc_sym_x
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       real, dimension (mcom) :: slope
@@ -1569,7 +1569,7 @@ module Boundcond
 !
 !  25-feb-07/axel: adapted from bc_sym_x
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom) :: dist
       integer :: i,j
@@ -1608,7 +1608,7 @@ module Boundcond
 !
 !  25-feb-07/axel: adapted from bc_sym_z
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom) :: dist
       integer :: i,j
@@ -1651,7 +1651,7 @@ module Boundcond
 !
 !  25-feb-07/axel: adapted from bc_slope_x
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       real, dimension (mcom) :: slope
@@ -1712,7 +1712,7 @@ module Boundcond
 !  10-apr-05/axel: added val argument
 !   9-jun-11/axel: added val2 argument
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val,val2,val4
       integer :: sgn,i,j
@@ -1767,7 +1767,7 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !  10-apr-05/axel: added val argument
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: sgn,i,j
@@ -1809,7 +1809,7 @@ module Boundcond
 !
 !  30-may-11/axel: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: i,j
@@ -1835,7 +1835,7 @@ module Boundcond
 !
 !  30-may-11/axel: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,mz) :: derval
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
@@ -1865,7 +1865,7 @@ module Boundcond
 !
 !  19-nov-09/axel: adapted from bc_symset0der_x
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
@@ -1911,7 +1911,7 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !  10-apr-05/axel: added val argument
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val,val2,val4
       integer :: sgn,i,j
@@ -1985,7 +1985,7 @@ module Boundcond
 !
 !  22-nov-09/axel: adapted from bc_symset0der_y
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
 !
@@ -2026,7 +2026,7 @@ module Boundcond
 !
 !  14-may-2006/tobi: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
@@ -2056,7 +2056,7 @@ module Boundcond
 !
 !  27-apr-2007/dhruba: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
@@ -2082,7 +2082,7 @@ module Boundcond
 !
 !   9-jan-2008/axel+nils+natalia: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
@@ -2160,7 +2160,7 @@ module Boundcond
 !
 !  27-apr-2007/dhruba: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
@@ -2199,7 +2199,7 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
@@ -2233,7 +2233,7 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
@@ -2266,7 +2266,7 @@ module Boundcond
 !
 !  03-Dec-2009/dhruba: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
@@ -2306,7 +2306,7 @@ module Boundcond
 !
       use SharedVariables, only : get_shared_variable
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
 !
@@ -2401,7 +2401,7 @@ module Boundcond
 !
       use Sub, only: step
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent(in) :: jj
       integer :: i,j,k
@@ -2466,7 +2466,7 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       integer :: k
@@ -2501,7 +2501,7 @@ module Boundcond
 !
       use SharedVariables, only : get_shared_variable
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, pointer :: Lambda_H1,nu
@@ -2614,7 +2614,7 @@ module Boundcond
 !
 !  25-Aug-2007/dhruba: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real :: cottheta
@@ -2649,7 +2649,7 @@ module Boundcond
 !
 !  14-may-2006/tobi: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
@@ -2677,7 +2677,7 @@ module Boundcond
 !
 !  14-may-2006/tobi: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
@@ -2705,7 +2705,7 @@ module Boundcond
 !
 !  17-may-2010/bing: coded
 !
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (nx,ny) :: fac,duz_dz
       real, intent(in) :: val
@@ -2781,7 +2781,7 @@ module Boundcond
 !
 !  26-apr-06/tobi: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 !
@@ -2811,7 +2811,7 @@ module Boundcond
 !
 !  26-apr-06/tobi: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 !
@@ -2841,7 +2841,7 @@ module Boundcond
 !
 !  26-apr-06/tobi: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 !
@@ -2871,7 +2871,7 @@ module Boundcond
 !
 !  19-aug-03/anders: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -2927,7 +2927,7 @@ module Boundcond
 !  05-apr-03/axel: coded
 !  07-jan-09/axel: corrected
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
 !
@@ -3006,7 +3006,7 @@ module Boundcond
 !
 !  05-apr-03/axel: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
@@ -3053,7 +3053,7 @@ module Boundcond
 !  07-jan-09/axel: corrected
 !  26-jan-09/nils: adapted from bc_onesided_x
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
 !
@@ -3132,7 +3132,7 @@ module Boundcond
 !
 !  05-apr-03/axel: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
@@ -3178,7 +3178,7 @@ module Boundcond
 !  05-apr-03/axel: coded
 !  10-mar-09/axel: corrected
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
 !
@@ -3257,7 +3257,7 @@ module Boundcond
 !
 !  19-jun-03/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -3288,7 +3288,7 @@ module Boundcond
 !
 !  19-jun-03/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -3319,7 +3319,7 @@ module Boundcond
 !
 !  19-jun-03/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -3351,7 +3351,7 @@ module Boundcond
 !  19-jun-03/wolf: coded
 !  01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,n1p4,n2m4
 !
@@ -3389,7 +3389,7 @@ module Boundcond
 !  19-jun-03/wolf: coded
 !  01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,l1p4,l2m4
 !
@@ -3427,7 +3427,7 @@ module Boundcond
 !   19-jun-03/wolf: coded
 !   01-jul-03/axel: introduced abbreviations n1p4,n2m4
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,m1p4,m2m4
 !
@@ -3463,7 +3463,7 @@ module Boundcond
 !
 !  18-dec-08/wlad: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,l,i
 !
@@ -3510,7 +3510,7 @@ module Boundcond
 !
 !  09-oct-03/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -3555,7 +3555,7 @@ module Boundcond
 !
 !  09-oct-03/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -3590,7 +3590,7 @@ module Boundcond
 !
 !  09-oct-03/wolf: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,n1p4,n2m4
 !
@@ -3630,7 +3630,7 @@ module Boundcond
 !
 !  18-dec-08/wlad: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
 !
@@ -3676,7 +3676,7 @@ module Boundcond
 !
 !  23-nov-10/Bourdin.KIS: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
@@ -3710,7 +3710,7 @@ module Boundcond
 !
 !  23-nov-10/Bourdin.KIS: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
@@ -3750,7 +3750,7 @@ module Boundcond
 !
       use SharedVariables, only: get_shared_variable
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j
 !
@@ -3820,7 +3820,7 @@ module Boundcond
 !
 !  11-apr-11/Bourdin.KIS: coded
 !
-      character (len=3), intent(in) :: topbot
+      character (len=bclen), intent(in) :: topbot
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: j
 !
@@ -3896,7 +3896,7 @@ module Boundcond
 !  11-jul-2002/nils: moved into the density module
 !  13-aug-2002/nils: moved into boundcond
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -3949,7 +3949,7 @@ module Boundcond
 !  11-jul-2002/nils: moved into the density module
 !  13-aug-2002/nils: moved into boundcond
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -4003,7 +4003,7 @@ module Boundcond
 !
       use EquationOfState, only: gamma_m1, cs2top, cs2bot
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: sgn,i,j
 !
@@ -4079,7 +4079,7 @@ module Boundcond
 !
       use SharedVariables, only : get_shared_variable
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, pointer :: ampl_forc, k_forc, w_forc
       integer :: sgn, i, j, ierr
@@ -4204,7 +4204,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       select case (topbot)
 !
@@ -4229,7 +4229,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       select case (topbot)
 !
@@ -4254,7 +4254,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       select case (topbot)
 !
@@ -4277,7 +4277,7 @@ module Boundcond
 !  given boundary
 !
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       lfrozen_bcs_x = .true.    ! set flag
 !
@@ -4298,7 +4298,7 @@ module Boundcond
 !  given boundary
 !
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       lfrozen_bcs_y = .true.    ! set flag
 !
@@ -4319,7 +4319,7 @@ module Boundcond
 !  given boundary
 !
       integer :: j
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       lfrozen_bcs_z = .true.    ! set flag
 !
@@ -4904,7 +4904,7 @@ module Boundcond
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       real, pointer :: hcond0, hcond1, Fbot
       real, dimension (:,:), allocatable :: tmp_yz
@@ -4966,7 +4966,7 @@ module Boundcond
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_xy
       real, pointer :: hcond0, Fbot
@@ -5026,7 +5026,7 @@ module Boundcond
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       real, dimension (:,:), allocatable :: tmp_yz,work_yz
       real, pointer :: FbotKbot, FtopKtop, Fbot, Ftop, cp
@@ -5226,7 +5226,7 @@ module Boundcond
       use Fourier, only: fourier_transform_xy_xy
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       integer, intent (in) :: j
 !
       real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact,tmp_re,tmp_im
@@ -5344,7 +5344,7 @@ module Boundcond
 !  11-aug-2009/anders: implemented
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       integer :: j
 !
       select case (topbot)
@@ -5375,7 +5375,7 @@ module Boundcond
 !  13-jul-2011/Tijmen: adapted from bc_zero_x
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       integer :: j
 !
       select case (topbot)
@@ -5406,7 +5406,7 @@ module Boundcond
 !  13-aug-2007/anders: implemented
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       integer :: j
 !
       select case (topbot)
@@ -5441,7 +5441,7 @@ module Boundcond
 !
 !  25-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_z'
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       logical, optional :: lforce_ghost
@@ -5508,7 +5508,7 @@ module Boundcond
 !
 !  14-jun-2011/axel: adapted from bc_outflow_z
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       logical, optional :: lforce_ghost
@@ -5575,7 +5575,7 @@ module Boundcond
 !
 !  14-jun-2011/axel: adapted from bc_outflow_x
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       logical, optional :: lforce_ghost
@@ -5648,7 +5648,7 @@ module Boundcond
 !  12-aug-2007/anders: implemented
 !  25-dec-2010/Bourdin.KIS: added forcing of boundary and ghost cell values
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       logical, optional :: lforce_ghost
@@ -5714,7 +5714,7 @@ module Boundcond
 !
 !  27-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_const_deriv_z'
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -5769,7 +5769,7 @@ module Boundcond
 !
 !  27-dec-2010/Bourdin.KIS: adapted from 'bc_outflow_z'
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -5823,7 +5823,7 @@ module Boundcond
 !
 !  10-jul-2012/Bourdin.KIS: adapted from 'bc_inflow_zero_deriv_z'
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -5869,7 +5869,7 @@ module Boundcond
 !
 !  10-jul-2012/Bourdin.KIS: adapted from 'bc_outflow_zero_deriv_z'
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -5916,7 +5916,7 @@ module Boundcond
 !  06-nov-2010/fred: implemented
 !  14-mar-2011/fred: amended
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -5975,7 +5975,7 @@ module Boundcond
 !
 !  11-aug-2009/anders: implemented
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -6008,7 +6008,7 @@ module Boundcond
 !
 !  08-june-2010/wlyra: implemented
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -6047,7 +6047,7 @@ module Boundcond
 !
 !  08-june-2010/wlyra: implemented
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: value
       integer :: j,l,n
@@ -6093,7 +6093,7 @@ module Boundcond
 !
 !  15-aug-2007/anders: implemented
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
@@ -6128,7 +6128,7 @@ module Boundcond
 !
       use SharedVariables, only: get_shared_variable
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       integer :: j
 !
       logical, save :: lfirstcall=.true.
@@ -6168,7 +6168,7 @@ module Boundcond
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
 !
       integer :: i
       real, dimension (mx,my) :: T_inv, grad_rho
@@ -6231,7 +6231,7 @@ module Boundcond
       use Fourier, only: vect_pot_extrapol_z_parallel
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       logical, optional :: lfinalize
 !
       real, dimension (:,:,:), allocatable, save :: exp_fact_top, exp_fact_bot
@@ -6318,7 +6318,7 @@ module Boundcond
       use Fourier, only: fourier_transform_xy_xy
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
 !
       real, dimension (:,:,:), allocatable :: aa_re,aa_im
       real, dimension (:,:), allocatable :: kx,ky,kappa,exp_fact
@@ -6450,7 +6450,7 @@ module Boundcond
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_y_y
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
 !
       real, dimension (:,:,:), allocatable :: aa_re,aa_im
       real, dimension (:,:), allocatable :: kx,ky,kappa
@@ -6590,7 +6590,7 @@ module Boundcond
 !   8-jul-2002/axel: introduced topbot argument
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
 !
       real, dimension (:,:), allocatable :: f2,f3
       real, dimension (:,:,:), allocatable :: fz
@@ -6909,7 +6909,7 @@ module Boundcond
 !
 !  18-06-2008/bing: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,ipt,ntb=-1
       real :: massflux,u_add
@@ -7017,7 +7017,7 @@ module Boundcond
       use SharedVariables, only: get_shared_variable
 !
       real, pointer :: Fbot
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: tmp_x
       integer :: i, ierr
@@ -7099,7 +7099,7 @@ module Boundcond
 !
 ! NB! Assumes y to have the range 0 < y < 2pi
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,i
       real, dimension(mcom) :: val
@@ -7151,7 +7151,7 @@ module Boundcond
       use EquationOfState, only : cs20
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real    :: haut
       integer :: i
 !
@@ -7176,7 +7176,7 @@ module Boundcond
 !
 !  25-Oct-10/tijmen & bing: coded
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 !
@@ -7215,7 +7215,7 @@ module Boundcond
       use Fourier, only: fourier_transform_other
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      character (len=3), intent (in) :: topbot
+      character (len=bclen), intent (in) :: topbot
       real, dimension (nxgrid) :: fft_az_r,fft_az_i,A_r,A_i,exp_fact
       real, dimension (nxgrid) :: iay_global
       integer :: i,j,ipos,dir
@@ -7289,7 +7289,7 @@ module Boundcond
 !
       use EquationOfState, only: get_cv1,get_cp1
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
       real :: cv1,cp1,cv,cp
@@ -7336,7 +7336,7 @@ module Boundcond
 !
 !  13-feb-11/fred: adapted from bc_ctz
 !
-      character (len=3) :: topbot
+      character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,k
 !
