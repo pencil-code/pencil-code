@@ -4993,7 +4993,8 @@ module Initcond
       real :: lnTTpoint0, dens_coeff, temp_coeff, temp_coeff_out
       real :: x_wave, wavelength, QQQ, temp_trans, T_cloud_out_rel0
 !
-      character (len=labellen) :: datafile, cloud_mode
+      character (len=fnlen) :: datafile
+      character (len=labellen) :: cloud_mode
 !
       write (*,*) 'Solar mass:', M_sun
       write (*,*) 'unit_mass:', unit_mass
