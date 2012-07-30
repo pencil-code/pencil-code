@@ -7391,7 +7391,7 @@ module Boundcond
       select case (dirn)
         case ('x')
           select case (tb)
-            case('bottom')
+            case('bot')
               if ((btyp/=bcx1(ilnrho)) .or. (rhob/=fbcx1(ilnrho))) then
                 lconsistent=.false.
                 bcx1(ilnrho)=btyp

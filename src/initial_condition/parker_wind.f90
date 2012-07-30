@@ -185,7 +185,8 @@ module InitialCondition
       integer :: j
       real :: GM,rhob
       logical :: lsuccess=.false.
-      character (len=labellen) :: gtype,gprofile,boundtype,bot,direction
+      character (len=labellen) :: gtype,gprofile
+      character (len=bclen) :: boundtype,bot,direction
 !
       Ecrit=0.5*cs20-cs20*log(cs0)-2*cs20*log(rcrit)-2*cs20
       cs20logx=2*cs20*log(x)
@@ -228,7 +229,7 @@ module InitialCondition
       direction='x'
       boundtype='set'  
       rhob=rho(l1)
-      bot='bottom'
+      bot='bot'
       call set_consistent_density_boundary(f,direction,boundtype,bot,rhob,lsuccess)
       if(lsuccess) then
          lreset_boundary_values=lsuccess
