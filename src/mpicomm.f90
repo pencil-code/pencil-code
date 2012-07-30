@@ -6792,7 +6792,6 @@ module Mpicomm
 !
       integer                            :: mpiprocs,merge
       real, dimension(nk)                :: recvbuf
-      integer, dimension(MPI_STATUS_SIZE):: status
 !
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
@@ -6803,8 +6802,6 @@ module Mpicomm
       call MPI_OP_CREATE( merge_1d, .false., merge, mpierr )
       call MPI_REDUCE(vector, recvbuf, nk, MPI_REAL, merge, root, mpiprocs, mpierr)
       vector = recvbuf
-!
-      if (ALWAYS_FALSE) print*,status
 !
     endsubroutine mpimerge_1d
 !***********************************************************************
