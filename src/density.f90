@@ -92,7 +92,8 @@ module Density
   character (len=labellen) :: mass_source_profile='nothing'
   character (len=intlen) :: iinit_str
   character (len=labellen) :: ffree_profile='none'
-  character (len=labellen) :: datafile='dens_temp.dat', cloud_mode='isothermal'
+  character (len=fnlen) :: datafile='dens_temp.dat'
+  character (len=labellen) :: cloud_mode='isothermal'
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
