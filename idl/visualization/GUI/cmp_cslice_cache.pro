@@ -461,6 +461,7 @@ pro cslice_event, event
 		orig_frozen = frozen
 		frozen = 1
 		if (num_snapshots gt 1) then begin
+			if (eventval eq "IMAGE") then cslice_save_movie, num_snapshots, /allocate
 			previous_snapshot = selected_snapshot
 			for i = num_snapshots-1, 0, -1 do begin
 				cslice_prepare_set, i
@@ -663,7 +664,7 @@ end
 
 
 ; Saves images of the slices with the given format
-pro cslice_save_images, img_type, slices=slices
+pro cslice_save_images, img_type, slices=slices, movie_frame=movie_frame
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
@@ -675,19 +676,20 @@ pro cslice_save_images, img_type, slices=slices
 	suffix = "." + strlowcase (img_type)
 
 	wset, wimg_xy
-	save_image, prefix+"_xy"+suffix
+	pc_save_image, prefix+"_xy"+suffix
 	wset, wimg_xz
-	save_image, prefix+"_xz"+suffix
+	pc_save_image, prefix+"_xz"+suffix
 	wset, wimg_yz
-	save_image, prefix+"_yz"+suffix
+	pc_save_image, prefix+"_yz"+suffix
 	wset, wcut_x
-	save_image, prefix+"_x"+suffix
+	pc_save_image, prefix+"_x"+suffix
 	wset, wcut_y
-	save_image, prefix+"_y"+suffix
+	pc_save_image, prefix+"_y"+suffix
 	wset, wcut_z
-	save_image, prefix+"_z"+suffix
+	pc_save_image, prefix+"_z"+suffix
 
 	if (keyword_set (slices)) then cslice_save_slices
+	if (n_elements (movie_frame)) then cslice_save_movie, movie_frame
 end
 
 
@@ -700,6 +702,7 @@ pro cslice_save_slices
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
         quantity = (tag_names (set))[selected_cube]
+	prefix = varfiles[selected_snapshot].title + "_" + quantity
 
 	cut_xy = reform (cube[*,*,pz], num_x, num_y)
 	cut_xz = reform (cube[*,py,*], num_x, num_z)
@@ -718,7 +721,60 @@ pro cslice_save_slices
 	pos_z = pz
 	time = varfiles[selected_snapshot].time
 
-	save, filename=quantity+"_cuts.xdr", time, quantity, cut_xy, cut_xz, cut_yz, cut_x, cut_y, cut_z, pos_x, pos_y, pos_z, x, y, z, dx, dy, dz
+	save, filename=prefix+"_cuts.xdr", time, quantity, cut_xy, cut_xz, cut_yz, cut_x, cut_y, cut_z, pos_x, pos_y, pos_z, x, y, z, dx, dy, dz
+end
+
+
+; Saves a movie of slices into a XDR file
+pro cslice_save_movie, frame, allocate=allocate
+
+	common cslice_movie_common, cut_xy, cut_xz, cut_yz, cut_x, cut_y, cut_z, time
+	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
+	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
+
+	if (keyword_set (allocate)) then begin
+		cut_xy = dblarr (num_x, num_y, frame)
+		cut_xz = dblarr (num_x, num_z, frame)
+		cut_yz = dblarr (num_y, num_z, frame)
+		cut_x = dblarr (num_x, frame)
+		cut_y = dblarr (num_y, frame)
+		cut_z = dblarr (num_z, frame)
+		time = dblarr (frame)
+		time[*] = !Values.D_NaN
+		return
+	end
+
+	cut_xy[*,*,frame] = reform (cube[*,*,pz], num_x, num_y)
+	cut_xz[*,*,frame] = reform (cube[*,py,*], num_x, num_z)
+	cut_yz[*,*,frame] = reform (cube[px,*,*], num_y, num_z)
+	cut_x[*,frame] = reform (cube[*,py,pz])
+	cut_y[*,frame] = reform (cube[px,*,pz])
+	cut_z[*,frame] = reform (cube[px,py,*])
+	time[frame] = varfiles[selected_snapshot].time
+	if (any (finite (time, /NaN))) then return
+
+        quantity = (tag_names (set))[selected_cube]
+	x = coord.x * unit.default_length
+	y = coord.y * unit.default_length
+	z = coord.z * unit.default_length
+	dx = coord.dx
+	dy = coord.dy
+	dz = coord.dz
+	pos_x = px
+	pos_y = py
+	pos_z = pz
+
+	save, filename=quantity+"_movie.xdr", time, quantity, cut_xy, cut_xz, cut_yz, cut_x, cut_y, cut_z, pos_x, pos_y, pos_z, x, y, z, dx, dy, dz
+
+	cut_xy = 0
+	cut_xz = 0
+	cut_yz = 0
+	cut_x = 0
+	cut_y = 0
+	cut_z = 0
+	time = 0
 end
 
 
