@@ -24,6 +24,7 @@ pro pc_save_image, file, window=window, image=image, quality=quality, grey=grey,
 		print, 'Window number is invalid or no window is open.'
 		stop
 	end
+	if (win ne !D.window) then wset, win
 
 	if (keyword_set (grey)) then begin
 		true_color = 1 - grey

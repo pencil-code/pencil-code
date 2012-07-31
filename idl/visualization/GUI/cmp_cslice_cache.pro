@@ -675,18 +675,12 @@ pro cslice_save_images, img_type, slices=slices, movie_frame=movie_frame
 	if (selected_overplot gt 0) then prefix += "_overplot-" + (tag_names (overplot))[selected_overplot]
 	suffix = "." + strlowcase (img_type)
 
-	wset, wimg_xy
-	pc_save_image, prefix+"_xy"+suffix
-	wset, wimg_xz
-	pc_save_image, prefix+"_xz"+suffix
-	wset, wimg_yz
-	pc_save_image, prefix+"_yz"+suffix
-	wset, wcut_x
-	pc_save_image, prefix+"_x"+suffix
-	wset, wcut_y
-	pc_save_image, prefix+"_y"+suffix
-	wset, wcut_z
-	pc_save_image, prefix+"_z"+suffix
+	pc_save_image, prefix+"_xy"+suffix, window=wimg_xy
+	pc_save_image, prefix+"_xz"+suffix, window=wimg_xz
+	pc_save_image, prefix+"_yz"+suffix, window=wimg_yz
+	pc_save_image, prefix+"_x"+suffix, window=wcut_x
+	pc_save_image, prefix+"_y"+suffix, window=wcut_y
+	pc_save_image, prefix+"_z"+suffix, window=wcut_z
 
 	if (keyword_set (slices)) then cslice_save_slices
 	if (n_elements (movie_frame)) then cslice_save_movie, movie_frame
