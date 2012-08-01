@@ -130,7 +130,7 @@ module InitialCondition
     character (len=len_trim(word)) :: wordn ! the trimmed word
 !
 !   keeps track of the current position of the strand
-    integer, dimension(9) :: strand_position
+    integer :: strand_position
 !   position of the other strand in the braid
     integer :: other_position, ierr
     integer :: braid_num ! auxiliary variable for the braid position
@@ -233,8 +233,8 @@ module InitialCondition
         tube_pos(3) = z(n1)-ipz*nz*dz
         idx = 1
 !
-!       reset the strand_position vector
-        strand_position = (/1,2,3,4,5,6,7,8,9/)
+!       reset the strand position
+        strand_position = idx_strand
 !
 !       loop over all braids
         do
@@ -290,13 +290,12 @@ module InitialCondition
             braid_num = ichar(word(idx:idx)) - ichar('A') + 1
           endif
 !         check if this braid affects this strand
-          if ((braid_num == strand_position(idx_strand)) .or. &
-              (braid_num == strand_position(idx_strand) - 1)) then
+          if ((braid_num == strand_position) .or. &
+              (braid_num == strand_position - 1)) then
 !
 !           switch the position of the strands
-            if (braid_num == strand_position(idx_strand)) then
-              strand_position(idx_strand) = strand_position(idx_strand) + 1
-              strand_position(idx_strand+1) = strand_position(idx_strand+1) - 1
+            if (braid_num == strand_position) then
+              strand_position = strand_position + 1
 !
               rotation_center(1) = tube_pos(1) + distance_tubes/2.
               rotation_center(2) = tube_pos(2)
@@ -308,8 +307,7 @@ module InitialCondition
                 rotation_sign = 1
               endif
             else
-              strand_position(idx_strand) = strand_position(idx_strand) - 1
-              strand_position(idx_strand-1) = strand_position(idx_strand-1) + 1
+              strand_position = strand_position - 1
 !
               rotation_center(1) = tube_pos(1) - distance_tubes/2.
               rotation_center(2) = tube_pos(2)
