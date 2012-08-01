@@ -220,12 +220,12 @@ program read_videofiles
               endif
             enddo
             close (lun)
-!
-            glob_min = minval(glob_slice)
-            glob_max = maxval(glob_slice)
           enddo
         enddo
       enddo
+!
+      glob_min = minval(glob_slice)
+      glob_max = maxval(glob_slice)
 !
       call safe_character_assign(fullname,trim(datadir)//trim(file))
       call write_slices(fullname,glob_slice,times,slice_pos)
