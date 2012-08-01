@@ -53,12 +53,12 @@ program read_videofiles
   do it = 1, num_slices
     if (mod(it, n_every) == 0) num_frames = num_frames + 1
   enddo
+  if (num_frames <= 0) then
+    print *, 'No frames are to be written with these settings!'
+    stop
+  endif
 !
-!  loop over all processors to find the positions of the slices.
-!  Therefore read all slice_positions.dat
-!
-  ipz1=-1; ipz2=-1; ipz3=-1
-  ipz4=-1; ipy1=-1; ipx1=-1
+!  Loop over all processors to find the positions of the slices.
 !
   do ipx=0,nprocx-1
     do ipy=0,nprocy-1
@@ -68,7 +68,7 @@ program read_videofiles
         ! check for existence first
         inquire(FILE=trim(directory)//'/slice_position.dat',EXIST=exists)
         if (.not. exists) then
-          print*,'slice_position.dat for iproc=',iproc,'not found!'
+          print *, 'slice_position.dat for iproc=', iproc, 'not found!'
           stop
         endif
         open(lun,file=trim(directory)//'/slice_position.dat',form='formatted',STATUS='old')
@@ -89,16 +89,19 @@ program read_videofiles
     enddo
   enddo
 !
-    ! XY-planes:
+!  XY-planes:
+!
   call read_slice(ipz1,'xy',min_xy,max_xy)
   call read_slice(ipz2,'xy2',min_xy2,max_xy2)
   call read_slice(ipz3,'xy3',min_xy3,max_xy3)
   call read_slice(ipz4,'xy4',min_xy4,max_xy4)
 !
-  ! XZ-plane:
+!  XZ-plane:
+!
   call read_slice(ipy1,'xz',min_xz,max_xz)
 !
-  ! YZ-plane:
+!  YZ-plane:
+!
   call read_slice(ipx1,'yz',min_yz,max_yz)
 !
   if (lwritten_something) then
