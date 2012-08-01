@@ -50,7 +50,7 @@ program read_videofiles
   close (lun)
   num_slices = num_slices - 1
   num_frames = 0
-  do it = 1, num_slices, n_every
+  do it = 1, num_slices
     if (mod(it, n_every) == 0) num_frames = num_frames + 1
   enddo
 !
