@@ -17,7 +17,7 @@ program read_videofiles
 !
   integer :: ipx,ipy,ipz,iproc,it,num_slices,num_frames
   integer :: ipy1=-1,ipx1=-1,ipz1=-1,ipz2=-1,ipz3=-1,ipz4=-1
-  integer, parameter :: lun_slice=10,lun_xy=11,lun_xy2=12,lun_xy3=13,lun_xy4=14,lun_xz=15,lun_yz=16
+  integer, parameter :: lun=10
   integer :: itdebug=1,n_every=1
   integer :: isep1=0,isep2=0,idummy
   real :: t
@@ -45,9 +45,9 @@ program read_videofiles
 !
 !  Find out the number of available slices and frames to read.
 !
-  open (lun_slice,file=trim(datadir)//'/tvid.dat',form='formatted',STATUS='old')
-  read (lun_slice,*) t, num_slices
-  close (lun_slice)
+  open (lun,file=trim(datadir)//'/tvid.dat',form='formatted',STATUS='old')
+  read (lun,*) t, num_slices
+  close (lun)
   num_slices = num_slices - 1
   num_frames = 0
   do it = 1, num_slices, n_every
@@ -71,35 +71,35 @@ program read_videofiles
           print*,'slice_position.dat for iproc=',iproc,'not found!'
           stop
         endif
-        open(lun_slice,file=trim(directory)//'/slice_position.dat',form='formatted',STATUS='old')
-        read(lun_slice,'(l5,i5)') lread_slice,idummy
+        open(lun,file=trim(directory)//'/slice_position.dat',form='formatted',STATUS='old')
+        read(lun,'(l5,i5)') lread_slice,idummy
         if (lread_slice) ipz1=ipz
-        read(lun_slice,'(l5,i5)') lread_slice,idummy
+        read(lun,'(l5,i5)') lread_slice,idummy
         if (lread_slice) ipz2=ipz
-        read(lun_slice,'(l5,i5)') lread_slice,idummy
+        read(lun,'(l5,i5)') lread_slice,idummy
         if (lread_slice) ipz3=ipz
-        read(lun_slice,'(l5,i5)') lread_slice,idummy
+        read(lun,'(l5,i5)') lread_slice,idummy
         if (lread_slice) ipz4=ipz
-        read(lun_slice,'(l5,i5)') lread_slice,idummy
+        read(lun,'(l5,i5)') lread_slice,idummy
         if (lread_slice) ipy1=ipy
-        read(lun_slice,'(l5,i5)') lread_slice,idummy
+        read(lun,'(l5,i5)') lread_slice,idummy
         if (lread_slice) ipx1=ipx
-        close(lun_slice)
+        close(lun)
       enddo
     enddo
   enddo
 !
     ! XY-planes:
-  call read_slice(ipz1,lun_xy,'xy',min_xy,max_xy)
-  call read_slice(ipz2,lun_xy2,'xy2',min_xy2,max_xy2)
-  call read_slice(ipz3,lun_xy3,'xy3',min_xy3,max_xy3)
-  call read_slice(ipz4,lun_xy4,'xy4',min_xy4,max_xy4)
+  call read_slice(ipz1,'xy',min_xy,max_xy)
+  call read_slice(ipz2,'xy2',min_xy2,max_xy2)
+  call read_slice(ipz3,'xy3',min_xy3,max_xy3)
+  call read_slice(ipz4,'xy4',min_xy4,max_xy4)
 !
   ! XZ-plane:
-  call read_slice(ipy1,lun_xz,'xz',min_xz,max_xz)
+  call read_slice(ipy1,'xz',min_xz,max_xz)
 !
   ! YZ-plane:
-  call read_slice(ipx1,lun_yz,'yz',min_yz,max_yz)
+  call read_slice(ipx1,'yz',min_yz,max_yz)
 !
   if (lwritten_something) then
     print *,'last file read: ',trim(fullname)
@@ -134,13 +134,13 @@ program read_videofiles
 !
   contains
 !***********************************************************************
-    subroutine read_slice(ipxyz,lun,suffix,glob_min,glob_max)
+    subroutine read_slice(ipxyz,suffix,glob_min,glob_max)
 !
 !  Read the slices of a given variable.
 !
 !  01-Aug-2012/Bourdin.KIS: rewritten
 !
-      integer, intent(in) :: ipxyz, lun
+      integer, intent(in) :: ipxyz
       character (len=*), intent(in) :: suffix
       real, intent(out) :: glob_min, glob_max
 !
@@ -207,7 +207,7 @@ program read_videofiles
               ! Loop over available slices.
               do slice = 1, n_every
                 it = slice + (frame-1) * n_every
-                if (read_slice_file(lun,fullname,loc_slice,slice_pos)) then
+                if (read_slice_file(lun,loc_slice,slice_pos)) then
                   deallocate (times, loc_slice, glob_slice)
                   return
                 endif
@@ -240,31 +240,7 @@ program read_videofiles
 !
     endsubroutine read_slice
 !***********************************************************************
-    subroutine read_ipz_position(file,ipz)
-!
-!  reads just one number from file
-!
-!  19-nov-06/axel: coded
-!
-      character (len=*) :: file
-      integer :: ipz,lun=1,ierr
-!
-      open(lun,file=file,status='old',iostat=ierr)
-      if (ierr /= 0) then
-        ! Escape procedure of file doesn't exist
-        print*,";;;"
-        print*,";;; data/z*_procnum.dat files don't exist."
-        print*,";;; Type (e.g. by cut+paste):"
-        print*,";;;    cp data/proc*/z*_procnum.dat data"
-        print*,";;;"
-        stop
-      endif
-      read(lun,*) ipz
-      close(lun)
-!
-    endsubroutine read_ipz_position
-!***********************************************************************
-    function read_slice_file(lun,filename,a,pos)
+    function read_slice_file(lun,a,pos)
 !
 ! Read an existing slice file
 !
@@ -273,40 +249,39 @@ program read_videofiles
 !
       logical :: read_slice_file
       integer, intent(in) :: lun
-      character (len=*), intent(in) :: filename
       real, dimension (:,:), intent(out) :: a
       real, intent(out) :: pos
 !
       integer :: ierr
 !
-      read(lun,iostat=ierr) a,t,pos
+      read(lun,iostat=ierr) a, t, pos
       if (ierr > 0) then
         ! IO-error: suspect wrong record length
-        read(lun,iostat=ierr) a,t
-        pos=0. ! Fill missing value
+        read(lun,iostat=ierr) a, t
+        pos = 0. ! Fill missing value
       endif
       read_slice_file = (ierr > 0) ! Unresolvable IO-error?
 !
     endfunction read_slice_file
 !***********************************************************************
-    subroutine write_slices(file,data,times,pos)
+    subroutine write_slices(filename,data,times,pos)
 !
 !  Write slices file
 !
 !  01-Aug-2012/Bourdin.KIS: rewritten
 !
-      character (len=*), intent(in) :: file
+      character (len=*), intent(in) :: filename
       real, dimension (:,:,:), intent(in) :: data
       real, dimension (:), intent(in) :: times
       real, intent(in) :: pos
 !
       integer :: frame
 !
-      open (lun_slice,file=file,form='unformatted',status='replace')
+      open (lun,file=filename,form='unformatted',status='replace')
       do frame = 1, num_frames
-        write (lun_slice) data(:,:,frame), times(frame), pos
+        write (lun) data(:,:,frame), times(frame), pos
       enddo
-      close (lun_slice)
+      close (lun)
 !
     endsubroutine write_slices
 !***********************************************************************
