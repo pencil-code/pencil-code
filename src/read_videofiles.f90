@@ -207,7 +207,10 @@ program read_videofiles
               ! Loop over available slices.
               do slice = 1, n_every
                 it = slice + (frame-1) * n_every
-                call read_slice_file(lun,fullname,loc_slice,slice_pos)
+                if (read_slice_file(lun,fullname,loc_slice,slice_pos)) then
+                  deallocate (times, loc_slice, glob_slice)
+                  return
+                endif
               enddo
 !
               times(frame) = t
@@ -261,37 +264,30 @@ program read_videofiles
 !
     endsubroutine read_ipz_position
 !***********************************************************************
-    subroutine read_slice_file(lun,filename,a,pos)
+    function read_slice_file(lun,filename,a,pos)
 !
 ! Read an existing slice file
 !
 !  12-nov-02/axel: coded
 !  01-Aug-2012/Bourdin.KIS: rewritten
 !
+      logical :: read_slice_file
       integer, intent(in) :: lun
       character (len=*), intent(in) :: filename
       real, dimension (:,:), intent(out) :: a
       real, intent(out) :: pos
 !
-      logical :: leof, lerr
       integer :: ierr
 !
-      leof = .false.
-      lerr = .false.
-!
-      pos=0. ! Default (ie. if missing from record)
       read(lun,iostat=ierr) a,t,pos
       if (ierr > 0) then
         ! IO-error: suspect wrong record length
         read(lun,iostat=ierr) a,t
+        pos=0. ! Fill missing value
       endif
-      if (ierr > 0) then
-        lerr = .true.
-      elseif (ierr < 0) then
-        leof = .true.
-      endif
+      read_slice_file = (ierr > 0) ! Unresolvable IO-error?
 !
-    endsubroutine read_slice_file
+    endfunction read_slice_file
 !***********************************************************************
     subroutine write_slices(file,data,times,pos)
 !
