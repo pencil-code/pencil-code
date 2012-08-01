@@ -19,10 +19,10 @@ program read_videofiles
   integer :: ipy1=-1,ipx1=-1,ipz1=-1,ipz2=-1,ipz3=-1,ipz4=-1
   integer, parameter :: lun=10
   integer :: itdebug=1,n_every=1
-  integer :: isep1=0,isep2=0,idummy
+  integer :: isep1=0,isep2=0
   real :: t
 !
-  character (len=fnlen) :: file='',fullname='',wfile='',directory=''
+  character (len=fnlen) :: file='',fullname='',directory=''
   character (len=fnlen) :: datadir='data',path='',cfield=''
   character (len=labellen) :: field='lnrho'
 !
@@ -72,17 +72,17 @@ program read_videofiles
           stop
         endif
         open(lun,file=trim(directory)//'/slice_position.dat',form='formatted',STATUS='old')
-        read(lun,'(l5,i5)') lread_slice,idummy
+        read(lun,*) lread_slice
         if (lread_slice) ipz1=ipz
-        read(lun,'(l5,i5)') lread_slice,idummy
+        read(lun,*) lread_slice
         if (lread_slice) ipz2=ipz
-        read(lun,'(l5,i5)') lread_slice,idummy
+        read(lun,*) lread_slice
         if (lread_slice) ipz3=ipz
-        read(lun,'(l5,i5)') lread_slice,idummy
+        read(lun,*) lread_slice
         if (lread_slice) ipz4=ipz
-        read(lun,'(l5,i5)') lread_slice,idummy
+        read(lun,*) lread_slice
         if (lread_slice) ipy1=ipy
-        read(lun,'(l5,i5)') lread_slice,idummy
+        read(lun,*) lread_slice
         if (lread_slice) ipx1=ipx
         close(lun)
       enddo
@@ -103,6 +103,8 @@ program read_videofiles
 !  YZ-plane:
 !
   call read_slice(ipx1,'yz',min_yz,max_yz)
+!
+!  Print summary.
 !
   if (lwritten_something) then
     print *,'last file read: ',trim(fullname)
