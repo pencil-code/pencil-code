@@ -132,40 +132,33 @@ module InitialCondition
         enddo
       enddo
 !
-!
 !   perturbation for the initial field
 !
-     print*,'ampl,rbreak=',ampl,rbreak
-     if (rbreak==0) then
-       do n=1,mz
-         do m=1,my
-           ax=ampl*x*(hel*cos(om*z(n))*sin(mphi*y(m))+nohel*sin(om*z(n))*sin(mphi*y(m)))
-           az=ampl*x*cos(om*z(n))*cos(mphi*y(m))
-           f(:,m,n,iax)=f(:,m,n,iax)+ax
-           f(:,m,n,iaz)=f(:,m,n,iaz)+az
-         enddo
-       enddo
-     else
-       f0=x-x
-       fp=x-rbreak
-       fm=rbreak-x
-       print*,'iproc,f0=',iproc,f0
-       print*,'iproc,fp=',iproc,fp
-       print*,'iproc,fm=',iproc,fm
-       fp=max(x-rbreak,x-x)
-       fm=max(rbreak-x,x-x)
-       print*,'iproc,x=',iproc,x
-       print*,'iproc,fp=',iproc,fp
-       print*,'iproc,fm=',iproc,fm
-       do n=1,mz
-         do m=1,my
-           ax=ampl*cos(om*z(n))*sin(mphi*y(m))
-           az=ampl*cos(om*z(n))*cos(mphi*y(m))
-           f(:,m,n,iax)=f(:,m,n,iax)+ax*fp-ax*fm
-           f(:,m,n,iaz)=f(:,m,n,iaz)+az*fp+az*fm
-         enddo
-       enddo
-     endif
+      print*,'ampl,rbreak=',ampl,rbreak
+      if (rbreak==0) then
+        do n=1,mz
+          do m=1,my
+            ax=ampl*x*(hel*cos(om*z(n))*sin(mphi*y(m))+nohel*sin(om*z(n))*sin(mphi*y(m)))
+            az=ampl*x*cos(om*z(n))*cos(mphi*y(m))
+            f(:,m,n,iax)=f(:,m,n,iax)+ax
+            f(:,m,n,iaz)=f(:,m,n,iaz)+az
+          enddo
+        enddo
+      else
+        fp=max(x-rbreak,x-x)
+        fm=max(rbreak-x,x-x)
+        print*,'iproc,x=',iproc,x
+        print*,'iproc,fp=',iproc,fp
+        print*,'iproc,fm=',iproc,fm
+        do n=1,mz
+          do m=1,my
+            ax=ampl*cos(om*z(n))*sin(mphi*y(m))
+            az=ampl*cos(om*z(n))*cos(mphi*y(m))
+            f(:,m,n,iax)=f(:,m,n,iax)+ax*fp-ax*fm
+            f(:,m,n,iaz)=f(:,m,n,iaz)+az*fp+az*fm
+          enddo
+        enddo
+      endif
 
     endsubroutine initial_condition_aa
 !***********************************************************************
