@@ -42,6 +42,10 @@ program read_videofiles
   isep2=len(cfield)
   field=cfield(1:isep1)
   if (cfield(isep1+1:isep2)/=' ') read(cfield(isep1:isep2),*) n_every
+  if (n_every <= 0) then
+    print *, 'Invalid value for stride!'
+    stop
+  endif
 !
 !  Find out the number of available slices and frames to read.
 !
@@ -149,7 +153,7 @@ program read_videofiles
       character (len=*), intent(in) :: suffix
       real, intent(out) :: glob_min, glob_max
 !
-      integer :: frame, slice, ndim1, ndim2, glob_ndim1, glob_ndim2, ipx, ipy, ipz
+      integer :: frame, slice, ndim1, ndim2, glob_ndim1, glob_ndim2
       integer :: ipx_start, ipx_end, ipy_start, ipy_end, ipz_start, ipz_end
       real, dimension (:), allocatable :: times
       real, dimension (:,:), allocatable :: loc_slice
@@ -236,11 +240,8 @@ program read_videofiles
       glob_max = maxval(glob_slice)
 !
       call safe_character_assign(fullname,trim(datadir)//trim(file))
-      call write_slices(fullname,glob_slice,times,slice_pos)
+      call write_slices(fullname,suffix,glob_slice,times,slice_pos)
       lwritten_something = .true.
-      do frame = 1, num_frames
-        print *, 'written full set of '//trim(suffix)//'-slices at t=', times(frame)
-      enddo
       deallocate (times, loc_slice, glob_slice)
 !
     endsubroutine read_slice
@@ -261,21 +262,21 @@ program read_videofiles
 !
       read(lun,iostat=ierr) a, t, pos
       if (ierr > 0) then
-        ! IO-error: suspect wrong record length
+        ! IO-error: suspect old file format
         read(lun,iostat=ierr) a, t
-        pos = 0. ! Fill missing value
+        pos = 0. ! Fill missing position value
       endif
       read_slice_file = (ierr > 0) ! Unresolvable IO-error?
 !
     endfunction read_slice_file
 !***********************************************************************
-    subroutine write_slices(filename,data,times,pos)
+    subroutine write_slices(filename,suffix,data,times,pos)
 !
 !  Write slices file
 !
 !  01-Aug-2012/Bourdin.KIS: rewritten
 !
-      character (len=*), intent(in) :: filename
+      character (len=*), intent(in) :: filename, suffix
       real, dimension (:,:,:), intent(in) :: data
       real, dimension (:), intent(in) :: times
       real, intent(in) :: pos
@@ -285,6 +286,7 @@ program read_videofiles
       open (lun,file=filename,form='unformatted',status='replace')
       do frame = 1, num_frames
         write (lun) data(:,:,frame), times(frame), pos
+        print *, 'written full set of '//trim(suffix)//'-slices at t=', times(frame)
       enddo
       close (lun)
 !
