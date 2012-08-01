@@ -45,6 +45,23 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
         Destination file.
     """
 
+    # this should correct for the case the user type only one variable
+    if (len(magic) > 0):
+        if (len(magic[0]) == 1):
+            magic = [magic]
+
+    # make sure magic is set when writing 'vort' or 'bb'
+    try:
+        index = variables.index('vort')
+        magic.append('vort')
+    except:
+        pass      
+    try:
+        index = variables.index('bb')
+        magic.append('bb')
+    except:
+        pass
+
     # reading pc variables and setting dimensions
     var = pc.read_var(varfile = varfile, datadir = datadir, proc = proc,
                     magic = magic, trimall = True, quiet = quiet)
@@ -73,22 +90,6 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     if (len(variables) > 0):
         if (len(variables[0]) == 1):
             variables = [variables]
-    # this should correct for the case the user type only one variable
-    if (len(magic) > 0):
-        if (len(magic[0]) == 1):
-            magic = [magic]
-
-    # make sure magic is set when writing 'vort' or 'bb'
-    try:
-        index = variables.index('vort')
-        magic.append('vort')
-    except:
-        pass      
-    try:
-        index = variables.index('bb')
-        magic.append('bb')
-    except:
-        pass
       
     try:
         index = variables.index('rho')
@@ -321,7 +322,28 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
       *destination*:
         Destination files without '.vtk' extension.        
     """
-    
+
+    # this should correct for the case the user type only one variable
+    if (len(variables) > 0):
+        if (len(variables[0]) == 1):
+            variables = [variables]
+    # this should correct for the case the user type only one variable
+    if (len(magic) > 0):
+        if (len(magic[0]) == 1):
+            magic = [magic]
+        
+    # make sure magic is set when writing 'vort' or 'bb'
+    try:
+        index = variables.index('vort')
+        magic.append('vort')
+    except:
+        pass      
+    try:
+        index = variables.index('bb')
+        magic.append('bb')
+    except:
+        pass
+
     for i in range(ti,tf+1):
         varfile = 'VAR' + str(i)
         # reading pc variables and setting dimensions
@@ -348,28 +370,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]))
         fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz))
         fd.write('POINT_DATA {0:9}\n'.format(dim))
-        
-        # this should correct for the case the user type only one variable
-        if (len(variables) > 0):
-            if (len(variables[0]) == 1):
-                variables = [variables]
-        # this should correct for the case the user type only one variable
-        if (len(magic) > 0):
-            if (len(magic[0]) == 1):
-                magic = [magic]
-            
-        # make sure magic is set when writing 'vort' or 'bb'
-        try:
-            index = variables.index('vort')
-            magic.append('vort')
-        except:
-            pass      
-        try:
-            index = variables.index('bb')
-            magic.append('bb')
-        except:
-            pass
-      
+              
         try:
             index = variables.index('rho')
             print 'writing rho'
