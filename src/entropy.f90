@@ -33,7 +33,7 @@ module Entropy
   real :: entropy_floor = impossible, TT_floor = impossible
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
   real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0
-  real :: rcool=0.0, wcool=0.1, zheat=0.0
+  real :: rcool=0.0, wcool=0.1
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
