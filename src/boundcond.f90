@@ -5818,7 +5818,7 @@ module Boundcond
 !
 !  Inflow boundary condition with inwards 1st derivative at boundary.
 !
-!  The velocity boundary condition is set to 's'.
+!  The velocity boundary condition is set to 's' or 'a' for steady flows.
 !  The boundary and ghost cell values are forced to not point outwards.
 !
 !  10-jul-2012/Bourdin.KIS: adapted from 'bc_inflow_zero_deriv_z'
@@ -5835,10 +5835,11 @@ module Boundcond
       case ('bot')
         do iy = 1, my
           do ix = 1, mx
-            ! 's' boundary condition with forced inflow
+            ! 's' or 'a' boundary condition for forced inflow
             do i = 1, nghost
               f(ix,iy,n1-i,j) = abs (f(ix,iy,n1+i,j))
             enddo
+            if (f(ix,iy,n1,j) < 0.0) f(ix,iy,n1,j) = 0.0
           enddo
         enddo
 !
@@ -5846,10 +5847,11 @@ module Boundcond
       case ('top')
         do iy = 1, my
           do ix = 1, mx
-            ! 's' boundary condition with forced inflow
+            ! 's' or 'a' boundary condition for forced inflow
             do i = 1, nghost
               f(ix,iy,n2+i,j) = -abs (f(ix,iy,n2-i,j))
             enddo
+            if (f(ix,iy,n2,j) > 0.0) f(ix,iy,n2,j) = 0.0
           enddo
         enddo
 !
@@ -5864,7 +5866,7 @@ module Boundcond
 !
 !  Outflow boundary condition with outwards 1st derivative at boundary.
 !
-!  The velocity boundary condition is set to 's'.
+!  The velocity boundary condition is set to 's' or 'a' for steady flows.
 !  The boundary and ghost cell values are forced to not point inwards.
 !
 !  10-jul-2012/Bourdin.KIS: adapted from 'bc_outflow_zero_deriv_z'
@@ -5881,10 +5883,11 @@ module Boundcond
       case ('bot')
         do iy = 1, my
           do ix = 1, mx
-            ! 's' boundary condition with forced outflow
+            ! 's' or 'a' boundary condition for forced outflow
             do i = 1, nghost
               f(ix,iy,n1-i,j) = -abs (f(ix,iy,n1+i,j))
             enddo
+            if (f(ix,iy,n1,j) > 0.0) f(ix,iy,n1,j) = 0.0
           enddo
         enddo
 !
@@ -5892,10 +5895,11 @@ module Boundcond
       case ('top')
         do iy = 1, my
           do ix = 1, mx
-            ! 's' boundary condition with forced outflow
+            ! 's' or 'a' boundary condition for forced outflow
             do i = 1, nghost
               f(ix,iy,n2+i,j) = abs (f(ix,iy,n2-i,j))
             enddo
+            if (f(ix,iy,n2,j) < 0.0) f(ix,iy,n2,j) = 0.0
           enddo
         enddo
 !
