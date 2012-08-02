@@ -93,7 +93,7 @@
 ; And update the availability and dependency list in "pc_check_quantities.pro".
 function pc_compute_quantity, vars, index, quantity
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
@@ -188,6 +188,7 @@ function pc_compute_quantity, vars, index, quantity
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		cdtv = pc_get_parameter ('cdtv', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
@@ -195,7 +196,7 @@ function pc_compute_quantity, vars, index, quantity
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			grad_ln_Temp = (grad (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*]
 		end
-		dt = cdtv / (gamma * cp * K_spitzer) * rho * sqrt (dot2 (bb) * dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
+		dt = cdtv / (gamma * cp * K_spitzer) * rho * B_2 * sqrt (dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp))) * (unit.time * unit.temperature^2.5 / unit.density)
 		; The z-direction may have a non-uniform gird, but not the x- and y-direction
 		dxy_1 = dx_1[0]^2 + dy_1[0]^2
 		for pz = 0, nz - 1 do dt[*,*,pz] /= dxy_1 + dz_1[pz]^2
@@ -204,9 +205,9 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'Spitzer_ratio', /fold_case)) then begin
 		; Ratio of perpendicular to parallel Spitzer heat conduction coefficients
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
-		return, 2.e-31 * n_rho^2 / (Temp^3 * dot2 (bb)) ; [Solar MHD, E. Priest (1982/1984), p. 86]
+		return, 2.e-31 * n_rho^2 / (Temp^3 * B_2) ; [Solar MHD, E. Priest (1982/1984), p. 86]
 	end
 
 	if (strcmp (quantity, 'rho', /fold_case)) then begin
@@ -261,7 +262,8 @@ function pc_compute_quantity, vars, index, quantity
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, cp * (gamma - 1.0) / gamma * rho * Temp * unit.density * unit.velocity^2
+		if (n_elements (P_therm) eq 0) then P_therm = cp * (gamma - 1.0) / gamma * rho * Temp * unit.density * unit.velocity^2
+		return, P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
 		; Gradient of thermal pressure
@@ -294,9 +296,9 @@ function pc_compute_quantity, vars, index, quantity
 		; Minimum density for an Alfvén speed below the speed of light
 		cdtv = pc_get_parameter ('cdtv', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'bb')
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
-		return, rho - dot2 (bb) / (2 * mu0_SI * (pc_get_parameter ('c', label=quantity) * cdtv)^2)
+		return, rho - B_2 / (2 * mu0_SI * (pc_get_parameter ('c', label=quantity) * cdtv)^2)
 	end
 
 	if (strcmp (quantity, 'HR_viscous', /fold_case)) then begin
@@ -352,6 +354,17 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (bb) eq 0) then bb = (curl (vars[*,*,*,index.aa]))[l1:l2,m1:m2,n1:n2,*] * unit.magnetic_field
 		return, bb
 	end
+	if (strcmp (quantity, 'B_abs', /fold_case)) then begin
+		; Magnetic field strengh
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
+		return, sqrt (B_2)
+	end
+	if (strcmp (quantity, 'B_2', /fold_case)) then begin
+		; Magnetic field strengh squared
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (B_2) eq 0) then B_2 = dot2 (bb)
+		return, B_2
+	end
 	if (strcmp (quantity, 'B_x', /fold_case)) then begin
 		; Magnetic field x-component
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
@@ -367,17 +380,26 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, bb[*,*,*,2]
 	end
+	if (strcmp (quantity, 'beta', /fold_case)) then begin
+		; Plasma beta
+		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		return, 2 * mu0_SI * P_therm / B_2
+	end
 	if (strcmp (quantity, 'rho_mag', /fold_case)) then begin
 		; Magnetic energy density [WORK HERE: unfinished, currently only computes B^2]
-		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		return, dot2 (bb)
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
+		return, B_2
 	end
 	if (strcmp (quantity, 'Rn_mag', /fold_case)) then begin
 		; Magnetic mesh Reynolds number of velocities perpendicular to the magnetic field
 		eta = pc_get_parameter ('eta', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
-		fact = 1.0 / (sqrt (dot2 (uu)) * dot2 (bb))
+		if (n_elements (u_abs) eq 0) then u_abs = pc_compute_quantity (vars, index, 'u_abs')
+		fact = 1.0 / (u_abs * B_2)
 		BxUxB = cross (cross (bb, uu), bb)
 		Rx = spread (pc_compute_quantity (vars, index, 'dx'), [1,2], [ny,nz]) * fact * uu[*,*,*,0] * BxUxB[*,*,*,0]
 		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * fact * uu[*,*,*,1] * BxUxB[*,*,*,1]
@@ -443,7 +465,7 @@ end
 ; Clean up cache for computation of physical quantities.
 pro pc_quantity_cache_cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 
 	undefine, uu
@@ -452,8 +474,10 @@ pro pc_quantity_cache_cleanup
 	undefine, n_rho
 	undefine, Temp
 	undefine, grad_Temp
+	undefine, P_therm
 	undefine, grad_P_therm
 	undefine, bb
+	undefine, B_2
 	undefine, jj
 
 	undefine, sources
@@ -477,7 +501,6 @@ end
 ; Calculation of physical quantities.
 function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, grad_P_therm, bb, jj
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated

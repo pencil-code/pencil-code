@@ -93,13 +93,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		HR_ohm_particle:'Ohmic heating rate / particle', $
 		HR_viscous:'viscous heating rate', $
 		HR_viscous_particle:'viscous heating rate / particle', $
-		rho_mag:'magnetic energy', $
 		A_x:'magnetic vector potential x', $
 		A_y:'magnetic vector potential y', $
 		A_z:'magnetic vector potential z', $
+		B_abs:'magnetic field strength', $
+		B_2:'magnetic field squared', $
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
+		beta:'plasma beta', $
+		rho_mag:'magnetic energy', $
 		u_x:'velocity x', $
 		u_y:'velocity y', $
 		u_z:'velocity z', $
@@ -174,13 +177,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		HR_ohm_particle:['HR_ohm','n_rho'], $
 		HR_viscous:['u', 'rho'], $
 		HR_viscous_particle:['HR_viscous', 'n_rho'], $
-		rho_mag:'B', $
 		A_x:'A', $
 		A_y:'A', $
 		A_z:'A', $
+		B_abs:'B', $
+		B_2:'B', $
 		B_x:'B', $
 		B_y:'B', $
 		B_z:'B', $
+		beta:['P_therm', 'B_2'], $
+		rho_mag:'B_2', $
 		u:'uu', $
 		u_x:'u', $
 		u_y:'u', $
