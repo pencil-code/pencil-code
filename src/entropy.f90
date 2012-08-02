@@ -32,7 +32,8 @@ module Entropy
 !
   real :: entropy_floor = impossible, TT_floor = impossible
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
-  real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0, rcool=0.0, wcool=0.1
+  real :: luminosity=0.0, wheat=0.1, cool=0.0, cool2=0.0, zcool=0.0
+  real :: rcool=0.0, wcool=0.1, zheat=0.0
   real :: rcool1=0.0, rcool2=0.0, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
@@ -131,23 +132,21 @@ module Entropy
       initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
       mixinglength_flux, chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
-      thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, center1_x, &
-      center1_y, center1_z, center2_x, center2_y, center2_z, T0, ampl_TT, &
-      kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
+      thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
+      center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, T0, &
+      ampl_TT, kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
-      tau_cool_ss, cool2, &
-      TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, rho0hs, tau_cool2, &
-      rho0ts, T0hs, lconvection_gravx, Fbot, hcond0_kramers, nkramers, &
-      alpha_MLT, lprestellar_cool_iso
+      tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
+      rho0hs, tau_cool2, rho0ts, T0hs, lconvection_gravx, Fbot, &
+      hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso
 !
 !  Run parameters.
 !
   namelist /entropy_run_pars/ &
       hcond0, hcond1, hcond2, widthss, borderss, mpoly0, mpoly1, mpoly2, &
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
-      rcool1, rcool2, deltaT, cs2cool2, cool2,&
-      wcool, wcool2, Fbot, lcooling_general, &
-      ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
+      rcool1, rcool2, deltaT, cs2cool2, cool2,wcool, wcool2, Fbot, &
+      lcooling_general, ss_const, chi_t, chi_th, chi_rho, chit_prof1, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -155,14 +154,13 @@ module Entropy
       chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
       lcalc_ss_volaverage, lcalc_ssmean, lcalc_cs2mean, lcalc_cs2mz_mean, &
-      lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, &
-      TTref_cool, mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, &
-      xtop, tau_cool2, tau_cool_ss, tau_diff, lfpres_from_pressure, &
-      chit_aniso, chit_aniso_prof1, chit_aniso_prof2, &
-      lchit_aniso_simplified, lconvection_gravx, &
-      ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, hcond0_kramers, &
-      nkramers, xbot_aniso, xtop_aniso, entropy_floor, lprestellar_cool_iso, &
-      zz1, zz2, lphotoelectric_heating, TT_floor
+      lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, TTref_cool, &
+      mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
+      tau_cool_ss, tau_diff, lfpres_from_pressure, chit_aniso, &
+      chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
+      lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
+      hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
+      lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -4327,13 +4325,17 @@ module Entropy
 !***********************************************************************
     subroutine get_heat_cool_general(heat,p)
 !
-      type (pencil_case) :: p
-!
-      real, dimension (nx) :: heat,prof
-      intent(in) :: p
-!
 !  Subroutine to do volume heating and cooling in a layer independent of
 !  gravity.
+!
+      real, dimension (nx) :: heat
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: prof
+!
+      intent(in) :: p
+!
+!  Calculate profile.
 !
       select case (cooling_profile)
       case ('gaussian-z')
@@ -4352,8 +4354,10 @@ module Entropy
 !  will clarify this. - Dhruba
 !
      select case (cooltype)
+     case('constant')
+       heat=heat-cool*prof
      case ('Temp')
-       if (headtt) print*,'calc_heat_cool: cs20,cs2cool=',cs20,cs2cool
+       if (headtt) print*, 'calc_heat_cool: cs20,cs2cool=', cs20, cs2cool
        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
      case('Temp2')
        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
@@ -4388,15 +4392,15 @@ module Entropy
 !  Heating profile, normalised, so volume integral = 1.
 !  Note: only the 3-D version is coded (Lx *and* Ly /= 0)
 !
-      if (luminosity/=0.) then
+      if (luminosity/=0.0) then
         prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
-             /(sqrt(pi/2.)*wheat*Lx*Ly)
+               /(sqrt(pi/2.)*wheat*Lx*Ly)
         heat = luminosity*prof
 !
 !  Smoothly switch on heating if required.
 !
         if ((ttransient>0) .and. (t<ttransient)) then
-           heat = heat * t*(2*ttransient-t)/ttransient**2
+          heat = heat * t*(2*ttransient-t)/ttransient**2
         endif
       endif
 !
