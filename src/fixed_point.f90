@@ -264,7 +264,8 @@ module Fixed_point
     allocate(yt(nygrid*trace_sub))
     allocate(zt(nz))
 !
-    phi_min = pi/2.-2.**(-15)
+    phi_min = pi/2.
+!     phi_min = pi/8.-2.**(-15)
 !
 !   compute the array with the global xyz values
     do j=1,(nxgrid*trace_sub)
@@ -384,12 +385,19 @@ module Fixed_point
 !       Get the Poincare index for this grid cell
         call pindex(f, xt(j:j+1)+ipx*nx*dx, yt(l:l+1)+ipy*ny*dy, diff, phi_min, vv, poincare)
 !       find the fixed point in this cell
-        if (poincare >= 6.2) then
+        if (abs(poincare) >= 6.2) then
           call get_fixed_point(f,(/(tracers2(j+(l-1)*(nx*trace_sub+addx),1)+tracers2(j+1+(l-1)*(nx*trace_sub+addx),1))/2., &
               (tracers2(j+(l-1)*(nx*trace_sub+addx),2)+tracers2(j+l*(nx*trace_sub+addx),2))/2./), &
               fixed_points(fidx,1:2), fixed_points(fidx,3), vv)
-          if ((fixed_points(fidx,1) < xt(1)) .or. (fixed_points(fidx,1) > xt(nxgrid*trace_sub)) .or. &
-              (fixed_points(fidx,2) < yt(1)) .or. (fixed_points(fidx,2) > yt(nygrid*trace_sub))) then
+! !  Fixed point lies outside the physical domain.
+!           if ((fixed_points(fidx,1) < xt(1)) .or. (fixed_points(fidx,1) > xt(nxgrid*trace_sub)) .or. &
+!               (fixed_points(fidx,2) < yt(1)) .or. (fixed_points(fidx,2) > yt(nygrid*trace_sub))) then
+!             write(*,*) iproc, "warning: fixed point lies outside the domain"
+!  Fixed point lies outside the cell.
+          if ((fixed_points(fidx,1) < tracers2(j+(l-1)*(nx*trace_sub+addx),1)) .or. &
+              (fixed_points(fidx,1) > tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)) .or. &
+              (fixed_points(fidx,2) < tracers2(j+(l-1)*(nx*trace_sub+addx),2)) .or. &
+              (fixed_points(fidx,2) > tracers2(j+l*(nx*trace_sub+addx),2))) then
             write(*,*) iproc, "warning: fixed point lies outside the domain"
           else
             fidx = fidx+1
@@ -456,6 +464,7 @@ module Fixed_point
 !   14-mar-12/simon: coded
 !
     use Sub
+    use General, only: keep_compiler_quiet
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
