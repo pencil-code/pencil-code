@@ -373,6 +373,7 @@ module Magnetic
   integer :: idiag_a2m=0        ! DIAG_DOC: $\left<\Av^2\right>$
   integer :: idiag_arms=0       ! DIAG_DOC: $\left<\Av^2\right>^{1/2}$
   integer :: idiag_amax=0       ! DIAG_DOC: $\max(|\Av|)$
+  integer :: idiag_divarms=0    ! DIAG_DOC: $\langle(\nabla\cdot\Av)^2\rangle^{1/2}$
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
                                 ! DIAG_DOC:   \quad(mean inverse plasma beta)
   integer :: idiag_beta1max=0   ! DIAG_DOC: $\max[\Bv^2/(2\mu_0 p)]$
@@ -1745,6 +1746,7 @@ module Magnetic
       if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0 &
            .or. idiag_abmxy/=0 &
       ) lpenc_diagnos(i_a2)=.true.
+      if (idiag_divarms /= 0) lpenc_diagnos(i_diva) = .true.
       if (idiag_ab_int/=0 .or. idiag_abm/=0 .or. idiag_abmh/=0 &
           .or. idiag_abmz/=0 .or. idiag_abrms/=0 &
           .or. idiag_abumx/=0 .or. idiag_abumy/=0 .or. idiag_abumz/=0 &
@@ -3398,6 +3400,8 @@ module Magnetic
         if (idiag_a2m/=0) call sum_mn_name(p%a2,idiag_a2m)
         if (idiag_arms/=0) call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
         if (idiag_amax/=0) call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
+!  Divergence of A
+        if (idiag_divarms /= 0) call sum_mn_name(p%diva**2, idiag_divarms, lsqrt=.true.)
 !
 !  Calculate surface integral <2ExA>*dS.
 !
@@ -6492,6 +6496,7 @@ module Magnetic
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
         idiag_a2m=0; idiag_arms=0; idiag_amax=0; idiag_beta1m=0; idiag_beta1mz=0
+        idiag_divarms = 0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
@@ -6635,6 +6640,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'a2m',idiag_a2m)
         call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
         call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
+        call parse_name(iname,cname(iname),cform(iname),'divarms',idiag_divarms)
         call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
         call parse_name(iname,cname(iname),cform(iname),'vA2m',idiag_vA2m)
