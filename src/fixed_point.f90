@@ -264,7 +264,7 @@ module Fixed_point
     allocate(yt(nygrid*trace_sub))
     allocate(zt(nz))
 !
-    phi_min = pi/2.
+    phi_min = pi/8.
 !     phi_min = pi/8.-2.**(-15)
 !
 !   compute the array with the global xyz values
