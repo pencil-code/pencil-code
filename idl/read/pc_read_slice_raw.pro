@@ -306,9 +306,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Iterate over processors.
 ;
-  for ipx = ipx_start, ipx_end do begin
+  for ipz = ipz_start, ipz_end do begin
     for ipy = ipy_start, ipy_end do begin
-      for ipz = ipz_start, ipz_end do begin
+      for ipx = ipx_start, ipx_end do begin
         iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
         x_off = ipx * procdim.nx
         y_off = ipy * procdim.ny
