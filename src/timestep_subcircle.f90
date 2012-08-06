@@ -1,7 +1,7 @@
 ! $Id$
 !
-! MODULE_DOC: Runge-Kutta time advance, accurate to order itorder.
-! MODULE_DOC: At the moment, itorder can be 1, 2, or 3.
+! MODULE_DOC: This is a highly specified timestep module currently only working
+! MODULE_DOC: together with the special module coronae.f90.
 !
 module Timestep
 !
@@ -38,7 +38,7 @@ module Timestep
       type (pencil_case) :: p
       real :: ds
       real :: dt1, dt1_local, dt1_last=0.0
-      integer :: j,ienergy, Nsub !, N_max
+      integer :: j,ienergy, Nsub
       real, dimension (mx,my,mz,mfarray) :: ftmp
       real, dimension (nx) :: dt1_hcond_max
       real :: dt1_energy_local,dt1_energy,dt_energy
@@ -137,8 +137,6 @@ module Timestep
 !  (do this loop in pencils, for cache efficiency)
 !
         do j=1,mvar; do n=n1,n2; do m=m1,m2
-!ajwm Note to self... Just how much overhead is there in calling
-!ajwm a sub this often...
             if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
             f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
@@ -150,12 +148,13 @@ module Timestep
         t = t + dt_beta_ts(itsub)*ds
 !
       enddo
-!!
-!!  Now do the substeps for the energy (thermal conduction) only ----------------------------------
-!!
+!
+!  Now do the substeps for the energy (thermal conduction) only
+!
       dt_energy = dt / dble(Nsub)
-      if ((dt_energy /= dt) .and. lroot .and. (mod(it,isave) == 0)) &
-      write(*,'(a,I3,a,ES10.2)') 'Nsub = ',Nsub,' | dt_energy = ',dt_energy
+!      if ((dt_energy /= dt) .and. lroot .and. (mod(it,isave) == 0)) &
+!
+      write(*,*) 'Nsub = ',Nsub,'dt_energy = ',dt_energy
 !
       IF (Nsub > 1) THEN ! Turn of the subcycle when dt1_energy actully = 0.
 !
@@ -181,24 +180,22 @@ module Timestep
 !
           if (ldt) dt_beta_ts=dt_energy*beta_ts
           if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt_energy  !(all have same dt?)
-!!!!
-!!!!  Time evolution of grid variables.
-!!!!  (do this loop in pencils, for cache efficiency)
-!!!!
+!
+!  Time evolution of grid variables.
+!  (do this loop in pencils, for cache efficiency)
+!
           do n=n1,n2; do m=m1,m2
-!ajwm Note to self... Just how much overhead is there in calling
-!ajwm a sub this often...
             ftmp(l1:l2,m,n,ienergy)=ftmp(l1:l2,m,n,ienergy)+dt_beta_ts(itsub)*df(l1:l2,m,n,ienergy)
           enddo; enddo
 !
         enddo
       enddo
 !
-       do n=n1,n2; do m=m1,m2
-         f(l1:l2,m,n,ienergy)=ftmp(l1:l2,m,n,ienergy)
-       enddo; enddo
+      do n=n1,n2; do m=m1,m2
+        f(l1:l2,m,n,ienergy)=ftmp(l1:l2,m,n,ienergy)
+      enddo; enddo
 !
-       ENDIF
+    endif
 !
     endsubroutine time_step
 !***********************************************************************
@@ -235,7 +232,7 @@ module Timestep
 !
       headtt = headt .and. lfirst .and. lroot
 !
-      if (headtt.or.ldebug) print*,'pde: ENTER'
+!      if (headtt.or.ldebug) print*,'pde_energy_only: ENTER'
 !
 !  For chemistry with LSODE
 !
@@ -313,21 +310,6 @@ module Timestep
        call boundconds_z(f,ilnTT,ilnTT)
      endif
 !
-!DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to
-! hydro_after_boundary etc.
-!AB: yes, we should rename these step by step
-!AB: so calc_polymer_after_boundary -> polymer_after_boundary
-!!!      if (lhydro)                 call calc_lhydro_pars(f)
-!!!      if (lmagnetic)              call calc_lmagnetic_pars(f)
-!!!   if (lmagnetic)              call magnetic_after_boundary(f)
-!!!      if (lentropy)               call calc_lentropy_pars(f)
-!!!      if (ldensity)               call calc_ldensity_pars(f)
-!!!      if (lspecial)               call calc_lspecial_pars(f)
-!AB: could be renamed to special_after_boundary etc
-      !if (lspecial)               call special_after_boundary(f)
-!
-!
-!------------------------------------------------------------------------------
 !  Do loop over m and n.
 !
       mn_loop: do imn=1,ny*nz
@@ -396,9 +378,9 @@ module Timestep
 !       if (.not. lpencil_check_at_work .and. necessary(imn)) &
 !       call check_ghosts_consistency (f, 'before calc_pencils_*')
 !!!                              call calc_pencils_hydro(f,p)
-call calc_pencils_sub_circle(f,p)
+        call calc_pencils_sub_circle(f,p)
 !!!                              call calc_pencils_density(f,p)
-call calc_pencils_eos(f,p)
+        call calc_pencils_eos(f,p)
 !!!                              call calc_pencils_entropy(f,p)
 !!!        if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
 !!!        if (lmagnetic)        call calc_pencils_magnetic(f,p)
@@ -413,9 +395,9 @@ call calc_pencils_eos(f,p)
 !  even if lentropy=.false.
 !
 !!!        call dss_dt(f,df,p)
-call calc_heatcond_tensor(f,df,p)
-call calc_heatcond_glnTT(df,p)
-call calc_heatcond_glnTT_iso(df,p)
+        call calc_heatcond_tensor(f,df,p)
+        call calc_heatcond_glnTT(df,p)
+        call calc_heatcond_glnTT_iso(df,p)
 !
 !  End of loops over m and n.
 !
@@ -445,7 +427,6 @@ call calc_heatcond_glnTT_iso(df,p)
     real, dimension (mx,my,mz,mfarray) :: f
     type (pencil_case) :: p
 !
-!    integer :: i
     real :: B2_ext
     real, dimension (nx) :: quench
     real, dimension (3) :: B_ext=(/0.0,0.0,1d-8/)
