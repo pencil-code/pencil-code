@@ -11,7 +11,7 @@
 &hydro_run_pars
 /
 &density_run_pars
-  lupw_rho=T
+  diffrho_hyper3=4.0e-15, idiff='hyper3'
 /
 &grav_run_pars
   lgravz_gas=T
