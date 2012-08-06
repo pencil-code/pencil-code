@@ -369,10 +369,10 @@ module Hydro
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
-
+!
   integer :: idiag_udpxxm=0, &  ! DIAG_DOC: components of symmetric tensor
-             idiag_udpyym=0, &  ! DIAG_DOC: $\left< u_i \partial_j p + u_j \partial_i p \right>$   
-             idiag_udpzzm=0, &           
+             idiag_udpyym=0, &  ! DIAG_DOC: $\left< u_i \partial_j p + u_j \partial_i p \right>$
+             idiag_udpzzm=0, &
              idiag_udpxym=0, &
              idiag_udpyzm=0, &
              idiag_udpxzm=0
@@ -513,7 +513,7 @@ module Hydro
 !  equations: iuu, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
-! 18-may-12/MR: put Pr*Ra as a shared variable for use in 
+! 18-may-12/MR: put Pr*Ra as a shared variable for use in
 !               temperature_idealgas
 !
       use FArrayManager
@@ -633,8 +633,8 @@ module Hydro
 !
 !  defining a r-depend profile for Omega. The coriolis force will be suppressed
 !  in r < r_omega with the width w_omega, for having the supression for r> r_omega,
-!  choose a negativ w_omega. 
-!     
+!  choose a negativ w_omega.
+!
       prof_om = 1.0
       if (r_omega /= 0.0) then
         prof_om = step(x(l1:l2),r_omega,w_omega)
@@ -1654,8 +1654,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx,3,3) :: oij
-      real, dimension (nx,3) :: uu,graddivu
+      real, dimension (nx,3) :: uu
       real, dimension (nx) :: tmp, tmp2
       integer :: i, j, ju
 !
@@ -2140,7 +2139,7 @@ module Hydro
         if (idiag_uzdivum/=0) call sum_mn_name(p%uu(:,3)*p%divu,idiag_uzdivum)
         if (idiag_uxuydivum/=0) &
             call sum_mn_name(p%uu(:,1)*p%uu(:,2)*p%divu,idiag_uxuydivum)
-
+!
         if (idiag_udpxxm/=0) call sum_mn_name(2.*(p%uu(:,1)*p%fpres(:,1)),idiag_udpxxm)
         if (idiag_udpyym/=0) call sum_mn_name(2.*(p%uu(:,2)*p%fpres(:,2)),idiag_udpyym)
         if (idiag_udpzzm/=0) call sum_mn_name(2.*(p%uu(:,3)*p%fpres(:,3)),idiag_udpzzm)
@@ -5088,10 +5087,10 @@ module Hydro
       use Diagnostics, only : name_is_present, expand_cname
 !
       if (nnamerz>0) then
-
+!
         call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uumphi'),&
                           'urmphi','upmphi','uzmphi')
-
+!
         if (name_is_present(cnamerz,'upmphi')>0) then
           call expand_cname(cnamerz,nnamerz,name_is_present(cnamerz,'uusphmphi'),&
                             'ursphmphi','uthmphi')
@@ -5101,6 +5100,6 @@ module Hydro
         endif
       endif
 !
-    endsubroutine expand_shands_hydro 
+    endsubroutine expand_shands_hydro
 !***********************************************************************
 endmodule Hydro
