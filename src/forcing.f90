@@ -92,8 +92,8 @@ module Forcing
   real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
   real :: tgentle=0.
   real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
-  real :: fcont_ampl
-  real ::  ampl_diffrot,omega_exponent
+  real :: fcont_ampl, ABC_A, ABC_B, ABC_C
+  real :: ampl_diffrot,omega_exponent
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -120,6 +120,7 @@ module Forcing
        force_direction, force_strength, lhelical_test, &
        lfastCK,fpre,helsign,nlist_ck,lwrite_psi,&
        ck_equator_gap,ck_gap_step,&
+       ABC_A, ABC_B, ABC_C, &
        lforcing_cont,iforcing_cont, &
        lembed, k1_ff, ampl_ff, ampl1_ff, width_fcont, x1_fcont, x2_fcont, &
        kf_fcont,omega_fcont,eps_fcont,lsamesign,&
@@ -4053,11 +4054,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         select case (iforcing_cont)
         case('ABC')
-          fact=ampl_ff/sqrt(3.)
+          fact=ampl_ff/sqrt(ABC_A**2+ABC_B**2+ABC_C**2)
           fact2=1.-eps_fcont
-          force(:,1)=fact*(sinz(n    )+fact2*cosy(m)    )
-          force(:,2)=fact*(sinx(l1:l2)+fact2*cosz(n)    )
-          force(:,3)=fact*(siny(m    )+fact2*cosx(l1:l2))
+          force(:,1)=fact*(ABC_A*sinz(n    )+fact2*ABC_B*cosy(m)    )
+          force(:,2)=fact*(ABC_C*sinx(l1:l2)+fact2*ABC_A*cosz(n)    )
+          force(:,3)=fact*(ABC_B*siny(m    )+fact2*ABC_C*cosx(l1:l2))
         case ('AKA')
           fact=sqrt(2.)*ampl_ff
           force(:,1)=fact*phi1_ff(m    )
