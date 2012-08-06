@@ -42,9 +42,9 @@ module Special
   real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
-  real :: aa_tau_inv=0.
+  real :: aa_tau_inv=0.,gT_max=1e12,wgT_max=1.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.
-  logical :: sub_step_hcond=.false.
+  logical :: sub_step_hcond=.false.,lquench_spitzer_exp=.false.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -72,7 +72,7 @@ module Special
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
-      sub_step_hcond
+      sub_step_hcond,lquench_spitzer_exp,gT_max,wgT_max
 !
 ! variables for print.in
 !
@@ -382,6 +382,7 @@ module Special
         lpenc_requested(i_uglnrho)=.true.
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -574,7 +575,7 @@ module Special
       use EquationOfState, only: gamma
       use Deriv, only: der2, der
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use Sub, only: multsv, dot, dot2, unit_vector, identify_bcs
+      use Sub, only: multsv, dot, dot2, unit_vector, identify_bcs, cubic_step
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -583,7 +584,7 @@ module Special
       real, dimension(nx) :: rhs,cosgT_b
       real, dimension(nx,3) :: K1,unit_glnTT
       real, dimension(nx,3) :: spitzer_vec
-      real, dimension(nx) :: tmp,dt_1_8th,nu_coll
+      real, dimension(nx) :: tmp,dt_1_8th,nu_coll, spitzer_exp, K_prim
       real :: coeff
       integer :: i
 !
@@ -603,12 +604,21 @@ module Special
 !
       if (tau_inv_spitzer /= 0.) then
 !
-        b2_1=1./(p%b2+tini)
+        if (lquench_spitzer_exp) then
+          call dot(p%glnTT,p%bunit,tmp)
+          spitzer_exp(:) = 2.5 * (1.-cubic_step(p%TT*tmp,gT_max,wgT_max))
 !
-        call multsv(Kspitzer_para*exp(-p%lnrho+3.5*p%lnTT),p%glnTT,K1)
+          K_prim = Kspitzer_para * exp((2.5-spitzer_exp)*p%lnTT)
+        else
+          spitzer_exp(:) = 2.5
 !
-        call dot(K1,p%bb,tmp)
-        call multsv(-b2_1*tmp,p%bb,spitzer_vec)
+          K_prim = Kspitzer_para
+        endif
+!
+        call multsv(K_prim*exp(-p%lnrho+(spitzer_exp+1.)*p%lnTT),p%glnTT,K1)
+!
+        call dot(K1,p%bunit,tmp)
+        call multsv(-tmp,p%bunit,spitzer_vec)
 !
 ! Reduce the heat conduction at places of low density or very
 ! high temperatures
@@ -635,7 +645,10 @@ module Special
 !
         rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
 !
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
+        call dot2(p%glnTT,tmp)
+!
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs + &
+            (2.5-spitzer_exp)*exp(-p%lnrho-2.5*p%lnTT)*tmp
 !
         if (lvideo) then
 !
@@ -651,7 +664,7 @@ module Special
         if (lfirst.and.ldt) then
           call unit_vector(p%glnTT,unit_glnTT)
           call dot(unit_glnTT,p%bunit,cosgT_b)
-          rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
+          rhs = sqrt(K_prim*exp(spitzer_exp*p%lnTT-p%lnrho)* &
               gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
           advec_uu = max(advec_uu,rhs/dxmax_pencil)
           if (idiag_dtspitzer/=0) &
@@ -4064,7 +4077,7 @@ module Special
 !
       dt1_hcond_max = 0d0
 !
-      IF (sub_step_hcond) then
+      if (sub_step_hcond) then
 !
 !  Do loop over m and n.
 !
@@ -4074,10 +4087,10 @@ module Special
 !
 ! grid spacing for time step
 !
-      dline_1(:,1)=dx_1(l1:l2)
-      dline_1(:,2)=dy_1(m)
-      dline_1(:,3)=dz_1(n)
-      dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+        dline_1(:,1)=dx_1(l1:l2)
+        dline_1(:,2)=dy_1(m)
+        dline_1(:,3)=dz_1(n)
+        dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
 !
 ! initial thermal diffusion
       diffus_hcond=0d0
@@ -4107,7 +4120,7 @@ module Special
         if (B_ext_special(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext_special(3)
       endif
 !
-      if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+      call dot2_mn(p%bb,p%b2)
 ! bunit
       quench = 1.0/max(tini,sqrt(p%b2))
       p%bunit(:,1) = p%bb(:,1)*quench
