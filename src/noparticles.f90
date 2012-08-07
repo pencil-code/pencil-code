@@ -214,7 +214,7 @@ module Particles
 !
     endsubroutine dvvp_dt_blocks
 !***********************************************************************
-    subroutine remove_particles_sink(f,fp,dfp,ineargrid)
+    subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
@@ -225,9 +225,9 @@ module Particles
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine remove_particles_sink
+    endsubroutine remove_particles_sink_simple
 !***********************************************************************
-    subroutine create_sink_particles(f,fp,dfp,ineargrid)
+    subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
@@ -238,7 +238,7 @@ module Particles
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine create_sink_particles
+    endsubroutine create_particles_sink_simple
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !

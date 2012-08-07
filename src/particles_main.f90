@@ -18,6 +18,7 @@ module Particles_main
   use Particles_number
   use Particles_potential
   use Particles_radius
+  use Particles_sink
   use Particles_spin
   use Particles_selfgravity
   use Particles_stalker
@@ -52,6 +53,7 @@ module Particles_main
       call register_particles_mass         ()
       call register_particles_selfgrav     ()
       call register_particles_nbody        ()
+      call register_particles_sink         ()
       call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
 !
@@ -171,19 +173,20 @@ module Particles_main
 !
       call initialize_particles_mpicomm      (f,lstarting)
       call initialize_particles              (f,lstarting)
-      call initialize_particles_radius       (f,lstarting)
-      call initialize_particles_spin         (f,lstarting)
-      call initialize_particles_number       (f,lstarting)
-      call initialize_particles_mass         (f,lstarting)
-      call initialize_particles_selfgrav     (f,lstarting)
-      call initialize_particles_nbody        (f,lstarting)
-      call initialize_particles_viscosity    (f,lstarting)
       call initialize_particles_coag         (f,lstarting)
       call initialize_particles_collisions   (f,lstarting)
-      call initialize_particles_stalker      (f,lstarting)
-      call initialize_particles_diagnos_dv   (f,lstarting)
       call initialize_pars_diagnos_state     (f,lstarting)
+      call initialize_particles_diagnos_dv   (f,lstarting)
+      call initialize_particles_mass         (f,lstarting)
+      call initialize_particles_nbody        (f,lstarting)
+      call initialize_particles_number       (f,lstarting)
       call initialize_particles_potential    (f,lstarting)
+      call initialize_particles_radius       (f,lstarting)
+      call initialize_particles_selfgrav     (f,lstarting)
+      call initialize_particles_sink         (f,lstarting)
+      call initialize_particles_spin         (f,lstarting)
+      call initialize_particles_stalker      (f,lstarting)
+      call initialize_particles_viscosity    (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
@@ -231,8 +234,9 @@ module Particles_main
       if (lparticles_number)        call init_particles_number(f,fp)
       if (lparticles_mass)          call init_particles_mass(f,fp)
       call init_particles(f,fp,ineargrid)
-      if (lparticles_spin)          call init_particles_spin(f,fp)
       if (lparticles_nbody)         call init_particles_nbody(f,fp)
+      if (lparticles_sink)          call init_particles_sink(f,fp)
+      if (lparticles_spin)          call init_particles_spin(f,fp)
       if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
 !
     endsubroutine particles_init
@@ -468,13 +472,17 @@ module Particles_main
 !  WARNING: ineargrid and the mapped particle density have not been updated
 !  yet, and the sink particle subroutine must not rely on those arrays.
 !
-      if (lparticles)       call remove_particles_sink(f,fp,dfp,ineargrid)
+      if (lparticles) &
+          call remove_particles_sink_simple(f,fp,dfp,ineargrid)
       if (lparticles_nbody) call remove_particles_sink_nbody(f,fp,dfp,ineargrid)
+      if (lparticles_sink)  call remove_particles_sink(f,fp,dfp,ineargrid)
 !
 !  Create new sink particles or sink points.
 !
-      if (lparticles)       call create_sink_particles(f,fp,dfp,ineargrid)
-      if (lparticles_nbody) call create_sink_particles_nbody(f,fp,dfp,ineargrid)
+      if (lparticles) &
+          call create_particles_sink_simple(f,fp,dfp,ineargrid)
+      if (lparticles_nbody) call create_particles_sink_nbody(f,fp,dfp,ineargrid)
+      if (lparticles_sink)  call create_particles_sink(f,fp,dfp,ineargrid)
 !
 !  Find nearest grid point for each particle.
 !

@@ -1586,11 +1586,11 @@ module Particles_nbody
 !
     endsubroutine get_total_gravity
 !***********************************************************************
-    subroutine create_sink_particles_nbody(f,fp,dfp,ineargrid)
+    subroutine create_particles_sink_nbody(f,fp,dfp,ineargrid)
 !
 !  If the flow in any place of the grid has gone gravitationally
 !  unstable, substitute the local flow by a sink particle. By now,
-!  the only criterion if the local Jeans mass. The Jeans length is
+!  the only criterion is the local Jeans mass. The Jeans length is
 !
 !    lambda_J = sqrt(pi*cs2/(G*rho))
 !
@@ -1926,7 +1926,7 @@ module Particles_nbody
 !
       call keep_compiler_quiet(dfp)
 !
-    endsubroutine create_sink_particles_nbody
+    endsubroutine create_particles_sink_nbody
 !***********************************************************************
     subroutine remove_particles_sink_nbody(f,fp,dfp,ineargrid)
 !

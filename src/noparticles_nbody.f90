@@ -159,7 +159,7 @@ module Particles_nbody
 !
     endsubroutine remove_particles_sink_nbody
 !***********************************************************************
-    subroutine create_sink_particles_nbody(f,fp,dfp,ineargrid)
+    subroutine create_particles_sink_nbody(f,fp,dfp,ineargrid)
 !
       real,    dimension (mx,my,mz,mfarray) :: f
       real,    dimension (mpar_loc,mpvar)   :: fp, dfp
@@ -170,7 +170,7 @@ module Particles_nbody
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine create_sink_particles_nbody
+    endsubroutine create_particles_sink_nbody
 !***********************************************************************
     subroutine calc_nbodygravity_particles(f)
 !

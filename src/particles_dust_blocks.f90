@@ -24,8 +24,8 @@
 !***************************************************************
 module Particles
 !
-  use Cparam, only: lparticles_spin
   use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
@@ -1962,7 +1962,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt_blocks
 !***********************************************************************
-    subroutine remove_particles_sink(f,fp,dfp,ineargrid)
+    subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
 !  Subroutine for taking particles out of the simulation due to their proximity
 !  to a sink particle or sink point.
@@ -2006,9 +2006,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine remove_particles_sink
+    endsubroutine remove_particles_sink_simple
 !***********************************************************************
-    subroutine create_sink_particles(f,fp,dfp,ineargrid)
+    subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
 !
 !  Subroutine for creating new sink particles or sink points.
 !
@@ -2025,7 +2025,7 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine create_sink_particles
+    endsubroutine create_particles_sink_simple
 !***********************************************************************
     subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock,nochange_opt)
 !
