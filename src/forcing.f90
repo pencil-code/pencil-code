@@ -92,15 +92,15 @@ module Forcing
   real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
   real :: tgentle=0.
   real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
-  real :: fcont_ampl, ABC_A, ABC_B, ABC_C
+  real :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
 !
 !  auxiliary functions for continuous forcing function
 !
   real, dimension (my) :: phi1_ff
   real, dimension (mx) :: phi2_ff
-  real, dimension (mx) :: sinx,cosx,embedx
-  real, dimension (my) :: siny,cosy,embedy
+  real, dimension (mx) :: sinx,cosx,sinxt,cosxt,embedx
+  real, dimension (my) :: siny,cosy,sinyt,cosyt,embedy
   real, dimension (mz) :: sinz,cosz,embedz
 !
   namelist /forcing_run_pars/ &
@@ -3969,6 +3969,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  but the same for all pencils
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: ecost,esint
       intent(in) :: f
 !
 !  for the AKA effect, calculate auxiliary functions phi1_ff and phi2_ff
@@ -3976,6 +3977,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
       if (iforcing_cont=='AKA') then
         phi1_ff=cos(kf_fcont*y+omega_fcont*t)
         phi2_ff=cos(kf_fcont*x-omega_fcont*t)
+      elseif (iforcing_cont=='GP') then
+        ecost=eps_fcont*cos(omega_fcont*t)
+        esint=eps_fcont*sin(omega_fcont*t)
+        sinxt=sin(kf_fcont*x+ecost)
+        cosxt=cos(kf_fcont*x+ecost)
+        sinyt=sin(kf_fcont*y+esint)
+        cosyt=cos(kf_fcont*y+esint)
       endif
 !
       call keep_compiler_quiet(f)
@@ -4192,6 +4200,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*sinx(l1:l2)*cosy(m)*cosz(n)
           force(:,2)=fact*cosx(l1:l2)*siny(m)*cosz(n)
           force(:,3)=fact*cosx(l1:l2)*cosy(m)*sinz(n)
+!
+!  Galloway-Proctor (GP) forcing
+!
+        case ('GP')
+          fact=ampl_ff/sqrt(2.)
+          force(:,1)=-fact*              sinyt(m)
+          force(:,2)=+fact* sinxt(l1:l2)
+          force(:,3)=-fact*(cosxt(l1:l2)+cosyt(m))
 !
 ! Continuous emf required in Induction equation for the Mag Buoy Inst
 !
