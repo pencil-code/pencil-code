@@ -34,7 +34,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     anglecoord=anglecoord, style_polar=style_polar, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
-    newwindow=newwindow
+    newwindow=newwindow, sample=sample
 ;
 COMMON pc_precision, zero, one
 ;
@@ -360,25 +360,25 @@ while (not eof(1)) do begin
   planesize=size(plane)
   nx_plane=planesize[1]
   ny_plane=planesize[2]
-  x2=rebin(x,zoom*nx_plane)
-  y2=rebin(y,zoom*ny_plane)
+  x2=rebin(x,zoom*nx_plane,sample=sample)
+  y2=rebin(y,zoom*ny_plane,sample=sample)
 ;
 ;  if extension eq 'xz', then our y2 wasn't right.
 ;
-if extension eq 'xz' then y2=rebin(z,zoom*ny_plane)
+if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
 ;
 ;  other options
 ;
   if (keyword_set(exponential)) then begin
-    plane2=rebin(exp(plane),zoom*nx_plane,zoom*ny_plane)
+    plane2=rebin(exp(plane),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(nsmooth)) then begin
-    plane2=rebin(smooth(plane,nsmooth),zoom*nx_plane,zoom*ny_plane)
+    plane2=rebin(smooth(plane,nsmooth),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(sqroot)) then begin
-    plane2=rebin(sqrt(plane),zoom*nx_plane,zoom*ny_plane)
+    plane2=rebin(sqrt(plane),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(log)) then begin
-     plane2=rebin(alog10(plane+tini),zoom*nx_plane,zoom*ny_plane)
+     plane2=rebin(alog10(plane+tini),zoom*nx_plane,zoom*ny_plane,sample=sample)
   endif else begin
-     plane2=rebin(plane,zoom*nx_plane,zoom*ny_plane)
+     plane2=rebin(plane,zoom*nx_plane,zoom*ny_plane,sample=sample)
   endelse
 ;
 ;  Do masking, if shell set.
