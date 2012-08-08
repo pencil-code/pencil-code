@@ -1329,11 +1329,13 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my) :: profxy
       real, dimension (mx) :: profx
       real, dimension (my) :: profy
       real, dimension (mz) :: profz
       real :: fleft,fright,width
       character(len=*) :: dir
+      integer :: l,m
 !
 !  jump; check direction
 !
@@ -1350,6 +1352,17 @@ module Initcond
       case ('z')
         profz=fleft+(fright-fleft)*.5*(1.+tanh(z/width))
         f(:,:,:,i)=f(:,:,:,i)+spread(spread(profz,1,mx),2,my)
+!
+!  2-D shocks
+!
+      case ('xy')
+        do l=1,mx
+        do m=1,my
+          profxy(l,m)=fleft+(fright-fleft)*.25* &
+            (1.+tanh(x(l)/width))*(1.+tanh(y(m)/width))
+        enddo
+        enddo
+        f(:,:,:,i)=f(:,:,:,i)+spread(profxy,3,mz)
 !
       case default
         print*,'jump: no default value'
@@ -1882,7 +1895,7 @@ module Initcond
 !
     endsubroutine soundwave
 !***********************************************************************
-    subroutine coswave(ampl,f,i,kx,ky,kz)
+    subroutine coswave_old(ampl,f,i,kx,ky,kz)
 !
 !  cosine wave (as initial condition)
 !
@@ -1930,6 +1943,24 @@ module Initcond
           f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(cos(k*z),1,mx),2,my)
         endif
       endif
+!
+    endsubroutine coswave_old
+!***********************************************************************
+    subroutine coswave(ampl,f,i,kx,ky,kz)
+!
+!  cosine wave (as initial condition)
+!
+!  14-nov-03/axel: adapted from sinwave
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.
+!
+        f(:,:,:,i)=f(:,:,:,i)+ampl*cos( &
+          spread(spread(kx*x,2,my),3,mz)+ &
+          spread(spread(ky*y,1,mx),3,mz)+ &
+          spread(spread(kz*z,1,mx),2,my))
 !
     endsubroutine coswave
 !***********************************************************************

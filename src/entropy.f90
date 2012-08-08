@@ -993,6 +993,7 @@ module Entropy
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
           case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
+          case('xyjump'); call jump(f,iss,ss_left,ss_right,widthss,'xy')
           case('sinxsinz'); call sinxsinz(ampl_ss,f,iss,kx_ss,ky_ss,kz_ss)
           case('hor-fluxtube')
             call htube(ampl_ss,f,iss,iss,radius_ss,epsilon_ss, &
