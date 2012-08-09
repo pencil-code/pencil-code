@@ -467,8 +467,13 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: TT,z_SI,TT_var
       integer :: i,j
+      real :: Ltot
 !
-      z_SI = Lxyz(1) / pi *sin( x/Lxyz(1)*pi ) *unit_length
+! If we not start at z=0
+      Ltot = Lxyz(1) + 2*xyz0(1)
+!
+! The height in [m]
+      z_SI = Ltot/pi*sin(x/Ltot*pi)*unit_length
 !
       TT = (T1-T0)*(0.5*tanh((z_SI-z0_tanh)/width_tanh)+0.5)+T0
 !
