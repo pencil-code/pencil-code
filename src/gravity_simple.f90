@@ -249,10 +249,10 @@ module Gravity
 !
       case ('loop')
         if (lroot) print*,'initialize_gravity: 1D loop, gravx=',gravx
-        gravx_xpencil=cos((x-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
+        gravx_xpencil=cos(x / (2*xyz0(1)+Lxyz(1)) * pi)
         gravx_xpencil=gravx * gravx_xpencil
-        potx_xpencil =sin((x-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)
-        potx_xpencil =gravx*(xyz0(1)+Lxyz(1))/pi * potx_xpencil + potx_const
+        potx_xpencil =sin(x / (2*xyz0(1)+Lxyz(1)) * pi)
+        potx_xpencil =gravx*(2*xyz0(1)+Lxyz(1))/pi * potx_xpencil + potx_const
 !
       case default
         if (lroot) print*, &
