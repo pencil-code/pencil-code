@@ -955,7 +955,9 @@ module Special
           if (headtt) then
             heat_flux = heat_par_exp(1)*heat_par_exp(2)*1e6*exp(-4./heat_par_exp(2))
             write (*,*) 'Exp heating, scale height: ',heat_par_exp(2),' [ Mm ]'
+            write (*,*) 'Exp heating, amplitude',heat_par_exp(1)/heat_unit,' [ Wm^-3 ]'
             write (*,*) 'Exp heating, flux at z=4 Mm: ', heat_flux
+            write (*,*) 'Exp heating, flux at z=0 Mm: ', heat_par_exp(1)*heat_par_exp(2)*1e6
           endif
 !
         case ('exp2')
