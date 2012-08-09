@@ -1370,7 +1370,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx,3) :: hhh,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
-      real, dimension (nx) :: cosbgT,glnTT2,bbb,b1,tmpk
+      real, dimension (nx) :: cosbgT,glnTT2,bbb,b_1,tmpk
       real, dimension (nx) :: chi_spitzer,rhs,u_spitzer
       real, dimension (nx) :: chi_clight,chi_2
       real, dimension (nx,3) :: glnTT_upwind,unit_glnTT
@@ -1378,10 +1378,7 @@ module Special
       real :: ksatb
       type (pencil_case), intent(in) :: p
 !
-!  calculate unit vector of bb
-!
-      call dot2(p%bb,bbb,PRECISE_SQRT=.true.)
-      b1=1./(tini+bbb)
+      b_1=1./(sqrt(p%b2)+tini)
 !
 !  calculate H_i
 !
@@ -1395,7 +1392,7 @@ module Special
           hhh(:,i)=hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmpj(:))
         enddo
       enddo
-      call multsv(b1,hhh,tmpv)
+      call multsv(b_1,hhh,tmpv)
 !
 !  calculate abs(h) limiting
 !
@@ -1417,7 +1414,7 @@ module Special
         enddo
       enddo
 !
-      if (nghost == 3) then
+      if (nghost == 3 .and. ltemperature) then
         do i=1,3
           call der_upwind(f,-p%glnTT,ilnTT,glnTT_upwind(:,i),i)
         enddo
@@ -1590,9 +1587,19 @@ module Special
       rhs = hcond_grad*(rhs + glnT2*tmp)*gamma*p%cp1
 !
       if (ltemperature .and. (.not. ltemperature_nolog)) then
-        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) +rhs
       else
-        call fatal_error('calc_heatcond_glnTT','only for ltemperature')
+      endif
+
+      if (ltemperature .and. (.not.ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      else if (lentropy .and. (.not. pretend_lnTT)) then
+        call fatal_error('calc_heatcond_glnTT','not implemented for lentropy')
+        !df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + chi_spitzer * rhs /p%cp1/gamma
+      else if (lthermal_energy) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + rhs * exp(p%lnrho+p%lnTT)
+      else
+        call fatal_error('calc_heatcond_tensor', &
+            'not implemented for current set of thermodynamic variables')
       endif
 !
       if (lvideo) then
