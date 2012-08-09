@@ -66,6 +66,7 @@ contains
       write(*,'(A,ES10.2)') "eta <=",1e7/unit_velocity/unit_length
 !
       write(*,'(A,ES10.2)') "hcond_grad=",1e9*dxmax**3*unit_temperature/unit_velocity**3
+      write(*,'(A,ES10.2)') 'Assume Umax=150 km/s and R=1 => diff=',150e3/unit_velocity*dxmax
       write(*,*) "-------------------------------------------------------------"
     endif
 !
