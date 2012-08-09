@@ -910,7 +910,7 @@ module Special
       real :: heat_unit,heat_flux
       real :: nano_sigma_t,nano_time,nano_start,nano_sigma_z
       real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
-      real :: nano_amplitude
+      real :: nano_amplitude,Ltot
       real, dimension(2) :: event_pos
       type (pencil_case) :: p
       integer :: i
@@ -918,10 +918,12 @@ module Special
 ! the unit W/m^3 is
       heat_unit= unit_density*unit_velocity**3/unit_length
 !
+! coordinate along the loop in [Mm]
       x_Mm = x(l1:l2)*unit_length*1e-6
 !
 ! The height in [Mm]
-      height = Lxyz(1)/pi*sin((x(l1:l2)-xyz0(1)) / (xyz0(1)+Lxyz(1)) * pi)*unit_length*1e-6
+      Ltot = 2*(xyz0(1)+Lxyz(1))
+      height = Ltot/pi*sin(x(l1:l2)/Ltot*pi)*unit_length*1e-6
 !
       heatinput = 0.
       heat_flux = 0.
@@ -930,28 +932,24 @@ module Special
         if (headtt) print*,'iheattype:',iheattype(i)
         select case(iheattype(i))
         case ('nothing')
-          ! do nothing
+! do nothing
         case ('one-sided')
-          !
           heatinput=heatinput + &
               heat_par_exp(1)*exp(-x(l1:l2)/heat_par_exp(2))/heat_unit
 !
           heatinput=heatinput + &
               heat_par_exp2(1)*exp(-x(l1:l2)/heat_par_exp2(2))/heat_unit
-          !
+!
           heat_flux=heat_flux - heat_par_exp(1)*heat_par_exp(2)*1e6
 !
           if (headtt) print*,'Flux of exp heating: ',heat_flux,' [ W m^(-2)]'
 !
         case ('exp')
-          ! heat_par_exp(1) should be 530 W/m^3 (amplitude)
-          ! heat_par_exp(2) should be 0.3 Mm (scale height)
-          !
           heatinput=heatinput + &
               heat_par_exp(1)/heat_unit*exp(-height/heat_par_exp(2))
 !
 !  add the flux at a ref height of 4 Mm
-          !
+!
           if (headtt) then
             heat_flux = heat_par_exp(1)*heat_par_exp(2)*1e6*exp(-4./heat_par_exp(2))
             write (*,*) 'Exp heating, scale height: ',heat_par_exp(2),' [ Mm ]'
