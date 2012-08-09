@@ -1955,12 +1955,12 @@ module Initcond
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
       real,optional :: kx,ky,kz
-      real :: ampl,k=1.
+      real :: ampl
 !
-        f(:,:,:,i)=f(:,:,:,i)+ampl*cos( &
-          spread(spread(kx*x,2,my),3,mz)+ &
-          spread(spread(ky*y,1,mx),3,mz)+ &
-          spread(spread(kz*z,1,mx),2,my))
+      f(:,:,:,i)=f(:,:,:,i)+ampl*cos( &
+        spread(spread(kx*x,2,my),3,mz)+ &
+        spread(spread(ky*y,1,mx),3,mz)+ &
+        spread(spread(kz*z,1,mx),2,my))
 !
     endsubroutine coswave
 !***********************************************************************
