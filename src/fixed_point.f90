@@ -55,7 +55,7 @@ module Fixed_point
 !
     file = trim(datadir)//'/tfixed_points.dat'
     if (ifirst==0) then
-      call read_snaptime(file,tfixed_points,ntracers,dtracers,t)
+      call read_snaptime(file,tfixed_points,nfixed_points,dfixed_points,t)
 !     Read the previous fixed points from the file.
       write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
       write(filename, *) 'data/proc', adjustl(trim(str_tmp))
@@ -95,66 +95,91 @@ module Fixed_point
 !   Returns the position of the fixed point together with the integrated value q.
 !
 !   01-mar-12/simon: coded
+!   09-aug-12/anthony: modified to use Newton's method
 !
     real, dimension (mx,my,mz,mfarray) :: f
-    real :: point(2), point_old(2), fixed_point(2)
+    real :: point(2), fixed_point(2)
 !   the integrated quantity along the field line
     real :: q
-!     real, pointer, dimension(2) :: fixed_point
     real, pointer, dimension (:,:,:,:) :: vv
 !   the points for the extrapolation
-    real :: der(2)
     real, pointer, dimension (:,:) :: tracers
-    real :: diff(13)
     integer :: iter
-    real :: lambda, dl
+    real :: dl
+    real :: fjac(2,2), fjin(2,2)
+    real :: det, ff(2), dpoint(2)
 !
     intent(out) :: fixed_point, q
 !
-    allocate(tracers(13,7))
+    allocate(tracers(5,7))
+!
+!   step-size for calculating Jacobian by finite differences:
+    dl = min(dx,dy)/100.
 !
     iter = 0
-    dl = min(dx,dy)/30.
     do
-!     trace the necessary field lines for the gradient
+!
+!   trace field lines at original point and for Jacobian:
+!   (second order seems to be enough)
+!
       tracers(1,:) = (/point(1),point(2),point(1),point(2),z(1+nghost)-ipz*nz*dz+dz,0.,1./)
-      tracers(2,:) = (/point(1)-3*dl,point(2),point(1)-3*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
-      tracers(3,:) = (/point(1)-2*dl,point(2),point(1)-2*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
-      tracers(4,:) = (/point(1)-1*dl,point(2),point(1)-1*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
-      tracers(5,:) = (/point(1)+1*dl,point(2),point(1)+1*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
-      tracers(6,:) = (/point(1)+2*dl,point(2),point(1)+2*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
-      tracers(7,:) = (/point(1)+3*dl,point(2),point(1)+3*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
-      tracers(8,:) = (/point(1),point(2)-3*dl,point(1),point(2)-3*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      tracers(9,:) = (/point(1),point(2)-2*dl,point(1),point(2)-2*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      tracers(10,:) = (/point(1),point(2)-1*dl,point(1),point(2)-1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      tracers(11,:) = (/point(1),point(2)+1*dl,point(1),point(2)+1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      tracers(12,:) = (/point(1),point(2)+2*dl,point(1),point(2)+2*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      tracers(13,:) = (/point(1),point(2)+3*dl,point(1),point(2)+3*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
-      call trace_streamlines(f,tracers,13,vv)
-      diff(1:13) = sqrt((tracers(1:13,3) - tracers(1:13,1))**2 + (tracers(1:13,4) - tracers(1:13,2))**2)
-      q = tracers(1,7)
-!     determine the 6th order gradient at this point
-      der(1) = (-diff(2)/60. + 3./20.*diff(3) - 3./4.*diff(4) + 3./4.*diff(5) - 3./20.*diff(6) +diff(7)/60.)/dl
-      der(2) = (-diff(8)/60. + 3./20.*diff(9) - 3./4.*diff(10) + 3./4.*diff(11) - 3./20.*diff(12) +diff(13)/60.)/dl
-!     if the gradient is 0 we have already reached the fixed points
-      if ((der(1) == 0 .and. der(2) == 0) .or. (der(1)**2+der(2)**2 == 0)) then
+      tracers(2,:) = (/point(1)-1*dl,point(2),point(1)-1*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(3,:) = (/point(1)+1*dl,point(2),point(1)+1*dl,point(2),z(1+nghost)-ipz*nz*dz+dz,0.,2./)
+      tracers(4,:) = (/point(1),point(2)-1*dl,point(1),point(2)-1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      tracers(5,:) = (/point(1),point(2)+1*dl,point(1),point(2)+1*dl,z(1+nghost)-ipz*nz*dz+dz,0.,4./)
+      call trace_streamlines(f,tracers,5,vv)
+!
+!   compute Jacobian at x:
+!
+      fjac(1,1) = (tracers(3,3) - tracers(3,1) - &
+          (tracers(2,3) - tracers(2,1)))/2.0/dl
+      fjac(1,2) = (tracers(5,3) - tracers(5,1) - &
+          (tracers(4,3) - tracers(4,1)))/2.0/dl
+      fjac(2,1) = (tracers(3,4) - tracers(3,2) - &
+          (tracers(2,4) - tracers(2,2)))/2.0/dl
+      fjac(2,2) = (tracers(5,4) - tracers(5,2) - &
+          (tracers(4,4) - tracers(4,2)))/2.0/dl
+!
+!   check function convergence:
+!
+      ff(1) = tracers(1,3) - tracers(1,1)
+      ff(2) = tracers(1,4) - tracers(1,2)
+      if (sum(abs(ff)) <= 1.0e-4) then
+        q = tracers(1,7)
         fixed_point = point
         exit
-      else
-!       gradient descent method
-        point_old = point
-        lambda = diff(1)/(der(1)**2+der(2)**2)
-!       avoid that the step length becomes too large
-        if (lambda > min(dx,dy)) lambda = min(dx,dy)
-        point = point - der*lambda
-      endif
-      if (iter > 50) then
+      end if
+!
+!   invert Jacobian and do Newton step:
+!
+      det = fjac(1,1)*fjac(2,2) - fjac(1,2)*fjac(2,1)
+      fjin(1,1) = fjac(2,2)
+      fjin(2,2) = fjac(1,1)
+      fjin(1,2) = -fjac(1,2)
+      fjin(2,1) = -fjac(2,1)
+      fjin = fjin/det
+      dpoint(1) = -fjin(1,1)*ff(1) - fjin(1,2)*ff(2)
+      dpoint(2) = -fjin(2,1)*ff(1) - fjin(2,2)*ff(2)
+      point = point + dpoint
+!
+!   check root convergence:
+!
+      if (sum(abs(dpoint)) <= 1.0e-4) then
+        q = tracers(1,7)
         fixed_point = point
+        exit
+      end if
+!
+      if (iter > 10) then
+        q = tracers(1,7)
+        fixed_point = point
+        write(*,*) 'Warning: Newton not converged'
         exit
       endif
       iter = iter + 1
     enddo
 !
+    write(*,*) point
     deallocate(tracers)
   end subroutine get_fixed_point
 !***********************************************************************
@@ -237,9 +262,10 @@ module Fixed_point
 !***********************************************************************
   subroutine get_fixed_points(f, tracers, vv)
 !
-!  trace stream lines of the vetor field stored in f(:,:,:,iaa)
+!  trace stream lines of the vector field stored in f(:,:,:,iaa)
 !
 !   13-feb-12/simon: coded
+!   09-aug-12/anthony: modified to subsample identified cells
 !
     use Sub
 !
@@ -255,6 +281,9 @@ module Fixed_point
 !   variables for the final non-blocking mpi communication
     integer :: request_finished_send(nprocx*nprocy*nprocz)
     integer :: request_finished_rcv(nprocx*nprocy*nprocz)
+    real, pointer, dimension(:,:) :: tracers3
+    real :: x3min, x3max, y3min, y3max, minx, miny, min3, x3, y3, diff3
+    integer :: i1, j1, k1, nt3
 !
     addx = 0; addy = 0
     if (ipx /= nprocx-1) addx = 1
@@ -385,20 +414,57 @@ module Fixed_point
 !       Get the Poincare index for this grid cell
         call pindex(f, xt(j:j+1)+ipx*nx*dx, yt(l:l+1)+ipy*ny*dy, diff, phi_min, vv, poincare)
 !       find the fixed point in this cell
-        if (abs(poincare) >= 6.2) then
-          call get_fixed_point(f,(/(tracers2(j+(l-1)*(nx*trace_sub+addx),1)+tracers2(j+1+(l-1)*(nx*trace_sub+addx),1))/2., &
-              (tracers2(j+(l-1)*(nx*trace_sub+addx),2)+tracers2(j+l*(nx*trace_sub+addx),2))/2./), &
+        if (abs(poincare) >= 5.) then
+!
+!       subsample to get starting point for iteration:
+!
+          nt3 = 4
+          x3min = tracers2(j+(l-1)*(nx*trace_sub+addx),1)
+          y3min = tracers2(j+(l-1)*(nx*trace_sub+addx),2)
+          x3max = tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)
+          y3max = tracers2(j+l*(nx*trace_sub+addx),2)
+          allocate(tracers3(nt3*nt3,7))
+          i1=1
+          do j1=1,nt3
+             do k1=1,nt3
+               x3 = x3min + (j1-1.)/(real(nt3)-1)*(x3max - x3min)
+               y3 = y3min + (k1-1.)/(real(nt3)-1)*(y3max - y3min)
+               tracers3(i1,:) = (/x3, y3, x3, y3, z(1+nghost)-ipz*nz*dz+dz, &
+                    0., 4./)
+               i1 = i1 + 1
+             end do
+          end do
+          call trace_streamlines(f,tracers3,nt3*nt3,vv)
+          min3 = 1.0e6
+          minx = x3min
+          miny = y3min
+          i1=1
+          do j1=1,nt3
+             do k1=1,nt3
+               diff3 = (tracers3(i1,3) - tracers3(i1,1))**2 + &
+                    (tracers3(i1,4) - tracers3(i1,2))**2
+               if (diff3 < min3) then
+                 min3 = diff3
+                 minx = x3min + (j1-1.)/(real(nt3)-1)*(x3max - x3min)
+                 miny = y3min + (k1-1.)/(real(nt3)-1)*(y3max - y3min)
+               end if
+               i1 = i1 + 1
+             end do
+          end do
+          deallocate(tracers3)
+!
+!       iterate to find the fixed point from this starting point:        
+!
+          call get_fixed_point(f,(/minx, miny/), &
               fixed_points(fidx,1:2), fixed_points(fidx,3), vv)
-! !  Fixed point lies outside the physical domain.
-!           if ((fixed_points(fidx,1) < xt(1)) .or. (fixed_points(fidx,1) > xt(nxgrid*trace_sub)) .or. &
-!               (fixed_points(fidx,2) < yt(1)) .or. (fixed_points(fidx,2) > yt(nygrid*trace_sub))) then
-!             write(*,*) iproc, "warning: fixed point lies outside the domain"
-!  Fixed point lies outside the cell.
+!
+!       check that fixed point lies inside the cell:
+!
           if ((fixed_points(fidx,1) < tracers2(j+(l-1)*(nx*trace_sub+addx),1)) .or. &
               (fixed_points(fidx,1) > tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)) .or. &
               (fixed_points(fidx,2) < tracers2(j+(l-1)*(nx*trace_sub+addx),2)) .or. &
               (fixed_points(fidx,2) > tracers2(j+l*(nx*trace_sub+addx),2))) then
-            write(*,*) iproc, "warning: fixed point lies outside the domain"
+            write(*,*) iproc, "warning: fixed point lies outside the cell"
           else
             fidx = fidx+1
           endif
@@ -508,11 +574,16 @@ module Fixed_point
 !
 ! !   mpi debug output for finding dead locks
 !     rewind(11)
-!     write(11,*) iproc, "fixed_points: starting fixedp oint finding at", fixed_points(:,1:2)
+!     write(11,*) iproc, "fixed_points: starting fixed point finding at", fixed_points(:,1:2)
     do j=1,fidx
       point = fixed_points(j,1:2)
       call get_fixed_point(f, point, fixed_points(j,1:2), fixed_points(j,3), vv)
     enddo
+!
+!   Make sure there is a delay before sending the finished signal, so that we
+!   don't end up with the last process to finish stuck in trace_streamlines.
+!
+    call sleep(1)
 !
 !   Tell every other core that we have finished.
 ! !   mpi debug output for finding dead locks
