@@ -1364,6 +1364,16 @@ module Initcond
         enddo
         f(:,:,:,i)=f(:,:,:,i)+spread(profxy,3,mz)
 !
+!  2-D diagonal shocks
+!
+      case ('x-y')
+        do l=1,mx
+        do m=1,my
+          profxy(l,m)=fleft+(fright-fleft)*.5*(1.+tanh((x(l)+y(m))/width))
+        enddo
+        enddo
+        f(:,:,:,i)=f(:,:,:,i)+spread(profxy,3,mz)
+!
       case default
         print*,'jump: no default value'
 !
