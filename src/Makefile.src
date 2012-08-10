@@ -4,7 +4,7 @@
 ##
 ##  Makefile for modular pencil code.
 ##
-# 
+#
 # Default module settings: they can be overwritten by src/Makefile.local which
 # should be present in each local run directory.
 #
@@ -30,7 +30,7 @@ SIGNAL_HANDLING   = nosignal_handling
 STRUCT_FUNC       = nostruct_func
 TIMEAVG           = notimeavg
 TIMESTEP          =   timestep
-# 
+#
 # Physics modules (alphabetical order).
 #
 CHEMISTRY         = nochemistry
@@ -73,9 +73,9 @@ TESTSCALAR        = notestscalar
 VISCOSITY         =   viscosity
 WENO_TRANSPORT    = noweno_transport
 LSODE_FC          = nolsode_for_chemistry
-# 
+#
 # Particle modules (alphabetical order).
-# 
+#
 PARTICLES             = noparticles
 PARTICLES_COAGULATION = noparticles_coagulation
 PARTICLES_COLLISIONS  = noparticles_collisions
@@ -97,11 +97,11 @@ PARTICLES_SUB         = noparticles_sub
 PARTICLES_VISCOSITY   = noparticles_viscosity
 PARTICLES_DIAGNOS_DV  = noparticles_diagnos_dv
 PARTICLES_DIAGNOS_STATE = noparticles_diagnos_state
-# 
+#
 # Single vs. double precision.
 #
 REAL_PRECISION = default
-# 
+#
 # Default compiler settings.
 #
 AR           = ar
@@ -123,21 +123,21 @@ LD_FFTW3      =
 CFLAGS_FFTW2  =
 FFLAGS_FFTW2  =
 LD_FFTW2      =
-# 
+#
 # Extra compiler flags (what does the `GENERAL' refer to?).
 #
 FFLAGS_GENERAL =
 CFLAGS_GENERAL =
-# 
+#
 # Default double flags (can be overwritten in machine-specific section).
 #
 FFLAGS_DOUBLE = -r8
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
-# 
+#
 # Overwrite settings that are local to each run directory.
 #
 include Makefile.local
-# 
+#
 # Double precision settings and similar. Must be included _after_
 # Makefile.local, so we can set REAL_PRECISION=double there.
 #
@@ -146,7 +146,7 @@ include Makefile.inc
 # Can someone explain this?
 #
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
-# 
+#
 # Compile files with particle programming structure if particles are chosen.
 #
 ifneq ($(PARTICLES),noparticles)
@@ -175,7 +175,7 @@ ifeq ($(PARTICLES_MAP),particles_map_blocks)
 #    PARTICLES_MPICOMM = experimental/particles_mpicomm_blocks_partition
   endif
 endif
-# 
+#
 # Compile files with the proper FFT libraries. If condition not really needed
 # for source libraries but will be needed for external libraries.
 #
@@ -189,7 +189,7 @@ ifeq ($(FOURIER),fourier_fftpack)
   FFLAGS_FOURIER =
   LD_FOURIER     = fftpack.o
 endif
-# 
+#
 # For gsl library.
 #
 ifeq ($(GSL),gsl_wrapper)
@@ -201,7 +201,7 @@ endif
 ifeq ($(TIMESTEP),timestep_LSODE)
   LSODE_FC          =   lsode_for_chemistry
 endif
-# 
+#
 # Check for inconsistent settings in Makefile.local.
 #
 ifeq ($(HYDRO),nohydro)
@@ -214,7 +214,7 @@ nohydro_message:
 
   endif
 endif
-# 
+#
 # Check for outdated features.
 #
 ifneq ($(BORDER_PROF),)
@@ -228,7 +228,7 @@ nograv_message:
 	@echo ";;;"
 	exit 1
 endif
-# 
+#
 ifeq ($(GRAVITY),nograv)
 nograv_message:
 	@echo ";;; Cannot compile:"
@@ -240,7 +240,7 @@ nograv_message:
 	@echo ";;;"
 	exit 1
 endif
-# 
+#
 ifeq ($(GRAVITY),grav_z)
 grav_z_message:
 	@echo ";;; Cannot compile:"
@@ -253,7 +253,7 @@ grav_z_message:
 	@echo ";;;"
 	exit 1
 endif
-# 
+#
 ifeq ($(GRAVITY),grav_r)
 grav_r_message:
 	@echo ";;; Cannot compile:"
@@ -577,7 +577,7 @@ VISCOSITY_SRC=$(VISCOSITY).f90
 #
 WENO_TRANSPORT_OBJ=$(WENO_TRANSPORT).o
 WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
-# 
+#
 # The following block (`Begin/End machine dependent') specifies compilers
 # and switches for given architectures and machine names. See
 # `perldoc adapt-mkfile' for full documentation of the syntax.
@@ -585,7 +585,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #   FFLAGS are used by both the F90 compiler $(FC) and $(F77);
 #   F90FLAGS are only used by $(FC)
 #   F77FLAGS are only used by $(F77)
-# 
+#
 ### Begin machine dependent
 
 ## IRIX64:
@@ -716,7 +716,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS= -O4 -Munroll -Mvect=prefetch -I/cvos/shared/apps/mvapich/pgi/1.2rc2/include/ #(vsl176)
 ##FFLAGS= -O0 -C -Mbounds -Mdwarf2 -Melf  -I/cvos/shared/apps/mvapich/pgi/1.2rc2/include/ #(vsl176)
 ##FFLAGS= -O3 -I/cvos/shared/apps/mvapich/pgi/1.2rc2/include/ -Mrecursive #(vsl176)
-#LD_MPI= -L/cvos/shared/apps/mvapich/pgi/1.2rc2/lib -lmpich -L/cvos/shared/apps/ofed/1.3.1/lib64/ -libumad -libverbs -lrdmacm #(vsl176) 
+#LD_MPI= -L/cvos/shared/apps/mvapich/pgi/1.2rc2/lib -lmpich -L/cvos/shared/apps/ofed/1.3.1/lib64/ -libumad -libverbs -lrdmacm #(vsl176)
 #FC=gfortran -I. #(vsl174)
 ##FFLAGS=-O3 -I/home/arnelohr/mpich2/include #(vsl174)
 #FFLAGS= -I/home/arnelohr/mpich2/include #(vsl174)
@@ -926,7 +926,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-O3 -DFUNDERSC=1 #(nid00*)
 #LD_MPI= #(nid00*)
 ##
-## Axel on sarek/akka 
+## Axel on sarek/akka
 ##
 #FC=mpif90 #(m191.hpc2n.umu.se)
 #FFLAGS= -O2   #(m191.hpc2n.umu.se)
@@ -1161,7 +1161,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##LD_MPI=-L/usr/lib/lam/lib -pthread -llammpio -llamf77mpi -lmpi -llam -llammpi++ #(rockall)
 #LD_MPI=-L/usr/lib/openmpi/lib -pthread -lmpi -lmpi_f77 -lmpi_f90 -lmpi_cxx -lopen-rte -lopen-pal -lmca_common_sm #(rockall)
 ##F77FLAGS=-w90 #(rockall)
-#LIBMPISUFFIX=_#(rockall) 
+#LIBMPISUFFIX=_#(rockall)
 ##
 ## valdivia (grsarson's desktop)
 ##
@@ -1333,7 +1333,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #MPI_HOME=/opt/openmpi/1.2.5gcc#(is[0-9]+)
 #LD_MPI=-I$(MPI_HOME)/include -L$(MPI_HOME)/lib -lmpi -lmpi_f90 #(is[0-9]+)
 ##
-## RA cluster at uppmax 
+## RA cluster at uppmax
 ## www.uppmax.uu.se/systems/ra/ra-cluster
 ##
 #FC=mpif90 #(ra[1-99]*)
@@ -1377,7 +1377,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-autodouble #(pfe?)
 #LD_MPI=-lmpi #(pfe?)
 ##
-## Toulouse's machines: 
+## Toulouse's machines:
 ## Opteron cluster (116+320 cores) + Altix 3700 (256 cores)
 ##
 #FC=ifort #(frontale-pastel*|soleil1)
@@ -1392,7 +1392,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FC=/home/dhruba/mpich/bin/mpif90 -f90=/home/dhruba/bin/g95 -fno-second-underscore  #(cluster.maths.qmul.ac.uk)
 #FFLAGS=  -O3 -I/home/dhruba/mpich/include/ #(cluster.maths.qmul.ac.uk)
 #CC=/home/dhruba/mpich/bin/mpicc #(cluster.maths.qmul.ac.uk)
-#LD_MPI = -lmpich #(cluster.maths.qmul.ac.uk) 
+#LD_MPI = -lmpich #(cluster.maths.qmul.ac.uk)
 ##
 ## Dhruba on hyades.qmul cluster
 ##
@@ -1414,16 +1414,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 #FC=mpif90    -L${HOME}/Library/lib #(taurus)
 #FFLAGS= -O3 #(taurus)
-#CC=mpicc #(taurus) 
+#CC=mpicc #(taurus)
 #CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib #(taurus)
 ##
 ## Dhruba at manchester, lancaster, liverpool
-## 
+##
 #FC = mpif90 #(man2|penumbra|lv1)
 #FFLAGS = #(man2|penumbra|lv1)
 #CC = pgcc #(man2|penumbra|lv1)
 ##
-## Dhruba's Desktop (starpc37) 
+## Dhruba's Desktop (starpc37)
 ##
 #FC=mpif90  # (starpc37.maths.qmul.ac.uk)
 #FFLAGS_DOUBLE = -r8 # (starpc37.maths.qmul.ac.uk)
@@ -1438,7 +1438,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=  -O3  #(mhdc)
 #CC=mpicc -cc=pgcc#(mhdc)
 #CFLAGS=-O3 -DFUNDERSC=1 -I${HOME}/Library/include -L${HOME}/Library/lib  #(mhdc)
-#LD_MPI = -lmpich #(mhdc) 
+#LD_MPI = -lmpich #(mhdc)
 ##
 ## Piyali on nordita laptop on maths.qmul cluster
 ##
@@ -1651,7 +1651,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-DFUNDERSC=1 -I/usr/local/include#(norosx52)
 #LD_GSL = -lgsl -lgslcblas -L/usr/local/lib/#(norosx52)
 ##
-## Dhruba's laptop 
+## Dhruba's laptop
 ##
 #FC=g95 -fno-second-underscore # (lilabati)
 #F77=$(FC) #(lilabati)
@@ -1659,7 +1659,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CC=gcc #(lilabati)
 #CFLAGS=-O3 -DFUNDERSC=1 #(lilabati)
 ##
-## Dhruba's new laptop (meera) 
+## Dhruba's new laptop (meera)
 ##
 #FC=/home/dhruba/Library/bin/mpif90  # (meera)
 #FFLAGS_DOUBLE = -O3  # (meera)
@@ -1669,7 +1669,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-O3 -DFUNDERSC=1  #(meera)
 ##
 ## joishi's laptop
-## 
+##
 ##FC=gfortran #(ebisu)
 #FC=/usr/local/openmpi_gfortran/bin/mpif90 #(ebisu)
 #FFLAGS=-O3 -frecord-marker=4 #(ebisu)
@@ -1711,9 +1711,9 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CC=gcc #(groovy|ip237*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(groovy|ip237*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(groovy|ip237*)
-## 
+##
 ## giuseppe's laptop
-## 
+##
 #FC=gfortran #(giuseppe)
 #FFLAGS=-O3 #(giuseppe)
 #CFLAGS=-DFUNDERSC=1 #(giuseppe)
@@ -1795,19 +1795,19 @@ endif
 #
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
-# 
+#
 #  Generic rules.
-# 
+#
 .SUFFIXES:			# get rid of that annoying Modula rule
 .SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
-# 
+#
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*.o -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*.o -c $*.c
-# 
+#
 #  Default target (start.x and run.x are compiled in "code").
 #
 default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
@@ -1835,13 +1835,13 @@ start=$(physics) $(technical)
 #  Short hand notation for run.o dependencies.
 #
 run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
-# 
+#
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
 start.o: $(start) Makefile.local
 start.x: start.o
 	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
-# 
+#
 run.o: $(run) Makefile.local
 run.x: run.o
 	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
@@ -1886,19 +1886,19 @@ pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
-# 
+#
 #  Symbolic targets
 #
 pacx: pacx-makefile cparam.inc code
-# 
+#
 Makefile: Makefile.src
 	scripts/check-mkfile Makefile.local Makefile.src
 	env ADAPT_MKFILE=$(ADAPT_MKFILE) scripts/adapt-mkfile Makefile.src Makefile
-# 
+#
 pacx-makefile: Makefile.src
 	scripts/acx-adapt-mkfile Makefile.src pacx-Makefile
 	cp pacx-Makefile Makefile
-# 
+#
 depend dep:
 	@printf "***** %-45s *****\n" \
 	    '*********************************************' \
@@ -1909,7 +1909,7 @@ depend dep:
 	    '*********************************************'
 	rm -f Makefile.depend
 	scripts/mkdep start.f90 run.f90 combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90 read_vectorfiles.f90 equ.f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
-# 
+#
 #  Help us finding out what compiler, MPI library, etc we have and give
 #  recommendations
 #
@@ -1930,7 +1930,7 @@ semiauto-conf:
 	    LD_FLAGS="$(LD_FLAGS)" \
 	    LD_FOURIER="$(LD_FOURIER)" \
 	    LIBMPISUFFIX="$(LIBMPISUFFIX)"
-# 
+#
 #  Generate files for automated debugging and testing etc.
 #
 start_buildtime:
@@ -1951,7 +1951,7 @@ buildinfo:
 	    -e "LORENZ_GAUGE='$(LORENZ_GAUGE)';" \
 	    -e "POLYMER='$(POLYMER)';" \
 	    -e "CHIRAL='$(CHIRAL)';CHEMISTRY='$(CHEMISTRY)';DUSTVELOCITY='$(DUSTVELOCITY)';DUSTDENSITY='$(DUSTDENSITY)';" \
-            -e "NEUTRALVELOCITY='$(NEUTRALVELOCITY)';NEUTRALDENSITY='$(NEUTRALDENSITY)';" \
+	    -e "NEUTRALVELOCITY='$(NEUTRALVELOCITY)';NEUTRALDENSITY='$(NEUTRALDENSITY)';" \
 	    -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \
 	    -e "EOS='$(EOS)';STRUCT_FUNC='$(STRUCT_FUNC)';SHOCK='$(SHOCK)';" \
 	    -e "TESTSCALAR='$(TESTSCALAR)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
@@ -1962,7 +1962,7 @@ buildinfo:
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
 	scripts/mkcparam -b $(preprocess) -o cparam.inc
-# 
+#
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	if [ "" ]; then \
 	    rm -f cparam.inc; \
@@ -1971,35 +1971,35 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	    ln -s cparam_pencils.inc cparam_pencils.inc; \
 	fi
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam.o -c cparam.f90
-# 
+#
 special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 #
 initial_condition_dummies.inc:  noinitial_condition.f90 $(INITIAL_CONDITION).f90
 	scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 > initial_condition_dummies.inc
-# 
+#
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
-# 
+#
 ghostfold_mpicomm_double.f90: ghostfold_mpicomm.f90
 	ln -s ghostfold_mpicomm.f90 ghostfold_mpicomm_double.f90
-# 
+#
 mpicomm_.f90: mpicomm.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm.f90 > mpicomm_.f90
-# 
+#
 mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
-# 
+#
 nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
-# 
+#
 EXECUTABLES=start.x run.x \
 	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
-# 
+#
 # The last few object files to compile. We need to compile _all_ object
 # files before linking, because FC=g95_quick_and_dirty will otherwise
 # delete already compiled .x files:
-# 
+#
 LAST_OBJ=$(EXECUTABLES:.x=.o)
 code: Makefile.inc cparam.inc
 	@# Realize error even when last command in pipe is FCCLEANER:
@@ -2010,7 +2010,7 @@ code: Makefile.inc cparam.inc
 	else \
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
-# 
+#
 FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
@@ -2020,7 +2020,7 @@ fast:
 	else \
 	    $(MAKE) $(MAKEOPTS) $(FASTEXECS) ; \
 	fi
-# 
+#
 debug:
 	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2029,18 +2029,18 @@ debug:
 	else \
 	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
 	fi
-# 
+#
 #  Handy for debugging; just compile by hand what is changed.
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
 	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) -o start.x
 	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
-# 
+#
 #  Needed for the underscore trick.
 #
 mpicomm_.f90: mpicomm.f90
-# 
+#
 #  Use sloppier compiler for a few files that use F77 syntax.
 #  (and also for param_io.f90, since `gfortran-4.4.5 -std=f95' doesn't
 #  accept open(..., DELIM=...); this looks like a compiler bug.
@@ -2053,19 +2053,19 @@ fftpack.o: fftpack.f90
 	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) -o fftpack.o -c fftpack.f90
 param_io.o: param_io.f90
 	$(FC_SLOPPY) $(FFLAGS) $(FFLAGS_GENERAL) -o param_io.o -c param_io.f90
-# 
+#
 #  Remove all build files, but keep executables (misleading name..)
 #
 run:
 	rm -f *.o *.mod *.d
 	rm -f work.pc work.pcl
-# 
+#
 #  Alternative to make run. To copy executables to parent directory. Make
 #  clean(n) could then be run on the source. (misleading name..)
 #
 install:
 	cp *.x ../
-# 
+#
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
 #  temporarily create them
@@ -2074,7 +2074,7 @@ TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
 	@ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
 	@ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
-# 
+#
 #  Clean up, but leave makefile and TAGS.
 #
 clean:
@@ -2086,7 +2086,7 @@ clean:
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
-# 
+#
 #  Clean up all
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
 #
@@ -2095,11 +2095,11 @@ cleann: clean
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
 	rm -f *.inc && touch Makefile.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
-# 
+#
 #  Same thing.
 #
 cleanall: cleann
-# 
+#
 #  Try to remove everything generated by pc_setupsrc, compilation, etc.
 #
 distclean: cleanall
