@@ -194,6 +194,7 @@ module Particles
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
+  integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
   integer :: idiag_rhopvpysm=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
@@ -2570,6 +2571,36 @@ k_loop:   do while (.not. (k>npar_loc))
                 fp(1:npar_loc,ivpz), idiag_rhopvpzm)
           endif
         endif
+        if (idiag_rhopvpxt/=0) then
+          if (lparticles_mass) then
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx)* &
+                npar_loc, idiag_rhopvpxt)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
+                fp(1:npar_loc,ivpx)*npar_loc, idiag_rhopvpxt)
+          endif
+        endif
+        if (idiag_rhopvpyt/=0) then
+          if (lparticles_mass) then
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy)* &
+                npar_loc, idiag_rhopvpyt)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
+                fp(1:npar_loc,ivpy)*npar_loc, idiag_rhopvpyt)
+          endif
+        endif
+        if (idiag_rhopvpzt/=0) then
+          if (lparticles_mass) then
+            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz)* &
+                npar_loc, idiag_rhopvpzt)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call sum_par_name(four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
+                fp(1:npar_loc,ivpz)*npar_loc, idiag_rhopvpzt)
+          endif
+        endif
         if (idiag_rhopvpysm/=0) then
           if (lparticles_mass) then
             call sum_par_name(fp(1:npar_loc,irhopswarm)* &
@@ -4596,6 +4627,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0; idiag_vpmax=0
         idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0; idiag_rhopvpysm=0
+        idiag_rhopvpxt=0; idiag_rhopvpyt=0; idiag_rhopvpzt=0
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
         idiag_lpx2m=0; idiag_lpy2m=0; idiag_lpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
@@ -4651,6 +4683,14 @@ k_loop:   do while (.not. (k>npar_loc))
             idiag_rhopvpym)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
             idiag_rhopvpzm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
+            idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt', &
+            idiag_rhopvpxt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt', &
+            idiag_rhopvpyt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt', &
+            idiag_rhopvpzt)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
             idiag_rhopvpysm)
         call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
