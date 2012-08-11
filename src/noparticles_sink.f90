@@ -80,4 +80,62 @@ module Particles_sink
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
+    subroutine read_particles_sink_init_pars(unit,iostat)
+!
+!  11-aug-12/anders: dummy
+!
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
+    endsubroutine read_particles_sink_init_pars
+!***********************************************************************
+    subroutine write_particles_sink_init_pars(unit)
+!
+!  11-aug-12/anders: dummy
+!
+      integer, intent (in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_particles_sink_init_pars
+!***********************************************************************
+    subroutine read_particles_sink_run_pars(unit,iostat)
+!
+!  11-aug-12/anders: dummy
+!
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
+!
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
+!
+    endsubroutine read_particles_sink_run_pars
+!***********************************************************************
+    subroutine write_particles_sink_run_pars(unit)
+!
+!  11-aug-12/anders: dummy
+!
+      integer, intent (in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_particles_sink_run_pars
+!***********************************************************************
+    subroutine rprint_particles_sink(lreset,lwrite)
+!
+!  11-aug-12/anders: dummy
+!
+      use Diagnostics, only: parse_name
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(present(lwrite))
+!
+    endsubroutine rprint_particles_sink
+!***********************************************************************
 endmodule Particles_sink

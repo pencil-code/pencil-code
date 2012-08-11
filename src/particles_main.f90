@@ -81,6 +81,7 @@ module Particles_main
           STATUS='old', POSITION='append')
       call rprint_particles              (lreset,LWRITE=lroot)
       call rprint_particles_radius       (lreset,LWRITE=lroot)
+      call rprint_particles_sink         (lreset,LWRITE=lroot)
       call rprint_particles_spin         (lreset,LWRITE=lroot)
       call rprint_particles_number       (lreset,LWRITE=lroot)
       call rprint_particles_mass         (lreset,LWRITE=lroot)
@@ -477,13 +478,6 @@ module Particles_main
       if (lparticles_nbody) call remove_particles_sink_nbody(f,fp,dfp,ineargrid)
       if (lparticles_sink)  call remove_particles_sink(f,fp,dfp,ineargrid)
 !
-!  Create new sink particles or sink points.
-!
-      if (lparticles) &
-          call create_particles_sink_simple(f,fp,dfp,ineargrid)
-      if (lparticles_nbody) call create_particles_sink_nbody(f,fp,dfp,ineargrid)
-      if (lparticles_sink)  call create_particles_sink(f,fp,dfp,ineargrid)
-!
 !  Find nearest grid point for each particle.
 !
       call map_nearest_grid(fp,ineargrid)
@@ -651,6 +645,13 @@ module Particles_main
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
       if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
       if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+!
+!  Create new sink particles or sink points.
+!
+      if (lparticles) &
+          call create_particles_sink_simple(f,fp,dfp,ineargrid)
+      if (lparticles_nbody) call create_particles_sink_nbody(f,fp,dfp,ineargrid)
+      if (lparticles_sink)  call create_particles_sink(f,fp,dfp,ineargrid)
 !
 !  Correct for curvilinear geometry.
 !
@@ -852,6 +853,15 @@ module Particles_main
         endif
       endif
 !
+      if (lparticles_sink) then
+        call read_particles_sink_init_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_startpars('particles_sink_init_pars',iostat); return
+          endif
+        endif
+      endif
+!
       if (lparticles_number) then
         call read_particles_num_init_pars(unit,iostat)
         if (present(iostat)) then
@@ -921,6 +931,7 @@ module Particles_main
       if (lparticles_radius)      call read_particles_rad_init_pars(unit)
       if (lparticles_potential)   call read_particles_pot_init_pars(unit)
       if (lparticles_spin)        call read_particles_spin_init_pars(unit)
+      if (lparticles_sink)        call read_particles_sink_init_pars(unit)
       if (lparticles_number)      call read_particles_num_init_pars(unit)
       if (lparticles_mass)        call read_particles_mass_init_pars(unit)
       if (lparticles_selfgravity) call read_particles_selfg_init_pars(unit)
@@ -950,6 +961,8 @@ module Particles_main
             print*,'&particles_potential_init_pars  /'
         if (lparticles_spin) &
             print*,'&particles_spin_init_pars    /'
+        if (lparticles_sink) &
+            print*,'&particles_sink_init_pars    /'
         if (lparticles_number) &
             print*,'&particles_number_init_pars  /'
         if (lparticles_mass) &
@@ -983,6 +996,7 @@ module Particles_main
       if (lparticles_radius)      call write_particles_rad_init_pars(unit)
       if (lparticles_potential)   call write_particles_pot_init_pars(unit)
       if (lparticles_spin)        call write_particles_spin_init_pars(unit)
+      if (lparticles_sink)        call write_particles_sink_init_pars(unit)
       if (lparticles_number)      call write_particles_num_init_pars(unit)
       if (lparticles_mass)        call write_particles_mass_init_pars(unit)
       if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
@@ -1029,6 +1043,15 @@ module Particles_main
         if (present(iostat)) then
           if (iostat/=0) then
             call samplepar_runpars('particles_spin_run_pars',iostat); return
+          endif
+        endif
+      endif
+!
+      if (lparticles_sink) then
+        call read_particles_sink_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('particles_sink_run_pars',iostat); return
           endif
         endif
       endif
@@ -1148,6 +1171,7 @@ module Particles_main
         if (lparticles_radius)         print*,'&particles_radius_run_pars  /'
         if (lparticles_potential)         print*,'&particles_potential_run_pars  /'
         if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
+        if (lparticles_sink)           print*,'&particles_sink_run_pars    /'
         if (lparticles_number)         print*,'&particles_number_run_pars  /'
         if (lparticles_mass)           print*,'&particles_mass_run_pars    /'
         if (lparticles_selfgravity)    print*,'&particles_selfgrav_run_pars/'
@@ -1180,6 +1204,7 @@ module Particles_main
       if (lparticles_radius)         call write_particles_rad_run_pars(unit)
       if (lparticles_potential)      call write_particles_pot_run_pars(unit)
       if (lparticles_spin)           call write_particles_spin_run_pars(unit)
+      if (lparticles_sink)           call write_particles_sink_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)
       if (lparticles_mass)           call write_particles_mass_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
