@@ -174,10 +174,9 @@ module Particles_sink
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: xxps, vvps
-      real :: rhops, rads, dist2
+      real :: rhops, rads, rads2, dist2
       integer, dimension(3) ::  dis=(/-1,0,+1/)
-      integer :: j, k
-      logical :: lremove
+      integer :: j, k, jsink
 
 !
       if (lmpicomm) then
@@ -198,12 +197,13 @@ module Particles_sink
             vvps=fp(j,ivpx:ivpz)
             rhops=fp(j,irhopswarm)
             rads=fp(j,israd)
-            k=1
+            rads2=fp(j,israd)**2
+            k=npar_loc
+            jsink=j
 !
 !  Loop over all particles to see which ones get removed by the sink particle.
 !
-            do while (k<=npar_loc)
-              lremove=.false.
+            do while (k>=1)
               if (j/=k) then
 !
 !  Find minimum distance by directional splitting. This makes it easier to
@@ -224,28 +224,36 @@ module Particles_sink
 !  above by demanding j/=k, but in pathological cases where j=npar_loc, the
 !  sink particle may be moved down to replace a removed particle.
 !
-                      if (dist2/=0.0 .and. dist2<=rads**2) then
+                      if (dist2<=rads2) then
                         if (lparticles_mass) then
                           vvps=(rhops*vvps+fp(k,irhopswarm)* &
                               fp(k,ivpx:ivpz))/(rhops+fp(k,irhopswarm))
                           rhops=rhops+fp(k,irhopswarm)
                         endif
-                        lremove=.true.
+!
+!  If the sink particle has index npar_loc, then it will be moved to k.
+!
+                        if (j==npar_loc) then
+                          jsink=k
+                        endif
+!
+!  Remove particle, replacing it in fp with the particle of index npar_loc.
+!
                         call remove_particle(fp,ipar,k,dfp,ineargrid)
                       endif
                     endif
                   endif
                 endif
               endif
-              if (.not. lremove) k=k+1
+              k=k-1
             enddo
 !
 !  Give accreted mass and velocity to the sink particle. This conserves mass
 !  and momentum, but angular momentum is not conserved - this is assumed to
 !  be stored in rotation of the sink particle.
 !
-            fp(j,ivpx:ivpz)=vvps
-            fp(j,irhopswarm)=rhops
+            fp(jsink,ivpx:ivpz)=vvps
+            fp(jsink,irhopswarm)=rhops
           endif
           j=j-1
         enddo
