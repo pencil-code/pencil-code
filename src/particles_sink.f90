@@ -173,6 +173,84 @@ module Particles_sink
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
+      real, dimension(3) :: xxps, vvps
+      real :: rhops, rads, dist2
+      integer, dimension(3) ::  dis=(/-1,0,+1/)
+      integer :: j, k
+      logical :: lremove
+
+!
+      if (lmpicomm) then
+
+      else
+!
+!  Loop over sink particles, starting at npar_loc so that the sink particle
+!  position in fp does not change when particles are removed.
+!
+        j=npar_loc
+        do while (j>=1)
+          if (fp(j,israd)/=0.0) then
+!
+!  Store sink particle information in separate variables, as this might give
+!  better cache efficiency.
+!
+            xxps=fp(j,ixp:izp)
+            vvps=fp(j,ivpx:ivpz)
+            rhops=fp(j,irhopswarm)
+            rads=fp(j,israd)
+            k=1
+!
+!  Loop over all particles to see which ones get removed by the sink particle.
+!
+            do while (k<=npar_loc)
+              lremove=.false.
+              if (j/=k) then
+!
+!  Find minimum distance by directional splitting. This makes it easier to
+!  incorporate periodic boundary conditions.
+!
+                if (minval(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))<=rads) then
+                  if (minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))<=rads) then
+                    if (minval(abs(fp(k,izp)-(xxps(3)+Lz*dis)))<=rads) then
+!
+!  Particle is constrained to be within cube of size rads. Estimate whether
+!  the particle is also within the sphere of size rads.
+!
+                      dist2=minval(((fp(k,ixp)-(xxps(1)+Lx*dis))**2+ &
+                          (fp(k,iyp)-(xxps(2)+Ly*dis))**2+ &
+                          (fp(k,izp)-(xxps(3)+Lz*dis))**2))
+!
+!  Do not allow sink particle to accrete itself. This is already excluded
+!  above by demanding j/=k, but in pathological cases where j=npar_loc, the
+!  sink particle may be moved down to replace a removed particle.
+!
+                      if (dist2/=0.0 .and. dist2<=rads**2) then
+                        if (lparticles_mass) then
+                          vvps=(rhops*vvps+fp(k,irhopswarm)* &
+                              fp(k,ivpx:ivpz))/(rhops+fp(k,irhopswarm))
+                          rhops=rhops+fp(k,irhopswarm)
+                        endif
+                        lremove=.true.
+                        call remove_particle(fp,ipar,k,dfp,ineargrid)
+                      endif
+                    endif
+                  endif
+                endif
+              endif
+              if (.not. lremove) k=k+1
+            enddo
+!
+!  Give accreted mass and velocity to the sink particle. This conserves mass
+!  and momentum, but angular momentum is not conserved - this is assumed to
+!  be stored in rotation of the sink particle.
+!
+            fp(j,ivpx:ivpz)=vvps
+            fp(j,irhopswarm)=rhops
+          endif
+          j=j-1
+        enddo
+      endif
+!
     endsubroutine remove_particles_sink
 !***********************************************************************
     subroutine read_particles_sink_init_pars(unit,iostat)
