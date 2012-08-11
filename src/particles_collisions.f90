@@ -303,8 +303,6 @@ module Particles_collisions
                       tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
                           fp(j,irhopswarm)/rho0*(tausp_j+tausp_k)**2* &
                           min(tausp1_j,tausp1_k)**2
-                      if (lsinkparticle_1 .and. (j==1 .or. k==1)) &
-                          tau_coll1=0.0
                     elseif (npar_species>1) then
                       tau_coll1=0.75*min(tausp1_j,tausp1_k)*deltavjk/cs0* &
                           rhop_swarm/rho0*(tausp_j+tausp_k)**2* &
@@ -318,6 +316,15 @@ module Particles_collisions
 !  calculate the collision time-scale.
 !
                     tau_coll1=deltavjk/lambda_mfp_single
+                  endif
+!
+!  Exclude sink particles from collisions.
+!
+                  if (lsinkparticle_1 .and. (j==1 .or. k==1)) &
+                      tau_coll1=0.0
+                  if (lparticles_sink) then
+                    if (fp(j,israd)/=0.0 .or. fp(k,israd)/=0.0) &
+                        tau_coll1=0.0
                   endif
 !
 !  Increase collision rate artificially for fewer collisions.
@@ -553,6 +560,15 @@ module Particles_collisions
 !  calculate the collision time-scale.
 !
                     tau_coll1=deltavjk/lambda_mfp_single
+                  endif
+!
+!  Exclude sink particles from collisions.
+!
+                  if (lsinkparticle_1 .and. (j==1 .or. k==1)) &
+                      tau_coll1=0.0
+                  if (lparticles_sink) then
+                    if (fp(j,israd)/=0.0 .or. fp(k,israd)/=0.0) &
+                        tau_coll1=0.0
                   endif
 !
 !  Increase collision rate artificially for fewer collisions.
