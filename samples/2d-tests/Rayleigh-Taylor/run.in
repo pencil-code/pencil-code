@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Run parameters for Rayleigh-Taylor problem
+!
+&run_pars
+  cvsid='$Id$'
+  nt=40000, it1=100, cdt=0.1, cdtv=0.20, isave=50, itorder=3,
+  dsnap=0.1, dvid=1., d2davg=0.01
+  tmax=80.
+  bcz = 's','s','a','a2','a2'   !(ux,uy,uz,lnrho,ss) 
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  cdiffrho=0.,  ! no mass diffusion
+  lupw_lnrho=T  ! use upwinding for lnrho to avoid wiggles
+/
+&grav_run_pars
+  gravz_profile='const', gravz=-0.1   ! constant gravity in the z-direction
+/
+&entropy_run_pars
+  lupw_ss=T ! use upwinding for entropy to avoid wiggles
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=2.e-7 ! for 30*90
+/

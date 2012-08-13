@@ -1,0 +1,34 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/Rayleigh-Taylor
+SVN Id:
+    $Id$
+Maintainer:
+    Michiel Lambrechts  <michiel/astro.lu.se>
+Added:
+    x/Aug/2012 
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    300*900 in order to see secondary Kelvin-Helmholtz instabilities develop.
+Comments:
+    Classical test for hydro codes. I tried to stay close to the standard test
+    problem as described in 
+    - Comparison of several difference schemes on 1d and 2d test problems for
+    the euler equations - by Richard Liska and Burton Wendroff
+    http://www-troja.fjfi.cvut.cz/~liska/ps.gz/compare_euler_SISC_03.pdf 
+    The Rayleigh-Taylor instability occurs when a denser fluid (rho_2) is
+    placed on top of a lighter fluid (rho_1) in a gravitational field.
+    Although both fluids can be maintained in hydrostatic equilibrium, a small
+    perturbation at the interface between the 2 fluids will lead to turbulent
+    mixing.
+    In the linear phase the growth rate is given by
+    \omega = \pm \sqrt{gk \frac{\rho_1-\rho_2}{\rho_2 + \rho_1}} .
+    This growth rate can be clearly seen between times t=4 to t=8, at 300*900
+    resolution.
+    WARNING: In the current implementation higher resolution runs (300*900)
+    break the symmetry around the vertical ($x=0$)-axis, at late times
+    (t>11).  This is unexpected since the equations solved by the Pencil Code
+    are symmetric.
+    NOTE: This sample makes use of the initial condition module.
+References:
+    None
