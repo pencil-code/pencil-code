@@ -22,32 +22,9 @@ module InitialCondition
   real :: widthrho=1.0
 !
   namelist /initial_condition_pars/ &
-     ampluu, widthrho
+      ampluu, widthrho
 !
   contains
-!***********************************************************************
-    subroutine register_initial_condition()
-!
-!  Register variables associated with this module; likely none.
-!
-!  07-may-09/wlad: coded
-!
-      if (lroot) call svn_id( &
-          "$Id: noinitial_condition.f90 16806 2011-05-04 15:52:49Z dhruba.mitra $")
-!
-    endsubroutine register_initial_condition
-!***********************************************************************
-    subroutine initialize_initial_condition(f)
-!
-!  Initialize any module variables which are parameter dependent.
-!
-!  07-may-09/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine initialize_initial_condition
 !***********************************************************************
     subroutine initial_condition_all(f)
 !
@@ -64,46 +41,42 @@ module InitialCondition
 !  Specific 2D mode pertubing u_z, but not near boundaries box
 !  Creates the classic RT mushroom bubble
 !
-          if (lroot) print*, &
-              'initial_condition_all: RT-mode, ampluu=', ampluu
-          do l=l1,l2; do n=n1,n2
-            f(l,m1:m2,n,iuz) = f(l,m1:m2,n,iuz)+ &
-                (ampluu/4)*(1+cos(2*pi*x(l)/Lxyz(1)))* &
-                (1+cos(2*pi*z(n)/Lxyz(3)))
-          enddo; enddo
+      if (lroot) print*, &
+          'initial_condition_all: RT-mode, ampluu=', ampluu
+      do l=l1,l2; do n=n1,n2
+        f(l,m1:m2,n,iuz) = f(l,m1:m2,n,iuz)+ &
+            (ampluu/4)*(1+cos(2*pi*x(l)/Lxyz(1)))* &
+            (1+cos(2*pi*z(n)/Lxyz(3)))
+      enddo; enddo
 !
 !  Tangential density profile approximating a density jump at z=0
 !  rho towards 1 if z<0, rho towards 2 if z>0
 !  Width of the jump fixed at 6 gridcells (6*dz)
 !
-          if (lroot) print*, &
-              'initial_condition_all: tangential discontinuity for RT'
-          do n=n1,n2
-              rhoprof= &
-                  (widthrho/2)*(tanh(z(n)/(6*dz)) +1) + rho0
-              f(l1:l2,m1:m2,n,ilnrho)= log(rhoprof) 
-          enddo
+      if (lroot) print*, &
+          'initial_condition_all: tangential discontinuity for RT'
+      do n=n1,n2
+         rhoprof=(widthrho/2)*(tanh(z(n)/(6*dz)) +1) + rho0
+         f(l1:l2,m1:m2,n,ilnrho)=log(rhoprof) 
+      enddo
 !
 !  Entropy profile for hydrostatic equilibrium, 
 !  given the above density profile
 !  NOTE We get gravity from gravity module.
 !  Standard values c_P=rho_0=1, gravz=-0.1 and P_0 = 2.5
 !
-          if (lroot) print*, &
-              'initial_condition_all: entropy profile for RT'
-          !  Equilibrium pressure P0 from EoS
-          P0 = gamma1*rho0*cs20
-          do n=n1,n2
-             rhoprof= &
-                 (widthrho/2)*(tanh(z(n)/(6*dz)) +1) + rho0
-             Pprof= &
-                 P0 + gravz*((widthrho/2)+rho0)*z(n) +&
-                 gravz*(widthrho/2)*(6*dz)*log(cosh(z(n)/(6*dz)))
-             f(l1:l2,m1:m2,n,iss) = &
-                 -log(rhoprof/rho0) + (gamma1)*log(Pprof/P0)
-            enddo
-!
-      call keep_compiler_quiet(f)
+      if (lroot) print*, &
+          'initial_condition_all: entropy profile for RT'
+      !  Equilibrium pressure P0 from EoS
+      P0 = gamma1*rho0*cs20
+      do n=n1,n2
+        rhoprof=(widthrho/2)*(tanh(z(n)/(6*dz)) +1) + rho0
+        Pprof= &
+            P0 + gravz*((widthrho/2)+rho0)*z(n) +&
+            gravz*(widthrho/2)*(6*dz)*log(cosh(z(n)/(6*dz)))
+        f(l1:l2,m1:m2,n,iss) = &
+            -log(rhoprof/rho0) + (gamma1)*log(Pprof/P0)
+      enddo
 !
     endsubroutine initial_condition_all
 !***********************************************************************
@@ -120,7 +93,7 @@ module InitialCondition
         read(unit,NML=initial_condition_pars,ERR=99)
       endif
 !
-99 return
+99    return
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
