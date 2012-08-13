@@ -65,6 +65,8 @@ module Param_IO
 !
   character (len=labellen) :: mips_is_buggy='system'
 !
+  logical :: lforce_shear_bc = .true.
+!
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, coord_system, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, &
@@ -88,7 +90,8 @@ module Param_IO
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
-      lconst_advection, u0_advec, ldust_pressure
+      lconst_advection, u0_advec, ldust_pressure, &
+      lforce_shear_bc
 !
   namelist /run_pars/ &
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
@@ -223,7 +226,7 @@ module Param_IO
 !
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
-      if (lshear) bcx(:)='she'
+      if (lshear .and. lforce_shear_bc) bcx(:)='she'
 !
 !  Open namelist file.
 !

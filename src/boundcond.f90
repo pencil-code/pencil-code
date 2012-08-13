@@ -113,7 +113,7 @@ module Boundcond
 !
       real, dimension (mcom) :: fbcx12
       real, dimension (mcom) :: fbcx2_12
-      integer :: ivar1, ivar2, j, k, one
+      integer :: ivar1, ivar2, j, k
       logical :: ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=bclen) :: topbot
@@ -137,8 +137,7 @@ module Boundcond
 !  Use the following construct to keep compiler from complaining if
 !  we have no variables (and boundconds) at all (samples/no-modules):
 !
-        one = min(1,mcom)
-        if (any(bcx1(1:one)=='she')) then
+        if (all(bcx1(ivar1:ivar2)=='she') .and. all(bcx2(ivar1:ivar2)=='she')) then
           call boundcond_shear(f,ivar1,ivar2)
         else
           do k=1,2
@@ -163,6 +162,14 @@ module Boundcond
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
               if (ip_ok) then
                 select case (bc12(j))
+                case ('she')
+                  bottom: if (k == 1) then
+                    both: if (bcx1(j) == bcx2(j)) then
+                      call boundcond_shear(f, j, j)
+                    else both
+                      call fatal_error_local('boundconds_x', 'generalize me to have sheared periodic boundary on only one end.')
+                    endif both
+                  endif bottom
                 case ('0')
                   ! BCX_DOC: zero value in ghost zones, free value on boundary
                   call bc_zero_x(f,topbot,j)
