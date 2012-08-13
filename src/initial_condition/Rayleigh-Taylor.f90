@@ -11,8 +11,8 @@ module InitialCondition
 !
   use Cdata
   use Cparam
+  use General, only: keep_compiler_quiet
   use Messages
-  use Sub, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -53,7 +53,7 @@ module InitialCondition
 !
 !  Initializes all the f arrays in one call. This subroutine is called last.
 !
-      use EquationOfState, only: gamma_inv, cs20, rho0 
+      use EquationOfState, only: gamma1, cs20, rho0 
       use Gravity, only: gravz
 !      
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -92,7 +92,7 @@ module InitialCondition
           if (lroot) print*, &
               'initial_condition_all: entropy profile for RT'
           !  Equilibrium pressure P0 from EoS
-          P0 = gamma_inv*rho0*cs20
+          P0 = gamma1*rho0*cs20
           do n=n1,n2
              rhoprof= &
                  (widthrho/2)*(tanh(z(n)/(6*dz)) +1) + rho0
@@ -100,7 +100,7 @@ module InitialCondition
                  P0 + gravz*((widthrho/2)+rho0)*z(n) +&
                  gravz*(widthrho/2)*(6*dz)*log(cosh(z(n)/(6*dz)))
              f(l1:l2,m1:m2,n,iss) = &
-                 -log(rhoprof/rho0) + (gamma_inv)*log(Pprof/P0)
+                 -log(rhoprof/rho0) + (gamma1)*log(Pprof/P0)
             enddo
 !
       call keep_compiler_quiet(f)
