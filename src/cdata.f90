@@ -63,10 +63,10 @@ module Cdata
   real, dimension(3) :: dxi_fact=1.0
   real, dimension(3) :: trans_width=0.0
   real, dimension(3,2) :: xyz_step,xi_step_frac,xi_step_width=1.5
-  real :: zeta_grid0=0.
-  real :: xbot_slice=0.,xtop_slice=1.
-  real :: ybot_slice=0.,ytop_slice=1.
-  real :: zbot_slice=0.,ztop_slice=1.
+  real :: zeta_grid0=0.0
+  real :: xbot_slice=0.0,xtop_slice=1.0
+  real :: ybot_slice=0.0,ytop_slice=1.0
+  real :: zbot_slice=0.0,ztop_slice=1.0
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
