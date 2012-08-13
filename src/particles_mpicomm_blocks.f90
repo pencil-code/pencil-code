@@ -1711,6 +1711,13 @@ module Particles_mpicomm
       ibrick=0
       do while (ibrick<nbricks)
         if (iproc_foster_brick(ibrick)/=-1) then
+          if (iproc_foster_brick(ibrick)<-1 .or. &
+              iproc_foster_brick(ibrick)>ncpus-1) then
+            print*, 'load_balance_particles: error in communicating '// &
+                'foster parent list'
+            print*, 'iproc, ibrick, iproc_foster_brick(ibrick)', &
+                iproc, ibrick, iproc_foster_brick(ibrick)
+          endif
           call MPI_ISEND(iproc_foster_old(ibrick), 1, MPI_INTEGER, &
               iproc_foster_brick(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
               ireq, ierr)
@@ -1722,6 +1729,13 @@ module Particles_mpicomm
 !
       iblock=0
       do while (iblock<nblock_loc)
+        if (iproc_parent_block(ibrick)<-1 .or. &
+            iproc_parent_block(ibrick)>ncpus-1) then
+          print*, 'load_balance_particles: error in communicating '// &
+              'grand parent list'
+          print*, 'iproc, iblock, iproc_parent_block(iblock)', &
+              iproc, iblock, iproc_parent_block(iblock)
+        endif
         call MPI_IRECV(iproc_grandparent(iblock), 1, MPI_INTEGER, &
             iproc_parent_block(iblock), tag_id+ibrick_parent_block(iblock), &
             MPI_COMM_WORLD, ireq, ierr)
@@ -1743,6 +1757,13 @@ module Particles_mpicomm
       ibrick=0
       do while (ibrick<nbricks)
         if (iproc_foster_old(ibrick)/=-1) then
+          if (iproc_foster_old(ibrick)<-1 .or. &
+              iproc_foster_old(ibrick)>ncpus-1) then
+            print*, 'load_balance_particles: error in communicating '// &
+                'foster brick list'
+            print*, 'iproc, ibrick, iproc_foster_old(ibrick)', &
+                iproc, ibrick, iproc_foster_old(ibrick)
+          endif
           call MPI_ISEND(iproc_foster_brick(ibrick), 1, MPI_INTEGER, &
               iproc_foster_old(ibrick), tag_id+ibrick, MPI_COMM_WORLD, &
               ireq, ierr)
@@ -1755,6 +1776,13 @@ module Particles_mpicomm
       iproc_grandchild=iproc_parent_block
       iblock=0
       do while (iblock<nblock_loc_old)
+        if (iproc_parent_old(iblock)<-1 .or. &
+            iproc_parent_old(iblock)>ncpus-1) then
+          print*, 'load_balance_particles: error in communicating '// &
+              'parent brick list'
+          print*, 'iproc, iblock, iproc_parent_old(iblock)', &
+              iproc, iblock, iproc_parent_old(iblock)
+        endif
         call MPI_IRECV(iproc_grandchild(iblock), 1, MPI_INTEGER, &
             iproc_parent_old(iblock), tag_id+ibrick_parent_old(iblock), &
             MPI_COMM_WORLD, ireq, ierr)
@@ -1798,6 +1826,11 @@ module Particles_mpicomm
             endif
             ibrick_global= &
                 iproc_parent_block(iblock)*nbricks+ibrick_parent_block(iblock)
+            if (iproc_recv<-1 .or. iproc_recv>ncpus-1) then
+              print*, 'load_balance_particles: error in receiving particles'
+              print*, 'iproc, iblock, iproc_recv, tag', &
+                  iproc, iblock, iproc_recv, tag_id+ibrick_global
+            endif
             call MPI_IRECV(fp(npar_loc_tmp+1:npar_loc_tmp+npar_recv,ipvar), &
                 npar_recv, MPI_DOUBLE_PRECISION, iproc_recv, &
                 tag_id+ibrick_global, MPI_COMM_WORLD, ireq, ierr)
@@ -1818,6 +1851,11 @@ module Particles_mpicomm
           if (iproc_send/=iproc .and. iproc_send/=-1) then
             ibrick_global= &
                 iproc_parent_old(iblock)*nbricks+ibrick_parent_old(iblock)
+            if (iproc_send<-1 .or. iproc_send>ncpus-1) then
+              print*, 'load_balance_particles: error in sending particles'
+              print*, 'iproc, iblock, iproc_send, tag', &
+                  iproc, iblock, iproc_send, tag_id+ibrick_global
+            endif
             call MPI_ISEND(fp(k1_send:k2_send,ipvar),(k2_send-k1_send+1), &
                 MPI_DOUBLE_PRECISION, iproc_send, tag_id+ibrick_global, &
                 MPI_COMM_WORLD, ireq, ierr)
