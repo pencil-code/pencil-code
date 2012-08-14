@@ -80,7 +80,8 @@ module Particles_number
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      allocate(kneighbour(mpar_loc))
+      if (lfragmentation_par .and. .not. allocated(kneighbour)) &
+          allocate(kneighbour(mpar_loc))
       lshepherd_neighbour=.true.
 !
       if (mpmat/=0.0) then
