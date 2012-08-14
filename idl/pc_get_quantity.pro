@@ -211,7 +211,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'rho', /fold_case)) then begin
-		; Density
+		; Density [kg/m^3]
 		if (n_elements (rho) eq 0) then begin
 			if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
 				rho = exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho]) * unit.density
@@ -249,7 +249,7 @@ function pc_compute_quantity, vars, index, quantity
 		end
 	end
 	if (strcmp (quantity, 'n_rho', /fold_case)) then begin
-		; Particle density
+		; Particle density [1/m^3]
 		mu = pc_get_parameter ('mu', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (n_rho) eq 0) then n_rho = rho / (pc_get_parameter ('m_proton', label=quantity) * mu)
