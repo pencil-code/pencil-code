@@ -169,6 +169,8 @@ module Particles_sink
 !
 !  07-aug-12/anders: coded
 !
+      use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
@@ -176,18 +178,88 @@ module Particles_sink
       real, dimension(3) :: xxps, vvps
       real :: rhops, rads, rads2, dist2
       integer, dimension(3) ::  dis=(/-1,0,+1/)
-      integer :: j, k, jsink
-
+      integer :: j, j1, j2, k, jsink
+      integer :: npar_sink, npar_sink_proc
+      integer :: ipx_send, ipy_send, ipz_send, ipx_recv, ipy_recv, ipz_recv
+      integer :: iproc_recv, iproc_send, itag_npar=2001, itag_fpar=2010
+      integer :: dipx, dipx1, dipx2, dipy, dipy1, dipy2, dipz, dipz1, dipz2
 !
-      if (lmpicomm) then
-
+      if (nprocx==1) then
+        dipx1=0; dipx2=0
+      elseif (nprocx==2) then
+        dipx1=0; dipx2=1
       else
+        dipx1=-1; dipx2=1
+      endif
+!
+      if (nprocy==1) then
+        dipy1=0; dipy2=0
+      elseif (nprocy==2) then
+        dipy1=0; dipy2=1
+      else
+        dipy1=-1; dipy2=1
+      endif
+!
+      if (nprocz==1) then
+        dipz1=0; dipz2=0
+      elseif (nprocz==2) then
+        dipz1=0; dipz2=1
+      else
+        dipz1=-1; dipz2=1
+      endif
+!
+      do dipx=dipx1,dipx2; do dipy=dipy1,dipy2; do dipz=dipz1,dipz2
+        ipx_send=ipx+dipx
+        ipy_send=ipy+dipy
+        ipz_send=ipz+dipz
+        if (ipx_send<0)        ipx_send=ipx_send+nprocx
+        if (ipx_send>nprocx-1) ipx_send=ipx_send-nprocx
+        if (ipy_send<0)        ipy_send=ipy_send+nprocx
+        if (ipy_send>nprocx-1) ipy_send=ipy_send-nprocx
+        if (ipz_send<0)        ipz_send=ipz_send+nprocx
+        if (ipz_send>nprocx-1) ipz_send=ipz_send-nprocx
+        iproc_send=ipx_send+ipy_send*nprocx+ipz_send*nprocx*nprocy
+        ipx_recv=ipx-dipx
+        ipy_recv=ipy-dipy
+        ipz_recv=ipz-dipz
+        if (ipx_recv<0)        ipx_recv=ipx_recv+nprocx
+        if (ipx_recv>nprocx-1) ipx_recv=ipx_recv-nprocx
+        if (ipy_recv<0)        ipy_recv=ipy_recv+nprocx
+        if (ipy_recv>nprocx-1) ipy_recv=ipy_recv-nprocx
+        if (ipz_recv<0)        ipz_recv=ipz_recv+nprocx
+        if (ipz_recv>nprocx-1) ipz_recv=ipz_recv-nprocx
+        iproc_recv=ipx_recv+ipy_recv*nprocx+ipz_recv*nprocx*nprocy
+!
+        if (iproc_send/=iproc) then
+          npar_sink=0
+          do k=1,npar_loc
+            if (fp(k,israd)/=0.0) then
+              npar_sink=npar_sink+1
+              fp(npar_sink,:)=fp(k,:)
+            endif
+          enddo
+        endif
+!
+        if (iproc_send==iproc) then
+          j1=npar_loc
+          j2=1
+        else
+          call mpisend_int(npar_sink,1,iproc_send,itag_npar)
+          call mpirecv_int(npar_sink_proc,1,iproc_recv,itag_npar)
+          call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
+              (/npar_sink,mpvar/),iproc_send,itag_fpar)
+          call mpirecv_real(fp(npar_loc+npar_sink+1: &
+              npar_loc+npar_sink+npar_sink_proc,:),(/npar_sink_proc,mpvar/), &
+              iproc_recv,itag_fpar)
+          j1=npar_loc+npar_sink+npar_sink_proc
+          j2=npar_loc+npar_sink+1
+        endif
 !
 !  Loop over sink particles, starting at npar_loc so that the sink particle
 !  position in fp does not change when particles are removed.
 !
-        j=npar_loc
-        do while (j>=1)
+        j=j1
+        do while (j>=j2)
           if (fp(j,israd)/=0.0) then
 !
 !  Store sink particle information in separate variables, as this might give
@@ -257,7 +329,7 @@ module Particles_sink
           endif
           j=j-1
         enddo
-      endif
+      enddo; enddo; enddo
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
