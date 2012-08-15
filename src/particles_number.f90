@@ -80,9 +80,10 @@ module Particles_number
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (lfragmentation_par .and. .not. allocated(kneighbour)) &
-          allocate(kneighbour(mpar_loc))
-      lshepherd_neighbour=.true.
+      if (lfragmentation_par) then
+        if (.not. allocated(kneighbour)) allocate(kneighbour(mpar_loc))
+        lshepherd_neighbour=.true.
+      endif
 !
       if (mpmat/=0.0) then
         np_swarm0=rhop_swarm/mpmat
