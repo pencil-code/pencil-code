@@ -608,8 +608,8 @@ module Special
         dt1_max=max(dt1_max,u_spitzer/cdt)
 !
         if (ldiagnos.and.idiag_dtspitzer/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtspitzer,l_dt=.true.)
-          call max_mn_name(u_spitzer/cdt,idiag_dtspitzer,l_dt=.true.)
+          call max_mn_name(max(diffus_chi/cdtv,u_spitzer/cdt), &
+              idiag_dtspitzer,l_dt=.true.)
         endif
       endif
 !
