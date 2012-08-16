@@ -922,7 +922,7 @@ module Special
       x_Mm = x(l1:l2)*unit_length*1e-6
 !
 ! The height in [Mm]
-      Ltot = 2*(xyz0(1)+Lxyz(1))
+      Ltot = 2*xyz0(1)+Lxyz(1)
       height = Ltot/pi*sin(x(l1:l2)/Ltot*pi)*unit_length*1e-6
 !
       heatinput = 0.
