@@ -182,7 +182,7 @@ module Particles_sink
       integer, dimension (MPI_STATUS_SIZE) :: stat
       integer, dimension (2*mpvar) :: ireq_array
       integer, dimension(3) ::  dis=(/-1,0,+1/)
-      integer :: j, j1, j2, k, ireq, ierr, nreq
+      integer :: j, j1, j2, k, ireq, ierr, nreq, i
       integer :: npar_sink, npar_sink_proc
       integer :: ipx_send, ipy_send, ipz_send, ipx_recv, ipy_recv, ipz_recv
       integer :: iproc_recv, iproc_send, itag_npar=2001, itag_fpar=2010
@@ -259,24 +259,27 @@ module Particles_sink
         endif
 !
 !  Send sink particles to neighbouring processor and receive particles from
-!  opposite membmer.
+!  opposite neighbour.
 !
         if (iproc_send==iproc) then
           j1=npar_loc
           j2=1
         else
-!print*, 'QQQ2', iproc, dipy
           call mpisend_int(npar_sink,1,iproc_send,itag_npar+iproc)
           call mpirecv_int(npar_sink_proc,1,iproc_recv,itag_npar+iproc_recv)
-          call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
-              (/npar_sink,mpvar/),iproc_send,itag_fpar+iproc)
-          call mpirecv_real(fp(npar_loc+npar_sink+1: &
-              npar_loc+npar_sink+npar_sink_proc,:),(/npar_sink_proc,mpvar/), &
-              iproc_recv,itag_fpar+iproc_recv)
-!print*, 'QQQ3', iproc, dipy, fp(1:npar_loc+npar_sink,ixp)
+          do i=0,ncpus-1
+            if (i==iproc) then
+              call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
+                  (/npar_sink,mpvar/),iproc_send,itag_fpar+iproc)
+            elseif (i==iproc_recv) then
+              call mpirecv_real(fp(npar_loc+npar_sink+1: &
+                  npar_loc+npar_sink+npar_sink_proc,:), &
+                  (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar+iproc_recv)
+            endif
+          enddo
 !          nreq=0
 !          ireq=0
-!          do j=1,1!mpvar
+!          do j=1,mpvar
 !            if (npar_sink_proc/=0) then
 !              call MPI_IRECV(fp(npar_loc+npar_sink+1: &
 !                  npar_loc+npar_sink+npar_sink_proc,j), &
@@ -286,7 +289,7 @@ module Particles_sink
 !              ireq_array(nreq)=ireq
 !            endif
 !          enddo
-!          do j=1,1!mpvar
+!          do j=1,mpvar
 !            if (npar_sink/=0) then
 !              call MPI_ISEND(fp(npar_loc+1:npar_loc+npar_sink,j), &
 !                npar_sink,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar+j, &
@@ -373,15 +376,20 @@ module Particles_sink
 !  Send new sink particle state back to the parent processor.
 !
         if (iproc_send/=iproc) then
-          call mpisend_real(fp(npar_loc+npar_sink+1: &
+          do i=0,ncpus-1
+            if (i==iproc) then
+              call mpisend_real(fp(npar_loc+npar_sink+1: &
               npar_loc+npar_sink+npar_sink_proc,:), &
               (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar)
-          call mpirecv_real(fp(npar_loc+1: &
-              npar_loc+npar_sink,:),(/npar_sink,mpvar/), &
-              iproc_send,itag_fpar)
+            elseif (i==iproc_send) then
+              call mpirecv_real(fp(npar_loc+1: &
+                  npar_loc+npar_sink,:),(/npar_sink,mpvar/), &
+                  iproc_send,itag_fpar)
+            endif
+          enddo
 !          nreq=0
 !          ireq=0
-!          do j=1,1!mpvar
+!          do j=1,mpvar
 !            if (npar_sink/=0) then
 !              call MPI_IRECV(fp(npar_loc+1:npar_loc+npar_sink,j), &
 !                  npar_sink,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar2+j, &
@@ -390,7 +398,7 @@ module Particles_sink
 !              ireq_array(nreq)=ireq
 !            endif
 !          enddo
-!          do j=1,1!mpvar
+!          do j=1,mpvar
 !            if (npar_sink_proc/=0) then
 !              call MPI_ISEND(fp(npar_loc+npar_sink+1: &
 !                  npar_loc+npar_sink+npar_sink_proc,j), &
