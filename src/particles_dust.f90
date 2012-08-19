@@ -2548,7 +2548,7 @@ k_loop:   do while (.not. (k>npar_loc))
           elseif (lparticles_radius.and.lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpx), idiag_rhopvpxm)
+                fp(1:npar_loc,ivpx),idiag_rhopvpxm)
           endif
         endif
         if (idiag_rhopvpym/=0) then
@@ -2558,7 +2558,7 @@ k_loop:   do while (.not. (k>npar_loc))
           elseif (lparticles_radius.and.lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpy), idiag_rhopvpym)
+                fp(1:npar_loc,ivpy),idiag_rhopvpym)
           endif
         endif
         if (idiag_rhopvpzm/=0) then
@@ -2568,37 +2568,37 @@ k_loop:   do while (.not. (k>npar_loc))
           elseif (lparticles_radius.and.lparticles_number) then
             call sum_par_name(four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpz), idiag_rhopvpzm)
+                fp(1:npar_loc,ivpz),idiag_rhopvpzm)
           endif
         endif
         if (idiag_rhopvpxt/=0) then
           if (lparticles_mass) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpx)* &
-                npar_loc, idiag_rhopvpxt)
+            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
+                fp(1:npar_loc,ivpx),idiag_rhopvpxt)
           elseif (lparticles_radius.and.lparticles_number) then
-            call sum_par_name(four_pi_rhopmat_over_three* &
+            call integrate_par_name(four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpx)*npar_loc, idiag_rhopvpxt)
+                fp(1:npar_loc,ivpx),idiag_rhopvpxt)
           endif
         endif
         if (idiag_rhopvpyt/=0) then
           if (lparticles_mass) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpy)* &
-                npar_loc, idiag_rhopvpyt)
+            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
+                fp(1:npar_loc,ivpy),idiag_rhopvpyt)
           elseif (lparticles_radius.and.lparticles_number) then
-            call sum_par_name(four_pi_rhopmat_over_three* &
+            call integrate_par_name(four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpy)*npar_loc, idiag_rhopvpyt)
+                fp(1:npar_loc,ivpy),idiag_rhopvpyt)
           endif
         endif
         if (idiag_rhopvpzt/=0) then
           if (lparticles_mass) then
-            call sum_par_name(fp(1:npar_loc,irhopswarm)*fp(1:npar_loc,ivpz)* &
-                npar_loc, idiag_rhopvpzt)
+            call integrate_par_name(fp(1:npar_loc,irhopswarm)* &
+                fp(1:npar_loc,ivpz),idiag_rhopvpzt)
           elseif (lparticles_radius.and.lparticles_number) then
-            call sum_par_name(four_pi_rhopmat_over_three* &
+            call integrate_par_name(four_pi_rhopmat_over_three* &
                 fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)* &
-                fp(1:npar_loc,ivpz)*npar_loc, idiag_rhopvpzt)
+                fp(1:npar_loc,ivpz),idiag_rhopvpzt)
           endif
         endif
         if (idiag_rhopvpysm/=0) then
