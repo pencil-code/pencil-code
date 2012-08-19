@@ -248,7 +248,6 @@ module Particles_sink
 !
         if (iproc_send/=iproc) then
           npar_sink=0
-          npar_sink_proc=0
           do k=1,npar_loc
             if (fp(k,israd)/=0.0) then
               npar_sink=npar_sink+1
@@ -265,6 +264,7 @@ module Particles_sink
           j1=npar_loc
           j2=1
         else
+          npar_sink_proc=0
           call mpisend_int(npar_sink,1,iproc_send,itag_npar+iproc)
           call mpirecv_int(npar_sink_proc,1,iproc_recv,itag_npar+iproc_recv)
           do i=0,ncpus-1
@@ -326,7 +326,7 @@ module Particles_sink
 !  Loop over local particles to see which ones are removed by the sink particle.
 !
             do while (k>=1)
-              if (j/=k .and. fp(k,israd)>0.0) then
+              if (j/=k .and. fp(k,israd)>=0.0) then
 !
 !  Find minimum distance by directional splitting. This makes it easier to
 !  incorporate periodic boundary conditions.
@@ -366,7 +366,7 @@ module Particles_sink
 !  is not conserved - this is assumed to be stored in internal rotation of
 !  the sink particle.
 !
-            fp(j,ixp:izp)=xxps
+!            fp(j,ixp:izp)=xxps
             fp(j,ivpx:ivpz)=vvps
             fp(j,irhopswarm)=rhops
           endif
@@ -379,12 +379,12 @@ module Particles_sink
           do i=0,ncpus-1
             if (i==iproc) then
               call mpisend_real(fp(npar_loc+npar_sink+1: &
-              npar_loc+npar_sink+npar_sink_proc,:), &
-              (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar)
+                  npar_loc+npar_sink+npar_sink_proc,:), &
+                  (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar+iproc)
             elseif (i==iproc_send) then
               call mpirecv_real(fp(npar_loc+1: &
                   npar_loc+npar_sink,:),(/npar_sink,mpvar/), &
-                  iproc_send,itag_fpar)
+                  iproc_send,itag_fpar+iproc_send)
             endif
           enddo
 !          nreq=0
@@ -419,6 +419,8 @@ module Particles_sink
           do k=npar_loc+1,npar_loc+npar_sink
             if (fp(ipar(k),israd)/=-1.0) then
               fp(ipar(k),:)=fp(k,:)
+!            else
+!              stop
             endif
           enddo
         endif
