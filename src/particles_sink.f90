@@ -252,9 +252,13 @@ module Particles_sink
             if (fp(k,israd)/=0.0) then
               npar_sink=npar_sink+1
               fp(npar_loc+npar_sink,:)=fp(k,:)
-              ipar(npar_loc+npar_sink)=k
+              ipar(npar_loc+npar_sink)=ipar(k)
             endif
           enddo
+          if (ip<=6) then
+            print*, 'remove_particles_sink: sink particles on proc', iproc, ':'
+            print*, ipar(npar_loc+1:npar_loc+npar_sink)
+          endif
         endif
 !
 !  Send sink particles to neighbouring processor and receive particles from
@@ -267,6 +271,16 @@ module Particles_sink
           npar_sink_proc=0
           call mpisend_int(npar_sink,1,iproc_send,itag_npar+iproc)
           call mpirecv_int(npar_sink_proc,1,iproc_recv,itag_npar+iproc_recv)
+          do i=0,ncpus-1
+            if (i==iproc) then
+              call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink), &
+                  npar_sink,iproc_send,itag_fpar+iproc)
+            elseif (i==iproc_recv) then
+              call mpirecv_int(ipar(npar_loc+npar_sink+1: &
+                  npar_loc+npar_sink+npar_sink_proc), &
+                  npar_sink_proc,iproc_recv,itag_fpar+iproc_recv)
+            endif
+          enddo
           do i=0,ncpus-1
             if (i==iproc) then
               call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
@@ -311,7 +325,7 @@ module Particles_sink
 !
         j=j1
         do while (j>=j2)
-          if (fp(j,israd)>0.0) then
+          if (ipar(j)>0) then
 !
 !  Store sink particle information in separate variables, as this might give
 !  better cache efficiency.
@@ -326,7 +340,7 @@ module Particles_sink
 !  Loop over local particles to see which ones are removed by the sink particle.
 !
             do while (k>=1)
-              if (j/=k .and. fp(k,israd)>=0.0) then
+              if (j/=k .and. ipar(k)>0) then
 !
 !  Find minimum distance by directional splitting. This makes it easier to
 !  incorporate periodic boundary conditions.
@@ -343,6 +357,17 @@ module Particles_sink
                           (fp(k,izp)-(xxps(3)+Lz*dis))**2))
 !
                       if (dist2<=rads2) then
+                        if (ip<=6) then
+                          print*, 'remove_particles_sink: sink particle', &
+                              ipar(j), 'from proc', iproc_recv
+                          if (fp(k,israd)>0.0) then
+                            print*, '    tagged sink particle', ipar(k), &
+                                'for removal on proc', iproc
+                          else
+                            print*, '    tagged particle', ipar(k), &
+                                'for removal on proc', iproc
+                          endif
+                        endif
                         if (lparticles_mass) then
                           xxps=(rhops*xxps+fp(k,irhopswarm)* &
                               fp(k,ixp:izp))/(rhops+fp(k,irhopswarm))
@@ -353,7 +378,7 @@ module Particles_sink
 !
 !  Mark particle for later deletion.
 !
-                        fp(k,israd)=-1.0
+                        ipar(k)=-ipar(k)
                       endif
                     endif
                   endif
@@ -366,7 +391,7 @@ module Particles_sink
 !  is not conserved - this is assumed to be stored in internal rotation of
 !  the sink particle.
 !
-!            fp(j,ixp:izp)=xxps
+            fp(j,ixp:izp)=xxps
             fp(j,ivpx:ivpz)=vvps
             fp(j,irhopswarm)=rhops
           endif
@@ -416,22 +441,45 @@ module Particles_sink
 !  Copy sink particles back into particle array.
 !
         if (iproc_send/=iproc) then
-          do k=npar_loc+1,npar_loc+npar_sink
-            if (fp(ipar(k),israd)/=-1.0) then
-              fp(ipar(k),:)=fp(k,:)
-!            else
-!              stop
-            endif
-          enddo
+          if (npar_sink/=0) then
+            j=npar_loc+1
+            do k=1,npar_loc
+              if (fp(k,israd)>0) then
+                fp(k,:)=fp(j,:)
+                j=j+1
+              endif
+            enddo
+          endif
         endif
 !
 !  Remove particles marked for deletion.
 !
-        do k=1,npar_loc
-          if (fp(k,israd)<0.0) call remove_particle(fp,ipar,k,dfp,ineargrid)
+        k=1
+        do while (k<=npar_loc)
+          if (ipar(k)<0) then
+            ipar(k)=-ipar(k)
+            if (ip<=6) then
+              print*, 'remove_particles_sink: removed particle ', ipar(k), &
+                  'on proc', iproc
+            endif
+            call remove_particle(fp,ipar,k,dfp,ineargrid)
+          else
+            k=k+1
+          endif
         enddo
 !
       enddo; enddo; enddo
+!
+      do k=1,npar_loc
+        if (ipar(k)<0) then
+          print*, 'remove_particles_sink: ipar(k) is negative!!!'
+          stop
+        endif
+      enddo
+!
+!  Apply boundary conditions to the newly updated sink particle positions.
+!
+      call boundconds_particles(fp,ipar,dfp=dfp)
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
