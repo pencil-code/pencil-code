@@ -2547,6 +2547,7 @@ module Special
           z_ref = floor (pos)
           if (z_ref < 1) then
             lnQ(px) = -max_real
+            delta_lnTT(px) = intlnT(2) - intlnT(1)
             cycle
           endif
           if (z_ref > 36) z_ref = 36
