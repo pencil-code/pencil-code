@@ -30,12 +30,15 @@ module Particles_sink
   include 'particles_sink.h'
 !
   real :: sink_radius=0.0, rhop_sink_create=1.0
+  real :: srad0=0.0, srad1=0.0
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
+  character (len=labellen), dimension(ninit) :: initsrad='nothing'
 !
   integer :: idiag_nparsink=0
 !
   namelist /particles_sink_init_pars/ &
-      sink_radius, lsink_radius_dx_unit, rhop_sink_create, lrhop_roche_unit
+      sink_radius, lsink_radius_dx_unit, rhop_sink_create, lrhop_roche_unit, &
+      initsrad, srad0, srad1
 !
   namelist /particles_sink_run_pars/ &
       sink_radius, lsink_radius_dx_unit, rhop_sink_create, lrhop_roche_unit
@@ -96,9 +99,50 @@ module Particles_sink
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
-!  Set all particles to have zero sink radius.
+      integer :: j, k
 !
-      fp(1:npar_loc,israd)=0.0
+      do j=1,ninit
+!
+        select case (initsrad(j))
+!
+        case ('nothing')
+          if (lroot.and.j==1) print*, 'init_particles_sink: nothing'
+!
+        case ('zero')
+          if (lroot) print*, 'init_particles_sink: zero sink particle radius'
+          fp(1:npar_loc,israd)=0.0
+!
+        case ('constant')
+          if (lroot) then
+            print*, 'init_particles_sink: constant sink particle radius'
+            print*, 'init_particles_sink: srad0=', srad0
+          endif
+          if (lsink_radius_dx_unit) then
+            fp(1:npar_loc,israd)=srad0*dx
+          else
+            fp(1:npar_loc,israd)=srad0
+          endif
+!
+        case ('constant-1')
+          if (lroot) then
+            print*, 'init_particles_sink: set particle 1 sink radius'
+            print*, 'init_particles_sink: srad1=', srad1
+          endif
+          do k=1,npar_loc
+            if (lsink_radius_dx_unit) then
+              if (ipar(k)==1) fp(k,israd)=srad1*dx
+            else
+              if (ipar(k)==1) fp(k,israd)=srad1
+            endif
+          enddo
+!
+        case default
+          if (lroot) print*, 'init_particles_sink: '// &
+              'No such such value for initsrad: ', trim(initsrad(j))
+          call fatal_error('init_particles_sink','')
+        endselect
+!
+      enddo
 !
       call keep_compiler_quiet(f)
 !
@@ -221,26 +265,38 @@ module Particles_sink
 !
         ipx_send=ipx+dipx
         ipy_send=ipy+dipy
+        if (lshear) then
+          if (ipx_send<0) &
+              ipy_send=ipy_send-ceiling(deltay/Lxyz_loc(2)-0.5)
+          if (ipx_send>nprocx-1) &
+              ipy_send=ipy_send+ceiling(deltay/Lxyz_loc(2)-0.5)
+        endif
         ipz_send=ipz+dipz
-        if (ipx_send<0)        ipx_send=ipx_send+nprocx
-        if (ipx_send>nprocx-1) ipx_send=ipx_send-nprocx
-        if (ipy_send<0)        ipy_send=ipy_send+nprocy
-        if (ipy_send>nprocy-1) ipy_send=ipy_send-nprocy
-        if (ipz_send<0)        ipz_send=ipz_send+nprocz
-        if (ipz_send>nprocz-1) ipz_send=ipz_send-nprocz
+        do while (ipx_send<0);        ipx_send=ipx_send+nprocx; enddo
+        do while (ipx_send>nprocx-1); ipx_send=ipx_send-nprocx; enddo
+        do while (ipy_send<0);        ipy_send=ipy_send+nprocy; enddo
+        do while (ipy_send>nprocy-1); ipy_send=ipy_send-nprocy; enddo
+        do while (ipz_send<0);        ipz_send=ipz_send+nprocz; enddo
+        do while (ipz_send>nprocz-1); ipz_send=ipz_send-nprocz; enddo
         iproc_send=ipx_send+ipy_send*nprocx+ipz_send*nprocx*nprocy
 !
 !  Find index of opposite neighbour.
 !
         ipx_recv=ipx-dipx
         ipy_recv=ipy-dipy
+        if (lshear) then
+          if (ipx_recv<0) &
+              ipy_recv=ipy_recv-ceiling(deltay/Lxyz_loc(2)-0.5)
+          if (ipx_recv>nprocx-1) &
+              ipy_recv=ipy_recv+ceiling(deltay/Lxyz_loc(2)-0.5)
+        endif
         ipz_recv=ipz-dipz
-        if (ipx_recv<0)        ipx_recv=ipx_recv+nprocx
-        if (ipx_recv>nprocx-1) ipx_recv=ipx_recv-nprocx
-        if (ipy_recv<0)        ipy_recv=ipy_recv+nprocy
-        if (ipy_recv>nprocy-1) ipy_recv=ipy_recv-nprocy
-        if (ipz_recv<0)        ipz_recv=ipz_recv+nprocz
-        if (ipz_recv>nprocz-1) ipz_recv=ipz_recv-nprocz
+        do while (ipx_recv<0);        ipx_recv=ipx_recv+nprocx; enddo
+        do while (ipx_recv>nprocx-1); ipx_recv=ipx_recv-nprocx; enddo
+        do while (ipy_recv<0);        ipy_recv=ipy_recv+nprocy; enddo
+        do while (ipy_recv>nprocy-1); ipy_recv=ipy_recv-nprocy; enddo
+        do while (ipz_recv<0);        ipz_recv=ipz_recv+nprocz; enddo
+        do while (ipz_recv>nprocz-1); ipz_recv=ipz_recv-nprocz; enddo
         iproc_recv=ipx_recv+ipy_recv*nprocx+ipz_recv*nprocx*nprocy
 !
 !  Store sink particles at the end of the particle array, for contiguous
