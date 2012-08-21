@@ -1,5 +1,5 @@
 ;$Id: pc_error_range.pro 11565 2009-08-29 06:03:58Z AxelBrandenburg $
-pro pc_error_range_array,tt,a,mean=am,error=err,oplot=oplot,accum=accum,col=col,li=li
+pro pc_error_range_array,tt,a,mean=am,error=err,oplot=oplot,accum=accum,col=col,li=li, ia=ia
 ;
 ;  Calculate averages for each third of time series and use
 ;  maximum departure from full average as error estimate.
@@ -12,11 +12,12 @@ default,col,122
 ;
 ;  determine 3 ranges for which separate errors are calculated
 ;
-nt=n_elements(tt)
-it1=0
+if not keyword_set(ia) then ia=0
+nt=n_elements(tt[ia:*])
+it1=ia
 it2=it1+(nt-it1)/3
 it3=it2+(nt-it1)/3
-it4=nt-1
+it4=nt-1+ia
 ;
 ;  calculate the 3 averages
 ;
