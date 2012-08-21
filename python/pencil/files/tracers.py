@@ -139,7 +139,8 @@ def read_tracers(dataDir = 'data/', fileName = 'tracers.dat', zlim = []):
 
 
 
-def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
+# keep this for the time being
+def read_fixed_points_old(dataDir = 'data/', fileName = 'fixed_points.dat'):
     """
     Reads the fixed points files.
 
@@ -228,6 +229,93 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     fixed.x = np.array(fixed.x)
     fixed.y = np.array(fixed.y)
     fixed.q = np.array(fixed.q)
+    
+    return fixed
+
+
+
+def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
+    """
+    Reads the fixed points files.
+
+    call signature::
+    
+      fixed = read_tracers(fileName = 'tracers.dat', dataDir = 'data/')
+    
+    Reads from the fixed points files. Returns the fixed points positions.
+    
+    Keyword arguments:
+    
+      *dataDir*:
+        Data directory.
+        
+      *fileName*:
+        Name of the fixed points file.
+    """
+    
+
+    class data_struct:
+        def __init__(self):
+            self.t = []
+            self.fidx = [] # number of fixed points at this time
+            self.x = []
+            self.y = []
+            self.q = []
+
+    # read the cpu structure
+    dim = pc.read_dim()
+    if (dim.nprocz > 1):
+        print "error: number of cores in z-direction > 1"
+
+    # determine the file structure
+    n_proc = dim.nprocx*dim.nprocy
+    
+    data = []
+
+    # read the data
+    fixed_file = open(dataDir+fileName, 'rb')
+    tmp = fixed_file.read(4)
+    
+    data = data_struct()
+    eof = 0
+    if tmp == '':
+        eof = 1
+    while (eof == 0):
+        data.t.append(struct.unpack("<ff", fixed_file.read(8))[0])
+        n_fixed = int(struct.unpack("<fff", fixed_file.read(12))[1])
+        data.fidx.append(n_fixed)
+
+        x = list(np.zeros(n_fixed))
+        y = list(np.zeros(n_fixed))
+        q = list(np.zeros(n_fixed))
+        for j in range(n_fixed):
+            x[j] = struct.unpack("<ff", fixed_file.read(8))[1]
+            y[j] = struct.unpack("<f", fixed_file.read(4))[0]
+            q[j] = struct.unpack("<ff", fixed_file.read(8))[0]
+        data.x.append(x)
+        data.y.append(y)
+        data.q.append(q)
+        data.fidx.append(n_fixed)
+
+        tmp = fixed_file.read(4)
+        if tmp == '':
+            eof = 1
+
+    fixed_file.close()
+        
+    fixed = data_struct()
+    for i in range(len(data.t)):
+        fixed.t.append(data.t[i])
+        fixed.x.append(data.x[i])
+        fixed.y.append(data.y[i])
+        fixed.q.append(data.q[i])
+        fixed.fidx.append(data.fidx[i])
+    
+    fixed.t = np.array(fixed.t)
+    fixed.x = np.array(fixed.x)
+    fixed.y = np.array(fixed.y)
+    fixed.q = np.array(fixed.q)
+    fixed.fidx = np.array(fixed.fidx)
     
     return fixed
 
