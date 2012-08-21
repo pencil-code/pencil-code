@@ -227,6 +227,8 @@ module Streamlines
     y_proc = ipy + floor((grid_pos(2)-1)/real(ny))
     z_proc = ipz + floor((grid_pos(3)-1)/real(nz))
     proc_id = x_proc + nprocx*y_proc + nprocx*nprocy*z_proc
+    if (proc_id > (nprocx*nprocy*nprocz-1)) &
+        call fatal_error("streamlines", "proc_id > nprocs")
 !
 !   find the grid position in the other core
     grid_pos_send(1) = grid_pos(1) - (x_proc - ipx)*nx
@@ -271,13 +273,7 @@ module Streamlines
 !
 !     Now it should be safe to make a blocking send request.
 !
-!     start blocking send and non-blocking receive
-      if (sent == 0) then
-        call MPI_SEND(grid_pos_send,3,MPI_integer,proc_id,VV_RQST,MPI_comm_world,ierr)
-        if (ierr /= MPI_SUCCESS) &
-            call fatal_error("streamlines", "MPI_SEND could not send request")
-        sent = 1
-      endif
+!     start non-blocking receive and blocking send
       if (receiving == 0) then
         call MPI_IRECV(vvb,3+mfarray,MPI_REAL,proc_id,VV_RCV,MPI_comm_world,request_rcv,ierr)
         if (ierr /= MPI_SUCCESS) &
@@ -287,6 +283,12 @@ module Streamlines
         call MPI_TEST(request_rcv,flag_rcv,status_recv,ierr)
         if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_TEST failed")
+      endif
+      if (sent == 0) then
+        call MPI_SEND(grid_pos_send,3,MPI_integer,proc_id,VV_RQST,MPI_comm_world,ierr)
+        if (ierr /= MPI_SUCCESS) &
+            call fatal_error("streamlines", "MPI_SEND could not send request")
+        sent = 1
       endif
 !
       if (flag_rcv == 1) exit
@@ -352,7 +354,7 @@ module Streamlines
     do tracer_idx=1,n_tracers
       tracers(tracer_idx, 6:7) = 0.
 !     initial step length dh
-      dh = sqrt(h_max*h_min/2.)
+      dh = sqrt(h_max*h_min)
       loop_count = 0
 !
       do
@@ -491,7 +493,8 @@ module Streamlines
             exit
           endif
         else
-          tracers(tracer_idx, 6) = tracers(tracer_idx, 6) + dh
+          tracers(tracer_idx, 6) = tracers(tracer_idx, 6) + &
+              sqrt(dot_product((tracers(tracer_idx,3:5)-x_double), (tracers(tracer_idx,3:5)-x_double)))
 !         integrate the requested quantity along the field line
           if (int_q == 'curlyA') then
             tracers(tracer_idx, 7) = tracers(tracer_idx, 7) + &
@@ -581,7 +584,7 @@ module Streamlines
 !
     use General, only: keep_compiler_quiet
     use Sub, only: curl
-!
+    
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
 !   the integrated quantity along the field line

@@ -161,6 +161,10 @@ module InitialCondition
 !   filename for the tracer and fixed point output
     character(len=1024) :: filename, str_tmp
 !
+!   increment variable for the processor index
+    integer :: proc_idx
+    integer, dimension (MPI_STATUS_SIZE) :: status
+!
 !
     if (trace_field == 'bb' .and. ipz == 0) then
 !     allocate memory for the traced field
@@ -531,6 +535,45 @@ module InitialCondition
 !
       if (int_q == 'curlyA') then
         call get_fixed_points(f,tracers,vv)
+!       communicate the fixed points to proc0
+!         MPI_BARRIER(MPI_comm_world, ierr)
+        if (iproc == 0) then
+!           allocate(fixed_points_all(1000,3))
+          fixed_points_all(1:fidx,:) = fixed_points(1:fidx,:)
+!         receive the fixed_points from the other cores
+          fidx_all = fidx
+          do proc_idx=1,(nprocx*nprocy*nprocz-1)
+!           receive the number of fixed points of that proc
+            call MPI_RECV(fidx, 1, MPI_integer, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
+            if (ierr /= MPI_SUCCESS) &
+                call fatal_error("streamlines", "MPI_RECV could not receive")
+!           receive the fixed points form that proc
+            call MPI_RECV(buffer_tmp, fidx*3, MPI_real, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
+            fixed_points_all(fidx_all+1:fidx_all+fidx,:) = transpose(buffer_tmp(:,1:fidx))
+            if (ierr /= MPI_SUCCESS) &
+                call fatal_error("streamlines", "MPI_RECV could not receive")
+            fidx_all = fidx_all + fidx
+          enddo
+!
+          open(unit = 1, file = 'data/fixed_points.dat', form = "unformatted")
+          write(1) 0.
+          write(1) float(fidx_all)
+          do l=1,fidx_all
+            write(1) fixed_points_all(l,:)
+          enddo
+          close(1)
+!
+!           deallocate(fixed_points_all)
+        else
+          call MPI_SEND(fidx, 1, MPI_integer, 0, MERGE_FIXED, MPI_comm_world, ierr)
+          if (ierr /= MPI_SUCCESS) &
+              call fatal_error("streamlines", "MPI_SEND could not send")
+          buffer_tmp = transpose(fixed_points)
+          call MPI_SEND(buffer_tmp, fidx*3, MPI_real, 0, MERGE_FIXED, MPI_comm_world, ierr)              
+          if (ierr /= MPI_SUCCESS) &
+              call fatal_error("streamlines", "MPI_SEND could not send")
+        endif
+          
         write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
         write(filename, *) 'data/proc', adjustl(trim(str_tmp))
         open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")

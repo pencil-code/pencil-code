@@ -11,19 +11,29 @@ module Fixed_point
 !
   use Cdata
   use Cparam
+  use Mpicomm
   use Messages
   use Streamlines
 !
   implicit none
 !
 ! a few constants
+  integer :: MERGE_FIXED = 97
   integer :: FINISHED_FIXED = 98
 ! the arrays with the values for x, y, and z for all cores (tracer xyz)
   real, pointer, dimension (:) :: xt, yt, zt
-! fixed points array
+! fixed points array for this core
   real, dimension (1000,3) :: fixed_points
+! fixed points array for all fixed points  
+!   real, pointer, dimension (:,:) :: fixed_points_all
+  real, dimension (1000,3) :: fixed_points_all
+! temporary array, which stores the transposed fixed_points array
+! this is needed for the MPI communication and to keep the order of the indices
+  real, dimension (3,1000) :: buffer_tmp
 ! total number of fixed points of this core
   integer :: fidx
+! global number of fixed points
+  integer :: fidx_all
   real :: fidx_read
 !
   real, public :: tfixed_points
@@ -50,33 +60,82 @@ module Fixed_point
     real, pointer, dimension (:,:) :: fixed_tmp
 !   integer which checks if end of file has been reached
     integer :: IOstatus, j
+!   increment variable for the processor index
+    integer :: proc_idx, ierr, x_proc, y_proc
 !
 !  Output fixed points-data in 'tfixed_points' time intervals
 !
     file = trim(datadir)//'/tfixed_points.dat'
-    if (ifirst==0) then
-      call read_snaptime(file,tfixed_points,nfixed_points,dfixed_points,t)
-!     Read the previous fixed points from the file.
-      write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
-      write(filename, *) 'data/proc', adjustl(trim(str_tmp))
-      open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
-!     loop until we find the last entry
-      IOstatus = 0
 !
-      read(1,iostat = IOstatus) tfixed_points_write
-      if (IOstatus == 0) then
-        read(1) fidx_read
-        fidx = int(fidx_read)
-        allocate(fixed_tmp(fidx,3))
-        do j=1,fidx
-          read(1) fixed_tmp(j,:)
-        enddo
-        fixed_points(1:fidx,:) = fixed_tmp(:,:)
-        deallocate(fixed_tmp)
-        close(1)
-      endif
-      ifirst=1
-    endif
+    if (ifirst==0) then
+      do proc_idx=0,(nprocx*nprocy*nprocz-1)
+!       artificially serialize this routine to avoid accessing the same file by different cores
+        call MPI_BARRIER(MPI_comm_world, ierr)
+        if (proc_idx == iproc) then
+          call read_snaptime(file,tfixed_points,ntracers,dfixed_points,t)
+!         Read the previous fixed points from the file.
+!           open(unit = 1, file = adjustl(trim('data/fixed_points.dat')), form = "unformatted")
+          open(unit = 1, file = 'data/fixed_points.dat', form = "unformatted")
+!         loop until we find the last entry
+          IOstatus = 0
+!
+          read(1,iostat = IOstatus) tfixed_points_write
+          if (IOstatus == 0) then
+            read(1) fidx_read
+            fidx_all = int(fidx_read)
+!             allocate(fixed_points_all(fidx,3))
+            do j=1,fidx_all
+              read(1) fixed_points_all(j,:)
+            enddo
+            close(1)
+          endif
+          ifirst=1
+        endif
+      enddo
+    endif         
+!
+!   find out which fixed points are destinated for this core
+!
+    fidx = 0
+    do j = 1,fidx_all
+!     find the corresponding core
+!     NB: the whole thing only works for nprocz = 1
+      x_proc = floor((fixed_points_all(j,1)-x0)*real(nprocx)/Lx)
+      y_proc = floor((fixed_points_all(j,2)-y0)*real(nprocy)/Ly)
+      if ((x_proc == ipx) .and. (y_proc == ipy)) then
+        fidx = fidx + 1
+        fixed_points(fidx,:) = fixed_points_all(j,:)
+      endif      
+    enddo
+!     deallocate(fixed_points_all)
+!
+!     ==== old code ===
+!
+!     if (ifirst==0) then
+!       call read_snaptime(file,tfixed_points,ntracers,dtracers,t)
+! !     Read the previous fixed points from the file.
+!       write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
+!       write(filename, *) 'data/proc', adjustl(trim(str_tmp))
+!       open(unit = 1, file = adjustl(trim(filename)), form = "unformatted")
+! !     loop until we find the last entry
+!       IOstatus = 0
+! !
+!       read(1,iostat = IOstatus) tfixed_points_write
+!       if (IOstatus == 0) then
+!         read(1) fidx_read
+!         fidx = int(fidx_read)
+!         allocate(fixed_tmp(fidx,3))
+!         do j=1,fidx
+!           read(1) fixed_tmp(j,:)
+!         enddo
+!         fixed_points(1:fidx,:) = fixed_tmp(:,:)
+!         deallocate(fixed_tmp)
+!         close(1)
+!       endif
+!       ifirst=1
+!     endif
+!
+!     ==== old code end ===
 !
 !  This routine sets lfixed_points=T whenever its time to write the fixed points
 !
@@ -557,11 +616,6 @@ module Fixed_point
 !
     call keep_compiler_quiet(path)
 !
-! !   mpi debug output for finding dead locks
-!     write(str_tmp, "(I10.1,A)") iproc, '/mpi_debug.out'
-!     write(filename, *) 'data/proc', adjustl(trim(str_tmp))
-!     open(unit = 11, file = adjustl(trim(filename)), access="sequential", form="formatted")
-!
 !   TODO: include other fields as well
     if (trace_field == 'bb' .and. ipz == 0) then
 !     convert the magnetic vector potential into the magnetic field
@@ -572,9 +626,6 @@ module Fixed_point
       enddo
     endif
 !
-! !   mpi debug output for finding dead locks
-!     rewind(11)
-!     write(11,*) iproc, "fixed_points: starting fixed point finding at", fixed_points(:,1:2)
     do j=1,fidx
       point = fixed_points(j,1:2)
       call get_fixed_point(f, point, fixed_points(j,1:2), fixed_points(j,3), vv)
@@ -583,12 +634,10 @@ module Fixed_point
 !   Make sure there is a delay before sending the finished signal, so that we
 !   don't end up with the last process to finish stuck in trace_streamlines.
 !
-    call sleep(1)
+    if (nprocx*nprocy*nprocz > 1) &
+        call sleep(1)
 !
 !   Tell every other core that we have finished.
-! !   mpi debug output for finding dead locks
-!     rewind(11)
-!     write(11,*) iproc, "fixed_points: we have finished"
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)
@@ -605,9 +654,6 @@ module Fixed_point
     enddo
 !
 !   Wait for all cores to compute their missing stream lines.
-! !   mpi debug output for finding dead locks
-!     rewind(11)
-!     write(11,*) iproc, "fixed_points: wait for other cores"
     do
 !     Trace a dummy field line to start a field receive request.
       tracer_tmp(1,:) = (/(x(1+nghost)+x(nx+nghost))/2.,(y(1+nghost)+y(ny+nghost))/2., &
@@ -629,16 +675,49 @@ module Fixed_point
         exit
       endif
     enddo
-! !   mpi debug output for finding dead locks
-!     rewind(11)
-!     write(11,*) iproc, "fixed_points: other cores have finished"
 !
 !   Wait for other cores. This ensures that uncomplete fixed points wont get written out.
     call MPI_BARRIER(MPI_comm_world, ierr)
-! !   mpi debug output for finding dead locks
-!     rewind(11)
-!     write(11,*) iproc, "fixed_points: MPI_BARRIER passed"
 !
+!   communicate the fixed points to proc0
+    if (iproc == 0) then
+!       allocate(fixed_points_all(1000,3))
+      fixed_points_all(1:fidx,:) = fixed_points(1:fidx,:)
+!     receive the fixed_points from the other cores
+      fidx_all = fidx
+      do proc_idx=1,(nprocx*nprocy*nprocz-1)
+!       receive the number of fixed points of that proc
+        call MPI_RECV(fidx, 1, MPI_integer, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
+        if (ierr /= MPI_SUCCESS) &
+            call fatal_error("streamlines", "MPI_RECV could not receive")
+!        receive the fixed points form that proc
+        call MPI_RECV(buffer_tmp, fidx*3, MPI_real, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
+        fixed_points_all(fidx_all+1:fidx_all+fidx,:) = transpose(buffer_tmp(:,1:fidx))
+        if (ierr /= MPI_SUCCESS) &
+            call fatal_error("streamlines", "MPI_RECV could not receive")
+        fidx_all = fidx_all + fidx
+      enddo
+!
+      open(unit = 1, file = 'data/fixed_points.dat', form = "unformatted", position = "append")
+      write(1) tfixed_points_write
+      write(1) float(fidx_all)
+      do j=1,fidx_all
+        write(1) fixed_points_all(j,:)
+      enddo
+      close(1)
+!
+!       deallocate(fixed_points_all)
+    else
+      call MPI_SEND(fidx, 1, MPI_integer, 0, MERGE_FIXED, MPI_comm_world, ierr)
+      if (ierr /= MPI_SUCCESS) &
+          call fatal_error("streamlines", "MPI_SEND could not send")
+      buffer_tmp = transpose(fixed_points)
+      call MPI_SEND(buffer_tmp, fidx*3, MPI_real, 0, MERGE_FIXED, MPI_comm_world, ierr)              
+      if (ierr /= MPI_SUCCESS) &
+          call fatal_error("streamlines", "MPI_SEND could not send")
+    endif
+!
+!   this is kept for the moment, but will be removed soon
     write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
     write(filename, *) 'data/proc', adjustl(trim(str_tmp))
     open(unit = 1, file = adjustl(trim(filename)), form = "unformatted", position = "append")
@@ -648,7 +727,6 @@ module Fixed_point
       write(1) fixed_points(j,:)
     enddo
     close(1)
-!     close(11)
 !
     deallocate(tracer_tmp)
     deallocate(vv)
