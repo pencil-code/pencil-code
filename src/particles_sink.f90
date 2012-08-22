@@ -381,7 +381,7 @@ module Particles_sink
 !
         j=j1
         do while (j>=j2)
-          if (ipar(j)>0) then
+          if (fp(j,israd)>0.0 .and. ipar(j)>0) then
 !
 !  Store sink particle information in separate variables, as this might give
 !  better cache efficiency.
