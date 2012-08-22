@@ -46,6 +46,7 @@ The file format is inferred from the file extension. The full list of output opt
 is listed below in the form of examples:
 
 
+    pc_plot_ts rhopmax --out gui      #  Plot rhopmax vs t in a GUI (wxWidgets).
     pc_plot_ts rhopmax --out wx       #  Plot rhopmax vs t in a wxWidgets window.
     pc_plot_ts rhopmax --out x11      #  Plot rhopmax vs t in an X11 window.
     pc_plot_ts rhopmax --out ascii    #  Plot rhopmax vs t in ASCII.
@@ -72,9 +73,9 @@ all of these:
 The title and labels can produce exponents and Greek lettes using the same
 format strings as Gnuplot:
 
-    pc_plot_ts dt    -o wx  --ylabel 'Time step {/Symbol D}t'
-    pc_plot_ts rhopm -o wx  --ylabel 'Mean density {/Symbol r}_p'
-    pc_plot_ts zp2m  -o wx  --ylabel 'Mean square height z_p^2'
+    pc_plot_ts dt    -o gui  --ylabel 'Time step {/Symbol D}t'
+    pc_plot_ts rhopm -o gui  --ylabel 'Mean density {/Symbol r}_p'
+    pc_plot_ts zp2m  -o gui  --ylabel 'Mean square height z_p^2'
 
 
 You can set either axis to be on a logarithmic scale, and you can set the
@@ -90,10 +91,10 @@ exponential notation.
 With pc_plot_ts you can shorten any parameter so long as the option remains
 unambiguous. For example, the following commands are valid:
 
-    pc_plot_ts zp2m -o wx --ylab '<z_p^2>' --ylog
-    pc_plot_ts zp2m -o wx --yla '<z_p^2>' --ylo
-    pc_plot_ts zp2m -o wx --ti 'My Title'
-    pc_plot_ts zp2m -o wx -t 'My Title'
+    pc_plot_ts zp2m -o gui --ylab '<z_p^2>' --ylog
+    pc_plot_ts zp2m -o gui --yla '<z_p^2>' --ylo
+    pc_plot_ts zp2m -o gui --ti 'My Title'
+    pc_plot_ts zp2m -o gui -t 'My Title'
 
 Notice in the last example that -o and -t are unambigous because --out and
 --title are the only parameters that begin with 'o' and 't' respectively.
@@ -136,8 +137,8 @@ Sample usage:
     pc_plot_ts zp2m --sqrt --ylog -o 'myplot.ps'   \
                     --xlab 'Particle scale height' \
                     --ylab 'Simulation time'       \
-                    --xrange 100:800  > commands.plt
-
+                    --xrange 100:800 --gnuplot > commands.plt
+    
     vi commands.plt   # Edit the commands.
     
     gnuplot commands.plt
@@ -212,6 +213,7 @@ $gnuplot ? open (GNUPLOT, ">-")  # Print to STDOUT.
 #  Output format.
 #
 ($out eq 'wx')    and print GNUPLOT "set terminal wxt enhanced\n";
+($out eq 'gui')   and print GNUPLOT "set terminal wxt enhanced\n";
 ($out eq 'x11')   and print GNUPLOT "set terminal x11 enhanced\n";
 ($out eq 'dumb')  and print GNUPLOT "set terminal dumb\n";
 ($out eq 'ascii') and print GNUPLOT "set terminal dumb\n";
