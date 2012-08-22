@@ -1,0 +1,311 @@
+#!/usr/bin/perl
+
+=pod
+
+=head1 NAME
+
+pc_plot_ts -- Plots of Pencil Code time series data.
+
+
+=head1 SYNOPSIS
+
+pc_plot_ts [VAR1] VAR2 [OPTIONS]
+
+
+=head1 DESCRIPTION
+
+pc_plot_ts makes plots of time series data from the Pencil Code. It is designed
+as a more powerful drop-in replacement for pc_plot_ts_ascii. It can make "quick
+and dirty" plots, but it can also make nice postscript plots suitable for group
+meetings. pc_plot_ts also has an option to output Gnuplot commands. Thus it can
+help get you started on publication quality plots.
+
+The simplest way to use pc_plot_ts is:
+
+    pc_plot_ts VAR
+
+This command looks in 'data/time_series.dat' and makes an ASCII plot of variable
+'VAR' as a function of time 't'. Alternatively, you can provide two variables:
+
+    pc_plot_ts VAR1 VAR2
+
+This makes a plot of (VAR1, VAR2) as a series of (x,y) pairs. For example, the
+following two commands do exactly the same thing:
+
+    pc_plot_ts rhopmax
+    pc_plot_ts t rhopmax
+
+In this way, pc_plot_ts can be easily used as a drop-in replacement for the older
+pc_plot_ts_ascii.
+
+=head2 OUTPUT FORMATS
+
+pc_plot_ts can produce graphical plots using wxWidgets or XLib using the --out
+or -o flags. It can also save the plot as a file in any of the supported formats.
+The file format is inferred from the file extension. The full list of output options
+is listed below in the form of examples:
+
+
+    pc_plot_ts rhopmax --out wx       #  Plot rhopmax vs t in a wxWidgets window.
+    pc_plot_ts rhopmax --out x11      #  Plot rhopmax vs t in an X11 window.
+    pc_plot_ts rhopmax --out ascii    #  Plot rhopmax vs t in ASCII.
+    
+    pc_plot_ts rhopmax -o plot.ps     # Save the plot in postscript as plot.ps
+    pc_plot_ts rhopmax -o plot.png    # Save the plot in PNG format as plot.png
+    pc_plot_ts rhopmax -o plot.svg    # Save the plot in SVG format as plot.svg
+    pc_plot_ts rhopmax -o plot.jpg    # Save the plot in JPEG format as plot.jpg
+    pc_plot_ts rhopmax -o plot.jpeg   # Save the plot in JPEG format as plot.jpeg
+    pc_plot_ts rhopmax -o plot.txt    # Save the plot in ASCII format as plot.txt
+
+
+=head2 PLOT OPTIONS
+
+By default, the plot title is the data file, and the labels on the X and Y
+axis are the names of the variables plotted. Of course, you can configure
+all of these:
+
+    pc_plot_ts  ...  --title "Density over time"
+    
+    pc_plot_ts  ...  --xlabel 'Time'
+    pc_plot_ts  ...  --ylabel 'Max Density'
+
+The title and labels can produce exponents and Greek lettes using the same
+format strings as Gnuplot:
+
+    pc_plot_ts dt    -o wx  --ylabel 'Time step {/Symbol D}t'
+    pc_plot_ts rhopm -o wx  --ylabel 'Mean density {/Symbol r}_p'
+    pc_plot_ts zp2m  -o wx  --ylabel 'Mean square height z_p^2'
+
+
+You can set either axis to be on a logarithmic scale, and you can set the
+range of X and Y values. Maximum and minimum values can be expressed in
+exponential notation.
+    
+    pc_plot_ts --ylog
+    pc_plot_ts --xlog
+    
+    pc_plot_ts --xrange 100:800
+    pc_plot_ts --yrange 1e-3:1e-1
+
+With pc_plot_ts you can shorten any parameter so long as the option remains
+unambiguous. For example, the following commands are valid:
+
+    pc_plot_ts zp2m -o wx --ylab '<z_p^2>' --ylog
+    pc_plot_ts zp2m -o wx --yla '<z_p^2>' --ylo
+    pc_plot_ts zp2m -o wx --ti 'My Title'
+    pc_plot_ts zp2m -o wx -t 'My Title'
+
+Notice in the last example that -o and -t are unambigous because --out and
+--title are the only parameters that begin with 'o' and 't' respectively.
+
+
+=head2 OTHER OPTIONS
+
+There is a final set of options that can make pc_plot_ts significantly moe useful.
+First, you can specify a non-standard path to the time series data file:
+
+    pc_plot_ts --file "path/to/time_series.dat"
+
+You can supply an arbitrary function to plot. Use the variables 'x' and 'y' to
+access the fist and second datasets. The single most common use of this feature
+is to take the square root of xp2m, yp2m, zp2m. Therefore, the square root has
+its own dedicated shortcut (--sqrt). Some examples:
+
+
+    pc_plot_ts  ...  --fun  'x^2'
+    pc_plot_ts  ...  --fun  'x*y'
+    pc_plot_ts  ...  --fun  'sin(x) * sin(y)'
+
+    pc_plot_ts zp2m --fun 'sqrt(y)'  # \ __ These commands are identical.
+    pc_plot_ts zp2m --sqrt           # /
+
+    pc_plot_ts rhopm rhom --title 'rho_p/rho_m versus rho_m' --fun 'y/x'
+
+
+When making plots for publication, you usually want a greater level of control
+than what pc_plot_ts gives you. But even then, pc_plot_ts can help you get
+started by providing the Gnuplot commands that it uses to make plots. You can
+then edit and tweak these commands as needed for publication:
+
+
+    pc_plot_ts  ...  --gnuplot    # Send Gnuplot commands to STDOUT.
+    
+
+Sample usage:
+    
+    pc_plot_ts zp2m --sqrt --ylog -o 'myplot.ps'   \
+                    --xlab 'Particle scale height' \
+                    --ylab 'Simulation time'       \
+                    --xrange 100:800  > commands.plt
+
+    vi commands.plt   # Edit the commands.
+    
+    gnuplot commands.plt
+
+
+=head1 AUTHOR
+
+Daniel Carrera <danielc@astro.lu.se>. Written in August 2012.
+
+=head1 BUGS
+
+Bugs? I don't see no bugs!... Seriously though, no software is perfect. If you
+come across any problems or discover any errors in the pogram, please contact
+the author.
+    
+=cut
+
+use Getopt::Long;
+use warnings;
+use strict;
+
+
+#
+#  Get plot options.
+#
+my $out = 'ascii';                 # Default.
+my $file = 'data/time_series.dat'; # Default.
+my ($title, $fun, $xlog, $ylog);
+my ($xrange, $yrange, $xlabel, $ylabel, $sqrt, $gnuplot);
+my $result = GetOptions(
+                 "title=s"  => \$title,  # Overall title.
+                 "file=s"   => \$file,   # Time series data file.
+                 "fun=s"    => \$fun,    # Custom function in (x,y).
+                 "out=s"    => \$out,    # Output format [+ file]
+                 "xlog"     => \$xlog,   # set logscale x
+                 "ylog"     => \$ylog,   # set logscale y
+                 "xrange=s" => \$xrange, # Range of X values.
+                 "yrange=s" => \$yrange, # Range of Y values.
+                 "xlabel=s" => \$xlabel, # set xlabel
+                 "ylabel=s" => \$ylabel, # set ylabel
+                 "sqrt"     => \$sqrt,   # Shortcut for $fun = 'sqrt(y)'
+                 "gnuplot"  => \$gnuplot # Print commands to STDOUT, don't run them.
+            );
+
+
+#
+#  Get variables from command line.
+#
+my ($var1, $var2);
+
+@ARGV >  0 or die "Please specify variables to plot.";
+@ARGV == 1 and ($var1, $var2) = ('t', $ARGV[0]);
+@ARGV == 2 and ($var1, $var2) = @ARGV;
+@ARGV >  2 and die "This program only takes two parameters.";
+
+
+########################
+#
+#  HANDLE OPTIONS
+#
+########################
+
+#
+# Start a pipe to Gnuplot.
+#
+
+$gnuplot ? open (GNUPLOT, ">-")  # Print to STDOUT.
+         : open (GNUPLOT, "|-", "gnuplot --persist");
+
+
+#
+#  Output format.
+#
+($out eq 'wx')    and print GNUPLOT "set terminal wxt enhanced\n";
+($out eq 'x11')   and print GNUPLOT "set terminal x11 enhanced\n";
+($out eq 'dumb')  and print GNUPLOT "set terminal dumb\n";
+($out eq 'ascii') and print GNUPLOT "set terminal dumb\n";
+
+($out =~ /\.ps/)   and print GNUPLOT "set terminal postscript enhanced color\nset output '$out'\n";
+($out =~ /\.png/)  and print GNUPLOT "set terminal pngcairo   enhanced\nset output '$out'\n";
+($out =~ /\.jpg/)  and print GNUPLOT "set terminal jpeg       enhanced\nset output '$out'\n";
+($out =~ /\.svg/)  and print GNUPLOT "set terminal svg        enhanced\nset output '$out'\n";
+($out =~ /\.jpeg/) and print GNUPLOT "set terminal jpeg       enhanced\nset output '$out'\n";
+
+
+#
+#  Title.
+#
+
+print GNUPLOT "set title '" . ($title ? $title : $file) . "'\n";
+
+
+#
+#  Axes scales.
+#
+$xlog and print GNUPLOT "set logscale x\n";
+$ylog and print GNUPLOT "set logscale y\n";
+
+
+#
+#  Plot range.
+#
+$xrange and print GNUPLOT "set xrange [$xrange]\n";
+$yrange and print GNUPLOT "set yrange [$yrange]\n";
+
+
+#
+#  Axis labels.
+#
+
+print GNUPLOT "set xlabel '" . ($xlabel ? $xlabel : $var1) . "'\n";
+print GNUPLOT "set ylabel '" . ($ylabel ? $ylabel : $var2) . "'\n";
+
+
+#
+#  Custom function.
+#
+$sqrt and $fun = 'sqrt(y)';
+$fun  and print GNUPLOT "f(x,y) = $fun\n";
+
+########################
+#
+#  PROCESS DATA
+#
+########################
+
+#
+#  Read data into 
+#
+open TS, "data/time_series.dat";
+
+my $header = <TS>;
+my @ts = <TS>;
+
+close TS;
+
+
+#
+#  Header -- Removing prefix/postfix dashes.
+#
+chomp $header;
+$header =~ s/#-*//;
+$header =~ s/-+$//;
+
+my @header = split(/-+/, $header);
+
+#
+#  Locate the plot variables.
+#
+my ($i1, $i2) = (0,0);
+
+for my $i (0..$#header) {
+    # Gnuplot starts counting at '1'.
+    $i1 = $i + 1 if ($var1 eq $header[$i]);
+    $i2 = $i + 1 if ($var2 eq $header[$i]);
+}
+
+$i1 > 0 or die "Could not find column '$var1' in '$file'\n";
+$i2 > 0 or die "Could not find column '$var2' in '$file'\n";
+
+
+#
+# Finally, pot the data.
+#
+
+if ($fun) {
+    print GNUPLOT "plot '$file' using $i1:(f(\$$i1,\$$i2)) w l notitle\n";
+} else {
+    print GNUPLOT "plot '$file' using $i1:$i2 w l notitle\n";
+}
+
