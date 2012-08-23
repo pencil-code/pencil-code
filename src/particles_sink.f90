@@ -225,9 +225,11 @@ module Particles_sink
       real :: rhops, rads, rads2, dist2
       real :: mindistx, mindisty, mindistz
       integer, dimension (MPI_STATUS_SIZE) :: stat
+      integer, dimension (27) :: iproc_recv_list, iproc_send_list
       integer, dimension (2*mpvar) :: ireq_array
       integer, dimension(3) ::  dis=(/-1,0,+1/)
-      integer :: j, j1, j2, k, ireq, ierr, nreq, i
+      integer :: i, j, j1, j2, k, ireq, ierr, nreq
+      integer :: nproc_comm, iproc_comm
       integer :: npar_sink, npar_sink_proc
       integer :: ipx_send, ipy_send, ipz_send, ipx_recv, ipy_recv, ipz_recv
       integer :: iproc_recv, iproc_send, itag_npar=2001, itag_fpar=2010
@@ -260,7 +262,9 @@ module Particles_sink
         dipz1=-1; dipz2=1
       endif
 !
+      nproc_comm=0
       do dipx=dipx1,dipx2; do dipy=dipy1,dipy2; do dipz=dipz1,dipz2
+        nproc_comm=nproc_comm+1
 !
 !  Find processor index of immediate neighbours.
 !
@@ -273,13 +277,14 @@ module Particles_sink
               ipy_send=ipy_send+ceiling(deltay/Lxyz_loc(2)-0.5)
         endif
         ipz_send=ipz+dipz
-        do while (ipx_send<0);        ipx_send=ipx_send+nprocx; enddo
-        do while (ipx_send>nprocx-1); ipx_send=ipx_send-nprocx; enddo
-        do while (ipy_send<0);        ipy_send=ipy_send+nprocy; enddo
-        do while (ipy_send>nprocy-1); ipy_send=ipy_send-nprocy; enddo
-        do while (ipz_send<0);        ipz_send=ipz_send+nprocz; enddo
-        do while (ipz_send>nprocz-1); ipz_send=ipz_send-nprocz; enddo
-        iproc_send=ipx_send+ipy_send*nprocx+ipz_send*nprocx*nprocy
+        if (ipx_send<0)        ipx_send=ipx_send+nprocx
+        if (ipx_send>nprocx-1) ipx_send=ipx_send-nprocx
+        if (ipy_send<0)        ipy_send=ipy_send+nprocy
+        if (ipy_send>nprocy-1) ipy_send=ipy_send-nprocy
+        if (ipz_send<0)        ipz_send=ipz_send+nprocz
+        if (ipz_send>nprocz-1) ipz_send=ipz_send-nprocz
+        iproc_send_list(nproc_comm)= &
+            ipx_send+ipy_send*nprocx+ipz_send*nprocx*nprocy
 !
 !  Find index of opposite neighbour.
 !
@@ -292,13 +297,26 @@ module Particles_sink
               ipy_recv=ipy_recv+ceiling(deltay/Lxyz_loc(2)-0.5)
         endif
         ipz_recv=ipz-dipz
-        do while (ipx_recv<0);        ipx_recv=ipx_recv+nprocx; enddo
-        do while (ipx_recv>nprocx-1); ipx_recv=ipx_recv-nprocx; enddo
-        do while (ipy_recv<0);        ipy_recv=ipy_recv+nprocy; enddo
-        do while (ipy_recv>nprocy-1); ipy_recv=ipy_recv-nprocy; enddo
-        do while (ipz_recv<0);        ipz_recv=ipz_recv+nprocz; enddo
-        do while (ipz_recv>nprocz-1); ipz_recv=ipz_recv-nprocz; enddo
-        iproc_recv=ipx_recv+ipy_recv*nprocx+ipz_recv*nprocx*nprocy
+        if (ipx_recv<0)        ipx_recv=ipx_recv+nprocx
+        if (ipx_recv>nprocx-1) ipx_recv=ipx_recv-nprocx
+        if (ipy_recv<0)        ipy_recv=ipy_recv+nprocy
+        if (ipy_recv>nprocy-1) ipy_recv=ipy_recv-nprocy
+        if (ipz_recv<0)        ipz_recv=ipz_recv+nprocz
+        if (ipz_recv>nprocz-1) ipz_recv=ipz_recv-nprocz
+        iproc_recv_list(nproc_comm)= &
+            ipx_recv+ipy_recv*nprocx+ipz_recv*nprocx*nprocy
+      enddo; enddo; enddo
+!
+      if (ip<=60) then
+        print*, 'remove_particles_sink: iproc, iproc_send_list=', iproc, &
+            iproc_send_list(1:nproc_comm)
+        print*, 'remove_particles_sink: iproc, iproc_recv_list=', iproc, &
+            iproc_recv_list(1:nproc_comm)
+      endif
+!
+      do iproc_comm=1,nproc_comm
+        iproc_send=iproc_send_list(iproc_comm)
+        iproc_recv=iproc_recv_list(iproc_comm)
 !
 !  Store sink particles at the end of the particle array, for contiguous
 !  communication with neighbouring processors.
@@ -536,7 +554,7 @@ module Particles_sink
           endif
         enddo
 !
-      enddo; enddo; enddo
+      enddo
 !
       do k=1,npar_loc
         if (ipar(k)<0) then
