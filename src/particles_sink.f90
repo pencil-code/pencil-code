@@ -223,6 +223,7 @@ module Particles_sink
 !
       real, dimension(3) :: xxps, vvps
       real :: rhops, rads, rads2, dist2
+      real :: mindistx, mindisty, mindistz
       integer, dimension (MPI_STATUS_SIZE) :: stat
       integer, dimension (2*mpvar) :: ireq_array
       integer, dimension(3) ::  dis=(/-1,0,+1/)
@@ -399,18 +400,29 @@ module Particles_sink
               if (j/=k .and. ipar(k)>0) then
 !
 !  Find minimum distance by directional splitting. This makes it easier to
-!  incorporate periodic boundary conditions.
+!  take into account periodic and shear-periodic boundary conditions.
 !
-                if (minval(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))<=rads) then
-                  if (minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))<=rads) then
-                    if (minval(abs(fp(k,izp)-(xxps(3)+Lz*dis)))<=rads) then
+                mindistx=minval(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))
+                if (mindistx<=rads) then
+                  mindistz=minval(abs(fp(k,izp)-(xxps(3)+Lz*dis)))
+                  if (mindistz<=rads) then
+                    if (lshear) then
+                      if (abs(fp(k,ixp)-(xxps(1)+Lx))<=rads) then
+                        mindisty=minval(abs(fp(k,iyp)-(xxps(2)-deltay+Ly*dis)))
+                      elseif (abs(fp(k,ixp)-xxps(1))<=rads) then
+                        mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                      elseif (abs(fp(k,ixp)-(xxps(1)-Lx))<=rads) then
+                        mindisty=minval(abs(fp(k,iyp)-(xxps(2)+deltay+Ly*dis)))
+                      endif
+                    else
+                      mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                    endif
+                    if (mindisty<=rads) then
 !
 !  Particle is constrained to be within cube of size rads. Estimate whether
 !  the particle is also within the sphere of size rads.
 !
-                      dist2=minval(((fp(k,ixp)-(xxps(1)+Lx*dis))**2+ &
-                          (fp(k,iyp)-(xxps(2)+Ly*dis))**2+ &
-                          (fp(k,izp)-(xxps(3)+Lz*dis))**2))
+                      dist2=mindistx**2+mindisty**2+mindistz**2
 !
                       if (dist2<=rads2) then
                         if (ip<=6) then
