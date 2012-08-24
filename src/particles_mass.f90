@@ -26,11 +26,13 @@ module Particles_mass
 !
   real :: rhop_swarm0=1.0, rhop_swarm1=1.0
   real :: gravr_swarm0=1.0, gravr_swarm1=1.0
+  real :: eps_dtog=0.01
   real, pointer :: rhs_poisson_const
   character (len=labellen), dimension(ninit) :: initrhopswarm='nothing'
 !
   namelist /particles_mass_init_pars/ &
-      initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1
+      initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1, &
+      eps_dtog
 !
   namelist /particles_mass_run_pars/ &
       initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1
@@ -98,6 +100,7 @@ module Particles_mass
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
+      real :: rhom
       integer :: j, k
 !
       do j=1,ninit
@@ -154,8 +157,9 @@ module Particles_mass
                 fp(k,irhopswarm)=gravr_swarm1/(rhs_poisson_const/(4*pi)*dx**3)
           enddo
 !
-        case ('particles-to-gas-ratio')
-          fp(1:npar_loc,irhopswarm)=rhop_swarm
+        case ('particles-to-gas-ratio-thin-disk')
+          rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
+          fp(1:npar_loc,irhopswarm)=eps_dtog*rhom/(real(npar)/nwgrid)
 !
         case default
           if (lroot) print*, 'init_particles_mass: '// &
