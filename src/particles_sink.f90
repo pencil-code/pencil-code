@@ -96,9 +96,12 @@ module Particles_sink
 !
 !  07-aug-12/anders: coded
 !
+      use General, only: random_number_wrapper
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
+      real :: r
       integer :: j, k
 !
       do j=1,ninit
@@ -133,6 +136,20 @@ module Particles_sink
               if (ipar(k)==1) fp(k,israd)=srad1*dx
             else
               if (ipar(k)==1) fp(k,israd)=srad1
+            endif
+          enddo
+!
+        case ('random')
+          if (lroot) then
+            print*, 'init_particles_sink: random sink radii'
+            print*, 'init_particles_sink: srad0=', srad0
+          endif
+          do k=1,npar_loc
+            call random_number_wrapper(r)
+            if (lsink_radius_dx_unit) then
+              fp(k,israd)=r*srad0*dx
+            else
+              fp(k,israd)=r*srad0
             endif
           enddo
 !
