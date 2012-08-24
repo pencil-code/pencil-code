@@ -2714,7 +2714,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: rhop_swarm_pt
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
-      logical :: lnbody
+      logical :: lnbody, lsink
 !
       intent (inout) :: f, df, dfp, fp, ineargrid
 !
@@ -2776,11 +2776,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           do k=k1_imn(imn),k2_imn(imn)
 !
-!  Exclude the massive nbody particles from the drag calculations
+!  Exclude massive nbody particles and sink particles from the drag.
 !
             lnbody=any(ipar(k)==ipar_nbody)
             lnbody=.false.
-            if (.not.lnbody) then
+            lsink =.false.
+            if (lparticles_sink) then
+              if (fp(k,israd)>0.0) lsink=.true.
+            endif
+            if ((.not.lnbody).and.(.not.lsink)) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
