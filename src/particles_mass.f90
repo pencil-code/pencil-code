@@ -157,6 +157,9 @@ module Particles_mass
                 fp(k,irhopswarm)=gravr_swarm1/(rhs_poisson_const/(4*pi)*dx**3)
           enddo
 !
+        case ('rhopswarm-from-particles-module','particles-to-gas-ratio')
+          fp(1:npar_loc,irhopswarm)=rhop_swarm
+!
         case ('particles-to-gas-ratio-thin-disk')
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
           fp(1:npar_loc,irhopswarm)=eps_dtog*rhom/(real(npar)/nwgrid)
