@@ -235,6 +235,7 @@ module Particles_sink
       integer :: iproc_recv, iproc_send, itag_npar=2001, itag_fpar=2010
       integer :: itag_fpar2=20100
       integer :: dipx, dipx1, dipx2, dipy, dipy1, dipy2, dipz, dipz1, dipz2
+      logical :: lproc_higher_sends
 !
 !  Make list of neighbouring processors.
 !
@@ -279,8 +280,8 @@ module Particles_sink
         ipz_send=ipz+dipz
         if (ipx_send<0)        ipx_send=ipx_send+nprocx
         if (ipx_send>nprocx-1) ipx_send=ipx_send-nprocx
-        if (ipy_send<0)        ipy_send=ipy_send+nprocy
-        if (ipy_send>nprocy-1) ipy_send=ipy_send-nprocy
+        do while (ipy_send<0);        ipy_send=ipy_send+nprocy; enddo
+        do while (ipy_send>nprocy-1); ipy_send=ipy_send-nprocy; enddo
         if (ipz_send<0)        ipz_send=ipz_send+nprocz
         if (ipz_send>nprocz-1) ipz_send=ipz_send-nprocz
         iproc_send_list(nproc_comm)= &
@@ -299,19 +300,40 @@ module Particles_sink
         ipz_recv=ipz-dipz
         if (ipx_recv<0)        ipx_recv=ipx_recv+nprocx
         if (ipx_recv>nprocx-1) ipx_recv=ipx_recv-nprocx
-        if (ipy_recv<0)        ipy_recv=ipy_recv+nprocy
-        if (ipy_recv>nprocy-1) ipy_recv=ipy_recv-nprocy
+        do while (ipy_recv<0);        ipy_recv=ipy_recv+nprocy; enddo
+        do while (ipy_recv>nprocy-1); ipy_recv=ipy_recv-nprocy; enddo
         if (ipz_recv<0)        ipz_recv=ipz_recv+nprocz
         if (ipz_recv>nprocz-1) ipz_recv=ipz_recv-nprocz
         iproc_recv_list(nproc_comm)= &
             ipx_recv+ipy_recv*nprocx+ipz_recv*nprocx*nprocy
+!
+        if (iproc_recv_list(nproc_comm)<0 .or. &
+            iproc_recv_list(nproc_comm)>ncpus-1 .or. &
+            iproc_send_list(nproc_comm)<0 .or. &
+            iproc_send_list(nproc_comm)>ncpus-1) then
+          print*, 'remove_particles_sink: error in processor list'
+          print*, 'remove_particles_sink: ipx_send, ipy_send, ipz_send, '// &
+              'iproc_send=', ipx_send, ipy_send, ipz_send, &
+              iproc_send_list(nproc_comm)
+          print*, 'remove_particles_sink: ipx_recv, ipy_recv, ipz_recv, '// &
+              'iproc_recv=', ipx_recv, ipy_recv, ipz_recv, &
+              iproc_recv_list(nproc_comm)
+          call fatal_error('remove_particles_sink','')
+        endif
+!
+        if (iproc_recv_list(nproc_comm)==iproc_send_list(nproc_comm) .and. &
+            iproc_recv_list(nproc_comm)/=iproc) then
+          nproc_comm=nproc_comm+1
+          iproc_recv_list(nproc_comm)=iproc_recv_list(nproc_comm-1)
+          iproc_send_list(nproc_comm)=iproc_send_list(nproc_comm-1)
+        endif
       enddo; enddo; enddo
 !
-      if (ip<=60) then
-        print*, 'remove_particles_sink: iproc, iproc_send_list=', iproc, &
-            iproc_send_list(1:nproc_comm)
-        print*, 'remove_particles_sink: iproc, iproc_recv_list=', iproc, &
-            iproc_recv_list(1:nproc_comm)
+      if (ip<=6) then
+        print*, 'remove_particles_sink: iproc, it, itsub, iproc_send_list=', &
+            iproc, it, itsub, iproc_send_list(1:nproc_comm)
+        print*, 'remove_particles_sink: iproc, it, itsub, iproc_recv_list=', &
+            iproc, it, itsub, iproc_recv_list(1:nproc_comm)
       endif
 !
       do iproc_comm=1,nproc_comm
@@ -336,6 +358,21 @@ module Particles_sink
           endif
         endif
 !
+!  Two processors are not allowed to take particles from each other
+!  simultaneously. We instead make two communications. First the processor
+!  of higher index sends to the processor of lower index, which does not send
+!  any particles, and then the other way around.
+!
+        if (iproc_comm==1) lproc_higher_sends=.true.
+        if (iproc_send/=iproc .and. iproc_send==iproc_recv) then
+          if (lproc_higher_sends) then
+            if (iproc<iproc_recv) npar_sink=0
+          else
+            if (iproc>iproc_recv) npar_sink=0
+          endif
+          lproc_higher_sends=.not. lproc_higher_sends
+        endif
+!
 !  Send sink particles to neighbouring processor and receive particles from
 !  opposite neighbour.
 !
@@ -348,20 +385,24 @@ module Particles_sink
           call mpirecv_int(npar_sink_proc,1,iproc_recv,itag_npar+iproc_recv)
           do i=0,ncpus-1
             if (i==iproc) then
-              call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink), &
+              if (npar_sink/=0) &
+                  call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink), &
                   npar_sink,iproc_send,itag_fpar+iproc)
             elseif (i==iproc_recv) then
-              call mpirecv_int(ipar(npar_loc+npar_sink+1: &
+              if (npar_sink_proc/=0) &
+                  call mpirecv_int(ipar(npar_loc+npar_sink+1: &
                   npar_loc+npar_sink+npar_sink_proc), &
                   npar_sink_proc,iproc_recv,itag_fpar+iproc_recv)
             endif
           enddo
           do i=0,ncpus-1
             if (i==iproc) then
-              call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
+              if (npar_sink/=0) &
+                  call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
                   (/npar_sink,mpvar/),iproc_send,itag_fpar+iproc)
             elseif (i==iproc_recv) then
-              call mpirecv_real(fp(npar_loc+npar_sink+1: &
+              if (npar_sink_proc/=0) &
+                  call mpirecv_real(fp(npar_loc+npar_sink+1: &
                   npar_loc+npar_sink+npar_sink_proc,:), &
                   (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar+iproc_recv)
             endif
@@ -489,11 +530,13 @@ module Particles_sink
         if (iproc_send/=iproc) then
           do i=0,ncpus-1
             if (i==iproc) then
-              call mpisend_real(fp(npar_loc+npar_sink+1: &
+              if (npar_sink_proc/=0) &
+                  call mpisend_real(fp(npar_loc+npar_sink+1: &
                   npar_loc+npar_sink+npar_sink_proc,:), &
                   (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar+iproc)
             elseif (i==iproc_send) then
-              call mpirecv_real(fp(npar_loc+1: &
+              if (npar_sink/=0) &
+                  call mpirecv_real(fp(npar_loc+1: &
                   npar_loc+npar_sink,:),(/npar_sink,mpvar/), &
                   iproc_send,itag_fpar+iproc_send)
             endif
