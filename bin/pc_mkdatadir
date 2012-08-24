@@ -181,6 +181,8 @@ else if ($hn =~ kraken*) then # NICS Kraken cluster
   set str='s/nics\/'"$letter"'\/home/lustre\/scratch/g'
 else if ( ($hn =~ platon.int) && ($USER =~ ajohan) ) then # platon.lunarc.lu.se
   set str='s/home/platon\/projects\/astro\/nobackup/g'
+else if ( ($hn =~ alarik.int) && ($USER =~ ajohan) ) then # alarik.lunarc.lu.se
+  set str='s/home/alarik\/projects\/astro\/nobackup/g'
 else if ( ($hn =~ gardar*) ) then # platon.lunarc.lu.se
   set str='s/home/scratch/g'
 else
