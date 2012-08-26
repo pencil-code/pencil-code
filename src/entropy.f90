@@ -264,6 +264,15 @@ module Entropy
   integer :: idiag_uxTTmxy=0   ! ZAVG_DOC: $\left< u_x T \right>_{z}$
   integer :: idiag_uyTTmxy=0   ! ZAVG_DOC: $\left< u_y T \right>_{z}$
   integer :: idiag_uzTTmxy=0   ! ZAVG_DOC: $\left< u_z T \right>_{z}$
+  integer :: idiag_gTxmxy=0    ! ZAVG_DOC: $\left<\nabla_x T\right>_{z}$
+  integer :: idiag_gTymxy=0    ! ZAVG_DOC: $\left<\nabla_y T\right>_{z}$
+  integer :: idiag_gTzmxy=0    ! ZAVG_DOC: $\left<\nabla_z T\right>_{z}$
+  integer :: idiag_gsxmxy=0    ! ZAVG_DOC: $\left<\nabla_x s\right>_{z}$
+  integer :: idiag_gsymxy=0    ! ZAVG_DOC: $\left<\nabla_y s\right>_{z}$
+  integer :: idiag_gszmxy=0    ! ZAVG_DOC: $\left<\nabla_z s\right>_{z}$
+  integer :: idiag_gTxgsxmxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_x\right>_{z}$
+  integer :: idiag_gTxgsymxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_y\right>_{z}$
+  integer :: idiag_gTxgszmxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_z\right>_{z}$
   integer :: idiag_fconvxy=0   ! ZAVG_DOC: $\left<\varrho u_x T \right>_{z}$
   integer :: idiag_fconvyxy=0  ! ZAVG_DOC: $\left<\varrho u_y T \right>_{z}$
   integer :: idiag_fconvzxy=0  ! ZAVG_DOC: $\left<\varrho u_z T \right>_{z}$
@@ -2392,7 +2401,7 @@ module Entropy
       endif
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_uxTTmxy/=0 .or. &
           idiag_uyTTmxy/=0 .or. idiag_uzTTmxy/=0) &
-          lpenc_diagnos2d(i_TT)=.true.
+        lpenc_diagnos2d(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_TTp/=0) then
@@ -2404,8 +2413,15 @@ module Entropy
 !
 !  diagnostics for baroclinic term
 !
-      if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gTT)=.true.
+      if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) &
+        lpenc_diagnos(i_gTT)=.true.
+      if (idiag_gTxmxy/=0 .or. idiag_gTymxy/=0 .or. idiag_gTzmxy/=0 .or. &
+          idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0) &
+        lpenc_diagnos2d(i_gTT)=.true.
       if (idiag_gsrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gss)=.true.
+      if (idiag_gsxmxy/=0 .or. idiag_gsymxy/=0 .or. idiag_gszmxy/=0 .or. &
+          idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0) &
+        lpenc_diagnos2d(i_gss)=.true.
 !
 !  Cooling for cold core collapse
 !
@@ -2829,6 +2845,24 @@ module Entropy
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%TT,idiag_fconvyxy)
         if (idiag_fconvzxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,3)*p%TT,idiag_fconvzxy)
+        if (idiag_gTxmxy/=0) &
+            call zsum_mn_name_xy(p%gTT(:,1),idiag_gTxmxy)
+        if (idiag_gTymxy/=0) &
+            call zsum_mn_name_xy(p%gTT(:,2),idiag_gTymxy)
+        if (idiag_gTzmxy/=0) &
+            call zsum_mn_name_xy(p%gTT(:,3),idiag_gTzmxy)
+        if (idiag_gsxmxy/=0) &
+            call zsum_mn_name_xy(p%gss(:,1),idiag_gsxmxy)
+        if (idiag_gsymxy/=0) &
+            call zsum_mn_name_xy(p%gss(:,2),idiag_gsymxy)
+        if (idiag_gszmxy/=0) &
+            call zsum_mn_name_xy(p%gss(:,3),idiag_gszmxy)
+        if (idiag_gTxgsxmxy/=0) &
+            call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
+        if (idiag_gTxgsymxy/=0) &
+            call zsum_mn_name_xy(gTxgs(:,2),idiag_gTxgsymxy)
+        if (idiag_gTxgszmxy/=0) &
+            call zsum_mn_name_xy(gTxgs(:,3),idiag_gTxgszmxy)
       endif
 !
     endsubroutine dss_dt
@@ -4922,6 +4956,9 @@ module Entropy
         idiag_fradz_kramers=0; idiag_fradxy_kramers=0;
         idiag_fconvyxy=0; idiag_fconvzxy=0; idiag_dcoolxy=0
         idiag_ufpresm=0; idiag_uduum=0; idiag_fradz_constchi=0
+        idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
+        idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
+        idiag_gTxgsxmxy=0;idiag_gTxgszmxy=0;idiag_gTxgszmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5020,6 +5057,15 @@ module Entropy
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvyxy',idiag_fconvyxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'fconvzxy',idiag_fconvzxy)
         call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'dcoolxy',idiag_dcoolxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gTxmxy',idiag_gTxmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gTymxy',idiag_gTymxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gTzmxy',idiag_gTzmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gsxmxy',idiag_gsxmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gsymxy',idiag_gsymxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gszmxy',idiag_gszmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gTxgsxmxy',idiag_gTxgsxmxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gTxgsymxy',idiag_gTxgsymxy)
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'gTxgszmxy',idiag_gTxgszmxy)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
