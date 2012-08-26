@@ -2759,8 +2759,10 @@ module Entropy
           call sum_mn_name(gs2,idiag_gsrms,lsqrt=.true.)
         endif
 !
+        if (idiag_gTxgsrms/=0 .or. idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. &
+            idiag_gTxgszmxy/=0) & 
+            call cross(p%gTT,p%gss,gTxgs)
         if (idiag_gTxgsrms/=0) then
-          call cross(p%gTT,p%gss,gTxgs)
           call dot2(gTxgs,gTxgs2)
           call sum_mn_name(gTxgs2,idiag_gTxgsrms,lsqrt=.true.)
         endif
