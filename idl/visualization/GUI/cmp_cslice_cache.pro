@@ -785,7 +785,7 @@ pro cslice_draw_averages, number
 	normal_charsize = !P.CHARSIZE
 	if (normal_charsize le 0.0) then normal_charsize = 1.0
 	!P.CHARSIZE = 1.25 * normal_charsize
-	vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averagess of '+set.(selected_cube)
+	vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averages of '+set.(selected_cube)
 	!P.CHARSIZE = normal_charsize
 end
 
