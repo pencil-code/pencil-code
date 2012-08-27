@@ -312,7 +312,7 @@ COMPILE_OPT IDL2,HIDDEN
         iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
         x_off = ipx * procdim.nx
         y_off = ipy * procdim.ny
-        z_off = ipz * procdim.nz
+        if (allprocs eq 2) then z_off = 0 else z_off = ipz * procdim.nz
         if (allprocs eq 1) then begin
           procdir = 'allprocs'
         end else begin
