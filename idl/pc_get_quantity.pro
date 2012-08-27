@@ -414,6 +414,11 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / mu0 * unit.current_density
 		return, jj
 	end
+	if (strcmp (quantity, 'j_abs', /fold_case)) then begin
+		; Current density [A / m^2]
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		return, sqrt (dot2 (jj))
+	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
@@ -426,12 +431,6 @@ function pc_compute_quantity, vars, index, quantity
 		; Ohming heating rate per particle [W]
 		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
 		return, pc_compute_quantity (vars, index, 'HR_ohm') / n_rho
-	end
-
-	if (strcmp (quantity, 'j_abs', /fold_case)) then begin
-		; Current density [A / m^2]
-		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		return, sqrt (dot2 (jj))
 	end
 
 	; Check for Pencil Code alias names
