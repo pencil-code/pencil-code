@@ -41,9 +41,6 @@ end
 ; Get values for minimum and maximum of the selected data
 pro cslice_get_minmax_value, data, min, max
 
-	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
-
 	tmp_minmax = minmax (data)
 
 	min = min (tmp_minmax)
