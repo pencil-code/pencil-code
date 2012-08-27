@@ -409,13 +409,13 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'j', /fold_case)) then begin
-		; Current density
+		; Current density [A / m^2]
 		mu0 = pc_get_parameter ('mu0', label=quantity)
 		if (n_elements (jj) eq 0) then jj = (curlcurl (vars[*,*,*,index.ax:index.az]))[l1:l2,m1:m2,n1:n2,*] / mu0 * unit.current_density
 		return, jj
 	end
 	if (strcmp (quantity, 'j_abs', /fold_case)) then begin
-		; Current density [A / m^2]
+		; Absolute value of the current density [A / m^2]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, sqrt (dot2 (jj))
 	end
@@ -431,6 +431,22 @@ function pc_compute_quantity, vars, index, quantity
 		; Ohming heating rate per particle [W]
 		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
 		return, pc_compute_quantity (vars, index, 'HR_ohm') / n_rho
+	end
+
+	if (strcmp (quantity, 'Poynting', /fold_case)) then begin
+		; Poynting flux [W/m^2]
+		mu0 = pc_get_parameter ('mu0', label=quantity)
+		eta = pc_get_parameter ('eta', label=quantity)
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		if (n_elements (Poynting) eq 0) then Poynting = cross ((eta * jj - cross (uu, bb)/mu0), bb)
+		return, Poynting
+	end
+	if (strcmp (quantity, 'Poynting_abs', /fold_case)) then begin
+		; Absolute value of the Poynting flux [W/m^2]
+		if (n_elements (Poynting) eq 0) then Poynting = pc_compute_quantity (vars, index, 'Poynting')
+		return, sqrt (dot2 (Poynting))
 	end
 
 	; Check for Pencil Code alias names

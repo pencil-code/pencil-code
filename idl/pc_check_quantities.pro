@@ -103,6 +103,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_z:'magnetic field z', $
 		beta:'plasma beta', $
 		rho_mag:'magnetic energy', $
+		Poynting_abs:'Poynting flux', $
 		u_x:'velocity x', $
 		u_y:'velocity y', $
 		u_z:'velocity z', $
@@ -137,6 +138,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	available_vectorfields = { $
 		u:'velocities', $
 		j:'current density', $
+		Poynting:'Poynting flux', $
 		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
 		B:'magnetic field', $
@@ -187,6 +189,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_z:'B', $
 		beta:['P_therm', 'B_2'], $
 		rho_mag:'B_2', $
+		Poynting:['u', 'B', 'j'], $
+		Poynting_abs:'Poynting', $
 		u:'uu', $
 		u_x:'u', $
 		u_y:'u', $
