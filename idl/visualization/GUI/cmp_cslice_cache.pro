@@ -781,58 +781,12 @@ pro cslice_draw_averages, number
 
 	tags = tag_names (varsets[number])
 
-	if (tags eq ['cube']) then begin
-		window, 13, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
-		!P.MULTI = [0, 1, 1]
-		vert_prof, reform (varsets[number].cube[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averages of '+set.(selected_cube)
-	end else begin
-		window, 13, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
-		!P.MULTI = [0, 2, 2]
-		normal_charsize = !P.CHARSIZE
-		if (normal_charsize le 0.0) then normal_charsize = 1.0
-		!P.CHARSIZE = 1.25 * normal_charsize
-		max_subplots = 4
-		vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averagess of '+set.(selected_cube)
-		num_subplots = 1
-		if (any (strcmp (tags, 'ln_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (exp (varsets[number].ln_rho[cut]), num_x, num_y, num_z), coord=coord.z, title = 'density ['+unit.default_density_str+']', /log
-		end else if (any (strcmp (tags, 'log_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (10.0^(varsets[number].log_rho[cut]), num_x, num_y, num_z), coord=coord.z, title = 'density ['+unit.default_density_str+']', /log
-		end else if (any (strcmp (tags, 'rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (varsets[number].rho[cut], num_x, num_y, num_z), coord=coord.z, title = 'density ['+unit.default_density_str+']'
-		end
-		if (any (strcmp (tags, 'spitzer_ratio', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (varsets[number].spitzer_ratio[cut], num_x, num_y, num_z), coord=coord.z, max=3, title = 'Spitzer K_perpendicular / K_parallel [-]', /log
-		end
-		if (any (strcmp (tags, 'u_z', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (varsets[number].u_z[cut], num_x, num_y, num_z), coord=coord.z, title = 'vertical velocity ['+unit.default_velocity_str+']'
-		end else if (any (strcmp (tags, 'u_abs', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (varsets[number].u_abs[cut], num_x, num_y, num_z), coord=coord.z, title = 'absolute velocity ['+unit.default_velocity_str+']'
-		end
-		if (any (strcmp (tags, 'Temp', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (varsets[number].Temp[cut], num_x, num_y, num_z), coord=coord.z, title = 'temperature [K]', /log
-		end
-		if (any (strcmp (tags, 'j', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (varsets[number].j[cut], num_x, num_y, num_z), coord=coord.z, title = 'current density', /log
-		end
-		if (any (strcmp (tags, 'Rn_mag', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform ((reform (varsets[number].Rn_mag[cut], num_x, num_y, num_z))[*,*,0:num_z/4-1], num_x, num_y, num_z/4), coord=coord.z[0:num_z/4-1], title = 'magnetic mesh Reynolds number [-]'
-		end
-		if (any (strcmp (tags, 'rho_u_z', /fold_case)) and (num_subplots lt max_subplots)) then begin
-			num_subplots += 1
-			vert_prof, reform (varsets[number].rho_u_z[cut], num_x, num_y, num_z), coord=coord.z, title = 'vertical impulse density ['+unit.default_density_str+' * '+unit.default_velocity_str+']'
-		end
-		!P.CHARSIZE = normal_charsize
-	end
+	window, 13, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
+	normal_charsize = !P.CHARSIZE
+	if (normal_charsize le 0.0) then normal_charsize = 1.0
+	!P.CHARSIZE = 1.25 * normal_charsize
+	vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averagess of '+set.(selected_cube)
+	!P.CHARSIZE = normal_charsize
 end
 
 
