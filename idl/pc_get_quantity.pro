@@ -388,9 +388,10 @@ function pc_compute_quantity, vars, index, quantity
 		return, 2 * mu0_SI * P_therm / B_2
 	end
 	if (strcmp (quantity, 'rho_mag', /fold_case)) then begin
-		; Magnetic energy density [WORK HERE: unfinished, currently only computes B^2]
+		; Magnetic energy density
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
-		return, B_2
+		return, B_2 / (2.0 * mu0_SI)
 	end
 	if (strcmp (quantity, 'Rn_mag', /fold_case)) then begin
 		; Magnetic mesh Reynolds number of velocities perpendicular to the magnetic field
