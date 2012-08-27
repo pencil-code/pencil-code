@@ -784,7 +784,7 @@ pro cslice_draw_averages, number
 	if (tags eq ['cube']) then begin
 		window, 13, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 1, 1]
-		vert_prof, reform (varsets[number].cube[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averages'
+		vert_prof, reform (varsets[number].cube[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averages of '+set.(selected_cube)
 	end else begin
 		window, 13, xsize=1000, ysize=800, title = 'vertical profile analysis', retain=2
 		!P.MULTI = [0, 2, 2]
@@ -792,7 +792,8 @@ pro cslice_draw_averages, number
 		if (normal_charsize le 0.0) then normal_charsize = 1.0
 		!P.CHARSIZE = 1.25 * normal_charsize
 		max_subplots = 4
-		num_subplots = 0
+		vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averagess of '+set.(selected_cube)
+		num_subplots = 1
 		if (any (strcmp (tags, 'ln_rho', /fold_case)) and (num_subplots lt max_subplots)) then begin
 			num_subplots += 1
 			vert_prof, reform (exp (varsets[number].ln_rho[cut]), num_x, num_y, num_z), coord=coord.z, title = 'density ['+unit.default_density_str+']', /log
