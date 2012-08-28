@@ -856,7 +856,8 @@ contains
 !***********************************************************************
   subroutine const_alfven_speed(f)
 !
-!  routine to set the alfven constant everywhere in the box
+! Toutine to set the alfven velocity constant everywhere in the box
+! The alfven velocity is  v = sqrt(b^2/(mu0 rho))
 !
     use Boundcond, only: boundconds_x, boundconds_y, boundconds_z 
     use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
@@ -868,11 +869,16 @@ contains
     real, dimension(nx,3) :: aa,bb
     real, dimension(nx,3,3) :: aij
 !
+! Make sure the internal boundaries are set properly 
+! before computing the magnetic field.
+!
     call boundconds_x(f,iax,iaz)
     call initiate_isendrcv_bdry(f,iax,iaz)
     call finalize_isendrcv_bdry(f,iax,iaz)
     call boundconds_y(f,iax,iaz)
     call boundconds_z(f,iax,iaz)
+!
+! Compute
 !
     do m=m1,m2
       do n=n1,n2
@@ -882,7 +888,7 @@ contains
 !
         call dot2_mn(bb,b2)
 !
-        f(l1:l2,m,n,ilnrho) = alog(b2/(mu0*const_alfven))
+        f(l1:l2,m,n,ilnrho) = alog(b2/(mu0*const_alfven**2.))
 !
       enddo
     enddo
