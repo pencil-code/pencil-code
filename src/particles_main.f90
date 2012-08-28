@@ -174,10 +174,6 @@ module Particles_main
 !
       call initialize_particles_mpicomm      (f,lstarting)
       call initialize_particles              (f,lstarting)
-      call initialize_particles_coag         (f,lstarting)
-      call initialize_particles_collisions   (f,lstarting)
-      call initialize_pars_diagnos_state     (f,lstarting)
-      call initialize_particles_diagnos_dv   (f,lstarting)
       call initialize_particles_mass         (f,lstarting)
       call initialize_particles_nbody        (f,lstarting)
       call initialize_particles_number       (f,lstarting)
@@ -188,6 +184,10 @@ module Particles_main
       call initialize_particles_spin         (f,lstarting)
       call initialize_particles_stalker      (f,lstarting)
       call initialize_particles_viscosity    (f,lstarting)
+      call initialize_particles_coag         (f,lstarting)
+      call initialize_particles_collisions   (f,lstarting)
+      call initialize_pars_diagnos_state     (f,lstarting)
+      call initialize_particles_diagnos_dv   (f,lstarting)
 !
       if (lparticles_blocks.and.(.not.lstarting)) then
         if (lroot.and.lparticles_blocks) &
