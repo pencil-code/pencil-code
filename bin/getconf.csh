@@ -1283,6 +1283,11 @@ else if ($hostname =~ jugene*) then
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /work/$USER
 #-------------------------------------------------
+else if ($hn =~ an*) then
+  echo "Alarik cluster at Lunarc in Lund"
+  set mpirun = "mpiexec"
+  set mpirunops = "-bind-to-core"
+#-------------------------------------------------
 else if ($hn =~ pn*) then
   echo "Platon cluster at Lunarc in Lund"
   cd $PBS_O_WORKDIR
