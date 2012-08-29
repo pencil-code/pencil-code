@@ -84,7 +84,6 @@
 
 ;  Known issues:
 ;  =============
-;  'q_sat' is untested
 ;  'rho_c' is untested, only available in SI
 
 
@@ -171,15 +170,16 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
 		; Absolute value of the saturation heat flux density vector q [W/m^2] = [kg/s^3]
 		K_sat = pc_get_parameter ('K_sat', label=quantity)
+		if (K_sat le 0.0) then K_sat = 1.0
 		mu = pc_get_parameter ('mu', label=quantity)
 		m_e = pc_get_parameter ('m_electron', label=quantity)
 		m_p = pc_get_parameter ('m_proton', label=quantity)
 		k_B = pc_get_parameter ('k_Boltzmann', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-;		return, K_sat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
-		fact = 1.5 * sqrt (3 / m_e) / (m_e + m_p) * k_B^1.5
-		return, K_sat * fact * mu * rho * Temp^1.5
+		return, K_sat * 1.5 * sqrt (3 / m_e) / (m_e + m_p) * k_B^1.5 * mu * rho * Temp^1.5
+		; This should correspond to the calculation in the solar_corona module, but is untested:
+		; return, K_sat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
 		; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
@@ -214,6 +214,10 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho')
 		return, 2.e-31 * n_rho^2 / (Temp^3 * B_2) ; [Solar MHD, E. Priest (1982/1984), p. 86]
+	end
+	if (strcmp (quantity, 'Spitzer_q_ratio', /fold_case)) then begin
+		; Ratio of saturation heat flux to Spitzer heat flux
+		return, pc_compute_quantity (vars, index, 'q_sat') / pc_compute_quantity (vars, index, 'Spitzer_q')
 	end
 
 	if (strcmp (quantity, 'rho', /fold_case)) then begin

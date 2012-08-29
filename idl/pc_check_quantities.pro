@@ -117,6 +117,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_dt:'Spitzer timestep', $
 		Spitzer_ratio:'Spitzer perp./par. heatflux', $
+		Spitzer_q_ratio:'saturation/Spitzer heatflux', $
 		rho_c:'minimum density (Alfven < c)', $
 		rho:'density', $
 		ln_rho:'ln density', $
@@ -206,6 +207,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Spitzer_q:['Temp'], $
 		Spitzer_dt:['Temp', 'rho', 'B'], $
 		Spitzer_ratio:['Temp', 'B', 'n_rho'], $
+		Spitzer_q_ratio:['q_sat', 'Spitzer_q'], $
 		rho_c:['rho', 'B'], $
 		rho:{ rho:['lnrho', 'rho'] }, $
 		ln_rho:'rho', $
