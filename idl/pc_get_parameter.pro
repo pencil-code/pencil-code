@@ -51,8 +51,8 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 
 	if (keyword_set (start_param)) then start_par = start_param
 	if (keyword_set (run_param)) then run_par = run_param
-	if (not keyword_set (start_par)) then pc_read_param, obj=start_par, dim=dim, datadir=datadir, /quiet
-	if (not keyword_set (run_par)) then pc_read_param, obj=run_par, dim=dim, datadir=datadir, /param2, /quiet
+	if (n_elements (start_par) eq 0) then pc_read_param, obj=start_par, dim=dim, datadir=datadir, /quiet
+	if (n_elements (run_par) eq 0) then pc_read_param, obj=run_par, dim=dim, datadir=datadir, /param2, /quiet
 	start_param = start_par
 	run_param = run_par
 
@@ -78,6 +78,12 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	index = where (start_names eq strupcase (param))
 	if (index[0] ge 0) then return, pc_get_parameter_cleanup (start_par.(index[0]), cleanup=cleanup)
 
+	; Some additional useful abbreviations
+	if (strcmp (param, 'mu0_4_pi', /fold_case)) then begin
+		mu0 = pc_get_parameter ('mu0', label=label, cleanup=cleanup)
+		return, 4.0 * double (!Pi) * mu0 ; Magnetic vacuum permeability * 4 pi [SI: V*s/(A*m)]
+	end
+
 	; Cleanup parameter cache, if requested
 	dummy = pc_get_parameter_cleanup ('', cleanup=cleanup)
 
@@ -87,7 +93,6 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	if (strcmp (param, 'm_proton', /fold_case)) then return, 1.6726218d-27 ; Proton mass [kg]
 	if (strcmp (param, 'k_Boltzmann', /fold_case)) then return, 1.3806488d-23 ; Boltzmann constant [J/K]
 	if (strcmp (param, 'c', /fold_case)) then return, 299792458.d0 ; Speed of light [m/s]
-	if (strcmp (param, 'mu0_SI', /fold_case)) then return, 4.0 * double (!Pi) * 1.d-7 ; Magnetic vacuum permeability in SI units [V*s/(A*m)]
 	if (strcmp (param, 'pi', /fold_case)) then return, double (!Pi) ; Precise value of pi
 
 	message = "find"

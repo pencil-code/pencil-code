@@ -84,7 +84,7 @@
 
 ;  Known issues:
 ;  =============
-;  'rho_c', 'rho_mag', and 'beta' are using 'mu0_SI' that is currently only available in SI units.
+;  none
 
 
 ; Computation of physical quantities.
@@ -308,8 +308,8 @@ function pc_compute_quantity, vars, index, quantity
 		c = pc_get_parameter ('c', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
-		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
-		return, B_2 / (2 * mu0_SI * (c * cdtv)^2)
+		mu0_4_pi = pc_get_parameter ('mu0_4_pi', label=quantity)
+		return, B_2 / (2 * mu0_4_pi * (c * cdtv)^2)
 	end
 	if (strcmp (quantity, 'rho_c_ratio', /fold_case)) then begin
 		; Ratio of density to minimum density for an Alfvén speed below the speed of light
@@ -399,14 +399,14 @@ function pc_compute_quantity, vars, index, quantity
 		; Plasma beta
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
-		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
-		return, 2 * mu0_SI * P_therm / B_2
+		mu0_4_pi = pc_get_parameter ('mu0_4_pi', label=quantity)
+		return, 2 * mu0_4_pi * P_therm / B_2
 	end
 	if (strcmp (quantity, 'rho_mag', /fold_case)) then begin
 		; Magnetic energy density
-		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		mu0_4_pi = pc_get_parameter ('mu0_4_pi', label=quantity)
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
-		return, B_2 / (2.0 * mu0_SI)
+		return, B_2 / (2.0 * mu0_4_pi)
 	end
 	if (strcmp (quantity, 'Rn_mag', /fold_case)) then begin
 		; Magnetic mesh Reynolds number of velocities perpendicular to the magnetic field
