@@ -84,7 +84,7 @@
 
 ;  Known issues:
 ;  =============
-;  'rho_c' is untested, only available in SI
+;  'rho_c', 'rho_mag', and 'beta' are using 'mu0_SI' that is currently only available in SI units.
 
 
 ; Computation of physical quantities.
@@ -305,10 +305,15 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'rho_c', /fold_case)) then begin
 		; Minimum density for an Alfvén speed below the speed of light
 		cdtv = pc_get_parameter ('cdtv', label=quantity)
+		c = pc_get_parameter ('c', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
-		return, rho - B_2 / (2 * mu0_SI * (pc_get_parameter ('c', label=quantity) * cdtv)^2)
+		return, B_2 / (2 * mu0_SI * (c * cdtv)^2)
+	end
+	if (strcmp (quantity, 'rho_c_ratio', /fold_case)) then begin
+		; Ratio of density to minimum density for an Alfvén speed below the speed of light
+		return, pc_compute_quantity (vars, index, 'rho') / pc_compute_quantity (vars, index, 'rho_c')
 	end
 
 	if (strcmp (quantity, 'HR_viscous', /fold_case)) then begin
