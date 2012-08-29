@@ -1,6 +1,6 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   emissivity.pro   ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;   pc_emissivity.pro   ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;  $Id$
 ;;;
 ;;;  Description:
@@ -12,10 +12,11 @@
 
 
 ; Event handling of emissivity visualisation window
-pro emissivity_event, event
+pro pc_emissivity_event, event
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, sl_cut, em_sel, image
+	common emissive_event, button_pressed
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	WIDGET_CONTROL, WIDGET_INFO(event.top, /CHILD)
@@ -26,28 +27,22 @@ pro emissivity_event, event
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
 
 
-	CASE eventval of
+	SWITCH eventval of
 	'CUT_Z':  begin
-		WIDGET_CONTROL, event.id, GET_VALUE = idx
-		cut_z = idx
-		WIDGET_CONTROL, em_sel, SENSITIVE = 0
-		WIDGET_CONTROL, image, SENSITIVE = 0
-		if (event.drag le 0) then begin
-			em_z = total (em[*,*,cut_z:*], 3)
-			if (bin_x ne 1 or bin_y ne 1) then em_z = congrid (em_z, fix (num_x*bin_x), fix (num_y*bin_y), cubic = 0)
-		end
-		WIDGET_CONTROL, em_sel, SENSITIVE = 1
-		WIDGET_CONTROL, image, SENSITIVE = 1
+		WIDGET_CONTROL, event.id, GET_VALUE = cut_z
+		pc_emissivity_cut_z, cut_z, dragging=event.drag
 		DRAW_IMAGES = 1
+		break
 	end
 	'HORIZ':  begin
 		sub_horiz = event.select
 		WIDGET_CONTROL, em_sel, SENSITIVE = 0
 		WIDGET_CONTROL, image, SENSITIVE = 0
-		precalc_emissivity
+		pc_emissivity_precalc
 		WIDGET_CONTROL, em_sel, SENSITIVE = 1
 		WIDGET_CONTROL, image, SENSITIVE = 1
 		DRAW_IMAGES = 1
+		break
 	end
 	'VAL_B': begin
 		WIDGET_CONTROL, val_b, GET_VALUE = sl_min
@@ -57,6 +52,7 @@ pro emissivity_event, event
 		end
 		emin = 10^sl_min
 		DRAW_IMAGES = 1
+		break
 	end
 	'VAL_T': begin
 		WIDGET_CONTROL, val_t, GET_VALUE = sl_max
@@ -66,6 +62,7 @@ pro emissivity_event, event
 		end
 		emax = 10^sl_max
 		DRAW_IMAGES = 1
+		break
 	end
 	'EMIS': begin
 		last = selected_emissivity
@@ -73,25 +70,39 @@ pro emissivity_event, event
 		if (last ne selected_emissivity) then begin
 			WIDGET_CONTROL, em_sel, SENSITIVE = 0
 			WIDGET_CONTROL, image, SENSITIVE = 0
-			precalc_emissivity
+			pc_emissivity_precalc
 			WIDGET_CONTROL, em_sel, SENSITIVE = 1
 			WIDGET_CONTROL, image, SENSITIVE = 1
 		end
 		DRAW_IMAGES = 1
+		break
 	end
 	'IMAGE': begin
 		WIDGET_CONTROL, em_sel, SENSITIVE = 0
 		WIDGET_CONTROL, image, SENSITIVE = 0
-		save_emissivity, "PNG"
+		pc_emissivity_save, "PNG"
 		WIDGET_CONTROL, em_sel, SENSITIVE = 1
 		WIDGET_CONTROL, image, SENSITIVE = 1
+		break
+	end
+	'EM_X':
+	'EM_Y': begin
+		if (event.press) then button_pressed = 1
+		if (button_pressed) then begin
+			pos_z = event.y / bin_z > 0 < (num_z-1)
+			pc_emissivity_cut_z, pos_z, dragging=(event.release ne 1)
+		end
+		if (event.release) then button_pressed = 0
+		DRAW_IMAGES = 1
+		break
 	end
 	'QUIT': begin
 		quit = event.top
+		break
 	end
-	endcase
+	endswitch
 
-	if (DRAW_IMAGES) then plot_emissivity
+	if (DRAW_IMAGES) then pc_emissivity_plot
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 
@@ -101,11 +112,36 @@ pro emissivity_event, event
 end
 
 
-; Calculates emissivities
-pro precalc_emissivity
+; Cuts a defined part of the lower layer for Z-integration
+pro pc_emissivity_cut_z, pos_z, dragging=dragging
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, sl_cut, em_sel, image
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
+
+	if (n_elements (dragging) eq 0) then dragging = 0
+
+	if (pos_z ne cut_z) then begin
+		WIDGET_CONTROL, sl_cut, SET_VALUE = cut_z
+		cut_z = pos_z
+	end
+
+	WIDGET_CONTROL, em_sel, SENSITIVE = 0
+	WIDGET_CONTROL, image, SENSITIVE = 0
+	if (dragging le 0) then begin
+		em_z = total (em[*,*,cut_z:*], 3)
+		if ((bin_x ne 1) or (bin_y ne 1)) then em_z = congrid (em_z, fix (num_x*bin_x), fix (num_y*bin_y), cubic=0)
+	end
+	WIDGET_CONTROL, em_sel, SENSITIVE = 1
+	WIDGET_CONTROL, image, SENSITIVE = 1
+end
+
+
+; Calculates emissivities
+pro pc_emissivity_precalc
+
+	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, sl_cut, em_sel, image
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
@@ -149,10 +185,10 @@ end
 
 
 ; Plots integrated emissivities in x-, y- and z-direction
-pro plot_emissivity
+pro pc_emissivity_plot
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, sl_cut, em_sel, image
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	plot_em_x = em_x
@@ -175,10 +211,10 @@ end
 
 
 ; Saves the data with the given format
-pro save_emissivity, img_type
+pro pc_emissivity_save, img_type
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, sl_cut, em_sel, image
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources
 	common settings_common, px, py, pz, cut, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 
@@ -206,11 +242,12 @@ pro save_emissivity, img_type
 end
 
 
-; Emissivitiy plotting GUI
-pro emissivity, sets, limits, scaling=scaling
+; Emissivity plotting GUI
+pro pc_emissivity, sets, limits, scaling=scaling
 
 	common emissive_common, parameter, selected_emissivity, em, em_x, em_y, em_z, cut_z, sub_horiz, aver_z, emin, emax
-	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, em_sel, image
+	common emigui_common, wem_x, wem_y, wem_z, val_t, val_b, sl_min, sl_max, sl_cut, em_sel, image
+	common emissive_event, button_pressed
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, val_min, val_max, val_range, dimensionality, frozen
 
 	; Emissivities for different ions (values with only one decimal digit are UNVERIFIED)
@@ -248,48 +285,45 @@ pro emissivity, sets, limits, scaling=scaling
 	em_z = dblarr (num_x,num_y)
 
 	MOTHER	= WIDGET_BASE (title='emissivitiy')
-	BASE    = WIDGET_BASE (MOTHER, /col)
-	TOP     = WIDGET_BASE (base, /row)
-	col     = WIDGET_BASE (top, /col)
-	tmp     = WIDGET_LABEL (col, value='Plot starts at z-layer:', frame=0)
-	col     = WIDGET_BASE (top, /col)
-	tmp     = WIDGET_SLIDER (col, uvalue='CUT_Z', value=cut_z, min=0, max=num_z-1, xsize=num_z*bin_z, /drag)
-	col     = WIDGET_BASE (top, /col)
-	em_sel  = WIDGET_DROPLIST (col, value=(parameter[*].title), uvalue='EMIS', EVENT_PRO=emissivity_event, title='Ion:', SENSITIVE = 0)
-	col     = WIDGET_BASE (top, /col)
-	b_sub   = CW_BGROUP (col, 'normalise averages', /nonexcl, uvalue='HORIZ', set_value=sub_horiz)
-	col     = WIDGET_BASE (top, /col)
+	BASE	= WIDGET_BASE (MOTHER, /col)
+	TOP	= WIDGET_BASE (base, /row)
+	col	= WIDGET_BASE (top, /col)
+	tmp	= WIDGET_LABEL (col, value='Plot starts at z-layer:', frame=0)
+	col	= WIDGET_BASE (top, /col)
+	sl_cut	= WIDGET_SLIDER (col, uvalue='CUT_Z', value=cut_z, min=0, max=num_z-1, xsize=num_z*bin_z, /drag)
+	col	= WIDGET_BASE (top, /col)
+	em_sel	= WIDGET_DROPLIST (col, value=(parameter[*].title), uvalue='EMIS', EVENT_PRO=pc_emissivity_event, title='Ion:', SENSITIVE = 0)
+	col	= WIDGET_BASE (top, /col)
+	b_sub	= CW_BGROUP (col, 'normalise averages', /nonexcl, uvalue='HORIZ', set_value=sub_horiz)
+	col	= WIDGET_BASE (top, /col)
 	image	= WIDGET_BUTTON (col, value='SAVE IMAGE', UVALUE='IMAGE', xsize=100)
-	col     = WIDGET_BASE (top, /col)
+	col	= WIDGET_BASE (top, /col)
 	tmp	= WIDGET_BUTTON (col, value='QUIT', UVALUE='QUIT', xsize=100)
-	drow    = WIDGET_BASE (BASE, /row)
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_X', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wem_x   = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Y', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wem_y   = !d.window
-	tmp     = WIDGET_DRAW (drow, UVALUE='EM_Z', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2)
-	WIDGET_CONTROL, tmp, /REALIZE
-	wem_z   = !d.window
-	bcot    = WIDGET_BASE (base, /row)
+	drow	= WIDGET_BASE (BASE, /row)
+	dem_x	= WIDGET_DRAW (drow, UVALUE='EM_X', xsize=num_y*bin_y, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	dem_y	= WIDGET_DRAW (drow, UVALUE='EM_Y', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
+	dem_z	= WIDGET_DRAW (drow, UVALUE='EM_Z', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2)
+	bcot	= WIDGET_BASE (base, /row)
 
 	sl_size = ((2*num_x*bin_x+num_y*bin_y)/2.5 > (400+max([num_x*bin_x,num_y*bin_y,num_z*bin_z]))/2) < 500
-	val_b   = CW_FSLIDER (bcot, title='lower value (black level)', uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=sl_size)
-	val_t   = CW_FSLIDER (bcot, title='upper value (white level)', uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=sl_size)
+	val_b	= CW_FSLIDER (bcot, title='lower value (black level)', uvalue='VAL_B', /edit, min=emin, max=emax, drag=1, value=sl_min, xsize=sl_size)
+	val_t	= CW_FSLIDER (bcot, title='upper value (white level)', uvalue='VAL_T', /edit, min=emin, max=emax, drag=1, value=sl_max, xsize=sl_size)
 
 	WIDGET_CONTROL, MOTHER, /REALIZE
-	wimg = !d.window
+	WIDGET_CONTROL, dem_x, GET_VALUE = wem_x
+	WIDGET_CONTROL, dem_y, GET_VALUE = wem_y
+	WIDGET_CONTROL, dem_z, GET_VALUE = wem_z
 
 	WIDGET_CONTROL, BASE
 
-	XMANAGER, "emissivity", MOTHER, /no_block
+	XMANAGER, "pc_emissivity", MOTHER, /no_block
 
 	emin = 10^sl_min
 	emax = 10^sl_max
 
-	precalc_emissivity
-	plot_emissivity
+	button_pressed = 0
+	pc_emissivity_precalc
+	pc_emissivity_plot
 	WIDGET_CONTROL, em_sel, SENSITIVE = 1
 
 	return
@@ -302,7 +336,7 @@ end
 emissivity_quantities = { temperature:'Temp', logarithmic_density:'ln_rho' }
 
 
-emissivity, emissivity_quantities, lmn12, scaling=scaling
+pc_emissivity, emissivity_quantities, lmn12, scaling=scaling
 
 window, 0, xsize=8, ysize=8, retain=2
 !P.MULTI = [0, 1, 1]
