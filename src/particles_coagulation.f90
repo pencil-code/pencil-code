@@ -33,7 +33,7 @@ module Particles_coagulation
   real :: four_pi_rhopmat_over_three2=0.0
   real :: three_over_four_pi_rhopmat=0.0
   real :: GNewton=6.67428e-11, deltav_grav_floor=0.0
-  real :: critical_mass_ratio_sticking=1.0
+  real :: critical_mass_ratio_sticking=0.0
   real :: minimum_particle_mass=0.0, minimum_particle_radius=0.0
   real, pointer :: rhs_poisson_const
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
