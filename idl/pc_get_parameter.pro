@@ -85,6 +85,7 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	if (strcmp (param, 'q_electron', /fold_case)) then return, 1.6021766d-19 ; Electron charge [A*s]
 	if (strcmp (param, 'm_electron', /fold_case)) then return, 9.109383d-31 ; Electron mass [kg]
 	if (strcmp (param, 'm_proton', /fold_case)) then return, 1.6726218d-27 ; Proton mass [kg]
+	if (strcmp (param, 'k_Boltzmann', /fold_case)) then return, 1.3806488d-23 ; Boltzmann constant [J/K]
 	if (strcmp (param, 'c', /fold_case)) then return, 299792458.d0 ; Speed of light [m/s]
 	if (strcmp (param, 'mu0_SI', /fold_case)) then return, 4.0 * double (!Pi) * 1.d-7 ; Magnetic vacuum permeability in SI units [V*s/(A*m)]
 	if (strcmp (param, 'pi', /fold_case)) then return, double (!Pi) ; Precise value of pi
