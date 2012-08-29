@@ -1108,14 +1108,6 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, nx:num_x, ny:num_y, nz:num_z, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1 }
 	end
 
-	wimg_yz = !d.window
-	wimg_xz = !d.window
-	wimg_xy = !d.window
-
-	wcut_x = !d.window
-	wcut_y = !d.window
-	wcut_z = !d.window
-
 	sl_min = 0
 	sl_max = 0
 	sl_over = 0
