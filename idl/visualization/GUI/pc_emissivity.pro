@@ -332,8 +332,8 @@ end
 
 ;;; Settings:
 
-; Quantities to be used for emissivity (calculated in 'precalc_data'):
-emissivity_quantities = { temperature:'Temp', logarithmic_density:'ln_rho' }
+; Quantities to be used for emissivity (calculated in 'pc_emissivity_precalc'):
+emissivity_quantities = { Temp:'temperature', log_rho:'log density' }
 
 
 pc_emissivity, emissivity_quantities, lmn12, scaling=scaling
