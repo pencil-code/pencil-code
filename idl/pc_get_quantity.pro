@@ -171,9 +171,15 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'q_sat', /fold_case)) then begin
 		; Absolute value of the saturation heat flux density vector q [W/m^2] = [kg/s^3]
 		K_sat = pc_get_parameter ('K_sat', label=quantity)
+		mu = pc_get_parameter ('mu', label=quantity)
+		m_e = pc_get_parameter ('m_electron', label=quantity)
+		m_p = pc_get_parameter ('m_proton', label=quantity)
+		k_B = pc_get_parameter ('k_Boltzmann', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, K_sat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
+;		return, K_sat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
+		fact = 1.5 * sqrt (3 / m_e) / (m_e + m_p) * k_B^1.5
+		return, K_sat * fact * mu * rho * Temp^1.5
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
 		; Absolute value of the Spitzer heat flux density vector q [W/m^2] = [kg/s^3]
