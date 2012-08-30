@@ -568,13 +568,15 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		val_range = cslice_get_range (data)
 		wset, wimg_yz
 		if (show_cross) then begin
-			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do data[i:i+1, pz*bin_z+oz] = val_range
-			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do data[i:i+1, pz*bin_z+oz] = val_range
-			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do data[py*bin_y+oy, i:i+1] = val_range
-			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do data[py*bin_y+oy, i:i+1] = val_range
-			if ((py le af_y) and (py ge num_y-1-af_y) and (pz le af_z) and (pz ge num_z-1-af_z)) then data[0:1, 0] = val_range
-		end $
-		else if (abs_scale) then data[0:1, 0] = val_range
+			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do data[i:i+1,pz*bin_z+oz] = val_range
+			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do data[i:i+1,pz*bin_z+oz] = val_range
+			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do data[py*bin_y+oy,i:i+1] = val_range
+			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do data[py*bin_y+oy,i:i+1] = val_range
+			if ((py le af_y) and (py ge num_y-1-af_y) and (pz le af_z) and (pz ge num_z-1-af_z)) then data[0:1,0] = val_range
+		end else if (abs_scale) then begin
+			if (min (data) gt val_min) then data[0,0] = val_min
+			if (max (data) lt val_max) then data[1,0] = val_max
+		end
 		if (log_plot) then data = alog10 (data)
 		tvscl, data
 		if (selected_overplot gt 0) then begin
@@ -583,7 +585,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 					contour, reform (field_x_y[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 				endif
 			end else begin
-				if (abs_scale) then local_max = max (abs ([field_y_x[px,*,*], field_z_x[px,*,*]]))
+				if (abs_scale) then local_max = max (abs ([field_y_x[px,*,*],field_z_x[px,*,*]]))
 				vec_len = vector_length * over_length * local_max / over_max
 				velovect, reform (field_y_x[px,*,*], num_over_y, num_over_z), reform (field_z_x[px,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
@@ -598,18 +600,20 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	end
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		data = reform ((cube[*, py, *] > val_min) < val_max, num_x, num_z)
+		data = reform ((cube[*,py,*] > val_min) < val_max, num_x, num_z)
 		if ((bin_x ne 1) or (bin_z ne 1)) then data = congrid (data, fix (num_x*bin_x), fix (num_z*bin_z), cubic=0)
 		val_range = cslice_get_range (data)
 		wset, wimg_xz
 		if (show_cross) then begin
-			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do data[i:i+1, pz*bin_z+oz] = val_range
-			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do data[i:i+1, pz*bin_z+oz] = val_range
-			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do data[px*bin_x+ox, i:i+1] = val_range
-			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do data[px*bin_x+ox, i:i+1] = val_range
-			if ((px le af_x) and (px ge num_x-1-af_x) and (pz le af_z) and (pz ge num_z-1-af_z)) then data[0:1, 0] = val_range
-		end $
-		else if (abs_scale) then data[0:1, 0] = val_range
+			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do data[i:i+1,pz*bin_z+oz] = val_range
+			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do data[i:i+1,pz*bin_z+oz] = val_range
+			if (pz gt af_z) then for i = fix ((pz-af_z)*bin_z), 0, -step do data[px*bin_x+ox,i:i+1] = val_range
+			if (pz lt num_z-1-af_z) then for i = fix ((pz+af_z)*bin_z), fix (num_z*bin_z)-2, step do data[px*bin_x+ox,i:i+1] = val_range
+			if ((px le af_x) and (px ge num_x-1-af_x) and (pz le af_z) and (pz ge num_z-1-af_z)) then data[0:1,0] = val_range
+		end else if (abs_scale) then begin
+			if (min (data) gt val_min) then data[0,0] = val_min
+			if (max (data) lt val_max) then data[1,0] = val_max
+		end
 		if (log_plot) then data = alog10 (data)
 		tvscl, data
 		if (selected_overplot gt 0) then begin
@@ -618,7 +622,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 					contour, reform (field_y_x[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 				endif
 			end else begin
-				if (abs_scale) then local_max = max (abs ([field_x_y[*,py,*], field_z_y[*,py,*]]))
+				if (abs_scale) then local_max = max (abs ([field_x_y[*,py,*],field_z_y[*,py,*]]))
 				vec_len = vector_length * over_length * local_max / over_max
 				velovect, reform (field_x_y[*,py,*], num_over_x, num_over_z), reform (field_z_y[*,py,*], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
@@ -633,18 +637,20 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	end
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
-		data = reform ((cube[*, *, pz] > val_min) < val_max, num_x, num_y)
+		data = reform ((cube[*,*,pz] > val_min) < val_max, num_x, num_y)
 		if ((bin_x ne 1) or (bin_y ne 1)) then data = congrid (data, fix (num_x*bin_x), fix (num_y*bin_y), cubic=0)
 		val_range = cslice_get_range (data)
 		wset, wimg_xy
 		if (show_cross) then begin
-			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do data[i:i+1, py*bin_y+oy] = val_range
-			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do data[i:i+1, py*bin_y+oy] = val_range
-			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do data[px*bin_x+ox, i:i+1] = val_range
-			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do data[px*bin_x+ox, i:i+1] = val_range
-			if ((px le af_x) and (px ge num_x-1-af_x) and (py le af_y) and (py ge num_y-1-af_y)) then data[0:1, 0] = val_range
-		end $
-		else if (abs_scale) then data[0:1, 0] = val_range
+			if (px gt af_x) then for i = fix ((px-af_x)*bin_x), 0, -step do data[i:i+1,py*bin_y+oy] = val_range
+			if (px lt num_x-1-af_x) then for i = fix ((px+af_x)*bin_x), fix (num_x*bin_x)-2, step do data[i:i+1,py*bin_y+oy] = val_range
+			if (py gt af_y) then for i = fix ((py-af_y)*bin_y), 0, -step do data[px*bin_x+ox,i:i+1] = val_range
+			if (py lt num_y-1-af_y) then for i = fix ((py+af_y)*bin_y), fix (num_y*bin_y)-2, step do data[px*bin_x+ox,i:i+1] = val_range
+			if ((px le af_x) and (px ge num_x-1-af_x) and (py le af_y) and (py ge num_y-1-af_y)) then data[0:1,0] = val_range
+		end else if (abs_scale) then begin
+			if (min (data) gt val_min) then data[0,0] = val_min
+			if (max (data) lt val_max) then data[1,0] = val_max
+		end
 		if (log_plot) then data = alog10 (data)
 		tvscl, data
 		if (selected_overplot gt 0) then begin
@@ -653,7 +659,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 					contour, reform (field_z_x[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, nlevels=nlevels, xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 				endif
 			end else begin
-				if (abs_scale) then local_max = max (abs ([field_x_z[*,*,pz], field_y_z[*,*,pz]]))
+				if (abs_scale) then local_max = max (abs ([field_x_z[*,*,pz],field_y_z[*,*,pz]]))
 				vec_len = vector_length * over_length * local_max / over_max
 				velovect, reform (field_x_z[*,*,pz], num_over_x, num_over_y), reform (field_y_z[*,*,pz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
@@ -791,7 +797,7 @@ pro cslice_draw_averages, number
 	normal_charsize = !P.CHARSIZE
 	if (normal_charsize le 0.0) then normal_charsize = 1.0
 	!P.CHARSIZE = 1.25 * normal_charsize
-	vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title = 'horizontal averages of '+set.(selected_cube)
+	pc_vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube)
 	!P.CHARSIZE = normal_charsize
 end
 
