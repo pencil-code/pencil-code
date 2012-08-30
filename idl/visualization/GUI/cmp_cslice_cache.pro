@@ -22,19 +22,9 @@ function cslice_get_range, data
 		cslice_get_minmax_value, data, min, max
 	end
 
-	if (min eq max) then begin
-		; extend value range a little, if necessary (must have min < max)
-		; a uniform value should appear as a 50% saturation gray
-		if (min eq 0.0) then begin
-			min = -1d-42
-			max = 1d-42
-		end else begin
-			min *= 0.99999
-			max *= 1.00001
-		end
-	end
+	range = get_val_range ([min, max])
 
-	return, [min, max]
+	return, [range[0], range[1]]
 end
 
 

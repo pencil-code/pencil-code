@@ -10,29 +10,6 @@
 ;;;   Add more comments
 
 
-; Check value range and extend it, if necessary (for sliders or plotting)
-function pc_show_ts_get_range, data
-
-	tmp = minmax (data)
-	min = tmp[0]
-	max = tmp[1]
-
-	if (min eq max) then begin
-		; extend value range a little, if necessary (must have min < max)
-		; a uniform value should appear as a 50% saturation gray
-		if (min eq 0.0) then begin
-			min = -1d-42
-			max = 1d-42
-		end else begin
-			min *= 0.99999
-			max *= 1.00001
-		end
-	end
-
-	return, [min, max]
-end
-
-
 ; Event handling of visualisation window
 pro pc_show_ts_event, event
 
@@ -181,8 +158,8 @@ pro pc_show_ts_event, event
 			lx_range = minmax (ts.(l_sx))
 			lvx_min = lx_range[0]
 			lvx_max = lx_range[1]
-			WIDGET_CONTROL, lx_min, SET_VALUE = [lvx_min, pc_show_ts_get_range (lx_range)]
-			WIDGET_CONTROL, lx_max, SET_VALUE = [lvx_max, pc_show_ts_get_range (lx_range)]
+			WIDGET_CONTROL, lx_min, SET_VALUE = [lvx_min, get_val_range (lx_range)]
+			WIDGET_CONTROL, lx_max, SET_VALUE = [lvx_max, get_val_range (lx_range)]
 			WIDGET_CONTROL, lx_fr, SENSITIVE = 0
 			L_DRAW_TS = 1
 		end
@@ -194,8 +171,8 @@ pro pc_show_ts_event, event
 			ly_range = minmax (ts.(l_sy))
 			lvy_min = ly_range[0]
 			lvy_max = ly_range[1]
-			WIDGET_CONTROL, ly_min, SET_VALUE = [lvy_min, pc_show_ts_get_range (ly_range)]
-			WIDGET_CONTROL, ly_max, SET_VALUE = [lvy_max, pc_show_ts_get_range (ly_range)]
+			WIDGET_CONTROL, ly_min, SET_VALUE = [lvy_min, get_val_range (ly_range)]
+			WIDGET_CONTROL, ly_max, SET_VALUE = [lvy_max, get_val_range (ly_range)]
 			L_DRAW_TS = 1
 		end
 		break
@@ -206,8 +183,8 @@ pro pc_show_ts_event, event
 			rx_range = minmax (ts.(r_sx))
 			rvx_min = rx_range[0]
 			rvx_max = rx_range[1]
-			WIDGET_CONTROL, rx_min, SET_VALUE = [rvx_min, pc_show_ts_get_range (rx_range)]
-			WIDGET_CONTROL, rx_max, SET_VALUE = [rvx_max, pc_show_ts_get_range (rx_range)]
+			WIDGET_CONTROL, rx_min, SET_VALUE = [rvx_min, get_val_range (rx_range)]
+			WIDGET_CONTROL, rx_max, SET_VALUE = [rvx_max, get_val_range (rx_range)]
 			WIDGET_CONTROL, rx_fr, SENSITIVE = 0
 			R_DRAW_TS = 1
 		end
@@ -219,8 +196,8 @@ pro pc_show_ts_event, event
 			ry_range = minmax (ts.(r_sy))
 			rvy_min = ry_range[0]
 			rvy_max = ry_range[1]
-			WIDGET_CONTROL, ry_min, SET_VALUE = [rvy_min, pc_show_ts_get_range (ry_range)]
-			WIDGET_CONTROL, ry_max, SET_VALUE = [rvy_max, pc_show_ts_get_range (ry_range)]
+			WIDGET_CONTROL, ry_min, SET_VALUE = [rvy_min, get_val_range (ry_range)]
+			WIDGET_CONTROL, ry_max, SET_VALUE = [rvy_max, get_val_range (ry_range)]
 			R_DRAW_TS = 1
 		end
 		break
@@ -243,14 +220,14 @@ pro pc_show_ts_event, event
 		ly_range = minmax (ts.(l_sy))
 		rx_range = minmax (ts.(r_sx))
 		ry_range = minmax (ts.(r_sy))
-		WIDGET_CONTROL, lx_min, SET_VALUE = [lvx_min, pc_show_ts_get_range (lx_range)]
-		WIDGET_CONTROL, lx_max, SET_VALUE = [lvx_max, pc_show_ts_get_range (lx_range)]
-		WIDGET_CONTROL, ly_min, SET_VALUE = [lvy_min, pc_show_ts_get_range (ly_range)]
-		WIDGET_CONTROL, ly_max, SET_VALUE = [lvy_max, pc_show_ts_get_range (ly_range)]
-		WIDGET_CONTROL, rx_min, SET_VALUE = [rvx_min, pc_show_ts_get_range (rx_range)]
-		WIDGET_CONTROL, rx_max, SET_VALUE = [rvx_max, pc_show_ts_get_range (rx_range)]
-		WIDGET_CONTROL, ry_min, SET_VALUE = [rvy_min, pc_show_ts_get_range (ry_range)]
-		WIDGET_CONTROL, ry_max, SET_VALUE = [rvy_max, pc_show_ts_get_range (ry_range)]
+		WIDGET_CONTROL, lx_min, SET_VALUE = [lvx_min, get_val_range (lx_range)]
+		WIDGET_CONTROL, lx_max, SET_VALUE = [lvx_max, get_val_range (lx_range)]
+		WIDGET_CONTROL, ly_min, SET_VALUE = [lvy_min, get_val_range (ly_range)]
+		WIDGET_CONTROL, ly_max, SET_VALUE = [lvy_max, get_val_range (ly_range)]
+		WIDGET_CONTROL, rx_min, SET_VALUE = [rvx_min, get_val_range (rx_range)]
+		WIDGET_CONTROL, rx_max, SET_VALUE = [rvx_max, get_val_range (rx_range)]
+		WIDGET_CONTROL, ry_min, SET_VALUE = [rvy_min, get_val_range (ry_range)]
+		WIDGET_CONTROL, ry_max, SET_VALUE = [rvy_max, get_val_range (ry_range)]
 		pc_show_ts_draw, 1, 1
 		break
 	end
@@ -269,8 +246,8 @@ pro pc_show_ts_event, event
 		if (indices[0] ge 0) then range = minmax ((ts.(l_sy))[indices]) else range = ly_range
 		lvy_min = range[0]
 		lvy_max = range[1]
-		WIDGET_CONTROL, ly_min, SET_VALUE = [lvy_min, pc_show_ts_get_range (ly_range)]
-		WIDGET_CONTROL, ly_max, SET_VALUE = [lvy_max, pc_show_ts_get_range (ly_range)]
+		WIDGET_CONTROL, ly_min, SET_VALUE = [lvy_min, get_val_range (ly_range)]
+		WIDGET_CONTROL, ly_max, SET_VALUE = [lvy_max, get_val_range (ly_range)]
 		L_DRAW_TS = 1
 		break
 	end
@@ -289,8 +266,8 @@ pro pc_show_ts_event, event
 		if (indices[0] ge 0) then range = minmax ((ts.(r_sy))[indices]) else range = ry_range
 		rvy_min = range[0]
 		rvy_max = range[1]
-		WIDGET_CONTROL, ry_min, SET_VALUE = [rvy_min,  pc_show_ts_get_range (ry_range)]
-		WIDGET_CONTROL, ry_max, SET_VALUE = [rvy_max,  pc_show_ts_get_range (ry_range)]
+		WIDGET_CONTROL, ry_min, SET_VALUE = [rvy_min,  get_val_range (ry_range)]
+		WIDGET_CONTROL, ry_max, SET_VALUE = [rvy_max,  get_val_range (ry_range)]
 		R_DRAW_TS = 1
 		break
 	end
@@ -320,8 +297,8 @@ pro pc_show_ts_draw, l_draw, r_draw
 
 	if (l_draw ne 0) then begin
 		wset, l_plot
-		xr = pc_show_ts_get_range ([lvx_min, lvx_max])
-		yr = pc_show_ts_get_range ([lvy_min, lvy_max])
+		xr = get_val_range ([lvx_min, lvx_max])
+		yr = get_val_range ([lvy_min, lvy_max])
 		if (plot_style le 2) then plot, ts.(l_sx), ts.(l_sy), xr=xr, yr=yr, /xs, ys=3
 		if (plot_style eq 1) then oplot, ts.(l_sx), ts.(l_sy), psym=3, color=200
 		if (plot_style eq 2) then oplot, ts.(l_sx), ts.(l_sy), psym=2, color=200
@@ -331,8 +308,8 @@ pro pc_show_ts_draw, l_draw, r_draw
 
 	if (r_draw ne 0) then begin
 		wset, r_plot
-		xr = pc_show_ts_get_range ([rvx_min, rvx_max])
-		yr = pc_show_ts_get_range ([rvy_min, rvy_max])
+		xr = get_val_range ([rvx_min, rvx_max])
+		yr = get_val_range ([rvy_min, rvy_max])
 		if (plot_style le 2) then plot, ts.(r_sx), ts.(r_sy), xr=xr, yr=yr, /xs, ys=3
 		if (plot_style eq 1) then oplot, ts.(r_sx), ts.(r_sy), psym=3, color=200
 		if (plot_style eq 2) then oplot, ts.(r_sx), ts.(r_sy), psym=2, color=200
