@@ -41,6 +41,7 @@ module Particles_coagulation
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
   logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
   logical :: lgravitational_cross_section=.false.
+  logical :: lmontecarlo_sink=.false.
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
@@ -49,7 +50,7 @@ module Particles_coagulation
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
       kernel_pro, lnoselfcollision, lgravitational_cross_section, &
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
-      minimum_particle_mass, minimum_particle_radius
+      minimum_particle_mass, minimum_particle_radius, lmontecarlo_sink
 !
   contains
 !***********************************************************************
@@ -576,7 +577,7 @@ module Particles_coagulation
 !
 !  Turn into sink particle if number of physical particles is less than one.
 !
-          if (npnew*dx*dy*dz<1.0) then
+          if (lmontecarlo_sink .and. npnew*dx*dy*dz<1.0) then
             if (fp(j,iap)<fp(k,iap)) then
               fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
                   rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
