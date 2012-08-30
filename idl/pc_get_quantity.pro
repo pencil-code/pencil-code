@@ -450,8 +450,8 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'Poynting', /fold_case)) then begin
 		; Poynting flux vector [W/m^2]
-		mu0 = pc_get_parameter ('mu0', label=quantity)
-		eta = pc_get_parameter ('eta', label=quantity)
+		mu0 = pc_get_parameter ('mu0_4_pi', label=quantity)
+		eta = pc_get_parameter ('eta', label=quantity) * unit.length*unit.velocity
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
@@ -525,6 +525,7 @@ pro pc_quantity_cache_cleanup
 	undefine, bb
 	undefine, B_2
 	undefine, jj
+	undefine, Poynting
 
 	undefine, sources
 
