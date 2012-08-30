@@ -781,14 +781,7 @@ pro cslice_draw_averages, number
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 
-	tags = tag_names (varsets[number])
-
-	window, 13, xsize=500, ysize=400, title = 'vertical profile analysis', retain=2
-	normal_charsize = !P.CHARSIZE
-	if (normal_charsize le 0.0) then normal_charsize = 1.0
-	!P.CHARSIZE = 1.25 * normal_charsize
-	pc_vert_prof, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube)
-	!P.CHARSIZE = normal_charsize
+	pc_vert_profile, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube)
 end
 
 
