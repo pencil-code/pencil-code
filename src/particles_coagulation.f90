@@ -41,7 +41,7 @@ module Particles_coagulation
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
   logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
   logical :: lgravitational_cross_section=.false.
-  logical :: lmontecarlo_sink=.false.
+  logical :: lmontecarlo_sink=.false., lcollide_own_mass=.true.
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
@@ -50,7 +50,8 @@ module Particles_coagulation
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
       kernel_pro, lnoselfcollision, lgravitational_cross_section, &
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
-      minimum_particle_mass, minimum_particle_radius, lmontecarlo_sink
+      minimum_particle_mass, minimum_particle_radius, lmontecarlo_sink, &
+      lcollide_own_mass
 !
   contains
 !***********************************************************************
@@ -360,11 +361,12 @@ module Particles_coagulation
                         four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                     endif
                     if (j==k .and. lnoselfcollision) kernel=0.0
-                    if (fp(k,iap)<fp(j,iap)) then
-                      tau_coll1=kernel*npswarmj
+                    if (lcollide_own_mass) then
+                      tau_coll1=kernel*min(npswarmj,npswarmk)
                     else
-                      tau_coll1=kernel*npswarmk
+                      tau_coll1=kernel*npswarmj
                     endif
+!                    tau_coll1=kernel*min(npswarmj,npswarmk)
                   else
                     tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                         min(npswarmj,npswarmk)
@@ -605,9 +607,14 @@ module Particles_coagulation
 !  Physical particles in the two swarms collide asymmetrically.
 !
           if (fp(k,iap)<fp(j,iap)) then
-            fp(k,inpswarm)=fp(k,inpswarm)* &
-                 (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
-            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
+            if (lcollide_own_mass) then
+              fp(k,inpswarm)=0.5*fp(j,inpswarm)
+              fp(k,iap)=2**(1.0/3.0)*fp(j,iap)
+            else
+              fp(k,inpswarm)=fp(k,inpswarm)* &
+                   (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
+              fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
+            endif
           else
             fp(k,inpswarm)=0.5*fp(k,inpswarm)
             fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
