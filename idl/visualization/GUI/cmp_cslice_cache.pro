@@ -781,7 +781,18 @@ pro cslice_draw_averages, number
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 
-	pc_vert_profile, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube)
+	vert_label = "height"
+	if (unit.default_length_str) then begin
+		vert_label += ' ['+unit.default_length_str+']'
+	end else if (strupcase (param.unit_system) eq "SI") then begin
+		vert_label += ' [m]'
+	end else if (strupcase (param.unit_system) eq "CGS") then begin
+		vert_label += ' [cm]'
+	end else begin
+		vert_label += ' [code units]'
+	end
+
+	pc_vert_profile, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label
 end
 
 
