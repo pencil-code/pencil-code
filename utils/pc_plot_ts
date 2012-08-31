@@ -156,6 +156,7 @@ the author.
     
 =cut
 
+use Cwd 'abs_path';
 use Getopt::Long;
 use warnings;
 use strict;
@@ -166,9 +167,10 @@ use strict;
 #
 my $out = 'ascii';                 # Default.
 my $file = 'data/time_series.dat'; # Default.
-my ($title, $fun, $xlog, $ylog);
+my ($help, $title, $fun, $xlog, $ylog);
 my ($xrange, $yrange, $xlabel, $ylabel, $sqrt, $gnuplot);
 my $result = GetOptions(
+                 "help"     => \$help,   # Print help.
                  "title=s"  => \$title,  # Overall title.
                  "file=s"   => \$file,   # Time series data file.
                  "fun=s"    => \$fun,    # Custom function in (x,y).
@@ -183,6 +185,25 @@ my $result = GetOptions(
                  "gnuplot"  => \$gnuplot # Print commands to STDOUT, don't run them.
             );
 
+
+#####
+#
+# HANDLE HELP FIRST
+#
+#####
+
+if ($help) {
+    my $script  = abs_path($0);
+    
+    print "The help for pc_plot_ts requires perldoc. If you do not\n";
+    print "have perldoc installed, you can install it with:\n\n";
+    print "    sudo apt-get install perldoc\n";
+    print "\n";
+    
+    system("perldoc $script");
+
+    exit 0;
+}
 
 #
 #  Get variables from command line.
@@ -228,6 +249,10 @@ $gnuplot ? open (GNUPLOT, ">-")  # Print to STDOUT.
 #
 #  Title.
 #
+unless ($title) {
+    $title = $file;
+    $title =~ s/_/\\_/g;
+}
 
 print GNUPLOT "set title '" . ($title ? $title : $file) . "'\n";
 
@@ -269,7 +294,7 @@ $fun  and print GNUPLOT "f(x,y) = $fun\n";
 #
 #  Read data into 
 #
-open TS, "data/time_series.dat";
+open TS, $file;
 
 my $header = <TS>;
 my @ts = <TS>;
