@@ -12,8 +12,8 @@
 ; Event handling of vertical profile window
 pro pc_vert_profile_event, event
 
-	common vert_prof_common, z, x_log, prof_mean, prof_min, prof_max, x_range, x_min, x_max, z_range, z_min, z_max
-	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, show_zero, show_line, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
+	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label
+	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -134,9 +134,25 @@ pro pc_vert_profile_event, event
 		DRAW_PROF = 1
 		break
 	end
+	'LOG_PLOT': begin
+		log_plot = event.select
+		if (log_plot) then begin
+			show_zero = 0
+			WIDGET_CONTROL, b_zero, SET_VALUE = show_zero
+		end
+		DRAW_PROF = 1
+		break
+	end
 	'RESET': begin
 		pc_vert_profile_reset
 		DRAW_PROF = 1
+		break
+	end
+	'IMAGE': begin
+		WIDGET_CONTROL, event.id, SENSITIVE = 0
+		pc_save_image, prof_name+".png", window=win
+		save, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_label, z_range, z_label, file=prof_name+".xdr"
+		WIDGET_CONTROL, event.id, SENSITIVE = 1
 		break
 	end
 	'Z_COUPLE': begin
@@ -172,8 +188,8 @@ end
 ; Draw the timeseries plots
 pro pc_vert_profile_draw
 
-	common vert_prof_common, z, x_log, prof_mean, prof_min, prof_max, x_range, x_min, x_max, z_range, z_min, z_max
-	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, show_zero, show_line, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
+	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label
+	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
 
 	wset, win
 
@@ -189,7 +205,7 @@ pro pc_vert_profile_draw
 
 	; plot profile mean value
 	if (plot_style ge 3) then psym = 3 else psym = 0
-	plot, prof_mean, z, xlog=x_log, xs=3, ys=1, xrange=range, yrange=get_val_range (z_range), psym=psym
+	plot, prof_mean, z, xlog=log_plot, xs=3, ys=1, xr=range, yr=get_val_range (z_range), psym=psym, title=prof_name, xtitle=x_label, ytitle=z_label
 	if (show_line) then oplot, [0.0, 0.0], minmax (z), linestyle=1, color=20020
 	if (plot_style le 2) then oplot, prof_mean, z
 	if (plot_style gt 0) then begin
@@ -216,8 +232,8 @@ end
 ; Reset to defaults
 pro pc_vert_profile_reset
 
-	common vert_prof_common, z, x_log, prof_mean, prof_min, prof_max, x_range, x_min, x_max, z_range, z_min, z_max
-	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, show_zero, show_line, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
+	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label
+	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
 
 	; initial GUI settings
 	x_range = [x_min, x_max]
@@ -227,12 +243,15 @@ pro pc_vert_profile_reset
 	line_style = 1
 	show_zero = 0
 	show_line = 1
+	log_plot = 0
 
 	if (win ge 0) then begin
 		WIDGET_CONTROL, l_plot, SET_DROPLIST_SELECT = plot_style
 		WIDGET_CONTROL, l_line, SET_DROPLIST_SELECT = line_style
 		WIDGET_CONTROL, b_zero, SET_VALUE = show_zero
 		WIDGET_CONTROL, b_line, SET_VALUE = show_line
+		WIDGET_CONTROL, b_log, SET_VALUE = log_plot
+		WIDGET_CONTROL, b_log, sensitive = (x_min gt 0.0)
 		WIDGET_CONTROL, sx_min, SET_VALUE = x_range[0]
 		WIDGET_CONTROL, sx_max, SET_VALUE = x_range[1]
 		WIDGET_CONTROL, sz_min, SET_VALUE = z_range[0]
@@ -244,27 +263,29 @@ end
 
 ; Calculate and draw a vertical profile of the given 3D data
 ;
-; data:   3D data cube (can be including ghost cells)
-; coord:  coordinates for the vertical position of data in the cube,
-;         asumed to be in the center of the data cube (eg. without ghost cells).
-;         If omitted, the index numbers are used as coordinates.
-; title:  title string for the plot
-; min:    initial minimum value for data display
-; max:    initial maximum value for data display
-; log:    set this to use a logarithmic scale for data display
+; data:        3D data cube (can be including ghost cells)
+; coord:       coordinates for the vertical position of data in the cube,
+;              asumed to be in the center of the data cube (eg. without ghost cells).
+;              If omitted, the index numbers are used as coordinates.
+; title:       title string for the plot
+; min:         initial minimum value for data display
+; max:         initial maximum value for data display
+; log:         set this to use a logarithmic scale for data display
+; horiz_label: label string for the horizontal axis
+; vert_label:  label string for the vertical axis
 ;
-pro pc_vert_profile, data, coord=coord, title=title, min=min, max=max, log=log
+pro pc_vert_profile, data, coord=coord, title=title, horiz_label=horiz_label, vert_label=vert_label, min=min, max=max, log=log
 
-	common vert_prof_common, z, x_log, prof_mean, prof_min, prof_max, x_range, x_min, x_max, z_range, z_min, z_max
-	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, show_zero, show_line, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
+	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label
+	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
 
 	num = (size (data))[3]
 	if (n_elements (coord) eq 0) then coord = findgen (num)
 	num_coord = size (coord, /n_elements)
 	z = reform (coord, num_coord)
 
-	x_log = 0
-	if (keyword_set (log)) then x_log = log
+	prof_name = ""
+	if (keyword_set (title)) then prof_name = title
 
 	; if the data contains ghost cells, but not the coordinates, center the plot:
 	start_pos = (num - num_coord) / 2
@@ -283,6 +304,7 @@ pro pc_vert_profile, data, coord=coord, title=title, min=min, max=max, log=log
 	x_min = min (prof_min)
 	x_max = max (prof_max)
 	x_range = [x_min, x_max]
+	if (keyword_set (horiz_label)) then x_label = horiz_label else x_label = ""
 
 	; extend vertical profile plot range by half a grid distance
 	if (num_coord le 1) then begin
@@ -292,6 +314,7 @@ pro pc_vert_profile, data, coord=coord, title=title, min=min, max=max, log=log
 	end
 	z_min = z_range[0]
 	z_max = z_range[1]
+	if (keyword_set (vert_label)) then z_label = vert_label else z_label = ""
 
 	; GUI default settings
 	win = -1
@@ -300,15 +323,17 @@ pro pc_vert_profile, data, coord=coord, title=title, min=min, max=max, log=log
 	sl_width = (plot_width - 100) / 2
 	pc_vert_profile_reset
 
-	MOTHER	= WIDGET_BASE (title='PC vertical profile analysis')
+	if (prof_name eq "") then add = "" else add = " of "
+	MOTHER	= WIDGET_BASE (title="PC vertical profile analysis"+add+prof_name)
 	APP	= WIDGET_BASE (MOTHER, /col)
 
 	BASE	= WIDGET_BASE (APP, /row)
 
 	CTRL	= WIDGET_BASE (BASE, /row)
 
-	BUT	= WIDGET_BASE (CTRL, /col, /align_center)
+	BUT	= WIDGET_BASE (CTRL, /col)
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='RESET', uvalue='RESET')
+	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='SAVE PLOT', uvalue='IMAGE')
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='QUIT', uvalue='QUIT')
 
 	BUT	= WIDGET_BASE (CTRL, /col, frame=1, /align_left)
@@ -316,6 +341,7 @@ pro pc_vert_profile, data, coord=coord, title=title, min=min, max=max, log=log
 	l_line	= WIDGET_DROPLIST (BUT, value=['none', 'dashed', 'dotted', 'solid'], uvalue='LINESTYLE', title='plot min/max:')
 
 	BUT	= WIDGET_BASE (CTRL, /col)
+	b_log	= CW_BGROUP (BUT, 'logarithmic plot', /nonexcl, uvalue='LOG_PLOT', set_value=log_plot)
 	b_zero	= CW_BGROUP (BUT, 'extend to zero', /nonexcl, uvalue='ZERO', set_value=show_zero)
 	b_line	= CW_BGROUP (BUT, 'plot zero line', /nonexcl, uvalue='LINE', set_value=show_line)
 
@@ -356,8 +382,11 @@ pro pc_vert_profile, data, coord=coord, title=title, min=min, max=max, log=log
 
 	pc_vert_profile_reset
 
+	if (keyword_set (log)) then log_plot = (log ne 0) and (x_min gt 0.0)
 	if (keyword_set (min)) then x_range[0] = min
 	if (keyword_set (max)) then x_range[1] = max
+	WIDGET_CONTROL, b_log, SET_VALUE = log_plot
+	WIDGET_CONTROL, b_log, sensitive = (x_min gt 0.0)
 	WIDGET_CONTROL, sx_min, SET_VALUE = x_range[0]
 	WIDGET_CONTROL, sx_max, SET_VALUE = x_range[1]
 
