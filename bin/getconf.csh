@@ -1283,6 +1283,18 @@ else if ($hostname =~ jugene*) then
   setenv SCP "scp -q"
   setenv SCRATCH_DIR /work/$USER
 #-------------------------------------------------
+else if ($hostname =~ juqueen*) then
+   echo "Blue Gene/Q at Juelich"
+   set local_disc = 0
+   set one_local_disc = 1
+   set mpirun = runjob
+   set mpirunops = "--ranks-per-node 16"
+   set mpirunops2="--exe"
+   set npops = ''
+   setenv SSH "ssh -q -x"
+   setenv SCP "scp -q"
+   setenv SCRATCH_DIR /work/$USER
+#-------------------------------------------------
 else if ($hn =~ an*) then
   echo "Alarik cluster at Lunarc in Lund"
   set mpirun = "mpiexec"
