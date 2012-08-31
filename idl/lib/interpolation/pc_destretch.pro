@@ -35,6 +35,8 @@ function pc_destretch, data, grid, target
 		print, ""
 		return, -1
 	end
+	print, "ERROR: this function is still under development!"
+	return, -1
 
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 	if (n_elements (param) eq 0) then pc_read_param, obj=param, dim=dim, datadir=datadir, /quiet
