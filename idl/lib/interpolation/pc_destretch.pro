@@ -127,20 +127,18 @@ function pc_destretch, data, grid, target
 	if (n_elements (quantity) gt 1) then begin
 		; Iterate through availabe quantities
 		num = n_elements (avail)
-		result = create_struct (quantity[avail[0]], pc_compute_quantity (vars, index, quantity[avail[0]]))
+		result = create_struct (quantity[avail[0]], pc_get_quantity (vars, index, quantity[avail[0]]))
 		if (num gt 1) then begin
 			for pos = 1, num-1 do begin
-				result = create_struct (result, quantity[avail[pos]], pc_compute_quantity (vars, index, quantity[avail[pos]]))
+				result = create_struct (result, quantity[avail[pos]], pc_get_quantity (vars, index, quantity[avail[pos]], cleanup=((pos eq num-1) and (not cache or cleanup))))
 			end
 		end
 	end else if (n_elements (quantity) eq 1) then begin
 		; Compute requested quantity:
-		result = pc_compute_quantity (vars, index, quantity)
+		result = pc_get_quantity (vars, index, quantity, cleanup=(not cache or cleanup))
 	end else begin
 		result = !Values.D_NaN
 	end
-
-	if (not keyword_set (cache) or keyword_set (cleanup)) then pc_quantity_cache_cleanup
 
 	return, result
 
