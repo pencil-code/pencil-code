@@ -28,7 +28,7 @@ program pc_distribute
   real, dimension (mzgrid) :: gz
   real :: dummy_dx, dummy_dy, dummy_dz
   logical :: ex
-  integer :: mvar_in, io_len, pz, pa, alloc_err
+  integer :: mvar_in, io_len, pz, pa, alloc_err, lun_global=87
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lrun=.true.
@@ -146,7 +146,7 @@ program pc_distribute
   close (lun_input)
   t = t_sp
 !
-  open (lun_input, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
+  open (lun_global, FILE=trim(directory_in)//'/'//filename, access='direct', recl=mxgrid*mygrid*io_len, status='old')
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -170,7 +170,7 @@ program pc_distribute
     ! read xy-layer:
     do pa = 1, mvar_io
       do pz = 1, mz
-        read (lun_input, rec=pz+ipz*nz+(pa-1)*mzgrid) gf(:,:,pz,pa)
+        read (lun_global, rec=pz+ipz*nz+(pa-1)*mzgrid) gf(:,:,pz,pa)
       enddo
     enddo
 !
@@ -209,14 +209,14 @@ program pc_distribute
         if (ip<=6.and.lroot) print*, 'reading grid coordinates'
         call rgrid ('grid.dat')
 !
-! Size of box at local processor. The if-statement is for 
+! Size of box at local processor. The if-statement is for
 ! backward compatibility.
 !
-        if (all(lequidist)) then 
+        if (all(lequidist)) then
           Lxyz_loc(1)=Lxyz(1)/nprocx
           Lxyz_loc(2)=Lxyz(2)/nprocy
           Lxyz_loc(3)=Lxyz(3)/nprocz
-          xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1) 
+          xyz0_loc(1)=xyz0(1)+ipx*Lxyz_loc(1)
           xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
           xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
           xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
@@ -251,7 +251,7 @@ program pc_distribute
     enddo
   enddo
 !
-  close (lun_input)
+  close (lun_global)
   print *, 'Writing snapshot for time t =', t
 !
 !  Gvie all modules the possibility to exit properly.
