@@ -623,29 +623,22 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LIBSIG= #(gauss)
 
 ## Linux:
+## default settings
 ##
-## old OS Defaults
-##
-#FC=g95 -fno-second-underscore
+#FC=gfortran
+#CC=gcc -DFUNDERSC=1
 #F77=$(FC)
 #FFLAGS=-O3
+#CFLAGS=-O3
 #F90FLAGS=
 #LD_MPI=
-#CFLAGS=-O3 -DFUNDERSC=1 -Wall
+#FFLAGS_DOUBLE=-fdefault-real-8
 #CFLAGS_FFTW3=
 #FFLAGS_FFTW3=
 #LD_FFTW3=
 #CFLAGS_FFTW2=
 #FFLAGS_FFTW2=
 #LD_FFTW2=
-##
-##  New default settings
-##
-#FC=gfortran
-#FFLAGS=-O3
-#FFLAGS_DOUBLE=-fdefault-real-8
-#F77=$(FC)
-#CC=gcc
 ##
 ## Settings for individual machines
 ##
