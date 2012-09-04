@@ -1,0 +1,32 @@
+Compiler-based configuration scheme:
+====================================
+In the "compilers" folder you will find preset configuration files for
+compilers suites in capital letters with the name "manufacturer-suitename".
+These inherit separate configuration files stored in "compilers/separate/".
+
+Host-based configuration scheme:
+================================
+Here, individual hostname-based configuration files can be stored, where you
+can set host-related library and include paths, as well as optimization flags.
+Usually, a host-file should inherit one of the compiler-suite configurations.
+
+If for some reason, you have to mix FORTRAN and C compilers from different
+suites, you can have a host-based configuration file inheriting directly the
+settings from the two matching files in "compilers/separate/". But, you will
+have to make sure that the number of underscores in function names are fitting
+together between these two compilers. For that, you can just try out the
+CFLAGS-option "-DFUNDERSC=x" for the C-compiler, where x is one of {0,1,2}.
+Otherwise, nothing else should be neccessary. More information about the tested
+combinations of compilers-settings, please refer to Table 1 in the manual.
+
+Operating-System-based configuration scheme:
+============================================
+If you have no clue at all, you might just try the "os/GNU_Linux" configuration
+for Linux-based systems, after installing the "GCC - GNU compiler collection":
+$ cd work_directory
+$ pc_setupsrc
+$ pc_build -f os/GNU_Linux
+
+If you need MPI, you can simply add it with:
+$ pc_build -f os/GNU_Linux,mpi/default
+
