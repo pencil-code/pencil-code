@@ -792,7 +792,9 @@ pro cslice_draw_averages, number
 		vert_label += ' [code units]'
 	end
 
-	pc_vert_profile, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label
+	prefix = varfiles[selected_snapshot].title + "_" + (tag_names (set))[selected_cube]
+	time = strtrim (varfiles[selected_snapshot].time * unit.time/unit.default_time, 2) + " " + unit.default_time_str
+	pc_vert_profile, reform ((varsets[number].(selected_cube))[cut], num_x, num_y, num_z), coord=coord.z, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
 end
 
 
