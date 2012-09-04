@@ -6315,14 +6315,9 @@ module Mpicomm
 !
 !  Read file content into buffer.
 !
-        open(unit, FILE=file, FORM='unformatted', RECL=bytes, &
-            ACCESS='direct', STATUS='old')
-        read(unit, REC=1, IOSTAT=ierr) buffer
-        call stop_it_if_any((ierr<0),'true_parallel_open: error reading file "'// &
-            trim(file)//'" into buffer')
+        open(unit, FILE=file, FORM='unformatted', RECL=bytes, ACCESS='direct', STATUS='old')
+        read(unit, REC=1) buffer
         close(unit)
-      else
-        call stop_it_if_any(.false.,'')
       endif
 !
 !  Broadcast buffer to all MPI ranks.
@@ -6343,16 +6338,14 @@ module Mpicomm
 !
 !     *** WORK HERE: THIS CODE WILL BE DELETED SOON
 !                   (because of an ifort compiler bug)
-!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct')
+!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct', IOSTAT=ierr)
 !      write(unit, REC=1) buffer
 !     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
-      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct', IOSTAT=ierr)
-      call stop_it_if_any((ierr/=0),'true_parallel_open: error opening temporary file "'//trim(file)//'"')
+      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct')
       do pos=1,bytes
         write (unit, '(A)', REC=pos) buffer(pos)
       enddo
-      endfile(unit, iostat=ierr)
-      call stop_it_if_any((ierr<0),'true_parallel_open: error writing temporary file "'//trim(file)//'"')
+      endfile(unit)
       close(unit)
       deallocate(buffer)
 !
