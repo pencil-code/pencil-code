@@ -110,7 +110,7 @@ FFLAGS       =
 F90FLAGS     =
 F77          = f90
 F77FLAGS     =
-CFLAGS       = -O3 -DFUNDERSC=1
+CFLAGS       =
 FCCLEANER    =
 LIBMPISUFFIX =
 MAKEOPTS     =
