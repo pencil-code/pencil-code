@@ -12,7 +12,7 @@
 ; Event handling of vertical profile window
 pro pc_vert_profile_event, event
 
-	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label
+	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label, file_name
 	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -150,8 +150,9 @@ pro pc_vert_profile_event, event
 	end
 	'IMAGE': begin
 		WIDGET_CONTROL, event.id, SENSITIVE = 0
-		pc_save_image, prof_name+".png", window=win
-		save, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_label, z_range, z_label, file=prof_name+".xdr"
+		file_name = prof_name
+		pc_save_image, file_name+".png", window=win
+		save, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_label, z_range, z_label, file=file_name+".xdr"
 		WIDGET_CONTROL, event.id, SENSITIVE = 1
 		break
 	end
@@ -188,7 +189,7 @@ end
 ; Draw the timeseries plots
 pro pc_vert_profile_draw
 
-	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label
+	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label, file_name
 	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
 
 	wset, win
@@ -273,10 +274,11 @@ end
 ; log:         set this to use a logarithmic scale for data display
 ; horiz_label: label string for the horizontal axis
 ; vert_label:  label string for the vertical axis
+; file_label:  label string for filenames (special characters will be filtered)
 ;
-pro pc_vert_profile, data, coord=coord, title=title, horiz_label=horiz_label, vert_label=vert_label, min=min, max=max, log=log
+pro pc_vert_profile, data, coord=coord, title=title, horiz_label=horiz_label, vert_label=vert_label, min=min, max=max, log=log, file_label=file_label
 
-	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label
+	common vert_prof_common, z, prof_name, prof_mean, prof_min, prof_max, x_range, x_min, x_max, x_label, z_range, z_min, z_max, z_label, file_name
 	common vert_prof_GUI_common, win, l_plot, l_line, plot_style, line_style, b_zero, b_line, b_log, show_zero, show_line, log_plot, sx_set, sz_set, sz_fr, z_coupled, sx_max, sx_min, sz_max, sz_min
 
 	num = (size (data))[3]
@@ -286,6 +288,14 @@ pro pc_vert_profile, data, coord=coord, title=title, horiz_label=horiz_label, ve
 
 	prof_name = ""
 	if (keyword_set (title)) then prof_name = title
+
+	if (not keyword_set (file_label)) then file_name = prof_name
+	pos = stregex (file_name, '[ \/]+', length=len)
+	while (pos gt 0) begin
+		file_name = strmid (file_name, 0, pos) + "_" + strmid (file_name, pos+len)
+		pos = stregex (file_name, '[ \/]+', length=len)
+	end
+	file_label = file_name
 
 	; if the data contains ghost cells, but not the coordinates, center the plot:
 	start_pos = (num - num_coord) / 2
