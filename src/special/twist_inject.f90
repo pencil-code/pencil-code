@@ -88,7 +88,7 @@ module Special
           dIring=0.0,dposx=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
   real, save :: posx,Iring    
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,&
-           posx,dposx,tilt,dtilt,Ilimit
+           posx,dposx,tilt,dtilt,Ilimit,poslimit
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -701,14 +701,11 @@ module Special
               f(l1,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
                       -distxy*tmpz/dist)
               f(l1,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
-            else if (dIring.ne.0.0) then
-              bb=f(l1,m,n,ibx:ibz)
-              vv=f(l1,m,n,iux:iuz)
-              call cross(vv,bb,uxb)
-              df(l1,m,n,iax:iaz) = uxb
-              endif
-!
+            else if (dIring.eq.0.0) then
+              f(l1,m,n,iuy:iuz)=0.0
             endif
+!
+          endif
         enddo
       enddo
 !
@@ -743,7 +740,7 @@ module Special
 !  so its derivative is .5*(1.+erf(-x/(sqrt(2)*eps))
 !
       case ('gaussian')
-        width2=20.0*width
+        width2=50.0*width
         if (abs(zz1).le.width2) then
           if (sqrt(tmp**2+zz1**2).le.width2) then
             vv(3) = + fring * .5*(erfunc(sqrt(width2**2-zz1**2)/width/sqrt(2.))- &
@@ -760,21 +757,6 @@ module Special
         else
           vv(3)=0.0
         endif  
-!        if (abs(zz1).le.width) then
-!          if (abs(tmp).le.width) then
-!            vv(3) = + fring * .5*(erfunc(1./sqrt(2.))-erfunc(tmp/(sqrt(2.)*width))) &
-!                     *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
-!          else if (tmp.gt.width) then
-!            vv(3) = 0.0
-!          else if (tmp.lt.width) then
-!            vv(3) = + fring * .5*(erfunc(1./sqrt(2.))-erfunc(-1./(sqrt(2.)))) &
-!                     *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
-!          endif
-!        else
-!          vv(3)=0.0
-!        endif  
-!        vv(3) = + fring * .5*(1.-erfunc(tmp/(sqrt(2.)*width))) &
-!                          * exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
 !
 !  tanh profile, so the delta function is approximated by 1/cosh^2.
 !  The name tanh is misleading, because the actual B frofile is
