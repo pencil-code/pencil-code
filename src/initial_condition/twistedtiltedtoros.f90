@@ -152,6 +152,7 @@ module InitialCondition
 !
       use Boundcond, only: update_ghosts 
       use Deriv, only: der
+      use Hydro, only: find_umax
       use Sub, only: curl_mn,gij
       use IO,  only: input_snap,input_snap_finalize
 !
@@ -160,7 +161,7 @@ module InitialCondition
       real, dimension (nx,3) :: tmpv,aa,bb
       real, dimension (nx) :: xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy
       real, dimension (nx) :: tmpx,tmpy,tmpz,dfy,dfz
-      real :: xi
+      real :: xi,umax
       integer :: l
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part) 
@@ -209,7 +210,7 @@ module InitialCondition
       enddo
       call update_ghosts(f)
 !
-! The global arrays bx_ext,jy_ext, jz_ext are used to store the surface radial
+! The arrays iux,iuy,iuz is used to store the surface radial
 ! magnetic field, theta-comp of vel and phi-comp of velocity at the surface
 ! respectively if required by the problem
 !
@@ -221,16 +222,17 @@ module InitialCondition
             f(l1:l2,m,n,iux)=bb(:,1)**2
           enddo
         enddo  
-       call update_ghosts(f)
+        call find_umax(f,umax) 
+        call update_ghosts(f)
         do n=n1,n2
           do m=m1,m2
             call der(f,iux,dfz,3)
             call der(f,iux,dfy,2)
 !            
-! Normalize to unity. Magnitude will be multiplied later            
+! Normalize to unity.          
 !
-            f(l1,m,n,iuy)=dIring*dfz(1)/maxval(f(l1,m1:m2,n1:n2,iux))
-            f(l1,m,n,iuz)=-dIring*dfy(1)/maxval(f(l1,m1:m2,n1:n2,iux))
+            f(l1,m,n,iuy)=dIring*dfz(1)/umax
+            f(l1,m,n,iuz)=-dIring*dfy(1)/umax
           enddo
         enddo  
       f(l1:l2,m1:m2,n1:n2,iux)=0.0
