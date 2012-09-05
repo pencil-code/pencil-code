@@ -37,8 +37,10 @@ module Special
   real :: bullets_h0=0.,hyper3_diffrho=0.
   logical :: lfilter_farray=.false.
   real, dimension(mvar) :: filter_strength=0.01
+  real :: Ltot
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
+  character /len=labellen) :: loop_frac='full'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
@@ -51,7 +53,7 @@ module Special
       exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc, &
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
       bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho, &
-      lfilter_farray,filter_strength
+      lfilter_farray,filter_strength,loop_frac
 !
 ! variables for print.in
 !
@@ -133,6 +135,16 @@ module Special
         read(unit) lnTT_init_prof
         close(unit)
       endif
+!
+      select case (loop_frac)
+      case ('full')
+        Ltot = Lxyz(1) + 2*xyz0(1)
+      case ('half')
+        Ltot = 2*Lxyz(1) + 2*xyz0(1)
+      case default
+        call fatal_error('initialize_initial_condition','Wrong loop_frac')
+        Ltot = 0.
+      endselect
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -910,7 +922,7 @@ module Special
       real :: heat_unit,heat_flux
       real :: nano_sigma_t,nano_time,nano_start,nano_sigma_z
       real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
-      real :: nano_amplitude,Ltot
+      real :: nano_amplitude
       real, dimension(2) :: event_pos
       type (pencil_case) :: p
       integer :: i
@@ -922,7 +934,6 @@ module Special
       x_Mm = x(l1:l2)*unit_length*1e-6
 !
 ! The height in [Mm]
-      Ltot = 2*xyz0(1)+Lxyz(1)
       height = Ltot/pi*sin(x(l1:l2)/Ltot*pi)*unit_length*1e-6
 !
       heatinput = 0.

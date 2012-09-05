@@ -25,12 +25,16 @@ module InitialCondition
   real :: rho_init=0.
   real :: T0=6000.,T1=1e6,z0_tanh=4e6,width_tanh=1e6
   character (len=labellen) :: direction='z'
+  character (len=labellen) :: loop_frac='full'
   real, dimension(4) :: mpoly_special = (/1.3,1000.,-1.04,500./)
   real, dimension(3) :: zpoly = (/0.,3.,5./)
 !
   namelist /initial_condition_pars/ &
       lnrho_init,lnTT_init,stratitype,rho_init,direction, &
-      set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly_special,zpoly
+      set_lnTT_first,T0,T1,z0_tanh,width_tanh,mpoly_special,zpoly, &
+      loop_frac
+!
+  real :: Ltot
 !
 contains
 !***********************************************************************
@@ -65,6 +69,16 @@ contains
         write(*,*) "-------------------------------------------------------------"
       endif
 !
+      select case (loop_frac)
+      case ('full')
+        Ltot = Lxyz(1) + 2*xyz0(1)
+      case ('half')
+        Ltot = 2*Lxyz(1) + 2*xyz0(1)
+      case default
+        call fatal_error('initialize_initial_condition','Wrong loop_frac')
+        Ltot = 0.
+      endselect
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_initial_condition
@@ -467,10 +481,6 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: TT,z_SI,TT_var
       integer :: i,j
-      real :: Ltot
-!
-! If we not start at z=0
-      Ltot = Lxyz(1) + 2*xyz0(1)
 !
 ! The height in [m]
       z_SI = Ltot/pi*sin(x/Ltot*pi)*unit_length

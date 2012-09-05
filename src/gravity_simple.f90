@@ -254,6 +254,13 @@ module Gravity
         potx_xpencil =sin(x / (2*xyz0(1)+Lxyz(1)) * pi)
         potx_xpencil =gravx*(2*xyz0(1)+Lxyz(1))/pi * potx_xpencil + potx_const
 !
+      case ('half-loop')
+        if (lroot) print*,'initialize_gravity: 1D half-loop, gravx=',gravx
+        gravx_xpencil=cos(x / (2*xyz0(1)+2*Lxyz(1)) * pi)
+        gravx_xpencil=gravx * gravx_xpencil
+        potx_xpencil =sin(x / (2*xyz0(1)+2*Lxyz(1)) * pi)
+        potx_xpencil =gravx*(2*xyz0(1)+2*Lxyz(1))/pi * potx_xpencil + potx_const
+!
       case default
         if (lroot) print*, &
             'initialize_gravity: unknown gravx_profile ', gravx_profile
@@ -459,7 +466,7 @@ module Gravity
 !
 !  This subroutine checks, if the gravity paramters as type, profile and values
 !  are set consistently with initial condittion for example.
-!  
+!
 !  ginput     =     value for the gravity, GM    : 4, 10, 200
 !  gtype      =     type of gravity              : 'gravx','gravy','gravz'
 !  gprofile   =     profile of the gravity       : 'kepler','const'
