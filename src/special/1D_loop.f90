@@ -40,7 +40,7 @@ module Special
   real :: Ltot
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
-  character /len=labellen) :: loop_frac='full'
+  character (len=labellen) :: loop_frac='full'
   real, dimension(2) :: heat_par_exp=(/0.,1./)
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
