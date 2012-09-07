@@ -1698,7 +1698,7 @@ endif
 
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
-set subdirs = ("allprocs" "averages" "idl")
+set subdirs = ("allprocs" "reduced" "averages" "idl")
 set procdirs = \
     `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
 if ($local_disc) then

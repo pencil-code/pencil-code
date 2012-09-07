@@ -156,7 +156,7 @@ foreach dir ($procdirs $subdirs)
     mkdir $ddir
   else if (! -e NOERASE) then
     # Clean up
-    if ($dir == "allprocs") then
+    if ($dir == "allprocs" || $dir == "reduced") then
       rm -f $ddir/VAR[0-9]* $ddir/PERS[0-9]* $ddir/grid.dat $ddir/dim.dat $ddir/varN.list >& /dev/null
     else
       rm -f $ddir/VAR[0-9]* $ddir/PERS[0-9]* $ddir/TAVG[0-9]* $ddir/*.info $ddir/slice* $ddir/PVAR[0-9]* $ddir/SPVAR[0-9]* $ddir/varN.list >& /dev/null
