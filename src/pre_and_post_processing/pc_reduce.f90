@@ -34,6 +34,7 @@ program pc_reduce
   real, dimension (mygrid) :: gy, gdy_1, gdy_tilde
   logical :: ex
   integer :: mvar_in, io_len, px, py, pz, pa, start_pos, end_pos, alloc_err
+  integer :: iprocz_slowest = 0
   integer(kind=8) :: rec_len, num_rec
   real, parameter :: inv_reduce = 1.0 / reduce, inv_reduce_2 = 1.0 / reduce**2
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
@@ -450,6 +451,15 @@ program pc_reduce
   write (lun_output) rdx_1, rdy_1, gdz_1
   write (lun_output) rdx_tilde, rdy_tilde, gdz_tilde
   close (lun_output)
+!
+  ! write global dim:
+  open (lun_output, FILE=trim(directory_out)//'/dim.dat', FORM='formatted', status='replace')
+  write (lun_output, '(3I7,3I5)') nrx, nry, nzgrid+2*nghost, mvar, maux, mglobal
+  write (lun_output, '(A)') numeric_precision()
+  write (lun_output, '(3I5)') nghost, nghost, nghost
+  if (lprocz_slowest) iprocz_slowest = 1
+  write (lun_output, '(4I5)') nprocx, nprocy, nprocz, iprocz_slowest
+  close(lun_output)
 !
   print*, 'Writing snapshot for time t =', t
 !
