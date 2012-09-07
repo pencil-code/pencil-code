@@ -7,11 +7,11 @@
 ;;  $Date: 2008-06-12 13:26:15 $
 ;;  $Revision: 1.17 $
 ;;
-;;  27-nov-02/tony: coded 
+;;  27-nov-02/tony: coded
 ;;
 pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     datadir=datadir, proc=proc, print=print, quiet=quiet, help=help, $
-    swap_endian=swap_endian, allprocs=allprocs
+    swap_endian=swap_endian, allprocs=allprocs, reduced=reduced
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
@@ -33,6 +33,8 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     print, "                                                                              "
     print, "  datadir: specify root data directory. Default: './data'          [string]   "
     print, "     proc: specify a processor to get the data from. Default is 0  [integer]  "
+    print, " allprocs: specify a collectively written grid file. Default is 0  [integer]  "
+    print, " /reduced: use a reduced dataset grid file.                                   "
     print, "                                                                              "
     print, "   object: optional structure in which to return all the above     [structure]"
     print, "                                                                              "
@@ -46,22 +48,27 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
-; Check if allprocs keyword is set.
+; Check if allprocs is set.
 ;
 if (keyword_set(allprocs)) then begin
-  if (n_elements(proc) ne 0) then message, 'pc_read_grid: /allproc and proc cannot be both set.'
+  if (n_elements(proc) ne 0) then message, "pc_read_grid: 'allprocs' and 'proc' cannot be set both."
 endif else begin
   allprocs = 0
 endelse
 ;
+; Check if reduced keyword is set.
+;
+if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
+    message, "pc_read_grid: /reduced and 'proc' cannot be both set."
+;
 ; Get necessary dimensions.
 ;
-if (n_elements(dim) eq 0) then  $
-    pc_read_dim,object=dim,datadir=datadir,proc=proc,QUIET=QUIET 
-if (n_elements(param) eq 0) then  $
-    pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
+if (n_elements(dim) eq 0) then $
+    pc_read_dim,object=dim,datadir=datadir,proc=proc,reduced=reduced,QUIET=QUIET
+if (n_elements(param) eq 0) then $
+    pc_read_param,object=param,datadir=datadir,QUIET=QUIET
 
-if (allprocs gt 0) then begin
+if ((allprocs gt 0) or keyword_set (reduced)) then begin
   ncpus=1
 endif else begin
   ncpus=dim.nprocx*dim.nprocy*dim.nprocz
@@ -88,8 +95,8 @@ pc_set_precision, dim=dim, quiet=quiet
 ;
 t=zero
 x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
-dx=zero & dy=zero & dz=zero 
-Lx=zero & Ly=zero & Lz=zero 
+dx=zero & dy=zero & dz=zero
+Lx=zero & Ly=zero & Lz=zero
 dx_1=fltarr(dim.mx)*one & dy_1=fltarr(dim.my)*one & dz_1=fltarr(dim.mz)*one
 dx_tilde=fltarr(dim.mx)*one & dy_tilde=fltarr(dim.my)*one & dz_tilde=fltarr(dim.mz)*one
 ;
@@ -101,20 +108,22 @@ for i=0,ncpus-1 do begin
   ; Build the full path and filename
   if (allprocs gt 0) then begin
     filename=datadir+'/allprocs/grid.dat'
+  end else if (keyword_set (reduced)) then begin
+    filename=datadir+'/reduced/grid.dat'
   endif else if (n_elements(proc) ne 0) then begin
     filename=datadir+'/proc'+str(proc)+'/grid.dat'
   endif else begin
     filename=datadir+'/proc'+str(i)+'/grid.dat'
     ; Read processor box dimensions
-    pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET 
-    xloc=fltarr(procdim.mx)*one  
-    yloc=fltarr(procdim.my)*one 
+    pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET
+    xloc=fltarr(procdim.mx)*one
+    yloc=fltarr(procdim.my)*one
     zloc=fltarr(procdim.mz)*one
-    dx_1loc=fltarr(procdim.mx)*one  
-    dy_1loc=fltarr(procdim.my)*one 
+    dx_1loc=fltarr(procdim.mx)*one
+    dy_1loc=fltarr(procdim.my)*one
     dz_1loc=fltarr(procdim.mz)*one
-    dx_tildeloc=fltarr(procdim.mx)*one  
-    dy_tildeloc=fltarr(procdim.my)*one 
+    dx_tildeloc=fltarr(procdim.mx)*one
+    dy_tildeloc=fltarr(procdim.my)*one
     dz_tildeloc=fltarr(procdim.mz)*one
     ;
     ;  Don't overwrite ghost zones of processor to the left (and
@@ -124,10 +133,10 @@ for i=0,ncpus-1 do begin
     if (procdim.ipx eq 0L) then begin
       i0x=0L
       i1x=i0x+procdim.mx-1L
-      i0xloc=0L 
+      i0xloc=0L
       i1xloc=procdim.mx-1L
     endif else begin
-      i0x=procdim.ipx*procdim.nx+procdim.nghostx 
+      i0x=procdim.ipx*procdim.nx+procdim.nghostx
       i1x=i0x+procdim.mx-1L-procdim.nghostx
       i0xloc=procdim.nghostx & i1xloc=procdim.mx-1L
     endelse
@@ -135,24 +144,24 @@ for i=0,ncpus-1 do begin
     if (procdim.ipy eq 0L) then begin
       i0y=0L
       i1y=i0y+procdim.my-1L
-      i0yloc=0L 
+      i0yloc=0L
       i1yloc=procdim.my-1L
     endif else begin
-      i0y=procdim.ipy*procdim.ny+procdim.nghosty 
+      i0y=procdim.ipy*procdim.ny+procdim.nghosty
       i1y=i0y+procdim.my-1L-procdim.nghosty
-      i0yloc=procdim.nghosty 
+      i0yloc=procdim.nghosty
       i1yloc=procdim.my-1L
     endelse
     ;
     if (procdim.ipz eq 0L) then begin
       i0z=0L
       i1z=i0z+procdim.mz-1L
-      i0zloc=0L 
+      i0zloc=0L
       i1zloc=procdim.mz-1L
     endif else begin
-      i0z=procdim.ipz*procdim.nz+procdim.nghostz 
+      i0z=procdim.ipz*procdim.nz+procdim.nghostz
       i1z=i0z+procdim.mz-1L-procdim.nghostz
-      i0zloc=procdim.nghostz 
+      i0zloc=procdim.nghostz
       i1zloc=procdim.mz-1L
     endelse
   endelse
@@ -165,8 +174,8 @@ for i=0,ncpus-1 do begin
   if (not keyword_set(quiet)) THEN print, 'Reading ' , filename , '...'
 
   openr,file,filename,/F77,SWAP_ENDIAN=SWAP_ENDIAN
-    
-  if ((allprocs gt 0) or (n_elements(proc) ne 0)) then begin
+
+  if ((allprocs gt 0) or (n_elements(proc) ne 0) or keyword_set(reduced)) then begin
     readu,file, t,x,y,z
     readu,file, dx,dy,dz
     found_Lxyz=0
@@ -181,7 +190,7 @@ for i=0,ncpus-1 do begin
     x[i0x:i1x] = xloc[i0xloc:i1xloc]
     y[i0y:i1y] = yloc[i0yloc:i1yloc]
     z[i0z:i1z] = zloc[i0zloc:i1zloc]
-    
+
     readu,file, dx,dy,dz
     found_Lxyz=0
     found_grid_der=0
@@ -199,12 +208,12 @@ for i=0,ncpus-1 do begin
     dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
     dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
   endelse
-  found_grid_der=1    
+  found_grid_der=1
 
 missing:
   on_ioerror, Null
 
-  close,file 
+  close,file
 
 endfor
 ;
@@ -255,6 +264,8 @@ fmt = '(A,4G15.6)'
 if (keyword_set(print)) then begin
   if (n_elements(proc) eq 0) then begin
     print, FORMAT='(A,I2,A)', 'For all processors calculation domain:'
+  endif else if (keyword_set(reduced)) then begin
+    print, FORMAT='(A,I2,A)', 'For reduced calculation domain:'
   endif else begin
     print, FORMAT='(A,I2,A)', 'For processor ',proc,' calculation domain:'
   endelse

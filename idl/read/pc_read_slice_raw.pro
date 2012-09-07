@@ -9,19 +9,22 @@
 ;       Pencil Code run, and another array with the variable labels.
 ;       If you need to be efficient, please use 'pc_collect.x' to combine
 ;       distributed varfiles before reading them in IDL.
+;       This routine can also read reduced datasets from 'pc_reduce.x'.
 ;
 ; CATEGORY:
 ;       Pencil Code, File I/O
 ;
 ; CALLING SEQUENCE:
 ;       pc_read_slice_raw, object=object, varfile=varfile, tags=tags,         $
-;                    datadir=datadir, trimall=trimall, /quiet,                $
+;                    datadir=datadir, trimall=trimall, /reduced, /quiet,      $
 ;                    swap_endian=swap_endian, time=time, grid=grid,           $
-;                    cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, var_list=var_list
+;                    cut_x=cut_x, cut_y=cut_y, cut_z=cut_z,                   $
+;                    allprocs=allprocs, var_list=var_list
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
 ;    varfile: Name of the collective snapshot. Default: 'var.dat'.   [string]
 ;   allprocs: Load distributed (0) or collective (1 or 2) varfiles.  [integer]
+;   /reduced: Load previously reduced collective varfiles (implies allprocs=1).
 ;        dim: Dimension structure of the global 3D-setup.            [struct]
 ;  slice_dim: Dimension structure of the loaded 2D-slice.            [struct]
 ;
@@ -75,11 +78,13 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default settings.
 ;
   default, allprocs, 0
+  default, reduced, 0
   default, swap_endian, 0
   default, cut_x, -1
   default, cut_y, -1
   default, cut_z, -1
   addname = ""
+  if (keyword_set (reduced)) then allprocs = 1
   if (keyword_set (allprocs) and not keyword_set (f77)) then f77 = 0
   default, f77, 1
 ;
@@ -97,7 +102,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Get necessary dimensions quietly.
 ;
   if (n_elements(dim) eq 0) then $
-      pc_read_dim, object=dim, datadir=datadir, /quiet
+      pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0) then begin
@@ -108,7 +113,7 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
   endif
   if (n_elements(grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, allprocs=allprocs, /quiet
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
 ;
 ; Set the coordinate system.
 ;  
@@ -315,7 +320,7 @@ COMPILE_OPT IDL2,HIDDEN
         z_off = ipz * procdim.nz
         if ((allprocs eq 2) and (cut_z ne -1)) then z_off = 0
         if (allprocs eq 1) then begin
-          procdir = 'allprocs'
+          if (keyword_set (reduced)) then procdir = 'reduced' else procdir = 'allprocs'
         end else begin
           procdir = 'proc' + strtrim (iproc, 2)
         end
@@ -357,7 +362,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Read timestamp.
 ;
-  pc_read_var_time, time=t, varfile=varfile, datadir=datadir, allprocs=allprocs, procdim=procdim, param=param, /quiet
+  pc_read_var_time, time=t, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdim=procdim, param=param, /quiet
 ;
 ; Crop grid.
 ;
@@ -382,6 +387,8 @@ COMPILE_OPT IDL2,HIDDEN
   if (cut_x ne -1) then Lx = 1.0/dx_1[dim.nghostx] else Lx = grid.Lx
   if (cut_y ne -1) then Ly = 1.0/dy_1[dim.nghosty] else Ly = grid.Ly
   if (cut_z ne -1) then Lz = 1.0/dz_1[dim.nghostz] else Lz = grid.Lz
+;
+  if (keyword_set (reduced)) then addname += "reduced_"
 ;
 ; Remove ghost zones if requested.
 ;

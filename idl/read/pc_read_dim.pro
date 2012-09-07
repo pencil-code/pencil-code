@@ -7,9 +7,9 @@
 ;  $Date: 2008-04-19 06:13:04 $
 ;  $Revision: 1.22 $
 ;
-;  27-nov-02/tony: coded 
+;  27-nov-02/tony: coded
 ;
-;  
+;
 pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  nx=nx, ny=ny, nz=nz, $
                  nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, $
@@ -18,9 +18,9 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  nghostx=nghostx, nghosty=nghosty, nghostz=nghostz, $
                  nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, $
                  ipx=ipx,ipy=ipy,ipz=ipz, $
-                 l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $ 
-                 object=object, $ 
-                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+                 l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $
+                 object=object, datadir=datadir, proc=proc, reduced=reduced, $
+                 PRINT=PRINT, QUIET=QUIET, HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read dim.dat
@@ -46,6 +46,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "  datadir: specify the root data directory. Default is './data'                     [string]"
     print, "     proc: specify a processor to get the data from eg. 0                          [integer]"
     print, "           If unspecified data is read for global calculation.                              "
+    print, " /reduced: use a reduced dataset dimension file.                                            "
     print, "                                                                                            "
     print, "       mx: x dimension of processor calculation domain including ghost zones       [integer]"
     print, "       my: y dimension of processor calculation domain including ghost zones       [integer]"
@@ -111,18 +112,20 @@ GET_LUN, file
 
 ; Build the full path and filename
 if (n_elements(proc) eq 1) then begin
+    if (keyword_set(reduced)) then message, "pc_read_dim: /reduced and 'proc' cannot be set both."
     filename=datadir+'/proc'+str(proc)+'/dim.dat'   ; Read processor box dimensions
 endif else begin
     filename=datadir+'/dim.dat'            ; Read global box dimensions
+    if (keyword_set(reduced)) then filename=datadir+'/reduced/dim.dat'
 endelse
 
 ; Check for existance and read the data
 if (file_test(filename)) then begin
-  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
+  IF (not keyword_set(QUIET)) THEN print, 'Reading ' + filename + '...'
 
   openr,file,filename
-; if execute('readf,file,mx,my,mz,mvar,maux,mglobal',1,1) ne 1 then begin
-  if execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1 then begin
+; if (execute('readf,file,mx,my,mz,mvar,maux,mglobal',1,1) ne 1) then begin
+  if (execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1) then begin
 ; For backwards compatibility with dim.dat without mglobal.
     print
     print,'Note: the Input conversion error is of no significance.'
@@ -140,7 +143,7 @@ if (file_test(filename)) then begin
   endif else begin
     readf,file,nprocx,nprocy,nprocz
   endelse
-  close,file 
+  close,file
   free_lun,file
 endif else begin
   free_lun,file
@@ -156,14 +159,7 @@ l1 = nghostx & l2 = mx-nghostx-1
 m1 = nghosty & m2 = my-nghosty-1
 n1 = nghostz & n2 = mz-nghostz-1
 
-if (n_elements(proc) ne 1) then begin
-  nxgrid = nx
-  nygrid = ny
-  nzgrid = nz
-  mxgrid = nxgrid + (2 * nghostx)
-  mygrid = nygrid + (2 * nghosty)
-  mzgrid = nzgrid + (2 * nghostz)
-endif else begin
+if (n_elements(proc) eq 1) then begin
   pc_read_dim, obj=globdim, datadir=datadir, /quiet
   nprocx = globdim.nprocx
   nprocy = globdim.nprocy
@@ -174,10 +170,17 @@ endif else begin
   mxgrid = globdim.mxgrid
   mygrid = globdim.mygrid
   mzgrid = globdim.mzgrid
+endif else begin
+  nxgrid = nx
+  nygrid = ny
+  nzgrid = nz
+  mxgrid = nxgrid + (2 * nghostx)
+  mygrid = nygrid + (2 * nghosty)
+  mzgrid = nzgrid + (2 * nghostz)
 endelse
 
 
-precision = (strtrim(precision,2))        ; drop leading zeros
+precision = strtrim(precision,2)        ; drop leading zeros
 precision = strmid(precision,0,1)
 
 
@@ -206,7 +209,9 @@ object = CREATE_STRUCT(name=filename,['mx','my','mz','mw', $
 ; If requested print a summary
 if keyword_set(PRINT) then begin
   if (n_elements(proc) eq 1) then begin
-      print, 'For processor ',proc,' calculation domain:'
+      print, 'For processor ',strtrim(proc, 2),' calculation domain:'
+  endif else if (keyword_set(reduced)) then begin
+      print, 'For REDUCED calculation domain:'
   endif else begin
       print, 'For GLOBAL calculation domain:'
   endelse

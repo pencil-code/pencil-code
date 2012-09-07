@@ -15,12 +15,12 @@
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
 ;    varfile: Name of the var file. Default: 'var.dat'.              [string]
+;   allprocs: Load data from the allprocs directory.                 [integer]
+;   /reduced: Load reduced collective varfiles.
 ;
 ;       time: Variable in which to return the loaded time.           [real]
 ;exit_status: Suppress fatal errors in favour of reporting the
 ;             error through exit_status/=0.
-;
-;  /allprocs: Load data from the allprocs directory.
 ;
 ;     /quiet: Suppress any information messages and summary statistics.
 ;      /help: Display this usage information, and exit.
@@ -35,7 +35,7 @@
 ;-
 pro pc_read_var_time,                                                              $
     time=time, varfile=varfile_, allprocs=allprocs, datadir=datadir, param=param,  $
-    procdim=dim, ivar=ivar, swap_endian=swap_endian, f77=f77,                      $
+    procdim=dim, ivar=ivar, swap_endian=swap_endian, f77=f77, reduced=reduced,     $
     exit_status=exit_status, quiet=quiet
 
 COMPILE_OPT IDL2,HIDDEN
@@ -48,6 +48,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default settings.
 ;
+  default, reduced, 0
+  if (keyword_set(reduced)) then allprocs=1
   if (arg_present(exit_status)) then exit_status=0
 ;
 ; Check if allprocs and/or f77 keyword is set.
@@ -78,7 +80,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (n_elements(dim) eq 0) then begin
     if (allprocs eq 1) then begin
-      pc_read_dim, object=dim, datadir=datadir, /quiet
+      pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
     endif else if (allprocs eq 2) then begin
       pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
       dim.nx = dim.nxgrid
@@ -118,7 +120,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Build the full path and filename.
 ;
-  if (allprocs eq 1) then dirname='/allprocs/' else dirname='/proc0/'
+  if (allprocs eq 1) then begin
+    if (keyword_set (reduced)) then dirname='/reduced/' else dirname='/allprocs/'
+  end else begin
+    dirname='/proc0/'
+  end
   filename=datadir+dirname+varfile
 ;
 ; Check for existence and read the data.

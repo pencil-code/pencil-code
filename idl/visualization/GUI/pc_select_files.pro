@@ -275,7 +275,7 @@ end
 
 
 ; File selection dialog GUI.
-pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, procdir=procdir, unit=unit, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots, scaling=scaling
+pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots, scaling=scaling
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
@@ -301,7 +301,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	; Load needed objects
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir ()
-	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+	if (not keyword_set (dim)) then pc_read_dim, obj=dim, datadir=datadir, reduced=reduced, /quiet
 	if (not keyword_set (param)) then pc_read_param, obj=param, datadir=datadir, dim=dim, /quiet
 	if (not keyword_set (varcontent)) then varcontent = pc_varcontent (datadir=datadir, dim=dim, param=param, /quiet)
 	all_quant = pc_check_quantities (sources=varcontent, /available)
@@ -345,6 +345,16 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	c_over = !VALUES.D_NAN
 
 	; Determine procdir
+	if (keyword_set (reduced)) then begin
+		if (n_elements (allprocs) gt 0) then begin
+			if (allprocs ne 1) then begin
+				print, "ERROR: if 'reduced' is set, 'allprocs=1' must be chosen."
+				print, "Type '.c' to continue..."
+				stop
+			end
+		end
+		allprocs = 1
+	end
 	if (n_elements (allprocs) eq 0) then begin
 		allprocs = 1
 		procdir = datadir+"/allprocs/"
@@ -359,6 +369,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		procdir = datadir+"/proc0/"
 		if (allprocs eq 1) then procdir = datadir+"/allprocs/"
 	end
+	if (keyword_set (reduced) and (allprocs eq 1)) then procdir = datadir+"/reduced/"
 
 	; Get file size
 	file_struct = file_info (procdir+varfile)
@@ -478,7 +489,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	c_list	= WIDGET_LIST (SEL, value=files, uvalue='LIST', YSIZE=(num_files<max_display)>min_display, /multiple)
 
 	if (var_selected eq 1) then begin
-		pc_read_var_time, t=var_time, varfile=varfile, datadir=datadir, allprocs=allprocs, /quiet
+		pc_read_var_time, t=var_time, varfile=varfile, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
 		b_var	= CW_BGROUP (SEL, varfile+' ('+strtrim (var_time*unit.time, 2)+' s)', /nonexcl, uvalue='VAR', set_value=1)
 	end else if (varfile ne "") then begin
 		b_var	= WIDGET_LABEL (SEL, value='"'+varfile+'" not found', frame=0)
@@ -489,7 +500,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	if (addfile eq varfile) then begin
 		b_add	= WIDGET_LABEL (SEL, value='Additional file is identical to "'+varfile+'"', frame=0)
 	end else if (add_selected eq 1) then begin
-		pc_read_var_time, t=add_time, varfile=addfile, datadir=datadir, allprocs=allprocs, /quiet
+		pc_read_var_time, t=add_time, varfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, /quiet
 		b_add	= CW_BGROUP (SEL, addfile+' ('+strtrim (add_time*unit.time, 2)+' s)', /nonexcl, uvalue='ADD', set_value=1)
 	end else begin
 		b_add	= WIDGET_LABEL (SEL, value='No "'+addfile+'" found', frame=0)
@@ -498,6 +509,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	VC	= WIDGET_BASE (BASE, /col)
 
 	IO_scheme = ["distributed files", "collective files", "collect_xy files"]
+	if (keyword_set (reduced)) then IO_scheme[allprocs] = "reduced files"
 	tmp	= WIDGET_LABEL (VC, value='Load '+IO_scheme[allprocs]+":", frame=0)
 	SEL	= WIDGET_BASE (VC, frame=1, /align_center, /col)
 	if (dimensionality eq 3) then begin
@@ -510,6 +522,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 		cut_sl	= WIDGET_SLIDER (SEL, uvalue='CUT_SL', value=cut_pos, min=0<max_pos, max=max_pos>1, /drag, /suppress_value, sensitive=(cut_pos ge 0))
 	end else begin
 		if (allprocs eq 1) then dir_str = "/allprocs/" else dir_str = "/proc*/"
+		if (keyword_set (reduced)) then dir_str = "/reduced/"
 		tmp	= WIDGET_LABEL (SEL, value="From: "+datadir+dir_str, frame=0)
 		tmp	= WIDGET_LABEL (SEL, value='full '+strtrim (dimensionality, 2)+'D data', frame=0)
 	end

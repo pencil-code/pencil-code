@@ -7,9 +7,9 @@
 ;  $Date: 2007-08-03 09:53:26 $
 ;  $Revision: 1.7 $
 ;
-;  28-nov-02/tony: coded 
+;  28-nov-02/tony: coded
 ;
-;  
+;
 pro pc_read_slice,field=field,plane=plane,slice=slice,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz, $
                  object=object, dim1=dim1, dim2=dim2, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
@@ -59,7 +59,7 @@ COMPILE_OPT IDL2,HIDDEN
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 
 ; Get necessary dimensions, inheriting QUIET
-pc_read_dim,mx=mx,my=my,mz=mz,datadir=datadir,proc=proc,QUIET=QUIET 
+pc_read_dim,mx=mx,my=my,mz=mz,datadir=datadir,proc=proc,QUIET=QUIET
 ; and check pc_precision is set!
 pc_set_precision,dim=dim,QUIET=QUIET
 
@@ -84,7 +84,7 @@ if (file_test(filename)) then begin
   openr,file,filename
   readu,file, t,x,y,z
   readu,file, dx,dy,dz
-  close,file 
+  close,file
   FREE_LUN, file
 end else begin
   FREE_LUN, file

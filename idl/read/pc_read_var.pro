@@ -22,13 +22,14 @@
 ;       proc: Specifies processor to get the data from. Default: ALL [integer]
 ;    varfile: Name of the var file. Default: 'var.dat'.              [string]
 ;       ivar: Number of the varfile, to be appended optionally.      [integer]
+;   allprocs: Load data from the allprocs directory.                 [integer]
+;   /reduced: Load reduced collective varfiles.
 ;
 ;     object: Optional structure in which to return the loaded data. [structure]
 ;  variables: Array of names of variables to read.                   [string(*)]
 ;exit_status: Suppress fatal errors in favour of reporting the
 ;             error through exit_status/=0.
 ;
-;  /allprocs: Load data from the allprocs directory.
 ;/additional: Load all variables stored in the files, PLUS any additional
 ;             variables specified with the variables=[] option.
 ;     /magic: Call pc_magic_var to replace special variable names with their
@@ -52,6 +53,8 @@
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
 ;       pc_read_var, obj=vars, proc=5    ;; read only from data/proc5
+;       pc_read_var, obj=vars, /allprocs ;; read from data/allprocs
+;       pc_read_var, obj=vars, /reduced  ;; read from data/reduced
 ;       pc_read_var, obj=vars, variables=['ss']
 ;                                        ;; read entropy into vars.ss
 ;       pc_read_var, obj=vars, variables=['bb'], /magic
@@ -69,9 +72,9 @@
 ;-
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
-    variables=variables, tags=tags, magic=magic,                  $ 
+    variables=variables, tags=tags, magic=magic,                  $
     bbtoo=bbtoo, ootoo=ootoo,                                     $
-    allprocs=allprocs,                                            $
+    allprocs=allprocs, reduced=reduced,                           $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
     dim=dim, grid=grid, param=param, par2=par2, ivar=ivar,        $
@@ -105,6 +108,8 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcz, 'none'
   default, validate_variables, 1
   if (arg_present(exit_status)) then exit_status=0
+  default, reduced, 0
+  if (keyword_set(reduced)) then allprocs=1
 ;
 ; If no meaningful parameters are given show some help!
 ;
@@ -113,10 +118,15 @@ COMPILE_OPT IDL2,HIDDEN
     return
   endif
 ;
+; Check if reduced keyword is set.
+;
+if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
+    message, "pc_read_var: /reduced and 'proc' cannot be set both."
+;
 ; Check if allprocs and/or f77 keyword is set.
 ;
   if (keyword_set(allprocs)) then begin
-    if (n_elements(proc) ne 0) then message, 'pc_read_var: /allproc and proc cannot be both set.'
+    if (n_elements(proc) ne 0) then message, "pc_read_var: 'allprocs' and 'proc' cannot be set both."
     if (not keyword_set(f77)) then f77=0
   endif else begin
     allprocs = 0
@@ -146,7 +156,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Get necessary dimensions quietly.
 ;
   if (n_elements(dim) eq 0) then $
-      pc_read_dim, object=dim, datadir=datadir, proc=proc, /quiet
+      pc_read_dim, object=dim, datadir=datadir, proc=proc, reduced=reduced, /quiet
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
   if (n_elements(par2) eq 0) then begin
@@ -158,7 +168,7 @@ COMPILE_OPT IDL2,HIDDEN
     endelse
   endif
   if (n_elements(grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, /quiet
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, /quiet
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;
@@ -166,7 +176,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (param.lwrite_2d) then run2D=1
 ;
 ; Set the coordinate system.
-;  
+;
   coord_system=param.coord_system
 ;
 ; Read dimensions (global)...
@@ -202,7 +212,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Number of processors over which to loop.
 ;
-  if (n_elements(proc) eq 1 or (allprocs eq 1)) then begin
+  if ((n_elements(proc) eq 1) or (allprocs eq 1)) then begin
     nprocs=1
   endif else if (allprocs eq 2) then begin
     nprocs=dim.nprocz
@@ -356,7 +366,8 @@ COMPILE_OPT IDL2,HIDDEN
       filename=datadir+'/proc'+str(i*dim.nprocx*dim.nprocy)+'/'+varfile
       procdim.ipz=i
     endif else if (allprocs eq 1) then begin
-      filename=datadir+'/allprocs/'+varfile
+      if (keyword_set (reduced)) then procdir = 'reduced' else procdir = 'allprocs'
+      filename=datadir+'/'+procdir+'/'+varfile
     endif else begin
       if (n_elements(proc) eq 1) then begin
         filename=datadir+'/proc'+str(proc)+'/'+varfile
@@ -544,11 +555,11 @@ COMPILE_OPT IDL2,HIDDEN
                 + "[i0x:i1x,i0y:i1y,dim.n1,*,*]=" $
                 + varcontent[iv].idlvarloc $
                 +"[i0xloc:i1xloc,i0yloc:i1yloc,*,*]"
-          endelse 
+          endelse
         endif else begin
 ;
 ; Regular 3-D run.
-;        
+;
           cmd =   varcontent[iv].idlvar $
               + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
               + varcontent[iv].idlvarloc $
