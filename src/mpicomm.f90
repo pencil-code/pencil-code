@@ -6336,16 +6336,17 @@ module Mpicomm
 !
 !  Write temporary file into local RAM disk (/tmp).
 !
-!     *** WORK HERE: THIS CODE WILL BE DELETED SOON
-!                   (because of an ifort compiler bug)
-!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes, ACCESS='direct', IOSTAT=ierr)
+!     *** WORK HERE:
+!     *** Instead of writing N records with one byte, we want to write 1 record with N bytes...
+!     *** Problem is that the record length is not neccessarily in bytes.
+!     *** Solution is => we need to devide by the number of bytes per record.
+!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes/bpr, ACCESS='direct', STATUS='replace', IOSTAT=ierr)
 !      write(unit, REC=1) buffer
 !     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
-      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct')
+      open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct', STATUS='replace')
       do pos=1,bytes
         write (unit, '(A)', REC=pos) buffer(pos)
       enddo
-      endfile(unit)
       close(unit)
       deallocate(buffer)
 !
