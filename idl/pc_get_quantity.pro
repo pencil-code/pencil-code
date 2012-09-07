@@ -187,6 +187,14 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		return, K_spitzer * Temp^2.5 * sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
 	end
+	if (strcmp (quantity, 'Spitzer_q_parallel', /fold_case)) then begin
+		; Absolute value of the field-aligned Spitzer heat flux density vector q_parallel [W/m^2] = [kg/s^3]
+		K_spitzer = pc_get_parameter ('K_spitzer', label=quantity)
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		return, K_spitzer * Temp^2.5 * dot (pc_compute_quantity (vars, index, 'grad_Temp'), bb) / sqrt (B_2) * (unit.density * unit.velocity^3 / unit.temperature^3.5 * unit.length)
+	end
 	if (strcmp (quantity, 'Spitzer_dt', /fold_case)) then begin
 		; Spitzer heat flux timestep [s]
 		K_spitzer = pc_get_parameter ('K_spitzer', label=quantity)

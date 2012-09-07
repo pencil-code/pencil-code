@@ -118,6 +118,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Rn_mag:'magnetic Reynolds number', $
 		q_sat:'saturation heatflux', $
 		Spitzer_q:'Spitzer heatflux', $
+		Spitzer_q_parallel:'field-aligned Spitzer heatflux', $
 		Spitzer_dt:'Spitzer timestep', $
 		Spitzer_ratio:'Spitzer perp./par. heatflux', $
 		Spitzer_q_ratio:'saturation/Spitzer heatflux', $
@@ -212,6 +213,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		Rn_mag:['u','B'], $
 		q_sat:['Temp', 'rho'], $
 		Spitzer_q:['Temp'], $
+		Spitzer_q_parallel:['Temp', 'B'], $
 		Spitzer_dt:['Temp', 'rho', 'B'], $
 		Spitzer_ratio:['Temp', 'B', 'n_rho'], $
 		Spitzer_q_ratio:['q_sat', 'Spitzer_q'], $
