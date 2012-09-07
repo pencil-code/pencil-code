@@ -106,10 +106,10 @@ get_lun, file
 
 for i=0,ncpus-1 do begin
   ; Build the full path and filename
-  if (allprocs gt 0) then begin
-    filename=datadir+'/allprocs/grid.dat'
-  end else if (keyword_set (reduced)) then begin
+  if (keyword_set (reduced)) then begin
     filename=datadir+'/reduced/grid.dat'
+  end else if (allprocs gt 0) then begin
+    filename=datadir+'/allprocs/grid.dat'
   endif else if (n_elements(proc) ne 0) then begin
     filename=datadir+'/proc'+str(proc)+'/grid.dat'
   endif else begin
