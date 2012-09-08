@@ -59,7 +59,7 @@ endelse
 ; Check if reduced keyword is set.
 ;
 if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
-    message, "pc_read_grid: /reduced and 'proc' cannot be both set."
+    message, "pc_read_grid: /reduced and 'proc' cannot be set both."
 ;
 ; Get necessary dimensions.
 ;
