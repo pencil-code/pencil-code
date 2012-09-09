@@ -26,10 +26,10 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: pi2=2.*pi, pi6=6.*pi, B0=.2
+  real :: pi2=2.*pi, pi6=6.*pi, u0=.2, B0=.2
   integer :: l
 !
-  namelist /initial_condition_pars/ B0
+  namelist /initial_condition_pars/ u0,B0
 !
   contains
 !***********************************************************************
@@ -59,9 +59,9 @@ module InitialCondition
 !
       do n=1,mz
       do l=1,mx
-        f(l,:,n,iux)=cos(pi2*z(m))
-        f(l,:,n,iuy)=cos(pi2*(x(l)+3*z(n)))
-        f(l,:,n,iuz)=cos(pi2*x(l))
+        f(l,:,n,iux)=u0*cos(pi2*z(m))
+        f(l,:,n,iuy)=u0*cos(pi2*(x(l)+3*z(n)))
+        f(l,:,n,iuz)=u0*cos(pi2*x(l))
       enddo
       enddo
 !
