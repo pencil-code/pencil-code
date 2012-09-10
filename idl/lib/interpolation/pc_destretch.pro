@@ -4,10 +4,10 @@
 ;  $Id$
 ;
 ;  Description:
-;   Destretches a given 2D-data array to an equidistant grid by interpolation.
+;   Destretches a given data array to an equidistant grid by interpolation.
 ;
 ;  Parameters:
-;   * in             multi-dimensional data array
+;   * in             1D or multi-dimensional data array
 ;   * source         original grid
 ;   * target         optional: array=destination grid, scalar=destination grid spacing
 ;                    returns the equidistant target grid
