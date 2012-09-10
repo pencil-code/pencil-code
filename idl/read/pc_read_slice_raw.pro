@@ -63,7 +63,7 @@ pro pc_read_slice_raw,                                                        $
     tags=tags, dim=dim, param=param, par2=par2, varcontent=varcontent,        $
     trimall=trimall, quiet=quiet, swap_endian=swap_endian, f77=f77,           $
     cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, var_list=var_list, time=time,      $
-    grid=grid, slice_dim=slice_dim
+    grid=grid, slice_dim=slice_dim, reduced=reduced
 
 COMPILE_OPT IDL2,HIDDEN
 ;
