@@ -7,8 +7,7 @@
 ;;;   Framework for precalculation and comparision of Pencil VAR* files.
 ;;;   Calls 'cmp_cslice_cache' for visualisation of a full 3D dataset.
 ;;;   These routines are intended for usage with Euclidian coordinates.
-;;;   Non-equidistant grid coordinates are in principle supported,
-;;;   but will be displayed as if they were stretched to an equidistand grid.
+;;;   Non-equidistant grids can be displayed as-is or de-stretched.
 ;;;
 ;;;   To run the Graphical User Interface (GUI), please go to a simulation
 ;;;   directory, open IDL there, and type ".r pc_gui".
@@ -112,7 +111,9 @@ if (not pc_gui_loaded) then BEGIN
 			nx:nx, ny:ny, nz:nz, $
 			l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, $
 			m1:dim.nghosty, m2:dim.my-dim.nghosty-1, $
-			n1:dim.nghostz, n2:dim.mz-dim.nghostz-1 }
+			n1:dim.nghostz, n2:dim.mz-dim.nghostz-1, $
+			lequidist:grid.lequidist, lperi:grid.lperi, $
+			ldegenerated:grid.ldegenerated }
 
 
 	print, "Allocating memory..."
