@@ -595,7 +595,6 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 	; Setup 'start.in' and 'run.in' parameters
 	dummy = pc_get_parameter ('', start_param=param, run_param=run_param, dim=dim, datadir=datadir)
 	start_par = param
-	lequidist = safe_get_tag (param, 'lequidist', default=[1,1,1])
 	run_par = run_param
 
 	; Set default units
@@ -670,6 +669,9 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 		dx_tilde = grid.dx_tilde
 		dy_tilde = grid.dy_tilde
 		dz_tilde = grid.dz_tilde
+		lequidist = grid.lequidist
+		lperi = grid.lperi
+		ldegenerated = grid.ldegenerated
 		if (((size (x))[1] ne (size (vars))[1]) or ((size (y))[1] ne (size (vars))[2]) or ((size (z))[1] ne (size (vars))[3])) then begin
 			print, "Data doesn't fit to the given grid structure."
 			return, -1
