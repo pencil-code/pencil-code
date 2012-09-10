@@ -568,9 +568,9 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 	num_plots = n_elements (plots)
 
 	l_sx = 0
-	l_sy = 2 < (num_plots-1)
+	l_sy = 0 < (num_plots-1)
 	r_sx = 1 < (num_plots-1)
-	r_sy = 2 < (num_plots-1)
+	r_sy = 1 < (num_plots-1)
 	lx_range = float (minmax (ts.(l_sx)))
 	ly_range = float (minmax (ts.(l_sy)))
 	rx_range = float (minmax (ts.(r_sx)))
