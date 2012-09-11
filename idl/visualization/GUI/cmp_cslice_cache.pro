@@ -413,7 +413,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
 		WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
 		WIDGET_CONTROL, b_cro, SET_VALUE = show_cross
-		if (any (not coord.lequidist)) then WIDGET_CONTROL, b_des, SET_VALUE = any (destretch)
+		if (any (coord.lequidist eq 0)) then WIDGET_CONTROL, b_des, SET_VALUE = any (destretch)
 		WIDGET_CONTROL, co_x, SET_VALUE = varfiles[selected_snapshot].time
 		WIDGET_CONTROL, sl_x, SET_VALUE = selected_snapshot
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
@@ -1039,7 +1039,7 @@ pro cslice_reset_GUI
 	WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
 	WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
 	WIDGET_CONTROL, b_cro, SET_VALUE = show_cross
-	WIDGET_CONTROL, b_des, SET_VALUE = any (destretch)
+	if (any (coord.lequidist eq 0)) then WIDGET_CONTROL, b_des, SET_VALUE = any (destretch)
 	WIDGET_CONTROL, co_t, SET_VALUE = varfiles[selected_snapshot].time
 	WIDGET_CONTROL, sl_t, SET_VALUE = num_snapshots-1-selected_snapshot
 	WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
@@ -1162,6 +1162,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	pos_t = replicate (!VALUES.D_NAN, num_cubes, 2, 2)
 	pos_over = replicate (1.0, num_overs)
 
+	b_des = !VALUES.D_NAN
 	co_t = !VALUES.D_NAN
 	sl_t = !VALUES.D_NAN
 
@@ -1242,7 +1243,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	b_sub	= CW_BGROUP (bcol, 'substract profile', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
 	b_abs	= CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='ABS_SCALE', set_value=abs_scale)
 	b_cro	= CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
-	if (any (not coord.lequidist)) then $
+	if (any (coord.lequidist eq 0)) then $
 		b_des = CW_BGROUP (bcol, 'destretch grid', /nonexcl, uvalue='DESTRETCH', set_value=0)
 
 	scol	= WIDGET_BASE (CTRL, /col)
