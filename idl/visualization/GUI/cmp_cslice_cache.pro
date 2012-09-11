@@ -489,7 +489,6 @@ pro cslice_event, event
 			if (eventval eq "IMAGE") then cslice_save_images, "PNG", /slices
 		end
 		frozen = orig_frozen
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		WIDGET_CONTROL, vars, SENSITIVE = (num_cubes ge 2)
 		WIDGET_CONTROL, over, SENSITIVE = (num_overs ge 2)
 		WIDGET_CONTROL, snap, SENSITIVE = (num_snapshots ge 2)
