@@ -6278,7 +6278,7 @@ module Mpicomm
       integer, optional :: recl
 !
       logical :: exists
-      integer :: ierr, bytes, pos
+      integer :: bytes, pos
       integer, parameter :: buf_len=fnlen
       character (len=buf_len) :: filename
       character, dimension(:), allocatable :: buffer
