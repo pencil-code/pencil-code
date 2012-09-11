@@ -980,9 +980,9 @@ pro cslice_prepare_overplot
 		field_z_y = 0.0
 
 		; setup field indices
-		field_x_indices = (findgen (num_x) + 0.25) / num_x
-		field_y_indices = (findgen (num_y) + 0.25) / num_y
-		field_z_indices = (findgen (num_z) + 0.25) / num_z
+		field_x_indices = (findgen (num_x)*bin_x + 0.5*(bin_x-1)) / (num_x*bin_x)
+		field_y_indices = (findgen (num_y)*bin_y + 0.5*(bin_y-1)) / (num_y*bin_y)
+		field_z_indices = (findgen (num_z)*bin_z + 0.5*(bin_z-1)) / (num_z*bin_z)
 	end else begin
 		; setup vector field
 		field_x_y = congrid (field_x, num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
