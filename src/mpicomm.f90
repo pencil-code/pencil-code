@@ -6340,7 +6340,8 @@ module Mpicomm
 !     *** Instead of writing N records with one byte, we want to write 1 record with N bytes...
 !     *** Problem is that the record length is not neccessarily in bytes.
 !     *** Solution is => we need to devide by the number of bytes per record.
-!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes/bpr, ACCESS='direct', STATUS='replace', IOSTAT=ierr)
+!     *** But, how to determine the number of bytes per record?
+!      open(unit, FILE=filename, FORM='unformatted', RECL=bytes/bpr, ACCESS='direct', STATUS='replace')
 !      write(unit, REC=1) buffer
 !     *** WORK HERE: TEMPORARY REPLACEMENT CODE:
       open(unit, FILE=filename, FORM='formatted', RECL=1, ACCESS='direct', STATUS='replace')
