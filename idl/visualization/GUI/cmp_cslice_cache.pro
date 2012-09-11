@@ -13,7 +13,7 @@
 function cslice_get_range, data
 
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	if (abs_scale) then begin
 		min = val_min
@@ -45,8 +45,8 @@ pro cslice_event, event
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 
@@ -339,6 +339,14 @@ pro cslice_event, event
 		end
 		break
 	end
+	'COLTAB': begin
+		if (selected_color ne event.index) then begin
+			selected_color = event.index
+			cslice_load_ct, selected_color
+			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		end
+		break
+	end
 	'NEXT': begin
 		selected_snapshot -= 1
 		if (selected_snapshot le 0) then begin
@@ -428,6 +436,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
 		WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
 		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
+		WIDGET_CONTROL, coltab, SET_DROPLIST_SELECT = selected_color
 		break
 	end
 	'SAVE': begin
@@ -440,7 +449,7 @@ pro cslice_event, event
 		pos_top[selected_cube,sub_aver] = val_max
 		selected_var = selected_cube
 		selected_over = selected_overplot
-		save, filename=settings_file, var_names, over_names, selected_var, selected_over, log_plot, abs_scale, sub_aver, show_cross, destretch, px, py, pz, pos_bot, pos_top, pos_overplot
+		save, filename=settings_file, var_names, over_names, selected_var, selected_over, selected_color, log_plot, abs_scale, sub_aver, show_cross, destretch, px, py, pz, pos_bot, pos_top, pos_overplot
 		WIDGET_CONTROL, b_load, SENSITIVE = 1
 		break
 	end
@@ -449,6 +458,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, vars, SENSITIVE = 0
 		WIDGET_CONTROL, over, SENSITIVE = 0
 		WIDGET_CONTROL, snap, SENSITIVE = 0
+		WIDGET_CONTROL, coltab, SENSITIVE = 0
 		WIDGET_CONTROL, prev, SENSITIVE = 0
 		WIDGET_CONTROL, next, SENSITIVE = 0
 		WIDGET_CONTROL, co_t, SENSITIVE = 1
@@ -492,6 +502,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, vars, SENSITIVE = (num_cubes ge 2)
 		WIDGET_CONTROL, over, SENSITIVE = (num_overs ge 2)
 		WIDGET_CONTROL, snap, SENSITIVE = (num_snapshots ge 2)
+		WIDGET_CONTROL, coltab, SENSITIVE = 1
 		WIDGET_CONTROL, prev, SENSITIVE = (selected_snapshot lt num_snapshots - 1)
 		WIDGET_CONTROL, next, SENSITIVE = (selected_snapshot gt 0)
 		WIDGET_CONTROL, co_t, SENSITIVE = (num_snapshots ge 2)
@@ -533,6 +544,33 @@ pro cslice_event, event
 end
 
 
+; Loads a specified color table
+pro cslice_load_ct, id
+
+	common cslice_ct_common, last_ct
+
+	if (id eq last_ct) then return
+	last_ct = id
+
+	device, decomposed=(id eq 0)
+	if (id eq 1) then begin
+		; Doppler velocities: red-white-blue (negative-zero-positive)
+		num_colors = !D.table_size
+		mid = round (num_colors / 2)
+		wedge = bytscl (findgen (mid) / (mid-1) * (num_colors-1))
+		r = bytarr (num_colors)
+		g = bytarr (num_colors)
+		b = bytarr (num_colors)
+		r[0:mid-1] = num_colors-1  &  r[mid:*] = reverse (wedge)
+		g[0:mid-1] = wedge         &  g[mid:*] = reverse (wedge)
+		b[0:mid-1] = wedge         &  b[mid:*] = num_colors-1
+		tvlct, r, g, b
+	end else begin
+		loadct, (id - 2) > 0, /silent
+	end
+end
+
+
 ; Draws the slices into the window
 pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
@@ -540,8 +578,8 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	; stepping of crosshairs
 	step = 4
@@ -575,6 +613,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if ((bin_y ne 1) or (bin_z ne 1)) then data = congrid (data, fix (num_y*bin_y), fix (num_z*bin_z), cubic=0)
 		val_range = cslice_get_range (data)
 		wset, wimg_yz
+		cslice_load_ct, selected_color
 		if (show_cross) then begin
 			if (cy gt af_y) then for i = fix ((cy-af_y)*bin_y), 0, -step do data[i:i+1,cz*bin_z+oz] = val_range
 			if (cy lt num_y-1-af_y) then for i = fix ((cy+af_y)*bin_y), fix (num_y*bin_y)-2, step do data[i:i+1,cz*bin_z+oz] = val_range
@@ -600,6 +639,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
 			wset, wcut_y
+			cslice_load_ct, 0
 			data = reform (cube[px,*,pz])
 			if (any (destretch)) then begin
 				plot, coord.y, data, xrange=minmax (coord.y), yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
@@ -620,6 +660,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if ((bin_x ne 1) or (bin_z ne 1)) then data = congrid (data, fix (num_x*bin_x), fix (num_z*bin_z), cubic=0)
 		val_range = cslice_get_range (data)
 		wset, wimg_xz
+		cslice_load_ct, selected_color
 		if (show_cross) then begin
 			if (cx gt af_x) then for i = fix ((cx-af_x)*bin_x), 0, -step do data[i:i+1,cz*bin_z+oz] = val_range
 			if (cx lt num_x-1-af_x) then for i = fix ((cx+af_x)*bin_x), fix (num_x*bin_x)-2, step do data[i:i+1,cz*bin_z+oz] = val_range
@@ -645,6 +686,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
 			wset, wcut_x
+			cslice_load_ct, 0
 			data = reform (cube[*,py,pz])
 			if (any (destretch)) then begin
 				plot, coord.x, data, xrange=minmax (coord.x), yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
@@ -665,6 +707,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if ((bin_x ne 1) or (bin_y ne 1)) then data = congrid (data, fix (num_x*bin_x), fix (num_y*bin_y), cubic=0)
 		val_range = cslice_get_range (data)
 		wset, wimg_xy
+		cslice_load_ct, selected_color
 		if (show_cross) then begin
 			if (cx gt af_x) then for i = fix ((cx-af_x)*bin_x), 0, -step do data[i:i+1,cy*bin_y+oy] = val_range
 			if (cx lt num_x-1-af_x) then for i = fix ((cx+af_x)*bin_x), fix (num_x*bin_x)-2, step do data[i:i+1,cy*bin_y+oy] = val_range
@@ -690,6 +733,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
 			wset, wcut_z
+			cslice_load_ct, 0
 			data = reform (cube[px,py,*])
 			if (any (destretch)) then begin
 				plot, coord.z, data, xrange=minmax (coord.z), yrange=val_range, xstyle=1, ystyle=1, xmargin=[0,0], ymargin=[0,0], ylog=log_plot
@@ -709,8 +753,8 @@ end
 pro cslice_save_images, img_type, slices=slices, movie_frame=movie_frame
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	quantity = (tag_names (set))[selected_cube]
 	prefix = varfiles[selected_snapshot].title + "_" + quantity
@@ -735,7 +779,7 @@ pro cslice_save_slices
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
         quantity = (tag_names (set))[selected_cube]
 	prefix = varfiles[selected_snapshot].title + "_" + quantity
@@ -768,7 +812,7 @@ pro cslice_save_movie, frame, allocate=allocate
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	if (keyword_set (allocate)) then begin
 		cut_xy = dblarr (num_x, num_y, frame)
@@ -818,7 +862,7 @@ end
 pro cslice_draw_averages, number
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 
 	vert_label = "height"
@@ -843,8 +887,8 @@ pro cslice_prepare_set, i
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	selected_snapshot = i
 
@@ -867,8 +911,8 @@ pro cslice_prepare_cube, cube_index
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	; SETTINGS:
 	; fraction of box width to keep free of crosshairs at center
@@ -930,8 +974,8 @@ pro cslice_prepare_overplot
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	; SETTINGS:
 	; distance of vector footpoint locations
@@ -1010,13 +1054,16 @@ pro cslice_reset_GUI
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
+	common cslice_ct_common, last_ct
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
+	last_ct = -1
 	selected_cube = 0
 	selected_overplot = 0
 	selected_snapshot = 0
+	selected_color = 0
 	log_plot = 0
 	sub_aver = 0
 	abs_scale = 1
@@ -1053,6 +1100,9 @@ pro cslice_reset_GUI
 	WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
 	WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
 	WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
+	WIDGET_CONTROL, coltab, SET_DROPLIST_SELECT = selected_color
+	device, /decomposed
+	loadct, 0, /silent
 
 	WIDGET_CONTROL, prev, SENSITIVE = (num_snapshots ge 2)
 	WIDGET_CONTROL, next, SENSITIVE = 0
@@ -1067,12 +1117,14 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
+	common cslice_ct_common, last_ct
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max
-	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, af_x, af_y, af_z, destretch
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	; DEFAULT SETTINGS:
+	last_ct = -1
 	show_cuts = 1
 	log_plot = 0
 	sub_aver = 0
@@ -1083,6 +1135,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	selected_cube = 0
 	selected_overplot = 0
 	selected_snapshot = 0
+	selected_color = 0
 	af_x = 0
 	af_y = 0
 	af_z = 0
@@ -1236,12 +1289,11 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	WIDGET_CONTROL, sl_over, SENSITIVE = (selected_overplot gt 0)
 
 	bcol	= WIDGET_BASE (CTRL, /col)
-	timeser	= WIDGET_BUTTON (bcol, value='timeseries analysis', uvalue='SHOW_TIME')
 	aver	= WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')
+	b_cro	= CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
 	b_log	= CW_BGROUP (bcol, 'logarithmic plot', /nonexcl, uvalue='LOG_PLOT', set_value=log_plot)
 	b_sub	= CW_BGROUP (bcol, 'substract profile', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
 	b_abs	= CW_BGROUP (bcol, 'absolute scaling', /nonexcl, uvalue='ABS_SCALE', set_value=abs_scale)
-	b_cro	= CW_BGROUP (bcol, 'show crosshairs', /nonexcl, uvalue='SHOW_CROSS', set_value=show_cross)
 	if (any (coord.lequidist eq 0)) then $
 		b_des = CW_BGROUP (bcol, 'destretch grid', /nonexcl, uvalue='DESTRETCH', set_value=0)
 
@@ -1262,6 +1314,8 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 		title_add = ':'
 		co_int = 1
 	end
+	timeser	= WIDGET_BUTTON (scot, value='timeseries analysis', uvalue='SHOW_TIME')
+
 	scot	= WIDGET_BASE (scol, /row, /base_align_center)
 	co_x	= CW_FIELD (scot, title='X'+title_add, uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, integer=co_int, floating=(1-co_int), /return_events, xsize=12)
 	sl_x	= WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=((num_x*bin_x>128)+10)<512, /drag, sensitive=coord_x_active)
@@ -1287,6 +1341,12 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	bsubrow	= WIDGET_BASE (bsubcol, /row)
 	jump_min= WIDGET_BUTTON (bsubrow, value='MIN', uvalue='JUMP_MIN')
 	jump_max= WIDGET_BUTTON (bsubrow, value='MAX', uvalue='JUMP_MAX')
+
+	bsubcol	= WIDGET_BASE (bcot, /col)
+	loadct, get_names=table_names
+	table_names = [ 'original', 'red-white-blue', table_names ]
+	tmp	= WIDGET_LABEL (bsubcol, value='color table:', frame=0)
+	coltab	= WIDGET_DROPLIST (bsubcol, value=table_names, uvalue='COLTAB', EVENT_PRO=cslice_event)
 
 	cut_height = min ([num_x*bin_x,num_y*bin_y,num_z*bin_z]) > 256
 	CUTS	= WIDGET_BASE (BASE, /row)
