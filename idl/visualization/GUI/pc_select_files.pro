@@ -373,7 +373,10 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	; Get file size
 	file_struct = file_info (procdir+varfile)
-	gb_per_file = file_struct.size / 1073741824.
+	multiplier = dim.nprocx * dim.nprocy * dim.nprocz
+	if (allprocs eq 1) then multiplier = 1
+	if (allprocs eq 2) then multiplier = dim.nprocz
+	gb_per_file = (file_struct.size * multiplier) / 1024.0^3
 
 	; Get list of available snapshots
 	files = file_search (procdir, pattern)
