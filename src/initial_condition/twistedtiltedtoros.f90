@@ -152,7 +152,6 @@ module InitialCondition
 !
       use Boundcond, only: update_ghosts 
       use Deriv, only: der
-      use Hydro, only: find_umax
       use Sub, only: curl_mn,gij
       use IO,  only: input_snap,input_snap_finalize
 !
@@ -161,7 +160,7 @@ module InitialCondition
       real, dimension (nx,3) :: tmpv,aa,bb
       real, dimension (nx) :: xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy
       real, dimension (nx) :: tmpx,tmpy,tmpz,dfy,dfz
-      real :: xi,umax
+      real :: xi,umax,ymid,zmid,rr,r1,prof
       integer :: l
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part) 
@@ -214,15 +213,20 @@ module InitialCondition
 ! magnetic field, theta-comp of vel and phi-comp of velocity at the surface
 ! respectively if required by the problem
 !
+        ymid=0.5*(xyz0(2)+xyz1(2))
+        zmid=0.5*(xyz0(3)+xyz1(3))
         do n=n1,n2
           do m=m1,m2
             aa=f(l1:l2,m,n,iax:iaz)
             call gij(f,iaa,aij,1)
             call curl_mn(aij,bb,aa)
-            f(l1:l2,m,n,iux)=bb(:,1)**2
+            rr=sqrt((y(m)-ymid)**2+(z(n)-zmid)**2)
+            r1=sqrt(r0**2-(1.-posx)**2)+3*width
+            prof=0.5*(1.0+tanh((rr-r1)/0.01))
+!            prof=1.0
+            f(l1:l2,m,n,iux)=bb(:,1)**2*prof
           enddo
         enddo  
-        call find_umax(f,umax) 
         call update_ghosts(f)
         do n=n1,n2
           do m=m1,m2
@@ -231,11 +235,14 @@ module InitialCondition
 !            
 ! Normalize to unity.          
 !
-            f(l1,m,n,iuy)=dIring*dfz(1)/umax
-            f(l1,m,n,iuz)=-dIring*dfy(1)/umax
+            f(l1,m,n,iuy)=dfz(1)
+            f(l1,m,n,iuz)=-dfy(1)
           enddo
         enddo  
-      f(l1:l2,m1:m2,n1:n2,iux)=0.0
+        f(l1:l2,m1:m2,n1:n2,iux)=0.0
+        call find_umax(f,umax) 
+        f(l1:l2,m1:m2,n1:n2,iuy)=dIring*f(l1:l2,m1:m2,n1:n2,iuy)/umax
+        f(l1:l2,m1:m2,n1:n2,iuz)=dIring*f(l1:l2,m1:m2,n1:n2,iuz)/umax
 
       if (luse_only_botbdry) then
         f(l1+1:l2,:,:,:)=0.0
@@ -347,6 +354,31 @@ module InitialCondition
       vv(:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine find_umax(f,umax)
+!
+!  Find the absolute maximum of the velocity.
+!
+!  19-aug-2011/ccyang: coded
+!  13-sep-2012/piyali: Added this routine from hydro since 
+!  initial_condition cannot use 
+!  the hydro module because of Makefile.depend
+!
+      use Mpicomm, only: mpiallreduce_max
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(out) :: umax
+!
+      real :: umax1
+!
+!  Find the maximum.
+!
+      umax1 = sqrt(maxval(f(l1:l2,m1:m2,n1:n2,iux)**2 &
+                        + f(l1:l2,m1:m2,n1:n2,iuy)**2 &
+                        + f(l1:l2,m1:m2,n1:n2,iuz)**2))
+      call mpiallreduce_max(umax1, umax)
+!
+    endsubroutine find_umax
 !***********************************************************************
 !
 !********************************************************************
