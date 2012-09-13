@@ -66,6 +66,8 @@ contains
 !
         write(*,'(A,ES10.2)') "hcond_grad=",1e9*dxmax**3*unit_temperature/ &
             unit_velocity**3
+        write(*,'(A,ES10.2)') "nu_spitzer=",2.21e-17*unit_temperature**2.5/ &
+            unit_density/unit_velocity/unit_length
         write(*,*) "-------------------------------------------------------------"
       endif
 !
