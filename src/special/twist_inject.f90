@@ -591,22 +591,27 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
+      use Boundcond, only: update_ghosts
+      use Deriv, only: der
       use Mpicomm, only: mpibcast_double
       use Diagnostics, only: save_name
-      use Sub, only: cross,curl_mn,gij,gij_etc
+!      use Sub, only: cross,curl_mn,gij,gij_etc
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
-      real, dimension(nx,3,3) :: aij,bij
-      real, dimension(3) :: aa,bb,jj,uxb
+!      real, dimension(nx,3,3) :: aij,bij
+      real, dimension(nx) :: dfy,dfz
       real, dimension(3) :: tmpv,vv,uu
-      real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi
+      real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
+              prof,ymid,zmid,umax
       real :: tmpx,tmpy,tmpz,posxold,Iringold
       integer :: l,k
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part)
 !  (Yeates, Mackay and van Ballegooijen 2008, Sol. Phys, 247, 103)
 !
+      ymid=0.5*(xyz0(2)+xyz1(2))
+      zmid=0.5*(xyz0(3)+xyz1(3))
       if (lroot) then
         posxold=posx
         Iringold=Iring
@@ -701,6 +706,12 @@ module Special
               f(l1,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
                       -distxy*tmpz/dist)
               f(l1,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
+!            else if (dIring.ne.0.0) then
+!            rr=sqrt((y(m)-ymid)**2+(z(n)-zmid)**2)
+!            r1=sqrt(r0**2-(1.-posx)**2)+3*width
+!            prof=0.5*(1.0+tanh((rr-r1)/0.01))
+!            prof=1.0
+!            f(l1,m,n,iux)=f(l1,m,n,ibx)**2*prof
             else if (dIring.eq.0.0) then
               f(l1,m,n,iuy:iuz)=0.0
             endif
@@ -708,6 +719,25 @@ module Special
           endif
         enddo
       enddo
+!      if (dIring.ne.0) then
+!        call update_ghosts(f)
+!        do n=n1,n2
+!          do m=m1,m2
+!            call der(f,iux,dfz,3)
+!            call der(f,iux,dfy,2)
+!!            
+!! Normalize to unity.          
+!!
+!            f(l1,m,n,iuy)=dfz(1)
+!            f(l1,m,n,iuz)=-dfy(1)
+!          enddo
+!        enddo
+!        f(l1,m1:m2,n1:n2,iux)=0.0
+!        call find_umax(f,umax)
+!        f(l1,m1:m2,n1:n2,iuy)=dIring*f(l1,m1:m2,n1:n2,iuy)/umax
+!        f(l1,m1:m2,n1:n2,iuz)=dIring*f(l1,m1:m2,n1:n2,iuz)/umax
+!      endif
+
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -785,6 +815,31 @@ module Special
       vv(2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine find_umax(f,umax)
+!
+!  Find the absolute maximum of the velocity.
+!
+!  19-aug-2011/ccyang: coded
+!  13-sep-2012/piyali: Added this routine from hydro since
+!  initial_condition cannot use
+!  the hydro module because of Makefile.depend
+!
+      use Mpicomm, only: mpiallreduce_max
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, intent(out) :: umax
+!
+      real :: umax1
+!
+!  Find the maximum.
+!
+      umax1 = sqrt(maxval(f(l1,m1:m2,n1:n2,iux)**2 &
+                        + f(l1,m1:m2,n1:n2,iuy)**2 &
+                        + f(l1,m1:m2,n1:n2,iuz)**2))
+      call mpiallreduce_max(umax1, umax)
+!
+    endsubroutine find_umax
 !***********************************************************************
 !
 endmodule Special
