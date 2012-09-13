@@ -32,7 +32,7 @@ function pc_destretch, in, source, target=target, dim=dim
 		; Print usage
 		print, "USAGE:"
 		print, "======"
-		print, "pc_destretch, in, source_grid, target=destination_grid"
+		print, "destretched = pc_destretch (data, source_grid, target=destination_grid)"
 		print, ""
 		return, -1
 	end
