@@ -20,6 +20,7 @@ module Boundcond
   public :: bc_pencil
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: set_consistent_density_boundary
+  public :: set_consistent_velocity_boundary
 !
   interface update_ghosts
      module procedure update_ghosts_all
@@ -4283,7 +4284,7 @@ module Boundcond
 !  Tell other modules that variable with slot j is to be frozen in on
 !  given boundary
 !
-      integer :: j
+      integer :: j 
       character (len=bclen) :: topbot
 !
       lfrozen_bcs_x = .true.    ! set flag
@@ -7436,5 +7437,101 @@ module Boundcond
 ! density set consistently at the boundary.
 !
     endsubroutine set_consistent_density_boundary
+!***********************************************************************
+    subroutine set_consistent_velocity_boundary(f,dirn,boundtype,tb,comp,lsuccess)
+!
+!  This subroutine checks, if the velocity paramters like type and  topbot
+!  are set consistently with eg. the initial condition.
+!  
+!  14-sep-12/joern: coded, adapted from subroutine set_consistent_density_boundary
+!
+!  dirn       =     direction                    : 'x','y','z'
+!  boundtype  =     type of boundary condition   : 'set','a',...
+!  tb         =     top or bottom boundary       : 'top','bot'
+!  comp       =     component of the velocity    : 'x','y','z'
+!  lsuccess   =     switch, if it was successful : .true., .false.
+!      
+!  At the moment only the x-direction is implemented
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=bclen), intent(in) :: boundtype,tb,dirn,comp
+      logical, intent(out) :: lsuccess
+!
+      character (len=bclen) :: btyp
+      logical :: lconsistent=.true.
+!
+! check for consistency
+!
+      btyp=trim(boundtype)
+      select case (dirn)
+        case ('x')
+          select case (tb)
+            case('bot')
+              select case (comp)
+                case('x')
+                  if (btyp/=bcx1(iux)) then
+                    lconsistent=.false.
+                    bcx1(iux)=btyp
+                    call boundconds_x(f,iux,iux)
+                    if (lroot) print*,'boundcond: x velocity in x at the bottom set to: ',bcx1(iux)
+                  endif
+                case('y')
+                  if (btyp/=bcx1(iuy)) then
+                    lconsistent=.false.
+                    bcx1(iuy)=btyp
+                    call boundconds_x(f,iuy,iuy)
+                    if (lroot) print*,'boundcond: y velocity in x at the bottom set to: ',bcx1(iuy)
+                  endif
+                case('z')
+                  if (btyp/=bcx1(iuz)) then
+                    lconsistent=.false.
+                    bcx1(iuz)=btyp
+                    call boundconds_x(f,iuz,iuz)
+                    if (lroot) print*,'boundcond: z velocity in x at the bottom set to: ',bcx1(iuz)
+                  endif
+                case default
+                  call fatal_error('set_consistent_velocity_boundary','component does not match any, aborting')
+              endselect
+            case('top')
+              select case (comp)
+                case('x')
+                  if (btyp/=bcx2(iux)) then
+                    lconsistent=.false.
+                    bcx2(iux)=btyp
+                    call boundconds_x(f,iux,iux)
+                    if (lroot) print*,'boundcond: x velocity in x at the top set to: ',bcx2(iux)
+                  endif
+                case('y')
+                  if (btyp/=bcx2(iuy)) then
+                    lconsistent=.false.
+                    bcx2(iuy)=btyp
+                    call boundconds_x(f,iuy,iuy)
+                    if (lroot) print*,'boundcond: y velocity in x at the top set to: ',bcx2(iuy)
+                  endif
+                case('z')
+                  if (btyp/=bcx2(iuz)) then
+                    lconsistent=.false.
+                    bcx2(iuz)=btyp
+                    call boundconds_x(f,iuz,iuz)
+                    if (lroot) print*,'boundcond: z velocity in x at the top set to: ',bcx2(iuz)
+                  endif
+                case default
+                  call fatal_error('set_consistent_velocity_boundary','component does not match any, aborting')
+              endselect
+            case default
+              call fatal_error('set_consistent_velocity_boundary','topbot does not match any, aborting')
+          endselect
+        case ('y')
+          call fatal_error('set_consistent_velovity_boundary','y direction not implemented yet')
+        case ('z')
+          call fatal_error('set_consistent_velocity_boundary','z direction not implemented yet')
+        case default
+          call fatal_error('set_consistent_velocity_boundary','you have to choose either x,y or z direction')
+      endselect
+      lsuccess=.true.
+!
+! velocity set consistently at the boundary.
+!
+    endsubroutine set_consistent_velocity_boundary
 !***********************************************************************
 endmodule Boundcond
