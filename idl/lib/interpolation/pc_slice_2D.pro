@@ -5,6 +5,9 @@
 ;
 ;  Description:
 ;   Extracts any 2D slice from a given 3D data array by interpolation.
+;   This method implements the idea of Hermann Amandus Schwarz et al. (1865),
+;   and extends it from a 2D minimal bilinear surface solution to an
+;   interpolation in 3D between source data points given on a cartesian grid.
 ;
 ;  Parameters:
 ;   * in             1D or multi-dimensional data array
