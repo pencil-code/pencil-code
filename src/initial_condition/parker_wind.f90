@@ -227,7 +227,7 @@ module InitialCondition
 ! check if consistent values of density at the boundary
 !
       direction='x'
-      boundtype='set'  
+      boundtype='fg'  
       rhob=rho(l1)
       bot='bot'
       call set_consistent_density_boundary(f,direction,boundtype,bot,rhob,lsuccess)
