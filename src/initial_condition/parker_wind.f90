@@ -175,7 +175,7 @@ module InitialCondition
       use SharedVariables
       use EquationOfState
       use Gravity, only: set_consistent_gravity,initialize_gravity
-      use Boundcond, only: set_consistent_density_boundary
+      use Boundcond, only: set_consistent_density_boundary,set_consistent_velocity_boundary 
 !     
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       real, dimension (mx), intent(out) :: vel
@@ -186,7 +186,8 @@ module InitialCondition
       real :: GM,rhob
       logical :: lsuccess=.false.
       character (len=labellen) :: gtype,gprofile
-      character (len=bclen) :: boundtype,bot,direction
+      character (len=bclen) :: boundtype_rho,bot_rho,direction_rho
+      character (len=bclen) :: boundtype_vel,bot_vel,direction_vel,comp_vel
 !
       Ecrit=0.5*cs20-cs20*log(cs0)-2*cs20*log(rcrit)-2*cs20
       cs20logx=2*cs20*log(x)
@@ -226,16 +227,31 @@ module InitialCondition
 !
 ! check if consistent values of density at the boundary
 !
-      direction='x'
-      boundtype='fg'  
+      direction_rho='x'
+      boundtype_rho='fg'  
       rhob=rho(l1)
-      bot='bot'
-      call set_consistent_density_boundary(f,direction,boundtype,bot,rhob,lsuccess)
+      bot_rho='bot'
+      call set_consistent_density_boundary(f,direction_rho,boundtype_rho,bot_rho,rhob,lsuccess)
       if(lsuccess) then
          lreset_boundary_values=lsuccess
         if (lroot) print*,'density set consistently at the boundaries'
       else
         call fatal_error('initial_condition/parker_wind:','density in fbcx1 not set consistently')
+      endif
+!
+!
+! check if consitstent boundary condition is set for the velocity
+!
+      direction_vel='x'
+      boundtype_vel='fg'
+      bot_vel='bot'
+      comp_vel='x'
+      call set_consistent_velocity_boundary(f,direction_vel,boundtype_vel,bot_vel,comp_vel,lsuccess)
+      if(lsuccess) then
+         lreset_boundary_values=lsuccess
+        if (lroot) print*,'velocity set consistently at the boundaries'
+      else
+        call fatal_error('initial_condition/parker_wind:','velocity not set consistently')
       endif
 !
 !
