@@ -3894,7 +3894,8 @@ module Sub
       intent(in) :: bc1,bc2
 !
       do j=1,mcom
-        if (bc(j) == '') then ! will probably never happen due to default='p'
+        if ((bc1(j) == '') .or. (bc2(j) == '')) then 
+! will probably never happen due to default='p'
           if (lroot) print*, 'Empty boundary condition No. ', &
               j, 'in (x, y, or z)'
           call fatal_error('inverse_parse_bc','')
