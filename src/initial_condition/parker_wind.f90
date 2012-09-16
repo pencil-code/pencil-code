@@ -175,7 +175,7 @@ module InitialCondition
       use SharedVariables
       use EquationOfState
       use Gravity, only: set_consistent_gravity,initialize_gravity
-      use Boundcond, only: set_consistent_density_boundary,set_consistent_velocity_boundary 
+      use Boundcond, only: set_consistent_density_boundary,set_consistent_vel_boundary 
 !     
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
       real, dimension (mx), intent(out) :: vel
@@ -246,7 +246,7 @@ module InitialCondition
       boundtype_vel='fg'
       bot_vel='bot'
       comp_vel='x'
-      call set_consistent_velocity_boundary(f,direction_vel,boundtype_vel,bot_vel,comp_vel,lsuccess)
+      call set_consistent_vel_boundary(f,direction_vel,boundtype_vel,bot_vel,comp_vel,lsuccess)
       if(lsuccess) then
          lreset_boundary_values=lsuccess
         if (lroot) print*,'velocity set consistently at the boundaries'

@@ -20,7 +20,7 @@ module Boundcond
   public :: bc_pencil
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: set_consistent_density_boundary
-  public :: set_consistent_velocity_boundary
+  public :: set_consistent_vel_boundary
 !
   interface update_ghosts
      module procedure update_ghosts_all
@@ -7438,7 +7438,7 @@ module Boundcond
 !
     endsubroutine set_consistent_density_boundary
 !***********************************************************************
-    subroutine set_consistent_velocity_boundary(f,dirn,boundtype,tb,comp,lsuccess)
+    subroutine set_consistent_vel_boundary(f,dirn,boundtype,tb,comp,lsuccess)
 !
 !  This subroutine checks, if the velocity paramters like type and  topbot
 !  are set consistently with eg. the initial condition.
@@ -7490,7 +7490,7 @@ module Boundcond
                     if (lroot) print*,'boundcond: z velocity in x at the bottom set to: ',bcx1(iuz)
                   endif
                 case default
-                  call fatal_error('set_consistent_velocity_boundary','component does not match any, aborting')
+                  call fatal_error('set_consistent_vel_boundary','component does not match any, aborting')
               endselect
             case('top')
               select case (comp)
@@ -7516,22 +7516,22 @@ module Boundcond
                     if (lroot) print*,'boundcond: z velocity in x at the top set to: ',bcx2(iuz)
                   endif
                 case default
-                  call fatal_error('set_consistent_velocity_boundary','component does not match any, aborting')
+                  call fatal_error('set_consistent_vel_boundary','component does not match any, aborting')
               endselect
             case default
-              call fatal_error('set_consistent_velocity_boundary','topbot does not match any, aborting')
+              call fatal_error('set_consistent_vel_boundary','topbot does not match any, aborting')
           endselect
         case ('y')
           call fatal_error('set_consistent_velovity_boundary','y direction not implemented yet')
         case ('z')
-          call fatal_error('set_consistent_velocity_boundary','z direction not implemented yet')
+          call fatal_error('set_consistent_vel_boundary','z direction not implemented yet')
         case default
-          call fatal_error('set_consistent_velocity_boundary','you have to choose either x,y or z direction')
+          call fatal_error('set_consistent_vel_boundary','you have to choose either x,y or z direction')
       endselect
       lsuccess=.true.
 !
 ! velocity set consistently at the boundary.
 !
-    endsubroutine set_consistent_velocity_boundary
+    endsubroutine set_consistent_vel_boundary
 !***********************************************************************
 endmodule Boundcond
