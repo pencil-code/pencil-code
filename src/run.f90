@@ -786,6 +786,10 @@ program run
 !
   call finalize_modules(f,.false.)
 !
+!  Write success file, if the requested simulation is complete.
+!
+  if ((it > nt) .or. (t > tmax)) call touch_file('COMPLETED')
+!
 !  Stop MPI.
 !
   call mpifinalize

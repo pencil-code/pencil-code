@@ -160,6 +160,7 @@ my $data_dir = './data';
 my $runtime_dir = './runtime';
 my $lockfile = './LOCK';
 my $errorfile = './ERROR';
+my $completedfile = './COMPLETED';
 my $noerasefile = './NOERASE';
 my $rerunfile = './RERUN';
 my $newdirfile = './NEWDIR';
@@ -269,6 +270,7 @@ sub start_cmd {
     handle_local_binary($start_x);
 
     get_lock();
+    clear_completed();
     mpi_run_cmd($start_x);
     clear_lock();
 
@@ -288,6 +290,7 @@ sub run_cmd {
     log_rundirectory();
 
     get_lock();
+    clear_completed();
     mpi_run_cmd($run_x);
     clear_lock();
 
@@ -1255,10 +1258,7 @@ sub log_rundirectory {
 }
 # ---------------------------------------------------------------------- #
 sub get_lock {
-    if (-e 'NEVERLOCK') {
-        return;
-    }
-
+    
     if (-e $lockfile) {
         print "\n";
         print "pc_run: found LOCK file\n";
@@ -1270,8 +1270,12 @@ sub get_lock {
         print "[Not yet implemented]\n";
         die "\n";           # die(), not exit() or lockfile gets removed
     } else {
-        write_to_file($lockfile);
-        $locked = 1;
+        unless (-e 'NEVERLOCK') {
+          write_to_file($lockfile);
+          $locked = 1;
+        }
+        # Save our unique PID:
+        # store_into_file("PID", $$);
     }
 }
 # ---------------------------------------------------------------------- #
@@ -1299,6 +1303,13 @@ sub clear_error {
     }
 }
 # ---------------------------------------------------------------------- #
+sub clear_completed {
+    if (-e $completedfile) {
+        unlink $completedfile
+          or warn "Cannot remove lock file $completedfile: $!\n";
+    }
+}
+# ---------------------------------------------------------------------- #
 sub timestr {
 # Return date and time in a compact way to attach to file names
     return POSIX::strftime("%y%m%d.%H%M", localtime);
@@ -1323,9 +1334,6 @@ sub write_to_file {
 # identifying this script.
     my ($filename, @text) = @_;
 
-    open(my $fh, "> $filename")
-      or die "Cannot open $filename for writing: $!\n";
-
     unless (@text) {
         push @text,
           "File: $filename\n"
@@ -1334,6 +1342,17 @@ sub write_to_file {
           . strftime("%a %Y-%m-%e %H:%M:%S", localtime())
           . "\n";
     }
+
+    store_into_file($filename, @text);
+}
+# ---------------------------------------------------------------------- #
+sub store_into_file {
+# Create a file and store a given @text (line-wise), if defined.
+    my ($filename, @text) = @_;
+
+    open(my $fh, "> $filename")
+      or die "Cannot open $filename for writing: $!\n";
+
     foreach my $line (@text) {
         chomp $line;
         print $fh $line, "\n";

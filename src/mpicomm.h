@@ -6,7 +6,7 @@
   public :: mpicomm_init, initialize_mpicomm, mpifinalize
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
-  public :: die_gracefully, die_immediately
+  public :: touch_file, die_gracefully, die_immediately
   public :: check_emergency_brake
 
   public :: mpirecv_logical, mpirecv_real, mpirecv_int

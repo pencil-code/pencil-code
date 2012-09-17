@@ -188,7 +188,7 @@ if ($local_binary) then
 endif
 
 # Run start.x
-rm -f ERROR
+rm -f ERROR COMPLETED
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
@@ -277,7 +277,7 @@ endif
 timestr>> $datadir/runtime.dat
 
 # Run run.x
-rm -f ERROR
+rm -f ERROR COMPLETED
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
@@ -297,8 +297,7 @@ if ($?SLURM_JOBID) then
 endif
 # EASY job (PDC):
 if ($?SP_JID) then
-  echo $SP_JID "  # RUN FINISHED on " `date` \
-    >> $datadir/jobid.dat
+  echo $SP_JID "  # RUN FINISHED on " `date` >> $datadir/jobid.dat
 endif
 
 # look for RERUN file

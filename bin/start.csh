@@ -116,7 +116,7 @@ if ($local_binary) then
 endif
 
 # Run start.x
-rm -f ERROR
+rm -f ERROR COMPLETED
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops

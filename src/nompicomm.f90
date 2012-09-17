@@ -1093,11 +1093,28 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
+    subroutine touch_file(fname)
+!
+!  touch file (used for code locking)
+!  25-may-03/axel: coded
+!  06-mar-07/wolf: moved here from sub.f90, so we can use it below
+!
+      character (len=*) :: fname
+!
+      if (lroot) then
+        open(1,FILE=fname,STATUS='replace')
+        close(1)
+      endif
+!
+    endsubroutine touch_file
+!***********************************************************************
     subroutine die_gracefully()
 !
 !  Stop... perform any necessary shutdown stuff.
 !
 !  29-jun-05/tony: coded
+!
+      call touch_file('ERROR')
 !
       call mpifinalize
       STOP 1                    ! Return nonzero exit status
@@ -1109,6 +1126,8 @@ module Mpicomm
 !  Stop... perform any necessary shutdown stuff.
 !
 !  29-jun-05/tony: coded
+!
+      call touch_file('ERROR')
 !
       STOP 2                    ! Return nonzero exit status
 !

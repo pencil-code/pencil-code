@@ -2501,8 +2501,10 @@ module Mpicomm
 !
       character (len=*) :: fname
 !
-      open(1,FILE=fname)
-      close(1)
+      if (lroot) then
+        open(1,FILE=fname,STATUS='replace')
+        close(1)
+      endif
 !
     endsubroutine touch_file
 !***********************************************************************
@@ -2517,7 +2519,7 @@ module Mpicomm
 !  Tell the world something went wrong -- mpirun may not propagate
 !  an error status.
 !
-      if (lroot) call touch_file('ERROR')
+      call touch_file('ERROR')
 !
       call mpifinalize
       if (lroot) then
@@ -2539,7 +2541,7 @@ module Mpicomm
 !  Tell the world something went wrong -- mpirun may not propagate
 !  an error status.
 !
-      if (lroot) call touch_file('ERROR')
+      call touch_file('ERROR')
 !
       if (lroot) then
         STOP 2                    ! Return nonzero exit status

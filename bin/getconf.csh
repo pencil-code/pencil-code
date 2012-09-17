@@ -65,6 +65,8 @@ if (-e "LOCK" || -e "data/LOCK") then
 endif
 # The LOCK is ours:
 if (! -e "NEVERLOCK") touch LOCK
+# Save our unique PID:
+# echo $$ > PID
 
 # Are we running the MPI version?
 set mpi = `fgrep -c 'initialize_mpicomm: MPICOMM neighbors' src/start.x`

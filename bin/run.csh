@@ -145,7 +145,7 @@ endif
 timestr>> $datadir/runtime.dat
 
 # Run run.x
-rm -f ERROR
+rm -f ERROR COMPLETED
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
