@@ -1261,7 +1261,7 @@ sub get_lock {
 
     if (-e $lockfile) {
         print "\n";
-        print "getconf.csh: found LOCK file\n";
+        print "pc_run: found LOCK file\n";
         print "(if it is left over from a crash, remove it manually: rm LOCK)\n";
         print "\n";
         print "Will *not* start in this directory, as the code may already ";
