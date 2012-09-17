@@ -279,7 +279,7 @@ sub run_cmd {
 # Run run.x
 
     setup_local_disc();
-    handle_local_binary($start_x);
+    handle_local_binary($run_x);
     distribute_var_files();
 
     clean_up_before_run();
@@ -991,9 +991,9 @@ sub handle_local_binary {
 
     return unless $local_binary;
 
-    print "Copying $start_x to $ENV{SCRATCH_DIR}\n" unless $quiet;
+    print "Copying $binary to $ENV{SCRATCH_DIR}\n" unless $quiet;
     use File::Copy;
-    copy($start_x, $ENV{SCRATCH_DIR})
+    copy($binary, $ENV{SCRATCH_DIR})
       or die "Cannot copy $binary to $ENV{SCRATCH_DIR}\n";
 
     system("remote-top > remote-top.log 2>&1 &") == 0
