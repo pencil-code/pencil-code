@@ -111,11 +111,11 @@ if ($remote_top) then
   remote-top >&! remote-top.log &
 endif
 if ($local_binary) then
-  echo "ls src/run.x $SCRATCH_DIR before copying:"
-  ls -lt src/run.x $SCRATCH_DIR
-  cp src/run.x $SCRATCH_DIR
-  echo "ls src/run.x $SCRATCH_DIR after copying:"
-  ls -lt src/run.x $SCRATCH_DIR
+  echo "ls $run_x $SCRATCH_DIR before copying:"
+  ls -lt $run_x $SCRATCH_DIR
+  cp $run_x $SCRATCH_DIR
+  echo "ls $run_x $SCRATCH_DIR after copying:"
+  ls -lt $run_x $SCRATCH_DIR
 endif
 
 # Write $PBS_JOBID or $LOADL_STEP_ID to file
@@ -285,9 +285,9 @@ exit ( $run_status | $run_status2 ) # propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
-# bsub -n  8 -q 8cpu12h mpijob dmpirun src/run.x
-# bsub -n 16 -q 16cpu8h mpijob dmpirun src/run.x
-# bsub -n  8 -q 8cpu12h -o run.log -w 'exit(123456)' mpijob dmpirun src/run.x
+# bsub -n  8 -q 8cpu12h mpijob dmpirun $run_x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun $run_x
+# bsub -n  8 -q 8cpu12h -o run.log -w 'exit(123456)' mpijob dmpirun $run_x
 
 # qsub -l ncpus=64,mem=32gb,walltime=500:00:00 -W group_list=UK07001 -q UK07001 run.csh
 # qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long run.csh

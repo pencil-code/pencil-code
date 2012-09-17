@@ -111,7 +111,7 @@ endif
 # If local_binary is used, copy executable to $SCRATCH_DIR of master node
 if ($local_binary) then
   echo "Copying start.x to $SCRATCH_DIR"
-  cp src/start.x $SCRATCH_DIR
+  cp $start_x $SCRATCH_DIR
   remote-top >& remote-top.log &
 endif
 
@@ -173,9 +173,9 @@ exit ( $start_status | $start_status2 )        # propagate status of mpirun
 
 
 # cut & paste for job submission on the mhd machine
-# bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
-# bsub -n  8 -q 8cpu12h mpijob dmpirun src/start.x
-# bsub -n 16 -q 16cpu8h mpijob dmpirun src/start.x
+# bsub -n  4 -q 4cpu12h mpijob dmpirun $start_x
+# bsub -n  8 -q 8cpu12h mpijob dmpirun $start_x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun $start_x
 
 # cut & paste for job submission for PBS
 # qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start.csh

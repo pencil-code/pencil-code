@@ -183,7 +183,7 @@ endif
 # If local_binary is used, copy executable to $SCRATCH_DIR of master node
 if ($local_binary) then
   echo "Copying start.x to $SCRATCH_DIR"
-  cp src/start.x $SCRATCH_DIR
+  cp $start_x $SCRATCH_DIR
   remote-top >& remote-top.log &
 endif
 
@@ -244,11 +244,11 @@ if ($remote_top) then
   remote-top >&! remote-top.log &
 endif
 if ($local_binary) then
-  echo "ls src/run.x $SCRATCH_DIR before copying:"
-  ls -lt src/run.x $SCRATCH_DIR
-  cp src/run.x $SCRATCH_DIR
-  echo "ls src/run.x $SCRATCH_DIR after copying:"
-  ls -lt src/run.x $SCRATCH_DIR
+  echo "ls $run_x $SCRATCH_DIR before copying:"
+  ls -lt $run_x $SCRATCH_DIR
+  cp $run_x $SCRATCH_DIR
+  echo "ls $run_x $SCRATCH_DIR after copying:"
+  ls -lt $run_x $SCRATCH_DIR
 endif
 
 # Write $PBS_JOBID or $LOADL_STEP_ID to file
@@ -401,9 +401,12 @@ endif
 exit ( $run_status | $run_status2 ) # propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
-# bsub -n  4 -q 4cpu12h mpijob dmpirun src/start_run.x
-# bsub -n  8 -q 8cpu12h mpijob dmpirun src/start_run.x
-# bsub -n 16 -q 16cpu8h mpijob dmpirun src/start_run.x
+# bsub -n  4 -q 4cpu12h mpijob dmpirun $start_x
+# bsub -n  4 -q 4cpu12h mpijob dmpirun $run_x
+# bsub -n  8 -q 8cpu12h mpijob dmpirun $start_x
+# bsub -n  8 -q 8cpu12h mpijob dmpirun $run_x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun $start_x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun $run_x
 
 # cut & paste for job submission for PBS
 # qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start_run.csh
