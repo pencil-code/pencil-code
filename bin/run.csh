@@ -130,13 +130,12 @@ if ($?LOADL_STEP_ID) then
 endif
 if ($?SLURM_JOBID) then
   #echo $SLURM_JOBID "  RUN STARTED on "$SLURMD_NODENAME `date` \
-    echo $SLURM_JOBID "  RUN STARTED on " `date` \
+  echo $SLURM_JOBID "  RUN STARTED on " `date` \
     >> $datadir/jobid.dat
 endif
 # EASY job (PDC):
 if ($?SP_JID) then
-  echo $SP_JID "  RUN STARTED on " `date` \
-    >> $datadir/jobid.dat
+  echo $SP_JID "  RUN STARTED on " `date` >> $datadir/jobid.dat
 endif
 
 # Write time and current working directory into log file

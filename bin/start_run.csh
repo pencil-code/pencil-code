@@ -267,8 +267,7 @@ if ($?SLURM_JOBID) then
 endif
 # EASY job (PDC):
 if ($?SP_JID) then
-  echo $SP_JID "  # RUN STARTED on " `date` \
-    >> $datadir/jobid.dat
+  echo $SP_JID "  # RUN STARTED on " `date` >> $datadir/jobid.dat
 endif
 
 # Write time and current working directory into log file
