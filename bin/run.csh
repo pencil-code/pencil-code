@@ -146,7 +146,7 @@ endif
 timestr>> $datadir/runtime.dat
 
 # Run run.x
-rm -f 'ERROR'
+rm -f ERROR
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
@@ -211,9 +211,8 @@ echo "Done"
 # if NEWDIR contains a directory name, then continue run in that directory
 if (-e "NEWDIR") then
   if (-s "NEWDIR") then
-    # Remove LOCK file before going to other directory
-    if (-e "LOCK") rm -f LOCK
-    if (-e "data/LOCK") rm -f data/LOCK
+    # Remove LOCK files before going to other directory
+    rm -f LOCK data/LOCK
     set olddir=$cwd
     cd `cat NEWDIR`
     rm $olddir/NEWDIR
@@ -229,9 +228,7 @@ if (-e "NEWDIR") then
     echo
     goto newdir
   else
-    rm -f NEWDIR
-    if (-e "LOCK") rm -f LOCK
-    if (-e "data/LOCK") rm -f data/LOCK
+    rm -f NEWDIR LOCK data/LOCK
     echo
     echo "====================================================================="
     echo "Rerunning in the *same* directory; current run status: $run_status"
@@ -255,9 +252,8 @@ if ($?booted_mpd) then
 else
 endif
 
-# remove LOCK file
-if (-e "LOCK") rm -f LOCK
-if (-e "data/LOCK") rm -f data/LOCK
+# remove LOCK files
+rm -f LOCK data/LOCK
 
 # Detect error status flagged by code (for cases where this does not get
 # propagated to the mpirun status):
@@ -267,7 +263,7 @@ if (-e 'ERROR') then
 else
   set run_status2 = 0
   if(-e "RESUBMIT") then
-    if(-e "rs") rm -f rs
+    rm -f rs
     echo "Resubmitting from node:$hn to masternode $masterhost"
     echo "$resub $resubop" > rs
     chmod +x rs

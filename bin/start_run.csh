@@ -188,7 +188,7 @@ if ($local_binary) then
 endif
 
 # Run start.x
-rm -f 'ERROR'
+rm -f ERROR
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
@@ -278,7 +278,7 @@ endif
 timestr>> $datadir/runtime.dat
 
 # Run run.x
-rm -f 'ERROR'
+rm -f ERROR
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
@@ -353,9 +353,8 @@ checknewdir:
 # if NEWDIR contains a directory name, then continue run in that directory
 if (-e "NEWDIR") then
   if (-s "NEWDIR") then
-    # Remove LOCK file before going to other directory
-    if (-e "LOCK") rm -f LOCK
-    if (-e "data/LOCK") rm -f data/LOCK
+    # Remove LOCK files before going to other directory
+    rm -f LOCK data/LOCK
     set olddir=$cwd
     cd `cat NEWDIR`
     rm $olddir/NEWDIR
@@ -371,9 +370,7 @@ if (-e "NEWDIR") then
     echo
     goto newdir
   else
-    rm -f NEWDIR
-    if (-e "LOCK") rm -f LOCK
-    if (-e "data/LOCK") rm -f data/LOCK
+    rm -f NEWDIR LOCK data/LOCK
     echo
     echo "====================================================================="
     echo "Rerunning in the *same* directory; current run status: $run_status"
@@ -389,9 +386,8 @@ endif
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
 
-# remove LOCK file
-if (-e "LOCK") rm -f LOCK
-if (-e "data/LOCK") rm -f data/LOCK
+# remove LOCK files
+rm -f LOCK data/LOCK
 
 # Detect error status flagged by code (for cases where this does not get
 # propagated to the mpirun status):

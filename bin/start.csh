@@ -44,8 +44,7 @@ if (! -d "$datadir") then
   echo ">>  but that will most likely end up on your NFS file system and be"
   echo ">>  slow"
   echo
-  if (-e "LOCK") rm -f LOCK
-  if (-e "data/LOCK") rm -f data/LOCK
+  rm -f LOCK data/LOCK
   exit 0
 endif
 
@@ -117,7 +116,7 @@ if ($local_binary) then
 endif
 
 # Run start.x
-rm -f 'ERROR'
+rm -f ERROR
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
@@ -156,9 +155,8 @@ if ($?booted_mpd) then
 else
 endif
 
-# remove LOCK file
-if (-e "LOCK") rm -f LOCK
-if (-e "data/LOCK") rm -f data/LOCK
+# remove LOCK files
+rm -f LOCK data/LOCK
 
 # Detect error status flagged by code (for cases where this does not get
 # propagated to the mpirun status):
@@ -169,8 +167,7 @@ else
   set start_status2 = 0
 endif
 
-rm -f resubmit.log
-rm -f rs
+rm -f resubmit.log rs
 
 exit ( $start_status | $start_status2 )        # propagate status of mpirun
 
