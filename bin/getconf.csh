@@ -1713,14 +1713,6 @@ if ($local_disc) then
   end
 endif
 
-# Apply the SGI namelist read fix if running IRIX
-set os = `uname -s`
-if ($os =~ IRIX*) then
-  touch SGIFIX
-else
-  rm -f SGIFIX
-endif
-
 # Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
