@@ -4821,6 +4821,16 @@ module Hydro
             -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
       endif
 !
+!  Remove vertical shear profile
+!
+      case ('remove_vertical_shear')
+      if (.not.lcalc_uumean) then
+        call fatal_error("remove_vertical_shear","you need to set lcalc_uumean=T in hydro_run_pars")
+      else
+        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)-uumz(n,1)
+        f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-uumz(n,2)
+      endif
+!
 !  vertical shear profile
 !
       case ('vertical_shear_x')
