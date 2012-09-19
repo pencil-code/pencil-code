@@ -567,6 +567,7 @@ pro pc_show_ts, object=time_series, unit=unit, param=param, run_param=run_param,
 	plots = tag_names (ts)
 	num_plots = n_elements (plots)
 
+	; Usually, the first column (0) is 'it', the second (1) is 't', and additional quantities follow (2, ...):
 	l_sx = 0
 	l_sy = 2 < (num_plots-1)
 	r_sx = 1 < (num_plots-1)
