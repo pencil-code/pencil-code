@@ -4960,7 +4960,7 @@ module Entropy
         idiag_ufpresm=0; idiag_uduum=0; idiag_fradz_constchi=0
         idiag_gTxmxy=0; idiag_gTymxy=0; idiag_gTzmxy=0
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
-        idiag_gTxgsxmxy=0;idiag_gTxgszmxy=0;idiag_gTxgszmxy=0
+        idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
