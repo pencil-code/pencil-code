@@ -221,12 +221,18 @@ endfor
 ;
 free_lun,file
 ;
-;  Trim coordinate arrays of ghost zones.
+;  Trim ghost zones of coordinate arrays.
 ;
 if (keyword_set(trimxyz)) then begin
   x=x[dim.l1:dim.l2]
   y=y[dim.m1:dim.m2]
   z=z[dim.n1:dim.n2]
+  dx_1=dx_1[dim.l1:dim.l2]
+  dy_1=dy_1[dim.m1:dim.m2]
+  dz_1=dz_1[dim.n1:dim.n2]
+  dx_tilde=dx_tilde[dim.l1:dim.l2]
+  dy_tilde=dy_tilde[dim.m1:dim.m2]
+  dz_tilde=dz_tilde[dim.n1:dim.n2]
 endif
 ;
 ;  Build structure of all the variables
