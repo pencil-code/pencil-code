@@ -89,7 +89,7 @@ if (not pc_gui_loaded) then BEGIN
 	if ((num_files le 0) or (n_elements (quantities) le 0)) then stop
 
 	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
-		pc_read_slice_raw, varfile=files[0], var_list=['none'], dim=orig_dim, slice_dim=dim, grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, allprocs=allprocs, reduced=reduced, /trim, /quiet
+		pc_read_slice_raw, varfile=files[0], var_list=['none'], dim=orig_dim, slice_dim=dim, slice_grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, allprocs=allprocs, reduced=reduced, /trim, /quiet
 	end else begin
 		dim = orig_dim
 		pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, reduced=reduced, /trim, /quiet

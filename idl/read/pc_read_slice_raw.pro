@@ -26,7 +26,9 @@
 ;   allprocs: Load distributed (0) or collective (1 or 2) varfiles.  [integer]
 ;   /reduced: Load previously reduced collective varfiles (implies allprocs=1).
 ;        dim: Dimension structure of the global 3D-setup.            [struct]
-;  slice_dim: Dimension structure of the loaded 2D-slice.            [struct]
+;  slice_dim: Returns a dimension structure of the loaded 2D-slice.  [struct]
+;       grid: Grid structure of the global 3D-setup.                 [struct]
+; slice_grid: Returns a grid structure of the loaded 2D-slice.       [struct]
 ;
 ;      cut_x: x-coordinate of the yz-plane cut.                      [integer]
 ;      cut_y: y-coordinate of the xz-plane cut.                      [integer]
@@ -37,7 +39,7 @@
 ;       tags: Array of tag names inside the object array.            [string(*)]
 ;   var_list: Array of varcontent idlvars to read (default = all).   [string(*)]
 ;
-;   /trimall: Remove ghost points from the returned data.
+;   /trimall: Remove ghost points from the returned data, dim and grid.
 ;     /quiet: Suppress any information messages and summary statistics.
 ;
 ; EXAMPLES:
@@ -63,7 +65,7 @@ pro pc_read_slice_raw,                                                        $
     tags=tags, dim=dim, param=param, par2=par2, varcontent=varcontent,        $
     trimall=trimall, quiet=quiet, swap_endian=swap_endian, f77=f77,           $
     cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, var_list=var_list, time=time,      $
-    grid=grid, slice_dim=slice_dim, reduced=reduced
+    grid=grid, slice_grid=slice_grid, slice_dim=slice_dim, reduced=reduced
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -179,12 +181,14 @@ COMPILE_OPT IDL2,HIDDEN
     cut_nx = dim.mx
     px_start = 0
     px_delta = procdim.mx
+    ldegenerated[0] = 0
   endif else begin
     if ((cut_x lt 0) or (cut_x ge dim.nx)) then $
         message, 'pc_read_slice_raw: cut_x is invalid, min/max: 0-'+strtrim(dim.nx-1, 2)
     cut_nx = 1 + 2*dim.nghostx
     px_start = cut_x mod procdim.nx
     px_delta = 1 + 2*dim.nghostx
+    ldegenerated[0] = 1
   endelse
   px_end = px_start + px_delta - 1
 ;
@@ -192,12 +196,14 @@ COMPILE_OPT IDL2,HIDDEN
     cut_ny = dim.my
     py_start = 0
     py_delta = procdim.my
+    ldegenerated[1] = 0
   endif else begin
     if ((cut_y lt 0) or (cut_y ge dim.ny)) then $
         message, 'pc_read_slice_raw: cut_y is invalid, min/max: 0-'+strtrim(dim.ny-1, 2)
     cut_ny = 1 + 2*dim.nghosty
     py_start = cut_y mod procdim.ny
     py_delta = 1 + 2*dim.nghosty
+    ldegenerated[1] = 1
   endelse
   py_end = py_start + py_delta - 1
 ;
@@ -205,12 +211,14 @@ COMPILE_OPT IDL2,HIDDEN
     cut_nz = dim.mz
     pz_start = 0
     pz_delta = procdim.mz
+    ldegenerated[2] = 0
   endif else begin
     if ((cut_z lt 0) or (cut_z ge dim.nz)) then $
         message, 'pc_read_slice_raw: cut_z is invalid, min/max: 0-'+strtrim(dim.nz-1, 2)
     cut_nz = 1 + 2*dim.nghostz
     pz_start = cut_z mod procdim.nz
     pz_delta = 1 + 2*dim.nghostz
+    ldegenerated[2] = 1
   endelse
   pz_end = pz_start + pz_delta - 1
 ;
@@ -282,7 +290,7 @@ COMPILE_OPT IDL2,HIDDEN
     endif
   endfor
   read_content = strmid (read_content, 2)
-  if (not keyword_set(quiet)) then begin
+  if (not keyword_set (quiet)) then begin
     print, ''
     print, 'The file '+varfile+' contains: ', content
     if (strlen (read_content) lt strlen (content)) then print, 'Will read only: ', read_content
@@ -291,27 +299,28 @@ COMPILE_OPT IDL2,HIDDEN
     print, ''
   endif
   if (num_read le 0) then begin
-    if (not keyword_set(quiet)) then message, 'ERROR: nothing to read!'
-    return
-  end
-  indices = indices[where (indices ge 0)]
+    if (not keyword_set (quiet)) then message, 'WARNING: nothing to read!'
+  end else begin
+    indices = indices[where (indices ge 0)]
 ;
 ; Initialise read buffers.
 ;
-  if (precision eq 'D') then begin
-    bytes = 8
-    object = dblarr (cut_nx, cut_ny, cut_nz, num_read)
-    buffer = dblarr (px_delta)
-  endif else begin
-    bytes = 4
-    object = fltarr (cut_nx, cut_ny, cut_nz, num_read)
-    buffer = fltarr (px_delta)
-  endelse
+    if (precision eq 'D') then begin
+      bytes = 8
+      object = dblarr (cut_nx, cut_ny, cut_nz, num_read)
+      buffer = dblarr (px_delta)
+    endif else begin
+      bytes = 4
+      object = fltarr (cut_nx, cut_ny, cut_nz, num_read)
+      buffer = fltarr (px_delta)
+    endelse
+  end
   if (f77 eq 0) then markers = 0 else markers = 1
 ;
 ; Iterate over processors.
 ;
   for ipz = ipz_start, ipz_end do begin
+    if (num_read le 0) then continue
     for ipy = ipy_start, ipy_end do begin
       for ipx = ipx_start, ipx_end do begin
         iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
@@ -369,21 +378,24 @@ COMPILE_OPT IDL2,HIDDEN
   x_off = ipx_start * procdim.nx + px_start
   y_off = ipy_start * procdim.ny + py_start
   z_off = ipz_start * procdim.nz + pz_start
-  x = grid.x[x_off:x_off+cut_nx-1]
-  y = grid.y[y_off:y_off+cut_ny-1]
-  z = grid.z[z_off:z_off+cut_nz-1]
+  x_end = x_off + cut_nx - 1
+  y_end = y_off + cut_ny - 1
+  z_end = z_off + cut_nz - 1
+  x = grid.x[x_off:x_end]
+  y = grid.y[y_off:y_end]
+  z = grid.z[z_off:z_end]
 ;
 ; Prepare for derivatives.
 ;
   dx = grid.dx
   dy = grid.dy
   dz = grid.dz
-  dx_1 = grid.dx_1[x_off:x_off+cut_nx-1]
-  dy_1 = grid.dy_1[y_off:y_off+cut_ny-1]
-  dz_1 = grid.dz_1[z_off:z_off+cut_nz-1]
-  dx_tilde = grid.dx_tilde[x_off:x_off+cut_nx-1]
-  dy_tilde = grid.dy_tilde[y_off:y_off+cut_ny-1]
-  dz_tilde = grid.dz_tilde[z_off:z_off+cut_nz-1]
+  dx_1 = grid.dx_1[x_off:x_end]
+  dy_1 = grid.dy_1[y_off:y_end]
+  dz_1 = grid.dz_1[z_off:z_end]
+  dx_tilde = grid.dx_tilde[x_off:x_end]
+  dy_tilde = grid.dy_tilde[y_off:y_end]
+  dz_tilde = grid.dz_tilde[z_off:z_end]
   if (cut_x ne -1) then Lx = 1.0/dx_1[dim.nghostx] else Lx = grid.Lx
   if (cut_y ne -1) then Ly = 1.0/dy_1[dim.nghosty] else Ly = grid.Ly
   if (cut_z ne -1) then Lz = 1.0/dz_1[dim.nghostz] else Lz = grid.Lz
@@ -392,14 +404,14 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Remove ghost zones if requested.
 ;
-  if (keyword_set(trimall)) then begin
+  if (keyword_set (trimall)) then begin
     l1 = slice_dim.l1
     l2 = slice_dim.l2
     m1 = slice_dim.m1
     m2 = slice_dim.m2
     n1 = slice_dim.n1
     n2 = slice_dim.n2
-    object = reform (object[l1:l2,m1:m2,n1:n2,*])
+    if (num_read ge 1) then object = reform (object[l1:l2,m1:m2,n1:n2,*])
     x = x[l1:l2]
     y = y[m1:m2]
     z = z[n1:n2]
@@ -412,7 +424,7 @@ COMPILE_OPT IDL2,HIDDEN
     addname += "trimmed_"
   endif
 ;
-  if (not keyword_set(quiet)) then begin
+  if (not keyword_set (quiet)) then begin
     print, ' t = ', t
     print, ''
   endif
@@ -420,8 +432,8 @@ COMPILE_OPT IDL2,HIDDEN
   time = t
   tags.time = t
   name = "pc_read_slice_raw_"+addname+strtrim (cut_nx, 2)+"_"+strtrim (cut_ny, 2)+"_"+strtrim (cut_nz, 2)
-  grid = create_struct (name=name, $
-      ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde'], $
-      t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde)
+  slice_grid = create_struct (name=name, $
+      ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated'], $
+      t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated)
 ;
 end
