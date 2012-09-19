@@ -9,6 +9,13 @@
 !    2. t(1), x(mxgrid), y(mygrid), z(mzgrid), dx(1), dy(1), dz(1)
 !  Where nvar denotes the number of variables to be saved.
 !  In the case of MHD with entropy, nvar is 8 for a 'var.dat' file.
+!  Only outer ghost-layers are written, so mzlocal is between nz and mz,
+!  depending on the corresponding ipz-layer.
+!
+!  To read these snapshots in IDL, the parameter allprocs needs to be set:
+!  IDL> pc_read_var, obj=vars, /allprocs
+!  or in a much more efficient way by reading into an array:
+!  IDL> pc_read_var_raw, obj=data, tags=tags, grid=grid, /allprocs
 !
 !  13-Jan-2012/Bourdin.KIS: adapted from io_dist.f90
 !
