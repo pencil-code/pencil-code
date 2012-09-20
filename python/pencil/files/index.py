@@ -36,10 +36,11 @@ class read_index(dict):
             clean = line.strip()
             name=clean.split('=')[0].strip()
             val=int(clean.split('=')[1].strip())
-
+            #            print name,val
             # need to compare val to totalvars as global indices 
             # may be present in index.pro
-            if (val != 0 and val <= totalvars and \
+            #            if (val != 0 and val <= totalvars and \
+            if (val != 0  and \
                 not name.startswith('i_') and name.startswith('i')):
                 name=name.lstrip('i')
                 if (name == 'lnTT' and param.ltemperature_nolog):
