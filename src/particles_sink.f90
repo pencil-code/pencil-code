@@ -214,6 +214,11 @@ module Particles_sink
                   rhop_interp=f(ix0,iy0,iz0,irhop:irhop)
                 endif
                 if (rhop_interp(1)>=rhop_sink_create) then
+                  if (ip<=6) then
+                    print*, 'create_particles_sink: created '// &
+                        'sink particle with rhop=', rhop_interp(1)
+                    print*, 'processor, position=', iproc, fp(k,ixp:izp)
+                  endif
                   fp(k,israd)=sink_radius
                 endif
               endif
@@ -228,7 +233,7 @@ module Particles_sink
           do k=1,npar_loc
             if (fp(k,israd)/=0.0) npar_sink=npar_sink+1
           enddo
-          call save_name(float(npar_sink),idiag_nparsink)
+          call integrate_par_name((/float(npar_sink)/),idiag_nparsink)
         endif
       endif
 !
