@@ -29,7 +29,7 @@ module Particles_sink
 !
   include 'particles_sink.h'
 !
-  real :: sink_radius=0.0, rhop_sink_create=1.0
+  real :: sink_birth_radius=0.0, sink_radius=0.0, rhop_sink_create=1.0
   real :: srad0=0.0, srad1=0.0
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   character (len=labellen), dimension(ninit) :: initsrad='nothing'
@@ -37,11 +37,12 @@ module Particles_sink
   integer :: idiag_nparsink=0
 !
   namelist /particles_sink_init_pars/ &
-      sink_radius, lsink_radius_dx_unit, rhop_sink_create, lrhop_roche_unit, &
-      initsrad, srad0, srad1
+      sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
+      lrhop_roche_unit, initsrad, srad0, srad1
 !
   namelist /particles_sink_run_pars/ &
-      sink_radius, lsink_radius_dx_unit, rhop_sink_create, lrhop_roche_unit
+      sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
+      lrhop_roche_unit
 !
   include 'mpif.h'
 !
@@ -83,7 +84,14 @@ module Particles_sink
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
-      if (lsink_radius_dx_unit) sink_radius=sink_radius*dx
+      if (lsink_radius_dx_unit) then
+        sink_radius=sink_birth_radius*dx
+      else
+        sink_radius=sink_birth_radius
+      endif
+!
+      if (lroot) print*, 'initialize_particles_sink: sink_radius=', &
+          sink_radius
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
