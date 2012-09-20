@@ -123,6 +123,11 @@ varcontent[irhopswarm].variable = 'Particle mass density (rhopswarm)'
 varcontent[irhopswarm].idlvar   = 'rhopswarm'
 varcontent[irhopswarm].idlinit  = INIT_SCALAR
 ;
+default, israd, 0
+varcontent[israd].variable = 'Particle sink radius (srad)'
+varcontent[israd].idlvar   = 'srad'
+varcontent[israd].idlinit  = INIT_SCALAR
+;
 varcontent = varcontent[1:*]
 ;
 ;  Put variable names in array
