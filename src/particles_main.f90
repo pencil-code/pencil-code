@@ -648,10 +648,12 @@ module Particles_main
 !
 !  Create new sink particles or sink points.
 !
-      if (lparticles) &
-          call create_particles_sink_simple(f,fp,dfp,ineargrid)
-      if (lparticles_nbody) call create_particles_sink_nbody(f,fp,dfp,ineargrid)
-      if (lparticles_sink)  call create_particles_sink(f,fp,dfp,ineargrid)
+      if  (.not.lpencil_check_at_work) then
+        if (lparticles) &
+            call create_particles_sink_simple(f,fp,dfp,ineargrid)
+        if (lparticles_nbody) call create_particles_sink_nbody(f,fp,dfp,ineargrid)
+        if (lparticles_sink)  call create_particles_sink(f,fp,dfp,ineargrid)
+      endif
 !
 !  Correct for curvilinear geometry.
 !
