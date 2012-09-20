@@ -74,5 +74,20 @@ elsif ($host =~ /p6012/ or $host=~ /jugene/ or $host=~ /genius/){ # LoadLeveler
     $a =~ s/\/gpfs\/h05\/$ENV{'USER'}/\~/g;
     print "$job : $a\n";
     }
+  }
+elsif ($host =~ /alarik/){ # SLURM
+  
+  if ($#ARGV ne -1) { @jobs = @ARGV; }
+  else {
+    @jobs = `squeue | grep $ENV{'USER'} | sort`;
+    foreach $job (@jobs) { $job =~ s/ .*//g; chomp $job; }
+    }
+
+  foreach $job (@jobs){
+
+    $a = `scontrol show job $job | grep WorkDir`;
+    $a =~ s/   WorkDir=//;
+    print "$job : $a\n";
+    }
 
   }
