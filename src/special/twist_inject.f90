@@ -591,7 +591,6 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      use Boundcond, only: update_ghosts
       use Deriv, only: der
       use Mpicomm, only: mpibcast_double
       use Diagnostics, only: save_name
@@ -698,23 +697,14 @@ module Special
             else
               vv=0.0
             endif
-            if (dposx.ne.0) then
-              tmpx=vv(1)
-              tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
-              tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
-              f(l1,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-              f(l1,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
-                      -distxy*tmpz/dist)
-              f(l1,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
-!            else if (dIring.ne.0.0) then
-!            rr=sqrt((y(m)-ymid)**2+(z(n)-zmid)**2)
-!            r1=sqrt(r0**2-(1.-posx)**2)+3*width
-!            prof=0.5*(1.0+tanh((rr-r1)/0.01))
-!            prof=1.0
-!            f(l1,m,n,iux)=f(l1,m,n,ibx)**2*prof
-            else if (dIring.eq.0.0) then
-              f(l1,m,n,iuy:iuz)=0.0
-            endif
+            tmpx=vv(1)
+            tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
+            tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
+            f(l1,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+            f(l1,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+                    -distxy*tmpz/dist)
+            f(l1,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
+            if (dIring.eq.0.0) f(l1,m,n,iuy:iuz)=0.0
 !
           endif
         enddo
