@@ -2759,9 +2759,7 @@ module Entropy
           call sum_mn_name(gs2,idiag_gsrms,lsqrt=.true.)
         endif
 !
-        if (idiag_gTxgsrms/=0 .or. idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. &
-            idiag_gTxgszmxy/=0) & 
-            call cross(p%gTT,p%gss,gTxgs)
+        if (idiag_gTxgsrms/=0) call cross(p%gTT,p%gss,gTxgs)
         if (idiag_gTxgsrms/=0) then
           call dot2(gTxgs,gTxgs2)
           call sum_mn_name(gTxgs2,idiag_gTxgsrms,lsqrt=.true.)
@@ -2859,13 +2857,25 @@ module Entropy
             call zsum_mn_name_xy(p%gss(:,2),idiag_gsymxy)
         if (idiag_gszmxy/=0) &
             call zsum_mn_name_xy(p%gss(:,3),idiag_gszmxy)
-        if (idiag_gTxgsxmxy/=0) &
-            call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
-        if (idiag_gTxgsymxy/=0) &
-            call zsum_mn_name_xy(gTxgs(:,2),idiag_gTxgsymxy)
-        if (idiag_gTxgszmxy/=0) &
-            call zsum_mn_name_xy(gTxgs(:,3),idiag_gTxgszmxy)
       endif
+!
+!
+!  For the 2D averages of the baroclinic term  
+!
+       if (l2davgfirst) then
+         if (idiag_gTxgsxmxy/=0 .or. &
+             idiag_gTxgsymxy/=0 .or. &
+             idiag_gTxgsxmxy/=0) then
+           call cross(p%gTT,p%gss,gTxgs)
+           if (idiag_gTxgsxmxy/=0) &
+               call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
+           if (idiag_gTxgsymxy/=0) &
+               call zsum_mn_name_xy(gTxgs(:,2),idiag_gTxgsymxy)
+           if (idiag_gTxgszmxy/=0) &
+               call zsum_mn_name_xy(gTxgs(:,3),idiag_gTxgszmxy)
+         endif
+       endif
+!
 !
     endsubroutine dss_dt
 !***********************************************************************
