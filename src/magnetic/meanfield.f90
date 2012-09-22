@@ -760,8 +760,8 @@ module Magnetic_meanfield
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
-          !alpha_quenching_tmp=alpha_quenching
-          !alpha_quenching_tmp=alpha_quenching*sqrt(kf_x)
+          alpha_quenching_tmp=alpha_quenching
+          !alpha_quenching_tmp=alpha_quenching*sqrt(kf_x) !(test)
           alpha_total=alpha_total/(1.+alpha_quenching_tmp*p%b2*Beq21)
         endif
 !
