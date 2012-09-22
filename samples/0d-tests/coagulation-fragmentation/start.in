@@ -25,6 +25,7 @@
   deltavp12_floor=0.01
 /
 &particles_number_init_pars
-  initnpswarm='constant'
+  initnpswarm='constant_rhop'
+  rhop_swarm0=1.0
   deltavp22_floor=0.01
 /
