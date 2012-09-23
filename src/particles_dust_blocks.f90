@@ -1726,7 +1726,10 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Exclude the massive nbody particles from the drag calculations
 !
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              lsink =(lparticles_sink .and.fp(k,israd)>0.0)
+              lsink=.false.
+              if (lparticles_sink) then
+                if (fp(k,israd)>0.0) lsink=.true.
+              endif
               if ((.not.lnbody).and.(.not.lsink)) then
                 ix0=ineargrid(k,1)
                 iy0=ineargrid(k,2)
