@@ -118,7 +118,7 @@ module Density
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
-      density_xaver_range
+      density_xaver_range, mass_source_tau1
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
