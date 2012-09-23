@@ -89,8 +89,8 @@ module Forcing
   logical :: lgentle=.false.
   character (len=labellen) :: iforcing_cont='ABC'
   real :: ampl_ff=1., ampl1_ff=0., width_fcont=1., x1_fcont=0., x2_fcont=0.
-  real :: kf_fcont=0.,omega_fcont=0.,eps_fcont=0.
-  real :: tgentle=0.
+  real :: kf_fcont=0., omega_fcont=0., omegay_fcont=0., omegaz_fcont=0.
+  real :: eps_fcont=0., tgentle=0.
   real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
   real :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
@@ -101,7 +101,7 @@ module Forcing
   real, dimension (mx) :: phi2_ff
   real, dimension (mx) :: sinx,cosx,sinxt,cosxt,embedx
   real, dimension (my) :: siny,cosy,sinyt,cosyt,embedy
-  real, dimension (mz) :: sinz,cosz,embedz
+  real, dimension (mz) :: sinz,cosz,sinzt,coszt,embedz
 !
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
@@ -123,14 +123,16 @@ module Forcing
        ABC_A, ABC_B, ABC_C, &
        lforcing_cont,iforcing_cont, &
        lembed, k1_ff, ampl_ff, ampl1_ff, width_fcont, x1_fcont, x2_fcont, &
-       kf_fcont,omega_fcont,eps_fcont,lsamesign,&
-       lshearing_adjust_old,equator,&
+       kf_fcont, omega_fcont, omegay_fcont, omegaz_fcont, eps_fcont, &
+       lsamesign, lshearing_adjust_old, equator, &
        lscale_kvector_fac,scale_kvectorx,scale_kvectory,scale_kvectorz, &
        lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
-       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d,&
-       z_bb,width_bb,eta_bb,fcont_ampl,&
+       tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
+       z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent
+!
 ! other variables (needs to be consistent with reset list below)
+!
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_qfm=0, idiag_ffm=0
   integer :: idiag_ruxfxm=0, idiag_ruyfym=0, idiag_ruzfzm=0
   integer :: idiag_ruxfym=0, idiag_ruyfxm=0
@@ -3969,7 +3971,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  but the same for all pencils
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ecost,esint
+      real :: ecost,esint,ecoxt,ecoyt,ecozt
       intent(in) :: f
 !
 !  for the AKA effect, calculate auxiliary functions phi1_ff and phi2_ff
@@ -3984,6 +3986,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
         cosxt=cos(kf_fcont*x+ecost)
         sinyt=sin(kf_fcont*y+esint)
         cosyt=cos(kf_fcont*y+esint)
+      elseif (iforcing_cont=='ABCtdep') then
+        ecoxt=eps_fcont*cos(omega_fcont*t)
+        ecoyt=eps_fcont*cos(omegay_fcont*t)
+        ecozt=eps_fcont*cos(omegaz_fcont*t)
+        sinxt=sin(k1_ff*x+ecoxt); cosxt=cos(k1_ff*x+ecoxt)
+        sinyt=sin(k1_ff*y+ecoyt); cosyt=cos(k1_ff*y+ecoyt)
+        sinzt=sin(k1_ff*z+ecozt); coszt=cos(k1_ff*z+ecozt)
       endif
 !
       call keep_compiler_quiet(f)
@@ -4062,11 +4071,17 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         select case (iforcing_cont)
         case('ABC')
+          fact2=relhel
           fact=ampl_ff/sqrt(ABC_A**2+ABC_B**2+ABC_C**2)
-          fact2=1.-eps_fcont
-          force(:,1)=fact*(ABC_A*sinz(n    )+fact2*ABC_B*cosy(m)    )
-          force(:,2)=fact*(ABC_C*sinx(l1:l2)+fact2*ABC_A*cosz(n)    )
-          force(:,3)=fact*(ABC_B*siny(m    )+fact2*ABC_C*cosx(l1:l2))
+          force(:,1)=fact*(ABC_C*sinz(n    )+fact2*ABC_B*cosy(m)    )
+          force(:,2)=fact*(ABC_A*sinx(l1:l2)+fact2*ABC_C*cosz(n)    )
+          force(:,3)=fact*(ABC_B*siny(m    )+fact2*ABC_A*cosx(l1:l2))
+        case('ABCtdep')
+          fact2=relhel
+          fact=ampl_ff/sqrt(ABC_A**2+ABC_B**2+ABC_C**2)
+          force(:,1)=fact*(ABC_C*sinzt(n    )+fact2*ABC_B*cosyt(m)    )
+          force(:,2)=fact*(ABC_A*sinxt(l1:l2)+fact2*ABC_C*coszt(n)    )
+          force(:,3)=fact*(ABC_B*sinyt(m    )+fact2*ABC_A*cosxt(l1:l2))
         case ('AKA')
           fact=sqrt(2.)*ampl_ff
           force(:,1)=fact*phi1_ff(m    )
