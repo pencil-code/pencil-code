@@ -105,7 +105,9 @@ module Density
       lisothermal_fixed_Hrho, density_floor, lanti_shockdiffusion, &
       lrho_as_aux, ldiffusion_nolog, lnrho_z_shift, powerlr, zoverh, hoverr, &
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
-      r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, density_xaver_range
+      r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
+      T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
+      dens_coeff, temp_coeff, temp_trans, temp_coeff_out
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
