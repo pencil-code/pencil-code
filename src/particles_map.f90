@@ -1044,7 +1044,7 @@ module Particles_map
         if (.not.(lparticles_radius.or.lparticles_number.or. &
             lparticles_mass)) then
           do m=m1,m2; do n=n1,n2
-            call get_rhopswarm(mp_swarm,m,n,rhop_swarm_mn)
+            call get_rhopswarm(mp_swarm,fp,1,m,n,rhop_swarm_mn)
             f(l1:l2,m,n,irhop)=rhop_swarm_mn*f(l1:l2,m,n,irhop)
           enddo; enddo
         endif
@@ -1207,7 +1207,7 @@ module Particles_map
 !  Normalize the assigned momentum by the particle density in the grid cell.
 !
           do m=m1,m2 ; do n=n1,n2
-            call get_rhopswarm(mp_swarm,m,n,rhop_swarm_mn)
+            call get_rhopswarm(mp_swarm,fp,1,m,n,rhop_swarm_mn)
             where (f(l1:l2,m,n,irhop)/=0.0)
               f(l1:l2,m,n,iupx+ivp)=rhop_swarm_mn*&
               f(l1:l2,m,n,iupx+ivp)/f(l1:l2,m,n,irhop)

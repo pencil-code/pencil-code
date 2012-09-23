@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3)
+! PENCILS PROVIDED np; rhop; epsp; grhop(3)
 !
 !***************************************************************
 module Particles
@@ -2084,7 +2084,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lpencil_in(i_rhop) .and. irhop==0) then
         lpencil_in(i_np)=.true.
-        lpencil_in(i_rhop_swarm)=.true.
       endif
 !
       if (lpencil_in(i_epsp)) then
@@ -2118,8 +2117,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          call get_rhopswarm(mp_swarm,m,n,p%rhop_swarm)
-          p%rhop=p%rhop_swarm*p%np
+          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
         endif
       endif
 !
@@ -2711,7 +2709,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(:), allocatable :: rep,stocunn
       real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
-      real :: rhop_swarm_pt
+      real :: rhop_swarm_par
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lnbody, lsink
@@ -2897,9 +2895,9 @@ k_loop:   do while (.not. (k>npar_loc))
                       rho1_point=p%rho1(ixx-nghost)
                     endif
 !  Add friction force to grid point.
-                    call get_rhopswarm(mp_swarm,ixx,iyy,izz,rhop_swarm_pt)
+                    call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
                     df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         rhop_swarm_pt*rho1_point*dragforce*weight
+                         rhop_swarm_par*rho1_point*dragforce*weight
                   enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -2966,18 +2964,18 @@ k_loop:   do while (.not. (k>npar_loc))
                       rho1_point=p%rho1(ixx-nghost)
                     endif
 !  Add friction force to grid point.
-                    call get_rhopswarm(mp_swarm,ixx,iyy,izz,rhop_swarm_pt)
+                    call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
                     df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                         rhop_swarm_pt*rho1_point*dragforce*weight
+                         rhop_swarm_par*rho1_point*dragforce*weight
                   enddo; enddo; enddo
                 else
 !
 !  Nearest Grid Point (NGP) scheme.
 !
                   l=ineargrid(k,1)
-                  call get_rhopswarm(mp_swarm,l,m,n,rhop_swarm_pt)
+                  call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
                   df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                       rhop_swarm_pt*p%rho1(l-nghost)*dragforce
+                       rhop_swarm_par*p%rho1(l-nghost)*dragforce
                 endif
               endif
 !
@@ -2992,9 +2990,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 ! WL: Check if this is right. drag_heat is of dimension nx, not a scalar
 !
-                call get_rhopswarm(mp_swarm,ix0,iy0,iz0,rhop_swarm_pt)
+                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
                 drag_heat(ix0-nghost)=drag_heat(ix0-nghost) + &
-                     rhop_swarm_pt*tausp1_par*up2
+                     rhop_swarm_par*tausp1_par*up2
               endif
 !
 !  The minimum friction time of particles in a grid cell sets the local friction
@@ -3010,7 +3008,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 if (ldragforce_gas_par) then
                   if (p%np(ix0-nghost)/=0.0) &
                        dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
-                       p%epsp(ix0-nghost)/p%np(ix0-nghost)*tausp1_par
+                       rhop_swarm_par*tausp1_par
                 endif
               endif
             endif
@@ -3857,7 +3855,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (3) :: deltavp_vec, vbar_jk
       real :: deltavp, tau_cool1_par, dt1_cool
       real :: tausp1_par, tausp1_parj, tausp1_park, tausp_parj, tausp_park
-      real :: tausp_parj3, tausp_park3, rhop_swarm_pt
+      real :: tausp_parj3, tausp_park3, rhop_swarm_par
       integer :: j, k, l, ix0
       integer :: ispecies, jspecies
 !
@@ -3946,9 +3944,9 @@ k_loop:   do while (.not. (k>npar_loc))
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
                 tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
             if (lcollisional_heat .or. ldiagnos) then
-              call get_rhopswarm(mp_swarm,ineargrid(k,:),rhop_swarm_pt)
+              call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
               coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                   rhop_swarm_pt*tau_coll1(ix0-nghost)*&
+                   rhop_swarm_par*tau_coll1(ix0-nghost)*&
                    sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:)))
             endif
           enddo
@@ -3988,10 +3986,10 @@ k_loop:   do while (.not. (k>npar_loc))
                     (tausp_parj3*fp(k,ivpx:ivpz)+tausp_park3*fp(j,ivpx:ivpz))/ &
                     (tausp_parj3+tausp_park3)
 !  Cooling time-scale.
-                call get_rhopswarm(mp_swarm,ineargrid(k,:),rhop_swarm_pt)
+                call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
                 tau_cool1_par= &
                      (1.0-coeff_restitution)* &
-                     rhop_swarm_pt*deltavp*(tausp_parj+tausp_park)**2/ &
+                     rhop_swarm_par*deltavp*(tausp_parj+tausp_park)**2/ &
                      (tausp_parj3+tausp_park3)
                 dt1_cool=dt1_cool+tau_cool1_par
 !                if (tau_coll_min>0.0) then
@@ -4062,7 +4060,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   (vvpm_species(:,1,ispecies)-vvpm_species(:,1,jspecies))**2 + &
                   (vvpm_species(:,2,ispecies)-vvpm_species(:,2,jspecies))**2 + &
                   (vvpm_species(:,3,ispecies)-vvpm_species(:,3,jspecies))**2)
-            call get_rhopswarm(mp_swarm,m,n,rhop_swarm_mn)
+            call get_rhopswarm(mp_swarm,fp,k,m,n,rhop_swarm_mn)
             tau_coll1_species(:,jspecies,ispecies) = &
                  vcoll*np_species(:,ispecies)*rhop_swarm_mn*p%rho1 / ( &
                  tausp_species(jspecies)**3/ &
@@ -4103,9 +4101,10 @@ k_loop:   do while (.not. (k>npar_loc))
                   tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
                   (fp(k,ivpx:ivpz)-vvpm_species(ix0-nghost,:,jspecies))
               if (lcollisional_heat .or. ldiagnos) then
-                call get_rhopswarm(mp_swarm,ineargrid(k,:),rhop_swarm_pt)
+                call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
                 coll_heat(ix0-nghost) = coll_heat(ix0-nghost) + &
-                     rhop_swarm_pt*tau_coll1_species(ix0-nghost,ispecies,jspecies)*&
+                     rhop_swarm_par* &
+                     tau_coll1_species(ix0-nghost,ispecies,jspecies)* &
                      sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz) - &
                      vvpm_species(ix0-nghost,:,jspecies)))
               endif
@@ -4404,7 +4403,7 @@ k_loop:   do while (.not. (k>npar_loc))
       character (len=labellen) :: ivis=''
       integer, dimension(3) :: ineark
       integer :: k
-      real :: stocunn,rhop_swarm_pt
+      real :: stocunn, rhop_swarm_par
 !
       intent(in) :: fp,k
 !
@@ -4444,10 +4443,10 @@ k_loop:   do while (.not. (k>npar_loc))
         TT=brownian_T0
       endif
 !
-      call get_rhopswarm(mp_swarm,ineark,rhop_swarm_pt)
+      call get_rhopswarm(mp_swarm,fp,k,ineark,rhop_swarm_par)
 !
       Szero=216*nu*k_B*TT*pi_1/ &
-           (dia**5*stocunn*rhop_swarm_pt**2/interp_rho(k))
+           (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
 !
       if (dt==0.0) then
         force=0.0

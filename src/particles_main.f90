@@ -1355,7 +1355,6 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
-      real :: rhop_swarm_pt
       integer :: l
 !
 !  Loop over slices
@@ -1388,19 +1387,14 @@ module Particles_main
               slices%xy2=rhop_swarm*f(l1:l2 ,m1:m2 ,iz2_loc,inp)
             else
               do m=m1,m2 ; do n=n1,n2
-                call get_rhopswarm(mp_swarm,ix_loc,m,n,rhop_swarm_pt)
-                slices%yz(m,n) =  rhop_swarm_pt*f(ix_loc,m,n,inp)
+                slices%yz(m,n) = rhop_swarm*f(ix_loc,m,n,inp)
               enddo;enddo
               do l=l1,l2 ; do n=n1,n2
-                call get_rhopswarm(mp_swarm,l,iy_loc,n,rhop_swarm_pt)
-                slices%xz(l,n) =  rhop_swarm_pt*f(l,iy_loc,n,inp)
+                slices%xz(l,n) = rhop_swarm*f(l,iy_loc,n,inp)
               enddo;enddo
               do l=l1,l2 ; do m=m1,m2
-                call get_rhopswarm(mp_swarm,l,m,iz_loc ,rhop_swarm_pt)
-                slices%xy(l,m) =  rhop_swarm_pt*f(l,m,iz_loc,inp)
-!
-                call get_rhopswarm(mp_swarm,l,m,iz2_loc,rhop_swarm_pt)
-                slices%xy2(l,m) = rhop_swarm_pt*f(l,m,iz2_loc,inp)
+                slices%xy(l,m) = rhop_swarm*f(l,m,iz_loc,inp)
+                slices%xy2(l,m) = rhop_swarm*f(l,m,iz2_loc,inp)
               enddo;enddo
             endif
             slices%ready = .true.

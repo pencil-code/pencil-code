@@ -417,7 +417,6 @@ module Particles
 !
       if (lpencil_in(i_rhop) .and. irhop==0) then
         lpencil_in(i_np)=.true.
-        lpencil_in(i_rhop_swarm)=.true.
       endif
 !
       if (lpencil_in(i_epsp)) then
@@ -442,8 +441,7 @@ module Particles
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          call get_rhopswarm(mp_swarm,m,n,p%rhop_swarm)
-          p%rhop=p%rhop_swarm*p%np
+          p%rhop=rhop_swarm*p%np
         endif
       endif
 ! epsp

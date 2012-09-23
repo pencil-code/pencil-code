@@ -19,7 +19,7 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3)
+! PENCILS PROVIDED np; rhop; epsp; grhop(3)
 !
 !***************************************************************
 module Particles
@@ -1141,8 +1141,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
         else
-          call get_rhopswarm(mp_swarm,m,n,p%rhop_swarm)
-          p%rhop=p%rhop_swarm*f(l1:l2,m,n,inp)
+          p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
         endif
       endif
 !
@@ -1695,7 +1694,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mxb,myb,mzb) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (3) :: dragforce, uup
-      real :: rho1_point, tausp1_par, rhop_swarm_pt
+      real :: rho1_point, tausp1_par, rhop_swarm_par
       real :: weight, weight_x, weight_y, weight_z
       integer :: k, l, ix0, iy0, iz0, ib, iblock, lb, mb, nb
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
@@ -1810,9 +1809,10 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
                       endif
 !  Add friction force to grid point.
-                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,ib,rhop_swarm_pt)
+                      call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
+                          rhop_swarm_par)
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
-                          rhop_swarm_pt*rho1_point*dragforce*weight
+                          rhop_swarm_par*rho1_point*dragforce*weight
                     enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -1876,9 +1876,10 @@ k_loop:   do while (.not. (k>npar_loc))
                         rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
                       endif
 !  Add friction force to grid point.
-                      call get_rhopswarm(mp_swarm,ixx,iyy,izz,ib,rhop_swarm_pt)
+                      call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
+                          rhop_swarm_par)
                       dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
-                          rhop_swarm_pt*rho1_point*dragforce*weight
+                          rhop_swarm_par*rho1_point*dragforce*weight
                     enddo; enddo; enddo
                   else
 !
@@ -1891,9 +1892,10 @@ k_loop:   do while (.not. (k>npar_loc))
                     endif
                     !WL: Why is this l being defined?
                     l=ineargrid(k,1)
-                    call get_rhopswarm(mp_swarm,ix0,iy0,iz0,ib,rhop_swarm_pt)
+                    call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,ib, &
+                        rhop_swarm_par)
                     dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
-                        rhop_swarm_pt*rho1_point*dragforce
+                        rhop_swarm_par*rho1_point*dragforce
                   endif
                 endif
 !
@@ -1915,8 +1917,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     endif
                     if (fb(ix0,iy0,iz0,inp,ib)/=0.0) &
                         dt1_drag_gas(ix0,iy0,iz0)=dt1_drag_gas(ix0,iy0,iz0)+ &
-                        (fb(ix0,iy0,iz0,irhop,ib)*rho1_point)/ &
-                        fb(ix0,iy0,iz0,inp,ib)*tausp1_par
+                        rhop_swarm_par*rho1_point*tausp1_par
                   endif
                 endif
               endif

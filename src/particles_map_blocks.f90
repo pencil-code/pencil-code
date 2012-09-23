@@ -157,7 +157,7 @@ module Particles_map
 !
       real :: weight0, weight, weight_x, weight_y, weight_z
       real, save :: dx1, dy1, dz1
-      real :: rhop_swarm_pt
+      real :: rhop_swarm_par
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
       integer :: lb,mb,nb
@@ -411,9 +411,9 @@ module Particles_map
 !
             do ib=0,nblock_loc-1
               do nb=1,mzb ; do mb=1,myb ; do lb=1,mxb
-                rhop_swarm_pt  = mp_swarm*&
+                rhop_swarm_par  = mp_swarm*&
                      dVol1xb(lb,ib)*dVol1yb(mb,ib)*dVol1zb(nb,ib)
-                fb(lb,mb,nb,irhop,ib) = rhop_swarm_pt*fb(lb,mb,nb,irhop,ib)
+                fb(lb,mb,nb,irhop,ib) = rhop_swarm_par*fb(lb,mb,nb,irhop,ib)
               enddo;enddo;enddo
             enddo
 !

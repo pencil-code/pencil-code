@@ -366,7 +366,7 @@ module Particles_coagulation
                     else
                       tau_coll1=kernel*npswarmj
                     endif
-!                    tau_coll1=kernel*min(npswarmj,npswarmk)
+                    tau_coll1=kernel*min(npswarmj,npswarmk)
                   else
                     tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                         min(npswarmj,npswarmk)

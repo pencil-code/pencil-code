@@ -22,10 +22,10 @@ module Particles_sub
   public :: get_rhopswarm
 !
   interface get_rhopswarm
-     module procedure get_rhopswarm_ineargrid
-     module procedure get_rhopswarm_point
-     module procedure get_rhopswarm_pencil
-     module procedure get_rhopswarm_block
+    module procedure get_rhopswarm_ineargrid
+    module procedure get_rhopswarm_point
+    module procedure get_rhopswarm_pencil
+    module procedure get_rhopswarm_block
   endinterface
 !
   contains
@@ -849,7 +849,7 @@ module Particles_sub
 !
     endsubroutine output_particle_size_dist
 !***********************************************************************
-    subroutine get_rhopswarm_ineargrid(mp_swarm_tmp,ineark,rhop_swarm_tmp)
+    subroutine get_rhopswarm_ineargrid(mp_swarm_tmp,fp,k,ineark,rhop_swarm_tmp)
 !     
 !  Subroutine to calculate rhop_swarm, the mass density of a single 
 !  superparticle. The fundamental quantity is actually mp_swarm, the 
@@ -867,13 +867,23 @@ module Particles_sub
 !
 !  29-apr-11/wlad: coded
 !
+      real, intent(in)  :: mp_swarm_tmp
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      integer, intent(in) :: k
       integer, dimension (3), intent(in) :: ineark
-      real,    intent(in)  :: mp_swarm_tmp
-      real,    intent(out) :: rhop_swarm_tmp
+      real, intent(out) :: rhop_swarm_tmp
+!
       integer  :: il,im,in
 !
       if (lcartesian_coords.and.all(lequidist)) then
-        rhop_swarm_tmp = rhop_swarm
+        if (lparticles_mass) then
+          rhop_swarm_tmp = fp(k,irhopswarm)
+        elseif (lparticles_radius.and.lparticles_number) then
+          rhop_swarm_tmp = &
+              four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
+        else
+          rhop_swarm_tmp = rhop_swarm
+        endif
       else
         il = ineark(1) ; im = ineark(2) ; in = ineark(3) 
         rhop_swarm_tmp = mp_swarm_tmp*dVol1_x(il)*dVol1_y(im)*dVol1_z(in)
@@ -881,26 +891,34 @@ module Particles_sub
 !
     endsubroutine get_rhopswarm_ineargrid
 !***********************************************************************
-    subroutine get_rhopswarm_point(mp_swarm_tmp,il,im,in,rhop_swarm_tmp)
+    subroutine get_rhopswarm_point(mp_swarm_tmp,fp,k,il,im,in,rhop_swarm_tmp)
 !     
 !  Same as get_rhopswarm_ineargrid, for general grid points il,im,in. 
 !  Retrieves a scalar. 
 !
 !  29-apr-11/wlad: coded
 !
-      real,    intent(in)  :: mp_swarm_tmp
-      real,    intent(out) :: rhop_swarm_tmp
-      integer, intent(in)  :: il,im,in
+      real, intent(in)  :: mp_swarm_tmp
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      integer, intent(in) :: k, il, im, in
+      real, intent(out) :: rhop_swarm_tmp
 !
       if (lcartesian_coords.and.all(lequidist)) then 
-        rhop_swarm_tmp = rhop_swarm
+        if (lparticles_mass) then
+          rhop_swarm_tmp = fp(k,irhopswarm)
+        elseif (lparticles_radius.and.lparticles_number) then
+          rhop_swarm_tmp = &
+              four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
+        else
+          rhop_swarm_tmp = rhop_swarm
+        endif
       else
         rhop_swarm_tmp = mp_swarm_tmp*dVol1_x(il)*dVol1_y(im)*dVol1_z(in)
       endif
 !
     endsubroutine get_rhopswarm_point
 !***********************************************************************
-    subroutine get_rhopswarm_block(mp_swarm_tmp,il,im,in,ib,rhop_swarm_tmp)
+    subroutine get_rhopswarm_block(mp_swarm_tmp,fp,k,il,im,in,ib,rhop_swarm_tmp)
 !     
 !  Same as get_rhopswarm_point, but for the volume elements as block arrays.
 !  Retrieves a scalar. 
@@ -909,12 +927,20 @@ module Particles_sub
 !
       use Particles_mpicomm, only: dVol1xb, dVol1yb, dVol1zb
 !
-      real,    intent(in)  :: mp_swarm_tmp
-      real,    intent(out) :: rhop_swarm_tmp
-      integer, intent(in)  :: il,im,in,ib
+      real, intent(in) :: mp_swarm_tmp
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      integer, intent(in) :: k, il, im, in, ib
+      real, intent(out) :: rhop_swarm_tmp
 !
       if (lcartesian_coords.and.all(lequidist)) then 
-        rhop_swarm_tmp = rhop_swarm
+        if (lparticles_mass) then
+          rhop_swarm_tmp = fp(k,irhopswarm)
+        elseif (lparticles_radius.and.lparticles_number) then
+          rhop_swarm_tmp = &
+              four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
+        else
+          rhop_swarm_tmp = rhop_swarm
+        endif
       else
         rhop_swarm_tmp = mp_swarm_tmp*&
              dVol1xb(il,ib)*dVol1yb(im,ib)*dVol1zb(in,ib)
@@ -922,22 +948,30 @@ module Particles_sub
 !
     endsubroutine get_rhopswarm_block
 !***********************************************************************
-    subroutine get_rhopswarm_pencil(mp_swarm_tmp,im,in,rhop_swarm_tmp)
+    subroutine get_rhopswarm_pencil(mp_swarm_tmp,fp,k,im,in,rhop_swarm_tmp)
 !
 !  Same as get_rhopswarm_ineargrid, but retrieves a pencil.
 !
 !  29-apr-11/wlad: coded
 !
-      real,                intent(in)  :: mp_swarm_tmp
+      real, intent(in) :: mp_swarm_tmp
+      real, dimension (mpar_loc,mpvar), intent(in) :: fp
+      integer, intent(in) :: k, im, in
       real, dimension(nx), intent(out) :: rhop_swarm_tmp
-      integer,             intent(in)  :: im,in
 !
       if (lcartesian_coords.and.all(lequidist)) then 
-        rhop_swarm_tmp = rhop_swarm
+        if (lparticles_mass) then
+          rhop_swarm_tmp = fp(k,irhopswarm)
+        elseif (lparticles_radius.and.lparticles_number) then
+          rhop_swarm_tmp = &
+              four_pi_rhopmat_over_three*fp(k,iap)**3*fp(k,inpswarm)
+        else
+          rhop_swarm_tmp = rhop_swarm
+        endif
       else
         rhop_swarm_tmp = mp_swarm_tmp*dVol1_x(l1:l2)*dVol1_y(im)*dVol1_z(in)
       endif
 !
-      endsubroutine get_rhopswarm_pencil
+    endsubroutine get_rhopswarm_pencil
 !***********************************************************************
 endmodule Particles_sub
