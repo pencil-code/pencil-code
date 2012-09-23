@@ -87,6 +87,7 @@ elsif ($host =~ /alarik/){ # SLURM
 
     $a = `scontrol show job $job | grep WorkDir`;
     $a =~ s/   WorkDir=//;
+    $a =~ s/\n//;
     print "$job : $a\n";
     }
 
