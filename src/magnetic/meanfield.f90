@@ -127,7 +127,7 @@ module Magnetic_meanfield
   integer :: idiag_EMFmz3=0     ! DIAG_DOC: $\left<{\cal E}\right>_{xy}|_z$
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
-  integer :: idiag_peffmxz=0       ! YAVG_DOC: $\left< q_p \right>_{y}$
+  integer :: idiag_peffmxz=0    ! YAVG_DOC: $\left<{\cal P}_{\rm eff}\right>_{y}$
 
 !
 ! xy averaged diagnostics given in xyaver.in
@@ -962,14 +962,13 @@ module Magnetic_meanfield
       endif
 !
 !  2-D averages.
+!  y-averaged effective magnetic pressure,
+!  only makes sense for the 'uturbconst' profile
 !
       if (l2davgfirst) then
         if (idiag_peffmxz/=0)  then
-!         Beq21=p%rho1/(uturb**2+p%u2)
-!AB: Koen, why should the mean flow (in a mean-field model) enter here.
           Beq21=p%rho1/uturb**2
           mf_qp=meanfield_qp/(1.+p%b2*Beq21/meanfield_Bp**2)
-!         y-averaged effective magnetic pressure, only makes sense for the 'uturbconst' profile
           call ysum_mn_name_xz((1.-mf_qp)*p%b2/2*Beq21,idiag_peffmxz)
         endif
       endif

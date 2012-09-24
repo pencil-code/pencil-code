@@ -213,6 +213,7 @@ module Gravity
 !  tanh profile
 !  For isothermal EOS, we have 0=-cs2*dlnrho+gravx.
 !  pot_ratio gives the resulting ratio in the density.
+!AB: these potx_const values seem to be missing in corresponding entries for potx_xpoint.
 !
       case ('tanh-pot')
         if (dgravx==0.) call fatal_error("initialize_gravity","dgravx=0 not OK")
@@ -239,6 +240,34 @@ module Gravity
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x + potx_const
+        g0=gravx
+        call put_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx_xpencil')
+!
+!  Convection zone model, normalized to the bottom of the domain
+!
+      case ('CZbot1')
+        if (lroot) print*,'initialize_gravity: CZbot1 x-grav, gravx=',gravx
+        gravx_xpencil=-gravx/x**2
+        potx_xpencil=-gravx*(1./x-1./xyz0(1)) + potx_const
+        g0=gravx
+        call put_shared_variable('gravx', gravx, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil, ierr)
+        if (ierr/=0) call fatal_error('initialize_gravity', &
+             'there was a problem when putting gravx_xpencil')
+!
+!  Convection zone model, normalized to the middle of the domain
+!
+      case ('CZmid1')
+        if (lroot) print*,'initialize_gravity: CZmid1 x-grav, gravx=',gravx
+        gravx_xpencil=-gravx/x**2
+        potx_xpencil=-gravx*(1./x-2./(xyz0(1)+xyz1(1))) + potx_const
         g0=gravx
         call put_shared_variable('gravx', gravx, ierr)
         if (ierr/=0) call fatal_error('initialize_gravity', &
@@ -746,6 +775,9 @@ module Gravity
       poty_ypoint=0.0
       potz_zpoint=0.0
 !
+!  Selection different potentials at one point.
+!  These entries should match those for potx_xpencil.
+!
       if (present(x)) then
         select case (gravx_profile)
         case ('zero')
@@ -757,6 +789,10 @@ module Gravity
           potx_xpoint=0.5*(x**2-xinfty**2)*nux_epicycle**2*zdep
         case ('kepler')
           potx_xpoint=-gravx/x
+        case ('CZbot1')
+          potx_xpoint=-gravx*(1./x-1./xyz0(1))
+        case ('CZmid1')
+          potx_xpoint=-gravx*(1./x-2./(xyz0(1)+xyz1(1)))
         case default
           call fatal_error('potential_point', &
                'gravx_profile='//gravx_profile//' not implemented')
