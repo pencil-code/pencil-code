@@ -1905,7 +1905,7 @@ module Initcond
 !
     endsubroutine soundwave
 !***********************************************************************
-    subroutine coswave_old(ampl,f,i,kx,ky,kz)
+    subroutine coswave(ampl,f,i,kx,ky,kz)
 !
 !  cosine wave (as initial condition)
 !
@@ -1954,25 +1954,27 @@ module Initcond
         endif
       endif
 !
-    endsubroutine coswave_old
-!***********************************************************************
-    subroutine coswave(ampl,f,i,kx,ky,kz)
-!
-!  cosine wave (as initial condition)
-!
-!  14-nov-03/axel: adapted from sinwave
-!
-      integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl
-!
-      f(:,:,:,i)=f(:,:,:,i)+ampl*cos( &
-        spread(spread(kx*x,2,my),3,mz)+ &
-        spread(spread(ky*y,1,mx),3,mz)+ &
-        spread(spread(kz*z,1,mx),2,my))
-!
     endsubroutine coswave
+!***********************************************************************
+!* 26-sep-12/ccyang: This routine does not work with my machine when not
+!*                   all k's are present.
+!    subroutine coswave(ampl,f,i,kx,ky,kz)
+!!
+!!  cosine wave (as initial condition)
+!!
+!!  14-nov-03/axel: adapted from sinwave
+!!
+!      integer :: i
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      real,optional :: kx,ky,kz
+!      real :: ampl
+!!
+!      f(:,:,:,i)=f(:,:,:,i)+ampl*cos( &
+!        spread(spread(kx*x,2,my),3,mz)+ &
+!        spread(spread(ky*y,1,mx),3,mz)+ &
+!        spread(spread(kz*z,1,mx),2,my))
+!!
+!    endsubroutine coswave
 !***********************************************************************
     subroutine sph_constb(ampl,f,izero)
 !
