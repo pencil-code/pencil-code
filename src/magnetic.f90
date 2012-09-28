@@ -352,6 +352,9 @@ module Magnetic
   integer :: idiag_bxmax=0      ! DIAG_DOC: $\max(|B_x|)$
   integer :: idiag_bymax=0      ! DIAG_DOC: $\max(|B_y|)$
   integer :: idiag_bzmax=0      ! DIAG_DOC: $\max(|B_z|)$
+  integer :: idiag_jxmax=0      ! DIAG_DOC: $\max(|jv_x|)$
+  integer :: idiag_jymax=0      ! DIAG_DOC: $\max(|jv_y|)$
+  integer :: idiag_jzmax=0      ! DIAG_DOC: $\max(|jv_z|)$
   integer :: idiag_jrms=0       ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
   integer :: idiag_hjrms=0      ! DIAG_DOC: $\left<\jv^2\right>^{1/2}$
   integer :: idiag_jmax=0       ! DIAG_DOC: $\max(|\jv|)$
@@ -1697,6 +1700,7 @@ module Magnetic
 !
 !  diagnostics pencils
 !
+      if (idiag_jxmax/=0 .or. idiag_jymax/=0 .or. idiag_jzmax/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
           lpenc_diagnos(i_jxbr)=.true.
       if (idiag_poynzmz/=0) lpenc_diagnos(i_jxb)=.true.
@@ -3218,6 +3222,9 @@ module Magnetic
         if (idiag_bxmax/=0) call max_mn_name(p%bb(:,1),idiag_bxmax)
         if (idiag_bymax/=0) call max_mn_name(p%bb(:,2),idiag_bymax)
         if (idiag_bzmax/=0) call max_mn_name(p%bb(:,3),idiag_bzmax)
+        if (idiag_jxmax/=0) call max_mn_name(abs(p%jj(:,1)),idiag_jxmax)
+        if (idiag_jymax/=0) call max_mn_name(abs(p%jj(:,2)),idiag_jymax)
+        if (idiag_jzmax/=0) call max_mn_name(abs(p%jj(:,3)),idiag_jzmax)
         if (idiag_aybym2/=0) &
             call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
@@ -6495,6 +6502,7 @@ module Magnetic
         idiag_exjm2=0; idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
+        idiag_jxmax=0; idiag_jymax=0; idiag_jzmax=0
         idiag_a2m=0; idiag_arms=0; idiag_amax=0; idiag_beta1m=0; idiag_beta1mz=0
         idiag_divarms = 0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
@@ -6631,6 +6639,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxmax',idiag_bxmax)
         call parse_name(iname,cname(iname),cform(iname),'bymax',idiag_bymax)
         call parse_name(iname,cname(iname),cform(iname),'bzmax',idiag_bzmax)
+        call parse_name(iname,cname(iname),cform(iname),'jxmax',idiag_jxmax)
+        call parse_name(iname,cname(iname),cform(iname),'jymax',idiag_jymax)
+        call parse_name(iname,cname(iname),cform(iname),'jzmax',idiag_jzmax)
         call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
         call parse_name(iname,cname(iname),cform(iname),'hjrms',idiag_hjrms)
         call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
