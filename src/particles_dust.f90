@@ -2618,8 +2618,7 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
         if (idiag_npargone/=0) then
           call count_particles(ipar,npar_found)
-          call integrate_par_name((/float(npar/ncpus-npar_found)/), &
-              idiag_npargone)
+          call save_name(float(npar-npar_found),idiag_npargone)
         endif
         if (idiag_deshearbcsm/=0) then
           call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)

@@ -233,7 +233,7 @@ module Particles_sink
           do k=1,npar_loc
             if (fp(k,israd)/=0.0) npar_sink=npar_sink+1
           enddo
-          call integrate_par_name((/float(npar_sink)/),idiag_nparsink)
+          call sum_name(float(npar_sink),idiag_nparsink)
         endif
       endif
 !
