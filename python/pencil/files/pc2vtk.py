@@ -778,14 +778,14 @@ def aver2vtk(varfile = 'xyaverages.dat', datadir = 'data/',
 
 # Convert PencilCode power spectra to vtk.
 def power2vtk(powerfiles = ['power_mag.dat'],
-            datadir = 'data/', destination = 'power'):
+            datadir = 'data/', destination = 'power', thickness = 1):
     """
     Convert power spectra from PencilCode format to vtk.
 
     call signature::
     
       power2vtk(powerfiles = ['power_mag.dat'],
-            datadir = 'data/', destination = 'power.vtk'):
+            datadir = 'data/', destination = 'power.vtk', thickness = 1):
     
     Read the power spectra stored in the power*.dat files
     and convert them into vtk format.
@@ -801,6 +801,11 @@ def power2vtk(powerfiles = ['power_mag.dat'],
        
       *destination*:
         Destination file.
+      
+      *thickness*:
+        Dimension in z-direction. Setting it 2 will create n*m*2 dimensional
+        array of data. This is useful in Paraview for visualizing the spectrum
+        in 3 dimensions. Note that this will simply double the amount of data.
                
     """
 
@@ -827,10 +832,16 @@ def power2vtk(powerfiles = ['power_mag.dat'],
     fd.write('power spectra\n')
     fd.write('BINARY\n') 
     fd.write('DATASET STRUCTURED_POINTS\n')
-    fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), power.shape[1], 1))
+    if (thickness == 1):
+        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), power.shape[1], 1))
+    else:
+        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), power.shape[1], 2))
     fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(float(t[0]), k0, 0.))
     fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(t[1]-t[0], dk, 1.))
-    fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1]))
+    if (thickness == 1):
+        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1]))
+    else:
+        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1] * 2))
     
     for powfile in powerfiles:
         # read the power spectrum
@@ -839,8 +850,14 @@ def power2vtk(powerfiles = ['power_mag.dat'],
         fd.write('SCALARS ' + powfile[:-4] + ' float\n')
         fd.write('LOOKUP_TABLE default\n')
         
-        for j in range(power.shape[1]):
-            for i in range(len(t)):
-                    fd.write(struct.pack(">f", power[i,j]))
+        if (thickness == 1):
+            for j in range(power.shape[1]):
+                for i in range(len(t)):
+                        fd.write(struct.pack(">f", power[i,j]))
+        else:
+            for k in [1,2]:
+                for j in range(power.shape[1]):
+                    for i in range(len(t)):
+                            fd.write(struct.pack(">f", power[i,j]))
                                 
     fd.close()
