@@ -251,13 +251,14 @@ module Particles_sink
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
-      real, dimension(3) :: xxps, vvps
+      real, dimension(3) :: xxps, vvps, xxkghost
       real :: rhops, rads, rads2, dist2
       real :: mindistx, mindisty, mindistz
-      integer, dimension (MPI_STATUS_SIZE) :: stat
-      integer, dimension (27) :: iproc_recv_list, iproc_send_list
-      integer, dimension (2*mpvar) :: ireq_array
-      integer, dimension(3) ::  dis=(/-1,0,+1/)
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, dimension(27) :: iproc_recv_list, iproc_send_list
+      integer, dimension(2*mpvar) :: ireq_array
+      integer, dimension(3) :: dis=(/-1,0,+1/)
+      integer, dimension(1) :: ixmin, iymin, izmin
       integer :: i, j, j1, j2, k, ireq, ierr, nreq
       integer :: nproc_comm, iproc_comm
       integer :: npar_sink, npar_sink_proc
@@ -526,8 +527,48 @@ module Particles_sink
                           endif
                         endif
                         if (lparticles_mass) then
-                          xxps=(rhops*xxps+fp(k,irhopswarm)* &
-                              fp(k,ixp:izp))/(rhops+fp(k,irhopswarm))
+!
+!  Identify the nearest ghost image of the accreted particle.
+!
+                          ixmin=minloc(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))
+                          if (lshear) then
+                            if (dis(ixmin(1))==-1) then
+                              iymin=minloc(abs(fp(k,iyp)- &
+                                  (xxps(2)-deltay+Ly*dis)))
+                            elseif (dis(ixmin(1))==0) then
+                              iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                            elseif (dis(ixmin(1))==1) then
+                              iymin=minloc(abs(fp(k,iyp)- &
+                                  (xxps(2)+deltay+Ly*dis)))
+                            endif
+                          else
+                            iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                          endif
+                          izmin=minloc(abs(fp(k,izp)-(xxps(3)+Lz*dis)))
+!
+!  Double check that accreted particle ghost image is within the sink radius.
+!
+                          xxkghost=fp(k,ixp:izp)-(/Lx*dis(ixmin), &
+                              Ly*dis(iymin)-(ixmin-2)*deltay, &
+                              Lz*dis(izmin)/)
+                          if (sum((xxps-xxkghost)**2)>rads2) then
+                            print*, 'remove_particles_sink: sink particle', &
+                                 ipar(j), 'attempts to accrete particle '// &
+                                 'that is too far away!'
+                            print*, 'iproc, j, k, disx, disy, disz=', iproc, &
+                                ipar(j), ipar(k), dis(ixmin), dis(iymin), &
+                                dis(izmin)
+                            print*, 'xj, rhoj, radsj=', xxps, rhops, rads
+                            print*, 'xk, rhok, radsk=', fp(k,ixp:izp), &
+                                fp(k,irhopswarm), fp(k,israd)
+                            print*, 'xkghost=', xxkghost
+                            call fatal_error_local('remove_particles_sink','')
+                          endif
+!
+!  Add accreted position, momentum and mass to sink particle.
+!
+                          xxps=(rhops*xxps+fp(k,irhopswarm)*xxkghost)/ &
+                              (rhops+fp(k,irhopswarm))
                           vvps=(rhops*vvps+fp(k,irhopswarm)* &
                               fp(k,ivpx:ivpz))/(rhops+fp(k,irhopswarm))
                           rhops=rhops+fp(k,irhopswarm)
@@ -554,6 +595,10 @@ module Particles_sink
           endif
           j=j-1
         enddo
+!
+!  Catch fatal errors during particle accretion.
+!
+        call fatal_error_local_collect()
 !
 !  Send new sink particle state back to the parent processor.
 !
