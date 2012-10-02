@@ -26,7 +26,7 @@ module Density
   implicit none
 !
   logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false.
-  real, dimension (nz,3) :: glnrhomz
+  real, dimension (nz) :: glnrhomz
 !
   include 'density.h'
 !

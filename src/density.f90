@@ -36,7 +36,7 @@ module Density
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
-  real, dimension (nz,3) :: glnrhomz
+  real, dimension (nz) :: glnrhomz
   real, dimension (mz) :: lnrho_init_z=0.0, del2lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
@@ -1127,7 +1127,7 @@ module Density
 !
       real :: fact
       real, dimension (nx,3) :: gradlnrho
-      real, dimension (nz,3) :: temp
+      real, dimension (nz) :: temp
 !
       integer :: j,nxy=nxgrid*nygrid,nl
 !
@@ -1137,21 +1137,19 @@ module Density
         fact=1./nxy
         do n=n1,n2
           nl = n-n1+1
-          glnrhomz(nl,:)=0.
+          glnrhomz(nl)=0.
 !
           do m=m1,m2
             call grad(f,ilnrho,gradlnrho)
-            do j=1,3
-              glnrhomz(nl,j)=glnrhomz(nl,j)+sum(gradlnrho(:,j))
-            enddo
+            glnrhomz(nl)=glnrhomz(nl)+sum(gradlnrho(:,3))
           enddo
 !
           if (nprocx>1.or.nprocy>1) then
-            call mpiallreduce_sum(glnrhomz,temp,(/nz,3/),idir=12)
+            call mpiallreduce_sum(glnrhomz,temp,nz,idir=12)
             glnrhomz = temp
           endif
 !
-          glnrhomz(nl,:) = fact*glnrhomz(nl,:)
+          glnrhomz(nl) = fact*glnrhomz(nl)
 !
         enddo
       endif
