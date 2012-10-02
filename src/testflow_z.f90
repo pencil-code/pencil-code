@@ -63,6 +63,7 @@ module Testflow
     module procedure update_diag2
   endinterface
 
+  !!integer, parameter :: njtestflow=6
   integer :: njtestflow_loc
 !
 ! Slice precalculation buffers
@@ -244,7 +245,7 @@ module Testflow
       use FArrayManager
       use density, only: lcalc_glnrhomean, lupw_lnrho
       use Hydro, only: lcalc_uumean, lupw_uu
-      use Forcing, only:ltestflow_forcing, lhydro_forcing, lforcing_cont
+      use Forcing, only:ltestflow_forcing, lhydro_forcing
       use Viscosity, only:getnu
       use Mpicomm, only:stop_it
       use sub, only:zlocation
@@ -620,7 +621,6 @@ module Testflow
 !                                                 - grad h^(pq)
 !                         -U^(pq).grad u - u.grad U^(pq)
 !                         + viscous terms
-!                         + Lorentz force (added in testfield)
 !
 !  and dh^(pq)/dt = -( u^(0).grad h^(pq) + u^(pq).grad h ) + < u^(0).grad h^(pq) + u^(pq).grad h >
 !  [alternatively:  -( u^(pq).grad h^(0) + u.grad h^(pq) ) + < u^(pq).grad h^(0) + u.grad h^(pq) > ]
@@ -636,7 +636,7 @@ module Testflow
       use Mpicomm, only: stop_it
       use density, only: glnrhomz
       use Hydro, only: uumz, guumz, traceless_strain, coriolis_cartesian, ampl_fcont_uu
-      use Forcing, only:forcing_cont, lforcing_cont
+      use Forcing, only:forcing_cont
       use Shear, only: shear_variables
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -696,9 +696,8 @@ module Testflow
 !
 ! calculate ghfluct=gh-ghmean
 !
-        do j=1,3
-          ghfluct(:,j)=p%glnrho(:,j)-glnrhomz(n-n1+1,j)
-        enddo
+        ghfluct=p%glnrho
+        ghfluct(:,3)=ghfluct(:,3)-glnrhomz(n-n1+1)
 
       endif
 !
@@ -796,11 +795,11 @@ module Testflow
 !
         if (jtest>0) then
 !
-          call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers    no upwinding!
+          !!call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers 
 
-          !!call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)
-          !!!MR: still wrong, because under ilnrho and not hhfluct!!
-                          !!!ilnrho
+          call u_dot_grad(f,ilnrho, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)
+          U0ghtest = U0ghtest - U0test(:,3)*glnrhomz(n-n1+1)    ! because in slot ilnrho there is hh and not hhfluct
+                          
           !!if ( jtest==2 .and. ( maxval(ghfluct(:,2)-U0ghtest(:))/=0. .or. minval(ghfluct(:,2)-U0ghtest(:))/=0. ) ) &
             !!print*, 'U0ghtest, n, m:', n, m, ghfluct(:,2)-U0ghtest(:)
 !
@@ -833,7 +832,7 @@ module Testflow
 !
           endif
 !
-          call h_dot_grad(U0test,uijfluct,uufluct,U0testgu)
+          call h_dot_grad(U0test,uijfluct,uufluct,U0testgu) ! no upwinding?
                                           !this parameter without meaning in cartesian geometry
 !
           call multsv(uufluct(:,3),gU0test,ugU0test)
@@ -1198,9 +1197,7 @@ yloop:  do m=m1,m2
 ! calculate ghfluct=gh-ghmean out of the main run
 !
             call grad(f,ilnrho,ghfluct)
-            do j=1,3
-              ghfluct(:,j)=ghfluct(:,j)-glnrhomz(n-n1+1,j)
-            enddo
+            ghfluct(:,3)=ghfluct(:,3)-glnrhomz(n-n1+1)
 !
           endif
 !
@@ -1222,7 +1219,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 
             call traceless_strain( uijtest, divutest, sijtest, uutest )
                                                                ! this parameter is without meaning in Cartesian geometry
-            if ( jtest==0 ) then    ! primary turbulence
+            if ( jtest==0 ) then      ! primary turbulence
 
               gh0  = ghtest           ! save primary turbulence
               uu0  = uutest
