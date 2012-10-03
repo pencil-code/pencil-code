@@ -2,7 +2,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid = '$Id'
+  cvsid = '$Id$'
   lwrite_ic = .true.
 /
 &eos_init_pars

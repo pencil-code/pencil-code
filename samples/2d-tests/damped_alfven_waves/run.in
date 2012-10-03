@@ -1,5 +1,5 @@
 &run_pars
-  cvsid = '$Id'
+  cvsid = '$Id$'
   nt = 1000, it1 = 10
   cdt = .5
   tmax = 10.
