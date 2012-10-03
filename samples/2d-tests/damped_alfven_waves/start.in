@@ -1,0 +1,21 @@
+!                                  -*-f90-*-
+! Initialisation parameters
+!
+&init_pars
+  cvsid = '$Id'
+  lwrite_ic = .true.
+/
+&eos_init_pars
+/
+&hydro_init_pars
+  inituu = 'sinwave-phase'
+  ampl_ux =  4.e-3, kx_ux = 3., ky_ux = 0., kz_ux = 4., phase_ux = 0.
+  ampl_uy =  0.
+  ampl_uz = -3.e-3, kx_uz = 3., ky_uz = 0., kz_uz = 4., phase_uz = 0.
+/
+&magnetic_init_pars
+  initaa = 'coswave-phase'
+  ampl_ax = 0.
+  ampl_ay = 1.e-3, kx_ay = 3., ky_ay = 0., kz_ay = 4., phase_ay = 0.
+  ampl_az = 0.
+/

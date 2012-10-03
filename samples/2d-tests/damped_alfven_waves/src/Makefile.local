@@ -1,0 +1,11 @@
+###  -*-Makefile-*-  (for Emacs)    vim:set filetype=make:  (for vim)
+###
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = nompicomm
+
+HYDRO     =   hydro
+MAGNETIC  =   magnetic
+

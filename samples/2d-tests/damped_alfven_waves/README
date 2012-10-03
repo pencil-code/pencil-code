@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/damped_alfven_waves
+SVN Id:
+    $Id$
+Maintainer:
+    Chao-Chin Yang <ccyang/ucolick[dot]org>
+Added:
+    02-Oct-2012
+Status:
+    succeeds
+Recommended resolution:
+    64x1x64
+Comments:
+    Test for 2D damped Alfven waves.
+References:
+    Chandrasekhar S., 1961, Hydrodynamic and Hydromagnetic Stability, Sec. 39
+
