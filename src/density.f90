@@ -126,7 +126,7 @@ module Density
 !
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
-  integer :: idiag_rhomxmask=0  ! DIAG_DOC: $\left<\varrho\right>$ for 
+  integer :: idiag_rhomxmask=0  ! DIAG_DOC: $\left<\varrho\right>$ for
                                 ! DIAG_DOC: the density_xaver_range
   integer :: idiag_rho2m=0      ! DIAG_DOC:
   integer :: idiag_lnrho2m=0    ! DIAG_DOC:
@@ -250,7 +250,6 @@ module Density
 !  Normalize such that the average over the full domain
 !  gives still unity.
 !
-
       if (l1 == l2) then
         xmask_den = 1.
       else
@@ -1129,7 +1128,7 @@ module Density
       real, dimension (nx,3) :: gradlnrho
       real, dimension (nz) :: temp
 !
-      integer :: j,nxy=nxgrid*nygrid,nl
+      integer :: nxy=nxgrid*nygrid,nl
 !
 !  Calculate mean gradient of lnrho.
 !
@@ -2743,7 +2742,7 @@ module Density
 !
 !  23-mar-2012/dintrans: coded
 !  dummy routine for the Boussinesq approximation
-!  
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
