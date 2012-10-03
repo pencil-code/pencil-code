@@ -78,6 +78,7 @@ my %tests = (
                          dust-vortex
                          2d-tests/boussinesq_convection
                          1d-tests/implicit_diffusion
+                         2d-tests/damped_alfven_waves
                     )],
              2 => [qw(
                          0d-tests/heating_noionize
