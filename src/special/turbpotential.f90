@@ -82,7 +82,7 @@ module Special
 !
   real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
   real, dimension(nmode_max) :: omega_mode, tmode_init, radial_sigma_inv
-  real, dimension(nmode_max) :: tmode_lifetime, tmode_lifetime_inv, tmode_age
+  real, dimension(nmode_max) :: tmode_lifetime, tmode_lifetime_inv
   integer, dimension(nmode_max) :: mode_wnumber 
 !
   real, dimension(mx) :: rad,amplitude_scaled
@@ -209,6 +209,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: lambda 
+      real ::  tmode_age
       integer :: k
 !
 !  This main loop sets the modes.
@@ -221,7 +222,9 @@ module Special
 !
 !  Loop the grid **locally** to sum the contribution of each mode. 
 !
-        do n=n1,n2;do m=1,my 
+        do k=1,nmode_max
+          tmode_age = t-tmode_init(k)
+          do n=n1,n2;do m=1,my 
 !
 !  Calculate the mode structure. The modes dimensions are: 
 !  Radius: Centred exponentially
@@ -230,32 +233,38 @@ module Special
 !  Time: Grows and fades following a sine curve, of duration equal 
 !        to its sound crossing time.
 !
-          do k=1,nmode_max
             lambda = gauss_ampl(k) * &
 !radial gaussian dimension of mode
                  exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
 !azimuthal extent of mode..
                  cos(mode_wnumber(k)*phi(m) - phicenter(k) - &
 !..with Keplerianly-shifting center
-                 omega_mode(k)*tmode_age(k))*&
+                 omega_mode(k)*tmode_age)*&
 !mode grows and fades in time following a sine curve
-                 sin(pi*tmode_age(k)*tmode_lifetime_inv(k))
+                 sin(pi*tmode_age*tmode_lifetime_inv(k))
 !
 !  Sum all the modes.
 !
             f(:,m,n,ipotturb) = f(:,m,n,ipotturb) + amplitude_scaled*lambda
 !
-          enddo
-        enddo;enddo
+          enddo;enddo
+        enddo
       endif
 !
     endsubroutine special_before_boundary
 !***********************************************************************
     subroutine update_mode_list
 !
-      use Mpicomm, only: mpibcast_real,mpibcast_int
+      use Mpicomm, only: mpibcast_real,mpibcast_int,mpibcast_logical
 !
       integer :: k
+!
+!  Auxiliary array for the broadcast only. 
+!
+      real, dimension(9) :: g
+      real :: tmode_age
+      integer  :: h
+      logical :: flag
 !
 !  Create and update the list only on one processor. In the 
 !  first timestep it generates the whole mode list, but 
@@ -264,56 +273,65 @@ module Special
 !  updated too often. Were that not the case, the mode list 
 !  would need to be calculated in a load-balanced way. 
 !
-      if (lroot) then 
-        do k=1,nmode_max 
+      do k=1,nmode_max 
+!
+        if (lroot) then 
+!
+          flag = .false.
 !
           if (it == 1) then 
-            call set_mode(k)
-            tmode_age(k) = 0.
+            call set_mode(g,h)
+            flag =.true.
           else
 !
 !  Test if the mode has exceeded its lifetime. 
 !  If so, replace it by a new random mode.
 !
-            tmode_age(k) = t-tmode_init(k)
-            if (tmode_age(k) > tmode_lifetime(k)) then
+            tmode_age = t-tmode_init(k)
+            if (tmode_age > tmode_lifetime(k)) then
 !
               if (ldebug .or. ip<=9) print*,'mode ',k,' at r=',&
                    rcenter(k),', of m=',mode_wnumber(k),' gone'
 !
-              call set_mode(k)
+              call set_mode(g,h)
+              flag =.true.
 !
               if (ldebug .or. ip<=9) print*,'   replaced by mode at r=',&
                    rcenter(k),', of m=',mode_wnumber(k)
             endif
           endif
-        enddo
-      endif
+        endif
 !
-!  Unfortunately it cannot broadcast a structure. Do one by one. 
-!  Also, look at a way to flag individual slots in the arrays and 
-!  only broadcast those that were changed. 
+!  Root-specific part over. Now check if the mode changed. If so, 
+!  broadcast the information. 
 !
-      call mpibcast_real(gauss_ampl,nmode_max)
-      call mpibcast_real(rcenter,nmode_max)
-      call mpibcast_real(phicenter,nmode_max)
-      call mpibcast_real(radial_sigma_inv,nmode_max)
-      call mpibcast_real(tmode_init,nmode_max)
-      call mpibcast_real(tmode_lifetime,nmode_max)
-      call mpibcast_real(omega_mode,nmode_max)
-      call mpibcast_real(tmode_lifetime_inv,nmode_max)
-      call mpibcast_real(tmode_age,nmode_max)
-      call mpibcast_int(mode_wnumber,nmode_max)
+        call mpibcast_logical(flag)
+        if (flag) then 
+          call mpibcast_real(g,8)
+          call mpibcast_int(h)
+          gauss_ampl(k)          = g(1) 
+          rcenter(k)             = g(2) 
+          phicenter(k)           = g(3) 
+          radial_sigma_inv(k)    = g(4) 
+          tmode_init(k)          = g(5) 
+          tmode_lifetime(k)      = g(6) 
+          omega_mode(k)          = g(7) 
+          tmode_lifetime_inv(k)  = g(8) 
+          mode_wnumber(k)        = h    
+        endif
+!
+      enddo
 !
     endsubroutine update_mode_list
 !***********************************************************************
-    subroutine set_mode(k)
+    subroutine set_mode(g,h)
 !
 !  This sets all the needed parameters of the mode, and stores them in 
 !  a "structure".
 !
       use General, only: random_number_wrapper
 !
+      real, dimension(8) :: g
       real :: gauss_ampl_scl,phicenter_scl
       real :: tmode_lifetime_scl,rcenter_scl,inv_radial_sigma_scl
       real :: tmode_init_scl,omega_mode_scl
@@ -321,7 +339,7 @@ module Special
 !
       real :: aux1,aux2
       real :: cs_mode
-      integer :: k
+      integer :: h
 !
 !  Mode's Gaussian-distributed random amplitude.
 !
@@ -360,20 +378,17 @@ module Special
       cs_mode = rcenter_scl**(-0.5*temperature_power_law)
       tmode_lifetime_scl = 2*pi*rcenter_scl/(mode_wnumber_scl*cs_mode)
 !
-!  Store them in pan-mode array. 
+!  Store them in the "broadcastable" array. 
 !
-      gauss_ampl(k)       = gauss_ampl_scl
-      rcenter(k)          = rcenter_scl
-      phicenter(k)        = phicenter_scl
-      mode_wnumber(k)     = mode_wnumber_scl
-      radial_sigma_inv(k) = inv_radial_sigma_scl
-      tmode_init(k)       = tmode_init_scl
-      tmode_lifetime(k)   = tmode_lifetime_scl
-      omega_mode(k)       = omega_mode_scl
-!
-!  Shortcut for inverse mode lifetime
-!
-      tmode_lifetime_inv(k) = 1./tmode_lifetime_scl
+      g(1) = gauss_ampl_scl
+      g(2) = rcenter_scl
+      g(3) = phicenter_scl
+      g(4) = inv_radial_sigma_scl
+      g(5) = tmode_init_scl
+      g(6) = tmode_lifetime_scl
+      g(7) = omega_mode_scl
+      g(8) = 1./tmode_lifetime_scl
+      h    = mode_wnumber_scl
 !
     endsubroutine set_mode
 !***********************************************************************
