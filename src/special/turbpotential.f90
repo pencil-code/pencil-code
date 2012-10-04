@@ -82,7 +82,7 @@ module Special
 !
   real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
   real, dimension(nmode_max) :: omega_mode, tmode_init, radial_sigma_inv
-  real, dimension(nmode_max) :: tmode_lifetime, tmode_lifetime_inv
+  real, dimension(nmode_max) :: tmode_lifetime, tmode_lifetime_inv, tmode_age
   integer, dimension(nmode_max) :: mode_wnumber 
 !
   real, dimension(mx) :: rad,amplitude_scaled
@@ -209,39 +209,19 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: lambda 
-      real :: tmode_age
       integer :: k
 !
-!  This main loop sets the modes. Modes exist only in azimuth. 
+!  This main loop sets the modes.
 !
       if (lcalc_potturb) then 
 !
-        do k=1,nmode_max
+!  Generate or update the full list of modes. 
 !
-!  If we are starting the simulation, get all modes. 
-!  The mode-specific quantity tinit measures the 
-!  time each mode "comes to life". tmode=t-t0
+        call update_mode_list
 !
-          if (it == 1) then 
-            call get_mode(k)
-            tmode_age = 0.
-          else
+!  Loop the grid **locally** to sum the contribution of each mode. 
 !
-!  Test if the mode has exceeded its lifetime. 
-!  If so, replace it by a new random mode.
-!
-            tmode_age = t-tmode_init(k)
-            if (tmode_age > tmode_lifetime(k)) then
-!            
-              if (ldebug .or. ip<=9) print*,'mode ',k,' at r=',&
-                   rcenter(k),', of m=',mode_wnumber(k),' gone'
-!
-              call get_mode(k)
-!
-              if (ldebug .or. ip<=9) print*,'   replaced by mode at r=',&
-                   rcenter(k),', of m=',mode_wnumber(k)
-            endif
-          endif
+        do n=n1,n2;do m=1,my 
 !
 !  Calculate the mode structure. The modes dimensions are: 
 !  Radius: Centred exponentially
@@ -250,28 +230,84 @@ module Special
 !  Time: Grows and fades following a sine curve, of duration equal 
 !        to its sound crossing time.
 !
-          do n=n1,n2;do m=1,my 
-              lambda = gauss_ampl(k) * &
+          do k=1,nmode_max
+            lambda = gauss_ampl(k) * &
 !radial gaussian dimension of mode
-                   exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
+                 exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
 !azimuthal extent of mode..
-                   cos(mode_wnumber(k)*phi(m) - phicenter(k) - &
+                 cos(mode_wnumber(k)*phi(m) - phicenter(k) - &
 !..with Keplerianly-shifting center
-                       omega_mode(k)*tmode_age)*&
+                 omega_mode(k)*tmode_age(k))*&
 !mode grows and fades in time following a sine curve
-                       sin(pi*tmode_age*tmode_lifetime_inv(k))
+                 sin(pi*tmode_age(k)*tmode_lifetime_inv(k))
 !
 !  Sum all the modes.
 !
-              f(:,m,n,ipotturb) = f(:,m,n,ipotturb) + amplitude_scaled*lambda
+            f(:,m,n,ipotturb) = f(:,m,n,ipotturb) + amplitude_scaled*lambda
 !
-          enddo;enddo
-        enddo
+          enddo
+        enddo;enddo
       endif
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine get_mode(k)
+    subroutine update_mode_list
+!
+      use Mpicomm, only: mpibcast_real,mpibcast_int
+!
+      integer :: k
+!
+!  Create and update the list only on one processor. In the 
+!  first timestep it generates the whole mode list, but 
+!  afterwards, modes are updated only sporadically. Therefore, 
+!  the idle time is minimal, as the list does not need to be 
+!  updated too often. Were that not the case, the mode list 
+!  would need to be calculated in a load-balanced way. 
+!
+      if (lroot) then 
+        do k=1,nmode_max 
+!
+          if (it == 1) then 
+            call set_mode(k)
+            tmode_age(k) = 0.
+          else
+!
+!  Test if the mode has exceeded its lifetime. 
+!  If so, replace it by a new random mode.
+!
+            tmode_age(k) = t-tmode_init(k)
+            if (tmode_age(k) > tmode_lifetime(k)) then
+!
+              if (ldebug .or. ip<=9) print*,'mode ',k,' at r=',&
+                   rcenter(k),', of m=',mode_wnumber(k),' gone'
+!
+              call set_mode(k)
+!
+              if (ldebug .or. ip<=9) print*,'   replaced by mode at r=',&
+                   rcenter(k),', of m=',mode_wnumber(k)
+            endif
+          endif
+        enddo
+      endif
+!
+!  Unfortunately it cannot broadcast a structure. Do one by one. 
+!  Also, look at a way to flag individual slots in the arrays and 
+!  only broadcast those that were changed. 
+!
+      call mpibcast_real(gauss_ampl,nmode_max)
+      call mpibcast_real(rcenter,nmode_max)
+      call mpibcast_real(phicenter,nmode_max)
+      call mpibcast_real(radial_sigma_inv,nmode_max)
+      call mpibcast_real(tmode_init,nmode_max)
+      call mpibcast_real(tmode_lifetime,nmode_max)
+      call mpibcast_real(omega_mode,nmode_max)
+      call mpibcast_real(tmode_lifetime_inv,nmode_max)
+      call mpibcast_real(tmode_age,nmode_max)
+      call mpibcast_int(mode_wnumber,nmode_max)
+!
+    endsubroutine update_mode_list
+!***********************************************************************
+    subroutine set_mode(k)
 !
 !  This sets all the needed parameters of the mode, and stores them in 
 !  a "structure".
@@ -339,7 +375,7 @@ module Special
 !
       tmode_lifetime_inv(k) = 1./tmode_lifetime_scl
 !
-    endsubroutine get_mode
+    endsubroutine set_mode
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
