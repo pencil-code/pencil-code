@@ -70,7 +70,7 @@ module Special
 !   
   namelist /special_run_pars/ alpha,lcalc_potturb,lturbulent_force
 !
-  integer, parameter :: nmode_max = nygrid/2, nmode_min = 1
+  integer, parameter :: nmode_max = min(50,nygrid/2), nmode_min = 1
   real :: logmode_min,logmode_max
 !
   type InternalPencils
