@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# $Id$  
+# Script to automatically reduce distributed VARN files into
+# one single file that will be stored in data/reduced.
+#  
+
+DATADIR="data"
+PROCDIR="$DATADIR/proc0"
+ALLPROCS="$DATADIR/reduced"
+SCRIPT="src/pre_and_post_processing/pc_reduce.x"
+
+for ENTRY in `find "$PROCDIR" -name VAR[0-9]* | sort`
+do
+	FILE=`basename "$ENTRY"`
+	if [ ! -e "$ALLPROCS/$FILE" ]; then
+		echo "collecting $FILE"
+		echo "$FILE" | $1 $SCRIPT
+	fi
+done
+
