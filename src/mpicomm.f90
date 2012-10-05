@@ -1880,6 +1880,8 @@ module Mpicomm
 !
 !  Calculate total sum for each array element and return to all processors.
 !
+!  3-oct-12/MR: communicator corrected
+!
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: idir
@@ -1893,7 +1895,7 @@ module Mpicomm
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
-          MPI_COMM_WORLD, mpierr)
+                         mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
