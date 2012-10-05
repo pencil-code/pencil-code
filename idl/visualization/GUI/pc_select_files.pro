@@ -371,13 +371,6 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	end
 	if (keyword_set (reduced) and (allprocs eq 1)) then procdir = datadir+"/reduced/"
 
-	; Get file size
-	file_struct = file_info (procdir+varfile)
-	multiplier = dim.nprocx * dim.nprocy * dim.nprocz
-	if (allprocs eq 1) then multiplier = 1
-	if (allprocs eq 2) then multiplier = dim.nprocz
-	gb_per_file = (file_struct.size * multiplier) / 1024.0^3
-
 	; Get list of available snapshots
 	files = file_search (procdir, pattern)
 	num_files = n_elements (files)
@@ -395,6 +388,14 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	end
 	files = sorted[1:*]
 	sorted = 1
+
+	; Get file size
+	if (file_test (procdir+varfile)) then somefile = varfile else somefile = files[0]
+	file_struct = file_info (procdir+somefile)
+	multiplier = dim.nprocx * dim.nprocy * dim.nprocz
+	if (allprocs eq 1) then multiplier = 1
+	if (allprocs eq 2) then multiplier = dim.nprocz
+	gb_per_file = (file_struct.size * multiplier) / 1024.0^3
 
 	; Preselected snapshots and additional snapshots to be loaded
 	selected = -1
