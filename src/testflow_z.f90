@@ -636,8 +636,9 @@ module Testflow
       use Mpicomm, only: stop_it
       use density, only: glnrhomz
       use Hydro, only: uumz, guumz, traceless_strain, coriolis_cartesian, ampl_fcont_uu
-      use Forcing, only:forcing_cont
+      use Forcing, only: forcing_cont
       use Shear, only: shear_variables
+      use Deriv, only: der5_single
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -793,19 +794,20 @@ module Testflow
 !
 !       testflow inhomogeneity
 !
-        if (jtest>0) then
+        if (jtest>0 .and. .not.lburgers_testflow) then
 !
-          !!call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers 
-
-          call u_dot_grad(f,ilnrho, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h)
-          U0ghtest = U0ghtest - U0test(:,3)*glnrhomz(n-n1+1)    ! because in slot ilnrho there is hh and not hhfluct
-                          
-          !!if ( jtest==2 .and. ( maxval(ghfluct(:,2)-U0ghtest(:))/=0. .or. minval(ghfluct(:,2)-U0ghtest(:))/=0. ) ) &
-            !!print*, 'U0ghtest, n, m:', n, m, ghfluct(:,2)-U0ghtest(:)
+          if (lkinem_testflow) then
+            !!call dot_mn(U0test,ghfluct,U0ghtest)          ! MR: checked by numbers 
+            call u_dot_grad(f,iuutest+3, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)   ! Utest.grad(h0)
+          else
+            call u_dot_grad(f,ilnrho, ghfluct, U0test, U0ghtest,UPWIND=ltestflow_upw_lnrho)      ! Utest.grad(h)
+            if (ltestflow_upw_lnrho) &
+              U0ghtest = U0ghtest - abs(U0test(:,3))* &     ! in slot ilnrho there is hh, not hhfluct
+                         der5_single(glnrhomz,n-n1+1,dz_1(n1:n2))/(60.*dz_1(n-n1+1)**5) 
+          endif
 !
-          if ( .not.lburgers_testflow ) &
-            df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-uufluct(:,3)*gH0test-U0ghtest
-
+          df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-uufluct(:,3)*gH0test-U0ghtest
+!
         endif
 !
 !  rhs of momentum equation (nonlinear terms already in df, if needed!),
