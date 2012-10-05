@@ -1117,6 +1117,7 @@ module Density
     subroutine calc_ldensity_pars(f)
 !
 !   31-aug-09/MR: adapted from calc_lhydro_pars
+!    3-oct-12/MR: global averaging corrected
 !
       use Sub, only: grad
       use Mpicomm, only: mpiallreduce_sum
@@ -1133,6 +1134,7 @@ module Density
 !  Calculate mean gradient of lnrho.
 !
       if (lcalc_glnrhomean) then
+!
         fact=1./nxy
         do n=n1,n2
           nl = n-n1+1
@@ -1143,14 +1145,15 @@ module Density
             glnrhomz(nl)=glnrhomz(nl)+sum(gradlnrho(:,3))
           enddo
 !
-          if (nprocx>1.or.nprocy>1) then
-            call mpiallreduce_sum(glnrhomz,temp,nz,idir=12)
-            glnrhomz = temp
-          endif
-!
-          glnrhomz(nl) = fact*glnrhomz(nl)
-!
         enddo
+!
+        if (nprocx>1.or.nprocy>1) then
+          call mpiallreduce_sum(glnrhomz,temp,nz,idir=12)
+          glnrhomz = temp
+        endif
+!
+        glnrhomz = fact*glnrhomz
+!
       endif
 !
    endsubroutine calc_ldensity_pars
