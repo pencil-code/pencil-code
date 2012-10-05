@@ -66,7 +66,7 @@ module Grid
       real :: xi1lo,xi1up,g1lo,g1up
       real :: xi2lo,xi2up,g2lo,g2up
       real :: xi3lo,xi3up,g3lo,g3up
-!      real :: a0,a1,a3
+      real :: a0,a1,a3
       real, dimension(3,2) :: xi_step
       real, dimension(3,3) :: dxyz_step
       real :: dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
@@ -410,20 +410,32 @@ module Grid
                            'No such x grid function - '//grid_func(1))
         endselect
 !
-!  Fitting a polynomial function to the gridfunction to set the xprim2 zero at the boundary
+!  Fitting a polynomial function to the grid function to set the xprim2 zero at the boundary, 
+!  this makes sure that the second derivertive is zero, if you choose a2 for example.
+!  Still in the testing phase, that why it is commented out.
 !
 !        if ( .not.lequidist(1) ) then
-!          if (lfirst_proc_x) then 
-!            a3=xprim2(l1+1)/6.
-!            a1=xprim(l1+1) - xprim2(l1+1)/2.
-!            a0=x(l1+1) - xprim(l1+1) + xprim2(l1+1)/3.
-!            x(l1)=a0
-!            xprim(l1) = a1
-!            xprim2(l1) = 0.
-!            print*, 'joern'
+!          if (xprim2(l1) .ne. 0) then
+!            print*, 'use polynomia extension in x bottom'
+!            if (lfirst_proc_x) then 
+!              a3=xprim2(l1+1)/6.
+!              a1=xprim(l1+1) - xprim2(l1+1)/2.
+!             a0=x(l1+1) - xprim(l1+1) + xprim2(l1+1)/3.
+!             x(l1)=a0
+!             xprim(l1) = a1
+!             xprim2(l1) = 0.
+!           endif
 !          endif
-!          if (llast_proc_x) then 
-!           
+!          if (xprim2(l2) .ne. 0) then
+!            print*, 'use polynomia extension in x top'
+!            if (llast_proc_x) then
+!              a3=-xprim2(l2-1)/6.
+!              a1=xprim(l2-1) + xprim2(l2-1)/2.
+!              a0=x(l2-1) +xprim(l2-1) + xprim2(l2-1)/3.
+!              x(l2)=a0
+!              xprim(l2) = a1
+!              xprim2(l2) = 0
+!            endif
 !          endif
 !        endif
 !
