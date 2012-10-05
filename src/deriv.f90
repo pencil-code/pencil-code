@@ -17,7 +17,7 @@ module Deriv
   private
 !
   public :: initialize_deriv, finalize_deriv
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j
+  public :: der, der2, der3, der4, der5, der6, derij, der5i1j, der5_single
   public :: der6_other, der_pencil, der2_pencil
   public :: deri_3d_inds
   public :: der_z,der2_z
@@ -1020,6 +1020,28 @@ module Deriv
       endif
 !
     endsubroutine der6_other
+!***********************************************************************
+    real function der5_single(f,j,dc1)
+!
+!  computes 5th order derivative of function given by f at position j
+!
+!   3-oct-12/MR: coded
+! 
+      real, dimension(:),  intent(in) :: f, dc1
+      integer           ,  intent(in) :: j
+!
+      real :: fac
+!
+      if (size(f)/=1) then
+        fac=dc1(j)**5
+        der5_single=fac*(+  2.5*(f(j+1)-f(j-1)) &
+                         -  2.0*(f(j+2)-f(j-2)) &
+                         +  0.5*(f(j+3)-f(j-3)))
+      else
+        der5_single=0.
+      endif
+!
+    endfunction der5_single
 !***********************************************************************
     subroutine derij_main(f,k,df,i,j)
 !
