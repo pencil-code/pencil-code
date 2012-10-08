@@ -107,12 +107,12 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
   ntread=0
   t_loc=zero
   npar_stalk_loc=0L
-  npar_stalk_read=0L
   ipar=0L
 ;
   openr, 1, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77, $
       swap_endian=swap_endian
   while (ntread lt nout and not eof(1)) do begin
+    npar_stalk_read=0L
     readu, 1, t_loc, npar_stalk_loc
 ;
     if (it ge it0) then begin
@@ -172,9 +172,12 @@ if (lstalk_sink_particles) then begin
             else array[*,k,it]=zero
       endfor
     endfor
-  endif
-  ipar_stalk=kuniq
-  array=array[*,0:npar_stalk_read-1,*]
+    ipar_stalk=kuniq
+    array=array[*,0:n_elements(ipar_stalk)-1,*]
+  endif else begin
+    ipar_stalk=-1
+    array=array[*,0,*]
+  endelse
 endif
 ;
 ; Build structure of all the variables.
