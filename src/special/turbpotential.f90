@@ -64,14 +64,28 @@ module Special
   include '../special.h'
 !
   real :: alpha=0.01, temperature_power_law=1.0
-  logical :: lturbulent_force=.true.,lcalc_potturb=.true.
+  logical :: lcalc_potturb=.true.              ! Calculate the turbulent potential
+  logical :: lturbulent_force=.true.           ! Add the turbulent potential to the momentum equation
+  logical :: ltime_dependant_amplitude=.true.  ! Term that makes the modes come in and out of existence smoothly
+  logical :: lgravitational_turbulence=.false. ! Choose between asp ratio 4 for the modes (GI) or 1/h (MRI)
+  logical :: lcap_modes_at_m6=.false.          ! Set amplitude of modes higher than m>6 to zero. 
+  logical :: lupdate_as_var=.false.            ! Writes modes.dat and MODESN like var.dat and VARN
+                                               !  though symmetric, it is not that useful, since the 
+                                               !  modelist changes only very sporadically (the modes are 
+                                               !  long lived).  
 !
-  namelist /special_init_pars/ alpha,lcalc_potturb
-!   
-  namelist /special_run_pars/ alpha,lcalc_potturb,lturbulent_force
+  namelist /special_init_pars/ alpha,lcalc_potturb,lturbulent_force,&
+       ltime_dependant_amplitude,lgravitational_turbulence,&
+       lcap_modes_at_m6,lupdate_as_var
 !
-  integer, parameter :: nmode_max = min(50,nygrid/2), nmode_min = 1
-  real :: logmode_min,logmode_max
+  namelist /special_run_pars/ alpha,lcalc_potturb,lturbulent_force,&
+       ltime_dependant_amplitude,lgravitational_turbulence,&
+       lcap_modes_at_m6,lupdate_as_var
+!
+  integer, parameter :: nmode_max = 50
+  integer :: mmode_max=nygrid/8, mmode_min = 1
+  real :: logmode_min,logmode_max,cs01
+  logical :: lcompute_all_modes
 !
   type InternalPencils
      real, dimension(nx,3) :: gpotturb
@@ -149,8 +163,8 @@ module Special
 !
 !  Useful constants
 !
-      logmode_min=log(1.*nmode_min)
-      logmode_max=log(1.*nmode_max)
+      logmode_min=log(1.*mmode_min)
+      logmode_max=log(1.*mmode_max)
       aspect_ratio = cs0
 !
 !  Use the scaling from Baruteau & Lin 2010,  that defines the amplitude of the 
@@ -164,9 +178,21 @@ module Special
       Omega2 = 1./rad**3
       amplitude_scaled = rad**2*Omega2 * amplitude
 !
+!  Inverse sound speed
+!
+      cs01=1./cs0
+!
+!  Switch for a more intuitive label. 
+!
+      if (lcap_modes_at_m6) then 
+        lcompute_all_modes=.false.
+      else
+        lcompute_all_modes=.true.
+      endif
+!
 !  Set the potential at start time, for debugging purposes.
 !
-      if (lstarting) call special_before_boundary(f)
+      if (lstarting) call special_before_boundary(f,lstarting)
 !
       call keep_compiler_quiet(f)
 !
@@ -199,7 +225,7 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine special_before_boundary(f)
+    subroutine special_before_boundary(f,lstarting)
 !
 !  This subroutine calculates the full potential due to the turbulence.
 !
@@ -208,9 +234,17 @@ module Special
       use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: lambda 
+      real, dimension(mx) :: lambda, time_dependant_amplitude
       real ::  tmode_age
-      integer :: k
+      integer :: k,icount
+      logical, optional :: lstarting
+      logical :: lstart
+!
+      if (present(lstarting)) then 
+        lstart = lstarting
+      else
+        lstart=.false.
+      endif
 !
 !  This main loop sets the modes.
 !
@@ -218,13 +252,18 @@ module Special
 !
 !  Generate or update the full list of modes. 
 !
-        call update_mode_list
+        call update_modes(lstart)
 !
 !  Loop the grid **locally** to sum the contribution of each mode. 
 !
+        icount=0
         do k=1,nmode_max
-          tmode_age = t-tmode_init(k)
-          do n=n1,n2;do m=1,my 
+          if (lcompute_all_modes .or. mode_wnumber(k) <= 6) then  
+!
+            icount=icount+1
+!
+            tmode_age = t-tmode_init(k)
+            do n=n1,n2;do m=1,my 
 !
 !  Calculate the mode structure. The modes dimensions are: 
 !  Radius: Centred exponentially
@@ -233,38 +272,55 @@ module Special
 !  Time: Grows and fades following a sine curve, of duration equal 
 !        to its sound crossing time.
 !
-            lambda = gauss_ampl(k) * &
+              if (ltime_dependant_amplitude) then 
+                time_dependant_amplitude = &
+                     sin(pi*tmode_age*tmode_lifetime_inv(k))
+              else
+                time_dependant_amplitude = 1.
+              endif
+!
+              lambda = gauss_ampl(k) * &
 !radial gaussian dimension of mode
-                 exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
+                   exp(-((rad-rcenter(k))*radial_sigma_inv(k))**2)* &
 !azimuthal extent of mode..
-                 cos(mode_wnumber(k)*phi(m) - phicenter(k) - &
+                   cos(mode_wnumber(k)*phi(m) - phicenter(k) - &
 !..with Keplerianly-shifting center
-                 omega_mode(k)*tmode_age)*&
+                   omega_mode(k)*tmode_age)* &
 !mode grows and fades in time following a sine curve
-                 sin(pi*tmode_age*tmode_lifetime_inv(k))
+                   time_dependant_amplitude
 !
 !  Sum all the modes.
 !
-            f(:,m,n,ipotturb) = f(:,m,n,ipotturb) + amplitude_scaled*lambda
+              if (icount==1) then
+                f(:,m,n,ipotturb) = amplitude_scaled*lambda
+              else
+                f(:,m,n,ipotturb) = f(:,m,n,ipotturb) + amplitude_scaled*lambda
+              endif
 !
-          enddo;enddo
+            enddo;enddo
+          endif
         enddo
       endif
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-    subroutine update_mode_list
+    subroutine update_modes(lstart)
 !
-      use Mpicomm, only: mpibcast_real,mpibcast_int,mpibcast_logical
-!
-      integer :: k
+      use Mpicomm, only: mpibcast_logical,mpibcast_real,mpibcast_int
 !
 !  Auxiliary array for the broadcast only. 
 !
-      real, dimension(9) :: g
-      real :: tmode_age
+      real, dimension(8) :: g
       integer  :: h
-      logical :: flag
+!
+      real :: tmode_age
+      logical :: flag,lstart
+      integer :: k
+!
+!  For file inquiry
+!
+      logical :: exist
+      integer :: stat
 !
 !  Create and update the list only on one processor. In the 
 !  first timestep it generates the whole mode list, but 
@@ -273,56 +329,154 @@ module Special
 !  updated too often. Were that not the case, the mode list 
 !  would need to be calculated in a load-balanced way. 
 !
-      do k=1,nmode_max 
+      if (lstart) then
+        do k=1,nmode_max 
+          if (lroot) then
+            if (k==1) then 
+              print*,''
+              print*,'it=',it,' t=',t
+              print*,'Start of the simulation. Setting the modes'
+              print*,''
+            endif
+            call set_mode(g,h)
+          endif
+          call mpibcast_real(g,8)
+          call mpibcast_int(h)
+          call set_values(g,h,k)
+        enddo
 !
         if (lroot) then 
+          call output_modes(trim(datadir)//'/modes.dat')
+          if (lwrite_ic.and.lupdate_as_var) &
+               call output_modes(trim(datadir)//'/MODES0')
+        endif
+      else
 !
-          flag = .false.
+!  Restarting a simulation. Read the list of modes. All procs 
+!  read the file and set their modes (would it be more efficient
+!  to only have the root read, then broadcast?).
 !
-          if (it == 1) then 
-            call set_mode(g,h)
-            flag =.true.
-          else
+        if (it==1.and.itsub==1) then 
+!
+          if (lroot) then
+            print*,''
+            print*,'it=',it,' t=',t
+            print*,'This is a simulation that is '
+            print*,'restarting from a snapshot. The'
+            print*,'list of modes will be read from file, '
+            print*,'to regenerate the mode structure.'
+            print*,''
+            inquire(file=trim(datadir)//'/modes.dat',exist=exist)
+            if (exist) then
+              open(19,file=trim(datadir)//'/modes.dat')
+            else
+              call fatal_error(trim(datadir)//'/modes.dat','no input file')
+            endif
+          endif
+!
+          do k=1,nmode_max
+            if (lroot) read(19,*,iostat=stat)    &
+                   g(1),g(2),g(3),g(4),g(5),g(6),g(7),g(8),h
+            call mpibcast_real(g,8)
+            call mpibcast_int(h)
+            call set_values(g,h,k)
+          enddo
+          if (lroot) close(19)
+!
+        else 
 !
 !  Test if the mode has exceeded its lifetime. 
 !  If so, replace it by a new random mode.
 !
-            tmode_age = t-tmode_init(k)
-            if (tmode_age > tmode_lifetime(k)) then
+          do k=1,nmode_max
+            if (lroot) then
+              flag=.false.
+              tmode_age = t-tmode_init(k)
+              if (tmode_age > tmode_lifetime(k)) then
+                if (ldebug .or. ip<=9) print*,'mode ',k,' at r=',&
+                     rcenter(k),', of m=',mode_wnumber(k),' gone'
 !
-              if (ldebug .or. ip<=9) print*,'mode ',k,' at r=',&
-                   rcenter(k),', of m=',mode_wnumber(k),' gone'
+                call set_mode(g,h)
+                flag=.true.
 !
-              call set_mode(g,h)
-              flag =.true.
-!
-              if (ldebug .or. ip<=9) print*,'   replaced by mode at r=',&
-                   rcenter(k),', of m=',mode_wnumber(k)
+                if (ldebug .or. ip<=9) print*,'   replaced by mode at r=',&
+                     rcenter(k),', of m=',mode_wnumber(k)
+              endif
             endif
-          endif
+            call mpibcast_logical(flag)
+            if (flag) then 
+!
+              if (lroot) then
+                if (ldebug .or. ip<=9) &
+                     print*,'update_modes: saving the current modes before updating'
+                call output_modes(trim(datadir)//'/modes_old.dat')
+              endif
+!
+              call mpibcast_real(g,8)
+              call mpibcast_int(h)
+              call set_values(g,h,k)
+!
+!  Update the list of modes as well. Save the previous one. 
+!
+              if (lroot) then
+                if (ldebug .or. ip<=9) &
+                     print*,'update_modes: updating the mode output list '
+                call output_modes(trim(datadir)//'/modes.dat')
+              endif
+!
+            endif
+          enddo
+!
         endif
+      endif
 !
-!  Root-specific part over. Now check if the mode changed. If so, 
-!  broadcast the information. 
+    endsubroutine update_modes
+!***********************************************************************
+    subroutine wsnap_mode
 !
-        call mpibcast_logical(flag)
-        if (flag) then 
-          call mpibcast_real(g,8)
-          call mpibcast_int(h)
-          gauss_ampl(k)          = g(1) 
-          rcenter(k)             = g(2) 
-          phicenter(k)           = g(3) 
-          radial_sigma_inv(k)    = g(4) 
-          tmode_init(k)          = g(5) 
-          tmode_lifetime(k)      = g(6) 
-          omega_mode(k)          = g(7) 
-          tmode_lifetime_inv(k)  = g(8) 
-          mode_wnumber(k)        = h    
-        endif
+      use General, only: itoa
+      use Sub, only: read_snaptime
 !
+      real, save :: tsnap
+      integer, save :: nsnap
+      logical, save :: lfirstcall=.true.
+      character (len=intlen) :: insnap
+!
+!  The usual var.dat
+!
+      if (mod(it,isave)==0) &
+           call output_modes(trim(datadir)//'/modes.dat')
+!
+!  The enumerated VARN
+!
+      if (lfirstcall) then
+        nsnap=floor(t/dsnap)
+        tsnap=dsnap*(nsnap+1)
+        lfirstcall=.false.
+      endif
+      if (t >= tsnap) then 
+        tsnap = tsnap + dsnap
+        nsnap = nsnap + 1
+        insnap=itoa(nsnap)
+        call output_modes(trim(datadir)//'/MODES'//trim(insnap))
+      endif
+!
+    endsubroutine wsnap_mode
+!***********************************************************************
+    subroutine output_modes(file)
+!
+      character (len=*) :: file
+      integer :: k
+!
+      open(18,file=file)
+      do k=1,nmode_max 
+        write(18,*) gauss_ampl(k),rcenter(k),phicenter(k),&
+             radial_sigma_inv(k),tmode_init(k),tmode_lifetime(k),&
+             omega_mode(k),tmode_lifetime_inv(k),mode_wnumber(k)
       enddo
+      close(18)
 !
-    endsubroutine update_mode_list
+    endsubroutine output_modes
 !***********************************************************************
     subroutine set_mode(g,h)
 !
@@ -331,28 +485,15 @@ module Special
 !
       use General, only: random_number_wrapper
 !
-      real, dimension(8) :: g
-      real :: gauss_ampl_scl,phicenter_scl
-      real :: tmode_lifetime_scl,rcenter_scl,inv_radial_sigma_scl
-      real :: tmode_init_scl,omega_mode_scl
+      real, dimension(8), intent(out) :: g
+      integer, intent(out) :: h
+!
+      real :: gauss_ampl_scl,rcenter_scl,phicenter_scl
+      real :: tmode_lifetime_scl,inv_radial_sigma_scl,cs1_mode
+      real :: tmode_init_scl,omega_mode_scl,mode_aspect_ratio
       integer :: mode_wnumber_scl
 !
       real :: aux1,aux2
-      real :: cs_mode
-      integer :: h
-!
-!  Mode's Gaussian-distributed random amplitude.
-!
-      call random_number_wrapper(aux1)
-      call random_number_wrapper(aux2)
-      gauss_ampl_scl   = sqrt(-2*log(aux1))*cos(2*pi*aux2)
-!
-!  Mode's random radial and azimuthal location.
-!
-      call random_number_wrapper(aux1)
-      rcenter_scl    = aux1*(r_ext-r_int) + r_int
-      call random_number_wrapper(aux1)
-      phicenter_scl  = aux1*2*pi
 !
 !  Mode's azimuthal wavenumber. 
 !
@@ -360,23 +501,73 @@ module Special
       aux1 = aux1*(logmode_max-logmode_min)+logmode_min
       mode_wnumber_scl = nint(exp(aux1))
 !
-!  Radial extent (sigma variance) of mode.
+!  If the mode is smaller than m=6, we set the amplitude to zero; still 
+!  we need to calculate the lifetime to know when to replace a mode. 
 !
-      inv_radial_sigma_scl = 4.*mode_wnumber_scl/(pi*rcenter_scl)
+!  Mode's radial location
 !
-!  Keplerian frequency at mode center.
+      call random_number_wrapper(aux1)
+      rcenter_scl    = aux1*(r_ext-r_int) + r_int
 !
-      !omega_mode_scl = g0*rcenter_scl**(-1.5)
-      omega_mode_scl = rcenter_scl**(-1.5)
+!  Sound speed at mode location
 !
-!  Mode's time of appearance.
+      cs1_mode = cs01*rcenter_scl**(0.5*temperature_power_law)
+!
+!  Mode's time of appearance and duration, which is the sound crossing time.
 !
       tmode_init_scl=t
+      tmode_lifetime_scl = 2*pi*rcenter_scl*cs1_mode/mode_wnumber_scl
 !
-!  Mode's duration, which is the sound crossing time.
+!  The rest only needs be calculated if the mode is computed, i.e., m<=6.
 !
-      cs_mode = rcenter_scl**(-0.5*temperature_power_law)
-      tmode_lifetime_scl = 2*pi*rcenter_scl/(mode_wnumber_scl*cs_mode)
+      if (lcompute_all_modes.or.mode_wnumber_scl <= 6) then 
+!
+!  Mode's Gaussian-distributed random amplitude.
+!
+        call random_number_wrapper(aux1)
+        call random_number_wrapper(aux2)
+        gauss_ampl_scl   = sqrt(-2*log(aux1))*cos(2*pi*aux2)
+!
+!  Mode's random radial and azimuthal location.
+!
+        call random_number_wrapper(aux1)
+        phicenter_scl  = aux1*2*pi
+!
+!  Keplerian frequency at mode location.
+!
+        omega_mode_scl = rcenter_scl**(-1.5)
+!
+!  Radial extent (sigma variance) of mode. In the original Laughlin
+!  paper, the factor 4 was so that the modes had a 4:1 aspect ratio. 
+!  This leads to a turbulence that in many ways ressembles that 
+!  of self-gravity, with well defined spiral arms and low-m swinging modes. 
+!  This perhaps comes from his background of massive disks. MRI turbulence
+!  on the other hand, being subsonic, will give rise to structure that is 
+!  more localized, with modes bound by the sonic radii. It is better to 
+!  have the aspect ratio defined by the sound speed itself. 
+!     
+!  Aspect ratio at mode center.
+!
+        if (lgravitational_turbulence) then 
+          mode_aspect_ratio = 4.
+        else
+          !inverse aspect ratio of the disk itself, 1/h
+          mode_aspect_ratio = rcenter_scl*omega_mode_scl*cs1_mode
+        endif
+!
+        inv_radial_sigma_scl = &
+             mode_aspect_ratio*mode_wnumber_scl/(pi*rcenter_scl)
+          
+      else
+!
+!  Modes of m>6. Set amplitude at zero. Whatever for the rest.
+!
+        gauss_ampl_scl   = 0.
+        phicenter_scl  = impossible
+        omega_mode_scl = impossible
+        inv_radial_sigma_scl = impossible
+!
+      endif
 !
 !  Store them in the "broadcastable" array. 
 !
@@ -391,6 +582,23 @@ module Special
       h    = mode_wnumber_scl
 !
     endsubroutine set_mode
+!***********************************************************************
+    subroutine set_values(g,h,k)
+!
+      real, dimension(8) :: g
+      integer :: h,k
+!
+      gauss_ampl(k)          = g(1) 
+      rcenter(k)             = g(2) 
+      phicenter(k)           = g(3) 
+      radial_sigma_inv(k)    = g(4) 
+      tmode_init(k)          = g(5) 
+      tmode_lifetime(k)      = g(6) 
+      omega_mode(k)          = g(7) 
+      tmode_lifetime_inv(k)  = g(8) 
+      mode_wnumber(k)        = h    
+      
+    endsubroutine set_values
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
@@ -512,6 +720,20 @@ endsubroutine read_special_run_pars
       call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_hydro
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt_)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
+!
+      if (lupdate_as_var.and.lroot) call wsnap_mode
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dt_)
+!
+    endsubroutine special_after_timestep
 !***********************************************************************
 !***********************************************************************
 !********************************************************************
