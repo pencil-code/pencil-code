@@ -853,7 +853,7 @@ module Particles_map
       real :: weight0, weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
-      logical :: lnbody
+      logical :: lnbody, lsink
 !
       intent(in)  :: fp, ineargrid
       intent(out) :: f
@@ -865,7 +865,11 @@ module Particles_map
         do k=1,npar_loc
           !exclude the massive particles from the mapping
           lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if (.not.lnbody) then
+          lsink=.false.
+          if (lparticles_sink) then
+            if (fp(k,israd)>0.0) lsink=.true.
+          endif
+          if ((.not.lnbody).and.(.not.lsink)) then
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
           endif
@@ -893,7 +897,11 @@ module Particles_map
 !
           do k=1,npar_loc
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then
+            lsink=.false.
+            if (lparticles_sink) then
+              if (fp(k,israd)>0.0) lsink=.true.
+            endif
+            if ((.not.lnbody).and.(.not.lsink)) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
               ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -941,7 +949,11 @@ module Particles_map
 !
           do k=1,npar_loc
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then
+            lsink=.false.
+            if (lparticles_sink) then
+              if (fp(k,israd)>0.0) lsink=.true.
+            endif
+            if ((.not.lnbody).and.(.not.lsink)) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
                 ixx0=ix0-1; ixx1=ix0+1
@@ -1016,7 +1028,11 @@ module Particles_map
           if (lparticles_radius.or.lparticles_number.or.lparticles_mass) then
             do k=1,npar_loc
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then
+              lsink=.false.
+              if (lparticles_sink) then
+                if (fp(k,israd)>0.0) lsink=.true.
+              endif
+              if ((.not.lnbody).and.(.not.lsink)) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
                 if (lparticles_mass) then
