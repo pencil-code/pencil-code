@@ -25,9 +25,11 @@ module Shear
 !
   real :: x0_shear=0.0, qshear0=0.0, sini=0.0
   real :: Sshear1=0.0, Sshear_sini=0.0
+  real, dimension(:), pointer :: B_ext
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
+  logical :: lexternal_magnetic_field = .false.
 !
   include 'shear.h'
 !
@@ -38,8 +40,8 @@ module Shear
 !
   namelist /shear_run_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
-      lshearadvection_as_shift, lmagnetic_stretching, lrandomx0, x0_shear, &
-      sini
+      lshearadvection_as_shift, lrandomx0, x0_shear, &
+      lmagnetic_stretching, lexternal_magnetic_field, sini
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
   integer :: idiag_deltay=0     ! DIAG_DOC: deltay
@@ -75,6 +77,11 @@ module Shear
 !  the central host.  If Omega_p = Omega, the usual shearing approximation is
 !  recovered.
 !
+      use SharedVariables, only: get_shared_variable
+      use Messages, only: fatal_error
+!
+      integer :: ierr
+!
       if (qshear/=0.0) then
         Sshear=-(qshear-qshear0)*Omega
         Sshear1=-qshear*Omega
@@ -85,6 +92,13 @@ module Shear
       if (lroot .and. ip<=12) then
         print*, 'initialize_shear: Sshear,Sshear1=', Sshear, Sshear1
         print*, 'initialize_shear: qshear,qshear0=', qshear, qshear0
+      endif
+!
+!  Get the external magnetic field if exists.
+!
+      if (lmagnetic) then
+        call get_shared_variable('B_ext', B_ext, ierr)
+        if (ierr /= 0) call fatal_error('initialize_shear', 'unable to get shared variable B_ext')
       endif
 !
 !  Turn on tilt of magnetic stretching if requested.
@@ -309,6 +323,13 @@ module Shear
           df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear_sini*p%aa(:,1)
           df(l1:l2,m,n,iay)=df(l1:l2,m,n,iay)+Sshear_sini*p%aa(:,2)
         endif
+      endif
+!
+!  Consider the external magnetic field.
+!
+      if (lmagnetic .and. lexternal_magnetic_field) then
+        df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) + B_ext(3) * uy0
+        df(l1:l2,m,n,iaz) = df(l1:l2,m,n,iaz) - B_ext(1) * uy0
       endif
 !
 !  Testfield stretching term.

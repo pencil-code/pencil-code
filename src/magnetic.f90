@@ -89,7 +89,8 @@ module Magnetic
 ! Input parameters
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
-  real, dimension(3) :: B_ext=(/0.0,0.0,0.0/), B1_ext, B_ext_inv, B_ext_tmp
+  real, dimension(3), target :: B_ext=(/0.0,0.0,0.0/)
+  real, dimension(3) :: B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
@@ -759,6 +760,13 @@ module Magnetic
       logical :: lstarting
       integer :: i,j,ierr
       real :: J_ext2
+!
+!  Share the external magnetic field with module Shear.
+!
+      if (lshear) then
+        call put_shared_variable('B_ext', B_ext, ierr)
+        if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
+      endif
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
 !  Normalize such that the average over the full domain
