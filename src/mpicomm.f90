@@ -2183,15 +2183,17 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
-    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr2(fsum_tmp,fsum,nreduce,idir,inplace)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer, dimension(2) :: nreduce
-      real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+      real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp, fsum
       integer, optional :: idir
+      logical, optional :: inplace
 !
       integer :: mpiprocs
+      logical :: inplace_opt
 !
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
@@ -2204,8 +2206,18 @@ module Mpicomm
         else
           mpiprocs=MPI_COMM_WORLD
         endif
-        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
-            root, mpiprocs, mpierr)
+        if (present(inplace)) then
+          inplace_opt=inplace
+        else
+          inplace_opt=.false.
+        endif
+        if (inplace_opt) then
+          call MPI_REDUCE(MPI_IN_PLACE, fsum, product(nreduce), MPI_REAL, &
+              MPI_SUM, root, mpiprocs, mpierr)
+        else
+          call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_REAL, MPI_SUM, &
+              root, mpiprocs, mpierr)
+        endif
       endif
 !
     endsubroutine mpireduce_sum_arr2
