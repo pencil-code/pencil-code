@@ -516,7 +516,7 @@ module Magnetic_meanfield
 !
       use Sub
       use General, only: bessj
-      use Diagnostics, only: sum_mn_name, xysum_mn_name_z
+      use Diagnostics, only: sum_mn_name, xysum_mn_name_z, ysum_mn_name_xz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
