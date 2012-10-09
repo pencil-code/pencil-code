@@ -278,12 +278,13 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
     
     data = data_struct()
     eof = 0
+    # length of longest array of fixed points
+    fixedMax = 0
     if tmp == '':
         eof = 1
     while (eof == 0):
         data.t.append(struct.unpack("<ff", fixed_file.read(8))[0])
         n_fixed = int(struct.unpack("<fff", fixed_file.read(12))[1])
-        data.fidx.append(n_fixed)
 
         x = list(np.zeros(n_fixed))
         y = list(np.zeros(n_fixed))
@@ -300,15 +301,20 @@ def read_fixed_points(dataDir = 'data/', fileName = 'fixed_points.dat'):
         tmp = fixed_file.read(4)
         if tmp == '':
             eof = 1
+            
+        if fixedMax < len(x):
+            fixedMax = len(x)
 
     fixed_file.close()
-        
+    
+    # add NaN to fill up the times with smaller number of fixed points
     fixed = data_struct()
     for i in range(len(data.t)):
+        annex = list(np.zeros(fixedMax - len(data.x[i])) + np.nan)
         fixed.t.append(data.t[i])
-        fixed.x.append(data.x[i])
-        fixed.y.append(data.y[i])
-        fixed.q.append(data.q[i])
+        fixed.x.append(data.x[i] + annex)
+        fixed.y.append(data.y[i] + annex)
+        fixed.q.append(data.q[i] + annex)
         fixed.fidx.append(data.fidx[i])
     
     fixed.t = np.array(fixed.t)
