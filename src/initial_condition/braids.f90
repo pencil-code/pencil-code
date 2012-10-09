@@ -165,6 +165,8 @@ module InitialCondition
     integer :: proc_idx
     integer, dimension (MPI_STATUS_SIZE) :: status
 !
+!   array with indices of fixed points to discard (double and too close ones)
+    integer :: discard(1000)
 !
     if (trace_field == 'bb' .and. ipz == 0) then
 !     allocate memory for the traced field
@@ -544,22 +546,47 @@ module InitialCondition
           fidx_all = fidx
           do proc_idx=1,(nprocx*nprocy*nprocz-1)
 !           receive the number of fixed points of that proc
+            fidx = 0
             call MPI_RECV(fidx, 1, MPI_integer, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
             if (ierr /= MPI_SUCCESS) &
                 call fatal_error("streamlines", "MPI_RECV could not receive")
 !           receive the fixed points form that proc
-            call MPI_RECV(buffer_tmp, fidx*3, MPI_real, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
-            fixed_points_all(fidx_all+1:fidx_all+fidx,:) = transpose(buffer_tmp(:,1:fidx))
-            if (ierr /= MPI_SUCCESS) &
-                call fatal_error("streamlines", "MPI_RECV could not receive")
-            fidx_all = fidx_all + fidx
+            if (fidx > 0) then
+              call MPI_RECV(buffer_tmp, fidx*3, MPI_real, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
+              fixed_points_all(fidx_all+1:fidx_all+fidx,:) = transpose(buffer_tmp(:,1:fidx))
+              if (ierr /= MPI_SUCCESS) &
+                  call fatal_error("streamlines", "MPI_RECV could not receive")
+              fidx_all = fidx_all + fidx
+            endif
+          enddo
+!
+!         Check whether fixed points are too close or out of the domain.
+!
+          discard(:) = 0
+          do j=1,fidx_all
+            if ((fixed_points_all(j,1) < x0) .or. (fixed_points_all(j,1) > (x0+Lx)) .or. &
+              (fixed_points_all(j,2) < y0) .or. (fixed_points_all(j,2) > (y0+Ly))) then
+              discard(j) = 1
+            else
+              do l=j+1,fidx_all
+                if ((abs(fixed_points_all(l,1) - fixed_points_all(j,1)) < dx/2) .and. &
+                    (abs(fixed_points_all(l,2) - fixed_points_all(j,2)) < dy/2)) then
+                  discard(l) = 1
+                endif
+              enddo
+            endif
           enddo
 !
           open(unit = 1, file = 'data/fixed_points.dat', form = "unformatted")
           write(1) 0.
-          write(1) float(fidx_all)
+          write(1) float(fidx_all-sum(discard))
           do l=1,fidx_all
-            write(1) fixed_points_all(l,:)
+            if (discard(l) == 0) then
+              write(1) fixed_points_all(l,:)
+!               write(*,*) "writing ", fixed_points_all(l,:)
+            else
+!               write(*,*) "discarding ", fixed_points_all(l,:)
+            endif
           enddo
           close(1)
 !
