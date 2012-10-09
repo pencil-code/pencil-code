@@ -735,6 +735,27 @@ endsubroutine read_special_run_pars
 !
     endsubroutine special_after_timestep
 !***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Potential
+!
+        case('potturb')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,ipotturb)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,ipotturb)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,ipotturb)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipotturb)
+          slices%ready = .true.
+        endselect
+!
+    endsubroutine get_slices_special
+!***********************************************************************
 !***********************************************************************
 !********************************************************************
 !
