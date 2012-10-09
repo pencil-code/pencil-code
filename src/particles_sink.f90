@@ -188,7 +188,7 @@ module Particles_sink
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       real, dimension(1) :: rhop_interp
-      integer :: k, ix0, iy0, iz0, npar_sink, iblock
+      integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
 !
 !  Particle block domain decomposition.
 !
@@ -269,11 +269,11 @@ module Particles_sink
 !
       if (ldiagnos) then
         if (idiag_nparsink/=0) then
-          npar_sink=0
+          npar_sink_loc=0
           do k=1,npar_loc
-            if (fp(k,israd)/=0.0) npar_sink=npar_sink+1
+            if (fp(k,israd)/=0.0) npar_sink_loc=npar_sink_loc+1
           enddo
-          call sum_name(float(npar_sink),idiag_nparsink)
+          call sum_name(float(npar_sink_loc),idiag_nparsink)
         endif
       endif
 !
@@ -285,73 +285,82 @@ module Particles_sink
 !
 !  07-aug-12/anders: coded
 !
-      use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
+      use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real, &
+          mpibcast_int, mpibcast_real, mpireduce_sum
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp, dfp
       integer, dimension(mpar_loc,3) :: ineargrid
 !
-      real, dimension(3) :: xxps, vvps, xxkghost
-      real :: rhops, rads, rads2, dist2
-      real :: mindistx, mindisty, mindistz
-      integer, dimension(0:ncpus-1) :: npar_sink_proc_arr
+      integer, dimension(0:ncpus-1) :: npar_sink_proc
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer, dimension(27) :: iproc_recv_list, iproc_send_list
       integer, dimension(2*mpvar) :: ireq_array
-      integer, dimension(3) :: dis=(/-1,0,+1/)
-      integer, dimension(1) :: ixmin, iymin, izmin
-      integer :: i, j, j1, j2, k, ireq, ierr, nreq
+      integer :: i, j, j1, j2, k, k1, k2, ireq, ierr, nreq
       integer :: nproc_comm, iproc_comm
-      integer :: npar_sink, npar_sink_proc
+      integer :: npar_sink_loc, npar_sink
       integer :: ipx_send, ipy_send, ipz_send, ipx_recv, ipy_recv, ipz_recv
       integer :: iproc_recv, iproc_send, itag_npar=2001, itag_fpar=2010
       integer :: itag_ipar=20100, itag_fpar2=201000
       integer :: dipx, dipx1, dipx2, dipy, dipy1, dipy2, dipz, dipz1, dipz2
       logical :: lproc_higher_sends
 !
-!  Method where sink particles are coordinated by the root processor.
+!  Method I: sink particles are coordinated by the root processor.
 !
       if (lsink_communication_all_to_all) then
 !
-!  Count number of sink particles.
+!  Count number of sink particles and move sink particles to end of particle
+!  array.
 !
-        npar_sink=0
+        npar_sink_loc=0
         do k=1,npar_loc
           if (fp(k,israd)>0.0) then
-            npar_sink=npar_sink+1
-            fp(npar_loc+npar_sink,:)=fp(k,:)
+            npar_sink_loc=npar_sink_loc+1
+            fp(npar_loc+npar_sink_loc,:)=fp(k,:)
+            ipar(npar_loc+npar_sink_loc)=ipar(k)
           endif
         enddo
 !
 !  Communicate the number of sink particles to the root processor.
 !
         if (lroot) then
-          npar_sink_proc_arr(0)=npar_sink
+          npar_sink_proc(0)=npar_sink_loc
+          npar_sink=npar_sink_loc
           do iproc_recv=1,ncpus-1
-            call mpirecv_int(npar_sink_proc_arr(iproc_recv),1, &
+            call mpirecv_int(npar_sink_proc(iproc_recv),1, &
                 iproc_recv,itag_npar+iproc_recv)
+            npar_sink=npar_sink+npar_sink_proc(iproc_recv)
           enddo
         else
-          call mpisend_int(npar_sink,1,0,itag_npar+iproc)
+          call mpisend_int(npar_sink_loc,1,0,itag_npar+iproc)
         endif
+!
+!  Let the processors know how many sink particles there are.
+!
+        call mpibcast_int(npar_sink)
+        if (ip<=6) print*, 'remove_particles_sink: '// &
+            'iproc, npar_sink_loc, npar_sink=', iproc, npar_sink_loc, npar_sink
+!
+!  Return if there are no sink particles at all.
+!
+        if (npar_sink==0) return
 !
 !  Communicate the sink particle data to the root processor.
 !
-        if (npar_sink/=0) then
-          if (.not.lroot) then
-            call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
-                (/npar_sink,mpvar/),0,itag_fpar+iproc)
+        if (.not.lroot) then
+          if (npar_sink_loc/=0) then
+            call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink_loc,:), &
+                (/npar_sink_loc,mpvar/),0,itag_fpar+iproc)
           endif
-        endif
-        if (lroot) then
-          npar_sink_proc=npar_sink
+        else
+          npar_sink=npar_sink_loc
           do iproc_recv=1,ncpus-1
-            if (npar_sink_proc_arr(iproc_recv)/=0) then
-              call mpirecv_real(fp(npar_loc+npar_sink_proc+1: &
-                  npar_loc+npar_sink_proc+npar_sink_proc_arr(iproc_recv),:), &
-                  (/npar_sink_proc_arr(iproc_recv),mpvar/),iproc_recv, &
+            if (npar_sink_proc(iproc_recv)/=0) then
+              call mpirecv_real(fp(npar_loc+npar_sink+1: &
+                  npar_loc+npar_sink+npar_sink_proc(iproc_recv),:), &
+                  (/npar_sink_proc(iproc_recv),mpvar/),iproc_recv, &
                   itag_fpar+iproc_recv)
-              npar_sink_proc=npar_sink_proc+npar_sink_proc_arr(iproc_recv)
+              npar_sink=npar_sink+npar_sink_proc(iproc_recv)
             endif
           enddo
         endif
@@ -359,26 +368,132 @@ module Particles_sink
 !  Communicate the sink particle indices to the root processor.
 !
         if (.not.lroot) then
-          if (npar_sink/=0) then
-            call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink), &
-                npar_sink,0,itag_ipar+iproc)
+          if (npar_sink_loc/=0) then
+            call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink_loc), &
+                npar_sink_loc,0,itag_ipar+iproc)
           endif
-        endif
-        if (lroot) then
-          npar_sink_proc=npar_sink
+        else
+          npar_sink=npar_sink_loc
           do iproc_recv=1,ncpus-1
-            if (npar_sink_proc_arr(iproc_recv)/=0) then
-              call mpirecv_int(ipar(npar_loc+npar_sink_proc+1: &
-                  npar_loc+npar_sink_proc+npar_sink_proc_arr(iproc_recv)), &
-                  npar_sink_proc_arr(iproc_recv),iproc_recv, &
+            if (npar_sink_proc(iproc_recv)/=0) then
+              call mpirecv_int(ipar(npar_loc+npar_sink+1: &
+                  npar_loc+npar_sink+npar_sink_proc(iproc_recv)), &
+                  npar_sink_proc(iproc_recv),iproc_recv, &
                   itag_ipar+iproc_recv)
-              npar_sink_proc=npar_sink_proc+npar_sink_proc_arr(iproc_recv)
+              npar_sink=npar_sink+npar_sink_proc(iproc_recv)
+            endif
+          enddo
+          if (ip<=6) print*, 'remove_particles_sink: '// &
+              'root processor received sink particles', &
+              ipar(npar_loc+1:npar_loc+npar_sink), &
+              'with sink particle radii', &
+              fp(npar_loc+1:npar_loc+npar_sink,israd)
+        endif
+!
+!  Let sink particles accrete other sink particles. We need to do this now
+!  to avoid that a sink particle accretes on one processor and is accreted
+!  on another one.
+!
+        if (lroot) then
+          j1=npar_loc+npar_sink
+          j2=npar_loc+1
+          k1=j1
+          k2=j2
+          call sink_particle_accretion(fp,j1,j2,k1,k2)
+        endif
+!
+!  Send sink particle information to processors.
+!
+        call mpibcast_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
+            (/npar_sink,mpvar/))
+        call mpibcast_int(ipar(npar_loc+1:npar_loc+npar_sink), &
+            npar_sink)
+!
+!  Let sink particles accrete.
+!
+        j1=npar_loc+npar_sink
+        j2=npar_loc+1
+        k1=npar_loc
+        k2=1
+        call sink_particle_accretion(fp,j1,j2,k1,k2,nosink_in=.true.)
+!
+!  Send updated sink particle information back to root. No need to send
+!  the particle index, as sink particles are protected from accretion during
+!  the previous accretion step.
+!
+        call mpireduce_sum(fp(npar_loc+1:npar_loc+npar_sink,:), &
+            fp(npar_loc+1:npar_loc+npar_sink,:),(/npar_sink,mpvar/), &
+            inplace=.true.)
+!
+!  Send updated sink particle information back to processors.
+!
+        if (lroot) then
+          npar_sink=npar_sink_loc
+          do iproc_send=1,ncpus-1
+            if (npar_sink_proc(iproc_send)/=0) &
+                call mpisend_real(fp(npar_loc+1+npar_sink: &
+                npar_loc+npar_sink+npar_sink_proc(iproc_send),:), &
+                (/npar_sink_proc(iproc_send),mpvar/),iproc_send, &
+                itag_fpar+iproc_send)
+          enddo
+        else
+          if (npar_sink_loc/=0) &
+              call mpirecv_real(fp(npar_loc+1:npar_loc+npar_sink_loc,:), &
+              (/npar_sink_loc,mpvar/),0,itag_fpar+iproc)
+        endif
+!
+        if (lroot) then
+          npar_sink=npar_sink_loc
+          do iproc_send=1,ncpus-1
+            if (npar_sink_proc(iproc_send)/=0) &
+                call mpisend_int(ipar(npar_loc+1+npar_sink: &
+                npar_loc+npar_sink+npar_sink_proc(iproc_send)), &
+                npar_sink_proc(iproc_send),iproc_send, &
+                itag_ipar+iproc_send)
+          enddo
+        else
+          if (npar_sink_loc/=0) &
+              call mpirecv_int(ipar(npar_loc+1:npar_loc+npar_sink_loc), &
+              npar_sink_loc,0,itag_ipar+iproc)
+        endif
+!
+        if (npar_sink_loc/=0 .and. ip<=6) print*, 'remove_particles_sink: '// &
+            'processor ', iproc, ', received sink particles', &
+            ipar(npar_loc+1:npar_loc+npar_sink), &
+            'with sink particle radii', &
+            fp(npar_loc+1:npar_loc+npar_sink,israd)
+!
+!  Copy sink particles back into particle array.
+!
+        if (npar_sink_loc/=0) then
+          j=npar_loc+1
+          do k=1,npar_loc
+            if (fp(k,israd)>0.0) then
+              fp(k,:)=fp(j,:)
+              ipar(k)=ipar(j)
+              j=j+1
             endif
           enddo
         endif
+!
+!  Remove particles marked for deletion.
+!
+        k=1
+        do while (k<=npar_loc)
+          if (ipar(k)<0) then
+            ipar(k)=-ipar(k)
+            if (ip<=6) then
+              print*, 'remove_particles_sink: removed particle ', ipar(k), &
+                  'on proc', iproc
+            endif
+            call remove_particle(fp,ipar,k,dfp,ineargrid)
+          else
+            k=k+1
+          endif
+        enddo
       else
 !
-!  Method where sink particles are communicated only with neighbouring
+!  Method II: sink particles are communicated only with neighbouring
 !  processors.
 !  Make list of neighbouring processors.
 !
@@ -481,17 +596,17 @@ module Particles_sink
 !  communication with neighbouring processors.
 !
           if (iproc_send/=iproc) then
-            npar_sink=0
+            npar_sink_loc=0
             do k=1,npar_loc
               if (fp(k,israd)/=0.0) then
-                npar_sink=npar_sink+1
-                fp(npar_loc+npar_sink,:)=fp(k,:)
-                ipar(npar_loc+npar_sink)=ipar(k)
+                npar_sink_loc=npar_sink_loc+1
+                fp(npar_loc+npar_sink_loc,:)=fp(k,:)
+                ipar(npar_loc+npar_sink_loc)=ipar(k)
               endif
             enddo
             if (ip<=6) then
               print*, 'remove_particles_sink: sink particles on proc', &
-                  iproc, ':', ipar(npar_loc+1:npar_loc+npar_sink)
+                  iproc, ':', ipar(npar_loc+1:npar_loc+npar_sink_loc)
             endif
           endif
 !
@@ -503,9 +618,9 @@ module Particles_sink
           if (iproc_comm==1) lproc_higher_sends=.true.
           if (iproc_send/=iproc .and. iproc_send==iproc_recv) then
             if (lproc_higher_sends) then
-              if (iproc<iproc_recv) npar_sink=0
+              if (iproc<iproc_recv) npar_sink_loc=0
             else
-              if (iproc>iproc_recv) npar_sink=0
+              if (iproc>iproc_recv) npar_sink_loc=0
             endif
             lproc_higher_sends=.not. lproc_higher_sends
           endif
@@ -517,49 +632,49 @@ module Particles_sink
             j1=npar_loc
             j2=1
           else
-            npar_sink_proc=0
-            call mpisend_int(npar_sink,1,iproc_send,itag_npar+iproc)
-            call mpirecv_int(npar_sink_proc,1,iproc_recv,itag_npar+iproc_recv)
+            npar_sink=0
+            call mpisend_int(npar_sink_loc,1,iproc_send,itag_npar+iproc)
+            call mpirecv_int(npar_sink,1,iproc_recv,itag_npar+iproc_recv)
             do i=0,ncpus-1
               if (i==iproc) then
-                if (npar_sink/=0) &
-                    call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink), &
-                    npar_sink,iproc_send,itag_ipar+iproc)
+                if (npar_sink_loc/=0) &
+                    call mpisend_int(ipar(npar_loc+1:npar_loc+npar_sink_loc), &
+                    npar_sink_loc,iproc_send,itag_ipar+iproc)
               elseif (i==iproc_recv) then
-                if (npar_sink_proc/=0) &
-                    call mpirecv_int(ipar(npar_loc+npar_sink+1: &
-                    npar_loc+npar_sink+npar_sink_proc), &
-                    npar_sink_proc,iproc_recv,itag_ipar+iproc_recv)
+                if (npar_sink/=0) &
+                    call mpirecv_int(ipar(npar_loc+npar_sink_loc+1: &
+                    npar_loc+npar_sink_loc+npar_sink), &
+                    npar_sink,iproc_recv,itag_ipar+iproc_recv)
               endif
             enddo
             do i=0,ncpus-1
               if (i==iproc) then
-                if (npar_sink/=0) &
-                    call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
-                    (/npar_sink,mpvar/),iproc_send,itag_fpar+iproc)
+                if (npar_sink_loc/=0) &
+                    call mpisend_real(fp(npar_loc+1:npar_loc+npar_sink_loc,:), &
+                    (/npar_sink_loc,mpvar/),iproc_send,itag_fpar+iproc)
               elseif (i==iproc_recv) then
-                if (npar_sink_proc/=0) &
-                    call mpirecv_real(fp(npar_loc+npar_sink+1: &
-                    npar_loc+npar_sink+npar_sink_proc,:), &
-                    (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar+iproc_recv)
+                if (npar_sink/=0) &
+                    call mpirecv_real(fp(npar_loc+npar_sink_loc+1: &
+                    npar_loc+npar_sink_loc+npar_sink,:), &
+                    (/npar_sink,mpvar/),iproc_recv,itag_fpar+iproc_recv)
               endif
             enddo
 !            nreq=0
 !            ireq=0
 !            do j=1,mpvar
-!              if (npar_sink_proc/=0) then
-!                call MPI_IRECV(fp(npar_loc+npar_sink+1: &
-!                    npar_loc+npar_sink+npar_sink_proc,j), &
-!                    npar_sink_proc,MPI_DOUBLE_PRECISION,iproc_recv,itag_fpar+j, &
+!              if (npar_sink/=0) then
+!                call MPI_IRECV(fp(npar_loc+npar_sink_loc+1: &
+!                    npar_loc+npar_sink_loc+npar_sink,j), &
+!                    npar_sink,MPI_DOUBLE_PRECISION,iproc_recv,itag_fpar+j, &
 !                    MPI_COMM_WORLD,ireq,ierr)
 !                nreq=nreq+1
 !                ireq_array(nreq)=ireq
 !              endif
 !            enddo
 !            do j=1,mpvar
-!              if (npar_sink/=0) then
-!                call MPI_ISEND(fp(npar_loc+1:npar_loc+npar_sink,j), &
-!                  npar_sink,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar+j, &
+!              if (npar_sink_loc/=0) then
+!                call MPI_ISEND(fp(npar_loc+1:npar_loc+npar_sink_loc,j), &
+!                  npar_sink_loc,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar+j, &
 !                  MPI_COMM_WORLD,ireq,ierr)
 !                nreq=nreq+1
 !                ireq_array(nreq)=ireq
@@ -568,141 +683,13 @@ module Particles_sink
 !            do ireq=1,nreq
 !              call MPI_WAIT(ireq_array(nreq),stat,ierr)
 !            enddo
-            j1=npar_loc+npar_sink+npar_sink_proc
-            j2=npar_loc+npar_sink+1
+            j1=npar_loc+npar_sink_loc+npar_sink
+            j2=npar_loc+npar_sink_loc+1
           endif
 !
-!  Loop over sink particles, placed among the other particles when removing
-!  local particles, or in the end of the particle array when hosting sink
-!  particles from another processor.
 !
-          j=j1
-          do while (j>=j2)
-            if (fp(j,israd)>0.0 .and. ipar(j)>0) then
 !
-!  Store sink particle information in separate variables, as this might give
-!  better cache efficiency.
-!
-              xxps=fp(j,ixp:izp)
-              vvps=fp(j,ivpx:ivpz)
-              rhops=fp(j,irhopswarm)
-              rads=fp(j,israd)
-              rads2=fp(j,israd)**2
-              k=npar_loc
-!
-!  Loop over local particles to see which ones are removed by the sink particle.
-!
-              do while (k>=1)
-                if (j/=k .and. ipar(k)>0) then
-!
-!  Find minimum distance by directional splitting. This makes it easier to
-!  take into account periodic and shear-periodic boundary conditions.
-!
-                  mindistx=minval(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))
-                  if (mindistx<=rads) then
-                    mindistz=minval(abs(fp(k,izp)-(xxps(3)+Lz*dis)))
-                    if (mindistz<=rads) then
-                      if (lshear) then
-                        if (abs(fp(k,ixp)-(xxps(1)+Lx))<=rads) then
-                          mindisty=minval(abs(fp(k,iyp)-(xxps(2)-deltay+Ly*dis)))
-                        elseif (abs(fp(k,ixp)-xxps(1))<=rads) then
-                          mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
-                        elseif (abs(fp(k,ixp)-(xxps(1)-Lx))<=rads) then
-                          mindisty=minval(abs(fp(k,iyp)-(xxps(2)+deltay+Ly*dis)))
-                        endif
-                      else
-                        mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
-                      endif
-                      if (mindisty<=rads) then
-!
-!  Particle is constrained to be within cube of size rads. Estimate whether
-!  the particle is also within the sphere of size rads.
-!
-                        dist2=mindistx**2+mindisty**2+mindistz**2
-!
-                        if (dist2<=rads2) then
-                          if (ip<=6) then
-                            print*, 'remove_particles_sink: sink particle', &
-                                ipar(j), 'from proc', iproc_recv
-                            if (fp(k,israd)>0.0) then
-                              print*, '    tagged sink particle', ipar(k), &
-                                  'for removal on proc', iproc
-                            else
-                              print*, '    tagged particle', ipar(k), &
-                                  'for removal on proc', iproc
-                            endif
-                          endif
-                          if (lparticles_mass) then
-!
-!  Identify the nearest ghost image of the accreted particle.
-!
-                            ixmin=minloc(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))
-                            if (lshear) then
-                              if (dis(ixmin(1))==-1) then
-                                iymin=minloc(abs(fp(k,iyp)- &
-                                    (xxps(2)+deltay+Ly*dis)))
-                              elseif (dis(ixmin(1))==0) then
-                                iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
-                              elseif (dis(ixmin(1))==1) then
-                                iymin=minloc(abs(fp(k,iyp)- &
-                                    (xxps(2)-deltay+Ly*dis)))
-                              endif
-                            else
-                              iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
-                            endif
-                            izmin=minloc(abs(fp(k,izp)-(xxps(3)+Lz*dis)))
-!
-!  Double check that accreted particle ghost image is within the sink radius.
-!
-                            xxkghost=fp(k,ixp:izp)-(/Lx*dis(ixmin), &
-                                Ly*dis(iymin)-dis(ixmin)*deltay, &
-                                Lz*dis(izmin)/)
-                            if (sum((xxps-xxkghost)**2)>rads2) then
-                              print*, 'remove_particles_sink: sink particle', &
-                                   ipar(j), 'attempts to accrete particle '// &
-                                   'that is too far away!'
-                              print*, 'it, itsub, t, deltay=', t, it, itsub, &
-                                  deltay
-                              print*, 'iproc, j, k, disx, disy, disz=', iproc, &
-                                  ipar(j), ipar(k), dis(ixmin), dis(iymin), &
-                                  dis(izmin)
-                              print*, 'xj, rhoj, radsj=', xxps, rhops, rads
-                              print*, 'xk, rhok, radsk=', fp(k,ixp:izp), &
-                                  fp(k,irhopswarm), fp(k,israd)
-                              print*, 'xkghost=', xxkghost
-                              call fatal_error_local('remove_particles_sink','')
-                            endif
-!
-!  Add accreted position, momentum and mass to sink particle.
-!
-                            xxps=(rhops*xxps+fp(k,irhopswarm)*xxkghost)/ &
-                                (rhops+fp(k,irhopswarm))
-                            vvps=(rhops*vvps+fp(k,irhopswarm)* &
-                                fp(k,ivpx:ivpz))/(rhops+fp(k,irhopswarm))
-                            rhops=rhops+fp(k,irhopswarm)
-                          endif
-!
-!  Mark particle for later deletion.
-!
-                          ipar(k)=-ipar(k)
-                        endif
-                      endif
-                    endif
-                  endif
-                endif
-                k=k-1
-              enddo
-!
-!  Give new position, velocity and mass to the sink particle. Angular momentum 
-!  is not conserved - this is assumed to be stored in internal rotation of
-!  the sink particle.
-!
-              fp(j,ixp:izp)=xxps
-              fp(j,ivpx:ivpz)=vvps
-              fp(j,irhopswarm)=rhops
-            endif
-            j=j-1
-          enddo
+          call sink_particle_accretion(fp,j1,j2,npar_loc,1)
 !
 !  Catch fatal errors during particle accretion.
 !
@@ -713,33 +700,33 @@ module Particles_sink
           if (iproc_send/=iproc) then
             do i=0,ncpus-1
               if (i==iproc) then
-                if (npar_sink_proc/=0) &
-                    call mpisend_real(fp(npar_loc+npar_sink+1: &
-                    npar_loc+npar_sink+npar_sink_proc,:), &
-                    (/npar_sink_proc,mpvar/),iproc_recv,itag_fpar+iproc)
-              elseif (i==iproc_send) then
                 if (npar_sink/=0) &
+                    call mpisend_real(fp(npar_loc+npar_sink_loc+1: &
+                    npar_loc+npar_sink_loc+npar_sink,:), &
+                    (/npar_sink,mpvar/),iproc_recv,itag_fpar+iproc)
+              elseif (i==iproc_send) then
+                if (npar_sink_loc/=0) &
                     call mpirecv_real(fp(npar_loc+1: &
-                    npar_loc+npar_sink,:),(/npar_sink,mpvar/), &
+                    npar_loc+npar_sink_loc,:),(/npar_sink_loc,mpvar/), &
                     iproc_send,itag_fpar+iproc_send)
               endif
             enddo
 !            nreq=0
 !            ireq=0
 !            do j=1,mpvar
-!              if (npar_sink/=0) then
-!                call MPI_IRECV(fp(npar_loc+1:npar_loc+npar_sink,j), &
-!                    npar_sink,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar2+j, &
+!              if (npar_sink_loc/=0) then
+!                call MPI_IRECV(fp(npar_loc+1:npar_loc+npar_sink_loc,j), &
+!                    npar_sink_loc,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar2+j, &
 !                    MPI_COMM_WORLD,ireq,ierr)
 !                nreq=nreq+1
 !                ireq_array(nreq)=ireq
 !              endif
 !            enddo
 !            do j=1,mpvar
-!              if (npar_sink_proc/=0) then
-!                call MPI_ISEND(fp(npar_loc+npar_sink+1: &
-!                    npar_loc+npar_sink+npar_sink_proc,j), &
-!                    npar_sink_proc,MPI_DOUBLE_PRECISION,iproc_recv,itag_fpar2+j, &
+!              if (npar_sink/=0) then
+!                call MPI_ISEND(fp(npar_loc+npar_sink_loc+1: &
+!                    npar_loc+npar_sink_loc+npar_sink,j), &
+!                    npar_sink,MPI_DOUBLE_PRECISION,iproc_recv,itag_fpar2+j, &
 !                    MPI_COMM_WORLD,ireq,ierr)
 !                nreq=nreq+1
 !                ireq_array(nreq)=ireq
@@ -753,10 +740,10 @@ module Particles_sink
 !  Copy sink particles back into particle array.
 !
           if (iproc_send/=iproc) then
-            if (npar_sink/=0) then
+            if (npar_sink_loc/=0) then
               j=npar_loc+1
               do k=1,npar_loc
-                if (fp(k,israd)>0) then
+                if (fp(k,israd)>0.0) then
                   fp(k,:)=fp(j,:)
                   j=j+1
                 endif
@@ -781,21 +768,179 @@ module Particles_sink
           enddo
 !
         enddo
-!
-        do k=1,npar_loc
-          if (ipar(k)<0) then
-            print*, 'remove_particles_sink: ipar(k) is negative!!!'
-            stop
-          endif
-        enddo
       endif
+!
+!  Do a quick reality check.
+!
+      do k=1,npar_loc
+        if (ipar(k)<0) then
+          print*, 'remove_particles_sink: ipar(k) is negative!!!'
+          stop
+        endif
+      enddo
 !
 !  Apply boundary conditions to the newly updated sink particle positions.
 !
-        call boundconds_particles(fp,ipar,dfp=dfp)
+      call boundconds_particles(fp,ipar,dfp=dfp)
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
+    subroutine sink_particle_accretion(fp,j1,j2,k1,k2,nosink_in)
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer :: j1, j2, k1, k2
+      logical, optional :: nosink_in
+!
+      real, dimension(3) :: xxps, vvps, xxkghost
+      real :: rhops, rads, rads2, dist2
+      real :: mindistx, mindisty, mindistz
+      integer, dimension(3) :: dis=(/-1,0,+1/)
+      integer, dimension(1) :: ixmin, iymin, izmin
+      integer :: j, k
+      logical :: nosink
+!
+      if (present(nosink_in)) then
+        nosink=nosink_in
+      else
+        nosink=.false.
+      endif
+!
+!  Loop over sink particles, placed among the other particles when removing
+!  local particles, or in the end of the particle array when hosting sink
+!  particles from another processor.
+!
+      j=j1
+      do while (j>=j2)
+        if (fp(j,israd)>0.0 .and. ipar(j)>0) then
+!
+!  Store sink particle information in separate variables, as this might give
+!  better cache efficiency.
+!
+         xxps=fp(j,ixp:izp)
+         vvps=fp(j,ivpx:ivpz)
+         rhops=fp(j,irhopswarm)
+         rads=fp(j,israd)
+         rads2=fp(j,israd)**2
+         k=k1
+!
+!  Loop over local particles to see which ones are removed by the sink particle.
+!
+         do while (k>=k2)
+           if (j/=k .and. ipar(k)>0 .and. &
+               ( (.not.nosink) .or. (fp(k,israd)==0.0) )) then
+!
+!  Find minimum distance by directional splitting. This makes it easier to
+!  take into account periodic and shear-periodic boundary conditions.
+!
+             mindistx=minval(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))
+             if (mindistx<=rads) then
+               mindistz=minval(abs(fp(k,izp)-(xxps(3)+Lz*dis)))
+               if (mindistz<=rads) then
+                 if (lshear) then
+                   if (abs(fp(k,ixp)-(xxps(1)+Lx))<=rads) then
+                     mindisty=minval(abs(fp(k,iyp)-(xxps(2)-deltay+Ly*dis)))
+                   elseif (abs(fp(k,ixp)-xxps(1))<=rads) then
+                     mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                   elseif (abs(fp(k,ixp)-(xxps(1)-Lx))<=rads) then
+                     mindisty=minval(abs(fp(k,iyp)-(xxps(2)+deltay+Ly*dis)))
+                   endif
+                 else
+                   mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                 endif
+                 if (mindisty<=rads) then
+!
+!  Particle is constrained to be within cube of size rads. Estimate whether
+!  the particle is also within the sphere of size rads.
+!
+                    dist2=mindistx**2+mindisty**2+mindistz**2
+!
+                    if (dist2<=rads2) then
+                      if (ip<=6) then
+                        print*, 'remove_particles_sink: sink particle', &
+                            ipar(j)
+                        if (fp(k,israd)>0.0) then
+                          print*, '    tagged sink particle', ipar(k), &
+                              'for removal on proc', iproc
+                        else
+                          print*, '    tagged particle', ipar(k), &
+                              'for removal on proc', iproc
+                        endif
+                      endif
+                      if (lparticles_mass) then
+!
+!  Identify the nearest ghost image of the accreted particle.
+!
+                        ixmin=minloc(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))
+                        if (lshear) then
+                          if (dis(ixmin(1))==-1) then
+                            iymin=minloc(abs(fp(k,iyp)- &
+                                (xxps(2)+deltay+Ly*dis)))
+                          elseif (dis(ixmin(1))==0) then
+                            iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                          elseif (dis(ixmin(1))==1) then
+                            iymin=minloc(abs(fp(k,iyp)- &
+                                (xxps(2)-deltay+Ly*dis)))
+                          endif
+                        else
+                          iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                        endif
+                        izmin=minloc(abs(fp(k,izp)-(xxps(3)+Lz*dis)))
+!
+!  Double check that accreted particle ghost image is within the sink radius.
+!
+                        xxkghost=fp(k,ixp:izp)-(/Lx*dis(ixmin), &
+                            Ly*dis(iymin)-dis(ixmin)*deltay, &
+                            Lz*dis(izmin)/)
+                        if (sum((xxps-xxkghost)**2)>rads2) then
+                          print*, 'remove_particles_sink: sink particle', &
+                               ipar(j), 'attempts to accrete particle '// &
+                               'that is too far away!'
+                          print*, 'it, itsub, t, deltay=', t, it, itsub, &
+                              deltay
+                          print*, 'iproc, j, k, disx, disy, disz=', iproc, &
+                              ipar(j), ipar(k), dis(ixmin), dis(iymin), &
+                              dis(izmin)
+                          print*, 'xj, rhoj, radsj=', xxps, rhops, rads
+                          print*, 'xk, rhok, radsk=', fp(k,ixp:izp), &
+                              fp(k,irhopswarm), fp(k,israd)
+                          print*, 'xkghost=', xxkghost
+                          call fatal_error_local('remove_particles_sink','')
+                        endif
+!
+!  Add accreted position, momentum and mass to sink particle.
+!
+                        xxps=(rhops*xxps+fp(k,irhopswarm)*xxkghost)/ &
+                            (rhops+fp(k,irhopswarm))
+                        vvps=(rhops*vvps+fp(k,irhopswarm)* &
+                            fp(k,ivpx:ivpz))/(rhops+fp(k,irhopswarm))
+                        rhops=rhops+fp(k,irhopswarm)
+                      endif
+!
+!  Mark particle for later deletion.
+!
+                      ipar(k)=-ipar(k)
+                    endif
+                  endif
+                endif
+              endif
+            endif
+            k=k-1
+          enddo
+!
+!  Give new position, velocity and mass to the sink particle. Angular momentum 
+!  is not conserved - this is assumed to be stored in internal rotation of
+!  the sink particle.
+!
+          fp(j,ixp:izp)=xxps
+          fp(j,ivpx:ivpz)=vvps
+          fp(j,irhopswarm)=rhops
+        endif
+        j=j-1
+      enddo
+!
+    endsubroutine sink_particle_accretion
+!***********************************************************************
+!
     subroutine read_particles_sink_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
