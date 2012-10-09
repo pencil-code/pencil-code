@@ -30,8 +30,8 @@ module Fixed_point
 ! temporary array, which stores the transposed fixed_points array
 ! this is needed for the MPI communication and to keep the order of the indices
   real, dimension (3,1000) :: buffer_tmp
-! total number of fixed points of this core
-  integer :: fidx
+! total number of fixed points of one core
+  integer :: fidx, fidx_other
 ! global number of fixed points
   integer :: fidx_all
   real :: fidx_read
@@ -83,6 +83,7 @@ module Fixed_point
           if (IOstatus == 0) then
             read(1) fidx_read
             fidx_all = int(fidx_read)
+!             write(*,*) "reading ", fidx_all, " many fixed points"
 !             allocate(fixed_points_all(fidx,3))
             do j=1,fidx_all
               read(1) fixed_points_all(j,:)
@@ -229,16 +230,17 @@ module Fixed_point
         exit
       end if
 !
-      if (iter > 10) then
+      if (iter > 20) then
         q = tracers(1,7)
         fixed_point = point
+!         fixed_point = (/x0-0.1, y0-0.1/)
         write(*,*) 'Warning: Newton not converged'
         exit
       endif
       iter = iter + 1
     enddo
 !
-    write(*,*) point
+!     write(*,*) fixed_point
     deallocate(tracers)
   end subroutine get_fixed_point
 !***********************************************************************
@@ -597,7 +599,7 @@ module Fixed_point
     real, pointer, dimension (:,:,:,:) :: vv
 !   filename for the tracer output
     character(len=1024) :: filename, str_tmp
-    integer :: j, flag
+    integer :: i, j, flag
     integer, dimension (MPI_STATUS_SIZE) :: status
     real :: point(2)
 !   array with all finished cores
@@ -608,6 +610,10 @@ module Fixed_point
     real, pointer, dimension (:,:) :: tracer_tmp
     integer :: ierr, proc_idx
     character (len=labellen) :: trace_field='bb'
+!   array with indices of fixed points to discard (double and too close ones)
+    integer :: discard(1000)
+!   increment variable for the processor index
+    integer :: x_proc, y_proc
 !
 !   allocate memory for the traced field
     allocate(vv(nx,ny,nz,3))
@@ -686,36 +692,90 @@ module Fixed_point
 !     receive the fixed_points from the other cores
       fidx_all = fidx
       do proc_idx=1,(nprocx*nprocy*nprocz-1)
+        fidx_other = 0
 !       receive the number of fixed points of that proc
-        call MPI_RECV(fidx, 1, MPI_integer, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
+        call MPI_RECV(fidx_other, 1, MPI_integer, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
         if (ierr /= MPI_SUCCESS) &
             call fatal_error("streamlines", "MPI_RECV could not receive")
-!        receive the fixed points form that proc
-        call MPI_RECV(buffer_tmp, fidx*3, MPI_real, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
-        fixed_points_all(fidx_all+1:fidx_all+fidx,:) = transpose(buffer_tmp(:,1:fidx))
-        if (ierr /= MPI_SUCCESS) &
-            call fatal_error("streamlines", "MPI_RECV could not receive")
-        fidx_all = fidx_all + fidx
+!       receive the fixed points form that proc
+        if (fidx_other > 0) then
+          call MPI_RECV(buffer_tmp, fidx_other*3, MPI_real, proc_idx, MERGE_FIXED, MPI_comm_world, status, ierr)
+          fixed_points_all(fidx_all+1:fidx_all+fidx_other,:) = transpose(buffer_tmp(:,1:fidx_other))
+          if (ierr /= MPI_SUCCESS) &
+              call fatal_error("streamlines", "MPI_RECV could not receive")
+!               write(*,*) "fidx = ", fidx, " fidx_other = ", fidx_other
+          fidx_all = fidx_all + fidx_other
+        endif
+      enddo
+!
+!     Check whether fixed points are too close or out of the domain.
+!
+      discard(:) = 0
+      do j=1,fidx_all
+        if ((fixed_points_all(j,1) < x0) .or. (fixed_points_all(j,1) > (x0+Lx)) .or. &
+           (fixed_points_all(j,2) < y0) .or. (fixed_points_all(j,2) > (y0+Ly))) then
+          discard(j) = 1
+        else
+          do i=j+1,fidx_all
+            if ((abs(fixed_points_all(i,1) - fixed_points_all(j,1)) < dx/2) .and. &
+                (abs(fixed_points_all(i,2) - fixed_points_all(j,2)) < dy/2)) then
+              discard(i) = 1
+            endif
+          enddo
+        endif
       enddo
 !
       open(unit = 1, file = 'data/fixed_points.dat', form = "unformatted", position = "append")
       write(1) tfixed_points_write
-      write(1) float(fidx_all)
+      write(1) float(fidx_all-sum(discard))
       do j=1,fidx_all
-        write(1) fixed_points_all(j,:)
+        if (discard(j) == 0) then
+          write(1) fixed_points_all(j,:)
+!           write(*,*) "writing ", fidx_all-sum(discard), " many fixed points"
+!           write(*,*) "writing ", fixed_points_all(j,:)
+        else
+!           write(*,*) "discarding ", fixed_points_all(j,:)
+        endif
       enddo
       close(1)
 !
 !       deallocate(fixed_points_all)
     else
+!       write(*,*) "sending fidx = ", fidx
       call MPI_SEND(fidx, 1, MPI_integer, 0, MERGE_FIXED, MPI_comm_world, ierr)
       if (ierr /= MPI_SUCCESS) &
           call fatal_error("streamlines", "MPI_SEND could not send")
-      buffer_tmp = transpose(fixed_points)
-      call MPI_SEND(buffer_tmp, fidx*3, MPI_real, 0, MERGE_FIXED, MPI_comm_world, ierr)              
-      if (ierr /= MPI_SUCCESS) &
-          call fatal_error("streamlines", "MPI_SEND could not send")
+      if (fidx > 0) then
+        buffer_tmp = transpose(fixed_points)
+        call MPI_SEND(buffer_tmp, fidx*3, MPI_real, 0, MERGE_FIXED, MPI_comm_world, ierr)              
+        if (ierr /= MPI_SUCCESS) &
+            call fatal_error("streamlines", "MPI_SEND could not send")
+      endif
     endif
+!
+!   redistribute the fixed points to the appropriate cores
+!
+    if (iproc == 0) then 
+      call MPI_Bcast(fidx_all, 1, MPI_integer, 0, MPI_comm_world, ierr)
+      buffer_tmp = transpose(fixed_points_all)
+      call MPI_Bcast(buffer_tmp, fidx_all*3, MPI_real, 0, MPI_comm_world, ierr)   
+    else
+      call MPI_Bcast(fidx_all, 1, MPI_integer, 0, MPI_comm_world, ierr)
+      call MPI_Bcast(buffer_tmp, fidx_all*3, MPI_real, 0, MPI_comm_world, ierr)
+      fixed_points_all(1:fidx_all,:) = transpose(buffer_tmp(:,1:fidx_all))
+    endif
+!
+    fidx = 0
+    do j = 1,fidx_all
+!     find the corresponding core
+!     NB: the whole thing only works for nprocz = 1
+      x_proc = floor((fixed_points_all(j,1)-x0)*real(nprocx)/Lx)
+      y_proc = floor((fixed_points_all(j,2)-y0)*real(nprocy)/Ly)
+      if ((x_proc == ipx) .and. (y_proc == ipy)) then
+        fidx = fidx + 1
+        fixed_points(fidx,:) = fixed_points_all(j,:)
+      endif      
+    enddo
 !
 !   this is kept for the moment, but will be removed soon
     write(str_tmp, "(I10.1,A)") iproc, '/fixed_points.dat'
