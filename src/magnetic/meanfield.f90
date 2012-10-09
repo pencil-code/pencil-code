@@ -128,6 +128,7 @@ module Magnetic_meanfield
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
   integer :: idiag_peffmxz=0    ! YAVG_DOC: $\left<{\cal P}_{\rm eff}\right>_{y}$
+  integer :: idiag_alpmxz=0    ! YAVG_DOC: $\left<\alpha\right>_{y}$
 
 !
 ! xy averaged diagnostics given in xyaver.in
@@ -873,6 +874,15 @@ module Magnetic_meanfield
         call xysum_mn_name_z(meanfield_qp_func,idiag_qpmz)
       endif
 !
+!  2-D averages.
+!  y-averaged alpha effect
+!
+      if (l2davgfirst) then
+        if (idiag_alpmxz/=0)  then
+          call ysum_mn_name_xz(alpha_total,idiag_alpmxz)
+        endif
+      endif
+!
     endsubroutine calc_pencils_magn_mf
 !***********************************************************************
     subroutine daa_dt_meanfield(f,df,p)
@@ -1137,7 +1147,7 @@ module Magnetic_meanfield
       if (lreset) then
         idiag_qsm=0; idiag_qpm=0; idiag_qem=0;
         idiag_EMFmz1=0; idiag_EMFmz2=0; idiag_EMFmz3=0; idiag_peffmxz=0
-        idiag_qpmz=0
+        idiag_qpmz=0; idiag_alpmxz=0
       endif
 !
 !  Check for those quantities that we want to evaluate online.
@@ -1171,6 +1181,7 @@ module Magnetic_meanfield
 !
       do ixz=1,nnamexz
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'peffmxz',idiag_peffmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'alpmxz',idiag_alpmxz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
