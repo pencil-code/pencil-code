@@ -110,6 +110,7 @@ module Hydro
   real :: r_cyl = 1.0, skin_depth = 1e-1
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
+  real :: amp_factor=0.,kx_uu_perturb
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -123,7 +124,8 @@ module Hydro
       luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
-      rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu
+      rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
+      amp_factor,kx_uu_perturb
 !
 !  Run parameters.
 !
@@ -879,6 +881,15 @@ module Hydro
             f(ix,iy,iz,iuu+1)=ampluu(j)*sin(x(ix))
             f(ix,iy,iz,iuu+2)=0.001*ampluu(j)*sin(y(iy))
           enddo;enddo;enddo
+        case ('Kolmogorov-x')
+          do iy=m1,m2; do iz=n1,n2
+            f(:,iy,iz,iuy)=ampluu(j)*cos(kx_uu*x)
+          enddo; enddo
+        case ('Kolmogorov-x-perturb')
+          print*,'ampluu,kx_uu,amp_factor,kx_uu_perturb',ampluu,kx_uu,amp_factor,kx_uu_perturb
+          do iy=m1,m2; do iz=n1,n2
+            f(:,iy,iz,iuy)=ampluu(j)*(cos(kx_uu*x)+amp_factor*cos(kx_uu_perturb*x))
+          enddo; enddo
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
@@ -1666,6 +1677,9 @@ module Hydro
       if (lpencil(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
       if (lpencil(i_uij)) call gij(f,iuu,p%uij,1)
+!      if (.not.lpencil_check_at_work) then
+!        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
+!      endif
 ! divu
       if (lpencil(i_divu)) call div_mn(p%uij,p%divu,p%uu)
 ! sij
@@ -1699,6 +1713,14 @@ module Hydro
         uu=p%uu
         if (lconst_advection) uu=uu+spread(u0_advec,1,nx)
         call u_dot_grad(f,iuu,p%uij,uu,p%ugu,UPWIND=lupw_uu)
+!      if (.not.lpencil_check_at_work) then
+!        write(*,*) 'ugu',p%ugu(1:6,1)
+!      endif
+!        if (.not.lpencil_check_at_work) then
+!          write(*,*) 'DM',x(l1:l2)
+!          write(*,*) 'DM',p%uu(:,1)
+!          write(*,*) 'DM',p%uij(:,1,1)
+!        endif
 !
 !  If lffree switched is used, we need to turn off the u.gradu term
 !  to ensure momentum conservation.

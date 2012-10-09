@@ -303,6 +303,9 @@ module Entropy
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
         enddo
+!      if (.not.lpencil_check_at_work) then
+!        write(*,*) 'fpres',p%fpres(1:6,1)
+!      endif
 !
 !  Add pressure force from global density gradient.
 !

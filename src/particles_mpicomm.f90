@@ -48,6 +48,8 @@ module Particles_mpicomm
       intent (in) :: f, lstarting
 !
 !  Distribute particles evenly among processors to begin with.
+!  DM: for some initial conditions it may be better not to distribute 
+!  particles evenly. 
 !
       if (lstarting) call dist_particles_evenly_procs(ipar)
       call keep_compiler_quiet(f)

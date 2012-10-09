@@ -1,7 +1,7 @@
-! $Id: particles_potential.f90  $
+! $Id: particles_dust.f90 19004 2012-06-19 08:04:13Z dhruba@gmail.com $
 !
 !  This module calculates the additional force on each particle due to 
-!  particle-particle interaction through a short-range force.
+!   particle-particle interatction through a short--range force.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -9,6 +9,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles_potential=.true.
+!
 !
 !***************************************************************
 module Particles_potential
@@ -36,7 +37,7 @@ module Particles_potential
 !
   integer,allocatable,dimension(:,:),save :: neighbour_list
   character (len=labellen) :: ppotential='nothing'
-  real :: psigma,ppowerby2=19,skin_factor=2.,pampl=1.
+  real :: psigma=1.,ppowerby2=19,skin_factor=2.,pampl=1.
 !
 ! Note : psigma should be of the order of grid-spacing in general as we are
 ! not including many terms in the Maxey-Riley equations. As far as the interaction
@@ -53,8 +54,8 @@ module Particles_potential
 ! are noted withing the neighbourlist. The neighbourlist is update not on every time step
 ! but after a certain number of time steps (this is not implemented yet). 
 !
+  integer :: idiag_particles_vijm
   integer :: ysteps_int,zsteps_int
-  integer :: idiag_particles_Vijm
 !
   namelist /particles_potential_init_pars/ &
     ppotential,psigma,ppowerby2,skin_factor
@@ -72,7 +73,7 @@ module Particles_potential
 !  22-aug-05/anders: coded
 !
       if (lroot) call svn_id( &
-          "$Id: particles_potential.f90 $")
+          "$Id: particles_dust.f90 19004 2012-06-19 08:04:13Z dhruba@gmail.com  $")
 !
       if (.not.lparticles) call fatal_error('register_particles_potential:', &
         'the particles_potential module works only with particles_dust module.') 
@@ -90,12 +91,14 @@ module Particles_potential
       logical :: lstarting
 !
       call allocate_neighbour_list()
+      if (lroot) print*, 'initialize_particles_potential: Allocated neighbour list'
       ysteps_int=int(psigma*skin_factor*maxval(dy_1))+1
       zsteps_int=int(psigma*skin_factor*maxval(dz_1))+1
 !
 ! Abort is ysteps_int or zsteps_int are too big
 !        
       if (ysteps_int>nghost) then
+        if (lroot) print*,'nghost,ysteps_int=',nghost,ysteps_int
         if (lroot) print*,'nghost,ysteps_int=',nghost,ysteps_int
         call fatal_error('initialize_particles_potential:','ysteps_int must be smaller than nghost')
       endif
@@ -122,8 +125,10 @@ module Particles_potential
 !
 !  cleanup after the particles_potential module
 !
-      if (lallocated_neighbour_list) deallocate(neighbour_list)
-!
+      if(lallocated_neighbour_list) then
+	deallocate(neighbour_list)
+        print*,'particles_potential: Neighbour list deallocated'
+      endif
     endsubroutine particles_potential_clean_up
 !***********************************************************************
     subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
@@ -156,7 +161,8 @@ module Particles_potential
 !
 ! The neighbour_list is now update every ldiagnostic step. 
 !
-        if (ldiagnos) call update_neighbour_list(fp,k)
+!        if (ldiagnos) call update_neighbour_list(fp,k)
+        call update_neighbour_list(fp,k)
         call get_interparticle_accn(fp,k,interparticle_accn,Vij)
         dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + interparticle_accn
         if (ldiagnos) then

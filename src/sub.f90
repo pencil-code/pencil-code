@@ -2478,7 +2478,7 @@ module Sub
 !
 ! The same operation needs to be done to each element
 ! of the matrix ugradM. We assume below that this matrix
-! is symmetric. Otherwise the following should be written.
+! is symmetric. Otherwise the following should be rewritten.
 !
           ipk=0
           do ipi=1,3

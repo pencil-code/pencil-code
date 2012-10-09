@@ -21,6 +21,7 @@ module Solid_Cells
 !
   include 'solid_cells.h'
 !
+!  integer, parameter            :: max_items=5
   integer, parameter            :: max_items=5
   integer                       :: ncylinders=0,nrectangles,nspheres=0,dummy
   integer                       :: nobjects, nlong, nlat
@@ -38,7 +39,8 @@ module Solid_Cells
   logical :: lclose_interpolation=.false., lclose_linear=.false.
   logical :: lnointerception=.false.,lcheck_ba=.false.
   logical :: lclose_quad_rad_inter=.true.
-  real                          :: rhosum,flow_dir,T0
+  logical :: lset_flow_dir=.false.
+  real                          :: rhosum,flow_dir,T0,flow_dir_set
   integer                       :: irhocount
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
@@ -58,7 +60,7 @@ module Solid_Cells
        ampl_noise,interpolation_method, nforcepoints,object_skin,&
        lclose_interpolation,lclose_linear,limit_close_linear,lnointerception,&
        nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos,sphere_temp,&
-       lclose_quad_rad_inter,ineargridshift
+       lclose_quad_rad_inter,ineargridshift,lset_flow_dir,flow_dir_set
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
@@ -282,6 +284,7 @@ module Solid_Cells
             endif
           endif
         enddo
+        if (lset_flow_dir) flow_dir = flow_dir_set
         if (flow_dir == 0) then
           call fatal_error('initialize_solid_cells',&
               'I was not able to determine the flow direction!')
@@ -433,6 +436,7 @@ module Solid_Cells
             a2 = objects(icyl)%r**2
             yr=y(j)-objects(icyl)%x(2)
             if (objects(icyl)%x(1) /= 0) then
+!              write(*,*) 'DM',objects(icyl)%x(1),icyl
               print*,'When using cylinderstream_y all cylinders must have'
               print*,'zero offset in x-direction!'
               call fatal_error('init_solid_cells:','')

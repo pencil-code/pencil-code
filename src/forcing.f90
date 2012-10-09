@@ -62,6 +62,7 @@ module Forcing
   character (len=labellen) :: iforce_profile='nothing'
   character (len=labellen) :: iforce_tprofile='nothing'
   real :: equator=0.
+  real :: kx_2df=0.,ky_2df=0.,xminf=0.,xmaxf=0.,yminf=0.,ymaxf=0.
 ! For helical forcing in spherical polar coordinate system
   real,allocatable,dimension(:,:,:) :: psif
   real,allocatable,dimension(:,:) :: cklist
@@ -129,7 +130,7 @@ module Forcing
        lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
        z_bb,width_bb,eta_bb,fcont_ampl, &
-       ampl_diffrot,omega_exponent
+       ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -160,7 +161,7 @@ module Forcing
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
-      use Sub, only: step_scalar,erfunc
+      use Sub, only: step,step_scalar,erfunc
 !
       real :: zstar
       integer :: l
@@ -348,6 +349,16 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=exp(z/width_ff)
         profz_hel=1.
+!
+      elseif (iforce_profile=='xybox') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profx_ampl=.5*(1.-erfunc(z/width_ff))
+        profz_hel=1.
+        profx_ampl= step(x,xminf,width_ff)-step(x,xmaxf,width_ff)
+        do m=1,my
+          profy_ampl(m)= step_scalar(y(m),yminf,width_ff)-step_scalar(y(m),ymaxf,width_ff)
+        enddo
 !
 !  turn off forcing intensity above z=0
 !
@@ -578,6 +589,7 @@ module Forcing
 !
         select case (iforce)
         case ('2drandom_xy');     call forcing_2drandom_xy(f)
+        case ('2drxy_simple');    call forcing_2drandom_xy_simple(f)
         case ('ABC');             call forcing_ABC(f)
         case ('blobs');           call forcing_blobs(f)
         case ('chandra_kendall'); call forcing_chandra_kendall(f)
@@ -747,6 +759,63 @@ module Forcing
       if (lonly_total) random2d_nmodes = imode
 !
     endsubroutine get_2dmodes
+!***********************************************************************
+    subroutine forcing_2drandom_xy_simple(f)
+!
+!  Random force in two dimensions (x and y) limited to bands of wave-vector
+!  in space.
+!
+!  14-feb-2011/ dhruba : coded
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Sub, only: step,step_scalar
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      logical, save :: lfirst_call=.true.
+      integer :: ikmodes,iran1,iran2,kx1,ky1,kx2,ky2
+      real, dimension(nx,3) :: forcing_rhs
+      real, dimension(nx) :: xkx
+      real,dimension(4) :: fran
+      real :: phase1,phase2,pi_over_Lx,force_norm
+!
+
+!
+! force = xhat [ cos (k_2 y + \phi_1) ] +
+!         yhat [ cos (k_3 x + \phi_2 ) ]
+! where k_1 -- k_2 and k_3 -- k_4 are two randomly chose pairs in the list
+! random2d_kmodes and  \phi_1 and \phi_2 are two random phases.
+!
+      call random_number_wrapper(fran)
+      phase1=pi*(2*fran(1)-1.)
+      phase2=pi*(2*fran(2)-1.)
+!
+!  normally we want to use the wavevectors as they are,
+!  but in some cases, e.g. when the box is bigger than 2pi,
+!  we want to rescale k so that k=1 now corresponds to a smaller value.
+!
+
+!
+! Now add the forcing
+!
+      force_norm = force*cs0*cs0*sqrt(dt)
+      do n=n1,n2
+        do m=m1,m2
+          xkx = x(l1:l2)*kx_2df+phase1
+          forcing_rhs(:,1) = force_norm*(cos(y(m)*ky_2df+phase2) )*profx_ampl*profy_ampl(m)
+          forcing_rhs(:,2) = force_norm*(sin(xkx) )*profx_ampl*profy_ampl(m)
+          forcing_rhs(:,3) = 0.
+          if (lhelical_test) then
+            f(l1:l2,m,n,iuu:iuu+2)=forcing_rhs(:,1:3)
+          else
+            f(l1:l2,m,n,iuu:iuu+2)=f(l1:l2,m,n,iuu:iuu+2)+forcing_rhs(:,1:3)
+          endif
+        enddo
+      enddo
+!
+      if (ip<=9) print*,'forcing_2drandom_xy_simple: forcing OK'
+!
+    endsubroutine forcing_2drandom_xy_simple
 !***********************************************************************
     subroutine forcing_irro(f,force_ampl)
 !
