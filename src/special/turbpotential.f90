@@ -338,7 +338,7 @@ module Special
               print*,'Start of the simulation. Setting the modes'
               print*,''
             endif
-            call set_mode(g,h)
+            call get_mode(g,h)
           endif
           call mpibcast_real(g,8)
           call mpibcast_int(h)
@@ -396,7 +396,7 @@ module Special
                 if (ldebug .or. ip<=9) print*,'mode ',k,' at r=',&
                      rcenter(k),', of m=',mode_wnumber(k),' gone'
 !
-                call set_mode(g,h)
+                call get_mode(g,h)
                 flag=.true.
 !
                 if (ldebug .or. ip<=9) print*,'   replaced by mode at r=',&
@@ -478,12 +478,10 @@ module Special
 !
     endsubroutine output_modes
 !***********************************************************************
-    subroutine set_mode(g,h)
+    subroutine get_mode(g,h)
 !
 !  This sets all the needed parameters of the mode, and stores them in 
 !  a "structure".
-!
-      use General, only: random_number_wrapper
 !
       real, dimension(8), intent(out) :: g
       integer, intent(out) :: h
@@ -497,7 +495,7 @@ module Special
 !
 !  Mode's azimuthal wavenumber. 
 !
-      call random_number_wrapper(aux1)
+      call random_number(aux1)
       aux1 = aux1*(logmode_max-logmode_min)+logmode_min
       mode_wnumber_scl = nint(exp(aux1))
 !
@@ -506,7 +504,7 @@ module Special
 !
 !  Mode's radial location
 !
-      call random_number_wrapper(aux1)
+      call random_number(aux1)
       rcenter_scl    = aux1*(r_ext-r_int) + r_int
 !
 !  Sound speed at mode location
@@ -524,13 +522,13 @@ module Special
 !
 !  Mode's Gaussian-distributed random amplitude.
 !
-        call random_number_wrapper(aux1)
-        call random_number_wrapper(aux2)
+        call random_number(aux1)
+        call random_number(aux2)
         gauss_ampl_scl   = sqrt(-2*log(aux1))*cos(2*pi*aux2)
 !
 !  Mode's random radial and azimuthal location.
 !
-        call random_number_wrapper(aux1)
+        call random_number(aux1)
         phicenter_scl  = aux1*2*pi
 !
 !  Keplerian frequency at mode location.
@@ -562,10 +560,10 @@ module Special
 !
 !  Modes of m>6. Set amplitude at zero. Whatever for the rest.
 !
-        gauss_ampl_scl   = 0.
-        phicenter_scl  = impossible
-        omega_mode_scl = impossible
-        inv_radial_sigma_scl = impossible
+        gauss_ampl_scl       = 0.
+        phicenter_scl        = 1.
+        omega_mode_scl       = 1.
+        inv_radial_sigma_scl = 1.
 !
       endif
 !
@@ -581,7 +579,7 @@ module Special
       g(8) = 1./tmode_lifetime_scl
       h    = mode_wnumber_scl
 !
-    endsubroutine set_mode
+    endsubroutine get_mode
 !***********************************************************************
     subroutine set_values(g,h,k)
 !
