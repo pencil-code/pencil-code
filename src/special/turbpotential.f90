@@ -74,13 +74,16 @@ module Special
                                                !  modelist changes only very sporadically (the modes are 
                                                !  long lived).  
 !
+  real :: rmodes_int=impossible
+  real :: rmodes_ext=impossible                ! emulate a dead zone
+!
   namelist /special_init_pars/ alpha,lcalc_potturb,lturbulent_force,&
        ltime_dependant_amplitude,lgravitational_turbulence,&
-       lcap_modes_at_m6,lupdate_as_var
+       lcap_modes_at_m6,lupdate_as_var,rmodes_int,rmodes_ext
 !
   namelist /special_run_pars/ alpha,lcalc_potturb,lturbulent_force,&
        ltime_dependant_amplitude,lgravitational_turbulence,&
-       lcap_modes_at_m6,lupdate_as_var
+       lcap_modes_at_m6,lupdate_as_var,rmodes_int,rmodes_ext
 !
   integer, parameter :: nmode_max = 50
   integer :: mmode_max=nygrid/8, mmode_min = 1
@@ -189,6 +192,11 @@ module Special
       else
         lcompute_all_modes=.true.
       endif
+!
+!  Radii to bracket the modes
+!
+      if (rmodes_int==impossible) rmodes_int=r_int
+      if (rmodes_ext==impossible) rmodes_ext=r_ext
 !
 !  Set the potential at start time, for debugging purposes.
 !
@@ -483,6 +491,8 @@ module Special
 !  This sets all the needed parameters of the mode, and stores them in 
 !  a "structure".
 !
+      !use General, only: random_number_wrapper
+!
       real, dimension(8), intent(out) :: g
       integer, intent(out) :: h
 !
@@ -505,7 +515,7 @@ module Special
 !  Mode's radial location
 !
       call random_number(aux1)
-      rcenter_scl    = aux1*(r_ext-r_int) + r_int
+      rcenter_scl    = aux1*(rmodes_ext-rmodes_int) + rmodes_int
 !
 !  Sound speed at mode location
 !
