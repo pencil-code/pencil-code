@@ -1139,7 +1139,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	af_x = 0
 	af_y = 0
 	af_z = 0
-	min_size = 8
+	min_size = 8.0
 
 
 	set = set_names
