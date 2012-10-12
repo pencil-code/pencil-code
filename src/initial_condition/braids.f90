@@ -223,7 +223,7 @@ module InitialCondition
 !
 !   Calculate the minimum step size of the curve parameters
 !   to avoid discretization issues, like mesh points without magnetic field
-    delta_tube_param = min(dx, dy, dz)
+    delta_tube_param = min(dx, dy, dz)/2
 !   correct for the braid steepnes
 !     delta_tube_param = delta_tube_param * l_sigma / (steepnes * pi * distance_tubes * 8)
     delta_tube_param = delta_tube_param * l_sigma / (1 * pi * distance_tubes * 8)
