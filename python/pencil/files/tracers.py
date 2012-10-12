@@ -381,6 +381,9 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
     params = pc.read_param(quiet = True)
     domain = [params.xyz0[0], params.xyz1[0], params.xyz0[1], params.xyz1[1]]
     
+    # determine the how much faster the fixed pints have been written out than the color mapping
+    advance = np.ceil(float(len(fixed.t))/len(mapping[0,0,:,0]))
+    
     # determine the colors for the fixed points
     colors = np.zeros(np.shape(fixed.q) + (3,))
     colors[:,:,:] = 0.
@@ -417,7 +420,7 @@ def tracer_movie(dataDir = 'data/', tracerFile = 'tracers.dat',
         figure.clear()
         for k in range(len(fixed.x[j,:])):
             dots = plt.plot(fixed.x[j,k], fixed.y[j,k], 'o', c = colors[j,k,:])
-        image = plt.imshow(zip(*mapping[:,::-1,j,:]), interpolation = 'nearest', extent = domain)
+        image = plt.imshow(zip(*mapping[:,::-1,np.floor(j/advance),:]), interpolation = 'nearest', extent = domain)
         frameName = imageDir + 'images%06d.png'%j
         imageFiles.append(frameName)
         figure.savefig(frameName)
