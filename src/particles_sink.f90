@@ -462,16 +462,18 @@ module Particles_sink
         if (lroot) then
           do i=0,2
             fp(npar_loc+1:npar_loc+npar_sink,ixp+i)= &
-                fp(npar_loc+1:npar_loc+npar_sink,ixp+i)* &
-                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)/ &
+                (fp(npar_loc+1:npar_loc+npar_sink,ixp+i)* &
+                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)+ &
+                dfp(npar_loc+1:npar_loc+npar_sink,ixp+i))/ &
                 (fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)+ &
                 dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm))
           enddo
 !
           do i=0,2
             fp(npar_loc+1:npar_loc+npar_sink,ivpx+i)= &
-                fp(npar_loc+1:npar_loc+npar_sink,ivpx+i)* &
-                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)/ &
+                (fp(npar_loc+1:npar_loc+npar_sink,ivpx+i)* &
+                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)+ &
+                dfp(npar_loc+1:npar_loc+npar_sink,ivpx+i))/ &
                 (fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)+ &
                 dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm))
           enddo
@@ -481,7 +483,9 @@ module Particles_sink
               dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
         endif
 !
-!  Send updated sink particle state back to processors.
+!  Send updated sink particle state back to processors. We must send particle
+!  index too, although it has not changed, since the sink particles have moved
+!  place along the way.
 !
         if (lroot) then
           npar_sink=npar_sink_loc
@@ -491,6 +495,7 @@ module Particles_sink
                 npar_loc+npar_sink+npar_sink_proc(iproc_send),:), &
                 (/npar_sink_proc(iproc_send),mpvar/),iproc_send, &
                 itag_fpar+iproc_send)
+            npar_sink=npar_sink+npar_sink_proc(iproc_send)
           enddo
         else
           if (npar_sink_loc/=0) &
@@ -506,18 +511,13 @@ module Particles_sink
                 npar_loc+npar_sink+npar_sink_proc(iproc_send)), &
                 npar_sink_proc(iproc_send),iproc_send, &
                 itag_ipar+iproc_send)
+            npar_sink=npar_sink+npar_sink_proc(iproc_send)
           enddo
         else
           if (npar_sink_loc/=0) &
               call mpirecv_int(ipar(npar_loc+1:npar_loc+npar_sink_loc), &
               npar_sink_loc,0,itag_ipar+iproc)
         endif
-!
-        if (npar_sink_loc/=0 .and. ip<=6) print*, 'remove_particles_sink: '// &
-            'processor ', iproc, ', received sink particles', &
-            ipar(npar_loc+1:npar_loc+npar_sink), &
-            'with sink particle radii', &
-            fp(npar_loc+1:npar_loc+npar_sink,israd)
 !
 !  Copy sink particles back into particle array.
 !
@@ -855,6 +855,18 @@ module Particles_sink
       integer :: j, k
       logical :: nosink
 !
+      if (ip<=6) then
+        print*, 'sink_particle_accretion: iproc, it, itsub, sum(x*rho), '// &
+            'sum(v*rho), sum(rho) [BEFORE] =', iproc, it, itsub, &
+            sum(fp(k2:j1,ixp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,iyp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,izp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,ivpx)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,ivpy)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,ivpz)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0)
+      endif
+!
       if (present(nosink_in)) then
         nosink=nosink_in
       else
@@ -993,6 +1005,18 @@ module Particles_sink
         endif
         j=j-1
       enddo
+!
+      if (ip<=6) then
+        print*, 'sink_particle_accretion: iproc, it, itsub, sum(x*rho), '// &
+            'sum(v*rho), sum(rho) [AFTER]  =', iproc, it, itsub, &
+            sum(fp(k2:j1,ixp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,iyp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,izp)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,ivpx)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,ivpy)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,ivpz)*fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0), &
+            sum(fp(k2:j1,irhopswarm),mask=ipar(k2:j1)>0)
+      endif
 !
     endsubroutine sink_particle_accretion
 !***********************************************************************
