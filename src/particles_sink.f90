@@ -409,6 +409,11 @@ module Particles_sink
         call mpibcast_int(ipar(npar_loc+1:npar_loc+npar_sink), &
             npar_sink)
 !
+!  Store sink particle state in dfp, to allow us to calculate the added
+!  centre-of-mass, momentum and mass later.
+!
+        dfp(npar_loc+1:npar_loc+npar_sink,:)=fp(npar_loc+1:npar_loc+npar_sink,:)
+!
 !  Let sink particles accrete.
 !
         j1=npar_loc+npar_sink
@@ -417,15 +422,66 @@ module Particles_sink
         k2=1
         call sink_particle_accretion(fp,j1,j2,k1,k2,nosink_in=.true.)
 !
-!  Send updated sink particle information back to root. No need to send
-!  the particle index, as sink particles are protected from accretion during
-!  the previous accretion step.
+!  Calculate the added centre-of-mass, momentum, and mass density for each
+!  sink particle.
 !
-        call mpireduce_sum(fp(npar_loc+1:npar_loc+npar_sink,:), &
-            fp(npar_loc+1:npar_loc+npar_sink,:),(/npar_sink,mpvar/), &
-            inplace=.true.)
+        if (lroot) then
+          dfp(npar_loc+1:npar_loc+npar_sink,:)=0.0
+        else
+          do i=0,2
+            dfp(npar_loc+1:npar_loc+npar_sink,ixp+i)= &
+                fp(npar_loc+1:npar_loc+npar_sink,ixp+i)* &
+                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)- &
+                dfp(npar_loc+1:npar_loc+npar_sink,ixp+i)* &
+                dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
+          enddo
 !
-!  Send updated sink particle information back to processors.
+          do i=0,2
+            dfp(npar_loc+1:npar_loc+npar_sink,ivpx+i)= &
+                fp(npar_loc+1:npar_loc+npar_sink,ivpx+i)* &
+                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)- &
+                dfp(npar_loc+1:npar_loc+npar_sink,ivpx+i)* &
+                dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
+          enddo
+!
+          dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)= &
+              fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)- &
+              dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
+        endif
+!
+!  Send information about added centre-of-mass, momentum, and mass density to
+!  root. No need to send the particle index, as sink particles are protected
+!  from accretion during the previous accretion step.
+!
+        call mpireduce_sum(dfp(npar_loc+1:npar_loc+npar_sink,:), &
+            dfp(npar_loc+1:npar_loc+npar_sink,:),(/npar_sink,mpvar/))
+!
+!  Calculate new state of particles, given the added centre-of-mass, momentum,
+!  and mass density.
+!
+        if (lroot) then
+          do i=0,2
+            fp(npar_loc+1:npar_loc+npar_sink,ixp+i)= &
+                fp(npar_loc+1:npar_loc+npar_sink,ixp+i)* &
+                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)/ &
+                (fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)+ &
+                dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm))
+          enddo
+!
+          do i=0,2
+            fp(npar_loc+1:npar_loc+npar_sink,ivpx+i)= &
+                fp(npar_loc+1:npar_loc+npar_sink,ivpx+i)* &
+                fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)/ &
+                (fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)+ &
+                dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm))
+          enddo
+!
+          fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)= &
+              fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)+ &
+              dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
+        endif
+!
+!  Send updated sink particle state back to processors.
 !
         if (lroot) then
           npar_sink=npar_sink_loc
