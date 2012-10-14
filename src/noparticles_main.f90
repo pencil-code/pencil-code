@@ -377,15 +377,11 @@ module Particles_main
 !***********************************************************************
     subroutine insert_particles_now(f)
 !
-! dummy
+!  14-oct-12/dhruba: dummy 
 !
-      !
       real, dimension (mx,my,mz,mfarray) :: f
-      !
-      !
-      call keep_compiler_quiet(f)
-      !
 !
+      call keep_compiler_quiet(f)
 !
     endsubroutine insert_particles_now
 !***********************************************************************

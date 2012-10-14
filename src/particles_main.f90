@@ -1406,15 +1406,14 @@ module Particles_main
 !***********************************************************************
     subroutine insert_particles_now(f)
 !
-! Insert particles which has been removed from the system as the
-! system has evolved. 
+!  Insert particles which has been removed from the system as the
+!  system has evolved. 
 !
-! 2012-oct-19/dhruba: coded
+!  2012-oct-19/dhruba: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-
-      if(linsert_particle) call insert_lost_particles(f,fp,ineargrid)
+      if (linsert_particle) call insert_lost_particles(f,fp,ineargrid)
 !
     endsubroutine insert_particles_now
 !***********************************************************************
