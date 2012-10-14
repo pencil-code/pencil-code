@@ -375,29 +375,6 @@ module Particles_main
 !
     endsubroutine particles_doprepencil_calc
 !***********************************************************************
-    subroutine insert_particles_now(f)
-!
-!  14-oct-12/dhruba: dummy 
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine insert_particles_now
-!***********************************************************************
-    subroutine particles_insert_continuously(f)
-!
-!  Insert particles continuously, i.e. add particles in
-!  the beginning of a time step.
-!
-!  sep-09/kragset: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine particles_insert_continuously
-!***********************************************************************
     subroutine write_dim_particles(datadir)
 !
       character (len=*) :: datadir

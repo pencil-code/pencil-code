@@ -497,11 +497,6 @@ program run
       endif
     endif
 !
-! Insert particles (if linsert_particles_continuously==T)
-!
-      call particles_insert_continuously(f)
-      call insert_particles_now(f)
-!
 !  Remove wiggles in lnrho in sporadic time intervals.
 !  Necessary on moderate-sized grids. When this happens,
 !  this is often an indication of bad boundary conditions!

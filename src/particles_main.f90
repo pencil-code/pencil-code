@@ -403,6 +403,11 @@ module Particles_main
 !
       call particles_discrete_collisions()
 !
+!  Insert particles.
+!
+      call particles_insert_continuously(f)
+      call insert_particles_now(f)
+!
     endsubroutine particles_timestep_second
 !***********************************************************************
     subroutine particles_discrete_collisions()
