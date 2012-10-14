@@ -274,7 +274,7 @@ COMPILE_OPT IDL2,HIDDEN
 		print, 'The file '+varfile+' contains: ', content
 		if (strlen (read_content) lt strlen (content)) then print, 'Will read only: ', read_content
 		print, ''
-		print, 'The subvol dimension is ', sub_dim.mx, sub_dim.my, sub_dim.mz
+		print, 'The sub-volume dimension is ', sub_dim.mx, sub_dim.my, sub_dim.mz
 		print, ''
 	endif
 	if (f77 eq 0) then markers = 0 else markers = 1
