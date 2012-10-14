@@ -2836,7 +2836,7 @@ k_loop:   do while (.not. (k>npar_loc))
             lnbody=any(ipar(k)==ipar_nbody)
             lsink =.false.
             if (lparticles_sink) then
-              if (fp(k,israd)>0.0) lsink=.true.
+              if (fp(k,iaps)>0.0) lsink=.true.
             endif
             if ((.not.lnbody).and.(.not.lsink)) then
               ix0=ineargrid(k,1)

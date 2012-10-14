@@ -50,6 +50,22 @@ module Particles_sink
 !
     endsubroutine init_particles_sink
 !***********************************************************************
+    subroutine calc_selfpotential_sinkparticles(f,rhs_poisson,fp,ineargrid)
+!
+!  14-oct-12/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,ny,nz) :: rhs_poisson
+      real, dimension(mpar_loc,mpvar) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rhs_poisson)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine calc_selfpotential_sinkparticles
+!***********************************************************************
     subroutine create_particles_sink(f,fp,dfp,ineargrid)
 !
 !  07-aug-12/anders: dummy

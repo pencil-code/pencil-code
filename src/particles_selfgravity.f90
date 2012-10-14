@@ -131,7 +131,7 @@ module Particles_selfgravity
 !***********************************************************************
     subroutine calc_selfpotential_particles(f,rhs_poisson,lcontinued)
 !
-!  Calculate the gravity potential of the dust particles.
+!  Calculate the gravitational potential of the dust particles.
 !
 !  13-jun-06/anders: coded
 !

@@ -836,9 +836,9 @@ module Particles_map
 !
     endsubroutine random_particle_pencils
 !***********************************************************************
-    subroutine map_xxp_grid(f,fp,ineargrid)
+    subroutine map_xxp_grid(f,fp,ineargrid,lmapsink_opt)
 !
-!  Calculate the number of particles in each grid cell.
+!  Map the particles as a continuous density field on the grid.
 !
 !  27-nov-05/anders: coded
 !
@@ -848,27 +848,41 @@ module Particles_map
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      logical, optional :: lmapsink_opt
 !
       real, dimension(nx) :: rhop_swarm_mn
       real :: weight0, weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
-      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
-      logical :: lnbody, lsink
+      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm
+      logical :: lnbody, lsink, lmapsink
 !
       intent(in)  :: fp, ineargrid
       intent(out) :: f
 !
+!  Possible to map sink particles by temporarily switching irhop to irhops.
+!
+      if (present(lmapsink_opt)) then
+        lmapsink=lmapsink_opt
+        if (lmapsink) then
+          irhopm=irhop
+          irhop=ipotself
+        endif
+      else
+        lmapsink=.false.
+      endif
+!
 !  Calculate the number of particles in each grid cell.
 !
-      if (inp/=0 .and. (.not. lnocalc_np)) then
+      if (inp/=0 .and. (.not. lnocalc_np) .and. (.not. lmapsink)) then
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
           !exclude the massive particles from the mapping
           lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
           lsink=.false.
           if (lparticles_sink) then
-            if (fp(k,israd)>0.0) lsink=.true.
+            if (fp(k,iaps)>0.0) lsink=.true.
           endif
+          if (lmapsink) lsink=.not.lsink
           if ((.not.lnbody).and.(.not.lsink)) then
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
@@ -889,7 +903,7 @@ module Particles_map
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-      if (irhop/=0 .and. (.not. lnocalc_rhop)) then
+      if ( (irhop/=0 .and. (.not. lnocalc_rhop)) .or. lmapsink) then
         f(:,:,:,irhop)=0.0
         if (lparticlemesh_cic) then
 !
@@ -899,8 +913,9 @@ module Particles_map
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             lsink=.false.
             if (lparticles_sink) then
-              if (fp(k,israd)>0.0) lsink=.true.
+              if (fp(k,iaps)>0.0) lsink=.true.
             endif
+            if (lmapsink) lsink=.not.lsink
             if ((.not.lnbody).and.(.not.lsink)) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
@@ -951,8 +966,9 @@ module Particles_map
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             lsink=.false.
             if (lparticles_sink) then
-              if (fp(k,israd)>0.0) lsink=.true.
+              if (fp(k,iaps)>0.0) lsink=.true.
             endif
+            if (lmapsink) lsink=.not.lsink
             if ((.not.lnbody).and.(.not.lsink)) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
@@ -1030,8 +1046,9 @@ module Particles_map
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               lsink=.false.
               if (lparticles_sink) then
-                if (fp(k,israd)>0.0) lsink=.true.
+                if (fp(k,iaps)>0.0) lsink=.true.
               endif
+              if (lmapsink) lsink=.not.lsink
               if ((.not.lnbody).and.(.not.lsink)) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
@@ -1066,6 +1083,10 @@ module Particles_map
         endif
 !        call sharpen_tsc_density(f)
       endif
+!
+!  Restore normal particle index if mapping sink particles.
+!
+      if (lmapsink) irhop=irhopm
 !
     endsubroutine map_xxp_grid
 !***********************************************************************

@@ -30,22 +30,23 @@ module Particles_sink
   include 'particles_sink.h'
 !
   real :: sink_birth_radius=0.0, sink_radius=0.0, rhop_sink_create=1.0
-  real :: srad0=0.0, srad1=0.0
+  real :: aps0=0.0, aps1=0.0
+  real, pointer :: tstart_selfgrav
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
-  character (len=labellen), dimension(ninit) :: initsrad='nothing'
+  logical :: lselfgravity_sinkparticles=.true.
+  character (len=labellen), dimension(ninit) :: initaps='nothing'
 !
   integer :: idiag_nparsink=0
 !
   namelist /particles_sink_init_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
-      lrhop_roche_unit, initsrad, srad0, srad1, lsink_communication_all_to_all
+      lrhop_roche_unit, initaps, aps0, aps1, &
+      lselfgravity_sinkparticles, lsink_communication_all_to_all
 !
   namelist /particles_sink_run_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
       lrhop_roche_unit
-!
-  include 'mpif.h'
 !
   contains
 !***********************************************************************
@@ -55,15 +56,13 @@ module Particles_sink
 !
 !  07-aug-12/anders: coded
 !
-      use FArrayManager, only: farray_register_auxiliary
-!
       if (lroot) call svn_id( &
            "$Id: particles_dust.f90 19206 2012-06-30 21:40:24Z sven.bingert $")
 !
-!  Indices for sink particle radius.
+!  Index for sink particle radius.
 !
-      israd=npvar+1
-      pvarname(npvar+1)='israd'
+      iaps=npvar+1
+      pvarname(npvar+1)='iaps'
       npvar=npvar+1
 !
 !  Check that the fp and dfp arrays are big enough.
@@ -82,6 +81,8 @@ module Particles_sink
 !
 !  07-aug-12/anders: coded
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
@@ -93,6 +94,9 @@ module Particles_sink
 !
       if (lroot) print*, 'initialize_particles_sink: sink_radius=', &
           sink_radius
+!
+      if (lselfgravity) &
+          call get_shared_variable('tstart_selfgrav',tstart_selfgrav)
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -115,56 +119,56 @@ module Particles_sink
 !
       do j=1,ninit
 !
-        select case (initsrad(j))
+        select case (initaps(j))
 !
         case ('nothing')
           if (lroot.and.j==1) print*, 'init_particles_sink: nothing'
 !
         case ('zero')
           if (lroot) print*, 'init_particles_sink: zero sink particle radius'
-          fp(1:npar_loc,israd)=0.0
+          fp(1:npar_loc,iaps)=0.0
 !
         case ('constant')
           if (lroot) then
             print*, 'init_particles_sink: constant sink particle radius'
-            print*, 'init_particles_sink: srad0=', srad0
+            print*, 'init_particles_sink: aps0=', aps0
           endif
           if (lsink_radius_dx_unit) then
-            fp(1:npar_loc,israd)=srad0*dx
+            fp(1:npar_loc,iaps)=aps0*dx
           else
-            fp(1:npar_loc,israd)=srad0
+            fp(1:npar_loc,iaps)=aps0
           endif
 !
         case ('constant-1')
           if (lroot) then
             print*, 'init_particles_sink: set particle 1 sink radius'
-            print*, 'init_particles_sink: srad1=', srad1
+            print*, 'init_particles_sink: aps1=', aps1
           endif
           do k=1,npar_loc
             if (lsink_radius_dx_unit) then
-              if (ipar(k)==1) fp(k,israd)=srad1*dx
+              if (ipar(k)==1) fp(k,iaps)=aps1*dx
             else
-              if (ipar(k)==1) fp(k,israd)=srad1
+              if (ipar(k)==1) fp(k,iaps)=aps1
             endif
           enddo
 !
         case ('random')
           if (lroot) then
             print*, 'init_particles_sink: random sink radii'
-            print*, 'init_particles_sink: srad0=', srad0
+            print*, 'init_particles_sink: aps0=', aps0
           endif
           do k=1,npar_loc
             call random_number_wrapper(r)
             if (lsink_radius_dx_unit) then
-              fp(k,israd)=r*srad0*dx
+              fp(k,iaps)=r*aps0*dx
             else
-              fp(k,israd)=r*srad0
+              fp(k,iaps)=r*aps0
             endif
           enddo
 !
         case default
           if (lroot) print*, 'init_particles_sink: '// &
-              'No such such value for initsrad: ', trim(initsrad(j))
+              'No such such value for initaps: ', trim(initaps(j))
           call fatal_error('init_particles_sink','')
         endselect
 !
@@ -173,6 +177,30 @@ module Particles_sink
       call keep_compiler_quiet(f)
 !
     endsubroutine init_particles_sink
+!***********************************************************************
+    subroutine calc_selfpotential_sinkparticles(f,rhs_poisson,fp,ineargrid)
+!
+!  Calculate the gravitational potential of the sink particles.
+!
+!  13-jun-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,ny,nz) :: rhs_poisson
+      real, dimension(mpar_loc,mpvar) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
+!
+      if (lselfgravity .and. t>=tstart_selfgrav) then
+!
+!  We use here the potself index for temporary storage of sink particle density.
+!
+        if (lselfgravity_sinkparticles) then
+          call map_xxp_grid(f,fp,ineargrid,lmapsink_opt=.true.)
+          rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ipotself)
+        endif
+!
+      endif  ! if (t>=tstart_selfgrav) then
+!
+    endsubroutine calc_selfpotential_sinkparticles
 !***********************************************************************
     subroutine create_particles_sink(f,fp,dfp,ineargrid)
 !
@@ -196,7 +224,7 @@ module Particles_sink
         do iblock=0,nblock_loc-1
           if (npar_iblock(iblock)/=0) then
             do k=k1_iblock(iblock),k2_iblock(iblock)
-              if (fp(k,israd)==0.0) then
+              if (fp(k,iaps)==0.0) then
                 ix0=ineargrid(k,1)
                 iy0=ineargrid(k,2)
                 iz0=ineargrid(k,3)
@@ -220,7 +248,7 @@ module Particles_sink
                         'sink particle with rhop=', rhop_interp(1)
                     print*, 'processor, position=', iproc, fp(k,ixp:izp)
                   endif
-                  fp(k,israd)=sink_radius
+                  fp(k,iaps)=sink_radius
                 endif
               endif
             enddo
@@ -233,7 +261,7 @@ module Particles_sink
         do imn=1,ny*nz
           if (npar_imn(imn)/=0) then
             do k=k1_imn(imn),k2_imn(imn)
-              if (fp(k,israd)==0.0) then
+              if (fp(k,iaps)==0.0) then
                 ix0=ineargrid(k,1)
                 iy0=ineargrid(k,2)
                 iz0=ineargrid(k,3)
@@ -257,7 +285,7 @@ module Particles_sink
                         'sink particle with rhop=', rhop_interp(1)
                     print*, 'processor, position=', iproc, fp(k,ixp:izp)
                   endif
-                  fp(k,israd)=sink_radius
+                  fp(k,iaps)=sink_radius
                 endif
               endif
             enddo
@@ -271,7 +299,7 @@ module Particles_sink
         if (idiag_nparsink/=0) then
           npar_sink_loc=0
           do k=1,npar_loc
-            if (fp(k,israd)/=0.0) npar_sink_loc=npar_sink_loc+1
+            if (fp(k,iaps)/=0.0) npar_sink_loc=npar_sink_loc+1
           enddo
           call sum_name(float(npar_sink_loc),idiag_nparsink)
         endif
@@ -293,7 +321,6 @@ module Particles_sink
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       integer, dimension(0:ncpus-1) :: npar_sink_proc
-      integer, dimension(MPI_STATUS_SIZE) :: stat
       integer, dimension(27) :: iproc_recv_list, iproc_send_list
       integer, dimension(2*mpvar) :: ireq_array
       integer :: i, j, j1, j2, k, k1, k2, ireq, ierr, nreq
@@ -314,7 +341,7 @@ module Particles_sink
 !
         npar_sink_loc=0
         do k=1,npar_loc
-          if (fp(k,israd)>0.0) then
+          if (fp(k,iaps)>0.0) then
             npar_sink_loc=npar_sink_loc+1
             fp(npar_loc+npar_sink_loc,:)=fp(k,:)
             ipar(npar_loc+npar_sink_loc)=ipar(k)
@@ -387,7 +414,7 @@ module Particles_sink
               'root processor received sink particles', &
               ipar(npar_loc+1:npar_loc+npar_sink), &
               'with sink particle radii', &
-              fp(npar_loc+1:npar_loc+npar_sink,israd)
+              fp(npar_loc+1:npar_loc+npar_sink,iaps)
         endif
 !
 !  Let sink particles accrete other sink particles. We need to do this now
@@ -524,7 +551,7 @@ module Particles_sink
         if (npar_sink_loc/=0) then
           j=npar_loc+1
           do k=1,npar_loc
-            if (fp(k,israd)>0.0) then
+            if (fp(k,iaps)>0.0) then
               fp(k,:)=fp(j,:)
               ipar(k)=ipar(j)
               j=j+1
@@ -654,7 +681,7 @@ module Particles_sink
           if (iproc_send/=iproc) then
             npar_sink_loc=0
             do k=1,npar_loc
-              if (fp(k,israd)/=0.0) then
+              if (fp(k,iaps)/=0.0) then
                 npar_sink_loc=npar_sink_loc+1
                 fp(npar_loc+npar_sink_loc,:)=fp(k,:)
                 ipar(npar_loc+npar_sink_loc)=ipar(k)
@@ -715,30 +742,6 @@ module Particles_sink
                     (/npar_sink,mpvar/),iproc_recv,itag_fpar+iproc_recv)
               endif
             enddo
-!            nreq=0
-!            ireq=0
-!            do j=1,mpvar
-!              if (npar_sink/=0) then
-!                call MPI_IRECV(fp(npar_loc+npar_sink_loc+1: &
-!                    npar_loc+npar_sink_loc+npar_sink,j), &
-!                    npar_sink,MPI_DOUBLE_PRECISION,iproc_recv,itag_fpar+j, &
-!                    MPI_COMM_WORLD,ireq,ierr)
-!                nreq=nreq+1
-!                ireq_array(nreq)=ireq
-!              endif
-!            enddo
-!            do j=1,mpvar
-!              if (npar_sink_loc/=0) then
-!                call MPI_ISEND(fp(npar_loc+1:npar_loc+npar_sink_loc,j), &
-!                  npar_sink_loc,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar+j, &
-!                  MPI_COMM_WORLD,ireq,ierr)
-!                nreq=nreq+1
-!                ireq_array(nreq)=ireq
-!              endif
-!            enddo
-!            do ireq=1,nreq
-!              call MPI_WAIT(ireq_array(nreq),stat,ierr)
-!            enddo
             j1=npar_loc+npar_sink_loc+npar_sink
             j2=npar_loc+npar_sink_loc+1
           endif
@@ -767,30 +770,6 @@ module Particles_sink
                     iproc_send,itag_fpar+iproc_send)
               endif
             enddo
-!            nreq=0
-!            ireq=0
-!            do j=1,mpvar
-!              if (npar_sink_loc/=0) then
-!                call MPI_IRECV(fp(npar_loc+1:npar_loc+npar_sink_loc,j), &
-!                    npar_sink_loc,MPI_DOUBLE_PRECISION,iproc_send,itag_fpar2+j, &
-!                    MPI_COMM_WORLD,ireq,ierr)
-!                nreq=nreq+1
-!                ireq_array(nreq)=ireq
-!              endif
-!            enddo
-!            do j=1,mpvar
-!              if (npar_sink/=0) then
-!                call MPI_ISEND(fp(npar_loc+npar_sink_loc+1: &
-!                    npar_loc+npar_sink_loc+npar_sink,j), &
-!                    npar_sink,MPI_DOUBLE_PRECISION,iproc_recv,itag_fpar2+j, &
-!                    MPI_COMM_WORLD,ireq,ierr)
-!                nreq=nreq+1
-!                ireq_array(nreq)=ireq
-!              endif
-!            enddo
-!            do ireq=1,nreq
-!              call MPI_WAIT(ireq_array(nreq),stat,ierr)
-!            enddo
           endif
 !
 !  Copy sink particles back into particle array.
@@ -799,7 +778,7 @@ module Particles_sink
             if (npar_sink_loc/=0) then
               j=npar_loc+1
               do k=1,npar_loc
-                if (fp(k,israd)>0.0) then
+                if (fp(k,iaps)>0.0) then
                   fp(k,:)=fp(j,:)
                   j=j+1
                 endif
@@ -879,7 +858,7 @@ module Particles_sink
 !
       j=j1
       do while (j>=j2)
-        if (fp(j,israd)>0.0 .and. ipar(j)>0) then
+        if (fp(j,iaps)>0.0 .and. ipar(j)>0) then
 !
 !  Store sink particle information in separate variables, as this might give
 !  better cache efficiency.
@@ -887,15 +866,15 @@ module Particles_sink
          xxps=fp(j,ixp:izp)
          vvps=fp(j,ivpx:ivpz)
          rhops=fp(j,irhopswarm)
-         rads=fp(j,israd)
-         rads2=fp(j,israd)**2
+         rads=fp(j,iaps)
+         rads2=fp(j,iaps)**2
          k=k1
 !
 !  Loop over local particles to see which ones are removed by the sink particle.
 !
          do while (k>=k2)
            if (j/=k .and. ipar(k)>0 .and. &
-               ( (.not.nosink) .or. (fp(k,israd)==0.0) )) then
+               ( (.not.nosink) .or. (fp(k,iaps)==0.0) )) then
 !
 !  Find minimum distance by directional splitting. This makes it easier to
 !  take into account periodic and shear-periodic boundary conditions.
@@ -926,7 +905,7 @@ module Particles_sink
                       if (ip<=6) then
                         print*, 'remove_particles_sink: sink particle', &
                             ipar(j)
-                        if (fp(k,israd)>0.0) then
+                        if (fp(k,iaps)>0.0) then
                           print*, '    tagged sink particle', ipar(k), &
                               'for removal on proc', iproc
                         else
@@ -970,7 +949,7 @@ module Particles_sink
                               dis(izmin)
                           print*, 'xj, rhoj, radsj=', xxps, rhops, rads
                           print*, 'xk, rhok, radsk=', fp(k,ixp:izp), &
-                              fp(k,irhopswarm), fp(k,israd)
+                              fp(k,irhopswarm), fp(k,iaps)
                           print*, 'xkghost=', xxkghost
                           call fatal_error_local('remove_particles_sink','')
                         endif
@@ -1079,11 +1058,17 @@ module Particles_sink
       logical, optional :: lwrite
 !
       integer :: iname
+      logical :: lwr
 !
 !  Run through all possible names that may be listed in print.in.
 !
       if (lroot .and. ip<14) &
           print*, 'rprint_particles_sink: run through parse list'
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+      if (lwr) write(3,*) 'iaps=', iaps
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nparsink', &
             idiag_nparsink)

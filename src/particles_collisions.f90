@@ -323,7 +323,7 @@ module Particles_collisions
                   if (lsinkparticle_1 .and. (j==1 .or. k==1)) &
                       tau_coll1=0.0
                   if (lparticles_sink) then
-                    if (fp(j,israd)/=0.0 .or. fp(k,israd)/=0.0) &
+                    if (fp(j,iaps)/=0.0 .or. fp(k,iaps)/=0.0) &
                         tau_coll1=0.0
                   endif
 !
@@ -567,7 +567,7 @@ module Particles_collisions
                   if (lsinkparticle_1 .and. (j==1 .or. k==1)) &
                       tau_coll1=0.0
                   if (lparticles_sink) then
-                    if (fp(j,israd)/=0.0 .or. fp(k,israd)/=0.0) &
+                    if (fp(j,iaps)/=0.0 .or. fp(k,iaps)/=0.0) &
                         tau_coll1=0.0
                   endif
 !

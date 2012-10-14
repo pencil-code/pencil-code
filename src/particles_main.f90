@@ -542,6 +542,7 @@ module Particles_main
       logical :: lcontinued
 !
       call calc_selfpotential_particles(f,rhs_poisson,lcontinued)
+      call calc_selfpotential_sinkparticles(f,rhs_poisson,fp,ineargrid)
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************

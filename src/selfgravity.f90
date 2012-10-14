@@ -370,9 +370,10 @@ module Selfgravity
 !  Put potential into f array.
 !
         if (tselfgrav_gentle > 0. .and. t < tselfgrav_gentle) then
-          f(l1:l2,m1:m2,n1:n2,ipotself) = .5 * rhs_poisson_const * (1. - cos(pi * t / tselfgrav_gentle)) * rhs_poisson
+          f(l1:l2,m1:m2,n1:n2,ipotself) = 0.5*rhs_poisson_const* &
+              (1.0-cos(pi*t/tselfgrav_gentle))*rhs_poisson
         else
-          f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const * rhs_poisson
+          f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson
         endif
 !
       endif ! if (t>=tstart_selfgrav) then

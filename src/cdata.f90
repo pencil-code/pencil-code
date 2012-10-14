@@ -271,7 +271,7 @@ module Cdata
   integer :: iQrad2=0,ikapparho2=0
   integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
   integer :: iFrad2=0,iFradx2=0,iFrady2=0,iFradz2=0
-  integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0, irhop=0
+  integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0
   integer :: iaphi=0,ibphi=0,ieth=0
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0

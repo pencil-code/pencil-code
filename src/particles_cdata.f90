@@ -32,13 +32,13 @@ module Particles_cdata
   integer, dimension (npar_species) :: ipar_fence_species=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0
-  integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0
+  integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0
   integer :: inpswarm=0, irhopswarm=0
   integer :: ipsx=0, ipsy=0, ipsz=0
   integer :: ipss=0, ipst=0, ipxx=0, ipyy=0, ipzz=0
   integer :: iuup=0, iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
-  integer :: inp=0
+  integer :: inp=0, irhop=0, irhops=0
   integer :: idiag_nmigmax=0, npart_radii=0
   integer :: nbin_ap_dist=100
 !

@@ -32,13 +32,13 @@ module Particles_stalker
   logical :: lstalk_rho=.true., lstalk_grho=.false.
   logical :: lstalk_bb=.true., lstalk_ap=.true.
   logical :: lstalk_rhopswarm=.true., lstalk_potself=.true.
-  logical :: lstalk_srad=.true.
+  logical :: lstalk_aps=.true.
   logical :: lstalk_sink_particles=.false.
 !
   namelist /particles_stalker_init_pars/ &
       dstalk, linterpolate_cic, linterpolate_tsc, &
       lstalk_xx, lstalk_vv, lstalk_uu, lstalk_guu, lstalk_rho, lstalk_grho, &
-      lstalk_bb, lstalk_ap, lstalk_rhopswarm, lstalk_potself, lstalk_srad, &
+      lstalk_bb, lstalk_ap, lstalk_rhopswarm, lstalk_potself, lstalk_aps, &
       lstalk_sink_particles
 !
   namelist /particles_stalker_run_pars/ &
@@ -71,7 +71,7 @@ module Particles_stalker
       if (ivpx==0)       lstalk_vv=.false.
       if (iap==0)        lstalk_ap=.false.
       if (irhopswarm==0) lstalk_rhopswarm=.false.
-      if (israd==0)      lstalk_srad=.false.
+      if (iaps==0)       lstalk_aps=.false.
       if (iuu==0)        lstalk_uu=.false.
       if (iuu==0)        lstalk_guu=.false.
       if (ilnrho==0)     lstalk_rho=.false.
@@ -91,7 +91,7 @@ module Particles_stalker
       if (lstalk_vv)        nvar_stalk=nvar_stalk+3
       if (lstalk_ap)        nvar_stalk=nvar_stalk+1
       if (lstalk_rhopswarm) nvar_stalk=nvar_stalk+1
-      if (lstalk_srad)      nvar_stalk=nvar_stalk+1
+      if (lstalk_aps)       nvar_stalk=nvar_stalk+1
       if (lstalk_uu)        nvar_stalk=nvar_stalk+3
       if (lstalk_guu)       nvar_stalk=nvar_stalk+9
       if (lstalk_rho)       nvar_stalk=nvar_stalk+1
@@ -108,7 +108,7 @@ module Particles_stalker
           if (lstalk_vv)        write(1,'(A)',advance='no') 'vpx,vpy,vpz,'
           if (lstalk_ap)        write(1,'(A)',advance='no') 'ap,'
           if (lstalk_rhopswarm) write(1,'(A)',advance='no') 'rhopswarm,'
-          if (lstalk_srad)      write(1,'(A)',advance='no') 'srad,'
+          if (lstalk_aps)       write(1,'(A)',advance='no') 'aps,'
           if (lstalk_uu)        write(1,'(A)',advance='no') 'ux,uy,uz,'
           if (lstalk_guu)       write(1,'(A)',advance='no') 'duxdx,duxdy,duxdz,'
           if (lstalk_guu)       write(1,'(A)',advance='no') 'duydx,duydy,duydz,'
@@ -159,7 +159,7 @@ module Particles_stalker
       real, dimension (npar_stalk) :: duydx, duydy, duydz
       real, dimension (npar_stalk) :: duzdx, duzdy, duzdz
       real, dimension (npar_stalk) :: bx, by, bz, ap, rhopswarm
-      real, dimension (npar_stalk) :: potself, srad
+      real, dimension (npar_stalk) :: potself, aps
       real, dimension (:,:), allocatable :: values
       integer, dimension (npar_stalk) :: k_stalk
       integer :: i, k, npar_stalk_loc, ivalue
@@ -176,7 +176,7 @@ module Particles_stalker
         npar_stalk_loc=0
         if (lstalk_sink_particles) then
           do k=1,npar_loc
-            if (fp(k,israd)>0.0) then
+            if (fp(k,iaps)>0.0) then
               npar_stalk_loc=npar_stalk_loc+1
               if (npar_stalk_loc>npar_stalk) then
                 print*, 'particles_stalker_sub: too many sink particles '// &
@@ -238,9 +238,9 @@ module Particles_stalker
 !
 !  Sink particle radius.
 !
-        if (lstalk_srad) then
+        if (lstalk_aps) then
           do i=1,npar_stalk_loc
-            srad(i)=fp(k_stalk(i),israd)
+            aps(i)=fp(k_stalk(i),iaps)
            enddo
         endif
 !
@@ -327,8 +327,8 @@ module Particles_stalker
             if (lstalk_rhopswarm) then
               ivalue=ivalue+1; values(ivalue,:)=rhopswarm(1:npar_stalk_loc)
             endif
-            if (lstalk_srad) then
-              ivalue=ivalue+1; values(ivalue,:)=srad(1:npar_stalk_loc)
+            if (lstalk_aps) then
+              ivalue=ivalue+1; values(ivalue,:)=aps(1:npar_stalk_loc)
             endif
             if (lstalk_uu) then
               ivalue=ivalue+1; values(ivalue,:)=ux(1:npar_stalk_loc)
