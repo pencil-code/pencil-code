@@ -99,6 +99,7 @@ if (not pc_gui_loaded) then BEGIN
 		dy:1.0/grid.dy_1 * unit.length, $
 		dz:1.0/grid.dz_1 * unit.length, $
 		nx:dim.nx, ny:dim.ny, nz:dim.nz, $
+		orig_nx:orig_dim.nx, orig_ny:orig_dim.ny, orig_nz:orig_dim.nz, $
 		l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, $
 		m1:dim.nghosty, m2:dim.my-dim.nghosty-1, $
 		n1:dim.nghostz, n2:dim.mz-dim.nghostz-1, $
@@ -144,7 +145,7 @@ if (not pc_gui_loaded) then BEGIN
 
 	; Precalculate selected timesteps
 	for i = 1, num_files do begin
-		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, orig_dim=orig_dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
+		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
 	end
 
 	; Mark completition of preparational work
