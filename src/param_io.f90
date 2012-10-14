@@ -1015,6 +1015,7 @@ module Param_IO
       logical :: lneutralvelocity = lneutralvelocity_var
       logical :: lneutraldensity  = lneutraldensity_var
       logical :: lpolymer         = lpolymer_var
+      logical :: lsolid_cells     = lsolid_cells_var
       integer :: unit=1
 !
       namelist /lphysics/ &
@@ -1024,7 +1025,8 @@ module Param_IO
           ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, &
           lshock, lradiation_fld, leos_ionization, leos_fixed_ionization, &
           lvisc_hyper, lchiral, leos, leos_temperature_ionization, &
-          lneutralvelocity, lneutraldensity, ltemperature,lpolymer
+          lneutralvelocity, lneutraldensity, ltemperature,lpolymer, &
+          lsolid_cells
 !
 ! If the boundary condition has been changed by subroutines then 
 ! corresponding bc arrays need to be changed too. At present (june 2012) 

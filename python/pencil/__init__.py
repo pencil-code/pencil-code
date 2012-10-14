@@ -3,6 +3,7 @@
 
 from pencil.files.ts import *
 from pencil.files.dim import *
+from pencil.files.pdim import *
 from pencil.files.param import *
 from pencil.files.grid import read_grid
 from pencil.files.var import read_var

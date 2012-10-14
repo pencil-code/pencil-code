@@ -375,6 +375,20 @@ module Particles_main
 !
     endsubroutine particles_doprepencil_calc
 !***********************************************************************
+    subroutine insert_particles_now(f)
+!
+! dummy
+!
+      !
+      real, dimension (mx,my,mz,mfarray) :: f
+      !
+      !
+      call keep_compiler_quiet(f)
+      !
+!
+!
+    endsubroutine insert_particles_now
+!***********************************************************************
     subroutine particles_insert_continuously(f)
 !
 !  Insert particles continuously, i.e. add particles in

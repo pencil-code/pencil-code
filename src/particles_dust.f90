@@ -81,6 +81,7 @@ module Particles
   logical :: ltau_coll_min_courant=.true.
   logical :: ldragforce_equi_global_eps=.false., ldragforce_equi_noback=.false.
   logical :: ldraglaw_epstein=.true., ldraglaw_epstein_stokes_linear=.false.
+  logical :: ldraglaw_simple=.false.
   logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
@@ -94,6 +95,7 @@ module Particles
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
   logical :: lcalc_uup=.false.
+  logical :: lparticle_gravity=.true.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -129,7 +131,7 @@ module Particles
       kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, &
+      tstart_dragforce_par, tstart_grav_par, lparticle_gravity,&
       tstart_grav_x_par, tstart_grav_z_par,tstart_grav_r_par, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, tausp_species, tau_coll_min, &
@@ -137,7 +139,7 @@ module Particles
       tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcollisional_dragforce_cooling, ldragforce_heat, &
       lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check, ldraglaw_epstein, ldraglaw_epstein_stokes_linear, &
+      lmigration_real_check, ldraglaw_epstein,ldraglaw_simple,ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, pdlaw, ldragforce_stiff, &
       ldraglaw_steadystate, tstart_liftforce_par, &
@@ -161,14 +163,14 @@ module Particles
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
       tstart_grav_par, tstart_grav_x_par, &
-      tstart_grav_z_par, tstart_grav_r_par, &
+      tstart_grav_z_par, tstart_grav_r_par, lparticle_gravity, &
       lparticlemesh_cic, lparticlemesh_tsc, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,ldraglaw_variable, luse_tau_ap, ldraglaw_epstein, &
+      lmigration_real_check,ldraglaw_variable, luse_tau_ap, ldraglaw_epstein, ldraglaw_simple,&
       ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
@@ -346,7 +348,7 @@ module Particles
 !
 !  Share friction time (but only if Epstein drag regime!).
 !
-      if (ldraglaw_epstein) then
+      if (ldraglaw_epstein .or. ldraglaw_simple) then
         call put_shared_variable( 'tausp_species', tausp_species)
         call put_shared_variable('tausp1_species',tausp1_species)
       endif
@@ -456,7 +458,8 @@ module Particles
       if (ldraglaw_epstein_stokes_linear) ldraglaw_epstein=.false.
       if (ldraglaw_epstein_transonic    .or.&
           ldraglaw_eps_stk_transonic    .or.&
-          ldraglaw_steadystate) then
+          ldraglaw_steadystate          .or.&
+          ldraglaw_simple) then
         ldraglaw_epstein=.false.
       endif
       if (ldraglaw_epstein_transonic         .and.&
@@ -515,7 +518,8 @@ module Particles
       if (lnostore_uu) then
         interp%luu=.false.
       else
-        interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or.lparticles_spin
+        interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or. &
+          lparticles_spin
       endif
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
@@ -1409,6 +1413,25 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine init_particles
 !***********************************************************************
+    subroutine insert_lost_particles(f,fp,ineargrid)
+!
+! dummy
+!
+      !
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar)   :: fp
+      integer, dimension (mpar_loc,3)    :: ineargrid
+      !
+      intent (inout) :: fp,ineargrid
+      !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+      !
+!
+!
+    endsubroutine insert_lost_particles
+!***********************************************************************
     subroutine insert_particles(f,fp,ineargrid)
 !
 ! Insert particles continuously (when linsert_particles_continuously == T),
@@ -2234,7 +2257,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Print out header information in first time step.
 !
       lheader=lfirstcall .and. lroot
-      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
+      if (lheader) then
+        print*,'dvvp_dt: Calculate dvvp_dt'
+      endif
 !
 !  Add Coriolis force from rotating coordinate frame.
 !
@@ -2292,138 +2317,9 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
 !  Gravity on the particles.
+!  Gravity on particles is implemented only if lparticle_gravity is true which is the default. 
 !
-!
-!  Gravity in the x-direction.
-!
-      if (t>=tstart_grav_x_par) then
-!        
-        select case (gravx_profile)
-!
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-!
-          case ('zero')
-            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
-!
-          case ('const','plain')
-            if (lheader) print*, 'dvvp_dt: Constant gravity field in x-direction'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + gravx
-!
-          case ('linear')
-            if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
-                nu_epicycle2*fp(1:npar_loc,ixp)
-!
-          case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
-            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + &
-                gravx*sin(kx_gg*fp(1:npar_loc,ixp))
-!
-          case default
-            call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
-!
-        endselect
-!        
-      endif
-!
-!  Gravity in the z-direction.
-!
-      if (t>=tstart_grav_z_par) then
-!
-        select case (gravz_profile)
-!
-          case ('')
-            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-!
-          case ('zero')
-            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
-!
-          case ('const','plain')
-            if (lheader) print*, 'dvvp_dt: Constant gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + gravz
-!
-          case ('linear')
-            if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-                nu_epicycle2*fp(1:npar_loc,izp)
-!
-          case ('sinusoidal')
-            if (lheader) &
-                print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
-            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + &
-                gravz*sin(kz_gg*fp(1:npar_loc,izp))
-!
-          case default
-            call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
-!
-        endselect
-!
-      endif
-!
-!  Radial gravity.
-!
-      if (t>=tstart_grav_r_par) then
-!
-        select case (gravr_profile)
-!
-        case ('')
-          if (lheader) print*, 'dvvp_dt: No radial gravity'
-!
-        case ('zero')
-          if (lheader) print*, 'dvvp_dt: No radial gravity'
-!
-        case ('newtonian-central','newtonian')
-          if (lparticles_nbody) &
-              call fatal_error('dvvp_dt','You are using massive particles. '//&
-              'The N-body code should take care of the stellar-like '// &
-              'gravity on the dust. Switch off the '// &
-              'gravr_profile=''newtonian'' on particles_init')
-          if (lheader) &
-               print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
-          do k=1,npar_loc
-            if (lcartesian_coords) then
-              rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = -fp(k,iyp)*OO2
-              ggp(3) = -fp(k,izp)*OO2
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            elseif (lcylindrical_coords) then
-              rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0
-              ggp(3) = -fp(k,izp)*OO2
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            elseif (lspherical_coords) then
-              rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0; ggp(3) = 0.0
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
-            endif
-!  Limit time-step if particles close to gravity source.
-            if (ldt_grav_par.and.(lfirst.and.ldt)) then
-              if (lcartesian_coords) then
-                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
-              elseif (lcylindrical_coords) then
-                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
-              elseif (lspherical_coords) then
-                vsph=abs(fp(k,ivpx))
-              endif
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost),vsph/rsph/cdtpgrav)
-            endif
-          enddo
-!
-        case default
-          call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
-!
-        endselect
-!
-      endif
+      if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
 !
 !  Diagnostic output
 !
@@ -2633,6 +2529,169 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt
 !***********************************************************************
+    subroutine particle_gravity(f,df,fp,dfp,ineargrid)
+!
+!  Contribution of gravity to dvvp_dt
+!
+!  11-oct-12/dhruba: copied from dvvp_dt 
+!
+      use Diagnostics
+      use EquationOfState, only: cs20
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension(3) :: ggp
+      real :: Omega2, rsph=0, vsph=0, OO2
+      integer :: k, npar_found
+      logical :: lheader, lfirstcall=.true.
+!
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: df, dfp
+!
+!  Print out header information in first time step.
+!
+      lheader=lfirstcall .and. lroot
+      if (lheader) then
+        print*,'dvvp_dt: Calculating gravity'
+      endif
+!
+!  Gravity in the x-direction.
+!
+      if (t>=tstart_grav_x_par) then
+!        
+        select case (gravx_profile)
+!
+          case ('')
+            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
+!
+          case ('zero')
+            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
+!
+          case ('const','plain')
+            if (lheader) print*, 'dvvp_dt: Constant gravity field in x-direction'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + gravx
+!
+          case ('linear')
+            if (lheader) print*, 'dvvp_dt: Linear gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
+                nu_epicycle2*fp(1:npar_loc,ixp)
+!
+          case ('sinusoidal')
+            if (lheader) &
+                print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) + &
+                gravx*sin(kx_gg*fp(1:npar_loc,ixp))
+!
+          case default
+            call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
+!
+        endselect
+!        
+      endif
+!
+!  Gravity in the z-direction.
+!
+      if (t>=tstart_grav_z_par) then
+!
+        select case (gravz_profile)
+!
+          case ('')
+            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
+!
+          case ('zero')
+            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
+!
+          case ('const','plain')
+            if (lheader) print*, 'dvvp_dt: Constant gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + gravz
+!
+          case ('linear')
+            if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+                nu_epicycle2*fp(1:npar_loc,izp)
+!
+          case ('sinusoidal')
+            if (lheader) &
+                print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) + &
+                gravz*sin(kz_gg*fp(1:npar_loc,izp))
+!
+          case default
+            call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
+!
+        endselect
+!
+      endif
+!
+!  Radial gravity.
+!
+      if (t>=tstart_grav_r_par) then
+!
+        select case (gravr_profile)
+!
+        case ('')
+          if (lheader) print*, 'dvvp_dt: No radial gravity'
+!
+        case ('zero')
+          if (lheader) print*, 'dvvp_dt: No radial gravity'
+!
+        case ('newtonian-central','newtonian')
+          if (lparticles_nbody) &
+              call fatal_error('dvvp_dt','You are using massive particles. '//&
+              'The N-body code should take care of the stellar-like '// &
+              'gravity on the dust. Switch off the '// &
+              'gravr_profile=''newtonian'' on particles_init')
+          if (lheader) &
+               print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
+          do k=1,npar_loc
+            if (lcartesian_coords) then
+              rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = -fp(k,iyp)*OO2
+              ggp(3) = -fp(k,izp)*OO2
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            elseif (lcylindrical_coords) then
+              rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0
+              ggp(3) = -fp(k,izp)*OO2
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            elseif (lspherical_coords) then
+              rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
+              OO2=rsph**(-3)*gravr
+              ggp(1) = -fp(k,ixp)*OO2
+              ggp(2) = 0.0; ggp(3) = 0.0
+              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+            endif
+!  Limit time-step if particles close to gravity source.
+            if (ldt_grav_par.and.(lfirst.and.ldt)) then
+              if (lcartesian_coords) then
+                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+              elseif (lcylindrical_coords) then
+                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+              elseif (lspherical_coords) then
+                vsph=abs(fp(k,ivpx))
+              endif
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost),vsph/rsph/cdtpgrav)
+            endif
+          enddo
+!
+        case default
+          call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
+!
+        endselect
+!
+      endif
+      if (lfirstcall) lfirstcall=.false.
+!
+    endsubroutine particle_gravity
+!***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of particle position (called from main pencil loop).
@@ -2736,22 +2795,24 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
           if (.not. interp%luu) then
             call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F'//&
-                 ' when rep is to be calculated')
+              ' when rep is to be calculated')
           endif
 !
           call calc_pencil_rep(fp,rep)
         endif
 !
-!  Precalculate Stokes-Cunningham factor
+!  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple)
 !
-        if (ldraglaw_steadystate.or.lbrownian_forces) then
-          allocate(stocunn(k1_imn(imn):k2_imn(imn)))
-          if (.not.allocated(stocunn)) then
-            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
-              'memory for stocunn')
+        if (.not.ldraglaw_simple) then
+          if (ldraglaw_steadystate.or.lbrownian_forces) then
+            allocate(stocunn(k1_imn(imn):k2_imn(imn)))
+            if (.not.allocated(stocunn)) then
+              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
+                'memory for stocunn')
+            endif
+!
+            call calc_stokes_cunningham(fp,stocunn)
           endif
-!
-          call calc_stokes_cunningham(fp,stocunn)
         endif
       endif
 !
@@ -2792,14 +2853,14 @@ k_loop:   do while (.not. (k>npar_loc))
                 if (lhydro) then
                   if (lparticlemesh_cic) then
                     call interpolate_linear(f,iux,iuz, &
-                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                      fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                   elseif (lparticlemesh_tsc) then
                     if (linterpolate_spline) then
                       call interpolate_quadratic_spline(f,iux,iuz, &
-                          fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                     else
                       call interpolate_quadratic(f,iux,iuz, &
-                          fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
                     endif
                   else
                     uup=f(ix0,iy0,iz0,iux:iuz)
@@ -3549,6 +3610,18 @@ k_loop:   do while (.not. (k>npar_loc))
           call calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
         endif
 !
+! Simple drag law, drag force = 1/\taup (v-u) where \taup is an input parameter. 
+!
+      else if (ldraglaw_simple) then
+!        write(*,*)'DM','simple drag'
+!  Check if we are using multiple or single particle species.
+        if (npar_species>1) then
+          jspec=npar_species*(ipar(k)-1)/npar+1
+          tmp=tausp1_species(jspec)
+        else
+          tmp=tausp1
+        endif
+        tausp1_par=tmp
       endif
 !
 !  Change friction time artificially.

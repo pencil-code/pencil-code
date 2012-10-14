@@ -23,6 +23,7 @@ module Particles_cdata
   real :: energy_gain_shear_bcs=impossible
   real :: log_ap_min_dist=0.0, log_ap_max_dist=6.0
   real :: rsinkparticle_1=0.0
+  real :: t_nextinsert=0. !The time at which new particles are going to be inserted.
 !
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
@@ -52,6 +53,7 @@ module Particles_cdata
   logical :: linsert_particles_continuously=.false.
   logical :: loutput_psize_dist=.false.
   logical :: lsinkparticle_1=.false.
+  logical :: linsert_particle=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
