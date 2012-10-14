@@ -377,11 +377,13 @@ module Particles_main
 !
     endsubroutine particles_write_block
 !***********************************************************************
-    subroutine particles_timestep_first
+    subroutine particles_timestep_first(f)
 !
 !  Setup dfp in the beginning of each itsub.
 !
 !  07-jan-05/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lfirst) then
         dfp(1:npar_loc,:)=0.0
@@ -391,11 +393,13 @@ module Particles_main
 !
     endsubroutine particles_timestep_first
 !***********************************************************************
-    subroutine particles_timestep_second()
+    subroutine particles_timestep_second(f)
 !
 !  Time evolution of particle variables.
 !
 !  07-jan-05/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta_ts(itsub)*dfp(1:npar_loc,:)
 !
