@@ -15,14 +15,18 @@
 ;       Pencil Code, File I/O
 ;
 ; CALLING SEQUENCE:
-;       pc_read_subvol_raw, object=object, varfile=varfile, tags=tags,        $
-;                    datadir=datadir, trimall=trimall, /reduced, /quiet,      $
-;                    swap_endian=swap_endian, time=time, grid=grid,           $
-;                    xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze,                $
-;                    allprocs=allprocs, var_list=var_list, addghosts=addghosts
+;       pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, $
+;           datadir=datadir, var_list=var_list, varcontent=varcontent, $
+;           param=param, run_param=run_param, /trimall, allprocs=allprocs, $
+;           /reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, /addghosts, $
+;           dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, $
+;           time=time, name=name, /quiet, /swap_endian, /f77
+;
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
-;    varfile: Name of the collective snapshot. Default: 'var.dat'.   [string]
+;    varfile: Name of the snapshot. Default: 'var.dat'.              [string]
+;       time: Timestamp of the snapshot.                             [float]
+;       name: Name to be used for the generated sub_grid structure.  [string]
 ;   allprocs: Load distributed (0) or collective (1 or 2) varfiles.  [integer]
 ;   /reduced: Load previously reduced collective varfiles (implies allprocs=1).
 ;        dim: Dimension structure of the global 3D-setup.            [struct]
@@ -63,14 +67,7 @@
 ;       Adapted from: pc_read_slice_raw.pro, 4th May 2012
 ;
 ;-
-pro pc_read_subvol_raw,                                                       $
-		object=object, varfile=varfile, datadir=datadir, allprocs=allprocs,       $
-		tags=tags, param=param, run_param=run_param, varcontent=varcontent,       $
-		dim=dim, trimall=trimall, quiet=quiet, swap_endian=swap_endian, f77=f77,  $
-		xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, var_list=var_list, time=time,   $
-		grid=grid, sub_grid=sub_grid, sub_dim=sub_dim, reduced=reduced, addghosts=addghosts
-
-COMPILE_OPT IDL2,HIDDEN
+pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, param=param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, addghosts=addghosts, dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77
 
 	; Use common block belonging to derivative routines etc. so they can be set up properly.
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
@@ -83,7 +80,7 @@ COMPILE_OPT IDL2,HIDDEN
 	default, reduced, 0
 	default, addghosts, 0
 	default, swap_endian, 0
-	addname = ""
+	if (keyword_set (name)) then name += "_" else name = "pc_read_subvol_raw_"
 	if (keyword_set (reduced)) then allprocs = 1
 	if (keyword_set (allprocs) and not keyword_set (f77)) then f77 = 0
 	default, f77, 1
@@ -126,12 +123,12 @@ COMPILE_OPT IDL2,HIDDEN
 		default, xs, 0
 		default, ys, 0
 		default, zs, 0
-		default, xe, xs + 2*nxgrid - 1
-		default, ye, xs + 2*nygrid - 1
-		default, ze, xs + 2*nzgrid - 1
-		xe = xe + 2*nghostx
-		ye = ye + 2*nghosty
-		ze = ze + 2*nghostz
+		default, xe, xs + nxgrid - 1
+		default, ye, ys + nygrid - 1
+		default, ze, zs + nzgrid - 1
+		xe = xe + 2 * nghostx
+		ye = ye + 2 * nghosty
+		ze = ze + 2 * nghostz
 	end else begin
 		default, xs, 0
 		default, ys, 0
@@ -375,7 +372,7 @@ COMPILE_OPT IDL2,HIDDEN
 	if (ze-zs eq mzgrid-1) then Lz = grid.Lz else Lz = total (1.0/grid.dz_1[zns:zne])
 	ldegenerated = [ xe-xs, ye-ys, ze-zs ] lt 2 * [ nghostx, nghosty, nghostz ]
 
-	if (keyword_set (reduced)) then addname += "reduced_"
+	if (keyword_set (reduced)) then name += "reduced_"
 
 	; Remove ghost zones if requested.
 	if (keyword_set (trimall)) then begin
@@ -385,7 +382,7 @@ COMPILE_OPT IDL2,HIDDEN
 		m2 = sub_dim.m2
 		n1 = sub_dim.n1
 		n2 = sub_dim.n2
-		if (num_read ge 1) then object = reform (object[l1:l2,m1:m2,n1:n2,*])
+		if (num_read ge 1) then object = object[l1:l2,m1:m2,n1:n2,*]
 		x = x[l1:l2]
 		y = y[m1:m2]
 		z = z[n1:n2]
@@ -396,7 +393,7 @@ COMPILE_OPT IDL2,HIDDEN
 		dy_tilde = dy_tilde[m1:m2]
 		dz_tilde = dz_tilde[n1:n2]
 		ldegenerated = [ l1, m1, n1 ] eq [ l2, m2, n2 ]
-		addname += "trimmed_"
+		name += "trimmed_"
 	endif
 
 	if (not keyword_set (quiet)) then begin
@@ -406,7 +403,7 @@ COMPILE_OPT IDL2,HIDDEN
 
 	time = t
 	tags.time = t
-	name = "pc_read_subvol_raw_"+addname+strtrim (xs, 2)+"_"+strtrim (xe, 2)+"_"+strtrim (ys, 2)+"_"+strtrim (ye, 2)+"_"+strtrim (zs, 2)+"_"+strtrim (ze, 2)
+	name += strtrim (xs, 2)+"_"+strtrim (xe, 2)+"_"+strtrim (ys, 2)+"_"+strtrim (ye, 2)+"_"+strtrim (zs, 2)+"_"+strtrim (ze, 2)
 	sub_grid = create_struct (name=name, $
 			['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated'], $
 			t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated)
