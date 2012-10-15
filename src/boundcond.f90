@@ -4375,9 +4375,9 @@ module Boundcond
        intent (inout) :: f
 !
        if (lroot .and. .not. file_exists(vel_times_dat)) &
-           call fatal_error('uu_driver', 'Could not find file "'//trim(vel_times_dat)//'"', .true.)
+           call fatal_error_local('uu_driver','Could not find file "'//trim(vel_times_dat)//'"')
        if (lroot .and. .not. file_exists(vel_field_dat)) &
-           call fatal_error('uu_driver', 'Could not find file "'//trim(vel_field_dat)//'"', .true.)
+           call fatal_error_local('uu_driver', 'Could not find file "'//trim(vel_field_dat)//'"')
 !
        ierr = 0
        stat = 0
