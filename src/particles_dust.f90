@@ -41,7 +41,7 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0
+  real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=100.0
   real :: cdtp=0.2, cdtpgrav=0.1
   real :: gravx=0.0, gravz=0.0, gravr=1.0, kx_gg=1.0, kz_gg=1.0
   real :: gravsmooth=0.0, gravsmooth2=0.0, Ri0=0.25, eps1=0.5
@@ -342,6 +342,13 @@ module Particles
           enddo
         endif
       else
+!
+!  Single dust species => If tausp_species is set, it is probably an error.
+!
+        if (any(tausp_species /= 0.0)) then
+            call fatal_error('initialize_particles',&
+                'When there is only 1 particle species, use tausp instead of tausp_species.')
+        endif
         tausp_species(1)=tausp
         if (tausp_species(1)/=0.0) tausp1_species(1)=1/tausp_species(1)
       endif
