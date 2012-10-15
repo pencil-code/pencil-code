@@ -1190,7 +1190,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 		lequidist = indgen (dimensionality) ne -1
 		lperi = indgen (dimensionality) eq -1
 		ldegenerated = indgen (dimensionality) eq -1
-		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, dx:1.0, dy:1.0, dz:1.0, nx:num_x, ny:num_y, nz:num_z, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1, lequidist:lequidist, lperi:lperi, ldegenerated:ldegenerated }
+		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, dx:1.0, dy:1.0, dz:1.0, nx:num_x, ny:num_y, nz:num_z, orig_nx:num_x, orig_ny:num_y, orig_nz:num_z, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1, lequidist:lequidist, lperi:lperi, ldegenerated:ldegenerated }
 	end
 
 	sl_min = 0
