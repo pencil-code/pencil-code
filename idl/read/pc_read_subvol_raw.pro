@@ -153,8 +153,6 @@ COMPILE_OPT IDL2,HIDDEN
 	if (any ([xs, xne-xns, ys, yne-yns, zs, zne-zns] lt 0) or any ([xe, ye, ze] ge [mxgrid, mygrid, mzgrid])) then $
 			message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
 
-	ldegenerated = [ xe-xs, ye-ys, ze-zs ] ne ([ mxgrid, mygrid, mzgrid ] - 1)
-
 	; Get necessary parameters quietly.
 	if (n_elements (param) eq 0) then $
 			pc_read_param, object=param, dim=dim, datadir=datadir, /quiet
@@ -375,6 +373,7 @@ COMPILE_OPT IDL2,HIDDEN
 	if (xe-xs eq mxgrid-1) then Lx = grid.Lx else Lx = total (1.0/grid.dx_1[xns:xne])
 	if (ye-ys eq mygrid-1) then Ly = grid.Ly else Ly = total (1.0/grid.dy_1[yns:yne])
 	if (ze-zs eq mzgrid-1) then Lz = grid.Lz else Lz = total (1.0/grid.dz_1[zns:zne])
+	ldegenerated = [ xe-xs, ye-ys, ze-zs ] lt 2 * [ nghostx, nghosty, nghostz ]
 
 	if (keyword_set (reduced)) then addname += "reduced_"
 
@@ -396,6 +395,7 @@ COMPILE_OPT IDL2,HIDDEN
 		dx_tilde = dx_tilde[l1:l2]
 		dy_tilde = dy_tilde[m1:m2]
 		dz_tilde = dz_tilde[n1:n2]
+		ldegenerated = [ l1, m1, n1 ] eq [ l2, m2, n2 ]
 		addname += "trimmed_"
 	endif
 

@@ -181,14 +181,12 @@ COMPILE_OPT IDL2,HIDDEN
     cut_nx = dim.mx
     px_start = 0
     px_delta = procdim.mx
-    ldegenerated[0] = 0
   endif else begin
     if ((cut_x lt 0) or (cut_x ge dim.nx)) then $
         message, 'pc_read_slice_raw: cut_x is invalid, min/max: 0-'+strtrim(dim.nx-1, 2)
     cut_nx = 1 + 2*dim.nghostx
     px_start = cut_x mod procdim.nx
     px_delta = 1 + 2*dim.nghostx
-    ldegenerated[0] = 1
   endelse
   px_end = px_start + px_delta - 1
 ;
@@ -196,14 +194,12 @@ COMPILE_OPT IDL2,HIDDEN
     cut_ny = dim.my
     py_start = 0
     py_delta = procdim.my
-    ldegenerated[1] = 0
   endif else begin
     if ((cut_y lt 0) or (cut_y ge dim.ny)) then $
         message, 'pc_read_slice_raw: cut_y is invalid, min/max: 0-'+strtrim(dim.ny-1, 2)
     cut_ny = 1 + 2*dim.nghosty
     py_start = cut_y mod procdim.ny
     py_delta = 1 + 2*dim.nghosty
-    ldegenerated[1] = 1
   endelse
   py_end = py_start + py_delta - 1
 ;
@@ -211,14 +207,12 @@ COMPILE_OPT IDL2,HIDDEN
     cut_nz = dim.mz
     pz_start = 0
     pz_delta = procdim.mz
-    ldegenerated[2] = 0
   endif else begin
     if ((cut_z lt 0) or (cut_z ge dim.nz)) then $
         message, 'pc_read_slice_raw: cut_z is invalid, min/max: 0-'+strtrim(dim.nz-1, 2)
     cut_nz = 1 + 2*dim.nghostz
     pz_start = cut_z mod procdim.nz
     pz_delta = 1 + 2*dim.nghostz
-    ldegenerated[2] = 1
   endelse
   pz_end = pz_start + pz_delta - 1
 ;
@@ -375,30 +369,31 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Crop grid.
 ;
-  x_off = ipx_start * procdim.nx + px_start
-  y_off = ipy_start * procdim.ny + py_start
-  z_off = ipz_start * procdim.nz + pz_start
-  x_end = x_off + cut_nx - 1
-  y_end = y_off + cut_ny - 1
-  z_end = z_off + cut_nz - 1
-  x = grid.x[x_off:x_end]
-  y = grid.y[y_off:y_end]
-  z = grid.z[z_off:z_end]
+  xs = ipx_start * procdim.nx + px_start
+  ys = ipy_start * procdim.ny + py_start
+  zs = ipz_start * procdim.nz + pz_start
+  xe = xs + cut_nx - 1
+  ye = ys + cut_ny - 1
+  ze = zs + cut_nz - 1
+  x = grid.x[xs:xe]
+  y = grid.y[ys:ye]
+  z = grid.z[zs:ze]
 ;
 ; Prepare for derivatives.
 ;
   dx = grid.dx
   dy = grid.dy
   dz = grid.dz
-  dx_1 = grid.dx_1[x_off:x_end]
-  dy_1 = grid.dy_1[y_off:y_end]
-  dz_1 = grid.dz_1[z_off:z_end]
-  dx_tilde = grid.dx_tilde[x_off:x_end]
-  dy_tilde = grid.dy_tilde[y_off:y_end]
-  dz_tilde = grid.dz_tilde[z_off:z_end]
+  dx_1 = grid.dx_1[xs:xe]
+  dy_1 = grid.dy_1[ys:ye]
+  dz_1 = grid.dz_1[zs:ze]
+  dx_tilde = grid.dx_tilde[xs:xe]
+  dy_tilde = grid.dy_tilde[ys:ye]
+  dz_tilde = grid.dz_tilde[zs:ze]
   if (cut_x ne -1) then Lx = 1.0/dx_1[dim.nghostx] else Lx = grid.Lx
   if (cut_y ne -1) then Ly = 1.0/dy_1[dim.nghosty] else Ly = grid.Ly
   if (cut_z ne -1) then Lz = 1.0/dz_1[dim.nghostz] else Lz = grid.Lz
+  ldegenerated = [ xe-xs, ye-ys, ze-zs ] lt 2 * [ dim.nghostx, dim.nghosty, dim.nghostz ]
 ;
   if (keyword_set (reduced)) then addname += "reduced_"
 ;
@@ -421,6 +416,7 @@ COMPILE_OPT IDL2,HIDDEN
     dx_tilde = dx_tilde[l1:l2]
     dy_tilde = dy_tilde[m1:m2]
     dz_tilde = dz_tilde[n1:n2]
+    ldegenerated = [ l1, m1, n1 ] eq [ l2, m2, n2 ]
     addname += "trimmed_"
   endif
 ;
