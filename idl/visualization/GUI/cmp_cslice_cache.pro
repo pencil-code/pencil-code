@@ -128,7 +128,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		px = pc_find_index (pos, coord.x, num_x)
 		if (event.update) then WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
-		WIDGET_CONTROL, sl_x, SET_VALUE = px
+		WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
 		DRAW_IMAGE_1 = 1
 		break
 	end
@@ -136,7 +136,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		py = pc_find_index (pos, coord.y, num_y)
 		if (event.update) then WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
-		WIDGET_CONTROL, sl_y, SET_VALUE = py
+		WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
 		DRAW_IMAGE_2 = 1
 		break
 	end
@@ -144,27 +144,27 @@ pro cslice_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		pz = pc_find_index (pos, coord.z, num_z)
 		if (event.update) then WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
-		WIDGET_CONTROL, sl_z, SET_VALUE = pz
+		WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 		DRAW_IMAGE_3 = 1
 		break
 	end
 	'SLX': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		px = pos
+		px = pos - coord.x_off
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		DRAW_IMAGE_1 = 1
 		break
 	end
 	'SLY': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		py = pos
+		py = pos - coord.y_off
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		DRAW_IMAGE_2 = 1
 		break
 	end
 	'SLZ': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		pz = pos
+		pz = pos - coord.z_off
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		DRAW_IMAGE_3 = 1
 		break
@@ -179,8 +179,8 @@ pro cslice_event, event
 			if (destretch[1]) then py = pc_find_index (py * (coord.y[num_y-1] - coord.y[0]) / (num_y-1) + coord.y[0], coord.y, num_y)
 			if (destretch[2]) then pz = pc_find_index (pz * (coord.z[num_z-1] - coord.z[0]) / (num_z-1) + coord.z[0], coord.z, num_z)
 			if ((py ne last_py) or (pz ne last_pz)) then begin
-				WIDGET_CONTROL, sl_y, SET_VALUE = py
-				WIDGET_CONTROL, sl_z, SET_VALUE = pz
+				WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
+				WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -199,8 +199,8 @@ pro cslice_event, event
 			if (destretch[0]) then px = pc_find_index (px * (coord.x[num_x-1] - coord.x[0]) / (num_x-1) + coord.x[0], coord.x, num_x)
 			if (destretch[2]) then pz = pc_find_index (pz * (coord.z[num_z-1] - coord.z[0]) / (num_z-1) + coord.z[0], coord.z, num_z)
 			if ((px ne last_px) or (pz ne last_pz)) then begin
-				WIDGET_CONTROL, sl_x, SET_VALUE = px
-				WIDGET_CONTROL, sl_z, SET_VALUE = pz
+				WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
+				WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 				WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -219,8 +219,8 @@ pro cslice_event, event
 			if (destretch[0]) then px = pc_find_index (px * (coord.x[num_x-1] - coord.x[0]) / (num_x-1) + coord.x[0], coord.x, num_x)
 			if (destretch[1]) then py = pc_find_index (py * (coord.y[num_y-1] - coord.y[0]) / (num_y-1) + coord.y[0], coord.y, num_y)
 			if ((px ne last_px) or (py ne last_py)) then begin
-				WIDGET_CONTROL, sl_x, SET_VALUE = px
-				WIDGET_CONTROL, sl_y, SET_VALUE = py
+				WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
+				WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
 				WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -272,9 +272,9 @@ pro cslice_event, event
 		px = pos_min[0]
 		py = pos_min[1]
 		pz = pos_min[2]
-		WIDGET_CONTROL, sl_x, SET_VALUE = px
-		WIDGET_CONTROL, sl_y, SET_VALUE = py
-		WIDGET_CONTROL, sl_z, SET_VALUE = pz
+		WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
+		WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
+		WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
@@ -288,9 +288,9 @@ pro cslice_event, event
 		px = pos_max[0]
 		py = pos_max[1]
 		pz = pos_max[2]
-		WIDGET_CONTROL, sl_x, SET_VALUE = px
-		WIDGET_CONTROL, sl_y, SET_VALUE = py
-		WIDGET_CONTROL, sl_z, SET_VALUE = pz
+		WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
+		WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
+		WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
@@ -414,29 +414,8 @@ pro cslice_event, event
 		if (px gt (num_x - 1)) then px = num_x - 1
 		if (py gt (num_y - 1)) then py = num_y - 1
 		if (pz gt (num_z - 1)) then pz = num_z - 1
-		cslice_prepare_cube, -1
-		cslice_prepare_overplot
+		cslice_update_GUI
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
-		WIDGET_CONTROL, b_log, SET_VALUE = log_plot
-		WIDGET_CONTROL, b_abs, SET_VALUE = abs_scale
-		WIDGET_CONTROL, b_sub, SET_VALUE = sub_aver
-		WIDGET_CONTROL, b_cro, SET_VALUE = show_cross
-		if (any (coord.lequidist eq 0)) then WIDGET_CONTROL, b_des, SET_VALUE = any (destretch)
-		WIDGET_CONTROL, co_x, SET_VALUE = varfiles[selected_snapshot].time
-		WIDGET_CONTROL, sl_x, SET_VALUE = selected_snapshot
-		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
-		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
-		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
-		WIDGET_CONTROL, sl_x, SET_VALUE = px
-		WIDGET_CONTROL, sl_y, SET_VALUE = py
-		WIDGET_CONTROL, sl_z, SET_VALUE = pz
-		WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver]
-		WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver]
-		WIDGET_CONTROL, sl_over, SET_VALUE = [ pos_over[selected_overplot], 0.0, 2.0 ]
-		WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
-		WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
-		WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
-		WIDGET_CONTROL, coltab, SET_DROPLIST_SELECT = selected_color
 		break
 	end
 	'SAVE': begin
@@ -1078,6 +1057,22 @@ pro cslice_reset_GUI
 	pos_over = replicate (1.0, num_overs)
 	over_max = 0.0
 
+	device, /decomposed
+	loadct, 0, /silent
+
+	cslice_update_GUI
+end
+
+
+; Updated everything and redraws the window
+pro cslice_update_GUI
+
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
+	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
+
 	cslice_prepare_cube, -1
 	cslice_prepare_overplot
 
@@ -1091,18 +1086,16 @@ pro cslice_reset_GUI
 	WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 	WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 	WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
-	WIDGET_CONTROL, sl_x, SET_VALUE = px
-	WIDGET_CONTROL, sl_y, SET_VALUE = py
-	WIDGET_CONTROL, sl_z, SET_VALUE = pz
+	WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
+	WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
+	WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 	WIDGET_CONTROL, sl_min, SET_VALUE = pos_b[selected_cube,sub_aver]
 	WIDGET_CONTROL, sl_max, SET_VALUE = pos_t[selected_cube,sub_aver]
-	WIDGET_CONTROL, sl_over, SET_VALUE = [1.0, 0.0, 2.0]
+	WIDGET_CONTROL, sl_over, SET_VALUE = [pos_over[selected_overplot], 0.0, 2.0]
 	WIDGET_CONTROL, vars, SET_DROPLIST_SELECT = selected_cube
 	WIDGET_CONTROL, over, SET_DROPLIST_SELECT = selected_overplot
 	WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 	WIDGET_CONTROL, coltab, SET_DROPLIST_SELECT = selected_color
-	device, /decomposed
-	loadct, 0, /silent
 
 	WIDGET_CONTROL, prev, SENSITIVE = (num_snapshots ge 2)
 	WIDGET_CONTROL, next, SENSITIVE = 0
@@ -1190,7 +1183,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 		lequidist = indgen (dimensionality) ne -1
 		lperi = indgen (dimensionality) eq -1
 		ldegenerated = indgen (dimensionality) eq -1
-		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, dx:1.0, dy:1.0, dz:1.0, nx:num_x, ny:num_y, nz:num_z, orig_nx:num_x, orig_ny:num_y, orig_nz:num_z, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1, lequidist:lequidist, lperi:lperi, ldegenerated:ldegenerated }
+		coord = { x:findgen(num_x)*unit.length/unit.default_length, y:findgen(num_y)*unit.length/unit.default_length, z:findgen(num_z)*unit.length/unit.default_length, dx:1.0, dy:1.0, dz:1.0, nx:num_x, ny:num_y, nz:num_z, orig_nx:num_x, orig_ny:num_y, orig_nz:num_z, x_off:0, y_off:0, z_off:0, l1:nghost_x, l2:nghost_x+num_x-1, m1:nghost_y, m2:nghost_y+num_y-1, n1:nghost_z, n2:nghost_z+num_z-1, lequidist:lequidist, lperi:lperi, ldegenerated:ldegenerated }
 	end
 
 	sl_min = 0
@@ -1318,13 +1311,13 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	scot	= WIDGET_BASE (scol, /row, /base_align_center)
 	co_x	= CW_FIELD (scot, title='X'+title_add, uvalue='COX', value=coord.x[px], noedit=1-coord_x_active, integer=co_int, floating=(1-co_int), /return_events, xsize=12)
-	sl_x	= WIDGET_SLIDER (scot, uvalue='SLX', value=px, min=0, max=(num_x-1)>1, xsize=((num_x*bin_x>128)+10)<512, /drag, sensitive=coord_x_active)
+	sl_x	= WIDGET_SLIDER (scot, uvalue='SLX', value=px+coord.x_off, min=coord.x_off, max=((num_x-1)>1)+coord.x_off, xsize=((num_x*bin_x>128)+10)<512, /drag, sensitive=coord_x_active)
 	scot	= WIDGET_BASE (scol, /row, /base_align_center)
 	co_y	= CW_FIELD (scot, title='Y'+title_add, uvalue='COY', value=coord.y[py], noedit=1-coord_y_active, integer=co_int, floating=(1-co_int), /return_events, xsize=12)
-	sl_y	= WIDGET_SLIDER (scot, uvalue='SLY', value=py, min=0, max=(num_y-1)>1, xsize=((num_y*bin_y>128)+10)<512, /drag, sensitive=coord_y_active)
+	sl_y	= WIDGET_SLIDER (scot, uvalue='SLY', value=py+coord.y_off, min=coord.y_off, max=((num_y-1)>1)+coord.y_off, xsize=((num_y*bin_y>128)+10)<512, /drag, sensitive=coord_y_active)
 	scot	= WIDGET_BASE (scol, /row, /base_align_center)
 	co_z	= CW_FIELD (scot, title='Z'+title_add, uvalue='COZ', value=coord.z[pz], noedit=1-coord_z_active, integer=co_int, floating=(1-co_int), /return_events, xsize=12)
-	sl_z	= WIDGET_SLIDER (scot, uvalue='SLZ', value=pz, min=0, max=(num_z-1)>1, xsize=((num_z*bin_z>128)+10)<512, /drag, sensitive=coord_z_active)
+	sl_z	= WIDGET_SLIDER (scot, uvalue='SLZ', value=pz+coord.z_off, min=coord.z_off, max=((num_z-1)>1)+coord.z_off, xsize=((num_z*bin_z>128)+10)<512, /drag, sensitive=coord_z_active)
 
 	DISP	= WIDGET_BASE (BASE, /row)
 	MID	= WIDGET_BASE (BASE, /col)

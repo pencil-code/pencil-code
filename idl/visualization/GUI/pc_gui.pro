@@ -85,7 +85,7 @@ if (not pc_gui_loaded) then BEGIN
 	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
 		pc_read_slice_raw, varfile=files[0], var_list=['none'], dim=orig_dim, slice_dim=dim, slice_grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, allprocs=allprocs, reduced=reduced, /trim, /quiet
 	end else if ((xe-xs lt orig_dim.nx-1) or (ye-ys lt orig_dim.ny-1) or (ze-zs lt orig_dim.nz-1)) then begin
-		pc_read_subvol_raw, varfile=files[0], var_list=['none'], dim=orig_dim, sub_dim=dim, sub_grid=grid, datadir=datadir, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, allprocs=allprocs, reduced=reduced, /addghosts, /quiet
+		pc_read_subvol_raw, varfile=files[0], var_list=['none'], dim=orig_dim, sub_dim=dim, sub_grid=grid, datadir=datadir, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, allprocs=allprocs, reduced=reduced, /addghosts, /trim, /quiet
 	end else begin
 		dim = orig_dim
 		pc_read_grid, obj=grid, dim=dim, datadir=datadir, allprocs=allprocs, reduced=reduced, /trim, /quiet
@@ -100,6 +100,7 @@ if (not pc_gui_loaded) then BEGIN
 		dz:1.0/grid.dz_1 * unit.length, $
 		nx:dim.nx, ny:dim.ny, nz:dim.nz, $
 		orig_nx:orig_dim.nx, orig_ny:orig_dim.ny, orig_nz:orig_dim.nz, $
+		x_off:xs, y_off:ys, z_off:zs, $
 		l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, $
 		m1:dim.nghosty, m2:dim.my-dim.nghosty-1, $
 		n1:dim.nghostz, n2:dim.mz-dim.nghostz-1, $

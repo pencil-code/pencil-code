@@ -54,7 +54,7 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 
 	; setup coordinates, if necessary
 	if (n_elements (coords) eq 0) then begin
-		coords = { x:findgen(num_x), y:findgen(num_y), z:findgen(num_z), dx:1.0, dy:1.0, dz:1.0, nx:num_x, ny:num_y, nz:num_z, orig_nx:num_x, orig_ny:num_y, orig_nz:num_z, l1:0, l2:num_x-1, m1:0, m2:num_y-1, n1:0, n2:num_z-1, lequidist:[1,1,1], lperi:[0,0,0], ldegenerated:[0,0,0] }
+		coords = { x:findgen(num_x), y:findgen(num_y), z:findgen(num_z), dx:1.0, dy:1.0, dz:1.0, nx:num_x, ny:num_y, nz:num_z, orig_nx:num_x, orig_ny:num_y, orig_nz:num_z, x_off:0, y_off:0, z_off:0, l1:0, l2:num_x-1, m1:0, m2:num_y-1, n1:0, n2:num_z-1, lequidist:[1,1,1], lperi:[0,0,0], ldegenerated:[0,0,0] }
 	end
 
 	; setup a scaling factor to have a minimum size, if necessary
