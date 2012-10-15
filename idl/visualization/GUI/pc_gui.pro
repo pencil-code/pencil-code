@@ -82,9 +82,7 @@ if (not pc_gui_loaded) then BEGIN
 	pc_select_files, files=files, num_selected=num_files, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, param=start_param, run_param=run_param, varcontent=varcontent, var_list=var_list, quantities=quantities, overplots=overplot_quantities, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, dim=orig_dim, scaling=scaling
 	if ((num_files le 0) or (n_elements (quantities) le 0)) then stop
 
-	if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
-		pc_read_slice_raw, varfile=files[0], var_list=['none'], dim=orig_dim, slice_dim=dim, slice_grid=grid, datadir=datadir, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, allprocs=allprocs, reduced=reduced, /trim, /quiet
-	end else if ((xe-xs lt orig_dim.nx-1) or (ye-ys lt orig_dim.ny-1) or (ze-zs lt orig_dim.nz-1)) then begin
+	if ((xe-xs lt orig_dim.nx-1) or (ye-ys lt orig_dim.ny-1) or (ze-zs lt orig_dim.nz-1)) then begin
 		pc_read_subvol_raw, varfile=files[0], var_list=['none'], dim=orig_dim, sub_dim=dim, sub_grid=grid, datadir=datadir, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, allprocs=allprocs, reduced=reduced, /addghosts, /trim, /quiet
 	end else begin
 		dim = orig_dim
@@ -146,7 +144,7 @@ if (not pc_gui_loaded) then BEGIN
 
 	; Precalculate selected timesteps
 	for i = 1, num_files do begin
-		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
+		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
 	end
 
 	; Mark completition of preparational work

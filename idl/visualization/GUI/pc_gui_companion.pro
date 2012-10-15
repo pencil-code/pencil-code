@@ -33,15 +33,12 @@ end
 
 
 ; Precalculates a data set and loads data, if necessary
-pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, reduced=reduced, show_aver=show_aver, time=time, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
+pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, param=par, run_param=run_par, varcontent=varcontent, allprocs=allprocs, reduced=reduced, show_aver=show_aver, time=time, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 
 	; Default settings
 	default, show_aver, 0
-	default, cut_x, -1
-	default, cut_y, -1
-	default, cut_z, -1
 	default, xs, 0
 	default, ys, 0
 	default, zs, 0
@@ -61,9 +58,7 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, par
 		default, varfile, "var.dat"
 		if (n_elements (vars) eq 0) then begin
 			print, 'Reading: ', varfile, ' ... please wait!'
-			if (total([cut_x, cut_y, cut_z] < 0) ge -2) then begin
-				pc_read_slice_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, slice_dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, time=time, quiet=(i ne 0), cut_x=cut_x, cut_y=cut_y, cut_z=cut_z
-			end else if ((xe-xs lt coord.orig_nx-1) or (ye-ys lt coord.orig_ny-1) or (ze-zs lt coord.orig_nz-1)) then begin
+			if ((xe-xs lt coord.orig_nx-1) or (ye-ys lt coord.orig_ny-1) or (ze-zs lt coord.orig_nz-1)) then begin
 				pc_read_subvol_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, sub_dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, time=time, quiet=(i ne 0), xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, /addghosts
 			end else begin
 				pc_read_var_raw, varfile=varfile, var_list=var_list, object=vars, tags=tags, datadir=datadir, dim=dim, param=param, par2=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, time=time, quiet=(i ne 0)
