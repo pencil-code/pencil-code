@@ -45,6 +45,7 @@ module Special
   real :: aa_tau_inv=0.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.
   logical :: sub_step_hcond=.false.
+  logical :: lrad_loss=.false.
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   real, dimension(1) :: heat_par_b2=0.
@@ -72,7 +73,7 @@ module Special
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
-      sub_step_hcond
+      sub_step_hcond,lrad_loss
 !
 ! variables for print.in
 !
@@ -147,7 +148,7 @@ module Special
   real :: Kspitzer_perp_SI = 3e12, Kspitzer_perp=0.
   real :: Ksaturation_SI = 7e7,Ksaturation=0.
 !
-  real :: nu_ee
+  real :: nu_ee,ln_unit_TT
 !
   contains
 !
@@ -188,6 +189,7 @@ module Special
       logical :: exists
       real,dimension(:,:,:),allocatable :: ltemp
 !
+      ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
         call fatal_error('initialize_special', &
             'filter_strength has to be smaller than 0.02. A good value is 0.01')
@@ -297,9 +299,6 @@ module Special
 !  initialise special condition; called from start.f90
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
-!      real, dimension (mx) ::  glnT
-!      integer :: i,j
 !
       intent(inout) :: f
 !
@@ -883,6 +882,108 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
+    subroutine special_after_timestep(f,df,dt_)
+!
+!  
+!
+!  10-oct-12/bing: coded
+!
+      use EquationOfState, only: gamma
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
+      integer,save :: j=35
+      real :: lnTT_SI,dt_step,dt_rad,ln_coeff,one_m_alpha,lnTT_res
+      integer :: l
+      logical :: notdone
+!
+      real, parameter, dimension (37) :: intlnT = (/ &
+          8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086 &
+          , 9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524 &
+          , 11.2827, 11.5129, 11.7432, 11.9734, 12.2037, 12.4340, 12.6642 &
+          , 12.8945, 13.1247, 13.3550, 13.5853, 13.8155, 14.0458, 14.2760 &
+          , 14.5063, 14.6214, 14.7365, 14.8517, 14.9668, 15.1971, 15.4273 &
+          ,  15.6576,  69.0776 /)
+      real, parameter, dimension (36) :: alpha_rad = (/ &
+          67.4287,   40.0384,  21.3332, 20.0001,  9.33333,  4.66647 &
+          ,  2.33345,-0.566705,-0.199849, 0.199849, 0.899692,  1.33405 &
+          ,  1.66611, 0.833237,-0.166805, -1.49977,  0.00000, 0.566656 &
+          , 0.233155,-0.966534,-0.633508, 0.800159, 0.433348, -0.0998807 &
+          ,-0.499988, -1.00000, -1.96697, -3.06643, -3.60040, -5.80186 &
+          , -1.86549, -2.66724,-0.166734, 0.566900, 0.666504,  6.23231 /)
+      real, parameter, dimension (36) :: lnchi_rad = (/ &
+          -690.935, -448.121, -280.147, -268.022, -169.777, -125.719 &
+          , -103.157, -74.4422, -78.1590, -82.2545, -89.5060, -94.1066 &
+          , -97.7002, -88.4950, -77.2118, -61.8654, -79.4776, -86.2624 &
+          , -82.1925, -67.2755, -71.4930, -89.9794, -85.1652, -78.0439 &
+          , -72.6083, -65.7003, -52.1185, -36.4226, -28.6767,  3.51167 &
+          , -54.4966, -42.5892, -80.0138, -91.1629, -92.6996, -179.847 /)
+!
+      if (llast .and. lrad_loss) then
+!
+        do l=l1,l2
+          do m=m1,m2
+            do n=n1,n2
+              notdone=.true.
+              dt_rad = dt*unit_time
+              lnTT_SI = f(l,m,n,ilnTT) + ln_unit_TT
+              do while (notdone)
+!
+                if (lnTT_SI > intlnT(j) .and. &
+                    lnTT_SI <=  intlnT(j+1) ) then
+! we are the propper intervall, compute the factors
+!
+                  one_m_alpha = (1-alpha_rad(j))
+!
+                  ln_coeff = f(l,m,n,ilnrho) + alog(1.5**2./8.7*(gamma-1.)/0.6/m_p/k_B)+ lnchi_rad(j)
+                  ln_coeff = ln_coeff + alog(unit_temperature/unit_velocity**2./unit_density/unit_length**6.)
+!
+! compute resulting temperature in SI units
+!
+! first check if we would get negative temperatues
+                  if (-one_m_alpha*dt_rad*exp(ln_coeff)+exp(one_m_alpha*lnTT_SI) < 0) then
+                    lnTT_res = intlnT(j)*0.9
+                  else
+                    lnTT_res =1./one_m_alpha*alog(  &
+                        -one_m_alpha*dt_rad*exp(ln_coeff) &
+                        +exp(one_m_alpha*lnTT_SI))
+                  endif
+!
+                  if (lnTT_res >= intlnT(j)) then
+                    ! everything is fine
+                    f(l,m,n,ilnTT) = lnTT_res - ln_unit_TT
+                    notdone = .false.
+                  else
+                    ! timestep to large, we need to repeat for another intervall
+                    dt_step = exp(-ln_coeff)/one_m_alpha*  &
+                        (exp(one_m_alpha*lnTT_SI) - exp(one_m_alpha*intlnT(j)))
+                    dt_rad = dt_rad - dt_step
+                    f(l,m,n,ilnTT)  = intlnT(j)-ln_unit_TT
+                    lnTT_SI = f(l,m,n,ilnTT) + ln_unit_TT
+                    j = j-1
+                  endif
+                else
+                  j = j + sign(1.,lnTT_SI-intlnT(j))
+                  if (j <= 0) then
+                    j=1
+                    notdone=.false.
+                  elseif (j >= 37) then
+                    j=36
+                    notdone=.false.
+                  endif
+                endif
+              enddo  ! while loop
+            enddo
+          enddo
+        enddo
+      endif  ! if (llast)
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(dt_)
+!
+    endsubroutine  special_after_timestep
+!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
 !
 ! Additional terms to the right hand side of the
@@ -1370,7 +1471,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx,3) :: hhh,tmpv,gKp
       real, dimension (nx) :: tmpj,hhh2,quenchfactor
-      real, dimension (nx) :: cosbgT,glnTT2,bbb,b_1,tmpk
+      real, dimension (nx) :: cosbgT,glnTT2,b_1,tmpk
       real, dimension (nx) :: chi_spitzer,rhs,u_spitzer
       real, dimension (nx) :: chi_clight,chi_2
       real, dimension (nx,3) :: glnTT_upwind,unit_glnTT
@@ -1859,7 +1960,7 @@ module Special
             ordinate=intlnQ(j) - slope*intlnT(j)
 !
             get_lnQ(i) = slope*lnTT(i) + ordinate
-            delta_lnTT(i) = 0.5 !intlnT(j+1) - intlnT(j)
+            delta_lnTT(i) = 0.5*(intlnT(j+1) - intlnT(j))
             notdone = .false.
           else
             j = j + sign(1.,lnTT(i)-intlnT(j))
