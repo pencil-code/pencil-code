@@ -345,9 +345,9 @@ module Particles
 !
 !  Single dust species => If tausp_species is set, it is probably an error.
 !
-        if (any(tausp_species /= 0.0)) then
-            call fatal_error('initialize_particles',&
-                'When there is only 1 particle species, use tausp instead of tausp_species.')
+        if (any(tausp_species/=0.0)) then
+          call fatal_error('initialize_particles', 'When there is only '// &
+              '1 particle species, use tausp instead of tausp_species')
         endif
         tausp_species(1)=tausp
         if (tausp_species(1)/=0.0) tausp1_species(1)=1/tausp_species(1)
