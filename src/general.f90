@@ -2397,16 +2397,16 @@ module General
       character (len=3), dimension(12) :: month = &
            (/ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', &
               'jul', 'aug', 'sep', 'oct', 'nov', 'dec' /)
-      character*20 datel
+      character (len=datelen) datestr
 !
       if (len(date) < 20) &
           print*, 'date_time_string: WARNING -- string arg "date" too short'
 !
       call date_and_time(VALUES=values)
-      write(datel,'(I2.2,"-",A3,"-",I4.2," ",I2.2,":",I2.2,":",I2.2)') &
+      write(datestr,'(I2.2,"-",A3,"-",I4.2," ",I2.2,":",I2.2,":",I2.2)') &
            values(3), month(values(2)), values(1), &
            values(5), values(6), values(7)
-      date=datel
+      date=trim(datestr)
 !
 ! TEMPORARY DEBUGGING STUFF
 ! SOMETIMES THIS ROUTINE PRINTS '***' WHEN IT SHOULDN'T
@@ -2417,7 +2417,7 @@ module General
         write(11,*) 'produced a strange result. Please forwad this file to'
         write(11,*) '  Wolfgang.Dobler@kis.uni-freiburg.de'
         write(11,*)
-        write(11,*) 'date = <', datel,'>'
+        write(11,*) 'date = <', date, '>'
         write(11,*) 'values = ', values
         write(11,*) 'i.e.'
         write(11,*) 'values(1) = ', values(1)
