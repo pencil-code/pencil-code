@@ -57,10 +57,11 @@
 ;       cmp_cslice, { uz:vars[*,*,*,tags.uz], lnrho:vars[*,*,*,tags.lnrho] }
 ;
 ; * Load a sub-volume including ghosts and compute some physical quantity:
-;       pc_read_subvol_raw, obj=vars, tags=tags, sub_dim=dim, xs=10, xe=20, ys=11, ye=55
+;       pc_read_subvol_raw, obj=vars, tags=tags, sub_dim=dim, xs=10, xe=14, ys=11, ye=49, /addghosts
 ;       HR_ohm = pc_get_quantity ('HR_ohm', vars, tags, dim=dim)
 ;       tvscl, HR_ohm[*,*,0]          ; Display lowest physical z-layer.
 ;       tvscl, HR_ohm[dim.nx-1,*,*]   ; Display rightmost physical yz-cut.
+;       cslice, HR_ohm                ; Explore 3D sub-volume in a GUI.
 ;
 ; MODIFICATION HISTORY:
 ;       $Id$
