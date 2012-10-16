@@ -452,7 +452,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	ny = dim.ny
 	nz = dim.nz
 	nghost = max ([dim.nghostx, dim.nghosty, dim.nghostz])
-	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=param, dim=orig_dim, /quiet
+	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=param, dim=dim, /quiet
 	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
 	units = unit
 	start_par = param
