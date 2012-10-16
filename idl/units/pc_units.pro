@@ -32,10 +32,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   pc_check_math,location='before entry to pc_units'
   if (not keyword_set(datadir)) then datadir = pc_get_datadir()
-  if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, $
-      quiet=quiet
-  if (n_elements(param) eq 0) then pc_read_param, object=param, $
-      datadir=datadir, dim=dim, quiet=quiet
+  if (n_elements(param) eq 0) then $
+      pc_read_param, object=param, datadir=datadir, dim=dim, quiet=quiet
 ;
   temperature = double(param.unit_temperature)
   density = double(param.unit_density)
