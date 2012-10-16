@@ -77,8 +77,6 @@ program pc_reduce
 !
   inquire (IOLENGTH=io_len) 1.0
 !
-  if (IO_strategy == 'collect') call fatal_error ('pc_reduce', &
-      "Reducing snapshots is not implemented for the 'io_collect'-module.")
   if (IO_strategy == 'MPI-IO') call fatal_error ('pc_reduce', &
       "Reducing snapshots is not implemented for the 'io_mpi2'-module.")
 !
@@ -159,7 +157,10 @@ program pc_reduce
 !
   allocate (rf (nrx,nry,mz,mvar_io), stat=alloc_err)
   if (alloc_err /= 0) call fatal_error ('pc_reduce', 'Failed to allocate memory for rf.', .true.)
-  if (IO_strategy == 'collect_xy') then
+  if (IO_strategy == 'collect') then
+    allocate (gf (mxgrid,mygrid,1,1), stat=alloc_err)
+    if (alloc_err /= 0) call fatal_error ('pc_reduce', 'Failed to allocate memory for gf.', .true.)
+  elseif (IO_strategy == 'collect_xy') then
     allocate (gf (mxgrid,mygrid,mz,mvar_io), stat=alloc_err)
     if (alloc_err /= 0) call fatal_error ('pc_reduce', 'Failed to allocate memory for gf.', .true.)
   endif
@@ -205,7 +206,74 @@ program pc_reduce
     lfirst_proc_z = (ipz == 0)
     llast_proc_z = (ipz == nprocz-1)
 !
-    if (IO_strategy == 'collect_xy') then
+    if (IO_strategy == 'collect') then
+      ! Take the shortcut, files are well prepared for direct reduction
+!
+      gf = huge(1.0)
+      gx = huge(1.0)
+      gy = huge(1.0)
+!
+      ! Set up directory names 'directory' and 'directory_snap'
+      call directory_names()
+!
+      ! Read the data
+      rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * io_len
+      open (lun_input, FILE=trim (directory_snap)//'/'//filename, access='direct', recl=rec_len, status='old')
+      do pa = 1, mvar_io
+        start_pos = nghost + 1
+        end_pos = nghost + nz
+        if (lfirst_proc_z) start_pos = 1
+        if (llast_proc_z) end_pos = mz
+        do pz = start_pos, end_pos
+          read (lun_input, rec=pz+ipz*nz+(pa-1)*mzgrid) gf
+          do py = 0, nygrid-1, reduce
+            do px = 0, nxgrid-1, reduce
+              ! reduce f:
+              rf(nghost+1+(px+ipx*nxgrid)/reduce,nghost+1+(py+ipy*nygrid)/reduce,pz,pa) = &
+                  sum (gf(nghost+1+px:nghost+px+reduce,nghost+1+py:nghost+py+reduce,1,1)) * inv_reduce_2
+            enddo
+          enddo
+        enddo
+      enddo
+      close (lun_input)
+!
+      if (lroot) then
+!
+        ! Read additional information
+        rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8)
+        num_rec = int (mzgrid, kind=8) * int (mvar_in*sizeof_real(), kind=8)
+        open (lun_input, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='old')
+        call fseek_pos (lun_input, rec_len, num_rec, 0)
+        read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+        close (lun_input)
+        t = t_sp
+!
+        ! read grid:
+        open (lun_input, FILE=trim(directory_collect)//'/grid.dat', FORM='unformatted', status='old')
+        read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+        read (lun_input) dx, dy, dz
+        read (lun_input) Lx, Ly, Lz
+        read (lun_input) gdx_1, gdy_1, gdz_1
+        read (lun_input) gdx_tilde, gdy_tilde, gdz_tilde
+        close (lun_input)
+!
+        ! reduce x coordinates:
+        do px = 0, nxgrid-1, reduce
+          rx(nghost+1+px/reduce) = sum (gx(nghost+1+px:nghost+px+reduce)) * inv_reduce
+          rdx_1(nghost+1+px/reduce) = 1.0 / sum (1.0/gdx_1(nghost+1+px:nghost+px+reduce))
+          rdx_tilde(nghost+1+px/reduce) = sum (1.0/gdx_1(nghost+1+px:nghost+px+reduce))
+        enddo
+!
+        ! reduce y coordinates:
+        do py = 0, nygrid-1, reduce
+          ry(nghost+1+py/reduce) = sum (gy(nghost+1+py:nghost+py+reduce)) * inv_reduce
+          rdy_1(nghost+1+py/reduce) = 1.0 / sum (1.0/gdy_1(nghost+1+py:nghost+py+reduce))
+          rdy_tilde(nghost+1+py/reduce) = sum (1.0/gdy_1(nghost+1+py:nghost+py+reduce))
+        enddo
+!
+      endif
+!
+    elseif (IO_strategy == 'collect_xy') then
       ! Take the shortcut, files are well prepared for direct reduction
 !
       gf = huge(1.0)
