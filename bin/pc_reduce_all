@@ -14,7 +14,7 @@ for ENTRY in `find "$PROCDIR" -name VAR[0-9]* | sort`
 do
 	FILE=`basename "$ENTRY"`
 	if [ ! -e "$ALLPROCS/$FILE" ]; then
-		echo "collecting $FILE"
+		echo "reducing $FILE"
 		echo "$FILE" | $1 $SCRIPT
 	fi
 done
