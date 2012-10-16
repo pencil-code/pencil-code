@@ -739,7 +739,7 @@ else if ($hn =~ emil-login*.pdc.kth.se*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
-else if ($hn =~ aprun*) then
+else if (($hn =~ aprun*) || ($hn =~ kraken*)) then
   echo "Kraken -- NICS, Tennessee, USA"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
