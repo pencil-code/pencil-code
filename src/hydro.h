@@ -22,4 +22,4 @@
 !
   public :: uumz, guumz, lcalc_uumean, lupw_uu
   public :: uumxy, lcalc_uumeanxy
-  public :: lforcing_cont_uu, ampl_fcont_uu
+  public :: ampl_fcont_uu
