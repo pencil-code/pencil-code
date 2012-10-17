@@ -28,7 +28,8 @@ module Hydro
   include 'hydro.h'
 !
   real, dimension (mz,3) :: uumz=0.
-  real, dimension (mz,3) :: uumzg=0.,guumz=0.
+  real, dimension (mz,3) :: uumzg=0.
+  real, dimension (nz,3) :: guumz=0.
   real, dimension (mx,my,3) :: uumxy=0.
 !
   real :: u_out_kep=0.0
