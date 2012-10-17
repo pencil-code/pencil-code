@@ -70,7 +70,7 @@ module power_spectrum
 !
           zrange(:,i) = (/1,nzgrid,1/)
 !
-          if ( read_range( czranges(i), (/1,nzgrid,1/), zrange(1,i) ) ) then
+          if ( read_range( czranges(i), zrange(1,i), (/1,nzgrid,1/) ) ) then
             call merge_ranges( zrange, i-1, zrange(1,i) )
             print*, 'zrange=', zrange(:,i)
           endif
@@ -118,7 +118,7 @@ module power_spectrum
 !
         kranges(:,i) = (/1,ngrid,1/)
 !
-        if ( read_range( ckranges(i), (/-ngrid/2,ngrid/2-1,1/), kranges(1,i) ) ) then
+        if ( read_range( ckranges(i), kranges(1,i), (/-ngrid/2,ngrid/2-1,1/) ) ) then
 !
           ie = nre
 !
