@@ -479,10 +479,7 @@ module Shear
 !
 !  Calculate shearing related diagnostics
 !
-      if (ldiagnos) then
-        if (idiag_deltay/=0) &
-            call save_name(deltay,idiag_deltay)
-      endif
+      if (ldiagnos) call save_name(deltay,idiag_deltay)
 !
     endsubroutine advance_shear
 !***********************************************************************
