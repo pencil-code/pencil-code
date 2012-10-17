@@ -4,8 +4,10 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
+MPICOMM   =   mpicomm
 
+DENSITY   = nodensity
 HYDRO     =   hydro
 MAGNETIC  =   magnetic
 
+#REAL_PRECISION = double

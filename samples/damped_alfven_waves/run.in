@@ -2,20 +2,20 @@
   cvsid = '$Id$'
   nt = 1000, it1 = 10
   cdt = .5
-  tmax = 10.
+  tmax = 10., dsnap = 10.
 /
 &eos_run_pars
 /
 &hydro_run_pars
 /
 &magnetic_run_pars
-  limplicit_resistivity = .true.
+!  limplicit_resistivity = .true.
+  lweyl_gauge = .true.
   iresistivity = 'eta-const'
-  eta = 1.e-3
-  B_ext = 0.6, 0., 0.8
-  luse_Bext_in_b2 = .true.
+  eta = 0.01
+  B_ext = 1., 1., 0.5
 /
 &viscosity_run_pars
   ivisc = 'simplified'
-  nu = 1.e-3
+  nu = 0.01
 /
