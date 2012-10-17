@@ -178,7 +178,7 @@ module Particles_sink
 !
     endsubroutine init_particles_sink
 !***********************************************************************
-    subroutine calc_selfpotential_sinkparticles(f,rhs_poisson,fp,ineargrid)
+    subroutine calc_selfpot_sinkparticles(f,rhs_poisson,fp,ineargrid)
 !
 !  Calculate the gravitational potential of the sink particles.
 !
@@ -200,7 +200,7 @@ module Particles_sink
 !
       endif  ! if (t>=tstart_selfgrav) then
 !
-    endsubroutine calc_selfpotential_sinkparticles
+    endsubroutine calc_selfpot_sinkparticles
 !***********************************************************************
     subroutine create_particles_sink(f,fp,dfp,ineargrid)
 !

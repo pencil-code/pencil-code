@@ -50,7 +50,7 @@ module Particles_sink
 !
     endsubroutine init_particles_sink
 !***********************************************************************
-    subroutine calc_selfpotential_sinkparticles(f,rhs_poisson,fp,ineargrid)
+    subroutine calc_selfpot_sinkparticles(f,rhs_poisson,fp,ineargrid)
 !
 !  14-oct-12/anders: dummy
 !
@@ -64,7 +64,7 @@ module Particles_sink
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine calc_selfpotential_sinkparticles
+    endsubroutine calc_selfpot_sinkparticles
 !***********************************************************************
     subroutine create_particles_sink(f,fp,dfp,ineargrid)
 !
