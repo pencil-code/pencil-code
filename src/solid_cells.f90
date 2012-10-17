@@ -2220,7 +2220,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !***********************************************************************
     function in_solid_cell(part_pos,part_rad)
 !
-!  Check if the position px,py,pz is within a colid cell
+!  Check if the position px,py,pz is within a solid cell
 !
 !  02-dec-2008/nils: coded
 !

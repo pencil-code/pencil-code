@@ -68,6 +68,7 @@ module Particles
   real :: max_particle_insert_time=huge1
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
+  real :: fake_particle_radius=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -3283,6 +3284,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k, ksink, iproc_sink, iproc_sink_send
       integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
       integer, parameter :: itag1=100, itag2=101
+      real :: particle_radius
 !
 !  Sinkparticle activated at time tstart_sink_par
       if (t <= tstart_sink_par) return
@@ -3440,7 +3442,12 @@ k_loop:   do while (.not. (k>npar_loc))
       if (lsolid_cells) then
         k=1
         do while (k<=npar_loc)
-          if (in_solid_cell(fp(k,ixp:izp),fp(k,iap))) then
+          if (lparticles_radius) then
+            particle_radius=fp(k,iap)
+          else
+            particle_radius=fake_particle_radius
+          endif
+          if (in_solid_cell(fp(k,ixp:izp),particle_radius)) then
             call remove_particle(fp,ipar,k,dfp,ineargrid)
           else
             k=k+1
