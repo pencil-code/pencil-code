@@ -419,4 +419,16 @@ module Particles_main
 !
     endsubroutine particles_cleanup
 !***********************************************************************
+    subroutine particles_insert_continuously(f)
+!
+! dummy subroutine
+!
+!  17-oct-12/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+     call keep_compiler_quiet(f)
+!
+    endsubroutine particles_insert_continuously
+!***********************************************************************
 endmodule Particles_main
