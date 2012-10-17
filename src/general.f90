@@ -72,6 +72,11 @@ module General
     module procedure write_full_columns_cmplx
   endinterface
 !
+  interface read_range
+    module procedure read_range_r
+    module procedure read_range_i
+  endinterface
+
   interface write_by_ranges
     module procedure write_by_ranges_1d_real
     module procedure write_by_ranges_1d_cmplx
@@ -2183,18 +2188,103 @@ module General
 !
     endsubroutine merge_ranges
 !***********************************************************************
-    logical function read_range( crange, defrange, range )
+    logical function read_range_r( crange, range, defrange )
 !
-! reads a range (start,stop,step) from string crange of the shape [0...9][:[0...9][:[0...9]]]
-! adjusts range not to exceed limits of default range defrange
+! reads a range (start,stop,step) of reals from string crange of the shape  <start>:<stop>[:<step>]
+! if <step> missing it is set to 1.
+! adjusts range not to exceed limits of default range 'defrange'
 !
 ! 20-apr-11/MR: coded
+! 20-sep-12/MR: made defrange optional, changed order of dummy arguments
 !
-      character (LEN=20)   , intent(in)  :: crange
-      integer, dimension(3), intent(in)  :: defrange
-      integer, dimension(3), intent(out) :: range
+      character (LEN=20), intent(in)           :: crange
+      real, dimension(3), intent(out)          :: range
+      real, dimension(3), intent(in), optional :: defrange
+!
+      integer :: isep, isep1, ios, ios1, ios2, lenrng
+      real    :: tmp
+      logical :: ldefr         
+!
+      ldefr = present(defrange)
+     
+      ios=0; ios1=0; ios2=0
+!
+      if ( crange /= '' ) then
+!
+        range = defrange
+!
+        isep = index(crange,':')
+        lenrng = len_trim(crange)
+!
+        if ( isep > 0 ) then
+!
+          if ( isep > 1 ) then
+            read( crange(1:isep-1),*,IOSTAT=ios ) range(1)
+            if ( ldefr .and. ios == 0 ) &
+              range(1) = min(max(defrange(1),range(1)),defrange(2))
+          endif
+!
+          if ( isep < lenrng ) then
+!
+            isep1 = index(crange(isep+1:lenrng),':')+isep
+!
+            if ( isep1 == isep ) isep1 = lenrng+1
+!
+            if ( isep1 > isep+1 ) then
+              read( crange(isep+1:isep1-1),*,IOSTAT=ios1 ) range(2)
+              if ( ldefr .and. ios1 == 0 ) &
+                range(2) = min(max(defrange(1),range(2)),defrange(2))
+            endif
+!
+            if ( isep1 < lenrng ) then
+!
+              range(3)=1.
+              read( crange(isep1+1:lenrng),*,IOSTAT=ios2 ) range(3)
+!
+              if ( ios2 == 0 ) range(3) = abs(range(3))
+!
+            endif
+          endif
+!
+          if ( range(1) > range(2) ) then
+            tmp = range(1); range(1) = range(2); range(2) = tmp
+          endif
+!
+        else
+!
+          read( crange, *,IOSTAT=ios ) range(1)
+          if ( ldefr .and. ios == 0 ) &
+            range(1) = min(max(defrange(1),range(1)),defrange(2))
+          range(2) = range(1)
+!
+        endif
+!
+        if ( ios/=0 .or. ios1/=0 .or. ios2/=0 ) &
+          print*, 'read_range_r - Warning: invalid data in range!'
+!
+        read_range_r = .true.
+      else
+        read_range_r = .false.
+      endif
+!
+    endfunction read_range_r
+!***********************************************************************
+    logical function read_range_i( crange, range, defrange )
+!
+! reads a range (start,stop,step) of integers from string crange of the shape <start>:<stop>[:<step>]
+! if <step> missing it is set to 1
+! adjusts range not to exceed limits of default range defrange
+!
+! 20-sep-12/MR: coded
+!
+      character (LEN=20)   , intent(in)           :: crange
+      integer, dimension(3), intent(out)          :: range
+      integer, dimension(3), intent(in), optional :: defrange
 !
       integer :: isep, isep1, ios, ios1, ios2, lenrng, tmp
+      logical :: ldefr         
+!
+      ldefr = present(defrange)
 !
       ios=0; ios1=0; ios2=0
 !
@@ -2227,10 +2317,11 @@ module General
 !
             if ( isep1 < lenrng ) then
 !
+              range(3)=1
               read( crange(isep1+1:lenrng),*,IOSTAT=ios2 ) range(3)
 !
               if ( ios2 == 0 ) range(3) = abs(range(3))
-!
+!       
             endif
           endif
 !
@@ -2248,14 +2339,14 @@ module General
         endif
 !
         if ( ios/=0 .or. ios1/=0 .or. ios2/=0 ) &
-          print*, 'read_range - Warning: invalid data in range!'
+          print*, 'read_range_i - Warning: invalid data in range!'
 !
-        read_range = .true.
+        read_range_i = .true.
       else
-        read_range = .false.
+        read_range_i = .false.
       endif
 !
-    endfunction read_range
+    endfunction read_range_i
 !***********************************************************************
     integer function get_range_no( ranges, nr )
 !
