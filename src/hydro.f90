@@ -43,8 +43,8 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,mach_xz
   real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,mach_yz
-  real, dimension (mz,3) :: uumz,guumz=0.0 ! guumz contains invalid data
-                                           ! on ghostzones
+  real, dimension (mz,3) :: uumz
+  real, dimension (nz,3) :: guumz=0.0 
   real, dimension (mx,3) :: uumx=0.0
   real, dimension (mx,my,3) :: uumxy=0.0
   real, dimension (mx,mz,3) :: uumxz=0.0
@@ -2487,6 +2487,7 @@ module Hydro
         if (idiag_ozmphi/=0) &
             call phisum_mn_name_rz(p%oo(:,3),idiag_ozmphi)
         if (idiag_oumphi/=0) call phisum_mn_name_rz(p%ou,idiag_oumphi)
+!
         if (idiag_uxmxz/=0) &
             call ysum_mn_name_xz(p%uu(:,1),idiag_uxmxz)
         if (idiag_uymxz/=0) &
@@ -2507,6 +2508,7 @@ module Hydro
             call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
         if (idiag_oumxz/=0) &
             call ysum_mn_name_xz(p%ou,idiag_oumxz)
+!
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
@@ -2736,11 +2738,8 @@ module Hydro
           uumz=temp
         endif
 !
-!AB: it would be better to define guumz without ghost zones
-!AB: this is still not done, right?
-!
         do j=1,3
-          call der_z(uumz(:,j),guumz(n1:n2,j))       ! ghost zones in guumz are not filled!
+          call der_z(uumz(:,j),guumz(:,j)) 
         enddo
 !
       endif
@@ -3484,7 +3483,7 @@ module Hydro
             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+fint(:,1)
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+fint(:,2)
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+fint(:,3)
-            if (idiag_fintm/=0) then
+            if (idiag_fintm/=0) then                     ! Why not "if (ldiagnos .and. ..." ?
               fint_work=f(l1:l2,m,n,iux)*fint(:,1)&
                        +f(l1:l2,m,n,iuy)*fint(:,2)&
                        +f(l1:l2,m,n,iuz)*fint(:,3)
