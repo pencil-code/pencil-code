@@ -43,7 +43,7 @@
 ; Update a list of given quantities.
 pro pc_select_files_update_list, list, all, indices, default=default, avail=avail_list
 
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
 
 	if (not keyword_set (default)) then default = all
 
@@ -70,7 +70,7 @@ end
 pro select_files_event, event
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, dim_x, dim_y, dim_z
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -361,7 +361,7 @@ end
 pro pc_select_files_update, quant_update=quant_update, over_update=over_update
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, dim_x, dim_y, dim_z
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
 
 	num = 0
 	for pos = 0, num_cont-1 do begin
@@ -370,15 +370,20 @@ pro pc_select_files_update, quant_update=quant_update, over_update=over_update
 	end
 	cont_corr = num / float (num_cont)
 
-	slice_corr = 1
-	if (max_pos ge 1) then slice_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
+	if ((slice ge 1) and (slice le 3)) then begin
+		subvol_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
+	end else if (slice eq 4) then begin
+		subvol_corr = product (([dim_x, dim_y, dim_z]+2*nghost)/([nx, ny, nz]+2.0*nghost))
+	end else begin
+		subvol_corr = 1
+	end
 	
 	if (any (quant_selected ne -1)) then num_quant = n_elements (quant_selected) else num_quant = 0
 	if (any (over_selected ne -1)) then num_over = n_elements (over_selected) else num_over = 0
 
-	WIDGET_CONTROL, f_load, SET_VALUE = gb_per_file*cont_corr*slice_corr*(num_selected+var_selected+add_selected)
+	WIDGET_CONTROL, f_load, SET_VALUE = gb_per_file*cont_corr*subvol_corr*(num_selected+var_selected+add_selected)
 	if (not finite (f_comp, /NaN)) then $
-		WIDGET_CONTROL, f_comp, SET_VALUE = gb_per_file/num_cont*slice_corr*(num_selected+var_selected+add_selected)*(num_quant+num_over*3)
+		WIDGET_CONTROL, f_comp, SET_VALUE = gb_per_file/num_cont*subvol_corr*(num_selected+var_selected+add_selected)*(num_quant+num_over*3)
 
 	if (not finite (c_quant, /NaN) and keyword_set (quant_update)) then begin
 		WIDGET_CONTROL, c_quant, SET_VALUE = quant_avail
@@ -395,7 +400,7 @@ end
 pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, ys=ys, zs=zs, xe=xe, ye=ye, ze=ze, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots, scaling=scaling
 
 	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, dim_x, dim_y, dim_z
-	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, slice_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
+	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
 
 	; Default settings
 	@pc_gui_settings
@@ -853,7 +858,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 			print, "none"
 		end else begin
 			print, files
-			print, "This corresponds to ", strtrim (num_selected * gb_per_file * cont_corr * slice_corr, 2), " GB = ", strtrim (num_selected, 2), " files"
+			print, "This corresponds to ", strtrim (num_selected * gb_per_file * cont_corr * subvol_corr, 2), " GB = ", strtrim (num_selected, 2), " files"
 		end
 		print, ""
 	end
