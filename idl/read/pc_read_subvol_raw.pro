@@ -311,9 +311,9 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 				; Initialize processor specific parameters.
 				iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
-				if (ipx eq ipx_start) then x_off = 0 else x_off = nghostx + (ipx - ipx_start) * procdim.nx - xs
-				if (ipy eq ipy_start) then y_off = 0 else y_off = nghosty + (ipy - ipy_start) * procdim.ny - ys
-				if (ipz eq ipz_start) then z_off = 0 else z_off = nghostz + (ipz - ipz_start) * procdim.nz - zs
+				if (ipx eq ipx_start) then x_off = 0 else x_off = nghostx + ipx * procdim.nx - xs
+				if (ipy eq ipy_start) then y_off = 0 else y_off = nghosty + ipy * procdim.ny - ys
+				if (ipz eq ipz_start) then z_off = 0 else z_off = nghostz + ipz * procdim.nz - zs
 				if (allprocs eq 1) then begin
 					if (keyword_set (reduced)) then procdir = 'reduced' else procdir = 'allprocs'
 				end else begin
