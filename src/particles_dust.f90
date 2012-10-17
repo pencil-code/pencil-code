@@ -63,7 +63,7 @@ module Particles
   real :: pdlaw=0.0
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0, thermophoretic_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
-  real :: particles_insert_rate
+  real :: particles_insert_rate=0.
   real :: avg_n_insert, remaining_particles=0.0
   real :: max_particle_insert_time=huge1
   real :: Deltauy_gas_friction=0.0

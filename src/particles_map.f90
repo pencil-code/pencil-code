@@ -582,6 +582,7 @@ module Particles_map
               print*, 'Information about what went wrong:'
               print*, '----------------------------------'
               print*, 'it, itsub, t=', it, itsub, t_sp
+              print*, 'iproc  =', iproc
               print*, 'ipar, k     =', ipar(k), k
               print*, 'xxp         =', fp(k,ixp:izp)
               if (ivpx/=0) print*, 'vvp         =', fp(k,ivpx:ivpz)

@@ -49,7 +49,8 @@ module Particles_mpicomm
 !
 !  Distribute particles evenly among processors to begin with.
 !  DM: for some initial conditions it may be better not to distribute 
-!  particles evenly. 
+!  particles evenly so the logical variable ldist_particles_evenly has been
+!  introduced. This variable is true by default.  
 !
       if (lstarting) call dist_particles_evenly_procs(ipar)
       call keep_compiler_quiet(f)
@@ -214,6 +215,7 @@ module Particles_mpicomm
         endif
 !
       endif
+!      write(*,*)'DM','proc no=',iproc,'npar_loc=',npar_loc
 !
     endsubroutine dist_particles_evenly_procs
 !***********************************************************************

@@ -19,3 +19,4 @@
   public :: write_snapshot_particles, read_snapshot_particles
   public :: write_dim_particles
   public :: particles_cleanup
+  public :: particles_insert_continuously

@@ -624,6 +624,10 @@ module Cdata
 !
   logical :: lparticles_prepencil_calc
 !
+! Also to insert particles at specific times
+!
+  logical :: lparticles_insert
+!
 !  Dynamical diffusion coefficients with fixed mesh Reynolds number.
 !
   real :: re_mesh=1.

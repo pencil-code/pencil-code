@@ -497,6 +497,16 @@ program run
       endif
     endif
 !
+! Insert particles (if linsert_particles_continuously==T)
+!
+    if(lparticles) then
+      call particles_insert_continuously(f)
+!      lparticles_insert=l2davg
+!      if (lparticles_insert) call insert_particles_now(f)
+!      write(*,*)'DM','I am iproc=',iproc
+      call mpibarrier()
+    endif
+!
 !  Remove wiggles in lnrho in sporadic time intervals.
 !  Necessary on moderate-sized grids. When this happens,
 !  this is often an indication of bad boundary conditions!
