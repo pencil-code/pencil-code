@@ -389,7 +389,7 @@ module Particles_collisions
               call sum_par_name(fp(1:npar_loc,ixp),idiag_ncollpm)
           if (idiag_npartpm/=0) &
               call sum_par_name(fp(1:npar_loc,ixp),idiag_npartpm)
-          if (idiag_decollpm/=0) call save_name(0.0,idiag_decollpm)
+          call save_name(0.0,idiag_decollpm)
         endif
       endif
 !
@@ -612,8 +612,7 @@ module Particles_collisions
                     call sum_par_name((/float(ncoll_par)/),idiag_ncollpm)
                 if (idiag_npartpm/=0) &
                     call sum_par_name((/float(npart_par)/),idiag_npartpm)
-                if (idiag_decollpm/=0) &
-                    call save_name(energy_gain_inelastic/npar,idiag_decollpm)
+                call save_name(energy_gain_inelastic/npar,idiag_decollpm)
               endif
 !
             enddo
@@ -633,7 +632,7 @@ module Particles_collisions
               call sum_par_name(fp(1:npar_loc,ixp),idiag_ncollpm)
           if (idiag_npartpm/=0) &
               call sum_par_name(fp(1:npar_loc,ixp),idiag_npartpm)
-          if (idiag_decollpm/=0) call save_name(0.0,idiag_decollpm)
+          call save_name(0.0,idiag_decollpm)
         endif
       endif
 !
