@@ -57,6 +57,11 @@ module Diagnostics
     module procedure expand_cname_full
   endinterface expand_cname
 !
+  interface parse_name
+    module procedure parse_name_s
+    module procedure parse_name_v
+  endinterface parse_name
+
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   integer :: mnamer
   character (len=intlen) :: ch2davg
@@ -1072,9 +1077,8 @@ module Diagnostics
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length,index_i
 !
-      intent(in)    :: iname,cname,ctest
-      intent(inout) :: itest,cform
-!      intent(out)   :: cform
+      intent(in)  :: iname,cname,ctest
+      intent(out) :: itest,cform
 !
 !  Check whether format is given.
 !
@@ -1119,12 +1123,11 @@ module Diagnostics
       if (index_i/=0) then
         cform(index_i:index_i)='f'
         cform=trim(cform)//'.0'
-        !!print*, 'length, iform=', length, iform0, iform2
       endif
 !
     endfunction fparse_name
 !***********************************************************************
-    subroutine parse_name(iname,cname,cform,ctest,itest)
+    subroutine parse_name_s(iname,cname,cform,ctest,itest)
 !
 !   subroutine wrapper around fparse_name function: ignores return value
 !
@@ -1134,14 +1137,40 @@ module Diagnostics
       character (len=*) :: ctest
       integer :: iname,itest
 !
-      intent(in)    :: iname,cname,ctest
-      intent(inout) :: itest,cform
+      intent(in)  :: iname,cname,ctest
+      intent(out) :: itest,cform
 !
-      integer iret;
+      integer iret
 !
       iret = fparse_name(iname,cname,cform,ctest,itest)
 !
-    endsubroutine parse_name
+    endsubroutine parse_name_s
+!***********************************************************************
+    subroutine parse_name_v( cname,cform,cdiag,idiag )
+!
+!   extension to parse_name_s: cname, cform now vectors;
+!                              names to look for now in vector cdiag,
+!                              indices for found ones in vector idiag
+!                              both do loops incorporated
+!
+!   29-jun-12/MR: coded
+!
+      character (len=*), dimension(:) :: cname,cform
+      character (len=*), dimension(:) :: cdiag
+      integer,           dimension(:) :: idiag
+!
+      intent(in)  :: cname,cdiag
+      intent(out) :: cform,idiag
+!
+      integer :: i,j
+!
+      do i=1,size(cname)
+        do j=1,size(cdiag)
+          if ( fparse_name(i,cname(i),cform(i),cdiag(j),idiag(j)) /= 0 ) exit
+        enddo    
+      enddo
+
+    endsubroutine parse_name_v
 !***********************************************************************
     subroutine expand_cname_short(ccname,nname,vlabel,vname,lform)
 !
@@ -1269,8 +1298,10 @@ module Diagnostics
 !  Set corresponding entry in itype_name
 !  This routine is to be called only once per step
 !
-      fname(iname)=a
-      itype_name(iname)=ilabel_save
+      if (iname/=0) then
+        fname(iname)=a
+        itype_name(iname)=ilabel_save
+      endif
 !
    endsubroutine save_name
 !***********************************************************************
@@ -1395,10 +1426,13 @@ module Diagnostics
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
+!  29-jun-12/MR: incorporated test for iname/=0
 !
       real, dimension (nx) :: a
       integer :: iname
       logical, optional :: lsqrt,l_dt,lneg,lreciprocal
+
+      if (iname==0) return
 !
       if (lfirstpoint) then
         fname(iname)=maxval(a)
@@ -1813,6 +1847,8 @@ module Diagnostics
       real, dimension (nx) :: a,fac
       integer :: iname
 !
+      if (iname==0) return
+!
 !  initialize by the volume element (which is different for different m and n)
 !
       fac=dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
@@ -1958,6 +1994,8 @@ module Diagnostics
       integer :: iname
       real :: fac,suma
 !
+      if (iname==0) return
+!
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
 !
@@ -1991,6 +2029,8 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname
       real :: fac,suma
+!
+      if (iname==0) return
 !
 !  Initialize to zero, including other parts of the z-array
 !  which are later merged with an mpi reduce command.
@@ -2026,6 +2066,8 @@ module Diagnostics
       integer :: iname
       real :: fac
 !
+      if (iname==0) return
+!
 !  Initialize to zero.
 !
       if (lfirstpoint) fnamex(:,:,iname) = 0.0
@@ -2055,6 +2097,8 @@ module Diagnostics
 !
       real, dimension (nx) :: a
       integer :: iname,ir,nnghost
+!
+      if (iname==0) return
 !
       if (lfirstpoint) fnamer(:,iname)=0.
       if (lfirstpoint.and.iname==nnamer) fnamer(:,iname+1)=0.
@@ -2091,6 +2135,8 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname,n_nghost
 !
+      if (iname==0) return
+!
 !  Initialize to zero, including other parts of the xz-array
 !  which are later merged with an mpi reduce command.
 !
@@ -2122,6 +2168,8 @@ module Diagnostics
 !
       integer :: m_nghost
       real :: factor
+!
+      if (iname==0) return
 !
 !  Scale factor for integration
 !
