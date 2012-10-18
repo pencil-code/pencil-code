@@ -10,4 +10,4 @@ DENSITY   = nodensity
 HYDRO     =   hydro
 MAGNETIC  =   magnetic
 
-REAL_PRECISION = double
+#REAL_PRECISION = double
