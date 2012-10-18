@@ -1028,11 +1028,11 @@ module Param_IO
           lneutralvelocity, lneutraldensity, ltemperature,lpolymer, &
           lsolid_cells
 !
-! If the boundary condition has been changed by subroutines then 
-! corresponding bc arrays need to be changed too. At present (june 2012) 
-! it is done only for the bcx array because parker_wind.f90 is the only 
+! If the boundary condition has been changed by subroutines then
+! corresponding bc arrays need to be changed too. At present (june 2012)
+! it is done only for the bcx array because parker_wind.f90 is the only
 ! subroutine that changes boundary conditions and it does it only for
-! the density in the x direction. 
+! the density in the x direction.
 !
         if  (lreset_boundary_values) then
           call inverse_parse_bc(bcx,bcx1,bcx2)
@@ -1112,6 +1112,7 @@ module Param_IO
       call keep_compiler_quiet(lneutralvelocity)
       call keep_compiler_quiet(lneutraldensity)
       call keep_compiler_quiet(lpolymer)
+      call keep_compiler_quiet(lsolid_cells)
 !
     endsubroutine wparam
 !***********************************************************************
