@@ -469,8 +469,8 @@ module Shear
 !  from shear motion.
 !
       safi: if (lshearadvection_as_shift) then
-        call sheared_advection_fft(f(l1:l2,m1:m2,n1:n2,:), mvar, dt_shear)
-        if (.not. llast) call sheared_advection_fft(df(l1:l2,m1:m2,n1:n2,:), mvar, dt_shear)
+        call sheared_advection_fft(f, 1, mvar, dt_shear)
+        if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
       endif safi
 !
 !  Print identifier.
@@ -483,7 +483,7 @@ module Shear
 !
     endsubroutine advance_shear
 !***********************************************************************
-    subroutine sheared_advection_fft(a, ncomp, dt_shear)
+    subroutine sheared_advection_fft(a, comp_start, comp_end, dt_shear)
 !
 !  Uses Fourier interpolation to integrate the shearing terms.
 !
@@ -497,11 +497,11 @@ module Shear
 !
       use Fourier, only: fourier_shift_y, fft_y_parallel
 !
-      integer, intent(in) :: ncomp
-      real, dimension(nx,ny,nz,ncomp), intent(inout) :: a
+      real, dimension(:,:,:,:), intent(inout) :: a
+      integer, intent(in) :: comp_start, comp_end
       real, intent(in) :: dt_shear
 !
-      real, dimension(nx,ny,nz) :: a_im
+      real, dimension(nx,ny,nz) :: a_re, a_im
       real, dimension(nx) :: shift
       integer :: ic
 !
@@ -512,15 +512,17 @@ module Shear
 !
 !  Conduct the Fourier interpolation.
 !
-      comp: do ic = 1, ncomp
-        serial: if (nprocx == 1) then
-          call fourier_shift_y(a(:,:,:,ic), shift)
-        else serial
+      do ic = comp_start, comp_end
+        a_re = a(l1:l2,m1:m2,n1:n2,ic)
+        if (nprocx == 1) then
+          call fourier_shift_y(a_re, shift)
+        else
           a_im = 0.
-          call fft_y_parallel(a(:,:,:,ic), a_im, SHIFT_Y=shift, lneed_im=.false.)
-          call fft_y_parallel(a(:,:,:,ic), a_im, linv=.true.)
-        endif serial
-      enddo comp
+          call fft_y_parallel(a_re, a_im, SHIFT_Y=shift, lneed_im=.false.)
+          call fft_y_parallel(a_re, a_im, linv=.true.)
+        endif
+        a(l1:l2,m1:m2,n1:n2,ic) = a_re
+      enddo
 !
     endsubroutine sheared_advection_fft
 !***********************************************************************
