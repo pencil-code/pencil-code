@@ -14,7 +14,8 @@
 ! CPARAM logical, parameter :: lthermal_energy = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
+! COMMUNICATED AUXILIARIES 1
 !
 ! PENCILS PROVIDED Ma2; fpres(3); transpeth
 !
@@ -35,16 +36,20 @@ module Entropy
   real :: energy_floor = 0., temperature_floor = 0.
   real :: rk_eps = 1.e-3
   real :: nu_z=0., KI_csz=0.
+  real :: detonation_factor = 1., detonation_power = 1., divu_crit = 0.
   integer :: rk_nmax = 100
   integer :: njeans = 4
+  integer :: idet = 0
   logical :: lsplit_update=.false.
   logical :: lviscosity_heat=.true.
   logical :: lupw_eth=.false.
   logical :: lcheck_negative_energy=.false.
   logical :: lKI02=.false.
   logical :: ljeans_floor=.false.
+  logical :: ldetonate=.false.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
+  character(len=labellen) :: feedback = 'energy'
 !
 !  Input parameters.
 !
@@ -58,7 +63,8 @@ module Entropy
       chi, chi_shock, chi_shock_gradTT, chi_hyper3_mesh, &
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, nu_z, KI_csz, &
-      ljeans_floor, njeans
+      ljeans_floor, njeans, &
+      ldetonate, detonation_factor, detonation_power, divu_crit, feedback
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -117,6 +123,12 @@ module Entropy
 !
   real :: Jeans_c0 = 0.
 !
+! Variables for the detonations.
+!
+  real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: smooth = 0.
+  integer :: nx_smooth = 0, ny_smooth = 0, nz_smooth = 0, nyz = ny * nz
+  real :: deposit = 0.
+!
   contains
 !***********************************************************************
     subroutine register_entropy()
@@ -131,6 +143,7 @@ module Entropy
       integer :: ierr
 !
       call farray_register_pde('eth',ieth)
+      call farray_register_auxiliary('det', idet, communicated=.true.)
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
@@ -151,12 +164,13 @@ module Entropy
 !  04-nov-10/anders+evghenii: adapted
 !  03-oct-11/ccyang: add initialization for KI02
 !
-      use EquationOfState, only: select_eos_variable, get_cv1, getmu, gamma, gamma_m1
+      use EquationOfState, only: select_eos_variable, get_cv1, getmu, gamma, gamma_m1, cs0, cs20
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       logical, intent (in) :: lstarting
 !
+      integer :: i, j, k
       real :: mu
       real :: c0
 !
@@ -201,6 +215,35 @@ module Entropy
           Jeans_c0 = real(njeans) * G_Newton * dxmax / (gamma * gamma_m1)
         endif
       endif Jeans
+!
+!  Initialize the variables for detonations.
+!
+      detonate: if (ldetonate) then
+!       Determine the amount of deposit into each cell to be detonated.
+        method: select case (feedback)
+        case ('energy') method
+          deposit = detonation_factor * cs20
+        case ('momentum') method
+          deposit = detonation_factor * cs0
+        case default method
+          call fatal_error('detonate', 'unknown feedback method')
+        endselect method
+!       Smoothing kernal
+        smooth(0,0,0) = 1.
+        xdir: if (nxgrid > 1) then
+          nx_smooth = nghost
+          forall (i=-nghost:nghost, i/=0) smooth(i,0,0) = smooth(0,0,0) * exp(-real(i * i))
+        endif xdir
+        ydir: if (nygrid > 1) then
+          ny_smooth = nghost
+          forall (i=-nghost:nghost, j=-nghost:nghost, j/=0) smooth(i,j,0) = smooth(i,0,0) * exp(-real(j * j))
+        endif ydir
+        zdir: if (nzgrid > 1) then
+          nz_smooth = nghost
+          forall (i=-nghost:nghost, j=-nghost:nghost, k=-nghost:nghost, k/=0) smooth(i,j,k) = smooth(i,j,0) * exp(-real(k * k))
+        endif zdir
+        smooth = smooth / sum(smooth)
+      endif detonate
 !
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -776,6 +819,10 @@ module Entropy
           call warning('split_update_energy', trim(message))
         endif
 !
+!  Detonate those cells violating the Jeans criterion.
+!
+        if (ldetonate) call detonate(f, status == 1)
+!
         if (ldebug) then
           where(status < 0) status = rk_nmax
           print *, 'Minimum, maximum, and average numbers of iterations = ', &
@@ -867,9 +914,13 @@ module Entropy
           delta_eth = delta_eth + deth
 !
           done: if (last) then
-            status1 = 0
+            if (lovershoot) then
+              status1 = 1
+            else
+              status1 = 0
+            endif
             exit rkck
-          else if (t1 + dt1 == t1) then
+          else if (t1 + dt1 == t1) then done
             status1 = -1
             exit rkck
           endif done
@@ -990,6 +1041,115 @@ module Entropy
       if (eth < eth_min) eth = eth_min
 !
     endsubroutine
+!***********************************************************************
+    subroutine detonate(f, mask)
+!
+!  Detonate specified cells by specified method.
+!
+!  15-aug-12/ccyang: coded.
+!
+      use Mpicomm
+      use Boundcond
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      logical, dimension(nx,ny,nz), intent(in) :: mask
+!
+      real, dimension(nx,ny,nz,3) :: delta
+      real, dimension(nx,3) :: pv
+      real, dimension(nx) :: ps
+      integer :: i, j, k, ii, jj, kk, imn, n
+      real :: divu, r
+!
+!  Prepare for communicating the cells that should be detonated.
+!
+      n = 0
+      f(:,:,:,idet) = 0.
+      zscan: do k = n1, n2
+        kk = k - nghost
+        yscan: do j = m1, m2
+          jj = j - nghost
+          xscan: do i = l1, l2
+            ii = i - nghost
+            trigger: if (mask(ii,jj,kk)) then
+              divu = 0.
+              if (nxgrid > 1) divu = divu + dx_1(i) * (f(i+1,j,k,iux) - f(i-1,j,k,iux))
+              if (nygrid > 1) divu = divu + dy_1(j) * (f(i,j+1,k,iuy) - f(i,j-1,k,iuy))
+              if (nzgrid > 1) divu = divu + dz_1(k) * (f(i,j,k+1,iuz) - f(i,j,k-1,iuz))
+              converge: if (divu < -divu_crit) then
+                n = n + 1
+                f(i,j,k,idet) = deposit * f(i,j,k,irho)**detonation_power
+              endif converge
+            endif trigger
+          enddo xscan
+        enddo yscan
+      enddo zscan
+      if (ldebug .and. n > 0) print *, 'Detonated ', n, ' cells. '
+!
+!  Communicate the cells and prepare for the feedback.
+!
+      shear: if (lshear) then
+        call boundconds_y(f, idet, idet)
+        call initiate_isendrcv_bdry(f, idet, idet)
+        call finalize_isendrcv_bdry(f, idet, idet)
+      endif shear
+      call boundconds_x(f, idet, idet)
+      call initiate_isendrcv_bdry(f, idet, idet)
+!
+      pencil: do imn = 1, nyz
+        n = nn(imn)
+        m = mm(imn)
+        final: if (necessary(imn)) then
+          call finalize_isendrcv_bdry(f, idet, idet)
+          call boundconds_y(f, idet, idet)
+          call boundconds_z(f, idet, idet)
+        endif final
+!
+        dispatch1: select case (feedback)
+!
+        case ('energy') dispatch1
+!         Energy feedback
+          ps = 0.
+          zdir: do k = -nz_smooth, nz_smooth
+            ydir: do j = -ny_smooth, ny_smooth
+              xdir: do i = -nx_smooth, nx_smooth
+                ps = ps + smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet)
+              enddo xdir
+            enddo ydir
+          enddo zdir
+          delta(:,m-nghost,n-nghost,1) = ps
+!
+        case ('momentum') dispatch1
+!         Momentum feedback
+          pv = 0.
+          zdirm: do k = -nz_smooth, nz_smooth
+            ydirm: do j = -ny_smooth, ny_smooth
+              xdirm: do i = -nx_smooth, nx_smooth
+                r = sqrt(real(i * i + j * j + k * k))
+                not_center: if (r > 0.) then
+                  ps = smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet) / r
+                  pv(:,1) = pv(:,1) - real(i) * ps
+                  pv(:,2) = pv(:,2) - real(j) * ps
+                  pv(:,3) = pv(:,3) - real(k) * ps
+                endif not_center
+              enddo xdirm
+            enddo ydirm
+          enddo zdirm
+          delta(:,m-nghost,n-nghost,:) = pv / spread(f(l1:l2,m,n,irho),2,3)
+        endselect dispatch1
+      enddo pencil
+!
+!  Make the deposit into the cells.
+!
+      dispatch2: select case (feedback)
+      case ('energy') dispatch2
+!       Energy feedback
+        f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta(:,:,:,1)
+      case ('momentum') dispatch2
+!       Momentum feedback
+        f(l1:l2,m1:m2,n1:n2,iux:iuz) = f(l1:l2,m1:m2,n1:n2,iux:iuz) + delta
+      endselect dispatch2
+!
+    endsubroutine detonate
 !***********************************************************************
     subroutine expand_shands_entropy()
 !
