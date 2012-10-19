@@ -167,7 +167,8 @@ module Particles_spin
       use Cdata
       use Sub, only: curl
 !
-      real,dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3) :: tmp
 !
       intent(inout) :: f
 !
@@ -176,7 +177,8 @@ module Particles_spin
 !  and mpi communication as usual.
 !
       do m=m1,m2;do n=n1,n2
-        call curl(f,iux,f(l1:l2,m,n,iox:ioz))
+        call curl(f,iux,tmp)
+        f(l1:l2,m,n,iox:ioz) = tmp
       enddo;enddo
 !
     endsubroutine particles_spin_prepencil_calc
