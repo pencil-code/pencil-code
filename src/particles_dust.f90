@@ -60,7 +60,7 @@ module Particles
   real :: tstart_sink_par=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, mean_free_path_gas=0.0
-  real :: pdlaw=0.0
+  real :: pdlaw=0.0, rad_sphere=0.0
   real :: taucool=0.0, taucool1=0.0, brownian_T0=0.0, thermophoretic_T0=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   real :: particles_insert_rate=0.
@@ -142,7 +142,7 @@ module Particles
       lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein,ldraglaw_simple,ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, pdlaw, ldragforce_stiff, &
+      ldraglaw_eps_stk_transonic, pdlaw, rad_sphere, ldragforce_stiff, &
       ldraglaw_steadystate, tstart_liftforce_par, &
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
@@ -749,6 +749,37 @@ module Particles
               fp(k,iyp)=xp0*sin(2*pi*r)
             endif
           enddo
+!
+        case ('random-sphere')
+          if (lroot) print*, 'init_particles: Random particle positions '// &
+              'in a sphere around (0,0,0) with radius=',rad_sphere
+          if (rad_sphere==0) then
+            call fatal_error('init_particles','random-sphere '// &
+                  'radius needs to be larger than zero')
+          endif
+          if (-rad_sphere<xyz0(1) .or. rad_sphere>xyz1(1) .or. &
+              -rad_sphere<xyz0(2) .or. rad_sphere>xyz1(2) .or. &
+              -rad_sphere<xyz0(3) .or. rad_sphere>xyz1(3)) then
+            call fatal_error('init_particles','random-sphere '// &
+                 'sphere needs to fit in the box')
+          endif
+          if (lcartesian_coords) then
+            do k=1,npar_loc
+              rp2=2.*rad_sphere**2
+              do while (rp2>rad_sphere**2)
+                call random_number_wrapper(fp(k,ixp))
+                call random_number_wrapper(fp(k,iyp))
+                call random_number_wrapper(fp(k,izp))
+                fp(k,ixp)=(fp(k,ixp)-0.5)*2.*rad_sphere
+                fp(k,iyp)=(fp(k,iyp)-0.5)*2.*rad_sphere
+                fp(k,izp)=(fp(k,izp)-0.5)*2.*rad_sphere
+                rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
+              enddo
+            enddo
+          else
+            call fatal_error('init_particles','random-sphere '// &
+                 'only implemented for cartesian coordinates')
+          endif
 !
         case ('random-hole')
           if (lroot) print*, 'init_particles: Random particle positions '// &
