@@ -129,7 +129,6 @@ module Magnetic_meanfield
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
   integer :: idiag_peffmxz=0    ! YAVG_DOC: $\left<{\cal P}_{\rm eff}\right>_{y}$
   integer :: idiag_alpmxz=0    ! YAVG_DOC: $\left<\alpha\right>_{y}$
-
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -433,13 +432,12 @@ module Magnetic_meanfield
       if (lmagn_mf_demfdt) call pencil_criteria_magn_mf_demfdt()
 !
 !  Nempi model C requires currents
-
+!
       if (lqpcurrent) then
         lpenc_requested(i_jj)=.true.
         lpenc_requested(i_j2)=.true.
         lpenc_requested(i_jij)=.true.
       endif
-
 !
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
@@ -530,7 +528,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_etaB2, Beq21
-      real, dimension (nx,3) :: Bk_Bki, exa_meanfield,Jk_Jki
+      real, dimension (nx,3) :: Bk_Bki, exa_meanfield !,Jk_Jki
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact
       integer :: j,l
@@ -560,7 +558,7 @@ module Magnetic_meanfield
 !  The follwing (not lmeanfield_jxb_with_vA2) has been used for the
 !  various publications so far.
 !
-!            
+!
 !        else
           select case (meanfield_Beq_profile)
           case ('exp(z/H)');
@@ -608,7 +606,7 @@ module Magnetic_meanfield
 !  Note: p%jij is not J_i,j; omit extra term for the time being.
 !
           call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
-          if (lqpcurrent) then 
+          if (lqpcurrent) then
 !--         call multmv_transp(p%jij,p%jj,Jk_Jki) !=1/2 grad J^2
             call multsv_mn((1+p%j2*mf_qJ2)*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
 !--         call multsv_mn(meanfield_qp_func*p%b2*mf_qJ2,Jk_Jki,p%jxb_mf)
@@ -893,7 +891,7 @@ module Magnetic_meanfield
 !
       use Diagnostics
 !
-      real, dimension (nx) :: Beq21, mf_qp 
+      real, dimension (nx) :: Beq21, mf_qp
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -983,7 +981,7 @@ module Magnetic_meanfield
         endif
       endif
 !  Note that this does not necessarily happen with ldiagnos=.true.
-! 
+!
 !     if (l2davgfirst) then
 !       if (idiag_Ezmxz/=0) call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
 !     else
