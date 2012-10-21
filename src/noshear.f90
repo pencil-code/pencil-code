@@ -165,16 +165,16 @@ module Shear
 !
     endsubroutine advance_shear
 !***********************************************************************
-    subroutine sheared_advection_fft(a, ncomp, dt_shear)
+    subroutine sheared_advection_fft(a, comp_start, comp_end, dt_shear)
 !
 !  dummy
 !
-      integer, intent(in) :: ncomp
+      integer, intent(in) :: comp_start, comp_end
       real, dimension(nx,ny,nz,ncomp), intent(inout) :: a
       real, intent(in) :: dt_shear
 !
       call keep_compiler_quiet(a)
-      call keep_compiler_quiet(ncomp)
+      call keep_compiler_quiet(comp_start,comp_end)
       call keep_compiler_quiet(dt_shear)
 !
     endsubroutine sheared_advection_fft
