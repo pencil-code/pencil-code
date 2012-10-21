@@ -106,7 +106,13 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distance=distance, 
 		dx = 1.0 / grid.dx_1
 		dy = 1.0 / grid.dy_1
 		dz = 1.0 / grid.dz_1
-		dr = sqrt (grid.dx^2 + grid.dy^2 + grid.dz^2)
+		if (any (strcmp (tag_names (grid), "nghost", /fold_case))) then begin
+			nghost = grid.nghost
+			mx = nx + 2*nghost
+			my = ny + 2*nghost
+			mz = nz + 2*nghost
+		end
+		dr = sqrt (mean (dx)^2 + mean (dy)^2 + mean (dz)^2)
 	end else begin
 		if (periodic[0]) then x = dindgen (mx) - nghost + 0.5 else x = dindgen (mx) / (mx-1) * (mx) - nghost
 		if (periodic[1]) then y = dindgen (my) - nghost + 0.5 else y = dindgen (my) / (my-1) * (my) - nghost
@@ -129,9 +135,9 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distance=distance, 
 	; Starting position
 	pos = anchor
 	if (keyword_set (grid)) then begin
-		if (nx+6 ne n_elements (x)) then message, "ERROR: the field data doesn't fit to the X-grid coordinates."
-		if (ny+6 ne n_elements (y)) then message, "ERROR: the field data doesn't fit to the Y-grid coordinates."
-		if (nz+6 ne n_elements (z)) then message, "ERROR: the field data doesn't fit to the Z-grid coordinates."
+		if (nx+2*nghost ne n_elements (x)) then message, "ERROR: the field data doesn't fit to the X-grid coordinates."
+		if (ny+2*nghost ne n_elements (y)) then message, "ERROR: the field data doesn't fit to the Y-grid coordinates."
+		if (nz+2*nghost ne n_elements (z)) then message, "ERROR: the field data doesn't fit to the Z-grid coordinates."
 		; Convert anchor point into equidistant unit grid coordinates
 		pos[0] = pc_find_index (anchor[0], x, mx) - nghost
 		pos[1] = pc_find_index (anchor[1], y, my) - nghost

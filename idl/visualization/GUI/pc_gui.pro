@@ -96,13 +96,16 @@ if (not pc_gui_loaded) then BEGIN
 		dx:1.0/grid.dx_1 * unit.length, $
 		dy:1.0/grid.dy_1 * unit.length, $
 		dz:1.0/grid.dz_1 * unit.length, $
+		dx_1:grid.dx_1 / unit.length, $
+		dy_1:grid.dy_1 / unit.length, $
+		dz_1:grid.dz_1 / unit.length, $
 		nx:dim.nx, ny:dim.ny, nz:dim.nz, $
 		orig_nx:orig_dim.nx, orig_ny:orig_dim.ny, orig_nz:orig_dim.nz, $
 		x_off:xs, y_off:ys, z_off:zs, $
 		l1:dim.nghostx, l2:dim.mx-dim.nghostx-1, $
 		m1:dim.nghosty, m2:dim.my-dim.nghosty-1, $
 		n1:dim.nghostz, n2:dim.mz-dim.nghostz-1, $
-		lequidist:grid.lequidist, lperi:grid.lperi, ldegenerated:grid.ldegenerated }
+		lequidist:grid.lequidist, lperi:grid.lperi, ldegenerated:grid.ldegenerated, nghost:0 }
 
 
 	print, "Allocating memory..."
