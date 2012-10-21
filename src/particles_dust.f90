@@ -51,7 +51,7 @@ module Particles
   real :: ky_vpx=0.0, ky_vpy=0.0, ky_vpz=0.0
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
-  real :: tstart_dragforce_par=0.0 
+  real :: tstart_dragforce_par=0.0
   real :: tstart_grav_par=0.0, tstart_grav_x_par=0.0
   real :: tstart_grav_z_par=0.0, tstart_grav_r_par=0.0
   real :: tstart_liftforce_par=0.0
@@ -2282,8 +2282,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension(3) :: ggp
-      real :: Omega2, rsph=0, vsph=0, OO2
+      real :: Omega2
       integer :: k, npar_found
       logical :: lheader, lfirstcall=.true.
 !
@@ -2353,7 +2352,7 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
 !  Gravity on the particles.
-!  Gravity on particles is implemented only if lparticle_gravity is true which is the default. 
+!  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
 !
       if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
 !
@@ -2569,7 +2568,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Contribution of gravity to dvvp_dt
 !
-!  11-oct-12/dhruba: copied from dvvp_dt 
+!  11-oct-12/dhruba: copied from dvvp_dt
 !
       use Diagnostics
       use EquationOfState, only: cs20
@@ -2580,12 +2579,14 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: Omega2, rsph=0, vsph=0, OO2
-      integer :: k, npar_found
+      real :: rsph=0, vsph=0, OO2
+      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
+!
+      call keep_compiler_quiet(f,df)
 !
 !  Print out header information in first time step.
 !
@@ -2597,7 +2598,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Gravity in the x-direction.
 !
       if (t>=tstart_grav_x_par) then
-!        
+!
         select case (gravx_profile)
 !
           case ('')
@@ -2625,7 +2626,7 @@ k_loop:   do while (.not. (k>npar_loc))
             call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
 !
         endselect
-!        
+!
       endif
 !
 !  Gravity in the z-direction.
@@ -3652,7 +3653,7 @@ k_loop:   do while (.not. (k>npar_loc))
           call calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
         endif
 !
-! Simple drag law, drag force = 1/\taup (v-u) where \taup is an input parameter. 
+! Simple drag law, drag force = 1/\taup (v-u) where \taup is an input parameter.
 !
       else if (ldraglaw_simple) then
 !        write(*,*)'DM','simple drag'
@@ -4576,7 +4577,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !   Henrik Lutro, testing
 !
       use Viscosity, only: getnu
-
+!
       real, dimension(mpar_loc,mpvar) :: fp
       real, dimension(3), intent(out) :: force
       real, dimension(3) :: temp_grad
@@ -4591,7 +4592,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       Ktc=1.10
       Cm=1.13
-      Ce=2.17 
+      Ce=2.17
       if (interp%lTT) then
         TT=interp_TT(k)
       else
@@ -4612,7 +4613,7 @@ k_loop:   do while (.not. (k>npar_loc))
       else
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
-      Cint=0.5    
+      Cint=0.5
       if (interp%lgradTT) then
         temp_grad=interp_gradTT(k,:)
       else
