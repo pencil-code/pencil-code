@@ -772,14 +772,10 @@ module Forcing
       use Sub, only: step,step_scalar
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      logical, save :: lfirst_call=.true.
-      integer :: ikmodes,iran1,iran2,kx1,ky1,kx2,ky2
       real, dimension(nx,3) :: forcing_rhs
       real, dimension(nx) :: xkx
       real,dimension(4) :: fran
-      real :: phase1,phase2,pi_over_Lx,force_norm
-!
-
+      real :: phase1,phase2,force_norm
 !
 ! force = xhat [ cos (k_2 y + \phi_1) ] +
 !         yhat [ cos (k_3 x + \phi_2 ) ]
@@ -848,6 +844,8 @@ module Forcing
       integer, save :: nk
       integer :: ik,j,jf
       logical :: lk_dot_dat_exists
+!
+      call keep_compiler_quiet(force_ampl)
 !
       if (lfirst_call) then
         if (lroot) print*,'forcing_irro: opening k.dat'
