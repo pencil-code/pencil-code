@@ -385,6 +385,8 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
+      call keep_compiler_quiet(f)
+!
       if (lfirst) then
         dfp(1:npar_loc,:)=0.0
       else
@@ -715,9 +717,9 @@ module Particles_main
           call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_viscosity) &
           call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
-      if (lparticles_potential) & 
+      if (lparticles_potential) &
           call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
-!      if (lparticles_polymer) & 
+!      if (lparticles_polymer) &
 !          call dRR_dt_pencil(f,df,fp,dfp,ineargrid)
 !
 !  Time-step contribution from discrete particle collisions.
@@ -1417,7 +1419,7 @@ module Particles_main
     subroutine insert_particles_now(f)
 !
 !  Insert particles which has been removed from the system as the
-!  system has evolved. 
+!  system has evolved.
 !
 !  2012-oct-19/dhruba: coded
 !
