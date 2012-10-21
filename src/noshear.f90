@@ -170,7 +170,7 @@ module Shear
 !  dummy
 !
       integer, intent(in) :: comp_start, comp_end
-      real, dimension(nx,ny,nz,ncomp), intent(inout) :: a
+      real, dimension(:,:,:,:), intent(inout) :: a
       real, intent(in) :: dt_shear
 !
       call keep_compiler_quiet(a)
