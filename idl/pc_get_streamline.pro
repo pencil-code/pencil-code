@@ -11,7 +11,7 @@
 ;   * anchor         Anchor point in grid coordinates.
 ;   * grid           Grid structure (Default: equidistant grid spacing of unit length 1.0).
 ;   * direction      Direction (1: along, -1: against the field, Default: both).
-;   * periodic       3D-array of periodicity flags (Default: no periodicity).
+;   * periodic       3D-array of periodicity flags (Default: no periodicity, if no grid is given).
 ;   * precision      Precision of streamline tracing between grid points, a value
 ;                    of 0.1 results in 10 interpolations per grid distance (Default: 0.1).
 ;   * max_length     Maximum length of a streamline.

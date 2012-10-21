@@ -7,11 +7,11 @@
 ;   Extraction of any quantiy along a previously traced streamline.
 ;
 ;  Parameters:
-;   * data           Data cube of magnetic field (3- or 4-dimensional).
-;   * indices        Array of data indices of the traced streamline.
+;   * data           Data cube of a scalar field or vector field (3- or 4-dimensional).
+;   * indices        Data indices of the traced streamline returned by 'pc_get_streamline'.
 ;
 ;  Returns:
-;   * quantity       Array of the data values along the traced streamline.
+;   * quantity       Extracted (interpolated) data values along the traced streamline.
 ;
 ;  Example:
 ;  ========
