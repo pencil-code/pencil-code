@@ -66,7 +66,6 @@ module Grid
       real :: xi1lo,xi1up,g1lo,g1up
       real :: xi2lo,xi2up,g2lo,g2up
       real :: xi3lo,xi3up,g3lo,g3up
-      real :: a0,a1,a3
       real, dimension(3,2) :: xi_step
       real, dimension(3,3) :: dxyz_step
       real :: dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
