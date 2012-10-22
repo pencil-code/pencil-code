@@ -163,9 +163,9 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distance=distance, 
 		dx_local = interpolate (dx, pos[0] + nghost)
 		dy_local = interpolate (dy, pos[1] + nghost)
 		dz_local = interpolate (dz, pos[2] + nghost)
-		step_x = (vector_x / vector_abs) * precision * dir * (dx_local / dr)
-		step_y = (vector_y / vector_abs) * precision * dir * (dy_local / dr)
-		step_z = (vector_z / vector_abs) * precision * dir * (dz_local / dr)
+		step_x = (vector_x / vector_abs) * precision * dir * (dr / dx_local)
+		step_y = (vector_y / vector_abs) * precision * dir * (dr / dy_local)
+		step_z = (vector_z / vector_abs) * precision * dir * (dr / dz_local)
 
 		; Reduce projected step size to non-periodic boundaries
 		reduce = 0.0
