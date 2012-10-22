@@ -1490,54 +1490,48 @@ module Mpicomm
 !
     endsubroutine sum_xy
 !***********************************************************************
-    subroutine distribute_xy_0D(in, out, source_proc)
+    subroutine distribute_xy_0D(out, in, source_proc)
 !
 !  This routine distributes a scalar on the source processor
 !  to all processors in the xy-plane.
 !
 !  25-jan-2012/Bourdin.KIS: coded
 !
-      real, intent(in) :: in
       real, intent(out) :: out
+      real, intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc)) continue
-!
-      out = in
+      if (present (in) .or. present (source_proc)) out = in
 !
     endsubroutine distribute_xy_0D
 !***********************************************************************
-    subroutine distribute_xy_2D(in, out, source_proc)
+    subroutine distribute_xy_2D(out, in, source_proc)
 !
 !  This routine divides a large array of 2D data on the broadcaster processor
 !  and distributes it to all processors in the xy-plane.
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
+      real, dimension(:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc)) continue
-!
-      out = in
+      if (present (in) .or. present (source_proc)) out = in
 !
     endsubroutine distribute_xy_2D
 !***********************************************************************
-    subroutine distribute_xy_3D(in, out, source_proc)
+    subroutine distribute_xy_3D(out, in, source_proc)
 !
 !  This routine divides a large array of 3D data on the broadcaster processor
 !  and distributes it to all processors in the xy-plane.
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc)) continue
-!
-      out = in
+      if (present (in) .or. present (source_proc)) out = in
 !
     endsubroutine distribute_xy_3D
 !***********************************************************************
@@ -1548,13 +1542,11 @@ module Mpicomm
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc)) continue
-!
-      out = in
+      if (present (in) .or. present (source_proc)) out = in
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
@@ -1623,20 +1615,18 @@ module Mpicomm
 !
     endsubroutine collect_xy_4D
 !***********************************************************************
-    subroutine distribute_z_3D(in, out, source_proc)
+    subroutine distribute_z_3D(out, in, source_proc)
 !
 !  This routine divides a large array of 3D data on the source processor
 !  and distributes it to all processors in the z-direction.
 !
 !  09-mar-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc)) continue
-!
-      out = in
+      if (present (in) .or. present (source_proc)) out = in
 !
     endsubroutine distribute_z_3D
 !***********************************************************************
@@ -1647,13 +1637,11 @@ module Mpicomm
 !
 !  09-mar-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
-      if (present (source_proc)) continue
-!
-      out = in
+      if (present (in) .or. present (source_proc)) out = in
 !
     endsubroutine distribute_z_4D
 !***********************************************************************

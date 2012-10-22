@@ -3613,11 +3613,11 @@ module Mpicomm
       endif
 !
       ! distribute back the sum
-      call distribute_xy (sum, out)
+      call distribute_xy (out, sum)
 !
     endsubroutine sum_xy
 !***********************************************************************
-    subroutine distribute_xy_0D(in, out, source_proc)
+    subroutine distribute_xy_0D(out, in, source_proc)
 !
 !  This routine distributes a scalar on the source processor
 !  to all processors in the xy-plane.
@@ -3626,8 +3626,8 @@ module Mpicomm
 !
 !  25-jan-2012/Bourdin.KIS: coded
 !
-      real, intent(in) :: in
       real, intent(out) :: out
+      real, intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: px, py, broadcaster, partner
@@ -3659,7 +3659,7 @@ module Mpicomm
 !
     endsubroutine distribute_xy_0D
 !***********************************************************************
-    subroutine distribute_xy_2D(in, out, source_proc)
+    subroutine distribute_xy_2D(out, in, source_proc)
 !
 !  This routine divides a large array of 2D data on the source processor
 !  and distributes it to all processors in the xy-plane.
@@ -3668,8 +3668,8 @@ module Mpicomm
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
+      real, dimension(:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny ! transfer box sizes
@@ -3712,7 +3712,7 @@ module Mpicomm
 !
     endsubroutine distribute_xy_2D
 !***********************************************************************
-    subroutine distribute_xy_3D(in, out, source_proc)
+    subroutine distribute_xy_3D(out, in, source_proc)
 !
 !  This routine divides a large array of 3D data on the source processor
 !  and distributes it to all processors in the xy-plane.
@@ -3721,8 +3721,8 @@ module Mpicomm
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz ! transfer box sizes
@@ -3768,7 +3768,7 @@ module Mpicomm
 !
     endsubroutine distribute_xy_3D
 !***********************************************************************
-    subroutine distribute_xy_4D(in, out, source_proc)
+    subroutine distribute_xy_4D(out, in, source_proc)
 !
 !  This routine divides a large array of 4D data on the source processor
 !  and distributes it to all processors in the xy-plane.
@@ -3777,8 +3777,8 @@ module Mpicomm
 !
 !  08-jan-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
@@ -4063,7 +4063,7 @@ module Mpicomm
 !
     endsubroutine collect_xy_4D
 !***********************************************************************
-    subroutine distribute_z_3D(in, out, source_proc)
+    subroutine distribute_z_3D(out, in, source_proc)
 !
 !  This routine divides a large array of 3D data on the source processor
 !  and distributes it to all processors in the z-direction.
@@ -4072,8 +4072,8 @@ module Mpicomm
 !
 !  08-mar-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz ! transfer box sizes
@@ -4116,7 +4116,7 @@ module Mpicomm
 !
     endsubroutine distribute_z_3D
 !***********************************************************************
-    subroutine distribute_z_4D(in, out, source_proc)
+    subroutine distribute_z_4D(out, in, source_proc)
 !
 !  This routine divides a large array of 4D data on the source processor
 !  and distributes it to all processors in the z-direction.
@@ -4125,8 +4125,8 @@ module Mpicomm
 !
 !  08-mar-2011/Bourdin.KIS: coded
 !
-      real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
@@ -4411,7 +4411,7 @@ module Mpicomm
 !
     endsubroutine globalize_xy
 !***********************************************************************
-    subroutine localize_xy(out, in, source_proc, dest_pz)
+    recursive subroutine localize_xy(out, in, source_proc, dest_pz)
 !
 !  Localizes global 4D data first along the y, then along the x-direction to
 !  the destination processor. The global data is supposed to include the outer
@@ -4428,12 +4428,13 @@ module Mpicomm
 !
       integer :: bnx, bny, bnz, bna ! transfer box sizes
       integer :: cnx, cny ! transfer box sizes minus ghosts
-      integer :: rny ! y-row box size
+      integer :: gnx, gny ! x- and y global data array sizes
+      integer :: rnx, rny ! x- and y-row box sizes
       integer :: px, py, pz, broadcaster, partner, nbox, nrow, alloc_err
       integer, parameter :: xtag=125, ytag=126
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      real, dimension(:,:,:,:), allocatable :: y_row
+      real, dimension(:,:,:,:), allocatable :: y_row, extended
 !
 !
       bnx = size (out, 1)
@@ -4443,7 +4444,10 @@ module Mpicomm
       nbox = bnx*bny*bnz*bna
       cnx = bnx - 2*nghost
       cny = bny - 2*nghost
-      rny = cny*nprocy + 2*nghost
+      gnx = cnx*nprocx
+      gny = cny*nprocy
+      rnx = gnx + 2*nghost
+      rny = gny + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
       broadcaster = ipz * nprocxy
@@ -4452,6 +4456,30 @@ module Mpicomm
       if (present (dest_pz)) pz = dest_pz
 !
       if (iproc == broadcaster) then
+        if ((gnx == size (in, 1)) .and. (gny == size (in, 2))) then
+          ! add outer ghost layers
+          allocate (extended(rnx,rny,bnz,bna), stat=alloc_err)
+          if (alloc_err > 0) call stop_fatal ('globalize_xy: not enough memory for outer ghost cells extension!', .true.)
+          extended(nghost+1:nghost+gnx,nghost+1:nghost+gnx,:,:) = in
+          if (lperi(1)) then
+            extended(1:nghost,:,:,:) = in(gnx-nghost+1:gnx,:,:,:)
+            extended(rnx-nghost+1:rnx,:,:,:) = in(1:nghost,:,:,:)
+          else
+            write (*,*) "WARNING: localize_xy: extending non-periodic outer ghost cells with zeros!"
+            extended(1:nghost,:,:,:) = 0.0
+            extended(rnx-nghost+1:rnx,:,:,:) = 0.0
+          endif
+          if (lperi(2)) then
+            extended(:,1:nghost,:,:) = in(:,gny-nghost+1:gny,:,:)
+            extended(:,rny-nghost+1:rny,:,:) = in(:,1:nghost,:,:)
+          else
+            write (*,*) "WARNING: localize_xy: extending non-periodic outer ghost cells with zeros!"
+            extended(:,1:nghost,:,:) = 0.0
+            extended(:,rny-nghost+1:rny,:,:) = 0.0
+          endif
+          call localize_xy(out, extended, broadcaster - ipz * nprocxy, pz)
+          return
+        endif
         if (cnx * nprocx + 2*nghost /= size (in, 1)) &
             call stop_fatal ('localize_xy: input x dim must be nprocx*output minus inner ghosts', .true.)
         if (cny * nprocy + 2*nghost /= size (in, 2)) &

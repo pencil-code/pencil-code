@@ -1459,11 +1459,14 @@ module Special
         open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
         read (unit, rec=2*(frame-1)+1) tmp_x
         read (unit, rec=2*(frame-1)+2) tmp_y
-      endif
 !
-     call distribute_xy (tmp_x, Ux)
-     call distribute_xy (tmp_y, Uy)
-     if (lfirst_proc_xy) deallocate (tmp_x, tmp_y)
+        call distribute_xy (Ux, tmp_x)
+        call distribute_xy (Uy, tmp_y)
+        deallocate (tmp_x, tmp_y)
+      else
+        call distribute_xy (Ux)
+        call distribute_xy (Uy)
+      endif
 !
       Ux = Ux / unit_velocity
       Uy = Uy / unit_velocity
@@ -2944,8 +2947,8 @@ module Special
 !
 ! Distribute the results in the xy-plane.
       if (lfirst_proc_z) then
-        call distribute_xy (Ux, gran_x)
-        call distribute_xy (Uy, gran_y)
+        call distribute_xy (gran_x, Ux)
+        call distribute_xy (gran_y, Uy)
       endif
 !
 ! Quench the horizontal velocities.
