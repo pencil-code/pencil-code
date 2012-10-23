@@ -734,7 +734,7 @@ module Entropy
       real, dimension(mx,my,mz,mfarray) :: f
 !
       integer :: i, j, k
-      real :: eth
+      real, dimension(nx) :: eth, rho
 !
 !  Impose the energy floor.
 !
@@ -743,13 +743,15 @@ module Entropy
 !  Apply Jeans energy floor.
 !
       if (ljeans_floor) then
-        eth = f(l1:l2,m1:m2,n1:n2,ieth)
-        if (ldensity_nolog) then
-          call jeans_floor(eth, f(l1:l2,m1:m2,n1:n2,irho))
-        else
-          call jeans_floor(eth, exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
-        endif
-        f(l1:l2,m1:m2,n1:n2,ieth) = eth
+        do k = n1, n2
+          do j = m1, m2
+            eth = f(l1:l2,j,k,ieth)
+            rho = f(l1:l2,j,k,irho)
+            if (.not. ldensity_nolog) rho = exp(rho)
+            call jeans_floor(eth, rho)
+            f(l1:l2,j,k,ieth) = eth
+          enddo
+        enddo
       endif
 !
 !  Stop the code if negative energy exists.
