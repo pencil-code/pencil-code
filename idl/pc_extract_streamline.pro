@@ -47,9 +47,10 @@ function pc_extract_streamline, data, indices
 	if (s[0] eq 1) then length = 1 else length = s[2]
 	quantity = dblarr (num, length)
 
-	; Iterate over the streamline
+	; Iterate over the streamlines
 	for pos = 0, length - 1 do begin
 		point = indices[*,pos]
+		; Follow one streamline
 		for comp = 0, num - 1 do begin
 			quantity[comp,pos] = interpolate (data[*,*,*,comp], point[0], point[1], point[2])
 		end
