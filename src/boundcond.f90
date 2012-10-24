@@ -200,7 +200,7 @@ module Boundcond
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                 case ('a2r')
-                  ! BCX_DOC: sets d^f/dr^2 - 2f/r^2 = 0
+                  ! BCX_DOC: sets $d^f/dr^2 - 2f/r^2 = 0$
                   ! BCX_DOC: This is the replacement of zero second derivative
                   ! BCX_DOC: in spherical coordinates, in radial direction.
                   call bc_a2r_x(f,topbot,j)
