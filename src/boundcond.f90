@@ -1162,10 +1162,38 @@ module Boundcond
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        call fatal_error('bc_a2_r_x,bot','to be coded by joern')
+        f(l1-1,:,:,j)=f(l1,:,:,j)*(2*dx_1(l1)**2+2/x(l1)**2) &
+                      /(dx_1(l1)**2-dx_1(l1)*dx_tilde(l1)/2) &
+                      -f(l1+1,:,:,j)
+        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*(16*dx_1(l1)**2+8*dx_1(l1)*dx_tilde(l1)) &
+                       -f(l1,:,:,j)*(30*dx_1(l1)**2+24/x(l1)**2) &
+                       +f(l1+1,:,:,j)*(16*dx_1(l1)**2-8*dx_1(l1)*dx_tilde(l1))) &
+                       /(dx_1(l1)**2-dx_1(l1)*dx_tilde(l1)) &
+                       -f(l1+2,:,:,j)
+        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*(9*dx_1(l1)**2.-9*dx_1(l1)*dx_tilde(l1)) &
+                       -f(l1-1,:,:,j)*(90*dx_1(l1)**2-45*dx_1(l1)*dx_tilde(l1)) &
+                       +f(l1,:,:,j)*(490/3*dx_1(l1)**2+120/x(l1)**2) &
+                       -f(l1+1,:,:,j)*(90*dx_1(l1)**2+45*dx_1(l1)*dx_tilde(l1)) &
+                       +f(l1-2,:,:,j)*(9*dx_1(l1)**2.+9*dx_1(l1)*dx_tilde(l1))) &
+                       /(2/3*dx_1(l1)**2-dx_1(l1)*dx_tilde(l1)) &
+                       -f(l1+3,:,:,j)
 !
       case ('top')               ! top boundary
-        call fatal_error('bc_a2_r_x,bot','to be coded by joern')
+       f(l2+1,:,:,j)=f(l2,:,:,j)*(2*dx_1(l2)**2+2/x(l2)**2) &
+                      /(dx_1(l2)**2-dx_1(l2)*dx_tilde(l2)/2) &
+                      -f(l2-1,:,:,j)
+        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*(16*dx_1(l2)**2+8*dx_1(l2)*dx_tilde(l2)) &
+                       -f(l2,:,:,j)*(30*dx_1(l2)**2+24/x(l2)**2) &
+                       +f(l2-1,:,:,j)*(16*dx_1(l2)**2-8*dx_1(l2)*dx_tilde(l2))) &
+                       /(dx_1(l2)**2-dx_1(l2)*dx_tilde(l2)) &
+                       -f(l2-2,:,:,j)
+        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*(9*dx_1(l2)**2.-9*dx_1(l2)*dx_tilde(l2)) &
+                       -f(l2+1,:,:,j)*(90*dx_1(l2)**2-45*dx_1(l2)*dx_tilde(l2)) &
+                       +f(l2,:,:,j)*(490/3*dx_1(l2)**2+120/x(l2)**2) &
+                       -f(l2-1,:,:,j)*(90*dx_1(l2)**2+45*dx_1(l2)*dx_tilde(l2)) &
+                       +f(l2-2,:,:,j)*(9*dx_1(l2)**2.+9*dx_1(l2)*dx_tilde(l2))) &
+                       /(2/3*dx_1(l2)**2-dx_1(l2)*dx_tilde(l2)) &
+                       -f(l2-3,:,:,j)
 !
       case default
         print*, "bc_a2r_x: ", topbot, " should be 'top' or 'bot'"
