@@ -199,6 +199,11 @@ module Boundcond
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                case ('a2r')
+                  ! BCX_DOC: sets d^f/dr^2 - 2f/r^2 = 0
+                  ! BCX_DOC: This is the replacement of zero second derivative
+                  ! BCX_DOC: in spherical coordinates, in radial direction.
+                  call bc_a2r_x(f,topbot,j)
                 case ('cpc')
                   ! BCX_DOC: cylindrical perfect conductor
                   ! BCX_DOC: implies $f''+f'/R=0$
@@ -1145,6 +1150,29 @@ module Boundcond
       endselect
 !
     endsubroutine bc_per_z
+!***********************************************************************
+    subroutine bc_a2r_x(f,topbot,j)
+!
+!  11-nov-02/wolf: coded
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer ::i,j
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        call fatal_error('bc_a2_r_x,bot','to be coded by joern')
+!
+      case ('top')               ! top boundary
+        call fatal_error('bc_a2_r_x,bot','to be coded by joern')
+!
+      case default
+        print*, "bc_a2r_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_a2r_x
 !***********************************************************************
     subroutine bc_sym_x(f,sgn,topbot,j,rel,val)
 !
