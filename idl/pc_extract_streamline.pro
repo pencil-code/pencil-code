@@ -43,14 +43,16 @@ function pc_extract_streamline, data, indices
 	ny = s[2]
 	nz = s[3]
 	if (n_dim eq 3) then num = 1 else num = s[4]
+
 	s = size (indices)
-	if (s[0] eq 1) then length = 1 else length = s[2]
+	if (s[0] le 1) then length = 1 else length = s[2]
+
 	quantity = dblarr (num, length)
 
-	; Iterate over the streamlines
+	; Follow the streamline
 	for pos = 0, length - 1 do begin
 		point = indices[*,pos]
-		; Follow one streamline
+		; Iterate over the data components
 		for comp = 0, num - 1 do begin
 			quantity[comp,pos] = interpolate (data[*,*,*,comp], point[0], point[1], point[2])
 		end
