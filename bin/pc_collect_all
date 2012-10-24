@@ -5,10 +5,17 @@
 # one single file that will be stored in data/allprocs.
 #  
 
+SCRIPTNAME="pc_collect"
+
 DATADIR="data"
 PROCDIR="$DATADIR/proc0"
 ALLPROCS="$DATADIR/allprocs"
-SCRIPT="src/pre_and_post_processing/pc_collect.x"
+SCRIPT="src/pre_and_post_processing/$SCRIPTNAME.x"
+
+if [ ! -e "$SCRIPT" ]; then
+	echo "Please compile first by ececuting \"pc_build $SCRIPTNAME\"."
+	exit 1
+fi
 
 for ENTRY in `find "$PROCDIR" -name VAR[0-9]* | sort`
 do
