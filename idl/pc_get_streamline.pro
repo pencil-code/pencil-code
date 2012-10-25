@@ -17,7 +17,7 @@
 ;   * max_length     Maximum length of a streamline.
 ;   * length         Returns the full length of a traced streamline.
 ;   * coords         Returns an array of grid coordinates of the traced streamline.
-;   * distance       Returns an array of the distances from the anchor point along the streamline.
+;   * distances      Returns an array of the distances from the anchor point along the streamline.
 ;   * cache          Cache vector field data cube for later use.
 ;
 ;  Returns:
@@ -30,16 +30,16 @@
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, grid=grid
 ;   IDL> B = pc_get_quantity ('B', var, tags)
 ;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
-;   IDL> indices = pc_get_streamline (B, anchor=[2.0, 3.5, 1.2], grid=grid, distance=distance, length=length)
+;   IDL> indices = pc_get_streamline (B, anchor=[2.0, 3.5, 1.2], grid=grid, distances=distances, length=length)
 ;
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, field, anchor=anchor, grid=grid, distance=distance, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, max_length=max_length, cache=cache
+function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, max_length=max_length, cache=cache
 
 	common pc_get_streamline_common, data, nx, ny, nz, mx, my, mz
 
-	default, precision, 0.1
+	default, precision, 0.2
 	default, nghost, 3
 	default, nbox, 3.0
 
@@ -70,15 +70,15 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distance=distance, 
 	default, dir, 0
 	if (dir eq 0) then begin
 		; Combine forward and backward streamlines from starting point
-		along = pc_get_streamline (field, anchor=anchor, grid=grid, distance=d1, coords=along_coords, direction=1, periodic=periodic, precision=precision, length=l1, max_length=max_length, /cache)
-		against = pc_get_streamline (field, anchor=anchor, grid=grid, distance=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, max_length=max_length, /cache)
+		along = pc_get_streamline (field, anchor=anchor, grid=grid, distances=d1, coords=along_coords, direction=1, periodic=periodic, precision=precision, length=l1, max_length=max_length, /cache)
+		against = pc_get_streamline (field, anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, max_length=max_length, /cache)
 		length = l1 + l2
 		if (n_elements (d2) le 1) then begin
-			distance = d1
+			distances = d1
 			coords = along_coords
 			return, along
 		endif
-		distance = [ -reverse (d2[1:*]), d1 ]
+		distances = [ -reverse (d2[1:*]), d1 ]
 		against = against[*,1:*]
 		against_coords = against_coords[*,1:*]
 		if (size (against, /n_dim) eq 2) then against = reverse (against, 2)
@@ -148,7 +148,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distance=distance, 
 	length = 0.0
 	indices = [ [pos] ]
 	coords = [ [anchor] ]
-	distance = [ length ]
+	distances = [ length ]
 	last = anchor
 	done = 0
 	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_len) and not done) do begin
@@ -194,7 +194,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distance=distance, 
 
 		; Compute the path length along the traced streamline
 		length += delta
-		distance = [ distance, length ]
+		distances = [ distances, length ]
 
 		; Add indices and grid coordinates to the list of traced streamline points
 		indices = [ [indices], [pos] ]
