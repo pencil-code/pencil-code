@@ -4,94 +4,54 @@
 #
 # Script to update the Pencil Code tree from svn.
 #
-if ("$1" == "-h" || "$1" == "-help") then
-  echo 'Update all the necessaries but nothing else, i.e. miss out the runs'
-  echo 'directory. Works from anywhere in the Pencil Code tree.'
-  echo '-h  this help menu'
-  echo '-i  update only the important directories'
-  echo '-I  update only the src and bin directories'
-  echo '-src  update only the src directory'
-  echo '-s  check svn status as well'
-  echo '-val or -validated  merge current changes into validated version'
-  exit 1
+# Default settings
+set all=( "src" "bin" "lib" "config" "idl" "python" "dx" "samples" "doc" "license" "bugs" "remesh" "misc" "utils" )
+set include_all=1
+set rev="-rHEAD"
+set stat=0
+#
+# Parameter processing
+set dirs=( )
+foreach param ($argv)
+  switch ($param)
+    case "-h":
+    case "-help":
+      set scriptname=`basename $0`
+      echo "'Updates all necessary directories. Works from any directory."
+      echo "Usage: $scriptname [options] [dir1 [dir2 [...]]]"
+      echo "-h      display this help text"
+      echo "-I      update the src and bin directories"
+      echo "-s      check svn status as well"
+      echo "-val or -validated"
+      echo "        merge current changes into validated version"
+      exit 1
+    case "-val":
+    case "-validated":
+      set rev="-r `cat $PENCIL_HOME/misc/validation/validated.dat`"
+      breaksw
+    case "-s":
+      set stat=1
+      breaksw
+    case "-I":
+      set include_all=0
+      set dirs=( "src" "bin" )
+      breaksw
+    case "-i":
+      # Ignore this option for backwards compatibility
+      breaksw
+    default:
+      # Add manually selected directory
+      set include_all=0
+      set dirs=( $dirs $param )
+  endsw
+end
+#
+if ($include_all) then
+  set dirs=( $all $dirs )
 endif
 #
-if ("$1" == "-validated" || "$1" == "-val" || \
-    "$2" == "-validated" || "$2" == "-val" || \
-    "$3" == "-validated" || "$3" == "-val") then
-  set rev="-r `cat $PENCIL_HOME/misc/validation/validated.dat`"
-else
-  set rev="-rHEAD"
-endif
-#
-#echo svn up -N $rev $PENCIL_HOME/
-#svn up -N $rev $PENCIL_HOME
-if ("$1" == "-s" || "$2" == "-s") then
-  set stat=1
-else
-  set stat=0
-endif
-#
-#echo svn up -N $rev $PENCIL_HOME/
-#svn up -N $rev $PENCIL_HOME
-#if ($stat) svn status -N $PENCIL_HOME
-#
-echo svn up $rev $PENCIL_HOME/src
-svn up $rev $PENCIL_HOME/src
-if ($stat) svn status $PENCIL_HOME/src
-#
-if ("$1" != "-src") then
-  echo svn up $rev $PENCIL_HOME/bin
-  svn up $rev $PENCIL_HOME/bin
-  if ($stat) svn status $PENCIL_HOME/bin
-#
-  if ("$1" != "-I") then
-    echo svn up $rev $PENCIL_HOME/samples
-    svn up $rev $PENCIL_HOME/samples
-    if ($stat) svn status $PENCIL_HOME/samples
-#
-    echo svn up $rev $PENCIL_HOME/lib
-    svn up $rev $PENCIL_HOME/lib
-    if ($stat) svn status $PENCIL_HOME/lib
-#
-    echo svn up $rev $PENCIL_HOME/config
-    svn up $rev $PENCIL_HOME/config
-    if ($stat) svn status $PENCIL_HOME/config
-#
-    echo svn up $rev $PENCIL_HOME/doc
-    svn up $rev $PENCIL_HOME/doc
-    if ($stat) svn status $PENCIL_HOME/doc
-#
-    echo svn up $rev $PENCIL_HOME/idl
-    svn up $rev $PENCIL_HOME/idl
-    if ($stat) svn status $PENCIL_HOME/idl
-#
-    echo svn up $rev $PENCIL_HOME/python
-    svn up $rev $PENCIL_HOME/python
-    if ($stat) svn status $PENCIL_HOME/python
-#
-    echo svn up $rev $PENCIL_HOME/license
-    svn up $rev $PENCIL_HOME/license
-    if ($stat) svn status $PENCIL_HOME/license
-#
-    echo svn up $rev $PENCIL_HOME/bugs
-    svn up $rev $PENCIL_HOME/bugs
-    if ($stat) svn status $PENCIL_HOME/bugs
-#
-    echo svn up $rev $PENCIL_HOME/dx
-    svn up $rev $PENCIL_HOME/dx
-    if ($stat) svn status $PENCIL_HOME/dx
-#
-    echo svn up $rev $PENCIL_HOME/remesh
-    svn up $rev $PENCIL_HOME/remesh
-    if ($stat) svn status $PENCIL_HOME/remesh
-#
-    echo svn up $rev $PENCIL_HOME/misc
-    svn up $rev $PENCIL_HOME/misc
-    if ($stat) svn status $PENCIL_HOME/misc
-#
-    echo svn up $rev $PENCIL_HOME/utils
-    svn up $rev $PENCIL_HOME/utils
-    if ($stat) svn status $PENCIL_HOME/utils
-  endif
-endif
+foreach directory ( $dirs )
+  echo svn up $rev $PENCIL_HOME/$directory
+  svn up $rev $PENCIL_HOME/$directory
+  if ($stat) svn status $PENCIL_HOME/$directory
+end
