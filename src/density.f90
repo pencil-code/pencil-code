@@ -142,6 +142,7 @@ module Density
   integer :: idiag_rhomr=0      ! DIAG_DOC:
   integer :: idiag_totmass=0    ! DIAG_DOC: $\int\varrho\,dV$
   integer :: idiag_mass=0       ! DIAG_DOC: $\int\varrho\,dV$
+  integer :: idiag_vol=0        ! DIAG_DOC: $\int\,dV$ (volume)
   integer :: idiag_grhomax=0    ! DIAG_DOC: $\max (|\nabla \varrho|)$
 !
 ! xy averaged diagnostics given in xyaver.in
@@ -1698,6 +1699,7 @@ module Density
       type (pencil_case) :: p
 !
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
+      real, dimension (nx) :: unitpencil=1.
       integer :: j
 !
       intent(in)  :: p
@@ -2006,6 +2008,7 @@ module Density
         if (idiag_rhomxmask/=0)call sum_mn_name(p%rho*xmask_den,idiag_rhomxmask)
         if (idiag_totmass/=0)  call sum_mn_name(p%rho,idiag_totmass,lint=.true.)
         if (idiag_mass/=0)     call integrate_mn_name(p%rho,idiag_mass)
+        if (idiag_vol/=0)      call integrate_mn_name(unitpencil,idiag_vol)
         if (idiag_rhomin/=0) &
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
         if (idiag_rhomax/=0)   call max_mn_name(p%rho,idiag_rhomax)
@@ -2469,7 +2472,7 @@ module Density
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0
-        idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0
+        idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
         idiag_rhomxz=0; idiag_grhomax=0
         idiag_rhomxmask=0
         idiag_sigma=0
@@ -2493,6 +2496,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
         call parse_name(iname,cname(iname),cform(iname),'mass',idiag_mass)
+        call parse_name(iname,cname(iname),cform(iname),'vol',idiag_vol)
         call parse_name(iname,cname(iname),cform(iname),'grhomax',idiag_grhomax)
       enddo
 !
