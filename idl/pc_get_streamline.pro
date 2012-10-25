@@ -126,11 +126,6 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	; Maximum streamline length
 	if (n_elements (max_length) eq 0) then max_length = total (Box_xyz_upper - Box_xyz_lower) * nbox * dr
 	if (max_length le 0.0) then message, "ERROR: 'max_length' must be positive definite."
-	max_len = max_length / dr
-
-	; Apply periodic boundaries to starting position
-	anchor += [ nx, ny, nz ] * periodic * (anchor lt Box_xyz_lower)
-	anchor -= [ nx, ny, nz ] * periodic * (anchor ge Box_xyz_upper)
 
 	; Starting position
 	pos = anchor
@@ -151,7 +146,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	distances = [ length ]
 	last = anchor
 	done = 0
-	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_len) and not done) do begin
+	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and not done) do begin
 
 		; Interpolate data
 		vector_x = interpolate (data[*,*,*,0], pos[0] + nghost, pos[1] + nghost, pos[2] + nghost)
