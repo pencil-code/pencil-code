@@ -961,7 +961,7 @@ pro cslice_save_streamlines, data=data
 		quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (cube, streamlines.(line).indices))
 	end
 	quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
-	save, filename=streamlines_file+"_"+quantity_name+"_"+suffix, streamlines, quantity
+	save, filename=streamlines_file+"_"+quantity_name+suffix, streamlines, quantity
 end
 
 
