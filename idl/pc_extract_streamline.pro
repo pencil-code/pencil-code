@@ -58,7 +58,7 @@ function pc_extract_streamline, data, indices
 		end
 	end
 
-	return, quantity
+	return, reform (quantity)
 
 end
 
