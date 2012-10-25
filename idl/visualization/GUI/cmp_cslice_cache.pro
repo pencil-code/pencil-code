@@ -395,12 +395,12 @@ pro cslice_event, event
 			field[*,*,*,0] = field_x
 			field[*,*,*,1] = field_y
 			field[*,*,*,2] = field_z
-			indices = pc_get_streamline (field, anchor=anchor, grid=coord, coords=coords, /cache)
+			indices = pc_get_streamline (field, anchor=anchor, grid=coord, coords=coords, distances=distances, length=length, /cache)
 		end else begin
-			indices = pc_get_streamline (anchor=anchor, grid=coord, coords=coords, /cache)
+			indices = pc_get_streamline (anchor=anchor, grid=coord, coords=coords, distances=distances, length=length, /cache)
 		end
 		streamlines.num += 1
-		streamlines = create_struct (streamlines, 'indices_'+strtrim (streamlines.num, 2), indices, 'coords_'+strtrim (streamlines.num, 2), coords)
+		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), { indices:indices, coords:coords, distances:distances, length:length })
 		WIDGET_CONTROL, stream, SENSITIVE = 1
 		WIDGET_CONTROL, extract, SENSITIVE = 1
 		WIDGET_CONTROL, clear, SENSITIVE = 1
@@ -417,6 +417,7 @@ pro cslice_event, event
 	end
 	'CLEAR': begin
 		if (streamlines.num ge 1) then begin
+			WIDGET_CONTROL, extract, SENSITIVE = 0
 			WIDGET_CONTROL, clear, SENSITIVE = 0
 			streamlines = { num:0 }
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -663,16 +664,16 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (streamlines.num ge 1) then begin
 			for pos = 1, streamlines.num do begin
 				if (destretch[1]) then begin
-					indices_y = reform (streamlines.(pos*2)[1,*])
+					indices_y = reform (streamlines.(pos).coords[1,*])
 					indices_y = (indices_y - coord.y[0]) / (coord.y[num_y-1] - coord.y[0]) * num_y
 				end else begin
-					indices_y = reform (streamlines.(pos*2-1)[1,*])
+					indices_y = reform (streamlines.(pos).indices[1,*])
 				end
 				if (destretch[2]) then begin
-					indices_z = reform (streamlines.(pos*2)[2,*])
+					indices_z = reform (streamlines.(pos).coords[2,*])
 					indices_z = (indices_z - coord.z[0]) / (coord.z[num_z-1] - coord.z[0]) * num_z
 				end else begin
-					indices_z = reform (streamlines.(pos*2-1)[2,*])
+					indices_z = reform (streamlines.(pos).indices[2,*])
 				end
 				plots, indices_y*bin_y, indices_z*bin_z, psym=3, color=200+12000*pos, /device
 			end
@@ -727,16 +728,16 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (streamlines.num ge 1) then begin
 			for pos = 1, streamlines.num do begin
 				if (destretch[0]) then begin
-					indices_x = reform (streamlines.(pos*2)[0,*])
+					indices_x = reform (streamlines.(pos).coords[0,*])
 					indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
 				end else begin
-					indices_x = reform (streamlines.(pos*2-1)[0,*])
+					indices_x = reform (streamlines.(pos).indices[0,*])
 				end
 				if (destretch[2]) then begin
-					indices_z = reform (streamlines.(pos*2)[2,*])
+					indices_z = reform (streamlines.(pos).coords[2,*])
 					indices_z = (indices_z - coord.z[0]) / (coord.z[num_z-1] - coord.z[0]) * num_z
 				end else begin
-					indices_z = reform (streamlines.(pos*2-1)[2,*])
+					indices_z = reform (streamlines.(pos).indices[2,*])
 				end
 				plots, indices_x*bin_x, indices_z*bin_z, psym=3, color=200+12000*pos, /device
 			end
@@ -791,16 +792,16 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		if (streamlines.num ge 1) then begin
 			for pos = 1, streamlines.num do begin
 				if (destretch[0]) then begin
-					indices_x = reform (streamlines.(pos*2)[0,*])
+					indices_x = reform (streamlines.(pos).coords[0,*])
 					indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
 				end else begin
-					indices_x = reform (streamlines.(pos*2-1)[0,*])
+					indices_x = reform (streamlines.(pos).indices[0,*])
 				end
 				if (destretch[1]) then begin
-					indices_y = reform (streamlines.(pos*2)[1,*])
+					indices_y = reform (streamlines.(pos).coords[1,*])
 					indices_y = (indices_y - coord.y[0]) / (coord.y[num_y-1] - coord.y[0]) * num_y
 				end else begin
-					indices_y = reform (streamlines.(pos*2-1)[1,*])
+					indices_y = reform (streamlines.(pos).indices[1,*])
 				end
 				plots, indices_x*bin_x, indices_y*bin_y, psym=3, color=200+12000*pos, /device
 			end
@@ -951,7 +952,7 @@ pro cslice_save_streamlines, data=data
         quantity_name = (tag_names (set))[selected_cube]
 	quantity = { name:quantity_name }
 	for line = 1, streamlines.num do begin
-		quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (cube, streamlines.(line)))
+		quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (cube, streamlines.(line).indices))
 	end
 	save, filename=quantity_name+"_"+streamlines_file, streamlines, quantity
 end
