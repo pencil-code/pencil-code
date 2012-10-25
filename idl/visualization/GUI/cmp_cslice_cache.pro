@@ -389,15 +389,19 @@ pro cslice_event, event
 		WIDGET_CONTROL, clear, SENSITIVE = 0
 		WIDGET_CONTROL, extract, SENSITIVE = 0
 		WIDGET_CONTROL, stream, SENSITIVE = 0
-		anchor = [ coord.x[px], coord.y[py], coord.z[pz] ]
+		grid = coord
+		grid.x /= unit.default_length
+		grid.y /= unit.default_length
+		grid.z /= unit.default_length
+		anchor = [ grid.x[px], grid.y[py], grid.z[pz] ]
 		if (streamlines.num le 0) then begin
 			field = dblarr (num_x, num_y, num_z, 3)
 			field[*,*,*,0] = field_x
 			field[*,*,*,1] = field_y
 			field[*,*,*,2] = field_z
-			indices = pc_get_streamline (field, anchor=anchor, grid=coord, coords=coords, distances=distances, length=length, /cache)
+			indices = pc_get_streamline (field, anchor=anchor, grid=grid, coords=coords, distances=distances, length=length, /cache)
 		end else begin
-			indices = pc_get_streamline (anchor=anchor, grid=coord, coords=coords, distances=distances, length=length, /cache)
+			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, distances=distances, length=length, /cache)
 		end
 		streamlines.num += 1
 		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), { indices:indices, coords:coords, distances:distances, length:length })
