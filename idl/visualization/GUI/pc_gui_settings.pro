@@ -38,10 +38,7 @@ default, quantities, { $
 ;;; Available quantities can be found and defined in 'pc_get_quantity'.
 default, overplot_quantities, { $
 	u:'velocities', $
-	grad_Temp:'temperature gradient', $
-	grad_P_therm:'thermal pressure gradient', $
-;	B:'magnetic_field', $
-	A_contour:'fieldlines' $
+	B:'magnetic field' $
 }
 
 ;;; Default filenames
