@@ -403,8 +403,9 @@ pro cslice_event, event
 		end else begin
 			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, distances=distances, length=length, /cache)
 		end
+		add_line = { indices:indices, coords:coords, distances:distances, length:length, time:varfiles[selected_snapshot].time*unit.time, snapshot:varfiles[selected_snapshot].title }
 		streamlines.num += 1
-		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), { indices:indices, coords:coords, distances:distances, length:length })
+		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), add_line)
 		WIDGET_CONTROL, stream, SENSITIVE = 1
 		WIDGET_CONTROL, extract, SENSITIVE = 1
 		WIDGET_CONTROL, clear, SENSITIVE = 1
@@ -948,9 +949,10 @@ pro cslice_save_streamlines, data=data
 	if (streamlines.num lt 1) then return
 
 	; Settings:
-	streamlines_file = 'streamlines.xdr'
+	streamlines_file = 'streamlines'
+	suffix = '.xdr'
 
-	save, filename=streamlines_file, streamlines
+	save, filename=streamlines_file+suffix, streamlines
 	if (not keyword_set (data)) then return
 
         quantity_name = (tag_names (set))[selected_cube]
@@ -958,7 +960,8 @@ pro cslice_save_streamlines, data=data
 	for line = 1, streamlines.num do begin
 		quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (cube, streamlines.(line).indices))
 	end
-	save, filename=quantity_name+"_"+streamlines_file, streamlines, quantity
+	quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
+	save, filename=streamlines_file+"_"+quantity_name+"_"+suffix, streamlines, quantity
 end
 
 
