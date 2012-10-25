@@ -7,17 +7,20 @@
 #  29-may-2004/axel: coded
 #
 #  Usage:
-#     new run1 run2
-#  Alternative usage, if one is already in run1
-#     new run2
+#     pc_rename [source] destination
+#
+#  If source is omitted, '.' is assumed to be the source directory.
 #
 if ($#argv == 2) then
   set olddir=$cwd/$1
   set newdir=$cwd/$2
-else
+else if ($#argv == 1) then
   set olddir=$cwd
   cd ..
   set newdir=$cwd/$1
+else
+  echo "Usage: pc_rename [source] destination"
+  exit 1
 endif
 #
 #  save current working directory and make new run directory
