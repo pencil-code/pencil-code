@@ -69,7 +69,7 @@ end
 ; Event handling of file dialog window
 pro select_files_event, event
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, dim_x, dim_y, dim_z
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -145,13 +145,13 @@ pro select_files_event, event
 			WIDGET_CONTROL, cut_sl, SENSITIVE = (cut_pos ge 0)
 			WIDGET_CONTROL, sub_xs, SENSITIVE = (slice eq 4)
 			WIDGET_CONTROL, sub_xe, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, dim_x, SENSITIVE = (slice eq 4)
+			WIDGET_CONTROL, sub_nx, SENSITIVE = (slice eq 4)
 			WIDGET_CONTROL, sub_ys, SENSITIVE = (slice eq 4)
 			WIDGET_CONTROL, sub_ye, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, dim_y, SENSITIVE = (slice eq 4)
+			WIDGET_CONTROL, sub_ny, SENSITIVE = (slice eq 4)
 			WIDGET_CONTROL, sub_zs, SENSITIVE = (slice eq 4)
 			WIDGET_CONTROL, sub_ze, SENSITIVE = (slice eq 4)
-			WIDGET_CONTROL, dim_z, SENSITIVE = (slice eq 4)
+			WIDGET_CONTROL, sub_nz, SENSITIVE = (slice eq 4)
 			pc_select_files_update
 		end
 		break
@@ -190,7 +190,8 @@ pro select_files_event, event
 		subvol_nx = subvol_xe - subvol_xs + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_xs
 		WIDGET_CONTROL, sub_xe, SET_VALUE = subvol_xe
-		WIDGET_CONTROL, dim_x, SET_VALUE = subvol_nx
+		WIDGET_CONTROL, sub_nx, SET_VALUE = subvol_nx
+		pc_select_files_update
 		break
 	end
 	'SUB_YS': begin
@@ -201,7 +202,8 @@ pro select_files_event, event
 		subvol_ny = subvol_ye - subvol_ys + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_ys
 		WIDGET_CONTROL, sub_ye, SET_VALUE = subvol_ye
-		WIDGET_CONTROL, dim_y, SET_VALUE = subvol_ny
+		WIDGET_CONTROL, sub_ny, SET_VALUE = subvol_ny
+		pc_select_files_update
 		break
 	end
 	'SUB_ZS': begin
@@ -212,7 +214,8 @@ pro select_files_event, event
 		subvol_nz = subvol_ze - subvol_zs + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_zs
 		WIDGET_CONTROL, sub_ze, SET_VALUE = subvol_ze
-		WIDGET_CONTROL, dim_z, SET_VALUE = subvol_nz
+		WIDGET_CONTROL, sub_nz, SET_VALUE = subvol_nz
+		pc_select_files_update
 		break
 	end
 	'SUB_XE': begin
@@ -221,11 +224,12 @@ pro select_files_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_xe
 		if (subvol_xe gt last_xe) then subvol_nx = subvol_xe - subvol_xs + 1
 		subvol_xe = (subvol_xe > 0) < (nx-1)
-		subvol_xs = (subvol_xe - subvol_nx + 1) > 0
-		subvol_nx = subvol_xe - subvol_xs + 1
+		subvol_nx = (subvol_xe - subvol_xs + 1) > 1
+		subvol_xs = subvol_xe - subvol_nx + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_xe
 		WIDGET_CONTROL, sub_xs, SET_VALUE = subvol_xs
-		WIDGET_CONTROL, dim_x, SET_VALUE = subvol_nx
+		WIDGET_CONTROL, sub_nx, SET_VALUE = subvol_nx
+		pc_select_files_update
 		break
 	end
 	'SUB_YE': begin
@@ -234,11 +238,12 @@ pro select_files_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_ye
 		if (subvol_ye gt last_ye) then subvol_ny = subvol_ye - subvol_ys + 1
 		subvol_ye = (subvol_ye > 0) < (ny-1)
-		subvol_ys = (subvol_ye - subvol_ny + 1) > 0
-		subvol_ny = subvol_ye - subvol_ys + 1
+		subvol_ny = (subvol_ye - subvol_ys + 1) > 1
+		subvol_ys = subvol_ye - subvol_ny + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_ye
 		WIDGET_CONTROL, sub_ys, SET_VALUE = subvol_ys
-		WIDGET_CONTROL, dim_y, SET_VALUE = subvol_ny
+		WIDGET_CONTROL, sub_ny, SET_VALUE = subvol_ny
+		pc_select_files_update
 		break
 	end
 	'SUB_ZE': begin
@@ -247,24 +252,26 @@ pro select_files_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_ze
 		if (subvol_ze gt last_ze) then subvol_nz = subvol_ze - subvol_zs + 1
 		subvol_ze = (subvol_ze > 0) < (nz-1)
-		subvol_zs = (subvol_ze - subvol_nz + 1) > 0
-		subvol_nz = subvol_ze - subvol_zs + 1
+		subvol_nz = (subvol_ze - subvol_zs + 1) > 1
+		subvol_zs = subvol_ze - subvol_nz + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_ze
 		WIDGET_CONTROL, sub_zs, SET_VALUE = subvol_zs
-		WIDGET_CONTROL, dim_z, SET_VALUE = subvol_nz
+		WIDGET_CONTROL, sub_nz, SET_VALUE = subvol_nz
+		pc_select_files_update
 		break
 	end
-	'DIM_X': begin
+	'SUB_NX': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_nx
 		subvol_nx = (subvol_nx > 1) < nx
 		subvol_xe = (subvol_xs + subvol_nx - 1) < (nx-1)
 		subvol_xs = subvol_xe - subvol_nx + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_nx
 		WIDGET_CONTROL, sub_xs, SET_VALUE = subvol_xs
+		pc_select_files_update
 		WIDGET_CONTROL, sub_xe, SET_VALUE = subvol_xe
 		break
 	end
-	'DIM_Y': begin
+	'SUB_NY': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_ny
 		subvol_ny = (subvol_ny > 1) < ny
 		subvol_ye = (subvol_ys + subvol_ny - 1) < (ny-1)
@@ -272,9 +279,10 @@ pro select_files_event, event
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_ny
 		WIDGET_CONTROL, sub_ys, SET_VALUE = subvol_ys
 		WIDGET_CONTROL, sub_ye, SET_VALUE = subvol_ye
+		pc_select_files_update
 		break
 	end
-	'DIM_Z': begin
+	'SUB_NZ': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_nz
 		subvol_nz = (subvol_nz > 1) < nz
 		subvol_ze = (subvol_zs + subvol_nz - 1) < (nz-1)
@@ -282,6 +290,7 @@ pro select_files_event, event
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_nz
 		WIDGET_CONTROL, sub_zs, SET_VALUE = subvol_zs
 		WIDGET_CONTROL, sub_ze, SET_VALUE = subvol_ze
+		pc_select_files_update
 		break
 	end
 	'QUANT': begin
@@ -360,7 +369,7 @@ end
 ; Update file size and memory consumption display.
 pro pc_select_files_update, quant_update=quant_update, over_update=over_update
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, dim_x, dim_y, dim_z
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
 
 	num = 0
@@ -373,7 +382,10 @@ pro pc_select_files_update, quant_update=quant_update, over_update=over_update
 	if ((slice ge 1) and (slice le 3)) then begin
 		subvol_corr = (1.0+2*nghost)/(max_pos+1.0+2*nghost)
 	end else if (slice eq 4) then begin
-		subvol_corr = product (([dim_x, dim_y, dim_z]+2*nghost)/([nx, ny, nz]+2.0*nghost))
+		subvol_nx = subvol_xe - subvol_xs + 1
+		subvol_ny = subvol_ye - subvol_ys + 1
+		subvol_nz = subvol_ze - subvol_zs + 1
+		subvol_corr = product (([subvol_nx, subvol_ny, subvol_nz]+2*nghost)/([nx, ny, nz]+2.0*nghost))
 	end else begin
 		subvol_corr = 1
 	end
@@ -399,7 +411,7 @@ end
 ; File selection dialog GUI.
 pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=varfile, addfile=addfile, datadir=datadir, allprocs=allprocs, reduced=reduced, procdir=procdir, unit=unit, dim=dim, param=param, run_param=run_param, quantities=quantities, overplots=overplots, varcontent=varcontent, var_list=var_list, cut_x=cut_x, cut_y=cut_y, cut_z=cut_z, xs=xs, ys=ys, zs=zs, xe=xe, ye=ye, ze=ze, min_display=min_display, max_display=max_display, hide_quantities=hide_quantities, hide_overplots=hide_overplots, scaling=scaling
 
-	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, dim_x, dim_y, dim_z
+	common select_files_gui_common, b_var, b_add, b_ts, c_list, i_skip, i_step, f_load, f_comp, scal_x, scal_y, scal_z, c_cont, c_quant, c_over, d_slice, cut_co, cut_sl, sub_xs, sub_ys, sub_zs, sub_xe, sub_ye, sub_ze, sub_nx, sub_ny, sub_nz
 	common select_files_common, num_files, selected, num_selected, var_selected, add_selected, sources, sources_selected, num_cont, cont_selected, quant, quant_selected, quant_list, all_quant, quant_avail, over, over_selected, over_list, all_over, over_avail, cut_pos, max_pos, slice, skipping, stepping, data_dir, units, run_par, start_par, gb_per_file, cont_corr, subvol_corr, subvol_xs, subvol_ys, subvol_zs, subvol_xe, subvol_ye, subvol_ze, scaling_x, scaling_y, scaling_z, nx, ny, nz, nghost
 
 	; Default settings
@@ -703,24 +715,24 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
 	sub_xs	= CW_FIELD (SUB, title='X:', uvalue='SUB_XS', value=subvol_xs, /integer, /return_events, xsize=5)
 	sub_xe	= CW_FIELD (SUB, title='', uvalue='SUB_XE', value=subvol_xe, /integer, /return_events, xsize=5)
-	dim_x	= CW_FIELD (SUB, title='=', uvalue='DIM_X', value=subvol_nx, /integer, /return_events, xsize=5)
+	sub_nx	= CW_FIELD (SUB, title='=', uvalue='SUB_NX', value=subvol_nx, /integer, /return_events, xsize=5)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
 	sub_ys	= CW_FIELD (SUB, title='Y:', uvalue='SUB_YS', value=subvol_ys, /integer, /return_events, xsize=5)
 	sub_ye	= CW_FIELD (SUB, title='', uvalue='SUB_YE', value=subvol_ye, /integer, /return_events, xsize=5)
-	dim_y	= CW_FIELD (SUB, title='=', uvalue='DIM_Y', value=subvol_ny, /integer, /return_events, xsize=5)
+	sub_ny	= CW_FIELD (SUB, title='=', uvalue='SUB_NY', value=subvol_ny, /integer, /return_events, xsize=5)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
 	sub_zs	= CW_FIELD (SUB, title='Z:', uvalue='SUB_ZS', value=subvol_zs, /integer, /return_events, xsize=5)
 	sub_ze	= CW_FIELD (SUB, title='', uvalue='SUB_ZE', value=subvol_ze, /integer, /return_events, xsize=5)
-	dim_z	= CW_FIELD (SUB, title='=', uvalue='DIM_Z', value=subvol_nz, /integer, /return_events, xsize=5)
+	sub_nz	= CW_FIELD (SUB, title='=', uvalue='SUB_NZ', value=subvol_nz, /integer, /return_events, xsize=5)
 	WIDGET_CONTROL, sub_xs, SENSITIVE = (slice eq 4)
 	WIDGET_CONTROL, sub_xe, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, dim_x, SENSITIVE = (slice eq 4)
+	WIDGET_CONTROL, sub_nx, SENSITIVE = (slice eq 4)
 	WIDGET_CONTROL, sub_ys, SENSITIVE = (slice eq 4)
 	WIDGET_CONTROL, sub_ye, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, dim_y, SENSITIVE = (slice eq 4)
+	WIDGET_CONTROL, sub_ny, SENSITIVE = (slice eq 4)
 	WIDGET_CONTROL, sub_zs, SENSITIVE = (slice eq 4)
 	WIDGET_CONTROL, sub_ze, SENSITIVE = (slice eq 4)
-	WIDGET_CONTROL, dim_z, SENSITIVE = (slice eq 4)
+	WIDGET_CONTROL, sub_nz, SENSITIVE = (slice eq 4)
 
 	tmp	= WIDGET_LABEL (VC, value='Scaling factors (X,Y,Z):', frame=0)
 	SCA	= WIDGET_BASE (VC, frame=1, /align_center, /row)
