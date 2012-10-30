@@ -7165,10 +7165,10 @@ module Magnetic
         call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
         call implicit_resistivity_ysweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
 !
-        call sheared_advection_fft(f, iax,iaz, real(-t))
+        call sheared_advection_fft(f, iax, iaz, real(-t))
         call implicit_resistivity_xsweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
         call implicit_resistivity_xsweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
-        call sheared_advection_fft(f, iax,iaz, real(t))
+        call sheared_advection_fft(f, iax, iaz, real(t))
 !
         call implicit_resistivity_ysweep(f, (/'p','p','p'/), (/'p','p','p'/), dth)
         call implicit_resistivity_zsweep(f, bcz1(iax:iaz), bcz2(iax:iaz), dth)
