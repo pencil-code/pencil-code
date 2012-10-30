@@ -1548,25 +1548,21 @@ module Initcond
 !
 !  Beltrami field with wavelengths that are cube roots of unity
 !
-!
       integer :: i
       integer :: ix,iy,iz
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kz,nfactor,maxAx,maxAy,zmax,zmin,zzm,maxA
+      real :: ampl,kz,nfactor,maxAx,maxAy,zmax,zmin,zzm !,maxA
       complex :: omega,Ax,Ay
-      real :: Pi
-!
 !
 !  set z-dependent Beltrami field
 !
       omega=cmplx(1./2.,sqrt(3.)/2.)
       zmin=xyz0(3)
       zmax=xyz1(3)
-      Pi = 4.*atan(1.)
       zzm=max(abs(zmin),abs(zmax))
       maxAx= abs(sin(omega*kz*zzm)+sin(omega*omega*kz*zzm))
       maxAy= abs(cos(omega*kz*zzm)+cos(omega*omega*kz*zzm))
-      maxA = max(maxAx,maxAy)
+!      maxA = max(maxAx,maxAy)
       do ix=1,mx; do iy=1,my;do iz=1,mz
         Ax = (1.-nfactor)*cos(kz*z(iz))+ nfactor*real(sin(omega*kz*z(iz)))
         Ay = (1.-nfactor)*sin(kz*z(iz))+ nfactor*real(cos(omega*kz*z(iz)))
