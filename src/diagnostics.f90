@@ -1146,7 +1146,6 @@ module Diagnostics
 !
       integer :: iret
 !
-      write (*,*) '++++++',iname,itest
       iret = fparse_name(iname,cname,cform,ctest,itest)
 !
     endsubroutine parse_name_s
