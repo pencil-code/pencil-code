@@ -2545,7 +2545,7 @@ module General
 !
     backskip = .true.
 !
-    do i=1,count
+    do i=1,n
       backspace(unit,IOSTAT=iostat)
       if (iostat/=0) return
     enddo
