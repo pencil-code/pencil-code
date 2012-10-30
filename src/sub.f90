@@ -2502,7 +2502,7 @@ module Sub
         call fatal_error('u_dot_grad_mat','not implemented in cyl-coordinates')
       endif
 !
-   endsubroutine u_dot_grad_mat
+    endsubroutine u_dot_grad_mat
 !***********************************************************************
     subroutine u_dot_grad_scl(f,k,gradf,uu,ugradf,upwind,ladd)
 !
@@ -3894,7 +3894,7 @@ module Sub
       intent(in) :: bc1,bc2
 !
       do j=1,mcom
-        if ((bc1(j) == '') .or. (bc2(j) == '')) then 
+        if ((bc1(j) == '') .or. (bc2(j) == '')) then
 ! will probably never happen due to default='p'
           if (lroot) print*, 'Empty boundary condition No. ', &
               j, 'in (x, y, or z)'
