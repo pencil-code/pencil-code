@@ -61,7 +61,7 @@ module Diagnostics
     module procedure parse_name_s
     module procedure parse_name_v
   endinterface parse_name
-
+!
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   integer :: mnamer
   character (len=intlen) :: ch2davg
@@ -945,7 +945,6 @@ module Diagnostics
             form='unformatted', position='append',IOSTAT=iostat)
 ! file distributed, backskipping enabled
         if (outlog(iostat,'open',trim(directory_dist)//'/yaverages.dat',dist=1)) return
-
 !
         write(1,IOSTAT=iostat) t2davgfirst
         if (outlog(iostat,'write t2davgfirst')) return
@@ -1114,6 +1113,7 @@ module Diagnostics
         itest=iname
         fparse_name=iname
       else
+        itest = 0
         fparse_name=0
       endif
 !
@@ -1140,7 +1140,7 @@ module Diagnostics
       intent(in)  :: iname,cname,ctest
       intent(out) :: itest,cform
 !
-      integer iret
+      integer :: iret
 !
       iret = fparse_name(iname,cname,cform,ctest,itest)
 !
@@ -1167,9 +1167,9 @@ module Diagnostics
       do i=1,size(cname)
         do j=1,size(cdiag)
           if ( fparse_name(i,cname(i),cform(i),cdiag(j),idiag(j)) /= 0 ) exit
-        enddo    
+        enddo
       enddo
-
+!
     endsubroutine parse_name_v
 !***********************************************************************
     subroutine expand_cname_short(ccname,nname,vlabel,vname,lform)
@@ -1179,7 +1179,7 @@ module Diagnostics
 !  <vname>x..., <vname>y..., <vname>z..., or correspondingly for curvilinear coord systems;
 !  updates nname accordingly.
 !
-!  16-may-12/MR: coded 
+!  16-may-12/MR: coded
 !
       character (len=*), dimension(:) :: ccname    ! F2003: , allocatable
       character (len=*) :: vlabel
@@ -1189,7 +1189,7 @@ module Diagnostics
 !
       intent(inout) :: ccname,nname
       intent(in) :: vlabel, vname
-
+!
       character (len=intlen):: tail,form
       integer :: ind, ic,lvn
 !
@@ -1202,7 +1202,7 @@ module Diagnostics
       else
         form=''
       endif
-
+!
       ic = name_is_present(ccname,trim(vlabel),form)
       if (ic>0) then
 !
@@ -1227,7 +1227,7 @@ module Diagnostics
                                  trim(vname)//'z'//trim(tail),form)
         endif
       endif
-!        
+!
     endsubroutine expand_cname_short
 !***********************************************************************
     subroutine expand_cname_full(ccname,nname,ic,xlabel,ylabel,zlabel,form)
@@ -1261,7 +1261,7 @@ module Diagnostics
       endif
 !
       if (ic<=0) return
-
+!
       if (present(zlabel)) then
         itot=3
       else
@@ -1270,9 +1270,9 @@ module Diagnostics
 !
       if (.not.lextend_vector(ccname,nname+itot-1)) & ! sanity check
         call fatal_error('expand_cname_full','Not enough memory')
-!      
+!
       ccname(ic+itot:nname+itot-1) = ccname(ic+1:nname)
-      if (lform) then 
+      if (lform) then
         ccname(ic) = xlabel//trim(form)
         ccname(ic+1) = ylabel//trim(form)
         if (present(zlabel)) ccname(ic+2) = zlabel//trim(form)
@@ -1431,7 +1431,7 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname
       logical, optional :: lsqrt,l_dt,lneg,lreciprocal
-
+!
       if (iname==0) return
 !
       if (lfirstpoint) then
@@ -1488,6 +1488,8 @@ module Diagnostics
       integer :: iname
       integer, optional :: ipart
       logical, optional :: lsqrt, lint
+!
+      intent(in) :: iname
 !
 !  Only do something if iname is not zero.
 !
@@ -2919,9 +2921,9 @@ module Diagnostics
 !
       mname = size(ccname)
       name_is_present=0
-! 
+!
       do i=1,mname
-        
+!
         str=ccname(i)
         if (lform) then
           ind = index(str,'(')
