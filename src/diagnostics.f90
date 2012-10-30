@@ -406,6 +406,9 @@ module Diagnostics
       real, dimension(1) :: mass_per_proc,mass
       real:: average_density
 !
+      intent(out) :: average_density
+      intent(in) :: mass_per_proc
+!
 !  Communicate over all processors.
 !
       call mpireduce_sum(mass_per_proc,mass,1)
@@ -1188,7 +1191,7 @@ module Diagnostics
       logical, optional :: lform
 !
       intent(inout) :: ccname,nname
-      intent(in) :: vlabel, vname
+      intent(in) :: vlabel, vname, lform
 !
       character (len=intlen):: tail,form
       integer :: ind, ic,lvn
@@ -1817,6 +1820,9 @@ module Diagnostics
       real, dimension (nx) :: a,fac
       real :: inta
 !
+      intent(in) :: a
+      intent(inout) :: inta
+!
 !  initialize by the volume element (which is different for different m and n)
 !
       fac=dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
@@ -2206,6 +2212,8 @@ module Diagnostics
       type (pencil_case) :: p
       real :: r0,width
       integer :: ir
+!
+      intent(in) :: p
 !
 !  We use a quartic-Gaussian profile ~ exp(-r^4)
 !
