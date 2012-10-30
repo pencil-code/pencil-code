@@ -1157,7 +1157,7 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer ::i,j
+      integer ::j
 !
       select case (topbot)
 !
@@ -4340,7 +4340,7 @@ module Boundcond
 !  Tell other modules that variable with slot j is to be frozen in on
 !  given boundary
 !
-      integer :: j 
+      integer :: j
       character (len=bclen) :: topbot
 !
       lfrozen_bcs_x = .true.    ! set flag
@@ -5136,7 +5136,7 @@ module Boundcond
 !  ===============
 !
       case ('bot')
-
+!
         call get_shared_variable('FbotKbot',FbotKbot,ierr)
         if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
              "there was a problem when getting FbotKbot")
@@ -5179,7 +5179,7 @@ module Boundcond
           endif
 !
 !  enforce ds/dx + gamma_m1/gamma*dlnrho/dx = - gamma_m1/gamma*Fbot/(K*cs2)
-! 
+!
           call heatflux_boundcond_x( f, tmp_yz, gamma_m1/gamma, BOT )
 !
         endif
@@ -5214,12 +5214,12 @@ module Boundcond
             tmp_yz=cs20*exp(gamma_m1*(f(l2,:,:,ilnrho)-lnrho0)+gamma*f(l2,:,:,iss))
           endif
           if (lheatc_kramers) then
-
+!
             call get_shared_variable('Ftop',Ftop,ierr)
             if (ierr/=0) call stop_it("bc_ss_flux_x: "//&
             "there was a problem when getting Ftop")
             if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
-
+!
             tmp_yz = Ftop*work_yz**(2*nkramers)*(cp*gamma_m1)**(6.5*nkramers)/ &
                      (hcond0_kramers*tmp_yz**(6.5*nkramers+1.))
           else
@@ -5251,7 +5251,7 @@ module Boundcond
 !  17-apr-12/MR: outsourced from bc_ss_flux_x
 !
       use Deriv, only: heatflux_deriv_x
-
+!
       real, dimension(mx,my,mz,mfarray), intent(INOUT):: f
       real, dimension(my,mz)           , intent(IN)   :: inh
       real                             , intent(IN)   :: fac
@@ -5262,7 +5262,7 @@ module Boundcond
       if ( .not.lequidist(1) ) then
         if ( heatflux_deriv_x( f, inh, fac, topbot ) ) return
       endif
-! 
+!
       if (topbot==1) then
         ll=l1; ia=1; ie=nghost
       else
@@ -7431,7 +7431,7 @@ module Boundcond
 !
 !  This subroutine checks, if the density paramters like type, topbot
 !  and boundary value are set consistently with eg. the initial condition.
-!  
+!
 !  26-jun-12/dhruba+joern: coded
 !
 !  dirn       =     direction                    : 'x','y','z'
@@ -7439,7 +7439,7 @@ module Boundcond
 !  tb         =     top or bottom boundary       : 'top','bot'
 !  rhob       =     value at the boundary        : 4.04, 8.35, 10.1
 !  lsuccess   =     switch, if it was successful : .true., .false.
-!      
+!
 !  At the moment only the x-direction is implemented
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -7498,7 +7498,7 @@ module Boundcond
 !
 !  This subroutine checks, if the velocity paramters like type and  topbot
 !  are set consistently with eg. the initial condition.
-!  
+!
 !  14-sep-12/joern: coded, adapted from subroutine set_consistent_density_boundary
 !
 !  dirn       =     direction                    : 'x','y','z'
@@ -7506,7 +7506,7 @@ module Boundcond
 !  tb         =     top or bottom boundary       : 'top','bot'
 !  comp       =     component of the velocity    : 'x','y','z'
 !  lsuccess   =     switch, if it was successful : .true., .false.
-!      
+!
 !  At the moment only the x-direction is implemented
 !
       real, dimension (mx,my,mz,mfarray) :: f
