@@ -1080,7 +1080,8 @@ module Diagnostics
       integer :: iname,itest,iform0,iform1,iform2,length,index_i
 !
       intent(in)  :: iname,cname,ctest
-      intent(out) :: itest,cform
+      intent(out) :: cform
+      intent(inout) :: itest
 !
 !  Check whether format is given.
 !
@@ -1116,7 +1117,6 @@ module Diagnostics
         itest=iname
         fparse_name=iname
       else
-        itest = 0
         fparse_name=0
       endif
 !
@@ -1141,10 +1141,12 @@ module Diagnostics
       integer :: iname,itest
 !
       intent(in)  :: iname,cname,ctest
-      intent(out) :: itest,cform
+      intent(out) :: cform
+      intent(inout) :: itest
 !
       integer :: iret
 !
+      write (*,*) '++++++',iname,itest
       iret = fparse_name(iname,cname,cform,ctest,itest)
 !
     endsubroutine parse_name_s
