@@ -1153,7 +1153,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_a2r_x(f,topbot,j)
 !
-!  11-nov-02/wolf: coded
+!  20-oct-12/joern: coded
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1170,12 +1170,12 @@ module Boundcond
                        +f(l1+1,:,:,j)*(16*dx_1(l1)**2-8*dx_1(l1)*dx_tilde(l1))) &
                        /(dx_1(l1)**2-dx_1(l1)*dx_tilde(l1)) &
                        -f(l1+2,:,:,j)
-        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*(9*dx_1(l1)**2.-9*dx_1(l1)*dx_tilde(l1)) &
-                       -f(l1-1,:,:,j)*(90*dx_1(l1)**2-45*dx_1(l1)*dx_tilde(l1)) &
-                       +f(l1,:,:,j)*(490/3*dx_1(l1)**2+120/x(l1)**2) &
-                       -f(l1+1,:,:,j)*(90*dx_1(l1)**2+45*dx_1(l1)*dx_tilde(l1)) &
-                       +f(l1-2,:,:,j)*(9*dx_1(l1)**2.+9*dx_1(l1)*dx_tilde(l1))) &
-                       /(2/3*dx_1(l1)**2-dx_1(l1)*dx_tilde(l1)) &
+        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*(27/2*dx_1(l1)**2.-27/2*dx_1(l1)*dx_tilde(l1)) &
+                       -f(l1-1,:,:,j)*(135*dx_1(l1)**2-135/2*dx_1(l1)*dx_tilde(l1)) &
+                       +f(l1,:,:,j)*(245*dx_1(l1)**2+180/x(l1)**2) &
+                       -f(l1+1,:,:,j)*(135*dx_1(l1)**2+135/2*dx_1(l1)*dx_tilde(l1)) &
+                       +f(l1+2,:,:,j)*(27/2*dx_1(l1)**2.+27/2*dx_1(l1)*dx_tilde(l1))) &
+                       /(dx_1(l1)**2-3/2*dx_1(l1)*dx_tilde(l1)) &
                        -f(l1+3,:,:,j)
 !
       case ('top')               ! top boundary
@@ -1187,12 +1187,12 @@ module Boundcond
                        +f(l2-1,:,:,j)*(16*dx_1(l2)**2-8*dx_1(l2)*dx_tilde(l2))) &
                        /(dx_1(l2)**2-dx_1(l2)*dx_tilde(l2)) &
                        -f(l2-2,:,:,j)
-        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*(9*dx_1(l2)**2.-9*dx_1(l2)*dx_tilde(l2)) &
-                       -f(l2+1,:,:,j)*(90*dx_1(l2)**2-45*dx_1(l2)*dx_tilde(l2)) &
-                       +f(l2,:,:,j)*(490/3*dx_1(l2)**2+120/x(l2)**2) &
-                       -f(l2-1,:,:,j)*(90*dx_1(l2)**2+45*dx_1(l2)*dx_tilde(l2)) &
-                       +f(l2-2,:,:,j)*(9*dx_1(l2)**2.+9*dx_1(l2)*dx_tilde(l2))) &
-                       /(2/3*dx_1(l2)**2-dx_1(l2)*dx_tilde(l2)) &
+        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*(27/2*dx_1(l2)**2.-27/2*dx_1(l2)*dx_tilde(l2)) &
+                       -f(l2+1,:,:,j)*(135*dx_1(l2)**2-135/2*dx_1(l2)*dx_tilde(l2)) &
+                       +f(l2,:,:,j)*(245*dx_1(l2)**2+180/x(l2)**2) &
+                       -f(l2-1,:,:,j)*(135*dx_1(l2)**2+135/2*dx_1(l2)*dx_tilde(l2)) &
+                       +f(l2-2,:,:,j)*(27/2*dx_1(l2)**2.+27/2*dx_1(l2)*dx_tilde(l2))) &
+                       /(dx_1(l1)**2-3/2*dx_1(l2)*dx_tilde(l2)) &
                        -f(l2-3,:,:,j)
 !
       case default
