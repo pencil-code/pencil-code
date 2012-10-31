@@ -1179,7 +1179,7 @@ module Boundcond
                        -f(l1+3,:,:,j)
 !
       case ('top')               ! top boundary
-       f(l2+1,:,:,j)=f(l2,:,:,j)*(2*dx_1(l2)**2+2/x(l2)**2) &
+        f(l2+1,:,:,j)=f(l2,:,:,j)*(2*dx_1(l2)**2+2/x(l2)**2) &
                       /(dx_1(l2)**2-dx_1(l2)*dx_tilde(l2)/2) &
                       -f(l2-1,:,:,j)
         f(l2+2,:,:,j)=(f(l2+1,:,:,j)*(16*dx_1(l2)**2+8*dx_1(l2)*dx_tilde(l2)) &
