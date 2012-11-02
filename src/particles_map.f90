@@ -653,7 +653,7 @@ module Particles_map
 !
       do k=1,npar_loc
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-        if (.not.lnbody) then 
+        if (.not.lnbody) then
           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
           ipark_sorted(k)=k
@@ -718,7 +718,7 @@ module Particles_map
         do ih=1,21
           do k=1+hshellsort(ih),npar_loc
             lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then 
+            if (.not.lnbody) then
               ilmn_par_tmp=ilmn_par(k)
               ipark_sorted_tmp=ipark_sorted(k)
               j=k
@@ -739,7 +739,7 @@ module Particles_map
         kk=k1_imn
         do k=1,npar_loc
           lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if (.not.lnbody) then 
+          if (.not.lnbody) then
              ipark_sorted(kk(ilmn_par(k)))=k
              kk(ilmn_par(k))=kk(ilmn_par(k))+1
           endif
@@ -1230,7 +1230,7 @@ module Particles_map
 !
             do k=1,npar_loc
               lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then 
+              if (.not.lnbody) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
               endif
@@ -1276,7 +1276,7 @@ module Particles_map
 !
       do k=1,npar_loc
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-        if (.not.lnbody) then 
+        if (.not.lnbody) then
            iy0=ineargrid(k,2); iz0=ineargrid(k,3)
            npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
         endif
