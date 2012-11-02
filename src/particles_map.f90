@@ -1265,7 +1265,7 @@ module Particles_map
 !
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      integer :: k, ix0, iy0, iz0
+      integer :: k, iy0, iz0
       logical :: lnbody
 !
       intent(in)  :: ineargrid
@@ -1277,7 +1277,7 @@ module Particles_map
       do k=1,npar_loc
         lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
         if (.not.lnbody) then 
-           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+           iy0=ineargrid(k,2); iz0=ineargrid(k,3)
            npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
         endif
       enddo
