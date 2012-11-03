@@ -123,10 +123,10 @@ varcontent[irhopswarm].variable = 'Particle mass density (rhopswarm)'
 varcontent[irhopswarm].idlvar   = 'rhopswarm'
 varcontent[irhopswarm].idlinit  = INIT_SCALAR
 ;
-default, israd, 0
-varcontent[israd].variable = 'Particle sink radius (srad)'
-varcontent[israd].idlvar   = 'srad'
-varcontent[israd].idlinit  = INIT_SCALAR
+default, iaps, 0
+varcontent[iaps].variable = 'Particle sink radius (aps)'
+varcontent[iaps].idlvar   = 'aps'
+varcontent[iaps].idlinit  = INIT_SCALAR
 ;
 varcontent = varcontent[1:*]
 ;
