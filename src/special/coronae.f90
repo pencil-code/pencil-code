@@ -957,7 +957,7 @@ module Special
                   one_m_alpha = (1-alpha_rad(j))
 !
                   ln_coeff = f(l,m,n,ilnrho) + alog(real(1.5**2./8.7*(gamma-1.)/0.6/m_p/k_B))+ lnchi_rad(j)
-                  ln_coeff = ln_coeff + alog(unit_temperature/unit_velocity**2./unit_density/unit_length**6.)
+                  ln_coeff = ln_coeff + alog(real(unit_temperature/unit_velocity**2./unit_density/unit_length**6.))
 !
 ! compute resulting temperature in SI units
 !
