@@ -573,7 +573,7 @@ module Special
       use EquationOfState, only: gamma
       use Deriv, only: der2, der
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use Sub, only: multsv, dot, dot2, unit_vector, identify_bcs
+      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -584,6 +584,9 @@ module Special
       real, dimension(nx,3) :: spitzer_vec
       real, dimension(nx) :: tmp,dt_1_8th,nu_coll
       real :: coeff
+!
+      real, dimension(nx,3,3) ::  qij
+      real, dimension(nx,3) :: qgradu,ugradq,qmu,qdivu,tmp_vec
       integer :: i
 !
       intent(in) :: p
@@ -653,6 +656,7 @@ module Special
           rhs = sqrt(Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)* &
               gamma*p%cp1*tau_inv_spitzer*abs(cosgT_b))
           advec_uu = max(advec_uu,rhs/dxmax_pencil)
+!
           if (idiag_dtspitzer/=0) &
               call max_mn_name(advec_uu/cdt,idiag_dtspitzer,l_dt=.true.)
           !
@@ -668,17 +672,29 @@ module Special
 !
         b2_1=1./(p%b2+tini)
 !
+        call gij(f,iqx,qij,1)
+        call u_dot_grad(f,iqx,qij,p%uu,ugradq)
+
+        call u_dot_grad(f,iux,p%uij,p%qq,qgradu)
+        call multsv(p%divu,p%qq,qdivu)
+!
+        call multmv(p%uij,p%qq,qmu)
+!
+        spitzer_vec=-(ugradq +7./5.*qgradu+7./5.*qdivu+2./5.*qmu)
+!
         coeff = 0.872*5./2.*(k_B/m_e)*(k_B/m_p)*eighth_moment
         call multsv(coeff*exp(2.0*p%lnTT+p%lnrho),p%glnTT,K1)
 !
         call dot(K1,p%bb,tmp)
-        call multsv(b2_1*tmp,p%bb,spitzer_vec)
+        call multsv(b2_1*tmp,p%bb,tmp_vec)
+!
+        spitzer_vec=spitzer_vec-tmp_vec
 !
         nu_coll = 16./35.*nu_ee*exp(p%lnrho-1.5*p%lnTT)*eighth_moment
 !
         do i=1,3
           df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) &
-              -nu_coll*p%qq(:,i)-spitzer_vec(:,i)
+              -nu_coll*p%qq(:,i)+spitzer_vec(:,i)
         enddo
 !
 !  Limit by saturation heat flux
@@ -701,6 +717,10 @@ module Special
         if (lfirst.and.ldt) then
           dt_1_8th = nu_coll
           dt1_max=max(dt1_max,dt_1_8th/cdts)
+          advec_uu = max(advec_uu,sqrt(coeff*exp(p%lnTT)*gamma*p%cp1)/dxmax_pencil)
+          if (idiag_dtspitzer/=0) &
+              call max_mn_name(dt_1_8th/cdts,idiag_dtspitzer,l_dt=.true.)
+          !
         endif
       endif
 !
@@ -884,7 +904,7 @@ module Special
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_)
 !
-!  
+!
 !
 !  10-oct-12/bing: coded
 !
@@ -936,7 +956,7 @@ module Special
 !
                   one_m_alpha = (1-alpha_rad(j))
 !
-                  ln_coeff = f(l,m,n,ilnrho) + alog(1.5**2./8.7*(gamma-1.)/0.6/m_p/k_B)+ lnchi_rad(j)
+                  ln_coeff = f(l,m,n,ilnrho) + alog(real(1.5**2./8.7*(gamma-1.)/0.6/m_p/k_B))+ lnchi_rad(j)
                   ln_coeff = ln_coeff + alog(unit_temperature/unit_velocity**2./unit_density/unit_length**6.)
 !
 ! compute resulting temperature in SI units
