@@ -149,9 +149,12 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and not done) do begin
 
 		; Interpolate data
-		vector_x = interpolate (data[*,*,*,0], pos[0] + nghost, pos[1] + nghost, pos[2] + nghost)
-		vector_y = interpolate (data[*,*,*,1], pos[0] + nghost, pos[1] + nghost, pos[2] + nghost)
-		vector_z = interpolate (data[*,*,*,2], pos[0] + nghost, pos[1] + nghost, pos[2] + nghost)
+		tmp = floor (pos + nghost)
+		redidual = pos + nghost - tmp
+		tmp_data = data[tmp[0]:tmp[0]+1,tmp[1]:tmp[1]+1,tmp[2]:tmp[2]+1,*]
+		vector_x = interpolate (tmp_data[*,*,*,0], redidual[0], redidual[1], redidual[2])
+		vector_y = interpolate (tmp_data[*,*,*,1], redidual[0], redidual[1], redidual[2])
+		vector_z = interpolate (tmp_data[*,*,*,2], redidual[0], redidual[1], redidual[2])
 		vector_abs = sqrt (vector_x^2 + vector_y^2 + vector_z^2)
 
 		; Find projected step size
