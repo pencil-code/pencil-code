@@ -2865,7 +2865,7 @@ module Entropy
        if (l2davgfirst) then
          if (idiag_gTxgsxmxy/=0 .or. &
              idiag_gTxgsymxy/=0 .or. &
-             idiag_gTxgsxmxy/=0) then
+             idiag_gTxgszmxy/=0) then
            call cross(p%gTT,p%gss,gTxgs)
            if (idiag_gTxgsxmxy/=0) &
                call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
