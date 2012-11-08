@@ -1082,6 +1082,8 @@ module Chemistry
            do k=1,nchemspec
              p%Diff_penc_add(:,k)=p%lambda*p%rho1*p%cp1*Lewis_coef1(k)
            enddo
+         else if (lDiff_lewis .and. l1step_test) then
+           p%Diff_penc_add(:,k)=p%lambda*p%rho1*p%cp1
 !
 !  Full diffusion coefficient case
 !
@@ -3860,8 +3862,13 @@ module Chemistry
       endif
 !
       if (.not.lew_exist .and. lDiff_lewis .and. lroot) then
+        if (.not. l1step_test) then
           print*, 'No lewis.dat file present, switch to simplified diffusion'
           lDiff_lewis=.false.; lDiff_simple=.true.
+        else
+          print*, 'Le=1'
+          lDiff_lewis=.true.
+        endif
       endif
 !
       if (lroot .and. .not.tran_exist .and. .not.lew_exist) then
@@ -5247,6 +5254,11 @@ module Chemistry
               gDiff_full_add(:,i)=p%Diff_penc_add(:,k)*(0.7*p%glnTT(:,i)-p%glnrho(:,i))
             enddo
           else if (lDiff_lewis .and. lew_exist) then
+            do i=1,3
+              gDiff_full_add(:,i)=(p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
+                  *p%Diff_penc_add(:,k)
+            enddo
+          else if (lDiff_lewis .and. l1step_test) then
             do i=1,3
               gDiff_full_add(:,i)=(p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
                   *p%Diff_penc_add(:,k)
