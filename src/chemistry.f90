@@ -1301,7 +1301,7 @@ module Chemistry
             endif
           enddo
 !
-        else
+        else if (.not. l1step_test) then
           do k=1,mx
             if (x(k)>=init_x1.and.x(k)<init_x2) then
               f(k,:,:,i_H2O)=(x(k)-init_x1)/(init_x2-init_x1) &
