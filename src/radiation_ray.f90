@@ -1484,12 +1484,14 @@ module Radiation
       use Debug_IO, only: output
       use EquationOfState, only: eoscalc
       use Sub, only: cubic_step
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
       real :: kappa0, kappa0_cgs,k1,k2
+      real, pointer :: hcond0
       logical, save :: lfirst=.true.
-      integer :: i
+      integer :: i, ierr
 !
       select case (opacity_type)
 !
@@ -1514,6 +1516,21 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
           f(:,m,n,ikapparho)=kappa_cst*exp(lnrho)
+        enddo
+        enddo
+!
+!   To have a const. K, kappa=kappa0*T^3/rho,
+!   where kappa0=16./3.*sigmaSB_cgs/K
+!   still have to be tested.
+!
+      case ('kappa_Kconst')
+        call get_shared_variable('hcond0',hcond0, ierr)
+        kappa0=16./3.*sigmaSB_cgs/hcond0  
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnTT=lnTT)
+          TT=exp(lnTT)
+          f(:,m,n,ikapparho)=kappa0*TT**3
         enddo
         enddo
 !
