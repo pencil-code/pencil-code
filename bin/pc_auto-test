@@ -779,10 +779,16 @@ sub test_shell_cmd {
     my $t_ref = shift;
 
     print STDERR "\nRunning `$nice $cmd`" if ($debug);
-    my $res = (`$nice $cmd 2>&1` || "Very BAD: `$cmd` returned undef");
-    my $cmdstatus = $?;
-    print STDERR " ..done \n" if ($debug);
+    my $res = `$nice $cmd 2>&1`;
+    my ($cmdstatus, $cmdmesg) = ($?, $!);
+    $res = '' unless defined($res);
     chomp($res);
+    if ($res ne '') {
+        $res .= ' ';
+    }
+    $res .= "['$nice $cmd' reported: $cmdmesg]" if ($cmdstatus != 0);
+
+    print STDERR " ..done \n" if ($debug);
     if (($phase eq 'compilation') && ($postproc ne '')) {
         print STDERR "Postprocessing output..\n" if ($debug);
         $res = postprocess($res);
