@@ -1192,7 +1192,7 @@ sub test_rundir {
     }
 
     # 1. Test compilation
-    test_compile($dir,$makeopts,$t0);
+    test_compile($dir, $makeopts, $t0);
     return if ($test_status);
 
     my $t1 = get_time();
@@ -1202,13 +1202,13 @@ sub test_rundir {
     if ($t_start) {         # no need for a data directory unless we start
                             # the code
         $created_datadir = check_for_datadir();
-        test_start($dir,$t1);
+        test_start($dir, $t1);
         goto cleanup if ($test_status);
     }
 
     # 3 ..and running (we only get here if compiling and starting was OK)
     my $t2 = get_time();
-    test_run($dir,$t2);
+    test_run($dir, $t2);
     return if ($test_status);
 
     my $t3 = get_time();
