@@ -473,7 +473,7 @@ if (@ARGV) {
     @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
     $ntests = @ARGV;
     for my $d (@ARGV) {
-        test_rundir("$d",$makeopts);
+        test_rundir("$d", $makeopts);
     }
     if ((scalar @ARGV)==1) {
         if (%failed) {
@@ -525,11 +525,11 @@ if (@ARGV) {
         if ($clean)    { $passthru_opts .= '-C '; }
         if ($makejobs) { $passthru_opts .= " -j $makejobs"; }
         if ($opts{'c'} || $opts{'compile-only'}) { $passthru_opts .= ' -c'; }
-        do_tests_in_parallel(\@testdirs,\@nodes,$passthru_opts);
+        do_tests_in_parallel(\@testdirs, \@nodes, $passthru_opts);
     } else {
         # Run tests consecutively
         for my $d (@testdirs) {
-            test_rundir("$d",$makeopts);
+            test_rundir("$d", $makeopts);
         }
     }
 }
