@@ -1173,7 +1173,13 @@ sub test_rundir {
     }
     chdir $dir;
     my $cwd = cwd();
-    if ($short) { $cwd =~ s{.*pencil[^/]*/}{}i };
+    if ($short) {
+        my $full_cwd = $cwd;
+        $cwd =~ s{.*pencil[^/]*/}{}i;
+        unless ($cwd) {
+            $cwd = $full_cwd;
+        }
+    }
     if ($list_only) {
         print "$cwd\n";
         return;
