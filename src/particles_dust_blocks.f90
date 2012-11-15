@@ -350,6 +350,7 @@ module Particles
           write (1,*) 'np_swarm=', np_swarm
           write (1,*) 'mpmat=', mpmat
           write (1,*) 'mp_swarm=', mp_swarm
+          write (1,*) 'rhop_swarm=', rhop_swarm
         close (1)
       endif
 !
