@@ -1439,6 +1439,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=  -O3  #(nordita-laptop)
 #CC=gcc #(nordita-laptop)
 ##
+## atefeh's laptop
+#FC=mpif90 #(atefeh-laptop)
+#FFLAGS= -O0 #(atefeh-laptop)
+#CFLAGS=-DFUNDERSC=1 #(atefeh-laptop)
+##
+##
 ## Hoffman2 Cluster @ UCLA (Steve B)
 ##
 #FC=mpif90 #(i01|i02)
