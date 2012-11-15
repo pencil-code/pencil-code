@@ -578,6 +578,26 @@ module Hydro
         endif
         if (lpencil(i_divu)) p%divu=0.
 !
+!  modified Taylor-Green flow
+!
+      case ('TGmod') 
+        if (headtt) print*,'modified Taylor-Green flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n)) &
+            +ABC_A*sin(2*kx_uukin*x(l1:l2))*cos(2*kz_uukin*z(n)) &
+            +ABC_B*(sin(kx_uukin*x(l1:l2))*cos(3*ky_uukin*y(m))*cos(kz_uukin*z(n)) &
+            +5./13.*sin(3*kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n)))
+          p%uu(:,2)=-cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n)) &
+            +ABC_A*sin(2*ky_uukin*y(m))*cos(2*kz_uukin*z(n)) &
+            -ABC_B*(cos(3*kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n)) &
+            +5./13.*cos(kx_uukin*x(l1:l2))*sin(3*ky_uukin*y(m))*cos(kz_uukin*z(n)))
+          p%uu(:,3)=-ABC_A*(cos(2*kx_uukin*x(l1:l2))+cos(2*ky_uukin*y(m)))*sin(2*kz_uukin*z(n)) &
+            +ABC_B*2./13.*(cos(kx_uukin*x(l1:l2))*cos(3*ky_uukin*y(m)) &
+                          -cos(3*kx_uukin*x(l1:l2))*cos(ky_uukin*y(m)))*sin(kz_uukin*z(n))
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  Galloway-Proctor flow, U=-z x grad(psi) - z k psi, where
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
 !  This makes sense only for kx_uukin=ky_uukin

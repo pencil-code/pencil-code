@@ -69,7 +69,7 @@ module Radiation
   real :: dtau_thresh_min, dtau_thresh_max
   real :: tau_top=0.0, TT_top=0.0
   real :: tau_bot=0.0, TT_bot=0.0
-  real :: kappa_cst=1.0, kapparho_cst=1.0
+  real :: kappa_cst=1.0, kapparho_cst=1.0, kappa_Kconst=1.0
   real :: Srad_const=1.0, amplSrad=1.0, radius_Srad=1.0
   real :: kx_Srad=0.0, ky_Srad=0.0, kz_Srad=0.0
   real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
@@ -127,7 +127,7 @@ module Radiation
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, &
-      kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
+      kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
@@ -135,10 +135,10 @@ module Radiation
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
-      TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, nnu, &
-      lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, kx_Srad, &
-      ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
-      kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
+      TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
+      nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, &
+      kx_Srad, ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
+      kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, &
       cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, angle_weight, &
@@ -1484,14 +1484,12 @@ module Radiation
       use Debug_IO, only: output
       use EquationOfState, only: eoscalc
       use Sub, only: cubic_step
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
       real :: kappa0, kappa0_cgs,k1,k2
-      real, pointer :: hcond0
       logical, save :: lfirst=.true.
-      integer :: i, ierr
+      integer :: i
 !
       select case (opacity_type)
 !
@@ -1519,25 +1517,23 @@ module Radiation
         enddo
         enddo
 !
-!   To have a const. K, kappa=kappa0*T^3/rho,
-!   where kappa0=16./3.*sigmaSB_cgs/K
-!   still have to be tested.
+      case ('kapparho_cst')
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          f(:,m,n,ikapparho)=kapparho_cst
+        enddo
+        enddo
+!
+!  To have a const. K, kappa=kappa0*T^3/rho,
+!  where kappa0=16./3.*sigmaSB/K
 !
       case ('kappa_Kconst')
-        call get_shared_variable('hcond0',hcond0, ierr)
-        kappa0=16./3.*sigmaSB_cgs/hcond0  
+        kappa0=16./3.*sigmaSB/kappa_Kconst
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
           TT=exp(lnTT)
           f(:,m,n,ikapparho)=kappa0*TT**3
-        enddo
-        enddo
-!
-      case ('kapparho_cst')
-        do n=n1-radz,n2+radz
-        do m=m1-rady,m2+rady
-          f(:,m,n,ikapparho)=kapparho_cst
         enddo
         enddo
 !
@@ -1565,6 +1561,7 @@ module Radiation
           endif
         enddo; enddo
 !
+!AB: the following looks suspicious with *_cgs
       case ('Tsquare') !! Morfill et al. 1985
         kappa0_cgs=2e-4 ! 2e-6 in D'Angelo 2003 (wrong!)
         kappa0=kappa0_cgs!!*unit_density*unit_length
