@@ -779,6 +779,7 @@ sub test_shell_cmd {
     my $t_ref = shift;
 
     print STDERR "\nRunning `$nice $cmd`" if ($debug);
+    $! = 0;                     # reset
     my $res = `$nice $cmd 2>&1`;
     my ($cmdstatus, $cmdmesg) = ($?, $!);
     $res = '' unless defined($res);
