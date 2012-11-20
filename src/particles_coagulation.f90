@@ -15,14 +15,14 @@
 !***************************************************************
 module Particles_coagulation
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Cparam
   use Messages
   use Particles_cdata
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -33,7 +33,7 @@ module Particles_coagulation
   real :: four_pi_rhopmat_over_three2=0.0
   real :: three_over_four_pi_rhopmat=0.0
   real :: GNewton=6.67428e-11, deltav_grav_floor=0.0
-  real :: critical_mass_ratio_sticking=0.0
+  real :: critical_mass_ratio_sticking=1.0
   real :: minimum_particle_mass=0.0, minimum_particle_radius=0.0
   real, pointer :: rhs_poisson_const
   logical :: lcoag_simultaneous=.false., lnoselfcollision=.true.
@@ -41,7 +41,12 @@ module Particles_coagulation
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
   logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
   logical :: lgravitational_cross_section=.false.
-  logical :: lmontecarlo_sink=.false., lcollide_own_mass=.true.
+  logical :: lzsomdullemond=.false.	! use Zsom and Dullemond method
+!
+  real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
+  real, dimension(:), allocatable :: r_i_tot, cum_func_first_i
+  real :: r_total = 0.0
+  real :: delta_r = 0.0
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
 !
@@ -50,8 +55,7 @@ module Particles_coagulation
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
       kernel_pro, lnoselfcollision, lgravitational_cross_section, &
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
-      minimum_particle_mass, minimum_particle_radius, lmontecarlo_sink, &
-      lcollide_own_mass
+      minimum_particle_mass, minimum_particle_radius, lzsomdullemond
 !
   contains
 !***********************************************************************
@@ -61,6 +65,7 @@ module Particles_coagulation
 !  parameters.
 !
 !  24-nov-10/anders: coded
+!  15-nov-12/KWJ: modified
 !
       use SharedVariables, only: get_shared_variable
 !
@@ -118,6 +123,15 @@ module Particles_coagulation
            'initialize_particles_coagulation', 'Coagulation only '// &
            'implemented for Cartesian equidistant grids.')
 !
+!  If using the Zsom-Dullemond Monte Carlo method
+!
+      if(lzsomdullemond.and.(.not.allocated(r_ik_mat))) then
+        allocate(r_ik_mat(mpar_loc,mpar_loc))
+        allocate(r_i_tot(mpar_loc))
+        allocate(cum_func_first_i(mpar_loc))
+        allocate(cum_func_sec_ik(mpar_loc,mpar_loc))
+      end if
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
@@ -128,6 +142,7 @@ module Particles_coagulation
 !  Time-step contribution from particle coagulation.
 !
 !  30-nov-10/anders: coded
+!  15-nov-12/KWJ: modified
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -136,6 +151,13 @@ module Particles_coagulation
       real :: deltavjk, dt1_coag_par, kernel
       real :: npswarmj, npswarmk
       integer :: j, k, l
+!
+!  If using the Zsom and Dullemond Monte Carlo method
+!
+      if(lzsomdullemond) then
+        call particles_coagulation_timestep_zd(fp)
+        return
+      end if
 !
       if (lfirst.and.ldt) then
 !
@@ -233,6 +255,7 @@ module Particles_coagulation
 !  Collisions lead to coagulation, shattering, erosion, or bouncing.
 !
 !  24-nov-10/anders: coded
+!  15-nov-12/KWJ: modified
 !
       use Diagnostics
       use General, only: random_number_wrapper
@@ -247,6 +270,13 @@ module Particles_coagulation
 !
       intent (in) :: ineargrid
       intent (inout) :: fp
+!
+!  If using the Zsom & Dullemond Monte Carlo method (KWJ)
+!
+      if(lzsomdullemond) then
+        call particles_coagulation_outcome_zd(fp)
+        return
+      end if
 !
 !  Reset collision counter.
 !
@@ -361,12 +391,11 @@ module Particles_coagulation
                         four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
                     endif
                     if (j==k .and. lnoselfcollision) kernel=0.0
-                    if (lcollide_own_mass) then
-                      tau_coll1=kernel*min(npswarmj,npswarmk)
-                    else
+                    if (fp(k,iap)<fp(j,iap)) then
                       tau_coll1=kernel*npswarmj
+                    else
+                      tau_coll1=kernel*npswarmk
                     endif
-                    tau_coll1=kernel*min(npswarmj,npswarmk)
                   else
                     tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                         min(npswarmj,npswarmk)
@@ -579,7 +608,7 @@ module Particles_coagulation
 !
 !  Turn into sink particle if number of physical particles is less than one.
 !
-          if (lmontecarlo_sink .and. npnew*dx*dy*dz<1.0) then
+          if (npnew*dx*dy*dz<1.0) then
             if (fp(j,iap)<fp(k,iap)) then
               fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
                   rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
@@ -607,14 +636,9 @@ module Particles_coagulation
 !  Physical particles in the two swarms collide asymmetrically.
 !
           if (fp(k,iap)<fp(j,iap)) then
-            if (lcollide_own_mass) then
-              fp(k,inpswarm)=0.5*fp(j,inpswarm)
-              fp(k,iap)=2**(1.0/3.0)*fp(j,iap)
-            else
-              fp(k,inpswarm)=fp(k,inpswarm)* &
-                   (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
-              fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
-            endif
+            fp(k,inpswarm)=fp(k,inpswarm)* &
+                 (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
+            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
           else
             fp(k,inpswarm)=0.5*fp(k,inpswarm)
             fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
@@ -639,6 +663,221 @@ module Particles_coagulation
 !
     endsubroutine coagulation_fragmentation
 !***********************************************************************
+    subroutine particles_coagulation_timestep_zd(fp)
+!
+!  Calculate the next timestep with the same scheme as in Zsom & Dullemond
+!  (2008). Only use for kernel tests. Self-collision included.
+!
+!  15-nov-12/KWJ: coded
+!
+      use General, only: random_number_wrapper
+      ! Get all variables
+      real, dimension (npar,mpvar) :: fp
+!
+      real :: r, kernel, dt1_coag_par
+      integer :: j, l
+!
+      real, dimension(npar) :: dt1_max
+!
+!  If first timestep calculate the r_ik-matrix and the total rates. 
+!  Loop over all particle pairs.
+!
+!  We also need to get the cumulative distributions to pick the particles.
+!  N.B. Non-normalized cumulative distributions for easier handle of coagulation
+!  outcome.
+!
+!
+      if (it==1) then
+        j=1
+        l=1
+!  Initialize all rates and cumulative functions
+        r_i_tot = 0.
+        r_total = 0.
+        cum_func_first_i = 0.
+        cum_func_sec_ik = 0.
+!  Loop over all particles
+        do while (.true.)
+          do while (.true.)
+!  Get kernel for jl-pair. Rep. particle j and phys. particle l
+            if (lconstant_kernel_test) then
+              kernel=kernel_cst
+            elseif (llinear_kernel_test) then
+              kernel=kernel_lin* &
+                four_pi_rhopmat_over_three*(fp(j,iap)**3+fp(l,iap)**3)
+            elseif (lproduct_kernel_test) then
+              kernel=kernel_pro* &
+                four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(l,iap)**3
+            endif
+!  Calculate rates and cum. functions
+            r_ik_mat(j,l) = fp(l,inpswarm)*kernel	! rate matrix element
+            r_i_tot(j) = r_i_tot(j) + r_ik_mat(j,l)	! total rate for part. j
+            cum_func_sec_ik(j,l) = r_i_tot(j)		! cum. func. for phys. part.
+!
+            l = l + 1					! go to next particle
+            if(l == npar) exit			! exit if last particle
+          enddo
+          r_total = r_total + r_i_tot(j)	! total rate for all particles
+          cum_func_first_i(j) = r_total		! cum. func. for rep. part.
+!
+          l = 1
+          j = j + 1				! go to next particle
+          if(j == npar) exit
+        enddo
+      endif
+!
+!  Now get the timestep (time until next collision) and put in 
+!  inverse time-step array.
+!
+      call random_number_wrapper(r)
+      dt1_coag_par = -1./r_total*alog10(r)
+      dt1_max(1) = dt1_coag_par
+!
+    endsubroutine particles_coagulation_timestep_zd
+!***********************************************************************
+    subroutine particles_coagulation_outcome_zd(fp)
+!
+!  Calculate which two particles collide and the outcome with the same 
+!  scheme as in Zsom & Dullemond (2008). Only use for kernel tests.
+!  Assume perfect sticking for now.
+!
+!  15-nov-12/KWJ: coded
+!
+      use General, only: random_number_wrapper
+      ! Get all variables
+      real, dimension (npar,mpvar) :: fp
+!
+      real :: r, r_i_old, kernel
+      integer :: i, j, k, l
+      real :: delta_r 		! change in r_i rate
+!
+!  Get the particles that is involved in the collision with 
+!  random numbers and cumulative distribution functions. 
+!  N.B. Using un-normalized cumulative functions.
+!  Use the bisection method to find the right particle.
+!
+!  Find the representative particle, j.
+      call random_number_wrapper(r)
+      r = r*r_total
+      call particles_coagulation_bisection(cum_func_first_i, r, j)
+!  Find the physical particle, l.
+      call random_number_wrapper(r)
+      r = r*r_i_tot(j)
+      call particles_coagulation_bisection(cum_func_sec_ik(j,:), r, l)
+!
+!  Change properties of the representative particle (particle j). Change
+!  mass (radius) and particle density in superparticle j.
+!
+      fp(j,inpswarm)=fp(j,inpswarm)* &
+           (1.0/(1.0+(fp(l,iap)/fp(j,iap))**3))
+      fp(j,iap)=(fp(j,iap)**3+fp(l,iap)**3)**(1.0/3.0)
+!
+!  Update r_ik matrix. Only need to update elements with representative 
+!  particle i = j (column) and physical particle k = j (row).
+!
+!  Loop over i and update row with k = j. Skip k = i = j 
+!  (value in i = j column).
+!
+      i = 1
+      do while (.true.)
+        if (i /= j) then
+          if (lconstant_kernel_test) then
+            kernel=kernel_cst
+          elseif (llinear_kernel_test) then
+            kernel=kernel_lin* &
+                   four_pi_rhopmat_over_three*(fp(i,iap)**3+fp(j,iap)**3)
+          elseif (lproduct_kernel_test) then
+            kernel=kernel_pro* &
+                   four_pi_rhopmat_over_three2*fp(i,iap)**3*fp(j,iap)**3
+          endif
+          delta_r = r_ik_mat(i,j) - &
+                    fp(j,inpswarm)*kernel  ! change in matrix element
+          r_ik_mat(i,j) = fp(j,inpswarm)*kernel	! rate matrix element
+!  Update rate and cumulative function
+          r_i_tot(i) = r_i_tot(i) + delta_r  ! total rate for rep. particle i
+!  Only need to update cumulative function from element j and onwards
+          cum_func_sec_ik(i, j:) = cum_func_sec_ik(i, j:) + &
+                                             delta_r
+        end if
+!
+        i = i + 1					! go to next superparticle
+        if(i == npar) exit
+      enddo
+!
+!  Update i = j column.
+!
+      k = 1
+      do while (.true.)
+        if (lconstant_kernel_test) then
+          kernel=kernel_cst
+        elseif (llinear_kernel_test) then
+          kernel=kernel_lin* &
+                 four_pi_rhopmat_over_three*(fp(j,iap)**3+fp(k,iap)**3)
+        elseif (lproduct_kernel_test) then
+          kernel=kernel_pro* &
+                 four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
+        endif
+        r_ik_mat(j,k) = fp(k,inpswarm)*kernel	! rate matrix element
+!
+        if (k == 1) then
+          r_i_tot(j) = r_ik_mat(j,k)
+        else
+          r_i_tot(j) = r_i_tot(j) + r_ik_mat(j,k)
+        end if
+        cum_func_sec_ik(j,k) = r_i_tot(j)
+!
+        k = k + 1
+        if (k == npar) exit
+      end do
+!
+!  Update total rate and cumulative function for rep. particles
+!   
+    i = 1
+    do while (.true.)
+      if (i == 1) then
+        r_total = r_i_tot(i)
+      else
+        r_total = r_total + r_i_tot(i)
+      end if
+      cum_func_first_i(i) = r_total
+!
+      i = i + 1
+      if (i == npar) exit
+    end do
+!
+    endsubroutine particles_coagulation_outcome_zd
+!***********************************************************************
+    subroutine particles_coagulation_bisection(qArr, qVal, iPart)
+!
+!  Given random value qVal [0,max_rate[ find particle iPart through the bisection 
+!  method given cumulative function qArr.
+!
+!  15-nov-12/KWJ: coded
+!
+      real, dimension (npar) :: qArr
+      real :: qVal
+      integer :: iPart, jl, ju, jm
+!
+      intent (in) :: qArr,qVal
+      intent (out) :: iPart
+!
+      jl = 1				! lower index limit
+      ju = size(qArr)			! upper index limit
+      if (qVal <= qArr(1)) then		! qVal is in first bin
+        iPart = 1
+      else 
+        do while ((ju-jl) > 1)		! not yet done
+          jm = (ju+jl)/2			! midpoint
+          if (qVal >= qArr(jm)) then
+            jl = jm			! new lower limit
+          else
+            ju = jm			! or new upper limit
+          endif
+        enddo
+        iPart = ju			! qVal is in the ju-bin
+      endif
+!
+    endsubroutine particles_coagulation_bisection
+!***********************************************************************
     subroutine read_particles_coag_run_pars(unit,iostat)
 !
 !  Read run parameters from run.in.
@@ -662,7 +901,9 @@ module Particles_coagulation
 !
       integer, intent(in) :: unit
 !
+      print*, 'stop here?', lzsomdullemond, lconstant_kernel_test
       write(unit,NML=particles_coag_run_pars)
+      print*, 'no'
 !
     endsubroutine write_particles_coag_run_pars
 !*******************************************************************
