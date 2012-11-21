@@ -44,9 +44,9 @@ pro cslice_event, event
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, field_x, field_y, field_z
+	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
@@ -388,18 +388,20 @@ pro cslice_event, event
 	'STREAM': begin
 		WIDGET_CONTROL, clear, SENSITIVE = 0
 		WIDGET_CONTROL, extract, SENSITIVE = 0
+		WIDGET_CONTROL, undo, SENSITIVE = 0
 		WIDGET_CONTROL, stream, SENSITIVE = 0
 		grid = coord
-		grid.x /= unit.default_length
-		grid.y /= unit.default_length
-		grid.z /= unit.default_length
+		grid.x *= unit.default_length
+		grid.y *= unit.default_length
+		grid.z *= unit.default_length
 		anchor = [ grid.x[px], grid.y[py], grid.z[pz] ]
-		if (streamlines.num le 0) then begin
+		if (stream_prep lt 2) then begin
 			field = dblarr (num_x, num_y, num_z, 3)
 			field[*,*,*,0] = field_x
 			field[*,*,*,1] = field_y
 			field[*,*,*,2] = field_z
 			indices = pc_get_streamline (field, anchor=anchor, grid=grid, coords=coords, distances=distances, length=length, /cache)
+			stream_prep = 2
 		end else begin
 			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, distances=distances, length=length, /cache)
 		end
@@ -407,6 +409,7 @@ pro cslice_event, event
 		streamlines.num += 1
 		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), add_line)
 		WIDGET_CONTROL, stream, SENSITIVE = 1
+		WIDGET_CONTROL, undo, SENSITIVE = 1
 		WIDGET_CONTROL, extract, SENSITIVE = 1
 		WIDGET_CONTROL, clear, SENSITIVE = 1
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -415,14 +418,33 @@ pro cslice_event, event
 	'EXTRACT': begin
 		WIDGET_CONTROL, clear, SENSITIVE = 0
 		WIDGET_CONTROL, extract, SENSITIVE = 0
+		WIDGET_CONTROL, undo, SENSITIVE = 0
 		cslice_save_streamlines, /data
+		WIDGET_CONTROL, undo, SENSITIVE = 1
 		WIDGET_CONTROL, extract, SENSITIVE = 1
 		WIDGET_CONTROL, clear, SENSITIVE = 1
+		break
+	end
+	'UNDO': begin
+		if (streamlines.num ge 1) then begin
+			WIDGET_CONTROL, undo, SENSITIVE = 0
+			WIDGET_CONTROL, clear, SENSITIVE = 0
+			WIDGET_CONTROL, extract, SENSITIVE = 0
+			names = tag_names (streamlines)
+			old = streamlines
+			streamlines = { num:streamlines.num-1 }
+			for pos = 1, streamlines.num do streamlines = create_struct (streamlines, names[pos], old.(pos))
+			WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1)
+			WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1)
+			WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1)
+			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		end
 		break
 	end
 	'CLEAR': begin
 		if (streamlines.num ge 1) then begin
 			WIDGET_CONTROL, extract, SENSITIVE = 0
+			WIDGET_CONTROL, undo, SENSITIVE = 0
 			WIDGET_CONTROL, clear, SENSITIVE = 0
 			streamlines = { num:0 }
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
@@ -604,9 +626,9 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
-	common streamline_common, streamlines, field_x, field_y, field_z
+	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	; stepping of crosshairs
@@ -833,7 +855,7 @@ end
 pro cslice_save_images, img_type, slices=slices, movie_frame=movie_frame
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	quantity = (tag_names (set))[selected_cube]
@@ -943,7 +965,7 @@ pro cslice_save_streamlines, data=data
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common streamline_common, streamlines, field_x, field_y, field_z
+	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	if (streamlines.num lt 1) then return
@@ -994,7 +1016,7 @@ pro cslice_prepare_set, i
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	selected_snapshot = i
@@ -1018,7 +1040,7 @@ pro cslice_prepare_cube, cube_index
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	; get selected cube from set
@@ -1067,10 +1089,10 @@ pro cslice_prepare_overplot, reset=reset
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, field_x, field_y, field_z
+	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	if (keyword_set (reset)) then begin
@@ -1110,6 +1132,7 @@ pro cslice_prepare_overplot, reset=reset
 		field_z = pc_destretch (field_z, coord.z, dim=3)
 	end
 	WIDGET_CONTROL, stream, SENSITIVE = 1
+	stream_prep = 1
 
 	if (overplot_contour eq 1) then begin
 		; setup contour plot
@@ -1155,6 +1178,7 @@ end
 pro cslice_default_settings
 
 	common cslice_ct_common, last_ct
+	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
@@ -1171,6 +1195,7 @@ pro cslice_default_settings
 	selected_overplot = 0
 	selected_snapshot = 0
 	selected_color = 0
+	stream_prep = 0
 end
 
 
@@ -1180,9 +1205,9 @@ pro cslice_reset_GUI
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common cslice_ct_common, last_ct
-	common streamline_common, streamlines, field_x, field_y, field_z
+	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	cslice_default_settings
@@ -1201,6 +1226,7 @@ pro cslice_reset_GUI
 	streamlines = { num:0 }
 	WIDGET_CONTROL, stream, SENSITIVE = 0
 	WIDGET_CONTROL, extract, SENSITIVE = 0
+	WIDGET_CONTROL, undo, SENSITIVE = 0
 	WIDGET_CONTROL, clear, SENSITIVE = 0
 
 	device, /decomposed
@@ -1215,9 +1241,9 @@ pro cslice_update_GUI
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, field_x, field_y, field_z
+	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	cslice_prepare_cube, -1
@@ -1252,6 +1278,7 @@ pro cslice_update_GUI
 	WIDGET_CONTROL, freeze, SENSITIVE = 1
 	WIDGET_CONTROL, sl_over, SENSITIVE = (selected_overplot gt 0)
 	WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1)
+	WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1)
 	WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1)
 end
 
@@ -1264,7 +1291,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	common cslice_ct_common, last_ct
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
-	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
+	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, stream, extract, undo, clear, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	; DEFAULT SETTINGS:
@@ -1419,11 +1446,12 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	over	= WIDGET_DROPLIST (bsubcol, value=overs, uvalue='OVER', sensitive=over_active, EVENT_PRO=cslice_event, title='overplot:')
 	bsubrow	= WIDGET_BASE (bsubcol, /row)
 	tmp	= WIDGET_LABEL (bsubrow, value='vector length:', frame=0)
-	sl_over	= CW_FSLIDER (bsubrow, uvalue='SCALE_OVER', /double, /edit, /suppress_value, min=0.0, max=2.0, /drag, value=1.0, xsize=100)
-	bsubcol	= WIDGET_BASE (bcot, /col)
-	stream	= WIDGET_BUTTON (bsubcol, value='STREAMLINE', uvalue='STREAM', sensitive=0, EVENT_PRO=cslice_event)
-	extract	= WIDGET_BUTTON (bsubcol, value='EXTRACT', uvalue='EXTRACT', sensitive=0, EVENT_PRO=cslice_event)
-	clear	= WIDGET_BUTTON (bsubcol, value='CLEAR', uvalue='CLEAR', sensitive=0, EVENT_PRO=cslice_event)
+	sl_over	= CW_FSLIDER (bsubrow, uvalue='SCALE_OVER', /double, /edit, /suppress_value, min=0.0, max=2.0, /drag, value=1.0, xsize=160)
+	bsubrow	= WIDGET_BASE (bsubcol, /row)
+	stream	= WIDGET_BUTTON (bsubrow, value='STREAMLINE', uvalue='STREAM', sensitive=0, EVENT_PRO=cslice_event, xsize=80)
+	undo	= WIDGET_BUTTON (bsubrow, value='UNDO', uvalue='UNDO', sensitive=0, EVENT_PRO=cslice_event, xsize=60)
+	extract	= WIDGET_BUTTON (bsubrow, value='EXTRACT', uvalue='EXTRACT', sensitive=0, EVENT_PRO=cslice_event, xsize=80)
+	clear	= WIDGET_BUTTON (bsubrow, value='CLEAR', uvalue='CLEAR', sensitive=0, EVENT_PRO=cslice_event, xsize=60)
 
 	bcol	= WIDGET_BASE (CTRL, /col)
 	aver	= WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')
