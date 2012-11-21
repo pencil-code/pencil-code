@@ -1250,7 +1250,7 @@ pro cslice_update_GUI
 	WIDGET_CONTROL, next, SENSITIVE = 0
 	WIDGET_CONTROL, min_max, SENSITIVE = 1
 	WIDGET_CONTROL, freeze, SENSITIVE = 1
-	WIDGET_CONTROL, sl_over, SENSITIVE = 0
+	WIDGET_CONTROL, sl_over, SENSITIVE = (selected_overplot gt 0)
 	WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1)
 	WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1)
 end
@@ -1424,7 +1424,6 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	stream	= WIDGET_BUTTON (bsubcol, value='STREAMLINE', uvalue='STREAM', sensitive=0, EVENT_PRO=cslice_event)
 	extract	= WIDGET_BUTTON (bsubcol, value='EXTRACT', uvalue='EXTRACT', sensitive=0, EVENT_PRO=cslice_event)
 	clear	= WIDGET_BUTTON (bsubcol, value='CLEAR', uvalue='CLEAR', sensitive=0, EVENT_PRO=cslice_event)
-	WIDGET_CONTROL, sl_over, SENSITIVE = (selected_overplot gt 0)
 
 	bcol	= WIDGET_BASE (CTRL, /col)
 	aver	= WIDGET_BUTTON (bcol, value='vertical profile', uvalue='SHOW_AVER')
