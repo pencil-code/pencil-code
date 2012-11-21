@@ -451,7 +451,7 @@ pro cslice_event, event
 				pos_t[insert] = pos_top[pos]
 			end
 		end
-		selected_over = (where (tag_names (overplot) eq var_names[selected_over]))[0]
+		selected_over = (where (tag_names (overplot) eq over_names[selected_over]))[0]
 		if (selected_over ge 0) then selected_overplot = selected_over
 		num = n_elements (over_names)
 		for pos = 0, num-1 do begin
