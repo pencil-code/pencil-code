@@ -37,17 +37,23 @@
 ; Calculation of streamline coordinates.
 function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, max_length=max_length, cache=cache
 
-	common pc_get_streamline_common, data, nx, ny, nz, mx, my, mz
+	common pc_get_streamline_common, data, nx, ny, nz, mx, my, mz, Box_xyz_lower, Box_xyz_upper
 
-	default, precision, 0.2
+	default, precision, 0.1
 	default, nghost, 3
 	default, nbox, 3.0
+
+	; Periodicity
+	if (keyword_set (grid)) then periodic = grid.lperi
+	default, periodic, [ 0, 0, 0 ]
+	if (n_elements (periodic) eq 1) then periodic = [ periodic, periodic, periodic ]
+	periodic = periodic eq 1
 
 	if (n_elements (anchor) eq 0) then message, "ERROR: no anchor point for streamline given."
 	if (n_elements (field) eq 0) then begin
 		if (n_elements (data) le 1) then message, "ERROR: no vector field given."
 	end else begin
-		; Size of data array
+		; Size of new given data array
 		s = size (field)
 		nx = s[1]
 		ny = s[2]
@@ -55,16 +61,25 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 		mx = nx + 2*nghost
 		my = ny + 2*nghost
 		mz = nz + 2*nghost
-		; Extent data with periodic boundary
-		data = dblarr (nx+1, ny+1, nz+1, 3)
-		data[0:nx-1,0:ny-1,0:nz-1,*] = field
-		data[nx,0:ny-1,0:nz-1,*] = field[0,*,*,*]
-		data[0:nx-1,ny,0:nz-1,*] = field[*,0,*,*]
-		data[0:nx-1,0:ny-1,nz,*] = field[*,*,0,*]
-		data[nx,ny,0:nz-1,*] = field[0,0,*,*]
-		data[0:nx-1,ny,nz,*] = field[*,0,0,*]
-		data[nx,0:ny-1,nz,*] = field[0,*,0,*]
-		data[nx,ny,nz,*] = field[0,0,0,*]
+
+		; Box coordinates for lower and upper corner
+		Box_xyz_lower = [ 0, 0, 0 ]
+		Box_xyz_upper = [ nx, ny, nz ] + (periodic - 1)
+
+		if (not any (periodic)) then begin
+			data = field
+		end else begin
+			; Extend data with one ghost layer in each periodic direction
+			data = dblarr (nx+periodic[0], ny+periodic[1], nz+periodic[2], 3)
+			data[0:nx-1,0:ny-1,0:nz-1,*] = field
+			if (periodic[0]) then data[nx,0:ny-1,0:nz-1,*] = field[0,*,*,*]
+			if (periodic[1]) then data[0:nx-1,ny,0:nz-1,*] = field[*,0,*,*]
+			if (periodic[2]) then data[0:nx-1,0:ny-1,nz,*] = field[*,*,0,*]
+			if (periodic[0] and periodic[1]) then data[nx,ny,0:nz-1,*] = field[0,0,*,*]
+			if (periodic[1] and periodic[2]) then data[0:nx-1,ny,nz,*] = field[*,0,0,*]
+			if (periodic[0] and periodic[2]) then data[nx,0:ny-1,nz,*] = field[0,*,0,*]
+			if (all (periodic)) then data[nx,ny,nz,*] = field[0,0,0,*]
+		end
 	end
 
 	default, dir, 0
@@ -87,16 +102,6 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 		return, [ [against], [along] ]
 	end
 	if (dir lt 0) then dir = -1 else dir = 1
-
-	; Periodicity
-	if (keyword_set (grid)) then periodic = grid.lperi
-	default, periodic, [ 0, 0, 0 ]
-	if (n_elements (periodic) eq 1) then periodic = [ periodic, periodic, periodic ]
-	periodic = periodic eq 1
-
-	; Box coordinates for lower and upper corner
-	Box_xyz_lower = [ 0, 0, 0 ] - periodic * [ 0.5, 0.5, 0.5 ]
-	Box_xyz_upper = [ nx, ny, nz ] - periodic * [ 0.5, 0.5, 0.5 ]
 
 	; Grid coordinates
 	if (keyword_set (grid)) then begin
@@ -149,12 +154,12 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and not done) do begin
 
 		; Interpolate data
-		tmp = floor (pos + nghost)
-		redidual = pos + nghost - tmp
-		tmp_data = data[tmp[0]:tmp[0]+1,tmp[1]:tmp[1]+1,tmp[2]:tmp[2]+1,*]
-		vector_x = interpolate (tmp_data[*,*,*,0], redidual[0], redidual[1], redidual[2])
-		vector_y = interpolate (tmp_data[*,*,*,1], redidual[0], redidual[1], redidual[2])
-		vector_z = interpolate (tmp_data[*,*,*,2], redidual[0], redidual[1], redidual[2])
+		i = floor (pos)
+		residual = pos - i
+		tmp_data = data[i[0]:i[0]+1,i[1]:i[1]+1,i[2]:i[2]+1,*]
+		vector_x = interpolate (tmp_data[*,*,*,0], residual[0], residual[1], residual[2])
+		vector_y = interpolate (tmp_data[*,*,*,1], residual[0], residual[1], residual[2])
+		vector_z = interpolate (tmp_data[*,*,*,2], residual[0], residual[1], residual[2])
 		vector_abs = sqrt (vector_x^2 + vector_y^2 + vector_z^2)
 
 		; Find projected step size
