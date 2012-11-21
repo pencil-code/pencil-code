@@ -95,6 +95,7 @@ module Forcing
   real :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
   real :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
+  real :: omega_tidal, R0_tidal, phi_tidal
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -130,7 +131,8 @@ module Forcing
        lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
        z_bb,width_bb,eta_bb,fcont_ampl, &
-       ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf
+       ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
+       omega_tidal, R0_tidal, phi_tidal
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -482,6 +484,13 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profx_ampl=.5*(1.-tanh((x(l1:l2)-xff_ampl)/wff_ampl))
         profx_hel=1.
+!
+!  tidal
+!
+      elseif (iforce_profile=='tidal') then
+        profz_ampl=1.; profz_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        profx_ampl=1.; profx_hel=1.
       else
         call fatal_error('initialize_forcing','iforce_profile value does not exist')
       endif
@@ -607,6 +616,7 @@ module Forcing
         case ('nocos');           call forcing_nocos(f)
         case ('TG');              call forcing_TG(f)
         case ('twist');           call forcing_twist(f)
+        case ('tidal');           call forcing_tidal(f,force)
         case ('zero'); if (headt.and.ip<10) print*,'addforce: No forcing'
         case default
           if (lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
@@ -631,6 +641,7 @@ module Forcing
         case ('helical_both'); call forcing_hel_both(f)
         case ('horiz-shear');  call forcing_hshear(f)
         case ('irrotational'); call forcing_irro(f,force2)
+        case ('tidal');        call forcing_tidal(f,force2)
         case ('zero');
           if (headtt .and. lroot) print*,'addforce: No additional forcing'
         case default;
@@ -3790,6 +3801,113 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       endif
 !
     endsubroutine forcing_hel_smooth
+!***********************************************************************
+    subroutine forcing_tidal(f,force_ampl)
+!
+!  Added tidal forcing function
+!  NB: This is still experimental. Use with care!
+!
+!  20-Nov-12/simon: coded
+!
+      use Diagnostics
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real :: force_ampl
+      real :: irufm
+      real, dimension (1) :: fsum_tmp,fsum
+      real, dimension (nx) :: ruf,rho, rho1
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
+      logical, save :: lfirst_call=.true.
+      integer :: j,jf,l
+      real :: fact, dist3
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=2*force_ampl*sqrt(dt)
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
+      do n=n1,n2
+        do m=m1,m2
+          variable_rhs=f(l1:l2,m,n,iffx:iffz)
+          if (lmomentum_ff) then
+            if (ldensity_nolog) then
+              rho1=1./f(l1:l2,m,n,irho)
+            else
+              rho1=exp(-f(l1:l2,m,n,ilnrho))
+            endif
+          else
+            rho1=1.
+          endif
+          do l=l1,l2
+            dist3 = sqrt( &
+                    (R0_tidal*cos(omega_tidal*t)*cos(phi_tidal)-x(l))**2 + &
+                    (R0_tidal*sin(omega_tidal*t)               -y(m))**2 + &
+                    (R0_tidal*cos(omega_tidal*t)*sin(phi_tidal)-z(n))**2)**3
+            forcing_rhs(l-l1+1,1) = &
+                rho1(l)*fact*(R0_tidal*cos(omega_tidal*t)*cos(phi_tidal)-x(l))/dist3
+            forcing_rhs(l-l1+1,2) = &
+                rho1(l)*fact*(R0_tidal*sin(omega_tidal*t)-y(m))/dist3
+            forcing_rhs(l-l1+1,3) = &
+                rho1(l)*fact*(R0_tidal*cos(omega_tidal*t)*sin(phi_tidal)-z(n))/dist3
+          enddo
+          do j=1,3
+            jf=j+ifff-1
+            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+          enddo
+          if (lout) then
+            if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+        enddo
+      enddo
+      !
+      ! For printouts
+      !
+!       if (lout) then
+!         if (idiag_rufm/=0) then
+!           irufm=irufm/(nwgrid)
+!           !
+!           !  on different processors, irufm needs to be communicated
+!           !  to other processors
+!           !
+!           fsum_tmp(1)=irufm
+!           call mpireduce_sum(fsum_tmp,fsum,1)
+!           irufm=fsum(1)
+!           call mpibcast_real(irufm,1)
+!           !
+!           fname(idiag_rufm)=irufm
+!           itype_name(idiag_rufm)=ilabel_sum
+!         endif
+!         if (lmagnetic) then
+!           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+!             call curl(f,iaa,bb)
+!             call cross(forcing_rhs,bb,fxb)
+!             call sum_mn_name(fxb(:,1),idiag_fxbxm)
+!             call sum_mn_name(fxb(:,2),idiag_fxbym)
+!             call sum_mn_name(fxb(:,3),idiag_fxbzm)
+!           endif
+!         endif
+!       endif
+!
+      if (ip<=9) print*,'forcing_tidal: forcing OK'
+!
+    endsubroutine forcing_tidal
 !***********************************************************************
     subroutine hel_vec(f,kx0,ky,kz,phase,kav,lfirst_call,force1)
 !
