@@ -62,7 +62,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 		my = ny + 2*nghost
 		mz = nz + 2*nghost
 
-		; Box coordinates for lower and upper corner
+		; Box indices for lower and upper corner
 		Box_xyz_lower = [ 0, 0, 0 ]
 		Box_xyz_upper = [ nx, ny, nz ] + (periodic - 1)
 
