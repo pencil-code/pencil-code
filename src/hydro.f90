@@ -909,8 +909,8 @@ module Hydro
         case ('trilinear-z'); call trilinear(f,iuz,ampl_ux(j),ampl_uy(j),ampl_uz(j))
         case ('cos-cos-sin-uz'); call cos_cos_sin(ampluu(j),f,iuz)
         case ('tor_pert'); call tor_pert(ampluu(j),f,iux)
-        case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,&
-                                   rot_rr,xsphere,ysphere,zsphere)
+        case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,rot_rr,xsphere,ysphere,zsphere)
+        case ('rotblob_yz'); call rotblob_yz(ampluu(j),f,iux,rot_rr,xsphere,ysphere,zsphere)
         case ('diffrot'); call diffrot(ampluu(j),f,iuy)
         case ('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)
         case ('sinwave-phase')
