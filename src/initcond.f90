@@ -57,7 +57,7 @@ module Initcond
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
   public :: ferriere_uniform_x, ferriere_uniform_y
-  public :: rotblob, pre_stellar_cloud
+  public :: rotblob, rotblob_yz, pre_stellar_cloud
 !
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -5002,6 +5002,58 @@ module Initcond
       endif
 !
     endsubroutine rotblob
+!***********************************************************************
+    subroutine rotblob_yz(ampl,f,i,radius,xsphere,ysphere,zsphere)
+!
+!  Rigid rotating sphere initial velocity
+!  with inclination  angle alpha.
+!
+!  18-feb-10/mvaisala: coded
+!
+      integer :: i,j,l
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, optional :: xsphere,ysphere,zsphere
+      real :: omega, radius, phi, rr_rot, ampl, x01=0.
+      real :: y01=0., z01=0., x_real, y_real, z_real
+      real :: incl_alpha, theta, vel_phi
+!
+!  Rotating sphere
+!
+      omega = ampl/radius
+      if (present(xsphere)) x01=xsphere
+      if (present(ysphere)) y01=ysphere
+      if (present(zsphere)) z01=zsphere
+      if (omega==0) then
+        if (lroot) print*,'The sphere does not rotate!'
+      else
+        do n = n1,n2
+          do m = m1,m2
+            do l = l1,l2
+              x_real = x(l) - x01 !
+              y_real = y(m) - y01 !
+              z_real = z(n) - z01 !
+              rr_rot = sqrt((x_real)**2+(y_real)**2+(z_real)**2) !
+              theta  = atan(abs(x_real)/sqrt((x_real)**2+(z_real)**2)) !
+              phi    = atan(y_real/z_real) !
+              vel_phi = omega*rr_rot*cos(theta) !
+              if (rr_rot <= radius) then
+                j = i+1
+                f(l,m,n,j) = -vel_phi*cos(phi)
+                j = i+2
+                f(l,m,n,j) = vel_phi*sin(phi)
+                if (z_real < 0.0) then
+                  j = i+1
+                  f(l,m,n,j) = -f(l,m,n,j)
+                  j = i+2
+                  f(l,m,n,j) = -f(l,m,n,j)
+                endif
+              endif
+            enddo
+          enddo
+        enddo
+      endif
+!
+    endsubroutine rotblob_yz
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &
