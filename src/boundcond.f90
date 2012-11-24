@@ -200,7 +200,7 @@ module Boundcond
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                 case ('a2r')
-                  ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
+                  ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$ 
                   ! BCX_DOC: This is the replacement of zero second derivative
                   ! BCX_DOC: in spherical coordinates, in radial direction.
                   call bc_a2r_x(f,topbot,j)
@@ -1153,44 +1153,60 @@ module Boundcond
 !***********************************************************************
     subroutine bc_a2r_x(f,topbot,j)
 !
-!  Setting d^2f/dr^2 + 2*/r*df/dr - 2*f/r^2 =0, because this is the graddiv
-!  of a vektorfield, which depend just on r and have just r component.
-!  To solve, we use the ansatz f=c1*r + c2*r^-2, and determint c1 and c2
-!  from the grid point at and one inside the boundary.
+!  Setting d^2f/dr^2 + 2*/r*df/dr - 2*f/r^2 =0, 
+!  to set del2=0 in spherical coordinates. 
 !
-!  20-oct-12/joern: coded
+!
+!  24-nov-12/joern: coded
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (my,mz) :: c1, c2
+      real :: tmp1,tmp2
       integer ::j
 !
       select case (topbot)
 !
       case ('bot')  ! bottom boundary
 !
-        c1 = (f(l1+1,:,:,j)*x(l1+1)**2-f(l1+2,:,:,j)*x(l1+2)**2) &
-              /(x(l1+1)**3-x(l1+2)**3)
-        c2 = x(l1+2)**2*x(l1+1)**2*(f(l1+2,:,:,j)*x(l1+1)-f(l1+1,:,:,j)*x(l1+2)) &
-              /(x(l1+1)**3-x(l1+2)**3)
-!              
-        f(l1,:,:,j)  =c1*x(l1)+c2/x(l1)**2
-        f(l1-1,:,:,j)=c1*x(l1-1)+c2/x(l1-1)**2
-        f(l1-2,:,:,j)=c1*x(l1-2)+c2/x(l1-2)**2
-        f(l1-3,:,:,j)=c1*x(l1-2)+c2/x(l1-3)**2
+        tmp1=dx_1(l1)**2
+        tmp2=dx_1(l1)/x(l1)
+!
+        f(l1-1,:,:,j)=(f(l1,:,:,j)*(-2*tmp1-2/x(l1)**2) &
+                      +f(l1+1,:,:,j)*(tmp1+tmp2)) &
+                      /(-1*tmp1+tmp2)
+        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp1-tmp2) &
+                      +f(l1,:,:,j)*(-30*tmp1-24/x(l1)**2) &
+                      +f(l1+1,:,:,j)*16*(tmp1+tmp2) &
+                      +f(l1+2,:,:,j)*(-1*tmp1-2*tmp2)) &
+                      /(tmp1-2*tmp2)
+        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27*(-1*tmp1+2*tmp2) &
+                      +f(l1-1,:,:,j)*270*(tmp1-tmp2) &
+                      +f(l1,:,:,j)*(-490*tmp1-360/x(l1)**2) &
+                      +f(l1+1,:,:,j)*270*(tmp1+tmp2) &
+                      +f(l1+2,:,:,j)*27*(-1*tmp1-2*tmp2) &
+                      +f(l1+3,:,:,j)*(2*tmp1+6*tmp2)) &
+                      /(-2*tmp1+6*tmp2)
 !
       case ('top')               ! top boundary
 !
-        c1 = (f(l2-1,:,:,j)*x(l2-1)**2-f(l2-2,:,:,j)*x(l2-2)**2) &
-              /(x(l2-1)**3-x(l2-2)**3)
-        c2 = x(l2-2)**2*x(l2-1)**2*(f(l2-2,:,:,j)*x(l2-1)-f(l2-1,:,:,j)*x(l2-2)) &
-              /(x(l2-1)**3-x(l2-2)**3)
-!             
-        f(l2,:,:,j)  =c1*x(l2)+c2/x(l2)**2
-        f(l2+1,:,:,j)=c1*x(l2+1)+c2/x(l2+1)**2
-        f(l2+2,:,:,j)=c1*x(l2+2)+c2/x(l2+2)**2
-        f(l2+3,:,:,j)=c1*x(l2+2)+c2/x(l2+3)**2
+        tmp1=dx_1(l2)**2
+        tmp2=dx_1(l2)/x(l2)
 !
+        f(l2+1,:,:,j)=(f(l2,:,:,j)*(-2*tmp1-2/x(l2)**2) &
+                      +f(l2-1,:,:,j)*(tmp1-tmp2)) &
+                      /(-1*tmp1-tmp2)
+        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp1+tmp2) &
+                      +f(l2,:,:,j)*(-30*tmp1-24/x(l2)**2) &
+                      +f(l2-1,:,:,j)*16*(tmp1-tmp2) &
+                      +f(l2-2,:,:,j)*(-1*tmp1+2*tmp2)) &
+                      /(tmp1+2*tmp2)
+        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27*(-1*tmp1-2*tmp2) &
+                      +f(l2+1,:,:,j)*270*(tmp1+tmp2) &
+                      +f(l2,:,:,j)*(-490*tmp1-360/x(l2)**2) &
+                      +f(l2-1,:,:,j)*270*(tmp1-tmp2) &
+                      +f(l2-2,:,:,j)*27*(-1*tmp1+2*tmp2) &
+                      +f(l2-3,:,:,j)*(2*tmp1-6*tmp2)) &
+                      /(-2*tmp1-6*tmp2)
       case default
         print*, "bc_a2r_x: ", topbot, " should be 'top' or 'bot'"
 !
