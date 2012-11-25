@@ -46,7 +46,7 @@ module Particles_sink
 !
   namelist /particles_sink_run_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
-      lrhop_roche_unit
+      lrhop_roche_unit, lselfgravity_sinkparticles
 !
   contains
 !***********************************************************************
