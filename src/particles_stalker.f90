@@ -42,7 +42,7 @@ module Particles_stalker
       lstalk_sink_particles
 !
   namelist /particles_stalker_run_pars/ &
-      dstalk, linterpolate_cic, linterpolate_tsc
+      dstalk, linterpolate_cic, linterpolate_tsc, lstalk_sink_particles
 !
   contains
 !***********************************************************************
