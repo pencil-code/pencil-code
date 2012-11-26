@@ -1169,7 +1169,7 @@ module Boundcond
       case ('bot')  ! bottom boundary
 !
         tmp1=dx_1(l1)**2
-        tmp2=dx_1(l1)/x(l1)
+        tmp2=dx_1(l1)*(1./x(l1)+dx_tilde(l1)/2.)
 !
         f(l1-1,:,:,j)=(f(l1,:,:,j)*(-2*tmp1-2/x(l1)**2) &
                       +f(l1+1,:,:,j)*(tmp1+tmp2)) &
@@ -1190,7 +1190,7 @@ module Boundcond
       case ('top')               ! top boundary
 !
         tmp1=dx_1(l2)**2
-        tmp2=dx_1(l2)/x(l2)
+        tmp2=dx_1(l2)*(1/x(l2)+dx_tilde(l2)/2.)
 !
         f(l2+1,:,:,j)=(f(l2,:,:,j)*(-2*tmp1-2/x(l2)**2) &
                       +f(l2-1,:,:,j)*(tmp1-tmp2)) &
