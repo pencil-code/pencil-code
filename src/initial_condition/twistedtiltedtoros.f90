@@ -86,14 +86,14 @@ module InitialCondition
 !!  integer :: dummy
 !
   real :: fring=1e-3,r0=0.2,Iring=0.0,rho0,tilt=0.0,width=0.02, &
-          posx=0.98,dIring=0.0
+          posx=0.98,dIring=0.0,bmax=impossible,posz=0.0
   real :: scale_aa=1.0
   character (len=8) :: extfieldfile
   logical :: luse_only_botbdry=.false.
 !
-  namelist /initial_condition_pars/ fring, r0, Iring, posx,&
+  namelist /initial_condition_pars/ fring, r0, Iring, posx,posz,&
   tilt,extfieldfile,rho0,width,luse_only_botbdry,scale_aa, &
-  dIring
+  dIring,bmax
 !
   contains
 !***********************************************************************
@@ -126,21 +126,44 @@ module InitialCondition
 !
 !  02-may-12/piyali: coded
 !
+      use Boundcond, only: update_ghosts 
+      use EquationOfState, only: cs0
+      use Mpicomm, only: stop_it
+      use SharedVariables, only: get_shared_variable
       use Sub, only: curl
       use IO,  only: input_snap,input_snap_finalize
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx,3) :: bb
-      real :: xi
-      integer :: l
+      real :: xi,hp1,eps=1.0e-6
+      real, pointer :: gravx
+      integer :: l,ierr
 !
-      call initial_condition_aa(f) 
-      do m=m1,m2
-        do n=n1,n2
-          call curl(f,iaa,bb)
-          f(l1:l2,m,n,ilnrho)=log(rho0+bb(:,1)**2+bb(:,2)**2+bb(:,3)**2)
+      if (lgrav) then 
+        call get_shared_variable('gravx',gravx,ierr)
+        if (ierr/=0) call stop_it("initial_condition: "//&
+           "there was a problem when getting gravx")
+        hp1=gravx/cs0**2
+      endif
+      if (lgrav) then
+!
+!  Isothermal hydrostatic density profile in a sphere
+!
+        do m=m1,m2
+          do n=n1,n2
+            f(l1:l2,m,n,ilnrho)=log(rho0)-hp1*(1.0-1.0/x(l1:l2))
+          end do
         end do
-      end do
+      else
+      call initial_condition_aa(f) 
+      call update_ghosts(f)
+        do m=m1,m2
+          do n=n1,n2
+            call curl(f,iaa,bb)
+            f(l1:l2,m,n,ilnrho)=log(rho0)+log(eps+bb(:,1)**2+bb(:,2)**2+bb(:,3)**2)
+          end do
+        end do
+      endif
     endsubroutine initial_condition_lnrho  
 !
 !***********************************************************************
@@ -158,9 +181,9 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx,3,3) :: aij
       real, dimension (nx,3) :: tmpv,aa,bb
-      real, dimension (nx) :: xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy
+      real, dimension (nx) :: xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,psi
       real, dimension (nx) :: tmpx,tmpy,tmpz,dfy,dfz
-      real :: xi,umax,ymid,zmid,rr,r1,prof
+      real :: xi,umax,amax,ymid,zmid,rr,r1,prof
       integer :: l
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part) 
@@ -189,8 +212,8 @@ module InitialCondition
               zz0=x(l1:l2)*costh(m)
           ! Calculate D^(-1)*(xxx-disp)
               xx1=xx0-posx
-              yy1=cos(tilt*pi/180.0)*yy0+sin(tilt*pi/180.0)*zz0
-              zz1=-sin(tilt*pi/180.0)*yy0+cos(tilt*pi/180.0)*zz0
+              yy1=cos(tilt*pi/180.0)*yy0+sin(tilt*pi/180.0)*(zz0-posz)
+              zz1=-sin(tilt*pi/180.0)*yy0+cos(tilt*pi/180.0)*(zz0-posz)
               call norm_ring(xx1,yy1,zz1,fring,Iring,r0,width,posx,tmpv,PROFILE='gaussian')
             ! calculate D*tmpv
               tmpx=tmpv(:,1)
@@ -207,12 +230,14 @@ module InitialCondition
           endif
         enddo
       enddo
-      call update_ghosts(f)
 !
 ! The arrays iux,iuy,iuz is used to store the surface radial
 ! magnetic field, theta-comp of vel and phi-comp of velocity at the surface
 ! respectively if required by the problem
 !
+        if (dIring.ne.0) then
+        call update_ghosts(f)
+        call find_max(f,amax,iax) 
         ymid=0.5*(xyz0(2)+xyz1(2))
         zmid=0.5*(xyz0(3)+xyz1(3))
         do n=n1,n2
@@ -222,9 +247,11 @@ module InitialCondition
             call curl_mn(aij,bb,aa)
             rr=sqrt((y(m)-ymid)**2+(z(n)-zmid)**2)
             r1=sqrt(r0**2-(1.-posx)**2)+3*width
-            prof=0.5*(1.0+tanh((rr-r1)/0.01))
-!            prof=1.0
-            f(l1:l2,m,n,iux)=bb(:,1)**2*prof
+!            prof=0.5*(1.0+tanh((rr-r1)/0.01))
+            prof=1.0
+            psi=exp(-3.5*(bb(:,1)/bmax)**2)
+            f(l1:l2,m,n,iux)=psi*prof
+!            f(l1:l2,m,n,iux)=bb(:,1)**2
           enddo
         enddo  
         call update_ghosts(f)
@@ -233,17 +260,21 @@ module InitialCondition
             call der(f,iux,dfz,3)
             call der(f,iux,dfy,2)
 !            
-! Normalize to unity.          
+! Calculate horizontal velocity from stream function.          
 !
             f(l1,m,n,iuy)=dfz(1)
             f(l1,m,n,iuz)=-dfy(1)
           enddo
         enddo  
-        f(l1:l2,m1:m2,n1:n2,iux)=0.0
-        call find_umax(f,umax) 
+!
+!  Normalize to unity
+!
+        f(:,:,:,iux)=0.0
+        call find_max(f,umax,iux) 
         f(l1:l2,m1:m2,n1:n2,iuy)=dIring*f(l1:l2,m1:m2,n1:n2,iuy)/umax
         f(l1:l2,m1:m2,n1:n2,iuz)=dIring*f(l1:l2,m1:m2,n1:n2,iuz)/umax
-
+        endif
+!
       if (luse_only_botbdry) then
         f(l1+1:l2,:,:,:)=0.0
       endif
@@ -355,7 +386,7 @@ module InitialCondition
 !
     endsubroutine norm_ring
 !***********************************************************************
-    subroutine find_umax(f,umax)
+    subroutine find_max(f,max,j)
 !
 !  Find the absolute maximum of the velocity.
 !
@@ -367,18 +398,18 @@ module InitialCondition
       use Mpicomm, only: mpiallreduce_max
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, intent(out) :: umax
-!
-      real :: umax1
+      real, intent(out) :: max
+      real :: max1
+      integer :: j
 !
 !  Find the maximum.
 !
-      umax1 = sqrt(maxval(f(l1:l2,m1:m2,n1:n2,iux)**2 &
-                        + f(l1:l2,m1:m2,n1:n2,iuy)**2 &
-                        + f(l1:l2,m1:m2,n1:n2,iuz)**2))
-      call mpiallreduce_max(umax1, umax)
+      max1 = sqrt(maxval(f(l1:l2,m1:m2,n1:n2,j)**2 &
+                        + f(l1:l2,m1:m2,n1:n2,j+1)**2 &
+                        + f(l1:l2,m1:m2,n1:n2,j+2)**2))
+      call mpiallreduce_max(max1, max)
 !
-    endsubroutine find_umax
+    endsubroutine find_max
 !***********************************************************************
 !
 !********************************************************************
