@@ -86,9 +86,11 @@ module Special
 !
   real :: fring=1e-3,r0=0.2,tilt=0.0,width=0.02,&
           dIring=0.0,dposx=0.0,dtilt=0.0,Ilimit=0.15,poslimit=0.98
-  real, save :: posx,Iring    
+  real :: posz=0.0
+  real, save :: posx,Iring
+  logical :: lset_boundary_emf=.false.
   namelist /special_run_pars/ Iring,dIring,fring,r0,width,&
-           posx,dposx,tilt,dtilt,Ilimit,poslimit
+           posx,dposx,posz,tilt,dtilt,Ilimit,poslimit,lset_boundary_emf
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -576,11 +578,38 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition), intent(in) :: bc
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      character (len=3) :: topbot
+      type (boundary_condition), intent(inout) :: bc
+      integer :: j
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(bc)
+      select case (bc%bcname)
+      case ('nfc')
+      j=bc%ivar
+        select case (bc%location)
+        case (iBC_X_TOP)
+          topbot='top'
+          call bc_nfc_x(f,topbot,j)
+      bc%done=.true.
+        case (iBC_X_BOT)
+          topbot='bot'
+          call bc_nfc_x(f,topbot,j)
+      bc%done=.true.
+        end select
+      case ('go')
+      j=bc%ivar
+        select case (bc%location)
+        case (iBC_X_TOP)
+          topbot='top'
+          call bc_go_x(f,topbot,j)
+      bc%done=.true.
+        case (iBC_X_BOT)
+          topbot='bot'
+          call bc_go_x(f,topbot,j)
+      bc%done=.true.
+        end select
+      end select
+
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -604,6 +633,7 @@ module Special
       real :: xi,xx0,yy0,zz0,xx1,yy1,zz1,dist,distxy,distyz,phi,rr,r1,&
               prof,ymid,zmid,umax
       real :: tmpx,tmpy,tmpz,posxold,Iringold
+      logical :: lcorner,lcorner_y,lcorner_z
       integer :: l,k
 !
 !  IMPLEMENTATION OF INSERTION OF BIPOLES (Non-Potential part)
@@ -636,6 +666,7 @@ module Special
       do n=n1,n2
         do m=m1,m2
 !
+        if (lfirst_proc_x) then
           if (lcartesian_coords) then
             xi=((x(l)**2+z(n)**2)/2.+y(m)**2)/r0**2
             f(l1,m,n,iax) = fring*Iring*z(n)*exp(-2*xi)
@@ -654,8 +685,8 @@ module Special
               zz0=x(l1)*costh(m)
           ! Calculate D^(-1)*(xxx-disp)
               xx1=xx0-posxold
-              yy1=cos(tilt*pi/180.0)*yy0+sin(tilt*pi/180.0)*zz0
-              zz1=-sin(tilt*pi/180.0)*yy0+cos(tilt*pi/180.0)*zz0
+              yy1=cos(tilt*pi/180.0)*yy0+sin(tilt*pi/180.0)*(zz0-posz)
+              zz1=-sin(tilt*pi/180.0)*yy0+cos(tilt*pi/180.0)*(zz0-posz)
               phi=atan2(yy1,xx1)
             if (dposx.ne.0.or.dtilt.ne.0) then
               call norm_ring(xx1,yy1,zz1,fring,Iringold,r0,width,posxold,tmpv,PROFILE='gaussian')
@@ -694,18 +725,34 @@ module Special
               else
                 vv=0.0
               endif
-            else
-              vv=0.0
+              tmpx=vv(1)
+              tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
+              tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
+              f(l1,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
+              f(l1,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
+                      -distxy*tmpz/dist)
+              f(l1,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
+            else if (dIring.eq.0.0.and.dposx.eq.0) then
+              f(l1,m,n,iux:iuz)=0.0
             endif
-            tmpx=vv(1)
-            tmpy=cos(tilt*pi/180.0)*vv(2)-sin(tilt*pi/180.0)*vv(3)
-            tmpz=sin(tilt*pi/180.0)*vv(2)+cos(tilt*pi/180.0)*vv(3)
-            f(l1,m,n,iux) = (xx0*tmpx/dist+yy0*tmpy/dist+zz0*tmpz/dist)
-            f(l1,m,n,iuy) = (xx0*zz0*tmpx/(dist*distxy)+yy0*zz0*tmpy/(dist*distxy) &
-                    -distxy*tmpz/dist)
-            f(l1,m,n,iuz) = (-yy0*tmpx/distxy+xx0*tmpy/distxy)
-            if (dIring.eq.0.0) f(l1,m,n,iuy:iuz)=0.0
 !
+          endif
+        endif
+          if (lset_boundary_emf) then
+            lcorner=.false.
+            lcorner_y=.false.
+            lcorner_z=.false.
+            if (llast_proc_y.and.m.eq.m2)  lcorner_y=.true.
+            if (lfirst_proc_y.and.m.eq.m1) lcorner_y=.true.
+            if (llast_proc_z.and.n.eq.n2)  lcorner_z=.true.
+            if (lfirst_proc_z.and.n.eq.n1) lcorner_z=.true.
+            if (lcorner_y.or.lcorner_z) lcorner=.true.
+            if (lcorner) then
+              do k=iay, iaz; call bc_nfc_x(f,'top',k); enddo
+            endif
+            call bc_emf_x(f,df,dt_,'top',iax)
+            call bc_emf_x(f,df,dt_,'top',iay)
+            call bc_emf_x(f,df,dt_,'top',iaz)
           endif
         enddo
       enddo
@@ -830,6 +877,165 @@ module Special
       call mpiallreduce_max(umax1, umax)
 !
     endsubroutine find_umax
+!***********************************************************************
+    subroutine bc_nfc_x(f,topbot,j)
+!
+!  Normal-field (or angry-hedgehog) boundary condition for spherical
+!  coordinate system.
+!  d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
+!  in spherical coordinate system.
+!  (compare with next subroutine sfree )
+!
+!  25-Aug-2012/piyali: adapted from bc_set_nfr_x
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension(3,3) :: mat
+      real, dimension(3) :: rhs
+      real :: x2,x3
+      integer, intent (in) :: j
+      integer :: k
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do k=1,nghost
+          if (lfirst_proc_x) &
+          f(l1-k,:,:,j)= f(l1+k,:,:,j)*(x(l1+k)/x(l1-k))
+        enddo
+!
+     case ('top')               ! top boundary
+       x2=x(l2+1)
+       x3=x(l2+2)
+       do m=m1, m2
+         do n=n1,n2
+           mat(1,1:3)=[2*x2*(60*dx+197*x3),x2*(60*dx+167*x3),-(6*x2*x3)]/ &
+                       (7500*dx*x2+10020*dx*x3+24475*x2*x3+3600*dx**2)
+!
+           mat(2,1:3)=[-10*x3*(12*dx+x2), 120*x2*x3, x3*(12*dx+25*x2)]/ &
+                       (1500*dx*x2+2004*dx*x3+4895*x2*x3+720*dx**2)
+!
+           mat(3,1:3)=[420*dx*x2+924*dx*x3+1259*x2*x3+720*dx**2,   &
+                       -(9*x2*(60*dx+47*x3)), 9*x3*(12*dx+31*x2)]/ &
+                       (1500*dx*x2+2004*dx*x3+4895*x2*x3+720*dx**2)
+           if (llast_proc_x) then
+!
+             rhs(1)=-f(l2,m,n,j)*60*dx/x(l2)+45*f(l2-1,m,n,j)-9*f(l2-2,m,n,j)+f(l2-3,m,n,j)
+             rhs(2)=f(l2,m,n,j)*80-30*f(l2-1,m,n,j)+8*f(l2-2,m,n,j)-f(l2-3,m,n,j)
+             rhs(3)=-f(l2,m,n,j)*100+50*f(l2-1,m,n,j)-15*f(l2-2,m,n,j)+2*f(l2-3,m,n,j)
+             f(l2+1:l2+3,m,n,j)=matmul(mat,rhs)
+           endif
+        enddo
+      enddo
+
+!
+      case default
+        print*, "bc_nfc_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_nfc_x
+!***********************************************************************
+    subroutine bc_emf_x(f,df,dt_,topbot,j)
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      real, intent(in) :: dt_
+      integer, intent (in) :: j
+      integer :: i
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        print*, "bc_emf_x: ", topbot, " should be 'top'"
+      case ('top')               ! top boundary
+        if (llast_proc_x) then
+          do i=1,nghost
+            f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_ 
+          enddo
+        endif
+      
+      case default
+        print*, "bc_emf_x: ", topbot, " should be 'top'"
+      endselect
+    endsubroutine bc_emf_x
+!***********************************************************************
+    subroutine bc_go_x(f,topbot,j,lforce_ghost)
+!
+!  Outflow boundary conditions.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to 'a'.
+!  If 'lforce_ghost' is true, the boundary and ghost cell values are forced
+!  to not point inwards. Otherwise the boundary value is forced to be 0.
+!
+!  14-jun-2011/axel: adapted from bc_outflow_z
+!  17-sep-2012/piyali: adapted from bc_outflow_x
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+      logical, optional :: lforce_ghost
+!
+      integer :: i, iy, iz
+      logical :: lforce
+!
+      lforce = .false.
+      if (present (lforce_ghost)) lforce = lforce_ghost
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case ('bot')
+        do iy=1,my; do iz=1,mz
+          if (f(l1,iy,iz,j)<0.0) then  ! 's'
+            do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
+          else                         ! 'a'
+            do i=1,nghost; f(l1-i,iy,iz,j)=-f(l1+i,iy,iz,j); enddo
+            f(l1,iy,iz,j)=0.0
+          endif
+          if (lforce) then
+            do i = 1, nghost
+              if (f(l1-i,iy,iz,j) > 0.0) f(l1-i,iy,iz,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case ('top')
+        if (llast_proc_x) then
+          do iy=1,my
+          do iz=1,mz
+            if (f(l2,iy,iz,j)>0.0) then
+              do i=1,nghost
+                f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j)
+              enddo
+            else
+              do i=1,nghost 
+                f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j)
+              enddo
+              f(l2,iy,iz,j)=0.0
+              if (lforce) then
+                do i = 1, nghost
+                  if (f(l2+i,iy,iz,j) < 0.0) f(l2+i,iy,iz,j) = 0.0
+                enddo
+              endif
+            endif
+          enddo
+          enddo
+        endif
+!
+!  Default.
+!
+      case default
+        print*, "bc_go_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_go_x
+
+
 !***********************************************************************
 !
 endmodule Special
