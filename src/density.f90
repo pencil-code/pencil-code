@@ -592,9 +592,9 @@ module Density
         case ('blob_hs')
           print*, 'init_lnrho: put a blob in hydrostatic equilibrium:'// &
           'radius_lnrho, ampllnrho, position=',radius_lnrho(j), &
-          ampllnrho(1), xblob, yblob, zblob
-          call blob(ampllnrho(1),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
-          call blob(-ampllnrho(1),f,iss,radius_lnrho(j),xblob,yblob,zblob)
+          ampllnrho(j), xblob, yblob, zblob
+          call blob(ampllnrho(j),f,ilnrho,radius_lnrho(j),xblob,yblob,zblob)
+          call blob(-ampllnrho(j),f,iss,radius_lnrho(j),xblob,yblob,zblob)
         case ('pre-stellar'); call pre_stellar_cloud(f, datafile, mass_cloud, &
                      cloud_mode, T_cloud_out_rel, &
                      dens_coeff, temp_coeff, temp_trans, temp_coeff_out)
