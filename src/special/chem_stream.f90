@@ -896,7 +896,7 @@ subroutine flame_spd_test(f)
 
       do k=1,mx
         f(k,:,:,ilnrho)=init_lnrho!log(p2_front)-log(Rgas)-f(k,:,:,ilnTT)-log(mu1(k,:,:))
-        f(k,:,:,iux)=init_ux!f(l1,:,:,iux)
+        f(k,:,:,iux)=f(k,:,:,iux)+init_ux!f(l1,:,:,iux)
       !   f(k,:,:,ilnTT)=f(l1,:,:,ilnTT)
       !  f(k,:,:,ichemspec(1))=1.
       !  f(k,:,:,ichemspec(2))=0.
