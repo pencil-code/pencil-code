@@ -41,7 +41,7 @@ module Particles_coagulation
   logical :: lkernel_test=.false., lconstant_kernel_test=.false.
   logical :: llinear_kernel_test=.false., lproduct_kernel_test=.false.
   logical :: lgravitational_cross_section=.false.
-  logical :: lzsomdullemond=.false.	! use Zsom and Dullemond method
+  logical :: lzsomdullemond=.false.     ! use Zsom and Dullemond method
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
   real, dimension(:), allocatable :: r_i_tot, cum_func_first_i
@@ -155,7 +155,7 @@ module Particles_coagulation
 !  If using the Zsom and Dullemond Monte Carlo method
 !
       if(lzsomdullemond) then
-        call particles_coagulation_timestep_zd(fp)
+        call particles_coag_timestep_zd(fp)
         return
       end if
 !
@@ -274,7 +274,7 @@ module Particles_coagulation
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
       if(lzsomdullemond) then
-        call particles_coagulation_outcome_zd(fp)
+        call particles_coag_outcome_zd(fp)
         return
       end if
 !
@@ -663,7 +663,7 @@ module Particles_coagulation
 !
     endsubroutine coagulation_fragmentation
 !***********************************************************************
-    subroutine particles_coagulation_timestep_zd(fp)
+    subroutine particles_coag_timestep_zd(fp)
 !
 !  Calculate the next timestep with the same scheme as in Zsom & Dullemond
 !  (2008). Only use for kernel tests. Self-collision included.
@@ -676,8 +676,6 @@ module Particles_coagulation
 !
       real :: r, kernel, dt1_coag_par
       integer :: j, l
-!
-      real, dimension(npar) :: dt1_max
 !
 !  If first timestep calculate the r_ik-matrix and the total rates. 
 !  Loop over all particle pairs.
@@ -709,32 +707,32 @@ module Particles_coagulation
                 four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(l,iap)**3
             endif
 !  Calculate rates and cum. functions
-            r_ik_mat(j,l) = fp(l,inpswarm)*kernel	! rate matrix element
-            r_i_tot(j) = r_i_tot(j) + r_ik_mat(j,l)	! total rate for part. j
-            cum_func_sec_ik(j,l) = r_i_tot(j)		! cum. func. for phys. part.
+            r_ik_mat(j,l) = fp(l,inpswarm)*kernel    ! rate matrix element
+            r_i_tot(j) = r_i_tot(j) + r_ik_mat(j,l)  ! total rate for part. j
+            cum_func_sec_ik(j,l) = r_i_tot(j)        ! cum. func. for phys. part.
 !
-            l = l + 1					! go to next particle
-            if(l == npar) exit			! exit if last particle
+            l = l + 1                      ! go to next particle
+            if(l == npar + 1) exit             ! exit if last particle
           enddo
-          r_total = r_total + r_i_tot(j)	! total rate for all particles
-          cum_func_first_i(j) = r_total		! cum. func. for rep. part.
+          r_total = r_total + r_i_tot(j)   ! total rate for all particles
+          cum_func_first_i(j) = r_total    ! cum. func. for rep. part.
 !
           l = 1
-          j = j + 1				! go to next particle
-          if(j == npar) exit
+          j = j + 1                        ! go to next particle
+          if(j == npar + 1) exit
         enddo
       endif
 !
 !  Now get the timestep (time until next collision) and put in 
-!  inverse time-step array.
+!  inverse time-step array. Use eq. 5 i Zsom & Dullemond 2008
 !
       call random_number_wrapper(r)
-      dt1_coag_par = -1./r_total*alog10(r)
-      dt1_max(1) = dt1_coag_par
+      dt1_coag_par = -r_total/log(r)
+      dt1_max = dt1_coag_par
 !
-    endsubroutine particles_coagulation_timestep_zd
+    endsubroutine particles_coag_timestep_zd
 !***********************************************************************
-    subroutine particles_coagulation_outcome_zd(fp)
+    subroutine particles_coag_outcome_zd(fp)
 !
 !  Calculate which two particles collide and the outcome with the same 
 !  scheme as in Zsom & Dullemond (2008). Only use for kernel tests.
@@ -748,7 +746,7 @@ module Particles_coagulation
 !
       real :: r, r_i_old, kernel
       integer :: i, j, k, l
-      real :: delta_r 		! change in r_i rate
+      real :: delta_r       ! change in r_i rate
 !
 !  Get the particles that is involved in the collision with 
 !  random numbers and cumulative distribution functions. 
@@ -789,18 +787,18 @@ module Particles_coagulation
             kernel=kernel_pro* &
                    four_pi_rhopmat_over_three2*fp(i,iap)**3*fp(j,iap)**3
           endif
-          delta_r = r_ik_mat(i,j) - &
-                    fp(j,inpswarm)*kernel  ! change in matrix element
-          r_ik_mat(i,j) = fp(j,inpswarm)*kernel	! rate matrix element
+          delta_r = fp(j,inpswarm)*kernel - &
+                    r_ik_mat(i,j)               ! change in matrix element
+          r_ik_mat(i,j) = fp(j,inpswarm)*kernel ! rate matrix element
 !  Update rate and cumulative function
           r_i_tot(i) = r_i_tot(i) + delta_r  ! total rate for rep. particle i
 !  Only need to update cumulative function from element j and onwards
           cum_func_sec_ik(i, j:) = cum_func_sec_ik(i, j:) + &
-                                             delta_r
+                                   delta_r
         end if
-!
-        i = i + 1					! go to next superparticle
-        if(i == npar) exit
+! 
+        i = i + 1            ! go to next superparticle
+        if(i == npar + 1) exit
       enddo
 !
 !  Update i = j column.
@@ -816,18 +814,18 @@ module Particles_coagulation
           kernel=kernel_pro* &
                  four_pi_rhopmat_over_three2*fp(j,iap)**3*fp(k,iap)**3
         endif
-        r_ik_mat(j,k) = fp(k,inpswarm)*kernel	! rate matrix element
-!
+        r_ik_mat(j,k) = fp(k,inpswarm)*kernel   ! rate matrix element
+! Update rate for representative particle j
         if (k == 1) then
           r_i_tot(j) = r_ik_mat(j,k)
         else
           r_i_tot(j) = r_i_tot(j) + r_ik_mat(j,k)
-        end if
+        endif
         cum_func_sec_ik(j,k) = r_i_tot(j)
 !
         k = k + 1
-        if (k == npar) exit
-      end do
+        if (k == npar + 1) exit
+      enddo
 !
 !  Update total rate and cumulative function for rep. particles
 !   
@@ -841,10 +839,10 @@ module Particles_coagulation
       cum_func_first_i(i) = r_total
 !
       i = i + 1
-      if (i == npar) exit
+      if (i == npar + 1) exit
     end do
 !
-    endsubroutine particles_coagulation_outcome_zd
+    endsubroutine particles_coag_outcome_zd
 !***********************************************************************
     subroutine particles_coagulation_bisection(qArr, qVal, iPart)
 !
@@ -860,20 +858,20 @@ module Particles_coagulation
       intent (in) :: qArr,qVal
       intent (out) :: iPart
 !
-      jl = 1				! lower index limit
-      ju = size(qArr)			! upper index limit
-      if (qVal <= qArr(1)) then		! qVal is in first bin
+      jl = 1                         ! lower index limit
+      ju = size(qArr)                ! upper index limit
+      if (qVal <= qArr(1)) then      ! qVal is in first bin
         iPart = 1
       else 
-        do while ((ju-jl) > 1)		! not yet done
-          jm = (ju+jl)/2			! midpoint
+        do while ((ju-jl) > 1)       ! not yet done
+          jm = (ju+jl)/2             ! midpoint
           if (qVal >= qArr(jm)) then
-            jl = jm			! new lower limit
+            jl = jm                  ! new lower limit
           else
-            ju = jm			! or new upper limit
+            ju = jm                  ! or new upper limit
           endif
         enddo
-        iPart = ju			! qVal is in the ju-bin
+        iPart = ju                   ! qVal is in the ju-bin
       endif
 !
     endsubroutine particles_coagulation_bisection
@@ -901,9 +899,7 @@ module Particles_coagulation
 !
       integer, intent(in) :: unit
 !
-      print*, 'stop here?', lzsomdullemond, lconstant_kernel_test
       write(unit,NML=particles_coag_run_pars)
-      print*, 'no'
 !
     endsubroutine write_particles_coag_run_pars
 !*******************************************************************
