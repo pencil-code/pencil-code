@@ -31,7 +31,7 @@ module InitialCondition
   logical :: linitial_diffrot=.false.
 !
   namelist /initial_condition_pars/ &
-      b0,s0,width,p0,eps,mphi,ampl,om,b1,b2,linitial_diffrot,omega_exponent,&
+      b0,s0,width,p0,eps,mphi,ampl,om,b1,b2,bz,linitial_diffrot,omega_exponent,&
      ampl_diffrot,hel,nohel,rbreak
 !
   contains
@@ -88,20 +88,20 @@ module InitialCondition
       if (lroot) print*,&
            'initial_condition_lnrho: ring'
 !
-!  density for the magnetic flux flux ring
+!  density for the magnetic flux ring
 !
-      argum=sqrt2*(x-s0)/width
-      term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
-      term2=(2.*x**2-width**2)*exp(-argum**2)
-      press=p0-(.5*b0/s0)**2*(term1+term2)
-      del_lnrho=eps*alog(press/cs20)
-!
-      do n=1,mz
-        do m=1,my
-          f(:,m,n,ilnrho)=f(:,m,n,ilnrho)+del_lnrho
-        enddo
-      enddo
-!
+     argum=sqrt2*(x-s0)/width
+     term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
+     term2=(2.*x**2-width**2)*exp(-argum**2)
+     press=p0-(.5*b0/s0)**2*(term1+term2)
+     del_lnrho=eps*alog(press/cs20)
+
+     do n=1,mz
+       do m=1,my
+         f(:,m,n,ilnrho)=f(:,m,n,ilnrho)+del_lnrho
+       enddo
+     enddo
+
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
