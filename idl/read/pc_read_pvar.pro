@@ -5,8 +5,8 @@
 ;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
-    rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, solid_object=solid_object, $
-    theta_arr=theta_arr, savefile=savefile
+    rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
+    solid_object=solid_object, theta_arr=theta_arr, savefile=savefile
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -241,37 +241,49 @@ for i=0,ncpus-1 do begin
 ;  by counting lines until eof, without actually using the read data.
 ;
       nrmv=0L
+      dummy=''
       while not (eof(file1)) do begin
-        readf, file1, ipar_rmv_loc, t_rmv_loc
+        readf, file1, dummy
         nrmv=nrmv+1
       endwhile
       close, file1
+      nfields=n_elements(strsplit(dummy,' '))
 ;
 ;  Read indices and times into array. The index is read as a real number,
 ;  but converted to integer afterwards.
 ;
-      array_loc=fltarr(2,nrmv)*one
+      array_loc=fltarr(nfields,nrmv)*one
       openr, file1, filename1
       readf, file1, array_loc
       close, file1 & free_lun, file1
       ipar_rmv_loc=reform(long(array_loc[0,*]))
       t_rmv_loc   =reform(     array_loc[1,*])
+      if (nfields eq 3) then ipar_sink_rmv_loc=reform(long(array_loc[2,*]))
 ;
 ;  Read positions, velocities, etc.
 ;
       get_lun, file2 & close, file2
       openr, file2, filename2, /f77
       array_loc=fltarr(mpvar)*one
+      if (nfields eq 3) then begin
+        if (i eq 0) then array_sink=fltarr(npar_max,totalvars)*one
+        array_sink_loc=fltarr(mpvar)*one
+      endif
       k=0L
       ipar_rmv_loc_dummy=0L
       for k=0,nrmv-1 do begin
         if (oldrmv) then begin
           readu, file2, ipar_rmv_loc_dummy, array_loc
         endif else begin
-          readu, file2, array_loc
+          if (nfields eq 2) then begin
+            readu, file2, array_loc, array_sink_loc
+          endif else begin
+            readu, file2, array_loc
+          endelse
         endelse
-        if (t_rmv_loc[k] lt t) then begin
+        if (t_rmv_loc[k] le t) then begin
           array[ipar_rmv_loc[k]-1,*]=array_loc
+          array_sink[ipar_rmv_loc[k]-1,*]=array_sink_loc
           ipar_rmv[ipar_rmv_loc[k]-1]=ipar_rmv[ipar_rmv_loc[k]-1]+1
           trmv[ipar_rmv_loc[k]-1]=t_rmv_loc[k]
         endif
