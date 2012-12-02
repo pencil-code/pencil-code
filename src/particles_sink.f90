@@ -426,7 +426,7 @@ module Particles_sink
           j2=npar_loc+1
           k1=j1
           k2=j2
-          call sink_particle_accretion(fp,j1,j2,k1,k2)
+          call sink_particle_accretion(fp,dfp,j1,j2,k1,k2)
         endif
 !
 !  Send sink particle information to processors.
@@ -447,7 +447,7 @@ module Particles_sink
         j2=npar_loc+1
         k1=npar_loc
         k2=1
-        call sink_particle_accretion(fp,j1,j2,k1,k2,nosink_in=.true.)
+        call sink_particle_accretion(fp,dfp,j1,j2,k1,k2,nosink_in=.true.)
 !
 !  Calculate the added centre-of-mass, momentum, and mass density for each
 !  sink particle.
@@ -515,6 +515,9 @@ module Particles_sink
 !  place along the way.
 !
         if (lroot) then
+          if (npar_sink_loc/=0) &
+              fp(npar_loc+npar_sink+1:npar_loc+npar_sink+npar_sink_loc,:)= &
+              fp(npar_loc+1:npar_loc+npar_sink_loc,:)
           npar_sink=npar_sink_loc
           do iproc_send=1,ncpus-1
             if (npar_sink_proc(iproc_send)/=0) &
@@ -526,11 +529,17 @@ module Particles_sink
           enddo
         else
           if (npar_sink_loc/=0) &
-              call mpirecv_real(fp(npar_loc+1:npar_loc+npar_sink_loc,:), &
+              call mpirecv_real(fp(npar_loc+npar_sink+1: &
+              npar_loc+npar_sink+npar_sink_loc,:), &
               (/npar_sink_loc,mpvar/),0,itag_fpar+iproc)
         endif
 !
+!  Send updated particle index.
+!
         if (lroot) then
+          if (npar_sink_loc/=0) &
+              ipar(npar_loc+npar_sink+1:npar_loc+npar_sink+npar_sink_loc)= &
+              ipar(npar_loc+1:npar_loc+npar_sink_loc)
           npar_sink=npar_sink_loc
           do iproc_send=1,ncpus-1
             if (npar_sink_proc(iproc_send)/=0) &
@@ -542,17 +551,41 @@ module Particles_sink
           enddo
         else
           if (npar_sink_loc/=0) &
-              call mpirecv_int(ipar(npar_loc+1:npar_loc+npar_sink_loc), &
+              call mpirecv_int(ipar(npar_loc+npar_sink+1: &
+              npar_loc+npar_sink+npar_sink_loc), &
               npar_sink_loc,0,itag_ipar+iproc)
+        endif
+!
+!  Send index of sink particle which removed the sink particle.
+!
+        if (lroot) then
+          if (npar_sink_loc/=0) &
+              dfp(npar_loc+npar_sink+1:npar_loc+npar_sink+npar_sink_loc,iaps)= &
+              dfp(npar_loc+1:npar_loc+npar_sink_loc,iaps)
+          npar_sink=npar_sink_loc
+          do iproc_send=1,ncpus-1
+            if (npar_sink_proc(iproc_send)/=0) &
+                call mpisend_real(dfp(npar_loc+1+npar_sink: &
+                npar_loc+npar_sink+npar_sink_proc(iproc_send),iaps), &
+                npar_sink_proc(iproc_send),iproc_send, &
+                itag_fpar2+iproc_send)
+            npar_sink=npar_sink+npar_sink_proc(iproc_send)
+          enddo
+        else
+          if (npar_sink_loc/=0) &
+              call mpirecv_real(dfp(npar_loc+npar_sink+1: &
+              npar_loc+npar_sink+npar_sink_loc,iaps), &
+              npar_sink_loc,0,itag_fpar2+iproc)
         endif
 !
 !  Copy sink particles back into particle array.
 !
         if (npar_sink_loc/=0) then
-          j=npar_loc+1
+          j=npar_loc+npar_sink+1
           do k=1,npar_loc
             if (fp(k,iaps)>0.0) then
               fp(k,:)=fp(j,:)
+              dfp(k,iaps)=dfp(j,iaps) ! Index of sink which removed the particle
               ipar(k)=ipar(j)
               j=j+1
             endif
@@ -569,7 +602,7 @@ module Particles_sink
               print*, 'remove_particles_sink: removed particle ', ipar(k), &
                   'on proc', iproc
             endif
-            call remove_particle(fp,ipar,k,dfp,ineargrid)
+            call remove_particle(fp,ipar,k,dfp,ineargrid,int(dfp(k,iaps)))
           else
             k=k+1
           endif
@@ -748,7 +781,7 @@ module Particles_sink
 !
 !
 !
-          call sink_particle_accretion(fp,j1,j2,npar_loc,1)
+          call sink_particle_accretion(fp,dfp,j1,j2,npar_loc,1)
 !
 !  Catch fatal errors during particle accretion.
 !
@@ -820,9 +853,9 @@ module Particles_sink
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
-    subroutine sink_particle_accretion(fp,j1,j2,k1,k2,nosink_in)
+    subroutine sink_particle_accretion(fp,dfp,j1,j2,k1,k2,nosink_in)
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer :: j1, j2, k1, k2
       logical, optional :: nosink_in
 !
@@ -963,9 +996,11 @@ module Particles_sink
                         rhops=rhops+fp(k,irhopswarm)
                       endif
 !
-!  Mark particle for later deletion.
+!  Mark particle for later deletion. We use the ipar array to set the mark
+!  and use the dfp array to store the index of the sink particle.
 !
                       ipar(k)=-ipar(k)
+                      dfp(k,iaps)=j
                     endif
                   endif
                 endif
