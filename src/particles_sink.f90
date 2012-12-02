@@ -343,10 +343,19 @@ module Particles_sink
         do k=1,npar_loc
           if (fp(k,iaps)>0.0) then
             npar_sink_loc=npar_sink_loc+1
+            if (npar_loc+npar_sink_loc>mpar_loc) then
+              print*, 'remove_particles_sink: too little room for sink '// &
+                  'particle communication on processor ', iproc
+              print*, 'remove_particles_sink: iproc, it, itsub, npar_loc, '// &
+                  'npar_sink_loc, mpar_loc=', iproc, it, itsub, &
+                  npar_loc, npar_sink_loc, mpar_loc
+              call fatal_error_local('remove_particles_sink','')
+            endif
             fp(npar_loc+npar_sink_loc,:)=fp(k,:)
             ipar(npar_loc+npar_sink_loc)=ipar(k)
           endif
         enddo
+        call fatal_error_local_collect()
 !
 !  Communicate the number of sink particles to the root processor.
 !
@@ -361,6 +370,16 @@ module Particles_sink
         else
           call mpisend_int(npar_sink_loc,1,0,itag_npar+iproc)
         endif
+!
+        if (npar_loc+npar_sink+npar_sink_loc>mpar_loc) then
+          print*, 'remove_particles_sink: too little room for sink '// &
+              'particle communication on processor ', iproc
+          print*, 'remove_particles_sink: iproc, it, itsub, npar_loc, '// &
+              'npar_sink, npar_sink_loc, mpar_loc=', iproc, it, itsub, &
+              npar_loc, npar_sink, npar_sink_loc, mpar_loc
+          call fatal_error_local('remove_particles_sink','')
+        endif
+        call fatal_error_local_collect()
 !
 !  Let the processors know how many sink particles there are.
 !
@@ -439,7 +458,12 @@ module Particles_sink
 !  Store sink particle state in dfp, to allow us to calculate the added
 !  centre-of-mass, momentum and mass later.
 !
-        dfp(npar_loc+1:npar_loc+npar_sink,:)=fp(npar_loc+1:npar_loc+npar_sink,:)
+        dfp(npar_loc+1:npar_loc+npar_sink,ixp:izp)= &
+            fp(npar_loc+1:npar_loc+npar_sink,ixp:izp)
+        dfp(npar_loc+1:npar_loc+npar_sink,ivpx:ivpz)= &
+            fp(npar_loc+1:npar_loc+npar_sink,ivpx:ivpz)
+        dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)= &
+            fp(npar_loc+1:npar_loc+npar_sink,irhopswarm)
 !
 !  Let sink particles accrete.
 !
@@ -453,7 +477,9 @@ module Particles_sink
 !  sink particle.
 !
         if (lroot) then
-          dfp(npar_loc+1:npar_loc+npar_sink,:)=0.0
+          dfp(npar_loc+1:npar_loc+npar_sink,ixp:izp)=0.0
+          dfp(npar_loc+1:npar_loc+npar_sink,ivpx:ivpz)=0.0
+          dfp(npar_loc+1:npar_loc+npar_sink,irhopswarm)=0.0
         else
           do i=0,2
             dfp(npar_loc+1:npar_loc+npar_sink,ixp+i)= &
@@ -480,8 +506,9 @@ module Particles_sink
 !  root. No need to send the particle index, as sink particles are protected
 !  from accretion during the previous accretion step.
 !
-        call mpireduce_sum(dfp(npar_loc+1:npar_loc+npar_sink,:), &
-            dfp(npar_loc+1:npar_loc+npar_sink,:),(/npar_sink,mpvar/))
+        call mpireduce_sum(dfp(npar_loc+1:npar_loc+npar_sink,ixp:irhopswarm), &
+            dfp(npar_loc+1:npar_loc+npar_sink,ixp:irhopswarm), &
+            (/npar_sink,7/))
 !
 !  Calculate new state of particles, given the added centre-of-mass, momentum,
 !  and mass density.
@@ -566,16 +593,20 @@ module Particles_sink
           do iproc_send=1,ncpus-1
             if (npar_sink_proc(iproc_send)/=0) &
                 call mpisend_real(dfp(npar_loc+1+npar_sink: &
-                npar_loc+npar_sink+npar_sink_proc(iproc_send),iaps), &
+                npar_loc+npar_sink+npar_sink_proc(iproc_send),iaps)-npar_loc, &
                 npar_sink_proc(iproc_send),iproc_send, &
                 itag_fpar2+iproc_send)
             npar_sink=npar_sink+npar_sink_proc(iproc_send)
           enddo
         else
-          if (npar_sink_loc/=0) &
-              call mpirecv_real(dfp(npar_loc+npar_sink+1: &
-              npar_loc+npar_sink+npar_sink_loc,iaps), &
-              npar_sink_loc,0,itag_fpar2+iproc)
+          if (npar_sink_loc/=0) then
+            call mpirecv_real(dfp(npar_loc+npar_sink+1: &
+                npar_loc+npar_sink+npar_sink_loc,iaps), &
+                npar_sink_loc,0,itag_fpar2+iproc)
+            dfp(npar_loc+npar_sink+1:npar_loc+npar_sink+npar_sink_loc,iaps)= &
+                dfp(npar_loc+npar_sink+1: &
+                npar_loc+npar_sink+npar_sink_loc,iaps)+npar_loc
+          endif
         endif
 !
 !  Copy sink particles back into particle array.
@@ -602,6 +633,12 @@ module Particles_sink
               print*, 'remove_particles_sink: removed particle ', ipar(k), &
                   'on proc', iproc
             endif
+            if (int(dfp(k,iaps)) < 1 .or. int(dfp(k,iaps)) > mpar_loc) then
+              print*, 'remove_particles_sink: error in sink particle index'
+              print*, 'remove_particles_sink: iproc, it, itsub, k, ks', &
+                  iproc, it, itsub, ipar(k), int(dfp(k,iaps))
+            endif
+            ipar(int(dfp(k,iaps)))=abs(ipar(int(dfp(k,iaps))))
             call remove_particle(fp,ipar,k,dfp,ineargrid,int(dfp(k,iaps)))
           else
             k=k+1
