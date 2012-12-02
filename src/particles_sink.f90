@@ -371,6 +371,12 @@ module Particles_sink
           call mpisend_int(npar_sink_loc,1,0,itag_npar+iproc)
         endif
 !
+!  Let the processors know how many sink particles there are.
+!
+        call mpibcast_int(npar_sink)
+        if (ip<=6) print*, 'remove_particles_sink: '// &
+            'iproc, npar_sink_loc, npar_sink=', iproc, npar_sink_loc, npar_sink
+!
         if (npar_loc+npar_sink+npar_sink_loc>mpar_loc) then
           print*, 'remove_particles_sink: too little room for sink '// &
               'particle communication on processor ', iproc
@@ -380,12 +386,6 @@ module Particles_sink
           call fatal_error_local('remove_particles_sink','')
         endif
         call fatal_error_local_collect()
-!
-!  Let the processors know how many sink particles there are.
-!
-        call mpibcast_int(npar_sink)
-        if (ip<=6) print*, 'remove_particles_sink: '// &
-            'iproc, npar_sink_loc, npar_sink=', iproc, npar_sink_loc, npar_sink
 !
 !  Return if there are no sink particles at all.
 !
