@@ -722,29 +722,37 @@ module Particles_sub
 !
       if (lnbody) then
         if (present(ks)) then 
-          print*,'nbody particle ', ks 
-          print*,'is removing the following nbody particle:'
+          print*, 'nbody particle ', ks 
+          print*, 'is removing the following nbody particle:'
         else
-          print*,'the following nbody particle is being removed'
+          print*, 'the following nbody particle is being removed'
         endif
-        print*,'ipar(k)=',ipar(k)
-        print*,'xp,yp,zp=',fp(k,ixp),fp(k,iyp),fp(k,izp)
-        print*,'vxp,vyp,vzp=',fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
+        print*, 'ipar(k)=', ipar(k)
+        print*, 'xp,yp,zp=' ,fp(k,ixp), fp(k,iyp), fp(k,izp)
+        print*, 'vxp,vyp,vzp=', fp(k,ivpx), fp(k,ivpy), fp(k,ivpz)
         call fatal_error("remove_particle","are you sure this should happen?")
       endif
 !
 !  Write to the respective processor that the particle is removed.
 !
       open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      write(20,*) ipar(k), t_sp
+      if (present(ks)) then
+        write(20,*) ipar(k), t_sp, ipar(ks)
+      else
+        write(20,*) ipar(k), t_sp
+      endif
       close(20)
 !
       open(20,file=trim(directory)//'/rmv_par.dat', &
           position='append',form='unformatted')
-      write(20) fp(k,:)
+      if (present(ks)) then
+        write(20) fp(k,:), fp(ks,:)
+      else
+        write(20) fp(k,:)
+      endif
       close(20)
 !
-      if (lroot.and.(ip<=8)) print*,'removed particle ',ipar(k)
+      if (ip<=8) print*, 'removed particle ', ipar(k)
 !
 !  Switch the removed particle with the last particle present in the processor
 !  npar_loc
