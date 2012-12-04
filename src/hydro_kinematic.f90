@@ -15,7 +15,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED oo(3); ou; uij(3,3); uu(3); u2; sij(3,3)
+! PENCILS PROVIDED oo(3); o2; ou; uij(3,3); uu(3); u2; sij(3,3)
 ! PENCILS PROVIDED der6u(3)
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3)
 !***********************************************************************
@@ -248,6 +248,8 @@ module Hydro
 !
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
+      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) &
+          lpenc_diagnos(i_o2)=.true.
       if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
 !
@@ -431,6 +433,25 @@ module Hydro
           p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
         endif
         if (lpencil(i_divu)) p%divu=0.
+!
+!  Modified Roberts flow (from Tilgner 2004)
+!
+      case ('Roberts-IV')
+        if (headtt) print*,'Roberts-IV flow; eps_kinflow=',eps_kinflow
+        fac=sqrt(2./eps_kinflow)*ampl_kinflow
+        fac2=sqrt(eps_kinflow)*ampl_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+          p%uu(:,3)=+fac2*sin(kx_uukin*x(l1:l2))
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+        if (lpencil(i_oo)) then
+          p%oo(:,1)=0.
+          p%oo(:,2)=-fac2*kx_uukin*cos(kx_uukin*x(l1:l2))
+          p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+        endif
 !
 !  Glen-Roberts flow (positive helicity), alternative version
 !
@@ -1277,6 +1298,8 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
+! o2
+      if (lpencil(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
       if (lpencil(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
 !
@@ -1284,13 +1307,16 @@ module Hydro
 !
       if (ldiagnos) then
         if (idiag_urms/=0)  call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
+        if (idiag_orms/=0)  call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
         if (idiag_umax/=0)  call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
+        if (idiag_omax/=0)  call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
         if (idiag_uzrms/=0) &
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
         if (idiag_uzmax/=0) &
             call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
         if (idiag_u2m/=0)   call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
+        if (idiag_oum/=0)   call sum_mn_name(p%ou,idiag_oum)
 !
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) &
@@ -1363,10 +1389,9 @@ module Hydro
 !
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: diagnostics ...'
-        if (idiag_oum/=0) call sum_mn_name(p%ou,idiag_oum)
 !
 !  Kinetic field components at one point (=pt).
-!
+ 
         if (lroot.and.m==mpoint.and.n==npoint) then
           if (idiag_uxpt/=0) call save_name(p%uu(lpoint-nghost,1),idiag_uxpt)
           if (idiag_uypt/=0) call save_name(p%uu(lpoint-nghost,2),idiag_uypt)
