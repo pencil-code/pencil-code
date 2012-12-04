@@ -162,6 +162,7 @@ if ($?PBS_NODEFILE) then
 else if ($?LOADL_PROCESSOR_LIST) then
   if ($debug) echo "LoadLeveler job"
   set nodelist = `echo $LOADL_PROCESSOR_LIST | tr " " "\n" | uniq`
+  set nodelist = `echo $hostname`
 else if ($?PE_HOSTFILE) then
   set masterhost = $SGE_O_HOST
   echo " Running under SGE "
@@ -213,8 +214,8 @@ if ($?SLURM_NODELIST) then
 else
   set nnodes = $#nodelist
 endif
-set nprocpernode = `expr $ncpus / $nnodes`
-echo "$nnodes nodes, $nprocpernode CPU(s) per node"
+## set nprocpernode = `expr $ncpus / $nnodes`
+## echo "$nnodes nodes, $nprocpernode CPU(s) per node"
 
 ## ------------------------------
 ## Choose machine specific settings
@@ -1293,6 +1294,22 @@ else if ($hostname =~ juqueen*) then
    set mpirunops = "--ranks-per-node 16"
    set mpirunops2="--exe"
    set npops = ''
+   setenv SSH "ssh -q -x"
+   setenv SCP "scp -q"
+   setenv SCRATCH_DIR /work/$USER
+#-------------------------------------------------
+else if ($hn =~ fen*) then
+   echo "Blue Gene/Q at Fermi"
+   echo $hostname 
+   setenv nodelist $hostname
+   echo $nodelist 
+   set local_disc = 0
+   set one_local_disc = 1
+   set mpirun = runjob
+   set mpirunops = "--ranks-per-node 1 --np 64"
+   set mpirunops2="--exe"
+   set npops = ''
+   set nprocpernode = '64'
    setenv SSH "ssh -q -x"
    setenv SCP "scp -q"
    setenv SCRATCH_DIR /work/$USER
