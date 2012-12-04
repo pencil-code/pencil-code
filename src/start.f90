@@ -116,7 +116,7 @@ program start
       mod(nzgrid,nprocz)/=0) then
     call fatal_error('start', &
         'in each dimension the number of grid points has to be '// &
-        'dividable by the number of processors')
+        'divisible by the number of processors')
   endif
 !
 !  Identify version.
