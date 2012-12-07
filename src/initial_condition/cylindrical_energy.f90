@@ -1,4 +1,4 @@
-!  $Id: cylindrical_energy.f90 19831 2012-11-30 12:23:55Z fadiesis $
+!  $Id$
 !
 !  Initial condition (density, magnetic field, velocity) 
 !  for magnetohydrostatical equilibrium in a global accretion
@@ -46,7 +46,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: cylindrical_energy.f90 19831 2012-11-30 12:23:55Z fadiesis $")
+           "$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
