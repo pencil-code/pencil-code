@@ -46,7 +46,7 @@ module InitialCondition
 !  Identify CVS/SVN version information.
 !
       if (lroot) call svn_id( &
-           "$Id: fluxring_cylindrical.f90 19831 2012-11-30 12:23:55Z fadiesis $")
+           "$Id: cylindrical_energy.f90 19831 2012-11-30 12:23:55Z fadiesis $")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -84,7 +84,6 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx) :: argum,term1,term2,press,lnrho0,lnrho,lnTT,TT
-!     real, dimension (nx) :: lnrho0,lnTT,TT,rho,press
       real :: cp,cv,cp1,lnTT0,TT0
       integer :: irho
 !
@@ -103,14 +102,11 @@ module InitialCondition
      cv=gamma1*cp
 !
      TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
-     lnrho0=log(press)/gamma !-log((cp-cv)*TT0)
-!    rho0=exp(lnrho0)
-!    press=(cp-cv)*TT0*rho0
+     lnrho0=log(press)/gamma 
 !!
       do m=1,my;do n=1,mz!
         TT=(press/((1-gamma1)*exp(lnrho)))/TT0
         lnTT = log(TT)
-!  assumes cp=1
 !
         f(:,m,n,iss)=f(:,m,n,iss) + &
             cv*(lnTT-gamma_m1*lnrho0)
@@ -126,44 +122,6 @@ module InitialCondition
  
  
     endsubroutine initial_condition_lnrho
-!***********************************************************************
-!    subroutine initial_condition_ss(f)
-!
-!  Initialize entropy.
-!
-!  07-may-09/wlad: coded
-!
-!      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0,lnrho0
-!
-!      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!      real, dimension (nx) :: lnrho,lnTT,TT,rho,press
-!      real :: cp,cv,cp1,lnTT0,TT0
-!      integer :: irho
-!
-!  Get the density and use a constant pressure entropy condition
-!
-!      cp=1.
-!      cp1=1/cp
-!      cv=gamma1*cp
-!
-!      rho0=exp(lnrho0)
-!      TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
-!      press=(cp-cv)*TT0*rho0
-!!
-!      do m=m1,m2;do n=n1,n2!
-!        lnTT = log(TT)
-!  assumes cp=1
-!
-!        f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss) + &
-!            cv*(lnTT-gamma_m1*lnrho0)
-!
-!      enddo;enddo
-!
-!  Revert the original variable (ishock) to zero.
-!
-!
-!    endsubroutine initial_condition_ss
-
 
 !***********************************************************************
     subroutine initial_condition_aa(f)
