@@ -13,6 +13,7 @@ from pencil.files.slices import *
 from pencil.files.xyaver import *
 from pencil.files.yzaver import *
 from pencil.files.yaver import *
+from pencil.files.zaver import *
 from pencil.files.zprof import *
 from pencil.files.power import *
 from pencil.files.animate_interactive import *
