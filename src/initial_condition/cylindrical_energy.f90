@@ -83,45 +83,62 @@ module InitialCondition
       use EquationOfState, only: cs20,gamma,gamma_m1,gamma1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: argum,term1,term2,press,lnrho0,lnrho,lnTT,TT
-      real :: cp,cv,cp1,lnTT0,TT0
-      integer :: irho
+      real, dimension (mx) :: argum,term1,term2,press,lnrho0,lnrho,ln
 !
       if (lroot) print*,&
            'initial_condition_lnrho: ring'
+ 
+ 
+    endsubroutine initial_condition_lnrho
+
+!***********************************************************************
+    subroutine initial_condition_ss(f)
 !
-!  density for the magnetic flux ring
+!  Initialize entropy.
 !
-     argum=sqrt2*(x-s0)/width
-     term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
-     term2=(2.*x**2-width**2)*exp(-argum**2)
-     press=p0-(.5*b0/s0)**2*(term1+term2)
-     
+!  07-may-09/wlad: coded
+!
+      use EquationOfState, only: gamma,gamma_m1,gamma1,cs20,rho0
+
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: cp,cv,cp1,lnTT0,pp0,TT0
+      integer :: irho
+      real, dimension (mx) :: argum,term1,term2,press,lnrho,lnTT,TT,rho,lnrho0
+!
+!  Get the density and use a constant pressure entropy condition
+!
      cp=1.
      cp1=1/cp	
      cv=gamma1*cp
 !
-     TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
-     lnrho0=log(press)/gamma 
-!!
-      do m=1,my;do n=1,mz!
-        TT=(press/((1-gamma1)*exp(lnrho)))/TT0
-        lnTT = log(TT)
-!
-        f(:,m,n,iss)=f(:,m,n,iss) + &
-            cv*(lnTT-gamma_m1*lnrho0)
-!
-      enddo;enddo
-!
-     
+ 
+     argum=sqrt2*(x-s0)/width
+     term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
+     term2=(2.*x**2-width**2)*exp(-argum**2)
+     press=p0-(.5*b0/s0)**2*(term1+term2)
+     lnrho0=eps*log(press)/gamma 
+   
+!     
      do n=1,mz
        do m=1,my
          f(:,m,n,ilnrho)=f(:,m,n,ilnrho)+lnrho0
-        enddo
+       lnrho = f(:,m,n,ilnrho)
+       enddo
      enddo
- 
- 
-    endsubroutine initial_condition_lnrho
+
+     TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
+    TT=(exp(gamma)/(1-gamma1))/TT0
+     lnTT = log(TT)
+       print*,'gamma,TT0=',gamma,TT0
+     do n=1,mz
+       do m=1,my
+        f(1:mx,m,n,iss)=f(1:mx,m,n,iss) +  cv*(lnTT-gamma_m1*lnrho)
+      enddo
+     enddo
+!
+    endsubroutine initial_condition_ss
+
+
 
 !***********************************************************************
     subroutine initial_condition_aa(f)
@@ -145,7 +162,6 @@ module InitialCondition
 !
       do n=1,mz
         do m=1,my
-!          f(:,m,n,iaz)=f(:,m,n,iaz)+az
           f(:,m,n,iaz)= az
           f(:,m,n,iay)=f(:,m,n,iay)+ay
         enddo
