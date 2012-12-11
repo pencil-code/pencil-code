@@ -127,7 +127,7 @@ module InitialCondition
      enddo
 
      TT0 = cs20*cp1/gamma_m1 ; lnTT0=log(TT0)
-    TT=(exp(gamma)/(1-gamma1))/TT0
+     TT=TT0*(exp(lnrho/lnrho0))**(gamma_m1)
      lnTT = log(TT)
        print*,'gamma,TT0=',gamma,TT0
      do n=1,mz
