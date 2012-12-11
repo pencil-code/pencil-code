@@ -52,7 +52,7 @@ module Gravity
   real :: gravx=0.0, gravy=0.0, gravz=0.0
   real :: kx_gg=1.0, ky_gg=1.0, kz_gg=1.0, gravz_const=1.0, reduced_top=1.0
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
-  real :: xinfty=0.0, yinfty=0.0, zinfty=impossible
+  real :: xinfty=0.0, yinfty=0.0, zinfty=impossible, zclip=impossible
   real :: dgravx=0.0, pot_ratio=1.0, qgshear=1.5
   real :: z1=0.0, z2=1.0, zref=impossible, sphere_rad=0.0, g_ref=0.0
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
@@ -84,7 +84,7 @@ module Gravity
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
-      potx_const,poty_const,potz_const
+      potx_const,poty_const,potz_const, zclip
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -93,7 +93,7 @@ module Gravity
       lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
-      lboussinesq_grav, n_pot, grav_tilt, grav_amp
+      lboussinesq_grav, n_pot, grav_tilt, grav_amp, zclip
 !
   integer :: idiag_epot=0
   integer :: idiag_epotmx=0
@@ -345,7 +345,11 @@ module Gravity
       case ('const')
         if (lroot) print*,'initialize_gravity: constant gravz=', gravz
         gravz_zpencil=gravz
-        potz_zpencil=-gravz*(z-zinfty)
+        if (zclip==impossible) then
+          potz_zpencil=-gravz*(z-zinfty)
+        else
+          potz_zpencil=-gravz*min(z-zinfty,zclip-zinfty)
+        endif
 !
       case ('const_tilt')
         gravz=-grav_amp*cos(grav_tilt*pi/180.)
@@ -816,7 +820,11 @@ module Gravity
         case ('zero')
           if (lroot) print*,'potential_point: no z-gravity'
         case ('const')
-          potz_zpoint=-gravz*(z-zinfty)
+          if (zclip==impossible) then
+            potz_zpoint=-gravz*(z-zinfty)
+          else
+            potz_zpoint=-gravz*max(z-zinfty,zclip-zinfty)
+          endif
         case ('linear')
           potz_zpoint=0.5*(z**2-zinfty**2)*nu_epicycle**2
         case ('spherical')
