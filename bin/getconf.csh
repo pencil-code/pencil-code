@@ -1303,8 +1303,8 @@ else if ($hn =~ fen*) then
    echo $hostname 
    setenv nodelist $hostname
    echo $nodelist 
-   set local_disc = 0
-   set one_local_disc = 1
+   set local_disc = 1
+   set one_local_disc = 0
    set mpirun = runjob
    set mpirunops = "--ranks-per-node 16 --np 64"
    set mpirunops2="--exe"
