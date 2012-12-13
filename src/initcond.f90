@@ -1524,11 +1524,13 @@ module Initcond
 !  set z-dependent Beltrami field
 !
       if (present(kz)) then
-        k=abs(kz)
+        !k=abs(kz)
+        k=kz
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncz=sign(sqrt(abs(ampl/k)),kz)*cos(k*z+ph)
-        sfuncz=sign(sqrt(abs(ampl/k)),kz)*sin(k*z+ph)
-        if (present(kz2)) sfuncz=sfuncz*sin(kz2*z+ph)
+        !cfuncz=sign(sqrt(abs(ampl/k)),kz)*cos(k*z+ph)
+        !sfuncz=sign(sqrt(abs(ampl/k)),kz)*sin(k*z+ph)
+        cfuncz=cos(k*z+ph)
+        sfuncz=sin(k*z+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
