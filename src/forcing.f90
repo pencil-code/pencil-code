@@ -4255,6 +4255,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
       integer :: i2d1=1,i2d2=2,i2d3=3
 !
         select case (iforcing_cont)
+        case('Fz=const')
+          force(:,1)=0.
+          force(:,2)=0.
+          force(:,3)=ampl_ff
         case('ABC')
           fact2=relhel
           fact=ampl_ff/sqrt(ABC_A**2+ABC_B**2+ABC_C**2)
