@@ -50,6 +50,7 @@ Joern Warnecke,  joern/nordita.org,        +46 8 5537 8277,   +46 72 7316111
 Tijmen van Wettum, vanwettum/mps.mpg.de    +49-5556-979-408,  +49 176 911 232 19, TvanWettum
 Chao-Chin Yang,   ccyang/ucolick.org,      +1-831-459-2896,   , , chaochinyang
 Tarek A. Yousef, tarek/pvv.org,            +44 798 122 8515,
+Illa R. Losada	illa.rivero.losada/gmail.com			+34 634773855, illarl	
 
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
