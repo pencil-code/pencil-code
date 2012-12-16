@@ -34,7 +34,7 @@ module Particles_mpicomm
   real, dimension (myb,0:nblockmax-1) :: yb,dy1b,dVol1yb
   real, dimension (mzb,0:nblockmax-1) :: zb,dz1b,dVol1zb
 !
-  real, dimension (mxb,myb,mzb,mvar+maux,0:nblockmax-1) :: fb
+  real, dimension (mxb,myb,mzb,mfarray,0:nblockmax-1) :: fb
   real, dimension (mxb,myb,mzb,mvar,0:nblockmax-1) :: dfb
 !
   integer, dimension (mpar_loc) :: inearblock
@@ -1729,8 +1729,8 @@ module Particles_mpicomm
 !
       iblock=0
       do while (iblock<nblock_loc)
-        if (iproc_parent_block(ibrick)<-1 .or. &
-            iproc_parent_block(ibrick)>ncpus-1) then
+        if (iproc_parent_block(iblock)<-1 .or. &
+            iproc_parent_block(iblock)>ncpus-1) then
           print*, 'load_balance_particles: error in communicating '// &
               'grand parent list'
           print*, 'iproc, iblock, iproc_parent_block(iblock)', &
