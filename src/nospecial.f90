@@ -587,4 +587,19 @@ module Special
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
+    subroutine set_init_parameters(Ntot,BB0,dsize,init_distr,init_distr2)
+!
+!  Possibility to modify the f and df after df is updated.
+!  Used for the Fargo shift, for instance.
+!
+!  27-nov-08/wlad: coded
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(ndustspec) :: dsize,init_distr,init_distr2
+      real :: Ntot, BB0
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine  set_init_parameters
+!***********************************************************************
 endmodule Special
