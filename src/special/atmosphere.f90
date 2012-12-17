@@ -51,7 +51,7 @@ module Special
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-!  use Density, only: rho_up
+!  use Dustdensity
   use EquationOfState
 
   implicit none
@@ -63,8 +63,7 @@ module Special
   logical :: lbuoyancy_z=.false.
 
   character (len=labellen) :: initstream='default'
-  real, dimension(ndustspec) :: dsize, dds
-  real, dimension(ndustspec0) :: dsize0, dds0
+  real, dimension(ndustspec) :: dsize, init_distr,init_distr2
   real, dimension(ndustspec0) :: Ntot_i
   real :: Rgas, Rgas_unit_sys=1.
   integer :: ind_H2O, ind_N2, imass=1! ind_cloud=0
@@ -162,12 +161,12 @@ module Special
 !  06-oct-03/tony: coded
 !
       use EquationOfState
-
+     
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
       integer :: k,i
-      real :: ddsize
-      real, dimension (ndustspec) ::  lnds
+      real :: ddsize, Ntot_,BB0_
+      real, dimension (ndustspec) ::  lnds,dsize_
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -189,49 +188,16 @@ module Special
 !        
       enddo
 !    
-      if (dsize_max/=0.0) then
-! 
-       if (llog_distribution) then
-         ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
-          do i=0,(ndustspec-1)
-            lnds(i+1)=alog(dsize_min)+i*ddsize
-            dsize(i+1)=exp(lnds(i+1))
-          enddo
-       else
-         ddsize=(dsize_max-dsize_min)/(ndustspec-1)
-          do i=0,(ndustspec-1)
-            lnds(i+1)=dsize_min+i*ddsize
-            dsize(i+1)=lnds(i+1)
-          enddo
-       endif
-!
-          do k=1,ndustspec
-          if ((k>1) .and. (k<ndustspec)) then
-            dds(k)=(dsize(k+1)-dsize(k-1))/2.
-          elseif (k==1) then
-            dds(k)=dsize(k+1)-dsize(k)
-          elseif (k==ndustspec) then
-            dds(k)=dsize(k)-dsize(k-1)
-          endif
-          enddo
-!
-          do i=1,ndustspec0
-          if ((i>1) .and. (i<ndustspec0)) then
-            dds0(i)=(dsize0(i+1)-dsize0(i-1))/2.
-          elseif (i==1) then
-            dds0(i)=(dsize0(i+1)-dsize0(i))/2
-          elseif (i==ndustspec0) then
-            dds0(i)=(dsize0(i)-dsize0(i-1))/2
-          endif
-          enddo
-      endif
-!
-   !   print*,'cloud index', ind_cloud
       print*,'special: water index', ind_H2O
       print*,'special: N2 index', ind_N2
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
+
+      call set_init_parameters(Ntot,BB0,dsize,init_distr,init_distr2)
+
+!print*,'Ntot_',Ntot_,'BB0',BB0_
+
+
+
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -264,6 +230,9 @@ module Special
 !          call stop_it("")
 !      endselect
 !
+
+       
+
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -786,40 +755,82 @@ module Special
 !  27-nov-08/wlad: coded
 !
 
-      use General, only: spline_integral
+      use General, only: spline_integral, spline
+      
 !      use Dustdensity
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       real, dimension (ndustspec) :: ff_tmp, ttt, ttt2
-      integer :: k,i,i1,i2,i3
+      real, dimension (4) :: ds_tmp, ff_tmp2
+      integer :: k,i,i1,i2,i3,j1,j2,j3
       character (len=20) :: output_file="./data/nd.out"
       character (len=20) :: output_file2="./data/nd2.out"
       character (len=20) :: output_file3="./data/nd3.out"
       character (len=20) :: output_file4="./data/nd4.out"
       integer :: file_id=123
+      integer :: j
+      real, dimension (ndustspec) :: S,x2
 ! 
+      j1=1
+      j2=2
+      j3=3
+      
+
       if (.not. ldustdensity_log) then
       do i1=l1,l2
       do i2=m1,m2
       do i3=n1,n2
 !
-         do k=1,ndustspec 
-            if (f(i1,i2,i3,ind(k))<10) f(i1,i2,i3,ind(k))=10
+         do k=3,ndustspec-2 
+!
+!            if (f(i1,i2,i3,ind(k))<0.) f(i1,i2,i3,ind(k))=0.
+
+!             if (f(i1,i2,i3,ind(k))<0.) then
+!               j=k  
+          
+!               do while (f(i1,i2,i3,ind(j))<0.)
+!                 j=j-1
+!                 ff_tmp2(2)=f(i1,i2,i3,ind(j)) 
+!                 ds_tmp(2)=dsize(j)
+!                 ff_tmp2(1)=f(i1,i2,i3,ind(j-1)) 
+!                ds_tmp(1)=dsize(j-1)
+!               enddo 
+!               do while (f(i1,i2,i3,ind(j))<0.)
+!                 j=j+1
+!                 ff_tmp2(3)=f(i1,i2,i3,ind(j))  
+!                 ds_tmp(3)=dsize(j)
+!                 ff_tmp2(4)=f(i1,i2,i3,ind(j+1))  
+!                 ds_tmp(4)=dsize(j+1)
+!               enddo 
+!
+
+!               x2(1)=ds_tmp(1); x2(2)=dsize(k); x2(3)=ds_tmp(4)
+!               call  spline(ds_tmp,ff_tmp2,x2,S,4,3)
+!                
+!               f(i1,i2,i3,ind(k))=(ff_tmp2(2)+ff_tmp2(3))/2.
+!             endif
+
+!
             if (ldcore) then
               do i=1, ndustspec0
-                if (f(i1,i2,i3,idcj(k,i))<10) f(i1,i2,i3,idcj(k,i))=10
+                if (f(i1,i2,i3,idcj(k,i))<1) f(i1,i2,i3,idcj(k,i))=1.
               enddo
             endif
           enddo
 !         
+!         f(i1,i2,i3,ind(j3))=f(i1,i2,i3,ind(j3+2))
+!         f(i1,i2,i3,ind(j2))=f(i1,i2,i3,ind(j3+3))
+!         f(i1,i2,i3,ind(j1))=f(i1,i2,i3,ind(j3+4))
+           
+
       enddo
       enddo  
       enddo
       endif
 !
-      call dustspec_normalization_(f)
+!      call dustspec_normalization_(f)
       call write_0d_result(f)
 !
     endsubroutine  special_after_timestep
@@ -1175,22 +1186,19 @@ module Special
 ! bottom boundary
         if (vr==ind(1)) then 
           do k=1,ndustspec
-            f(l1,m1:m2,n1:n2,ind(k))= &
-!                           nd0*exp(-((dsize(k)-r0)/delta)**2)
-            1e3/0.856E-03/(2.*pi)**0.5/(2.*dsize(k))/alog(delta) &
-               *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))
+            f(l1,m1:m2,n1:n2,ind(k))= init_distr(k)
           enddo
           do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
-        if (vr==imd(1)) then 
+   !     if (vr==imd(1)) then 
    !      f(l1,m1:m2,n1:n2,imd)=value1
-          do k=1,ndustspec
-           f(l1,m1:m2,n1:n2,imd(k))=4./3.*PI*dsize(k)**3*rho_w &
-                   *dds(k)/m_w &
-                   *exp(f(l1,m1:m2,n1:n2,ilnrho)) &
-                   *nd0*exp(-((dsize(k)-r0)/delta)**2)
-          enddo
-        endif
+   !!       do k=1,ndustspec
+   !        f(l1,m1:m2,n1:n2,imd(k))=4./3.*PI*dsize(k)**3*rho_w &
+   !                *dds(k)/m_w &
+   !                *exp(f(l1,m1:m2,n1:n2,ilnrho)) &
+   !                *nd0*exp(-((dsize(k)-r0)/delta)**2)
+   !       enddo
+   !     endif
 !       if (vr==ichemspec(ind_H2O)) then 
 !          psat=6.035e12*exp(-5938./exp(f(l1,m1:m2,n1:n2,ilnTT)))
 !          f(l1,m1:m2,n1:n2,ichemspec(ind_H2O))=psat/PP*dYw
@@ -1469,6 +1477,38 @@ subroutine bc_satur_x(f,bc)
 !
     endsubroutine special_before_boundary
 !
+!********************************************************************
+   subroutine set_init_parameters(Ntot_,BB0_,dsize_,init_distr_, init_distr2_)
+!    
+      real, dimension (ndustspec), intent(out) :: dsize_,init_distr_, init_distr2_
+      real, dimension (ndustspec) ::  lnds
+      real, intent(out) :: Ntot_, BB0_
+      integer :: i,k
+      real :: ddsize
+ !
+       ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
+       do i=0,(ndustspec-1)
+         lnds(i+1)=alog(dsize_min)+i*ddsize
+         dsize(i+1)=exp(lnds(i+1))
+       enddo
+
+       do k=1,ndustspec
+          init_distr_(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+            *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))+10.
+          if (r02 /= 0.) then
+            init_distr2_(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+            *exp(-(alog(2.*dsize(k))-alog(2.*r02))**2/(2.*(alog(delta))**2))+10.
+          endif             
+        enddo
+
+
+      Ntot_=Ntot
+      BB0_=BB0
+      dsize_=dsize
+
+
+    endsubroutine set_init_parameters
+!***********************************************************************
 !********************************************************************
 
 !************        DO NOT DELETE THE FOLLOWING       **************
