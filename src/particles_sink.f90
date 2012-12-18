@@ -323,7 +323,7 @@ module Particles_sink
       integer, dimension(0:ncpus-1) :: npar_sink_proc
       integer, dimension(27) :: iproc_recv_list, iproc_send_list
       integer, dimension(2*mpvar) :: ireq_array
-      integer :: i, j, j1, j2, k, k1, k2, ireq, ierr, nreq
+      integer :: i, j, j1, j2, k, k1, k2, ireq, ierr, nreq, krmv
       integer :: nproc_comm, iproc_comm
       integer :: npar_sink_loc, npar_sink
       integer :: ipx_send, ipy_send, ipz_send, ipx_recv, ipy_recv, ipz_recv
@@ -441,6 +441,7 @@ module Particles_sink
 !  on another one.
 !
         if (lroot) then
+          dfp(npar_loc+1:npar_loc+npar_sink,iaps)=0.0
           j1=npar_loc+npar_sink
           j2=npar_loc+1
           k1=j1
@@ -453,6 +454,8 @@ module Particles_sink
         call mpibcast_real(fp(npar_loc+1:npar_loc+npar_sink,:), &
             (/npar_sink,mpvar/))
         call mpibcast_int(ipar(npar_loc+1:npar_loc+npar_sink), &
+            npar_sink)
+        call mpibcast_real(dfp(npar_loc+1:npar_loc+npar_sink,iaps), &
             npar_sink)
 !
 !  Store sink particle state in dfp, to allow us to calculate the added
@@ -603,14 +606,22 @@ module Particles_sink
             call mpirecv_real(dfp(npar_loc+npar_sink+1: &
                 npar_loc+npar_sink+npar_sink_loc,iaps), &
                 npar_sink_loc,0,itag_fpar2+iproc)
-            dfp(npar_loc+npar_sink+1:npar_loc+npar_sink+npar_sink_loc,iaps)= &
-                dfp(npar_loc+npar_sink+1: &
-                npar_loc+npar_sink+npar_sink_loc,iaps)+npar_loc
+            where (dfp(npar_loc+npar_sink+1: &
+                npar_loc+npar_sink+npar_sink_loc,iaps)>0.0)
+              dfp(npar_loc+npar_sink+1: &
+                  npar_loc+npar_sink+npar_sink_loc,iaps)= &
+                  dfp(npar_loc+npar_sink+1: &
+                  npar_loc+npar_sink+npar_sink_loc,iaps)+npar_loc
+            elsewhere
+              dfp(npar_loc+npar_sink+1: &
+                  npar_loc+npar_sink+npar_sink_loc,iaps)=0.0
+            endwhere
           endif
         endif
 !
 !  Copy sink particles back into particle array.
 !
+        k=1
         if (npar_sink_loc/=0) then
           j=npar_loc+npar_sink+1
           do k=1,npar_loc
@@ -629,17 +640,17 @@ module Particles_sink
         do while (k<=npar_loc)
           if (ipar(k)<0) then
             ipar(k)=-ipar(k)
+            krmv=int(dfp(k,iaps))
             if (ip<=6) then
               print*, 'remove_particles_sink: removed particle ', ipar(k), &
                   'on proc', iproc
             endif
-            if (int(dfp(k,iaps)) < 1 .or. int(dfp(k,iaps)) > mpar_loc) then
+            if ( (krmv < 1) .or. (krmv > mpar_loc) ) then
               print*, 'remove_particles_sink: error in sink particle index'
               print*, 'remove_particles_sink: iproc, it, itsub, k, ks', &
                   iproc, it, itsub, ipar(k), int(dfp(k,iaps))
             endif
-            ipar(int(dfp(k,iaps)))=abs(ipar(int(dfp(k,iaps))))
-            call remove_particle(fp,ipar,k,dfp,ineargrid,int(dfp(k,iaps)))
+            call remove_particle(fp,ipar,k,dfp,ineargrid,krmv)
           else
             k=k+1
           endif
