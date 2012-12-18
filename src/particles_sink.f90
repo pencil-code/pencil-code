@@ -621,7 +621,6 @@ module Particles_sink
 !
 !  Copy sink particles back into particle array.
 !
-        k=1
         if (npar_sink_loc/=0) then
           j=npar_loc+npar_sink+1
           do k=1,npar_loc
