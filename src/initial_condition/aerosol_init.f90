@@ -479,55 +479,61 @@ module InitialCondition
 !
       if (linit_temperature) then
 !
-        if (lcurved) then
-          do j=m1,m2         
-            init_x1_ar(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
-            init_x2_ar(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
-          enddo
-          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.1*sin(4.*PI*y(:)/Lxyz(2)))
-          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.1*sin(4.*PI*y(:)/Lxyz(2)))
-        else
-          init_x1_ar=init_x1
-          init_x2_ar=init_x2
-          del_ar1(:)=(init_x2-init_x1)*0.2
-          del_ar2(:)=(init_x2-init_x1)*0.2
-        endif
+!        if (lcurved) then
+!          do j=m1,m2         
+!            init_x1_ar(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
+!            init_x2_ar(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
+!          enddo
+!          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.1*sin(4.*PI*y(:)/Lxyz(2)))
+!          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.1*sin(4.*PI*y(:)/Lxyz(2)))
+!        else
+!          init_x1_ar=init_x1
+!          init_x2_ar=init_x2
+!          del_ar1(:)=(init_x2-init_x1)*0.2
+!          del_ar2(:)=(init_x2-init_x1)*0.2
+!        endif
 !
           del=(init_x2-init_x1)*0.2
         do i=l1,l2
-          if (x(i)<0) then
-            del_ar=del_ar1
-          else
-            del_ar=del_ar2 
-          endif
-        do j=m1,m2
+!          if (x(i)<0) then
+!            del_ar=del_ar1
+!         else
+!            del_ar=del_ar2 
+!          endif
+!        do j=m1,m2
           if (ltanh_prof) then
             
-            f(i,j,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+!            f(i,j,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+!                             +((init_TT2-init_TT1)*0.5)  &
+!              *(exp(x(i)/del_ar(j))-exp(-x(i)/del_ar(j))) &
+!              /(exp(x(i)/del_ar(j))+exp(-x(i)/del_ar(j))))
+!
+             f(i,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
                              +((init_TT2-init_TT1)*0.5)  &
-              *(exp(x(i)/del_ar(j))-exp(-x(i)/del_ar(j))) &
-              /(exp(x(i)/del_ar(j))+exp(-x(i)/del_ar(j))))
+                            *(exp(x(i)/del)-exp(-x(i)/del)) &
+                           /(exp(x(i)/del)+exp(-x(i)/del)))
+
           else
-          if (x(i)<=init_x1_ar(j)) then
-            f(i,j,:,ilnTT)=alog(init_TT1)
+!          if (x(i)<=init_x1_ar(j)) then
+!            f(i,j,:,ilnTT)=alog(init_TT1)
+!          endif
+!          if (x(i)>=init_x2_ar(j)) then
+!            f(i,j,:,ilnTT)=alog(init_TT2)
+!          endif
+!          if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
+!            if (init_x1_ar(j) /= init_x2_ar(j)) then
+!              f(i,j,:,ilnTT)=&
+!               alog((x(i)-init_x1_ar(j))/(init_x2_ar(j)-init_x1_ar(j)) &
+!               *(init_TT2-init_TT1)+init_TT1)
+!            endif
+!          endif
           endif
-          if (x(i)>=init_x2_ar(j)) then
-            f(i,j,:,ilnTT)=alog(init_TT2)
-          endif
-          if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
-            if (init_x1_ar(j) /= init_x2_ar(j)) then
-              f(i,j,:,ilnTT)=&
-               alog((x(i)-init_x1_ar(j))/(init_x2_ar(j)-init_x1_ar(j)) &
-               *(init_TT2-init_TT1)+init_TT1)
-            endif
-          endif
-          endif
-        enddo
+!        enddo
         enddo
 !        
         if (ldensity_nolog) then
-          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+!          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
+!            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
         else
           tmp=(PP/(k_B_cgs/m_u_cgs)*&
             air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
