@@ -479,27 +479,27 @@ module InitialCondition
 !
       if (linit_temperature) then
 !
-!        if (lcurved) then
-!          do j=m1,m2         
-!            init_x1_ar(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
-!            init_x2_ar(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
-!          enddo
-!          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.1*sin(4.*PI*y(:)/Lxyz(2)))
-!          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.1*sin(4.*PI*y(:)/Lxyz(2)))
-!        else
-!          init_x1_ar=init_x1
-!          init_x2_ar=init_x2
-!          del_ar1(:)=(init_x2-init_x1)*0.2
-!          del_ar2(:)=(init_x2-init_x1)*0.2
-!        endif
+        if (lcurved) then
+          do j=m1,m2         
+            init_x1_ar(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
+            init_x2_ar(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
+          enddo
+          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.1*sin(4.*PI*y(:)/Lxyz(2)))
+          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.1*sin(4.*PI*y(:)/Lxyz(2)))
+        else
+          init_x1_ar=init_x1
+          init_x2_ar=init_x2
+          del_ar1(:)=(init_x2-init_x1)*0.2
+          del_ar2(:)=(init_x2-init_x1)*0.2
+        endif
 !
           del=(init_x2-init_x1)*0.2
         do i=l1,l2
-!          if (x(i)<0) then
-!            del_ar=del_ar1
-!         else
-!            del_ar=del_ar2 
-!          endif
+          if (x(i)<0) then
+            del_ar=del_ar1
+         else
+            del_ar=del_ar2 
+          endif
         do j=m1,m2
           if (ltanh_prof) then
             
