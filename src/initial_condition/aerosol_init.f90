@@ -500,35 +500,35 @@ module InitialCondition
 !         else
 !            del_ar=del_ar2 
 !          endif
-!        do j=m1,m2
+        do j=m1,m2
           if (ltanh_prof) then
             
-!            f(i,j,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
-!                             +((init_TT2-init_TT1)*0.5)  &
-!              *(exp(x(i)/del_ar(j))-exp(-x(i)/del_ar(j))) &
-!              /(exp(x(i)/del_ar(j))+exp(-x(i)/del_ar(j))))
-!
-             f(i,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+            f(i,j,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
                              +((init_TT2-init_TT1)*0.5)  &
-                            *(exp(x(i)/del)-exp(-x(i)/del)) &
-                           /(exp(x(i)/del)+exp(-x(i)/del)))
+              *(exp(x(i)/del_ar(j))-exp(-x(i)/del_ar(j))) &
+              /(exp(x(i)/del_ar(j))+exp(-x(i)/del_ar(j))))
+
+!             f(i,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+!                             +((init_TT2-init_TT1)*0.5)  &
+!                            *(exp(x(i)/del)-exp(-x(i)/del)) &
+!                           /(exp(x(i)/del)+exp(-x(i)/del)))
 
           else
-!          if (x(i)<=init_x1_ar(j)) then
-!            f(i,j,:,ilnTT)=alog(init_TT1)
-!          endif
-!          if (x(i)>=init_x2_ar(j)) then
-!            f(i,j,:,ilnTT)=alog(init_TT2)
-!          endif
-!          if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
-!            if (init_x1_ar(j) /= init_x2_ar(j)) then
-!              f(i,j,:,ilnTT)=&
-!               alog((x(i)-init_x1_ar(j))/(init_x2_ar(j)-init_x1_ar(j)) &
-!               *(init_TT2-init_TT1)+init_TT1)
-!            endif
-!          endif
+          if (x(i)<=init_x1_ar(j)) then
+            f(i,j,:,ilnTT)=alog(init_TT1)
           endif
-!        enddo
+          if (x(i)>=init_x2_ar(j)) then
+            f(i,j,:,ilnTT)=alog(init_TT2)
+          endif
+          if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
+            if (init_x1_ar(j) /= init_x2_ar(j)) then
+              f(i,j,:,ilnTT)=&
+               alog((x(i)-init_x1_ar(j))/(init_x2_ar(j)-init_x1_ar(j)) &
+               *(init_TT2-init_TT1)+init_TT1)
+            endif
+          endif
+          endif
+        enddo
         enddo
 !        
         if (ldensity_nolog) then
