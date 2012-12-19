@@ -87,6 +87,7 @@ array=fltarr(nfields,pdim.npar_stalk,nout)*zero
 if (lstalk_sink_particles) then begin
   ipar_stalk=lonarr(pdim.npar_stalk,nout)
   ipar_stalk[*,*]=-1
+  npar_stalk_read=lonarr(nout)
 endif else begin
   ipar_stalk=indgen(pdim.npar_stalk)
 endelse
@@ -94,7 +95,7 @@ endelse
 ; Go through all processor directories.
 ;
 for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
-
+;
   if (not quiet) then begin
     print, 'Reading data from processor '+ $
         strtrim(iproc,2)+'/'+strtrim(dim.nprocx*dim.nprocy*dim.nprocz-1,2)
@@ -112,7 +113,6 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
   openr, 1, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77, $
       swap_endian=swap_endian
   while (ntread lt nout and not eof(1)) do begin
-    npar_stalk_read=0L
     readu, 1, t_loc, npar_stalk_loc
 ;
     if (it ge it0) then begin
@@ -131,11 +131,11 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
         if (not lstalk_sink_particles) then begin
           array[*,ipar_loc-1,it-it0]=array_loc
         endif else begin ; Sink particles are sorted by index later
-          array[*,npar_stalk_read: $
-              npar_stalk_read+npar_stalk_loc-1,it-it0]=array_loc
-          ipar_stalk[npar_stalk_read:npar_stalk_read+npar_stalk_loc-1,it-it0]= $
-              ipar_loc
-          npar_stalk_read=npar_stalk_read+npar_stalk_loc
+          array[*,npar_stalk_read[it-it0]: $
+              npar_stalk_read[it-it0]+npar_stalk_loc-1,it-it0]=array_loc
+          ipar_stalk[npar_stalk_read[it-it0]:npar_stalk_read[it-it0]+ $
+              npar_stalk_loc-1,it-it0]=ipar_loc
+          npar_stalk_read[it-it0]=npar_stalk_read[it-it0]+npar_stalk_loc
         endelse
       endif
 ;
