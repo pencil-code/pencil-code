@@ -47,13 +47,13 @@ module Sub
   public :: u_dot_grad_alt
   public :: nou_dot_grad_scl
   public :: u_dot_grad_mat
-  public :: del2, del2v, del2v_etc
+  public :: del2, del2v, del2v_etc, del2fj
   public :: del2m3x3_sym
   public :: del4v, del4, del2vi_etc
   public :: del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st, doupwind
 !
-  public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub
+  public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
   public :: dyadic2
   public :: cross, cross_mn
@@ -667,12 +667,12 @@ module Sub
 !  To avoid division by zero when calculating a_max, we add tini.
 !
       if (precise_sqrt1) then
-         a_max=tini+maxval(abs(a),dim=2)
-         b=(a(:,1)/a_max)**2+(a(:,2)/a_max)**2+(a(:,3)/a_max)**2
-         b=a_max*sqrt(b)
+        a_max=tini+maxval(abs(a),dim=2)
+        b=(a(:,1)/a_max)**2+(a(:,2)/a_max)**2+(a(:,3)/a_max)**2
+        b=a_max*sqrt(b)
       else
-         b=a(:,1)**2+a(:,2)**2+a(:,3)**2
-         if (fast_sqrt1) b=sqrt(b)
+        b=a(:,1)**2+a(:,2)**2+a(:,3)**2
+        if (fast_sqrt1) b=sqrt(b)
       endif
 !
     endsubroutine dot2_mn
@@ -724,6 +724,27 @@ module Sub
       c=c-(a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3))
 !
     endsubroutine dot_mn_sub
+!***********************************************************************
+    subroutine dot2fj(a,vec,b)
+!
+!  Dot product with itself, multiplied by anisotropic factor.
+!
+!  20-dec-12/wlad: adapted from dot2_mn
+!
+      real, dimension (nx,3) :: a
+      real, dimension (3)    :: vec
+      real, dimension (nx)   :: b
+      integer :: j
+!
+      intent(in) :: a,vec
+      intent(out) :: b
+!
+      b=0.
+      do j=1,3
+         b=b+vec(j)*a(:,j)**2
+      enddo
+!
+    endsubroutine dot2fj
 !***********************************************************************
     subroutine dyadic2(a,b)
 !
@@ -1712,6 +1733,45 @@ module Sub
       endif
 !
     endsubroutine del2m3x3_sym
+!***********************************************************************
+    subroutine del2fj(f,vec,k,del2f)
+!
+!  Calculate del2 of a scalar, get scalar, adding anisotropic factor.
+!
+!  20-dec-12/wlad: adapted from del2_main
+!
+      use Deriv, only: der,der2
+!
+      intent(in) :: f,k
+      intent(out) :: del2f
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
+      real, dimension (3) :: vec
+      integer :: k
+!
+      call der2(f,k,d2fdx,1)
+      call der2(f,k,d2fdy,2)
+      call der2(f,k,d2fdz,3)
+      del2f=vec(1)*d2fdx+vec(2)*d2fdy+vec(3)*d2fdz
+!
+      if (lcylindrical_coords.and.vec(1)/=0.) then
+        call der(f,k,tmp,1)
+        del2f=del2f+vec(1)*tmp*rcyl_mn1
+      endif
+!
+      if (lspherical_coords) then
+        if (vec(1)/=0.) then
+          call der(f,k,tmp,1)
+          del2f=del2f+vec(1)*2.*r1_mn*tmp
+        endif
+        if (vec(2)/=0.) then
+          call der(f,k,tmp,2)
+          del2f=del2f+vec(2)*cotth(m)*r1_mn*tmp
+        endif
+      endif
+!
+    endsubroutine del2fj
 !***********************************************************************
     subroutine symmetrise3x3_ut2lt (matrix_ut3x3)
 !
@@ -4350,6 +4410,8 @@ nameloop: do
     endsubroutine blob
 !***********************************************************************
     recursive function hypergeometric2F1(a,b,c,z,tol) result (hyp2F1)
+!
+!  DOCUMENT ME!!!!!!
 !
       real, intent(in) :: a,b,c,z,tol
       real :: hyp2F1
