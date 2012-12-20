@@ -6,7 +6,8 @@
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
-    solid_object=solid_object, theta_arr=theta_arr, savefile=savefile
+    solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, $
+    proc=proc, ipar=ipar, trimxyz=trimxyz
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -18,6 +19,8 @@ default, quiet, 0
 default, rmv, 0
 default, oldrmv, 0
 default, savefile, 1
+default, proc, -1
+default, trimxyz, 1
 ;
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
@@ -33,7 +36,11 @@ if (keyword_set(solid_object)) then rmv=1
 ;
 ;  Get necessary dimensions.
 ;
-pc_read_dim, obj=dim, datadir=datadir, /quiet
+if (proc eq -1) then begin
+  pc_read_dim, obj=dim, datadir=datadir, /quiet
+endif else begin
+  pc_read_dim, obj=dim, datadir=datadir, proc=proc, /quiet
+endelse
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
 pc_set_precision, dim=dim, /quiet
 ;
@@ -50,7 +57,31 @@ endelse
 ;  Derived dimensions.
 ;
 mpvar=pdim.mpvar
-npar=pdim.npar
+if (proc ne -1) then begin
+  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile 
+;
+;  Check if file exists.
+;
+  if (not file_test(filename)) then begin
+    print, 'ERROR: cannot find file '+ filename
+    stop
+  endif
+;
+;  Get a unit number and open file.
+;
+  get_lun, file
+  close, file
+  openr, file, filename, /f77, swap_endian=swap_endian
+;
+;  Read the number of particles at the chosen processor.
+;
+  npar=0L
+  readu, file, npar
+;
+  close, file
+endif else begin
+  npar=pdim.npar
+endelse
 default, npar_max, npar & if (npar_max gt npar) then npar_max=npar
 ncpus=dim.nprocx*dim.nprocy*dim.nprocz
 ;
@@ -154,29 +185,19 @@ ipar=lonarr(npar)
 tarr=fltarr(ncpus)*one
 t=zero
 npar_loc=0L
+npar=0L
 if (rmv) then begin
   ipar_rmv=lonarr(npar)
   npar_rmv=0L
   trmv    =fltarr(npar)*one
 endif
 ;
-;  Loop over processors.
+;  Read from single processor.
 ;
-for i=0,ncpus-1 do begin
-;
+if (proc ne -1) then begin
+  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile 
   if (not keyword_set(quiet)) then $
-      print,'Loading chunk ', strtrim(str(i+1)), ' of ', $
-      strtrim(str(ncpus)), ' (', $
-      strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
-;
-  filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile 
-;
-;  Check if file exists.
-;
-  if (not file_test(filename)) then begin
-    print, 'ERROR: cannot find file '+ filename
-    stop
-  endif
+      print, 'Loading data from processor ', strtrim(str(proc))
 ;
 ;  Get a unit number and open file.
 ;
@@ -187,181 +208,240 @@ for i=0,ncpus-1 do begin
 ;  Read the number of particles at the local processor together with their
 ;  global index numbers.
 ;
-  readu, file, npar_loc
+  readu, file, npar
 ;
 ;  Read particle data (if any).
 ;
-  if (npar_loc ne 0) then begin
+  if (npar ne 0) then begin
 ;    
-    ipar_loc=lonarr(npar_loc)
-    readu, file, ipar_loc
-;
-;  Register particle indices for later check if all particles have been read.
-;  
-    for k=0L,npar_loc-1 do begin
-      ipar[ipar_loc[k]-1]=ipar[ipar_loc[k]-1]+1
-    endfor
+    ipar=lonarr(npar)
+    readu, file, ipar
 ;
 ;  Read local processor data.
 ;
-    array_loc=fltarr(npar_loc,mpvar)*one
-    readu, file, array_loc
-;
-;  Put local processor data into proper place in global data array
-;
-    for k=0L,npar_loc-1 do begin
-      if (ipar_loc[k] le npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
-    endfor
+    array=fltarr(npar,mpvar)*one
+    readu, file, array
 ;
   endif
 ;
 ;  Read time and grid data.
 ;
   readu, file, t, xloc, yloc, zloc, dx, dy, dz
+  x=xloc
+  y=yloc
+  z=zloc
 ;
 ;  Close time.
 ;
   close, file
   free_lun, file
+endif else begin
+;
+;  Loop over processors.
+;
+  for i=0,ncpus-1 do begin
+;
+    if (not keyword_set(quiet)) then $
+        print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
+        strtrim(str(ncpus)), ' (', $
+        strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
+;
+    filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile 
+;
+;  Check if file exists.
+;
+    if (not file_test(filename)) then begin
+      print, 'ERROR: cannot find file '+ filename
+      stop
+    endif
+;
+;  Get a unit number and open file.
+;
+    get_lun, file
+    close, file
+    openr, file, filename, /f77, swap_endian=swap_endian
+;
+;  Read the number of particles at the local processor together with their
+;  global index numbers.
+;
+    readu, file, npar_loc
+;
+;  Read particle data (if any).
+;
+    if (npar_loc ne 0) then begin
+;    
+      ipar_loc=lonarr(npar_loc)
+      readu, file, ipar_loc
+;
+;  Register particle indices for later check if all particles have been read.
+;  
+      for k=0L,npar_loc-1 do begin
+        ipar[ipar_loc[k]-1]=ipar[ipar_loc[k]-1]+1
+      endfor
+;
+;  Read local processor data.
+;
+      array_loc=fltarr(npar_loc,mpvar)*one
+      readu, file, array_loc
+;
+;  Put local processor data into proper place in global data array
+;
+      for k=0L,npar_loc-1 do begin
+        if (ipar_loc[k] le npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
+      endfor
+;
+    endif
+;
+;  Read time and grid data.
+;
+    readu, file, t, xloc, yloc, zloc, dx, dy, dz
+;
+;  Close time.
+;
+    close, file
+    free_lun, file
 ;
 ;  Read information about removed particles.
 ;
-  if (rmv) then begin
-    filename1=datadir+'/proc'+strtrim(i,2)+'/rmv_ipar.dat'
-    filename2=datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat'
-    if (file_test(filename1)) then begin
+    if (rmv) then begin
+      filename1=datadir+'/proc'+strtrim(i,2)+'/rmv_ipar.dat'
+      filename2=datadir+'/proc'+strtrim(i,2)+'/rmv_par.dat'
+      if (file_test(filename1)) then begin
 ;
 ;  Read indices and removal times of removed particles.
 ;
-      get_lun, file1 & close, file1
-      openr, file1, filename1
-      ipar_rmv_loc=0L & t_rmv_loc=0.0*one
+        get_lun, file1 & close, file1
+        openr, file1, filename1
+        ipar_rmv_loc=0L & t_rmv_loc=0.0*one
 ;
 ;  Find out how many particles were removed at this processor. This is done
 ;  by counting lines until eof, without actually using the read data.
 ;
-      nrmv=0L
-      dummy=''
-      while not (eof(file1)) do begin
-        readf, file1, dummy
-        nrmv=nrmv+1
-      endwhile
-      close, file1
-      nfields=n_elements(strsplit(dummy,' '))
+        nrmv=0L
+        dummy=''
+        while not (eof(file1)) do begin
+          readf, file1, dummy
+          nrmv=nrmv+1
+        endwhile
+        close, file1
+        nfields=n_elements(strsplit(dummy,' '))
 ;
 ;  Read indices and times into array. The index is read as a real number,
 ;  but converted to integer afterwards.
 ;
-      array_loc=fltarr(nfields,nrmv)*one
-      openr, file1, filename1
-      readf, file1, array_loc
-      close, file1 & free_lun, file1
-      ipar_rmv_loc=reform(long(array_loc[0,*]))
-      t_rmv_loc   =reform(     array_loc[1,*])
-      if (nfields eq 3) then ipar_sink_rmv_loc=reform(long(array_loc[2,*]))
+        array_loc=fltarr(nfields,nrmv)*one
+        openr, file1, filename1
+        readf, file1, array_loc
+        close, file1 & free_lun, file1
+        ipar_rmv_loc=reform(long(array_loc[0,*]))
+        t_rmv_loc   =reform(     array_loc[1,*])
+        if (nfields eq 3) then ipar_sink_rmv_loc=reform(long(array_loc[2,*]))
 ;
 ;  Read positions, velocities, etc.
 ;
-      get_lun, file2 & close, file2
-      openr, file2, filename2, /f77
-      array_loc=fltarr(mpvar)*one
-      if (nfields eq 3) then begin
-        if (i eq 0) then array_sink=fltarr(npar_max,totalvars)*one
-        array_sink_loc=fltarr(mpvar)*one
-      endif
-      k=0L
-      ipar_rmv_loc_dummy=0L
-      for k=0,nrmv-1 do begin
-        if (oldrmv) then begin
-          readu, file2, ipar_rmv_loc_dummy, array_loc
-        endif else begin
-          if (nfields eq 2) then begin
-            readu, file2, array_loc, array_sink_loc
-          endif else begin
-            readu, file2, array_loc
-          endelse
-        endelse
-        if (t_rmv_loc[k] le t) then begin
-          array[ipar_rmv_loc[k]-1,*]=array_loc
-          array_sink[ipar_rmv_loc[k]-1,*]=array_sink_loc
-          ipar_rmv[ipar_rmv_loc[k]-1]=ipar_rmv[ipar_rmv_loc[k]-1]+1
-          trmv[ipar_rmv_loc[k]-1]=t_rmv_loc[k]
+        get_lun, file2 & close, file2
+        openr, file2, filename2, /f77
+        array_loc=fltarr(mpvar)*one
+        if (nfields eq 3) then begin
+          if (i eq 0) then array_sink=fltarr(npar_max,totalvars)*one
+          array_sink_loc=fltarr(mpvar)*one
         endif
-      endfor
-      close, file2 & free_lun, file2
+        k=0L
+        ipar_rmv_loc_dummy=0L
+        for k=0,nrmv-1 do begin
+          if (oldrmv) then begin
+            readu, file2, ipar_rmv_loc_dummy, array_loc
+          endif else begin
+            if (nfields eq 2) then begin
+              readu, file2, array_loc, array_sink_loc
+            endif else begin
+              readu, file2, array_loc
+            endelse
+          endelse
+          if (t_rmv_loc[k] le t) then begin
+            array[ipar_rmv_loc[k]-1,*]=array_loc
+            array_sink[ipar_rmv_loc[k]-1,*]=array_sink_loc
+            ipar_rmv[ipar_rmv_loc[k]-1]=ipar_rmv[ipar_rmv_loc[k]-1]+1
+            trmv[ipar_rmv_loc[k]-1]=t_rmv_loc[k]
+          endif
+        endfor
+        close, file2 & free_lun, file2
+      endif
     endif
-  endif
 ;
 ;  Create global x, y and z arrays from local ones.
 ;
-  if (ncpus gt 1) then begin
-    pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
+    if (ncpus gt 1) then begin
+      pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
 ;
-    if (procdim.ipx eq 0L) then begin
-      i0x=0L
-      i1x=i0x+procdim.mx-1L
-      i0xloc=0L
-      i1xloc=procdim.mx-1L
+      if (procdim.ipx eq 0L) then begin
+        i0x=0L
+        i1x=i0x+procdim.mx-1L
+        i0xloc=0L
+        i1xloc=procdim.mx-1L
+      endif else begin
+        i0x=procdim.ipx*procdim.nx+procdim.nghostx
+        i1x=i0x+procdim.mx-1L-procdim.nghostx
+        i0xloc=procdim.nghostx & i1xloc=procdim.mx-1L
+      endelse
+;
+      if (procdim.ipy eq 0L) then begin
+        i0y=0L
+        i1y=i0y+procdim.my-1L
+        i0yloc=0L
+        i1yloc=procdim.my-1L
+      endif else begin
+        i0y=procdim.ipy*procdim.ny+procdim.nghosty
+        i1y=i0y+procdim.my-1L-procdim.nghosty
+        i0yloc=procdim.nghosty
+        i1yloc=procdim.my-1L
+      endelse
+;
+      if (procdim.ipz eq 0L) then begin
+        i0z=0L
+        i1z=i0z+procdim.mz-1L
+        i0zloc=0L
+        i1zloc=procdim.mz-1L
+      endif else begin
+        i0z=procdim.ipz*procdim.nz+procdim.nghostz
+        i1z=i0z+procdim.mz-1L-procdim.nghostz
+        i0zloc=procdim.nghostz
+        i1zloc=procdim.mz-1L
+      endelse
+;
+      x[i0x:i1x] = xloc[i0xloc:i1xloc]
+      y[i0y:i1y] = yloc[i0yloc:i1yloc]
+      z[i0z:i1z] = zloc[i0zloc:i1zloc]
+;
     endif else begin
-      i0x=procdim.ipx*procdim.nx+procdim.nghostx
-      i1x=i0x+procdim.mx-1L-procdim.nghostx
-      i0xloc=procdim.nghostx & i1xloc=procdim.mx-1L
+;
+      x=xloc
+      y=yloc
+      z=zloc
+;
     endelse
+    tarr[i]=t
 ;
-    if (procdim.ipy eq 0L) then begin
-      i0y=0L
-      i1y=i0y+procdim.my-1L
-      i0yloc=0L
-      i1yloc=procdim.my-1L
-    endif else begin
-      i0y=procdim.ipy*procdim.ny+procdim.nghosty
-      i1y=i0y+procdim.my-1L-procdim.nghosty
-      i0yloc=procdim.nghosty
-      i1yloc=procdim.my-1L
-    endelse
-;
-    if (procdim.ipz eq 0L) then begin
-      i0z=0L
-      i1z=i0z+procdim.mz-1L
-      i0zloc=0L
-      i1zloc=procdim.mz-1L
-    endif else begin
-      i0z=procdim.ipz*procdim.nz+procdim.nghostz
-      i1z=i0z+procdim.mz-1L-procdim.nghostz
-      i0zloc=procdim.nghostz
-      i1zloc=procdim.mz-1L
-    endelse
-;
-    x[i0x:i1x] = xloc[i0xloc:i1xloc]
-    y[i0y:i1y] = yloc[i0yloc:i1yloc]
-    z[i0z:i1z] = zloc[i0zloc:i1zloc]
-;
-  endif else begin
-;
-    x=xloc
-    y=yloc
-    z=zloc
-;
-  endelse
-  tarr[i]=t
-;
-endfor
+  endfor
 ;
 ;  Give indices of removed particles and the time of removal.
 ;
-if (rmv) then begin
-  irmv=where(ipar_rmv eq 1)
-  if (irmv[0] ne -1) then begin
-    trmv=trmv[irmv]
-    npar_rmv=n_elements(irmv)
+  if (rmv) then begin
+    irmv=where(ipar_rmv eq 1)
+    if (irmv[0] ne -1) then begin
+      trmv=trmv[irmv]
+      npar_rmv=n_elements(irmv)
+    endif
   endif
-endif
+endelse
 ;
 ;  Trim x, y and z arrays.
 ;
-x=x[dim.l1:dim.l2]
-y=y[dim.m1:dim.m2]
-z=z[dim.n1:dim.n2]
+if (trimxyz) then begin
+  x=x[dim.l1:dim.l2]
+  y=y[dim.m1:dim.m2]
+  z=z[dim.n1:dim.n2]
+endif
 ;
 ;  Put data into sensibly named arrays.
 ;
@@ -376,7 +456,7 @@ endfor
 ;  Allow for particles not beeing found if particles are beeing 
 ;  inserted continuously.
 ;
-if (not keyword_set(quiet)) then begin
+if (proc eq -1 and not keyword_set(quiet)) then begin
   if (linsert_particles_continuously) then begin
     if (rmv) then begin
     if ( (max(ipar+ipar_rmv) gt 1) ) then begin
@@ -422,7 +502,7 @@ endif
 ;
 ;  Check if times are consistent between processors.
 ;
-if (min(tarr) ne max(tarr)) then begin
+if (proc eq -1 and (min(tarr) ne max(tarr))) then begin
   print, 'The time of the snapshot is inconsistent among the processors!'
   print, 'min(t), max(t)=', min(tarr), max(tarr)
 endif
@@ -430,13 +510,18 @@ endif
 ;  Print out total number of particles.
 ;
 if (not quiet) then begin
-  if (rmv) then begin
-    print, ''
-    print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles ' + $
-        'and '+strtrim(npar_rmv,2)+' removed particles'
+  if (proc eq -1) then begin
+    if (rmv) then begin
+      print, ''
+      print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles ' + $
+          'and '+strtrim(npar_rmv,2)+' removed particles'
+    endif else begin
+      print, ''
+      print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles'
+    endelse
   endif else begin
     print, ''
-    print, 'Found '+strtrim(n_elements(where(ipar eq 1)),2)+' particles'
+    print, 'Processor snapshot contains '+strtrim(npar,2)+' particles'
   endelse
 endif
 ;
@@ -444,7 +529,8 @@ endif
 ;
 if (not quiet) then begin
   print, ''
-  print, 't = ', mean(tarr)
+  if (proc eq -1) then print, 't = ', mean(tarr) else $
+      print, 't =', t
 endif
 ;
 ;  If requested print a summary.
