@@ -168,8 +168,9 @@ module Particles
 !
 !  Set indices for auxiliary variables
 !
-      call farray_register_auxiliary('np',inp)
-      call farray_register_auxiliary('rhop',irhop)
+      if (.not. lnocalc_np) call farray_register_auxiliary('np',inp)
+      if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
+          communicated=lparticles_sink)
 !
 !  Check that the fp and dfp arrays are big enough.
 !
