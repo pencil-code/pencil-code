@@ -24,7 +24,8 @@
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
 ! PENCILS PROVIDED ppsf(ndustspec); mu1; udropav(3)
-! PENCILS PROVIDED glnrhod(3,ndustspec); rhodsum; grhodsum(3)
+! PENCILS PROVIDED glnrhod(3,ndustspec); 
+! PENCILS PROVIDED rhodsum; rhodsum1; grhodsum(3); glnrhodsum(3)
 !
 !***************************************************************
 module Dustdensity
@@ -48,6 +49,7 @@ module Dustdensity
   real, dimension(ndustspec0) :: dsize0, BB
   real, dimension(ndustspec) :: dsize,init_distr,init_distr2,init_distr_log
   real, dimension(0:5) :: coeff_smooth=0.0
+  real, dimension (3) :: diffnd_anisotropic=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0
   real :: nd_const=1.0, dkern_cst=1.0, eps_dtog=0.0, Sigmad=1.0
@@ -76,6 +78,7 @@ module Dustdensity
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
+  logical :: ldiffd_simpl_anisotropic=.false.
   logical :: latm_chemistry=.false.
   logical :: lresetuniform_dustdensity=.false.
   logical :: lnoaerosol=.false., lnocondens_term=.false.
@@ -287,6 +290,7 @@ module Dustdensity
       ldiffd_hyper3=.false.
       ldiffd_hyper3_polar=.false.
       ldiffd_shock=.false.
+      ldiffd_simpl_anisotropic=.false.
 !
       lnothing=.false.
 !
@@ -295,6 +299,9 @@ module Dustdensity
         case ('simplified')
           if (lroot) print*,'dust diffusion: div(D*grad(nd))'
           ldiffd_simplified=.true.
+        case ('simplified-anisotropic')
+          if (lroot) print*,'dust diffusion: [div(DT*grad(nd))]'
+          ldiffd_simpl_anisotropic=.true.
         case ('dust-to-gas-ratio')
           if (lroot) print*,'dust diffusion: div(D*rho*grad(nd/rho))'
           ldiffd_dusttogasratio=.true.
@@ -893,8 +900,6 @@ module Dustdensity
       if (lmdvar .and. diffmd/=0.) lpenc_requested(i_del2md)=.true.
       if (lmice .and. diffmi/=0.) lpenc_requested(i_del2mi)=.true.
 !
-!
-!
       if (latm_chemistry) then
         lpenc_requested(i_Ywater)=.true.
         lpenc_requested(i_pp)=.true.
@@ -974,15 +979,24 @@ module Dustdensity
         lpencil_in(i_sdij)=.true.
         lpencil_in(i_glnnd)=.true.
       endif
+      if (lpencil_in(i_grhod)) then 
+        lpencil_in(i_gnd)=.true.
+        lpencil_in(i_md)=.true.
+      endif
       if (lpencil_in(i_glnrhod)) then
         lpencil_in(i_grhod)=.true.
         lpencil_in(i_rhod1)=.true.
       endif
-      if (lpencil_in(i_rhodsum)) then
-        lpencil_in(i_rhod)=.true.
-      endif
-      if (lpencil_in(i_grhodsum)) then
-        lpencil_in(i_grhod)=.true.
+      if (lpencil_in(i_rhodsum))  lpencil_in(i_rhod)=.true.
+      if (lpencil_in(i_rhodsum1)) lpencil_in(i_rhodsum)=.true. 
+      if (lpencil_in(i_grhodsum)) lpencil_in(i_grhod)=.true.
+      if (lpencil_in(i_glnrhodsum)) then
+        if (ndustspec==1) then 
+          lpencil_in(i_glnrhod)=.true.
+        else
+          lpencil_in(i_grhodsum)=.true.
+          lpencil_in(i_rhodsum1)=.true.
+        endif
       endif
 !
       if (latm_chemistry) then
@@ -1113,7 +1127,7 @@ module Dustdensity
           enddo
         endif
 ! glnrhod
-        if (lpencil(i_grhod)) then
+        if (lpencil(i_glnrhod)) then
           do i=1,3
             p%glnrhod(:,i,k)=p%rhod1(:,k)*p%grhod(:,i,k)
           enddo
@@ -1354,7 +1368,7 @@ module Dustdensity
             p%udropav(:,1)=p%uu(:,1)-1e6*p%cc**2
           endif
         endif
-!
+! rhodsum
         if (lpencil(i_rhodsum)) then
           do k=1,ndustspec
             if (k==1) then
@@ -1364,7 +1378,9 @@ module Dustdensity
             endif
           enddo
         endif
-!
+! rhodsum1
+        if (lpencil(i_rhodsum1)) p%rhodsum1=1./p%rhodsum
+! grhodsum
         if (lpencil(i_grhodsum)) then
           do k=1,ndustspec
             if (k==1) then
@@ -1373,6 +1389,16 @@ module Dustdensity
               p%grhodsum=p%grhodsum+p%grhod(:,:,k)
             endif
           enddo
+        endif
+! glnrhodsum
+        if (lpencil(i_glnrhodsum)) then
+          if (ndustspec==1) then
+            p%glnrhodsum=p%glnrhod(:,:,1)
+          else
+            do i=1,3
+              p%glnrhodsum(:,i)=p%rhodsum1*p%grhodsum(:,i)
+            enddo
+          endif  
         endif
 !
     endsubroutine calc_pencils_dustdensity
@@ -1385,7 +1411,7 @@ module Dustdensity
 !   7-jun-02/axel: incoporated from subroutine pde
 !
       use Diagnostics
-      use Sub, only: identify_bcs, dot_mn
+      use Sub, only: identify_bcs, dot_mn, del2fj, dot2fj
       use Special, only: special_calc_dustdensity
       use General, only: spline_integral
       use Deriv, only: der6
@@ -1394,7 +1420,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, sum_tmp, tmp
+      real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
       real, dimension (nx,ndustspec) :: dndr_tmp
       integer :: k,i,j
       real :: tmpl
@@ -1449,13 +1475,13 @@ module Dustdensity
 !              if (k==1) then
 !                df(l1:l2,m,n,ind(k)) = 0.
 !              else
-               sum_tmp=0.
+               tmp1=0.
                do i=1, ndustspec0
 !                    +p%dndr(:,k)
 !                     + dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
-!                 sum_tmp=sum_tmp+dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
+!                 tmp1=tmp1+dndr_full(:,k,i)*dds0(i)/(dsize0_max-dsize0_min)
                enddo
-               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + sum_tmp
+               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + tmp1
                df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k))  - p%udropgnd(:,k)
 !              endif
             enddo
@@ -1528,6 +1554,21 @@ module Dustdensity
           if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd*dxyz_2
         endif
 !
+        if (ldiffd_simpl_anisotropic) then
+          if (ldustdensity_log) then
+            call del2fj(f,diffnd_anisotropic,ind(k),tmp1)
+            call dot2fj(p%glnnd(:,:,k),diffnd_anisotropic,tmp2)
+            fdiffd = fdiffd + tmp1 + tmp2
+          else
+            call del2fj(f,diffnd_anisotropic,ind(k),tmp1)
+            fdiffd = fdiffd + tmp1
+          endif
+          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+&
+               (diffnd_anisotropic(1)*dline_1(:,1)**2+&
+                diffnd_anisotropic(2)*dline_1(:,2)**2+&
+                diffnd_anisotropic(3)*dline_1(:,3)**2)               
+        endif
+!
         if (ldiffd_dusttogasratio) then
           if (ldustdensity_log) then
             fdiffd = fdiffd + diffnd*(p%del2lnnd(:,k) + p%glnnd2(:,k) - &
@@ -1550,8 +1591,8 @@ module Dustdensity
 !
         if (ldiffd_hyper3_polar) then
           do j=1,3
-            call der6(f,ind(k),tmp,j,IGNOREDX=.true.)
-            fdiffd = fdiffd + diffnd_hyper3*pi4_1*tmp*dline_1(:,j)**2
+            call der6(f,ind(k),tmp1,j,IGNOREDX=.true.)
+            fdiffd = fdiffd + diffnd_hyper3*pi4_1*tmp1*dline_1(:,j)**2
           enddo
           if (lfirst.and.ldt) &
                diffus_diffnd3=diffus_diffnd3+diffnd_hyper3*pi4_1/dxyz_4
