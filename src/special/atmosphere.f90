@@ -75,7 +75,8 @@ module Special
   logical :: llog_distribution=.true.
 
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
-  real :: nd0, r0, r02, delta, uy_bz, ux_bz, Ntot=1e3, BB0, dYw1, dYw2, PP
+  real :: nd0, r0, r02, delta, uy_bz, ux_bz, BB0, dYw1, dYw2, PP, Ntot=1e3
+ 
    
 ! Keep some over used pencils
 !
@@ -863,6 +864,7 @@ module Special
           enddo       
             ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
           do k=1,ndustspec
+           Ntot_i(i)=Ntot/ndustspec0
            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i))*Ntot_i(i)/ttt(ndustspec)  
 !            f(i1,i2,i3,idcj(k,i))=f(i1,i2,i3,idcj(k,i)) &
 !             *(ttt2(ndustspec)*dds0(i)/(dsize0_max-dsize0_min)) /ttt(ndustspec)  
@@ -1258,8 +1260,8 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (boundary_condition) :: bc
-      integer :: i,j,vr,k
-      integer :: jjj,kkk
+      integer :: i,j,vr,k,m1p1,m1p2,m1p3,m1p4,m2p1,m2p2,m2p3,m2p4
+      integer :: jjj,kkk,m1m1,m1m2,m1m3,m1m4,m2m1,m2m2,m2m3,m2m4
       real :: value1, value2
 !
       vr=bc%ivar
@@ -1267,40 +1269,46 @@ module Special
       value2=bc%value2
 !
       if (bc%location==iBC_Y_BOT) then
+        m1m1=m1-1; m1m2=m1-2; m1m3=m1-3; m1m4=m1-4
+        m1p1=m1+1; m1p2=m1+2; m1p3=m1+3; m1p4=m1+4
+
 ! bottom boundary
         if (vr>=iuud(1)+3) then 
-        f(:,m1-1,:,ind)=0.2   *(  9*f(:,m1,:,ind)-  4*f(:,m1+2,:,ind) &
-                       - 3*f(:,m1+3,:,ind)+ 3*f(:,m1+4,:,ind))
-        f(:,m1-2,:,ind)=0.2   *( 15*f(:,m1,:,ind)- 2*f(:,m1+1,:,ind)  &
-                 -  9*f(:,m1+2,:,ind)- 6*f(:,m1+3,:,ind)+ 7*f(:,m1+4,:,ind))
-        f(:,m1-3,:,ind)=1./35.*(157*f(:,m1,:,ind)-33*f(:,m1+1,:,ind)  &
-                       -108*f(:,m1+2,:,ind) -68*f(:,m1+3,:,ind)+87*f(:,m1+4,:,ind))
+        
+        f(:,m1m1,:,ind)=0.2   *(  9*f(:,m1,:,ind)-  4*f(:,m1p2,:,ind) &
+                       - 3*f(:,m1p3,:,ind)+ 3*f(:,m1p4,:,ind))
+        f(:,m1m2,:,ind)=0.2   *( 15*f(:,m1,:,ind)- 2*f(:,m1+1,:,ind)  &
+                 -  9*f(:,m1p2,:,ind)- 6*f(:,m1p3,:,ind)+ 7*f(:,m1p4,:,ind))
+        f(:,m1m3,:,ind)=1./35.*(157*f(:,m1,:,ind)-33*f(:,m1p1,:,ind)  &
+                       -108*f(:,m1p2,:,ind) -68*f(:,m1p3,:,ind)+87*f(:,m1p4,:,ind))
         endif
         if (vr==iuud(1)+4) then 
-        f(:,m1-1,:,imd)=0.2   *(  9*f(:,m1,:,imd)-  4*f(:,m1+2,:,imd) &
-                       - 3*f(:,m1+3,:,imd)+ 3*f(:,m1+4,:,imd))
-        f(:,m1-2,:,imd)=0.2   *( 15*f(:,m1,:,imd)- 2*f(:,m1+1,:,imd)  &
-                 -  9*f(:,m1+2,:,imd)- 6*f(:,m1+3,:,imd)+ 7*f(:,m1+4,:,imd))
-        f(:,m1-3,:,imd)=1./35.*(157*f(:,m1,:,imd)-33*f(:,m1+1,:,imd)  &
-                       -108*f(:,m1+2,:,imd) -68*f(:,m1+3,:,imd)+87*f(:,m1+4,:,imd))      
+        f(:,m1m1,:,imd)=0.2   *(  9*f(:,m1,:,imd)-  4*f(:,m1p2,:,imd) &
+                       - 3*f(:,m1p3,:,imd)+ 3*f(:,m1p4,:,imd))
+        f(:,m1m2,:,imd)=0.2   *( 15*f(:,m1,:,imd)- 2*f(:,m1p1,:,imd)  &
+                 -  9*f(:,m1p2,:,imd)- 6*f(:,m1p3,:,imd)+ 7*f(:,m1p4,:,imd))
+        f(:,m1m3,:,imd)=1./35.*(157*f(:,m1,:,imd)-33*f(:,m1p1,:,imd)  &
+                       -108*f(:,m1p2,:,imd) -68*f(:,m1p3,:,imd)+87*f(:,m1p4,:,imd))      
         endif
       elseif (bc%location==iBC_Y_TOP) then
+        m2m1=m2-1; m2m2=m2-2; m2m3=m2-3; m2m4=m2-4
+        m2p1=m2+1; m2p2=m2+2; m2p3=m2+3; m2p4=m2+4
 ! top boundary
         if (vr>=iuud(1)+3) then 
-        f(:,m2+1,:,ind)=0.2   *(  9*f(:,m2,:,ind)-  4*f(:,m2-2,:,ind) &
-                       - 3*f(:,m2-3,:,ind)+ 3*f(:,m2-4,:,ind))
-        f(:,m2+2,:,ind)=0.2   *( 15*f(:,m2,:,ind)- 2*f(:,m2-1,:,ind)  &
-                 -  9*f(:,m2-2,:,ind)- 6*f(:,m2-3,:,ind)+ 7*f(:,m2-4,:,ind))
-        f(:,m2+3,:,ind)=1./35.*(157*f(:,m2,:,ind)-33*f(:,m2-1,:,ind)  &
-                       -108*f(:,m2-2,:,ind) -68*f(:,m2-3,:,ind)+87*f(:,m2-4,:,ind))
+        f(:,m2p1,:,ind)=0.2   *(  9*f(:,m2,:,ind)-  4*f(:,m2m2,:,ind) &
+                       - 3*f(:,m2m3,:,ind)+ 3*f(:,m2m4,:,ind))
+        f(:,m2p2,:,ind)=0.2   *( 15*f(:,m2,:,ind)- 2*f(:,m2m1,:,ind)  &
+                 -  9*f(:,m2m2,:,ind)- 6*f(:,m2m3,:,ind)+ 7*f(:,m2m4,:,ind))
+        f(:,m2p3,:,ind)=1./35.*(157*f(:,m2,:,ind)-33*f(:,m2m1,:,ind)  &
+                       -108*f(:,m2m2,:,ind) -68*f(:,m2m3,:,ind)+87*f(:,m2m4,:,ind))
         endif
         if (vr==iuud(1)+4) then 
-        f(:,m2+1,:,imd)=0.2   *(  9*f(:,m2,:,imd)-  4*f(:,m2-2,:,imd) &
-                       - 3*f(:,m2-3,:,imd)+ 3*f(:,m2-4,:,imd))
-        f(:,m2+2,:,imd)=0.2   *( 15*f(:,m2,:,imd)- 2*f(:,m2-1,:,imd)  &
-                 -  9*f(:,m2-2,:,imd)- 6*f(:,m2-3,:,imd)+ 7*f(:,m2-4,:,imd))
-        f(:,m2+3,:,imd)=1./35.*(157*f(:,m2,:,imd)-33*f(:,m2-1,:,imd)  &
-                       -108*f(:,m2-2,:,imd) -68*f(:,m2-3,:,imd)+87*f(:,m2-4,:,imd))
+        f(:,m2p1,:,imd)=0.2   *(  9*f(:,m2,:,imd)-  4*f(:,m2m2,:,imd) &
+                       - 3*f(:,m2m3,:,imd)+ 3*f(:,m2m4,:,imd))
+        f(:,m2p2,:,imd)=0.2   *( 15*f(:,m2,:,imd)- 2*f(:,m2m1,:,imd)  &
+                 -  9*f(:,m2m2,:,imd)- 6*f(:,m2m3,:,imd)+ 7*f(:,m2m4,:,imd))
+        f(:,m2p3,:,imd)=1./35.*(157*f(:,m2,:,imd)-33*f(:,m2m1,:,imd)  &
+                       -108*f(:,m2m2,:,imd) -68*f(:,m2m3,:,imd)+87*f(:,m2m4,:,imd))
         endif
       else
         print*, "bc_BL_y: ", bc%location, " should be `top(", &
@@ -1314,6 +1322,8 @@ subroutine bc_satur_x(f,bc)
 ! Natalia
 !
     use Cdata
+    use Mpicomm, only: stop_it
+
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (boundary_condition) :: bc
@@ -1338,6 +1348,7 @@ subroutine bc_satur_x(f,bc)
 ! bottom boundary
 !        
 !
+     call stop_it('something is wrong. check carefully')
 
      if ((vr==ichemspec(ind_H2O)) .or. (vr==ichemspec(ind_N2))) then
 
@@ -1353,8 +1364,8 @@ subroutine bc_satur_x(f,bc)
          psat1=(aa0 + aa1*T_tmp  + aa2*T_tmp**2  &
                   + aa3*T_tmp**3 + aa4*T_tmp**4  &
                   + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
-         T_tmp=TT1-273.15
-         psat1=(aa0 + aa1*T_tmp  + aa2*T_tmp**2  &
+         T_tmp=TT2-273.15
+         psat2=(aa0 + aa1*T_tmp  + aa2*T_tmp**2  &
                   + aa3*T_tmp**3 + aa4*T_tmp**4  &
                   + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
 !
@@ -1478,11 +1489,11 @@ subroutine bc_satur_x(f,bc)
     endsubroutine special_before_boundary
 !
 !********************************************************************
-   subroutine set_init_parameters(Ntot_,BB0_,dsize_,init_distr_, init_distr2_)
+   subroutine set_init_parameters(Ntot_,BB0_,dsize,init_distr, init_distr2)
 !    
-      real, dimension (ndustspec), intent(out) :: dsize_,init_distr_, init_distr2_
+      real, dimension (ndustspec), intent(out) :: dsize,init_distr, init_distr2
       real, dimension (ndustspec) ::  lnds
-      real, intent(out) :: Ntot_, BB0_
+       real :: Ntot_, BB0_
       integer :: i,k
       real :: ddsize
  !
@@ -1491,23 +1502,22 @@ subroutine bc_satur_x(f,bc)
          lnds(i+1)=alog(dsize_min)+i*ddsize
          dsize(i+1)=exp(lnds(i+1))
        enddo
-
+!
        do k=1,ndustspec
-          init_distr_(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
-            *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))+10.
+          if (r0 /= 0.) then
+            init_distr(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+              *exp(-(alog(2.*dsize(k))-alog(2.*r0))**2/(2.*(alog(delta))**2))+10.
+          endif
           if (r02 /= 0.) then
-            init_distr2_(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
+            init_distr2(k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
             *exp(-(alog(2.*dsize(k))-alog(2.*r02))**2/(2.*(alog(delta))**2))+10.
           endif             
         enddo
 
-
-      Ntot_=Ntot
-      BB0_=BB0
-      dsize_=dsize
-
-
-    endsubroutine set_init_parameters
+        Ntot_=Ntot
+        BB0_=BB0
+!
+     endsubroutine set_init_parameters
 !***********************************************************************
 !********************************************************************
 
