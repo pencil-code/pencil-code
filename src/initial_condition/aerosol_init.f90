@@ -56,7 +56,7 @@ module InitialCondition
      real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
      logical :: linit_temperature=.false., lcurved=.false.!, linit_density=.false.
-     logical :: ltanh_prof=.false.
+     logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
      logical :: llog_distribution=.true.
 
 !
@@ -64,7 +64,7 @@ module InitialCondition
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved, &
-     ltanh_prof, Period, BB0
+     ltanh_prof_xz,ltanh_prof_xy, Period, BB0
 !
   contains
 !***********************************************************************
@@ -461,7 +461,8 @@ module InitialCondition
       real, dimension (mx,my,mz) :: sum_Y, air_mass_ar, tmp
       real, dimension (mx,my,mz) :: init_water1_,init_water2_
       real, dimension (my,mz) :: init_water1_min,init_water2_max
-      real , dimension (my) :: init_x1_ar, init_x2_ar, del_ar, del_ar1, del_ar2
+      real , dimension (my) :: init_x1_ary, init_x2_ary, del_ary, del_ar1y, del_ar2y
+      real , dimension (mz) :: init_x1_arz, init_x2_arz, del_arz, del_ar1z, del_ar2z
 !
       integer :: i,j,k, j1,j2,j3, iter
       real :: YY_k, air_mass,  PP, del, psat1, psat2, psf_1, psf_2 
@@ -478,57 +479,66 @@ module InitialCondition
 !  Reinitialization of T, water => rho
 !
       if (linit_temperature) then
-!
+        del=(init_x2-init_x1)*0.2
         if (lcurved) then
           do j=m1,m2         
-            init_x1_ar(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
-            init_x2_ar(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
+            init_x1_ary(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
+            init_x2_ary(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
           enddo
-          del_ar1(:)=(init_x2-init_x1)*0.2*(1-0.1*sin(4.*PI*y(:)/Lxyz(2)))
-          del_ar2(:)=(init_x2-init_x1)*0.2*(1+0.1*sin(4.*PI*y(:)/Lxyz(2)))
+          del_ar1y(:)=del*(1-0.1*sin(4.*PI*y(:)/Lxyz(2)))
+          del_ar2y(:)=del*(1+0.1*sin(4.*PI*y(:)/Lxyz(2)))
         else
-          init_x1_ar=init_x1
-          init_x2_ar=init_x2
-          del_ar1(:)=(init_x2-init_x1)*0.2
-          del_ar2(:)=(init_x2-init_x1)*0.2
+          init_x1_ary=init_x1
+          init_x2_ary=init_x2
+          init_x1_arz=init_x1
+          init_x2_arz=init_x2
+          del_ar1y(:)=del
+          del_ar2y(:)=del
+          del_ar1z(:)=del
+          del_ar2z(:)=del
         endif
 !
-          del=(init_x2-init_x1)*0.2
+          
         do i=l1,l2
           if (x(i)<0) then
-            del_ar=del_ar1
-         else
-            del_ar=del_ar2 
-          endif
-        do j=m1,m2
-          if (ltanh_prof) then
-            
-            f(i,j,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
-                             +((init_TT2-init_TT1)*0.5)  &
-              *(exp(x(i)/del_ar(j))-exp(-x(i)/del_ar(j))) &
-              /(exp(x(i)/del_ar(j))+exp(-x(i)/del_ar(j))))
-
-!             f(i,:,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
-!                             +((init_TT2-init_TT1)*0.5)  &
-!                            *(exp(x(i)/del)-exp(-x(i)/del)) &
-!                           /(exp(x(i)/del)+exp(-x(i)/del)))
-
+            del_ary=del_ar1y
+            del_arz=del_ar1z
           else
-          if (x(i)<=init_x1_ar(j)) then
-            f(i,j,:,ilnTT)=alog(init_TT1)
+            del_ary=del_ar2y 
+            del_arz=del_ar2z
           endif
-          if (x(i)>=init_x2_ar(j)) then
-            f(i,j,:,ilnTT)=alog(init_TT2)
-          endif
-          if (x(i)>init_x1_ar(j) .and. x(i)<init_x2_ar(j)) then
-            if (init_x1_ar(j) /= init_x2_ar(j)) then
-              f(i,j,:,ilnTT)=&
-               alog((x(i)-init_x1_ar(j))/(init_x2_ar(j)-init_x1_ar(j)) &
-               *(init_TT2-init_TT1)+init_TT1)
+!        
+          if (ltanh_prof_xy) then
+            do j=m1,m2
+              f(i,j,:,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+                             +((init_TT2-init_TT1)*0.5)  &
+                  *(exp(x(i)/del_ary(j))-exp(-x(i)/del_ary(j))) &
+                  /(exp(x(i)/del_ary(j))+exp(-x(i)/del_ary(j))))
+            enddo
+          elseif (ltanh_prof_xz) then
+            do j=n1,n2
+            f(i,:,j,ilnTT)=log((init_TT2+init_TT1)*0.5  &
+                             +((init_TT2-init_TT1)*0.5)  &
+              *(1.-exp(-2.*x(i)/del_arz(j))) &
+              /(1.+exp(-2.*x(i)/del_arz(j))))
+            enddo
+          else
+          do j=m1,m2
+            if (x(i)<=init_x1_ary(j)) then
+              f(i,j,:,ilnTT)=alog(init_TT1)
             endif
+            if (x(i)>=init_x2_ary(j)) then
+              f(i,j,:,ilnTT)=alog(init_TT2)
+            endif
+            if (x(i)>init_x1_ary(j) .and. x(i)<init_x2_ary(j)) then
+              if (init_x1_ary(j) /= init_x2_ary(j)) then
+                f(i,j,:,ilnTT)=&
+                   alog((x(i)-init_x1_ary(j))/(init_x2_ary(j)-init_x1_ary(j)) &
+                   *(init_TT2-init_TT1)+init_TT1)
+              endif
+            endif
+          enddo
           endif
-          endif
-        enddo
         enddo
 !        
         if (ldensity_nolog) then
@@ -631,7 +641,7 @@ module InitialCondition
 !
 !  Different profiles
 !
-           if (ltanh_prof) then
+           if (ltanh_prof_xz .or. ltanh_prof_xy) then
              do i=l1,l2
                f(i,:,:,ichemspec(index_H2O))= &
                    (init_water_2+init_water_1)*0.5  &
