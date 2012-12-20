@@ -461,6 +461,8 @@ module Dustvelocity
           call sinwave(ampluud,f,iudz(1),kx=kx_uud)
         case ('udz_sinz')
           do n=1,mz; f(:,:,n,iudz(1)) = ampluud*sin(kz_uud*z(n)); enddo
+        case ('linear-z')
+          do n=1,mz; f(:,:,n,iudz(1)) = ampluud*z(n); enddo
         case ('udz_siny')
           do m=m1,m2
             f(:,m,:,iudz(1)) = f(:,m,:,iudz(1)) + ampluud*sin(ky_uud*y(m))
