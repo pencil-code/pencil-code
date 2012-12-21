@@ -79,6 +79,7 @@ if (proc ne -1) then begin
   readu, file, npar
 ;
   close, file
+  free_lun, file
 endif else begin
   npar=pdim.npar
 endelse
