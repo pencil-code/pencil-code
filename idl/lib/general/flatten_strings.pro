@@ -39,9 +39,13 @@ function flatten_strings, strarr, $
 
   strarr1 = strarr              ; copy to avoid overwriting of original
   res = strarr1[0]
-  while ((size(strarr1))[1] gt 1) do begin
+
+  nn=n_elements(strarr)
+
+  while (nn gt 1) do begin
     strarr1 = strarr1[1:*]
     res = res + glue + strarr1[0]
+    nn=n_elements(strarr1)
   endwhile
 
   if (final_nl) then res = res + glue
