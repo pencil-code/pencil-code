@@ -1,32 +1,26 @@
-;
-; $Id$
-;
-;   Read stuff from dim.dat
-;
-;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2008-04-19 06:13:04 $
-;  $Revision: 1.22 $
-;
-;  27-nov-02/tony: coded
-;
-;
+;;
+;;  $Id$
+;;
+;;  Read information from dim.dat
+;;
+;;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
+;;
+;;  27-nov-02/tony: coded
+;;
 pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
-                 nx=nx, ny=ny, nz=nz, $
-                 nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, $
-                 mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid, $
-                 precision=precision, $
-                 nghostx=nghostx, nghosty=nghosty, nghostz=nghostz, $
-                 nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, $
-                 ipx=ipx,ipy=ipy,ipz=ipz, $
-                 l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $
-                 object=object, datadir=datadir, proc=proc, reduced=reduced, $
-                 PRINT=PRINT, QUIET=QUIET, HELP=HELP
-COMPILE_OPT IDL2,HIDDEN
+    nx=nx, ny=ny, nz=nz, $
+    nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, $
+    mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid, $
+    precision=precision, $
+    nghostx=nghostx, nghosty=nghosty, nghostz=nghostz, $
+    nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, $
+    ipx=ipx,ipy=ipy,ipz=ipz, $
+    l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $
+    object=object, datadir=datadir, proc=proc, reduced=reduced, $
+    print=print, quiet=quiet, help=help
+COMPILE_OPT IDL2, HIDDEN
 ;
-;  Read dim.dat
-;
-; If no meaningful parameters are given show some help!
-  IF ( keyword_set(HELP) ) THEN BEGIN
+  if ( keyword_set(HELP) ) then begin
     print, "Usage: "
     print, ""
     print, "pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar,                                                "
@@ -79,12 +73,13 @@ COMPILE_OPT IDL2,HIDDEN
     print, "   /QUIET: instruction not to print any 'helpful' information                               "
     print, "    /HELP: display this usage information, and exit                                         "
     return
-  ENDIF
-
-; Default data directory
+  endif
+;
+;  Set default data directory.
+;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
-; Initialize / set default returns for ALL variables
+;  Initialize / set default returns for ALL variables.
 ;
 mx=0L
 my=0L
@@ -106,51 +101,61 @@ ipz=-1L
 nprocx=0L
 nprocy=0L
 nprocz=0L
-
-; Get a unit number
-GET_LUN, file
-
-; Build the full path and filename
+;
+;  Get a unit number.
+;
+get_lun, file
+;
+;  Build the full path and filename.
+;
 if (n_elements(proc) eq 1) then begin
-    if (keyword_set(reduced)) then message, "pc_read_dim: /reduced and 'proc' cannot be set both."
-    filename=datadir+'/proc'+str(proc)+'/dim.dat'   ; Read processor box dimensions
+;
+;  Read dimensions on local processor.
+;
+  if (keyword_set(reduced)) then $
+      message, "pc_read_dim: /reduced and 'proc' cannot be set both."
+  filename=datadir+'/proc'+str(proc)+'/dim.dat'
 endif else begin
-    filename=datadir+'/dim.dat'            ; Read global box dimensions
-    if (keyword_set(reduced)) then filename=datadir+'/reduced/dim.dat'
+;
+;  Read global dimensions.
+;
+  filename=datadir+'/dim.dat'
+  if (keyword_set(reduced)) then filename=datadir+'/reduced/dim.dat'
 endelse
-
-; Check for existance and read the data
+;
+;  Check for existence and read the data.
+;
 if (file_test(filename)) then begin
-  IF (not keyword_set(QUIET)) THEN print, 'Reading ' + filename + '...'
-
-  openr,file,filename
-; if (execute('readf,file,mx,my,mz,mvar,maux,mglobal',1,1) ne 1) then begin
+  if (not keyword_set(quiet)) then print, 'Reading ' + filename + '...'
+;
+  openr, file, filename
   if (execute('readf,file,mx,my,mz,mvar,maux,mglobal') ne 1) then begin
-; For backwards compatibility with dim.dat without mglobal.
+;  For backwards compatibility with dim.dat without mglobal.
     print
-    print,'Note: the Input conversion error is of no significance.'
-    print,'Will now read without the mglobal parameter.'
+    print, 'Note: the Input conversion error is of no significance.'
+    print, 'Will now read without the mglobal parameter.'
     print
     close, file
-    openr,file,filename
-    readf,file,mx,my,mz,mvar,maux
+    openr, file, filename
+    readf, file, mx, my, mz, mvar, maux
     mglobal=0
   endif
-  readf,file,precision
-  readf,file,nghostx,nghosty,nghostz
+  readf, file, precision
+  readf, file, nghostx, nghosty, nghostz
   if (n_elements(proc) eq 1) then begin
-    readf,file,ipx,ipy,ipz
+    readf, file, ipx, ipy, ipz
   endif else begin
-    readf,file,nprocx,nprocy,nprocz
+    readf, file, nprocx, nprocy, nprocz
   endelse
   close,file
-  free_lun,file
+  free_lun, file
 endif else begin
-  free_lun,file
+  free_lun, file
   message, 'ERROR: cannot find file ' + filename
 endelse
-
-; Calculate any derived quantities
+;
+;  Calculate any derived quantities
+;
 nx = mx - (2 * nghostx)
 ny = my - (2 * nghosty)
 nz = mz - (2 * nghostz)
@@ -158,7 +163,7 @@ mw = mx * my * mz
 l1 = nghostx & l2 = mx-nghostx-1
 m1 = nghosty & m2 = my-nghosty-1
 n1 = nghostz & n2 = mz-nghostz-1
-
+;
 if (n_elements(proc) eq 1) then begin
   pc_read_dim, obj=globdim, datadir=datadir, /quiet
   nprocx = globdim.nprocx
@@ -178,14 +183,15 @@ endif else begin
   mygrid = nygrid + (2 * nghosty)
   mzgrid = nzgrid + (2 * nghostz)
 endelse
-
-
-precision = strtrim(precision,2)        ; drop leading zeros
+;
+;  Drop leading zeros.
+;
+precision = strtrim(precision,2)
 precision = strmid(precision,0,1)
-
-
-; Build structure of all the variables
-object = CREATE_STRUCT(name=filename,['mx','my','mz','mw', $
+;
+;  Build structure of all the variables.
+;
+object = create_struct(name=filename,['mx','my','mz','mw', $
     'mvar','maux','mglobal', $
     'precision', $
     'nx','ny','nz', $
@@ -204,18 +210,18 @@ object = CREATE_STRUCT(name=filename,['mx','my','mz','mw', $
     l1,l2,m1,m2,n1,n2, $
     ipx, ipy, ipz, $
     nprocx,nprocy,nprocz)
-
-
-; If requested print a summary
-if keyword_set(PRINT) then begin
+;
+;  Print a summary if requested.
+;
+if (keyword_set(print)) then begin
   if (n_elements(proc) eq 1) then begin
-      print, 'For processor ',strtrim(proc, 2),' calculation domain:'
+    print, 'For processor ',strtrim(proc, 2),' calculation domain:'
   endif else if (keyword_set(reduced)) then begin
-      print, 'For REDUCED calculation domain:'
+    print, 'For REDUCED calculation domain:'
   endif else begin
-      print, 'For GLOBAL calculation domain:'
+    print, 'For GLOBAL calculation domain:'
   endelse
-
+;
   print, '     (mx,my,mz,mvar,maux) = (',mx,',',my,',',mz,',',mvar,',',maux,')'
   print, '                       mw = ',mw
   print, '               (nx,ny,nz) = (',nx,',',ny,',',nz,')'
@@ -227,5 +233,5 @@ if keyword_set(PRINT) then begin
   print, '   (mxgrid,mygrid,mzgrid) = (',mxgrid,',',mygrid,',',mzgrid,')'
   print, '   (nprocx,nprocy,nprocz) = (',nprocx,',',nprocy,',',nprocz,')'
 endif
-
+;
 end
