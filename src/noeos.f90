@@ -107,7 +107,7 @@ module EquationOfState
 !   12-aug-03/tony: dummy
 !
       real, dimension (mx,my,mz,mfarray), optional :: f
-      real, dimension (mx,my,mz), intent(out) :: mu
+      real, intent(out) :: mu
 !
       call fatal_error('getmu','SHOULD NOT BE CALLED WITH NOEOS')
 !
