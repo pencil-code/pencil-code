@@ -25,6 +25,7 @@ if (file_test(filename)) then begin
   get_lun, file
   openr, file, filename
   readf, file, npar, mpvar, npar_stalk
+  close, file
   free_lun, file
 endif else begin
   message, 'ERROR: cannot find file ' + filename
