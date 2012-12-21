@@ -482,8 +482,8 @@ module InitialCondition
         del=(init_x2-init_x1)*0.2
         if (lcurved_xz) then
           do j=n1,n2         
-            init_x1_ary(j)=init_x1*(1-0.1*sin(4.*PI*z(j)/Lxyz(3)))
-            init_x2_ary(j)=init_x2*(1+0.1*sin(4.*PI*z(j)/Lxyz(3)))
+            init_x1_arz(j)=init_x1*(1-0.1*sin(4.*PI*z(j)/Lxyz(3)))
+            init_x2_arz(j)=init_x2*(1+0.1*sin(4.*PI*z(j)/Lxyz(3)))
           enddo
           del_ar1z(:)=del*(1-0.1*sin(4.*PI*z(:)/Lxyz(3)))
           del_ar2z(:)=del*(1+0.1*sin(4.*PI*z(:)/Lxyz(3)))
