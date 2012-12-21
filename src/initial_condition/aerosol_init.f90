@@ -55,15 +55,15 @@ module InitialCondition
      real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2. 
      real, dimension(ndustspec) :: dsize, dsize0
      logical :: lreinit_water=.false.,lwet_spots=.false.
-     logical :: linit_temperature=.false., lcurved=.false.!, linit_density=.false.
+     logical :: linit_temperature=.false., lcurved_xz=.false.
      logical :: ltanh_prof_xy=.false.,ltanh_prof_xz=.false.
-     logical :: llog_distribution=.true.
+     logical :: llog_distribution=.true., lcurved_xy=.false.
 
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
-     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved, &
+     linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0
 !
   contains
@@ -480,7 +480,14 @@ module InitialCondition
 !
       if (linit_temperature) then
         del=(init_x2-init_x1)*0.2
-        if (lcurved) then
+        if (lcurved_xz) then
+          do j=n1,n2         
+            init_x1_ary(j)=init_x1*(1-0.1*sin(4.*PI*z(j)/Lxyz(3)))
+            init_x2_ary(j)=init_x2*(1+0.1*sin(4.*PI*z(j)/Lxyz(3)))
+          enddo
+          del_ar1z(:)=del*(1-0.1*sin(4.*PI*z(:)/Lxyz(3)))
+          del_ar2z(:)=del*(1+0.1*sin(4.*PI*z(:)/Lxyz(3)))
+        elseif (lcurved_xy) then
           do j=m1,m2         
             init_x1_ary(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
             init_x2_ary(j)=init_x2*(1+0.1*sin(4.*PI*y(j)/Lxyz(2)))
