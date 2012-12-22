@@ -11,7 +11,8 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; epsp; grhop(3)
+! PENCILS PROVIDED np; rhop; rhop1
+! PENCILS PROVIDED epsp; grhop(3); glnrhop(3)
 !
 !***************************************************************
 module Particles
@@ -2150,6 +2151,13 @@ k_loop:   do while (.not. (k>npar_loc))
         lpencil_in(i_rho1)=.true.
       endif
 !
+      if (lpencil_in(i_rhop1)) lpencil_in(i_rhop)=.true.
+!
+      if (lpencil_in(i_glnrhop)) then 
+        lpencil_in(i_rhop1)=.true.
+        lpencil_in(i_grhop)=.true.
+      endif
+!
     endsubroutine pencil_interdep_particles
 !***********************************************************************
     subroutine calc_pencils_particles(f,p)
@@ -2163,6 +2171,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      integer :: j
 !
       if (lpencil(i_np)) then
         if (inp/=0) then
@@ -2180,7 +2189,22 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-      if (lpencil(i_grhop)) call grad(f,irhop,p%grhop)
+      if (lpencil(i_rhop1)) p%rho1 = 1./p%rhop
+!
+      if (lpencil(i_grhop)) then 
+        if (irhop/=0) then
+          call grad(f,irhop,p%grhop)
+        else
+          call grad(f,inp,p%grhop)
+          p%grhop=rhop_swarm*p%grhop
+        endif
+      endif
+!
+      if (lpencil(i_glnrhop)) then 
+        do j=1,3
+          p%glnrhop(:,j)=p%rhop1*p%grhop(:,j)
+        enddo
+      endif
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
