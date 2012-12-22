@@ -4348,11 +4348,7 @@ module Entropy
         lfirstcall=.false.
       endif
 !
-      if (.not.lphotoelectric_heating) then 
-        TT_drive=TTref_cool*rr1**TT_powerlaw      
-      else
-        TT_drive=TTref_cool*rr1**TT_powerlaw*p%rhop*rho01
-      endif
+      TT_drive=TTref_cool*rr1**TT_powerlaw      
 !
       if (TT_floor /= impossible) & 
            where(TT_drive < TT_floor) TT_drive = TT_floor
