@@ -105,7 +105,6 @@ module Entropy
   logical :: lconvection_gravx=.false.
   logical :: ltau_cool_variable=.false.
   logical :: lprestellar_cool_iso=.false.
-  logical :: lphotoelectric_heating=.false.
   logical, save :: lfirstcall_hcond=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -160,7 +159,7 @@ module Entropy
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
-      lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor
+      lprestellar_cool_iso, zz1, zz2
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -2334,10 +2333,6 @@ module Entropy
           elseif (lspherical_coords) then
             lpenc_requested(i_r_mn1)=.true.
           endif
-!
-!  for photoelectric dust heating in debris disks
-!
-          if (lphotoelectric_heating) lpenc_requested(i_rhop)=.true.
         endif
 !
       endif
@@ -4350,7 +4345,6 @@ module Entropy
 !
       if (lfirstcall) then 
         tau1_cool=1./tau_cool
-        if (lphotoelectric_heating) rho01=1./rho0
         lfirstcall=.false.
       endif
 !
