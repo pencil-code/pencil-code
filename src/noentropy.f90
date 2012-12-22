@@ -95,8 +95,6 @@ module Entropy
 !
       if (llocal_iso) then
         call select_eos_variable('cs2',-2) !special local isothermal
-      else if (ldust_pressure) then
-        call select_eos_variable('rhop',-1) !isentropic => polytropic
       else
         if (gamma_m1 == 0.) then
           call select_eos_variable('cs2',-1) !isothermal
@@ -180,19 +178,6 @@ module Entropy
         lpenc_diagnos(i_ee)=.true.
       endif
 !
-      if (ldust_pressure) then
-        if (lparticles) then
-          lpenc_requested(i_grhop)=.true.
-          lpenc_requested(i_rhop)=.true.
-        else
-          lpenc_requested(i_grhodsum)=.true.
-          lpenc_requested(i_rhodsum)=.true.
-        endif
-        lpenc_requested(i_rho)=.true.
-        lpenc_requested(i_grho)=.true.
-        lpenc_requested(i_cp)=.true.
-      endif
-!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -243,11 +228,7 @@ module Entropy
           if (llocal_iso) then
             p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
           else
-            if (ldust_pressure) then
-              call calc_dust_pressure(p)
-            else
-              p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
-            endif
+            p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
           endif
 !
 !  multiply previous p%fpres pencil with profiles
@@ -303,9 +284,6 @@ module Entropy
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
         enddo
-!      if (.not.lpencil_check_at_work) then
-!        write(*,*) 'fpres',p%fpres(1:6,1)
-!      endif
 !
 !  Add pressure force from global density gradient.
 !
@@ -434,37 +412,6 @@ module Entropy
       call keep_compiler_quiet(umax)
 !
     endsubroutine dynamical_thermal_diffusion
-!***********************************************************************
-    subroutine calc_dust_pressure(p)
-!
-      use EquationOfState, only: gamma1,gamma_m1,cs20,rho0,get_cp1
-!
-      type (pencil_case) :: p
-      integer :: j
-      real, save :: rho01,TT0
-      logical, save :: lfirstcall=.true.
-      real :: cp1
-!
-      if (lfirstcall) then
-        call get_cp1(cp1)
-        TT0=cs20*cp1/gamma_m1
-        rho01=1./rho0
-        lfirstcall=.false.
-      endif
-!
-      if (lparticles) then 
-        do j=1,3
-          p%fpres(:,j)=-p%cp*gamma_m1*gamma1*TT0*rho01*&
-               (p%rho*p%grhop(:,j) + p%rhop*p%grho(:,j))
-        enddo
-      else
-        do j=1,3
-          p%fpres(:,j)=-p%cp*gamma_m1*gamma1*TT0*rho01*&
-               (p%rho*p%grhodsum(:,j) + p%rhodsum*p%grho(:,j))
-        enddo
-      endif
-!
-    endsubroutine calc_dust_pressure
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
