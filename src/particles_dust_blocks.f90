@@ -1494,12 +1494,17 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
         if (idiag_ekinp/=0) then
-          if (lcartesian_coords.and.(all(lequidist))) then
-            call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
-                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+          if (lparticles_mass) then
+            call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
+                sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
           else
-            call sum_par_name(0.5*mp_swarm* &
-                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+            if (lcartesian_coords.and.(all(lequidist))) then
+              call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
+                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+            else
+              call sum_par_name(0.5*mp_swarm* &
+                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+            endif
           endif
         endif
         if (idiag_epotpm/=0) call sum_par_name( &

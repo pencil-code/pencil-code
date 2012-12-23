@@ -244,7 +244,9 @@ module Particles_map
 !
 !  Calculate mass density per superparticle.
 !
-                  if (lparticles_radius.and.lparticles_number) then
+                  if (lparticles_mass) then
+                    weight0=fp(k,irhopswarm)
+                  elseif (lparticles_radius.and.lparticles_number) then
                     weight0=four_pi_rhopmat_over_three*fp(k,iap)**3* &
                         fp(k,inpswarm)
                   elseif (lparticles_radius) then
@@ -324,7 +326,9 @@ module Particles_map
 !
 !  Calculate mass density per superparticle.
 !
-                  if (lparticles_radius.and.lparticles_number) then
+                  if (lparticles_mass) then
+                    weight0=fp(k,irhopswarm)
+                  elseif (lparticles_radius.and.lparticles_number) then
                     weight0=four_pi_rhopmat_over_three*fp(k,iap)**3* &
                         fp(k,inpswarm)
                   elseif (lparticles_radius) then
@@ -393,7 +397,7 @@ module Particles_map
 !
 !  Nearest Grid Point (NGP) method.
 !
-          if (lparticles_radius.or.lparticles_number) then
+          if (lparticles_radius.or.lparticles_number.or.lparticles_mass) then
             if (npar_iblock(ib)/=0) then
               do k=k1_iblock(ib),k2_iblock(ib)
                 lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
@@ -407,7 +411,9 @@ module Particles_map
 !
 !  Calculate mass density per superparticle.
 !
-                  if (lparticles_radius.and.lparticles_number) then
+                  if (lparticles_mass) then
+                    weight0=fp(k,irhopswarm)
+                  elseif (lparticles_radius.and.lparticles_number) then
                     weight0=four_pi_rhopmat_over_three*fp(k,iap)**3* &
                         fp(k,inpswarm)
                   elseif (lparticles_radius) then
@@ -430,7 +436,8 @@ module Particles_map
 !
 !  Multiply assigned particle number density by the mass density per particle.
 !
-        if (.not.(lparticles_radius.or.lparticles_number)) then
+        if (.not.(lparticles_radius.or.lparticles_number.or. &
+            lparticles_mass)) then
           if (lcartesian_coords.and.(all(lequidist))) then
             fb(:,:,:,irhop,0:nblock_loc-1)= &
                  rhop_swarm*fb(:,:,:,irhop,0:nblock_loc-1)
