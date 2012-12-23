@@ -1238,6 +1238,14 @@ else if ($hn =~ rio* || $hn =~ pia*) then
   setenv SCP scp
   setenv SCRATCH_DIR /var/tmp/$USER
 #---------------------------------------------------
+else if ($hn =~ vip*) then
+  echo "VIP IBM Power6 system at Rechenzentrum Garching"
+  set mpirun = poe
+#---------------------------------------------------
+else if ($hn =~ hy[0-9]*) then
+  echo "Hydra system at Rechenzentrum Garching"
+  set mpirun = poe
+#---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
   module load impi
