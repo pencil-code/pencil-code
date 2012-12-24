@@ -15,8 +15,8 @@ $host = `hostname`;
 #
 # Go through list of hosts to use proper method.
 #
-if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/){  # PBS
-  
+if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/ or $host = ~/stokes/){  # PBS
+
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
     @jobs = `qstat | grep $ENV{'USER'} `;
@@ -26,7 +26,7 @@ if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/){  # PBS
   foreach $job (@jobs){
     $a = `qstat -f $job`;
     $a =~ s/\s//g;
-    $a =~ /PBS_O_WORKDIR=(.*),/;
+    $a =~ /PBS_O_WORKDIR=([^,]*),/;
     $a = $1;
     if ($1 =~ /^\s*$/){
       $a = `qstat -f $job`;
