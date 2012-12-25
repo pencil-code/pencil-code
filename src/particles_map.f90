@@ -877,17 +877,8 @@ module Particles_map
       if (inp/=0 .and. (.not. lnocalc_np) .and. (.not. lmapsink)) then
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
-          !exclude the massive particles from the mapping
-          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          lsink=.false.
-          if (lparticles_sink) then
-            if (fp(k,iaps)>0.0) lsink=.true.
-          endif
-          if (lmapsink) lsink=.not.lsink
-          if ((.not.lnbody).and.(.not.lsink)) then
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
-          endif
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
         enddo
       endif
 !

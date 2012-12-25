@@ -187,16 +187,8 @@ module Particles_map
         do ib=0,nblock_loc-1
           if (npar_iblock(ib)/=0) then
             do k=k1_iblock(ib),k2_iblock(ib)
-              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              lsink=.false.
-              if (lparticles_sink) then
-                if (fp(k,iaps)>0.0) lsink=.true.
-              endif
-              if (lmapsink) lsink=.not.lsink
-              if ((.not.lnbody).and.(.not.lsink)) then
-                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-                fb(ix0,iy0,iz0,inp,ib)=fb(ix0,iy0,iz0,inp,ib)+1.0
-              endif
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              fb(ix0,iy0,iz0,inp,ib)=fb(ix0,iy0,iz0,inp,ib)+1.0
             enddo
           endif
         enddo
