@@ -1488,8 +1488,8 @@ module Particles_mpicomm
       integer :: k1_send, k2_send
 !
       if (ip<=6) then
-        print*, 'load_balance_particles: iproc, npar_loc (before) =', &
-            iproc, npar_loc
+        print*, 'load_balance_particles: iproc, it, npar_loc (before) =', &
+            iproc, it, npar_loc
       endif
 !
 !  Count particles in bricks, based on particle mapping done in map_xxp_grid.
@@ -2171,8 +2171,8 @@ module Particles_mpicomm
       enddo
 !
       if (ip<=6) then
-        print*, 'load_balance_particles: iproc, npar_loc (after ) =', &
-            iproc, npar_loc
+        print*, 'load_balance_particles: iproc, it, npar_loc (after ) =', &
+            iproc, it, npar_loc
       endif
 !
     endsubroutine load_balance_particles
