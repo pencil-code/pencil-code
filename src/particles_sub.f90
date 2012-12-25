@@ -10,6 +10,7 @@ module Particles_sub
   use General, only: keep_compiler_quiet
   use Messages
   use Particles_cdata
+  use Particles_mpicomm
 !
   implicit none
 !
@@ -761,6 +762,7 @@ module Particles_sub
       if (present(dfp)) dfp(k,:)=dfp(npar_loc,:)
       if (present(ineargrid)) ineargrid(k,:)=ineargrid(npar_loc,:)
       ipar(k)=ipar(npar_loc)
+      if (lparticles_blocks) inearblock(k)=inearblock(npar_loc)
 !
 !  Reduce the number of particles by one.
 !
