@@ -218,6 +218,11 @@ module Particles_sink
       real, dimension(1) :: rhop_interp
       integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
 !
+      if (ip<=6) then
+        print*, 'create_particles_sink: entering, iproc, it, itsub=', &
+            iproc, it, itsub
+      endif
+!
 !  Particle block domain decomposition.
 !
       if (lparticles_blocks) then
@@ -305,6 +310,11 @@ module Particles_sink
         endif
       endif
 !
+      if (ip<=6) then
+        print*, 'create_particles_sink: leaving, iproc, it, itsub=', &
+            iproc, it, itsub
+      endif
+!
     endsubroutine create_particles_sink
 !***********************************************************************
     subroutine remove_particles_sink(f,fp,dfp,ineargrid)
@@ -331,6 +341,11 @@ module Particles_sink
       integer :: itag_ipar=20100, itag_fpar2=201000
       integer :: dipx, dipx1, dipx2, dipy, dipy1, dipy2, dipz, dipz1, dipz2
       logical :: lproc_higher_sends
+!
+      if (ip<=6) then
+        print*, 'remove_particles_sink: entering, iproc, it, itsub=', &
+            iproc, it, itsub
+      endif
 !
 !  Method I: sink particles are coordinated by the root processor.
 !
@@ -897,6 +912,11 @@ module Particles_sink
 !  Apply boundary conditions to the newly updated sink particle positions.
 !
       call boundconds_particles(fp,ipar,dfp=dfp)
+!
+      if (ip<=6) then
+        print*, 'remove_particles_sink: leaving, iproc, it, itsub=', &
+            iproc, it, itsub
+      endif
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
