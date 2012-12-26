@@ -142,7 +142,8 @@ if ( subbox and (time ge tsubbox) ) then begin
          thick=thick, color=subcolor
 endif
 ;  Overplot stalked particles.         
-if (defined(xxstalk)) then oplot, [xxstalk], [yystalk], ps=1, color=255
+if (n_elements(xxstalk) ne 0) then oplot, [xxstalk], [yystalk], $
+    ps=1, color=50, thick=2.0
 ;  Colorbar indicating range.
 if (colorbar) then begin
   colorbar, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
@@ -248,8 +249,6 @@ pc_read_dim, obj=locdim, datadir=datadir+'/proc0', /quiet
 if (stalk) then begin
   pc_read_pstalk, obj=pst, datadir=datadir, /quiet
   default, nstalk, n_elements(pst.ipar)
-  if (pst.ipar[0] eq -1) then nstalk=0
-  if (nstalk gt n_elements(pst.xp[*,0])) then nstalk=n_elements(pst.xp[*,0])
 endif
 pc_set_precision, dim=dim, /quiet
 ;
@@ -540,13 +539,17 @@ endif else begin
 ;
      if (stalk) then begin
        ist=where( abs(pst.t-t) eq min(abs(pst.t-t)))
-       if (pst.t[ist] gt t) then ist=ist-1
-       xxstalk=pst.xp[ist,0:nstalk-1]+ $
-           (pst.xp[ist+1,0:nstalk-1]-pst.xp[ist,0:nstalk-1])/ $
-           (pst.t[ist+1]-pst.t[ist])*(t-pst.t[ist])
-       yystalk=pst.yp[ist,0:nstalk-1]+ $
-           (pst.yp[ist+1,0:nstalk-1]-pst.yp[ist,0:nstalk-1])/ $
-           (pst.t[ist+1]-pst.t[ist])*(t-pst.t[ist])
+       ist=ist[0]
+       if (max(tag_names(pst) eq 'APS') eq 1) then begin
+         ipar=where(pst.aps[*,ist] ne 0.0)
+         if (ipar[0] eq -1) then nstalk=0 else nstalk=n_elements(ipar)
+       endif else begin
+         ipar=indgen(nstalk)
+       endelse
+       if (nstalk ne 0) then begin
+         xxstalk=pst.xp[ipar,ist]
+         yystalk=pst.yp[ipar,ist]
+       endif
      endif
 ;
 ;  Plot requested variable (plotting is turned off by default).
