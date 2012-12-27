@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED rhod(ndustspec); udropav(3), rhodsum, grhodsum(3)
+! PENCILS PROVIDED rhod(ndustspec); udropav(3), rhodsum, glnrhodsum(3)
 !
 !***************************************************************
 module Dustdensity
