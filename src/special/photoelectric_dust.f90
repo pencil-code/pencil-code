@@ -69,7 +69,7 @@ module Special
   real :: dummy
   real :: mu=1.0, Sentropy=0.0
 !
-  namelist /special_init_pars/ dummy 
+  namelist /special_init_pars/ mu, Sentropy
 !
   namelist /special_run_pars/ mu, Sentropy
 !
@@ -85,12 +85,14 @@ module Special
 
 !
   real :: const1,const2
-  integer :: idiag_fpresphotom=0,idiag_fpresphotomax=0
-  integer :: idiag_fpresphotomin=0,idiag_fprespolym=0
-  integer :: idiag_fprespolymax=0,idiag_fprespolymin=0
+  integer :: idiag_photom=0,idiag_photomax=0
+  integer :: idiag_photomin=0,idiag_polym=0
+  integer :: idiag_polymax=0,idiag_polymin=0
+  integer :: idiag_dtcp=0
+!
+  logical, pointer :: lpressuregradient_gas
 !
   contains
-
 !***********************************************************************
     subroutine register_special()
 !
@@ -98,6 +100,12 @@ module Special
 !  which should be know to be able to evaluate
 !
 !  14-jul-09/wlad: coded
+!
+      use SharedVariables
+      integer :: ierr
+!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+      if (ierr/=0) call fatal_error('register_special','lpressuregradient_gas')
 !
     endsubroutine register_special
 !***********************************************************************
@@ -110,27 +118,36 @@ module Special
       use Cdata 
       use Mpicomm
       use EquationOfState, only: gamma1,cs20,rho0
+      use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
       real :: rho01
+      integer :: ierr
 !
       rho01=1./rho0
 !
       const1=Sentropy*mu
-      const2=cs20*gamma1*rho01
+      const2=cs20*rho01 !*gamma1*rho01
 !
+      !print*,const1,const2
+      !stop
+!
+      if (.not.lstarting) then 
+        call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
+        if (ierr/=0) call fatal_error('register_special','lpressuregradient_gas')
+        if (lpressuregradient_gas) then 
+          call fatal_error('initialize_special','switch lpressuregradient_gas=F in hydro_run_pars') 
+        endif
+      endif  
+
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_special
 !***********************************************************************
-    subroutine pencils_criteria_special(f,p)
+    subroutine pencil_criteria_special()
 !
       use Mpicomm
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
 !
       !const1=Sentropy*mu
       !const2=cs20*gamma1*rho01
@@ -140,21 +157,31 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (const2 /=0.0) then 
+      if (const2 /= 0.0) then 
         lpenc_requested(i_glnrho)=.true.
         if (lparticles) then 
           lpenc_requested(i_rhop)=.true.
           lpenc_requested(i_glnrhop)=.true.
-          lpenc_requested(i_glnrho)=.true.
-        else
+        elseif (ldustdensity) then 
           lpenc_requested(i_rhodsum)=.true.
           lpenc_requested(i_glnrhodsum)=.true.
+        else
+          call fatal_error("pencils_criteria_special",&
+               "the world is flat, and we never got here")
         endif
       endif
 !
-    endsubroutine pencils_criteria_special
+      !if (lfirst.and.ldt) 
+      lpenc_requested(i_cs2)=.true.
+!
+    endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
+!
+!  Calculate the pressure gradient. For the polytropic, P=S*rho**mu, 
+!  so fpres = - 1./rho * grad(P) = - S*mu * rho**(mu-2) * grad(rho) 
+!  
+!  For the photoelectric pressure, P=cs20/(gamma*/rho0) * rho*rhod
 !
       use Mpicomm
 !
@@ -163,12 +190,20 @@ module Special
       integer :: j
 !
       do j=1,3
-        q%fpres_polytropic(:,j) = -const1 * p%rho**(mu-1) * p%glnrho(:,j)
-!
-        if (lparticles) then
-          q%fpres_photoelectric(:,j) = -const2 * p%rhop * (p%glnrhop(:,j) + p%glnrho(:,j))
+        if (const1/=0.0) then 
+          q%fpres_polytropic(:,j) = -const1 * p%rho**(mu-1) * p%glnrho(:,j)
         else
-          q%fpres_photoelectric(:,j) = -const2 * p%rhodsum * (p%glnrhodsum(:,j) + p%glnrho(:,j))
+          q%fpres_polytropic(:,j) = 0.
+        endif
+!
+        if (const2/=0) then
+          if (lparticles) then
+            q%fpres_photoelectric(:,j) = -const2 * p%rhop * (p%glnrhop(:,j) + p%glnrho(:,j))
+          else
+            q%fpres_photoelectric(:,j) = -const2 * p%rhodsum * (p%glnrhodsum(:,j) + p%glnrho(:,j))
+          endif   
+        else
+          q%fpres_photoelectric(:,j) = 0.
         endif
       enddo
 !
@@ -253,26 +288,29 @@ endsubroutine read_special_run_pars
 !  Write information to index.pro
 !
       if (lreset) then
-        idiag_fpresphotom=0;idiag_fpresphotomax=0;idiag_fpresphotomin=0
-        idiag_fprespolym=0;idiag_fprespolymax=0;idiag_fprespolymin=0
+        idiag_photom=0;idiag_photomax=0;idiag_photomin=0
+        idiag_polym=0;idiag_polymax=0;idiag_polymin=0
+        idiag_dtcp=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'fpresphotom',idiag_fpresphotom)
-        call parse_name(iname,cname(iname),cform(iname),'fpresphotomax',idiag_fpresphotomax) 
-        call parse_name(iname,cname(iname),cform(iname),'fpresphotomin',idiag_fpresphotomin) 
-        call parse_name(iname,cname(iname),cform(iname),'fprespolym',idiag_fprespolym)
-        call parse_name(iname,cname(iname),cform(iname),'fprespolymax',idiag_fprespolymax)
-        call parse_name(iname,cname(iname),cform(iname),'fprespolymin',idiag_fprespolymin)
+        call parse_name(iname,cname(iname),cform(iname),'photom',idiag_photom)
+        call parse_name(iname,cname(iname),cform(iname),'photomax',idiag_photomax) 
+        call parse_name(iname,cname(iname),cform(iname),'photomin',idiag_photomin) 
+        call parse_name(iname,cname(iname),cform(iname),'polym',idiag_polym)
+        call parse_name(iname,cname(iname),cform(iname),'polymax',idiag_polymax)
+        call parse_name(iname,cname(iname),cform(iname),'polymin',idiag_polymin)
+        call parse_name(iname,cname(iname),cform(iname),'dtcp',idiag_dtcp)
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_fpresphotom',idiag_fpresphotom
-        write(3,*) 'i_fpresphotomax',idiag_fpresphotomax
-        write(3,*) 'i_fpresphotomin',idiag_fpresphotomin
-        write(3,*) 'i_fprespolym',idiag_fprespolym
-        write(3,*) 'i_fprespolymax',idiag_fprespolymax
-        write(3,*) 'i_fprespolymin',idiag_fprespolymin
+        write(3,*) 'i_photom',idiag_photom
+        write(3,*) 'i_photomax',idiag_photomax
+        write(3,*) 'i_photomin',idiag_photomin
+        write(3,*) 'i_polym',idiag_polym
+        write(3,*) 'i_polymax',idiag_polymax
+        write(3,*) 'i_polymin',idiag_polymin
+        write(3,*) 'i_dtcp',idiag_dtcp
       endif
 !
     endsubroutine rprint_special
@@ -293,20 +331,25 @@ endsubroutine read_special_run_pars
       type (pencil_case), intent(in) :: p
       integer :: j,ju
 !
+      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+      if (headtt.or.ldebug) &
+           print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
+!
 !  Modified momentum equation
 !
       do j=1,3 
         ju=j+iuu-1
-        df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - q%fpres(:,j)
+        df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + q%fpres(:,j)
       enddo
 !
       if (ldiagnos) then 
-        if (idiag_fpresphotom/=0)   call sum_mn_name( q%fpres_photoelectric,idiag_fpresphotom)
-        if (idiag_fpresphotomax/=0) call max_mn_name( q%fpres_photoelectric,idiag_fpresphotomax)
-        if (idiag_fpresphotomin/=0) call max_mn_name(-q%fpres_photoelectric,idiag_fpresphotomin)
-        if (idiag_fprespolym/=0)      call sum_mn_name( q%fpres_polytropic,idiag_fprespolym)
-        if (idiag_fprespolymax/=0)    call max_mn_name( q%fpres_polytropic,idiag_fprespolymax)
-        if (idiag_fprespolymin/=0)    call max_mn_name(-q%fpres_polytropic,idiag_fprespolymin)
+        if (idiag_photom/=0)   call sum_mn_name( q%fpres_photoelectric,idiag_photom)
+        if (idiag_photomax/=0) call max_mn_name( q%fpres_photoelectric,idiag_photomax)
+        if (idiag_photomin/=0) call max_mn_name(-q%fpres_photoelectric,idiag_photomin)
+        if (idiag_polym/=0)    call sum_mn_name( q%fpres_polytropic,idiag_polym)
+        if (idiag_polymax/=0)  call max_mn_name( q%fpres_polytropic,idiag_polymax)
+        if (idiag_polymin/=0)  call max_mn_name(-q%fpres_polytropic,idiag_polymin)
+        if (idiag_dtcp/=0)     call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtcp,l_dt=.true.)
       endif
 !
       call keep_compiler_quiet(f)
