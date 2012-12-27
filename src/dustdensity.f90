@@ -101,7 +101,8 @@ module Dustdensity
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
       idiffd, lupw_ndmdmi, deltavd_imposed, &
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
-      lnocondens_term,advec_ddensity, bordernd, dustdensity_floor
+      lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
+      diffnd_anisotropic
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
