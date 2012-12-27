@@ -119,7 +119,7 @@ module Particles
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhoptilm=0, idiag_dtdragp=0
+  integer :: idiag_dtdragp=0
   integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
@@ -1544,19 +1544,18 @@ k_loop:   do while (.not. (k>npar_loc))
             sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
             fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
             sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
-        if (idiag_rhoptilm/=0) then
-          do k=1,npar_loc
-            if (lparticles_number) np_swarm=fp(k,inpswarm)
-            call sum_par_name((/four_pi_rhopmat_over_three* &
-                fp(k,iap)**3*np_swarm/),idiag_rhoptilm)
-          enddo
-        endif
         if (idiag_mpt/=0) then
-          do k=1,npar_loc
-            if (lparticles_number) np_swarm=fp(k,inpswarm)
-            call integrate_par_name( &
-                (/four_pi_rhopmat_over_three*fp(k,iap)**3*np_swarm/),idiag_mpt)
-          enddo
+          if (lparticles_mass) then
+            do k=1,npar_loc
+              call integrate_par_name((/fp(k,irhopswarm)/),idiag_mpt)
+            enddo
+          else
+            do k=1,npar_loc
+              if (lparticles_number) np_swarm=fp(k,inpswarm)
+              call integrate_par_name((/four_pi_rhopmat_over_three* &
+                  fp(k,iap)**3*np_swarm/),idiag_mpt)
+            enddo
+          endif
         endif
         if (idiag_npargone/=0) then
           call count_particles(ipar,npar_found)
@@ -2247,7 +2246,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
         idiag_lpx2m=0; idiag_lpy2m=0; idiag_lpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhoptilm=0; idiag_dtdragp=0; idiag_dedragp=0
+        idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
         idiag_epspmin=0; idiag_epspmax=0
@@ -2321,8 +2320,6 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
         call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'rhoptilm',idiag_rhoptilm)
         call parse_name(iname,cname(iname),cform(iname), &
             'dedragp',idiag_dedragp)
         call parse_name(iname,cname(iname),cform(iname), &
