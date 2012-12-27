@@ -90,7 +90,7 @@ module Param_IO
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
-      lconst_advection, u0_advec, ldust_pressure, &
+      lconst_advection, u0_advec, &
       lforce_shear_bc
 !
   namelist /run_pars/ &
