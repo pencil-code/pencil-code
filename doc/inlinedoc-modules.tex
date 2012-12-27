@@ -7,7 +7,7 @@
 %%   noentropy.f90
 %%   nohydro.f90
 %%   timestep.f90
-%%   timestep_subcircle.f90
+%%   timestep_subcycle.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.9\textwidth}}
@@ -25,8 +25,8 @@
   \var{timestep.f90} & Runge-Kutta time advance, accurate to order itorder. \\
   \var{}          & At the moment, itorder can be 1, 2, or 3. \\
 \midrule
-  \var{timestep_subcircle.f90} & Runge-Kutta time advance, accurate to order itorder. \\
-  \var{}          & At the moment, itorder can be 1, 2, or 3. \\
+  \var{timestep_subcycle.f90} & This is a highly specified timestep module currently only working \\
+  \var{}          & together with the special module coronae.f90. \\
 %
 \bottomrule
 \end{longtable}

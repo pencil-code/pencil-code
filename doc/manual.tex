@@ -7388,6 +7388,7 @@ where \code{nw=nx*ny*nz}.
   64 &Neolith&0.0695& $256^3$ & magn/noentro &        &  6-dec-07 & AB \\
   64 &Ferlin & 8.51&$150\times128^2$&Li mechanism& 8x8& 21-jun-09 & AB \\
   64 &Ferlin & 0.156& $256^3$ & magn/noentro &  8x8   & 14-jun-09 & AB \\
+  64 & Akka  & 0.038&$256^2\times512$& magn/noentro & 8x8 & 27-dec-12 & AB \\
  128 & fe1   & 0.44 & $256^3$ &nomag/entro/rad8/ion&4x32&10-mar-04& TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
@@ -7402,7 +7403,7 @@ where \code{nw=nx*ny*nz}.
  512 & Akka  &0.0081& $512^3$ & magn/noentro & 16x32  & 10-sep-11 & AB \\
  512 &Neolith&0.0073& $256^3$ & magn/noentro &        & 20-nov-09 & AB \\
  512 &Lindgren&0.0040&$512^2\times1024$&magn/noentro&16x32& 8-jul-12 & AB \\
-2048 &Lindgren&0.0013&$1024^2\times2048$&magn/noentro&32x64&16-jul-12& AB \\
+2048 &Lindgren&0.00129&$1024^2\times2048$&magn/noentro&32x64&31-jul-12& AB \\
     \bottomrule
   \end{longtable}
   %\end{tabular}
@@ -9134,8 +9135,7 @@ boundary conditions and adding things like
 \item Prepare \file{print.in}, \file{xyaver.in}, and other obvious files
 such as \file{video.in}.
 
-\item Once it works and it running, you want to remove
-by saying {\it explicitly}
+\item Once it works and is running, you must say {\it explicitly}
 \begin{alltt}
 &run_pars
   ...
@@ -9144,6 +9144,9 @@ by saying {\it explicitly}
 \end{alltt}
 because otherwise you won't read in your precious test field data next
 time you restart the code!
+(If you instead just remove this line, it will remember
+\code{lread_oldsnap_notestfield=T} from the previous run,
+which is of course wrong!)
 
 \end{enumerate}
 

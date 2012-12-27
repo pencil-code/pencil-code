@@ -178,6 +178,7 @@
   \var{oxoym}     & $\left<\omega_x\omega_y\right>$ \\
   \var{oxozm}     & $\left<\omega_x\omega_z\right>$ \\
   \var{oyozm}     & $\left<\omega_y\omega_z\right>$ \\
+  \var{qfm}       & $\left<\qv\cdot\fv\right>$ \\
   \var{q2m}       & $\left<\qv^2\right>$ \\
   \var{qrms}      & $\left<\qv^2\right>^{1/2}$ \\
   \var{qmax}      & $\max(|\qv|)$ \\
@@ -216,6 +217,7 @@
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
+  \var{vol}       & $\int\,dV$ (volume) \\
   \var{grhomax}   & $\max (|\nabla \varrho|)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
@@ -351,6 +353,12 @@
   \var{bxmax}     & $\max(|B_x|)$ \\
   \var{bymax}     & $\max(|B_y|)$ \\
   \var{bzmax}     & $\max(|B_z|)$ \\
+  \var{bbxmax}    & $\max(|B_x|) excluding Bv_{ext}$ \\
+  \var{bbymax}    & $\max(|B_y|) excluding Bv_{ext}$ \\
+  \var{bbzmax}    & $\max(|B_z|) excluding Bv_{ext}$ \\
+  \var{jxmax}     & $\max(|jv_x|)$ \\
+  \var{jymax}     & $\max(|jv_y|)$ \\
+  \var{jzmax}     & $\max(|jv_z|)$ \\
   \var{jrms}      & $\left<\jv^2\right>^{1/2}$ \\
   \var{hjrms}     & $\left<\jv^2\right>^{1/2}$ \\
   \var{jmax}      & $\max(|\jv|)$ \\
@@ -369,6 +377,7 @@
   \var{a2m}       & $\left<\Av^2\right>$ \\
   \var{arms}      & $\left<\Av^2\right>^{1/2}$ \\
   \var{amax}      & $\max(|\Av|)$ \\
+  \var{divarms}   & $\langle(\nabla\cdot\Av)^2\rangle^{1/2}$ \\
   \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
                     \quad(mean inverse plasma beta) \\
   \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
