@@ -735,6 +735,10 @@ module Particles_sub
       endif
 !
 !  Write to the respective processor that the particle is removed.
+!  We also write the time.
+!
+!  TODO: It would be better to write this information in binary format to avoid
+!  conversion problems when reading t_rmv with pc_read_pvar.
 !
       open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
       if (present(ks)) then
