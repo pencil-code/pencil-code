@@ -361,7 +361,19 @@ endif else begin
               readu, file2, array_loc
             endelse
           endelse
-          if (t_rmv_loc[k] le t) then begin
+;
+;  Unfortunately the time of removal is written in ASCII in ipar_rmv. This can
+;  lead to round off errors when comparing t to r_rmv. We therefore determine
+;  whether t is single or double precision and allow variations on the last
+;  significant digit of t_rmv.
+;
+          if (n_elements(epsi) eq 0) then begin
+            itype=size(t,/type)
+            if (itype eq 4) then epsi=1.0d-6
+            if (itype eq 5) then epsi=1.0d-12
+          endif
+;
+          if (t_rmv_loc[k] le t*(1.0d + epsi)) then begin
             array[ipar_rmv_loc[k]-1,*]=array_loc
             array_sink[ipar_rmv_loc[k]-1,*]=array_sink_loc
             ipar_rmv[ipar_rmv_loc[k]-1]=ipar_rmv[ipar_rmv_loc[k]-1]+1
