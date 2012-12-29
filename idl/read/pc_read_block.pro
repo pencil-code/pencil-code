@@ -62,11 +62,23 @@ if (file_test(filename)) then begin
     xb=fltarr(mxb,nblock_loc)*one
     yb=fltarr(myb,nblock_loc)*one
     zb=fltarr(mzb,nblock_loc)*one
+    dx1b=fltarr(mxb,nblock_loc)*one
+    dy1b=fltarr(myb,nblock_loc)*one
+    dz1b=fltarr(mzb,nblock_loc)*one
+    dVol1xb=fltarr(mxb,nblock_loc)*one
+    dVol1yb=fltarr(myb,nblock_loc)*one
+    dVol1zb=fltarr(mzb,nblock_loc)*one
     readu, file, iproc_parent_block
     readu, file, ibrick_parent_block
     readu, file, xb
     readu, file, yb
     readu, file, zb
+    readu, file, dx1b
+    readu, file, dy1b
+    readu, file, dz1b
+    readu, file, dVol1xb
+    readu, file, dVol1yb
+    readu, file, dVol1zb
   endif else begin
     dummy=0L
     readu, file, dummy
@@ -107,9 +119,11 @@ endelse
 object = create_struct(name=objectname, $
     ['t','nblock_loc','nproc_parent','nproc_foster','iproc_foster_brick', $
      'iproc_parent_block','ibrick_parent_block','xb','yb','zb', $
+     'dx1b','dy1b','dz1b','dVol1xb','dVol1yb','dVol1zb', $
      'iproc_parent_list','iproc_foster_list'], $
      t,nblock_loc,nproc_parent,nproc_foster,iproc_foster_brick, $
      iproc_parent_block,ibrick_parent_block,xb,yb,zb, $
+     dx1b,dy1b,dz1b,dVol1xb,dVol1yb,dVol1zb, $
      iproc_parent_list,iproc_foster_list)
 ;
 end
