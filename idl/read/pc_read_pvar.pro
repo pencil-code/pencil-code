@@ -188,6 +188,7 @@ t=zero
 npar_loc=0L
 npar=0L
 if (rmv) then begin
+  npar=pdim.npar
   ipar_rmv=lonarr(npar)
   npar_rmv=0L
   trmv    =fltarr(npar)*one
