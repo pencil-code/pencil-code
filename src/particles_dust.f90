@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop
+! PENCILS PROVIDED np; rhop; rhop1
 ! PENCILS PROVIDED epsp; grhop(3); glnrhop(3)
 !
 !***************************************************************
@@ -2151,9 +2151,11 @@ k_loop:   do while (.not. (k>npar_loc))
         lpencil_in(i_rho1)=.true.
       endif
 !
+      if (lpencil_in(i_rhop1)) lpencil_in(i_rhop)=.true.
+!
       if (lpencil_in(i_glnrhop)) then 
         lpencil_in(i_grhop)=.true.
-        lpencil_in(i_rhop)=.true.
+        lpencil_in(i_rhop1)=.true.
       endif
 !
     endsubroutine pencil_interdep_particles
@@ -2187,6 +2189,10 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
+      if (lpencil(i_rhop1)) then 
+        p%rhop1=1./max(p%rhop,tini)
+      endif
+!
       if (lpencil(i_grhop)) then 
         if (irhop/=0) then
           call grad(f,irhop,p%grhop)
@@ -2198,7 +2204,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lpencil(i_glnrhop)) then 
         do j=1,3
-          p%glnrhop(:,j)=p%grhop(:,j)/p%rhop
+          p%glnrhop(:,j)=p%grhop(:,j)*p%rhop1
         enddo
       endif
 !
