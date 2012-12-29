@@ -168,7 +168,9 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     endelse
   endif
   if (n_elements(grid) eq 0) then $
-      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, proc=proc, allprocs=allprocs, reduced=reduced, /quiet
+      pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
+      proc=proc, allprocs=allprocs, reduced=reduced, $
+      swap_endian=swap_endian, /quiet
 ;
 ; We know from start.in whether we have to read 2-D or 3-D data.
 ;
