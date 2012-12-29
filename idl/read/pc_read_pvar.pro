@@ -461,44 +461,44 @@ endfor
 if (proc eq -1 and not keyword_set(quiet)) then begin
   if (linsert_particles_continuously) then begin
     if (rmv) then begin
-    if ( (max(ipar+ipar_rmv) gt 1) ) then begin
-      print, 'Warning: Some particles found more'
-      print, 'than once in snapshot files.'
-      print, 'Particle number---No. of occurences'
-      for i=0,npar-1 do begin
-        if ( (ipar[i]+ipar_rmv[i] gt 1) ) then print, i, ipar[i], ipar_rmv[i]
-      endfor
-    endif
+      if ( (max(ipar+ipar_rmv) gt 1) ) then begin
+        print, 'Warning: Some particles found more'
+        print, 'than once in snapshot files.'
+        print, 'Particle number---No. of occurences'
+        for i=0,npar-1 do begin
+          if ( (ipar[i]+ipar_rmv[i] gt 1) ) then print, i, ipar[i], ipar_rmv[i]
+        endfor
+      endif
     endif else begin
-    if ( (max(ipar) gt 1)) then begin
-      print, 'Warning: Some particles found more'
-      print, 'than once in snapshot files.'
-      print, 'Particle number---No. of occurences'
-      for i=0,npar-1 do begin
-        if ( ipar[i] gt 1 ) then print, i, ipar[i]
-      endfor
-    endif
-  endelse  
+      if ( (max(ipar) gt 1)) then begin
+        print, 'Warning: Some particles found more'
+        print, 'than once in snapshot files.'
+        print, 'Particle number---No. of occurences'
+        for i=0,npar-1 do begin
+          if ( ipar[i] gt 1 ) then print, i, ipar[i]
+        endfor
+      endif
+    endelse  
   endif else begin
-  if (rmv) then begin
-    if ( (max(ipar+ipar_rmv) ne 1) or (min(ipar+ipar_rmv) ne 1) ) then begin
-      print, 'Warning: Some particles not found at all or found more'
-      print, 'than once in snapshot files.'
-      print, 'Particle number---No. of occurences'
-      for i=0,npar-1 do begin
-        if ( (ipar[i]+ipar_rmv[i] ne 1) ) then print, i, ipar[i], ipar_rmv[i]
-      endfor
-    endif
-  endif else begin
-    if ( (max(ipar) ne 1) or (min(ipar) ne 1) ) then begin
-      print, 'Warning: Some particles not found at all or found more'
-      print, 'than once in snapshot files.'
-      print, 'Particle number---No. of occurences'
-      for i=0,npar-1 do begin
-        if ( ipar[i] ne 1 ) then print, i, ipar[i]
-      endfor
-    endif
-  endelse
+    if (rmv) then begin
+      if ( (max(ipar+ipar_rmv) ne 1) or (min(ipar+ipar_rmv) ne 1) ) then begin
+        print, 'Warning: Some particles not found at all or found more'
+        print, 'than once in snapshot files.'
+        print, 'Particle number---No. of occurences'
+        for i=0,npar-1 do begin
+          if ( (ipar[i]+ipar_rmv[i] ne 1) ) then print, i, ipar[i], ipar_rmv[i]
+        endfor
+      endif
+    endif else begin
+      if ( (max(ipar) ne 1) or (min(ipar) ne 1) ) then begin
+        print, 'Warning: Some particles not found at all or found more'
+        print, 'than once in snapshot files.'
+        print, 'Particle number---No. of occurences'
+        for i=0,npar-1 do begin
+          if ( ipar[i] ne 1 ) then print, i, ipar[i]
+        endfor
+      endif
+    endelse
   endelse
 endif
 ;
