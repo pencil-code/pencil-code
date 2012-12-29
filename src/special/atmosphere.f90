@@ -60,7 +60,7 @@ module Special
 
   ! input parameters
   logical :: lbuoyancy_x=.false.
-  logical :: lbuoyancy_z=.false.
+  logical :: lbuoyancy_z=.false.,lbuoyancy_z_model=.false.
 
   character (len=labellen) :: initstream='default'
   real, dimension(ndustspec) :: dsize, init_distr,init_distr2
@@ -82,7 +82,7 @@ module Special
 !
 ! start parameters
   namelist /atmosphere_init_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, &
+      lbuoyancy_z,lbuoyancy_x, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot, BB0, PP
          
@@ -422,10 +422,11 @@ module Special
       real :: rho_water=1., const_tmp=0.
 !
       real, dimension (mx) :: func_x
+      real, dimension (nx) ::  TT
       real    :: del,width
       integer :: l_sz
       integer :: i, j, sz_l_x,sz_r_x,ll1,ll2, sz_x
-      real    :: dt1
+      real    :: dt1, bs,Ts,dels
       logical :: lzone_left, lzone_right
 !
        const_tmp=4./3.*PI*rho_water 
@@ -435,6 +436,13 @@ module Special
              + (1./p%mu1/18.-1.)*(f(l1:l2,m,n,ichemspec(ind_H2O))-qwater0) &
              - p%fcloud(:) &
             )
+      elseif (lbuoyancy_z_model) then
+        bs=gg*(293.-290.)/293.
+        Ts=((293.+290.)/2.-290.)/(293.-290.)
+        TT=(p%TT(:)-290.)/(293.-290.)
+        dels=100.*0.1/Lxyz(1)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+             - bs*TT/Ts + bs/(1.-Ts)/Ts*dels*log(exp((TT-Ts)/dels)+1.) 
       elseif (lbuoyancy_x) then
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)&
              + gg*((p%TT(:)-TT0)/TT0 &
