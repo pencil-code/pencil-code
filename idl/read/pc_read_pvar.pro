@@ -337,24 +337,25 @@ endif else begin
         close, file1 & free_lun, file1
         ipar_rmv_loc=reform(long(array_loc[0,*]))
         t_rmv_loc   =reform(     array_loc[1,*])
-        if (nfields eq 3) then ipar_sink_rmv_loc=reform(long(array_loc[2,*]))
+        if (nfields eq 3) then begin
+          ipar_sink_rmv_loc=reform(long(array_loc[2,*]))
+          if (n_elements(array_sink) eq 0) then $
+              array_sink=fltarr(npar_max,totalvars)*one
+          array_sink_loc=fltarr(mpvar)*one
+        endif
 ;
 ;  Read positions, velocities, etc.
 ;
         get_lun, file2 & close, file2
         openr, file2, filename2, /f77
         array_loc=fltarr(mpvar)*one
-        if (nfields eq 3) then begin
-          if (i eq 0) then array_sink=fltarr(npar_max,totalvars)*one
-          array_sink_loc=fltarr(mpvar)*one
-        endif
         k=0L
         ipar_rmv_loc_dummy=0L
         for k=0,nrmv-1 do begin
           if (oldrmv) then begin
             readu, file2, ipar_rmv_loc_dummy, array_loc
           endif else begin
-            if (nfields eq 2) then begin
+            if (nfields eq 3) then begin
               readu, file2, array_loc, array_sink_loc
             endif else begin
               readu, file2, array_loc
