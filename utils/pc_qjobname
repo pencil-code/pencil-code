@@ -15,7 +15,7 @@ $host = `hostname`;
 #
 # Go through list of hosts to use proper method.
 #
-if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/ or $host = ~/stokes/){  # PBS
+if ($host =~ /fe[0-9]/ or $host =~/tpb[0-9]/ or $host =~/platon.int/ or $host =~ /stokes/){  # PBS
 
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
