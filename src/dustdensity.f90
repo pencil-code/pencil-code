@@ -1321,7 +1321,7 @@ module Dustdensity
             call fatal_error('calc_pencils_dustdensity', &
                 'p%ppsat or p%ppsf has zero value(s)')
           else
-           Imr=Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
+           Imr=1.!Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
            do i=1,nx
             if (lnoaerosol .or. lnocondens_term) then
               p%ccondens(i)=0.
