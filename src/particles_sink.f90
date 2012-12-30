@@ -250,8 +250,9 @@ module Particles_sink
                 if (rhop_interp(1)>=rhop_sink_create) then
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
-                        'sink particle with rhop=', rhop_interp(1)
-                    print*, 'processor, position=', iproc, fp(k,ixp:izp)
+                        'sink particle at density rhop=', rhop_interp(1)
+                    print*, 'iproc, it, itsub, xp     =', &
+                        iproc, it, itsub, fp(k,ixp:izp)
                   endif
                   fp(k,iaps)=sink_radius
                 endif
