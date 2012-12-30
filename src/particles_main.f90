@@ -484,10 +484,13 @@ module Particles_main
 !  WARNING: ineargrid and the mapped particle density have not been updated
 !  yet, and the sink particle subroutine must not rely on those arrays.
 !
-      if (lparticles) &
-          call remove_particles_sink_simple(f,fp,dfp,ineargrid)
-      if (lparticles_nbody) call remove_particles_sink_nbody(f,fp,dfp,ineargrid)
-      if (lparticles_sink)  call remove_particles_sink(f,fp,dfp,ineargrid)
+      if  (.not.lpencil_check_at_work) then
+        if (lparticles) &
+            call remove_particles_sink_simple(f,fp,dfp,ineargrid)
+        if (lparticles_nbody) &
+            call remove_particles_sink_nbody(f,fp,dfp,ineargrid)
+        if (lparticles_sink)  call remove_particles_sink(f,fp,dfp,ineargrid)
+      endif
 !
 !  Find nearest grid point for each particle.
 !
