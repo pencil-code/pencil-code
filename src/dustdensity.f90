@@ -1352,7 +1352,7 @@ module Dustdensity
               p%dndr=0.
             else
               if (.not. ldcore) then
-                Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+                Imr=1.!Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
                 call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,0)
                 do k=1,ndustspec
                   p%dndr(:,k)=-Imr*dndr_tmp(:,k)
