@@ -99,7 +99,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i,j
-      real :: del=10.
+      real :: del=10.,bs
 !
         if ((init_ux /=0.) .and. (nygrid>1)) then
          do i=1,my
@@ -107,8 +107,13 @@ module InitialCondition
          enddo
         endif
         if ((init_uz /=0.) .and. (nzgrid>1)) then
-         do i=1,mz
-           f(:,:,i,iux)=cos(Period*PI*z(i)/Lxyz(3))*init_ux
+!         do i=1,mz
+!           f(:,:,i,iux)=cos(Period*PI*z(i)/Lxyz(3))*init_ux
+!         enddo
+         bs=9.81e2*(293.-290.)/293.
+         do i=1,mx
+            f(i,:,:,iuz)=sqrt(Lxyz(1)*bs) &
+                        *((exp(2.*x(i)/Lxyz(1))+exp(-2.*x(i)/Lxyz(1)))/2.)**(-2)
          enddo
         endif
 !
