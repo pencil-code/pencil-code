@@ -690,6 +690,9 @@ module Magnetic
   integer :: idiag_bxbymxy=0    ! ZAVG_DOC: $\left< B_x B_y \right>_{z}$
   integer :: idiag_bxbzmxy=0    ! ZAVG_DOC: $\left< B_x B_z \right>_{z}$
   integer :: idiag_bybzmxy=0    ! ZAVG_DOC: $\left< B_y B_z \right>_{z}$
+  integer :: idiag_poynxmxy=0    ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{x}$
+  integer :: idiag_poynymxy=0    ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{y}$
+  integer :: idiag_poynzmxy=0    ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}$
   integer :: idiag_jbmxy=0      ! ZAVG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
   integer :: idiag_abmxy=0      ! ZAVG_DOC: $\left< \Av\cdot\Bv \right>_{z}$
   integer :: idiag_examxy1=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
@@ -1755,6 +1758,9 @@ module Magnetic
 !
       if (idiag_examxy1/=0 .or. idiag_examxy2/=0 .or. idiag_examxy3/=0 &
          ) lpenc_diagnos2d(i_aa)=.true.
+!
+      if (idiag_poynxmxy/=0 .or. idiag_poynymxy/=0 .or. idiag_poynzmxy/=0 &
+         ) lpenc_diagnos2d(i_jxb)=.true.
 !
       if (idiag_beta1mxy/=0) lpenc_diagnos2d(i_beta1)=.true.
 !
@@ -3885,6 +3891,15 @@ module Magnetic
           if (idiag_Exmxy/=0) call zsum_mn_name_xy(p%uxb(:,1),idiag_Exmxy)
           if (idiag_Eymxy/=0) call zsum_mn_name_xy(p%uxb(:,2),idiag_Eymxy)
           if (idiag_Ezmxy/=0) call zsum_mn_name_xy(p%uxb(:,3),idiag_Ezmxy)
+          if (idiag_poynxmxy/=0) & 
+            call ysum_mn_name_xz(etatotal*p%jxb(:,1)-mu01* &
+            (p%uxb(:,2)*p%bb(:,3)-p%uxb(:,3)*p%bb(:,2)),idiag_poynxmxy)
+        if (idiag_poynymxy/=0) &
+            call ysum_mn_name_xz(etatotal*p%jxb(:,2)-mu01* &
+            (p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3)),idiag_poynymxy)
+        if (idiag_poynzmxy/=0) & 
+            call ysum_mn_name_xz(etatotal*p%jxb(:,3)-mu01* &
+            (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmxy)
         endif
       endif
 !
@@ -6543,6 +6558,7 @@ module Magnetic
         idiag_bx2rmz=0; idiag_by2rmz=0; idiag_bz2rmz=0
         idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_jxmxy=0; idiag_jymxy=0; idiag_jzmxy=0
+        idiag_poynxmxy=0; idiag_poynymxy=0; idiag_poynzmxy=0
         idiag_bx2mxy=0; idiag_by2mxy=0; idiag_bz2mxy=0; idiag_bxbymxy=0
         idiag_examxy1=0; idiag_examxy3=0; idiag_examxy2=0
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
@@ -7013,6 +7029,9 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Eymxy',idiag_Eymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Ezmxy',idiag_Ezmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'beta1mxy',idiag_beta1mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynxmxy',idiag_poynxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynymxy',idiag_poynymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynzmxy',idiag_poynzmxy)
       enddo
 !
 !  Check for those quantities for which we want phi-averages.
