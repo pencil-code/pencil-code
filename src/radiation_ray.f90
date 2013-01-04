@@ -278,6 +278,12 @@ module Radiation
           unit_vec(idir,2)=mrad*dy/radlength
           unit_vec(idir,3)=nrad*dz/radlength
 !
+!  Print all unit vectors (if ray_good=T).
+!
+          if (lroot.and.ip<14) write(*,'(1x,a,i4,3f6.2)'), &
+              'initialize_radiation: ndir, unit_vec=', &
+              idir, unit_vec(idir,:)
+!
           idir=idir+1
 !
         endif
@@ -360,8 +366,11 @@ module Radiation
 !
 !  Calculate weights for weighed integrals involving one unit vector nhat
 !  (note that this fix is activated by default).
+!  Need to check whether we should do this also in the 1-D case for cooling
+!  (weight=weight/3) to get agreement with the usual optical thick calculation.
 !
         if (lfix_radweight_1d.and.ndir==2) weightn=weightn/3
+!--     if (lfix_radweight_1d.and.ndir==2) weight=weight/3
 !
       case ('spherical-harmonics')
 !
