@@ -1761,6 +1761,8 @@ module Magnetic
 !
       if (idiag_poynxmxy/=0 .or. idiag_poynymxy/=0 .or. idiag_poynzmxy/=0 &
          ) lpenc_diagnos2d(i_jxb)=.true.
+      if (idiag_poynxmxy/=0 .or. idiag_poynymxy/=0 .or. idiag_poynzmxy/=0 &
+         ) lpenc_diagnos2d(i_uxb)=.true.
 !
       if (idiag_beta1mxy/=0) lpenc_diagnos2d(i_beta1)=.true.
 !
@@ -3891,14 +3893,14 @@ module Magnetic
           if (idiag_Exmxy/=0) call zsum_mn_name_xy(p%uxb(:,1),idiag_Exmxy)
           if (idiag_Eymxy/=0) call zsum_mn_name_xy(p%uxb(:,2),idiag_Eymxy)
           if (idiag_Ezmxy/=0) call zsum_mn_name_xy(p%uxb(:,3),idiag_Ezmxy)
-          if (idiag_poynxmxy/=0) & 
-            call ysum_mn_name_xz(etatotal*p%jxb(:,1)-mu01* &
+          if (idiag_poynxmxy/=0) &
+            call zsum_mn_name_xy(etatotal*p%jxb(:,1)-mu01* &
             (p%uxb(:,2)*p%bb(:,3)-p%uxb(:,3)*p%bb(:,2)),idiag_poynxmxy)
-        if (idiag_poynymxy/=0) &
-            call ysum_mn_name_xz(etatotal*p%jxb(:,2)-mu01* &
+          if (idiag_poynymxy/=0) &
+            call zsum_mn_name_xy(etatotal*p%jxb(:,2)-mu01* &
             (p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3)),idiag_poynymxy)
-        if (idiag_poynzmxy/=0) & 
-            call ysum_mn_name_xz(etatotal*p%jxb(:,3)-mu01* &
+          if (idiag_poynzmxy/=0) & 
+            call zsum_mn_name_xy(etatotal*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmxy)
         endif
       endif
