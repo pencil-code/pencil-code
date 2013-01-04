@@ -143,7 +143,7 @@ if ( subbox and (time ge tsubbox) ) then begin
 endif
 ;  Overplot stalked particles.         
 if (n_elements(xxstalk) ne 0) then oplot, [xxstalk], [yystalk], $
-    ps=1, color=50, thick=2.0
+    ps=1, color=255, thick=2.0
 ;  Colorbar indicating range.
 if (colorbar) then begin
   colorbar, range=[min,max], pos=[0.89,0.15,0.91,0.35], divisions=1, $
