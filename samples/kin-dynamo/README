@@ -49,6 +49,7 @@ For Roberts flow with positive helicity,
       eta1=5.512, lam=-0.000383483
       eta1=5.522, lam=1.7171948e-05
       eta1=5.5216, lam=0
+      eta=0.181, lam=8.69488e-05
 
 So the 16^3 run with 6th order derivatives is accurate within 0.14%.
 and the 8^3 run is accurate within 6.7%.
@@ -88,4 +89,12 @@ So the 16^3 run with 2nd order derivatives is accurate to 0.07%.
 and the 8^3 run is accurate within 5.6%.
 
 10th-order
-32^3, eta1=5.52, lam=-5.6851997e-05
+ 8^3, eta1=5.15, lam=-0.00108046 (with default dt=0.215)
+      eta1=5.17, lam=-1.13033e-07
+      eta1=5.171, lam=5.34595e-05
+
+32^3, eta1=5.52, lam=-6.41440e-05 (with default dt=0.017)
+      eta1=5.521, lam=-2.47367e-05
+      eta1=5.522, lam=1.56453e-05
+      eta1=5.5216, lam=0 (interpolated)
+

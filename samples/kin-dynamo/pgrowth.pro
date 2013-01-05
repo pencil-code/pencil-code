@@ -3,8 +3,7 @@
 ;  for plotting brms and local growth rate
 ;  a summary of the results are in roberts.dat in this directory
 ;
-t1=.4 & t2=2
-t1=2. & t2=4
+t1=30. & t2=1e9
 !p.multi=[0,1,2]
 pc_read_ts,o=ts
 tt=ts.t
@@ -22,7 +21,7 @@ plot_io,tt,brms
 ;
 ;  growth rate
 ;
-plot,tt,lam,yr=yr
+plot,tt,lam,yr=yr,xtit='!8t!6',ytit=''
 ;
 good=where(tt gt t1 and tt lt t2)
 if good(0) ne -1 then begin

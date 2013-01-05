@@ -4,15 +4,18 @@
 !
 &run_pars
   cvsid='$Id$'
-  !nt=1000, it1=10, cdt=99, cdtv=.4, old_cdtv=F, isave=10, itorder=3
-  nt=50, it1=10, cdt=99, cdtv=.4, old_cdtv=F, isave=10, itorder=3
+  !nt=4000, it1=10, itorder=3
+  !nt=50, it1=10, cdt=99, cdtv=.4, old_cdtv=F, isave=10, itorder=3
+  nt=50, it1=10, cdt=99, cdtv=.4, isave=10, itorder=3
   dsnap=50, dvid=0.5
   random_gen='nr_f90'
   lpencil_check=T
+  !nghost_read_fewer=0, luse_oldgrid=T
 /
 &hydro_run_pars
   kinematic_flow='roberts'
 /
 &magnetic_run_pars
   eta=0.1
+  !eta1=5.522
 /
