@@ -424,7 +424,8 @@ module Io
 !  Read snapshot file, possibly with mesh and time (if mode=1).
 !
 !  11-apr-97/axel: coded
-!  13-Dec-2011/Bourdin.KIS: reworked
+!  13-dec-11/Bourdin.KIS: reworked
+!   5-jan-13/axel: allow nghost_read_fewer > 0 to read fewer ghost zones
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, stop_it_if_any
 !
@@ -452,7 +453,20 @@ module Io
           call fatal_error ('input_snap', 'lwrite_2d used for 3-D simulation!')
         endif
       else
-        read (lun_input, IOSTAT=io_err) a
+!
+!  Possibility of reading data with different numbers of ghost zones.
+!  In that case, one must regenerate the mesh with luse_oldgrid=T.
+!
+        if (nghost_read_fewer==0) then
+          read (lun_input, IOSTAT=io_err) a
+        elseif (nghost_read_fewer>0) then
+          read (lun_input, IOSTAT=io_err) &
+              a(1+nghost_read_fewer:mx-nghost_read_fewer, &
+                1+nghost_read_fewer:my-nghost_read_fewer, &
+                1+nghost_read_fewer:mz-nghost_read_fewer,:)
+        else
+          call fatal_error('input_snap','nghost_read_fewer must be >=0')
+        endif
       endif
       lerror = outlog (io_err, "Can't read main data", file)
 
@@ -465,7 +479,11 @@ module Io
           read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
           lerror = outlog (io_err, "Can't read additional data plus deltay", file)
         else
-          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+          if (nghost_read_fewer==0) then
+            read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
+          elseif (nghost_read_fewer>0) then
+            read (lun_input, IOSTAT=io_err) t_sp
+          endif
           lerror = outlog (io_err, "Can't read additional data", file)
         endif
 !

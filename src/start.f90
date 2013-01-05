@@ -93,7 +93,6 @@ program start
   implicit none
 !
   real, allocatable, dimension (:,:,:,:) :: f, df
-  real :: x00, y00, z00
   integer :: i, ifilter, stat
   logical :: lnoerase=.false.
 !
@@ -299,7 +298,7 @@ program start
 !
 !  Generate grid.
 !
-  call construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
+  call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Write grid.dat file.
 !

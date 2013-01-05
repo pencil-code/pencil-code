@@ -39,7 +39,8 @@ module Grid
 !
   contains
 !***********************************************************************
-    subroutine construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
+    !subroutine construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
+    subroutine construct_grid(x,y,z,dx,dy,dz)
 !
 !  Constructs a non-equidistant grid x(xi) of an equidistant grid xi with
 !  grid spacing dxi=1. For grid_func='linear' this is equivalent to an
@@ -61,8 +62,9 @@ module Grid
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
-      real, intent(out) :: dx,dy,dz,x00,y00,z00
+      real, intent(out) :: dx,dy,dz
 !
+      real :: x00,y00,z00
       real :: xi1lo,xi1up,g1lo,g1up
       real :: xi2lo,xi2up,g2lo,g2up
       real :: xi3lo,xi3up,g3lo,g3up

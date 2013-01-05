@@ -45,7 +45,7 @@ module Cdata
   logical :: lcartesian_coords=.true.
   logical :: lspherical_coords=.false.,lcylindrical_coords=.false.
   logical :: lsphere_in_a_box=.false.,lcylinder_in_a_box=.false.
-  logical :: luse_latitude=.false.
+  logical :: luse_latitude=.false., luse_oldgrid=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
@@ -73,6 +73,7 @@ module Cdata
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
+  integer :: nghost_read_fewer=0
 !
 !  Derivative parameters
 !
@@ -149,6 +150,7 @@ module Cdata
   integer :: isave=100,ialive=0,isaveglobal=0
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
   logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false.
+  logical :: lread_oldsnap_lnrho2rho=.false.
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
@@ -301,7 +303,6 @@ module Cdata
 !
 !debug  integer, dimension(mfarray,8,3,3) :: der_call_count=0 !DERCOUNT
 !debug  logical, parameter :: loptimise_ders=.true.             !DERCOUNT
-!
 !
 !  Pencil-related stuff.
 !

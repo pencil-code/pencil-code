@@ -124,6 +124,7 @@ module Snapshot
 !  Read snapshot file.
 !
 !  24-jun-05/tony: coded from snap reading code in run.f90
+!   5-jan-13/axel: allowed for lread_oldsnap_lnrho2rho=T
 !
       use IO, only: input_snap, input_snap_finalize
       use Persist, only: input_persistent
@@ -210,10 +211,23 @@ module Snapshot
           enddo
           f(:,:,:,icctest:icctest+ntestscalar-1)=0.
         endif
+!
+!  Use default input configuration.
+!
       else
         call input_snap(chsnap,f,msnap,1)
         call input_persistent(chsnap)
         call input_snap_finalize()
+      endif
+!
+!  Read data using lnrho, and now convert to rho.
+!  This assumes that one is now using ldensity_nolog=T.
+!
+      if (lread_oldsnap_lnrho2rho) then
+        print*,'convert lnrho -> rho',ilnrho,irho
+        if (irho>0) then
+          f(:,:,:,irho)=exp(f(:,:,:,ilnrho))
+        endif
       endif
 !
     endsubroutine rsnap
@@ -226,7 +240,7 @@ module Snapshot
 !  07-oct-02/nils: adapted from wsnap
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
 !  28-dec-02/axel: call structure from here; allow optional lwrite_only
-!  22-apr-11/MR: added possibility to get quantity for xy-power-spectrum from xy_specs
+!  22-apr-11/MR: added possibility to get xy-power-spectrum from xy_specs
 !
       use Boundcond, only: update_ghosts
       use Particles_main, only: particles_powersnap

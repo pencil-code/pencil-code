@@ -79,6 +79,8 @@ program run
   use Solid_Cells,     only: solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
+  use Grid,            only: construct_grid
+  use IO,              only: wgrid
   use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
@@ -139,13 +141,20 @@ program run
 !
   call directory_names()
 !
-!  Read coordinates.
+!  Read coordinates (if luse_oldgrid=T, otherwise regenerate grid).
+!  luse_oldgrid=T can be useful if nghost_read_fewer > 0,
+!  i.e. if one is changing the order of spatial derivatives.
 !
-  if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-  call rgrid('grid.dat')
+  if (luse_oldgrid) then
+    if (ip<=6.and.lroot) print*, 'reading grid coordinates'
+    call rgrid('grid.dat')
+  else
+    call construct_grid(x,y,z,dx,dy,dz)
+    call wgrid('grid.dat')
+  endif
 !
-! Size of box at local processor. The if-statement is for
-! backward compatibility.
+!  Size of box at local processor. The if-statement is for
+!  backward compatibility.
 !
   if (all(lequidist)) then
     Lxyz_loc(1)=Lxyz(1)/nprocx
@@ -167,7 +176,7 @@ program run
     Lxyz_loc(3)=xyz1_loc(3) - xyz0_loc(3)
   endif
 !
-! Calculate dimensionality
+!  Calculate dimensionality
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
 !

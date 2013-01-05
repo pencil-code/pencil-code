@@ -107,10 +107,10 @@ module Param_IO
       lkinflow_as_aux, ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
-      ltime_integrals, lnowrite, noghost_for_isave, lwrite_yaverages, &
-      lwrite_zaverages, lwrite_phiaverages, lwrite_slices, test_nonblocking, &
-      lwrite_tracers, lwrite_fixed_points, &
-      lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
+      ltime_integrals, lnowrite, noghost_for_isave, nghost_read_fewer, &
+      lwrite_yaverages, lwrite_zaverages, lwrite_phiaverages, lwrite_slices, &
+      test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
+      lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
       lread_aux, comment_char, ix, iy, iz, iz2, iz3, iz4, slice_position, &
       xbot_slice, xtop_slice, ybot_slice, ytop_slice, zbot_slice, ztop_slice, &
@@ -118,7 +118,7 @@ module Param_IO
       r_ext_border, lfreeze_varsquare, lfreeze_varint, lfreeze_varext, &
       xfreeze_square, yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, &
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &
-      fshift_int, fshift_ext, &
+      luse_oldgrid, fshift_int, fshift_ext, &
       lreset_tstart, tstart, lseparate_persist, ldistribute_persist, &
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
