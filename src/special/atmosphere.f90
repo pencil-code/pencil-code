@@ -437,7 +437,7 @@ module Special
              - p%fcloud(:) &
             )
       elseif (lbuoyancy_z_model) then
-        bs=gg*(293.-290.)/293.
+        bs=gg*(293.-290.)/293.*100.
         Ts=((293.+290.)/2.-290.)/(293.-290.)
         TT=(p%TT(:)-290.)/(293.-290.)
         dels=100.*0.1/Lxyz(1)
