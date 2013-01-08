@@ -112,7 +112,7 @@ module InitialCondition
 !         enddo
          bs=9.81e2*(293.-290.)/293.
          do i=1,mx
-            f(i,:,:,iuz)=sqrt(Lxyz(1)*bs) &
+            f(i,:,:,iuz)=-sqrt(Lxyz(1)*bs) &
                         *((exp(2.*x(i)/Lxyz(1))+exp(-2.*x(i)/Lxyz(1)))/2.)**(-2)
          enddo
         endif
@@ -487,11 +487,11 @@ module InitialCondition
         del=(init_x2-init_x1)*0.2
         if (lcurved_xz) then
           do j=n1,n2         
-            init_x1_arz(j)=init_x1*(1-0.1*sin(4.*PI*z(j)/Lxyz(3)))
-            init_x2_arz(j)=init_x2*(1+0.1*sin(4.*PI*z(j)/Lxyz(3)))
+            init_x1_arz(j)=init_x1*(1-0.6*sin(4.*PI*z(j)/Lxyz(3)))
+            init_x2_arz(j)=init_x2*(1+0.6*sin(4.*PI*z(j)/Lxyz(3)))
           enddo
-          del_ar1z(:)=del*(1-0.1*sin(4.*PI*z(:)/Lxyz(3)))
-          del_ar2z(:)=del*(1+0.1*sin(4.*PI*z(:)/Lxyz(3)))
+          del_ar1z(:)=del*(1-0.6*sin(4.*PI*z(:)/Lxyz(3)))
+          del_ar2z(:)=del*(1+0.6*sin(4.*PI*z(:)/Lxyz(3)))
         elseif (lcurved_xy) then
           do j=m1,m2         
             init_x1_ary(j)=init_x1*(1-0.1*sin(4.*PI*y(j)/Lxyz(2)))
