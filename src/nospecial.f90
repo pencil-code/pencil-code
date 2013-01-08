@@ -599,6 +599,8 @@ module Special
       real :: Ntot, BB0
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(dsize,init_distr,init_distr2)
+      call keep_compiler_quiet(Ntot,BB0)
 !
     endsubroutine  set_init_parameters
 !***********************************************************************
