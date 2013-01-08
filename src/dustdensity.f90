@@ -24,7 +24,7 @@
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
 ! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
 ! PENCILS PROVIDED ppsf(ndustspec); mu1; udropav(3)
-! PENCILS PROVIDED glnrhod(3,ndustspec); 
+! PENCILS PROVIDED glnrhod(3,ndustspec);
 ! PENCILS PROVIDED rhodsum; rhodsum1; grhodsum(3); glnrhodsum(3)
 !
 !***************************************************************
@@ -980,7 +980,7 @@ module Dustdensity
         lpencil_in(i_sdij)=.true.
         lpencil_in(i_glnnd)=.true.
       endif
-      if (lpencil_in(i_grhod)) then 
+      if (lpencil_in(i_grhod)) then
         lpencil_in(i_gnd)=.true.
         lpencil_in(i_md)=.true.
       endif
@@ -989,10 +989,10 @@ module Dustdensity
         lpencil_in(i_rhod1)=.true.
       endif
       if (lpencil_in(i_rhodsum))  lpencil_in(i_rhod)=.true.
-      if (lpencil_in(i_rhodsum1)) lpencil_in(i_rhodsum)=.true. 
+      if (lpencil_in(i_rhodsum1)) lpencil_in(i_rhodsum)=.true.
       if (lpencil_in(i_grhodsum)) lpencil_in(i_grhod)=.true.
       if (lpencil_in(i_glnrhodsum)) then
-        if (ndustspec==1) then 
+        if (ndustspec==1) then
           lpencil_in(i_glnrhod)=.true.
         else
           lpencil_in(i_grhodsum)=.true.
@@ -1246,7 +1246,7 @@ module Dustdensity
 ! gndglnrho
         if (lpencil(i_gndglnrho)) &
             call dot_mn(p%gnd(:,:,k),p%glnrho(:,:),p%gndglnrho(:,k))
-! glnndglnrho 
+! glnndglnrho
         if (lpencil(i_glnndglnrho)) &
             call dot_mn(p%glnnd(:,:,k),p%glnrho(:,:),p%glnndglnrho(:,k))
 ! udrop
@@ -1293,7 +1293,7 @@ module Dustdensity
           do k=1, ndustspec
           if (dsize(k)>0.) then
           if (.not. ldcore) then
- 
+
             if (dsize(k)>8e-6) then
               p%ppsf(:,k)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
                                 -BB0/(8.*dsize(k)**3))
@@ -1402,7 +1402,7 @@ module Dustdensity
             do i=1,3
               p%glnrhodsum(:,i)=p%rhodsum1*p%grhodsum(:,i)
             enddo
-          endif  
+          endif
         endif
 !
     endsubroutine calc_pencils_dustdensity
@@ -1494,17 +1494,17 @@ module Dustdensity
             do i=1,nx
               tmpl=p%dndr(i,k)
               if (k<-6) then
-              
+
                   df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
                      - p%udropgnd(i,k) + p%dndr(i,k) &
                      + (init_distr(k)-f(l1+i-1,m,n,ind(k)))/(5.*dt)
-             
+
               elseif (k<-11) then
-                
+
                   df(l1+i-1,m,n,ind(k)) = df(l1+i-1,m,n,ind(k)) &
                      - p%udropgnd(i,k) + p%dndr(i,k) &
                      + (init_distr(k)-f(l1+i-1,m,n,ind(k)))/(10.*dt)
-              
+
               else
 
                 if (f(l1+i-1,m,n,ind(k))+tmpl*dt<10.) then
@@ -1516,7 +1516,7 @@ module Dustdensity
                      - p%udropgnd(i,k) + p%dndr(i,k)
                 endif
               endif
-            
+
             enddo
             enddo
           endif
@@ -1570,7 +1570,7 @@ module Dustdensity
           if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+&
                (diffnd_anisotropic(1)*dline_1(:,1)**2+&
                 diffnd_anisotropic(2)*dline_1(:,2)**2+&
-                diffnd_anisotropic(3)*dline_1(:,3)**2)               
+                diffnd_anisotropic(3)*dline_1(:,3)**2)
         endif
 !
         if (ldiffd_dusttogasratio) then
@@ -2540,16 +2540,16 @@ module Dustdensity
                 'p%pp or dsize  has zero value(s)')
          endif
        enddo
-!       
+!
        do k=1,ndustspec
          if (ldcore) then
            ff_tmp(:,k)=f(l1:l2,m,n,idcj(k,i))*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
            ff_tmp0(:,k)=init_distr_ki(k,i)*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
          else
            ff_tmp(:,k)=p%nd(:,k) &
-               *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k) 
+               *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
            ff_tmp0(:,k)=init_distr(k) &
-               *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k) 
+               *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
          endif
        enddo
           call deriv_size(ff_tmp,ff_tmp0,dndr_dr,p)
@@ -2564,7 +2564,7 @@ module Dustdensity
 !
       use Mpicomm, only: stop_it
       use General, only: spline
- 
+
       real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
       type (pencil_case) :: p
       real, dimension (60) ::  x2, S
@@ -2596,7 +2596,7 @@ module Dustdensity
 !
        ff_km1=ff(i,k-1)
        ff_k  =ff(i,k)
-       ff_kp1=ff(i,k+1) 
+       ff_kp1=ff(i,k+1)
 !
        nd_km1=p%nd(i,k-1)
        nd_k=p%nd(i,k)
@@ -2637,16 +2637,16 @@ module Dustdensity
                  *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k-1)/p%ppsat(i))/x2(j)
              rr1=x2(j)
              if (x2(j)>dsize(k))  call stop_it('problem with spline points1')
-           endif  
+           endif
 !
            if (case2) then
              j=15
              ff_kp1=S(j) &
-                 *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k+1)/p%ppsat(i))/x2(j) 
+                 *(p%ppwater(i)/p%ppsat(i)-p%ppsf(i,k+1)/p%ppsat(i))/x2(j)
              rr3=x2(j)
              if (x2(j)<dsize(k))  call stop_it('problem with spline points2')
-           endif   
-!           
+           endif
+!
         endif
 !
         dff_dr(i,k) = ff_km1*(rr2-rr3)/((rr1-rr2)*(rr1-rr3)) &

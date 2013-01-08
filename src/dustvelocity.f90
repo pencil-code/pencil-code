@@ -843,8 +843,8 @@ module Dustvelocity
         if (lpencil(i_divud)) &
             p%divud(:,k) = p%udij(:,1,1,k) + p%udij(:,2,2,k) + p%udij(:,3,3,k)
 ! udgud
-        if (lpencil(i_udgud)) then 
-          if (lspherical_coords.or.lcylindrical_coords) then 
+        if (lpencil(i_udgud)) then
+          if (lspherical_coords.or.lcylindrical_coords) then
             call u_dot_grad(f,iuud(k),p%udij(:,:,:,k),&
                  p%uud(:,:,k),p%udgud(:,:,k))
           else
