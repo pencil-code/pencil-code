@@ -5017,7 +5017,7 @@ module Initcond
       real, optional :: xsphere,ysphere,zsphere
       real :: omega, radius, phi, rr_rot, ampl, x01=0.
       real :: y01=0., z01=0., x_real, y_real, z_real
-      real :: incl_alpha, theta, vel_phi
+      real :: theta, vel_phi
 !
 !  Rotating sphere
 !
