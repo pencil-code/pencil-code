@@ -378,6 +378,7 @@ module Pscalar
       intent(inout) :: p
 !
       real, dimension(nx,3) :: uu
+      real, dimension(nx) :: dot2_tmp
       integer :: i
 ! cc
       if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc:icc+npscalar-1)
@@ -400,7 +401,8 @@ module Pscalar
 ! gcc2
       if (lpencil(i_gcc2)) then
         do i = 1, npscalar
-          call dot2_mn(p%gcc(:,:,i),p%gcc2(:,i))
+          call dot2_mn(p%gcc(:,:,i),dot2_tmp)
+          p%gcc2(:,i)=dot2_tmp
         enddo
       endif
 ! gcc1
