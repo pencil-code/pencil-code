@@ -1090,7 +1090,10 @@ module Dustdensity
           endif
         endif
 ! glnnd2
-        if (lpencil(i_glnnd2)) call dot2_mn(p%glnnd(:,:,k),p%glnnd2(:,k))
+        if (lpencil(i_glnnd2)) then
+          call dot2_mn(p%glnnd(:,:,k),tmp)
+          p%glnnd2(:,k)=tmp
+        endif
 ! udgnd
         if (lpencil(i_udgnd)) then
 !          call u_dot_grad(f,ind(k),p%gnd(:,:,k),p%uud(:,:,k),tmp, &
