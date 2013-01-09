@@ -1020,13 +1020,17 @@ module Particles_sink
                       sink_mass = rhops*dx**3
                       vinf2 = sum((fp(k,ivpx:ivpz)-vvps)**2) -  &
                           2*gravitational_const*sink_mass/dist
-                      rbondi = gravitational_const*sink_mass/vinf2
-                      runit = fp(k,ixp:izp)-xxps
-                      runit = runit/sqrt(sum(runit**2))
-                      vunit = fp(k,ivpx:ivpz)-vvps
-                      vunit = vunit/sqrt(sum(vunit**2))
-                      impact_parameter = dist*sqrt(1.0-sum((runit*vunit)**2))
-                      if (impact_parameter>dist) laccrete=.false.
+                      if (vinf2<=0.0) then
+                        laccrete=.true.
+                      else
+                        rbondi = gravitational_const*sink_mass/vinf2
+                        runit = fp(k,ixp:izp)-xxps
+                        runit = runit/sqrt(sum(runit**2))
+                        vunit = fp(k,ivpx:ivpz)-vvps
+                        vunit = vunit/sqrt(sum(vunit**2))
+                        impact_parameter = dist*sqrt(1.0-sum(runit*vunit)**2)
+                        if (impact_parameter>rbondi) laccrete=.false.
+                      endif
                     endif
 !
                     if (dist2<=rads2 .and. laccrete) then
