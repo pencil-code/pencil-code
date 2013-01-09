@@ -201,7 +201,7 @@ module Particles_main
 !
 !  Stop if rhop_swarm is zero.
 !
-      if (irhop/=0 .and. rhop_swarm==0.0) then
+      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_mass)) then
         if (lroot) then
           print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &
