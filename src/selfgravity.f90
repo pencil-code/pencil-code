@@ -30,11 +30,9 @@ module Selfgravity
 !
 !  Init Parameters
 !
-  real, target :: rhs_poisson_const=1.0
+  real, target :: rhs_poisson_const=1.0, gravitational_const=0.0
   real, target :: tstart_selfgrav=0.0
-  real :: tselfgrav_gentle=0.0
-  real :: gravitational_const=0.0
-  real :: kappa=0.
+  real :: tselfgrav_gentle=0.0, kappa=0.0
 !
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lselfgravity_neutrals=.false.
@@ -127,12 +125,19 @@ module Selfgravity
         call fatal_error('initialize_selfgravity','')
       endif
 !
-!  Also share rhs_poisson_const.
+!  Share rhs_poisson_const and gravitational_const.
 !
       call put_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
       if (ierr/=0) then
         if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
             'when sharing rhs_poisson_const!'
+        call fatal_error('initialize_selfgravity','')
+      endif
+!
+      call put_shared_variable('gravitational_const',gravitational_const,ierr)
+      if (ierr/=0) then
+        if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
+            'when sharing gravitational_const!'
         call fatal_error('initialize_selfgravity','')
       endif
 !
@@ -200,8 +205,9 @@ module Selfgravity
 !
 !  Initialize the epicycle frequency for calculating Toomre Q.
 !
-      if (kappa==0.) kappa=Omega
-      if (lroot.and.kappa/=0.) print*, 'initialize_selfgravity: epicycle frequency kappa = ', kappa
+      if (kappa==0.0) kappa=Omega
+      if (lroot.and.kappa/=0.0) &
+          print*, 'initialize_selfgravity: epicycle frequency kappa = ', kappa
 !
     endsubroutine initialize_selfgravity
 !***********************************************************************
@@ -432,11 +438,15 @@ module Selfgravity
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
              call calc_cylgrav_stresses(p)
         if (idiag_qtoomre/=0) &
-             call sum_mn_name(kappa*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomre)
+             call sum_mn_name(kappa*sqrt(p%cs2)/ &
+             (gravitational_const*pi*p%rho),idiag_qtoomre)
         if (idiag_qtoomremin/=0) &
-             call max_mn_name(-kappa*sqrt(p%cs2)/(gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
-        if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/(gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
-        if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/(gravitational_const*p%rho),idiag_ljeans2d,lneg=.true.)
+             call max_mn_name(-kappa*sqrt(p%cs2)/ &
+             (gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
+        if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/ &
+            (gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
+        if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/ &
+            (gravitational_const*p%rho),idiag_ljeans2d,lneg=.true.)
       endif
 !
 !  1-D averages.
