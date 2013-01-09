@@ -562,11 +562,13 @@ module Particles_map
                 ineargrid(k,1)=l1
               elseif (ineargrid(k,1)>=l2+1) then
                 ineargrid(k,1)=l2
-              elseif (ineargrid(k,2)<=m1-1) then
+              endif
+              if (ineargrid(k,2)<=m1-1) then
                 ineargrid(k,2)=m1
               elseif (ineargrid(k,2)>=m2+1) then
                 ineargrid(k,2)=m2
-              elseif (ineargrid(k,3)<=n1-1) then
+              endif
+              if (ineargrid(k,3)<=n1-1) then
                 ineargrid(k,3)=n1
               elseif (ineargrid(k,3)>=n2+1) then
                 ineargrid(k,3)=n2
