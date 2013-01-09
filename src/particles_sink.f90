@@ -31,9 +31,10 @@ module Particles_sink
 !
   real :: sink_birth_radius=0.0, sink_radius=0.0, rhop_sink_create=1.0
   real :: aps0=0.0, aps1=0.0
-  real, pointer :: tstart_selfgrav
+  real, pointer :: tstart_selfgrav, gravitational_const
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
+  logical :: lbondi_accretion=.false.
   logical :: lselfgravity_sinkparticles=.true.
   character (len=labellen), dimension(ninit) :: initaps='nothing'
 !
@@ -41,12 +42,12 @@ module Particles_sink
 !
   namelist /particles_sink_init_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
-      lrhop_roche_unit, initaps, aps0, aps1, &
+      lrhop_roche_unit, initaps, aps0, aps1, lbondi_accretion, &
       lselfgravity_sinkparticles, lsink_communication_all_to_all
 !
   namelist /particles_sink_run_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
-      lrhop_roche_unit, lselfgravity_sinkparticles
+      lrhop_roche_unit, lbondi_accretion, lselfgravity_sinkparticles
 !
   contains
 !***********************************************************************
@@ -95,8 +96,10 @@ module Particles_sink
       if (lroot) print*, 'initialize_particles_sink: sink_radius=', &
           sink_radius
 !
-      if (lselfgravity) &
-          call get_shared_variable('tstart_selfgrav',tstart_selfgrav)
+      if (lselfgravity) then
+        call get_shared_variable('tstart_selfgrav',tstart_selfgrav)
+        call get_shared_variable('gravitational_const',gravitational_const)
+      endif
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -927,13 +930,14 @@ module Particles_sink
       integer :: j1, j2, k1, k2
       logical, optional :: nosink_in
 !
-      real, dimension(3) :: xxps, vvps, xxkghost
-      real :: rhops, rads, rads2, dist2
+      real, dimension(3) :: xxps, vvps, xxkghost, runit, vunit
+      real :: rhops, rads, rads2, dist2, dist
       real :: mindistx, mindisty, mindistz
+      real :: sink_mass, vinf2, rbondi, impact_parameter
       integer, dimension(3) :: dis=(/-1,0,+1/)
       integer, dimension(1) :: ixmin, iymin, izmin
       integer :: j, k
-      logical :: nosink
+      logical :: nosink, laccrete
 !
       if (ip<=6) then
         print*, 'sink_particle_accretion: iproc, it, itsub, sum(x*rho), '// &
@@ -1002,7 +1006,30 @@ module Particles_sink
 !
                     dist2=mindistx**2+mindisty**2+mindistz**2
 !
-                    if (dist2<=rads2) then
+                    laccrete=.true.
+!
+!  Only allow accretion of particles with impact parameter within the Bondi
+!  radius. This type of accretion relies on drag dissipation of the particle
+!  energy. See Lambrechts & Johansen (2012).
+!
+!  In absence of gas drag we should also allow for accretion within the
+!  gravitational cross section.
+!
+                    if (lbondi_accretion) then
+                      dist=sqrt(dist2)
+                      sink_mass = rhops*dx**3
+                      vinf2 = sum((fp(k,ivpx:ivpz)-vvps)**2) -  &
+                          2*gravitational_const*sink_mass/dist
+                      rbondi = gravitational_const*sink_mass/vinf2
+                      runit = fp(k,ixp:izp)-xxps
+                      runit = runit/sqrt(sum(runit**2))
+                      vunit = fp(k,ivpx:ivpz)-vvps
+                      vunit = vunit/sqrt(sum(vunit**2))
+                      impact_parameter = dist*sqrt(1.0-sum((runit*vunit)**2))
+                      if (impact_parameter>dist) laccrete=.false.
+                    endif
+!
+                    if (dist2<=rads2 .and. laccrete) then
                       if (ip<=6) then
                         print*, 'remove_particles_sink: sink particle', &
                             ipar(j)
