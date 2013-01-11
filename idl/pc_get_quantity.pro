@@ -619,12 +619,12 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 			return, -1
 		end
 		pc_read_dim, obj=glob_dim, datadir=datadir, /quiet
-		l1 = glob_dim.nprocx
-		l2 = mx - 1 - glob_dim.nprocx
-		m1 = glob_dim.nprocy
-		m2 = my - 1 - glob_dim.nprocy
-		n1 = glob_dim.nprocz
-		n2 = mz - 1 - glob_dim.nprocz
+		l1 = glob_dim.nghostx
+		l2 = mx - 1 - glob_dim.nghostx
+		m1 = glob_dim.nghosty
+		m2 = my - 1 - glob_dim.nghosty
+		n1 = glob_dim.nghostz
+		n2 = mz - 1 - glob_dim.nghostz
 		nx = mx - 2*glob_dim.nghostx
 		ny = my - 2*glob_dim.nghosty
 		nz = mz - 2*glob_dim.nghostz
