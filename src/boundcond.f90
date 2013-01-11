@@ -6305,6 +6305,9 @@ module Boundcond
     subroutine bc_aa_pot_field_extrapol(f,topbot,lfinalize)
 !
 !  Potential field extrapolation in z-direction for the ghost cells.
+!  To have a smooth transition at the boundary from non-force-free to a
+!  force-free field, the Az component is also extrapolated, so that it goes
+!  to zero smoothly. This reduces strong currents at the physical boundary.
 !
 !  9-jul-2010/Bourdin.KIS: coded
 !
