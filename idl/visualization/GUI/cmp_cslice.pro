@@ -41,12 +41,14 @@ pro cmp_cslice, sets, limits=limits, units=units, coords=coords, scaling=scaling
 	res = execute (exe_1)
 	if (not res) then begin
 		print, "ERROR: could not generate varsets!"
+		print, "("+exe_1+")"
 		return
 	end
 
 	res = execute (exe_2)
 	if (not res) then begin
 		print, "ERROR: could not generate set!"
+		print, "("+exe_2+")"
 		return
 	end
 
