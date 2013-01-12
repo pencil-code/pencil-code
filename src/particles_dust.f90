@@ -38,6 +38,7 @@ module Particles
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
+  real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -155,8 +156,8 @@ module Particles
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, np_const, &
       rhop_const, ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
-      lsinkparticle_1, rsinkparticle_1, lcalc_uup, temp_grad0, &
-      thermophoretic_eq, cond_ratio, interp_pol_gradTT
+      xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
+      lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -724,6 +725,17 @@ module Particles
             endif
           enddo
 !
+        case ('constant-3')
+          if (lroot) &
+              print*, 'init_particles: Particle 2 at x,y,z=', xp3, yp3, zp3
+          do k=1,npar_loc
+            if (ipar(k)==3) then
+              fp(k,ixp)=xp3
+              fp(k,iyp)=yp3
+              fp(k,izp)=zp3
+            endif
+          enddo
+!
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
@@ -1228,6 +1240,18 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,ivpx)=vpx2
               fp(k,ivpy)=vpy2
               fp(k,ivpz)=vpz2
+            endif
+          enddo
+!
+        case ('constant-3')
+          if (lroot) &
+              print*, 'init_particles: Particle 3 velocity vx,vy,vz=', &
+              vpx3, vpy3, vpz3
+          do k=1,npar_loc
+            if (ipar(k)==3) then
+              fp(k,ivpx)=vpx3
+              fp(k,ivpy)=vpy3
+              fp(k,ivpz)=vpz3
             endif
           enddo
 !

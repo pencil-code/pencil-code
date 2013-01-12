@@ -24,18 +24,19 @@ module Particles_mass
 !
   include 'particles_mass.h'
 !
-  real :: rhop_swarm0=1.0, rhop_swarm1=1.0
+  real :: rhop_swarm0=1.0, rhop_swarm1=1.0, rhop_swarm2, rhop_swarm3
   real :: gravr_swarm0=1.0, gravr_swarm1=1.0
   real :: eps_dtog=0.01
+  real :: dummy=0.0
   real, pointer :: rhs_poisson_const
   character (len=labellen), dimension(ninit) :: initrhopswarm='nothing'
 !
   namelist /particles_mass_init_pars/ &
-      initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1, &
-      eps_dtog
+      initrhopswarm, rhop_swarm0, rhop_swarm1, rhop_swarm2, rhop_swarm3, &
+      gravr_swarm0, gravr_swarm1, eps_dtog
 !
   namelist /particles_mass_run_pars/ &
-      initrhopswarm, rhop_swarm0, rhop_swarm1, gravr_swarm0, gravr_swarm1
+      dummy
 !
   contains
 !***********************************************************************
@@ -117,9 +118,6 @@ module Particles_mass
           endif
           fp(1:npar_loc,irhopswarm)=rhop_swarm0
 !
-        case ('constant-rhop')
-          fp(1:npar_loc,irhopswarm)=rhop_swarm0/(float(npar)/nwgrid)
-!
         case ('constant-1')
           if (lroot) then
             print*, 'init_particles_mass: set particle 1 mass density'
@@ -128,6 +126,27 @@ module Particles_mass
           do k=1,npar_loc
             if (ipar(k)==1) fp(k,irhopswarm)=rhop_swarm1
           enddo
+!
+        case ('constant-2')
+          if (lroot) then
+            print*, 'init_particles_mass: set particle 2 mass density'
+            print*, 'init_particles_mass: rhop_swarm2=', rhop_swarm2
+          endif
+          do k=1,npar_loc
+            if (ipar(k)==2) fp(k,irhopswarm)=rhop_swarm2
+          enddo
+!
+        case ('constant-3')
+          if (lroot) then
+            print*, 'init_particles_mass: set particle 3 mass density'
+            print*, 'init_particles_mass: rhop_swarm3=', rhop_swarm3
+          endif
+          do k=1,npar_loc
+            if (ipar(k)==3) fp(k,irhopswarm)=rhop_swarm3
+          enddo
+!
+        case ('constant-rhop')
+          fp(1:npar_loc,irhopswarm)=rhop_swarm0/(float(npar)/nwgrid)
 !
         case ('constant-grav')
           if (lroot) then
