@@ -29,8 +29,8 @@ module Particles_sink
 !
   include 'particles_sink.h'
 !
-  real :: sink_birth_radius=0.0, sink_radius=0.0, rhop_sink_create=1.0
-  real :: aps0=0.0, aps1=0.0
+  real :: sink_birth_radius=0.0, sink_radius=0.0, rhop_sink_create=-1.0
+  real :: aps0=0.0, aps1=0.0, aps2=0.0, aps3=0.0
   real, pointer :: tstart_selfgrav, gravitational_const
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
@@ -42,7 +42,7 @@ module Particles_sink
 !
   namelist /particles_sink_init_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
-      lrhop_roche_unit, initaps, aps0, aps1, lbondi_accretion, &
+      lrhop_roche_unit, initaps, aps0, aps1, aps2, aps3, lbondi_accretion, &
       lselfgravity_sinkparticles, lsink_communication_all_to_all
 !
   namelist /particles_sink_run_pars/ &
@@ -155,6 +155,32 @@ module Particles_sink
             endif
           enddo
 !
+        case ('constant-2')
+          if (lroot) then
+            print*, 'init_particles_sink: set particle 2 sink radius'
+            print*, 'init_particles_sink: aps2=', aps2
+          endif
+          do k=1,npar_loc
+            if (lsink_radius_dx_unit) then
+              if (ipar(k)==2) fp(k,iaps)=aps2*dx
+            else
+              if (ipar(k)==2) fp(k,iaps)=aps2
+            endif
+          enddo
+!
+        case ('constant-3')
+          if (lroot) then
+            print*, 'init_particles_sink: set particle 3 sink radius'
+            print*, 'init_particles_sink: aps3=', aps3
+          endif
+          do k=1,npar_loc
+            if (lsink_radius_dx_unit) then
+              if (ipar(k)==3) fp(k,iaps)=aps3*dx
+            else
+              if (ipar(k)==3) fp(k,iaps)=aps3
+            endif
+          enddo
+!
         case ('random')
           if (lroot) then
             print*, 'init_particles_sink: random sink radii'
@@ -225,6 +251,10 @@ module Particles_sink
         print*, 'create_particles_sink: entering, iproc, it, itsub=', &
             iproc, it, itsub
       endif
+!
+!  Leave the subroutine if new sink particles are never created.
+!
+      if (rhop_sink_create==-1.0) return
 !
 !  Particle block domain decomposition.
 !
@@ -930,12 +960,14 @@ module Particles_sink
       integer :: j1, j2, k1, k2
       logical, optional :: nosink_in
 !
-      real, dimension(3) :: xxps, vvps, xxkghost, runit, vunit
+      real, dimension(3) :: distx, disty, distz
+      real, dimension(3) :: xxps, vvps, xxkghost, runit, vrel, vunit
       real :: rhops, rads, rads2, dist2, dist
       real :: mindistx, mindisty, mindistz
       real :: sink_mass, vinf2, rbondi, impact_parameter
       integer, dimension(3) :: dis=(/-1,0,+1/)
       integer, dimension(1) :: ixmin, iymin, izmin
+      integer, dimension(1) :: imindistx, imindisty, imindistz
       integer :: j, k
       logical :: nosink, laccrete
 !
@@ -984,22 +1016,28 @@ module Particles_sink
 !  Find minimum distance by directional splitting. This makes it easier to
 !  take into account periodic and shear-periodic boundary conditions.
 !
-             mindistx=minval(abs(fp(k,ixp)-(xxps(1)+Lx*dis)))
-             if (mindistx<=rads) then
-               mindistz=minval(abs(fp(k,izp)-(xxps(3)+Lz*dis)))
-               if (mindistz<=rads) then
+             distx=fp(k,ixp)-(xxps(1)+Lx*dis)
+             imindistx=minloc(abs(distx))
+             mindistx=distx(imindistx(1))
+             if (abs(mindistx)<=rads) then
+               distz=fp(k,izp)-(xxps(3)+Lz*dis)
+               imindistz=minloc(abs(distz))
+               mindistz=distz(imindistz(1))
+               if (abs(mindistz)<=rads) then
                  if (lshear) then
-                   if (abs(fp(k,ixp)-(xxps(1)+Lx))<=rads) then
-                     mindisty=minval(abs(fp(k,iyp)-(xxps(2)-deltay+Ly*dis)))
-                   elseif (abs(fp(k,ixp)-xxps(1))<=rads) then
-                     mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
-                   elseif (abs(fp(k,ixp)-(xxps(1)-Lx))<=rads) then
-                     mindisty=minval(abs(fp(k,iyp)-(xxps(2)+deltay+Ly*dis)))
+                   if (imindistx(1)==1) then
+                     disty=fp(k,iyp)-(xxps(2)+deltay+Ly*dis)
+                   elseif (imindistx(1)==2) then
+                     disty=fp(k,iyp)-(xxps(2)+Ly*dis)
+                   elseif (imindistx(1)==3) then
+                     disty=fp(k,iyp)-(xxps(2)-deltay+Ly*dis)
                    endif
                  else
-                   mindisty=minval(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
+                   disty=fp(k,iyp)-(xxps(2)+Ly*dis)
                  endif
-                 if (mindisty<=rads) then
+                 imindisty=minloc(abs(disty))
+                 mindisty=disty(imindisty(1))
+                 if (abs(mindisty)<=rads) then
 !
 !  Particle is constrained to be within cube of size rads. Estimate whether
 !  the particle is also within the sphere of size rads.
@@ -1017,18 +1055,19 @@ module Particles_sink
 !
                     if (lbondi_accretion) then
                       dist=sqrt(dist2)
-                      sink_mass = rhops*dx**3
-                      vinf2 = sum((fp(k,ivpx:ivpz)-vvps)**2) -  &
+                      sink_mass=rhops*dx**3
+                      vinf2=sum((fp(k,ivpx:ivpz)-vvps)**2) -  &
                           2*gravitational_const*sink_mass/dist
                       if (vinf2<=0.0) then
                         laccrete=.true.
                       else
                         rbondi = gravitational_const*sink_mass/vinf2
-                        runit = fp(k,ixp:izp)-xxps
-                        runit = runit/sqrt(sum(runit**2))
-                        vunit = fp(k,ivpx:ivpz)-vvps
-                        vunit = vunit/sqrt(sum(vunit**2))
+                        runit  = (/mindistx,mindisty,mindistz/)/dist
+                        vrel   = fp(k,ivpx:ivpz)-vvps
+                        vunit  = vrel/sqrt(sum(vrel**2))
                         impact_parameter = dist*sqrt(1.0-sum(runit*vunit)**2)
+                        impact_parameter = impact_parameter* &
+                            sqrt(sum(vrel**2))/sqrt(vinf2)
                         if (impact_parameter>rbondi) laccrete=.false.
                       endif
                     endif
