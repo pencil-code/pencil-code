@@ -689,11 +689,11 @@ module Particles
 !
         case ('origin')
           if (lroot) print*, 'init_particles: All particles at origin'
-          fp(1:npar_loc,ixp:izp)=0.
+          fp(1:npar_loc,ixp:izp)=0.0
 !
         case ('zero-z')
           if (lroot) print*, 'init_particles: Zero z coordinate'
-          fp(1:npar_loc,izp)=0.
+          fp(1:npar_loc,izp)=0.0
 !
         case ('constant')
           if (lroot) &
@@ -781,6 +781,26 @@ module Particles
             call fatal_error('init_particles','random-sphere '// &
                  'only implemented for cartesian coordinates')
           endif
+!
+        case ('random-line-x')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          fp(1:npar_loc,iyp)=yp0
+          fp(1:npar_loc,izp)=zp0
+!
+        case ('random-line-y')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+          enddo
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          fp(1:npar_loc,ixp)=xp0
+          fp(1:npar_loc,izp)=zp0
 !
         case ('random-hole')
           if (lroot) print*, 'init_particles: Random particle positions '// &
