@@ -98,6 +98,7 @@ my %tests = (
                          conv-slab
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
+                         spherical-globaldisk
                          0d-tests/solar_system
                          mdwarf
                          sedimentation
@@ -186,7 +187,6 @@ my %tests = (
              # compile, but don't start sucessfully
              7 =>  [qw(
                           interstellar_ion
-                          spherical-globaldisk
                           turb-cylindrical-disk
                           2d-tests/A3+chi11+Ra1e5
                      )],
