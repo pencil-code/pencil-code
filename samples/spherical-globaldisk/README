@@ -1,0 +1,20 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-globaldisk
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wlyra/jpl[dot]nasa[dot]gov>
+Added:
+     14-jan-2013
+Status:
+    works since 14-jan-2003
+Recommended resolution:
+    128x32x256 (diffrho_hyper3=nu_hyper3=5e-3, hyper3-sph)
+Comments:
+    Planet-disk interaction in three dimensions, in a disk modeled 
+    in Spherical coordinates. 
+Reference:
+    Unpublished, but similar to the models presented in 
+    de Val-Borro, M. and 22 coauthors (incl. Lyra, W.): 2006,
+    “A comparative study of disc-planet interaction,” Monthly Notices
+    Roy. Astron. Soc. 370, 529-558
