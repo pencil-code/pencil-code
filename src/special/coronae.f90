@@ -904,8 +904,6 @@ module Special
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_)
 !
-!
-!
 !  10-oct-12/bing: coded
 !
       use EquationOfState, only: gamma
@@ -982,6 +980,7 @@ module Special
                     f(l,m,n,ilnTT)  = intlnT(j)-ln_unit_TT
                     lnTT_SI = f(l,m,n,ilnTT) + ln_unit_TT
                     j = j-1
+                    if (j<=0) notdone=.false.
                   endif
                 else
                   j = j + sign(1.,lnTT_SI-intlnT(j))
