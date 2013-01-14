@@ -5,34 +5,38 @@
 &run_pars
   cvsid='$Id$',
   ip=14,
-  nt=10, it1=1, it1d=500,  isave=50, itorder=3, 
+  nt=50, it1=5, it1d=500,  isave=500, itorder=3
   cdt=0.4, 
   cdtv=0.4, 
   dtmin=1e-6,
   dsnap=6.283 ,dvid=1., d2davg=6.283 
   tmax=628.30
   slice_position='w'
-  lpencil_check=T
+  wborder_int=0.05
+  wborder_ext=0.1
+  max_walltime=85500
 /
 &eos_run_pars
 /
 &hydro_run_pars
+  borderuu='initial-condition'
 /
 &density_run_pars
-  idiff='hyper3-sph','shock'
-  diffrho_hyper3=5e-3,diffrho_shock=5e-2
+  idiff='hyper3-sph' !,'shock'
+  diffrho_hyper3=5e-3 !,diffrho_shock=5e-2
+  borderlnrho='initial-condition'
 /
 &grav_run_pars
 /
 &viscosity_run_pars
-  ivisc='hyper3-sph','nu-shock'
-  nu_hyper3=5e-3,nu_shock=2.
-/
-&shock_run_pars
+  ivisc='hyper3-sph' ,'nu-shock'
+  nu_hyper3=5e-3,nu_shock=1.
 /
 &particles_run_pars
   ldragforce_dust_par=F
 /
 &particles_nbody_run_pars
   lfollow_particle=T,T
+/
+&shock_run_pars
 /

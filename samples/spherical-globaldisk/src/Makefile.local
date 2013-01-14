@@ -3,7 +3,8 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =  mpicomm
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
 
 HYDRO     =   hydro
 DENSITY   =   density
@@ -12,6 +13,7 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
+#GRAVITY   =   gravity_r
 FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock_highorder
@@ -19,4 +21,6 @@ SHOCK     =   shock_highorder
 PARTICLES_NBODY = particles_nbody
 PARTICLES = particles_dust
 
-REAL_PRECISION=double
+INITIAL_CONDITION = initial_condition/centrifugal_balance
+
+REAL_PRECISION = double
