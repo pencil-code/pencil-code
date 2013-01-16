@@ -68,10 +68,11 @@ module Special
 !
   real :: dummy
   real :: mu=1.0, Sentropy=0.0
+  logical :: ldust_pressureforce
 !
   namelist /special_init_pars/ mu, Sentropy
 !
-  namelist /special_run_pars/ mu, Sentropy
+  namelist /special_run_pars/ mu, Sentropy, ldust_pressureforce
 !
 !  integer, parameter :: nmode_max = 50
 !  real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
@@ -82,7 +83,6 @@ module Special
     real, dimension(nx,3) :: fpres_polytropic
   endtype InternalPencils
   type (InternalPencils) :: q
-
 !
   real :: const1,const2
   integer :: idiag_photom=0,idiag_photomax=0
@@ -130,9 +130,6 @@ module Special
       const1=Sentropy*mu
       const2=cs20*rho01 !*gamma1*rho01
 !
-      !print*,const1,const2
-      !stop
-!
       if (.not.lstarting) then 
         call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
         if (ierr/=0) call fatal_error('register_special','lpressuregradient_gas')
@@ -140,7 +137,7 @@ module Special
           call fatal_error('initialize_special','switch lpressuregradient_gas=F in hydro_run_pars') 
         endif
       endif  
-
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -161,7 +158,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
         if (lparticles) then 
           lpenc_requested(i_rhop)=.true.
-          lpenc_requested(i_glnrhop)=.true.
+          lpenc_requested(i_grhop)=.true.
         elseif (ldustdensity) then 
           lpenc_requested(i_rhodsum)=.true.
           lpenc_requested(i_glnrhodsum)=.true.
@@ -171,7 +168,6 @@ module Special
         endif
       endif
 !
-      !if (lfirst.and.ldt) 
       lpenc_requested(i_cs2)=.true.
 !
     endsubroutine pencil_criteria_special
@@ -198,7 +194,7 @@ module Special
 !
         if (const2/=0) then
           if (lparticles) then
-            q%fpres_photoelectric(:,j) = -const2 * p%rhop * (p%glnrhop(:,j) + p%glnrho(:,j))
+            q%fpres_photoelectric(:,j) = -const2 * (p%grhop(:,j) + p%rhop*p%glnrho(:,j))
           else
             q%fpres_photoelectric(:,j) = -const2 * p%rhodsum * (p%glnrhodsum(:,j) + p%glnrho(:,j))
           endif   
@@ -337,10 +333,12 @@ endsubroutine read_special_run_pars
 !
 !  Modified momentum equation
 !
-      do j=1,3 
-        ju=j+iuu-1
-        df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + q%fpres(:,j)
-      enddo
+      if (ldust_pressureforce) then
+        do j=1,3 
+          ju=j+iuu-1
+          df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + q%fpres(:,j)
+        enddo
+      endif
 !
       if (ldiagnos) then 
         if (idiag_photom/=0)   call sum_mn_name( q%fpres_photoelectric,idiag_photom)
