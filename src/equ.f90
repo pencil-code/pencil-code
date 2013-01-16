@@ -517,9 +517,9 @@ module Equ
         if (lchiral)          call calc_pencils_chiral(f,p)
         if (lradiation)       call calc_pencils_radiation(f,p)
         if (lshear)           call calc_pencils_shear(f,p)
-        if (lspecial)         call calc_pencils_special(f,p)
         if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
         if (lparticles)       call particles_calc_pencils(f,p)
+        if (lspecial)         call calc_pencils_special(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
