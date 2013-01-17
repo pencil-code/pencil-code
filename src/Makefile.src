@@ -812,12 +812,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ## FZ Juelich:
 ##
-#FC=mpif90 #(juropa|jj28[1-8]|juropa.fz-juelich.de)
-#CC=icc -ipo #(juropa|jj28[1-8]|juropa.fz-juelich.de)
-#AR=xiar #(juropa|jj28[1-8]|juropa.fz-juelich.de)
-##FFLAGS=-xT -ipo -O3 #(juropa|jj28[1-8]|juropa.fz-juelich.de)
-#FFLAGS=-xsse4.2 -axsse4.2 -ipo -O3 #(juropa|jj28[1-8]|juropa.fz-juelich.de)
-#FFLAGS_DOUBLE=-r8 #(juropa|jj28[1-8]|juropa.fz-juelich.de)
+#FC=mpif90 #(juropa|jj28[a-z][0-9][1-8]|juropa.fz-juelich.de)
+#CC=icc #(juropa|jj28[a-z][0-9][1-8]|juropa.fz-juelich.de)
+#AR=xiar #(juropa|jj28[a-z][0-9][1-8]|juropa.fz-juelich.de)
+#FFLAGS=-xsse4.2 -axsse4.2 -ipo -O3 #(juropa|jj28[a-z][0-9][1-8]|juropa.fz-juelich.de)
+#FFLAGS_DOUBLE=-r8 #(juropa|jj28[a-z][0-9][1-8]|juropa.fz-juelich.de)
+#CFLAGS=-ipo -O3 #(juropa|jj28[a-z][0-9][1-8]|juropa.fz-juelich.de)
 ##For single processor runs on the JUGENE frontend:
 ##FC=xlf95_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
 ##CC=xlc_r -I/bgsys/drivers/ppcfloor/comm/include #(genius1|jugene[3-4])
