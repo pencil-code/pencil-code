@@ -26,3 +26,12 @@ do
 	fi
 done
 
+for FILE in `echo "var.dat crash.dat"`
+do
+	if [ -e "$PROCDIR/$FILE" ]; then
+		if [ ! -e "$ALLPROCS/$FILE" ]; then
+			echo "collecting $FILE"
+			echo "$FILE" | $1 $SCRIPT
+		fi
+	fi
+done
