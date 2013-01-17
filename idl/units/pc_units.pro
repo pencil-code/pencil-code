@@ -39,10 +39,11 @@ COMPILE_OPT IDL2,HIDDEN
   density = double(param.unit_density)
   length = double(param.unit_length)
   velocity = double(param.unit_velocity)
-  magnetic = double(param.unit_magnetic)
+  if (any (strmatch (tag_names (param), "magnetic", /fold_case))) then magnetic = double(param.unit_magnetic)
 ;
   if (param.unit_system eq "cgs") then begin
 ;
+    default, magnetic, sqrt(4*double (!pi)/param.mu0 * density) * velocity
     object = { temperature:temperature, $
                density:density, $
                mass:param.unit_density*param.unit_length^3, $
@@ -68,6 +69,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   end else if (param.unit_system eq "SI") then begin
 ;
+    default, magnetic, sqrt (4*double (!pi)*1e-7/param.mu0 * density) * velocity
     object = { temperature:temperature, $
                density:density, $
                mass:param.unit_density*param.unit_length^3, $
