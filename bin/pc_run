@@ -481,6 +481,8 @@ sub get_mpiexec_opts {
     } elsif ($mpiexec =~ /aprun/) {
         # $mpiexec = 'aprun';     # necessary??
         push @np_opts, '-n', $ncpus;
+    } elsif ($mpiexec =~ /ibrun/) {
+        # No option is needed.
     } else {
         warn "pc_run: No clue how to tell $mpiexec to use $ncpus nodes\n";
     }
