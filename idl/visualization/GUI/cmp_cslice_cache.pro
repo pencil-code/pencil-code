@@ -525,9 +525,9 @@ pro cslice_event, event
 		WIDGET_CONTROL, jump_max, SENSITIVE = 0
 		orig_frozen = frozen
 		frozen = 1
+		previous_snapshot = selected_snapshot
 		if (num_snapshots gt 1) then begin
 			if (eventval eq "IMAGE") then cslice_save_movie, num_snapshots, /allocate
-			previous_snapshot = selected_snapshot
 			for i = num_snapshots-1, 0, -1 do begin
 				cslice_prepare_set, i
 				cslice_prepare_cube, -1
@@ -538,11 +538,6 @@ pro cslice_event, event
 				end else begin
 					wait, min_wait_time[dimensionality-1]
 				end
-			end
-			if (previous_snapshot ne 0) then begin
-				cslice_prepare_set, previous_snapshot
-				cslice_prepare_cube, -1
-				cslice_prepare_overplot
 			end
 		end else begin
 			if (eventval eq "IMAGE") then cslice_save_images, "PNG", /slices
@@ -569,6 +564,11 @@ pro cslice_event, event
 		end
 		WIDGET_CONTROL, jump_min, SENSITIVE = 1
 		WIDGET_CONTROL, jump_max, SENSITIVE = 1
+		if (previous_snapshot ne 0) then begin
+			cslice_prepare_set, previous_snapshot
+			cslice_prepare_cube, -1
+			cslice_prepare_overplot
+		end
 
 		if (show_cuts) then begin
 			window, 0, xsize=8, ysize=8, retain=2
