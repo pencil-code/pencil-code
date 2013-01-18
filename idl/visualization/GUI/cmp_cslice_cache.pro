@@ -540,6 +540,7 @@ pro cslice_event, event
 				end
 			end
 			if (previous_snapshot ne 0) then begin
+				if (eventval ne "IMAGE") then wait, 1+2*min_wait_time[dimensionality-1]
 				cslice_prepare_set, previous_snapshot
 				cslice_prepare_cube, -1
 				cslice_prepare_overplot
