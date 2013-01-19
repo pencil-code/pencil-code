@@ -184,6 +184,7 @@ module Entropy
 !  Decide if operator splitting is required.
 !
       lsplit_update = lKI02
+      if (lsplit_update .and. .not. ldensity) call fatal_error('initialize_entropy', 'Density is required for split_update_energy.')
 !
 !  Initialize the KI02 terms.
 !
@@ -791,14 +792,15 @@ module Entropy
 !  Update the thermal energy by integrating the operator split energy
 !  terms.
 !
-!  07-aug-11/ccyang: coded
+!  19-jan-13/ccyang: coded
 !
+      use Boundcond, only: update_ghosts
       use Density, only: impose_density_floor
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      integer, dimension(nx,ny,nz) :: status
-      real, dimension(nx,ny,nz) :: delta_eth
+      integer, dimension(mx,my,mz) :: status
+      real, dimension(mx,my,mz) :: delta_eth
       character(len=256) :: message
 !
 !  Impose density and energy floors.
@@ -806,27 +808,30 @@ module Entropy
       call impose_density_floor(f)
       call impose_energy_floor(f)
 !
+!  Update the ghost cells.
+!
+      call update_ghosts(f, ieth, ieth)
+      if (ldensity_nolog) then
+          call update_ghosts(f, irho, irho)
+      else
+          call update_ghosts(f, ilnrho, ilnrho)
+      endif
+!
 !  Update the energy.
 !
       split_update: if (lsplit_update) then
-        if (.not. ldensity) call fatal_error('split_update_energy', 'density is required')
-!
         if (ldensity_nolog) then
-          call get_delta_eth(t, dt, f(l1:l2,m1:m2,n1:n2,ieth), f(l1:l2,m1:m2,n1:n2,irho), delta_eth, status)
+          call get_delta_eth(t, dt, f(:,:,:,ieth), f(:,:,:,irho), delta_eth, status)
         else
-          call get_delta_eth(t, dt, f(l1:l2,m1:m2,n1:n2,ieth), exp(f(l1:l2,m1:m2,n1:n2,ilnrho)), delta_eth, status)
+          call get_delta_eth(t, dt, f(:,:,:,ieth), exp(f(:,:,:,ilnrho)), delta_eth, status)
         endif
 !
         if (any(status < 0)) then
           write(message,10) count(status == -1), ' cells had underflows and ', &
                             count(status == -2), ' cells reached maximum iterations.'
-       10 format(1x, i3, a, i3, a)
+          10 format(1x, i3, a, i3, a)
           call warning('split_update_energy', trim(message))
         endif
-!
-!  Detonate those cells violating the Jeans criterion.
-!
-        if (ldetonate) call detonate(f, status == 1)
 !
         if (ldebug) then
           where(status < 0) status = rk_nmax
@@ -834,7 +839,11 @@ module Entropy
             minval(status), maxval(status), real(sum(status)) / real(nw)
         endif
 !
-        f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta_eth
+        f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta_eth(l1:l2,m1:m2,n1:n2)
+!
+!  Detonate those cells violating the Jeans criterion.
+!
+        if (ldetonate) call detonate(f, status == 1)
       endif split_update
 !
     endsubroutine
@@ -1057,12 +1066,12 @@ module Entropy
       use Boundcond
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      logical, dimension(nx,ny,nz), intent(in) :: mask
+      logical, dimension(mx,my,mz), intent(in) :: mask
 !
       real, dimension(nx,ny,nz,3) :: delta
       real, dimension(nx,3) :: pv
       real, dimension(nx) :: ps
-      integer :: i, j, k, ii, jj, kk, imn, n
+      integer :: i, j, k, imn, n
       real :: divu, r
 !
 !  Prepare for communicating the cells that should be detonated.
@@ -1070,12 +1079,9 @@ module Entropy
       n = 0
       f(:,:,:,idet) = 0.
       zscan: do k = n1, n2
-        kk = k - nghost
         yscan: do j = m1, m2
-          jj = j - nghost
           xscan: do i = l1, l2
-            ii = i - nghost
-            trigger: if (mask(ii,jj,kk)) then
+            trigger: if (mask(i,j,k)) then
               divu = 0.
               if (nxgrid > 1) divu = divu + dx_1(i) * (f(i+1,j,k,iux) - f(i-1,j,k,iux))
               if (nygrid > 1) divu = divu + dy_1(j) * (f(i,j+1,k,iuy) - f(i,j-1,k,iuy))
