@@ -31,6 +31,7 @@ module Particles_sink
 !
   real :: sink_birth_radius=1.0, sink_radius=0.0, rhop_sink_create=-1.0
   real :: aps0=0.0, aps1=0.0, aps2=0.0, aps3=0.0
+  real :: bondi_accretion_grav_smooth=1.35
   real, pointer :: tstart_selfgrav, gravitational_const
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
@@ -43,11 +44,13 @@ module Particles_sink
   namelist /particles_sink_init_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
       lrhop_roche_unit, initaps, aps0, aps1, aps2, aps3, lbondi_accretion, &
-      lselfgravity_sinkparticles, lsink_communication_all_to_all
+      lselfgravity_sinkparticles, lsink_communication_all_to_all, &
+      bondi_accretion_grav_smooth
 !
   namelist /particles_sink_run_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
-      lrhop_roche_unit, lbondi_accretion, lselfgravity_sinkparticles
+      lrhop_roche_unit, lbondi_accretion, lselfgravity_sinkparticles, &
+      bondi_accretion_grav_smooth
 !
   contains
 !***********************************************************************
@@ -961,10 +964,10 @@ module Particles_sink
       logical, optional :: nosink_in
 !
       real, dimension(3) :: distx, disty, distz
-      real, dimension(3) :: xxps, vvps, xxkghost, runit, vrel, vunit
+      real, dimension(3) :: xxps, vvps, xxkghost, runit, vvrel, vunit
       real :: rhops, rads, rads2, dist2, dist
       real :: mindistx, mindisty, mindistz
-      real :: sink_mass, vinf2, rbondi, impact_parameter
+      real :: sink_mass, vinf2, vrel, vrel2, rbondi, impact_parameter
       integer, dimension(3) :: dis=(/-1,0,+1/)
       integer, dimension(1) :: ixmin, iymin, izmin
       integer, dimension(1) :: imindistx, imindisty, imindistz
@@ -1053,23 +1056,46 @@ module Particles_sink
 !  In absence of gas drag we should also allow for accretion within the
 !  gravitational cross section.
 !
-                    if (lbondi_accretion) then
-                      dist=sqrt(dist2)
+                    if (lbondi_accretion .and. fp(k,iaps)==0.0) then
                       sink_mass=rhops*dx**3
-                      vinf2=sum((fp(k,ivpx:ivpz)-vvps)**2) -  &
-                          2*gravitational_const*sink_mass/dist
+                      vvrel = fp(k,ivpx:ivpz)-vvps
+                      vrel2 = sum(vvrel**2)
+                      vrel  = sqrt(vrel2)
+                      dist  = sqrt(dist2)
+!
+!  The Bondi radius is rB = G*M/vinf^2. If rB is smaller than a grid cell,
+!  then the gravitational acceleration of the particle is unresolved and the
+!  state at infinity is equal to the current state.
+!
+                      vinf2 = vrel2-2*gravitational_const*sink_mass/ &
+                          max(dist,bondi_accretion_grav_smooth*dx)
+                      rbondi = gravitational_const*sink_mass/vinf2
+                      runit  = (/mindistx,mindisty,mindistz/)/dist
+                      vunit  = vvrel/vrel
+!
+!  The speed at infinity is known from energy conservation (ignoring all other
+!  forces than the gravity between the particle and the sink particle).
+!
+!    vinf^2 = vrel^2 - 2*G*M/r
+!
+!  The impact parameter is found from the relative velocity and position as
+!
+!    b = r*sqrt[1-(r.v)/(r*v)]
+!
+!  We need to know the original impact parameter
+!
+!    binf = b*v/vinf
+!
+!
+!  Accrete particle if it is gravitationally bound to sink particle.
+!
                       if (vinf2<=0.0) then
                         laccrete=.true.
                       else
-                        rbondi = gravitational_const*sink_mass/vinf2
-                        runit  = (/mindistx,mindisty,mindistz/)/dist
-                        vrel   = fp(k,ivpx:ivpz)-vvps
-                        vunit  = vrel/sqrt(sum(vrel**2))
                         impact_parameter = dist*sqrt(1.0-sum(runit*vunit)**2)
-                        impact_parameter = impact_parameter* &
-                            sqrt(sum(vrel**2))/sqrt(vinf2)
-                        if (impact_parameter>rbondi) laccrete=.false.
+                        impact_parameter = impact_parameter*vrel/sqrt(vinf2)
                       endif
+                      if (impact_parameter>rbondi) laccrete=.false.
                     endif
 !
                     if (dist2<=rads2 .and. laccrete) then
