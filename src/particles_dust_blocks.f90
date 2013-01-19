@@ -40,6 +40,9 @@ module Particles
 !
   real, dimension (npar_species) :: tausp_species=0.0, tausp1_species=0.0
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
+  real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
+  real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
+  real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -93,7 +96,9 @@ module Particles
       Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
-      lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks
+      lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
+      xp1, yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
+      xp3, yp3, zp3, vpx3, vpy3, vpz3
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -424,6 +429,39 @@ module Particles
           fp(1:npar_loc,ixp)=xp0
           fp(1:npar_loc,iyp)=yp0
           fp(1:npar_loc,izp)=zp0
+!
+        case ('constant-1')
+          if (lroot) &
+              print*, 'init_particles: Particle 1 at x,y,z=', xp1, yp1, zp1
+          do k=1,npar_loc
+            if (ipar(k)==1) then
+              fp(k,ixp)=xp1
+              fp(k,iyp)=yp1
+              fp(k,izp)=zp1
+            endif
+          enddo
+!
+        case ('constant-2')
+          if (lroot) &
+              print*, 'init_particles: Particle 2 at x,y,z=', xp2, yp2, zp2
+          do k=1,npar_loc
+            if (ipar(k)==2) then
+              fp(k,ixp)=xp2
+              fp(k,iyp)=yp2
+              fp(k,izp)=zp2
+            endif
+          enddo
+!
+        case ('constant-3')
+          if (lroot) &
+              print*, 'init_particles: Particle 2 at x,y,z=', xp3, yp3, zp3
+          do k=1,npar_loc
+            if (ipar(k)==3) then
+              fp(k,ixp)=xp3
+              fp(k,iyp)=yp3
+              fp(k,izp)=zp3
+            endif
+          enddo
 !
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -826,6 +864,42 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(1:npar_loc,ivpy)=vpy0
             fp(1:npar_loc,ivpz)=vpz0
           endif
+!
+        case ('constant-1')
+          if (lroot) &
+              print*, 'init_particles: Particle 1 velocity vx,vy,vz=', &
+              vpx1, vpy1, vpz1
+          do k=1,npar_loc
+            if (ipar(k)==1) then
+              fp(k,ivpx)=vpx1
+              fp(k,ivpy)=vpy1
+              fp(k,ivpz)=vpz1
+            endif
+          enddo
+!
+        case ('constant-2')
+          if (lroot) &
+              print*, 'init_particles: Particle 2 velocity vx,vy,vz=', &
+              vpx2, vpy2, vpz2
+          do k=1,npar_loc
+            if (ipar(k)==2) then
+              fp(k,ivpx)=vpx2
+              fp(k,ivpy)=vpy2
+              fp(k,ivpz)=vpz2
+            endif
+          enddo
+!
+        case ('constant-3')
+          if (lroot) &
+              print*, 'init_particles: Particle 3 velocity vx,vy,vz=', &
+              vpx3, vpy3, vpz3
+          do k=1,npar_loc
+            if (ipar(k)==3) then
+              fp(k,ivpx)=vpx3
+              fp(k,ivpy)=vpy3
+              fp(k,ivpz)=vpz3
+            endif
+          enddo
 !
         case ('sinwave-phase')
           if (lroot) print*, 'init_particles: sinwave-phase'
