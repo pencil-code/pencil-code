@@ -29,7 +29,7 @@ module Particles_sink
 !
   include 'particles_sink.h'
 !
-  real :: sink_birth_radius=0.0, sink_radius=0.0, rhop_sink_create=-1.0
+  real :: sink_birth_radius=1.0, sink_radius=0.0, rhop_sink_create=-1.0
   real :: aps0=0.0, aps1=0.0, aps2=0.0, aps3=0.0
   real, pointer :: tstart_selfgrav, gravitational_const
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
