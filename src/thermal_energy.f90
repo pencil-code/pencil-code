@@ -36,7 +36,7 @@ module Entropy
   real :: energy_floor = 0., temperature_floor = 0.
   real :: rk_eps = 1.e-3
   real :: nu_z=0., KI_csz=0.
-  real :: detonation_factor = 1., detonation_power = 1., divu_crit = 0.
+  real :: detonation_factor = 1., detonation_power = 1.
   integer :: rk_nmax = 100
   integer :: njeans = 4
   integer :: idet = 0
@@ -64,7 +64,7 @@ module Entropy
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, nu_z, KI_csz, &
       ljeans_floor, njeans, &
-      ldetonate, detonation_factor, detonation_power, divu_crit, feedback
+      ldetonate, detonation_factor, detonation_power, feedback
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1071,6 +1071,7 @@ module Entropy
       real, dimension(nx,ny,nz,3) :: delta
       real, dimension(nx,3) :: pv
       real, dimension(nx) :: ps
+      real, dimension(-3:3) :: uu
       integer :: i, j, k, imn, n
       real :: divu, r
 !
@@ -1083,10 +1084,19 @@ module Entropy
           xscan: do i = l1, l2
             trigger: if (mask(i,j,k)) then
               divu = 0.
-              if (nxgrid > 1) divu = divu + dx_1(i) * (f(i+1,j,k,iux) - f(i-1,j,k,iux))
-              if (nygrid > 1) divu = divu + dy_1(j) * (f(i,j+1,k,iuy) - f(i,j-1,k,iuy))
-              if (nzgrid > 1) divu = divu + dz_1(k) * (f(i,j,k+1,iuz) - f(i,j,k-1,iuz))
-              converge: if (divu < -divu_crit) then
+              duxdx: if (nxgrid > 1) then
+                uu = f(i-3:i+3,j,k,iux)
+                divu = divu + derivative(uu, dx_1(i))
+              endif duxdx
+              duydy: if (nygrid > 1) then
+                uu = f(i,j-3:j+3,k,iuy)
+                divu = divu + derivative(uu, dy_1(j))
+              endif duydy
+              duzdz: if (nzgrid > 1) then
+                uu = f(i,j,k-3:k+3,iuz)
+                divu = divu + derivative(uu, dz_1(k))
+              endif duzdz
+              converge: if (divu < 0.) then
                 n = n + 1
                 f(i,j,k,idet) = deposit * f(i,j,k,irho)**detonation_power
               endif converge
@@ -1167,5 +1177,21 @@ module Entropy
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_entropy
+!***********************************************************************
+    real function derivative(a, dx1)
+!
+!  Returns the first derivative at the center of a seven-point data
+!  array.
+!
+!  19-jan-13/ccyang: coded.
+!
+      real, dimension(-3:3), intent(in) :: a
+      real, intent(in) :: dx1
+!
+      real, parameter :: sixtieth = 1. / 60.
+!
+      derivative = sixtieth * dx1 * ((a(3) - a(-3)) - 9.0 * (a(2) - a(-2)) + 45.0 * (a(1) - a(-1)))
+!
+    endfunction
 !***********************************************************************
 endmodule Entropy
