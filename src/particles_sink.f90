@@ -1086,16 +1086,13 @@ module Particles_sink
 !
 !    binf = b*v/vinf
 !
-!
-!  Accrete particle if it is gravitationally bound to sink particle.
-!
                       if (vinf2<=0.0) then
                         laccrete=.true.
                       else
                         impact_parameter = dist*sqrt(1.0-sum(runit*vunit)**2)
                         impact_parameter = impact_parameter*vrel/sqrt(vinf2)
+                        if (impact_parameter>rbondi) laccrete=.false.
                       endif
-                      if (impact_parameter>rbondi) laccrete=.false.
                     endif
 !
                     if (dist2<=rads2 .and. laccrete) then
