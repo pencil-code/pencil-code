@@ -24,7 +24,7 @@ module Initcond
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
-  public :: beltrami_complex,bhyperz
+  public :: beltrami_complex, beltrami_old, bhyperz
   public :: rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: modes, modev, modeb, crazy
@@ -1453,7 +1453,7 @@ module Initcond
 !
     endsubroutine bjumpz
 !***********************************************************************
-    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase)
+    subroutine beltrami_old(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase)
 !
 !  Beltrami field (as initial condition)
 !
@@ -1483,9 +1483,100 @@ module Initcond
 !
       if (present(kx)) then
         k=abs(kx)
-        if (k==0) print*,'beltrami: k must not be zero!'
+        if (k==0) print*,'beltrami_old: k must not be zero!'
         cfuncx=sign(sqrt(abs(ampl/k)),kx)*cos(k*x+ph)
         sfuncx=sign(sqrt(abs(ampl/k)),kx)*sin(k*x+ph)
+        if (present(kx2)) sfuncx=sfuncx*sin(kx2*x+ph)
+        if (ampl==0) then
+          if (lroot) print*,'beltrami_old: ampl=0; kx=',k
+        elseif (ampl>0) then
+          if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): kx,i=',k,i
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
+        elseif (ampl<0) then
+          if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): kx,i=',k,i
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+        endif
+      endif
+!
+!  set y-dependent Beltrami field
+!
+      if (present(ky)) then
+        k=abs(ky)
+        if (k==0) print*,'beltrami_old: k must not be zero!'
+        cfuncy=sign(sqrt(abs(ampl/k)),ky)*cos(k*y+ph)
+        sfuncy=sign(sqrt(abs(ampl/k)),ky)*sin(k*y+ph)
+        if (present(ky2)) sfuncy=sfuncy*sin(ky2*y+ph)
+        if (ampl==0) then
+          if (lroot) print*,'beltrami_old: ampl=0; ky=',k
+        elseif (ampl>0) then
+          if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): ky,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+        elseif (ampl<0) then
+          if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): ky,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-dependent Beltrami field
+!
+      if (present(kz)) then
+        k=abs(kz)
+        if (k==0) print*,'beltrami_old: k must not be zero!'
+        cfuncz=sign(sqrt(abs(ampl/k)),kz)*cos(k*z+ph)
+        sfuncz=sign(sqrt(abs(ampl/k)),kz)*sin(k*z+ph)
+        if (present(kz2)) sfuncz=sfuncz*sin(kz2*z+ph)
+        if (ampl==0) then
+          if (lroot) print*,'beltrami_old: ampl=0; kz=',k
+        elseif (ampl>0) then
+          if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): kz,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
+        elseif (ampl<0) then
+          if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): kz,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine beltrami_old
+!***********************************************************************
+    subroutine beltrami(ampl,f,i,kx,ky,kz,kx2,ky2,kz2,phase)
+!
+!  Beltrami field (as initial condition)
+!
+!  19-jun-02/axel: coded
+!   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx) :: sfuncx,cfuncx
+      real, dimension (my) :: sfuncy,cfuncy
+      real, dimension (mz) :: sfuncz,cfuncz
+      real,optional :: kx,ky,kz,kx2,ky2,kz2,phase
+      real :: ampl,k=1.,ph
+!
+!  possibility of shifting the Beltrami wave by phase ph
+!
+      if (present(phase)) then
+        if (lroot) print*,'Beltrami: phase=',phase
+        ph=phase
+      else
+        ph=0.
+      endif
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  set x-dependent Beltrami field
+!
+      if (present(kx)) then
+        k=kx
+        if (k==0) print*,'beltrami: k must not be zero!'
+        cfuncx=cos(k*x+ph)
+        sfuncx=sin(k*x+ph)
         if (present(kx2)) sfuncx=sfuncx*sin(kx2*x+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kx=',k
@@ -1503,10 +1594,10 @@ module Initcond
 !  set y-dependent Beltrami field
 !
       if (present(ky)) then
-        k=abs(ky)
+        k=ky
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncy=sign(sqrt(abs(ampl/k)),ky)*cos(k*y+ph)
-        sfuncy=sign(sqrt(abs(ampl/k)),ky)*sin(k*y+ph)
+        cfuncy=cos(k*y+ph)
+        sfuncy=sin(k*y+ph)
         if (present(ky2)) sfuncy=sfuncy*sin(ky2*y+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; ky=',k
@@ -1524,11 +1615,8 @@ module Initcond
 !  set z-dependent Beltrami field
 !
       if (present(kz)) then
-        !k=abs(kz)
         k=kz
         if (k==0) print*,'beltrami: k must not be zero!'
-        !cfuncz=sign(sqrt(abs(ampl/k)),kz)*cos(k*z+ph)
-        !sfuncz=sign(sqrt(abs(ampl/k)),kz)*sin(k*z+ph)
         cfuncz=cos(k*z+ph)
         sfuncz=sin(k*z+ph)
         if (ampl==0) then
