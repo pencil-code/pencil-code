@@ -8,7 +8,8 @@
 &hydro_init_pars
 /
 &magnetic_init_pars
-  initaa='gaussian-noise','Beltrami-z'
+  !initaa='gaussian-noise','Beltrami-z'
+  initaa='gaussian-noise','Beltrami-z-old'
   amplaa=1e-3,-0.01
 /
 &testfield_init_pars
