@@ -125,8 +125,9 @@ module Entropy
 !
 ! Variables for the detonations.
 !
+  logical, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: mask_sphere = .false.
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: smooth = 0.
-  integer :: nx_smooth = 0, ny_smooth = 0, nz_smooth = 0, nyz = ny * nz
+  integer :: nxs = 0, nys = 0, nzs = 0, nyz = ny * nz
   real :: deposit = 0.
 !
   contains
@@ -212,6 +213,7 @@ module Entropy
 !
       Jeans: if (ljeans_floor) then
         if (nzgrid /= 1) then
+          call fatal_error('initialize_entropy', '3D Jeans floor under construction')
         else
           Jeans_c0 = real(njeans) * G_Newton * dxmax / (gamma * gamma_m1)
         endif
@@ -232,18 +234,21 @@ module Entropy
 !       Smoothing kernal
         smooth(0,0,0) = 1.
         xdir: if (nxgrid > 1) then
-          nx_smooth = nghost
-          forall (i=-nghost:nghost, i/=0) smooth(i,0,0) = smooth(0,0,0) * exp(-real(i * i))
+          nxs = nghost
+          forall (i=-nghost:nghost, i/=0) smooth(i,0,0) = smooth(0,0,0) * exp(-0.5 * real(i * i))
         endif xdir
         ydir: if (nygrid > 1) then
-          ny_smooth = nghost
-          forall (i=-nghost:nghost, j=-nghost:nghost, j/=0) smooth(i,j,0) = smooth(i,0,0) * exp(-real(j * j))
+          nys = nghost
+          forall (i=-nghost:nghost, j=-nghost:nghost, j/=0) smooth(i,j,0) = smooth(i,0,0) * exp(-0.5 * real(j * j))
         endif ydir
         zdir: if (nzgrid > 1) then
-          nz_smooth = nghost
-          forall (i=-nghost:nghost, j=-nghost:nghost, k=-nghost:nghost, k/=0) smooth(i,j,k) = smooth(i,j,0) * exp(-real(k * k))
+          nzs = nghost
+          forall (i=-nghost:nghost, j=-nghost:nghost, k=-nghost:nghost, k/=0) &
+            smooth(i,j,k) = smooth(i,j,0) * exp(-0.5 * real(k * k))
         endif zdir
         smooth = smooth / sum(smooth)
+!       Spherical mask
+        forall (i=-nxs:nxs, j=-nys:nys, k=-nzs:nzs, i*i+j*j+k*k <= 2**2) mask_sphere(i,j,k) = .true.
       endif detonate
 !
     endsubroutine initialize_entropy
@@ -1056,23 +1061,24 @@ module Entropy
 !
     endsubroutine
 !***********************************************************************
-    subroutine detonate(f, mask)
+    subroutine detonate(f, unstable)
 !
 !  Detonate specified cells by specified method.
 !
-!  15-aug-12/ccyang: coded.
+!  20-jan-13/ccyang: coded.
 !
       use Mpicomm
       use Boundcond
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      logical, dimension(mx,my,mz), intent(in) :: mask
+      logical, dimension(mx,my,mz), intent(in) :: unstable
 !
       real, dimension(nx,ny,nz,3) :: delta
       real, dimension(nx,3) :: pv
       real, dimension(nx) :: ps
       real, dimension(-3:3) :: uu
       integer :: i, j, k, imn, n
+      integer :: ll1, ll2, mm1, mm2, nn1, nn2
       real :: divu, r
 !
 !  Prepare for communicating the cells that should be detonated.
@@ -1080,20 +1086,29 @@ module Entropy
       n = 0
       f(:,:,:,idet) = 0.
       zscan: do k = n1, n2
+        nn1 = k - nzs
+        nn2 = k + nzs
         yscan: do j = m1, m2
+          mm1 = j - nys
+          mm2 = j + nys
           xscan: do i = l1, l2
-            trigger: if (mask(i,j,k)) then
+            ll1 = i - nxs
+            ll2 = i + nxs
+            trigger: if (maxval(f(ll1:ll2,mm1:mm2,nn1:nn2,irho), &
+                                mask=mask_sphere(-nxs:nxs,-nys:nys,-nzs:nzs)) == f(i,j,k,irho) .and. &
+                         all(unstable(ll1:ll2,mm1:mm2,nn1:nn2) .and. mask_sphere(-nxs:nxs,-nys:nys,-nzs:nzs) &
+                                                               .eqv. mask_sphere(-nxs:nxs,-nys:nys,-nzs:nzs))) then
               divu = 0.
-              duxdx: if (nxgrid > 1) then
-                uu = f(i-3:i+3,j,k,iux)
+              duxdx: if (nxs > 0) then
+                uu = f(ll1:ll2,j,k,iux)
                 divu = divu + derivative(uu, dx_1(i))
               endif duxdx
-              duydy: if (nygrid > 1) then
-                uu = f(i,j-3:j+3,k,iuy)
+              duydy: if (nys > 0) then
+                uu = f(i,mm1:mm2,k,iuy)
                 divu = divu + derivative(uu, dy_1(j))
               endif duydy
-              duzdz: if (nzgrid > 1) then
-                uu = f(i,j,k-3:k+3,iuz)
+              duzdz: if (nzs > 0) then
+                uu = f(i,j,nn1:nn2,iuz)
                 divu = divu + derivative(uu, dz_1(k))
               endif duzdz
               converge: if (divu < 0.) then
@@ -1130,9 +1145,9 @@ module Entropy
         case ('energy') dispatch1
 !         Energy feedback
           ps = 0.
-          zdir: do k = -nz_smooth, nz_smooth
-            ydir: do j = -ny_smooth, ny_smooth
-              xdir: do i = -nx_smooth, nx_smooth
+          zdir: do k = -nzs, nzs
+            ydir: do j = -nys, nys
+              xdir: do i = -nxs, nxs
                 ps = ps + smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet)
               enddo xdir
             enddo ydir
@@ -1142,9 +1157,9 @@ module Entropy
         case ('momentum') dispatch1
 !         Momentum feedback
           pv = 0.
-          zdirm: do k = -nz_smooth, nz_smooth
-            ydirm: do j = -ny_smooth, ny_smooth
-              xdirm: do i = -nx_smooth, nx_smooth
+          zdirm: do k = -nzs, nzs
+            ydirm: do j = -nys, nys
+              xdirm: do i = -nxs, nxs
                 r = sqrt(real(i * i + j * j + k * k))
                 not_center: if (r > 0.) then
                   ps = smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet) / r
