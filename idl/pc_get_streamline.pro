@@ -139,9 +139,9 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 		if (ny+2*nghost ne n_elements (y)) then message, "ERROR: the field data doesn't fit to the Y-grid coordinates."
 		if (nz+2*nghost ne n_elements (z)) then message, "ERROR: the field data doesn't fit to the Z-grid coordinates."
 		; Convert anchor point into equidistant unit grid coordinates
-		pos[0] = pc_find_index (anchor[0], x, mx) - nghost
-		pos[1] = pc_find_index (anchor[1], y, my) - nghost
-		pos[2] = pc_find_index (anchor[2], z, mz) - nghost
+		pos[0] = pc_find_index (anchor[0], x, num=mx) - nghost
+		pos[1] = pc_find_index (anchor[1], y, num=my) - nghost
+		pos[2] = pc_find_index (anchor[2], z, num=mz) - nghost
 	end
 
 	; Iterate finding points on the streamline

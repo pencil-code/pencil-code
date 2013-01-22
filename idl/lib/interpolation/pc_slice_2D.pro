@@ -107,9 +107,9 @@ function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 		for pv = 0, num_vert-1 do begin
 
 			; Find neighbouring grid coordinates of the target coordinate
-			px = pc_find_index (target[ph,pv,0], x, x_size)
-			py = pc_find_index (target[ph,pv,1], y, y_size)
-			pz = pc_find_index (target[ph,pv,2], z, z_size)
+			px = pc_find_index (target[ph,pv,0], x, num=x_size, /round)
+			py = pc_find_index (target[ph,pv,1], y, num=y_size, /round)
+			pz = pc_find_index (target[ph,pv,2], z, num=z_size, /round)
 			if (target[ph,pv,0] lt x[px]) then px -= 1
 			if (target[ph,pv,1] lt y[py]) then py -= 1
 			if (target[ph,pv,2] lt z[pz]) then pz -= 1

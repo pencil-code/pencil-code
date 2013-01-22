@@ -63,7 +63,7 @@ function pc_destretch, in, source, target=target, dim=dim
 	num_layers = (size (out))[dim]
 	for pos = 0, num_layers-1 do begin
 
-		pos_below = find_array_index (source, target[pos], /lower)
+		pos_below = floor (pc_find_index (target[pos], source, num=in_layers))
 		layer_pos = pos_below
 		result = execute ("below = in["+dim_str+"]")
 		if (not result) then message, "ERROR: can't get below layer "+strtrim (layer_pos, 2)+"."

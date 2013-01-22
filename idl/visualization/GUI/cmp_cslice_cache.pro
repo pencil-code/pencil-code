@@ -128,7 +128,7 @@ pro cslice_event, event
 	end
 	'COX': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		px = pc_find_index (pos, coord.x, num_x)
+		px = pc_find_index (pos, coord.x, num=num_x, /round)
 		if (event.update) then WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
 		DRAW_IMAGE_1 = 1
@@ -136,7 +136,7 @@ pro cslice_event, event
 	end
 	'COY': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		py = pc_find_index (pos, coord.y, num_y)
+		py = pc_find_index (pos, coord.y, num=num_y, /round)
 		if (event.update) then WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
 		DRAW_IMAGE_2 = 1
@@ -144,7 +144,7 @@ pro cslice_event, event
 	end
 	'COZ': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		pz = pc_find_index (pos, coord.z, num_z)
+		pz = pc_find_index (pos, coord.z, num=num_z, /round)
 		if (event.update) then WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 		DRAW_IMAGE_3 = 1
@@ -178,8 +178,8 @@ pro cslice_event, event
 			last_pz = pz
 			py = event.x / bin_y > 0 < (num_y-1)
 			pz = event.y / bin_z > 0 < (num_z-1)
-			if (destretch[1]) then py = pc_find_index (py * (coord.y[num_y-1] - coord.y[0]) / (num_y-1) + coord.y[0], coord.y, num_y)
-			if (destretch[2]) then pz = pc_find_index (pz * (coord.z[num_z-1] - coord.z[0]) / (num_z-1) + coord.z[0], coord.z, num_z)
+			if (destretch[1]) then py = pc_find_index (py * (coord.y[num_y-1] - coord.y[0]) / (num_y-1) + coord.y[0], coord.y, num=num_y)
+			if (destretch[2]) then pz = pc_find_index (pz * (coord.z[num_z-1] - coord.z[0]) / (num_z-1) + coord.z[0], coord.z, num=num_z)
 			if ((py ne last_py) or (pz ne last_pz)) then begin
 				WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
 				WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
@@ -198,8 +198,8 @@ pro cslice_event, event
 			last_pz = pz
 			px = event.x / bin_x > 0 < (num_x-1)
 			pz = event.y / bin_z > 0 < (num_z-1)
-			if (destretch[0]) then px = pc_find_index (px * (coord.x[num_x-1] - coord.x[0]) / (num_x-1) + coord.x[0], coord.x, num_x)
-			if (destretch[2]) then pz = pc_find_index (pz * (coord.z[num_z-1] - coord.z[0]) / (num_z-1) + coord.z[0], coord.z, num_z)
+			if (destretch[0]) then px = pc_find_index (px * (coord.x[num_x-1] - coord.x[0]) / (num_x-1) + coord.x[0], coord.x, num=num_x)
+			if (destretch[2]) then pz = pc_find_index (pz * (coord.z[num_z-1] - coord.z[0]) / (num_z-1) + coord.z[0], coord.z, num=num_z)
 			if ((px ne last_px) or (pz ne last_pz)) then begin
 				WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
 				WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
@@ -218,8 +218,8 @@ pro cslice_event, event
 			last_py = py
 			px = event.x / bin_x > 0 < (num_x-1)
 			py = event.y / bin_y > 0 < (num_y-1)
-			if (destretch[0]) then px = pc_find_index (px * (coord.x[num_x-1] - coord.x[0]) / (num_x-1) + coord.x[0], coord.x, num_x)
-			if (destretch[1]) then py = pc_find_index (py * (coord.y[num_y-1] - coord.y[0]) / (num_y-1) + coord.y[0], coord.y, num_y)
+			if (destretch[0]) then px = pc_find_index (px * (coord.x[num_x-1] - coord.x[0]) / (num_x-1) + coord.x[0], coord.x, num=num_x)
+			if (destretch[1]) then py = pc_find_index (py * (coord.y[num_y-1] - coord.y[0]) / (num_y-1) + coord.y[0], coord.y, num=num_y)
 			if ((px ne last_px) or (py ne last_py)) then begin
 				WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
 				WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
@@ -647,9 +647,9 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	ox = floor (bin_x / 2.0)
 	oy = floor (bin_y / 2.0)
 	oz = floor (bin_z / 2.0)
-	if (destretch[0]) then cx = pc_find_index (coord.x[px], pc_destretch (coord.x, coord.x, dim=1), num_x) else cx = px
-	if (destretch[1]) then cy = pc_find_index (coord.y[py], pc_destretch (coord.y, coord.y, dim=1), num_y) else cy = py
-	if (destretch[2]) then cz = pc_find_index (coord.z[pz], pc_destretch (coord.z, coord.z, dim=1), num_z) else cz = pz
+	if (destretch[0]) then cx = pc_find_index (coord.x[px], pc_destretch (coord.x, coord.x, dim=1), num=num_x) else cx = px
+	if (destretch[1]) then cy = pc_find_index (coord.y[py], pc_destretch (coord.y, coord.y, dim=1), num=num_y) else cy = py
+	if (destretch[2]) then cz = pc_find_index (coord.z[pz], pc_destretch (coord.z, coord.z, dim=1), num=num_z) else cz = pz
 
 	num_over_x = n_elements (field_x_indices)
 	num_over_y = n_elements (field_y_indices)
