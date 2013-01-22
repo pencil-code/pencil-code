@@ -179,8 +179,6 @@ module Special
 !  
 !  For the photoelectric pressure, P=cs20/(gamma*/rho0) * rho*rhod
 !
-      use Mpicomm
-!
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       integer :: j
@@ -212,8 +210,6 @@ module Special
 !  This subroutine calculates the full potential due to the turbulence.
 !
 !  03-oct-12/wlad: coded
-!
-      use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, optional :: lstarting
