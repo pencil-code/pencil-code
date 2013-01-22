@@ -203,6 +203,8 @@ module Special
 !
       q%fpres = q%fpres_photoelectric + q%fpres_polytropic
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine special_before_boundary(f,lstarting)
@@ -219,6 +221,8 @@ module Special
       else
         lstart=.false.
       endif
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
