@@ -168,6 +168,8 @@ module InitialCondition
 !   array with indices of fixed points to discard (double and too close ones)
     integer :: discard(1000)
 !
+    real :: F_L ! auxiliary to make H=A.B gauge-independent
+!
     if (trace_field == 'bb' .and. ipz == 0) then
 !     allocate memory for the traced field
       allocate(vv(nx,ny,nz,3))
@@ -503,6 +505,16 @@ module InitialCondition
         enddo
       endif
     endif
+!
+!   Apply boundary condition which makes A.B gauge-independent.
+!   This requires global communication and only works for nproc_z = 1.
+!
+    if ((ipx == 0) .and. (ipy == 0)) then
+        F_L = sum(f(l1,m1,n1:n2,iaz))/nz
+    endif
+    call MPI_BARRIER(MPI_comm_world, ierr)
+    call MPI_BCAST(F_L, 1, MPI_REAL, 0, MPI_Comm_world, ierr)
+    f(:,:,:,iaz) = f(:,:,:,iaz) - F_L
 !
 !   Trace the specified field lines
 !
