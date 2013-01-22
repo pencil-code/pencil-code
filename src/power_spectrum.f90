@@ -812,12 +812,13 @@ module power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
 !   3-oct-10/axel: added compution of krms (for realisability condition)
+!  22-jan-13/axel: corrected for x parallelization
 !
-    use Fourier, only: fourier_transform
+    use Fourier, only: fourier_transform, fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, cross, grad, curli
 !
-  integer, parameter :: nk=nx/2
+  integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
@@ -988,8 +989,8 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-    call fourier_transform(a_re,a_im)
-    call fourier_transform(b_re,b_im)
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
 !
 !  integration over shells
 !
@@ -997,7 +998,7 @@ module power_spectrum
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
-          k2=kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
           k=nint(sqrt(k2))
           if (k>=0 .and. k<=(nk-1)) then
 !
