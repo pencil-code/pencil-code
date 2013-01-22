@@ -1570,8 +1570,6 @@ your \name{IDL} path is set appropriately (provided you want to use
 \file[bin/]{bin} with their explicit path name, or adjust your \env{PATH}
 manually.
 
-
-
 % ---------------------------------------------------------------------- %
 
 \subsection{Basic concepts}
@@ -5922,6 +5920,73 @@ To restart in another directory, you say, from the old run directory,
 \end{Verbatim}
 Hope this helps.
 Look into pencil-code/bin/restart-new-dir to see what it is doing.
+
+\subsubsection{Unit-agnostic calculations?}
+
+{\bf Q}:
+The manual speaks about unit-agnostic calculations, stating that one may
+choose to interpret the results in any (consistent) units, depending
+on the problem that is solved at hand. So, for example, if I chose to
+run the \file{2d-tests/battery_term} simulation for an arbitrary number of
+time-steps and then choose to examine the diagnostics, am I correct in
+assuming the following:
+
+\begin{verbatim}
+1) [Brms] = Gauss (as output by unit_magnetic, before the run begins)
+2) [t] = s (since the default unit system is left as CGS)
+3) [urms] = cm/s (again, as output by unit_velocity, before the run begins)
+4) and etc. for the units of the other diagnostics
+\end{verbatim}
+
+{\bf A}:
+Detailed correspondence on this item can be found on:
+\url{https://groups.google.com/forum/?fromgroups#!topic/pencil-code-discuss/zek-uYNbgXI}
+There is also working material on unit systems under
+\url{http://www.nordita.org/~brandenb/teach/PencilCode/MixedTopics.html}
+with a link to
+\url{http://www.nordita.org/~brandenb/teach/PencilCode/material/AlfvenWave_SIunits/}
+Below is a pedagogical response from Wlad Lyra:
+\begin{verbatim}
+In the sample battery-term, the sound speed cs0=1 sets the unit of
+velocity. Together with the unit of length, that sets your unit of
+time. The unit of magnetic field follows from the unit of velocity,
+density, and your choice of magnetic permittivity, according to the
+definition of the Alfven velocity.
+\end{verbatim}
+
+\begin{verbatim}
+If you are assuming cgs, you are saying that your sound speed cs0=1
+actually means [U]=1 cm/s. Your unit of length is equivalently 1 cm,
+and therefore the unit of time is [t] = [L]/[U]=1 s. The unit of
+density is [rho] = 1 g/cm^3. Since in cgs va=B/sqrt(4*pi * rho), your
+unit of magnetic field is [B] = [U] * sqrt([rho] * 4*pi) ~= 3.5
+sqrt(g/cm) / s = 3.5 Gauss.
+\end{verbatim}
+
+\begin{verbatim}
+If instead you are assuming SI, you have cs0=1 assuming that means
+[U]=1 m/s and rho0=1 assuming that to mean [rho]=1 kg/m^3. Using [L]=1
+m, you have still [t]=1 s, but now what appears as B=1 in your output
+is actually [B] = [U] * sqrt (mu * [rho]) = 1 m/s * sqrt(4*pi * 1e-7
+N*A-2  1 kg/m^3)  ~= 0.0011210 kg/(s^2*A) ~ 11 Gauss.
+\end{verbatim}
+
+\begin{verbatim}
+You can make it more interesting and use units relevant to the
+problem. Say you are at the photosphere of the Sun. You may want to
+use dimensionless cs0=1 meaning a sound speed of 10 km/s.  Your
+appropriate length can be a megameter. Now your time unit is
+[t]=[L]/[U] = 1e3 km/ 10 km/s = 10^2 s, i.e., roughly 1.5 minute. For
+density, assume rho=2x10-4 kg/m^3, typical of the solar photosphere.
+Your unit of magnetic field is therefore [B] = [U] * sqrt([rho] *
+4*pi) = 1e6 cm/s * sqrt(4*pi * 2e-7 g/cm^3) ~ 1585.33 Gauss.
+\end{verbatim}
+
+\begin{verbatim}
+Notice that for mu0=1 and rho0=1 you simply have vA=B. Then you can
+conveniently set the field strength by your choice of plasma beta (=
+2*cs^2/va^2). There's a reason why we like dimensionless quantities!
+\end{verbatim}
 
 % ---------------------------------------------------------------------- %
 
