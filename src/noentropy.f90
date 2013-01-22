@@ -48,6 +48,7 @@ module Entropy
   integer :: idiag_ethm=0       ! DIAG_DOC: $\left<\varrho e\right>$
                                 ! DIAG_DOC:   \quad(mean thermal
                                 ! DIAG_DOC:   [=internal] energy)
+  integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
   integer :: idiag_ufpresm=0
   integer :: idiag_uduum=0
 !
@@ -178,6 +179,11 @@ module Entropy
         lpenc_diagnos(i_ee)=.true.
       endif
 !
+      if (idiag_pdivum/=0) then
+        lpenc_diagnos(i_pp)=.true.
+        lpenc_diagnos(i_divu)=.true.
+      endif
+!
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
     subroutine pencil_interdep_entropy(lpencil_in)
@@ -306,6 +312,7 @@ module Entropy
         if (idiag_thermalpressure/=0) &
             call sum_lim_mn_name(p%rho*p%cs2,idiag_thermalpressure,p)
         if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
         if (idiag_ufpresm/=0) then
           ufpres=0
           do i = 1, 3
@@ -431,7 +438,7 @@ module Entropy
 !
       if (lreset) then
         idiag_dtc=0; idiag_ugradpm=0; idiag_thermalpressure=0; idiag_ethm=0;
-        idiag_ufpresm=0; idiag_uduum=0
+        idiag_pdivum=0; idiag_ufpresm=0; idiag_uduum=0
       endif
 !
       do iname=1,nname
@@ -439,6 +446,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'TTp',idiag_thermalpressure)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
+        call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
