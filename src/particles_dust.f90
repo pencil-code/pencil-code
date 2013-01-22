@@ -189,7 +189,8 @@ module Particles
       lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
-      thermophoretic_eq, cond_ratio, interp_pol_gradTT
+      thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
+      lcommunicate_np
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -2226,10 +2227,16 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-      if (lpencil(i_grhop)) then 
+      if (lpencil(i_grhop)) then
         if (irhop/=0) then
+          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) & 
+               call fatal_error("calc_pencils_particles",&
+               "Switch on lcommunicate_rhop=T in particles_run_pars")  
           call grad(f,irhop,p%grhop)
         else
+          if ((nprocx/=1).and.(.not.lcommunicate_np)) & 
+               call fatal_error("calc_pencils_particles",&
+               "Switch on lcommunicate_np=T in particles_run_pars")  
           call grad(f,inp,p%grhop)
           p%grhop=rhop_swarm*p%grhop
         endif

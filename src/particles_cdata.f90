@@ -54,6 +54,8 @@ module Particles_cdata
   logical :: loutput_psize_dist=.false.
   logical :: lsinkparticle_1=.false.
   logical :: linsert_particle=.false.
+  logical :: lcommunicate_rhop=.false.
+  logical :: lcommunicate_np=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'

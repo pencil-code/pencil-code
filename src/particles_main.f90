@@ -470,6 +470,8 @@ module Particles_main
 !***********************************************************************
     subroutine particles_boundconds(f)
 !
+      use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
+!
 !  Particle boundary conditions and parallel communication.
 !
 !  16-feb-06/anders: coded
@@ -512,6 +514,18 @@ module Particles_main
 !  Distribute the n-body particles across processors
 !
       if (lparticles_nbody) call bcast_nbodyarray(fp)
+!
+!  Communicate rhop or np 
+!
+      if (lcommunicate_rhop.and.irhop/=0) then 
+        call initiate_isendrcv_bdry(f,irhop,irhop)
+        call finalize_isendrcv_bdry(f,irhop,irhop)
+      endif
+!
+      if (lcommunicate_np.and.inp/=0) then 
+        call initiate_isendrcv_bdry(f,inp,inp)
+        call finalize_isendrcv_bdry(f,inp,inp)
+      endif
 !
     endsubroutine particles_boundconds
 !***********************************************************************
