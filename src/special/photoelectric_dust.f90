@@ -67,12 +67,12 @@ module Special
   include '../special.h'
 !
   real :: dummy
-  real :: mu=1.0, Sentropy=0.0
+  real :: mu=1.0, Sentropy=0.0, factor_localiso=0.0, factor_photoelectric=1.0
   logical :: ldust_pressureforce
 !
-  namelist /special_init_pars/ mu, Sentropy
+  namelist /special_init_pars/ mu, Sentropy, factor_localiso, factor_photoelectric
 !
-  namelist /special_run_pars/ mu, Sentropy, ldust_pressureforce
+  namelist /special_run_pars/ mu, Sentropy, factor_localiso, factor_photoelectric, ldust_pressureforce
 !
 !  integer, parameter :: nmode_max = 50
 !  real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
@@ -81,10 +81,11 @@ module Special
     real, dimension(nx,3) :: fpres
     real, dimension(nx,3) :: fpres_photoelectric
     real, dimension(nx,3) :: fpres_polytropic
+    real, dimension(nx,3) :: fpres_localisotropic
   endtype InternalPencils
   type (InternalPencils) :: q
 !
-  real :: const1,const2
+  real :: const1,const2,const3
   integer :: idiag_photom=0,idiag_photomax=0
   integer :: idiag_photomin=0,idiag_polym=0
   integer :: idiag_polymax=0,idiag_polymin=0
@@ -128,7 +129,8 @@ module Special
       rho01=1./rho0
 !
       const1=Sentropy*mu
-      const2=cs20*rho01 !*gamma1*rho01
+      const2=factor_photoelectric * cs20*rho01 !*gamma1*rho01
+      const3=factor_localiso
 !
       if (.not.lstarting) then 
         call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
@@ -162,10 +164,15 @@ module Special
         elseif (ldustdensity) then 
           lpenc_requested(i_rhodsum)=.true.
           lpenc_requested(i_glnrhodsum)=.true.
-        else
+        else          
           call fatal_error("pencils_criteria_special",&
                "the world is flat, and we never got here")
         endif
+      endif  
+!
+      if (const3 /= 0.0) then
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
       endif
 !
       lpenc_requested(i_cs2)=.true.
@@ -190,7 +197,7 @@ module Special
           q%fpres_polytropic(:,j) = 0.
         endif
 !
-        if (const2/=0) then
+        if (const2/=0.0) then
           if (lparticles) then
             q%fpres_photoelectric(:,j) = -const2 * (p%grhop(:,j) + p%rhop*p%glnrho(:,j))
           else
@@ -199,9 +206,13 @@ module Special
         else
           q%fpres_photoelectric(:,j) = 0.
         endif
+!
+        if (const3/=0.0) then
+          q%fpres_localisotropic(:,j) = -const3*p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
+        endif
       enddo
 !
-      q%fpres = q%fpres_photoelectric + q%fpres_polytropic
+      q%fpres = q%fpres_localisotropic + q%fpres_photoelectric + q%fpres_polytropic
 !
       call keep_compiler_quiet(f)
 !
@@ -327,7 +338,7 @@ endsubroutine read_special_run_pars
       type (pencil_case), intent(in) :: p
       integer :: j,ju
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+      if (lfirst.and.ldt) advec_cs2 = (const3*p%cs2 + const2 + const1) * dxyz_2
       if (headtt.or.ldebug) &
            print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
