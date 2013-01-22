@@ -2209,7 +2209,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      integer :: j
 !
       if (lpencil(i_np)) then
         if (inp/=0) then
@@ -2343,7 +2342,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: Omega2
-      integer :: k, npar_found
+      integer :: npar_found
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
