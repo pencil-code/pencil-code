@@ -99,6 +99,7 @@ module Particles
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
   logical :: lcalc_uup=.false.
   logical :: lparticle_gravity=.true.
+  logical :: lcylindrical_gravity_par=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -190,7 +191,7 @@ module Particles
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
-      lcommunicate_np
+      lcommunicate_np, lcylindrical_gravity_par
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -2742,20 +2743,30 @@ k_loop:   do while (.not. (k>npar_loc))
               OO2=rsph**(-3)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = -fp(k,iyp)*OO2
-              ggp(3) = -fp(k,izp)*OO2
+              if (.not.lcylindrical_gravity_par) then 
+                ggp(3) = -fp(k,izp)*OO2
+              else
+                ggp(3) = 0.
+              endif
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lcylindrical_coords) then
               rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
               OO2=rsph**(-3)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0
-              ggp(3) = -fp(k,izp)*OO2
+              if (.not.lcylindrical_gravity_par) then 
+                ggp(3) = -fp(k,izp)*OO2
+              else
+                ggp(3) = 0.
+              endif  
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lspherical_coords) then
               rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
               OO2=rsph**(-3)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0; ggp(3) = 0.0
+              if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
+                   "No cylindrical gravity in spherical coordinates.")
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             endif
 !  Limit time-step if particles close to gravity source.
