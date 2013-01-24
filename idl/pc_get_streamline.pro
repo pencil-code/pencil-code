@@ -16,6 +16,8 @@
 ;                    of 0.1 results in 10 interpolations per grid distance (Default: 0.1).
 ;   * max_length     Maximum length of a streamline.
 ;   * length         Returns the full length of a traced streamline.
+;   * num            Returns the number of points of the traced streamline.
+;   * origin         Returns the array index of the origin of the traced streamline.
 ;   * coords         Returns an array of grid coordinates of the traced streamline.
 ;   * distances      Returns an array of the distances from the anchor point along the streamline.
 ;   * cache          Cache vector field data cube for later use.
@@ -35,7 +37,7 @@
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, max_length=max_length, cache=cache
+function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, num=num, origin=origin, max_length=max_length, cache=cache
 
 	common pc_get_streamline_common, data, nx, ny, nz, mx, my, mz, Box_xyz_lower, Box_xyz_upper
 
@@ -85,20 +87,18 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	default, dir, 0
 	if (dir eq 0) then begin
 		; Combine forward and backward streamlines from starting point
-		along = pc_get_streamline (field, anchor=anchor, grid=grid, distances=d1, coords=along_coords, direction=1, periodic=periodic, precision=precision, length=l1, max_length=max_length, /cache)
-		against = pc_get_streamline (field, anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, max_length=max_length, /cache)
-		length = l1 + l2
-		if (n_elements (d2) le 1) then begin
-			distances = d1
-			coords = along_coords
-			return, along
-		endif
-		distances = [ -reverse (d2[1:*]), d1 ]
+		along = pc_get_streamline (field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num=num, origin=origin, max_length=max_length, /cache)
+		against = pc_get_streamline (field, anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num=n2, max_length=max_length, /cache)
+		if (n2 le 1) then return, along
+		length += l2
+		num += n2 - 1
+		origin = n2 - 1
+		distances = [ -reverse (d2[1:*]), distances ]
 		against = against[*,1:*]
 		against_coords = against_coords[*,1:*]
 		if (size (against, /n_dim) eq 2) then against = reverse (against, 2)
 		if (size (against_coords, /n_dim) eq 2) then against_coords = reverse (against_coords, 2)
-		coords = [ [against_coords], [along_coords] ]
+		coords = [ [against_coords], [coords] ]
 		return, [ [against], [along] ]
 	end
 	if (dir lt 0) then dir = -1 else dir = 1
@@ -145,6 +145,8 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	end
 
 	; Iterate finding points on the streamline
+	origin = 0
+	num = 0
 	length = 0.0
 	indices = [ [pos] ]
 	coords = [ [anchor] ]
@@ -180,6 +182,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 			step_y *= (1.0 - reduce)
 			step_z *= (1.0 - reduce)
 			done = 1
+			if (reduce ge 1.0) then continue
 		end
 
 		; Calculate new position
@@ -208,6 +211,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 			point[2] = interpolate (z, pos[2] + nghost)
 		end
 		coords = [ [coords], [point] ]
+		num++
 		last = point
 	end
 
