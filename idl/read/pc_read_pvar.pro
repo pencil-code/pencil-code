@@ -7,7 +7,7 @@ pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
     solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, $
-    proc=proc, ipar=ipar, trimxyz=trimxyz
+    proc=proc, ipar=ipar, trimxyz=trimxyz, proc_id=proc_id
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -21,6 +21,7 @@ default, oldrmv, 0
 default, savefile, 1
 default, proc, -1
 default, trimxyz, 1
+default, proc_id, 0
 ;
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
@@ -183,7 +184,14 @@ endfor
 ;
 array=fltarr(npar_max,totalvars)*one
 ipar=lonarr(npar)
-proc_id=lonarr(npar)
+;
+; Define array for processor id storage
+;
+if (proc_id) then begin
+  iproc=replicate(-1,npar) 
+  variables=[variables,'iproc']
+endif
+;
 tarr=fltarr(ncpus)*one
 t=zero
 npar_loc=0L
@@ -295,7 +303,9 @@ endif else begin
 ;  Assign processor number so that we can trace where the particles
 ;  ended up after migrating
 ;
-         if (ipar_loc[k] le npar_max) then proc_id[ipar_loc[k]-1]=i
+         if (proc_id) then begin
+           if (ipar_loc[k] le npar_max) then iproc[ipar_loc[k]-1]=i
+         endif
       endfor
 ;
    endif
@@ -617,9 +627,9 @@ endif
 ;  Put data and parameters in object.
 ;
 makeobject="object = create_struct(name=objectname," + $
-    "['t','x','y','z','dx','dy','dz','proc_id'," + $
+    "['t','x','y','z','dx','dy','dz'," + $
     arraytostring(variables,quote="'",/noleader) + "]," + $
-    "t,x,y,z,dx,dy,dz,proc_id," + $
+    "t,x,y,z,dx,dy,dz," + $
     arraytostring(variables,/noleader) + ")"
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /info
