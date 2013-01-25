@@ -183,6 +183,7 @@ endfor
 ;
 array=fltarr(npar_max,totalvars)*one
 ipar=lonarr(npar)
+proc_id=lonarr(npar)
 tarr=fltarr(ncpus)*one
 t=zero
 npar_loc=0L
@@ -289,10 +290,15 @@ endif else begin
 ;  Put local processor data into proper place in global data array
 ;
       for k=0L,npar_loc-1 do begin
-        if (ipar_loc[k] le npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
+         if (ipar_loc[k] le npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
+;
+;  Assign processor number so that we can trace where the particles
+;  ended up after migrating
+;
+         if (ipar_loc[k] le npar_max) then proc_id[ipar_loc[k]-1]=i
       endfor
 ;
-    endif
+   endif
 ;
 ;  Read time and grid data.
 ;
@@ -611,9 +617,9 @@ endif
 ;  Put data and parameters in object.
 ;
 makeobject="object = create_struct(name=objectname," + $
-    "['t','x','y','z','dx','dy','dz'," + $
+    "['t','x','y','z','dx','dy','dz','proc_id'," + $
     arraytostring(variables,quote="'",/noleader) + "]," + $
-    "t,x,y,z,dx,dy,dz," + $
+    "t,x,y,z,dx,dy,dz,proc_id," + $
     arraytostring(variables,/noleader) + ")"
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /info
