@@ -1503,7 +1503,7 @@ k_loop:   do while (.not. (k>npar_loc))
                print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
           do k=1,npar_loc
             if (lcartesian_coords) then
-              if (lcylindrical_gravity_par) then 
+              if (lcylindrical_gravity_par) then
                 rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
               else
                 rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
@@ -1511,7 +1511,7 @@ k_loop:   do while (.not. (k>npar_loc))
               OO2=rr**(-3.)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = -fp(k,iyp)*OO2
-              if (lcylindrical_gravity_par) then 
+              if (lcylindrical_gravity_par) then
                 ggp(3) = 0.
               else
                 ggp(3) = -fp(k,izp)*OO2
@@ -1526,11 +1526,11 @@ k_loop:   do while (.not. (k>npar_loc))
               OO2=rr**(-3.)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0
-              if (lcylindrical_gravity_par) then 
-                ggp(3) = 0.                
+              if (lcylindrical_gravity_par) then
+                ggp(3) = 0.
               else
                 ggp(3) = -fp(k,izp)*OO2
-              endif  
+              endif
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lspherical_coords) then
               rr=sqrt(fp(k,ixp)**2+gravsmooth2)
