@@ -67,6 +67,7 @@ module Particles
   logical :: ldt_grav_par=.false., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
+  logical :: lcylindrical_gravity_par=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -113,7 +114,8 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
-      lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks
+      lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, & 
+      lcylindrical_gravity_par, lcommunicate_rhop, lcommunicate_np
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -1224,6 +1226,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  16-feb-06/anders: dummy
 !
+      use Sub, only: grad
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
@@ -1234,6 +1238,21 @@ k_loop:   do while (.not. (k>npar_loc))
           p%rhop=f(l1:l2,m,n,irhop)
         else
           p%rhop=rhop_swarm*f(l1:l2,m,n,inp)
+        endif
+      endif
+!
+      if (lpencil(i_grhop)) then
+        if (irhop/=0) then
+          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) &
+               call fatal_error("calc_pencils_particles",&
+               "Switch on lcommunicate_rhop=T in particles_run_pars")
+          call grad(f,irhop,p%grhop)
+        else
+          if ((nprocx/=1).and.(.not.lcommunicate_np)) &
+               call fatal_error("calc_pencils_particles",&
+               "Switch on lcommunicate_np=T in particles_run_pars")
+          call grad(f,inp,p%grhop)
+          p%grhop=rhop_swarm*p%grhop
         endif
       endif
 !
@@ -1338,7 +1357,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: Omega2, rsph, vsph, OO2
+      real :: Omega2, rr, vv, OO2
       integer :: k, npar_found
       logical :: lheader, lfirstcall=.true.
 !
@@ -1484,37 +1503,55 @@ k_loop:   do while (.not. (k>npar_loc))
                print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
           do k=1,npar_loc
             if (lcartesian_coords) then
-              rsph=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
+              if (lcylindrical_gravity_par) then 
+                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
+              else
+                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
+              endif
+              OO2=rr**(-3.)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = -fp(k,iyp)*OO2
-              ggp(3) = -fp(k,izp)*OO2
+              if (lcylindrical_gravity_par) then 
+                ggp(3) = 0.
+              else
+                ggp(3) = -fp(k,izp)*OO2
+              endif
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lcylindrical_coords) then
-              rsph=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
+              if (lcylindrical_gravity_par) then 
+                rr=sqrt(fp(k,ixp)**2+gravsmooth2)
+              else
+                rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
+              endif
+              OO2=rr**(-3.)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0
-              ggp(3) = -fp(k,izp)*OO2
+              if (lcylindrical_gravity_par) then 
+                ggp(3) = 0.                
+              else
+                ggp(3) = -fp(k,izp)*OO2
+              endif  
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lspherical_coords) then
-              rsph=sqrt(fp(k,ixp)**2+gravsmooth2)
-              OO2=rsph**(-3)*gravr
+              rr=sqrt(fp(k,ixp)**2+gravsmooth2)
+              OO2=rr**(-3)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0; ggp(3) = 0.0
+              if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
+                   "No cylindrical gravity in spherical coordinates.")
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             endif
 !  Limit time-step if particles close to gravity source.
             if (ldt_grav_par.and.(lfirst.and.ldt)) then
               if (lcartesian_coords) then
-                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
               elseif (lcylindrical_coords) then
-                vsph=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
               elseif (lspherical_coords) then
-                vsph=abs(fp(k,ivpx))
+                vv=abs(fp(k,ivpx))
               endif
-              dt1_max(ineargrid(k,1))= &
-                  max(dt1_max(ineargrid(k,1)),vsph/rsph/cdtpgrav)
+              dt1_max(ineargrid(k,1)-nghost)= &
+                  max(dt1_max(ineargrid(k,1)-nghost),vv/rr/cdtpgrav)
             endif
           enddo
 !
