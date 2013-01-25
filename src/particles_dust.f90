@@ -2740,17 +2740,17 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=1,npar_loc
             if (lcartesian_coords) then
               if (lcylindrical_gravity_par) then 
-                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
-              else
                 rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
+              else
+                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
               endif
               OO2=rr**(-3.)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = -fp(k,iyp)*OO2
-              if (.not.lcylindrical_gravity_par) then 
-                ggp(3) = -fp(k,izp)*OO2
-              else
+              if (lcylindrical_gravity_par) then 
                 ggp(3) = 0.
+              else
+                ggp(3) = -fp(k,izp)*OO2
               endif
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lcylindrical_coords) then
@@ -2762,10 +2762,10 @@ k_loop:   do while (.not. (k>npar_loc))
               OO2=rr**(-3.)*gravr
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0
-              if (.not.lcylindrical_gravity_par) then 
-                ggp(3) = -fp(k,izp)*OO2
+              if (lcylindrical_gravity_par) then 
+                ggp(3) = 0.                
               else
-                ggp(3) = 0.
+                ggp(3) = -fp(k,izp)*OO2
               endif  
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lspherical_coords) then
