@@ -96,6 +96,14 @@ module Particles_nbody
              ' using gravity_r.f90 instead.')
       endif
 !
+      if (npar < nspar) then
+        if (lroot) write(0,*) 'npar, nspar = ', npar, nspar
+        call fatal_error('register_particles_nbody','the number of massive'//&
+             ' particles (nspar) is less than the allocated number of particles'//&
+             ' (npar). Increase npar to the minimum number (npar=npsar) needed'//&
+             ' in cparam.local and recompile')
+      endif
+!
     endsubroutine register_particles_nbody
 !***********************************************************************
     subroutine initialize_particles_nbody(f,lstarting)
