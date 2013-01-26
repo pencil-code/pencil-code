@@ -879,6 +879,11 @@ module Entropy
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting star_params')
 !
+      if (llocal_iso) &
+           call fatal_error('initialize_entropy', &
+           'llocal_iso switches on the local isothermal approximation. ' // &
+           'Use ENTROPY=noentropy in src/Makefile.local')
+!
       call keep_compiler_quiet(lstarting)
 !
       endsubroutine initialize_entropy
@@ -4328,7 +4333,7 @@ module Entropy
 !
       real, dimension(nx), intent(inout) :: heat
       real, dimension (nx) :: rr1,TT_drive, OO
-      real, save :: rho01,tau1_cool
+      real, save :: tau1_cool
       logical, save :: lfirstcall=.true.
       type (pencil_case), intent(in) :: p
 !

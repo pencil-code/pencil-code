@@ -251,6 +251,11 @@ module Entropy
         forall (i=-nxs:nxs, j=-nys:nys, k=-nzs:nzs, i*i+j*j+k*k <= 2**2) mask_sphere(i,j,k) = .true.
       endif detonate
 !
+      if (llocal_iso) &
+           call fatal_error('initialize_entropy', &
+           'llocal_iso switches on the local isothermal approximation. ' // &
+           'Use ENTROPY=noentropy in src/Makefile.local')
+!
     endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f)

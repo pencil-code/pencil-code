@@ -473,6 +473,11 @@ module Entropy
           "lADI_mixed=T while iheatcond /= K-arctan?")
       endif
 !
+      if (llocal_iso) &
+           call fatal_error('initialize_entropy', &
+           'llocal_iso switches on the local isothermal approximation. ' // &
+           'Use ENTROPY=noentropy in src/Makefile.local')
+!
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_entropy

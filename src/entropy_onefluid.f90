@@ -193,6 +193,11 @@ module Entropy
         call warning('initialize_entropy','chi_shock is zero!')
       endif
 !
+      if (llocal_iso) &
+           call fatal_error('initialize_entropy', &
+           'llocal_iso switches on the local isothermal approximation. ' // &
+           'Use ENTROPY=noentropy in src/Makefile.local')
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
