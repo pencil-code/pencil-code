@@ -44,7 +44,7 @@ function pc_find_streamline, coord, streamlines, nearest=nearest, distance=dista
 
 	; Find nearest streamline
 	distance = min (distances_stream)
-	num = where (distances_stream eq distance)
+	num = (where (distances_stream eq distance))[0]
 	nearest = nearest[num]
 	distance = sqrt (distance)
 

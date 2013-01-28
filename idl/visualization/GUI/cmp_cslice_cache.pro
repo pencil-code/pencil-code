@@ -482,13 +482,13 @@ pro cslice_event, event
 				end
 			end
 			stream = streamlines.(selected_streamline)
-			px = pc_find_index (stream.coords[0,stream_pos], coord.x*unit.default_length, num_x)
+			px = pc_find_index (stream.coords[0,stream_pos], coord.x*unit.default_length, num=num_x)
 			WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 			WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
-			py = pc_find_index (stream.coords[1,stream_pos], coord.y*unit.default_length, num_y)
+			py = pc_find_index (stream.coords[1,stream_pos], coord.y*unit.default_length, num=num_y)
 			WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 			WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
-			pz = pc_find_index (stream.coords[2,stream_pos], coord.z*unit.default_length, num_z)
+			pz = pc_find_index (stream.coords[2,stream_pos], coord.z*unit.default_length, num=num_z)
 			WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 			WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1)
