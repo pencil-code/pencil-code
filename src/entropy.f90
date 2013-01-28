@@ -57,6 +57,7 @@ module Entropy
   real, target :: hcondzbot=impossible, hcondztop=impossible
   real, target :: Fbot=impossible, FbotKbot=impossible
   real, target :: Ftop=impossible, FtopKtop=impossible
+  real, pointer :: reduce_cs2
   real :: Kbot=impossible, Ktop=impossible
   real :: hcond2=impossible
   real :: chit_prof1=1.0, chit_prof2=1.0
@@ -105,6 +106,7 @@ module Entropy
   logical :: lconvection_gravx=.false.
   logical :: ltau_cool_variable=.false.
   logical :: lprestellar_cool_iso=.false.
+  logical, pointer :: lreduced_sound_speed
   logical, save :: lfirstcall_hcond=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -331,7 +333,7 @@ module Entropy
       use FArrayManager
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -878,6 +880,20 @@ module Entropy
       call put_shared_variable('star_params',star_params,ierr)
       if (ierr/=0) call fatal_error('initialize_entropy', &
           'there was a problem when putting star_params')
+!
+!  Check if reduced sound speed is used
+!
+      if (ldensity) then
+        call get_shared_variable('lreduced_sound_speed',&
+             lreduced_sound_speed,ierr)
+        if (ierr/=0) call fatal_error('initialize_entropy:',&
+             'failed to get lreduced_sound_speed from density')
+        if (lreduced_sound_speed) then
+          call get_shared_variable('reduce_cs2',reduce_cs2,ierr)
+          if (ierr/=0) call fatal_error('initialize_entropy:',&
+               'failed to get reduce_cs2 from density')
+        endif
+      endif
 !
       if (llocal_iso) &
            call fatal_error('initialize_entropy', &
@@ -2570,7 +2586,11 @@ module Entropy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lhydro.and.lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+!      if (lhydro.and.lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+      if (lhydro.and.lfirst.and.ldt.and..not.lreduced_sound_speed) &
+           advec_cs2=p%cs2*dxyz_2
+      if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) &
+           advec_cs2=reduce_cs2*p%cs2*dxyz_2
       if (headtt.or.ldebug) &
           print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
 !

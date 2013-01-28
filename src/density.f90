@@ -67,6 +67,7 @@ module Density
   real :: mass_cloud=0.0, T_cloud=0.0, T_cloud_out_rel=1.0, xi_coeff=1.0
   real :: temp_coeff=1.0, dens_coeff=1.0, temp_trans = 0.0
   real :: temp_coeff_out = 1.0
+  real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -84,7 +85,8 @@ module Density
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
-  logical :: lffree =.false.
+  logical :: lffree=.false.
+  logical, target :: lreduced_sound_speed=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -107,7 +109,8 @@ module Density
       lffree, ffree_profile, rzero_ffree, wffree, rho_top, rho_bottom, &
       r0_rho, invgrav_ampl, rnoise_int, rnoise_ext, datafile, mass_cloud, &
       T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
-      dens_coeff, temp_coeff, temp_trans, temp_coeff_out
+      dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
+      lreduced_sound_speed
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
@@ -120,7 +123,7 @@ module Density
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
-      density_xaver_range, mass_source_tau1
+      density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -495,6 +498,15 @@ module Density
         call put_shared_variable('profx_ffree',profx_ffree,ierr)
         call put_shared_variable('profy_ffree',profy_ffree,ierr)
         call put_shared_variable('profz_ffree',profz_ffree,ierr)
+      endif
+!
+!  Check if we are reduced sound speed is used and communicate to 
+!  entropy
+!
+      call put_shared_variable('lreduced_sound_speed',lreduced_sound_speed,ierr)
+!
+      if (lreduced_sound_speed) then
+        call put_shared_variable('reduce_cs2',reduce_cs2,ierr)
       endif
 !
       call keep_compiler_quiet(f)
@@ -1714,7 +1726,8 @@ module Density
 !  Continuity equation.
 !
       if (lcontinuity_gas .and. .not. lweno_transport .and. &
-          .not. lffree .and. ieos_profile=='nothing') then
+          .not. lffree .and. .not. lreduced_sound_speed .and. &
+          ieos_profile=='nothing') then
         if (ldensity_nolog) then
           df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   - p%ugrho   - p%rho*p%divu
         else
@@ -1754,7 +1767,7 @@ module Density
        endif
      endif
 !
-!  If we are solving the fore-free equation in parts of our domain.
+!  If we are solving the force-free equation in parts of our domain.
 !
       if (lcontinuity_gas .and. lffree) then
         if (ldensity_nolog) then
@@ -1775,6 +1788,19 @@ module Density
               -dprofx_ffree   *p%uu(:,1) &
               -dprofy_ffree(m)*p%uu(:,2) &
               -dprofz_ffree(n)*p%uu(:,3)
+        endif
+      endif
+!
+!  Use reduced sound speed according to Rempel (2005), ApJ, 622, 1320;
+!  see also Hotta et al. (2012), A&A, 539, A30.
+!
+      if (lcontinuity_gas .and. lreduced_sound_speed) then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho) &
+              - reduce_cs2*(p%ugrho + p%rho*p%divu)
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) &
+              - reduce_cs2*(p%uglnrho + p%divu)
         endif
       endif
 !
