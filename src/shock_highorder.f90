@@ -44,8 +44,24 @@ module Shock
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
       div_threshold, lrewrite_shock_boundary, lfix_Re_mesh
 !
-  integer :: idiag_shockm=0, idiag_shockmin=0, idiag_shockmax=0
-  integer :: idiag_shockmx=0, idiag_shockmy=0, idiag_shockmz=0
+!  Diagnostic variables for print.in
+! (needs to be consistent with reset list below)
+!
+  integer :: idiag_shockm=0        ! DIAG_DOC:
+  integer :: idiag_shockmin=0      ! DIAG_DOC:
+  integer :: idiag_shockmax=0      ! DIAG_DOC:
+!
+! xy averaged diagnostics given in xyaver.in written every it1d timestep
+!
+  integer :: idiag_shockmz=0       ! XYAVG_DOC:
+!
+! xz averaged diagnostics given in xzaver.in
+!
+  integer :: idiag_shockmy=0       ! XZAVG_DOC:
+!
+! yz averaged diagnostics given in yzaver.in
+!
+  integer :: idiag_shockmx=0       ! YZAVG_DOC:
 !
   real, dimension (-3:3,-3:3,-3:3) :: smooth_factor
 !
