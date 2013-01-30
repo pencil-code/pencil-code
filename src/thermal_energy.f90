@@ -831,9 +831,9 @@ module Entropy
 !
       split_update: if (lsplit_update) then
         if (ldensity_nolog) then
-          call get_delta_eth(t, dt, f(:,:,:,ieth), f(:,:,:,irho), delta_eth, status)
+          call get_delta_eth(real(t), dt, f(:,:,:,ieth), f(:,:,:,irho), delta_eth, status)
         else
-          call get_delta_eth(t, dt, f(:,:,:,ieth), exp(f(:,:,:,ilnrho)), delta_eth, status)
+          call get_delta_eth(real(t), dt, f(:,:,:,ieth), exp(f(:,:,:,ilnrho)), delta_eth, status)
         endif
 !
         if (any(status < 0)) then
@@ -1033,7 +1033,7 @@ module Entropy
 !
       c0 = rho
       if (nzgrid == 1 .and. KI_csz <= 0.) then
-        call get_soundspeed(temp / unit_temperature, cs2)
+        call get_soundspeed(real(temp / unit_temperature), cs2)
         c0 = rho / sqrt(cs2)
       endif
       heat_KI02 = rho * (KI_a0 - c0 * (KI_a1 * c1 + KI_a2 * sqrt(temp) * c2))
