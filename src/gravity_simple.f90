@@ -95,11 +95,24 @@ module Gravity
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, zclip
 !
-  integer :: idiag_epot=0
-  integer :: idiag_epotmx=0
-  integer :: idiag_epotmy=0
-  integer :: idiag_epotmz=0
-  integer :: idiag_epotuzmz=0
+!  Diagnostic variables for print.in
+! (needs to be consistent with reset list below)
+!
+  integer :: idiag_epot=0          ! DIAG_DOC:
+!
+! xy averaged diagnostics given in xyaver.in written every it1d timestep
+!
+  integer :: idiag_epotmz=0        ! XYAVG_DOC:
+  integer :: idiag_epotuzmz=0      ! XYAVG_DOC:
+!
+! xz averaged diagnostics given in xzaver.in
+!
+  integer :: idiag_epotmy=0        ! XZAVG_DOC:
+!
+! yz averaged diagnostics given in yzaver.in
+!
+  integer :: idiag_epotmx=0        ! YZAVG_DOC:
+!
 !
   contains
 !***********************************************************************
