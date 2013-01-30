@@ -3806,8 +3806,6 @@ module Sub
 !
 !  22-Jul-11/sven+philippe: coded
 !
-      use Mpicomm, only: stop_it_if_any
-!
       logical :: notanumber_3
       real, dimension(:,:,:) :: f
 !
@@ -3823,8 +3821,6 @@ module Sub
 !  Version for 4-d arrays
 !
 !  22-Jul-11/sven+philippe: coded
-!
-      use Mpicomm, only: stop_it_if_any
 !
       logical :: notanumber_4
       real, dimension(:,:,:,:) :: f
