@@ -44,6 +44,7 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
   integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
+  integer, parameter :: irho_eth=13, ilnrho_eth=14
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_

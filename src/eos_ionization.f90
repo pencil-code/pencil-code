@@ -32,6 +32,7 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
   integer, parameter :: irho_ss=7, ilnrho_TT=9, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
+  integer, parameter :: irho_eth=13, ilnrho_eth=14
 !
   interface eoscalc              ! Overload subroutine eoscalc
     module procedure eoscalc_farray

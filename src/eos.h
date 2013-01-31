@@ -5,7 +5,7 @@
   public :: eoscalc,pressure_gradient,temperature_gradient,get_cp1
   public :: temperature_laplacian,get_cv1
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee, ilnrho_TT
-  public :: ipp_ss,ipp_cs2, irho_TT, irho_ss
+  public :: ipp_ss,ipp_cs2, irho_TT, irho_ss, irho_eth, ilnrho_eth
   public :: eosperturb
   public :: get_soundspeed
   public :: getmu, getmu_array
