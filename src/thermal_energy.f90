@@ -36,10 +36,11 @@ module Entropy
   real :: energy_floor = 0., temperature_floor = 0.
   real :: rk_eps = 1.e-3
   real :: nu_z=0., KI_csz=0.
-  real :: detonation_factor = 1., detonation_power = 1.
+  real :: detonation_factor = 1.
   integer :: rk_nmax = 100
   integer :: njeans = 4
   integer :: idet = 0
+  integer :: detonation_power = 0
   logical :: lsplit_update=.false.
   logical :: lviscosity_heat=.true.
   logical :: lupw_eth=.false.
@@ -49,7 +50,7 @@ module Entropy
   logical :: ldetonate=.false.
   logical, pointer :: lpressuregradient_gas
   character (len=labellen), dimension(ninit) :: initeth='nothing'
-  character(len=labellen) :: feedback = 'energy'
+  character(len=labellen) :: feedback = 'linear'
 !
 !  Input parameters.
 !
@@ -64,7 +65,7 @@ module Entropy
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, nu_z, KI_csz, &
       ljeans_floor, njeans, &
-      ldetonate, detonation_factor, detonation_power, feedback
+      ldetonate, detonation_factor, feedback
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -224,10 +225,12 @@ module Entropy
       detonate: if (ldetonate) then
 !       Determine the amount of deposit into each cell to be detonated.
         method: select case (feedback)
-        case ('energy') method
+        case ('linear') method
           deposit = detonation_factor * cs20
-        case ('momentum') method
-          deposit = detonation_factor * cs0
+          detonation_power = 1
+        case ('binding') method
+          deposit = detonation_factor * Jeans_c0
+          detonation_power = 2
         case default method
           call fatal_error('detonate', 'unknown feedback method')
         endselect method
@@ -1078,17 +1081,17 @@ module Entropy
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, dimension(mx,my,mz), intent(in) :: unstable
 !
-      real, dimension(nx,ny,nz,3) :: delta
-      real, dimension(nx,3) :: pv
+      real, dimension(nx,ny,nz) :: delta
       real, dimension(nx) :: ps
       real, dimension(-3:3) :: uu
-      integer :: i, j, k, imn, n
+      integer :: ndet
+      integer :: i, j, k, imn, m, n
       integer :: ll1, ll2, mm1, mm2, nn1, nn2
       real :: divu, r
 !
 !  Prepare for communicating the cells that should be detonated.
 !
-      n = 0
+      ndet = 0
       f(:,:,:,idet) = 0.
       zscan: do k = n1, n2
         nn1 = k - nzs
@@ -1117,16 +1120,16 @@ module Entropy
                 divu = divu + derivative(uu, dz_1(k))
               endif duzdz
               converge: if (divu < 0.) then
-                n = n + 1
+                ndet = ndet + 1
                 f(i,j,k,idet) = deposit * f(i,j,k,irho)**detonation_power
               endif converge
             endif trigger
           enddo xscan
         enddo yscan
       enddo zscan
-      if (ldebug .and. n > 0) print *, 'Detonated ', n, ' cells. '
+      if (ldebug .and. ndet > 0) print *, 'Detonated ', ndet, ' cells. '
 !
-!  Communicate the cells and prepare for the feedback.
+!  Smooth out the detonation energy.
 !
       shear: if (lshear) then
         call boundconds_y(f, idet, idet)
@@ -1145,50 +1148,20 @@ module Entropy
           call boundconds_z(f, idet, idet)
         endif final
 !
-        dispatch1: select case (feedback)
-!
-        case ('energy') dispatch1
-!         Energy feedback
-          ps = 0.
-          zdir: do k = -nzs, nzs
-            ydir: do j = -nys, nys
-              xdir: do i = -nxs, nxs
-                ps = ps + smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet)
-              enddo xdir
-            enddo ydir
-          enddo zdir
-          delta(:,m-nghost,n-nghost,1) = ps
-!
-        case ('momentum') dispatch1
-!         Momentum feedback
-          pv = 0.
-          zdirm: do k = -nzs, nzs
-            ydirm: do j = -nys, nys
-              xdirm: do i = -nxs, nxs
-                r = sqrt(real(i * i + j * j + k * k))
-                not_center: if (r > 0.) then
-                  ps = smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet) / r
-                  pv(:,1) = pv(:,1) - real(i) * ps
-                  pv(:,2) = pv(:,2) - real(j) * ps
-                  pv(:,3) = pv(:,3) - real(k) * ps
-                endif not_center
-              enddo xdirm
-            enddo ydirm
-          enddo zdirm
-          delta(:,m-nghost,n-nghost,:) = pv / spread(f(l1:l2,m,n,irho),2,3)
-        endselect dispatch1
+        ps = 0.
+        zdir: do k = -nzs, nzs
+          ydir: do j = -nys, nys
+            xdir: do i = -nxs, nxs
+              ps = ps + smooth(i,j,k) * f(l1+i:l2+i, m+j, n+k, idet)
+            enddo xdir
+          enddo ydir
+        enddo zdir
+        delta(:,m-nghost,n-nghost) = ps
       enddo pencil
 !
 !  Make the deposit into the cells.
 !
-      dispatch2: select case (feedback)
-      case ('energy') dispatch2
-!       Energy feedback
-        f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta(:,:,:,1)
-      case ('momentum') dispatch2
-!       Momentum feedback
-        f(l1:l2,m1:m2,n1:n2,iux:iuz) = f(l1:l2,m1:m2,n1:n2,iux:iuz) + delta
-      endselect dispatch2
+      f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta(:,:,:)
 !
     endsubroutine detonate
 !***********************************************************************
