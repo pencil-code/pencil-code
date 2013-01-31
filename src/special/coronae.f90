@@ -42,7 +42,7 @@ module Special
   real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
-  real :: aa_tau_inv=0.
+  real :: aa_tau_inv=0.,chi_re=0.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.
   logical :: sub_step_hcond=.false.
   logical :: lrad_loss=.false.
@@ -73,7 +73,7 @@ module Special
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
-      sub_step_hcond,lrad_loss
+      sub_step_hcond,lrad_loss,chi_re
 !
 ! variables for print.in
 !
@@ -422,6 +422,14 @@ module Special
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_cp1)=.true.
+      endif
+!
+      if (chi_re /= 0.) then
+        lpenc_requested(i_uij)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
+        lpenc_requested(i_glnrho)=.true.
       endif
 !
       if (hcond_grad /= 0.) then
@@ -1025,6 +1033,7 @@ module Special
       if (hcond_grad /= 0.     .and. (.not. sub_step_hcond)) call calc_heatcond_glnTT(df,p)
       if (hcond_grad_iso /= 0. .and. (.not. sub_step_hcond)) call calc_heatcond_glnTT_iso(df,p)
       if (hcond1/=0.0) call calc_heatcond_constchi(df,p)
+      if (chi_re/=0.0) call calc_heatcond_chi_re(df,p)
       if (cool_RTV /= 0.) call calc_heat_cool_RTV(df,p)
       if (iheattype(1) /= 'nothing') call calc_artif_heating(df,p)
       if (tau_inv_newton /= 0.) call calc_heat_cool_newton(df,p)
@@ -3991,6 +4000,64 @@ module Special
 !
     endsubroutine mark_boundary
 !***********************************************************************
+    subroutine calc_heatcond_chi_re(df,p)
+!
+! Heatconduction to garanty const mesh Reynolds number
+!         Re = u *dx /chi =  chi_re
+! where chi_re should be in the order of unity
+!
+!  USED PENCILS  uij  uu
+      use Diagnostics,     only: max_mn_name
+      use Sub,             only: dot2,dot,multsv,multmv
+      use EquationOfState, only: gamma
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: chiRe,gchiRe,dxtmp,gdxtmp
+      real, dimension (nx) :: rhs
+      integer :: i
+!
+      dxtmp(:,:) =0.
+      gdxtmp(:,:) =0.
+!
+      if (nx .gt. 1) then
+        dxtmp(:,1) = 1./dx_1(l1:l2)
+        if (.not. lequidist(1)) gdxtmp(:,1) = 1./(dx_1(l1:l2) * dx_tilde(l1:l2))
+      endif
+!
+      if (ny .gt. 1) then
+        dxtmp(:,2) = 1./dy_1(m)
+        if (.not. lequidist(2)) gdxtmp(:,2) = 1./(dy_1(m) * dy_tilde(m))
+      endif
+!
+      if (nz .gt. 1) then
+        dxtmp(:,3) = 1./dz_1(n)
+        if (.not. lequidist(3)) gdxtmp(:,3) = 1./(dz_1(n) * dz_tilde(n))
+      endif
+!
+      do i=1,3
+        chiRe(:,i) = p%uu(:,i)*dxtmp(:,i)*chi_re
+        gchiRe(:,i) = p%uij(:,i,i)*dxtmp(:,i) + p%uu(:,i)*gdxtmp(:,i)*chi_re
+      enddo
+!
+      rhs(:) = 0
+      do i=1,3
+        rhs = rhs + p%glnTT(:,i) *( gchiRe(:,i)  &
+            + chiRe(:,i)*(p%glnTT(:,i) + p%glnrho(:,i))) &
+            + chiRe(:,i)*p%hlnTT(:,i,i)
+      enddo
+!
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+gamma*maxval(chiRe)*dxyz_2
+        if (ldiagnos.and.idiag_dtchi2/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi2,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_chi_re
+!***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !
 ! L = Div( K rho b*(b*Grad(T))
@@ -4175,11 +4242,40 @@ module Special
 !
     endsubroutine filter_farray
 !***********************************************************************
+    subroutine filter_lnTT(f,df,dt_in)
+!
+!  Reduce noise of farray using mesh independend hyper diffusion.
+!  Filter strength is equal for all variables up to now and has
+!  to be smaller than 1/64 for numerical stability.
+!
+!  13-jan-12/bing: coded
+!
+      use Sub, only: del6
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: del6_fj
+      real :: dt_in
+      integer :: j
+!
+      if (dt_in/=0.) then
+          j=ilnTT
+          if (filter_strength(j)/=0.) then
+            call del6(f,j,del6_fj,IGNOREDX=.true.)
+            df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+                filter_strength(j)*del6_fj/dt_in
+          endif
+      endif
+!
+    endsubroutine filter_lnTT
+!***********************************************************************
     subroutine calc_hcond_timestep(f,p,dt1_hcond_max)
-!
-      use Sub,             only : dot2,dot,grad,gij,curl_mn,dot2_mn,unit_vector
-      use EquationOfState, only : gamma
-!
+
+      use Sub,             only : dot2,dot,grad,gij,curl_mn, &
+                                  dot2_mn,unit_vector
+      use EquationOfState, only : gamma, get_cp1
+      use Diagnostics
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: quench
@@ -4187,105 +4283,126 @@ module Special
       real, dimension (nx) :: chi_spitzer,chi_grad,chi_grad_iso
       real, dimension (nx,3) :: unit_glnTT
       real, dimension (nx) :: diffus_hcond,dt1_hcond_max
-      real :: B2_ext
+      real, dimension (3) :: B_ext=(/0.0,0.0,1.e-8/)
+      real :: B2_ext,cp1
+      logical :: luse_Bext_in_b2=.true.
 !
       dt1_hcond_max = 0d0
 !
-      IF (sub_step_hcond) then
+      if (sub_step_hcond) then
+!
+        call get_cp1(cp1)
 !
 !  Do loop over m and n.
 !
-      mn_loop: do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
+        mn_loop: do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
 !
 ! grid spacing for time step
 !
-      dline_1(:,1)=dx_1(l1:l2)
-      dline_1(:,2)=dy_1(m)
-      dline_1(:,3)=dz_1(n)
-      dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+          dline_1(:,1)=dx_1(l1:l2)
+          dline_1(:,2)=dy_1(m)
+          dline_1(:,3)=dz_1(n)
+          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
 !
 ! initial thermal diffusion
-      diffus_hcond=0d0
-!--------------------------------------------
+          diffus_hcond=0d0
+!
 ! 1.1) calculate pencils
 !
-! lnrho
-      p%lnrho=f(l1:l2,m,n,ilnrho)
-! lntt
-      p%lnTT=f(l1:l2,m,n,ilnTT)
-! glntt
-      call grad(f,ilnTT,p%glnTT)
-! aa
-      p%aa=f(l1:l2,m,n,iax:iaz)
-! aij
-      call gij(f,iaa,p%aij,1)
-! bb
-      call curl_mn(p%aij,p%bb,p%aa)
-      B2_ext=B_ext_special(1)**2+B_ext_special(2)**2+B_ext_special(3)**2
+          p%lnrho=f(l1:l2,m,n,ilnrho)
+          p%lnTT=f(l1:l2,m,n,ilnTT)
+          call grad(f,ilnTT,p%glnTT)
+          p%aa=f(l1:l2,m,n,iax:iaz)
+          call gij(f,iaa,p%aij,1)
+          call curl_mn(p%aij,p%bb,p%aa)
+          p%bbb=p%bb
+          B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
 !
-      if (B2_ext/=0.0) then
+          if (B2_ext/=0.0) then
 !
 !  Add the external field.
 !
-        if (B_ext_special(1)/=0.0) p%bb(:,1)=p%bb(:,1)+B_ext_special(1)
-        if (B_ext_special(2)/=0.0) p%bb(:,2)=p%bb(:,2)+B_ext_special(2)
-        if (B_ext_special(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext_special(3)
-      endif
+            if (B_ext(1)/=0.0) p%bb(:,1)=p%bb(:,1)+B_ext(1)
+            if (B_ext(2)/=0.0) p%bb(:,2)=p%bb(:,2)+B_ext(2)
+            if (B_ext(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext(3)
+          endif
 !
-      if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+! b2 (default is that B_ext is not included), but this can be changed
+! by setting luse_Bext_in_b2=.true.
+!
+          if (luse_Bext_in_b2) then
+            if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+          else
+            if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
+          endif
 ! bunit
-      quench = 1.0/max(tini,sqrt(p%b2))
-      p%bunit(:,1) = p%bb(:,1)*quench
-      p%bunit(:,2) = p%bb(:,2)*quench
-      p%bunit(:,3) = p%bb(:,3)*quench
+          quench = 1.0/max(tini,sqrt(p%b2))
+          if (luse_Bext_in_b2) then
+            p%bunit(:,1) = p%bb(:,1)*quench
+            p%bunit(:,2) = p%bb(:,2)*quench
+            p%bunit(:,3) = p%bb(:,3)*quench
+          else
+            p%bunit(:,1) = p%bbb(:,1)*quench
+            p%bunit(:,2) = p%bbb(:,2)*quench
+            p%bunit(:,3) = p%bbb(:,3)*quench
+          endif
 !
 ! 1.2) other assistant varible
 !
 !  for timestep extension multiply with the
 !  cosine between grad T and bunit
 !
-      call unit_vector(p%glnTT,unit_glnTT)
-      call dot(p%bunit,unit_glnTT,cosbgT)
+          call unit_vector(p%glnTT,unit_glnTT)
+          call dot(p%bunit,unit_glnTT,cosbgT)
+          call dot2(p%glnTT,glnTT2)
 !
-      call dot2(p%glnTT,glnTT2)
-!-------------------------------------------------
 ! 2) calculate chi_spitzer (for the most simple case no Kc, Ksat)
 !
-      if (Kpara /= 0.) then
-        chi_spitzer =  Kpara * p%cp1 * gamma * exp(2.5*p%lnTT-p%lnrho)
+          if (Kpara /= 0.) then
+            chi_spitzer =  Kpara * cp1 * gamma * exp(2.5*p%lnTT-p%lnrho)
+            chi_spitzer = chi_spitzer*dxyz_2*abs(cosbgT)
+            diffus_hcond = diffus_hcond + chi_spitzer
 !
-        chi_spitzer=chi_spitzer*abs(cosbgT)
-        diffus_hcond=diffus_hcond + chi_spitzer*dxyz_2
-      endif
-!--------------------------------------------------
+            if (ldiagnos.and.idiag_dtspitzer /= 0.) then
+              call max_mn_name(chi_spitzer/cdtv,idiag_dtspitzer,l_dt=.true.)
+            endif
+          endif
+!
 ! 3) calculate chi_hcond_glntt (for the most simple case no Kc, Ksat)
 !
-      if (hcond_grad /= 0.) then
-        chi_grad = glnTT2*hcond_grad*p%cp1
+          if (hcond_grad /= 0.) then
+            chi_grad = glnTT2 * hcond_grad * gamma * cp1
+            chi_grad = chi_grad*dxyz_2*abs(cosbgT)
+            diffus_hcond=diffus_hcond+chi_grad
 !
-        chi_grad = gamma*chi_grad*dxyz_2*abs(cosbgT)
-        diffus_hcond=diffus_hcond+chi_grad
-      endif
-!---------------------------------------------------
+            if (ldiagnos.and.idiag_dtchi2/=0) then
+              call max_mn_name(chi_grad/cdtv,idiag_dtchi2,l_dt=.true.)
+            endif
+          endif
+!
 ! 4) calculate chi_hcond_glntt_iso (for the most simple case no Kc, Ksat)
 !
-      if (hcond_grad_iso /= 0.) then
-        chi_grad_iso =  hcond_grad_iso*glnTT2 * gamma*p%cp1
+          if (hcond_grad_iso /= 0.) then
+            chi_grad_iso =  hcond_grad_iso*glnTT2 * gamma*cp1*dxyz_2
+            diffus_hcond=diffus_hcond+chi_grad_iso
 !
-        diffus_hcond=diffus_hcond+chi_grad_iso*dxyz_2
-      endif
-!----------------------------------------------------
+            if (ldiagnos.and.idiag_dtchi2/=0) then
+              call max_mn_name(chi_grad_iso/cdtv,idiag_dtchi2,l_dt=.true.)
+            endif
+          endif
+!
 ! 5) calculate max diffus -> dt1_hcond -> max
 !
-      dt1_hcond_max = max(dt1_hcond_max,diffus_hcond/cdtv)
+          dt1_hcond_max = max(dt1_hcond_max,diffus_hcond/cdtv)
 !
-      enddo mn_loop
+        enddo mn_loop
 !
-    ENDIF
+        if (ldiagnos) call diagnostic(fname(1:5),5)
+      endif
 !
-    endsubroutine
+    endsubroutine calc_hcond_timestep
 !***********************************************************************
     subroutine update_aa(f,df)
 !
