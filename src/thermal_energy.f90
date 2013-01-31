@@ -37,6 +37,7 @@ module Entropy
   real :: rk_eps = 1.e-3
   real :: nu_z=0., KI_csz=0.
   real :: detonation_factor = 1.
+  real :: TTref = 0., tau_cool = 1.
   integer :: rk_nmax = 100
   integer :: njeans = 4
   integer :: idet = 0
@@ -46,6 +47,7 @@ module Entropy
   logical :: lupw_eth=.false.
   logical :: lcheck_negative_energy=.false.
   logical :: lKI02=.false.
+  logical :: lconst_cooling_time = .false.
   logical :: ljeans_floor=.false.
   logical :: ldetonate=.false.
   logical, pointer :: lpressuregradient_gas
@@ -64,6 +66,7 @@ module Entropy
       chi, chi_shock, chi_shock_gradTT, chi_hyper3_mesh, &
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, nu_z, KI_csz, &
+      lconst_cooling_time, TTref, tau_cool, &
       ljeans_floor, njeans, &
       ldetonate, detonation_factor, feedback
 !
@@ -112,13 +115,17 @@ module Entropy
   real, dimension(ny,nz) :: pp_yz
   real, dimension(nx,ny) :: pp_xy,pp_xy2,pp_xy3,pp_xy4
 !
+! General variables for operator split terms.
+!
+  real :: cv1 = 0.
+!
 ! Coefficients for the KI02 terms
 !
   real, parameter :: KI_heat = 2.0e-26                             ! heating rate [erg/s]
   real, parameter :: KI_v1 = 1.e7, KI_v2 = 1.4e-2                  ! coefficients of the two terms in Lambda / Gamma [cm^3]
   real, parameter :: KI_T1 = 1.184e5, KI_T2 = 1.e3, KI_T3 = 92.    ! coefficients for the temperatures [K]
   real :: KI_a0 = 0., KI_a1 = 0., KI_a2 = 0.
-  real :: cv1 = 0.
+  real :: KI_cv1 = 0.
 !
 ! Coefficient for Jeans energy floor
 !
@@ -185,16 +192,21 @@ module Entropy
 !
 !  Decide if operator splitting is required.
 !
-      lsplit_update = lKI02
+      lsplit_update = lKI02 .or. lconst_cooling_time
       if (lsplit_update .and. .not. ldensity) call fatal_error('initialize_entropy', 'Density is required for split_update_energy.')
+!
+!  General variables required by split_update_energy.
+!
+      ideal_gas: if (lsplit_update) then
+        if (.not. leos_idealgas) call fatal_error('initialize_entropy', 'currently assumes eos_idealgas')
+        call get_cv1(cv1)
+      endif ideal_gas
 !
 !  Initialize the KI02 terms.
 !
       KI02: if (lKI02) then
-        if (.not. leos_idealgas) call fatal_error('initialize_entropy', 'KI02 currently assumes eos_idealgas')
+        KI_cv1 = cv1 * unit_temperature
         call getmu(mu_tmp=mu)
-        call get_cv1(cv1)
-        cv1 = cv1 * unit_temperature
         KI_a0 = (KI_heat * unit_time / unit_energy) / (mu * m_u)
         c0 = KI_a0 / (mu * m_u * unit_length**3)
         if (nzgrid == 1) then
@@ -868,23 +880,24 @@ module Entropy
       real, dimension(mx,my,mz) :: delta_eth
       character(len=256) :: message
 !
+      split_update: if (lsplit_update) then
+!
 !  Impose density and energy floors.
 !
-      call impose_density_floor(f)
-      call impose_energy_floor(f)
+        call impose_density_floor(f)
+        call impose_energy_floor(f)
 !
 !  Update the ghost cells.
 !
-      call update_ghosts(f, ieth, ieth)
-      if (ldensity_nolog) then
-          call update_ghosts(f, irho, irho)
-      else
-          call update_ghosts(f, ilnrho, ilnrho)
-      endif
+        call update_ghosts(f, ieth, ieth)
+        if (ldensity_nolog) then
+            call update_ghosts(f, irho, irho)
+        else
+            call update_ghosts(f, ilnrho, ilnrho)
+        endif
 !
 !  Update the energy.
 !
-      split_update: if (lsplit_update) then
         if (ldensity_nolog) then
           call get_delta_eth(real(t), dt, f(:,:,:,ieth), f(:,:,:,irho), delta_eth, status)
         else
@@ -912,6 +925,31 @@ module Entropy
       endif split_update
 !
     endsubroutine
+!***********************************************************************
+    pure subroutine const_cooling_time(eth, rho, dt)
+!
+!  Exactly integrate the cooling term dTT/dt = (TTref - TT) / tau_cool.
+!  Ideal equation of state is assumed.
+!
+!  31-jan-13/ccyang: coded.
+!
+      real, intent(inout) :: eth
+      real, intent(in) :: rho, dt
+!
+      real :: temp, a, b, c, x
+!
+      c = cv1 / rho
+      temp = c * eth
+      hot: if (temp > TTref) then
+        x = dt / tau_cool
+        a = exp(-x)
+        b = 1. - a
+        if (b == 0.) b = x * (1. - 0.5 * x)
+        temp = temp * a + TTref * b
+        eth = temp / c
+      endif hot
+!
+    endsubroutine const_cooling_time
 !***********************************************************************
     elemental subroutine get_delta_eth(t, dt, eth, rho, delta_eth, status)
 !
@@ -1033,6 +1071,14 @@ module Entropy
         endif
       endif status_code
 !
+!  Cases for which there exists exact solutions.
+!
+      const: if (lconst_cooling_time) then
+        eth1 = eth + delta_eth
+        call const_cooling_time(eth1, rho, dt)
+        delta_eth = eth1 - eth
+      endif const
+!
     endsubroutine get_delta_eth
 !***********************************************************************
     elemental function calc_heat_split(t, eth, rho) result(heat)
@@ -1072,8 +1118,8 @@ module Entropy
 !
 !  Find the temperature and its derived values.
 !
-      if (cv1 > 0. .and. eth > 0. .and. rho > 0.) then
-        temp = cv1 * eth / rho
+      if (KI_cv1 > 0. .and. eth > 0. .and. rho > 0.) then
+        temp = KI_cv1 * eth / rho
         c1 = exp(-KI_T1 / (temp + KI_T2))
         c2 = exp(-KI_T3 / temp)
       else
