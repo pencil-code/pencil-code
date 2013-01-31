@@ -44,6 +44,7 @@ module Special
   real, dimension(2) :: heat_par_exp=(/0.,1./)
   real, dimension(2) :: heat_par_exp2=(/0.,1./)
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
+  real, dimension(3) :: heat_par_vandoors=(/1.,0.1,50./)
 !
   namelist /special_run_pars/ &
       Kpara,Kperp,cool_RTV,tau_inv_newton,exp_newton,init_time, &
@@ -53,7 +54,8 @@ module Special
       exp_RTV,cubic_RTV,tanh_RTV,hcond_grad_iso,Ksat,Kc, &
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
       bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho, &
-      lfilter_farray,filter_strength,loop_frac
+      lfilter_farray,filter_strength,loop_frac,&
+      heat_par_vandoors
 !
 ! variables for print.in
 !
@@ -234,6 +236,7 @@ module Special
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_glnrho)=.true.
       endif
 !
       if (Ksat /= 0.) then
@@ -912,22 +915,26 @@ module Special
       use Diagnostics, only: max_mn_name
       use General, only: random_number_wrapper,random_seed_wrapper, &
           normal_deviate
-      use Sub, only: cubic_step
+      use Sub, only: cubic_step, dot2, notanumber
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: heatinput
+      real, dimension (nx) :: heatinput,doors_heat,doors_a
       real, dimension (nx) :: x_Mm,heat_nano,rhs,height
-      real, dimension (nx) :: heat_event,heat_event1D
+      real, dimension (nx) :: heat_event,heat_event1D,Hlength
+      real, dimension (nx) :: Htemp
+      real, dimension (15,2) :: a_arr
       integer, dimension(mseed) :: global_rstate
       real :: heat_unit,heat_flux
       real :: nano_sigma_t,nano_time,nano_start,nano_sigma_z
       real :: nano_flare_energy,nano_pos_x,nano_pos_z,nano_pos_y
       real :: nano_amplitude
+      real :: slope
       real, dimension(2) :: event_pos
       type (pencil_case) :: p
-      integer :: i
+      integer :: i,j,k
+      logical :: notdone
 !
-! the unit W/m^3 is
+ ! the unit W/m^3 is
       heat_unit= unit_density*unit_velocity**3/unit_length
 !
 ! coordinate along the loop in [Mm]
@@ -976,13 +983,18 @@ module Special
           ! heat_par_exp2= (1e-4 , 4.)
           !
           heatinput=heatinput + &
-              heat_par_exp2(1)*exp(-height/heat_par_exp2(2))/heat_unit
+              heat_par_exp2(1)/heat_unit*exp(-height/heat_par_exp2(2))
 !
-          heat_flux=heat_flux + heat_par_exp2(1)*heat_par_exp2(2)*1e6
+!  add the flux at a ref height of 4 Mm
 !
-          if (headtt) print*,'Flux for exp2 heating: ', &
-              heat_par_exp2(1)*heat_par_exp2(2)*1e-6* &
-              (1.-exp(-lz*unit_length*1e-6/heat_par_exp2(2)))
+          if (headtt) then
+            heat_flux = heat_par_exp2(1)*heat_par_exp2(2)*1e6*exp(-4./heat_par_exp2(2))
+            write (*,*) 'Exp heating, scale height: ',heat_par_exp(2),' [ Mm ]'
+            write (*,*) 'Exp heating, amplitude',heat_par_exp2(1)/heat_unit,' [ Wm^-3 ]'
+            write (*,*) 'Exp heating, flux at z=4 Mm: ', heat_flux
+            write (*,*) 'Exp heating, flux at z=0 Mm: ', heat_par_exp2(1)*heat_par_exp2(2)*1e6
+          endif
+
 !
         case ('gauss')
           ! heat_par_gauss(1) is Center (z in Mm)
@@ -1084,6 +1096,93 @@ module Special
             heatinput=heatinput + heat_event1D/heat_unit
           endif
 !
+!---------------------------------------------------------------------
+        case ('vandoors')
+          !heating based on "Van Doorsselaere et al. 2007"
+          !pi defined?
+!          heat_par_vandoors(1)=1.   !amplitude
+          !          heat_par_vandoors(2)=0.1  
+          !(temp) some amplitude to add a physical heating
+          !          heat_par_vandoors(3)=50. Mm, 
+          !density scale height, later dynamic?
+          !  if (headtt) print*,heat_par_vandoors,pi
+
+          ! --find a --
+          !better in the header of the subroutine?
+          a_arr(:,1)=(/0.5,0.6,0.7,0.8,0.9,1.,1.2,1.4,1.6,2.,2.4,2.8,3.2,3.6,1000. /) !L/pi/H
+          a_arr(:,2)=(/0.03426,0.04169,0.04933,0.05717,0.06522,0.07349,0.09068,0.10877,&
+              0.12778,0.16853,0.21287,0.26046,0.31068,0.36260,125./) !a 
+     
+           if (notanumber(p%glnrho)) then
+   !         print*,p%glnrho
+            call fatal_error('p%glnrho','NaN found')
+            print*,'-------------------------------'
+          endif
+     
+          call dot2(p%glnrho,Htemp,FAST_SQRT=.true.)
+!          Htemp=sqrt(Htemp**2.)
+         
+     
+          Hlength=(Htemp+tiny(0D0))**(-1.)/Ltot/pi
+
+          j=6
+          
+          do k=1,nx
+            notdone=.true.
+            !
+            do while (notdone)
+              if (Hlength(k) >= a_arr(j,1) .and. Hlength(k)<a_arr(j+1,1)) then
+                
+                notdone = .false. 
+              else
+                j=j+sign(1.,Hlength(k)-a_arr(j,1))
+                
+                if (j <= 0) then
+                  j=1
+                  notdone=.false.
+                elseif (j >= 14) then
+                  j = 14
+                  notdone=.false.
+                endif
+              endif
+            enddo
+            slope=(a_arr(j+1,2)-a_arr(j,2))/(a_arr(j+1,1)-a_arr(j,1))
+            doors_a(k)=slope*(Hlength(k)-a_arr(j,1))+a_arr(j,2)
+          enddo
+          
+          
+          if (notanumber(doors_a)) then
+            print*,Hlength
+            call fatal_error('update points','NaN found')
+            print*,'-------------------------------'
+          endif
+          
+          where(doors_a < 0) 
+            doors_a=0D0
+          endwhere
+          where(doors_a > 0.5) 
+            doors_a=0.5
+          endwhere
+          
+          doors_heat= heat_par_vandoors(1)* (cos(pi* height/Ltot)**2.+ &
+               6.*doors_a*cos(pi*height/Ltot)*cos(3.*pi*height/Ltot))
+          where(doors_heat < 0) 
+            doors_heat=0
+          endwhere
+          
+          do k=0,nx
+            if (doors_heat(k) >1. ) then 
+              print*,doors_heat(k),k
+              call fatal_error('doors_heat','toobig!')
+            endif
+          enddo
+          
+          heatinput=heatinput + doors_heat!/heat_unit
+!print*,max(transpose(heat_par_vandoors(1)*cos(pi* height/Ltot)**2.) )
+
+!          print*,max((heat_par_vandoors(1)*cos(pi* height/ L)**2.+6.*heat_par_vandoors(2)*cos(pi*height/L)*cos(3.*pi*height/L))/&
+ !             heat_unit)
+!---------------------------------------------------------------------
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
               'Please provide correct iheattype')
