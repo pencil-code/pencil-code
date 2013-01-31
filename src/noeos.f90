@@ -1219,6 +1219,25 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
+    subroutine bc_ss_temp3_z(f,topbot)
+!
+!  boundary condition for entropy: constant temperature
+!
+!  22-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
+!
+      use Gravity, only: gravz
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: tmp,dcs2bot
+      integer :: i
+!
+      if (ldebug) print*,'bc_ss_temp3_z: cs20,cs0=',cs20,cs0
+!
+      call fatal_error('bc_ss_temp3_z','invalid argument')
+!
+    endsubroutine bc_ss_temp3_z
+!***********************************************************************
     subroutine bc_ss_stemp_x(f,topbot)
 !
 !  boundary condition for entropy: symmetric temperature

@@ -722,6 +722,9 @@ module Boundcond
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
+              case ('cT3')
+                ! BCZ_DOC: constant temp. (keep lnrho)
+                if (j==iss)   call bc_ss_temp3_z(f,topbot)
               case ('hs')
                 ! BCZ_DOC: hydrostatic equilibrium
                 if (.not.lgrav) call fatal_error('boundconds_z', &

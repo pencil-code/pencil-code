@@ -3215,6 +3215,60 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
+    subroutine bc_ss_temp3_z(f,topbot)
+!
+!  boundary condition for entropy: constant temperature
+!
+!  22-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
+!
+      use Gravity, only: gravz
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: tmp,dcs2bot
+      integer :: i
+!
+      if (ldebug) print*,'bc_ss_temp3_z: cs20,cs0=',cs20,cs0
+!
+!  Constant temperature/sound speed for entropy, i.e. antisymmetric
+!  ln(cs2) relative to cs2top/cs2bot.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case (topbot)
+!
+!  bottom boundary
+!
+      case ('bot')
+        dcs2bot=gamma*gravz/(mpoly+1.)
+        if (ldebug) print*, &
+            'bc_ss_temp3_z: set cs2bot,dcs2bot=',cs2bot,dcs2bot
+        if (cs2bot<=0.) print*, &
+            'bc_ss_temp3_z: cannot have cs2bot<=0'
+        do i=0,nghost
+          f(:,:,n1-i,iss) = cv*log((cs2bot+(z(n1-i)-z(n1))*dcs2bot)/cs20) &
+               -(cp-cv)*(f(:,:,n1-i,ilnrho)-lnrho0)
+        enddo
+!
+!  top boundary
+!
+      case ('top')
+        if (ldebug) print*, &
+                     'bc_ss_temp3_z: set z top temperature: cs2top=',cs2top
+        if (cs2top<=0.) print*,'bc_ss_temp3_z: cannot have cs2top<=0'
+        tmp = cv*log(cs2top/cs20)
+        do i=0,nghost
+          f(:,:,n2+i,iss) = tmp &
+               - (cp-cv)*(f(:,:,n2+i,ilnrho)-lnrho0)
+        enddo
+      case default
+        call fatal_error('bc_ss_temp3_z','invalid argument')
+      endselect
+!
+    endsubroutine bc_ss_temp3_z
+!***********************************************************************
     subroutine bc_ss_stemp_x(f,topbot)
 !
 !  boundary condition for entropy: symmetric temperature
