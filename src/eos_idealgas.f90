@@ -1520,6 +1520,8 @@ module EquationOfState
       real, intent(out), optional :: ee,pp,cs2
       real :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
 !
+      real :: rho1
+!
       if (gamma_m1==0.and..not.lanelastic) call fatal_error &
         ('eoscalc_point','gamma=1 not allowed w/entropy')
 !
@@ -1607,6 +1609,22 @@ module EquationOfState
             lnrho_=log(gamma*pp_/cs2_)
           endif
         endif
+!
+      case (irho_eth, ilnrho_eth)
+        density: if (ivars == irho_eth) then
+          if (present(lnrho)) lnrho_ = log(var1)
+          rho1 = 1. / var1
+        else density
+          if (present(lnrho)) lnrho_ = var1
+          rho1 = exp(-var1)
+        endif density
+        if (present(lnTT)) lnTT_ = log(cv1 * rho1 * var2)
+        if (present(ee)) ee_ = rho1 * var2
+        if (present(pp)) pp_ = gamma_m1 * var2
+        if (present(cs2)) cs2_ = gamma * gamma_m1 * rho1 * var2
+        if (present(ss)) call fatal_error('eoscalc_point', 'ss is not implemented for irho_eth')
+        if (present(yH)) call fatal_error('eoscalc_point', 'yH is not implemented for irho_eth')
+!
       case default
         call not_implemented('eoscalc_point')
       end select
@@ -1642,6 +1660,8 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp,cs2
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_,cs2_,TT_
+!
+      real, dimension(nx) :: rho1
 !
       if (gamma_m1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
@@ -1706,8 +1726,24 @@ module EquationOfState
         lnrho_=log(pp_)/gamma-ss_/cp
         TT_=pp_/((gamma_m1)*cv*exp(lnrho_))
         cs2_=cp*gamma_m1*TT_
+!
+      case (irho_eth, ilnrho_eth)
+        density: if (ivars == irho_eth) then
+          if (present(lnrho)) lnrho_ = log(var1)
+          rho1 = 1. / var1
+        else density
+          if (present(lnrho)) lnrho_ = var1
+          rho1 = exp(-var1)
+        endif density
+        if (present(lnTT)) lnTT_ = log(cv1 * rho1 * var2)
+        if (present(ee)) ee_ = rho1 * var2
+        if (present(pp)) pp_ = gamma_m1 * var2
+        if (present(cs2)) cs2_ = gamma * gamma_m1 * rho1 * var2
+        if (present(ss)) call fatal_error('eoscalc_pencil', 'ss is not implemented for irho_eth')
+        if (present(yH)) call fatal_error('eoscalc_pencil', 'yH is not implemented for irho_eth')
+!
       case default
-        call not_implemented('eoscalc_point')
+        call not_implemented('eoscalc_pencil')
       end select
 !
       if (present(lnrho)) lnrho=lnrho_
