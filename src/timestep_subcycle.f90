@@ -33,50 +33,24 @@ module Timestep
       use Special
       use Boundcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mfarray) :: f,fsub,fm1
+      real, dimension (mx,my,mz) :: fm2, fj
+      real, dimension (mx,my,mz,mvar) :: df,dfsub,dfm1
       type (pencil_case) :: p
       real :: ds
       real :: dt1, dt1_local, dt1_last=0.0
-      integer :: j,ienergy, Nsub
-      real, dimension (mx,my,mz,mfarray) :: ftmp
+      integer :: j,ienergy, Nsub , itRKL,s
       real, dimension (nx) :: dt1_hcond_max
-      real :: dt1_energy_local,dt1_energy,dt_energy
- !
-      if (ltemperature) then
-        if (ltemperature_nolog) then
-          ienergy = iTT
-        else
-          ienergy = ilnTT
-        endif
-      endif
-      if (lentropy) then
-        if (pretend_lnTT) then
-          ienergy = ilnTT
-        else
-          ienergy = iss
-        endif
-      endif
-      if (lthermal_energy) ienergy=ieth
+      real, dimension (itorder) :: coeff_fm1, coeff_fm2, coeff_fsub
+      real, dimension (itorder) :: coeff_dfm1, coeff_dfsub
+      real :: dt1_energy_local,dt1_energy,dt_energy,dt_RKL,dt_sub_RKL
 !
-!  Coefficients for up to order 3.
+      ienergy = ilnTT
 !
-      if (itorder==1) then
-        alpha_ts=(/ 0.0, 0.0, 0.0 /)
-        beta_ts =(/ 1.0, 0.0, 0.0 /)
-      elseif (itorder==2) then
-        alpha_ts=(/   0.0, -1/2.0, 0.0 /)
-        beta_ts =(/ 1/2.0,    1.0, 0.0 /)
-      elseif (itorder==3) then
-        !alpha_ts=(/   0.0, -2/3.0, -1.0   /)
-        !beta_ts =(/ 1/3.0,    1.0,  1/2.0 /)
-        !  use coefficients of Williamson (1980)
+!  Coefficients for order 3. RK Scheme
+!  use coefficients of Williamson (1980)
         alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
         beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
-      else
-        if (lroot) print*,'Not implemented: itorder=',itorder
-        call mpifinalize
-      endif
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !
@@ -84,9 +58,9 @@ module Timestep
 !
 !  Set up df and ds for each time sub.
 !
-      do itsub=1,itorder
+      do itsub=1,3
         lfirst=(itsub==1)
-        llast=(itsub==itorder)
+        llast=(itsub==3)
         if (lfirst) then
           df=0.0
           ds=0.0
@@ -112,17 +86,17 @@ module Timestep
 !  Get time step for heat conduction in sub step, when sub_step_hcond
 !  in coronae module is F, dt1_energy will be 0, and sub iteration below
 !  is turned off. This allows turn on/off sub iteration without recompile.
+!
           call calc_hcond_timestep(f,p,dt1_hcond_max)
           dt1_energy_local=maxval(dt1_hcond_max(1:nx))
 !
-          ! Get global time step limite
+!  Get global time step limite
           call mpiallreduce_max(dt1_local,dt1)
           call mpiallreduce_max(dt1_energy_local,dt1_energy)
           dt=1.0/dt1
-!  calc the number of sub iteration
-          Nsub = int(dt1_energy/dt1)+1
-! in pdf(f,df,p) ghost cells of f-array are set
-          ftmp = f
+!
+! in pde(f,df,p) ghost cells of f-array are set
+          fsub = f
           if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
           ! Timestep growth limiter
           if (ddt/=0.) dt1_last=dt1_local/ddt
@@ -137,6 +111,8 @@ module Timestep
 !  (do this loop in pencils, for cache efficiency)
 !
         do j=1,mvar; do n=n1,n2; do m=m1,m2
+!ajwm Note to self... Just how much overhead is there in calling
+!ajwm a sub this often...
             if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
             f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
@@ -149,59 +125,114 @@ module Timestep
 !
       enddo
 !
-!  Now do the substeps for the energy (thermal conduction) only
+!!--------------------------------------------------------------------------------!
+!!  Now do the substeps for the energy (thermal conduction) only -----------------!
+!!--------------------------------------------------------------------------------!
 !
-      dt_energy = dt / dble(Nsub)
-!      if ((dt_energy /= dt) .and. lroot .and. (mod(it,isave) == 0)) &
+      if (dt1*dt1_energy > 0.) then ! Turn of the subcycle when dt1_energy = 0.
 !
-      write(*,*) 'Nsub = ',Nsub,'dt_energy = ',dt_energy
+        dt_energy = 1d0/dt1_energy
 !
-      IF (Nsub > 1) THEN ! Turn of the subcycle when dt1_energy actully = 0.
+!  Set time step to the super-timestep
+        itRKL = itorder
+        dt_RKL = (itRKL*itRKL+itRKL-2d0)/4d0*dt_energy
 !
-      do n=n1,n2; do m=m1,m2
-        ftmp(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
-      enddo; enddo
+!  calc the number of sub iteration
+        Nsub = int(dt / dt_RKL)+1
+        dt_sub_RKL = dt / dble(Nsub)
 !
-      do j=1,Nsub
-        do itsub=1,itorder
-          lfirst=(itsub==1)
-          llast=(itsub==itorder)
-          if (lfirst) then
-            df=0.0
-            ds=0.0
+!  calc timestep coefficient
+        call RKL_coeff(itRKL, coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub)
+!
+! initalize fsub, fm1, fm2 for sub cycle with RKL steps
+        do n=n1,n2; do m=m1,m2
+          fsub(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
+          fm1(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
+        enddo; enddo
+!
+        do j=1,Nsub
+!
+! one RKL step contains itRKL sub steps
+!
+        do s=1,itRKL
+          if (s == 1) then
+            dfsub=0.
+            call pde_energy_only(fsub,dfsub,p,dt_sub_RKL)
+            do n=n1,n2; do m=m1,m2
+              fm1(l1:l2,m,n,ienergy)=fsub(l1:l2,m,n,ienergy) &
+              +coeff_dfm1(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
+              fm2(l1:l2,m,n) = fsub(l1:l2,m,n,ienergy)
+            enddo; enddo
           else
-            df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
-            ds=alpha_ts(itsub)*ds
+            dfm1=0.
+            call pde_energy_only(fm1,dfm1,p,dt_sub_RKL)
+            do n=n1,n2; do m=m1,m2
+              fj(l1:l2,m,n)=coeff_fm1(s) * fm1(l1:l2,m,n,ienergy) &
+                           +coeff_fm2(s) * fm2(l1:l2,m,n)         &
+                           +coeff_fsub(s)*fsub(l1:l2,m,n,ienergy) &
+                           +coeff_dfm1(s) *dt_sub_RKL* dfm1(l1:l2,m,n,ienergy) &
+                           +coeff_dfsub(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
+            enddo; enddo
+!
+! set Yj-1 and Yj-2 for the next sub step
+            do n=n1,n2; do m=m1,m2
+              fm2(l1:l2,m,n)=fm1(l1:l2,m,n,ienergy)
+              fm1(l1:l2,m,n,ienergy)=fj(l1:l2,m,n)
+            enddo; enddo
           endif
+        enddo ! end of itRKL sub steps
 !
-          call pde_energy_only(ftmp,df,p)
+! set inital value for the next RKL step
+        do n=n1,n2; do m=m1,m2
+        fsub(l1:l2,m,n,ienergy)=fj(l1:l2,m,n)
+        enddo; enddo
 !
-          ds=ds+1.0
+        enddo ! end of sub cycle
 !
-          if (ldt) dt_beta_ts=dt_energy*beta_ts
-          if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt_energy  !(all have same dt?)
+! set temperature after heat conduction back to f-array
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,ienergy)=fsub(l1:l2,m,n,ienergy)
+        enddo; enddo
 !
-!  Time evolution of grid variables.
-!  (do this loop in pencils, for cache efficiency)
-!
-          do n=n1,n2; do m=m1,m2
-            ftmp(l1:l2,m,n,ienergy)=ftmp(l1:l2,m,n,ienergy)+dt_beta_ts(itsub)*df(l1:l2,m,n,ienergy)
-          enddo; enddo
-!
-        enddo
-      enddo
-!
-      do n=n1,n2; do m=m1,m2
-        f(l1:l2,m,n,ienergy)=ftmp(l1:l2,m,n,ienergy)
-      enddo; enddo
-!
-    endif
+      ENDIF
 !
     endsubroutine time_step
 !***********************************************************************
-    subroutine pde_energy_only(f,df,p)
+    subroutine RKL_coeff(itRKL, coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub)
+
+    real, dimension (itorder) :: a,b,coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub
+    integer :: j,itRKL
+
+    b(1) = 1d0/3d0
+    b(2) = 1d0/3d0
+    a(1) = 1d0-b(1)
+    a(2) = 1d0-b(2)
 !
-!  Calculate thermal conduction for sub_circle time step.
+    coeff_dfm1(1) = 4d0/3d0/(itRKL*itRKL+itRKL-2d0)
+!
+    coeff_fm1(2) = 3d0/2d0
+    coeff_fm2(2) = -1d0/2d0
+    coeff_fsub(2) = 1d0-coeff_fm1(2)-coeff_fm2(2)
+    coeff_dfm1(2) = 6d0/(itRKL*itRKL+itRKL-2d0)
+    coeff_dfsub(2) = -a(1)*coeff_dfm1(2)
+!
+    do j=3, itRKL
+!
+      b(j) = (j*j+j-2d0)/(2d0*j)/(j+1d0)
+      a(j) = 1d0-b(j)
+!
+      coeff_fm1(j) = (2d0*j-1d0)/j*b(j)/b(j-1)
+      coeff_fm2(j) = -(j-1d0)/j*b(j)/b(j-2)
+      coeff_fsub(j) = 1d0-coeff_fm1(j)-coeff_fm2(j)
+      coeff_dfm1(j) = 4d0*(2d0*j-1d0)/j/(itRKL*itRKL+itRKL-2d0)*b(j)/b(j-2)
+      coeff_dfsub(j) = -a(j-1)*coeff_dfm1(j)
+    enddo
+
+    endsubroutine RKL_coeff
+!***********************************************************************
+    subroutine pde_energy_only(f,df,p,dt_in)
+!
+!  Calculate thermal conduction for sub_cycle time step.
 !
 !  22-jun-12/feng/bingert: coded
 !
@@ -222,6 +253,7 @@ module Timestep
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real :: dt_in
       type (pencil_case) :: p
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
@@ -232,7 +264,7 @@ module Timestep
 !
       headtt = headt .and. lfirst .and. lroot
 !
-!      if (headtt.or.ldebug) print*,'pde_energy_only: ENTER'
+      if (headtt.or.ldebug) print*,'pde: ENTER'
 !
 !  For chemistry with LSODE
 !
@@ -310,6 +342,8 @@ module Timestep
        call boundconds_z(f,ilnTT,ilnTT)
      endif
 !
+!
+!------------------------------------------------------------------------------
 !  Do loop over m and n.
 !
       mn_loop: do imn=1,ny*nz
@@ -377,14 +411,8 @@ module Timestep
 ! To check ghost cell consistency, please uncomment the following 2 lines:
 !       if (.not. lpencil_check_at_work .and. necessary(imn)) &
 !       call check_ghosts_consistency (f, 'before calc_pencils_*')
-!!!                              call calc_pencils_hydro(f,p)
-        call calc_pencils_sub_circle(f,p)
-!!!                              call calc_pencils_density(f,p)
-        call calc_pencils_eos(f,p)
-!!!                              call calc_pencils_entropy(f,p)
-!!!        if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
-!!!        if (lmagnetic)        call calc_pencils_magnetic(f,p)
-!!!        if (lspecial)         call calc_pencils_special(f,p)
+       call calc_pencils_sub_cycle(f,p)
+       call calc_pencils_eos(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -398,6 +426,7 @@ module Timestep
         call calc_heatcond_tensor(f,df,p)
         call calc_heatcond_glnTT(df,p)
         call calc_heatcond_glnTT_iso(df,p)
+        call filter_lnTT(f,df,dt_in)
 !
 !  End of loops over m and n.
 !
@@ -415,7 +444,7 @@ module Timestep
 !
     endsubroutine pde_energy_only
 !***********************************************************************
-    subroutine calc_pencils_sub_circle(f,p)
+    subroutine calc_pencils_sub_cycle(f,p)
 !
 ! Calculate pencil for spitzer heat conduction and
 ! hcond_grad and hcond_grad_iso
@@ -480,6 +509,6 @@ module Timestep
 !
     call gij_etc(f,iaa,p%aa,p%aij,p%bij)
 !
-    endsubroutine calc_pencils_sub_circle
+    endsubroutine calc_pencils_sub_cycle
 !***********************************************************************
 endmodule Timestep
