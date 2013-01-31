@@ -707,16 +707,23 @@ module Entropy
 !
 !  04-nov-10/anders+evghenii: adapted
 !
+      use EquationOfState, only: eoscalc, irho_eth, ilnrho_eth
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
+      real, dimension(nx) :: penc
+      integer :: ieosvars, idensity
+      integer :: m, n
+      real :: a
 !
 !  Loop over slices
 !
-      select case (trim(slices%name))
+      slice_name: select case (trim(slices%name))
+!
 !  Pressure
-        case ('pp')
+!
+        case ('pp') slice_name
           slices%yz =pp_yz
           slices%xz =pp_xz
           slices%xy =pp_xy
@@ -725,7 +732,52 @@ module Entropy
           if (lwrite_slice_xy4) slices%xy4=pp_xy4
           slices%ready=.true.
 !
-      endselect
+!  Temperature
+!
+        case ('TT', 'lnTT') slice_name
+          density: if (ldensity_nolog) then
+            ieosvars = irho_eth
+            idensity = irho
+          else density
+            ieosvars = ilnrho_eth
+            idensity = ilnrho
+          endif density
+!
+          xy: do m = m1, m2
+            call eoscalc(ieosvars, f(l1:l2,m,iz_loc,idensity), f(l1:l2,m,iz_loc,ieth), lnTT=penc)
+            slices%xy(:,m-nghost) = penc
+            call eoscalc(ieosvars, f(l1:l2,m,iz2_loc,idensity), f(l1:l2,m,iz2_loc,ieth), lnTT=penc)
+            slices%xy2(:,m-nghost) = penc
+            call eoscalc(ieosvars, f(l1:l2,m,iz3_loc,idensity), f(l1:l2,m,iz3_loc,ieth), lnTT=penc)
+            slices%xy3(:,m-nghost) = penc
+            call eoscalc(ieosvars, f(l1:l2,m,iz4_loc,idensity), f(l1:l2,m,iz4_loc,ieth), lnTT=penc)
+            slices%xy4(:,m-nghost) = penc
+          enddo xy
+!
+          xz: do n = n1, n2
+            call eoscalc(ieosvars, f(l1:l2,iy_loc,n,idensity), f(l1:l2,iy_loc,n,ieth), lnTT=penc)
+            slices%xz(:,n-nghost) = penc
+          enddo xz
+!
+          yz_z: do n = n1, n2
+            yz_y: do m = m1, m2
+              call eoscalc(ieosvars, f(ix_loc,m,n,idensity), f(ix_loc,m,n,ieth), lnTT=a)
+              slices%yz(m-nghost,n-nghost) = a
+            enddo yz_y
+          enddo yz_z
+!
+          nolog: if (trim(slices%name) == 'TT') then
+            slices%xy = exp(slices%xy)
+            slices%xy2 = exp(slices%xy2)
+            slices%xy3 = exp(slices%xy3)
+            slices%xy4 = exp(slices%xy4)
+            slices%xz = exp(slices%xz)
+            slices%yz = exp(slices%yz)
+          endif nolog
+!
+          slices%ready = .true.
+!
+      endselect slice_name
 !
     endsubroutine get_slices_entropy
 !***********************************************************************
