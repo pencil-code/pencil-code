@@ -2793,7 +2793,7 @@ module Boundcond
 !
       integer :: iref=-1,pos
 !
-      if (j/=iuz) call fatal_error('bc_set_div_z','only implemented for div(u)=0')
+      if (j/=iuz) call fatal_error_local('bc_set_div_z','please set div for uz only')
 !
       select case (topbot)
 !
