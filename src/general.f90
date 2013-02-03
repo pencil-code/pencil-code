@@ -1205,7 +1205,7 @@ module General
 !
     endfunction spline_integral_double
 !***********************************************************************
-    subroutine tridag(a,b,c,r,u,err)
+    pure subroutine tridag(a,b,c,r,u,err,msg)
 !
 !  Solves a tridiagonal system.
 !
@@ -1223,6 +1223,7 @@ module General
       real, dimension(:), intent(out) :: u
       real, dimension(size(b)) :: gam
       logical, intent(out), optional :: err
+      character(len=*), intent(out), optional :: msg
       integer :: n,j
       real :: bet
 !
@@ -1230,9 +1231,8 @@ module General
       n=size(b)
       bet=b(1)
       if (bet==0.0) then
-        print*,'tridag: Error at code stage 1'
-        if (present(err)) err=.true.
-        return
+        if (present(msg)) msg = 'tridag: Error at code stage 1'
+        if (present(err)) err = .true.
       endif
 !
       u(1)=r(1)/bet
@@ -1240,8 +1240,8 @@ module General
         gam(j)=c(j-1)/bet
         bet=b(j)-a(j)*gam(j)
         if (bet==0.0) then
-          print*,'tridag: Error at code stage 2'
-          if (present(err)) err=.true.
+          if (present(msg)) msg = 'tridag: Error at code stage 2'
+          if (present(err)) err = .true.
           return
         endif
         u(j)=(r(j)-a(j)*u(j-1))/bet
@@ -1346,7 +1346,7 @@ module General
 !
     endsubroutine pendag
 !***********************************************************************
-    subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
+    pure subroutine spline(arrx,arry,x2,S,psize1,psize2,err,msg)
 !
 !  Interpolates in x2 a natural cubic spline with knots defined by the 1d
 !  arrays arrx and arry.
@@ -1357,8 +1357,9 @@ module General
       integer :: i,j,ct1,ct2
       real, dimension (psize1) :: arrx,arry,h,h1,a,b,d,sol
       real, dimension (psize2) :: x2,S
-      real :: fac=0.1666666
+      real, parameter :: fac=0.1666666
       logical, intent(out), optional :: err
+      character(len=*), intent(out), optional :: msg
 !
       intent(in)  :: arrx,arry,x2
       intent(out) :: S
@@ -1378,8 +1379,8 @@ module General
 !
       do i=1,ct1-1
         if (arrx(i+1)<=arrx(i)) then
-          print*,'spline x:y in x2:y2 : vector x is not monotonically increasing'
-          if (present(err)) err=.true.
+          if (present(msg)) msg = 'spline x:y in x2:y2 : vector x is not monotonically increasing'
+          if (present(err)) err = .true.
           return
         endif
       enddo
@@ -1403,7 +1404,12 @@ module General
       d(2:ct1-1) = 6*((arry(3:ct1) - arry(2:ct1-1))*h1(2:ct1-1) - (arry(2:ct1-1) - arry(1:ct1-2))*h1(1:ct1-2))
       d(1) = 0. ; d(ct1) = 0.
 !
-      call tridag(a,b,h,d,sol)
+      if (present(msg)) then
+        call tridag(a,b,h,d,sol,err,msg)
+      else
+        call tridag(a,b,h,d,sol,err)
+      endif
+      if (err) return
 !
 !  Interpolation formula.
 !
@@ -1813,6 +1819,8 @@ module General
       integer :: i,n
       real, dimension(n) :: a,b,c,r,x,bb,u,z
       real    :: alpha,beta,gamma,fact
+      logical :: err
+      character(len=255) :: msg
 !
       if (n<=2) stop "cyclic in the general module: n too small"
       gamma=-b(1)
@@ -1821,13 +1829,15 @@ module General
       do i=2,n-1
         bb(i)=b(i)
       enddo
-      call tridag(a,bb,c,r,x)
+      call tridag(a,bb,c,r,x,err,msg)
+      if (err) print *, 'cyclic: ', trim(msg)
       u(1)=gamma
       u(n)=alpha
       do i=2,n-1
         u(i)=0.
       enddo
-      call tridag(a,bb,c,u,z)
+      call tridag(a,bb,c,u,z,err,msg)
+      if (err) print *, 'cyclic: ', trim(msg)
       fact=(x(1)+beta*x(n)/gamma)/(1.+z(1)+beta*z(n)/gamma)
       do i=1,n
         x(i)=x(i)-fact*z(i)

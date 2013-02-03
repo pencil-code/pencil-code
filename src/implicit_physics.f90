@@ -22,7 +22,7 @@ module ImplicitPhysics
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, warning
   use General, only: tridag, cyclic
 !
   implicit none
@@ -191,6 +191,8 @@ module ImplicitPhysics
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
 !
 !  first update all the ghost zones in the f-array
 !
@@ -262,7 +264,8 @@ module ImplicitPhysics
            call fatal_error('ADI_Kconst','bcz on TT must be cT or c1')
         endselect
 !
-        call tridag(az, bz, cz, rhsz, workz)
+        call tridag(az, bz, cz, rhsz, workz, err, msg)
+        if (err) call warning('ADI_Kconst', trim(msg))
         f(i,4,n1:n2,ilnTT)=workz
       enddo
 !
@@ -291,6 +294,8 @@ module ImplicitPhysics
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real    :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
 !
       source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
 ! BC important not for the x-direction (always periodic) but for 
@@ -378,7 +383,8 @@ module ImplicitPhysics
           call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
        endselect
 !
-       call tridag(az,bz,cz,rhsz,workz)
+       call tridag(az,bz,cz,rhsz,workz,err,msg)
+       if (err) call warning('ADI_Kprof', trim(msg))
        val(i,n1:n2)=workz(1:nz)
       enddo
 !
@@ -423,6 +429,8 @@ module ImplicitPhysics
       real, dimension(nx)      :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid)  :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
 !
 !  It is necessary to communicate ghost-zones points between
 !  processors to ensure a correct transposition of these ghost
@@ -523,7 +531,8 @@ module ImplicitPhysics
           case default 
             call fatal_error('ADI_Kprof','bcz on TT must be cT or c3')
         endselect
-        call tridag(az, bz, cz, rhsz, workz)
+        call tridag(az, bz, cz, rhsz, workz, err, msg)
+        if (err) call warning('ADI_Kprof', trim(msg))
         valt(n1t:n2t,i)=workz(1:nzgrid)
       enddo ! i
 !
@@ -592,6 +601,8 @@ module ImplicitPhysics
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mz) :: TT
       real, dimension(nz) :: az, bz, cz, rhsz, wz
+      logical :: err
+      character(len=255) :: msg
 !
       TT=f(4,4,:,iTT)
 !
@@ -609,7 +620,8 @@ module ImplicitPhysics
         cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(1)*dz*Fbot/hcond0  ! T' = -Fbot/K
 !        bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0  ! T' = -Fbot/K
       endif
-      call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT))
+      call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT), err, msg)
+      if (err) call warning('ADI_Kconst_1d', trim(msg))
 !
     endsubroutine ADI_Kconst_1d
 !***********************************************************************
@@ -628,6 +640,8 @@ module ImplicitPhysics
       real, dimension(mz) :: source, rho, TT, hcond, dhcond
       real, dimension(nz) :: a, b, c, rhs, work
       real :: wz, hcondp, hcondm
+      logical :: err
+      character(len=255) :: msg
 !
       source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
       rho=exp(f(4,4,:,ilnrho))
@@ -665,7 +679,8 @@ module ImplicitPhysics
           rhs(1)=0.
         endif
       enddo
-      call tridag(a, b, c, rhs, work)
+      call tridag(a, b, c, rhs, work, err, msg)
+      if (err) call warning('ADI_Kprof_1d', trim(msg))
       f(4,4,n1:n2,ilnTT)=f(4,4,n1:n2,iTTold)+work
 !
 ! Update the bottom value of hcond used for the 'c3' BC in boundcond
@@ -694,6 +709,8 @@ module ImplicitPhysics
       real, dimension(nx)         :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nzgrid)     :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
 !
       call update_ghosts(f)
 !
@@ -757,7 +774,8 @@ module ImplicitPhysics
             call fatal_error('ADI_Kconst_MPI','bcz on TT must be cT or c1')
         endselect
 !
-        call tridag(az, bz, cz, rhsz, workz)
+        call tridag(az, bz, cz, rhsz, workz, err, msg)
+        if (err) call warning('ADI_Kconst_MPI', trim(msg))
         wtmp(:,i)=workz
       enddo
       call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
@@ -833,6 +851,8 @@ module ImplicitPhysics
       real, dimension(mz) :: source, TT, hcond, dhcond, dLnhcond, chi
       real, dimension(nz) :: a, b, c, rhs, work
       real :: wz
+      logical :: err
+      character(len=255) :: msg
 !
       source=(f(4,4,:,ilnTT)-f(4,4,:,iTTold))/dt
       call heatcond_TT(f(4,4,:,iTTold), hcond, dhcond)
@@ -873,7 +893,8 @@ module ImplicitPhysics
         endif
       enddo
 !
-      call tridag(a, b, c, rhs, work)
+      call tridag(a, b, c, rhs, work, err, msg)
+      if (err) call warning('ADI_Kprof_1d_mixed', trim(msg))
       f(4,4,n1:n2,ilnTT)=f(4,4,n1:n2,iTTold)+work
 !
 ! Update the bottom value of hcond used for the 'c3' BC in boundcond
@@ -907,6 +928,8 @@ module ImplicitPhysics
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
 !
       call update_ghosts(f)
 !
@@ -976,7 +999,8 @@ module ImplicitPhysics
           call fatal_error('ADI_Kprof_mixed','bcz on TT must be cT or c3')
        endselect
 !
-       call tridag(az,bz,cz,rhsz,workz)
+       call tridag(az,bz,cz,rhsz,workz,err,msg)
+       if (err) call warning('ADI_Kprof_mixed', trim(msg))
        val(i,n1:n2)=workz(1:nz)
       enddo
 !
@@ -1013,6 +1037,8 @@ module ImplicitPhysics
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
+      logical :: err
+      character(len=255) :: msg
 !
       call update_ghosts(f)
 !
@@ -1072,7 +1098,8 @@ module ImplicitPhysics
             call fatal_error('ADI_Kconst_yakonov','bcz on TT must be cT or c1')
         endselect
 !
-        call tridag(az,bz,cz,rhsz,workz)
+        call tridag(az,bz,cz,rhsz,workz,err,msg)
+        if (err) call warning('ADI_Kconst_yakonov', trim(msg))
         f(i,4,n1:n2,ilnTT)=workz
       enddo
 !

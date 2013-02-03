@@ -7394,7 +7394,8 @@ module Magnetic
       character(len=*), intent(in) :: bc1, bc2
 !
       real, dimension(n) :: r, omb1
-      logical :: lcyclic
+      character(len=255) :: msg
+      logical :: lcyclic, err
       real :: alpha, beta
 !
 ! Prepare the RHS of the linear system.
@@ -7448,7 +7449,8 @@ module Magnetic
       if (lcyclic) then
         call cyclic(-a, omb1, -c, alpha, beta, r, q(1:n), n)
       else
-        call tridag(-a, omb1, -c, r, q(1:n))
+        call tridag(-a, omb1, -c, r, q(1:n), err, msg)
+        if (err) call warning('implicit_pencil', trim(msg))
       endif
 !
     endsubroutine implicit_pencil
