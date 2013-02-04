@@ -35,7 +35,7 @@ module Entropy
   real :: chi=0.0, chi_shock=0.0, chi_shock_gradTT=0., chi_hyper3_mesh=0.
   real :: energy_floor = 0., temperature_floor = 0.
   real :: rk_eps = 1.e-3
-  real :: nu_z=0., KI_csz=0.
+  real :: nu_z=0., cs_z=0.
   real :: detonation_factor = 1.
   real :: TTref = 0., tau_cool = 1.
   integer :: rk_nmax = 100
@@ -46,7 +46,8 @@ module Entropy
   logical :: lviscosity_heat=.true.
   logical :: lupw_eth=.false.
   logical :: lcheck_negative_energy=.false.
-  logical :: lKI02=.false.
+  logical :: lKI02 = .false.
+  logical :: lSD93 = .false.
   logical :: lconst_cooling_time = .false.
   logical :: ljeans_floor=.false.
   logical :: ldetonate=.false.
@@ -65,7 +66,7 @@ module Entropy
       lviscosity_heat, lupw_eth, &
       chi, chi_shock, chi_shock_gradTT, chi_hyper3_mesh, &
       energy_floor, temperature_floor, lcheck_negative_energy, &
-      rk_eps, rk_nmax, lKI02, nu_z, KI_csz, &
+      rk_eps, rk_nmax, lKI02, lSD93, nu_z, cs_z, &
       lconst_cooling_time, TTref, tau_cool, &
       ljeans_floor, njeans, &
       ldetonate, detonation_factor, feedback
@@ -117,7 +118,7 @@ module Entropy
 !
 ! General variables for operator split terms.
 !
-  real :: cv1 = 0.
+  real :: cv1 = 0., cv1_temp = 0.
 !
 ! Coefficients for the KI02 terms
 !
@@ -125,7 +126,12 @@ module Entropy
   real, parameter :: KI_v1 = 1.e7, KI_v2 = 1.4e-2                  ! coefficients of the two terms in Lambda / Gamma [cm^3]
   real, parameter :: KI_T1 = 1.184e5, KI_T2 = 1.e3, KI_T3 = 92.    ! coefficients for the temperatures [K]
   real :: KI_a0 = 0., KI_a1 = 0., KI_a2 = 0.
-  real :: KI_cv1 = 0.
+!
+! Sutherland & Dopita (1993) cooling function.
+!
+  real, dimension(:), allocatable :: SD_logTT, SD_logLambda
+  integer :: SD_nt = 0
+  real :: SD_a0 = 0.
 !
 ! Coefficient for Jeans energy floor
 !
@@ -192,7 +198,7 @@ module Entropy
 !
 !  Decide if operator splitting is required.
 !
-      lsplit_update = lKI02 .or. lconst_cooling_time
+      lsplit_update = lconst_cooling_time .or. lKI02 .or. lSD93
       if (lsplit_update .and. .not. ldensity) call fatal_error('initialize_entropy', 'Density is required for split_update_energy.')
 !
 !  General variables required by split_update_energy.
@@ -200,27 +206,30 @@ module Entropy
       ideal_gas: if (lsplit_update) then
         if (.not. leos_idealgas) call fatal_error('initialize_entropy', 'currently assumes eos_idealgas')
         call get_cv1(cv1)
+        cv1_temp = cv1 * unit_temperature
       endif ideal_gas
 !
 !  Initialize the KI02 terms.
 !
       KI02: if (lKI02) then
-        KI_cv1 = cv1 * unit_temperature
         call getmu(mu_tmp=mu)
         KI_a0 = (KI_heat * unit_time / unit_energy) / (mu * m_u)
         c0 = KI_a0 / (mu * m_u * unit_length**3)
-        if (nzgrid == 1) then
+        SI: if (unit_system == 'SI') then
+          KI_a0 = 1.e-7 * KI_a0
+          c0 = 1.e-13 * c0
+        endif SI
+        disk: if (nzgrid == 1) then
           c0 = c0 * nu_z / (2. * sqrtpi)
-          if (KI_csz > 0.) c0 = c0 / KI_csz
-        endif
+          if (cs_z > 0.) c0 = c0 / cs_z
+        endif disk
         KI_a1 = c0 * KI_v1
         KI_a2 = c0 * KI_v2
-        if (unit_system == 'SI') then
-          KI_a0 = 1.e-7 * KI_a0
-          KI_a1 = 1.e-6 * KI_a1
-          KI_a2 = 1.e-6 * KI_a2
-        endif
       endif KI02
+!
+!  Initialize the SD93 terms.
+!
+      if (lSD93) call init_cooling_SD93
 !
 !  Initialize the coefficient of the Jeans energy floor.
 !
@@ -1100,6 +1109,7 @@ module Entropy
 !
       heat = 0.
       if (lKI02) heat = heat + heat_KI02(eth1, rho)
+      if (lSD93) heat = heat - cool_SD93(eth1, rho)
 !
     endfunction calc_heat_split
 !***********************************************************************
@@ -1118,28 +1128,140 @@ module Entropy
 !
 !  Find the temperature and its derived values.
 !
-      if (KI_cv1 > 0. .and. eth > 0. .and. rho > 0.) then
-        temp = KI_cv1 * eth / rho
+      heat_KI02 = 0.
+      if (cv1_temp > 0. .and. eth > 0. .and. rho > 0.) then
+        temp = cv1_temp * eth / rho
+        if (lSD93 .and. temp >= 1.e4) return
         c1 = exp(-KI_T1 / (temp + KI_T2))
         c2 = exp(-KI_T3 / temp)
       else
-        heat_KI02 = 0.
         return
       endif
 !
 !  Calculate the net heat.
 !    For 3D run: rho is volume mass density
 !    For 2D run: rho is surface mass density
-!    KI_csz, if > 0, fix the disk vertical scale height
+!    cs_z, if > 0, fix the disk vertical scale height
 !
       c0 = rho
-      if (nzgrid == 1 .and. KI_csz <= 0.) then
+      if (nzgrid == 1 .and. cs_z <= 0.) then
         call get_soundspeed(real(temp / unit_temperature), cs2)
         c0 = rho / sqrt(cs2)
       endif
       heat_KI02 = rho * (KI_a0 - c0 * (KI_a1 * c1 + KI_a2 * sqrt(temp) * c2))
 !
     endfunction
+!***********************************************************************
+    subroutine init_cooling_SD93()
+!
+!  Initializes the tabulated cooling function of Sutherland and Dopita (1993).
+!
+!  02-feb-13/ccyang: coded.
+!
+      use Mpicomm
+      use EquationOfState, only: getmu
+!
+      integer, parameter :: lun = 1
+      integer, parameter :: ncol = 12
+      real, dimension(ncol) :: col
+      character(len=256) :: msg, src
+      integer :: stat
+      real :: mu
+      integer :: i
+!
+!  Find the number of table entries.
+!
+      get_nt: if (lroot) then
+        call get_environment_variable('PENCIL_HOME', src)
+        src = trim(src) // '/src/cooling_SD93_Z00.dat'
+        open (unit=lun, file=src, action='read', iostat=stat, iomsg=msg)
+        if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot open the cooling table; ' // trim(msg), force=.true.)
+        nline: do
+          read (lun,*,iostat=stat,iomsg=msg) col
+          if (stat < 0) exit nline
+          if (stat > 0) call fatal_error('init_cooling_SD93', 'error in reading the cooling table; ' // trim(msg), force=.true.)
+          SD_nt = SD_nt + 1
+        enddo nline
+        close (unit=lun, iostat=stat, iomsg=msg)
+        if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot close the cooling table; ' // trim(msg), force=.true.)
+      endif get_nt
+      call mpibcast_int(SD_nt)
+!
+!  Allocate the cooling table.
+!
+      allocate (SD_logTT(SD_nt), SD_logLambda(SD_nt), stat=stat)
+      if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot allocate the cooling table. ')
+!
+!  Read the cooling table.
+!
+      table: if (lroot) then
+        open (unit=lun, file=src, action='read')
+        reading: do i = 1, SD_nt
+          read (lun,*) col
+          SD_logTT(i) = col(1)
+          SD_logLambda(i) = col(5)
+        enddo reading
+        close (unit=lun)
+      endif table
+      call mpibcast_real(SD_logTT, SD_nt)
+      call mpibcast_real(SD_logLambda, SD_nt)
+!
+      if (lroot) print *, 'init_cooling_SD93: read the Sutherland & Dopita (1993) cooling table. '
+!
+!  Save the conversion factor.
+!
+      call getmu(mu_tmp=mu)
+      SD_a0 = unit_time / (unit_energy * unit_length**3 * (mu * m_u)**2)
+      if (unit_system == 'SI') SD_a0 = 1.e-13 * SD_a0
+      disk: if (nzgrid == 1) then
+        SD_a0 = 0.5 * SD_a0 * nu_z / sqrtpi
+        if (cs_z > 0.) SD_a0 = SD_a0 / cs_z
+      endif disk
+!
+    endsubroutine init_cooling_SD93
+!***********************************************************************
+    elemental real function cool_SD93(eth, rho)
+!
+!  Add Sutherland & Dopita (1993) cooling function.
+!
+!  02-feb-13/ccyang: coded.
+!
+      use General, only: spline
+      use EquationOfState, only: get_soundspeed
+!
+      real, intent(in) :: eth, rho
+!
+      logical :: err
+      real, dimension(1) :: logLambda
+      real :: temp, cs2
+!
+!  Find the temperature.
+!
+      cool_SD93 = 0.
+      if (cv1_temp > 0. .and. eth > 0. .and. rho > 0.) then
+        temp = cv1_temp * eth / rho
+        if (lKI02 .and. temp < 1.e4) return
+      else
+        return
+      endif
+!
+!  Interpolate the cooling table.
+!
+      call spline(SD_logTT, SD_logLambda, (/log10(temp)/), logLambda, SD_nt, 1, err)
+      if (err) return
+!
+!  Calculate the net cooling rate.
+!    For 3D run: rho is volume mass density
+!    For 2D run: rho is surface mass density
+!    cs_z, if > 0, fix the disk vertical scale height
+!
+      cool_SD93 = SD_a0 * rho**2 * 10.**logLambda(1)
+      disk: if (nzgrid == 1 .and. cs_z <= 0.) then
+        call get_soundspeed(real(temp / unit_temperature), cs2)
+        cool_SD93 = cool_SD93 / sqrt(cs2)
+      endif disk
+!
+    endfunction cool_SD93
 !***********************************************************************
     elemental subroutine jeans_floor(eth, rho)
 !
