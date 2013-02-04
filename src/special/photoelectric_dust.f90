@@ -45,15 +45,10 @@
 !   completeness and to provide support against gravity in stratified
 !   simulations. The pressure gradient itself is
 !
-!    gradP = C*(p%rho*p%grhop(:,j) + p%rhop*p%grho(:,j))
-!    C = cs20/(gamma*rho0)
-!
-!   Perhaps this whole thing should be moved to special, but then check
-!   how to do with all the needed modifications to the equation of state.
-!   Or should one use special with noeos instead? Hm...
+!    gradP = cs20/(gamma*rho0)*(p%rho*p%grhop(:,j) + p%rhop*p%grho(:,j))
 !
 !   17-may-12/wlad: coded
-!   20-dec-12/wlad: streamlined
+!   20-dec-12/wlad: streamlined, and moved here to special
 !
 module Special
 !
@@ -67,12 +62,12 @@ module Special
   include '../special.h'
 !
   real :: dummy
-  real :: mu=1.0, Sentropy=0.0, factor_localiso=0.0, factor_photoelectric=1.0
+  real :: mu=1.0, kappa=0.0, factor_localiso=0.0, factor_photoelectric=1.0
   logical :: ldust_pressureforce
 !
-  namelist /special_init_pars/ mu, Sentropy, factor_localiso, factor_photoelectric
+  namelist /special_init_pars/ mu, kappa, factor_localiso, factor_photoelectric
 !
-  namelist /special_run_pars/ mu, Sentropy, factor_localiso, factor_photoelectric, ldust_pressureforce
+  namelist /special_run_pars/ mu, kappa, factor_localiso, factor_photoelectric, ldust_pressureforce
 !
 !  integer, parameter :: nmode_max = 50
 !  real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
@@ -123,13 +118,12 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
-      real :: rho01
       integer :: ierr
 !
-      rho01=1./rho0
+!  Initializing the pressures. Seeting mu=1 makes the polytrope a linear barotrope.
 !
-      const1=Sentropy*mu
-      const2=factor_photoelectric * cs20*rho01 !*gamma1*rho01
+      const1=kappa*mu
+      const2=factor_photoelectric * cs20
       const3=factor_localiso
 !
       if (.not.lstarting) then 
@@ -147,9 +141,6 @@ module Special
     subroutine pencil_criteria_special()
 !
       use Mpicomm
-!
-      !const1=Sentropy*mu
-      !const2=cs20*gamma1*rho01
 !
       if (const1 /= 0.0) then 
         lpenc_requested(i_rho)=.true.
@@ -226,7 +217,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       logical, optional :: lstarting
-!!
+!
       if (present(lstarting)) then 
         lstart = lstarting
       else
