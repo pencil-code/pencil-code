@@ -114,9 +114,9 @@ module SharedVariables
 ! The head of the list (initially empty)
 !
   type (shared_variable_list), pointer :: thelist
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine initialize_shared_variables(lreloading)
 !
@@ -347,7 +347,7 @@ module SharedVariables
     subroutine get_variable_int1d(varname,variable,ierr)
 !
 !  Comment me.
-!    
+!
       character (len=*) :: varname
       integer, dimension(:), pointer :: variable
       integer, optional :: ierr
@@ -602,7 +602,7 @@ module SharedVariables
     subroutine put_variable_real1d(varname,variable,ierr)
 !
 !  put 1-D array into shared variable
-!    
+!
       character (len=*) :: varname
       real, dimension(:), target :: variable
       integer, optional :: ierr
@@ -634,7 +634,7 @@ module SharedVariables
     subroutine put_variable_real2d(varname,variable,ierr)
 !
 !  put 2-D array into shared variable
-!    
+!
       character (len=*) :: varname
       real, dimension(:,:), target :: variable
       integer, optional :: ierr
@@ -730,7 +730,7 @@ module SharedVariables
     function find_variable(varname)
 !
 !  Comment me.
-!    
+!
       character (len=*) :: varname
       type (shared_variable_list), pointer :: find_variable
 !
@@ -753,7 +753,7 @@ module SharedVariables
     subroutine free_list(list)
 !
 !  Comment me.
-!    
+!
       type (shared_variable_list), pointer :: list
       type (shared_variable_list), pointer :: next
 !
@@ -770,7 +770,7 @@ module SharedVariables
     subroutine new_item_atstart(list,new)
 !
 !  Comment me.
-!    
+!
       type (shared_variable_list), pointer :: list
       type (shared_variable_list), optional, pointer :: new
 !
@@ -816,5 +816,4 @@ module SharedVariables
 !
     endsubroutine sharedvars_clean_up
 !***********************************************************************
-
 endmodule SharedVariables
