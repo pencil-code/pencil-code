@@ -41,7 +41,7 @@ module Special
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
-  real, dimension(mvar) :: filter_strength=0.01
+  real, dimension(mvar) :: filter_strength=0.
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
