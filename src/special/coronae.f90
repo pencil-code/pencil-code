@@ -4376,7 +4376,7 @@ module Special
             chi_spitzer = chi_spitzer*dxyz_2*abs(cosbgT)
             diffus_hcond = diffus_hcond + chi_spitzer
 !
-            if (ldiagnos.and.idiag_dtspitzer /= 0.) then
+            if (lout.and.idiag_dtspitzer /= 0.) then
               call max_mn_name(chi_spitzer/cdtv,idiag_dtspitzer,l_dt=.true.)
             endif
           endif
@@ -4388,7 +4388,7 @@ module Special
             chi_grad = chi_grad*dxyz_2*abs(cosbgT)
             diffus_hcond=diffus_hcond+chi_grad
 !
-            if (ldiagnos.and.idiag_dtchi2/=0) then
+            if (lout.and.idiag_dtchi2/=0) then
               call max_mn_name(chi_grad/cdtv,idiag_dtchi2,l_dt=.true.)
             endif
           endif
@@ -4399,7 +4399,7 @@ module Special
             chi_grad_iso =  hcond_grad_iso*glnTT2 * gamma*cp1*dxyz_2
             diffus_hcond=diffus_hcond+chi_grad_iso
 !
-            if (ldiagnos.and.idiag_dtchi2/=0) then
+            if (lout.and.idiag_dtchi2/=0) then
               call max_mn_name(chi_grad_iso/cdtv,idiag_dtchi2,l_dt=.true.)
             endif
           endif
@@ -4410,7 +4410,7 @@ module Special
 !
         enddo mn_loop
 !
-        if (ldiagnos) call diagnostic(fname(1:5),5)
+        if (lout) call diagnostic(fname(1:5),5)
       endif
 !
     endsubroutine calc_hcond_timestep
