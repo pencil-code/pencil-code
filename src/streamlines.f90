@@ -22,11 +22,6 @@ module Streamlines
   integer :: VV_RQST = 10
   integer :: VV_RCV = 20
   integer :: FINISHED = 99
-! the traced vector field
-! the arrays with the values for x, y and z for all cores (global xyz)
-  real, dimension(nxgrid) :: xg
-  real, dimension(nygrid) :: yg
-  real, dimension(nzgrid) :: zg
 ! borrowed position on the grid
   integer :: grid_pos_b(3)
 ! variables for the non-blocking mpi communication
@@ -105,12 +100,12 @@ module Streamlines
     delta = Lx
     x_adj = 1
     do j=1,nxgrid
-      if ((abs(phys_pos(1) - xg(j)) <= dx) .and. x_adj <= 2) then
+      if ((abs(phys_pos(1) - xgrid(j)) <= dx) .and. x_adj <= 2) then
         grid_pos(1:8:x_adj,1) = j
         x_adj = x_adj + 1
       endif
-      if (abs(phys_pos(1) - xg(j)) < delta) then
-        delta = abs(phys_pos(1) - xg(j))
+      if (abs(phys_pos(1) - xgrid(j)) < delta) then
+        delta = abs(phys_pos(1) - xgrid(j))
       endif
     enddo
     x_adj = x_adj - 1
@@ -121,13 +116,13 @@ module Streamlines
     y_adj = 1
     if (outside == 0) then
     do j=1,nygrid
-      if ((abs(phys_pos(2) - yg(j)) <= dy) .and. y_adj <= 2) then
+      if ((abs(phys_pos(2) - ygrid(j)) <= dy) .and. y_adj <= 2) then
         grid_pos(1:8:x_adj*y_adj,2) = j
         grid_pos(x_adj:8:x_adj*y_adj,2) = j
         y_adj = y_adj + 1
       endif
-      if (abs(phys_pos(2) - yg(j)) < delta) then
-        delta = abs(phys_pos(2) - yg(j))
+      if (abs(phys_pos(2) - ygrid(j)) < delta) then
+        delta = abs(phys_pos(2) - ygrid(j))
       endif
     enddo
     y_adj = y_adj - 1
@@ -139,7 +134,7 @@ module Streamlines
     z_adj = 1
     if (outside == 0) then
     do j=1,nzgrid
-      if ((abs(phys_pos(3) - zg(j)) <= dz) .and. z_adj <= 2) then
+      if ((abs(phys_pos(3) - zgrid(j)) <= dz) .and. z_adj <= 2) then
         if (z_adj == 1) then
           grid_pos(1:8,3) = j
         else
@@ -151,8 +146,8 @@ module Streamlines
         endif
         z_adj = z_adj + 1
       endif
-      if (abs(phys_pos(3) - zg(j)) < delta) then
-        delta = abs(phys_pos(3) - zg(j))
+      if (abs(phys_pos(3) - zgrid(j)) < delta) then
+        delta = abs(phys_pos(3) - zgrid(j))
       endif
     enddo
     z_adj = z_adj - 1
@@ -190,9 +185,9 @@ module Streamlines
 !
     vv_int(:) = 0
     do j=1,n_int
-      weight(j) = (dx-abs(phys_pos(1)-xg(grid_pos(j,1)+ipx*nx)))* &
-          (dy-abs(phys_pos(2)-yg(grid_pos(j,2)+ipy*ny)))* &
-          (dz-abs(phys_pos(3)-zg(grid_pos(j,3)+ipz*nz)))
+      weight(j) = (dx-abs(phys_pos(1)-xgrid(grid_pos(j,1)+ipx*nx)))* &
+          (dy-abs(phys_pos(2)-ygrid(grid_pos(j,2)+ipy*ny)))* &
+          (dz-abs(phys_pos(3)-zgrid(grid_pos(j,3)+ipz*nz)))
       vv_int = vv_int + weight(j)*vv_adj(j,:)
     enddo
     if (sum(weight(1:n_int)) == 0) then
@@ -302,6 +297,8 @@ module Streamlines
 !
 !   13-feb-12/simon: coded
 !
+    use Mpicomm, only: mpibarrier
+!
     real, dimension (mx,my,mz,mfarray) :: f
     real, pointer, dimension (:,:) :: tracers
     real, pointer, dimension (:,:,:,:) :: vv
@@ -333,23 +330,8 @@ module Streamlines
 !
 !   tracing stream lines
 !
-!   compute the array with the global xyz values
-    call MPI_BARRIER(MPI_comm_world, ierr)
-    do j=1,nxgrid
-      xg(j) = x(l1) - ipx*nx*dx + (j-1)*dx
-    enddo
-    do j=1,nygrid
-      yg(j) = y(m1) - ipy*ny*dy + (j-1)*dy
-    enddo
-    do j=1,nzgrid
-      zg(j) = z(n1) - ipz*nz*dz + (j-1)*dz
-    enddo
-!
 !   make sure all threads are synchronized
-    call MPI_BARRIER(MPI_comm_world, ierr)
-    if (ierr /= MPI_SUCCESS) then
-      call fatal_error("streamlines", "MPI_BARRIER could not be invoced")
-    endif
+    call mpibarrier()
 !
     do tracer_idx=1,n_tracers
       tracers(tracer_idx, 6:7) = 0.
@@ -509,7 +491,7 @@ module Streamlines
         loop_count = loop_count + 1
       enddo
 !
-    enddo    
+    enddo
 !
 !   Tell every other core that we have finished.
     finished_tracing(:) = 0
@@ -584,7 +566,7 @@ module Streamlines
 !
     use General, only: keep_compiler_quiet
     use Sub, only: curl
-    
+!
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
 !   the integrated quantity along the field line
