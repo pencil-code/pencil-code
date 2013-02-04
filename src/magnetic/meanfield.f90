@@ -128,7 +128,7 @@ module Magnetic_meanfield
   integer :: idiag_EMFdotBm=0   ! DIAG_DOC: $\left<{\cal E}\cdot\Bv \right>$
   integer :: idiag_EMFdotB_int=0! DIAG_DOC: $\int{\cal E}\cdot\Bv dV$
   integer :: idiag_peffmxz=0    ! YAVG_DOC: $\left<{\cal P}_{\rm eff}\right>_{y}$
-  integer :: idiag_alpmxz=0    ! YAVG_DOC: $\left<\alpha\right>_{y}$
+  integer :: idiag_alpmxz=0     ! YAVG_DOC: $\left<\alpha\right>_{y}$
 !
 ! xy averaged diagnostics given in xyaver.in
 !

@@ -93,7 +93,8 @@ module Gravity
       lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
-      lboussinesq_grav, n_pot, grav_tilt, grav_amp, zclip
+      lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
+      potx_const,poty_const,potz_const, zclip
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
