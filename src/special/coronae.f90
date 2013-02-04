@@ -21,6 +21,9 @@ module Special
 !
   implicit none
 !
+! external magnetic field from the magnetic module
+  real, dimension(:), pointer :: B_ext
+!
   real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.,Kiso=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper2_spi=0.
@@ -37,7 +40,6 @@ module Special
   real :: u_amplifier=1.
   integer :: twisttype=0,irefz=nghost+1
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
-  real, dimension(3) :: B_ext_special=(/0.,0.,0./)
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.01
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
@@ -69,7 +71,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,B_ext_special,irefz,tau_inv_spitzer, &
+      heat_par_b2,irefz,tau_inv_spitzer, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
@@ -179,6 +181,9 @@ module Special
 !
       use EquationOfState, only: gamma,get_cp1
       use Syscalls, only: file_exists
+      use SharedVariables, only: get_shared_variable
+!
+      integer :: ierr
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       logical, intent(in) :: lstarting
@@ -188,6 +193,13 @@ module Special
       real :: dummy=1.,cp1=1.,eps0,unit_ampere,e_charge
       logical :: exists
       real,dimension(:,:,:),allocatable :: ltemp
+!
+!  Get the external magnetic field if exists.
+      if (lmagnetic) then
+        call get_shared_variable('B_ext', B_ext, ierr)
+        if (ierr /= 0) call fatal_error('calc_hcond_timestep',  &
+                                        'unable to get shared variable B_ext')
+      endif
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
@@ -682,7 +694,7 @@ module Special
 !
         call gij(f,iqx,qij,1)
         call u_dot_grad(f,iqx,qij,p%uu,ugradq)
-
+!
         call u_dot_grad(f,iux,p%uij,p%qq,qgradu)
         call multsv(p%divu,p%qq,qdivu)
 !
@@ -1718,7 +1730,7 @@ module Special
       if (ltemperature .and. (.not. ltemperature_nolog)) then
       else
       endif
-
+!
       if (ltemperature .and. (.not.ltemperature_nolog)) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
       else if (lentropy .and. (.not. pretend_lnTT)) then
@@ -4270,12 +4282,12 @@ module Special
     endsubroutine filter_lnTT
 !***********************************************************************
     subroutine calc_hcond_timestep(f,p,dt1_hcond_max)
-
-      use Sub,             only : dot2,dot,grad,gij,curl_mn, &
-                                  dot2_mn,unit_vector
+!
       use EquationOfState, only : gamma, get_cp1
       use Diagnostics
-
+      use Sub,             only : dot2,dot,grad,gij,curl_mn, &
+                                  dot2_mn,unit_vector
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: quench
@@ -4283,7 +4295,6 @@ module Special
       real, dimension (nx) :: chi_spitzer,chi_grad,chi_grad_iso
       real, dimension (nx,3) :: unit_glnTT
       real, dimension (nx) :: diffus_hcond,dt1_hcond_max
-      real, dimension (3) :: B_ext=(/0.0,0.0,1.e-8/)
       real :: B2_ext,cp1
       logical :: luse_Bext_in_b2=.true.
 !

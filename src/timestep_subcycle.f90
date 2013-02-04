@@ -147,8 +147,8 @@ module Timestep
 ! initalize fsub, fm1, fm2 for sub cycle with RKL steps
         do n=n1,n2; do m=m1,m2
           fsub(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
-          fm1(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
         enddo; enddo
+        fm1 = fsub
 !
         do j=1,Nsub
 !
@@ -160,7 +160,7 @@ module Timestep
             call pde_energy_only(fsub,dfsub,p,dt_sub_RKL)
             do n=n1,n2; do m=m1,m2
               fm1(l1:l2,m,n,ienergy)=fsub(l1:l2,m,n,ienergy) &
-              +coeff_dfm1(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
+                                    +coeff_dfm1(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
               fm2(l1:l2,m,n) = fsub(l1:l2,m,n,ienergy)
             enddo; enddo
           else
@@ -199,10 +199,10 @@ module Timestep
     endsubroutine time_step
 !***********************************************************************
     subroutine RKL_coeff(itRKL, coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub)
-
+!
     real, dimension (itorder) :: a,b,coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub
     integer :: j,itRKL
-
+!
     b(1) = 1d0/3d0
     b(2) = 1d0/3d0
     a(1) = 1d0-b(1)
@@ -227,7 +227,7 @@ module Timestep
       coeff_dfm1(j) = 4d0*(2d0*j-1d0)/j/(itRKL*itRKL+itRKL-2d0)*b(j)/b(j-2)
       coeff_dfsub(j) = -a(j-1)*coeff_dfm1(j)
     enddo
-
+!
     endsubroutine RKL_coeff
 !***********************************************************************
     subroutine pde_energy_only(f,df,p,dt_in)
@@ -451,6 +451,8 @@ module Timestep
 !
 ! 22 Jun F. Chen
 !
+    use Messages, only: fatal_error
+    use SharedVariables, only: get_shared_variable
     use Sub
 !
     real, dimension (mx,my,mz,mfarray) :: f
@@ -458,10 +460,19 @@ module Timestep
 !
     real :: B2_ext
     real, dimension (nx) :: quench
-    real, dimension (3) :: B_ext=(/0.0,0.0,1d-8/)
     logical :: luse_Bext_in_b2=.true.
+! external magnetic field from the magnetic module
+    real, dimension(:), pointer :: B_ext
+    integer :: ierr
 !
     intent(inout) :: f,p
+!
+!  Get the external magnetic field if exists.
+    if (lmagnetic) then
+      call get_shared_variable('B_ext', B_ext, ierr)
+      if (ierr /= 0) call fatal_error('calc_hcond_timestep',  &
+          'unable to get shared variable B_ext')
+    endif
 ! lnrho
     p%lnrho=f(l1:l2,m,n,ilnrho)
 ! glnrho
