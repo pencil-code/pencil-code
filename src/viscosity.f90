@@ -206,7 +206,7 @@ module Viscosity
 !
       do i=1,nvisc_max
         select case (ivisc(i))
-        case ('simplified', '0')
+        case ('nu-simplified','simplified', '0')
           if (lroot) print*,'viscous force: nu*del2v'
           lvisc_simplified=.true.
         case ('rho-nu-const','rho_nu-const', '1')
