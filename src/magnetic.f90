@@ -766,7 +766,7 @@ module Magnetic
 !
 !  Share the external magnetic field with module Shear.
 !
-      if (lshear) then
+      if (lshear.or.lspecial) then
         call put_shared_variable('B_ext', B_ext, ierr)
         if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
       endif
