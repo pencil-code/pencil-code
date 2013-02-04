@@ -703,6 +703,8 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	over_length = pos_over[selected_overplot] > 1.e-42
 	local_max = over_max
+	col_start = 255
+	col_step = 13200
 
 
 	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
@@ -750,7 +752,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				end else begin
 					indices_z = reform (streamlines.(pos).indices[2,*])
 				end
-				plots, indices_y*bin_y, indices_z*bin_z, psym=3, color=200+12000*pos, /device
+				plots, indices_y*bin_y, indices_z*bin_z, psym=3, color=col_start+col_step*pos, /device
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
@@ -814,7 +816,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				end else begin
 					indices_z = reform (streamlines.(pos).indices[2,*])
 				end
-				plots, indices_x*bin_x, indices_z*bin_z, psym=3, color=200+12000*pos, /device
+				plots, indices_x*bin_x, indices_z*bin_z, psym=3, color=col_start+col_step*pos, /device
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
@@ -878,7 +880,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				end else begin
 					indices_y = reform (streamlines.(pos).indices[1,*])
 				end
-				plots, indices_x*bin_x, indices_y*bin_y, psym=3, color=200+12000*pos, /device
+				plots, indices_x*bin_x, indices_y*bin_y, psym=3, color=col_start+col_step*pos, /device
 			end
 		end
 		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
