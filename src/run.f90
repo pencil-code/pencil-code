@@ -144,6 +144,7 @@ program run
 !  Read coordinates (if luse_oldgrid=T, otherwise regenerate grid).
 !  luse_oldgrid=T can be useful if nghost_read_fewer > 0,
 !  i.e. if one is changing the order of spatial derivatives.
+!  Also write dim.dat (important when reading smaller meshes, for example)
 !
   if (luse_oldgrid) then
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
@@ -151,6 +152,9 @@ program run
   else
     call construct_grid(x,y,z,dx,dy,dz)
     call wgrid('grid.dat')
+    call wdim(trim(directory)//'/dim.dat')
+    if (lroot) call wdim(trim(datadir)//'/dim.dat', &
+        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
   endif
 !
 !  Size of box at local processor. The if-statement is for

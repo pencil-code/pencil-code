@@ -464,6 +464,19 @@ module Io
               a(1+nghost_read_fewer:mx-nghost_read_fewer, &
                 1+nghost_read_fewer:my-nghost_read_fewer, &
                 1+nghost_read_fewer:mz-nghost_read_fewer,:)
+!
+!  The following 3 possibilities allow us to replicate 1-D data input
+!  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
+!
+        elseif (nghost_read_fewer==-1) then
+          read (lun_input, IOSTAT=io_err) a(:,1:1+nghost*2,1:1+nghost*2,:)
+          a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+        elseif (nghost_read_fewer==-2) then
+          read (lun_input, IOSTAT=io_err) a(1:1+nghost*2,:,1:1+nghost*2,:)
+          a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+        elseif (nghost_read_fewer==-3) then
+          read (lun_input, IOSTAT=io_err) a(1:1+nghost*2,1:1+nghost*2,:,:)
+          a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
         else
           call fatal_error('input_snap','nghost_read_fewer must be >=0')
         endif
