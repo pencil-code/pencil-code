@@ -1108,8 +1108,13 @@ module Entropy
       if (ljeans_floor) call jeans_floor(eth1, rho)
 !
       heat = 0.
-      if (lKI02) heat = heat + heat_KI02(eth1, rho)
-      if (lSD93) heat = heat - cool_SD93(eth1, rho)
+      if (lKI02 .and. lSD93) then
+        heat = heat - cool_KI02_SD93(eth1, rho)
+      elseif (lKI02) then
+        heat = heat + heat_KI02(eth1, rho)
+      elseif (lSD93) then
+        heat = heat - cool_SD93(eth1, rho)
+      endif
 !
     endfunction calc_heat_split
 !***********************************************************************
@@ -1129,14 +1134,10 @@ module Entropy
 !  Find the temperature and its derived values.
 !
       heat_KI02 = 0.
-      if (cv1_temp > 0. .and. eth > 0. .and. rho > 0.) then
-        temp = cv1_temp * eth / rho
-        if (lSD93 .and. temp >= 1.e4) return
-        c1 = exp(-KI_T1 / (temp + KI_T2))
-        c2 = exp(-KI_T3 / temp)
-      else
-        return
-      endif
+      temp = get_temperature(eth, rho)
+      if (temp <= 0.) return
+      c1 = exp(-KI_T1 / (temp + KI_T2))
+      c2 = exp(-KI_T3 / temp)
 !
 !  Calculate the net heat.
 !    For 3D run: rho is volume mass density
@@ -1238,12 +1239,8 @@ module Entropy
 !  Find the temperature.
 !
       cool_SD93 = 0.
-      if (cv1_temp > 0. .and. eth > 0. .and. rho > 0.) then
-        temp = cv1_temp * eth / rho
-        if (lKI02 .and. temp < 1.e4) return
-      else
-        return
-      endif
+      temp = get_temperature(eth, rho)
+      if (temp <= 0.) return
 !
 !  Interpolate the cooling table.
 !
@@ -1262,6 +1259,42 @@ module Entropy
       endif disk
 !
     endfunction cool_SD93
+!***********************************************************************
+    elemental real function cool_KI02_SD93(eth, rho) result(cool)
+!
+!  Smoothly connects the KI02 and the SD93 heating/cooling functions.
+!
+!  04-feb-13/ccyang: coded.
+!
+      real, intent(in) :: eth, rho
+!
+      real, parameter :: logTTmin = 4., logTTmax = 4.2
+      real, parameter :: dlogTT = logTTmax - logTTmin
+      real :: temp, logTT, cool1, cool2
+!
+!  Find the temperature.
+!
+      temp = get_temperature(eth, rho)
+      error: if (temp <= 0.) then
+        cool = 0.
+        return
+      endif error
+      logTT = log10(temp)
+!
+!  Linearly combine the two heating/cooling functions.
+!
+      step: if (logTT < logTTmin) then
+        cool = -heat_KI02(eth, rho)
+      elseif (logTT > logTTmax) then step
+        cool = cool_SD93(eth, rho)
+      else step
+        cool1 = -heat_KI02(eth, rho)
+        cool2 = cool_SD93(eth, rho)
+        temp = cos(pi * (logTT - logTTmin) / dlogTT)
+        cool = exp(0.5 * ((1. + temp) * log(cool1) + (1. - temp) * log(cool2)))
+      endif step
+!
+    endfunction cool_KI02_SD93
 !***********************************************************************
     elemental subroutine jeans_floor(eth, rho)
 !
@@ -1406,5 +1439,23 @@ module Entropy
       derivative = sixtieth * dx1 * ((a(3) - a(-3)) - 9.0 * (a(2) - a(-2)) + 45.0 * (a(1) - a(-1)))
 !
     endfunction
+!***********************************************************************
+    pure real function get_temperature(eth, rho) result(temp)
+!
+!  Finds the absolute temperature in Kelvins assuming the ideal-gas EOS.
+!
+!  04-feb-13/ccyang: coded.
+!
+      real, intent(in) :: eth, rho
+!
+!  Find the temperature.
+!
+      if (cv1_temp > 0. .and. eth > 0. .and. rho > 0.) then
+        temp = cv1_temp * eth / rho
+      else
+        temp = 0.
+      endif
+!
+    endfunction get_temperature
 !***********************************************************************
 endmodule Entropy
