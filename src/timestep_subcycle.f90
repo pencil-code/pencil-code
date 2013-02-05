@@ -459,7 +459,7 @@ module Timestep
 !
     use Messages, only: fatal_error
     use SharedVariables, only: get_shared_variable
-    use Sub, only: grad, gij, curl_mn, dot2_mn
+    use Sub, only: grad, gij, curl_mn, dot2_mn, gij_etc
 !
     real, dimension (mx,my,mz,mfarray) :: f
     type (pencil_case) :: p
@@ -467,6 +467,8 @@ module Timestep
     real :: B2_ext
     real, dimension (nx) :: quench
     logical :: luse_Bext_in_b2=.true.
+    real, dimension(:), pointer :: B_ext
+    integer :: ierr
 !
     intent(inout) :: f,p
 !
