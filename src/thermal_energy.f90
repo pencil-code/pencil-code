@@ -974,6 +974,7 @@ module Entropy
 !
 !  Cash-Karp parameters for embedded Runga-Kutta method
 !
+      real, parameter :: safety = 0.9, errcon = (5. / safety)**5
       real, parameter :: a2 = .2, a3 = .3, a4 = .6, a5 = 1., a6 = .875
       real, parameter :: b2 = .2
       real, dimension(2), parameter :: b3 = [.075, .225]
@@ -1031,7 +1032,7 @@ module Entropy
 !
 !  Estimate the error.
 !
-        if (.not. lovershoot) error = abs(sum(d * de) / (rk_eps * eth1))
+        if (.not. lovershoot) error = abs(sum(d * de)) / (rk_eps * (eth1 + abs(de(1))))
 !
 !  Time step control
 !
@@ -1054,14 +1055,18 @@ module Entropy
           t1 = t1 + dt1
           eth1 = eth + delta_eth
 !
-          dt1 = dt1 * min(error**(-.2), 2.)
+          if (error > errcon) then
+            dt1 = safety * dt1 * error**(-0.2)
+          else
+            dt1 = 5. * dt1
+          endif
           if (abs(t1 + dt1) >= tf) then
             dt1 = t + dt - t1
             last = .true.
           endif
         else passed
           nbad = nbad + 1
-          dt1 = dt1 * max(error**(-.2), .1)
+          dt1 = sign(max(abs(safety*dt1*error**(-0.25)), 0.1*abs(dt1)), dt1)
           last = .false.
         endif passed
 !
