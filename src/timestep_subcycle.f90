@@ -21,6 +21,7 @@ module Timestep
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
 !
+      use Boundcond
       use BorderProfiles, only: border_quenching
       use Equ, only: pde
       use Interstellar, only: calc_snr_damp_int
@@ -32,6 +33,7 @@ module Timestep
       use Entropy
       use Special
       use Boundcond
+      use Sub, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f,fsub,fm1
       real, dimension (mx,my,mz) :: fm2, fj
@@ -41,14 +43,12 @@ module Timestep
       real :: dt1, dt1_local, dt1_last=0.0
       integer :: j,ienergy, Nsub , itRKL,s
       real, dimension (nx) :: dt1_hcond_max
-      real, dimension (itorder) :: coeff_fm1, coeff_fm2, coeff_fsub
-      real, dimension (itorder) :: coeff_dfm1, coeff_dfsub
+      real, dimension (itorder) :: coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub
       real :: dt1_energy_local,dt1_energy,dt_energy,dt_RKL,dt_sub_RKL
 !
-      ienergy = ilnTT
+          ienergy = ilnTT
 !
-!  Coefficients for order 3. RK Scheme
-!  use coefficients of Williamson (1980)
+!  Coefficients for order 3.  (use coefficients of Williamson (1980))
         alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
         beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
 !
@@ -82,19 +82,9 @@ module Timestep
           dt1_local=maxval(dt1_max(1:nx))
           ! Timestep growth limiter
           if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-!
-!  Get time step for heat conduction in sub step, when sub_step_hcond
-!  in coronae module is F, dt1_energy will be 0, and sub iteration below
-!  is turned off. This allows turn on/off sub iteration without recompile.
-!
-          call calc_hcond_timestep(f,p,dt1_hcond_max)
-          dt1_energy_local=maxval(dt1_hcond_max(1:nx))
-!
-!  Get global time step limite
+          ! Get global time step limite
           call mpiallreduce_max(dt1_local,dt1)
-          call mpiallreduce_max(dt1_energy_local,dt1_energy)
           dt=1.0/dt1
-!
 ! in pde(f,df,p) ghost cells of f-array are set
           fsub = f
           if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
@@ -111,8 +101,6 @@ module Timestep
 !  (do this loop in pencils, for cache efficiency)
 !
         do j=1,mvar; do n=n1,n2; do m=m1,m2
-!ajwm Note to self... Just how much overhead is there in calling
-!ajwm a sub this often...
             if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
             f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
@@ -124,15 +112,31 @@ module Timestep
         t = t + dt_beta_ts(itsub)*ds
 !
       enddo
+!--------------------------------------------------------------------------------*
+!  Now do the substeps for the energy (thermal conduction) only -----------------*
+!--------------------------------------------------------------------------------*
 !
-!!--------------------------------------------------------------------------------!
-!!  Now do the substeps for the energy (thermal conduction) only -----------------!
-!!--------------------------------------------------------------------------------!
+      IF (sub_step_hcond) THEN
 !
-      if (dt1*dt1_energy > 0.) then ! Turn of the subcycle when dt1_energy = 0.
+!  initialized fsub
+        do n=n1,n2; do m=m1,m2
+          fsub(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
+        enddo; enddo
+!  update boundary is necessary for calculate time steps
+        call boundconds_x(fsub,ilnTT,ilnTT)
+        call initiate_isendrcv_bdry(fsub,ilnTT,ilnTT)
+        call finalize_isendrcv_bdry(fsub,ilnTT,ilnTT)
+        call boundconds_y(fsub,ilnTT,ilnTT)
+        call boundconds_z(fsub,ilnTT,ilnTT)
+!
+!  This should be a better position to determin dt_energy, changes in lnTT
+!  by other terms are taken into account.
+!  Get time step for heat conduction in sub step
+        call calc_hcond_timestep(fsub,p,dt1_hcond_max)
+        dt1_energy_local=maxval(dt1_hcond_max(1:nx))
+        call mpiallreduce_max(dt1_energy_local,dt1_energy)
 !
         dt_energy = 1d0/dt1_energy
-!
 !  Set time step to the super-timestep
         itRKL = itorder
         dt_RKL = (itRKL*itRKL+itRKL-2d0)/4d0*dt_energy
@@ -145,10 +149,7 @@ module Timestep
         call RKL_coeff(itRKL, coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub)
 !
 ! initalize fsub, fm1, fm2 for sub cycle with RKL steps
-        do n=n1,n2; do m=m1,m2
-          fsub(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
-        enddo; enddo
-        fm1 = fsub
+        fm1=fsub
 !
         do j=1,Nsub
 !
@@ -160,7 +161,7 @@ module Timestep
             call pde_energy_only(fsub,dfsub,p,dt_sub_RKL)
             do n=n1,n2; do m=m1,m2
               fm1(l1:l2,m,n,ienergy)=fsub(l1:l2,m,n,ienergy) &
-                                    +coeff_dfm1(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
+              +coeff_dfm1(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
               fm2(l1:l2,m,n) = fsub(l1:l2,m,n,ienergy)
             enddo; enddo
           else
@@ -186,6 +187,11 @@ module Timestep
         do n=n1,n2; do m=m1,m2
         fsub(l1:l2,m,n,ienergy)=fj(l1:l2,m,n)
         enddo; enddo
+!
+        if (notanumber(fsub(:,:,:,ienergy))) then
+           print*, 'fsub contains NaN in proc',iproc, 'in No.',j,'subcycle'
+           STOP
+        endif
 !
         enddo ! end of sub cycle
 !
@@ -423,10 +429,10 @@ module Timestep
 !  even if lentropy=.false.
 !
 !!!        call dss_dt(f,df,p)
-        call calc_heatcond_tensor(f,df,p)
-        call calc_heatcond_glnTT(df,p)
-        call calc_heatcond_glnTT_iso(df,p)
-        call filter_lnTT(f,df,dt_in)
+        if (Kpara /= 0.)          call calc_heatcond_tensor(f,df,p)
+        if (hcond_grad /= 0.)     call calc_heatcond_glnTT(df,p)
+        if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)
+        if (lfilter_farray)       call filter_lnTT(f,df,dt_in)
 !
 !  End of loops over m and n.
 !
@@ -453,7 +459,7 @@ module Timestep
 !
     use Messages, only: fatal_error
     use SharedVariables, only: get_shared_variable
-    use Sub
+    use Sub, only: grad, gij, curl_mn, dot2_mn
 !
     real, dimension (mx,my,mz,mfarray) :: f
     type (pencil_case) :: p
@@ -461,9 +467,6 @@ module Timestep
     real :: B2_ext
     real, dimension (nx) :: quench
     logical :: luse_Bext_in_b2=.true.
-! external magnetic field from the magnetic module
-    real, dimension(:), pointer :: B_ext
-    integer :: ierr
 !
     intent(inout) :: f,p
 !
@@ -473,23 +476,16 @@ module Timestep
       if (ierr /= 0) call fatal_error('calc_hcond_timestep',  &
           'unable to get shared variable B_ext')
     endif
-! lnrho
+!
     p%lnrho=f(l1:l2,m,n,ilnrho)
-! glnrho
     call grad(f,ilnrho,p%glnrho)
-! aa
     p%aa=f(l1:l2,m,n,iax:iaz)
-! aij
     call gij(f,iaa,p%aij,1)
-! bb
     call curl_mn(p%aij,p%bb,p%aa)
     p%bbb=p%bb
     B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
 !
     if (B2_ext/=0.0) then
-!
-!  Add the external field.
-!
       if (B_ext(1)/=0.0) p%bb(:,1)=p%bb(:,1)+B_ext(1)
       if (B_ext(2)/=0.0) p%bb(:,2)=p%bb(:,2)+B_ext(2)
       if (B_ext(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext(3)
