@@ -66,7 +66,6 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, par
 			sources = varcontent.idlvar
 			sources = sources[where (varcontent.idlvar ne 'dummy')]
 			pc_gui_precalc_data, number, vars, tags, dim, grid
-			print, 'Ready.'
 		end
 		varfiles[i].title = varfile
 		varfiles[i].loaded = 1

@@ -149,6 +149,7 @@ if (not pc_gui_loaded) then BEGIN
 	for i = 1, num_files do begin
 		pc_gui_precalc, i-1, varfile=files[num_files-i], datadir=datadir, dim=dim, param=param, run_param=run_param, varcontent=varcontent, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze
 	end
+	print, 'Ready.'
 
 	; Mark completition of preparational work
 	pc_gui_loaded = 1
