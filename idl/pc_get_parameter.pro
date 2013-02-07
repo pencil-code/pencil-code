@@ -62,8 +62,8 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	run_names = tag_names (run_par)
 	if (strcmp (param, 'K_Spitzer', /fold_case)) then begin
 		if (any (run_names eq "K_SPITZER")) then return, run_par.K_spitzer
-		if (any (run_names eq "KGPARA")) then return, run_par.Kgpara
 		if (any (run_names eq "KPARA")) then return, run_par.Kpara
+		if (any (run_names eq "KGPARA")) then return, run_par.Kgpara ; only for backwards compatibility, should be removed some day, because this belongs to the entropy module.
 		if (not keyword_set (missing)) then missing = "'K_Spitzer' or 'KPARA'"
 	end
 	if (strcmp (param, 'K_sat', /fold_case)) then begin
