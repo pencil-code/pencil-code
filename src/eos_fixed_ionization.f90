@@ -1165,20 +1165,16 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine bc_ss_temp3_z(f,topbot)
 !
-!  boundary condition for entropy: constant temperature
-!
-!  31-jan-2013/axel: dummy to bc_ss_temp3_z in eos_idealgas
-!
-      use Gravity, only: gravz
+!  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: tmp,dcs2bot
-      integer :: i
 !
-      if (ldebug) print*,'bc_ss_temp3_z: cs20,cs0=',cs20,cs0
+      call fatal_error('bc_ss_temp3_z', &
+          'not implemented in eos_fixed_ionization.f90')
 !
-      call fatal_error('bc_ss_temp3_z','invalid argument')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp3_z
 !***********************************************************************
