@@ -156,7 +156,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and not done) do begin
 
 		; Interpolate data
-		int_pos = floor (pos)
+		int_pos = (floor (pos) < (Box_xyz_upper-1)) > Box_xyz_lower
 		residual = pos - int_pos
 		loc_data = data[int_pos[0]:int_pos[0]+1,int_pos[1]:int_pos[1]+1,int_pos[2]:int_pos[2]+1,*]
 		vector_x = interpolate (loc_data[*,*,*,0], residual[0], residual[1], residual[2])

@@ -51,7 +51,7 @@ function pc_extract_streamline, data, indices
 
 	; Follow the streamline
 	for pos = 0, length - 1 do begin
-		int_pos = floor (indices[*,pos])
+		int_pos = (floor (indices[*,pos]) < [nx, ny, nz]-2) > 0
 		residual = pos - int_pos
 		loc_data = data[int_pos[0]:int_pos[0]+1,int_pos[1]:int_pos[1]+1,int_pos[2]:int_pos[2]+1,*]
 		; Iterate over the data components
