@@ -49,13 +49,13 @@ module Particles_sink
       lrhop_roche_unit, initaps, aps0, aps1, aps2, aps3, lbondi_accretion, &
       lselfgravity_sinkparticles, lsink_communication_all_to_all, &
       bondi_accretion_grav_smooth, lsubgrid_accretion, rsurf_to_rhill, &
-      cdtsubgrid, ldebug_subgrid_accretion
+      rsurf_subgrid, cdtsubgrid, ldebug_subgrid_accretion
 !
   namelist /particles_sink_run_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
       lrhop_roche_unit, lbondi_accretion, lselfgravity_sinkparticles, &
       bondi_accretion_grav_smooth, lsubgrid_accretion, rsurf_to_rhill, &
-      cdtsubgrid, ldebug_subgrid_accretion
+      rsurf_subgrid, cdtsubgrid, ldebug_subgrid_accretion
 !
   contains
 !***********************************************************************
@@ -1342,7 +1342,7 @@ module Particles_sink
 !
 !  Loop over sub-time-steps.
 !
-        do itsub=1,itorder
+        do itsub=1,4
           if (itsub==1) then
             xk  = xold
             yk  = yold
@@ -1443,6 +1443,7 @@ module Particles_sink
         fp(k,ivpy)=fp(j,ivpy)+vyk
         fp(k,ivpz)=fp(j,ivpz)+vzk
       endif
+      stop
 !
     endsubroutine subgrid_accretion
 !***********************************************************************
