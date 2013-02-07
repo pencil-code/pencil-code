@@ -506,7 +506,7 @@ module Particles_sink
           j2=npar_loc+1
           k1=j1
           k2=j2
-          call sink_particle_accretion(fp,dfp,j1,j2,k1,k2)
+          call sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,k1,k2)
         endif
 !
 !  Send sink particle information to processors.
@@ -534,7 +534,8 @@ module Particles_sink
         j2=npar_loc+1
         k1=npar_loc
         k2=1
-        call sink_particle_accretion(fp,dfp,j1,j2,k1,k2,nosink_in=.true.)
+        call sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,k1,k2, &
+            nosink_in=.true.)
 !
 !  Calculate the added centre-of-mass, momentum, and mass density for each
 !  sink particle.
@@ -888,7 +889,7 @@ module Particles_sink
 !
 !
 !
-          call sink_particle_accretion(fp,dfp,j1,j2,npar_loc,1)
+          call sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,npar_loc,1)
 !
 !  Catch fatal errors during particle accretion.
 !
@@ -965,9 +966,17 @@ module Particles_sink
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
-    subroutine sink_particle_accretion(fp,dfp,j1,j2,k1,k2,nosink_in)
+    subroutine sink_particle_accretion(f,fp,dfp,ineargrid,j1,j2,k1,k2, &
+        nosink_in)
 !
+!  Determine whether particle is in vicinity of a sink particle and remove
+!  it if certain criteria are met.
+!
+!  07-aug-12/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
       integer :: j1, j2, k1, k2
       logical, optional :: nosink_in
 !
@@ -1103,8 +1112,11 @@ module Particles_sink
                       endif
                     endif
 !
+!  Integrate the particle trajectory inside the sink sphere.
+!
                     if (lsubgrid_accretion .and. fp(k,iaps)==0.0) then
-                      call subgrid_accretion(fp,mindistx,mindisty,mindistz, &
+                      if (dist2<=rads2) call subgrid_accretion( &
+                          f,fp,ineargrid,mindistx,mindisty,mindistz, &
                           j,k,laccrete)
                     endif
 !
@@ -1208,31 +1220,48 @@ module Particles_sink
 !
     endsubroutine sink_particle_accretion
 !***********************************************************************
-    subroutine subgrid_accretion(fp,xk,yk,zk,j,k,laccrete)
+    subroutine subgrid_accretion(f,fp,ineargrid,xk,yk,zk,j,k,laccrete)
 !
+!  Integrate the particle trajectory inside the radius of the sink particle. 
+!
+!  07-aug-12/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
       real :: xk, yk, zk
       integer :: j, k
       logical :: laccrete
 !
       real, dimension (6) :: k0, k1, k2, k3, k4
+      real, dimension (3) :: uu_gas
       real :: vxk, vyk, vzk
       real :: xold, yold, zold, vxold, vyold, vzold
       real :: r, r2, v, v2, tsub, told, rj, gmass, rhill, rsurf, dtsub
-      real :: tausp, tausp1, ux, uy, uz
-      integer :: nsignx, nsigny, nsignz
+      real :: tausp, tausp1
+      integer :: iblock, nhalforbx, nhalforby, nhalforbz
       logical :: laccrete_subgrid
+!
+!  Write particle trajectory to file for debugging.
 !
       if (ldebug_subgrid_accretion) then
         open(1,file=trim(datadir)//'/subgrid.dat',form='formatted')
         write(1,'(e14.7,2i14)') t, ipar(j), ipar(k)
       endif
-      print*, '111', xk, yk, zk
+!
+!  Need the friction time for the drag force term. We assume here that the
+!  friction time is constant.
 !
       tausp1=tausp1_species(1)
       tausp =1/tausp1
 !
+!  Calculate mu = G*M.
+!
       gmass=gravitational_const*fp(j,irhopswarm)*dx**3
+!
+!  The surface of the sink particle is known either from the Hill radius or
+!  in absolute terms.
+!
       if (rsurf_to_rhill/=0.0) then
         rhill=(gmass/(3*Omega**2))**(1/3.0)
         rsurf=rsurf_to_rhill*rhill
@@ -1240,27 +1269,68 @@ module Particles_sink
         rsurf=rsurf_subgrid
       endif
 !
+!  Define the velocity of the particle relative to that of the sink particle.
+!
       vxk=fp(k,ivpx)-fp(j,ivpx)
       vyk=fp(k,ivpy)-fp(j,ivpy)
       vzk=fp(k,ivpz)-fp(j,ivpz)
-      tsub=t
-      r=sqrt(xk**2+yk**2+zk**2)
-      v=sqrt(vxk**2+vyk**2+vzk**2)
-      ux=-1.0; uy=0.0; uz=0.0
 !
-      nsignx=0; nsigny=0; nsignz=0
+!  We evolve the time separately from the main time.
+!
+      tsub=t
+!
+!  Calculate the length of the radius vector.
+!
+      r=sqrt(xk**2+yk**2+zk**2)
+!
+!  The gas velocity is taken from the position of the sink particle. We could
+!  interpolate at each time-step, but that would be expensive when the particle
+!  spends many time-steps within the sink sphere.
+!
+      if (lparticles_blocks) then
+        iblock=inearblock(k)
+      else
+        iblock=0
+      endif
+!
+!  Interpolation is either zeroth, first or second order spline interpolation.
+!
+      if (lparticlemesh_cic) then
+        call interpolate_linear( &
+            f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
+      elseif (lparticlemesh_tsc) then
+        call interpolate_quadratic_spline( &
+            f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
+      else
+        uu_gas=f(ineargrid(j,1),ineargrid(j,2),ineargrid(j,3),iux:iuz)
+      endif
+!
+!  Keep track of number of particle orbits.
+!
+      nhalforbx=0; nhalforby=0; nhalforbz=0
+!
+!  Define separate accretion criterion, false by default.
 !
       laccrete_subgrid=.false.
-      print*, '222', xk, yk, zk
 !
       do while (r<=fp(j,iaps) .and. (.not. laccrete_subgrid))
 !
+!  The length of the r and v vectors are used for the time-step.
+!
+        r=sqrt(xk**2+yk**2+zk**2)
+        v=sqrt(vxk**2+vyk**2+vzk**2)
+!
+!  Determine the time-step.
+!
         dtsub = cdtsubgrid*min(sqrt(r**3/gmass),r/v)
         if (tausp1/=0.0) dtsub = min(dtsub,cdtsubgrid*tausp)
+        if (Omega/=0.0)  dtsub = min(dtsub,cdtsubgrid*1/Omega)
 !
         if (ldebug_subgrid_accretion) then
           write(1,'(8e16.7)') tsub, dtsub, xk, yk, zk, vxk, vyk, vzk
         endif
+!
+!  Initialise the fourth-order Runge-Kutta integration.
 !
         xold =xk
         yold =yk
@@ -1269,6 +1339,8 @@ module Particles_sink
         vyold=vyk
         vzold=vzk
         told =tsub
+!
+!  Loop over sub-time-steps.
 !
         do itsub=1,itorder
           if (itsub==1) then
@@ -1305,17 +1377,21 @@ module Particles_sink
             tsub=told +dtsub
           endif
 !
+!  Calculate the length of the r and v vectors.
+!
           r2 = xk**2+yk**2+zk**2
           r  = sqrt(r2)
           v2 = vxk**2+vyk**2+vzk**2
           v  = sqrt(v2)
-!         
+!
+!  Evaluate the time-derivative of x, y, z, vx, vy, vz.
+!
           k0(1) = vxk
           k0(2) = vyk - qshear*Omega*xk
           k0(3) = vzk
-          k0(4) = -gmass/r2*xk/r - tausp1*(vxk-ux) + 2*Omega*vyk
-          k0(5) = -gmass/r2*yk/r - tausp1*(vyk-uy) - (2-qshear)*Omega*vxk
-          k0(6) = -gmass/r2*zk/r - tausp1*(vzk-uz) - Omega**2*zk
+          k0(4) = -gmass/r2*xk/r - tausp1*(vxk-uu_gas(1)) + 2*Omega*vyk
+          k0(5) = -gmass/r2*yk/r - tausp1*(vyk-uu_gas(2)) - (2-qshear)*Omega*vxk
+          k0(6) = -gmass/r2*zk/r - tausp1*(vzk-uu_gas(3)) - Omega**2*zk
 !         
           if (itsub==1) k1=k0*dtsub
           if (itsub==2) k2=k0*dtsub
@@ -1323,6 +1399,8 @@ module Particles_sink
           if (itsub==4) k4=k0*dtsub
 !
         enddo
+!
+!  Bring the solution to the next time-step.
 !
         xk  =  xold + (1.0/6.0)*(k1(1) + 2*k2(1) + 2*k3(1) + k4(1))
         yk  =  yold + (1.0/6.0)*(k1(2) + 2*k2(2) + 2*k3(2) + k4(2))
@@ -1332,19 +1410,22 @@ module Particles_sink
         vzk = vzold + (1.0/6.0)*(k1(6) + 2*k2(6) + 2*k3(6) + k4(6))
         tsub = told + dtsub
 !
+!  Stop the integration if the particle reaches the surface.
+!
         r=sqrt(xk**2+yk**2+zk**2)
-        v=sqrt(vxk**2+vyk**2+vzk**2)
 !
         if (r<=rsurf) laccrete_subgrid=.true.
 !
-        if (sign(1.0,xk)/=sign(1.0,xold)) nsignx=nsignx+1
-        if (sign(1.0,yk)/=sign(1.0,yold)) nsigny=nsigny+1
-        if (sign(1.0,zk)/=sign(1.0,zold)) nsignz=nsignz+1
-          print*, nsignx, nsigny, nsignz, r, rsurf
+!  Stop the integration if the particle has done a full orbit inside the
+!  sink sphere.
 !
-        if ((nsignx>2 .and. nsigny>2).or. &
-            (nsignx>2 .and. nsignz>2).or. &
-            (nsigny>2 .and. nsignz>2)) laccrete_subgrid=.true.
+        if (sign(1.0,xk)/=sign(1.0,xold)) nhalforbx=nhalforbx+1
+        if (sign(1.0,yk)/=sign(1.0,yold)) nhalforby=nhalforby+1
+        if (sign(1.0,zk)/=sign(1.0,zold)) nhalforbz=nhalforbz+1
+!
+        if ((nhalforbx>2 .and. nhalforby>2).or. &
+            (nhalforbx>2 .and. nhalforbz>2).or. &
+            (nhalforby>2 .and. nhalforbz>2)) laccrete_subgrid=.true.
 !
       enddo
 !
@@ -1352,14 +1433,16 @@ module Particles_sink
 !
       laccrete=laccrete_subgrid
 !
-      fp(k,ixp)=fp(j,ixp)+xk
-      fp(k,iyp)=fp(j,iyp)+yk
-      fp(k,izp)=fp(j,izp)+zk
-      fp(k,ivpx)=fp(j,ivpx)+vxk
-      fp(k,ivpy)=fp(j,ivpy)+vyk
-      fp(k,ivpz)=fp(j,ivpz)+vzk
-      print*, '333', fp(k,ixp:izp)
-      stop
+!  Put new particle position and velocity into particle array.
+!
+      if (.not.laccrete_subgrid) then
+        fp(k,ixp)=fp(j,ixp)+xk
+        fp(k,iyp)=fp(j,iyp)+yk
+        fp(k,izp)=fp(j,izp)+zk
+        fp(k,ivpx)=fp(j,ivpx)+vxk
+        fp(k,ivpy)=fp(j,ivpy)+vyk
+        fp(k,ivpz)=fp(j,ivpz)+vzk
+      endif
 !
     endsubroutine subgrid_accretion
 !***********************************************************************
