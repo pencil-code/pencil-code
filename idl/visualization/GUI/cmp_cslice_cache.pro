@@ -402,15 +402,16 @@ pro cslice_event, event
 		grid.y *= unit.default_length
 		grid.z *= unit.default_length
 		anchor = [ grid.x[px], grid.y[py], grid.z[pz] ]
+		precision = 0.1 / max ([ bin_x, bin_y, bin_z ])
 		if (stream_prep lt 2) then begin
 			field = dblarr (num_x, num_y, num_z, 3)
 			field[*,*,*,0] = field_x
 			field[*,*,*,1] = field_y
 			field[*,*,*,2] = field_z
-			indices = pc_get_streamline (field, anchor=anchor, grid=grid, coords=coords, distances=distances, length=length, num=num_points, origin=origin, /cache)
+			indices = pc_get_streamline (field, anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, /cache)
 			stream_prep = 2
 		end else begin
-			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, distances=distances, length=length, num=num_points, origin=origin, /cache)
+			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, /cache)
 		end
 		add_line = { indices:indices, coords:coords, distances:distances, length:length, num:num_points, origin:origin, time:varfiles[selected_snapshot].time*unit.time, snapshot:varfiles[selected_snapshot].title }
 		streamlines.num += 1
