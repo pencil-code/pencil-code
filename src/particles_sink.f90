@@ -29,14 +29,17 @@ module Particles_sink
 !
   include 'particles_sink.h'
 !
+  real, pointer, dimension (:) :: tausp_species, tausp1_species
   real :: sink_birth_radius=1.0, sink_radius=0.0, rhop_sink_create=-1.0
   real :: aps0=0.0, aps1=0.0, aps2=0.0, aps3=0.0
   real :: bondi_accretion_grav_smooth=1.35
+  real :: rsurf_to_rhill=0.0, rsurf_subgrid=0.001, cdtsubgrid=0.01
   real, pointer :: tstart_selfgrav, gravitational_const
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
   logical :: lbondi_accretion=.false.
   logical :: lselfgravity_sinkparticles=.true.
+  logical :: lsubgrid_accretion=.false., ldebug_subgrid_accretion=.false.
   character (len=labellen), dimension(ninit) :: initaps='nothing'
 !
   integer :: idiag_nparsink=0
@@ -45,12 +48,14 @@ module Particles_sink
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
       lrhop_roche_unit, initaps, aps0, aps1, aps2, aps3, lbondi_accretion, &
       lselfgravity_sinkparticles, lsink_communication_all_to_all, &
-      bondi_accretion_grav_smooth
+      bondi_accretion_grav_smooth, lsubgrid_accretion, rsurf_to_rhill, &
+      cdtsubgrid, ldebug_subgrid_accretion
 !
   namelist /particles_sink_run_pars/ &
       sink_birth_radius, lsink_radius_dx_unit, rhop_sink_create, &
       lrhop_roche_unit, lbondi_accretion, lselfgravity_sinkparticles, &
-      bondi_accretion_grav_smooth
+      bondi_accretion_grav_smooth, lsubgrid_accretion, rsurf_to_rhill, &
+      cdtsubgrid, ldebug_subgrid_accretion
 !
   contains
 !***********************************************************************
@@ -98,6 +103,9 @@ module Particles_sink
 !
       if (lroot) print*, 'initialize_particles_sink: sink_radius=', &
           sink_radius
+!
+      call get_shared_variable( 'tausp_species', tausp_species)
+      call get_shared_variable('tausp1_species',tausp1_species)
 !
       if (lselfgravity) then
         call get_shared_variable('tstart_selfgrav',tstart_selfgrav)
@@ -1095,6 +1103,11 @@ module Particles_sink
                       endif
                     endif
 !
+                    if (lsubgrid_accretion .and. fp(k,iaps)==0.0) then
+                      call subgrid_accretion(fp,mindistx,mindisty,mindistz, &
+                          j,k,laccrete)
+                    endif
+!
                     if (dist2<=rads2 .and. laccrete) then
                       if (ip<=6) then
                         print*, 'remove_particles_sink: sink particle', &
@@ -1195,7 +1208,161 @@ module Particles_sink
 !
     endsubroutine sink_particle_accretion
 !***********************************************************************
+    subroutine subgrid_accretion(fp,xk,yk,zk,j,k,laccrete)
 !
+      real, dimension (mpar_loc,mpvar) :: fp
+      real :: xk, yk, zk
+      integer :: j, k
+      logical :: laccrete
+!
+      real, dimension (6) :: k0, k1, k2, k3, k4
+      real :: vxk, vyk, vzk
+      real :: xold, yold, zold, vxold, vyold, vzold
+      real :: r, r2, v, v2, tsub, told, rj, gmass, rhill, rsurf, dtsub
+      real :: tausp, tausp1, ux, uy, uz
+      integer :: nsignx, nsigny, nsignz
+      logical :: laccrete_subgrid
+!
+      if (ldebug_subgrid_accretion) then
+        open(1,file=trim(datadir)//'/subgrid.dat',form='formatted')
+        write(1,'(e14.7,2i14)') t, ipar(j), ipar(k)
+      endif
+      print*, '111', xk, yk, zk
+!
+      tausp1=tausp1_species(1)
+      tausp =1/tausp1
+!
+      gmass=gravitational_const*fp(j,irhopswarm)*dx**3
+      if (rsurf_to_rhill/=0.0) then
+        rhill=(gmass/(3*Omega**2))**(1/3.0)
+        rsurf=rsurf_to_rhill*rhill
+      else
+        rsurf=rsurf_subgrid
+      endif
+!
+      vxk=fp(k,ivpx)-fp(j,ivpx)
+      vyk=fp(k,ivpy)-fp(j,ivpy)
+      vzk=fp(k,ivpz)-fp(j,ivpz)
+      tsub=t
+      r=sqrt(xk**2+yk**2+zk**2)
+      v=sqrt(vxk**2+vyk**2+vzk**2)
+      ux=-1.0; uy=0.0; uz=0.0
+!
+      nsignx=0; nsigny=0; nsignz=0
+!
+      laccrete_subgrid=.false.
+      print*, '222', xk, yk, zk
+!
+      do while (r<=fp(j,iaps) .and. (.not. laccrete_subgrid))
+!
+        dtsub = cdtsubgrid*min(sqrt(r**3/gmass),r/v)
+        if (tausp1/=0.0) dtsub = min(dtsub,cdtsubgrid*tausp)
+!
+        if (ldebug_subgrid_accretion) then
+          write(1,'(8e16.7)') tsub, dtsub, xk, yk, zk, vxk, vyk, vzk
+        endif
+!
+        xold =xk
+        yold =yk
+        zold =zk
+        vxold=vxk
+        vyold=vyk
+        vzold=vzk
+        told =tsub
+!
+        do itsub=1,itorder
+          if (itsub==1) then
+            xk  = xold
+            yk  = yold
+            zk  = zold
+            vxk =vxold
+            vyk =vyold
+            vzk =vzold
+            tsub= told
+          else if (itsub==2) then
+            xk  = xold+0.5*k1(1)
+            yk  = yold+0.5*k1(2)
+            zk  = zold+0.5*k1(3)
+            vxk =vxold+0.5*k1(4)
+            vyk =vyold+0.5*k1(5)
+            vzk =vzold+0.5*k1(6)
+            tsub= told+0.5*dtsub
+          else if (itsub==3) then
+            xk  = xold+0.5*k2(1)
+            yk  = yold+0.5*k2(2)
+            zk  = zold+0.5*k2(3)
+            vxk =vxold+0.5*k2(4)
+            vyk =vyold+0.5*k2(5)
+            vzk =vzold+0.5*k2(6)
+            tsub= told+0.5*dtsub
+          else if (itsub==4) then
+            xk  = xold+k3(1)
+            yk  = yold+k3(2)
+            zk  = zold+k3(3)
+            vxk =vxold+k3(4)
+            vyk =vyold+k3(5)
+            vzk =vzold+k3(6)
+            tsub=told +dtsub
+          endif
+!
+          r2 = xk**2+yk**2+zk**2
+          r  = sqrt(r2)
+          v2 = vxk**2+vyk**2+vzk**2
+          v  = sqrt(v2)
+!         
+          k0(1) = vxk
+          k0(2) = vyk - qshear*Omega*xk
+          k0(3) = vzk
+          k0(4) = -gmass/r2*xk/r - tausp1*(vxk-ux) + 2*Omega*vyk
+          k0(5) = -gmass/r2*yk/r - tausp1*(vyk-uy) - (2-qshear)*Omega*vxk
+          k0(6) = -gmass/r2*zk/r - tausp1*(vzk-uz) - Omega**2*zk
+!         
+          if (itsub==1) k1=k0*dtsub
+          if (itsub==2) k2=k0*dtsub
+          if (itsub==3) k3=k0*dtsub
+          if (itsub==4) k4=k0*dtsub
+!
+        enddo
+!
+        xk  =  xold + (1.0/6.0)*(k1(1) + 2*k2(1) + 2*k3(1) + k4(1))
+        yk  =  yold + (1.0/6.0)*(k1(2) + 2*k2(2) + 2*k3(2) + k4(2))
+        zk  =  zold + (1.0/6.0)*(k1(3) + 2*k2(3) + 2*k3(3) + k4(3))
+        vxk = vxold + (1.0/6.0)*(k1(4) + 2*k2(4) + 2*k3(4) + k4(4))
+        vyk = vyold + (1.0/6.0)*(k1(5) + 2*k2(5) + 2*k3(5) + k4(5))
+        vzk = vzold + (1.0/6.0)*(k1(6) + 2*k2(6) + 2*k3(6) + k4(6))
+        tsub = told + dtsub
+!
+        r=sqrt(xk**2+yk**2+zk**2)
+        v=sqrt(vxk**2+vyk**2+vzk**2)
+!
+        if (r<=rsurf) laccrete_subgrid=.true.
+!
+        if (sign(1.0,xk)/=sign(1.0,xold)) nsignx=nsignx+1
+        if (sign(1.0,yk)/=sign(1.0,yold)) nsigny=nsigny+1
+        if (sign(1.0,zk)/=sign(1.0,zold)) nsignz=nsignz+1
+          print*, nsignx, nsigny, nsignz, r, rsurf
+!
+        if ((nsignx>2 .and. nsigny>2).or. &
+            (nsignx>2 .and. nsignz>2).or. &
+            (nsigny>2 .and. nsignz>2)) laccrete_subgrid=.true.
+!
+      enddo
+!
+      if (ldebug_subgrid_accretion) close(1)
+!
+      laccrete=laccrete_subgrid
+!
+      fp(k,ixp)=fp(j,ixp)+xk
+      fp(k,iyp)=fp(j,iyp)+yk
+      fp(k,izp)=fp(j,izp)+zk
+      fp(k,ivpx)=fp(j,ivpx)+vxk
+      fp(k,ivpy)=fp(j,ivpy)+vyk
+      fp(k,ivpz)=fp(j,ivpz)+vzk
+      print*, '333', fp(k,ixp:izp)
+      stop
+!
+    endsubroutine subgrid_accretion
+!***********************************************************************
     subroutine read_particles_sink_init_pars(unit,iostat)
 !
       integer, intent (in) :: unit
