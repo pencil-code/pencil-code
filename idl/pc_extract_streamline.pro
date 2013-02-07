@@ -51,10 +51,12 @@ function pc_extract_streamline, data, indices
 
 	; Follow the streamline
 	for pos = 0, length - 1 do begin
-		point = indices[*,pos]
+		int_pos = floor (indices[*,pos])
+		residual = pos - int_pos
+		loc_data = data[int_pos[0]:int_pos[0]+1,int_pos[1]:int_pos[1]+1,int_pos[2]:int_pos[2]+1,*]
 		; Iterate over the data components
 		for comp = 0, num - 1 do begin
-			quantity[comp,pos] = interpolate (data[*,*,*,comp], point[0], point[1], point[2])
+			quantity[comp,pos] = interpolate (loc_data[*,*,*,comp], residual[0], residual[1], residual[2])
 		end
 	end
 
