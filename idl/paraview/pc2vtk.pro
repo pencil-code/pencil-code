@@ -92,6 +92,7 @@ pro pc2vtk, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, 
     endelse
   endfor
   close, lun
+  free_lun, lun
 
 end
 

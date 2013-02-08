@@ -45,5 +45,6 @@ pro pc2vtk_allvar, datadir=datadir, variables=variables, bbtoo=bbtoo, ootoo=ooto
     pc2vtk, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
   endfor
   close, lun
+  free_lun, lun
 
 end
