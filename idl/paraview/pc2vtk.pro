@@ -69,9 +69,9 @@ pro pc2vtk, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, 
   printf, lun, 'Pencil Code Data'
   printf, lun, 'BINARY'
   printf, lun, 'DATASET STRUCTURED_POINTS'
-  printf, lun, 'DIMENSIONS ', dimensions[dim_ok]
-  printf, lun, 'ORIGIN ', origin[dim_ok]
-  printf, lun, 'SPACING ', spacing[dim_ok]
+  printf, lun, 'DIMENSIONS ', dimensions
+  printf, lun, 'ORIGIN ', origin
+  printf, lun, 'SPACING ', spacing
   printf, lun, 'POINT_DATA ', ntot
 
 ; Write out each data field.
