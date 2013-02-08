@@ -60,7 +60,7 @@ pro pc2vtk, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, 
   origin = [f.x[0], f.y[0], f.z[0]]
   spacing = [f.dx[0], f.dy[0], f.dz[0]]
   dim_ok = where(dimensions gt 1)
-  ntot = long(product(dimensions))
+  ntot = product(dimensions, /integer)
 
 ; Open the output file and write the header information.
   print, 'Writing ', strtrim(vtkfile), '...'
