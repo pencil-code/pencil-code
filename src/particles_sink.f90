@@ -1443,7 +1443,6 @@ module Particles_sink
         fp(k,ivpy)=fp(j,ivpy)+vyk
         fp(k,ivpz)=fp(j,ivpz)+vzk
       endif
-      stop
 !
     endsubroutine subgrid_accretion
 !***********************************************************************
