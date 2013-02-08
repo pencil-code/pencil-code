@@ -476,18 +476,20 @@ module Particles_map
 !
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************
-    subroutine map_nearest_grid(fp,ineargrid)
+    subroutine map_nearest_grid(fp,ineargrid,k1_opt,k2_opt)
 !
-!  Find index (ix0, iy0, iz0) of nearest grid point of all the particles.
+!  Find index (ix0, iy0, iz0) of nearest grid point of all or some of the
+!  particles.
 !
 !  23-jan-05/anders: coded
 !  08-jul-08/kapelrud: support for non-equidistant grids
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer, optional :: k1_opt, k2_opt
 !
       double precision, save :: dx1, dy1, dz1
-      integer :: k, ix0, iy0, iz0
+      integer :: k, k1, k2, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
       logical :: lspecial_boundx,lnbody
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -496,6 +498,18 @@ module Particles_map
       intent(out) :: ineargrid
 !
       t_sp = t
+!
+      if (present(k1_opt)) then
+        k1=k1_opt
+      else
+        k1=1
+      endif
+!
+      if (present(k2_opt)) then
+        k2=k2_opt
+      else
+        k2=npar_loc
+      endif
 !
 !  Default values in case of missing directions.
 !
@@ -506,7 +520,7 @@ module Particles_map
         lfirstcall=.false.
       endif
 !
-      do k=1,npar_loc
+      do k=k1,k2
 !
 !  Find nearest grid point in x-direction.
 !  Find nearest grid point by bisection if the grid is not equidistant.

@@ -46,17 +46,19 @@ module Particles_map
 !
   contains
 !***********************************************************************
-    subroutine map_nearest_grid(fp,ineargrid)
+    subroutine map_nearest_grid(fp,ineargrid,k1_opt,k2_opt)
 !
-!  Find processor, brick, and grid point index of all the particles.
+!  Find processor, brick, and grid point index of all or some of the
+!  particles.
 !
 !  01-nov-09/anders: coded
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer, optional :: k1_opt, k2_opt
 !
       integer, dimension (0:nblockmax-1) :: ibrick_global_arr
-      integer :: k, status
+      integer :: k1, k2, k, status
       integer :: iblockl, iblocku, iblockm, ibrick_global_par
       integer :: iproc_parent_par, ibrick_parent_par
       integer :: iproc_parent_par_previous, ibrick_parent_par_previous
@@ -65,6 +67,18 @@ module Particles_map
       intent(in)  :: fp
       intent(out) :: ineargrid
 !
+      if (present(k1_opt)) then
+        k1=k1_opt
+      else
+        k1=1
+      endif
+!
+      if (present(k2_opt)) then
+        k2=k2_opt
+      else
+        k2=npar_loc
+      endif
+!
 !  Sort blocks by parent processor and by parent brick and create global
 !  brick array.
 !
@@ -72,11 +86,12 @@ module Particles_map
           iproc_parent_block(0:nblock_loc-1)*nbricks+ &
           ibrick_parent_block(0:nblock_loc-1)
 !
-      do k=1,npar_loc
+      do k=k1,k2
 !
 !  Calculate processor, brick, and grid point index of particle.
 !
-        call get_brick_index(fp(k,(/ixp,iyp,izp/)), iproc_parent_par, ibrick_parent_par, ineargrid(k,:), status=status)
+        call get_brick_index(fp(k,(/ixp,iyp,izp/)), iproc_parent_par, &
+            ibrick_parent_par, ineargrid(k,:), status=status)
         if (status < 0) then
           print*, 'map_nearest_grid: error in finding the grid index of particle'
           print*, 'map_nearest_grid: it, itsub, iproc, k, ipar=', it, itsub, iproc, k, ipar(k)
