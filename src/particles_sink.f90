@@ -1239,8 +1239,26 @@ module Particles_sink
       real :: xold, yold, zold, vxold, vyold, vzold
       real :: r, r2, v, v2, tsub, told, rj, gmass, rhill, rsurf, dtsub
       real :: tausp, tausp1
-      integer :: iblock, nhalforbx, nhalforby, nhalforbz
+      integer :: itsubsub, iblock, nhalforbx, nhalforby, nhalforbz
       logical :: laccrete_subgrid
+!
+!  Calculate the particle's nearest grid point.
+!
+      call map_nearest_grid(fp,ineargrid,k,k)
+!
+!  Return if nearest grid cell is outside the domain. This must mean that
+!  the particle has already been scattered once and hence we are not interested
+!  in a repeated scatter.
+!
+      if (lparticles_blocks) then
+        if (ineargrid(k,1)<l1b .or. ineargrid(k,2)>l2b .or. &
+            ineargrid(k,2)<m1b .or. ineargrid(k,2)>m2b .or. &
+            ineargrid(k,3)<n1b .or. ineargrid(k,2)>n2b) return
+      else
+        if (ineargrid(k,1)<l1 .or. ineargrid(k,2)>l2 .or. &
+            ineargrid(k,2)<m1 .or. ineargrid(k,2)>m2 .or. &
+            ineargrid(k,3)<n1 .or. ineargrid(k,2)>n2) return
+      endif
 !
 !  Write particle trajectory to file for debugging.
 !
@@ -1282,29 +1300,7 @@ module Particles_sink
 !  Calculate the length of the radius vector.
 !
       r=sqrt(xk**2+yk**2+zk**2)
-!
-!  The gas velocity is taken from the position of the sink particle. We could
-!  interpolate at each time-step, but that would be expensive when the particle
-!  spends many time-steps within the sink sphere.
-!
-      if (lparticles_blocks) then
-        iblock=inearblock(k)
-      else
-        iblock=0
-      endif
-!
-!  Interpolation is either zeroth, first or second order spline interpolation.
-!
-      if (lparticlemesh_cic) then
-        call interpolate_linear( &
-            f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
-      elseif (lparticlemesh_tsc) then
-        call interpolate_quadratic_spline( &
-            f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
-      else
-        uu_gas=f(ineargrid(j,1),ineargrid(j,2),ineargrid(j,3),iux:iuz)
-      endif
-!
+! 
 !  Keep track of number of particle orbits.
 !
       nhalforbx=0; nhalforby=0; nhalforbz=0
@@ -1320,6 +1316,25 @@ module Particles_sink
         r=sqrt(xk**2+yk**2+zk**2)
         v=sqrt(vxk**2+vyk**2+vzk**2)
 !
+!  The gas velocity is taken from the position of the sink particle. We could
+!  interpolate at each time-step, but that would be expensive when the particle
+!  spends many time-steps within the sink sphere.
+!
+        if (lparticles_blocks) then
+          iblock=inearblock(k)
+        else
+          iblock=0
+        endif
+!
+!  Interpolation is either zeroth or first order spline interpolation.
+!
+        if (lparticlemesh_cic .or. lparticlemesh_tsc) then
+          call interpolate_linear( &
+              f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
+        else
+          uu_gas=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),iux:iuz)
+        endif
+!
 !  Determine the time-step.
 !
         dtsub = cdtsubgrid*min(sqrt(r**3/gmass),r/v)
@@ -1327,7 +1342,8 @@ module Particles_sink
         if (Omega/=0.0)  dtsub = min(dtsub,cdtsubgrid*1/Omega)
 !
         if (ldebug_subgrid_accretion) then
-          write(1,'(8e16.7)') tsub, dtsub, xk, yk, zk, vxk, vyk, vzk
+          write(1,'(8e16.7)') tsub, dtsub, xk, yk, zk, vxk, vyk, vzk, &
+              uu_gas(1), uu_gas(2), uu_gas(3)
         endif
 !
 !  Initialise the fourth-order Runge-Kutta integration.
@@ -1342,8 +1358,8 @@ module Particles_sink
 !
 !  Loop over sub-time-steps.
 !
-        do itsub=1,4
-          if (itsub==1) then
+        do itsubsub=1,4
+          if (itsubsub==1) then
             xk  = xold
             yk  = yold
             zk  = zold
@@ -1351,7 +1367,7 @@ module Particles_sink
             vyk =vyold
             vzk =vzold
             tsub= told
-          else if (itsub==2) then
+          else if (itsubsub==2) then
             xk  = xold+0.5*k1(1)
             yk  = yold+0.5*k1(2)
             zk  = zold+0.5*k1(3)
@@ -1359,7 +1375,7 @@ module Particles_sink
             vyk =vyold+0.5*k1(5)
             vzk =vzold+0.5*k1(6)
             tsub= told+0.5*dtsub
-          else if (itsub==3) then
+          else if (itsubsub==3) then
             xk  = xold+0.5*k2(1)
             yk  = yold+0.5*k2(2)
             zk  = zold+0.5*k2(3)
@@ -1367,7 +1383,7 @@ module Particles_sink
             vyk =vyold+0.5*k2(5)
             vzk =vzold+0.5*k2(6)
             tsub= told+0.5*dtsub
-          else if (itsub==4) then
+          else if (itsubsub==4) then
             xk  = xold+k3(1)
             yk  = yold+k3(2)
             zk  = zold+k3(3)
@@ -1393,10 +1409,10 @@ module Particles_sink
           k0(5) = -gmass/r2*yk/r - tausp1*(vyk-uu_gas(2)) - (2-qshear)*Omega*vxk
           k0(6) = -gmass/r2*zk/r - tausp1*(vzk-uu_gas(3)) - Omega**2*zk
 !         
-          if (itsub==1) k1=k0*dtsub
-          if (itsub==2) k2=k0*dtsub
-          if (itsub==3) k3=k0*dtsub
-          if (itsub==4) k4=k0*dtsub
+          if (itsubsub==1) k1=k0*dtsub
+          if (itsubsub==2) k2=k0*dtsub
+          if (itsubsub==3) k3=k0*dtsub
+          if (itsubsub==4) k4=k0*dtsub
 !
         enddo
 !
