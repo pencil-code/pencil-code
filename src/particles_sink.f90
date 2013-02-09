@@ -33,7 +33,7 @@ module Particles_sink
   real :: sink_birth_radius=1.0, sink_radius=0.0, rhop_sink_create=-1.0
   real :: aps0=0.0, aps1=0.0, aps2=0.0, aps3=0.0
   real :: bondi_accretion_grav_smooth=1.35
-  real :: rsurf_to_rhill=0.0, rsurf_subgrid=0.001, cdtsubgrid=0.01
+  real :: rsurf_to_rhill=0.0, rsurf_subgrid=0.001, cdtsubgrid=0.1
   real, pointer :: tstart_selfgrav, gravitational_const
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
