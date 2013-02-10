@@ -73,7 +73,8 @@ function pc_destretch, in, source, target=target, dim=dim
 		result = execute ("above = in["+dim_str+"]")
 		if (not result) then message, "ERROR: can't get above layer "+strtrim (layer_pos, 2)+"."
 
-		above_weight = (target[pos] - source[pos_below]) / (source[pos_above] - source[pos_below])
+		distance = source[pos_above] - source[pos_below]
+		if (distance eq 0.0) then above_weight = 1.0 else above_weight = (target[pos] - source[pos_below]) / (source[pos_above] - source[pos_below])
 		above_weight = (above_weight > 0.0) < 1.0
 		below_weight = 1.0 - above_weight
 		interpolated = below * below_weight + above * above_weight
