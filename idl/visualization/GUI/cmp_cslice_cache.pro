@@ -691,6 +691,8 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	!P.MULTI = [0, 1, 1]
 
+	if (not any ([DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3])) then return
+
 	ox = floor (bin_x / 2.0)
 	oy = floor (bin_y / 2.0)
 	oz = floor (bin_z / 2.0)
