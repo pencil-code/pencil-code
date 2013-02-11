@@ -163,7 +163,7 @@ module InitialCondition
       use Sub,     only: get_radial_distance,power_law
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: rr_cyl,rr_sph,OO,g_r,tmp
+      real, dimension (nx) :: rr_cyl,rr_sph,OO,g_r,tmp
       integer :: i
 !
       if (lroot) &
@@ -176,8 +176,8 @@ module InitialCondition
              call fatal_error("centrifugal_balance","don't you dare using less smoothing than n_pot=2")
       endif
 !
-      do m=1,my
-      do n=1,mz
+      do m=m1,m2
+      do n=n1,n2
 !
         call get_radial_distance(rr_sph,rr_cyl)
 !
@@ -187,25 +187,14 @@ module InitialCondition
 !
           call acceleration(g_r)
 !
+! Sanity check
+!
           if (any(g_r > 0.)) then
-            do i=1,mx
-              if (g_r(i) > 0) then
-                if ((i <= nghost).or.(i >= mx-nghost)) then
-                  !ghost zones, just emit a warning
-                  if (ip<=7) then
-                    print*,"centrifugal_balance: gravity at ghost point ",&
-                         x(i),y(m),z(n),"is directed outwards"
-                    call warning("","")
-                  endif
-                  OO(i)=0
-                else
-                  !physical point. Break!
-                  print*,"centrifugal_balance: gravity at physical point ",&
-                       x(i),y(m),z(n),"is directed outwards"
-                  call fatal_error("","")
-                endif
-              else !g_r ne zero
-                OO(i)=sqrt(-g_r(i)/rr_cyl(i))
+            do i=l1,l2
+              if (g_r(i-l1+1) > 0) then
+                print*,"centrifugal_balance: gravity at physical point ",&
+                     x(i),y(m),z(n),"is directed outwards"
+                call fatal_error("","")
               endif
             enddo
           else
@@ -235,17 +224,17 @@ module InitialCondition
         endif
 !
         if (coord_system=='cartesian') then
-          f(:,m,n,iux) = f(:,m,n,iux) - y(m)*OO
-          f(:,m,n,iuy) = f(:,m,n,iuy) + x   *OO
-          f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
+          f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
         elseif (coord_system=='cylindric') then
-          f(:,m,n,iux) = f(:,m,n,iux) + 0.
-          f(:,m,n,iuy) = f(:,m,n,iuy) + OO*rr_cyl
-          f(:,m,n,iuz) = f(:,m,n,iuz) + 0.
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + OO*rr_cyl
+          f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
         elseif (coord_system=='spherical') then
-          f(:,m,n,iux) = f(:,m,n,iux) + 0.
-          f(:,m,n,iuy) = f(:,m,n,iuy) + 0.
-          f(:,m,n,iuz) = f(:,m,n,iuz) + OO*rr_sph
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 0.
+          f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + OO*rr_sph
         endif
 !
       enddo
