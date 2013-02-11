@@ -701,6 +701,51 @@ else if ($hn =~ louhi-login*) then
   set remote_top     = 1
   set local_binary = 0
 #----------------------------------------------
+else if ($hn =~ clogin*) then
+  echo "Sisu - CSC, Kajaani, Finland"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = ''
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
+else if ($hn =~ eslogin*) then
+  echo "Hermit - HLRS, Stuttgart, Germany"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = ''
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+else if (($hn =~ nid*) && ($USER =~ iprpkapy)) then
+  echo "Hermit - HLRS, Stuttgart, Germany"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = ''
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
 else if ($hn =~ emil-login*.pdc.kth.se*) then
   echo $SHELL
   if ($USER =~ gustavog) then

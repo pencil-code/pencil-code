@@ -1470,6 +1470,26 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-DFUNDERSC=1 -O3 #(louhi)
 #LD_MPI= #(louhi)
 ##
+## Sisu - CrayXC30 - (Kajaani)
+##
+#FC=ftn #(sisu*)
+#FC_SLOPPY = $(FC) #(sisu*)
+#F90=$(FC) #(sisu*)
+#CC=cc #(sisu*)
+#FFLAGS=-O3 #(sisu*)
+#FFLAGS_DOUBLE=-default64 #(sisu)
+#CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
+##
+## Hermit - CrayXE6 - (Stuttgart)
+##
+#FC=ftn #(eslogin0*)
+#FC_SLOPPY = $(FC) #(eslogin0*)
+#F90=$(FC) #(eslogin0*)
+#CC=cc #(eslogin0*)
+#FFLAGS=-Mipa=fast,inline -Mfree #(eslogin0*)
+#FFLAGS_DOUBLE=-r8
+#CFLAGS=-DFUNDERSC=1 -O3 #(eslogin0*)
+##
 ## Lindgren - CrayXE6 - (Stockholm)
 ## 1516 24-nodes per cabinet 2.1GHz Opterons
 ##
