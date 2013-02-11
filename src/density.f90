@@ -49,7 +49,7 @@ module Density
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
-  real :: xblob=0.0, yblob=0.0, zblob=0.0
+  real :: xblob=0.0, yblob=0.0, zblob=0.0, mass_source_omega=0.
   real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
   real :: wdamp=0.0, density_floor=-1.0
@@ -123,7 +123,8 @@ module Density
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fix, &
       lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
-      density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed
+      density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
+      xblob, yblob, zblob, mass_source_omega
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -2258,20 +2259,21 @@ module Density
 !  these formulae assume lnrho0=0 and cs0=1
 !
           where (r_mn > r_ext)
-            f(l1:l2,m,n,ilnrho)=lnrho_ref-gamma*pot/cs2top
+            f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+lnrho_ref-gamma*pot/cs2top
           elsewhere
             dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
-            f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
+            f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+lnrho0+mpoly*dlncs2
           endwhere
 !
 !  entropy
 !
           if (lentropy) then
             where (r_mn > r_ext)
-              f(l1:l2,m,n,iss)=-(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss) &
+                -(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
             elsewhere
               dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
-              f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+mpoly*(ggamma/gamma-1.)*dlncs2
             endwhere
           endif
         enddo; enddo
@@ -2282,8 +2284,8 @@ module Density
         do n=n1,n2; do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
-          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
-          if (lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+lnrho0+mpoly*dlncs2
+          if (lentropy) f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+mpoly*(ggamma/gamma-1.)*dlncs2
 !         if (ltemperature) f(l1:l2,m,n,ilnTT)=dlncs2-log(gamma_m1)
           if (ltemperature) f(l1:l2,m,n,ilnTT)=log(-gamma*pot/(mpoly+1.)/gamma_m1)
         enddo; enddo
@@ -2316,7 +2318,7 @@ module Density
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm
+      real, dimension (nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm,radius2
 !
       if (ldebug) print*,'mass_source: cs20,cs0=',cs20,cs0
 !
@@ -2335,6 +2337,11 @@ module Density
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
           fprofile=exp(-.5*(z(n)/mass_source_sigma)**2)/fnorm
           dlnrhodt=mass_source_Mdot*fprofile
+        case('bumpr')
+          fnorm=(2.*pi*mass_source_sigma**2)**1.5
+          radius2=(x(l1:l2)-xblob)**2+(y(m)-yblob)**2+(z(n)-zblob)**2
+          fprofile=exp(-.5*radius2/mass_source_sigma**2)/fnorm
+          dlnrhodt=mass_source_Mdot*fprofile*cos(mass_source_omega*t)
         case('bumpx')
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
           fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm

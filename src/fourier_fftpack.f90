@@ -216,7 +216,7 @@ module Fourier
 !  This version works currently only when nxgrid=nygrid!
 !  The length of the work arrays for ffts is therefore always nx.
 !
-!  19-12t-06/anders: adapted from fourier_transform
+!  19-dec-06/anders: adapted from fourier_transform
 !
       real, dimension (nx,ny,nz) :: a_re,a_im
       logical, optional :: linv

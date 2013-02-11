@@ -1533,7 +1533,7 @@ module Radiation
         enddo
         enddo
 !
-!  To have a const. K, kappa=kappa0*T^3/rho,
+!  To have a constant K, kappa=kappa0*T^3/rho,
 !  where kappa0=16./3.*sigmaSB/K
 !
       case ('kappa_Kconst')
