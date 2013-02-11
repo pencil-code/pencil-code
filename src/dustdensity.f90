@@ -2529,32 +2529,33 @@ module Dustdensity
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr
 !
-       if (ndustspec<3) then
-         call fatal_error('droplet_redistr', &
-          'Number of dust species is smaller than 3')
-       else
+      if (ndustspec<3) then
+        dndr_dr=0.  ! Initialize the "out" array 
+        call fatal_error('droplet_redistr', &
+             'Number of dust species is smaller than 3')
+      else
 !
-       do k=1,ndustspec
-         if (any(p%ppsat==0.0) .or. (dsize(k)==0.)) then
-           call fatal_error('droplet_redistr', &
-                'p%pp or dsize  has zero value(s)')
-         endif
-       enddo
+        do k=1,ndustspec
+          if (any(p%ppsat==0.0) .or. (dsize(k)==0.)) then
+            call fatal_error('droplet_redistr', &
+                 'p%pp or dsize  has zero value(s)')
+          endif
+        enddo
 !
-       do k=1,ndustspec
-         if (ldcore) then
-           ff_tmp(:,k)=f(l1:l2,m,n,idcj(k,i))*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
-           ff_tmp0(:,k)=init_distr_ki(k,i)*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
-         else
-           ff_tmp(:,k)=p%nd(:,k) &
-               *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
-           ff_tmp0(:,k)=init_distr(k) &
-               *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
-         endif
-       enddo
-          call deriv_size(ff_tmp,ff_tmp0,dndr_dr,p)
+         do k=1,ndustspec
+           if (ldcore) then
+             ff_tmp(:,k)=f(l1:l2,m,n,idcj(k,i))*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
+             ff_tmp0(:,k)=init_distr_ki(k,i)*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
+           else
+             ff_tmp(:,k)=p%nd(:,k) &
+                  *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
+             ff_tmp0(:,k)=init_distr(k) &
+                  *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
+           endif
+         enddo
+           call deriv_size(ff_tmp,ff_tmp0,dndr_dr,p)
 !
-      endif
+       endif
 !
     endsubroutine droplet_redistr
 !***********************************************************************
