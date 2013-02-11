@@ -95,7 +95,7 @@ module Entropy
 !  Tell the equation of state that we're here and what f variable we use.
 !
       if (llocal_iso) then
-        call warning('initialize_entropy',&
+        if (lroot) call warning('initialize_entropy',&
              'llocal_iso=T. Make sure you have the appropriate ' // & 
              'INITIAL_CONDITION in Makefile.local.')
         call select_eos_variable('cs2',-2) !special local isothermal
