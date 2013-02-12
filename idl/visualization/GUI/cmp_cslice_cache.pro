@@ -513,7 +513,6 @@ pro cslice_event, event
 		end
 		selected_over = (where (tag_names (overplot) eq over_names[selected_over]))[0]
 		if (selected_over ge 0) then selected_overplot = selected_over
-		selected_field = selected_overplot - 1
 		num = n_elements (over_names)
 		for pos = 0, num-1 do begin
 			insert = (where (tag_names (overplot) eq over_names[pos]))[0]
@@ -1168,14 +1167,15 @@ pro cslice_prepare_overplot, reset=reset
 		WIDGET_CONTROL, sl_over, SET_VALUE = [ 1.0, 0.0, 2.0 ]
 		WIDGET_CONTROL, sl_over, SENSITIVE = 0
 		if (selected_overplot le 0) then return
+	end else begin
+		selected_field = selected_overplot - 1
+		WIDGET_CONTROL, st_add, SENSITIVE = 1
 	end
 
-	selected_field = selected_overplot - 1
-	field = oversets[selected_snapshot].(selected_field)
+	field = oversets[selected_snapshot].(selected_overplot - 1)
 	if (destretch[0]) then field = pc_destretch (field, coord.x, dim=1)
 	if (destretch[1]) then field = pc_destretch (field, coord.y, dim=2)
 	if (destretch[2]) then field = pc_destretch (field, coord.z, dim=3)
-	WIDGET_CONTROL, st_add, SENSITIVE = (not overplot_contour)
 
 	if (overplot_contour eq 1) then begin
 		; setup contour plot
