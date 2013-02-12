@@ -144,6 +144,7 @@ module Special
   real :: dt_gran,t_gran
 !
 !  miscellaneous variables
+!
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
   real :: Bzflux
   real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
