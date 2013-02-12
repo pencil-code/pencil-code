@@ -44,7 +44,7 @@ pro cslice_event, event
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep, stream_pos, selected_streamline
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
@@ -403,16 +403,7 @@ pro cslice_event, event
 		grid.z *= unit.default_length
 		anchor = [ grid.x[px], grid.y[py], grid.z[pz] ]
 		precision = 0.1 / max ([ bin_x, bin_y, bin_z ])
-		if (stream_prep lt 2) then begin
-			field = dblarr (num_x, num_y, num_z, 3)
-			field[*,*,*,0] = field_x
-			field[*,*,*,1] = field_y
-			field[*,*,*,2] = field_z
-			indices = pc_get_streamline (field, anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, /cache)
-			stream_prep = 2
-		end else begin
-			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, /cache)
-		end
+		indices = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin)
 		add_line = { indices:indices, coords:coords, distances:distances, length:length, num:num_points, origin:origin, time:varfiles[selected_snapshot].time*unit.time, snapshot:varfiles[selected_snapshot].title }
 		streamlines.num += 1
 		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), add_line)
@@ -522,6 +513,7 @@ pro cslice_event, event
 		end
 		selected_over = (where (tag_names (overplot) eq over_names[selected_over]))[0]
 		if (selected_over ge 0) then selected_overplot = selected_over
+		selected_field = selected_overplot - 1
 		num = n_elements (over_names)
 		for pos = 0, num-1 do begin
 			insert = (where (tag_names (overplot) eq over_names[pos]))[0]
@@ -675,7 +667,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
-	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep, stream_pos, selected_streamline
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
@@ -1018,7 +1010,7 @@ pro cslice_save_streamlines, data=data
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep, stream_pos, selected_streamline
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
 	if (streamlines.num lt 1) then return
@@ -1030,6 +1022,7 @@ pro cslice_save_streamlines, data=data
 	save, filename=streamlines_file+suffix, streamlines
 	if (not keyword_set (data)) then return
 
+	; Extract selected scalar quantity
         quantity_name = (tag_names (set))[selected_cube]
 	quantity = { name:quantity_name }
 	for line = 1, streamlines.num do begin
@@ -1037,6 +1030,17 @@ pro cslice_save_streamlines, data=data
 	end
 	quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
 	save, filename=streamlines_file+"_"+varfiles[selected_snapshot].title+"_"+quantity_name+suffix, streamlines, quantity
+
+	if (selected_overplot ge 1) then begin
+		; Extract selected overplot vector field
+        	quantity_name = (tag_names (overplot))[selected_overplot]
+		quantity = { name:quantity_name }
+		for line = 1, streamlines.num do begin
+			quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (field, streamlines.(line).indices))
+		end
+		quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
+		save, filename=streamlines_file+"_"+varfiles[selected_snapshot].title+"_"+quantity_name+suffix, streamlines, quantity
+	end
 end
 
 
@@ -1142,7 +1146,7 @@ pro cslice_prepare_overplot, reset=reset
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep, stream_pos, selected_streamline
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
@@ -1166,34 +1170,20 @@ pro cslice_prepare_overplot, reset=reset
 		if (selected_overplot le 0) then return
 	end
 
-	field_x = reform ((oversets[selected_snapshot].(selected_overplot-1)[*,*,*,0])[cut], num_x, num_y, num_z)
-	field_y = reform ((oversets[selected_snapshot].(selected_overplot-1)[*,*,*,1])[cut], num_x, num_y, num_z)
-	field_z = reform ((oversets[selected_snapshot].(selected_overplot-1)[*,*,*,2])[cut], num_x, num_y, num_z)
-	if (destretch[0]) then begin
-		field_x = pc_destretch (field_x, coord.x, dim=1)
-		field_y = pc_destretch (field_y, coord.x, dim=1)
-		field_z = pc_destretch (field_z, coord.x, dim=1)
-	end
-	if (destretch[1]) then begin
-		field_x = pc_destretch (field_x, coord.y, dim=2)
-		field_y = pc_destretch (field_y, coord.y, dim=2)
-		field_z = pc_destretch (field_z, coord.y, dim=2)
-	end
-	if (destretch[2]) then begin
-		field_x = pc_destretch (field_x, coord.z, dim=3)
-		field_y = pc_destretch (field_y, coord.z, dim=3)
-		field_z = pc_destretch (field_z, coord.z, dim=3)
-	end
-	WIDGET_CONTROL, st_add, SENSITIVE = 1
-	stream_prep = 1
+	selected_field = selected_overplot - 1
+	field = oversets[selected_snapshot].(selected_field)
+	if (destretch[0]) then field = pc_destretch (field, coord.x, dim=1)
+	if (destretch[1]) then field = pc_destretch (field, coord.y, dim=2)
+	if (destretch[2]) then field = pc_destretch (field, coord.z, dim=3)
+	WIDGET_CONTROL, st_add, SENSITIVE = (not overplot_contour)
 
 	if (overplot_contour eq 1) then begin
 		; setup contour plot
-		field_x_y = field_x
+		field_x_y = field[*,*,*,0]
 		field_x_z = 0.0
-		field_y_x = field_y
+		field_y_x = field[*,*,*,1]
 		field_y_z = 0.0
-		field_z_x = field_z
+		field_z_x = field[*,*,*,2]
 		field_z_y = 0.0
 
 		; setup field indices
@@ -1202,12 +1192,12 @@ pro cslice_prepare_overplot, reset=reset
 		field_z_indices = (findgen (num_z)*bin_z + 0.5*(bin_z-1)) / (num_z*bin_z)
 	end else begin
 		; setup vector field
-		field_x_y = congrid (field_x, num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
-		field_x_z = congrid (field_x, num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
-		field_y_x = congrid (field_y, num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
-		field_y_z = congrid (field_y, num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
-		field_z_x = congrid (field_z, num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
-		field_z_y = congrid (field_z, num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
+		field_x_y = congrid (field[*,*,*,0], num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
+		field_x_z = congrid (field[*,*,*,0], num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
+		field_y_x = congrid (field[*,*,*,1], num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
+		field_y_z = congrid (field[*,*,*,1], num_x*bin_x/vector_distance, num_y*bin_y/vector_distance, num_z, /center)
+		field_z_x = congrid (field[*,*,*,2], num_x, num_y*bin_y/vector_distance, num_z*bin_z/vector_distance, /center)
+		field_z_y = congrid (field[*,*,*,2], num_x*bin_x/vector_distance, num_y, num_z*bin_z/vector_distance, /center)
 
 		; setup field indices
 		field_x_indices = (findgen (num_x*bin_x/vector_distance) + 0.5) / (num_x*bin_x/vector_distance)
@@ -1220,7 +1210,7 @@ pro cslice_prepare_overplot, reset=reset
 		WIDGET_CONTROL, sl_over, SET_VALUE = [ sl_val, 0.0, 2.0 ]
 
 		; find minimum and maximum values and set slider position
-		over_max = max ([field_x, field_y, field_z]) > 1.e-42
+		over_max = max (field) > 1.e-42
 	end
 
 	return
@@ -1231,7 +1221,7 @@ end
 pro cslice_default_settings
 
 	common cslice_ct_common, last_ct
-	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep, stream_pos, selected_streamline
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
@@ -1248,7 +1238,6 @@ pro cslice_default_settings
 	selected_overplot = 0
 	selected_snapshot = 0
 	selected_color = 0
-	stream_prep = 0
 	stream_pos = -1
 end
 
@@ -1259,7 +1248,7 @@ pro cslice_reset_GUI
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common cslice_ct_common, last_ct
-	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep, stream_pos, selected_streamline
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
@@ -1274,9 +1263,7 @@ pro cslice_reset_GUI
 	pos_over = replicate (1.0, num_overs)
 	over_max = 0.0
 
-	field_x = 0
-	field_y = 0
-	field_z = 0
+	field = 0
 	streamlines = { num:0 }
 	WIDGET_CONTROL, st_add, SENSITIVE = 0
 	WIDGET_CONTROL, extract, SENSITIVE = 0
@@ -1297,7 +1284,7 @@ pro cslice_update_GUI
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, field_x, field_y, field_z, stream_prep, stream_pos, selected_streamline
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
