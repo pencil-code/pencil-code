@@ -1477,7 +1477,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #F90=$(FC) #(sisu*)
 #CC=cc #(sisu*)
 #FFLAGS=-O3 #(sisu*)
-#FFLAGS_DOUBLE=-default64 #(sisu)
+#FFLAGS_DOUBLE=-default64 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
 ## Hermit - CrayXE6 - (Stuttgart)
@@ -1487,7 +1487,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #F90=$(FC) #(eslogin0*)
 #CC=cc #(eslogin0*)
 #FFLAGS=-Mipa=fast,inline -Mfree #(eslogin0*)
-#FFLAGS_DOUBLE=-r8
+#FFLAGS_DOUBLE=-r8 #(eslogin0*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(eslogin0*)
 ##
 ## Lindgren - CrayXE6 - (Stockholm)
