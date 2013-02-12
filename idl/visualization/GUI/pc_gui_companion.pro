@@ -125,12 +125,12 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 		tag = tags[pos]
 		if (strcmp (tag, "none", /fold_case)) then continue
 		last = (pos eq num-1)
-		oversets[i].(pos) = float (pc_get_quantity (tag, vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last))
+		oversets[i].(pos) = pc_get_quantity (tag, vars, index, unit=unit, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, /cache, clean=last)
 		; Divide by default units, where applicable.
 		if (any (strcmp (tag, ['u'], /fold_case))) then $
 			oversets[i].(pos) /= unit.default_velocity
 		if (any (strcmp (tag, ['b'], /fold_case))) then $
-			oversets[i].(pos) /= float (unit.default_magnetic_field)
+			oversets[i].(pos) /= unit.default_magnetic_field
 	end
 end
 
