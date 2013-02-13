@@ -3154,22 +3154,22 @@ module Entropy
 !  Provisional expression for magnetic chi_t quenching;
 !  (Derivatives of B are still missing.)
 !
-          if (chiB==0.) then
+!         if (chiB==0.) then
             thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
             call dot(glchit_prof,p%gss,g2)
             thdiff=thdiff+chi_t*g2
-           else
-            quench=1./(1.+chiB*p%b2)
-            thdiff=thdiff+quench*chi_t*chit_prof*(p%del2ss+g2)
-            if (lchiB_simplified) then
-              call dot(glchit_prof,p%gss,g2)
-            else
-              call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
-              call multsv_mn(2.*quench*chiB,Bk_Bki,glnchit)
-              call dot(glchit_prof+glnchit,p%gss,g2)
-            endif
-            thdiff=thdiff+quench*chi_t*g2
-          endif
+!         else
+!           quench=1./(1.+chiB*p%b2)
+!           thdiff=thdiff+quench*chi_t*chit_prof*(p%del2ss+g2)
+!           if (lchiB_simplified) then
+!             call dot(glchit_prof,p%gss,g2)
+!           else
+!             call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+!             call multsv_mn(2.*quench*chiB,Bk_Bki,glnchit)
+!             call dot(glchit_prof+glnchit,p%gss,g2)
+!           endif
+!           thdiff=thdiff+quench*chi_t*g2
+!         endif
         endif
       endif
 !

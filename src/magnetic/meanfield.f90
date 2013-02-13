@@ -12,7 +12,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mf_EMF(3); mf_EMFdotB; jxb_mf(3); jxbr_mf(3)
+! PENCILS PROVIDED mf_EMF(3); mf_EMFdotB; jxb_mf(3); jxbr_mf(3); chiB_mf
 !
 !***************************************************************
 module Magnetic_meanfield
@@ -49,6 +49,7 @@ module Magnetic_meanfield
 !
   real :: Omega_ampl=0.0, dummy=0.0
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0
+  real :: chit_quenching=0.0, chi_t0=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0., uturb=.1
   real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0.
@@ -62,6 +63,7 @@ module Magnetic_meanfield
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
+  logical :: lmeanfield_chitB=.false., lchiB_simplified=.false.
 !
   namelist /magn_mf_init_pars/ &
       dummy
@@ -91,6 +93,7 @@ module Magnetic_meanfield
       alpha_effect, alpha_quenching, alpha_rmax, &
       alpha_eps, alpha_width, alpha_width2, alpha_aniso, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
+      chit_quenching, chi_t0, &
       x_surface, x_surface2, z_surface, &
       alpha_rmin,&
       qp_model,&
@@ -103,10 +106,11 @@ module Magnetic_meanfield
       meanfield_Beq_profile, uturb, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
+      lmeanfield_chitB, lchiB_simplified, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
       lqpcurrent,mf_qJ2, &
-      meanfield_etaB, alpha_equator, alpha_equator_gap, alpha_gap_step, &
+      alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
       llarge_scale_velocity, EMF_profile, lEMF_profile, &
@@ -414,6 +418,12 @@ module Magnetic_meanfield
         if (lmeanfield_jxb_with_vA2) lpenc_requested(i_va2)=.true.
       endif
 !
+!  For mean-field modelling in entropy equation:
+!
+      if (lmeanfield_chitB) then
+        lpenc_requested(i_chiB_mf)=.true.
+      endif
+!
 !  Turbulent diffusivity
 !
       if (meanfield_etat/=0.0 .or. ietat/=0 .or. &
@@ -522,18 +532,20 @@ module Magnetic_meanfield
       real, dimension (nx) :: alpha_total
       real, dimension (nx) :: meanfield_etat_tmp
       real, dimension (nx) :: alpha_tmp, alpha_quenching_tmp, delta_tmp
-      real, dimension (nx) :: kf_tmp, EMF_prof, alpm, prefact
+      real, dimension (nx) :: kf_tmp, EMF_prof, alpm, prefact, Beq21
       real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
-      real, dimension (nx) :: meanfield_etaB2, Beq21
-      real, dimension (nx,3) :: Bk_Bki, exa_meanfield !,Jk_Jki
+      real, dimension (nx) :: meanfield_etaB2, quench_chiB, g2, chit_prof
+      real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit
       real, dimension (nx,3) :: meanfield_getat_tmp
       real :: kx,fact
       integer :: j,l
 !
       intent(inout) :: f,p
+!
+      save :: chit_prof, glnchit_prof
 !
 !  mean-field Lorentz force
 !
@@ -626,6 +638,8 @@ module Magnetic_meanfield
 !        endif
         call multsv_mn(p%rho1,p%jxb_mf,p%jxbr_mf)
       endif
+!
+!  compute alpha effect for EMF
 !
 !  mf_EMF for alpha effect dynamos
 !
@@ -755,7 +769,7 @@ module Magnetic_meanfield
         if (alpha_quenching/=0.0) then
           select case (meanfield_Beq_profile)
           case ('uturbconst');
-            Beq21=p%rho1/(uturb**2)
+            Beq21=mu01*p%rho1/(uturb**2)
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
@@ -858,6 +872,41 @@ module Magnetic_meanfield
 !
       if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
 !
+!  Compute chiB_term in specific entropy equation.
+!  Ds/Dt = ... (1/rho*T)*div[rho*T*chit(B)*grads]
+!        = ... chit(B)*{[gradln(rho*T)+gradln(chit(B))].gs+del2s}
+!        = ... chit(B)*[gradln(rho*T).grads+del2s] + chit(B)*gradln(chit(B)).gs
+!
+      if (lpencil(i_chiB_mf)) then
+        if (chit_quenching/=0.0) then
+          select case (meanfield_Beq_profile)
+          case ('uturbconst');
+            Beq21=mu01*p%rho1/(uturb**2)
+          case default;
+            Beq21=1./meanfield_Beq**2
+          endselect
+          quench_chiB=1./(1.+chit_quenching*p%b2*Beq21)
+!
+          call chit_profile(chit_prof)
+          call gradlogchit_profile(glnchit_prof)
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+          p%chiB_mf=quench_chiB*chi_t0*chit_prof*(p%del2ss+g2)
+!
+!  Add contribution from gradient of chiB*B^2/Beq^2 term
+!
+          if (lchiB_simplified) then
+            call dot(glnchit_prof,p%gss,g2)
+          else
+            call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+            call multsv_mn(2.*quench_chiB*chi_t0,Bk_Bki,glnchit)
+            call dot(glnchit_prof+glnchit,p%gss,g2)
+          endif
+          p%chiB_mf=p%chiB_mf+quench_chiB*chi_t0*g2
+        else
+          p%chiB_mf=0.
+        endif
+      endif
+!
 !  Calculate diagnostics.
 !
       if (ldiagnos) then
@@ -907,6 +956,12 @@ module Magnetic_meanfield
 !
       if (lhydro) then
         if (lmeanfield_jxb) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr_mf
+      endif
+!
+!  Add div(chit(B)*rho*T*grads) to entropy equation
+!
+      if (lentropy) then
+        if (lmeanfield_chitB) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%chiB_mf
       endif
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
