@@ -1021,6 +1021,9 @@ pro cslice_save_streamlines, data=data
 	save, filename=streamlines_file+suffix, streamlines
 	if (not keyword_set (data)) then return
 
+	varfile = varfiles[selected_snapshot].title
+	if (strmid (varfile, 0, 3) eq "VAR") then streamlines_file = varfile+"_"+streamlines_file
+
 	; Extract selected scalar quantity
         quantity_name = (tag_names (set))[selected_cube]
 	quantity = { name:quantity_name }
@@ -1028,7 +1031,7 @@ pro cslice_save_streamlines, data=data
 		quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (cube, streamlines.(line).indices))
 	end
 	quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
-	save, filename=streamlines_file+"_"+varfiles[selected_snapshot].title+"_"+quantity_name+suffix, streamlines, quantity
+	save, filename=streamlines_file+"_"+quantity_name+suffix, streamlines, quantity
 
 	if (selected_overplot ge 1) then begin
 		; Extract selected overplot vector field
@@ -1038,7 +1041,7 @@ pro cslice_save_streamlines, data=data
 			quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (field, streamlines.(line).indices))
 		end
 		quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
-		save, filename=streamlines_file+"_"+varfiles[selected_snapshot].title+"_"+quantity_name+suffix, streamlines, quantity
+		save, filename=streamlines_file+"_"+quantity_name+suffix, streamlines, quantity
 	end
 end
 
