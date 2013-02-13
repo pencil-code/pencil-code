@@ -97,6 +97,7 @@ module Param_IO
       cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
       dtracers, dfixed_points, &
+      unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
       uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, &

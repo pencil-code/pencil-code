@@ -102,6 +102,7 @@ module Entropy
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.,lchit_aniso_simplified=.false.
+  logical :: lchiB_simplified=.false.
   logical :: lfpres_from_pressure=.false.
   logical :: lconvection_gravx=.false.
   logical :: ltau_cool_variable=.false.
@@ -156,7 +157,7 @@ module Entropy
       beta_glnrho_global, ladvection_entropy, lviscosity_heat, r_bcz, &
       lcalc_ss_volaverage, lcalc_ssmean, lcalc_cs2mean, lcalc_cs2mz_mean, &
       lfreeze_sint, lfreeze_sext, lhcond_global, tau_cool, TTref_cool, &
-      mixinglength_flux, chiB, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
+      mixinglength_flux, chiB, lchiB_simplified, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
       tau_cool_ss, tau_diff, lfpres_from_pressure, chit_aniso, &
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
@@ -2299,6 +2300,9 @@ module Entropy
         if (chi_t/=0.) then
            lpenc_requested(i_gss)=.true.
            lpenc_requested(i_del2ss)=.true.
+           if (chiB/=0.0.and.(.not.lchiB_simplified)) then
+             lpenc_requested(i_bij)=.true.
+           endif
         endif
       endif
       if (lheatc_chitherm) then
@@ -3099,12 +3103,12 @@ module Entropy
 !  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
       use Diagnostics!, only: max_mn_name
-      use Sub, only: dot
+      use Sub, only: dot, multmv_transp, multsv_mn
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,g2,chit_prof
-      real, dimension (nx,3) :: glchit_prof
+      real, dimension (nx) :: thdiff, g2, chit_prof, quench
+      real, dimension (nx,3) :: Bk_Bki, glnchit, glchit_prof
 !
       intent(inout) :: df
 !
@@ -3155,9 +3159,16 @@ module Entropy
             call dot(glchit_prof,p%gss,g2)
             thdiff=thdiff+chi_t*g2
            else
-            thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)/(1.+chiB*p%b2)
-            call dot(glchit_prof,p%gss,g2)
-            thdiff=thdiff+chi_t*g2/(1.+chiB*p%b2)
+            quench=1./(1.+chiB*p%b2)
+            thdiff=thdiff+quench*chi_t*chit_prof*(p%del2ss+g2)
+            if (lchiB_simplified) then
+              call dot(glchit_prof,p%gss,g2)
+            else
+              call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+              call multsv_mn(2.*quench*chiB,Bk_Bki,glnchit)
+              call dot(glchit_prof+glnchit,p%gss,g2)
+            endif
+            thdiff=thdiff+quench*chi_t*g2
           endif
         endif
       endif
