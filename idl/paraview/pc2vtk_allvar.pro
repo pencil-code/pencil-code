@@ -42,7 +42,8 @@ pro pc2vtk_allvar, datadir=datadir, variables=variables, bbtoo=bbtoo, ootoo=ooto
   varfile = ''
   for i = 1, nvarN do begin
     readf, lun, varfile
-    pc2vtk, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
+    if n_elements(variables) eq 0 then undefine, vars else vars = variables
+    pc2vtk, datadir=datadir, varfile=varfile, variables=vars, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
   endfor
   close, lun
   free_lun, lun
