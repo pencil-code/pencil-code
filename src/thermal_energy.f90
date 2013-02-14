@@ -187,7 +187,7 @@ module Entropy
 !
       integer :: i, j, k
       real :: mu
-      real :: c0
+      real :: c0, c1
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
@@ -213,12 +213,16 @@ module Entropy
 !
       KI02: if (lKI02) then
         call getmu(mu_tmp=mu)
-        KI_a0 = (KI_heat * unit_time / unit_energy) / (mu * m_u)
-        c0 = KI_a0 / (mu * m_u * unit_length**3)
+        c1 = log10(mu * m_u)
+        KI_a0 = log10(KI_heat) + log10(unit_time) - log10(unit_energy)
+        c0 = KI_a0 - 3. * log10(unit_length) - 2. * c1
+        KI_a0 = KI_a0 - c1
         SI: if (unit_system == 'SI') then
-          KI_a0 = 1.e-7 * KI_a0
-          c0 = 1.e-13 * c0
+          KI_a0 = KI_a0 - 7.
+          c0 = c0 - 13.
         endif SI
+        KI_a0 = 10.**KI_a0
+        c0 = 10.**c0
         disk: if (nzgrid == 1) then
           c0 = c0 * nu_z / (2. * sqrtpi)
           if (cs_z > 0.) c0 = c0 / cs_z
@@ -888,6 +892,7 @@ module Entropy
       integer, dimension(mx,my,mz) :: status
       real, dimension(mx,my,mz) :: delta_eth
       character(len=256) :: message
+      integer :: i, j, k
 !
       split_update: if (lsplit_update) then
 !
@@ -918,6 +923,10 @@ module Entropy
                             count(status == -2), ' cells reached maximum iterations.'
           10 format(1x, i3, a, i3, a)
           call warning('split_update_energy', trim(message))
+          do k = n1, n2; do j = m1, m2; do i = l1, l2
+            if (status(i,j,k) == -2) print 20, f(i,j,k,irho), get_temperature(f(i,j,k,ieth), f(i,j,k,irho))
+            20 format (1x, 'rho = ', es13.6, ' & TT = ', es13.6)
+          enddo; enddo; enddo
         endif
 !
         if (ldebug) then
@@ -1217,7 +1226,7 @@ module Entropy
 !  Save the conversion factor.
 !
       call getmu(mu_tmp=mu)
-      SD_a0 = unit_time / (unit_energy * unit_length**3 * (mu * m_u)**2)
+      SD_a0 = exp(log(unit_time) - log(unit_energy) - 3. * log(unit_length) - 2. * log(mu * m_u))
       if (unit_system == 'SI') SD_a0 = 1.e-13 * SD_a0
       disk: if (nzgrid == 1) then
         SD_a0 = 0.5 * SD_a0 * nu_z / sqrtpi
