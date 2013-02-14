@@ -89,22 +89,24 @@ module InitialCondition
           posx=0.98,dIring=0.0,bmax=impossible,posz=0.0
   real :: scale_aa=1.0
   character (len=8) :: extfieldfile
-  logical :: luse_only_botbdry=.false.
+  logical :: luse_only_botbdry=.false.,ld2rho0_global=.false.
 !
   namelist /initial_condition_pars/ fring, r0, Iring, posx,posz,&
   tilt,extfieldfile,rho0,width,luse_only_botbdry,scale_aa, &
-  dIring,bmax
+  dIring,bmax,ld2rho0_global
 !
   contains
 !***********************************************************************
     subroutine register_initial_condition()
 !
+      use FArrayManager, only: farray_register_global
+!
 !  Register variables associated with this module; likely none.
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
-         "$Id: fieldloop.f90 17229 2011-07-19 20:14:00Z sven.bingert $")
+      if (ld2rho0_global) &
+        call farray_register_global("global_d2rho0",iglobal_d2rho0)
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -152,6 +154,9 @@ module InitialCondition
         do m=m1,m2
           do n=n1,n2
             f(l1:l2,m,n,ilnrho)=log(rho0)-hp1*(1.0-1.0/x(l1:l2))
+          if (iglobal_d2rho0) &
+            f(l1:l2,m,n,iglobal_d2rho0)=exp(f(l1:l2,m,n,ilnrho))* &
+                                        (2*hp1/x(l1:l2)**2-hp1**2/x(l1:l2)**4)
           end do
         end do
       else
