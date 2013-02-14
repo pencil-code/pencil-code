@@ -3108,11 +3108,11 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff, g2, chit_prof, quench
-      real, dimension (nx,3) :: Bk_Bki, glnchit, glchit_prof
+      real, dimension (nx,3) :: Bk_Bki, glnchit, glnchit_prof
 !
       intent(inout) :: df
 !
-      save :: chit_prof, glchit_prof
+      save :: chit_prof, glnchit_prof
 !
 !  Check that chi is ok.
 !
@@ -3135,10 +3135,10 @@ module Entropy
         thdiff=gamma*chi*(p%del2lnTT+g2)
         if (chi_t/=0.) then
           call chit_profile(chit_prof)
-          call gradlogchit_profile(glchit_prof)
+          call gradlogchit_profile(glnchit_prof)
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
-          call dot(glchit_prof,p%gss,g2)
+          call dot(glnchit_prof,p%gss,g2)
           thdiff=thdiff+chi_t*g2
         endif
       else
@@ -3148,28 +3148,11 @@ module Entropy
         thdiff=chi*(p%del2lnTT+g2)/p%cp1
         if (chi_t/=0.) then
           call chit_profile(chit_prof)
-          call gradlogchit_profile(glchit_prof)
+          call gradlogchit_profile(glnchit_prof)
           call dot(p%glnrho+p%glnTT,p%gss,g2)
-!
-!  Provisional expression for magnetic chi_t quenching;
-!  (Derivatives of B are still missing.)
-!
-!         if (chiB==0.) then
-            thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
-            call dot(glchit_prof,p%gss,g2)
-            thdiff=thdiff+chi_t*g2
-!         else
-!           quench=1./(1.+chiB*p%b2)
-!           thdiff=thdiff+quench*chi_t*chit_prof*(p%del2ss+g2)
-!           if (lchiB_simplified) then
-!             call dot(glchit_prof,p%gss,g2)
-!           else
-!             call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
-!             call multsv_mn(2.*quench*chiB,Bk_Bki,glnchit)
-!             call dot(glchit_prof+glnchit,p%gss,g2)
-!           endif
-!           thdiff=thdiff+quench*chi_t*g2
-!         endif
+          thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
+          call dot(glnchit_prof,p%gss,g2)
+          thdiff=thdiff+chi_t*g2
         endif
       endif
 !
@@ -3935,7 +3918,7 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof,gss1,glchit_aniso_prof
+      real, dimension (nx,3) :: glnThcond,glhc,glnchit_prof,gss1,glchit_aniso_prof
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,del2ss1
       real, dimension (nx) :: hcond,chit_prof,chit_aniso_prof
@@ -3944,7 +3927,7 @@ module Entropy
       real :: s2,c2,sc
       integer :: j,ix
 !
-      save :: hcond, glhc, chit_prof, glchit_prof, chit_aniso_prof, glchit_aniso_prof
+      save :: hcond, glhc, chit_prof, glnchit_prof, chit_aniso_prof, glchit_aniso_prof
 !
       intent(in) :: p
       intent(inout) :: df
@@ -3995,7 +3978,7 @@ module Entropy
           if (chi_t/= 0.0) then
             chit_prof=chit_zprof(n)
               do ix=1,nx
-                glchit_prof(ix,:)=gradlogchit_zprof(n,:)
+                glnchit_prof(ix,:)=gradlogchit_zprof(n,:)
               enddo
           endif
 ! If not gravz, using or not hcond_global
@@ -4015,7 +3998,7 @@ module Entropy
           endif
           if (chi_t/=0.0) then
             call chit_profile(chit_prof)
-            call gradlogchit_profile(glchit_prof)
+            call gradlogchit_profile(glnchit_prof)
           endif
           if (chit_aniso/=0.0) then
             call chit_aniso_profile(chit_aniso_prof)
@@ -4031,7 +4014,7 @@ module Entropy
           endif
           if (chi_t/=0.0) then
             call chit_profile(chit_prof)
-            call gradlogchit_profile(glchit_prof)
+            call gradlogchit_profile(glnchit_prof)
           endif
           if (chit_aniso/=0.0) then
             call chit_aniso_profile(chit_aniso_prof)
@@ -4106,12 +4089,12 @@ module Entropy
           del2ss1=p%del2ss-del2ssmz(n-n1+1)
           call dot(p%glnrho+p%glnTT,gss1,g2)
           thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
-          call dot(glchit_prof,gss1,g2)
+          call dot(glnchit_prof,gss1,g2)
           thdiff=thdiff+chi_t*g2
         else
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
-          call dot(glchit_prof,p%gss,g2)
+          call dot(glnchit_prof,p%gss,g2)
           thdiff=thdiff+chi_t*g2
         endif
       endif
@@ -4153,7 +4136,7 @@ module Entropy
 !
           thdiff=thdiff+chi_t*chit_aniso* &
               ((glchit_aniso_prof(:,1)*c2+chit_aniso_prof/x(l1:l2))*p%gss(:,1)+ &
-              sc*(chit_aniso_prof/x(l1:l2)-glchit_prof(:,1))*p%gss(:,2))
+              sc*(chit_aniso_prof/x(l1:l2)-glnchit_prof(:,1))*p%gss(:,2))
 !
           call g2ij(f,iss,tmp)
           thdiff=thdiff+chi_t*chit_aniso_prof*chit_aniso* &
@@ -5525,7 +5508,7 @@ module Entropy
 !
     endsubroutine chit_profile
 !***********************************************************************
-    subroutine gradlogchit_profile(glchit_prof)
+    subroutine gradlogchit_profile(glnchit_prof)
 !
 !  Calculate grad(log chit_prof), where chit_prof is the heat conductivity
 !  NB: *Must* be in sync with heatcond() above.
@@ -5535,7 +5518,7 @@ module Entropy
       use Gravity, only: z1, z2
       use Sub, only: der_step
 !
-      real, dimension (nx,3) :: glchit_prof
+      real, dimension (nx,3) :: glnchit_prof
       real, dimension (nx) :: z_mn
       real :: zbot, ztop
 !
@@ -5555,15 +5538,15 @@ module Entropy
 !
       if (lgravz) then
         z_mn=spread(z(n),1,nx)
-        glchit_prof(:,1:2) = 0.
-        glchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,zbot,-widthss) &
+        glnchit_prof(:,1:2) = 0.
+        glnchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,zbot,-widthss) &
                          + (chit_prof2-1)*der_step(z_mn,ztop,widthss)
       endif
 !
       if (lspherical_coords) then
-        glchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss) &
-                         + (chit_prof2-1)*der_step(x(l1:l2),xtop,widthss)
-        glchit_prof(:,2:3) = 0.
+        glnchit_prof(:,1) = (chit_prof1-1)*der_step(x(l1:l2),xbot,-widthss) &
+                          + (chit_prof2-1)*der_step(x(l1:l2),xtop,widthss)
+        glnchit_prof(:,2:3) = 0.
       endif
 !
     endsubroutine gradlogchit_profile

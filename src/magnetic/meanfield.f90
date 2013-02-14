@@ -421,6 +421,7 @@ module Magnetic_meanfield
 !  For mean-field modelling in entropy equation:
 !
       if (lmeanfield_chitB) then
+        lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_chiB_mf)=.true.
       endif
 !
@@ -886,24 +887,19 @@ module Magnetic_meanfield
             Beq21=1./meanfield_Beq**2
           endselect
           quench_chiB=1./(1.+chit_quenching*p%b2*Beq21)
-!
-          !call chit_profile(chit_prof)
-          !call gradlogchit_profile(glnchit_prof)
-chit_prof=0.
-glnchit_prof=0.
-          call dot(p%glnrho+p%glnTT,p%gss,g2)
-          p%chiB_mf=quench_chiB*chi_t0*chit_prof*(p%del2ss+g2)
+          chit_prof=1.
+          glnchit_prof=0.
 !
 !  Add contribution from gradient of chiB*B^2/Beq^2 term
 !
           if (lchiB_simplified) then
-            call dot(glnchit_prof,p%gss,g2)
+            call dot(p%glnrho+p%glnTT+glnchit_prof,p%gss,g2)
           else
             call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
-            call multsv_mn(2.*quench_chiB*chi_t0,Bk_Bki,glnchit)
-            call dot(glnchit_prof+glnchit,p%gss,g2)
+            call multsv_mn(2.*quench_chiB*chit_quenching,Bk_Bki-p%glnrho,glnchit)
+            call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%gss,g2)
           endif
-          p%chiB_mf=p%chiB_mf+quench_chiB*chi_t0*g2
+          p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
         else
           p%chiB_mf=0.
         endif
