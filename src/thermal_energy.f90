@@ -1305,7 +1305,7 @@ module Entropy
         cool1 = -heat_KI02(eth, rho)
         cool2 = cool_SD93(eth, rho)
         temp = cos(pi * (logTT - logTTmin) / dlogTT)
-        cool = exp(0.5 * ((1. + temp) * log(cool1) + (1. - temp) * log(cool2)))
+        cool = 0.5 * ((1. + temp) * cool1 + (1. - temp) * cool2)
       endif step
 !
     endfunction cool_KI02_SD93
