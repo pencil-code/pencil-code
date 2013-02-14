@@ -887,8 +887,10 @@ module Magnetic_meanfield
           endselect
           quench_chiB=1./(1.+chit_quenching*p%b2*Beq21)
 !
-          call chit_profile(chit_prof)
-          call gradlogchit_profile(glnchit_prof)
+          !call chit_profile(chit_prof)
+          !call gradlogchit_profile(glnchit_prof)
+chit_prof=0.
+glnchit_prof=0.
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           p%chiB_mf=quench_chiB*chi_t0*chit_prof*(p%del2ss+g2)
 !
