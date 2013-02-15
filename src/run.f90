@@ -151,10 +151,6 @@ program run
     call rgrid('grid.dat')
   else
     call construct_grid(x,y,z,dx,dy,dz)
-    call wgrid('grid.dat')
-    call wdim(trim(directory)//'/dim.dat')
-    if (lroot) call wdim(trim(datadir)//'/dim.dat', &
-        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
   endif
 !
 !  Size of box at local processor. The if-statement is for
@@ -188,6 +184,16 @@ program run
 !
   call register_modules()
   if (lparticles) call particles_register_modules()
+!
+!  Only after register it is possible to write the correct dim.dat
+!  file with the correct number of variables
+!
+  if (.not.luse_oldgrid) then
+    call wgrid('grid.dat')
+    call wdim(trim(directory)//'/dim.dat')
+    if (lroot) call wdim(trim(datadir)//'/dim.dat', &
+        nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+  endif
 !
 !  Define the lenergy logical
 !
