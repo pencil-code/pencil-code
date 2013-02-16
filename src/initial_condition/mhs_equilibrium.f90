@@ -190,7 +190,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: pressure,Bphi,Atheta
-      real, dimension(nx) :: rr_sph,rr_cyl
+      real, dimension(mx) :: rr_sph,rr_cyl
       real, dimension(nx) :: tmp
       real, dimension(0:nx) :: tmp2
       real :: dr,psum
@@ -220,12 +220,13 @@ module InitialCondition
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
         call get_radial_distance(rr_sph,rr_cyl)
-        dr=rr_sph(2)-rr_sph(1)
-        tmp=Bphi*rr_sph
+        !dr=rr_sph(2)-rr_sph(1)
+        tmp=Bphi*rr_sph(l1:l2)
 !
         iserial_xy=ipx+nprocx*ipy+1
         tmp2(0)=0.
-        do i=1,nx 
+        do i=1,nx
+          dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
           tmp2(i)=tmp2(i-1)+tmp(i)*dr
         enddo
         procsum_loc(m-m1+1)=tmp2(nx)
@@ -260,18 +261,20 @@ module InitialCondition
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
         call get_radial_distance(rr_sph,rr_cyl)
-        dr=rr_sph(2)-rr_sph(1)
-        tmp=Bphi*rr_sph
+        !dr=rr_sph(2)-rr_sph(1)
+        tmp=Bphi*rr_sph(l1:l2)
 !
         if (nprocx==1) then 
           tmp2(0)=0.
-          do i=1,nx 
+          do i=1,nx
+            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
             tmp2(i)=tmp2(i-1)+tmp(i)*dr
           enddo
         else
           if (lfirst_proc_x) then 
             tmp2(0)=0.
             do i=1,nx
+              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
               tmp2(i)=tmp2(i-1)+tmp(i)*dr
             enddo
           else 
@@ -282,11 +285,12 @@ module InitialCondition
             enddo
             tmp2(0)=psum
             do i=1,nx
+              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
               tmp2(i)=tmp2(i-1)+tmp(i)*dr
             enddo
           endif
         endif
-        Atheta=tmp2(1:nx)/rr_sph
+        Atheta=tmp2(1:nx)/rr_sph(l1:l2)
         f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
       enddo;enddo
 !
