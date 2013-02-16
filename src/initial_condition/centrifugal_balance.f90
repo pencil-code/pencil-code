@@ -442,51 +442,151 @@ module InitialCondition
 !
     endsubroutine initial_condition_ss
 !***********************************************************************
+    subroutine set_field_constbeta(f)
+!
+      use FArrayManager, only: farray_use_global
+      use Sub, only: gij,curl_mn,get_radial_distance
+      use EquationOfState, only: cs20,rho0
+      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx) :: cs2,pressure,Bphi,Atheta
+      real, dimension(mx) :: rr_sph,rr_cyl
+      real, dimension(nx) :: tmp
+      real, dimension(0:nx) :: tmp2
+      real :: dr,psum,cv1
+      integer, pointer :: iglobal_cs2
+      integer :: i,iprocx,iprocy,iserial_xy
+      real, dimension(ny,nprocx*nprocy) :: procsum
+      real, dimension(ny) :: procsum_loc,tmpy
+!
+      if (llocal_iso) then
+        call farray_use_global('cs2',iglobal_cs2)
+      elseif (lentropy) then
+        call get_cv1(cv1)
+      endif
+
+      do m=m1,m2 
+        if (llocal_iso) then
+          cs2=f(l1:l2,m,n,iglobal_cs2)
+        elseif (lentropy) then
+          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
+               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
+        endif
+        pressure = f(l1:l2,m,npoint,irho)*cs2 /gamma
+        Bphi = sqrt(2*pressure/plasma_beta)
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        !dr=rr_sph(2)-rr_sph(1)
+        tmp=Bphi*rr_sph(l1:l2)
+!
+        iserial_xy=ipx+nprocx*ipy+1
+        tmp2(0)=0.
+        do i=1,nx
+          dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+          tmp2(i)=tmp2(i-1)+tmp(i)*dr
+        enddo
+        procsum_loc(m-m1+1)=tmp2(nx)
+      enddo
+!
+      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
+!
+      if (lroot) then 
+        procsum(:,1)=procsum_loc
+        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
+          iserial_xy=iprocx+nprocx*iprocy+1
+          if (iserial_xy/=1) then
+            call mpirecv_real(tmpy,ny,iserial_xy-1,111)
+            procsum(:,iserial_xy)=tmpy
+          endif
+          if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
+        enddo; enddo
+      else
+        call mpisend_real(procsum_loc,ny,0,111)
+      endif
+!
+      call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
+!
+      do m=m1,m2;do n=n1,n2
+!
+        if (llocal_iso) then
+          cs2=f(l1:l2,m,n,iglobal_cs2)
+        elseif (lentropy) then
+          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss) + & 
+               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
+        endif
+        pressure=f(l1:l2,m,n,irho)*cs2 /gamma
+!
+!  The following line assumes mu0=1
+!
+        Bphi = sqrt(2*pressure/plasma_beta)
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        !dr=rr_sph(2)-rr_sph(1)
+        tmp=Bphi*rr_sph(l1:l2)
+!
+        if (nprocx==1) then 
+          tmp2(0)=0.
+          do i=1,nx
+            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
+            tmp2(i)=tmp2(i-1)+tmp(i)*dr
+          enddo
+        else
+          if (lfirst_proc_x) then 
+            tmp2(0)=0.
+            do i=1,nx
+              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+              tmp2(i)=tmp2(i-1)+tmp(i)*dr
+            enddo
+          else 
+            psum=0.
+            do iprocx=0,ipx-1
+              iserial_xy=iprocx+nprocx*ipy+1
+              psum=psum+procsum(m-m1+1,iserial_xy)
+            enddo
+            tmp2(0)=psum
+            do i=1,nx
+              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+              tmp2(i)=tmp2(i-1)+tmp(i)*dr
+            enddo
+          endif
+        endif
+        Atheta=tmp2(1:nx)/rr_sph(l1:l2)
+        f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
+      enddo;enddo
+!
+    endsubroutine set_field_constbeta
+!***********************************************************************
     subroutine initial_condition_aa(f)
 !
 !  Initialize the magnetic vector potential.
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: cs20
+      use EquationOfState, only: cs20,gamma_m1,lnrho0,get_cv1
       use Sub, only: step_scalar, power_law
+      use FArrayManager, only: farray_use_global
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: amplbb,pblaw
       real, dimension(nx) :: Aphi, rr, rrcyl
-      real, dimension(mx) :: bz,aphi_mx,Breal,pp
+      real, dimension(mx) :: bz,aphi_mx,Breal,pp,cs2
       character (len=labellen) :: intlabel
 !
-      real :: const,k1,kr
+      real :: const,k1,kr,cv1
       integer :: i
+      integer, pointer :: iglobal_cs2
 !
       select case (initcond_aa)
 !
-!  Add force-free field of constant plasma beta. 
+!  Constant plasma beta in spherical coordinates. Sets Bphi
 !
-        case ('plasma-beta')
-          if (ladd_field) then 
-            amplbb = 2*cs20*rho0/plasma_beta
-!
-            do m=m1,m2 
-              do n=n1,n2
-                Aphi = -amplbb * log(x(l1:l2))
-!
-                if (lspherical_coords) then 
-                  f(l1:l2,m,n,iaz) = Aphi
-                elseif (lcylindrical_coords) then
-                  f(l1:l2,m,n,iay) = Aphi
-                else
-                  print*,'case plasma-beta not coded for Cartesian '
-                  print*,'coordinates'
-                  call fatal_error("initial_condition_aa","")
-                endif
-              enddo
-            enddo
-          endif
-!
-!--------------------------------------------------------------
-!
+        case ('plasma-beta') 
+          call set_field_constbeta(f)
         case ('Alfven-zconst')
 !
 !  Radially variable field pointing in the z direction
@@ -668,6 +768,9 @@ module InitialCondition
     endsubroutine initial_condition_aa
 !***********************************************************************
     subroutine set_field(f,Breal)
+!
+!  This routine sets a radially-dependent vertical field, by numerically 
+!  integrating it to find the corresponding azimuthal magnetic potential. 
 !
       use Sub, only: step_scalar
 !
