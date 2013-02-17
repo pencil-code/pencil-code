@@ -1324,7 +1324,7 @@ module Dustdensity
             call fatal_error('calc_pencils_dustdensity', &
                 'p%ppsat or p%ppsf has zero value(s)')
           else
-           Imr=1.!Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
+           Imr=Dwater*m_w/Rgas*p%ppsat*p%TT1/rho_w
            do i=1,nx
             if (lnoaerosol .or. lnocondens_term) then
               p%ccondens(i)=0.
@@ -1355,7 +1355,7 @@ module Dustdensity
               p%dndr=0.
             else
               if (.not. ldcore) then
-                Imr=1.!Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+                Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
                 call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,0)
                 do k=1,ndustspec
                   p%dndr(:,k)=-Imr*dndr_tmp(:,k)
