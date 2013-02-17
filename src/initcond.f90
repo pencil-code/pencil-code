@@ -1575,8 +1575,8 @@ module Initcond
       if (present(kx)) then
         k=kx
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncx=cos(k*x+ph)
-        sfuncx=sin(k*x+ph)
+        cfuncx=ampl*cos(k*x+ph)
+        sfuncx=ampl*sin(k*x+ph)
         if (present(kx2)) sfuncx=sfuncx*sin(kx2*x+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kx=',k
@@ -1596,8 +1596,8 @@ module Initcond
       if (present(ky)) then
         k=ky
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncy=cos(k*y+ph)
-        sfuncy=sin(k*y+ph)
+        cfuncy=ampl*cos(k*y+ph)
+        sfuncy=ampl*sin(k*y+ph)
         if (present(ky2)) sfuncy=sfuncy*sin(ky2*y+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; ky=',k
@@ -1617,8 +1617,9 @@ module Initcond
       if (present(kz)) then
         k=kz
         if (k==0) print*,'beltrami: k must not be zero!'
-        cfuncz=cos(k*z+ph)
-        sfuncz=sin(k*z+ph)
+        cfuncz=ampl*cos(k*z+ph)
+        sfuncz=ampl*sin(k*z+ph)
+        if (present(kz2)) sfuncz=sfuncz*sin(kz2*z+ph)
         if (ampl==0) then
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then

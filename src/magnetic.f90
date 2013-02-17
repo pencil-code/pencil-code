@@ -1192,6 +1192,15 @@ module Magnetic
         call initialize_implicit_resistivity
       endif implicit
 !
+!  Write constants to disk. In future we may want to deal with this
+!  using an include file or another module.
+!
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,'(a,1pd26.16)') 'mu0=',mu0
+        close (1)
+      endif
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
