@@ -422,6 +422,8 @@ module Magnetic_meanfield
 !  For mean-field modelling in entropy equation:
 !
       if (lmeanfield_chitB) then
+        lpenc_requested(i_b2)=.true.
+        lpenc_requested(i_del2ss)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_chiB_mf)=.true.
       endif
