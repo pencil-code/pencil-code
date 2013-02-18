@@ -26,26 +26,19 @@
 ;	VAR*.vtk.
 ;
 ; MODIFICATION HISTORY:
-;       Written by:     Chao-Chin Yang, February 8, 2013.
+;       Written by:     Chao-Chin Yang, February 18, 2013.
 ;-
 
 pro pc2vtk_allvar, datadir=datadir, variables=variables, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
   compile_opt idl2
 
-; Find the number snapshots.
-  if n_elements(datadir) eq 0 then datadir = pc_get_datadir()
-  list = datadir + '/proc0/varN.list'
-  nvarN = file_lines(list)
+; Read the list of snapshots.
+  varlist = pc_read_varlist(datadir=datadir, nvar=nvar)
 
 ; Process each snapshot.
-  openr, lun, list, /get_lun
-  varfile = ''
-  for i = 1, nvarN do begin
-    readf, lun, varfile
+  for i = 0, nvar - 1 do begin
     if n_elements(variables) eq 0 then undefine, vars else vars = variables
-    pc2vtk, datadir=datadir, varfile=varfile, variables=vars, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
+    pc2vtk, datadir=datadir, varfile=varlist[i], variables=vars, bbtoo=bbtoo, ootoo=ootoo, trimall=trimall
   endfor
-  close, lun
-  free_lun, lun
 
 end
