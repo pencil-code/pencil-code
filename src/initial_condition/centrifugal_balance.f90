@@ -85,7 +85,6 @@ module InitialCondition
   real :: g0=1.,density_power_law=0.,temperature_power_law=1., plasma_beta=25
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
-  logical :: lcorrect_selfgravity=.false.
   real :: gravitational_const=0.
   real :: magnetic_power_law=impossible
 !
@@ -94,7 +93,7 @@ module InitialCondition
   logical :: ladd_field=.true.
   character (len=labellen) :: initcond_aa=''
   real, dimension(3) :: B_ext=(/0.0,0.0,0.0/)
-  real :: rmode_mag=4.,zmode_mag=16.,amplbb=1.
+  real :: rmode_mag=4.,zmode_mag=16.
   real :: rm_int=0.0,rm_ext=impossible
   real :: Bz_const=8d-3
 !
@@ -108,14 +107,21 @@ module InitialCondition
   real :: r0_pot=0.,qgshear=1.5
   integer :: n_pot=10
 !
+! Correct extra forces in the centrifugal balance condition
+!
+  logical :: lcorrect_pressuregradient=.true.
+  logical :: lcorrect_selfgravity=.false.
+  logical :: lcorrect_lorentzforce=.false.
+!
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,&
        gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
        llowk_noise,xmid,lgaussian_distributed_noise,rborder_int,&
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
-       zmode_mag,rmode_mag,rm_int,rm_ext,amplbb,Bz_const, &
-       r0_pot,qgshear,n_pot,magnetic_power_law
+       zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
+       r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
+       lcorrect_pressuregradient
 !
   contains
 !***********************************************************************
@@ -407,11 +413,13 @@ module InitialCondition
 !
 !  Correct the velocities by this pressure gradient
 !
-      call correct_pressure_gradient(f,ics2,temperature_power_law)
+      if (lcorrect_pressuregradient) &
+           call correct_pressure_gradient(f,ics2,temperature_power_law)
 !
 !  Correct the velocities for self-gravity
 !
-      call correct_for_selfgravity(f)
+      if (lcorrect_selfgravity) &
+           call correct_for_selfgravity(f)
 !
 !  Set noise in low wavelengths only
 !
@@ -442,901 +450,6 @@ module InitialCondition
 !
     endsubroutine initial_condition_ss
 !***********************************************************************
-    subroutine set_field_constbeta(f)
-!
-      use FArrayManager, only: farray_use_global
-      use Sub, only: gij,curl_mn,get_radial_distance
-      use EquationOfState, only: cs20,rho0
-      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nx) :: cs2,pressure,Bphi,Atheta
-      real, dimension(mx) :: rr_sph,rr_cyl
-      real, dimension(nx) :: tmp
-      real, dimension(0:nx) :: tmp2
-      real :: dr,psum,cv1
-      integer, pointer :: iglobal_cs2
-      integer :: i,iprocx,iprocy,iserial_xy
-      real, dimension(ny,nprocx*nprocy) :: procsum
-      real, dimension(ny) :: procsum_loc,tmpy
-!
-      if (llocal_iso) then
-        call farray_use_global('cs2',iglobal_cs2)
-      elseif (lentropy) then
-        call get_cv1(cv1)
-      endif
-
-      do m=m1,m2 
-        if (llocal_iso) then
-          cs2=f(l1:l2,m,n,iglobal_cs2)
-        elseif (lentropy) then
-          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
-               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
-        endif
-        pressure = f(l1:l2,m,npoint,irho)*cs2 /gamma
-        Bphi = sqrt(2*pressure/plasma_beta)
-!
-!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
-!
-        call get_radial_distance(rr_sph,rr_cyl)
-        !dr=rr_sph(2)-rr_sph(1)
-        tmp=Bphi*rr_sph(l1:l2)
-!
-        iserial_xy=ipx+nprocx*ipy+1
-        tmp2(0)=0.
-        do i=1,nx
-          dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-          tmp2(i)=tmp2(i-1)+tmp(i)*dr
-        enddo
-        procsum_loc(m-m1+1)=tmp2(nx)
-      enddo
-!
-      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
-!
-      if (lroot) then 
-        procsum(:,1)=procsum_loc
-        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
-          iserial_xy=iprocx+nprocx*iprocy+1
-          if (iserial_xy/=1) then
-            call mpirecv_real(tmpy,ny,iserial_xy-1,111)
-            procsum(:,iserial_xy)=tmpy
-          endif
-          if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
-        enddo; enddo
-      else
-        call mpisend_real(procsum_loc,ny,0,111)
-      endif
-!
-      call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
-!
-      do m=m1,m2;do n=n1,n2
-!
-        if (llocal_iso) then
-          cs2=f(l1:l2,m,n,iglobal_cs2)
-        elseif (lentropy) then
-          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss) + & 
-               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
-        endif
-        pressure=f(l1:l2,m,n,irho)*cs2 /gamma
-!
-!  The following line assumes mu0=1
-!
-        Bphi = sqrt(2*pressure/plasma_beta)
-!
-!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
-!
-        call get_radial_distance(rr_sph,rr_cyl)
-        !dr=rr_sph(2)-rr_sph(1)
-        tmp=Bphi*rr_sph(l1:l2)
-!
-        if (nprocx==1) then 
-          tmp2(0)=0.
-          do i=1,nx
-            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
-            tmp2(i)=tmp2(i-1)+tmp(i)*dr
-          enddo
-        else
-          if (lfirst_proc_x) then 
-            tmp2(0)=0.
-            do i=1,nx
-              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-              tmp2(i)=tmp2(i-1)+tmp(i)*dr
-            enddo
-          else 
-            psum=0.
-            do iprocx=0,ipx-1
-              iserial_xy=iprocx+nprocx*ipy+1
-              psum=psum+procsum(m-m1+1,iserial_xy)
-            enddo
-            tmp2(0)=psum
-            do i=1,nx
-              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-              tmp2(i)=tmp2(i-1)+tmp(i)*dr
-            enddo
-          endif
-        endif
-        Atheta=tmp2(1:nx)/rr_sph(l1:l2)
-        f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
-      enddo;enddo
-!
-    endsubroutine set_field_constbeta
-!***********************************************************************
-    subroutine initial_condition_aa(f)
-!
-!  Initialize the magnetic vector potential.
-!
-!  07-may-09/wlad: coded
-!
-      use EquationOfState, only: cs20,gamma_m1,lnrho0,get_cv1
-      use Sub, only: step_scalar, power_law
-      use FArrayManager, only: farray_use_global
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: amplbb,pblaw
-      real, dimension(nx) :: Aphi, rr, rrcyl
-      real, dimension(mx) :: bz,aphi_mx,Breal,pp,cs2
-      character (len=labellen) :: intlabel
-!
-      real :: const,k1,kr,cv1
-      integer :: i
-      integer, pointer :: iglobal_cs2
-!
-      select case (initcond_aa)
-!
-!  Constant plasma beta in spherical coordinates. Sets Bphi
-!
-        case ('plasma-beta') 
-          call set_field_constbeta(f)
-        case ('Alfven-zconst')
-!
-!  Radially variable field pointing in the z direction
-!  4 Balbus-Hawley wavelengths in the vertical direction
-!
-!  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
-!
-!  The smoothed case should be general, since it reduces
-!  to the non-smoothed for r0_pot=0.
-!
-!  B=C*(r2+r02)^-q ==> Aphi=C/(r*(2-q))*(r2+r02)^(1-q/2)
-!
-!  04-oct-06/wlad: coded
-!
-          if (lcartesian_coords) then
-            amplbb = Lxyz(3)/(2*zmode_mag*pi)
-            do n=n1,n2; do m=m1,m2
-              rr=sqrt(x(l1:l2)**2+y(m)**2)
-              Aphi=amplbb/(rr*(2-qgshear))*(rr**2+r0_pot**2)**(1-qgshear/2.)
-              f(l1:l2,m,n,iax) =  -Aphi*y(m)/rr
-              f(l1:l2,m,n,iay) =   Aphi*x(l1:l2)/rr
-            enddo; enddo
-          elseif (lcylindrical_coords) then
-            call fatal_error("initial_condition_aa","alfven_zconst: "//&
-                 "not implemented for cylindrical coordinates")
-          elseif (lspherical_coords) then
-            amplbb=Lxyz(2)/(2*zmode_mag*pi)
-            pblaw=1-qgshear!-plaw/2.
-            do n=n1,n2; do m=m1,m2
-              rr=x(l1:l2)
-              Aphi=-amplbb/(pblaw+2)*rr**(pblaw+1)*1
-              f(l1:l2,m,n,iax)=0.
-              f(l1:l2,m,n,iay)=0.
-              f(l1:l2,m,n,iaz)=Aphi/sin(y(m))
-            enddo; enddo
-!
-            call correct_lorentz_force(f,amplbb,pblaw)
-!
-          endif
-!
-!--------------------------------------------------------------
-!
-        case ('alfven_rz')
-!
-!  Alfven wave propagating on radial direction with
-!  field pointing to the z direction.
-!
-!  Bz = B0 cos(k r) ==> Aphi = B0/k sin(k r) + B0/(k2*r)*cos(k r)
-!
-!  04-oct-06/wlad: coded
-!
-          if (headtt) print*,'radial alfven wave propagating on z direction'
-          if (.not.lcylinder_in_a_box) &
-               call fatal_error("alfven_rz, this initial condition",&
-               "works only for embedded cylinders")
-!
-! Choose between cases. The non-smoothed case is singular 
-! in r=0 for the potential, thus can only be used if 
-! freezing is used with a non-zero r_int. The smoothed case
-! has a linear component that prevents singularities and a exponential 
-! that prevents the field from growing large in the outer disk
-!
-          do n=n1,n2; do m=m1,m2
-            rrcyl = max(sqrt(x(l1:l2)**2 + y(m)**2),tini)
-            if (r_int>0.) then
-              if (lroot .and. m==m1 .and. n==n1) then
-                print*,'freezing is being used, ok to use singular potentials'
-                print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
-              endif
-              kr = 2*pi*rmode_mag/(r_ext-r_int)
-              Aphi =  amplbb/kr * sin(kr*(rrcyl-r_int)) + &
-                   amplbb/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
-            else
-              if (lroot .and. m==m1 .and. n==n1) &
-                   print*,'Softened magnetic field in the center'
-              if (rmode_mag < 5) call fatal_error("initial_condition_aa",&
-                   "put more wavelengths in the field")
-              kr = 2*pi*rmode_mag/r_ext
-              k1 = 1. !not tested for other values
-              const=amplbb*exp(1.)*k1/cos(kr/k1)
-              Aphi=const/kr*rrcyl*exp(-k1*rrcyl)*sin(kr*rrcyl)
-            endif
-!
-            f(l1:l2,m,n,iax) = Aphi * (-    y(m)/rrcyl)
-            f(l1:l2,m,n,iay) = Aphi * ( x(l1:l2)/rrcyl)
-!
-          enddo; enddo
-!
-!--------------------------------------------------------------
-!
-       case ("alfven_rphi")
-         if (.not.lcylinder_in_a_box) &
-              call fatal_error("alfven_rz, this initial condition",&
-              "works only for embedded cylinders")
-         do n=n1,n2; do m=m1,m2
-           kr = 2*pi*rmode_mag/(r_ext-r_int)
-           rrcyl = sqrt(x(l1:l2)**2 + y(m)**2)
-           f(l1:l2,m,n,iaz) =  -amplbb/kr*sin(kr*(rrcyl-r_int))
-         enddo; enddo
-!
-!-------------------------------------------------------------
-!
-       case ("sine-avoid-boundary")
-!
-! Sine field in cylindrical coordinates, used in Armitage 1998
-!
-!   Bz=B0/r * sin(kr*(r-r0))
-!
-! And 0 outside of the interval r0-rn
-! Code the field and find Aphi through solving the
-! tridiagonal system for
-!
-!  Bz= d/dr Aphi + Aphi/r
-!
-!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz
-!
-!  05-apr-08/wlad : coded
-!
-         if (.not.lcylindrical_coords) &
-              call fatal_error("initial_condition_aa",&
-              "this IC assumes cylindrical coordinates")
-!
-         do i=1,mx
-           if ((rcyl_mn(i)>=rm_int).and.(rcyl_mn(i)<=rm_ext)) then
-             kr = 2*pi*rmode_mag/(rm_ext-rm_int)
-             bz(i)=amplbb/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-rm_int))
-           else
-             bz(i)=0.
-           endif
-         enddo
-!
-         intlabel=trim('tridag')
-         call integrate_field(bz,aphi_mx,intlabel)
-         do m=1,my; do n=1,mz
-           f(:,m,n,iay) = aphi_mx
-         enddo;enddo
-!
-!-------------------------------------------------------------
-!
-       case ("bz-const")
-!
-         Breal = bz_const
-         call set_field(f,Breal)
-!
-       case ("lambda_over_h_cte") 
-         if (zmode_mag==0) &
-              call fatal_error("initcond_aa","zmode_mag is zero")
-         call power_law(rho0*cs20,x,&
-              temperature_power_law+density_power_law,pp,r_ref)
-         Breal = sqrt(pp/gamma)/(zmode_mag*2*pi)
-         call set_field(f,Breal)
-!
-       case ("lambda_over_Lz_cte") 
-         if (zmode_mag==0) &
-              call fatal_error("initcond_aa","zmode_mag is zero")
-         if (magnetic_power_law/=impossible) then 
-           pblaw=magnetic_power_law
-         else
-           pblaw=1.5+0.5*density_power_law !alfven
-         endif
-         call power_law(Lxyz(3)/(zmode_mag*2*pi),x,pblaw,Breal,r_ref)
-         call set_field(f,Breal)
-!
-        case ('','nothing')
-!
-!  Do nothing
-!           
-        case default
-!
-!  Catch unknown values.
-!
-          call fatal_error('initcond_aa', &
-              'initcond_aa value "' // trim(initcond_aa) // '" not recognised')
-!
-        endselect
-!
-        !if (lspherical_coords) call correct_lorentz_numerical(f)
-!
-    endsubroutine initial_condition_aa
-!***********************************************************************
-    subroutine set_field(f,Breal)
-!
-!  This routine sets a radially-dependent vertical field, by numerically 
-!  integrating it to find the corresponding azimuthal magnetic potential. 
-!
-      use Sub, only: step_scalar
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: width
-      real, dimension(mx) :: bz,aphi_mx,Breal
-      integer :: i
-!
-      do i=1,mx
-!
-        width=5./dx_1(i)
-!
-        bz(i) = Breal(i) * &
-             (step_scalar(x(i),rm_int+width,width)-&
-              step_scalar(x(i),rm_ext-width,width))
-      enddo
-!
-      call integrate_field_parallel(bz*x,aphi_mx)
-!
-      do n=1,mz;do m=1,my
-        if (lcylindrical_coords) then 
-          f(:,m,n,iay) = aphi_mx/x 
-        elseif (lspherical_coords) then 
-          f(:,m,n,iaz) = sin(y(m))*aphi_mx/x 
-        else 
-          call fatal_error("initial_condition_aa",&
-               "bz-const not implemented for the chosen coordinated system")
-        endif
-      enddo;enddo
-!
-    endsubroutine set_field
-!***********************************************************************
-    subroutine correct_lorentz_numerical(f)
-!
-      use Sub, only: get_radial_distance,&
-                     gij,curl_mn,gij_etc,cross_mn,multsv_mn
-!
-      real, dimension (mx,my,mz,mfarray) :: f      
-      real, dimension (nx,3,3) :: aij,bij
-      real, dimension (nx,3) :: aa,bb,jj,jxb,jxbr
-      real, dimension (nx) :: rr_sph,rr_cyl,rho1
-      real, dimension (nx) :: fpres_magnetic
-!
-      if (.not.lspherical_coords) then
-        call fatal_error("correct_lorentz_numerical",&
-            "only implemented for spherical coordinates")
-        if ((B_ext(1)/=0).or.(B_ext(3)/=0)) then
-          call fatal_error("correct_lorentz_numerical",&
-              "only implemented for polar fields")
-        endif
-      endif
-!
-      do m=m1,m2
-        do n=n1,n2
-!
-          if (lmagnetic) then
-            aa=f(l1:l2,m,n,iax:iaz)         !aa
-            call gij(f,iaa,aij,1)           !aij
-            call curl_mn(aij,bb,aa)         !bb
-            call gij_etc(f,iaa,aa,aij,bij)  !bij
-            call curl_mn(bij,jj,bb)         !jj
-            call cross_mn(jj,bb,jxb)        !jxb
-            rho1=1./f(l1:l2,m,n,irho)       !1/rho
-            call multsv_mn(rho1,jxb,jxbr)   !jxb/rho
-            fpres_magnetic=-jxbr(:,2)
-          else
-            fpres_magnetic=0.
-          endif
-!         
-          call get_radial_distance(rr_sph,rr_cyl)
-!     
-! Not valid for all signs of the pressure gradient
-!
-          f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+&
-              sqrt(rr_sph*fpres_magnetic/cotth(m))
-!
-        enddo
-      enddo
-!
-    endsubroutine correct_lorentz_numerical
-!***********************************************************************
-    subroutine integrate_field_parallel(bz,aphi_mx)
-!
-      use FArrayManager, only: farray_use_global
-      use Sub, only: gij,curl_mn,get_radial_distance
-      use EquationOfState, only: cs20,rho0
-      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
-!
-      real, dimension(mx) :: aphi_mx,bz
-      real, dimension(0:nx) :: tmp2
-      integer :: i,ig,iprocx,iprocy,iserial_xy
-      real, dimension(nprocx*nprocy) :: procsum
-      real :: procsum_loc,tmpy,psum
-
-!
-      iserial_xy=ipx+nprocx*ipy+1
-      tmp2(0)=0.
-      do i=l1,l2
-        ig=i-l1+1
-        tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                bz(i-3)   +   bz(i+3)   +&
-             4*(bz(i-2)+bz(i)+bz(i+2))  +&
-             2*(bz(i-1)   +   bz(i+1)))/3.
-      enddo
-      procsum_loc=tmp2(nx)
-!
-      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc
-!
-      if (lroot) then 
-        procsum(1)=procsum_loc
-        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
-          iserial_xy=iprocx+nprocx*iprocy+1
-          if (iserial_xy/=1) then
-            call mpirecv_real(tmpy,1,iserial_xy-1,111)
-            procsum(iserial_xy)=tmpy
-          endif
-          if (ip<=9) print*,'recv',iserial_xy,procsum(iserial_xy)
-        enddo; enddo
-      else
-        call mpisend_real(procsum_loc,1,0,111)
-      endif
-!
-      call mpibcast_real(procsum,nprocx*nprocy)
-!
-      do n=n1,n2
-!
-        if (nprocx==1) then 
-          tmp2(0)=0.
-          do i=l1,l2
-            ig=i-l1+1
-            tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                    bz(i-3)   +   bz(i+3)   +&
-                 4*(bz(i-2)+bz(i)+bz(i+2))  +&
-                 2*(bz(i-1)   +   bz(i+1)))/3.
-          enddo
-        else
-          if (lfirst_proc_x) then 
-            tmp2(0)=0.
-            do i=l1,l2
-              ig=i-l1+1
-              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                   bz(i-3)   +   bz(i+3)   +&
-                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
-                   2*(bz(i-1)   +   bz(i+1)))/3.
-            enddo
-          else 
-            psum=0.
-            do iprocx=0,ipx-1
-              iserial_xy=iprocx+nprocx*ipy+1
-              psum=psum+procsum(iserial_xy)
-            enddo
-            tmp2(0)=psum
-            do i=l1,l2
-              ig=i-l1+1
-              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                   bz(i-3)   +   bz(i+3)   +&
-                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
-                   2*(bz(i-1)   +   bz(i+1)))/3.
-            enddo
-          endif
-        endif
-        aphi_mx(l1:l2)=tmp2(1:nx)
-        aphi_mx(1:l1-1) =0.;aphi_mx(l2+1:mx)=0.
-      enddo
-! 
-    endsubroutine integrate_field_parallel
-!***********************************************************************
-    subroutine integrate_field(bz,aphi_mx,integration_method)
-!
-      use General, only: tridag
-!
-      real, dimension(mx) :: a_tri,b_tri,c_tri,bz,rhs,aphi_mx
-      character (len=labellen) :: integration_method
-      integer :: i
-!
-      select case (integration_method)
-!
-      case ('tridag') 
-
-        a_tri=-1. ; b_tri=2/(x*dx_1) ; c_tri=1. ; rhs=bz*2/dx_1
-!
-        a_tri(1) =0.;c_tri(1 )=0.
-        a_tri(mx)=0.;c_tri(mx)=0.
-!
-        call tridag(a_tri,b_tri,c_tri,rhs,aphi_mx)
-!
-      case ('simpson')  
-!
-        aphi_mx(1:l1-1)=0.
-        do i=l1,l2
-          aphi_mx(i) = aphi_mx(i-1)+1./(6.*dx_1(i))*(&
-                  bz(i-3)   +   bz(i+3)   +&
-               4*(bz(i-2)+bz(i)+bz(i+2))  +&
-               2*(bz(i-1)   +   bz(i+1)))/3.
-          !aphi_mx(i) = aphi_mx(i-1)+dx/2.*(bz(i-1)+4*bz(i)+bz(i+1))/2.
-        enddo
-        !aphi_mx(1:l1-1)=0.; aphi_mx(l2+1:mx)=0.
-!
-      case default
-!
-!  Catch unknown values.
-!
-        call fatal_error('integrate_field', &
-             'integration_method "' // trim(integration_method) // '"'//&
-             ' not recognised')
-!
-      endselect
-!
-    endsubroutine integrate_field
-!***********************************************************************
-    subroutine correct_pressure_gradient(f,ics2,temperature_power_law)
-!
-!  Correct for pressure gradient term in the centrifugal force.
-!  For now, it only works for flat (isothermal) or power-law
-!  sound speed profiles, because the temperature gradient is
-!  constructed analytically.
-!
-!  21-aug-07/wlad : coded
-!
-      use FArrayManager
-      use Sub,    only: get_radial_distance,grad
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: glnrho
-      real, dimension (nx)   :: rr,rr_cyl,rr_sph
-      real, dimension (nx)   :: cs2,tmp1,tmp2,corr,gslnrho,gslnTT
-      integer                :: i,ics2
-      logical                :: lheader
-      real :: temperature_power_law
-!
-      if (lroot) print*,'Correcting density gradient on the '//&
-           'centrifugal force'
-!
-      do m=m1,m2
-      do n=n1,n2
-        lheader=(lfirstpoint.and.lroot)
-!
-!  Get the density gradient
-!
-        call get_radial_distance(rr_sph,rr_cyl)
-        call grad(f,ilnrho,glnrho)
-        if (lcartesian_coords) then
-          gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
-        else if (lcylindrical_coords) then
-          gslnrho=glnrho(:,1)
-        else if (lspherical_coords) then
-          gslnrho=glnrho(:,1)
-        endif
-!
-!  Get sound speed and calculate the temperature gradient
-!
-        cs2=f(l1:l2,m,n,ics2);rr=rr_cyl
-        if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
-        gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
-!
-!  Correct for cartesian or spherical
-!
-        corr=(gslnrho+gslnTT)*cs2
-        if (lenergy) corr=corr/gamma
-!
-        if (lcartesian_coords) then
-          tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-          tmp2=tmp1 + corr/rr_cyl
-        elseif (lcylindrical_coords) then
-          tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
-          tmp2=tmp1 + corr/rr_cyl
-        elseif (lspherical_coords) then
-          tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
-          tmp2=tmp1 + corr/rr_sph
-        endif
-!
-!  Make sure the correction does not impede centrifugal equilibrium
-!
-        do i=1,nx
-          if (tmp2(i)<0.) then
-            if (rr(i) < r_int) then
-              !it's inside the frozen zone, so
-              !just set tmp2 to zero and emit a warning
-              tmp2(i)=0.
-              if ((ip<=10).and.lheader) &
-                   call warning('correct_density_gradient','Cannot '//&
-                   'have centrifugal equilibrium in the inner '//&
-                   'domain. The pressure gradient is too steep.')
-            else
-              print*,'correct_density_gradient: ',&
-                   'cannot have centrifugal equilibrium in the inner ',&
-                   'domain. The pressure gradient is too steep at ',&
-                   'x,y,z=',x(i+nghost),y(m),z(n)
-              print*,'the angular frequency here is',tmp2(i)
-              call fatal_error("","")
-            endif
-          endif
-        enddo
-!
-!  Correct the velocities
-!
-        if (lcartesian_coords) then
-          f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-          f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-        elseif (lcylindrical_coords) then
-          f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-        elseif (lspherical_coords) then
-          f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
-        endif
-      enddo
-      enddo
-!
-    endsubroutine correct_pressure_gradient
-!***********************************************************************
-    subroutine exponential_fall(f)
-!
-!  Exponentially falling radial density profile.
-!
-!  21-aug-07/wlad: coded
-!
-      use Sub, only: get_radial_distance
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: rr_sph,rr_cyl,arg
-      real :: rmid,fac
-!
-      if (lroot) print*,'setting exponential falling '//&
-           'density with e-fold=',r_ref
-!
-      fac=pi/2
-      do m=1,my
-      do n=1,mz
-        call get_radial_distance(rr_sph,rr_cyl)
-        f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrho0 - rr_cyl/r_ref
-        if (lexponential_smooth) then
-          rmid=rshift+(xyz1(1)-xyz0(1))/radial_percent_smooth
-          arg=(rr_cyl-rshift)/rmid
-          f(:,m,n,ilnrho) = f(:,m,n,ilnrho)*&
-               .5*(1+atan(arg)/fac)
-        endif
-      enddo
-      enddo
-!
-!  Add self-gravity's contribution to the centrifugal force
-!
-      call correct_for_selfgravity(f)
-!
-    endsubroutine exponential_fall
-!***********************************************************************
-    subroutine correct_for_selfgravity(f)
-!
-!  Correct for the fluid's self-gravity in the
-!  centrifugal force
-!
-!  03-dec-07/wlad: coded
-!
-      use Sub,         only:get_radial_distance,grad
-      use Poisson,     only:inverse_laplacian
-      use Boundcond,   only:update_ghosts
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      real, dimension (mx,my,mz) :: selfpotential
-      real, dimension (nx,3) :: gpotself
-      real, dimension (nx) :: tmp1,tmp2
-      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
-      real :: rhs_poisson_const
-      logical :: lheader
-      integer :: i
-!
-!  Do nothing if self-gravity is not called
-!
-      if (lcorrect_selfgravity) then
-!
-        if (lroot) print*,'Correcting for self-gravity on the '//&
-             'centrifugal force'
-        if (.not.lpoisson) then 
-          print*,"You want to correct for selfgravity but you "
-          print*,"are using POISSON=nopoisson in src/Makefile.local. "
-          print*,"Please use a poisson solver."
-          call fatal_error("correct_for_selfgravity","")
-        endif
-!
-!  Poisson constant is 4piG, this has to be consistent with the 
-!  constant in poisson_init_pars
-!
-        rhs_poisson_const=4*pi*gravitational_const
-!
-!  feed linear density into the poisson solver
-!
-        selfpotential(l1:l2,m1:m2,n1:n2)=&
-             rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-        call inverse_laplacian(f,&
-             selfpotential(l1:l2,m1:m2,n1:n2))
-!
-        f(l1:l2,m1:m2,n1:n2,ipotself)=selfpotential(l1:l2,m1:m2,n1:n2)
-        call update_ghosts(f)
-!
-!  update the boundaries for the self-potential
-!
-        do n=n1,n2
-        do m=m1,m2
-!
-          lheader=(lfirstpoint.and.lroot)
-!
-!  Get the potential gradient
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-          call grad(f,ipotself,gpotself)
-!
-!  correct the angular frequency phidot^2
-!
-          if (lcartesian_coords) then
-            gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
-            tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
-            tmp2=tmp1+gspotself/rr_cyl
-          elseif (lcylindrical_coords) then
-            gspotself=gpotself(:,1)
-            tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
-            tmp2=tmp1+gspotself/rr_cyl
-          elseif (lspherical_coords) then
-            gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
-            tmp1=(f(l1:l2,m,n,iuz)/(rr_sph*sinth(m)))**2
-            tmp2=tmp1 + gspotself/(rr_sph*sinth(m)**2)
-          endif
-!
-!  Catch negative values of phidot^2
-!
-          do i=1,nx
-            if (tmp2(i)<0.) then
-              if (rr_cyl(i) < r_int) then
-                !it's inside the frozen zone, so
-                !just set tmp2 to zero and emit a warning
-                tmp2(i)=0.
-                if ((ip<=10).and.lheader) &
-                     call warning('correct_for_selfgravity','Cannot '//&
-                     'have centrifugal equilibrium in the inner '//&
-                     'domain. Just warning...')
-              else
-                print*,'correct_for_selfgravity: ',&
-                     'cannot have centrifugal equilibrium in the inner ',&
-                     'domain. The offending point is ',&
-                     'x,y,z=',x(i+nghost),y(m),z(n)
-                print*,'the angular frequency here is ',tmp2(i)
-                call fatal_error("correct_for_selfgravity","")
-              endif
-            endif
-          enddo
-!
-!  Correct the velocities
-!
-          if (lcartesian_coords) then
-            f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
-          elseif (lcylindrical_coords) then
-            f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
-          elseif (lspherical_coords) then
-            f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph*sinth(m)
-          endif
-        enddo
-        enddo
-      endif ! if (lcorrect_selfgravity)
-!
-    endsubroutine correct_for_selfgravity
-!***********************************************************************
-    subroutine correct_lorentz_force(f,const,pblaw)
-!
-!  Correct for the magnetic term in the centrifugal force. The
-!  pressure gradient was already corrected in the density and temperature
-!  modules
-!
-!  13-nov-08/wlad : coded
-!
-      use Sub,      only: get_radial_distance
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx)   :: rr_cyl,rr_sph,Btheta
-      real, dimension (mx)   :: tmp,uu2,va2,va2r
-      real, dimension (mx)   :: rho1,rho1_jxb
-      real                   :: const,pblaw
-      logical                :: lheader
-      integer                :: i
-!
-      if (lroot) print*,'Correcting magnetic terms on the '//&
-           'centrifugal force'
-!
-      if (.not.lspherical_coords) then
-        call fatal_error("correct_lorentz_force",&
-            "only implemented for spherical coordinates")
-        if ((B_ext(1)/=0).or.(B_ext(3)/=0)) then
-          call fatal_error("correct_lorentz_force",&
-              "only implemented for polar fields")
-        endif
-      endif
-!
-      do m=1,my
-        do n=1,mz
-!
-          call get_radial_distance(rr_sph,rr_cyl)
-!
-          lheader=((m==1).and.(n==1).and.lroot)
-!
-          !this field also has a magnetic pressure gradient
-          Btheta=const*rr_sph**pblaw/sin(y(m))
-!
-          rho1=1./f(:,m,n,ilnrho)
-!
-          uu2=f(:,m,n,iuz)**2
-          va2=rho1*(Btheta+B_ext(2))**2
-!
-          rho1_jxb=rho1
-!
-!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
-!
-          !if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-!
-!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
-!  set va2power_jxb to an integer value in order to specify the power
-!  of the limiting term,
-!
-          !if (va2max_jxb>0) then
-          !  rho1_jxb = rho1_jxb &
-          !      * (1+(va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
-          !endif
-          va2r=rho1_jxb*va2
-!
-!  The second term is the magnetic pressure gradient
-!
- 
-          tmp=uu2+va2r*(1+2*pblaw/rr_sph)
-!
-!  The polar pressure should be
-!  -2*cot(theta)/rr * va2r, but I will ignore it
-!  for now. It feedbacks on the density,
-!  so the initial condition for density and field
-!  should be solved iteratively. But as uu>>va, I
-!  will just let the system relax to equilibrium in
-!  runtime.
-!
-!  Make sure the correction does not impede centrifugal equilibrium
-!
-          do i=1,nx
-            if (tmp(i)<0.) then
-              if (rr_sph(i) < r_int) then
-                !it's inside the frozen zone, so
-                !just set tmp to zero and emit a warning
-                tmp(i)=0.
-                if ((ip<=10).and.lheader) &
-                    call warning('correct_lorentz_force','Cannot '//&
-                    'have centrifugal equilibrium in the inner '//&
-                    'domain. The lorentz force is too strong.')
-              else
-                print*,'correct_lorentz_force: ',&
-                    'cannot have centrifugal equilibrium in the inner ',&
-                    'domain. The lorentz force is too strong at ',&
-                    'x,y,z=',x(i+nghost),y(m),z(n)
-                print*,'the angular frequency here is',tmp(i)
-                call fatal_error("","")
-              endif
-            endif
-          enddo
-!
-!  Correct the velocities
-!
-          f(:,m,n,iuz)= sqrt(tmp)
-!
-        enddo
-      enddo
-!
-    endsubroutine correct_lorentz_force
-!***********************************************************************
     subroutine set_thermodynamical_quantities&
          (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
 !
@@ -1357,7 +470,7 @@ module InitialCondition
 !
       use FArrayManager
       use EquationOfState, only: gamma,gamma_m1,get_cp1,&
-                                 cs20,cs2bot,cs2top,lnrho0,rho0
+           cs20,cs2bot,cs2top,lnrho0
       use Sub,             only: power_law,get_radial_distance
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1442,7 +555,7 @@ module InitialCondition
 !  ... or entropy
           lnrho=f(l1:l2,m,n,ilnrho) ! initial condition, always log
           f(l1:l2,m,n,iss)=1./(gamma*cp1)*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
-        else
+       else
 !
           call fatal_error('set_thermodynamical_quantities', &
                'No thermodynamical variable. Choose if you want '//&
@@ -1479,8 +592,691 @@ module InitialCondition
 !
     endsubroutine set_thermodynamical_quantities
 !***********************************************************************
-    subroutine lowk_noise_gaussian_rprof(f)
+    subroutine initial_condition_aa(f)
 !
+!  Initialize the magnetic vector potential.
+!
+!  07-may-09/wlad: coded
+!
+      use EquationOfState, only: cs20,get_cv1
+      use Sub, only: step_scalar, power_law
+      use FArrayManager, only: farray_use_global
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: amplbb,pblaw
+      real, dimension(nx) :: Aphi, rr, rrcyl
+      real, dimension(mx) :: bz,aphi_mx,Breal,pp
+      character (len=labellen) :: intlabel
+!
+      real :: const,k1,kr
+      integer :: i
+!
+      select case (initcond_aa)
+!
+!  Constant plasma beta in spherical coordinates. Sets Bphi
+!
+        case ('plasma-beta') 
+          call set_field_constbeta(f)
+        case ('Alfven-zconst')
+!
+!  Radially variable field pointing in the z direction
+!  4 Balbus-Hawley wavelengths in the vertical direction
+!
+!  Bz=Lz/(8pi)*Omega      ==> Aphi = Lz/(8pi) Omega*r/(2-q)
+!
+!  The smoothed case should be general, since it reduces
+!  to the non-smoothed for r0_pot=0.
+!
+!  B=C*(r2+r02)^-q ==> Aphi=C/(r*(2-q))*(r2+r02)^(1-q/2)
+!
+!  04-oct-06/wlad: coded
+!
+          if (lcartesian_coords) then
+            amplbb = Lxyz(3)/(2*zmode_mag*pi)
+            do n=n1,n2; do m=m1,m2
+              rr=sqrt(x(l1:l2)**2+y(m)**2)
+              Aphi=amplbb/(rr*(2-qgshear))*(rr**2+r0_pot**2)**(1-qgshear/2.)
+              f(l1:l2,m,n,iax) =  -Aphi*y(m)/rr
+              f(l1:l2,m,n,iay) =   Aphi*x(l1:l2)/rr
+            enddo; enddo
+          elseif (lcylindrical_coords) then
+            call fatal_error("initial_condition_aa","alfven_zconst: "//&
+                 "not implemented for cylindrical coordinates")
+          elseif (lspherical_coords) then
+            amplbb=Lxyz(2)/(2*zmode_mag*pi)
+            pblaw=1-qgshear!-plaw/2.
+            do n=n1,n2; do m=m1,m2
+              rr=x(l1:l2)
+              Aphi=-amplbb/(pblaw+2)*rr**(pblaw+1)*1
+              f(l1:l2,m,n,iax)=0.
+              f(l1:l2,m,n,iay)=0.
+              f(l1:l2,m,n,iaz)=Aphi/sin(y(m))
+            enddo; enddo
+!
+            !call correct_lorentz_force(f,amplbb,pblaw)
+!
+          endif
+!
+!--------------------------------------------------------------
+!
+        case ('alfven_rz')
+!
+!  Alfven wave propagating on radial direction with
+!  field pointing to the z direction.
+!
+!  Bz = B0 cos(k r) ==> Aphi = B0/k sin(k r) + B0/(k2*r)*cos(k r)
+!
+!  04-oct-06/wlad: coded
+!
+          if (headtt) print*,'radial alfven wave propagating on z direction'
+          if (.not.lcylinder_in_a_box) &
+               call fatal_error("alfven_rz, this initial condition",&
+               "works only for embedded cylinders")
+!
+! Choose between cases. The non-smoothed case is singular 
+! in r=0 for the potential, thus can only be used if 
+! freezing is used with a non-zero r_int. The smoothed case
+! has a linear component that prevents singularities and a exponential 
+! that prevents the field from growing large in the outer disk
+!
+          do n=n1,n2; do m=m1,m2
+            rrcyl = max(sqrt(x(l1:l2)**2 + y(m)**2),tini)
+            if (r_int>0.) then
+              if (lroot .and. m==m1 .and. n==n1) then
+                print*,'freezing is being used, ok to use singular potentials'
+                print*,'Bz=B0cos(k.r) ==> Aphi=B0/k*sin(k.r)+B0/(k^2*r)*cos(k r)'
+              endif
+              kr = 2*pi*rmode_mag/(r_ext-r_int)
+              Aphi =  Bz_const/kr * sin(kr*(rrcyl-r_int)) + &
+                   Bz_const/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
+            else
+              if (lroot .and. m==m1 .and. n==n1) &
+                   print*,'Softened magnetic field in the center'
+              if (rmode_mag < 5) call fatal_error("initial_condition_aa",&
+                   "put more wavelengths in the field")
+              kr = 2*pi*rmode_mag/r_ext
+              k1 = 1. !not tested for other values
+              const=Bz_const*exp(1.)*k1/cos(kr/k1)
+              Aphi=const/kr*rrcyl*exp(-k1*rrcyl)*sin(kr*rrcyl)
+            endif
+!
+            f(l1:l2,m,n,iax) = Aphi * (-    y(m)/rrcyl)
+            f(l1:l2,m,n,iay) = Aphi * ( x(l1:l2)/rrcyl)
+!
+          enddo; enddo
+!
+!--------------------------------------------------------------
+!
+       case ("alfven_rphi")
+         if (.not.lcylinder_in_a_box) &
+              call fatal_error("alfven_rz, this initial condition",&
+              "works only for embedded cylinders")
+         do n=n1,n2; do m=m1,m2
+           kr = 2*pi*rmode_mag/(r_ext-r_int)
+           rrcyl = sqrt(x(l1:l2)**2 + y(m)**2)
+           f(l1:l2,m,n,iaz) =  -Bz_const/kr*sin(kr*(rrcyl-r_int))
+         enddo; enddo
+!
+!-------------------------------------------------------------
+!
+       case ("sine-avoid-boundary")
+!
+! Sine field in cylindrical coordinates, used in Armitage 1998
+!
+!   Bz=B0/r * sin(kr*(r-r0))
+!
+! And 0 outside of the interval r0-rn
+! Code the field and find Aphi through solving the
+! tridiagonal system for
+!
+!  Bz= d/dr Aphi + Aphi/r
+!
+!  -A_(i-1) + A_(i+1) + 2*A_i*dr/r = 2*dr*Bz
+!
+!  05-apr-08/wlad : coded
+!
+         if (.not.lcylindrical_coords) &
+              call fatal_error("initial_condition_aa",&
+              "this IC assumes cylindrical coordinates")
+!
+         do i=1,mx
+           if ((rcyl_mn(i)>=rm_int).and.(rcyl_mn(i)<=rm_ext)) then
+             kr = 2*pi*rmode_mag/(rm_ext-rm_int)
+             bz(i)=Bz_const/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-rm_int))
+           else
+             bz(i)=0.
+           endif
+         enddo
+!
+         intlabel=trim('tridag')
+         call integrate_field(bz,aphi_mx)
+         do m=1,my; do n=1,mz
+           f(:,m,n,iay) = aphi_mx
+         enddo;enddo
+!
+!-------------------------------------------------------------
+!
+       case ("bz-const")
+!
+         Breal = bz_const
+         call set_field(f,Breal)
+!
+       case ("lambda_over_h_cte") 
+         if (zmode_mag==0) &
+              call fatal_error("initcond_aa","zmode_mag is zero")
+         call power_law(rho0*cs20,x,&
+              temperature_power_law+density_power_law,pp,r_ref)
+         Breal = sqrt(pp/gamma)/(zmode_mag*2*pi)
+         call set_field(f,Breal)
+!
+       case ("lambda_over_Lz_cte") 
+         if (zmode_mag==0) &
+              call fatal_error("initcond_aa","zmode_mag is zero")
+         if (magnetic_power_law/=impossible) then 
+           pblaw=magnetic_power_law
+         else
+           pblaw=1.5+0.5*density_power_law !alfven
+         endif
+         call power_law(Lxyz(3)/(zmode_mag*2*pi),x,pblaw,Breal,r_ref)
+         call set_field(f,Breal)
+!
+        case ('','nothing')
+!
+!  Do nothing
+!           
+        case default
+!
+!  Catch unknown values.
+!
+          call fatal_error('initcond_aa', &
+              'initcond_aa value "' // trim(initcond_aa) // '" not recognised')
+!
+        endselect
+!
+    if (lcorrect_lorentzforce) call correct_lorentz_numerical(f)
+!
+    endsubroutine initial_condition_aa
+!***********************************************************************
+    subroutine set_field(f,Breal)
+!
+!  This routine sets a radially-dependent vertical field, by numerically 
+!  integrating it to find the corresponding azimuthal magnetic potential. 
+!
+      use Sub, only: step_scalar
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: width
+      real, dimension(mx) :: bz,aphi_mx,Breal
+      integer :: i
+!
+      do i=1,mx
+!
+        width=5./dx_1(i)
+!
+        bz(i) = Breal(i) * &
+             (step_scalar(x(i),rm_int+width,width)-&
+              step_scalar(x(i),rm_ext-width,width))
+      enddo
+!
+      call integrate_field(bz*x,aphi_mx)
+!
+      do n=1,mz;do m=1,my
+        if (lcylindrical_coords) then 
+          f(:,m,n,iay) = aphi_mx/x 
+        elseif (lspherical_coords) then 
+          f(:,m,n,iaz) = sin(y(m))*aphi_mx/x 
+        else 
+          call fatal_error("initial_condition_aa",&
+               "bz-const not implemented for the chosen coordinated system")
+        endif
+      enddo;enddo
+!
+    endsubroutine set_field
+!***********************************************************************
+    subroutine set_field_constbeta(f)
+!
+      use FArrayManager, only: farray_use_global
+      use Sub, only: gij,curl_mn,get_radial_distance
+      use EquationOfState, only: cs20
+      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx) :: cs2,pressure,Bphi,Atheta
+      real, dimension(mx) :: rr_sph,rr_cyl
+      real, dimension(nx) :: tmp
+      real, dimension(0:nx) :: tmp2
+      real :: dr,psum,cv1
+      integer, pointer :: iglobal_cs2
+      integer :: i,iprocx,iprocy,iserial_xy
+      real, dimension(ny,nprocx*nprocy) :: procsum
+      real, dimension(ny) :: procsum_loc,tmpy
+!
+      if (llocal_iso) then
+        call farray_use_global('cs2',iglobal_cs2)
+      elseif (lentropy) then
+        call get_cv1(cv1)
+      endif
+
+      do m=m1,m2 
+        if (llocal_iso) then
+          cs2=f(l1:l2,m,n,iglobal_cs2)
+        elseif (lentropy) then
+          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
+               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
+        endif
+        pressure = f(l1:l2,m,npoint,irho)*cs2 /gamma
+        Bphi = sqrt(2*pressure/plasma_beta)
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        !dr=rr_sph(2)-rr_sph(1)
+        tmp=Bphi*rr_sph(l1:l2)
+!
+        iserial_xy=ipx+nprocx*ipy+1
+        tmp2(0)=0.
+        do i=1,nx
+          dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+          tmp2(i)=tmp2(i-1)+tmp(i)*dr
+        enddo
+        procsum_loc(m-m1+1)=tmp2(nx)
+      enddo
+!
+      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
+!
+      if (lroot) then 
+        procsum(:,1)=procsum_loc
+        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
+          iserial_xy=iprocx+nprocx*iprocy+1
+          if (iserial_xy/=1) then
+            call mpirecv_real(tmpy,ny,iserial_xy-1,111)
+            procsum(:,iserial_xy)=tmpy
+          endif
+          if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
+        enddo; enddo
+      else
+        call mpisend_real(procsum_loc,ny,0,111)
+      endif
+!
+      call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
+!
+      do m=m1,m2;do n=n1,n2
+!
+        if (llocal_iso) then
+          cs2=f(l1:l2,m,n,iglobal_cs2)
+        elseif (lentropy) then
+          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss) + & 
+               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
+        endif
+        pressure=f(l1:l2,m,n,irho)*cs2 /gamma
+!
+!  The following line assumes mu0=1
+!
+        Bphi = sqrt(2*pressure/plasma_beta)
+!
+!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        tmp=Bphi*rr_sph(l1:l2)
+!
+        if (nprocx==1) then 
+          tmp2(0)=0.
+          do i=1,nx
+            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
+            tmp2(i)=tmp2(i-1)+tmp(i)*dr
+          enddo
+        else
+          if (lfirst_proc_x) then 
+            tmp2(0)=0.
+            do i=1,nx
+              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+              tmp2(i)=tmp2(i-1)+tmp(i)*dr
+            enddo
+          else 
+            psum=0.
+            do iprocx=0,ipx-1
+              iserial_xy=iprocx+nprocx*ipy+1
+              psum=psum+procsum(m-m1+1,iserial_xy)
+            enddo
+            tmp2(0)=psum
+            do i=1,nx
+              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
+              tmp2(i)=tmp2(i-1)+tmp(i)*dr
+            enddo
+          endif
+        endif
+        Atheta=tmp2(1:nx)/rr_sph(l1:l2)
+        f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
+      enddo;enddo
+!
+    endsubroutine set_field_constbeta
+!***********************************************************************
+    subroutine integrate_field(bz,aphi_mx)
+!
+      use FArrayManager, only: farray_use_global
+      use Sub, only: gij,curl_mn,get_radial_distance
+      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
+!
+      real, dimension(mx) :: aphi_mx,bz
+      real, dimension(0:nx) :: tmp2
+      integer :: i,ig,iprocx,iprocy,iserial_xy
+      real, dimension(nprocx*nprocy) :: procsum
+      real :: procsum_loc,tmpy,psum
+
+!
+      iserial_xy=ipx+nprocx*ipy+1
+      tmp2(0)=0.
+      do i=l1,l2
+        ig=i-l1+1
+        tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                bz(i-3)   +   bz(i+3)   +&
+             4*(bz(i-2)+bz(i)+bz(i+2))  +&
+             2*(bz(i-1)   +   bz(i+1)))/3.
+      enddo
+      procsum_loc=tmp2(nx)
+!
+      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc
+!
+      if (lroot) then 
+        procsum(1)=procsum_loc
+        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
+          iserial_xy=iprocx+nprocx*iprocy+1
+          if (iserial_xy/=1) then
+            call mpirecv_real(tmpy,1,iserial_xy-1,111)
+            procsum(iserial_xy)=tmpy
+          endif
+          if (ip<=9) print*,'recv',iserial_xy,procsum(iserial_xy)
+        enddo; enddo
+      else
+        call mpisend_real(procsum_loc,1,0,111)
+      endif
+!
+      call mpibcast_real(procsum,nprocx*nprocy)
+!
+      do n=n1,n2
+!
+        if (nprocx==1) then 
+          tmp2(0)=0.
+          do i=l1,l2
+            ig=i-l1+1
+            tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                    bz(i-3)   +   bz(i+3)   +&
+                 4*(bz(i-2)+bz(i)+bz(i+2))  +&
+                 2*(bz(i-1)   +   bz(i+1)))/3.
+          enddo
+        else
+          if (lfirst_proc_x) then 
+            tmp2(0)=0.
+            do i=l1,l2
+              ig=i-l1+1
+              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                   bz(i-3)   +   bz(i+3)   +&
+                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
+                   2*(bz(i-1)   +   bz(i+1)))/3.
+            enddo
+          else 
+            psum=0.
+            do iprocx=0,ipx-1
+              iserial_xy=iprocx+nprocx*ipy+1
+              psum=psum+procsum(iserial_xy)
+            enddo
+            tmp2(0)=psum
+            do i=l1,l2
+              ig=i-l1+1
+              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
+                   bz(i-3)   +   bz(i+3)   +&
+                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
+                   2*(bz(i-1)   +   bz(i+1)))/3.
+            enddo
+          endif
+        endif
+        aphi_mx(l1:l2)=tmp2(1:nx)
+        aphi_mx(1:l1-1) =0.;aphi_mx(l2+1:mx)=0.
+      enddo
+! 
+    endsubroutine integrate_field
+!***********************************************************************
+    subroutine correct_pressure_gradient(f,ics2,temperature_power_law)
+!
+!  Correct for pressure gradient term in the centrifugal force.
+!  For now, it only works for flat (isothermal) or power-law
+!  sound speed profiles, because the temperature gradient is
+!  constructed analytically.
+!
+!  21-aug-07/wlad : coded
+!
+      use FArrayManager
+      use Sub,    only: get_radial_distance,grad
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: glnrho
+      real, dimension (nx)   :: rr,rr_cyl,rr_sph
+      real, dimension (nx)   :: cs2,fpres_thermal,gslnrho,gslnTT
+      integer                :: ics2
+      logical                :: lheader
+      real :: temperature_power_law
+!
+      if (lroot) print*,'Correcting density gradient on the '//&
+           'centrifugal force'
+!
+      do n=n1,n2 ; do m=m1,m2
+        lheader=(lfirstpoint.and.lroot)
+!
+!  Get the density gradient
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        call grad(f,ilnrho,glnrho)
+        if (lcartesian_coords) then
+          gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
+        else if (lcylindrical_coords) then
+          gslnrho=glnrho(:,1)
+        else if (lspherical_coords) then
+          gslnrho=glnrho(:,1)
+        endif
+!
+        if (lspherical_coords.or.lsphere_in_a_box) then 
+          rr=rr_sph
+        else
+          rr=rr_cyl
+        endif
+!
+!  Get sound speed and calculate the temperature gradient
+!
+        cs2=f(l1:l2,m,n,ics2)
+        gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+!
+!  Correct for cartesian or spherical
+!
+        fpres_thermal=(gslnrho+gslnTT)*cs2/gamma
+!
+        call correct_azimuthal_velocity(f,fpres_thermal)
+!
+      enddo;enddo
+!
+    endsubroutine correct_pressure_gradient
+!***********************************************************************
+    subroutine correct_for_selfgravity(f)
+!
+!  Correct for the fluid's self-gravity in the centrifugal force
+!
+!  03-dec-07/wlad: coded
+!
+      use Sub,         only:get_radial_distance,grad
+      use Poisson,     only:inverse_laplacian
+      use Boundcond,   only:update_ghosts
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (mx,my,mz) :: selfpotential
+      real, dimension (nx,3) :: gpotself
+      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
+      real :: rhs_poisson_const
+!
+      if (lroot) print*,'Correcting for self-gravity on the '//&
+           'centrifugal force'
+      if (.not.lpoisson) then 
+        print*,"You want to correct for selfgravity but you "
+        print*,"are using POISSON=nopoisson in src/Makefile.local. "
+        print*,"Please use a poisson solver."
+        call fatal_error("correct_for_selfgravity","")
+      endif
+!
+!  Poisson constant is 4piG, this has to be consistent with the 
+!  constant in poisson_init_pars
+!
+      rhs_poisson_const=4*pi*gravitational_const
+!
+!  feed linear density into the poisson solver
+!
+      selfpotential(l1:l2,m1:m2,n1:n2)=&
+           rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      call inverse_laplacian(f,&
+           selfpotential(l1:l2,m1:m2,n1:n2))
+!
+      f(l1:l2,m1:m2,n1:n2,ipotself)=selfpotential(l1:l2,m1:m2,n1:n2)
+      call update_ghosts(f)
+!
+!  update the boundaries for the self-potential
+!
+      do n=n1,n2 ; do m=m1,m2
+!
+!  Get the potential gradient
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        call grad(f,ipotself,gpotself)
+!
+!  correct the angular frequency phidot^2
+!
+        if (lcartesian_coords) then
+          gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
+        elseif (lcylindrical_coords) then
+          gspotself=gpotself(:,1)
+        elseif (lspherical_coords) then
+          gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
+        endif
+!
+        call correct_azimuthal_velocity(f,gspotself)
+!
+      enddo;enddo
+!
+    endsubroutine correct_for_selfgravity
+!***********************************************************************
+    subroutine correct_lorentz_numerical(f)
+!
+      use Sub, only: get_radial_distance,&
+                     gij,curl_mn,gij_etc,cross_mn,multsv_mn
+      use Boundcond,only: update_ghosts
+!
+      real, dimension (mx,my,mz,mfarray) :: f      
+      real, dimension (nx,3,3) :: aij,bij
+      real, dimension (nx,3) :: aa,bb,jj,jxb,jxbr
+      real, dimension (nx) :: rho1, fpres_magnetic
+!
+      if (lroot) print*,'Correcting Lorentz force on centrifugal balance'
+!
+      call update_ghosts(f)
+!
+      do n=n1,n2 ; do m=m1,m2
+!
+        aa=f(l1:l2,m,n,iax:iaz)         !aa
+        call gij(f,iaa,aij,1)           !aij
+        call curl_mn(aij,bb,aa)         !bb
+        call gij_etc(f,iaa,aa,aij,bij)  !bij
+        call curl_mn(bij,jj,bb)         !jj
+        call cross_mn(jj,bb,jxb)        !jxb
+        rho1=1./f(l1:l2,m,n,irho)       !1/rho
+        call multsv_mn(rho1,jxb,jxbr)   !jxb/rho
+        fpres_magnetic=-jxbr(:,1)
+!
+        call correct_azimuthal_velocity(f,fpres_magnetic)  
+!
+      enddo; enddo
+!
+    endsubroutine correct_lorentz_numerical
+!***********************************************************************
+    subroutine correct_azimuthal_velocity(f,corr)
+!
+      use Sub, only: get_radial_distance
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx), intent(in) :: corr
+      real, dimension(nx) :: rr_sph, rr_cyl, rr, tmp1, tmp2
+!
+      call get_radial_distance(rr_sph,rr_cyl)
+!
+      if (lcartesian_coords) then
+        tmp1=(f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2)/rr_cyl**2
+        tmp2=tmp1 + corr/rr_cyl
+      elseif (lcylindrical_coords) then
+        tmp1=(f(l1:l2,m,n,iuy)/rr_cyl)**2
+        tmp2=tmp1 + corr/rr_cyl
+      elseif (lspherical_coords) then
+        tmp1=(f(l1:l2,m,n,iuz)/rr_sph)**2
+        tmp2=tmp1 + corr/rr_sph
+      endif
+!
+!  Make sure the correction does not impede centrifugal equilibrium
+!
+      if (lcylindrical_coords.or.lcylinder_in_a_box) then 
+        rr=rr_cyl
+      else
+        rr=rr_sph
+      endif
+      call reality_check(tmp2,rr)
+!
+!  Correct the velocities
+!
+      if (lcartesian_coords) then
+        f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
+        f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+      elseif (lcylindrical_coords) then
+        f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+      elseif (lspherical_coords) then
+        f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
+      endif
+!
+    endsubroutine correct_azimuthal_velocity
+!***********************************************************************
+    subroutine reality_check(tmp,rr)
+!
+!  Catches unphysical negative values of phidot^2, i.e., impossibility 
+!  of centrifugal equilibrium.
+!
+!  18-feb-13/wlad: moved to a separate subroutine because too many 
+!                  subroutines called it. 
+!
+      use Messages, only: warning, fatal_error
+!
+      real, dimension(nx) :: tmp,rr 
+      logical :: lheader
+      integer :: i
+!      
+      lheader=lroot.and.lfirstpoint
+!
+      do i=1,nx
+        if (tmp(i)<0.) then
+          if (rr(i) < r_int) then
+            !it's inside the frozen zone, so
+            !just set tmp2 to zero and emit a warning
+             tmp(i)=0.
+             if ((ip<=10).and.lheader) &
+                  call warning('reality_check','Cannot '//&
+                  'have centrifugal equilibrium in the inner '//&
+                  'domain. The pressure gradient is too steep.')
+          else
+            print*,'reality_check: ',&
+                 'cannot have centrifugal equilibrium in the inner ',&
+                 'domain. The pressure gradient is too steep at ',&
+                 'x,y,z=',x(i+nghost),y(m),z(n)
+            print*,'the angular frequency here is',tmp(i)
+            call fatal_error("","")
+          endif
+        endif
+      enddo
+!
+    endsubroutine reality_check
+!***********************************************************************
+    subroutine lowk_noise_gaussian_rprof(f)
 !
 !  Initialize logarithmic density. init_lnrho will take care of
 !  converting it to linear density if you use ldensity_nolog.
