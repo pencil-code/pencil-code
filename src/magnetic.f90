@@ -1293,6 +1293,7 @@ module Magnetic
         case ('mag-support'); call magsupport(amplaa(j),f,gravz,cs0,rho0)
         case ('arcade-x'); call arcade_x(amplaa(j),f,iaa,kx_aa(j),kz_aa(j))
         case ('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa)
+        case ('halfcos-Bz'); call halfcos_z(amplaa(j),f,iaa)
         case ('uniform-Bx'); call uniform_x(amplaa(j),f,iaa)
         case ('uniform-By'); call uniform_y(amplaa(j),f,iaa)
         case ('uniform-Bz'); call uniform_z(amplaa(j),f,iaa)

@@ -44,7 +44,7 @@ module Initcond
   public :: sin2x_sin2y_cosz, cos2x_cos2y_cos2z, x3_cosy_cosz, x3_siny_cosz
   public :: cosx_cosz, cosy_cosz, cosy_sinz
   public :: cosxz_cosz, cosyz_sinz
-  public :: halfcos_x, magsupport, vfield
+  public :: halfcos_x, halfcos_z, magsupport, vfield
   public :: uniform_x, uniform_y, uniform_z, uniform_phi, phi_comp_over_r
   public :: vfluxlayer, hfluxlayer, hfluxlayer_y
   public :: vortex_2d
@@ -3267,6 +3267,7 @@ module Initcond
     subroutine halfcos_x(ampl,f,i)
 !
 !  Uniform B_x field (for vector potential)
+!  WL: IS THIS REALLY UNIFORM, OR WRONG LABEL?
 !
 !  19-jun-02/axel: coded
 !
@@ -3291,7 +3292,32 @@ module Initcond
       endif
 !
     endsubroutine halfcos_x
+!***********************************************************************
+    subroutine halfcos_z(ampl,f,i)
 !
+!  Half-cosine (i.e., like gaussian bump, but periodic) for Bz field
+!
+!  19-jun-02/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kx
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'halfcos_z: set variable to zero; i=',i
+      else
+        print*,'halscos_z: half cosine z-field ; i=',i
+        kx=2*pi/Lx
+        if ((ip<=16).and.lroot) print*,'halfcos_z: ampl,kz=',ampl,kx
+        do n=n1,n2; do m=m1,m2
+          f(l1:l2,m,n,i  )=0.0
+          f(l1:l2,m,n,i+1)=ampl/kx*sin(kx*x(l1:l2))
+          f(l1:l2,m,n,i+2)=0.0
+        enddo; enddo
+      endif
+!
+    endsubroutine halfcos_z
 !***********************************************************************
     subroutine uniform_x(ampl,f,i)
 !
