@@ -1184,6 +1184,7 @@ module Grid
       logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_rcyl_mn1)) lpencil_in(i_rcyl_mn)=.true.
+      if (lpencil_in(i_r_mn1)) lpencil_in(i_r_mn)=.true.
       if (lpencil_in(i_evr)) lpencil_in(i_r_mn)=.true.
       if (lpencil_in(i_evth).or.lpencil_in(i_evr)) then
          lpencil_in(i_pomx)=.true.
