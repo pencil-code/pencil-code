@@ -606,7 +606,6 @@ module InitialCondition
       real :: amplbb,pblaw
       real, dimension(nx) :: Aphi, rr, rrcyl
       real, dimension(mx) :: bz,aphi_mx,Breal,pp
-      character (len=labellen) :: intlabel
 !
       real :: const,k1,kr
       integer :: i
@@ -748,7 +747,6 @@ module InitialCondition
            endif
          enddo
 !
-         intlabel=trim('tridag')
          call integrate_field(bz,aphi_mx)
          do m=1,my; do n=1,mz
            f(:,m,n,iay) = aphi_mx
@@ -835,21 +833,23 @@ module InitialCondition
 !***********************************************************************
     subroutine set_field_constbeta(f)
 !
-      use FArrayManager, only: farray_use_global
-      use Sub, only: gij,curl_mn,get_radial_distance
+      use FArrayManager,   only: farray_use_global
+      use Sub,             only: get_radial_distance
       use EquationOfState, only: cs20
-      use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
+      use Boundcond,       only: update_ghosts
+      use Messages,        only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(nx) :: cs2,pressure,Bphi,Atheta
+      real, dimension(mx) :: cs2,pressure,Bphi,tmp
       real, dimension(mx) :: rr_sph,rr_cyl
-      real, dimension(nx) :: tmp
-      real, dimension(0:nx) :: tmp2
-      real :: dr,psum,cv1
       integer, pointer :: iglobal_cs2
-      integer :: i,iprocx,iprocy,iserial_xy
-      real, dimension(ny,nprocx*nprocy) :: procsum
-      real, dimension(ny) :: procsum_loc,tmpy
+      real :: cv1
+!
+      if (.not.lspherical_coords) &
+           call fatal_error("set_field_constbeta",&
+           "coded for spherical coordinates only")
+!
+      call update_ghosts(f)
 !
       if (llocal_iso) then
         call farray_use_global('cs2',iglobal_cs2)
@@ -859,95 +859,22 @@ module InitialCondition
 
       do m=m1,m2 
         if (llocal_iso) then
-          cs2=f(l1:l2,m,n,iglobal_cs2)
+          cs2=f(:,m,n,iglobal_cs2)
         elseif (lentropy) then
-          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+ & 
-               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
+          cs2=cs20*exp(cv1*f(:,m,n,iss)+ & 
+               gamma_m1*(log(f(:,m,n,irho))-lnrho0))
         endif
-        pressure = f(l1:l2,m,npoint,irho)*cs2 /gamma
+        pressure = f(:,m,npoint,irho)*cs2 /gamma
         Bphi = sqrt(2*pressure/plasma_beta)
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
         call get_radial_distance(rr_sph,rr_cyl)
-        !dr=rr_sph(2)-rr_sph(1)
-        tmp=Bphi*rr_sph(l1:l2)
-!
-        iserial_xy=ipx+nprocx*ipy+1
-        tmp2(0)=0.
-        do i=1,nx
-          dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-          tmp2(i)=tmp2(i-1)+tmp(i)*dr
+        call integrate_field(Bphi*rr_sph,tmp)
+        do n=n1,n2
+          f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay) + tmp(l1:l2)/rr_sph(l1:l2)
         enddo
-        procsum_loc(m-m1+1)=tmp2(nx)
       enddo
-!
-      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc(mpoint)
-!
-      if (lroot) then 
-        procsum(:,1)=procsum_loc
-        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
-          iserial_xy=iprocx+nprocx*iprocy+1
-          if (iserial_xy/=1) then
-            call mpirecv_real(tmpy,ny,iserial_xy-1,111)
-            procsum(:,iserial_xy)=tmpy
-          endif
-          if (ip<=9) print*,'recv',iserial_xy,procsum(mpoint,iserial_xy)
-        enddo; enddo
-      else
-        call mpisend_real(procsum_loc,ny,0,111)
-      endif
-!
-      call mpibcast_real(procsum,(/nprocx*nprocy,ny/))
-!
-      do m=m1,m2;do n=n1,n2
-!
-        if (llocal_iso) then
-          cs2=f(l1:l2,m,n,iglobal_cs2)
-        elseif (lentropy) then
-          cs2=cs20*exp(cv1*f(l1:l2,m,n,iss) + & 
-               gamma_m1*(log(f(l1:l2,m,n,irho))-lnrho0))
-        endif
-        pressure=f(l1:l2,m,n,irho)*cs2 /gamma
-!
-!  The following line assumes mu0=1
-!
-        Bphi = sqrt(2*pressure/plasma_beta)
-!
-!  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
-!
-        call get_radial_distance(rr_sph,rr_cyl)
-        tmp=Bphi*rr_sph(l1:l2)
-!
-        if (nprocx==1) then 
-          tmp2(0)=0.
-          do i=1,nx
-            dr=rr_sph(i+l1-1)-rr_sph(i+l1-2)
-            tmp2(i)=tmp2(i-1)+tmp(i)*dr
-          enddo
-        else
-          if (lfirst_proc_x) then 
-            tmp2(0)=0.
-            do i=1,nx
-              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-              tmp2(i)=tmp2(i-1)+tmp(i)*dr
-            enddo
-          else 
-            psum=0.
-            do iprocx=0,ipx-1
-              iserial_xy=iprocx+nprocx*ipy+1
-              psum=psum+procsum(m-m1+1,iserial_xy)
-            enddo
-            tmp2(0)=psum
-            do i=1,nx
-              dr=rr_sph(i+l1-1)-rr_sph(i+l1-2) 
-              tmp2(i)=tmp2(i-1)+tmp(i)*dr
-            enddo
-          endif
-        endif
-        Atheta=tmp2(1:nx)/rr_sph(l1:l2)
-        f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay)+Atheta
-      enddo;enddo
 !
     endsubroutine set_field_constbeta
 !***********************************************************************
@@ -962,7 +889,6 @@ module InitialCondition
       integer :: i,ig,iprocx,iprocy,iserial_xy
       real, dimension(nprocx*nprocy) :: procsum
       real :: procsum_loc,tmpy,psum
-
 !
       iserial_xy=ipx+nprocx*ipy+1
       tmp2(0)=0.
