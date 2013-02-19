@@ -2082,6 +2082,8 @@ module Magnetic
       if (lpencil_in(i_del2a)) then
         if (lspherical_coords) then
 !WL: for the cylindrical case, lpencil_check says these pencils are not needed
+!AB: don't understand; this comment is in lspherical_coords.
+!AB: I suggest you just fix it when you get to this point again.
           lpencil_in(i_jj)=.true.
           lpencil_in(i_graddivA)=.true.
         endif

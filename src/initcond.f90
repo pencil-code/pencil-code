@@ -3266,8 +3266,7 @@ module Initcond
 !***********************************************************************
     subroutine halfcos_x(ampl,f,i)
 !
-!  Uniform B_x field (for vector potential)
-!  WL: IS THIS REALLY UNIFORM, OR WRONG LABEL?
+!  Half-cosine (i.e., like gaussian bump, but periodic) for Bx field
 !
 !  19-jun-02/axel: coded
 !
@@ -3282,7 +3281,6 @@ module Initcond
         print*,'halscos_x: half cosine x-field ; i=',i
         kz=0.5*pi/Lz
         zbot=xyz0(3)
-        ! ztop=xyz0(3)+Lxyz(3)
         if ((ip<=16).and.lroot) print*,'halfcos_x: ampl,kz=',ampl,kz
         do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,i  )=0.0

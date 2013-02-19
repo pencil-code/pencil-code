@@ -1484,7 +1484,7 @@ module Entropy
       if (ldensity.or.lboussinesq.or.lanelastic) then
         chix=p%rho1*hcond0*p%cp1
       else
-        chix=hcond0
+        chix=hcond0*p%cp1
       endif
 !
       if (ltemperature_nolog) then

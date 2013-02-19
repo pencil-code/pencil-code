@@ -783,6 +783,7 @@ module Grid
 ! WL: Axel, I coded serial arrays xgrid, ygrid, zgrid, that maybe
 ! make this z_allprocs obsolete. Can you check if you can use zgrid
 ! instead of z_allprocs? (19-oct-2010)
+! AB: I don't have a good test at hand and don't want to mess up things.
 !
 !  Set z_allprocs, which contains the z values from all processors
 !  ignore the ghost zones.
