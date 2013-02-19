@@ -785,6 +785,9 @@ module Entropy
           hcondxtop=hcond(nx)
         else
           do n=n1,n2; do m=m1,m2
+!
+!  WL: Why are these pencils recalculated here? They belong to grid.f90! 
+!
             if (lgravz) then
               p%z_mn=spread(z(n),1,nx)
             else
