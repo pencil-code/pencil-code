@@ -423,6 +423,7 @@ module Special
 !
       real, dimension (mx) :: func_x
       real, dimension (nx) ::  TT
+      real, dimension (my) :: u_profile
       real    :: del,width
       integer :: l_sz
       integer :: i, j, sz_l_x,sz_r_x,ll1,ll2, sz_x
@@ -472,7 +473,7 @@ module Special
             ll2=nxgrid
 
            do i = l1,l2
-           if ((x(i) >= xgrid(ll1)) .and. (x(i) <= xgrid(ll2))) lzone_right=.true.
+           if ((x(i) >= xgrid(ll1)) .and. (x(i) <= xgrid(ll2))) lzone_right=.false.
 !           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
 !            uy_ref=0.
            if (lzone_right) then
@@ -487,8 +488,9 @@ module Special
            if (x(l1)==xyz0(1)) lzone_left=.true.
 !            uy_ref=0.
            if (lzone_left) then
-!               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
-!                 -(f(ll1:ll2,m,n,iuy)-uy_ref)*dt1
+               u_profile(ll1:ll2)=cos(Period*PI*y(m)/Lxyz(2))
+               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
+                 -(f(ll1:ll2,m,n,iuy)-u_profile(ll1:ll2))*dt1
            endif
          endif
 !
