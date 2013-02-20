@@ -63,7 +63,7 @@ module Magnetic_meanfield
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
-  logical :: lmeanfield_chitB=.false., lchiB_simplified=.false.
+  logical :: lmeanfield_chitB=.false.
   logical :: lchit_with_glnTT=.false.
 !
   namelist /magn_mf_init_pars/ &
@@ -107,7 +107,7 @@ module Magnetic_meanfield
       meanfield_Beq_profile, uturb, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      lmeanfield_chitB, lchiB_simplified, lchit_with_glnTT, &
+      lmeanfield_chitB, lchit_with_glnTT, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
       lqpcurrent,mf_qJ2, &
@@ -543,7 +543,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_etaB2, quench_chiB, g2, chit_prof
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit
-      real, dimension (nx,3) :: meanfield_getat_tmp
+      real, dimension (nx,3) :: meanfield_getat_tmp, B2glnrho
       real :: kx,fact
       integer :: j,l
 !
@@ -882,34 +882,27 @@ module Magnetic_meanfield
 !        = ... chit(B)*[gradln(rho*T).grads+del2s] + chit(B)*gradln(chit(B)).gs
 !
       if (lpencil(i_chiB_mf)) then
-        if (chit_quenching/=0.0) then
-          select case (meanfield_Beq_profile)
-          case ('uturbconst');
-            Beq21=mu01*p%rho1/(uturb**2)
-          case default;
-            Beq21=1./meanfield_Beq**2
-          endselect
-          quench_chiB=1./(1.+chit_quenching*p%b2*Beq21)
-          chit_prof=1.
-          glnchit_prof=0.
+        select case (meanfield_Beq_profile)
+        case ('uturbconst');
+          Beq21=mu01*p%rho1/(uturb**2)
+        case default;
+          Beq21=1./meanfield_Beq**2
+        endselect
+        quench_chiB=1./(1.+chit_quenching*p%b2*Beq21)
+        chit_prof=1.
+        glnchit_prof=0.
 !
 !  Add contribution from gradient of chiB*B^2/Beq^2 term
 !
-          if (lchiB_simplified) then
-            call dot(p%glnrho+p%glnTT+glnchit_prof,p%gss,g2)
-          else
-            call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
-            call multsv_mn(2.*quench_chiB*chit_quenching,Bk_Bki-p%glnrho,glnchit)
-            if (lchit_with_glnTT) then
-              call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%gss,g2)
-            else
-              call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
-            endif
-          endif
-          p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
+        call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+        call multsv_mn(p%b2,p%glnrho,B2glnrho)
+        call multsv_mn(-quench_chiB*chit_quenching*Beq21,2.*Bk_Bki-B2glnrho,glnchit)
+        if (lchit_with_glnTT) then
+          call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%gss,g2)
         else
-          p%chiB_mf=0.
+          call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
         endif
+        p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
       endif
 !
 !  Calculate diagnostics.
