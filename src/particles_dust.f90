@@ -290,7 +290,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: cs0
+      use EquationOfState, only: rho0, cs0
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -384,9 +384,13 @@ module Particles
       if (eps_dtog>0.0) then
 ! For stratification, take into account gas present outside the simulation box.
         if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
-          rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
+          ! rhom = (total mass) / (box volume) = Sigma / Lz
+          ! Sigma = sqrt(2pi) * rho0 * H
+          !   rho0 = mid-plane density, H = (sound speed) / (epicycle frequency)
+          rhom = sqrt(2.0 * pi) / Lz
+          if (nu_epicycle > 0.0) rhom = rhom * (rho0 * cs0 / nu_epicycle)
         else
-          rhom=1.0
+          rhom = rho0
         endif
         if (rhop_swarm==0.0) &
             rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
