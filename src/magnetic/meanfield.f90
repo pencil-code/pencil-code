@@ -64,7 +64,7 @@ module Magnetic_meanfield
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lmeanfield_chitB=.false.
-  logical :: lchit_with_glnTT=.false.
+  logical :: lchit_with_glnTT=.false., lrho_chit=.true.
 !
   namelist /magn_mf_init_pars/ &
       dummy
@@ -107,7 +107,7 @@ module Magnetic_meanfield
       meanfield_Beq_profile, uturb, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      lmeanfield_chitB, lchit_with_glnTT, &
+      lmeanfield_chitB, lchit_with_glnTT, lrho_chit, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
       lqpcurrent,mf_qJ2, &
@@ -426,6 +426,7 @@ module Magnetic_meanfield
         lpenc_requested(i_del2ss)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_chiB_mf)=.true.
+        if (lrho_chit) lpenc_requested(i_rho1)=.true.
       endif
 !
 !  Turbulent diffusivity
@@ -899,10 +900,20 @@ module Magnetic_meanfield
         call multsv_mn(-quench_chiB*chit_quenching*Beq21,2.*Bk_Bki-B2glnrho,glnchit)
         if (lchit_with_glnTT) then
           call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%gss,g2)
+          p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
         else
-          call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
+!
+!  The lrho_chit option corresponds to solving the equation
+!  Ds/Dt = chi_t^{(\rho)}/\rho (gradlnchi_t^{(\rho)}.grads + del2s).
+!
+          if (lrho_chit) then
+            call dot(glnchit_prof+glnchit,p%gss,g2)
+            p%chiB_mf=p%rho1*chi_t0*quench_chiB*(g2+p%del2ss)
+          else
+            call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
+            p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
+          endif
         endif
-        p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
       endif
 !
 !  Calculate diagnostics.
