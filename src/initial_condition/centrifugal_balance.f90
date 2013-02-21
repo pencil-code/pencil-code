@@ -859,10 +859,10 @@ module InitialCondition
 
       do m=m1,m2 
         if (llocal_iso) then
-          cs2=f(:,m,n,iglobal_cs2)
+          cs2=f(:,m,npoint,iglobal_cs2)
         elseif (lentropy) then
-          cs2=cs20*exp(cv1*f(:,m,n,iss)+ & 
-               gamma_m1*(log(f(:,m,n,irho))-lnrho0))
+          cs2=cs20*exp(cv1*f(:,m,npoint,iss)+ & 
+               gamma_m1*(log(f(:,m,npoint,irho))-lnrho0))
         endif
         pressure = f(:,m,npoint,irho)*cs2 /gamma
         Bphi = sqrt(2*pressure/plasma_beta)
