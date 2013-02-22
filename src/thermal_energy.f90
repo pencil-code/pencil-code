@@ -462,7 +462,6 @@ module Entropy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax=0.0,ugeth
-      real, dimension(nx,3) :: uu
       real, dimension(nx) :: d6eth
       integer :: j
 !
@@ -495,12 +494,9 @@ module Entropy
 !  Add energy transport term.
 !
       if (lweno_transport) then
-        if (lconst_advection) call fatal_error('dss_dt', 'constant background advection is not implemented with WENO transport.')
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%transpeth
       else
-        uu = p%uu
-        if (lconst_advection) uu = uu + spread(u0_advec,1,nx)
-        call u_dot_grad(f, ieth, p%geth, uu, ugeth, UPWIND=lupw_eth)
+        call u_dot_grad(f, ieth, p%geth, p%uu, ugeth, UPWIND=lupw_eth)
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) - p%eth*p%divu - ugeth
       endif
 !

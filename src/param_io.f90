@@ -90,7 +90,6 @@ module Param_IO
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
-      lconst_advection, u0_advec, &
       lforce_shear_bc
 !
   namelist /run_pars/ &
@@ -140,7 +139,7 @@ module Param_IO
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
-      ldynamical_diffusion, re_mesh, lconst_advection, u0_advec, &
+      ldynamical_diffusion, re_mesh, &
       loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress
 !
   contains

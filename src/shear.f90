@@ -25,6 +25,7 @@ module Shear
 !
   real :: x0_shear=0.0, qshear0=0.0, sini=0.0
   real :: Sshear1=0.0, Sshear_sini=0.0
+  real, dimension(3) :: u0_advec = 0.0
   real, dimension(:), pointer :: B_ext
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
@@ -34,7 +35,7 @@ module Shear
   include 'shear.h'
 !
   namelist /shear_init_pars/ &
-      qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
+      qshear, qshear0, Sshear, Sshear1, deltay, Omega, u0_advec, &
       lshearadvection_as_shift, lmagnetic_stretching, lrandomx0, x0_shear, &
       sini
 !
@@ -473,6 +474,11 @@ module Shear
         if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
       endif safi
 !
+      spline: if (any(u0_advec /= 0.0)) then
+        call sheared_advection_spline(f, 1, mvar, dt_shear)
+        if (.not. llast) call sheared_advection_spline(df, 1, mvar, dt_shear)
+      endif spline
+!
 !  Print identifier.
 !
       if (headtt.or.ldebug) print*, 'advance_shear: deltay=',deltay
@@ -492,7 +498,7 @@ module Shear
 !  Input/Ouput Argument
 !    a: field to be sheared
 !  Input Argument
-!    ncomp: number of components in a
+!    ic1, ic2: start and end indices in a
 !    dt_shear: time increment
 !
       use Fourier, only: fourier_shift_y, fft_y_parallel
@@ -525,6 +531,77 @@ module Shear
       enddo
 !
     endsubroutine sheared_advection_fft
+!***********************************************************************
+    subroutine sheared_advection_spline(a, ic1, ic2, dt_shear)
+!
+!  Uses spline interpolation to integrate the constant advection and shearing terms.
+!
+!  05-jun-12/ccyang: modularized from advance_shear and advect_shear_xparallel
+!
+!  Input/Ouput Argument
+!    a: field to be advected and sheared
+!  Input Argument
+!    ic1, ic2: start and end indices in a
+!    dt_shear: time increment
+!
+      use General, only: spline
+      use Messages, only: warning, fatal_error
+      use Mpicomm, only: transp_xy
+!
+      real, dimension(:,:,:,:), intent(inout) :: a
+      integer, intent(in) :: ic1, ic2
+      real, intent(in) :: dt_shear
+!
+      real, dimension(nx,ny) :: b
+      real, dimension(3*nygrid) :: yext
+      real, dimension(nxgrid) :: xnew, penc
+      real, dimension(nygrid) :: ynew
+      character(len=256) :: message
+      logical :: error
+      integer :: ic, j, k
+!
+!  Find the displacement traveled with the advection.
+!
+      yext = (/ ygrid - Ly, ygrid, ygrid + Ly /)
+      xnew = xgrid - dt_shear * u0_advec(1)
+      ynew = ygrid - dt_shear * u0_advec(2)
+      ynew = ynew - floor((ynew - y0) / Ly) * Ly
+!
+!  Loop through each component.
+!
+      comp: do ic = ic1, ic2
+!
+!  Interpolation in x: assuming the correct boundary conditions have been applied.
+!
+        scan_xz: do k = n1, n2
+          scan_xy: do j = m1, m2
+            call spline(x, a(:,j,k,ic), xnew, penc, mx, nxgrid, err=error, msg=message)
+            if (error) call warning('sheared_advection_spline', 'error in x interpolation; ' // trim(message))
+            a(l1:l2,j,k,ic) = penc
+          enddo scan_xy
+        enddo scan_xz
+!
+!  Interpolation in y: assuming periodic boundary conditions
+!
+        scan_yz: do k = n1, n2
+          b = a(l1:l2,m1:m2,k,ic)
+          call transp_xy(b)
+          scan_yx: do j = 1, ny
+            call spline(yext, (/b(:,j),b(:,j),b(:,j)/), ynew, penc, 3*nygrid, nygrid, err=error, msg=message)
+            if (error) call warning('sheared_advection_spline', 'error in y interpolation; ' // trim(message))
+            b(:,j) = penc
+          enddo scan_yx
+          call transp_xy(b)
+          a(l1:l2,m1:m2,k,ic) = b
+        enddo scan_yz
+!
+!  Currently no interpolation in z
+!
+        if (u0_advec(3) /= 0.0) call fatal_error('sheared_advection_spline', 'Advection in z is not implemented.')
+!
+      enddo comp
+!
+    endsubroutine sheared_advection_spline
 !***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
 !

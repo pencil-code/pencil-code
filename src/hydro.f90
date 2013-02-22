@@ -1668,7 +1668,6 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: uu
       real, dimension (nx) :: tmp, tmp2
       integer :: i, j, ju
 !
@@ -1713,9 +1712,7 @@ module Hydro
 ! ugu
       if (lpencil(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
-        uu=p%uu
-        if (lconst_advection) uu=uu+spread(u0_advec,1,nx)
-        call u_dot_grad(f,iuu,p%uij,uu,p%ugu,UPWIND=lupw_uu)
+        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
 !      if (.not.lpencil_check_at_work) then
 !        write(*,*) 'ugu',p%ugu(1:6,1)
 !      endif
@@ -1857,7 +1854,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: uu,curlru,uxo
+      real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
       real :: kx
@@ -1939,20 +1936,18 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lfirst.and.ldt.and.ladvection_velocity) then
-        uu=p%uu
-        if (lconst_advection) uu=uu+spread(u0_advec,1,nx)
         if (lspherical_coords) then
-          advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                   abs(uu(:,2))*dy_1(  m  )*r1_mn+ &
-                   abs(uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
         elseif (lcylindrical_coords) then
-          advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                   abs(uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                   abs(uu(:,3))*dz_1(  n  )
+          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
+                   abs(p%uu(:,3))*dz_1(  n  )
         else
-          advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
-                   abs(uu(:,2))*dy_1(  m  )+ &
-                   abs(uu(:,3))*dz_1(  n  )
+          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                   abs(p%uu(:,2))*dy_1(  m  )+ &
+                   abs(p%uu(:,3))*dz_1(  n  )
         endif
       endif
 !

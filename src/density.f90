@@ -99,7 +99,7 @@ module Density
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
-      rho_const, cs2bot, cs2top, u0_advec, radius_lnrho, eps_planet, xblob, &
+      rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, &
       yblob, zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, mpoly, &
       strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
@@ -114,7 +114,7 @@ module Density
 !
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
-      cs2bot, cs2top, u0_advec, lupw_lnrho, lupw_rho, idiff, lmass_source, &
+      cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, lmass_source, &
       lmass_source_random, &
       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
@@ -1557,7 +1557,6 @@ module Density
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: uu
       type (pencil_case) :: p
 !
       integer :: i
@@ -1585,9 +1584,7 @@ module Density
       if (lpencil(i_ugrho)) then
         if (lupw_lnrho) call fatal_error('calc_pencils_density', &
             'you switched lupw_lnrho instead of lupw_rho')
-        uu=p%uu
-        if (lconst_advection) uu=uu+spread(u0_advec,1,nx)
-        call u_dot_grad(f,ilnrho,p%grho,uu,p%ugrho,UPWIND=lupw_rho)
+        call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
       endif
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
@@ -1624,7 +1621,6 @@ module Density
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: uu
       type (pencil_case) :: p
 !
       integer :: i
@@ -1647,12 +1643,10 @@ module Density
       endif
 ! uglnrho
       if (lpencil(i_uglnrho)) then
-        uu=p%uu
-        if (lconst_advection) uu=uu+spread(u0_advec,1,nx)
         if (lupw_lnrho) then
-          call u_dot_grad(f,ilnrho,p%glnrho,uu,p%uglnrho,UPWIND=lupw_lnrho)
+          call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         else
-          call dot(uu,p%glnrho,p%uglnrho)
+          call dot(p%uu,p%glnrho,p%uglnrho)
         endif
       endif
 ! ugrho

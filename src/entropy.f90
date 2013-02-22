@@ -2508,7 +2508,6 @@ module Entropy
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension(nx,3) :: uu
       integer :: j
 !
       intent(in) :: f
@@ -2517,9 +2516,7 @@ module Entropy
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
       if (lpencil(i_ugss)) then
-        uu = p%uu
-        if (lconst_advection) uu = uu + spread(u0_advec,1,nx)
-        call u_dot_grad(f,iss,p%gss,uu,p%ugss,UPWIND=lupw_ss)
+        call u_dot_grad(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
       endif
 ! for pretend_lnTT
       if (lpencil(i_uglnTT)) &
@@ -2646,14 +2643,10 @@ module Entropy
       if (ladvection_entropy) then
         if (pretend_lnTT) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
-          if (lconst_advection) &
-            call fatal_error('dss_dt', 'uniform advection is not implemented with lnTT')
         else
           if (lweno_transport) then
             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                 - p%transprhos*p%rho1 + p%ss*p%rho1*p%transprho
-            if (lconst_advection) &
-              call fatal_error('dss_dt', 'uniform advection is not implemented with WENO transport')
           else
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
           endif

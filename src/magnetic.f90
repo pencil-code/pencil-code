@@ -1556,8 +1556,6 @@ module Magnetic
 !
       if (ladvective_gauge) lpenc_requested(i_uga)=.true.
 !
-      if (lconst_advection) lpenc_requested(i_aij)=.true.
-!
       if (numag/=0.0) then
         lpenc_requested(i_jxb)=.true.
         lpenc_requested(i_jxbxb)=.true.
@@ -2548,7 +2546,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
-      real, dimension (nx,3) :: u0ga,magfric,vmagfric2, baroclinic
+      real, dimension (nx,3) :: magfric,vmagfric2, baroclinic
       real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -2965,14 +2963,6 @@ module Magnetic
 !
       if (.not.lupw_aa) then
         if (linduction) then
-!
-!  Constant background advection
-!
-          if (lconst_advection) then
-            call u_dot_grad(f,iaa,p%aij,spread(u0_advec,1,nx),u0ga)
-            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-u0ga
-          endif
-!
           if (ladvective_gauge) then
 !
 !  Take care of possibility of imposed field.
