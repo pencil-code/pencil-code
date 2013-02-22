@@ -68,6 +68,7 @@ module Particles
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
   logical :: lcylindrical_gravity_par=.false.
+  logical :: lreassign_strat_rhom=.true.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -280,7 +281,7 @@ module Particles
 !
       if (rhop_swarm==0.0 .or. mp_swarm==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
-        if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
+        if (lreassign_strat_rhom.and.((lgravz .and. lgravz_gas) .or. gravz_profile=='linear')) then
           ! rhom = (total mass) / (box volume) = Sigma / Lz
           ! Sigma = sqrt(2pi) * rho0 * H
           !   rho0 = mid-plane density, H = (sound speed) / (epicycle frequency)

@@ -123,6 +123,7 @@ module Particles
   real, dimension(3) :: uup_shared=0
   real :: turnover_shared=0
   logical :: vel_call=.false., turnover_call=.false.
+  logical :: lreassign_strat_rhom=.true.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -158,7 +159,8 @@ module Particles
       rhop_const, ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
-      lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT
+      lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
+      lreassign_strat_rhom
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -383,7 +385,7 @@ module Particles
 !
       if (eps_dtog>0.0) then
 ! For stratification, take into account gas present outside the simulation box.
-        if ((lgravz .and. lgravz_gas) .or. gravz_profile=='linear' ) then
+        if (lreassign_strat_rhom.and.((lgravz .and. lgravz_gas) .or. gravz_profile=='linear')) then
           ! rhom = (total mass) / (box volume) = Sigma / Lz
           ! Sigma = sqrt(2pi) * rho0 * H
           !   rho0 = mid-plane density, H = (sound speed) / (epicycle frequency)
