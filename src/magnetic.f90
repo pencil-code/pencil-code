@@ -109,7 +109,7 @@ module Magnetic
   real :: mu_ext_pot=-0.5,inclaa=0.0
   real :: mu012=0.5 !(=1/2mu0)
   real :: rescale_aa=0.0
-  real :: ampl_B0=0.0, D_smag=0.17, B_ext21, B_ext11
+  real :: ampl_B0=0.0, D_smag=0.17, B_ext2, B_ext21, B_ext11
   real :: nu_ni=0.0, nu_ni1, hall_term=0.0, battery_term=0.0
   real :: initpower_aa=0.0, cutoff_aa=0.0, brms_target=1.0
   real :: rescaling_fraction=1.0
@@ -836,15 +836,23 @@ module Magnetic
 !  calculate B_ext21 = 1/B_ext**2 and the unit vector B1_ext = B_ext/|B_ext|
 !  Also calculate B_ext_inv = B_ext/|B_ext|^2
 !
-      B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
-      if (B_ext21/=0.0) then
-        B_ext21=1/B_ext21
+      B_ext2=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+      if (B_ext2/=0.0) then
+        B_ext21=1/B_ext2
       else
         B_ext21=1.0
       endif
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
       B_ext_inv=B_ext*B_ext21
+!
+!  Share the external magnetic field with mean field module.
+!
+      if (lmagn_mf) then
+        call put_shared_variable('B_ext2', B_ext2, ierr)
+        if (ierr /= 0) call fatal_error('initialize_magnetic', &
+          'unable to share variable B_ext2')
+      endif
 !
 !  calculate lJ_ext (true if any of the 3 components in true)
 !
