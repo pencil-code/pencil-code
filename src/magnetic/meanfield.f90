@@ -30,7 +30,7 @@ module Magnetic_meanfield
 !  array for inputting alpha profile
 !
   real, dimension (mx,my) :: alpha_input
-  real, pointer :: kf_alpm
+  real, pointer :: kf_alpm, B_ext2
   logical, pointer :: lweyl_gauge
 !
   real, dimension (nx) :: kf_x, kf_x1
@@ -64,7 +64,7 @@ module Magnetic_meanfield
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lmeanfield_chitB=.false.
-  logical :: lchit_with_glnTT=.false., lrho_chit=.true.
+  logical :: lchit_with_glnTT=.false., lrho_chit=.true., lrho_chit_equil=.true.
 !
   namelist /magn_mf_init_pars/ &
       dummy
@@ -107,7 +107,7 @@ module Magnetic_meanfield
       meanfield_Beq_profile, uturb, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      lmeanfield_chitB, lchit_with_glnTT, lrho_chit, &
+      lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lrho_chit_equil, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
       lqpcurrent,mf_qJ2, &
@@ -370,6 +370,12 @@ module Magnetic_meanfield
         call initialize_magn_mf_demfdt(f,lstarting)
       endif
 !
+!  get B_ext2
+!
+      call get_shared_variable('B_ext2',B_ext2,ierr)
+      if (ierr/=0) &
+          call fatal_error("initialize_magn_mf: ", "cannot get B_ext2")
+!
     endsubroutine initialize_magn_mf
 !***********************************************************************
     subroutine init_aa_mf(f)
@@ -543,8 +549,9 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
       real, dimension (nx) :: meanfield_etaB2, quench_chiB, g2, chit_prof
+      real, dimension (nx) :: oneQbeta02, oneQbeta2
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit
-      real, dimension (nx,3) :: meanfield_getat_tmp, B2glnrho
+      real, dimension (nx,3) :: meanfield_getat_tmp, B2glnrho, glnchit2
       real :: kx,fact
       integer :: j,l
 !
@@ -889,7 +896,12 @@ module Magnetic_meanfield
         case default;
           Beq21=1./meanfield_Beq**2
         endselect
-        quench_chiB=1./(1.+chit_quenching*p%b2*Beq21)
+!
+!  Choice between 2 versions
+!
+        oneQbeta2=1.+chit_quenching*p%b2*Beq21
+        oneQbeta02=1.+chit_quenching*B_ext2*Beq21
+!
         chit_prof=1.
         glnchit_prof=0.
 !
@@ -897,7 +909,13 @@ module Magnetic_meanfield
 !
         call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
         call multsv_mn(p%b2,p%glnrho,B2glnrho)
-        call multsv_mn(-quench_chiB*chit_quenching*Beq21,2.*Bk_Bki-B2glnrho,glnchit)
+!
+        call multsv_mn(-chit_quenching*Beq21/oneQbeta2,2.*Bk_Bki-B2glnrho,glnchit)
+        if (lrho_chit_equil) then
+          call multsv_mn(-chit_quenching*B_ext2*Beq21/oneQbeta02,p%glnrho,glnchit2)
+          glnchit=glnchit+glnchit2
+        endif
+!
         if (lchit_with_glnTT) then
           call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%gss,g2)
           p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
@@ -908,10 +926,10 @@ module Magnetic_meanfield
 !
           if (lrho_chit) then
             call dot(glnchit_prof+glnchit,p%gss,g2)
-            p%chiB_mf=p%rho1*chi_t0*quench_chiB*(g2+p%del2ss)
+            p%chiB_mf=p%rho1*chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2ss)
           else
             call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
-            p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
+            p%chiB_mf=chi_t0*(g2+p%del2ss)
           endif
         endif
       endif
