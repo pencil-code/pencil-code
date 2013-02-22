@@ -11,9 +11,9 @@
   ip=14
   lwrite_ic=T
   lwrite_aux=T
-  !grid_func=, , 'sinh'
-  !coeff_grid=, , 8
-  !xyz_star=, , 0.
+  grid_func=, , 'sinh'
+  coeff_grid=, , 8
+  xyz_star=, , 0.
 /
 &eos_init_pars
   cs0=0.1, rho0=1.0
