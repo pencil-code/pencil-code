@@ -560,6 +560,11 @@ module Shear
       logical :: error
       integer :: ic, j, k
 !
+!  Santiy check
+!
+      if (nprocx /= 1) call fatal_error('sheared_advection_spline', 'currently only works with nprocx = 1.')
+      if (nxgrid /= nygrid) call fatal_error('sheared_advection_spline', 'currently only works with nxgrid = nygrid.')
+!
 !  Find the displacement traveled with the advection.
 !
       yext = (/ ygrid - Ly, ygrid, ygrid + Ly /)
@@ -577,7 +582,7 @@ module Shear
           scan_xy: do j = m1, m2
             call spline(x, a(:,j,k,ic), xnew, penc, mx, nxgrid, err=error, msg=message)
             if (error) call warning('sheared_advection_spline', 'error in x interpolation; ' // trim(message))
-            a(l1:l2,j,k,ic) = penc
+            a(l1:l2,j,k,ic) = penc(1:nx)
           enddo scan_xy
         enddo scan_xz
 !
@@ -589,7 +594,7 @@ module Shear
           scan_yx: do j = 1, ny
             call spline(yext, (/b(:,j),b(:,j),b(:,j)/), ynew, penc, 3*nygrid, nygrid, err=error, msg=message)
             if (error) call warning('sheared_advection_spline', 'error in y interpolation; ' // trim(message))
-            b(:,j) = penc
+            b(:,j) = penc(1:nx)
           enddo scan_yx
           call transp_xy(b)
           a(l1:l2,m1:m2,k,ic) = b
