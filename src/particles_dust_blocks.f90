@@ -100,7 +100,7 @@ module Particles
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
       xp1, yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
-      xp3, yp3, zp3, vpx3, vpy3, vpz3
+      xp3, yp3, zp3, vpx3, vpy3, vpz3, lreassign_strat_rhom
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
