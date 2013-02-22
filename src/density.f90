@@ -72,7 +72,7 @@ module Density
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
   logical :: lisothermal_fixed_Hrho=.false.
-  logical :: lmass_source=.false.,lcontinuity_gas=.true.
+  logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
@@ -115,6 +115,7 @@ module Density
   namelist /density_run_pars/ &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
       cs2bot, cs2top, u0_advec, lupw_lnrho, lupw_rho, idiff, lmass_source, &
+      lmass_source_random, &
       mass_source_profile, mass_source_Mdot, mass_source_sigma, &
       mass_source_offset, rmax_mass_source, lnrho_int, lnrho_ext, &
       damplnrho_int, damplnrho_ext, wdamp, lfreeze_lnrhoint, lfreeze_lnrhoext, &
@@ -2312,10 +2313,13 @@ module Density
 !
 !  28-apr-2005/axel: coded
 !
+      use General, only: random_number_wrapper
       use Sub, only: step,stepdown
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (2) :: fran
+      real :: tmp
       type (pencil_case) :: p
 !
       real, dimension (nx) :: dlnrhodt,fint,fext,pdamp,fprofile,fnorm,radius2
@@ -2341,7 +2345,13 @@ module Density
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
           radius2=(x(l1:l2)-xblob)**2+(y(m)-yblob)**2+(z(n)-zblob)**2
           fprofile=exp(-.5*radius2/mass_source_sigma**2)/fnorm
-          dlnrhodt=mass_source_Mdot*fprofile*cos(mass_source_omega*t)
+          if (lmass_source_random) then
+            call random_number_wrapper(fran)
+            tmp=sqrt(-2*log(fran(1)))*sin(2*pi*fran(2))
+            dlnrhodt=mass_source_Mdot*fprofile*cos(mass_source_omega*t)*tmp
+          else
+            dlnrhodt=mass_source_Mdot*fprofile*cos(mass_source_omega*t)
+          endif
         case('bumpx')
           fnorm=(2.*pi*mass_source_sigma**2)**1.5
           fprofile=exp(-.5*((x(l1:l2)-mass_source_offset)/mass_source_sigma)**2)/fnorm
