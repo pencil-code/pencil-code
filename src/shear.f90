@@ -27,6 +27,7 @@ module Shear
   real :: Sshear1=0.0, Sshear_sini=0.0
   real, dimension(3) :: u0_advec = 0.0
   real, dimension(:), pointer :: B_ext
+  character(len=6) :: shear_method = 'fft'
   logical :: lshearadvection_as_shift=.false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
@@ -36,12 +37,12 @@ module Shear
 !
   namelist /shear_init_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, u0_advec, &
-      lshearadvection_as_shift, lmagnetic_stretching, lrandomx0, x0_shear, &
-      sini
+      lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
+      lmagnetic_stretching, sini
 !
   namelist /shear_run_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
-      lshearadvection_as_shift, lrandomx0, x0_shear, &
+      lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
       lmagnetic_stretching, lexternal_magnetic_field, sini
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -444,6 +445,7 @@ module Shear
 !  05-jun-12/ccyang: move SAFI to subroutine sheared_advection_fft
 !
       use Diagnostics, only: save_name
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -469,15 +471,18 @@ module Shear
 !  time derivative (following Gammie 2001). Removes time-step constraint
 !  from shear motion.
 !
-      safi: if (lshearadvection_as_shift) then
-        call sheared_advection_fft(f, 1, mvar, dt_shear)
-        if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
-      endif safi
-!
-      spline: if (any(u0_advec /= 0.0)) then
-        call sheared_advection_spline(f, 1, mvar, dt_shear)
-        if (.not. llast) call sheared_advection_spline(df, 1, mvar, dt_shear)
-      endif spline
+      shear: if (lshearadvection_as_shift) then
+        method: select case (shear_method)
+        case ('fft') method
+          call sheared_advection_fft(f, 1, mvar, dt_shear)
+          if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
+        case ('spline') method
+          call sheared_advection_spline(f, 1, mvar, dt_shear)
+          if (.not. llast) call sheared_advection_spline(df, 1, mvar, dt_shear)
+        case default method
+          call fatal_error('advance_shear', 'unknown method')
+        end select method
+      endif shear
 !
 !  Print identifier.
 !
@@ -502,6 +507,7 @@ module Shear
 !    dt_shear: time increment
 !
       use Fourier, only: fourier_shift_y, fft_y_parallel
+      use Messages, only: fatal_error
 !
       real, dimension(:,:,:,:), intent(inout) :: a
       integer, intent(in) :: comp_start, comp_end
@@ -510,6 +516,10 @@ module Shear
       real, dimension(nx,ny,nz) :: a_re, a_im
       real, dimension(nx) :: shift
       integer :: ic
+!
+!  Sanity check
+!
+      if (any(u0_advec /= 0.0)) call fatal_error('sheared_advection_fft', 'uniform background advection is not implemented.')
 !
 !  Find the sheared length as a function of x.
 !
@@ -553,9 +563,8 @@ module Shear
       real, intent(in) :: dt_shear
 !
       real, dimension(nx,ny) :: b
-      real, dimension(3*nygrid) :: yext
-      real, dimension(nxgrid) :: xnew, penc
-      real, dimension(nygrid) :: ynew
+      real, dimension(nxgrid) :: xnew, penc, yshift
+      real, dimension(nygrid) :: ynew, ynew1
       character(len=256) :: message
       logical :: error
       integer :: ic, j, k
@@ -567,10 +576,9 @@ module Shear
 !
 !  Find the displacement traveled with the advection.
 !
-      yext = (/ ygrid - Ly, ygrid, ygrid + Ly /)
       xnew = xgrid - dt_shear * u0_advec(1)
       ynew = ygrid - dt_shear * u0_advec(2)
-      ynew = ynew - floor((ynew - y0) / Ly) * Ly
+      yshift = Sshear * (xgrid - x0_shear) * dt_shear
 !
 !  Loop through each component.
 !
@@ -592,7 +600,9 @@ module Shear
           b = a(l1:l2,m1:m2,k,ic)
           call transp_xy(b)
           scan_yx: do j = 1, ny
-            call spline(yext, (/b(:,j),b(:,j),b(:,j)/), ynew, penc, 3*nygrid, nygrid, err=error, msg=message)
+            ynew1 = ynew - yshift(j+ipy*ny)
+            ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
+            call spline(ygrid, b(:,j), ynew1, penc, nygrid, nygrid, err=error, msg=message)
             if (error) call warning('sheared_advection_spline', 'error in y interpolation; ' // trim(message))
             b(:,j) = penc(1:nx)
           enddo scan_yx
@@ -615,6 +625,7 @@ module Shear
 !  02-oct-07/anders: coded
 !
       use Mpicomm, only: initiate_shearing, finalize_shearing
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
@@ -623,7 +634,14 @@ module Shear
           'boundconds_x: use shearing sheet boundary condition'
 !
       if (lshearadvection_as_shift) then
-        call fourier_shift_ghostzones(f,ivar1,ivar2)
+        method: select case (shear_method)
+        case ('fft') method
+          call fourier_shift_ghostzones(f,ivar1,ivar2)
+        case ('spline') method
+          call spline_shift_ghostzones(f,ivar1,ivar2)
+        case default method
+          call fatal_error('boundcond_shear', 'unknown method')
+        end select method
       else
         call initiate_shearing(f,ivar1,ivar2)
         call finalize_shearing(f,ivar1,ivar2)
@@ -664,6 +682,78 @@ module Shear
       endif
 !
     endsubroutine fourier_shift_ghostzones
+!***********************************************************************
+    subroutine spline_shift_ghostzones(f, ivar1, ivar2)
+!
+!  Shearing boundary conditions by spline interpolation.
+!
+!  22-feb-13/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, intent(in) :: ivar1, ivar2
+!
+      integer :: nvar
+!
+      need_shift: if (nygrid /= 1) then
+!
+!  Periodically assign the ghost cells.
+!
+        f(1:nghost,       m1:m2, n1:n2, ivar1:ivar2) = f(l2-nghost+1:l2, m1:m2, n1:n2, ivar1:ivar2)
+        f(mx-nghost+1:mx, m1:m2, n1:n2, ivar1:ivar2) = f(l1:l1+nghost-1, m1:m2, n1:n2, ivar1:ivar2)
+!
+!  Shift the ghost cells.
+!
+        nvar = ivar2 - ivar1 + 1
+        call spline_shift_ghostzones_subtask(f(1:nghost,m1:m2,n1:n2,ivar1:ivar2), nvar, deltay)
+        call spline_shift_ghostzones_subtask(f(mx-nghost+1:mx,m1:m2,n1:n2,ivar1:ivar2), nvar, -deltay)
+!
+      endif need_shift
+!
+    endsubroutine spline_shift_ghostzones
+!***********************************************************************
+    subroutine spline_shift_ghostzones_subtask(a, nvar, shift)
+!
+!  Subtask for spline_shift_ghostzones.
+!
+!  22-feb-13/ccyang: coded.
+!
+      use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
+      use General, only: spline
+      use Messages, only: warning
+!
+      integer, intent(in) :: nvar
+      real, dimension(nghost,ny,nz,nvar), intent(inout) :: a
+      real, intent(in) :: shift
+!
+      real, dimension(nghost,ny,nz) :: work1
+      real, dimension(nghost,nygrid,nz) :: work2
+      real, dimension(nygrid) :: ynew, penc
+      character(len=256) :: message
+      logical :: error
+      integer :: ivar, i, k
+!
+!  Find the new y-coordinates after shift.
+!
+      ynew = ygrid - shift
+      ynew = ynew - floor((ynew - y0) / Ly) * Ly
+!
+!  Shift the ghost cells.
+!
+      comp: do ivar = 1, nvar
+        work1 = a(:,:,:,ivar)
+        call remap_to_pencil_y(work1, work2)
+        scan_z: do k = 1, nz
+          scan_x: do i = 1, nghost
+            call spline(ygrid, work2(i,:,k), ynew, penc, nygrid, nygrid, err=error, msg=message)
+            if (error) call warning('spline_shift_ghostzones_subtask', 'error in spline; ' // trim(message))
+            work2(i,:,k) = penc
+          enddo scan_x
+        enddo scan_z
+        call unmap_from_pencil_y(work2, work1)
+        a(:,:,:,ivar) = work1
+      enddo comp
+!
+    endsubroutine
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !
