@@ -21,6 +21,7 @@ module General
   public :: find_index_range, find_index
 !
   public :: spline,tridag,pendag,complex_phase,erfcc
+  public :: polynomial_interpolation
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
@@ -87,6 +88,11 @@ module General
   interface lextend_vector    
     module procedure lextend_vector_float
     module procedure lextend_vector_char
+  endinterface
+!
+  interface polynomial_interpolation
+    module procedure polynomial_interpolation_scalar
+    module procedure polynomial_interpolation_vector
   endinterface
 !
 !  State and default generator of random numbers.
@@ -957,32 +963,17 @@ module General
 !***********************************************************************
     pure integer function find_index(xa, x)
 !
-!  Returns the index i of the maximum element of the array xa such that
-!  xa(i) <= x.  The array xa must be monotonically increasing.
+!  Returns the index of the element in array xa that is closest to x.
 !
-!  10-aug-11/ccyang: coded
+!  24-feb-13/ccyang: coded
 !
       real, dimension(:), intent(in) :: xa
       real, intent(in) :: x
 !
-      integer :: n, i
+      integer, dimension(1) :: closest
 !
-!  Scan the array elements and compare.
-!
-      find_index = -1
-      n = size(xa)
-      if (x >= xa(n)) then
-        find_index = n
-      else if (n > 1) then
-        do i = 2, n
-          if (x < xa(i)) then
-            find_index = i - 1
-            exit
-          endif
-        enddo
-      else
-        find_index = 1
-      endif
+      closest = minloc(abs(x - xa))
+      find_index = closest(1)
 !
     endfunction find_index
 !***********************************************************************
@@ -1438,6 +1429,111 @@ module General
       enddo
 !
     endsubroutine spline
+!***********************************************************************
+    subroutine polynomial_interpolation_scalar(xa, ya, x, y, dy, istatus, message)
+!
+!  Uses polynomial interpolation to interpolate (xa, ya) to (x, y) with
+!  error estimate dy.  The order of the interpolation is the size of
+!  (xa, ya).
+!
+!  24-feb-13/ccyang: adapted from Numerical Recipes.
+!
+      real, dimension(:), intent(in) :: xa, ya
+      real, intent(in) :: x
+      real, intent(out) :: y, dy
+      integer, intent(out), optional :: istatus
+      character(len=*), intent(out), optional :: message
+!
+      integer :: m, n, ns
+      real, dimension(size(xa)) :: c, d, den, ho
+!
+!  Check the sizes of the input arrays.
+!
+      n = size(xa)
+      incompatible: if (size(ya) /= n) then
+        if (present(istatus)) istatus = -1
+        if (present(message)) message = 'Input arrays xa and ya are incompatible. '
+        return
+      endif incompatible
+!
+!  Initialize the tableau of c's and d's.
+!
+      c = ya
+      d = ya
+      ho = xa - x
+!
+!  Find index ns of closest table entry.
+!
+      ns = find_index(xa, x)
+!
+!  Initial approximation to y.
+!
+      y = ya(ns)
+      ns = ns - 1
+!
+!  For each column of the tableau, loop over the current c's and d's and update them.
+!
+      update: do m = 1, n - 1
+        den(1:n-m) = ho(1:n-m) - ho(1+m:n)
+        failure: if (any(den(1:n-m) == 0.0)) then
+          if (present(istatus)) istatus = -2
+          if (present(message)) message = 'calculation failure'
+          return
+        endif failure
+        den(1:n-m) = (c(2:n-m+1) - d(1:n-m)) / den(1:n-m)
+        d(1:n-m) = ho(1+m:n) * den(1:n-m)
+        c(1:n-m) = ho(1:n-m) * den(1:n-m)
+        take_side: if (2 * ns < n - m) then
+          dy = c(ns + 1)
+        else take_side
+          dy = d(ns)
+          ns = ns - 1
+        endif take_side
+        y = y + dy
+      enddo update
+!
+!  Clean exit
+!
+      if (present(istatus)) istatus = 0
+!
+    endsubroutine polynomial_interpolation_scalar
+!***********************************************************************
+    subroutine polynomial_interpolation_vector(xa, ya, x, y, dy, istatus, message)
+!
+!  24-feb-13/ccyang: coded
+!
+      real, dimension(:), intent(in) :: xa, ya
+      real, dimension(:), intent(in) :: x
+      real, dimension(:), intent(out) :: y, dy
+      integer, intent(out), optional :: istatus
+      character(len=*), intent(out), optional :: message
+!
+      character(len=256) :: msg
+      integer :: i, n, istat
+!
+!  Check the dimension of the output arrays.
+!
+      n = size(x)
+      incompatible: if (size(y) /= n .or. size(dy) /= n) then
+        if (present(istatus)) istatus = -3
+        if (present(message)) message = 'Arrays x, y, and/or dy are incompatible.'
+        return
+      endif incompatible
+!
+!  Interpolate each point.
+!
+      istat = 0
+      loop: do i = 1, n
+        call polynomial_interpolation_scalar(xa, ya, x(i), y(i), dy(i), istat, msg)
+        if (istat /= 0) exit loop
+      enddo loop
+!
+!  Error handling
+!
+      if (present(istatus)) istatus = istat
+      if (present(message) .and. istat /= 0) message = msg
+!
+    endsubroutine polynomial_interpolation_vector
 !***********************************************************************
     function complex_phase(z)
 !
