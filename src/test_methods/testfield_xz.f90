@@ -9,6 +9,10 @@
 !  testfield_z.f90, not this one! For more information, please
 !  contact Axel Brandenburg <brandenb@nordita.org>
 !
+!  Alex Hubbard and Matthias Rheinhardt have then developed the
+!  present module from inactive/testfield.f90 rather than the
+!  inactive/testfield_xz.f90 that also exists.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -30,7 +34,7 @@ module Testfield
 !
   implicit none
 !
-  include 'testfield.h'
+  include '../testfield.h'
 
   character (len=labellen) :: initaatest='zero'
 
@@ -45,7 +49,6 @@ module Testfield
   integer :: itestfield=1
   real :: ktestfield_x=1., ktestfield_z=1., xx0=0., zz0=0., kanalyze_x=-1.
   real :: kanalyze_z=-1.
-!  integer, parameter :: njtest=9, mtestfield=3*njtest
   integer, parameter :: mtestfield=3*njtest
   integer :: naainit
 
@@ -98,7 +101,6 @@ module Testfield
   integer :: idiag_alp11exz=0,idiag_alp21exz=0,idiag_alp31exz=0
   integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
   integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
-
 
   real, dimension (nx,nz,3,njtest) :: uxbtestm
   real, dimension (nx)        :: cx,sx

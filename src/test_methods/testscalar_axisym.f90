@@ -297,7 +297,7 @@ module Testscalar
       endwhere
       testscalar_zaver_range(1) = max(testscalar_zaver_range(1), xyz0(3))
       testscalar_zaver_range(2) = min(testscalar_zaver_range(2), xyz1(3))
-      if (testscalar_zaver_range(2) > testscalar_zaver_range(1)) then
+      if (testscalar_zaver_range(2) > testscalar_zaver_range(1)) &
         zmask = zmask * Lxyz(3) / &
             (testscalar_zaver_range(2) - testscalar_zaver_range(1))
 !

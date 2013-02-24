@@ -355,7 +355,7 @@ module Magnetic_meanfield
 !       endif
       endif
 !
-!  initialize secondary mean-field modules
+!  Initialize secondary mean-field modules:
 !
       if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate ) then
         call put_shared_variable('kf_x',kf_x,ierr)
@@ -370,11 +370,11 @@ module Magnetic_meanfield
         call initialize_magn_mf_demfdt(f,lstarting)
       endif
 !
-!  get B_ext2
+!  Get B_ext2 from magnetic module.
 !
       call get_shared_variable('B_ext2',B_ext2,ierr)
       if (ierr/=0) &
-          call fatal_error("initialize_magn_mf: ", "cannot get B_ext2")
+          call fatal_error("initialize_magn_mf:", "cannot get B_ext2")
 !
     endsubroutine initialize_magn_mf
 !***********************************************************************
@@ -897,15 +897,17 @@ module Magnetic_meanfield
           Beq21=1./meanfield_Beq**2
         endselect
 !
-!  Choice between 2 versions
+!  Choice between 2 versions:
 !
         oneQbeta2=1.+chit_quenching*p%b2*Beq21
         oneQbeta02=1.+chit_quenching*B_ext2*Beq21
 !
+!  Currently no additional profile, so zero gradient.
+!
         chit_prof=1.
         glnchit_prof=0.
 !
-!  Add contribution from gradient of chiB*B^2/Beq^2 term
+!  Add contribution from gradient of chiB*B^2/Beq^2 term.
 !
         call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
         call multsv_mn(p%b2,p%glnrho,B2glnrho)
