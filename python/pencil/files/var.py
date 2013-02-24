@@ -31,7 +31,8 @@ class read_var:
 
     def __init__(self, varfile='', datadir='data/', proc=-1, ivar=-1,
                  quiet=False, trimall=False, format='native',
-                 param=None, dim=None, index=None, run2D=False, magic=None):
+                 param=None, dim=None, index=None, run2D=False, 
+                 magic=None, setup=None):
         """
         Description:
         -----------
@@ -55,14 +56,21 @@ class read_var:
             index=None
             run2D=False
         """
-        datadir = os.path.expanduser(datadir)
+        if (setup is not None):
+            datadir=os.path.expanduser(setup.datadir)
+            dim=setup.dim
+            param=setup.param
+            index=setup.index
+            run2D=setup.run2D
+        else:
+            datadir = os.path.expanduser(datadir)
+            if dim is None:
+                dim = read_dim(datadir,proc) 
+            if param is None:
+                param = read_param(datadir=datadir, quiet=quiet)
+            if index is None:
+                index = read_index(datadir=datadir)
 
-        if dim is None:
-            dim = read_dim(datadir,proc) 
-        if param is None:
-            param = read_param(datadir=datadir, quiet=quiet)
-        if index is None:
-            index = read_index(datadir=datadir)
         if dim.precision == 'D':
             precision = 'd'
         else:
@@ -268,7 +276,9 @@ class read_var:
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
         for key,value in index.items():
-          setattr(self,key,self.f[value-1,...])
+#          print key,value
+          if key != 'global_gg':
+            setattr(self,key,self.f[value-1,...])
         # Special treatment for vector quantities
         if index.has_key('uu'):
           self.uu = self.f[index['ux']-1:index['uz'],...]
