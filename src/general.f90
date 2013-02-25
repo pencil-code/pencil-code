@@ -91,8 +91,8 @@ module General
   endinterface
 !
   interface polynomial_interpolation
-    module procedure polynomial_interpolation_scalar
-    module procedure polynomial_interpolation_vector
+    module procedure polynomial_interpolation_one
+    module procedure polynomial_interpolation_fixorder
   endinterface
 !
 !  State and default generator of random numbers.
@@ -1430,7 +1430,7 @@ module General
 !
     endsubroutine spline
 !***********************************************************************
-    subroutine polynomial_interpolation_scalar(xa, ya, x, y, dy, istatus, message)
+    subroutine polynomial_interpolation_one(xa, ya, x, y, dy, istatus, message)
 !
 !  Uses polynomial interpolation to interpolate (xa, ya) to (x, y) with
 !  error estimate dy.  The order of the interpolation is the size of
@@ -1496,19 +1496,29 @@ module General
 !
       if (present(istatus)) istatus = 0
 !
-    endsubroutine polynomial_interpolation_scalar
+    endsubroutine polynomial_interpolation_one
 !***********************************************************************
-    subroutine polynomial_interpolation_vector(xa, ya, x, y, dy, istatus, message)
+    subroutine polynomial_interpolation_fixorder(xa, ya, x, y, dy, norder, tvd, istatus, message)
 !
-!  24-feb-13/ccyang: coded
+!  Uses polynomials of norder to interpolate (xa, ya) to each of (x, y)
+!  with error estimates dy.  If tvd is present and set true, the order
+!  will be reduced at places where the total variation diminishing is
+!  violated.
+!
+!  25-feb-13/ccyang: coded
 !
       real, dimension(:), intent(in) :: xa, ya
       real, dimension(:), intent(in) :: x
       real, dimension(:), intent(out) :: y, dy
+      integer, intent(in) :: norder
+      logical, intent(in), optional :: tvd
       integer, intent(out), optional :: istatus
       character(len=*), intent(out), optional :: message
 !
       character(len=256) :: msg
+      logical :: fix_order, left
+      integer :: morder, moh
+      integer :: nxa, ix, ix1, ix2
       integer :: i, n, istat
 !
 !  Check the dimension of the output arrays.
@@ -1520,12 +1530,58 @@ module General
         return
       endif incompatible
 !
+!  Check if total variation diminishing is turned on.
+!
+      tvd_on: if (present(tvd)) then
+        fix_order = .not. tvd
+      else tvd_on
+        fix_order = .true.
+      endif tvd_on
+!
 !  Interpolate each point.
 !
       istat = 0
+      nxa = size(xa)
       loop: do i = 1, n
-        call polynomial_interpolation_scalar(xa, ya, x(i), y(i), dy(i), istat, msg)
-        if (istat /= 0) exit loop
+        morder = max(norder, 0)
+        check_tvd: do
+!
+!  Find the index range to construct the interpolant.
+!
+          ix = find_index(xa, x(i))
+          left = x(i) < xa(ix)
+          moh = morder / 2
+          ix1 = ix - moh
+          ix2 = ix + moh
+          odd: if (mod(morder, 2) /= 0) then
+            side: if (left) then
+              ix1 = ix1 - 1
+            else side
+              ix2 = ix2 + 1
+            endif side
+          endif odd
+          ix1 = max(ix1, 1)
+          ix2 = min(ix2, nxa)
+!
+!  Send for polynomial interpolation.
+!
+          call polynomial_interpolation_one(xa(ix1:ix2), ya(ix1:ix2), x(i), y(i), dy(i), istat, msg)
+          if (istat /= 0) exit loop
+          if (fix_order) exit check_tvd
+!
+!  Check the total variation.
+!
+          bracket: if (left) then
+            ix1 = max(ix - 1, 1)
+            ix2 = ix
+          else bracket
+            ix1 = ix
+            ix2 = min(ix + 1, nxa)
+          endif bracket
+!
+          if ((y(i) - ya(ix1)) * (ya(ix2) - y(i)) >= 0.0) exit check_tvd
+          morder = morder - 1
+        enddo check_tvd
       enddo loop
 !
 !  Error handling
@@ -1533,7 +1589,7 @@ module General
       if (present(istatus)) istatus = istat
       if (present(message) .and. istat /= 0) message = msg
 !
-    endsubroutine polynomial_interpolation_vector
+    endsubroutine polynomial_interpolation_fixorder
 !***********************************************************************
     function complex_phase(z)
 !
