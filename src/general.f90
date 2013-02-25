@@ -91,8 +91,8 @@ module General
   endinterface
 !
   interface polynomial_interpolation
-    module procedure polynomial_interpolation_one
-    module procedure polynomial_interpolation_fixorder
+    module procedure poly_interp_one
+    module procedure poly_interp_fixorder
   endinterface
 !
 !  State and default generator of random numbers.
@@ -1430,7 +1430,7 @@ module General
 !
     endsubroutine spline
 !***********************************************************************
-    subroutine polynomial_interpolation_one(xa, ya, x, y, dy, istatus, message)
+    subroutine poly_interp_one(xa, ya, x, y, dy, istatus, message)
 !
 !  Uses polynomial interpolation to interpolate (xa, ya) to (x, y) with
 !  error estimate dy.  The order of the interpolation is the size of
@@ -1496,9 +1496,9 @@ module General
 !
       if (present(istatus)) istatus = 0
 !
-    endsubroutine polynomial_interpolation_one
+    endsubroutine poly_interp_one
 !***********************************************************************
-    subroutine polynomial_interpolation_fixorder(xa, ya, x, y, dy, norder, tvd, posdef, istatus, message)
+    subroutine poly_interp_fixorder(xa, ya, x, y, dy, norder, tvd, posdef, istatus, message)
 !
 !  Uses polynomials of norder to interpolate (xa, ya) to each of (x, y)
 !  with error estimates dy.  If tvd is present and set true, the order
@@ -1573,7 +1573,7 @@ module General
 !
 !  Send for polynomial interpolation.
 !
-          call polynomial_interpolation_one(xa(ix1:ix2), ya(ix1:ix2), x(i), y(i), dy(i), istat, msg)
+          call poly_interp_one(xa(ix1:ix2), ya(ix1:ix2), x(i), y(i), dy(i), istat, msg)
           if (istat /= 0) exit loop
           if (fix_order) exit order
 !
@@ -1600,7 +1600,7 @@ module General
       if (present(istatus)) istatus = istat
       if (present(message) .and. istat /= 0) message = msg
 !
-    endsubroutine polynomial_interpolation_fixorder
+    endsubroutine poly_interp_fixorder
 !***********************************************************************
     function complex_phase(z)
 !
