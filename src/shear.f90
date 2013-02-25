@@ -697,20 +697,20 @@ module Shear
 !
       integer :: nvar
 !
-      need_shift: if (nygrid /= 1) then
+!  Periodically assign the ghost cells in x direction.
 !
-!  Periodically assign the ghost cells.
-!
+      xdir: if (nxgrid > 1) then
         f(1:nghost,       m1:m2, n1:n2, ivar1:ivar2) = f(l2-nghost+1:l2, m1:m2, n1:n2, ivar1:ivar2)
         f(mx-nghost+1:mx, m1:m2, n1:n2, ivar1:ivar2) = f(l1:l1+nghost-1, m1:m2, n1:n2, ivar1:ivar2)
+      endif xdir
 !
-!  Shift the ghost cells.
+!  Shift the ghost cells in y direction.
 !
+      ydir: if (nygrid > 1) then
         nvar = ivar2 - ivar1 + 1
         call spline_shift_ghostzones_subtask(f(1:nghost,m1:m2,n1:n2,ivar1:ivar2), nvar, deltay)
         call spline_shift_ghostzones_subtask(f(mx-nghost+1:mx,m1:m2,n1:n2,ivar1:ivar2), nvar, -deltay)
-!
-      endif need_shift
+      endif ydir
 !
     endsubroutine spline_shift_ghostzones
 !***********************************************************************
