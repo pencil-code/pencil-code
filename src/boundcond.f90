@@ -351,6 +351,8 @@ module Boundcond
                   ! BCX_DOC: inlet/outlet on western/eastern hemisphere
                   ! BCX_DOC: in cylindrical coordinates
                   call bc_inlet_outlet_cyl(f,topbot,j,fbcx12)
+                case ('tay')
+                  call tayler_expansion(f,topbot,j)
                 case ('')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case default
@@ -7607,5 +7609,30 @@ module Boundcond
 ! velocity set consistently at the boundary.
 !
     endsubroutine set_consistent_vel_boundary
+!***********************************************************************
+    subroutine tayler_expansion(f,topbot,j)
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: j
+!
+      select case (topbot) 
+      case ('top') 
+        f(l2+1,:,:,j) = + 4.*f(l2,:,:,j)   - 6.*f(l2-1,:,:,j) &
+                        + 4.*f(l2-2,:,:,j) -    f(l2-3,:,:,j) 
+        f(l2+2,:,:,j) = +10.*f(l2,:,:,j)   -20.*f(l2-1,:,:,j) &
+                        +15.*f(l2-2,:,:,j) - 4.*f(l2-3,:,:,j) 
+        f(l2+3,:,:,j) = +20.*f(l2,:,:,j)   -45.*f(l2-1,:,:,j) &
+                        +36.*f(l2-2,:,:,j) -10.*f(l2-3,:,:,j) 
+      case ('bot')                      
+        f(l1-1,:,:,j) = + 4.*f(l1,:,:,j)   - 6.*f(l1+1,:,:,j) &
+                        + 4.*f(l1+2,:,:,j) -    f(l1+3,:,:,j) 
+        f(l1-2,:,:,j) = +10.*f(l1,:,:,j)   -20.*f(l1+1,:,:,j) &
+                        +15.*f(l1+2,:,:,j) - 4.*f(l1+3,:,:,j) 
+        f(l1-3,:,:,j) = +20.*f(l1,:,:,j)   -45.*f(l1+1,:,:,j) &
+                        +36.*f(l1+2,:,:,j) -10.*f(l1+3,:,:,j) 
+      endselect
+!      
+    endsubroutine tayler_expansion
 !***********************************************************************
 endmodule Boundcond
