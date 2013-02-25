@@ -45,7 +45,7 @@ module Testfield
   real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: xextent=.true.,zextent=.true.,lsoca=.false.,lset_bbtest2=.false.
-  logical :: linit_aatest=.false.
+  logical :: linit_aatest=.false., lflucts_with_xyaver=.false.
   integer :: itestfield=1
   real :: ktestfield_x=1., ktestfield_z=1., xx0=0., zz0=0., kanalyze_x=-1.
   real :: kanalyze_z=-1.
@@ -62,7 +62,7 @@ module Testfield
        B_ext,reinitialize_aatest,xextent,zextent,lsoca, &
        lset_bbtest2,etatest,itestfield,ktestfield_x, &
        ktestfield_z,xx0,zz0,kanalyze_x,kanalyze_z,daainit, &
-       linit_aatest, &
+       linit_aatest, lflucts_with_xyaver, &
        rescale_aatest
 
   ! other variables (needs to be consistent with reset list below)
@@ -553,9 +553,20 @@ module Testfield
               call calc_pencils_hydro(f,p)
               call curl(f,iaxtest,btest)
               call cross_mn(p%uu,btest,uxbtest)
-
+!
+!  without SOCA, the alpha tensor is anisotropic even for the standard
+!  Roberts flow. To check that this is because of the averaging that
+!  enters, we allow outselves to turn it off with lflucts_with_xyaver=.true.
+!  It is off by default.
+!
               do j=1,3
-                uxbtestm(:,nscan,j,jtest)=uxbtestm(:,nscan,j,jtest)+fac*uxbtest(:,j)
+                if (lflucts_with_xyaver) then
+                  uxbtestm(:,nscan,j,jtest)=spread(sum( &
+                    uxbtestm(:,nscan,j,jtest)+fac*uxbtest(:,j),1),1,nx)/nx
+                else
+                  uxbtestm(:,nscan,j,jtest)= &
+                    uxbtestm(:,nscan,j,jtest)+fac*uxbtest(:,j)
+                endif
               enddo
               headtt=.false.
             enddo
@@ -645,7 +656,6 @@ module Testfield
       if (need_temp(9)) & !(idiag_alp33xz/=0) &
         temp_array(:,n,twod_address(9))= &
             Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9)
-
 !
 
       if (need_temp(10)) & !(idiag_eta111xz/=0) &
