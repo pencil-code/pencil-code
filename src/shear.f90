@@ -30,7 +30,7 @@ module Shear
   real, dimension(:), pointer :: B_ext
   character(len=6) :: shear_method = 'fft'
   logical :: lshearadvection_as_shift=.false.
-  logical :: ltvd_advection = .false.
+  logical :: ltvd_advection = .false., lposdef_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
   logical :: lexternal_magnetic_field = .false.
@@ -40,13 +40,13 @@ module Shear
   namelist /shear_init_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, u0_advec, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
-      norder_poly, ltvd_advection, &
+      norder_poly, ltvd_advection, lposdef_advection, &
       lmagnetic_stretching, sini
 !
   namelist /shear_run_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
-      norder_poly, ltvd_advection, &
+      norder_poly, ltvd_advection, lposdef_advection, &
       lmagnetic_stretching, lexternal_magnetic_field, sini
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -454,6 +454,7 @@ module Shear
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
+      integer :: ivar
 !
 !  Must currently use lshearadvection_as_shift=T when Sshear is positive.
 !
@@ -481,8 +482,15 @@ module Shear
           call sheared_advection_fft(f, 1, mvar, dt_shear)
           if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
         case ('spline', 'poly') method
-          call sheared_advection_nonfft(f, 1, mvar, dt_shear, shear_method)
-          if (.not. llast) call sheared_advection_nonfft(df, 1, mvar, dt_shear, shear_method)
+          comp: do ivar = 1, mvar
+            posdef: if (.not. lpencil_check_at_work .and. lposdef_advection .and. &
+                        (ivar == irho .or. ivar == ieth)) then
+              call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, .true.)
+            else posdef
+              call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
+            endif posdef
+          enddo comp
+          if (.not. llast) call sheared_advection_nonfft(df, 1, mvar, dt_shear, shear_method, ltvd_advection, .false.)
         case default method
           call fatal_error('advance_shear', 'unknown method')
         end select method
@@ -546,7 +554,7 @@ module Shear
 !
     endsubroutine sheared_advection_fft
 !***********************************************************************
-    subroutine sheared_advection_nonfft(a, ic1, ic2, dt_shear, method)
+    subroutine sheared_advection_nonfft(a, ic1, ic2, dt_shear, method, tvd, posdef)
 !
 !  Uses interpolation to integrate the constant advection and shearing
 !  terms with either spline or polynomials.
@@ -566,6 +574,7 @@ module Shear
 !
       real, dimension(:,:,:,:), intent(inout) :: a
       character(len=*), intent(in) :: method
+      logical, intent(in) :: tvd, posdef
       integer, intent(in) :: ic1, ic2
       real, intent(in) :: dt_shear
 !
@@ -602,7 +611,7 @@ module Shear
             case ('spline') xmethod
               call spline(xglobal, a(:,j,k,ic), xnew, penc, mx, nxgrid, err=error, msg=message)
             case ('poly') xmethod
-              call polynomial_interpolation(xglobal, a(:,j,k,ic), xnew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+              call polynomial_interpolation(xglobal, a(:,j,k,ic), xnew, penc, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
                                             istatus=istat, message=message)
               error = istat /= 0
             case default xmethod
@@ -631,7 +640,7 @@ module Shear
               case ('spline') ymethod
                 call spline(yglobal, by, ynew1, penc, mygrid, nygrid, err=error, msg=message)
               case ('poly') ymethod
-                call polynomial_interpolation(yglobal, by, ynew1, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+                call polynomial_interpolation(yglobal, by, ynew1, penc, dpenc, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
                 error = istat /= 0
               case default ymethod
@@ -791,8 +800,14 @@ module Shear
             case ('spline') dispatch
               call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
             case ('poly') dispatch
-              call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
-                                            istatus=istat, message=message)
+              posdef: if (.not. lpencil_check_at_work .and. lposdef_advection .and. &
+                          (ivar == irho .or. ivar == ieth)) then
+                call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, &
+                                              tvd=ltvd_advection, posdef=.true., istatus=istat, message=message)
+              else posdef
+                call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, &
+                                              tvd=ltvd_advection, istatus=istat, message=message)
+              endif posdef
               error = istat /= 0
             case default dispatch
               call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
