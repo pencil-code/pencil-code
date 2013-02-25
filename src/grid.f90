@@ -1593,13 +1593,15 @@ module Grid
 !
 !  19-oct-10/wlad: coded
 !  08-may-12/ccyang: include dx_1, dx_tilde, ... arrays
+!  25-feb-13/ccyang: construct global coordinates including ghost cells.
 !
-      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real
+      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int
 !
       real, dimension(nx) :: xrecv, x1recv, x2recv
       real, dimension(ny) :: yrecv, y1recv, y2recv
       real, dimension(nz) :: zrecv, z1recv, z2recv
       integer :: jx,jy,jz,iup,ido,iproc_recv
+      integer :: iproc_first, iproc_last
 !
       xrecv=0.; yrecv=0.; zrecv=0.
       x1recv=0.; y1recv=0.; z1recv=0.
@@ -1717,6 +1719,37 @@ module Grid
       call mpibcast_real(zgrid,nzgrid)
       call mpibcast_real(dz1grid,nzgrid)
       call mpibcast_real(dztgrid,nzgrid)
+!
+!  Check the first and last processors.
+!
+      iup = 0
+      if (lfirst_proc_xyz) iup = iproc
+      ido = 0
+      if (llast_proc_xyz) ido = iproc
+      call mpiallreduce_sum_int(iup, iproc_first)
+      call mpiallreduce_sum_int(ido, iproc_last)
+!
+!  Communicate the ghost cells.
+!
+      xglobal(nghost+1:mxgrid-nghost) = xgrid
+      yglobal(nghost+1:mygrid-nghost) = ygrid
+      zglobal(nghost+1:mzgrid-nghost) = zgrid
+!
+      xglobal(1:nghost) = x(1:nghost)
+      yglobal(1:nghost) = y(1:nghost)
+      zglobal(1:nghost) = z(1:nghost)
+!
+      xglobal(mxgrid-nghost+1:mxgrid) = x(mx-nghost+1:mx)
+      yglobal(mygrid-nghost+1:mygrid) = y(my-nghost+1:my)
+      zglobal(mzgrid-nghost+1:mzgrid) = z(mz-nghost+1:mz)
+!
+      call mpibcast_real(xglobal(1:nghost), nghost, iproc_first)
+      call mpibcast_real(yglobal(1:nghost), nghost, iproc_first)
+      call mpibcast_real(zglobal(1:nghost), nghost, iproc_first)
+!
+      call mpibcast_real(xglobal(mxgrid-nghost+1:mxgrid), nghost, iproc_last)
+      call mpibcast_real(yglobal(mygrid-nghost+1:mygrid), nghost, iproc_last)
+      call mpibcast_real(zglobal(mzgrid-nghost+1:mzgrid), nghost, iproc_last)
 !
     endsubroutine construct_serial_arrays
 !***********************************************************************
