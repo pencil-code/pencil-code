@@ -23,12 +23,14 @@ module Shear
 !
   implicit none
 !
+  integer :: norder_poly = 2 * nghost + 1
   real :: x0_shear=0.0, qshear0=0.0, sini=0.0
   real :: Sshear1=0.0, Sshear_sini=0.0
   real, dimension(3) :: u0_advec = 0.0
   real, dimension(:), pointer :: B_ext
   character(len=6) :: shear_method = 'fft'
   logical :: lshearadvection_as_shift=.false.
+  logical :: ltvd_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
   logical :: lexternal_magnetic_field = .false.
@@ -38,11 +40,13 @@ module Shear
   namelist /shear_init_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, u0_advec, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
+      norder_poly, ltvd_advection, &
       lmagnetic_stretching, sini
 !
   namelist /shear_run_pars/ &
       qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
+      norder_poly, ltvd_advection, &
       lmagnetic_stretching, lexternal_magnetic_field, sini
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
@@ -476,9 +480,9 @@ module Shear
         case ('fft') method
           call sheared_advection_fft(f, 1, mvar, dt_shear)
           if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
-        case ('spline') method
-          call sheared_advection_spline(f, 1, mvar, dt_shear)
-          if (.not. llast) call sheared_advection_spline(df, 1, mvar, dt_shear)
+        case ('spline', 'poly') method
+          call sheared_advection_nonfft(f, 1, mvar, dt_shear, shear_method)
+          if (.not. llast) call sheared_advection_nonfft(df, 1, mvar, dt_shear, shear_method)
         case default method
           call fatal_error('advance_shear', 'unknown method')
         end select method
@@ -542,32 +546,36 @@ module Shear
 !
     endsubroutine sheared_advection_fft
 !***********************************************************************
-    subroutine sheared_advection_spline(a, ic1, ic2, dt_shear)
+    subroutine sheared_advection_nonfft(a, ic1, ic2, dt_shear, method)
 !
-!  Uses spline interpolation to integrate the constant advection and shearing terms.
+!  Uses interpolation to integrate the constant advection and shearing
+!  terms with either spline or polynomials.
 !
-!  05-jun-12/ccyang: modularized from advance_shear and advect_shear_xparallel
+!  25-feb-13/ccyang: coded.
 !
 !  Input/Ouput Argument
 !    a: field to be advected and sheared
 !  Input Argument
 !    ic1, ic2: start and end indices in a
 !    dt_shear: time increment
+!    method: interpolation method
 !
-      use General, only: spline
+      use General, only: spline, polynomial_interpolation
       use Messages, only: warning, fatal_error
       use Mpicomm, only: transp_xy
 !
       real, dimension(:,:,:,:), intent(inout) :: a
+      character(len=*), intent(in) :: method
       integer, intent(in) :: ic1, ic2
       real, intent(in) :: dt_shear
 !
       real, dimension(nx,ny) :: b
-      real, dimension(nxgrid) :: xnew, penc, yshift
+      real, dimension(nxgrid) :: xnew, penc, dpenc, yshift
       real, dimension(nygrid) :: ynew, ynew1
       real, dimension(mygrid) :: by
       character(len=256) :: message
       logical :: error
+      integer :: istat
       integer :: ic, j, k
 !
 !  Santiy check
@@ -590,8 +598,17 @@ module Shear
 !
         scan_xz: do k = n1, n2
           scan_xy: do j = m1, m2
-            call spline(x, a(:,j,k,ic), xnew, penc, mx, nxgrid, err=error, msg=message)
-            if (error) call warning('sheared_advection_spline', 'error in x interpolation; ' // trim(message))
+            xmethod: select case (method)
+            case ('spline') xmethod
+              call spline(xglobal, a(:,j,k,ic), xnew, penc, mx, nxgrid, err=error, msg=message)
+            case ('poly') xmethod
+              call polynomial_interpolation(xglobal, a(:,j,k,ic), xnew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+                                            istatus=istat, message=message)
+              error = istat /= 0
+            case default xmethod
+              call fatal_error('sheared_advection_nonfft', 'unknown method')
+            endselect xmethod
+            if (error) call warning('sheared_advection_nonfft', 'error in x interpolation; ' // trim(message))
             a(l1:l2,j,k,ic) = penc(1:nx)
           enddo scan_xy
         enddo scan_xz
@@ -605,11 +622,23 @@ module Shear
             scan_yx: do j = 1, ny
               ynew1 = ynew - yshift(j+ipy*ny)
               ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
-              by(nghost+1:mygrid-nghost) = b(:,j)
-              by(1:nghost) = by(l2-nghost+1:l2)
-              by(mygrid-nghost+1:mygrid) = by(l1:l1+nghost-1)
-              call spline(yglobal, by, ynew1, penc, mygrid, nygrid, err=error, msg=message)
-              if (error) call warning('sheared_advection_spline', 'error in y interpolation; ' // trim(message))
+!
+              by(nghost+1:mygrid-nghost) = b(1:nygrid,j)
+              by(1:nghost) = by(mygrid-2*nghost+1:mygrid-nghost)
+              by(mygrid-nghost+1:mygrid) = by(nghost+1:nghost+nghost)
+!
+              ymethod: select case (method)
+              case ('spline') ymethod
+                call spline(yglobal, by, ynew1, penc, mygrid, nygrid, err=error, msg=message)
+              case ('poly') ymethod
+                call polynomial_interpolation(yglobal, by, ynew1, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+                                              istatus=istat, message=message)
+                error = istat /= 0
+              case default ymethod
+                call fatal_error('sheared_advection_nonfft', 'unknown method')
+              endselect ymethod
+              if (error) call warning('sheared_advection_nonfft', 'error in y interpolation; ' // trim(message))
+!
               b(:,j) = penc(1:nx)
             enddo scan_yx
             call transp_xy(b)
@@ -619,11 +648,11 @@ module Shear
 !
 !  Currently no interpolation in z
 !
-        if (u0_advec(3) /= 0.0) call fatal_error('sheared_advection_spline', 'Advection in z is not implemented.')
+        if (u0_advec(3) /= 0.0) call fatal_error('sheared_advection_nonfft', 'Advection in z is not implemented.')
 !
       enddo comp
 !
-    endsubroutine sheared_advection_spline
+    endsubroutine sheared_advection_nonfft
 !***********************************************************************
     subroutine boundcond_shear(f,ivar1,ivar2)
 !
@@ -644,8 +673,8 @@ module Shear
         method: select case (shear_method)
         case ('fft') method
           call fourier_shift_ghostzones(f,ivar1,ivar2)
-        case ('spline') method
-          call spline_shift_ghostzones(f,ivar1,ivar2)
+        case ('spline', 'poly') method
+          call shift_ghostzones_nonfft(f,ivar1,ivar2)
         case default method
           call fatal_error('boundcond_shear', 'unknown method')
         end select method
@@ -690,11 +719,11 @@ module Shear
 !
     endsubroutine fourier_shift_ghostzones
 !***********************************************************************
-    subroutine spline_shift_ghostzones(f, ivar1, ivar2)
+    subroutine shift_ghostzones_nonfft(f, ivar1, ivar2)
 !
 !  Shearing boundary conditions by spline interpolation.
 !
-!  22-feb-13/ccyang: coded.
+!  25-feb-13/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
@@ -712,31 +741,34 @@ module Shear
 !
       ydir: if (nygrid > 1) then
         nvar = ivar2 - ivar1 + 1
-        call spline_shift_ghostzones_subtask(f(1:nghost,m1:m2,n1:n2,ivar1:ivar2), nvar, deltay)
-        call spline_shift_ghostzones_subtask(f(mx-nghost+1:mx,m1:m2,n1:n2,ivar1:ivar2), nvar, -deltay)
+        call shift_ghostzones_nonfft_subtask(f(1:nghost,m1:m2,n1:n2,ivar1:ivar2), nvar, deltay, shear_method)
+        call shift_ghostzones_nonfft_subtask(f(mx-nghost+1:mx,m1:m2,n1:n2,ivar1:ivar2), nvar, -deltay, shear_method)
       endif ydir
 !
-    endsubroutine spline_shift_ghostzones
+    endsubroutine shift_ghostzones_nonfft
 !***********************************************************************
-    subroutine spline_shift_ghostzones_subtask(a, nvar, shift)
+    subroutine shift_ghostzones_nonfft_subtask(a, nvar, shift, method)
 !
 !  Subtask for spline_shift_ghostzones.
 !
-!  22-feb-13/ccyang: coded.
+!  25-feb-13/ccyang: coded.
 !
       use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
-      use General, only: spline
-      use Messages, only: warning
+      use General, only: spline, polynomial_interpolation
+      use Messages, only: warning, fatal_error
 !
       integer, intent(in) :: nvar
       real, dimension(nghost,ny,nz,nvar), intent(inout) :: a
+      character(len=*), intent(in) :: method
       real, intent(in) :: shift
 !
       real, dimension(nghost,ny,nz) :: work1
       real, dimension(nghost,nygrid,nz) :: work2
-      real, dimension(nygrid) :: ynew, penc
+      real, dimension(nygrid) :: ynew, penc, dpenc
+      real, dimension(mygrid) :: worky
       character(len=256) :: message
       logical :: error
+      integer :: istat
       integer :: ivar, i, k
 !
 !  Find the new y-coordinates after shift.
@@ -751,8 +783,22 @@ module Shear
         call remap_to_pencil_y(work1, work2)
         scan_z: do k = 1, nz
           scan_x: do i = 1, nghost
-            call spline(ygrid, work2(i,:,k), ynew, penc, nygrid, nygrid, err=error, msg=message)
-            if (error) call warning('spline_shift_ghostzones_subtask', 'error in spline; ' // trim(message))
+            worky(nghost+1:mygrid-nghost) = work2(i,:,k)
+            worky(1:nghost) = worky(mygrid-2*nghost+1:mygrid-nghost)
+            worky(mygrid-nghost+1:mygrid) = worky(nghost+1:nghost+nghost)
+!
+            dispatch: select case (method)
+            case ('spline') dispatch
+              call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
+            case ('poly') dispatch
+              call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, &
+                                            istatus=istat, message=message)
+              error = istat /= 0
+            case default dispatch
+              call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
+            endselect dispatch
+            if (error) call warning('shift_ghostzones_nonfft_subtask', 'error in spline; ' // trim(message))
+!
             work2(i,:,k) = penc
           enddo scan_x
         enddo scan_z
@@ -760,7 +806,7 @@ module Shear
         a(:,:,:,ivar) = work1
       enddo comp
 !
-    endsubroutine
+    endsubroutine shift_ghostzones_nonfft_subtask
 !***********************************************************************
     subroutine rprint_shear(lreset,lwrite)
 !
