@@ -45,7 +45,7 @@ module Special
   logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
-  real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.
+  real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,maxvA=0.
   logical :: sub_step_hcond=.false.
   logical :: lrad_loss=.false.
 !
@@ -71,7 +71,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,irefz,tau_inv_spitzer, &
+      heat_par_b2,irefz,tau_inv_spitzer,maxvA, &
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
@@ -488,7 +488,7 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (ldensity_floor_c) lpenc_requested(i_b2)=.true.
+      if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
 !
       if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
 !
@@ -1115,7 +1115,14 @@ module Special
       real, dimension (nx) :: hc,lnrho_floor
 !
       if (ldensity_floor_c) then
-        lnrho_floor = alog(p%b2/(0.5*real(c_light))**2/mu0/cdt)
+        lnrho_floor = alog(p%b2/mu0/cdt)-2.*alog(real(c_light)) 
+        where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
+          f(l1:l2,m,n,ilnrho) = lnrho_floor
+        endwhere
+      endif
+!
+      if (maxvA/=0.) then
+        lnrho_floor = alog(p%b2/mu0)-2.*alog(maxvA) 
         where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
           f(l1:l2,m,n,ilnrho) = lnrho_floor
         endwhere
