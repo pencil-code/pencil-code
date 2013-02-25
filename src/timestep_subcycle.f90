@@ -116,7 +116,7 @@ module Timestep
 !  Now do the substeps for the energy (thermal conduction) only -----------------*
 !--------------------------------------------------------------------------------*
 !
-      IF (sub_step_hcond) THEN
+      if (sub_step_hcond) then
 !
 !  initialized fsub
         do n=n1,n2; do m=m1,m2
