@@ -1498,7 +1498,7 @@ module General
 !
     endsubroutine polynomial_interpolation_one
 !***********************************************************************
-    subroutine polynomial_interpolation_fixorder(xa, ya, x, y, dy, norder, tvd, istatus, message)
+    subroutine polynomial_interpolation_fixorder(xa, ya, x, y, dy, norder, tvd, posdef, istatus, message)
 !
 !  Uses polynomials of norder to interpolate (xa, ya) to each of (x, y)
 !  with error estimates dy.  If tvd is present and set true, the order
@@ -1511,12 +1511,12 @@ module General
       real, dimension(:), intent(in) :: x
       real, dimension(:), intent(out) :: y, dy
       integer, intent(in) :: norder
-      logical, intent(in), optional :: tvd
+      logical, intent(in), optional :: tvd, posdef
       integer, intent(out), optional :: istatus
       character(len=*), intent(out), optional :: message
 !
       character(len=256) :: msg
-      logical :: fix_order, left
+      logical :: fix_order, tvd1, posdef1, left, ok
       integer :: morder, moh
       integer :: nxa, ix, ix1, ix2
       integer :: i, n, istat
@@ -1530,13 +1530,21 @@ module General
         return
       endif incompatible
 !
-!  Check if total variation diminishing is turned on.
+!  Check if total variation diminishing or positive definiteness is turned on.
 !
       tvd_on: if (present(tvd)) then
-        fix_order = .not. tvd
+        tvd1 = tvd
       else tvd_on
-        fix_order = .true.
+        tvd1 = .false.
       endif tvd_on
+!
+      pos_on: if (present(posdef)) then
+        posdef1 = posdef
+      else pos_on
+        posdef1 = .false.
+      endif pos_on
+!
+      fix_order = .not. tvd1 .and. .not. posdef1
 !
 !  Interpolate each point.
 !
@@ -1544,7 +1552,7 @@ module General
       nxa = size(xa)
       loop: do i = 1, n
         morder = max(norder, 0)
-        check_tvd: do
+        order: do
 !
 !  Find the index range to construct the interpolant.
 !
@@ -1567,9 +1575,9 @@ module General
 !
           call polynomial_interpolation_one(xa(ix1:ix2), ya(ix1:ix2), x(i), y(i), dy(i), istat, msg)
           if (istat /= 0) exit loop
-          if (fix_order) exit check_tvd
+          if (fix_order) exit order
 !
-!  Check the total variation.
+!  Check the total variation and/or positive definiteness.
 !
           bracket: if (left) then
             ix1 = max(ix - 1, 1)
@@ -1579,9 +1587,12 @@ module General
             ix2 = min(ix + 1, nxa)
           endif bracket
 !
-          if ((y(i) - ya(ix1)) * (ya(ix2) - y(i)) >= 0.0) exit check_tvd
+          ok = .true.
+          if (tvd1 .and.  (y(i) - ya(ix1)) * (ya(ix2) - y(i)) < 0.0) ok = .false.
+          if (posdef1 .and. y(i) <= 0.0) ok = .false.
+          if (ok) exit order
           morder = morder - 1
-        enddo check_tvd
+        enddo order
       enddo loop
 !
 !  Error handling
