@@ -206,9 +206,19 @@ endif
 #
 ifeq ($(HYDRO),nohydro)
   ifneq ($(VISCOSITY),noviscosity)
-nohydro_message:
+nohydro_visc_message:
 	@echo ";;; You are using HYDRO = nohydro, but VISCOSITY is not noviscosity."
 	@echo ";;; One can only use viscosity in connection with the hydro module."
+	@echo ";;; Please adapt the settings in Makefile.local."
+	exit 1
+
+  endif
+endif
+ifeq ($(HYDRO),nohydro)
+  ifneq ($(SHOCK),noshock)
+nohydro_shock_message:
+	@echo ";;; You are using HYDRO = nohydro, but SHOCK is not noshock."
+	@echo ";;; One can only use shock in connection with the hydro module."
 	@echo ";;; Please adapt the settings in Makefile.local."
 	exit 1
 
