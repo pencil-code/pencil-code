@@ -572,7 +572,8 @@ module Shear
 !  Santiy check
 !
       if (nprocx /= 1) call fatal_error('sheared_advection_spline', 'currently only works with nprocx = 1.')
-      if (nxgrid /= nygrid) call fatal_error('sheared_advection_spline', 'currently only works with nxgrid = nygrid.')
+      if (nygrid > 1 .and. nxgrid /= nygrid) &
+        call fatal_error('sheared_advection_spline', 'currently only works with nxgrid = nygrid.')
 !
 !  Find the displacement traveled with the advection.
 !
@@ -596,19 +597,21 @@ module Shear
 !
 !  Interpolation in y: assuming periodic boundary conditions
 !
-        scan_yz: do k = n1, n2
-          b = a(l1:l2,m1:m2,k,ic)
-          call transp_xy(b)
-          scan_yx: do j = 1, ny
-            ynew1 = ynew - yshift(j+ipy*ny)
-            ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
-            call spline(ygrid, b(:,j), ynew1, penc, nygrid, nygrid, err=error, msg=message)
-            if (error) call warning('sheared_advection_spline', 'error in y interpolation; ' // trim(message))
-            b(:,j) = penc(1:nx)
-          enddo scan_yx
-          call transp_xy(b)
-          a(l1:l2,m1:m2,k,ic) = b
-        enddo scan_yz
+        ydir: if (nygrid > 1) then
+          scan_yz: do k = n1, n2
+            b = a(l1:l2,m1:m2,k,ic)
+            call transp_xy(b)
+            scan_yx: do j = 1, ny
+              ynew1 = ynew - yshift(j+ipy*ny)
+              ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
+              call spline(ygrid, b(:,j), ynew1, penc, nygrid, nygrid, err=error, msg=message)
+              if (error) call warning('sheared_advection_spline', 'error in y interpolation; ' // trim(message))
+              b(:,j) = penc(1:nx)
+            enddo scan_yx
+            call transp_xy(b)
+            a(l1:l2,m1:m2,k,ic) = b
+          enddo scan_yz
+        endif ydir
 !
 !  Currently no interpolation in z
 !
