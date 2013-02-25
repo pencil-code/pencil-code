@@ -565,6 +565,7 @@ module Shear
       real, dimension(nx,ny) :: b
       real, dimension(nxgrid) :: xnew, penc, yshift
       real, dimension(nygrid) :: ynew, ynew1
+      real, dimension(mygrid) :: by
       character(len=256) :: message
       logical :: error
       integer :: ic, j, k
@@ -604,7 +605,10 @@ module Shear
             scan_yx: do j = 1, ny
               ynew1 = ynew - yshift(j+ipy*ny)
               ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
-              call spline(ygrid, b(:,j), ynew1, penc, nygrid, nygrid, err=error, msg=message)
+              by(nghost+1:mygrid-nghost) = b(:,j)
+              by(1:nghost) = by(l2-nghost+1:l2)
+              by(mygrid-nghost+1:mygrid) = by(l1:l1+nghost-1)
+              call spline(yglobal, by, ynew1, penc, mygrid, nygrid, err=error, msg=message)
               if (error) call warning('sheared_advection_spline', 'error in y interpolation; ' // trim(message))
               b(:,j) = penc(1:nx)
             enddo scan_yx
