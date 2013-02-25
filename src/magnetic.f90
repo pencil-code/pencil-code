@@ -672,6 +672,7 @@ module Magnetic
   integer :: idiag_Exmxz=0      ! YAVG_DOC: $\left<{\cal E}_x\right>_{y}$
   integer :: idiag_Eymxz=0      ! YAVG_DOC: $\left<{\cal E}_y\right>_{y}$
   integer :: idiag_Ezmxz=0      ! YAVG_DOC: $\left<{\cal E}_z\right>_{y}$
+  integer :: idiag_vAmxz=0      ! YAVG_DOC: $\left<v_A^2>_{y}$
 !
 ! z averaged diagnostics given in zaver.in
 !
@@ -1767,6 +1768,8 @@ module Magnetic
           idiag_axmxy/=0 .or. idiag_aymxy/=0 .or. idiag_azmxy/=0) &
            lpenc_diagnos2d(i_aa)=.true.
 !
+      if (idiag_vAmxz/=0) lpenc_diagnos2d(i_va2)=.true.
+!
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0 .or. &
           idiag_examx/=0 .or. idiag_examy/=0 .or. idiag_examz/=0 .or. &
           idiag_examz1/=0 .or. idiag_examz2/=0 .or. idiag_examz3/=0 .or. &
@@ -1957,12 +1960,14 @@ module Magnetic
         lpencil_in(i_aa)=.true.
       endif
 !
+      if (lpencil_in(i_etava)) lpencil_in(i_va2)=.true.
+      if (lpencil_in(i_jxbr) .and. va2max_jxb>0) lpencil_in(i_va2)=.true.
+!
       if (lpencil_in(i_va2)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_rho1)=.true.
       endif
 !
-      if (lpencil_in(i_etava)) lpencil_in(i_va2)=.true.
       if (lpencil_in(i_etaj) .or. lpencil_in(i_etaj2) .or. lpencil_in(i_etajrho)) then
         lpencil_in(i_j2)=.true.
         lpencil_in(i_rho1)=.true.
@@ -1984,8 +1989,6 @@ module Magnetic
         lpencil_in(i_bb)=.true.
         lpencil_in(i_hjj)=.true.
       endif
-!
-      if (lpencil_in(i_jxbr) .and. va2max_jxb>0) lpencil_in(i_va2)=.true.
 !
       if (lpencil_in(i_jxbr)) then
         lpencil_in(i_jxb)=.true.
@@ -3886,6 +3889,7 @@ module Magnetic
         if (idiag_Exmxz/=0) call ysum_mn_name_xz(p%uxb(:,1),idiag_Exmxz)
         if (idiag_Eymxz/=0) call ysum_mn_name_xz(p%uxb(:,2),idiag_Eymxz)
         if (idiag_Ezmxz/=0) call ysum_mn_name_xz(p%uxb(:,3),idiag_Ezmxz)
+        if (idiag_vAmxz/=0) call ysum_mn_name_xz(p%va2(:),idiag_vAmxz)
       else
 !
 !  idiag_bxmxy and idiag_bymxy also need to be calculated when
@@ -3910,7 +3914,7 @@ module Magnetic
           if (idiag_poynymxy/=0) &
             call zsum_mn_name_xy(etatotal*p%jxb(:,2)-mu01* &
             (p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3)),idiag_poynymxy)
-          if (idiag_poynzmxy/=0) & 
+          if (idiag_poynzmxy/=0) &
             call zsum_mn_name_xy(etatotal*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmxy)
         endif
@@ -6582,7 +6586,7 @@ module Magnetic
         idiag_axmxz=0; idiag_aymxz=0; idiag_azmxz=0; idiag_Exmxz=0
         idiag_axmxy=0; idiag_aymxy=0; idiag_azmxy=0
         idiag_Eymxz=0; idiag_Ezmxz=0; idiag_jxbm=0; idiag_uxbm=0; idiag_oxuxbm=0
-        idiag_jxbxbm=0; idiag_gpxbm=0; idiag_uxDxuxbm=0
+        idiag_jxbxbm=0; idiag_gpxbm=0; idiag_uxDxuxbm=0; idiag_vAmxz=0
         idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
         idiag_jxbmx=0; idiag_jxbmy=0; idiag_jxbmz=0
         idiag_uxbcmx=0; idiag_uxbsmx=0
@@ -7013,6 +7017,7 @@ module Magnetic
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Exmxz',idiag_Exmxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Eymxz',idiag_Eymxz)
         call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'Ezmxz',idiag_Ezmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'vAmxz',idiag_vAmxz)
       enddo
 !
 !  Check for those quantities for which we want z-averages.
