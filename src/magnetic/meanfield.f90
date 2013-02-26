@@ -63,7 +63,7 @@ module Magnetic_meanfield
   logical :: lOmega_effect=.false., lalpha_Omega_approx=.false.
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
-  logical :: lmeanfield_chitB=.false.
+  logical :: lmeanfield_chitB=.false., lignore_gradB2_inchiB=.false.
   logical :: lchit_with_glnTT=.false., lrho_chit=.true., lrho_chit_equil=.true.
 !
   namelist /magn_mf_init_pars/ &
@@ -108,6 +108,7 @@ module Magnetic_meanfield
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
       lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lrho_chit_equil, &
+      lignore_gradB2_inchiB, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
       lqpcurrent,mf_qJ2, &
@@ -908,11 +909,16 @@ module Magnetic_meanfield
         glnchit_prof=0.
 !
 !  Add contribution from gradient of chiB*B^2/Beq^2 term.
+!  The B2glnrho term is critical for the magneto-thermodiffusive instability.
 !
-        call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
         call multsv_mn(p%b2,p%glnrho,B2glnrho)
+        if (lignore_gradB2_inchiB) then
+          call multsv_mn(-chit_quenching*Beq21/oneQbeta2,-B2glnrho,glnchit)
+        else
+          call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
+          call multsv_mn(-chit_quenching*Beq21/oneQbeta2,2.*Bk_Bki-B2glnrho,glnchit)
+        endif
 !
-        call multsv_mn(-chit_quenching*Beq21/oneQbeta2,2.*Bk_Bki-B2glnrho,glnchit)
         if (lrho_chit_equil) then
           call multsv_mn(-chit_quenching*B_ext2*Beq21/oneQbeta02,p%glnrho,glnchit2)
           glnchit=glnchit+glnchit2

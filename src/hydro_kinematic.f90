@@ -453,6 +453,25 @@ module Hydro
           p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
         endif
 !
+!  Modified Roberts flow (from Tilgner 2004)
+!
+      case ('Roberts-IVb')
+        if (headtt) print*,'Roberts-IV flow; eps_kinflow=',eps_kinflow
+        fac=sqrt(2./eps_kinflow)*ampl_kinflow
+        fac2=sqrt(eps_kinflow)*ampl_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+          p%uu(:,3)=+fac2*sin(ky_uukin*y(m))
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+        if (lpencil(i_oo)) then
+          p%oo(:,1)=fac2*kx_uukin*cos(ky_uukin*y(m))
+          p%oo(:,2)=0.
+          p%oo(:,3)=2.*fac*kx_uukin*sin(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+        endif
+!
 !  Glen-Roberts flow (positive helicity), alternative version
 !
       case ('varhel-roberts')
