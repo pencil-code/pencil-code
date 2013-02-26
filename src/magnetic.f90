@@ -672,7 +672,7 @@ module Magnetic
   integer :: idiag_Exmxz=0      ! YAVG_DOC: $\left<{\cal E}_x\right>_{y}$
   integer :: idiag_Eymxz=0      ! YAVG_DOC: $\left<{\cal E}_y\right>_{y}$
   integer :: idiag_Ezmxz=0      ! YAVG_DOC: $\left<{\cal E}_z\right>_{y}$
-  integer :: idiag_vAmxz=0      ! YAVG_DOC: $\left<v_A^2>_{y}$
+  integer :: idiag_vAmxz=0      ! YAVG_DOC: $\left<v_A^2\right>_{y}$
 !
 ! z averaged diagnostics given in zaver.in
 !
