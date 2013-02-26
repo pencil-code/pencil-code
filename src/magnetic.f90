@@ -485,6 +485,7 @@ module Magnetic
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
   integer :: idiag_jxbrym=0     ! DIAG_DOC:
   integer :: idiag_jxbrzm=0     ! DIAG_DOC:
+  integer :: idiag_jxbrmax=0    ! DIAG_DOC: $\max(|\Jv\times\Bv/\rho|)$
   integer :: idiag_jxbr2m=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)^2\right>$
   integer :: idiag_uxBrms=0     ! DIAG_DOC:
   integer :: idiag_Bresrms=0    ! DIAG_DOC:
@@ -987,7 +988,7 @@ module Magnetic
         case ('anomalous')
           if (lroot) print*, 'resistivity: anomalous'
           lresi_anomalous=.true.
-        case ('spitzer')
+        case ('spitzer','eta-spitzer')
           if (lroot) print*, 'resistivity: temperature dependent (Spitzer 1969)'
           lresi_spitzer=.true.
         case ('magfield')
@@ -3380,6 +3381,7 @@ module Magnetic
         if (idiag_jxbrym/=0) call sum_mn_name(p%jxbr(:,2),idiag_jxbrym)
         if (idiag_jxbrzm/=0) call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
         if (idiag_jxbr2m/=0) call sum_mn_name(p%jxbr2,idiag_jxbr2m)
+        if (idiag_jxbrmax/=0) call max_mn_name(p%jxbr2,idiag_jxbrmax,lsqrt=.true.)
 !
 !  <J.A> for calculating k_effective, for example.
 !
@@ -6601,7 +6603,7 @@ module Magnetic
         idiag_bzmphi=0; idiag_b2mphi=0; idiag_jbmphi=0; idiag_uxbrmphi=0
         idiag_uxbpmphi=0; idiag_uxbzmphi=0; idiag_jxbrmphi=0; idiag_jxbpmphi=0
         idiag_jxbzmphi=0; idiag_jxbrxm=0; idiag_jxbrym=0; idiag_jxbrzm=0
-        idiag_jxbr2m=0; idiag_jxbrxmx=0; idiag_jxbrymx=0; idiag_jxbrzmx=0
+        idiag_jxbr2m=0; idiag_jxbrxmx=0; idiag_jxbrymx=0; idiag_jxbrzmx=0; idiag_jxbrmax=0;
         idiag_jxbrxmy=0; idiag_jxbrymy=0; idiag_jxbrzmy=0; idiag_jxbrxmz=0
         idiag_jxbrymz=0; idiag_jxbrzmz=0; idiag_armphi=0; idiag_apmphi=0
         idiag_azmphi=0; idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0
@@ -6722,6 +6724,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jxbrxm',idiag_jxbrxm)
         call parse_name(iname,cname(iname),cform(iname),'jxbrym',idiag_jxbrym)
         call parse_name(iname,cname(iname),cform(iname),'jxbrzm',idiag_jxbrzm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbrmax',idiag_jxbrmax)
         call parse_name(iname,cname(iname),cform(iname),'jxbr2m',idiag_jxbr2m)
         call parse_name(iname,cname(iname),cform(iname),'jxbm',idiag_jxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbm',idiag_uxbm)
