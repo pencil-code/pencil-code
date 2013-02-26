@@ -86,6 +86,8 @@ module Entropy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
+  integer :: idiag_detn=0     ! DIAG_DOC: Number of detonated cells
+  integer :: idiag_detot=0    ! DIAG_DOC: Total injected energy
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -671,6 +673,7 @@ module Entropy
         idiag_TTm=0; idiag_TTmax=0; idiag_TTmin=0
         idiag_ethm=0; idiag_ethmin=0; idiag_ethmax=0; idiag_eem=0
         idiag_pdivum=0; idiag_ppm=0
+        idiag_detn=0; idiag_detot=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -685,6 +688,8 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
+        call parse_name(iname,cname(iname),cform(iname),'detn',idiag_detn)
+        call parse_name(iname,cname(iname),cform(iname),'detot',idiag_detot)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -1347,14 +1352,16 @@ module Entropy
       real, dimension(nx,ny,nz) :: delta
       real, dimension(nx) :: ps
       real, dimension(-3:3) :: uu
-      integer :: ndet
+      integer :: ndet, ndet_sum
       integer :: i, j, k, imn, m, n
       integer :: ll1, ll2, mm1, mm2, nn1, nn2
       real :: divu, r
+      real :: det, det_sum
 !
 !  Prepare for communicating the cells that should be detonated.
 !
       ndet = 0
+      det = 0.0
       f(:,:,:,idet) = 0.
       zscan: do k = n1, n2
         nn1 = k - nzs
@@ -1385,6 +1392,7 @@ module Entropy
               converge: if (divu < 0.) then
                 ndet = ndet + 1
                 f(i,j,k,idet) = deposit * f(i,j,k,irho)**detonation_power
+                det = det + f(i,j,k,idet) * dVol_x(i) * dVol_y(j) * dVol_z(k)
               endif converge
             endif trigger
           enddo xscan
@@ -1425,6 +1433,19 @@ module Entropy
 !  Make the deposit into the cells.
 !
       f(l1:l2,m1:m2,n1:n2,ieth) = f(l1:l2,m1:m2,n1:n2,ieth) + delta(:,:,:)
+!
+!  Diagnostics
+!
+      diagnos: if (lout) then
+        get_detn: if (idiag_detn /= 0) then
+          call mpireduce_sum_int(ndet, ndet_sum)
+          if (lroot) fname(idiag_detn) = real(ndet_sum)
+        endif get_detn
+        get_detot: if (idiag_detot /= 0) then
+          call mpireduce_sum(det, det_sum)
+          if (lroot) fname(idiag_detot) = det_sum
+        endif get_detot
+      endif diagnos
 !
     endsubroutine detonate
 !***********************************************************************
