@@ -238,13 +238,14 @@ module Magnetic
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
-      ampl_ff, swirl, radius, k1x_ff, k1y_ff, k1z_ff, lcheck_positive_va2, &
+      ampl_ff, swirl, radius, epsilonaa, k1x_ff, k1y_ff, k1z_ff, &
+      center1_x, center1_y, center1_z, lcheck_positive_va2, &
       lmean_friction, LLambda_aa, bthresh, bthresh_per_brms, iresistivity, &
       lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, ldiamagnetism, B2_diamag, &
-      reinitialize_aa, rescale_aa, &
+      reinitialize_aa, rescale_aa, initaa, amplaa, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, xdep_profile, eta_width, &
       eta_z0, eta_z1, eta_x0, eta_x1, eta_spitzer, borderaa, &
@@ -753,6 +754,7 @@ module Magnetic
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !  13-jan-11/MR: use subroutine 'register_report_aux' instead of repeated code
+!  26-feb-13/axel: lreinitialize_aa added
 !
       use Sub, only: register_report_aux
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -760,6 +762,7 @@ module Magnetic
       use FArrayManager
       use SharedVariables, only: put_shared_variable
       use EquationOfState, only: cs0
+      use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -864,7 +867,15 @@ module Magnetic
 !  rescale magnetic field by a factor reinitialize_aa
 !
       if (reinitialize_aa) then
-        f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
+        do j=1,ninit
+          select case (initaa(j))
+          case ('rescale'); f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
+          case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
+          case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
+              center1_x,center1_z)
+          case default
+          endselect
+        enddo
       endif
 !
 !  set lrescaling_magnetic=T if linit_aa=T
