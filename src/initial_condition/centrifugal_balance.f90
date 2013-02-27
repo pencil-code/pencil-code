@@ -897,12 +897,12 @@ module InitialCondition
       use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
 !
       real, dimension(mx) :: aphi_mx,bz
-      real, dimension(nx) :: tmp2
-      integer :: i,ig,iprocx,iprocy,iserial_xy
-      real, dimension(nprocx*nprocy) :: procsum
-      real :: procsum_loc,tmpy,psum
+      real, dimension(nx) :: tmp
+      real, dimension(0:nprocx-1) :: proc_store
+      real :: out,in,psum
+      integer :: partner, px
 !
-      call integrate(bz,tmp2)
+      call integrate(bz,tmp)
 !
 !  If the run is serial in x, we're done. Otherwise, take into account that 
 !  the contribution of previous x-processors should be summed up. 
@@ -910,39 +910,32 @@ module InitialCondition
       if (nprocx/=1) then 
 !
 !  Store the last value of the integral, which should be the starting point 
-!  for the next x-processor. 
+!  for the next x-processor.
 !
-        procsum_loc=tmp2(nx)
+         out=tmp(nx)
 !
-!  All processors send to root, which then broadcasts the values.
+!  Prepare the communication in this yz row.
 !
-        if (lroot) then
-          procsum(1)=procsum_loc
-          do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
-            iserial_xy=iprocx+nprocx*iprocy+1
-            if (iserial_xy/=1) then
-              call mpirecv_real(tmpy,1,iserial_xy-1,111)
-              procsum(iserial_xy)=tmpy
+         do px=0,nprocx-1
+            partner = px + nprocx*ipy + nprocxy*ipz
+            if (iproc/=partner) then 
+               !Send to all processors in this row.
+               call mpisend_real(out,1,partner,111)
+               !Receive from all processors in the same row.
+               call mpirecv_real(in,1,partner,111)
+               proc_store(px)=in
+            else !data is local
+               proc_store(px) = out
             endif
-            if (ip<=9) print*,'recv',iserial_xy,procsum(iserial_xy)
-          enddo; enddo
-        else
-          call mpisend_real(procsum_loc,1,0,111)
-        endif
-        call mpibcast_real(procsum,nprocx*nprocy)
+         enddo
 !
 !  Sum the contributions of the x-processors in this y-row.
 !
-        psum=0.
-        do iprocx=0,ipx-1
-           iserial_xy=iprocx+nprocx*ipy+1
-           psum=psum+procsum(iserial_xy)
-        enddo
-        call integrate(bz,tmp2)
-        tmp2=tmp2+psum
+         psum=sum(proc_store(0:ipx-1))
+         tmp=tmp+psum
       endif
 !
-      aphi_mx(l1:l2)=tmp2
+      aphi_mx(l1:l2)=tmp
       aphi_mx(1:l1-1) =0.;aphi_mx(l2+1:mx)=0.
 !
     endsubroutine integrate_field
