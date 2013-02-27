@@ -652,8 +652,6 @@ module InitialCondition
               f(l1:l2,m,n,iaz)=Aphi/sin(y(m))
             enddo; enddo
 !
-            !call correct_lorentz_force(f,amplbb,pblaw)
-!
           endif
 !
 !--------------------------------------------------------------
@@ -880,87 +878,95 @@ module InitialCondition
 !***********************************************************************
     subroutine integrate_field(bz,aphi_mx)
 !
+!  Given a value of the magnetic field B , integrate it numerically to find the 
+!  corresponding magnetic potential A, in cylindrical or spherical coordinates. 
+!  In cylindrical coordinates, the field is 
+!
+!    r*Bz = d/dr(r*Aphi) 
+!
+!  whereas in spherical, it is 
+!
+!    r*Bphi = d/dr(r*Atheta)
+!
+!  Use the composite Simpson rule to integrate. 
+!
+!  26-feb-13/wlad: coded
+!
       use FArrayManager, only: farray_use_global
       use Sub, only: gij,curl_mn,get_radial_distance
       use Mpicomm, only: mpibcast_real,mpisend_real,mpirecv_real
 !
       real, dimension(mx) :: aphi_mx,bz
-      real, dimension(0:nx) :: tmp2
+      real, dimension(nx) :: tmp2
       integer :: i,ig,iprocx,iprocy,iserial_xy
       real, dimension(nprocx*nprocy) :: procsum
       real :: procsum_loc,tmpy,psum
 !
-      iserial_xy=ipx+nprocx*ipy+1
-      tmp2(0)=0.
-      do i=l1,l2
-        ig=i-l1+1
-        tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                bz(i-3)   +   bz(i+3)   +&
-             4*(bz(i-2)+bz(i)+bz(i+2))  +&
-             2*(bz(i-1)   +   bz(i+1)))/3.
-      enddo
-      procsum_loc=tmp2(nx)
+      call integrate(bz,tmp2)
 !
-      if (ip<=9) print*,'send',ipx+nprocx*ipy+1,procsum_loc
+!  If the run is serial in x, we're done. Otherwise, take into account that 
+!  the contribution of previous x-processors should be summed up. 
 !
-      if (lroot) then 
-        procsum(1)=procsum_loc
-        do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
-          iserial_xy=iprocx+nprocx*iprocy+1
-          if (iserial_xy/=1) then
-            call mpirecv_real(tmpy,1,iserial_xy-1,111)
-            procsum(iserial_xy)=tmpy
-          endif
-          if (ip<=9) print*,'recv',iserial_xy,procsum(iserial_xy)
-        enddo; enddo
-      else
-        call mpisend_real(procsum_loc,1,0,111)
+      if (nprocx/=1) then 
+!
+!  Store the last value of the integral, which should be the starting point 
+!  for the next x-processor. 
+!
+        procsum_loc=tmp2(nx)
+!
+!  All processors send to root, which then broadcasts the values.
+!
+        if (lroot) then
+          procsum(1)=procsum_loc
+          do iprocx=0,nprocx-1; do iprocy=0,nprocy-1
+            iserial_xy=iprocx+nprocx*iprocy+1
+            if (iserial_xy/=1) then
+              call mpirecv_real(tmpy,1,iserial_xy-1,111)
+              procsum(iserial_xy)=tmpy
+            endif
+            if (ip<=9) print*,'recv',iserial_xy,procsum(iserial_xy)
+          enddo; enddo
+        else
+          call mpisend_real(procsum_loc,1,0,111)
+        endif
+        call mpibcast_real(procsum,nprocx*nprocy)
+!
+!  Sum the contributions of the x-processors in this y-row.
+!
+        psum=0.
+        do iprocx=0,ipx-1
+           iserial_xy=iprocx+nprocx*ipy+1
+           psum=psum+procsum(iserial_xy)
+        enddo
+        call integrate(bz,tmp2)
+        tmp2=tmp2+psum
       endif
 !
-      call mpibcast_real(procsum,nprocx*nprocy)
+      aphi_mx(l1:l2)=tmp2
+      aphi_mx(1:l1-1) =0.;aphi_mx(l2+1:mx)=0.
 !
-      do n=n1,n2
-!
-        if (nprocx==1) then 
-          tmp2(0)=0.
-          do i=l1,l2
-            ig=i-l1+1
-            tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                    bz(i-3)   +   bz(i+3)   +&
-                 4*(bz(i-2)+bz(i)+bz(i+2))  +&
-                 2*(bz(i-1)   +   bz(i+1)))/3.
-          enddo
-        else
-          if (lfirst_proc_x) then 
-            tmp2(0)=0.
-            do i=l1,l2
-              ig=i-l1+1
-              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                   bz(i-3)   +   bz(i+3)   +&
-                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
-                   2*(bz(i-1)   +   bz(i+1)))/3.
-            enddo
-          else 
-            psum=0.
-            do iprocx=0,ipx-1
-              iserial_xy=iprocx+nprocx*ipy+1
-              psum=psum+procsum(iserial_xy)
-            enddo
-            tmp2(0)=psum
-            do i=l1,l2
-              ig=i-l1+1
-              tmp2(ig)=tmp2(ig-1)+1./(6.*dx_1(i))*(&
-                   bz(i-3)   +   bz(i+3)   +&
-                   4*(bz(i-2)+bz(i)+bz(i+2))  +&
-                   2*(bz(i-1)   +   bz(i+1)))/3.
-            enddo
-          endif
-        endif
-        aphi_mx(l1:l2)=tmp2(1:nx)
-        aphi_mx(1:l1-1) =0.;aphi_mx(l2+1:mx)=0.
-      enddo
-! 
     endsubroutine integrate_field
+!***********************************************************************
+    subroutine integrate(bb,aa)
+!
+!  Integrate using Simpson's composite rule. 
+!
+      real, dimension(mx) :: bb
+      real, dimension(0:nx) :: tmp
+      real, dimension(nx) :: aa
+      integer :: i,ig
+!
+      tmp(0)=0.
+      do i=l1,l2
+        ig=i-l1+1
+        tmp(ig)=tmp(ig-1)+1./(6.*dx_1(i))*(&
+                bb(i-3)   +   bb(i+3)   +&
+             4*(bb(i-2)+bb(i)+bb(i+2))  +&
+             2*(bb(i-1)   +   bb(i+1)))/3.
+      enddo
+      aa=tmp(1:nx)
+!
+    endsubroutine integrate
 !***********************************************************************
     subroutine correct_pressure_gradient(f,ics2,temperature_power_law)
 !
