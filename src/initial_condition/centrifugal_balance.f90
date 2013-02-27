@@ -798,22 +798,10 @@ module InitialCondition
 !  This routine sets a radially-dependent vertical field, by numerically 
 !  integrating it to find the corresponding azimuthal magnetic potential. 
 !
-      use Sub, only: step_scalar
-!
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: width
       real, dimension(mx) :: bz,aphi_mx,Breal
-      integer :: i
 !
-      do i=1,mx
-!
-        width=5./dx_1(i)
-!
-        bz(i) = Breal(i) * &
-             (step_scalar(x(i),rm_int+width,width)-&
-              step_scalar(x(i),rm_ext-width,width))
-      enddo
-!
+      call cap_field(bz,Breal)
       call integrate_field(bz*x,aphi_mx)
 !
       do n=1,mz;do m=1,my
@@ -838,7 +826,7 @@ module InitialCondition
       use Messages,        only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx) :: cs2,pressure,Bphi,tmp
+      real, dimension(mx) :: cs2,pressure,Bphi,BB,tmp
       real, dimension(mx) :: rr_sph,rr_cyl
       integer, pointer :: iglobal_cs2
       real :: cv1
@@ -864,17 +852,36 @@ module InitialCondition
         endif
         pressure = f(:,m,npoint,irho)*cs2 /gamma
         Bphi = sqrt(2*pressure/plasma_beta)
+        
+        call cap_field(Bphi,BB)
 !
 !  Bphi = 1/r*d/dr(r*Atheta), so integrate: Atheta=1/r*Int(B*r)dr
 !
         call get_radial_distance(rr_sph,rr_cyl)
-        call integrate_field(Bphi*rr_sph,tmp)
+        call integrate_field(BB*rr_sph,tmp)
         do n=n1,n2
           f(l1:l2,m,n,iay)=f(l1:l2,m,n,iay) + tmp(l1:l2)/rr_sph(l1:l2)
         enddo
       enddo
 !
     endsubroutine set_field_constbeta
+!***********************************************************************
+    subroutine cap_field(Bin,Bout)
+!
+      use Sub, only: step_scalar
+!
+      real, dimension(mx) :: Bin,Bout
+      real :: width
+      integer :: i
+!      
+      do i=1,mx
+         width=5./dx_1(i)
+         Bout(i) = Bin(i) * &
+             (step_scalar(x(i),rm_int,width)-&
+              step_scalar(x(i),rm_ext,width))
+      enddo
+!
+    endsubroutine cap_field
 !***********************************************************************
     subroutine integrate_field(bz,aphi_mx)
 !
