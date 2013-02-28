@@ -489,8 +489,9 @@ module Special
 !            uy_ref=0.
            if (lzone_left) then
                u_profile(ll1:ll2)=cos(Period*PI*y(m)/Lxyz(2))
-               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)&
-                 -(f(ll1:ll2,m,n,iuy)-u_profile(ll1:ll2))*dt1
+               df(ll1:ll2,m,n,iux)=df(ll1:ll2,m,n,iux)&
+                 -(f(ll1:ll2,m,n,iux)-u_profile(ll1:ll2))*dt1
+               df(ll1:ll2,m,n,iuy)=df(ll1:ll2,m,n,iuy)-(f(ll1:ll2,m,n,iuy)-0.)*dt1
            endif
          endif
 !
