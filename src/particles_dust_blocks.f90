@@ -1031,11 +1031,7 @@ k_loop:   do while (.not. (k>npar_loc))
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ib=inearblock(k)
-              if (ldensity_nolog) then
-                eps=fb(ix0,iy0,iz0,irhop,ib)/fb(ix0,iy0,iz0,irho,ib)
-              else
-                eps=fb(ix0,iy0,iz0,irhop,ib)/exp(fb(ix0,iy0,iz0,ilnrho,ib))
-              endif
+              eps = fb(ix0,iy0,iz0,irhop,ib) / get_gas_density(fb,ix0,iy0,iz0,ib)
             endif
 !
             fp(k,ivpx) = fp(k,ivpx) + &
@@ -1938,11 +1934,7 @@ k_loop:   do while (.not. (k>npar_loc))
                           ( 1.0-abs(fp(k,iyp)-yb(iyy,ib))*dy1b(iyy,ib) )
                       if (nzgrid/=1) weight=weight* &
                           ( 1.0-abs(fp(k,izp)-zb(izz,ib))*dz1b(izz,ib) )
-                      if (ldensity_nolog) then
-                        rho1_point=1/fb(ixx,iyy,izz,ilnrho,ib)
-                      else
-                        rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
-                      endif
+                      rho1_point = 1.0 / get_gas_density(fb,ixx,iyy,izz,ib)
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
                           rhop_swarm_par)
@@ -2005,11 +1997,7 @@ k_loop:   do while (.not. (k>npar_loc))
                       if (nxgrid/=1) weight=weight*weight_x
                       if (nygrid/=1) weight=weight*weight_y
                       if (nzgrid/=1) weight=weight*weight_z
-                      if (ldensity_nolog) then
-                        rho1_point=1/fb(ixx,iyy,izz,irho,ib)
-                      else
-                        rho1_point=exp(-fb(ixx,iyy,izz,ilnrho,ib))
-                      endif
+                      rho1_point = 1.0 / get_gas_density(fb,ixx,iyy,izz,ib)
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
                           rhop_swarm_par)
@@ -2020,11 +2008,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Nearest Grid Point (NGP) scheme.
 !
-                    if (ldensity_nolog) then
-                      rho1_point=1/fb(ix0,iy0,iz0,ilnrho,ib)
-                    else
-                      rho1_point=exp(-fb(ix0,iy0,iz0,ilnrho,ib))
-                    endif
+                    rho1_point = 1.0 / get_gas_density(fb,ix0,iy0,iz0,ib)
                     !WL: Why is this l being defined?
                     l=ineargrid(k,1)
                     call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,ib, &
@@ -2045,11 +2029,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   dt1_drag_dust(ix0,iy0,iz0)= &
                        max(dt1_drag_dust(ix0,iy0,iz0),tausp1_par)
                   if (ldragforce_gas_par) then
-                    if (ldensity_nolog) then
-                      rho1_point=1/fb(ix0,iy0,iz0,ilnrho,ib)
-                    else
-                      rho1_point=exp(-fb(ix0,iy0,iz0,ilnrho,ib))
-                    endif
+                    rho1_point = 1.0 / get_gas_density(fb,ix0,iy0,iz0,ib)
                     if (fb(ix0,iy0,iz0,inp,ib)/=0.0) &
                         dt1_drag_gas(ix0,iy0,iz0)=dt1_drag_gas(ix0,iy0,iz0)+ &
                         rhop_swarm_par*rho1_point*tausp1_par
@@ -2239,11 +2219,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  when the gas follows the dust.
 !
         if (epsp_friction_increase/=0.0) then
-          if (ldensity_nolog) then
-            epsp=fb(ix0,iy0,iz0,irhop,iblock)/fb(ix0,iy0,iz0,irho,iblock)
-          else
-            epsp=fb(ix0,iy0,iz0,irhop,iblock)/exp(fb(ix0,iy0,iz0,ilnrho,iblock))
-          endif
+          epsp = fb(ix0,iy0,iz0,irhop,iblock) / get_gas_density(fb,ix0,iy0,iz0,iblock)
           if (epsp>epsp_friction_increase) &
               tausp1_par=tausp1_par/(epsp/epsp_friction_increase)
         endif
@@ -2499,5 +2475,22 @@ k_loop:   do while (.not. (k>npar_loc))
       enddo
 !
     endsubroutine rprint_particles
+!***********************************************************************
+    real function get_gas_density(fb, ix, iy, iz, ib) result(rho)
+!   
+!  Reads the gas density at one location in a block.
+!
+!  01-mar-13/ccyang: coded.
+!
+      real, dimension(mxb,myb,mzb,mfarray,0:nblockmax-1), intent(in) :: fb
+      integer, intent(in) :: ix, iy, iz, ib
+!
+      linear: if (ldensity_nolog) then
+        rho = fb(ix, iy, iz, irho, ib)
+      else linear
+        rho = exp(fb(ix, iy, iz, ilnrho, ib))
+      endif linear
+!   
+    endfunction get_gas_density
 !***********************************************************************
 endmodule Particles
