@@ -549,7 +549,7 @@ module Magnetic_meanfield
       real, dimension (nx) :: meanfield_qe_func, meanfield_qs_der
       real, dimension (nx) :: meanfield_qp_der, meanfield_qe_der, BiBk_Bki
       real, dimension (nx) :: meanfield_Bs21, meanfield_Bp21, meanfield_Be21
-      real, dimension (nx) :: meanfield_etaB2, quench_chiB, g2, chit_prof
+      real, dimension (nx) :: meanfield_etaB2, g2, chit_prof !, quench_chiB
       real, dimension (nx) :: oneQbeta02, oneQbeta2
       real, dimension (nx,3) :: Bk_Bki, exa_meanfield, glnchit_prof, glnchit
       real, dimension (nx,3) :: meanfield_getat_tmp, B2glnrho, glnchit2
@@ -924,10 +924,10 @@ module Magnetic_meanfield
           glnchit=glnchit+glnchit2
         endif
 !
-        if (lchit_with_glnTT) then
-          call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%gss,g2)
-          p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
-        else
+!       if (lchit_with_glnTT) then
+!         call dot(p%glnrho+p%glnTT+glnchit_prof+glnchit,p%gss,g2)
+!         p%chiB_mf=chi_t0*quench_chiB*(g2+p%del2ss)
+!       else
 !
 !  The lrho_chit option corresponds to solving the equation
 !  Ds/Dt = chi_t^{(\rho)}/\rho (gradlnchi_t^{(\rho)}.grads + del2s).
@@ -939,7 +939,7 @@ module Magnetic_meanfield
             call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
             p%chiB_mf=chi_t0*(g2+p%del2ss)
           endif
-        endif
+!       endif
       endif
 !
 !  Calculate diagnostics.
