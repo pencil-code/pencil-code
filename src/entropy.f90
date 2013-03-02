@@ -45,7 +45,7 @@ module Entropy
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
   real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0
-  real :: mixinglength_flux=0.0
+  real :: mixinglength_flux=0.0, entropy_flux=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: center2_x=0.0, center2_y=0.0, center2_z=0.0
   real :: kx_ss=1.0, ky_ss=1.0, kz_ss=1.0
@@ -132,7 +132,8 @@ module Entropy
 !
   namelist /entropy_init_pars/ &
       initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
-      mixinglength_flux, chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, &
+      mixinglength_flux, entropy_flux, &
+      chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, T0, &
@@ -1034,6 +1035,7 @@ module Entropy
                 center1_x,center1_z)
           case ('hor-tube')
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
+          case ('const_chit'); call strat_const_chit(f)
           case ('mixinglength')
              call mixinglength(mixinglength_flux,f)
              hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma1/gravz
@@ -1514,6 +1516,63 @@ module Entropy
       f(:,:,:,iss)=ss_const
 !
     endsubroutine hydrostatic_isentropic
+!***********************************************************************
+    subroutine strat_const_chit(f)
+!
+!  Solve:
+!  ds/dz=-(F/rho*chit)
+!  dlnrho/dz=-ds/dz-|gravz|/cs2 using 2nd order Runge-Kutta.
+!
+!   2-mar-13/axel: coded
+!
+      use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
+      use Gravity, only: gravz
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: zz,lnrho,ss,rho,cs2,dlnrho,dss
+      integer :: iz
+!
+      if (headtt) print*,'init_ss : mixinglength stratification'
+      if (.not.lgravz) then
+        call fatal_error('mixinglength','works only for vertical gravity')
+      endif
+!
+!  Integrate downward.
+!
+      if (lroot) open(11,file='data/zprof_const_chit.dat',status='unknown')
+      lnrho=lnrho0
+      ss=0.
+      zz=xyz0(3)+Lxyz(3)
+      do iz=nzgrid+nghost,0,-1
+        n=iz-ipz*nz
+!
+!  compute right-hand side
+!
+        rho=exp(lnrho)
+        cs2=cs20*exp(gamma_m1*(lnrho-lnrho0)+gamma*ss)
+!
+!  write data
+!
+        if (lroot) write(11,'(4(2x,1pe12.4))') zz,lnrho,ss,cs2
+        if (n>=1.and.n<=mz) then
+          f(:,:,n,ilnrho)=lnrho
+          f(:,:,n,iss)=ss
+        endif
+!
+!  right-hand sides
+!
+        dss=-entropy_flux/rho
+        dlnrho=-dss+gravz/cs2
+!
+!  integrate
+!
+        zz=zz-dz
+        lnrho=lnrho-dlnrho*dz
+        ss=ss-dss*dz
+      enddo
+      if (lroot) close(11)
+!
+    endsubroutine strat_const_chit
 !***********************************************************************
     subroutine mixinglength(mixinglength_flux,f)
 !

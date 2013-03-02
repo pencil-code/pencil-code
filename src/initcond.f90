@@ -27,7 +27,7 @@ module Initcond
   public :: beltrami_complex, beltrami_old, bhyperz
   public :: rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
-  public :: modes, modev, modeb, crazy
+  public :: modes, modev, modeb, crazy, exponential
   public :: trilinear, baroclinic
   public :: triquad, isotdisk
   public :: diffrot, olddiffrot
@@ -1875,6 +1875,24 @@ module Initcond
                                        *spread(spread(cos(k*y),1,mx),3,mz)
 !
     endsubroutine robertsflow
+!***********************************************************************
+    subroutine exponential(ampl,f,j,KKz)
+!
+!  horizontal pattern with exponential decay (as initial condition)
+!
+!   2-mar-13/axel: coded
+!
+      integer :: j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,KKz,fact
+!
+!  By(z)=B0*exp(-z/2H), and put KKz=1/2H, so
+!  Ax(z)=-2*H*B0*exp(-z/2H)
+!
+      fact=-ampl/KKz
+      f(:,:,:,j)=f(:,:,:,j)+fact*spread(spread(exp(-KKz*z),1,mx),2,my)
+!
+    endsubroutine exponential
 !***********************************************************************
     subroutine vecpatternxy(ampl,f,i,kx,ky,kz)
 !

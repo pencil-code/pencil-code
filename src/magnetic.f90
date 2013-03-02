@@ -754,7 +754,7 @@ module Magnetic
 !  24-nov-02/tony: dummy routine - nothing to do at present
 !  20-may-03/axel: reinitialize_aa added
 !  13-jan-11/MR: use subroutine 'register_report_aux' instead of repeated code
-!  26-feb-13/axel: lreinitialize_aa added
+!  26-feb-13/axel: reinitialize_aa added
 !
       use Sub, only: register_report_aux
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -873,6 +873,7 @@ module Magnetic
           case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
           case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
               center1_x,center1_z)
+          case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
           case default
           endselect
         enddo
@@ -1255,6 +1256,7 @@ module Magnetic
         case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
         case ('zero', '0'); f(:,:,:,iax:iaz) = 0.0
         case ('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
+        case ('exponential'); call exponential(amplaa(j),f,iaa,kz_aa(j))
         case ('bsiny'); call acosy(amplaa(j),f,iaa,ky_aa(j))
         case ('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
         case ('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
