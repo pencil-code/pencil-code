@@ -5085,7 +5085,7 @@ module Initcond
     subroutine rotblob(ampl,incl_alpha,f,i,radius,xsphere,ysphere,zsphere)
 !
 !  Rigid rotating sphere initial velocity
-!  with inclination  angle alpha.
+!  with inclination angle alpha.
 !
 !  18-feb-10/mvaisala: coded
 !

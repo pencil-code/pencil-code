@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3)
-! PENCILS PROVIDED b2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
+! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); beta1; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
@@ -347,6 +347,7 @@ module Magnetic
   integer :: idiag_exjm2=0      ! DIAG_DOC:
   integer :: idiag_emag=0       ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
+  integer :: idiag_bfrms=0      ! DIAG_DOC: $\left<{\Bv'}^2\right>^{1/2}$
   integer :: idiag_bmax=0       ! DIAG_DOC: $\max(|\Bv|)$
   integer :: idiag_bxmin=0      ! DIAG_DOC: $\min(|B_x|)$
   integer :: idiag_bymin=0      ! DIAG_DOC: $\min(|B_y|)$
@@ -1879,6 +1880,7 @@ module Magnetic
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
+      if (idiag_bfrms/=0) lpenc_diagnos(i_bf2)=.true.
       if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
       if (idiag_etajmax/=0) lpenc_diagnos(i_etaj)=.true.
       if (idiag_etaj2max/=0) lpenc_diagnos(i_etaj2)=.true.
@@ -2234,6 +2236,7 @@ module Magnetic
       else
         if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
       endif
+      if (lpencil(i_bf2)) call dot2_mn(p%bbb,p%bf2)
 !
 ! rho=(rho0/10+B^2)
 !
@@ -3252,6 +3255,7 @@ module Magnetic
         if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
         if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
         if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+        if (idiag_bfrms/=0) call sum_mn_name(p%bf2,idiag_bfrms,lsqrt=.true.)
         if (idiag_emag/=0) call integrate_mn_name(mu012*p%b2,idiag_emag)
         if (idiag_brmsh/=0) then
           if (lequatory) call sum_mn_name_halfy(p%b2,idiag_brmsh)
@@ -6559,8 +6563,8 @@ module Magnetic
         idiag_jxp2=0; idiag_jyp2=0; idiag_jzp2=0
         idiag_Exp2=0; idiag_Eyp2=0; idiag_Ezp2=0
         idiag_axp2=0; idiag_ayp2=0; idiag_azp2=0
-        idiag_aybym2=0; idiag_exaym2=0
-        idiag_exjm2=0; idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
+        idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
+        idiag_brms=0; idiag_bfrms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0
         idiag_vArms=0; idiag_emag=0; idiag_bxmin=0; idiag_bymin=0; idiag_bzmin=0
         idiag_bxmax=0; idiag_bymax=0; idiag_bzmax=0; idiag_vAmax=0; idiag_dtb=0
         idiag_bbxmax=0; idiag_bbymax=0; idiag_bbzmax=0
@@ -6692,6 +6696,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'epsAD',idiag_epsAD)
         call parse_name(iname,cname(iname),cform(iname),'emag',idiag_emag)
         call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'bfrms',idiag_bfrms)
         call parse_name(iname,cname(iname),cform(iname),'brmsn',idiag_brmsn)
         call parse_name(iname,cname(iname),cform(iname),'brmss',idiag_brmss)
         call parse_name(iname,cname(iname),cform(iname),'brmsx',idiag_brmsx)

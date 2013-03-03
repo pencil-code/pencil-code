@@ -64,7 +64,7 @@ module Magnetic_meanfield
   logical :: lmeanfield_noalpm=.false., lmeanfield_pumping=.false.
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lmeanfield_chitB=.false., lignore_gradB2_inchiB=.false.
-  logical :: lchit_with_glnTT=.false., lrho_chit=.true., lrho_chit_equil=.true.
+  logical :: lchit_with_glnTT=.false., lrho_chit=.true., lchit_Bext2_equil=.true.
 !
   namelist /magn_mf_init_pars/ &
       dummy
@@ -107,7 +107,7 @@ module Magnetic_meanfield
       meanfield_Beq_profile, uturb, &
       lmeanfield_pumping, meanfield_pumping, &
       lmeanfield_jxb, lmeanfield_jxb_with_vA2, &
-      lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lrho_chit_equil, &
+      lmeanfield_chitB, lchit_with_glnTT, lrho_chit, lchit_Bext2_equil, &
       lignore_gradB2_inchiB, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
@@ -919,7 +919,11 @@ module Magnetic_meanfield
           call multsv_mn(-chit_quenching*Beq21/oneQbeta2,2.*Bk_Bki-B2glnrho,glnchit)
         endif
 !
-        if (lrho_chit_equil) then
+!  In the presence of a uniform imposed field, chit or calKt are no
+!  longer constant. To prevent this, we compensate by a 1+Q*B0^2 factor.
+!  This leads to an additional contribution in the glnchit expression.
+!
+        if (lchit_Bext2_equil) then
           call multsv_mn(-chit_quenching*B_ext2*Beq21/oneQbeta02,p%glnrho,glnchit2)
           glnchit=glnchit+glnchit2
         endif
@@ -930,14 +934,15 @@ module Magnetic_meanfield
 !       else
 !
 !  The lrho_chit option corresponds to solving the equation
-!  Ds/Dt = chi_t^{(\rho)}/\rho (gradlnchi_t^{(\rho)}.grads + del2s).
+!  Ds/Dt = (calKt/rho)*(glncalKt.grads + del2s). Otherwise we have
+!  Ds/Dt = chit*[(glnrho+glncalKt).grads + del2s]. Otherwise we have
 !
           if (lrho_chit) then
             call dot(glnchit_prof+glnchit,p%gss,g2)
             p%chiB_mf=p%rho1*chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2ss)
           else
             call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
-            p%chiB_mf=chi_t0*(g2+p%del2ss)
+            p%chiB_mf=chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2ss)
           endif
 !       endif
       endif
