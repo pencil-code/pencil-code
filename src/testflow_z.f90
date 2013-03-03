@@ -87,7 +87,7 @@ module Testflow
   real, dimension(2) :: zrange, ca, cl, cq, cqa, cqq
   real :: tuuinit=0.,duuinit=0.
 !
-  ! input parameters
+! input parameters
 !
   character (len=labellen), dimension(ninit*njtestflow) :: inituutest='nothing'
   real, dimension (ninit*njtestflow) :: ampluutest=0.
@@ -339,6 +339,9 @@ module Testflow
 
      if (lprescribed_velocity) &
        lkinem_testflow=.true.
+
+     if (lburgers_testflow) &
+       lremove_mean_enthalpy_z=.false.
 !
 ! calculate z-index bounds from valid_zrange for actual processor
 !
@@ -685,7 +688,8 @@ module Testflow
       if (lkinem_testflow) then
 !
         uufluct = f(l1:l2,m,n,iuxtest:iuztest)           ! ufluct = u0
-        call grad(f,ihhtest,ghfluct)                     ! ghfluct = grad(h0)
+        if (.not.lburgers_testflow) &
+          call grad(f,ihhtest,ghfluct)                   ! ghfluct = grad(h0)
 !
       else
 !
@@ -715,7 +719,8 @@ module Testflow
           call identify_bcs('uxtest-'//cjtest,iuxtest)
           call identify_bcs('uytest-'//cjtest,iuytest)
           call identify_bcs('uztest-'//cjtest,iuztest)
-          call identify_bcs('hhtest-'//cjtest,ihhtest)
+          if (.not.lburgers_testflow) &
+            call identify_bcs('hhtest-'//cjtest,ihhtest)
 !
         endif
 !
@@ -724,7 +729,7 @@ module Testflow
         if ( jtest>0 .or. .not.lprescribed_velocity ) then
 
           uutest=f(l1:l2,m,n,iuxtest:iuztest)! testflow solution # jtest
-          hhtest=f(l1:l2,m,n,ihhtest)
+          if (.not.lburgers_testflow) hhtest=f(l1:l2,m,n,ihhtest)
           !!if ( jtest==1 ) print*, 'uutest, hhtest:', minval(uutest),maxval(uutest), minval(hhtest),maxval(hhtest)
 !
 !  div u term
@@ -733,7 +738,7 @@ module Testflow
 !
 !  gradient of (pseudo) enthalpy
 !
-          call grad(f,ihhtest,ghtest)
+          if (.not.lburgers_testflow) call grad(f,ihhtest,ghtest)
 !
         endif
 
@@ -806,7 +811,8 @@ module Testflow
                          der5_single(glnrhomz,n-n1+1,dz_1(n1:n2))/(60.*dz_1(n-n1+1)**5) 
           endif
 !
-          df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-uufluct(:,3)*gH0test-U0ghtest
+          if ( .not.lburgers_testflow) &
+            df(l1:l2,m,n,ihhtest)=df(l1:l2,m,n,ihhtest)-uufluct(:,3)*gH0test-U0ghtest
 !
         endif
 !
@@ -967,7 +973,7 @@ module Testflow
 
           endif
 !
-          if (idiag_hpqrms(jtest)/=0) then
+          if (.not.lburgers_testflow.and.idiag_hpqrms(jtest)/=0) then
 !
             upq2=f(l1:l2,m,n,ihhtest)*f(l1:l2,m,n,ihhtest)
             call sum_mn_name(upq2,idiag_hpqrms(jtest),lsqrt=.true.)
@@ -1177,12 +1183,12 @@ yloop:  do m=m1,m2
               f(l1:l2,m,n,iuxtest:iuztest) = uufluct
 
               ghfluct = 0.
-              f(l1:l2,m,n,ihhtest) = 0.
+              if (.not.lburgers_testflow) f(l1:l2,m,n,ihhtest) = 0.
 
             else
 
-              uufluct = f(l1:l2,m,n,iuxtest:iuztest)           ! ufluct = u0
-              call grad(f,ihhtest,ghfluct)                     ! ghfluct = grad(h0)
+              uufluct = f(l1:l2,m,n,iuxtest:iuztest)                      ! ufluct = u0
+              if (.not.lburgers_testflow) call grad(f,ihhtest,ghfluct)    ! ghfluct = grad(h0)
 
             endif
 
@@ -1210,7 +1216,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !  velocity vector and enthalpy gradient of testflow solution
 !
             uutest=f(l1:l2,m,n,iuxtest:iuztest)
-            call grad(f,ihhtest,ghtest)                 ! grad(htest)
+            if (.not.lburgers_testflow) call grad(f,ihhtest,ghtest)                 ! grad(htest)
 !
 !  velocity gradient matrix and velocity divergence of testflow solution
 !
@@ -1309,7 +1315,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
                 unltestm(j,jtest)=unltestm(j,jtest)+sum(unltest(:,j))
               enddo
 
-              hnltestm(jtest)=hnltestm(jtest)+sum(hnltest)
+              if ( .not.lburgers_testflow ) &
+                hnltestm(jtest)=hnltestm(jtest)+sum(hnltest)
 
             endif
 !
@@ -1467,15 +1474,15 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           if (idiag_Fipq(i,j)/=0) call surf_mn_name( Fipq(i,j), idiag_Fipq(i,j) ) ! surf_mn_name because only simple addition needed
         enddo
 !
-        if (idiag_Qpq(j)/=0) call surf_mn_name( Qipq(j), idiag_Qpq(j) )
+        if (.not.lburgers_testflow.and.idiag_Qpq(j)/=0) call surf_mn_name( Qipq(j), idiag_Qpq(j) )
 !
       enddo
 !
       select case (itestflow)
 
-         case ('W11-W22')
+        case ('W11-W22')
 !
-           do k=1,2
+          do k=1,2
 !
 !  calculate aka-lambda and nu tensors
 !
@@ -1501,21 +1508,25 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
 !  calculate psi and phi tensors
 !
-          if ( idiag_psii(1)/=0) &
-            call surf_mn_name( -Qipq(1)*cz(indz)-Qipq(2)*sz(indz), idiag_psii(1) )       ! \psi_1
-          if ( idiag_psii(2)/=0) &
-            call surf_mn_name( -Qipq(3)*cz(indz)-Qipq(4)*sz(indz), idiag_psii(2) )       ! \psi_2
+          if (.not.lburgers_testflow) then
 !
-          if ( idiag_phii(1)/=0) &
-            call surf_mn_name( -Qipq(3)*k1sz(indz)+Qipq(4)*k1cz(indz), idiag_phii(1) )   ! \phi_1
-          if ( idiag_phii(2)/=0) &
-            call surf_mn_name(  Qipq(1)*k1sz(indz)-Qipq(2)*k1cz(indz), idiag_phii(2) )   ! \phi_2
+            if ( idiag_psii(1)/=0) &
+              call surf_mn_name( -Qipq(1)*cz(indz)-Qipq(2)*sz(indz), idiag_psii(1) )       ! \psi_1
+            if ( idiag_psii(2)/=0) &
+              call surf_mn_name( -Qipq(3)*cz(indz)-Qipq(4)*sz(indz), idiag_psii(2) )       ! \psi_2
+!
+            if ( idiag_phii(1)/=0) &
+              call surf_mn_name( -Qipq(3)*k1sz(indz)+Qipq(4)*k1cz(indz), idiag_phii(1) )   ! \phi_1
+            if ( idiag_phii(2)/=0) &
+              call surf_mn_name(  Qipq(1)*k1sz(indz)-Qipq(2)*k1cz(indz), idiag_phii(2) )   ! \phi_2
 !
 !  calculate theta-scalar
 !
-          if ( idiag_theta/=0) &
-            call surf_mn_name( -Qipq(5)*cz(indz)-Qipq(6)*sz(indz), idiag_theta )         ! \theta   TBC
-
+            if ( idiag_theta/=0) &
+              call surf_mn_name( -Qipq(5)*cz(indz)-Qipq(6)*sz(indz), idiag_theta )         ! \theta   TBC
+!
+          endif
+!XXX
         case('quadratic','quasi-periodic')
 !
           if (idiag_gal/=0) then
@@ -1560,7 +1571,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
             endif
           endif
 
-          if ( idiag_kappa/=0) then
+          if (.not.lburgers_testflow.and.idiag_kappa/=0) then
 !
             do i=1,2
               call surf_mn_name( Qipq(i), idiag_kappa+i-1 )                    ! \kappa_i
