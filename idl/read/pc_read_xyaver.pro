@@ -28,6 +28,14 @@ nz=dim.nz
 ;;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 spawn, 'cat '+datatopdir+'/xyaver.in', varnames
+
+inds = where(varnames ne '')
+if inds[0] eq -1 then begin
+  print, 'PC_READ_XYAVER: No variables provided!'
+  return
+endif else $
+  varnames = varnames[inds]
+
 if (not quiet) then print, 'Preparing to read xy-averages ', $
     arraytostring(varnames,quote="'",/noleader)
 nvar=n_elements(varnames)
