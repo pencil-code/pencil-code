@@ -10,91 +10,100 @@
 #
 #
 #
-if ($#argv == 1) then
-  cd $1
+if ($#argv >= 1) then
+  set dirlist=($argv)
+else
+  set dirlist=$cwd
 endif
+
+foreach pdir ($dirlist)
+  cd $pdir
 #
 #  set directory
 #
-set CWD=$cwd
-set dir=$cwd:t
+  set CWD=$cwd
+  set dir=$cwd:t
 #
 #  go one up add add our run directory to cvs
 #
-cd ..
-cvs add $dir
-cd $dir
+  cd ..
+  cvs add $dir
+  cd $dir
 #
 #  add directories and files to cvs
 #
-cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat *.sav data
+  cvs add *.in alpha_in.dat k.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat *.sav data
 #
-if (-e data) then
-    cd data
-    cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat
-else
-    echo "no data directory found"
-endif
+  if (-e data) then
+      cd data
+      cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml cvsid.dat varname.dat runtime.dat
+  else
+      echo "no data directory found"
+  endif
 #
 #  add alpeta.sav, if it exists
 #
-\ls | egrep 'alpeta.sav' >/dev/null
-if ( ! $status ) then
-  cvs add alpeta.sav
-endif
+  \ls | egrep 'alpeta.sav' >/dev/null
+  if ( ! $status ) then
+    cvs add alpeta.sav
+  endif
 #
 #  add power spectra, if they exist
 #  (for the time being, test existence only on a few such files)
 #
-\ls | egrep 'power.*\.dat' >/dev/null
-if ( ! $status ) then
-  cvs add power*.dat
-endif
+  \ls | egrep 'power.*\.dat' >/dev/null
+  if ( ! $status ) then
+    cvs add power*.dat
+  endif
 #
 #  add structure functions, if they exist
 #  (for the time being, test existence only on a few such files)
 #
-\ls | egrep 'sf.*\.dat' >/dev/null
-if ( ! $status ) then
-  cvs add sf*.dat
-endif
+  \ls | egrep 'sf.*\.dat' >/dev/null
+  if ( ! $status ) then
+    cvs add sf*.dat
+  endif
 #
 #  add testfield_info.dat file if it exists
 #
-\ls | egrep 'testfield_info\.dat' >/dev/null
-if ( ! $status ) then
-  cvs add testfield_info.dat
-endif
+  \ls | egrep 'testfield_info\.dat' >/dev/null
+  if ( ! $status ) then
+    cvs add testfield_info.dat
+  endif
 #
 #  add info about directory history
 #
-if (-e new_from.dir) then
-    cvs add new_from.dir
-endif
+  if (-e new_from.dir) then
+      cvs add new_from.dir
+  endif
 #
-if (-e new_to.dir) then
-    cvs add new_to.dir
-endif
+  if (-e new_to.dir) then
+      cvs add new_to.dir
+  endif
 #
-if (-e remeshed_from.dir) then
-    cvs add remeshed_from.dir
-endif
+  if (-e remeshed_from.dir) then
+      cvs add remeshed_from.dir
+  endif
 #
 #  check in everything
 #  need to take full path name, because we are still in data,
 #  which may only be a link.
 #
-cd $CWD
-cvs ci -l -m "added new run: `uname -n -s`" . data
+  cd $CWD
+  cvs ci -l -m "added new run: `uname -n -s`" . data
 #
 #  add src stuff only if it is not a link
 #  Do this at the very end, in case this step fails.
 #
-test -h src
-if ( $status ) then
-  cvs add src
-  cd src
-  cvs add *.local .build-history
+  test -h src
+  if ( $status ) then
+    cvs add src
+    cd src
+    cvs add *.local .build-history
+    cd ..
+    cvs ci -m "added new run: `uname -n -s`" src
+  endif
+
   cd ..
-  cvs ci -m "added new run: `uname -n -s`" src
-endif
+end
+
