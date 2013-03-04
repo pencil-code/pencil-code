@@ -995,7 +995,11 @@ k_loop:   do while (.not. (k>npar_loc))
           cs=sqrt(cs20)
           if (.not.learly_particle_map) call fatal_error('init_particles', &
               'must have learly_particle_map=T for dragforce_equilibrium')
-          call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
+          if (ldensity_nolog) then
+            call fill_blocks_with_bricks(f,fb,mfarray,irho)
+          else
+            call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
+          endif
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
             eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &

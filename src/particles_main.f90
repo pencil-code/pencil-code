@@ -767,8 +767,14 @@ module Particles_main
 !  Fill adopted blocks with gas density and gas velocity field, for calculating
 !  drag forces.
 !
-        if (lfill_blocks_density) &
+        if (lfill_blocks_density) then
+          if (ldensity_nolog) then
+            call fill_blocks_with_bricks(f,fb,mfarray,irho)
+          else
             call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
+          endif
+        endif
+!
         if (lfill_blocks_velocity) then
           call fill_blocks_with_bricks(f,fb,mfarray,iux)
           call fill_blocks_with_bricks(f,fb,mfarray,iuy)
