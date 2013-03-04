@@ -129,19 +129,29 @@ for i=0,ncpus-1 do begin        ; read data from individual files
     ;
     ;  read deltay in case of shear
     ;
+  on_ioerror, err1
   if (lshear) then begin
     readu,1, t, xloc, yloc, zloc, dx, dy, dz, deltay
   end else begin
     readu,1, t, xloc, yloc, zloc
   end
-
+  goto, cont1
+err1:
+  print, !err_string+' when reading from file "'+datadir+'/'+varfile+'"'
+cont1:
   close,1
+
   gridfile=datadir+'/'+'grid.dat'
   if (not any(lequidist)) then begin
     openr,1,gridfile,/F77
     point_lun,1,pos
+    on_ioerror, err2
     readu,1, dx_1_loc,     dy_1_loc,     dz_1_loc
     readu,1, dx_tilde_loc, dy_tilde_loc, dz_tilde_loc
+    goto, cont2
+err2:
+    print, !err_string+' when reading from file "'+datadir+'/grid.dat"'
+cont2:
     close,1
   endif else begin
     ;
