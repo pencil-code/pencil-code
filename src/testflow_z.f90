@@ -53,6 +53,7 @@ module Testflow
   endinterface
 
   interface correct_inds           ! Overload the 'correct_inds' function
+    module procedure correct_0inds
     module procedure correct_1inds
     module procedure correct_2inds
   endinterface
@@ -145,24 +146,27 @@ module Testflow
   ! diagnostic variables (needs to be consistent with reset list below)
 !
   integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients,     couple  $\overline F$ and $\overline U$
-  integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,         couples $\overline F$ and $\partial^2 \overline U/\partial z^2$
-  integer :: idiag_aklam=0                          ! DIAG_DOC: AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W$
-  integer :: idiag_xi=0                             ! DIAG_DOC: $\chi$-vector,        couples $\overline F$ and ${\overline G}_z$
-  integer :: idiag_kappa=0                          ! DIAG_DOC: $\kappa$-vector,      couples $\overline Q$ and $\overline U$
-  integer :: idiag_psi=0                            ! DIAG_DOC: $\psi$-vector,        couples $\overline Q$ and $\overline W$
-  integer :: idiag_phi=0                            ! DIAG_DOC: $\phi$-vector,        couples $\overline Q$ and $\partial^2 \overline U/\partial z^2$
-  integer :: idiag_pi=0                             ! DIAG_DOC: $\pi$-scalar,         couples $\overline Q$ and ${\overline G}_z$
-  integer :: idiag_theta=0                          ! DIAG_DOC: $\theta$-scalar,      couples $\overline Q$ and $div{\overline U}=dU_z/dz$
-  integer :: idiag_nu33=0
+  integer :: idiag_aklam=0                          ! DIAG_DOC: AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W = \nabla\times{\overline U}$
+  integer :: idiag_gamma=0                          ! DIAG_DOC: $\gamma-vector,       couples $\overline F$ and $\nabla\cdot{\overline U}$
+  integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,         couples $\overline F$ and $\partial^2 {\overline U}/\partial z^2$
+  integer :: idiag_zeta=0                           ! DIAG_DOC: $\zeta$-vector,       couples $\overline F$ and ${\overline G}_z = \nabla_z {\overline H}$
+  integer :: idiag_xi=0                             ! DIAG_DOC: $\xi$-vector,         couples $\overline F$ and $\partial^2 {\overline H}/\partial z^2$
+
+  integer :: idiag_aklamQ=0                         ! DIAG_DOC: $aklam^Q$-vector,     couples $\overline Q$ and $\overline W$
+  integer :: idiag_gammaQ=0                         ! DIAG_DOC: $\gamma^Q$-scalar,    couples $\overline Q$ and $\nabla\cdot{\overline U}=dU_z/dz$
+  integer :: idiag_nuQ=0                            ! DIAG_DOC: $\nu^Q$-vector,       couples $\overline Q$ and $\partial^2 \overline U/\partial z^2$
+  integer :: idiag_zetaQ=0                          ! DIAG_DOC: $\zetaQ$-scalar,      couples $\overline Q$ and ${\overline G}_z$
+  integer :: idiag_xiQ=0                            ! DIAG_DOC: $\xiQ$-scalar,        couples $\overline Q$ and $\partial^2 {\overline H}/\partial z^2$
 !
-  integer, dimension(2,2) :: idiag_galij=0, &       ! DIAG_DOC: $\alpha_{K,ij}$
-                             idiag_aklamij=0, &     ! DIAG_DOC: $\lambda_{ij}$
-                             idiag_nuij=0           ! DIAG_DOC: $\nu_{ij}$
+  integer, dimension(3,3) :: idiag_galij=0          ! DIAG_DOC: 
+  integer, dimension(3,2) :: idiag_aklamij=0        ! DIAG_DOC: $\alpha_{K,ij}$
+  integer, dimension(3)   :: idiag_gammai=0         ! DIAG_DOC: $\gamma_i$
+  integer, dimension(3,3) :: idiag_nuij=0           ! DIAG_DOC: $\nu_{ij}$
 !
-  integer, dimension(2) :: idiag_xii=0, &           ! DIAG_DOC: $\chi_i$
-                           idiag_kappai=0, &        ! DIAG_DOC: $\kappa_i$
-                           idiag_psii=0, &          ! DIAG_DOC: $\psi_i$
-                           idiag_phii=0             ! DIAG_DOC: $\phi_i$
+  integer, dimension(3) :: idiag_zetai=0, &         ! DIAG_DOC: $\zeta_i$
+                           idiag_xii=0, &           ! DIAG_DOC: $\xi_i$
+                           idiag_nuQi=0             ! DIAG_DOC: $\nu^Q_i$
+  integer, dimension(2) :: idiag_aklamQi=0          ! DIAG_DOC: $aklam^Q_i$
 !
   integer, dimension(3,njtestflow) :: idiag_Fipq=0      ! DIAG_DOC: ${\cal F}_i^{pq}$
   integer, dimension(njtestflow)   :: idiag_Qpq=0       ! DIAG_DOC: ${\cal Q}^{pq}$
@@ -176,6 +180,7 @@ module Testflow
   integer :: nname_old
 !
   integer :: idiag_map(100)
+!
   contains
 !
 !***********************************************************************
@@ -633,6 +638,7 @@ module Testflow
 !
 !  12-mar-08/axel: coded
 !  24-jun-08/MR: modified
+!  15-feb-13/MR: handling of test cases with mean enthalpy added
 !
       use Cdata
       use Sub
@@ -655,8 +661,7 @@ module Testflow
       real, dimension (nx,3) :: uutest,uufluct,del2utest,graddivutest,ghtest,ghfluct,U0testgu,ugU0test
       real, dimension (nx,3,3) :: uijfluct
       real, dimension (nx,3) :: U0test,gU0test                      !!!MR: needless x-dimension for 0-quantities
-      real, dimension (nx)   :: hhtest,U0ghtest,upq2,divutest, divufluct
-      real :: gH0test
+      real, dimension (nx)   :: hhtest,U0ghtest,gH0test,upq2,divutest,divufluct
 !
       logical :: ltestflow_out
 !
@@ -747,8 +752,7 @@ module Testflow
           select case (itestflow)                       ! get testflow U^(pq), grad U^(pq), grad H^(pq)
 !
             case ('W11-W22')
-              call set_U0test_W11_W22(U0test,gU0test,jtest)
-              gH0test=0.
+              call set_U0test_W11_W22(U0test,gU0test,gH0test,jtest)
 !
             case ('onlyconstant')
 !
@@ -874,7 +878,9 @@ module Testflow
 !
             if ( .not.lburgers_testflow ) then
 !
-              U0testgu = uijfluct(:,:,3)*gH0test                             ! S(u).grad(H^T)
+              do i=1,3                                                       ! 
+                U0testgu(:,i) = uijfluct(:,i,3)*gH0test                      ! S(u).grad(H^T)
+              enddo
 !
               call multsv(0.5*ghfluct(:,3),gU0test,ugU0test)                 ! S(U^T).grad(h)        MR: checked by numbers
               ugU0test(:,3) = ugU0test(:,3) + 0.5*ghfluct(:,3)*gU0test(:,3)  !  ~
@@ -1416,11 +1422,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 
             case('quadratic','quasi-periodic')
 !
-              if (idiag_aklamij(k,1)/=0) &
-                  call surf_mn_name( -wamp*gal2*z(n), idiag_aklamij(k,1) )
-!
-              if (idiag_aklamij(k,2)/=0) &
-                  call surf_mn_name(  wamp*gal1*z(n), idiag_aklamij(k,2) )
+                call surf_mn_name( -wamp*gal2*z(n), idiag_aklamij(k,1) )
+                call surf_mn_name(  wamp*gal1*z(n), idiag_aklamij(k,2) )
 
             case default
 !
@@ -1435,11 +1438,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
             do n=izrange(1),izrange(2)
 !
-              if (idiag_nuij(k,1)/=0) &
-                call surf_mn_name( wamp*(-gal1*zq2(n)+aklam2*z(n)), idiag_nuij(k,1) )
-!
-              if (idiag_nuij(k,2)/=0) &
-                call surf_mn_name( wamp*(-gal2*zq2(n)-aklam1*z(n)), idiag_nuij(k,2) )
+              call surf_mn_name( wamp*(-gal1*zq2(n)+aklam2*z(n)), idiag_nuij(k,1) )
+              call surf_mn_name( wamp*(-gal2*zq2(n)-aklam1*z(n)), idiag_nuij(k,2) )
 !
             enddo
 !
@@ -1454,6 +1454,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
     endsubroutine calc_ltestflow_nonlin_terms
 !***********************************************************************
     subroutine calc_coefficients(indz,Fipq,Qipq)
+!
+!  15-feb-13/MR: diagnostics completed
 !
     use Cdata
 !
@@ -1471,10 +1473,10 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
       do j=1,njtestflow_loc
 !
         do i=1,3
-          if (idiag_Fipq(i,j)/=0) call surf_mn_name( Fipq(i,j), idiag_Fipq(i,j) ) ! surf_mn_name because only simple addition needed
+          call surf_mn_name( Fipq(i,j), idiag_Fipq(i,j) ) ! surf_mn_name because only simple addition needed
         enddo
 !
-        if (.not.lburgers_testflow.and.idiag_Qpq(j)/=0) call surf_mn_name( Qipq(j), idiag_Qpq(j) )
+        if (.not.lburgers_testflow) call surf_mn_name( Qipq(j), idiag_Qpq(j) )
 !
       enddo
 !
@@ -1482,51 +1484,69 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 
         case ('W11-W22')
 !
-          do k=1,2
+          do k=1,3
 !
 !  calculate aka-lambda and nu tensors
 !
-            if (idiag_aklamij(k,1)/=0) &
+            if ( idiag_aklamij(k,1)/=0 ) &
               call surf_mn_name(    cz(indz)*Fipq(k,1)+  sz(indz)*Fipq(k,2), idiag_aklamij(k,1) )
-
-            if (idiag_aklamij(k,2)/=0) &
+            if ( idiag_aklamij(k,2)/=0 ) &
               call surf_mn_name(    cz(indz)*Fipq(k,3)+  sz(indz)*Fipq(k,4), idiag_aklamij(k,2) )
-
-            if (idiag_nuij(k,1)/=0) &
-              call surf_mn_name( -k1sz(indz)*Fipq(k,3)+k1cz(indz)*Fipq(k,4), idiag_nuij(k,1)    )
+! 
+            if ( idiag_nuij(k,1)/=0 ) &
+              call surf_mn_name( -k1sz(indz)*Fipq(k,3)+k1cz(indz)*Fipq(k,4), idiag_nuij(k,1) )
+            if ( idiag_nuij(k,2)/=0 ) &
+              call surf_mn_name(  k1sz(indz)*Fipq(k,1)-k1cz(indz)*Fipq(k,2), idiag_nuij(k,2) )
+            if ( idiag_nuij(k,3)/=0 ) &
+              call surf_mn_name( -k1sz(indz)*Fipq(k,5)+k1cz(indz)*Fipq(k,6), idiag_nuij(k,3) )
 !
-            if (idiag_nuij(k,2)/=0) &
-              call surf_mn_name(  k1sz(indz)*Fipq(k,1)-k1cz(indz)*Fipq(k,2), idiag_nuij(k,2)    )
+            if ( idiag_gammai(k)/=0 ) &
+              call surf_mn_name( cz(indz)*Fipq(k,5)+sz(indz)*Fipq(k,6), idiag_gammai(k) )
 !
           enddo
-
-          if (idiag_nu33/=0) &
-              call surf_mn_name( -k1sz(indz)*Fipq(k,5)+k1cz(indz)*Fipq(k,6), idiag_nu33 )          
-
+!
           !!print*, 'indz=', indz, -k1sz(indz)*Fipq(1,3)+k1cz(indz)*Fipq(1,4), k1sz(indz)*Fipq(2,1)-k1cz(indz)*Fipq(2,2), &
           !!                       -k1sz(indz)*Fipq(2,3)+k1cz(indz)*Fipq(2,4), k1sz(indz)*Fipq(1,1)-k1cz(indz)*Fipq(1,2)
 !
-!  calculate psi and phi tensors
+!  calculate aklamQ and nuQ vectors
 !
           if (.not.lburgers_testflow) then
 !
-            if ( idiag_psii(1)/=0) &
-              call surf_mn_name( -Qipq(1)*cz(indz)-Qipq(2)*sz(indz), idiag_psii(1) )       ! \psi_1
-            if ( idiag_psii(2)/=0) &
-              call surf_mn_name( -Qipq(3)*cz(indz)-Qipq(4)*sz(indz), idiag_psii(2) )       ! \psi_2
+            if ( idiag_aklamQi(1)/=0 ) &
+              call surf_mn_name( Qipq(1)*cz(indz)+Qipq(2)*sz(indz), idiag_aklamQi(1) )       ! \aklamQ_1
+            if ( idiag_aklamQi(2)/=0 ) &
+              call surf_mn_name( Qipq(3)*cz(indz)+Qipq(4)*sz(indz), idiag_aklamQi(2) )       ! \aklamQ_2
 !
-            if ( idiag_phii(1)/=0) &
-              call surf_mn_name( -Qipq(3)*k1sz(indz)+Qipq(4)*k1cz(indz), idiag_phii(1) )   ! \phi_1
-            if ( idiag_phii(2)/=0) &
-              call surf_mn_name(  Qipq(1)*k1sz(indz)-Qipq(2)*k1cz(indz), idiag_phii(2) )   ! \phi_2
+            if ( idiag_nuQi(1)/=0 ) &
+              call surf_mn_name( -Qipq(3)*k1sz(indz)+Qipq(4)*k1cz(indz), idiag_nuQi(1) )      ! \nuQ_1
+            if ( idiag_nuQi(2)/=0 ) &
+              call surf_mn_name(  Qipq(1)*k1sz(indz)-Qipq(2)*k1cz(indz), idiag_nuQi(2) )      ! \nuQ_2
+            if ( idiag_nuQi(3)/=0 ) &
+              call surf_mn_name( -Qipq(5)*k1sz(indz)+Qipq(6)*k1cz(indz), idiag_nuQi(3) )      ! \nuQ_3
 !
-!  calculate theta-scalar
+!  calculate gammaQ-scalar
 !
-            if ( idiag_theta/=0) &
-              call surf_mn_name( -Qipq(5)*cz(indz)-Qipq(6)*sz(indz), idiag_theta )         ! \theta   TBC
+            if ( idiag_gammaQ/=0 ) &
+              call surf_mn_name( Qipq(5)*cz(indz)+Qipq(6)*sz(indz), idiag_gammaQ )           ! \gamma^Q  
 !
+            if ( njtestflow>6 ) then
+
+              do k=1,3
+                if ( idiag_zetai(k)/=0 ) &
+                  call surf_mn_name( -Fipq(k,7)*  cz(indz)-Fipq(k,8)*  sz(indz), idiag_zetai(k) )    ! \zeta_k
+                if ( idiag_xii(k)/=0 ) &
+                  call surf_mn_name(  Fipq(k,7)*k1sz(indz)-Fipq(k,8)*k1cz(indz), idiag_xii(k) )      ! \xi_k
+              enddo
+!
+              if ( idiag_zetaQ/=0 ) &
+                call surf_mn_name( -Qipq(7)*  cz(indz)-Qipq(8)*  sz(indz), idiag_zetaQ )    ! \zetaQ
+              if ( idiag_xiQ/=0 ) &
+                call surf_mn_name(  Qipq(7)*k1sz(indz)-Qipq(8)*k1cz(indz), idiag_xiQ )      ! \xiQ
+ 
+            endif
+
           endif
-!XXX
+!
         case('quadratic','quasi-periodic')
 !
           if (idiag_gal/=0) then
@@ -1571,17 +1591,14 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
             endif
           endif
 
-          if (.not.lburgers_testflow.and.idiag_kappa/=0) then
+          if (.not.lburgers_testflow) then
 !
-            do i=1,2
-              call surf_mn_name( Qipq(i), idiag_kappa+i-1 )                    ! \kappa_i
-            enddo
-!
-            if ( idiag_psi/=0) then
+            if ( idiag_nuQ/=0) then
 !
               do i=1,2
-                call surf_mn_name( -Qipq(i+2)+Qipq(i)*z(indz), idiag_psi+i-1 ) ! \psi_i
+                call surf_mn_name( -Qipq(i+2)+Qipq(i)*z(indz), idiag_nuQ+i-1 ) ! \nuQ_i   TBC
               enddo
+!
             endif
 !
           endif
@@ -1637,8 +1654,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !   3-jun-05/axel: coded
 !
       use Cdata
-      use Sub
-!
+
       real, dimension (nx,3) :: uutest
       integer :: jtest
 !
@@ -1665,8 +1681,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !   3-jun-05/axel: coded
 !
       use Cdata
-      use Sub
-!
+
       real, dimension (nx,3) :: uutest
       integer :: jtest
 !
@@ -1676,27 +1691,32 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !  set uutest for each of the 9 cases
 !
       select case (jtest)
+!
       case (1); uutest(:,1)=cz(n); uutest(:,2)=0.; uutest(:,3)=0.
       case (2); uutest(:,1)=sz(n); uutest(:,2)=0.; uutest(:,3)=0.
       case default; uutest=0.
+!
       endselect
 !
     endsubroutine set_uutest_U11_U21
 !***********************************************************************
-    subroutine set_U0test_W11_W22 (U0test,gU0test,jtest)
+    subroutine set_U0test_W11_W22 (U0test,gU0test,gH0test,jtest)
 !
 !  set testflow
 !
 !  23-mar-08/axel: adapted from testflow_z
+!  15-feb-13/MR: parameter gH0test/test cases 7,8 added
 !
       use Cdata
-      use Sub
-!
+
       real, dimension (nx,3), intent(out) :: U0test,gU0test
+      real, dimension (nx),   intent(out) :: gH0test
       integer,                intent(in)  :: jtest
 !
 !  set U0test and gU0test for each of the various cases
 !
+      gH0test=0.
+
       select case (jtest)
 !
       case (1)
@@ -1723,9 +1743,17 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         U0test (:,1)=0.; U0test (:,2)=0.; U0test (:,3)=-wamp*k1cz(n)
         gU0test(:,1)=0.; gU0test(:,2)=0.; gU0test(:,3)=+wamp*sz(n)
 
-      case default
-        U0test=0.;gU0test=0.
+      case (7)
+        U0test=0.; gU0test=0.
+        gH0test=-wamp*cz(n)
 !
+      case (8)
+        U0test=0.; gU0test=0.
+        gH0test=-wamp*sz(n)
+
+      case default
+        U0test=0.; gU0test=0.
+
       endselect
 !
     endsubroutine set_U0test_W11_W22
@@ -1963,7 +1991,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
       logical           :: lreset
       logical, optional :: lwrite
 !
-      integer           :: iname,i,j,p,ifound,ifoundold
+      integer           :: iname,i,j,p,ifound,ifoundold,ijmax
       character         :: cind
       character(len=2)  :: cind2
       character(len=1)  :: cind1
@@ -1982,59 +2010,64 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
         idiag_gal=0  ; idiag_galij=0
         idiag_aklam=0; idiag_aklamij=0
+        idiag_gamma=0; idiag_gammai=0
         idiag_nu=0   ; idiag_nuij=0
 !
+        idiag_zeta=0; idiag_zetai=0
         idiag_xi=0; idiag_xii=0
 
-        idiag_kappa=0; idiag_kappai=0
-        idiag_psi=0; idiag_psii=0
-        idiag_phi=0; idiag_phii=0
+        idiag_aklamQ=0; idiag_aklamQi=0
+        idiag_nuQ=0; idiag_nuQi=0
 
-        idiag_pi=0; idiag_theta=0; idiag_nu33=0
-        idiag_ux0mz=0; idiag_uy0mz=0; idiag_uz0mz=0;
+        idiag_zetaQ=0; idiag_xiQ=0; idiag_gammaQ=0
+
+        idiag_ux0mz=0; idiag_uy0mz=0; idiag_uz0mz=0
         idiag_upqrms=0; idiag_hpqrms=0
 !
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
-      ifoundold=-1
+      ifoundold=0
 !
       do iname=1,nname
 !
+        ifound=0
         if ( itestflow/='W11-W22' ) &
           ifound = fparse_name(iname,cname(iname),cform(iname),'gal',idiag_gal)
 
         ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam',idiag_aklam)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gamma',idiag_gamma)
         ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu',idiag_nu)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'zeta',idiag_zeta)
         ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xi',idiag_xi)
 
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'kappa',idiag_kappa)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'psi',idiag_psi)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'phi',idiag_phi)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'pi',idiag_pi)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'theta',idiag_theta)
-        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu33',idiag_nu33)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklamQ',idiag_aklamQ)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gammaQ',idiag_gammaQ)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nuQ',idiag_nuQ)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'zetaQ',idiag_zetaQ)
+        ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xiQ',idiag_xiQ)
 !
-        do i=1,2
-          do j=1,2
+        do i=1,3
+          do j=1,3
 !
             cind2 = gen_ind(i,j)
 
             if ( itestflow/='W11-W22' ) &
               ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gal'//cind2,idiag_galij(i,j))
 
-            ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam'//cind2,idiag_aklamij(i,j))
+            if (j<3) ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklam'//cind2,idiag_aklamij(i,j))
             ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nu'//cind2,idiag_nuij(i,j))
 !
           enddo
 
           cind1 = gen_ind(i)
+          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'gamma'//cind1,idiag_gammai(i))
+          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'zeta'//cind1,idiag_zetai(i))
           ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'xi'//cind1,idiag_xii(i))
 
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'kappa'//cind1,idiag_kappai(i))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'psi'//cind1,idiag_psii(i))
-          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'phi'//cind1,idiag_phii(i))
+          if (i<3) ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'aklamQ'//cind1,idiag_aklamQi(i))
+          ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'nuQ'//cind1,idiag_nuQi(i))
 
         enddo
 
@@ -2061,7 +2094,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
               ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'F'//cind2,idiag_Fipq(i,j))
             enddo
 !
-            write(cind,'(i1)') j
+            cind = gen_ind(j)
             ifound = ifound + fparse_name(iname,cname(iname),cform(iname),'Q'//cind,idiag_Qpq(j))
 
           endif
@@ -2074,31 +2107,41 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           print*, 'testflow_z, rprint_testflow: Warning - diagnostic ouput for line',iname, &
                   ' and beyond will be messed up!!!'
 !
-        if ( ifound/=0 ) &
-          ifoundold=ifound
+        if ( ifound/=0 ) ifoundold=ifound
 !
       enddo
-
       nname_old = nname
 !
-      call update_diag( idiag_gal, idiag_galij, 'gal' )
-      call update_diag( idiag_aklam, idiag_aklamij, 'aklam' )
-      call update_diag( idiag_nu, idiag_nuij, 'nu' )
-      call update_diag( idiag_xi, idiag_xii, 'xi' )
+      if (njtestflow==4) then
+        ijmax=2
+      else
+        ijmax=3
+      endif
 
-      call update_diag( idiag_kappa, idiag_kappai, 'kappa' )
-      call update_diag( idiag_psi, idiag_psii, 'psi' )
-      call update_diag( idiag_phi, idiag_phii, 'phi' )
+      call update_diag( idiag_gal,   idiag_galij,   'gal'  , ijmax)
+      call update_diag( idiag_aklam, idiag_aklamij, 'aklam', ijmax)
+      call update_diag( idiag_nu,    idiag_nuij,    'nu'   , ijmax)
+      call update_diag( idiag_gamma, idiag_gammai,  'gamma', ijmax)
+      call update_diag( idiag_zeta,  idiag_zetai,   'zeta' , ijmax)
+      call update_diag( idiag_xi,    idiag_xii,     'xi'   , ijmax)
 
-      if ( idiag_gal/=-1 )   call correct_inds(idiag_galij)
-      if ( idiag_aklam/=-1 ) call correct_inds(idiag_aklamij)
-      if ( idiag_nu/=-1 )    call correct_inds(idiag_nuij)
+      call update_diag( idiag_aklamQ,idiag_aklamQi, 'aklamQ', ijmax)
+      call update_diag( idiag_nuQ,   idiag_nuQi,    'nuQ'   , ijmax)
+
+      if ( idiag_gal/=-1   ) call correct_inds(idiag_galij, ijmax)
+      if ( idiag_aklam/=-1 ) call correct_inds(idiag_aklamij, ijmax)
+      if ( idiag_nu/=-1    ) call correct_inds(idiag_nuij, ijmax)
 !
-      if ( idiag_xi/=-1 )    call correct_inds(idiag_xii)
+      if ( idiag_gamma/=-1 ) call correct_inds(idiag_gammai, ijmax)
+      if ( idiag_zeta/=-1  ) call correct_inds(idiag_zetai, ijmax)
+      if ( idiag_xi/=-1    ) call correct_inds(idiag_xii, ijmax)
 
-      if ( idiag_kappa/=-1 ) call correct_inds(idiag_kappai)
-      if ( idiag_psi/=-1 )   call correct_inds(idiag_psii)
-      if ( idiag_phi/=-1 )   call correct_inds(idiag_phii)
+      if ( idiag_aklamQ/=-1) call correct_inds(idiag_aklamQi)
+      if ( idiag_nuQ/=-1   ) call correct_inds(idiag_nuQi, ijmax)
+
+      if ( idiag_gammaQ/=-1) call correct_inds(idiag_gammaQ)
+      if ( idiag_zetaQ/=-1 ) call correct_inds(idiag_zetaQ)
+      if ( idiag_xiQ/=-1   ) call correct_inds(idiag_xiQ)
 
       if ( idiag_nu /= 0 ) &
         idiag_aklam = -1
@@ -2120,25 +2163,30 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
       if (lwr) then
 !
-        do i=1,2
-          do j=1,2
+        do i=1,3
+          do j=1,3
 !
             cind2 = gen_ind(i,j)
             write(3,*) 'idiag_gal'//cind2//'=',idiag_galij(i,j)
-            write(3,*) 'idiag_aklam'//cind2//'=',idiag_aklamij(i,j)
+            if (j<3) write(3,*) 'idiag_aklam'//cind2//'=',idiag_aklamij(i,j)
             write(3,*) 'idiag_nu'//cind2//'=',idiag_nuij(i,j)
 !
           enddo
 
           cind1 = gen_ind(i)
 
+          write(3,*) 'idiag_gamma'//cind1//'=',idiag_gammai(i)
+          write(3,*) 'idiag_zeta'//cind1//'=',idiag_zetai(i)
           write(3,*) 'idiag_xi'//cind1//'=',idiag_xii(i)
 
-          write(3,*) 'idiag_kappa'//cind1//'=',idiag_kappai(i)
-          write(3,*) 'idiag_psi'//cind1//'=',idiag_psii(i)
-          write(3,*) 'idiag_phi'//cind1//'=',idiag_phii(i)
+          if (i<3) write(3,*) 'idiag_aklamQ'//cind1//'=',idiag_aklamQi(i)
+          write(3,*) 'idiag_nuQ'//cind1//'=',idiag_nuQi(i)
 
         enddo
+
+        write(3,*) 'idiag_gammaQ=',idiag_gammaQ
+        write(3,*) 'idiag_zetaQ=',idiag_zetaQ
+        write(3,*) 'idiag_xiQ=',idiag_xiQ
 
         do j=1,njtestflow
 !
@@ -2210,7 +2258,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !***********************************************************************
     subroutine mark_del_elems2( carray, leng, indices )
 
-      integer, dimension(2,2) :: indices
+      integer, dimension(:,:) :: indices
       integer                 :: leng
 !
       character*(*), dimension(*) :: carray
@@ -2219,8 +2267,8 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
       integer :: i,j,ind
 !
-      do i=1,2
-      do j=1,2
+      do i=1,size(indices,1)
+      do j=1,size(indices,2)
 
         ind = indices(i,j)
         if ( ind /= 0 ) then
@@ -2239,7 +2287,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !***********************************************************************
     subroutine mark_del_elems1( carray, leng, indices )
 
-      integer, dimension(2) :: indices
+      integer, dimension(:) :: indices
       integer               :: leng
 !
       character*(*), dimension(*) :: carray
@@ -2248,7 +2296,7 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
       integer :: i,ind
 !
-      do i=1,2
+      do i=1,size(indices)
 
         ind = indices(i)
         if ( ind /= 0 ) then
@@ -2278,21 +2326,25 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
     endsubroutine del_elem
 !***********************************************************************
-    subroutine insert_array( carray, cinsert, leng_insert, index, leng )
-
-      integer                     :: index, leng, leng_insert, i
-      character*(*), dimension(*) :: carray, cinsert
+    subroutine insert_array( carray, cinsert, index, leng )
 !
-      intent(in)    :: index, cinsert, leng_insert
+! 15-feb-2013/MR: parameter leng_insert removed (now derived from cinsert)
+!
+      integer                     :: index, leng, leng_insert, i
+      character*(*), dimension(*) :: carray
+      character*(*), dimension(:) :: cinsert
+!
+      intent(in)    :: index, cinsert
       intent(inout) :: leng, carray
 !
       if ( index>0.and.index<=leng+1 ) then
 !
+        leng_insert = size(cinsert)
         do i=leng,index,-1
           carray(i+leng_insert) = carray(i)
         enddo
 !
-        carray(index:index+leng_insert-1) = cinsert(1:leng_insert)
+        carray(index:index+leng_insert-1) = cinsert
 !
         leng = leng+leng_insert
 
@@ -2322,37 +2374,46 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
       endif
     endsubroutine insert_array_mult
 !***********************************************************************
-    subroutine update_diag2( mat_diag_ind, mat_diag_indices, cdiagname )
+    subroutine update_diag2( mat_diag_ind, mat_diag_indices, cdiagname, ijmax )
+!
+! 15-feb-2013/MR: optional parameter ijmax for upper bound
+!                 of mat_diag_indices added; variable size
+!                 of mat_diag_indices handled
 !
       use Cdata
       use Diagnostics
 !
-      integer                 :: mat_diag_ind
-      integer, dimension(2,2) :: mat_diag_indices
+      integer                 :: mat_diag_ind, ijmax
+      integer, dimension(:,:) :: mat_diag_indices
 !
+      intent(in)    :: ijmax
       intent(inout) :: mat_diag_ind, mat_diag_indices
 !
       character*(*), intent(in) :: cdiagname
 !
       character(len=30) cformat
 !
-      integer :: iname, i, j, nname_form, indx
+      integer :: iname, i, j, nname_form, indx, matsize1, matsize2, addsize
+      character cind1, cind2
+      character(len=60), dimension(:), allocatable :: entries
 !
-      if ( mat_diag_ind==0 ) then                              ! if complete tensor was not already inquired
+      matsize1=min(size(mat_diag_indices,1),ijmax)
+      matsize2=min(size(mat_diag_indices,2),ijmax)
+
+      if ( mat_diag_ind==0 ) then                                 ! if complete tensor was not already inquired
 !
         do iname=1,nname
-        do i=1,2
-        do j=1,2
+          do i=1,matsize1
+            do j=1,matsize2
 !
-          if ( mat_diag_indices(i,j)/=0 ) then                 ! if any of the elements is inquired
+              if ( mat_diag_indices(i,j)/=0 ) then                ! if any of the elements is inquired
 !
-            mat_diag_ind = -2                                  ! flag the whole tensor to be calculated
-            return
+                mat_diag_ind = -2                                 ! flag the whole tensor to be calculated
+                return
 !
-          endif
-!
-        enddo
-        enddo
+              endif
+            enddo
+          enddo
         enddo
 !
       else
@@ -2365,12 +2426,24 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 
         nname_form=nname
 
-        call del_elem( cname, indx, nname )                                        ! replace inquiry for the whole tensor by inquiries for
-        call insert( cname, (/cdiagname//'11'//cformat,cdiagname//'12'//cformat,  &
-                              cdiagname//'21'//cformat,cdiagname//'22'//cformat/),&
-                     4, indx, nname )                                              ! all elements
-        do i=1,2
-          do j=1,2
+        call del_elem( cname, indx, nname )                       ! replace inquiry for the whole tensor by inquiries for
+
+        allocate(entries(matsize1*matsize2))
+        ind=1
+        do i=1,matsize1
+          cind1=gen_ind(i)
+          do j=1,matsize2
+            cind2=gen_ind(j)
+            entries(ind) = cdiagname//cind1//cind2//cformat
+            ind=ind+1
+          enddo
+        enddo
+        
+        call insert( cname,entries,indx,nname)  ! by inquiries for all elements
+        deallocate(entries)
+
+        do i=1,matsize1
+          do j=1,matsize2
 !
             mat_diag_indices(i,j) = indx
             indx = indx+1
@@ -2378,11 +2451,12 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
           enddo
         enddo
 
+        addsize=matsize1*matsize2-1
         if ( mat_diag_ind<nname_old ) &
-          idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+3
+          idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+addsize
 !
         cformat = cform(indx)
-        call insert( cform, cformat, 3, indx+1, nname_form )
+        call insert( cform, cformat, addsize, indx+1, nname_form )
 !
         mat_diag_ind = -1
 !
@@ -2390,30 +2464,37 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
     endsubroutine update_diag2
 !***********************************************************************
-    subroutine update_diag1( mat_diag_ind, mat_diag_indices, cdiagname )
+    subroutine update_diag1( mat_diag_ind, mat_diag_indices, cdiagname, ijmax )
+!
+! 15-feb-2013/MR: optional parameter ijmax for upper bound
+!                 of mat_diag_indices added; variable size
+!                 of mat_diag_indices handled
 !
       use Cdata
       use Diagnostics
 !
-      integer               :: mat_diag_ind
-      integer, dimension(2) :: mat_diag_indices
+      integer               :: mat_diag_ind, ijmax
+      integer, dimension(:) :: mat_diag_indices
 !
+      intent(in)    :: ijmax
       intent(inout) :: mat_diag_ind, mat_diag_indices
 !
       character*(*), intent(in) :: cdiagname
 !
       character(len=30) cformat
 !
-      integer :: iname, i, nname_form, indx
+      integer :: iname, i, nname_form, indx, matsize
 !
-      if ( mat_diag_ind==0) then ! if complete tensor was not already inquired
+      matsize=min(size(mat_diag_indices),ijmax)
+!
+      if ( mat_diag_ind==0) then             ! if complete tensor was not already inquired
 !
         do iname=1,nname
-        do i=1,2
+        do i=1,matsize
 !
           if ( mat_diag_indices(i)/=0 ) then ! if any of the elements is inquired
 !
-            mat_diag_ind = -2         ! flag the whole tensor to be calculated
+            mat_diag_ind = -2                ! flag the whole tensor to be calculated
             return
 !
           endif
@@ -2432,9 +2513,13 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         nname_form=nname
 
         call del_elem( cname, indx, nname )                                                         ! replace inquiry for the whole tensor by inquiries for
-        call insert( cname, (/cdiagname//'1'//cformat,cdiagname//'2'//cformat/), 2, indx, nname )   ! all elements
+        if (matsize==2) then
+          call insert( cname, (/cdiagname//'1'//cformat,cdiagname//'2'//cformat/), indx, nname )    ! all elements
+        else
+          call insert( cname, (/cdiagname//'1'//cformat,cdiagname//'2'//cformat,cdiagname//'3'//cformat/), indx, nname )   ! all elements
+        endif
 
-        do i=1,2
+        do i=1,matsize
 !
           mat_diag_indices(i) = indx
           indx = indx+1
@@ -2442,10 +2527,10 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
         enddo
 !
         if ( mat_diag_ind<nname_old ) &
-          idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+1
+          idiag_map(mat_diag_ind+1:nname_old) = idiag_map(mat_diag_ind+1:nname_old)+matsize-1
 !
         cformat = cform(indx)
-        call insert( cform, cformat, 1, indx+1, nname_form )
+        call insert( cform, cformat, matsize-1, indx+1, nname_form )
 !
         mat_diag_ind = -1
 !
@@ -2453,14 +2538,24 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
     endsubroutine update_diag1
 !***********************************************************************
-    subroutine correct_2inds(mat_diag_indices)
+    subroutine correct_2inds(mat_diag_indices, ijmax)
 !
-      integer, dimension(2,2) :: mat_diag_indices
+! 15-feb-2013/MR: optional parameter ijmax for upper bounds
+!                 of mat_diag_indices added
 !
-      integer i,j,ind
+      integer, dimension(:,:) :: mat_diag_indices
+      integer, optional :: ijmax
 !
-      do i=1,2
-        do j=1,2
+      integer i,j,ind,ijm
+!
+      if (.not.present(ijmax)) then
+        ijm=3
+      else
+        ijm=ijmax
+      endif
+!
+      do i=1,min(size(mat_diag_indices,1),ijm)
+        do j=1,min(size(mat_diag_indices,2),ijm)
 !
           ind = mat_diag_indices(i,j)
 !
@@ -2472,13 +2567,23 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
 !
     endsubroutine correct_2inds
 !***********************************************************************
-    subroutine correct_1inds(mat_diag_indices)
+    subroutine correct_1inds(mat_diag_indices, ijmax)
 !
-      integer, dimension(2) :: mat_diag_indices
+! 15-feb-2013/MR: optional parameter ijmax for upper bound
+!                 of mat_diag_indices added
 !
-      integer i,ind
+      integer, dimension(:) :: mat_diag_indices
+      integer, optional :: ijmax
 !
-      do i=1,2
+      integer i,ind,ijm
+!
+      if (.not.present(ijmax)) then
+        ijm=3
+      else
+        ijm=ijmax
+      endif
+!
+      do i=1,min(size(mat_diag_indices),ijm)
 !
         ind = mat_diag_indices(i)
 !
@@ -2488,6 +2593,18 @@ testloop: do jtest=0,njtestflow_loc                           ! jtest=0 : primar
       enddo
 !
     endsubroutine correct_1inds
+!***********************************************************************
+    subroutine correct_0inds(mat_diag_indices)
+!
+! 15-feb-2013/MR: adapted frome correct_2inds for
+!                 scalar quantities
+!
+      integer :: mat_diag_indices
+!
+      if (mat_diag_indices>0) &
+        mat_diag_indices = idiag_map(mat_diag_indices)
+!
+    endsubroutine correct_0inds
 !***********************************************************************
       SUBROUTINE ISORTP(N,RA,IP)
 !
