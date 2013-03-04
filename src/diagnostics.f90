@@ -1070,9 +1070,16 @@ module Diagnostics
 !  CNAME='bmax(G5.1)' to ITEST=INAME, CFORM='G5.1',
 !  CNAME='brms' to ITEST=<unchanged, normally 0>, CFORM='(1pe10.2)'
 !
+!   return value is iname if ctest matches
+!                   -1    if so and itest/=0 at call (indicates multiple 
+!                         occurrence of the same diagnostic in print.in
+!                   0     if ctest does not match
+!
 !   4-may-02/axel: coded
 !   6-apr-04/wolf: more liberate format reading
-!
+!  26-feb-13/MR  : prepared for ignoring multiple occurrences of 
+!                  diagnostics in print.in
+! 
       use General, only: safe_character_assign
 !
       character (len=*) :: cname,cform
@@ -1113,9 +1120,13 @@ module Diagnostics
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
 !
-      if (cname(1:length)==ctest .and. itest==0) then
-        itest=iname
-        fparse_name=iname
+      if (cname(1:length)==ctest) then
+        if (itest==0) then
+          itest=iname
+          fparse_name=iname
+        else
+          fparse_name=-1
+        endif
       else
         fparse_name=0
       endif
@@ -1789,19 +1800,24 @@ module Diagnostics
 !  Start from zero if lfirstpoint=.true.
 !
 !  14-aug-03/axel: adapted from sum_mn_name
+!  15-feb-13/MR: test of iname incorporated
 !
       real, intent(in) :: a
       integer, intent(in) :: iname
 !
-      if (lfirstpoint) then
-        fname(iname)=a
-      else
-        fname(iname)=fname(iname)+a
-      endif
+      if (iname>0) then
+!
+        if (lfirstpoint) then
+          fname(iname)=a
+        else
+          fname(iname)=fname(iname)+a
+        endif
 !
 !  Set corresponding entry in itype_name.
 !
-      itype_name(iname)=ilabel_surf
+        itype_name(iname)=ilabel_surf
+!
+      endif
 !
     endsubroutine surf_mn_name
 !***********************************************************************
