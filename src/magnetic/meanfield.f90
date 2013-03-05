@@ -901,7 +901,6 @@ module Magnetic_meanfield
 !  Choice between 2 versions:
 !
         oneQbeta2=1.+chit_quenching*p%b2*Beq21
-        oneQbeta02=1.+chit_quenching*B_ext2*Beq21
 !
 !  Currently no additional profile, so zero gradient.
 !
@@ -924,6 +923,7 @@ module Magnetic_meanfield
 !  This leads to an additional contribution in the glnchit expression.
 !
         if (lchit_Bext2_equil) then
+          oneQbeta02=1.+chit_quenching*B_ext2*Beq21
           call multsv_mn(-chit_quenching*B_ext2*Beq21/oneQbeta02,p%glnrho,glnchit2)
           glnchit=glnchit+glnchit2
         endif
@@ -939,10 +939,18 @@ module Magnetic_meanfield
 !
           if (lrho_chit) then
             call dot(glnchit_prof+glnchit,p%gss,g2)
-            p%chiB_mf=p%rho1*chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2ss)
+            if (lchit_Bext2_equil) then
+              p%chiB_mf=p%rho1*chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2ss)
+            else
+              p%chiB_mf=p%rho1*chi_t0/oneQbeta2*(g2+p%del2ss)
+            endif
           else
             call dot(p%glnrho+glnchit_prof+glnchit,p%gss,g2)
-            p%chiB_mf=chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2ss)
+            if (lchit_Bext2_equil) then
+              p%chiB_mf=chi_t0*oneQbeta02/oneQbeta2*(g2+p%del2ss)
+            else
+              p%chiB_mf=chi_t0/oneQbeta2*(g2+p%del2ss)
+            endif
           endif
 !       endif
       endif

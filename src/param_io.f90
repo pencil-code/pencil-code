@@ -93,7 +93,8 @@ module Param_IO
       lforce_shear_bc
 !
   namelist /run_pars/ &
-      cvsid, ip, nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, coord_system, &
+      nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &

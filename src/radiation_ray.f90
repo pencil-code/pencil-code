@@ -80,6 +80,7 @@ module Radiation
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
+  real :: ampl_Isurf=0.0, radius_Isurf=0.0
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -144,7 +145,7 @@ module Radiation
       cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
-      width_temp_opa
+      width_temp_opa, ampl_Isurf, radius_Isurf
 !
   contains
 !***********************************************************************
@@ -1221,7 +1222,7 @@ module Radiation
 !  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
       real, dimension(mx,my), intent(out) :: Qrad0_xy
-      real :: Irad_xy
+      real :: Irad_xy, fact
 !
 !  No incoming intensity.
 !
@@ -1233,6 +1234,13 @@ module Radiation
 !
       if (bc_ray_z=='1') then
         Qrad0_xy=1.0-Srad(:,:,nnstart-nrad)
+      endif
+!
+!  Set intensity equal to a gaussian (as a numerical experiment).
+!
+      if (bc_ray_z=='blo') then
+        fact=.5/radius_Isurf**2
+        Qrad0_xy=ampl_Isurf*exp(-fact*(spread(x**2,2,my)+spread(y**2,1,mx)))
       endif
 !
 !  Incoming intensity from a layer of constant temperature TT_top.
