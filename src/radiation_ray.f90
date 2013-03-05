@@ -91,7 +91,7 @@ module Radiation
   integer :: mmstart, mmstop, mm1, mm2, msign
   integer :: nnstart, nnstop, nn1, nn2, nsign
   integer :: ipzstart, ipzstop, ipystart, ipystop
-  integer :: nIsurf
+  integer :: nIsurf=1
 !
   logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_z
   logical :: lfix_radweight_1d=.true.
@@ -126,7 +126,7 @@ module Radiation
   namelist /radiation_init_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
-      nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, &
+      nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lradflux, Frad_boundary_ref, lrad_cool_diffus, &
       lrad_pres_diffus, scalefactor_Srad, angle_weight, lcheck_tau_division, &
@@ -136,7 +136,7 @@ module Radiation
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kappa_cst, kapparho_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
-      nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, &
+      nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kx_Srad, ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lcooling, lradflux, lradpressure, &
@@ -225,7 +225,6 @@ module Radiation
 !  Count.
 !
       idir=1
-      nIsurf=0
 !
       do nrad=-radz,radz
       do mrad=-rady,rady
@@ -2028,7 +2027,10 @@ module Radiation
 !
       select case (trim(slices%name))
 !
-!  Surface intensity
+!  Surface intensity. If nIsurf==1, then we only want the vertical ray.
+!  Otherwise, for bigger nIsurf, we get up to nIsurf upward pointing rays,
+!  but possibly not the vertical one, if nIsurf is not big enough.
+!  Count which one is which by putting ip<14 and look at output.
 !
         case ('Isurf')
           if (slices%index>=nIsurf) then
@@ -2040,7 +2042,8 @@ module Radiation
             nullify(slices%xy)
             do idir=idir_last+1,ndir
               nrad=dir(idir,3)
-              if (nrad>0) then
+              if ((nIsurf>1.and.nrad>0).or. &
+                  (nIsurf==1.and.lrad==0.and.mrad==0.and.nrad==1)) then
                 slices%xy2=>Isurf(idir)%xy2
                 slices%index=slices%index+1
                 if (slices%index<=nIsurf) slices%ready=.true.
