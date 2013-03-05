@@ -2076,6 +2076,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_nblockmin/=0) &
             call max_name(-nblock_loc,idiag_nblockmin,lneg=.true.)
         if (idiag_nblockmax/=0) call max_name(nblock_loc,idiag_nblockmax)
+        if (idiag_dtdragp /= 0) call max_name(maxval(dt1_drag), idiag_dtdragp, l_dt=.true.)
       endif
 !
       call keep_compiler_quiet(df)
