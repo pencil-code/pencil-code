@@ -1383,7 +1383,7 @@ module Diagnostics
 !
     endsubroutine max_name_int
 !***********************************************************************
-    subroutine max_name_real(a,iname,lneg)
+    subroutine max_name_real(a,iname,lneg,l_dt)
 !
 !  Successively calculate maximum of a, which is supplied at each call.
 !
@@ -1391,7 +1391,7 @@ module Diagnostics
 !
       real, intent(in) :: a
       integer, intent(in) :: iname
-      logical, intent(in), optional :: lneg
+      logical, intent(in), optional :: lneg, l_dt
 !
       if (present(lneg)) then
         if (lneg) then
@@ -1407,6 +1407,8 @@ module Diagnostics
 !
       if (present(lneg)) then
         itype_name(iname)=ilabel_max_neg
+      elseif (present(l_dt)) then
+        itype_name(iname)=ilabel_max_dt
       else
         itype_name(iname)=ilabel_max
       endif
