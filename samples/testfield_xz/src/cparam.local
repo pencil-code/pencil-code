@@ -1,5 +1,0 @@
-!                       -*-f90-*-    (for Emacs)
-!  cparam.local
-!
-integer, parameter :: ncpus=8,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
-integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=nxgrid
