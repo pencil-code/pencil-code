@@ -1,0 +1,14 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM=nompicomm
+FORCING=forcing
+ENTROPY=noentropy
+MAGNETIC=nomagnetic
+HYDRO=hydro
+DENSITY=density
+TESTFIELD=test_methods/testfield_z
+SHEAR=shear
+VISCOSITY=viscosity
