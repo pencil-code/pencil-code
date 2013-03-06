@@ -3,12 +3,12 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM=nompicomm
+MPICOMM=mpicomm
 FORCING=forcing
 ENTROPY=noentropy
 MAGNETIC=nomagnetic
 HYDRO=hydro
 DENSITY=density
-TESTFIELD=test_methods/testfield_z
+TESTFIELD=test_methods/testfield_xz
 SHEAR=shear
 VISCOSITY=viscosity
