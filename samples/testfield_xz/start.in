@@ -14,5 +14,4 @@
 &density_init_pars
 /
 &testfield_init_pars
-  luxb_as_aux=T
 /
