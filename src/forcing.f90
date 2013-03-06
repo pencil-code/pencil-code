@@ -73,6 +73,8 @@ module Forcing
   integer :: helsign=0,nlist_ck=25
   real :: fpre = 1.0,ck_equator_gap=0.,ck_gap_step=0.
   integer :: icklist,jtest_aa0=5,jtest_uu0=1
+! For random forcing
+  logical :: lavoid_xymean=.false.
 ! For random forcing in 2d
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
@@ -131,7 +133,7 @@ module Forcing
        lforce_peri,lforce_cuty,lforcing2_same,lforcing2_curl, &
        tgentle,random2d_kmin,random2d_kmax,l2dxz,l2dyz,k2d, &
        z_bb,width_bb,eta_bb,fcont_ampl, &
-       ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
+       ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, lavoid_xymean, &
        omega_tidal, R0_tidal, phi_tidal
 !
 ! other variables (needs to be consistent with reset list below)
@@ -830,6 +832,8 @@ module Forcing
 !  This forcing drives pressure waves
 !
 !  10-sep-01/axel: coded
+!   6-feb-13/MR  : introduced discard of wavevectors [0,0,kz] upon request by
+!                  lavoid_yxmean
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
@@ -884,9 +888,16 @@ module Forcing
         lfirst_call=.false.
       endif
 !
-      call random_number_wrapper(fran)
-      phase=pi*(2*fran(1)-1.)
-      ik=nk*(.9999*fran(2))+1
+      do
+        call random_number_wrapper(fran)
+        phase=pi*(2*fran(1)-1.)
+        ik=nk*(.9999*fran(2))+1
+!
+!  if lavoid_xymean=T and wavevector is close enough to [0,0,kz] discard it
+!  and look for a new one
+!
+        if ( .not.lavoid_xymean .or. abs(kkx(ik))>1.e-5 .or. abs(kky(ik))>1.e-5 ) exit
+      enddo
       if (ip<=6) print*,'forcing_irro: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,lfirst_call
 !
 !  Need to multiply by dt (for Euler step), but it also needs to be
@@ -4238,7 +4249,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 ! 4-nov-11/MR:                                  now also compensates Coriolis force
 !
 ! Note: It is not enough to set lforcing_cont = T in input parameters of forcing
-! one must also set  lforcing_cont_uu = T in hydro for the continious is time
+! one must also set  lforcing_cont_uu = T in hydro for the continuous is time
 ! forcing to be added to velocity.
 !
       use Gravity, only: gravz
