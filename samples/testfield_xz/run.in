@@ -1,0 +1,25 @@
+&run_pars
+  cvsid='$Id: run.in 18107 2012-01-08 18:53:35Z wladimir.lyra $',
+  nt=200001, it1=50, cdt=0.4, isave=100, itorder=3
+  dsnap=200., dvid=20., d2davg=20.
+  !lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&forcing_run_pars
+  iforce='helical', force=.01, relhel=1.
+/
+&testfield_run_pars
+  ktestfield_x=1., ktestfield_z=1.
+  itestfield=1
+  etatest=5e-3
+  lsoca=F
+/
+&viscosity_run_pars
+  nu=5e-3
+/

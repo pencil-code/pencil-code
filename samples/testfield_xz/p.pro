@@ -1,0 +1,54 @@
+;$Id: p.pro,v 1.2 2013-02-26 15:39:39 brandenb Exp $
+if !d.name eq 'PS' then begin
+  device,xsize=18,ysize=24,yoffset=3
+  !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
+end
+;
+;  mv idl.ps ~/tex/koen/RFP/fig/pfrac.ps
+;
+!p.charsize=1.7
+!x.margin=[8.8,.5]
+!y.margin=[3.2,.5]
+;
+pc_read_yaver,obj=yaver
+help,yaver.alp11xz
+print,'t=',yaver.t
+nt=n_elements(yaver.t)
+;
+!p.title='k=2'
+!p.multi=[0,3,4]
+!y.range=[-1,1]*.05
+plot,yaver.alp11xz(*,0,nt-1),ytit='alp11'
+plot,yaver.alp22xz(*,0,nt-1),ytit='alp22'
+plot,yaver.alp33xz(*,0,nt-1),ytit='alp33'
+!y.range=[-1,1]*.005
+plot,yaver.eta111xz(*,0,nt-1),ytit='eta111'
+plot,yaver.eta121xz(*,0,nt-1),ytit='eta121'
+plot,yaver.eta131xz(*,0,nt-1),ytit='eta131'
+plot,yaver.eta211xz(*,0,nt-1),ytit='eta211'
+plot,yaver.eta221xz(*,0,nt-1),ytit='eta221'
+plot,yaver.eta231xz(*,0,nt-1),ytit='eta231'
+plot,yaver.eta311xz(*,0,nt-1),ytit='eta311'
+plot,yaver.eta321xz(*,0,nt-1),ytit='eta321'
+plot,yaver.eta331xz(*,0,nt-1),ytit='eta331'
+;
+fo='(a,f9.5)'
+print,'eta111=',mean(yaver.eta111xz(*,*,nt-1)),fo=fo
+print,'eta112=',mean(yaver.eta112xz(*,*,nt-1)),fo=fo
+print,'eta121=',mean(yaver.eta121xz(*,*,nt-1)),fo=fo
+print,'eta122=',mean(yaver.eta122xz(*,*,nt-1)),fo=fo
+print,'eta131=',mean(yaver.eta131xz(*,*,nt-1)),fo=fo
+print,'eta132=',mean(yaver.eta132xz(*,*,nt-1)),fo=fo
+print,'eta211=',mean(yaver.eta211xz(*,*,nt-1)),fo=fo
+print,'eta212=',mean(yaver.eta212xz(*,*,nt-1)),fo=fo
+print,'eta221=',mean(yaver.eta221xz(*,*,nt-1)),fo=fo
+print,'eta222=',mean(yaver.eta222xz(*,*,nt-1)),fo=fo
+print,'eta231=',mean(yaver.eta231xz(*,*,nt-1)),fo=fo
+print,'eta232=',mean(yaver.eta232xz(*,*,nt-1)),fo=fo
+print,'eta311=',mean(yaver.eta311xz(*,*,nt-1)),fo=fo
+print,'eta312=',mean(yaver.eta312xz(*,*,nt-1)),fo=fo
+print,'eta321=',mean(yaver.eta321xz(*,*,nt-1)),fo=fo
+print,'eta322=',mean(yaver.eta322xz(*,*,nt-1)),fo=fo
+print,'eta331=',mean(yaver.eta331xz(*,*,nt-1)),fo=fo
+print,'eta332=',mean(yaver.eta332xz(*,*,nt-1)),fo=fo
+END
