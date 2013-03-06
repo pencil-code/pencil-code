@@ -772,7 +772,7 @@ module Testfield
       if (idiag_alp33xz/=0) &
         call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(9)),idiag_alp33xz)
 !
-!
+!  eta_i1k components
 !
       if (idiag_eta111xz/=0) &
         call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(10)),idiag_eta111xz)
@@ -792,7 +792,7 @@ module Testfield
       if (idiag_eta312xz/=0) &
         call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(15)),idiag_eta312xz)
 !
-!
+!  eta_i2k components
 !
       if (idiag_eta121xz/=0) &
         call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(16)),idiag_eta121xz)
@@ -812,6 +812,7 @@ module Testfield
       if (idiag_eta322xz/=0) &
         call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(21)),idiag_eta322xz)
 !
+!  eta_i3k components
 !
       if (idiag_eta131xz/=0) &
         call ysum_mn_name_xz(ny*temp_array(:,n-n1+1,twod_address(22)),idiag_eta131xz)
@@ -849,8 +850,33 @@ module Testfield
         if (idiag_alp13/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(7)), idiag_alp13)
         if (idiag_alp23/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(8)), idiag_alp23)
 !
-        if (idiag_eta122/=0) call sum_mn_name(ny*temp_array(:,n-n1+1, twod_address(17)), idiag_eta122)
+!  eta_i2k components
 !
+        if (idiag_eta111/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(10)),idiag_eta111)
+        if (idiag_eta112/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(11)),idiag_eta112)
+        if (idiag_eta211/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(12)),idiag_eta211)
+        if (idiag_eta212/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(13)),idiag_eta212)
+        if (idiag_eta311/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(14)),idiag_eta311)
+        if (idiag_eta312/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(15)),idiag_eta312)
+!
+!  eta_i2k components
+!
+        if (idiag_eta121/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(16)),idiag_eta121)
+        if (idiag_eta122/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(17)),idiag_eta122)
+        if (idiag_eta221/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(18)),idiag_eta221)
+        if (idiag_eta222/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(19)),idiag_eta222)
+        if (idiag_eta321/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(20)),idiag_eta321)
+        if (idiag_eta322/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(21)),idiag_eta322)
+!
+!  eta_i3k components
+!
+        if (idiag_eta131/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(22)),idiag_eta131)
+        if (idiag_eta132/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(23)),idiag_eta132)
+        if (idiag_eta231/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(24)),idiag_eta231)
+        if (idiag_eta232/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(25)),idiag_eta232)
+        if (idiag_eta331/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(26)),idiag_eta331)
+        if (idiag_eta332/=0) call sum_mn_name(ny*temp_array(:,n-n1+1,twod_address(27)),idiag_eta332)
+!XX
       enddo
 !
       if (idiag_alp11cc/=0 .or. idiag_alp11cs/=0 .or. idiag_alp11sc/=0 .or. idiag_alp11ss/=0) then

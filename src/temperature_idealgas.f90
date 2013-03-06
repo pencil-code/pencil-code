@@ -1516,7 +1516,7 @@ module Entropy
 !  Note: if ldensity=.false. then rho=1 and chi=K/cp
 !
       use Diagnostics, only: max_mn_name
-      use EquationOfState, only: gamma
+      use EquationOfState, only: gamma, rho0
       use Sub, only: dot
 !
       real, dimension(mx,my,mz,mvar) :: df
@@ -1528,11 +1528,12 @@ module Entropy
       hcondTT=hcond0*sqrt(exp(p%lnTT))
 !
 !  Add heat conduction to RHS of temperature equation.
+!  If ldensity=F, we need to divide by rho0, which can be /= 1.
 !
       if (ldensity) then
         chix=p%rho1*hcondTT*p%cp1
       else
-        chix=hcondTT*p%cp1
+        chix=hcondTT*p%cp1/rho0
       endif
 !
       if (ltemperature_nolog) then
