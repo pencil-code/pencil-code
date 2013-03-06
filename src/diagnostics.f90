@@ -1086,9 +1086,9 @@ module Diagnostics
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length,index_i
 !
-      intent(in)  :: iname,cname,ctest
-      intent(out) :: cform
+      intent(in)    :: iname,cname,ctest
       intent(inout) :: itest
+      intent(out)   :: cform
 !
 !  Check whether format is given.
 !
