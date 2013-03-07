@@ -61,9 +61,8 @@ module Special
 !
   include '../special.h'
 !
-  real :: dummy
   real :: mu=1.0, kappa=0.0, factor_localiso=0.0, factor_photoelectric=1.0
-  logical :: ldust_pressureforce
+  logical :: ldust_pressureforce=.true.
 !
   namelist /special_init_pars/ mu, kappa, factor_localiso, factor_photoelectric
 !
