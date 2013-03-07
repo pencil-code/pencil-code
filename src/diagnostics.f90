@@ -59,6 +59,7 @@ module Diagnostics
 !
   interface parse_name
     module procedure parse_name_s
+    module procedure parse_name_sa
     module procedure parse_name_v
   endinterface parse_name
 !
@@ -1160,6 +1161,26 @@ module Diagnostics
       iret = fparse_name(iname,cname,cform,ctest,itest)
 !
     endsubroutine parse_name_s
+!***********************************************************************
+    subroutine parse_name_sa(iname,cname,cform,ctest,itest)
+!
+!   alternative form of parse_name_s: adopts full vectors for cname and cform
+!
+!   6-mar-13/MR: adapted from parse_name_s
+!
+      character (len=*), dimension(*) :: cname,cform
+      character (len=*) :: ctest
+      integer :: iname,itest
+!
+      intent(in)  :: iname,cname,ctest
+      intent(out) :: cform
+      intent(inout) :: itest
+!
+      integer :: iret
+!
+      iret = fparse_name(iname,cname(iname),cform(iname),ctest,itest)
+!
+    endsubroutine parse_name_sa
 !***********************************************************************
     subroutine parse_name_v( cname,cform,cdiag,idiag )
 !
