@@ -349,6 +349,7 @@
   \var{exatop}    & $\int\Ev\times\Av\,dS|_{\rm top}$ \\
   \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
   \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
+  \var{bfrms}     & $\left<{\Bv'}^2\right>^{1/2}$ \\
   \var{bmax}      & $\max(|\Bv|)$ \\
   \var{bxmin}     & $\min(|B_x|)$ \\
   \var{bymin}     & $\min(|B_y|)$ \\
@@ -1388,21 +1389,24 @@
   \multicolumn{2}{c}{Module \file{testflow_z.f90}} \\
 \midrule
   \var{gal}       & GAL-coefficients,     couple  $\overline F$ and $\overline U$ \\
-  \var{nu}        & $\nu$-tensor,         couples $\overline F$ and $\partial^2 \overline U/\partial z^2$ \\
-  \var{aklam}     & AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W$ \\
-  \var{xi}        & $\chi$-vector,        couples $\overline F$ and ${\overline G}_z$ \\
-  \var{kappa}     & $\kappa$-vector,      couples $\overline Q$ and $\overline U$ \\
-  \var{psi}       & $\psi$-vector,        couples $\overline Q$ and $\overline W$ \\
-  \var{phi}       & $\phi$-vector,        couples $\overline Q$ and $\partial^2 \overline U/\partial z^2$ \\
-  \var{pi}        & $\pi$-scalar,         couples $\overline Q$ and ${\overline G}_z$ \\
-  \var{theta}     & $\theta$-scalar,      couples $\overline Q$ and $div{\overline U}=dU_z/dz$
+  \var{aklam}     & AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W = \nabla\times{\overline U}$ \\
+  \var{gamma}     & $\gamma$-vector,      couples $\overline F$ and $\nabla\cdot{\overline U}$ \\
+  \var{nu}        & $\nu$-tensor,         couples $\overline F$ and $\partial^2 {\overline U}/\partial z^2$ \\
+  \var{zeta}      & $\zeta$-vector,       couples $\overline F$ and ${\overline G}_z = \nabla_z {\overline H}$ \\
+  \var{xi}        & $\xi$-vector,         couples $\overline F$ and $\partial^2 {\overline H}/\partial z^2$ \\
+  \var{aklamQ}    & $aklam^Q$-vector,     couples $\overline Q$ and $\overline W$ \\
+  \var{gammaQ}    & $\gamma^Q$-scalar,    couples $\overline Q$ and $\nabla\cdot{\overline U}=dU_z/dz$ \\
+  \var{nuQ}       & $\nu^Q$-vector,       couples $\overline Q$ and $\partial^2 \overline U/\partial z^2$ \\
+  \var{zetaQ}     & $\zeta^Q$-scalar,      couples $\overline Q$ and ${\overline G}_z$ \\
+  \var{xiQ}       & $\xi^Q$-scalar,        couples $\overline Q$ and $\partial^2 {\overline H}/\partial z^2$
+                    
                     $\alpha_{K,ij}$
-                    $\lambda_{ij}$
+                    $\gamma_i$
                     $\nu_{ij}$
-                    $\chi_i$
-                    $\kappa_i$
-                    $\psi_i$
-                    $\phi_i$
+                    $\zeta_i$
+                    $\xi_i$
+                    $\nu^Q_i$
+                    $aklam^Q_i$
                     ${\cal F}_i^{pq}$
                     ${\cal Q}^{pq}$
                     $\left<{u^{pq}}^2\right>$
@@ -1573,6 +1577,8 @@
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
+  \var{detn}      & Number of detonated cells \\
+  \var{detot}     & Total injected energy \\
 \midrule
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule

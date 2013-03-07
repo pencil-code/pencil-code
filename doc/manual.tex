@@ -4889,6 +4889,7 @@ ions and neutrals.
 % ---------------------------------------------------------------------- %
 
 \subsection{Radiative transfer}
+\index{Radiative transfer}
 
 Here we only state the basic equations.
 A full description about the implementation is given in
@@ -4904,6 +4905,12 @@ where
   \tau \equiv \int\limits_0^s \chi(s') \, ds'
 \end{equation}
 is the optical depth ($s$ is the geometrical coordinate along the ray).
+
+Note that radiative transfer is called also in \file{start.csh},
+and again each time a snapshot is being written, provided the output
+of auxialiary variables is being requested \cmd{lwrite_aux=T}.
+(Also, of course, the pencil check runs radiative transfer 7 times,
+unless you put \cmd{pencil_check_small=F}.)
 
 % ---------------------------------------------------------------------- %
 
