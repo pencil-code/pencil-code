@@ -147,7 +147,7 @@ module Testflow
 !
   integer :: idiag_gal=0                            ! DIAG_DOC: GAL-coefficients,     couple  $\overline F$ and $\overline U$
   integer :: idiag_aklam=0                          ! DIAG_DOC: AKA-$\lambda$-tensor, couples $\overline F$ and $\overline W = \nabla\times{\overline U}$
-  integer :: idiag_gamma=0                          ! DIAG_DOC: $\gamma-vector,       couples $\overline F$ and $\nabla\cdot{\overline U}$
+  integer :: idiag_gamma=0                          ! DIAG_DOC: $\gamma$-vector,      couples $\overline F$ and $\nabla\cdot{\overline U}$
   integer :: idiag_nu=0                             ! DIAG_DOC: $\nu$-tensor,         couples $\overline F$ and $\partial^2 {\overline U}/\partial z^2$
   integer :: idiag_zeta=0                           ! DIAG_DOC: $\zeta$-vector,       couples $\overline F$ and ${\overline G}_z = \nabla_z {\overline H}$
   integer :: idiag_xi=0                             ! DIAG_DOC: $\xi$-vector,         couples $\overline F$ and $\partial^2 {\overline H}/\partial z^2$
@@ -155,8 +155,8 @@ module Testflow
   integer :: idiag_aklamQ=0                         ! DIAG_DOC: $aklam^Q$-vector,     couples $\overline Q$ and $\overline W$
   integer :: idiag_gammaQ=0                         ! DIAG_DOC: $\gamma^Q$-scalar,    couples $\overline Q$ and $\nabla\cdot{\overline U}=dU_z/dz$
   integer :: idiag_nuQ=0                            ! DIAG_DOC: $\nu^Q$-vector,       couples $\overline Q$ and $\partial^2 \overline U/\partial z^2$
-  integer :: idiag_zetaQ=0                          ! DIAG_DOC: $\zetaQ$-scalar,      couples $\overline Q$ and ${\overline G}_z$
-  integer :: idiag_xiQ=0                            ! DIAG_DOC: $\xiQ$-scalar,        couples $\overline Q$ and $\partial^2 {\overline H}/\partial z^2$
+  integer :: idiag_zetaQ=0                          ! DIAG_DOC: $\zeta^Q$-scalar,      couples $\overline Q$ and ${\overline G}_z$
+  integer :: idiag_xiQ=0                            ! DIAG_DOC: $\xi^Q$-scalar,        couples $\overline Q$ and $\partial^2 {\overline H}/\partial z^2$
 !
   integer, dimension(3,3) :: idiag_galij=0          ! DIAG_DOC: 
   integer, dimension(3,2) :: idiag_aklamij=0        ! DIAG_DOC: $\alpha_{K,ij}$
