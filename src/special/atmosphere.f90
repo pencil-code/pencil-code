@@ -452,7 +452,7 @@ module Special
             )
       endif
 !
-       dt1=1./(3.*dt)
+       dt1=1./(4.*dt)
        del=0.1
 !
 !
@@ -795,9 +795,9 @@ module Special
       do i2=m1,m2
       do i3=n1,n2
 !
-         do k=3,ndustspec-2 
+         do k=1,ndustspec 
 !
-!            if (f(i1,i2,i3,ind(k))<0.) f(i1,i2,i3,ind(k))=0.
+            if (f(i1,i2,i3,ind(k))<1.) f(i1,i2,i3,ind(k))=1.
 
 !             if (f(i1,i2,i3,ind(k))<0.) then
 !               j=k  
