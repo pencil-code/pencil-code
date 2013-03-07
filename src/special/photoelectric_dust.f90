@@ -301,13 +301,13 @@ endsubroutine read_special_run_pars
       enddo
 !
       if (lwr) then
-        write(3,*) 'i_photom',idiag_photom
-        write(3,*) 'i_photomax',idiag_photomax
-        write(3,*) 'i_photomin',idiag_photomin
-        write(3,*) 'i_polym',idiag_polym
-        write(3,*) 'i_polymax',idiag_polymax
-        write(3,*) 'i_polymin',idiag_polymin
-        write(3,*) 'i_dtcp',idiag_dtcp
+        write(3,*) 'i_photom=',idiag_photom
+        write(3,*) 'i_photomax=',idiag_photomax
+        write(3,*) 'i_photomin=',idiag_photomin
+        write(3,*) 'i_polym=',idiag_polym
+        write(3,*) 'i_polymax=',idiag_polymax
+        write(3,*) 'i_polymin=',idiag_polymin
+        write(3,*) 'i_dtcp=',idiag_dtcp
       endif
 !
     endsubroutine rprint_special
