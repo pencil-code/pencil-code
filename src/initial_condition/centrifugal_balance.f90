@@ -296,20 +296,24 @@ module InitialCondition
                "no valid coordinate system")
         endif
 !
-        call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
+        if (llocal_iso.or.lenergy) then 
+          call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
 !
 !  Store cs2 in one of the free slots of the f-array
 !
-        if (llocal_iso) then
-          nullify(iglobal_cs2)
-          call farray_use_global('cs2',iglobal_cs2)
-          ics2=iglobal_cs2
-        elseif (ltemperature) then
-          ics2=ilnTT
-        elseif (lentropy) then
-          ics2=iss
+          if (llocal_iso) then
+            nullify(iglobal_cs2)
+            call farray_use_global('cs2',iglobal_cs2)
+            ics2=iglobal_cs2
+          elseif (ltemperature) then
+            ics2=ilnTT
+          elseif (lentropy) then
+            ics2=iss
+          endif
+          f(:,m,n,ics2)=cs2
+        else
+          ics2=impossible_int 
         endif
-        f(:,m,n,ics2)=cs2
       enddo;enddo
 !
 !  Stratification is only coded for 3D runs. But as
@@ -360,7 +364,11 @@ module InitialCondition
 !
 !  Get the sound speed
 !
-          cs2=f(:,m,n,ics2)
+          if (lenergy.or.llocal_iso) then 
+            cs2=f(:,m,n,ics2)
+          else
+            cs2=cs20
+          endif
 !
           if (lspherical_coords.or.lsphere_in_a_box) then
             ! uphi2/r = -gr + dp/dr
@@ -430,7 +438,7 @@ module InitialCondition
       if (llocal_iso) then
         call set_thermodynamical_quantities&
              (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
-      else
+      else if (lenergy) then 
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
 !
@@ -1014,8 +1022,13 @@ module InitialCondition
 !
 !  Get sound speed and calculate the temperature gradient
 !
-        cs2=f(l1:l2,m,n,ics2)
-        gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+        if (llocal_iso.or.lenergy) then
+          cs2=f(l1:l2,m,n,ics2)
+          gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+       else
+          cs2=cs20
+          gslnTT=0.
+       endif
 !
 !  Correct for cartesian or spherical
 !
