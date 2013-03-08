@@ -36,54 +36,52 @@ module Testfield
 !
   include '../testfield.h'
 !
-  character (len=labellen) :: initaatest='zero'
+! init parameters
 !
-  ! input parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./)
-  real, dimension (nx,3) :: bbb
-  real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
-  real :: taainit=0.,daainit=0.
-  logical :: reinitialize_aatest=.false.
-  logical :: xextent=.true.,zextent=.true.,lsoca=.false.,lset_bbtest2=.false.
-  logical :: linit_aatest=.false., lflucts_with_xyaver=.false.
+  real, dimension(3)      :: B_ext=(/0.,0.,0./)
+  character (len=labellen):: initaatest='zero'
+!
+  namelist /testfield_init_pars/ B_ext,initaatest
+!
+! run parameters
+!
+  logical :: reinitialize_aatest=.false., lsoca=.false.,  &
+             linit_aatest=.false.,lflucts_with_xyaver=.false.
   integer :: itestfield=1
-  real :: ktestfield_x=1., ktestfield_z=1., xx0=0., zz0=0., kanalyze_x=-1.
-  real :: kanalyze_z=-1.
-  integer, parameter :: mtestfield=3*njtest
-  integer :: naainit
-!
-  namelist /testfield_init_pars/ &
-       B_ext,xextent,zextent,initaatest
-!
-  ! run parameters
-  real :: etatest=0.
+  real    :: ktestfield_x=1., ktestfield_z=1., xx0=0., zz0=0., &
+             etatest=0., daainit=0.
   real, dimension(njtest) :: rescale_aatest=0.
+!
   namelist /testfield_run_pars/ &
-       B_ext,reinitialize_aatest,xextent,zextent,lsoca, &
-       lset_bbtest2,etatest,itestfield,ktestfield_x, &
-       ktestfield_z,xx0,zz0,kanalyze_x,kanalyze_z,daainit, &
+       B_ext, reinitialize_aatest, lsoca, &
+       etatest, itestfield, ktestfield_x, &
+       ktestfield_z, xx0, zz0, daainit,   &
        linit_aatest, lflucts_with_xyaver, &
        rescale_aatest
 !
 ! diagnostic variables
 !
-  integer :: idiag_alp11cc=0,idiag_alp11cs=0,idiag_alp11sc=0,idiag_alp11ss=0
-  integer :: idiag_eta123cc=0,idiag_eta123cs=0,idiag_eta123sc=0,idiag_eta123ss=0
-!
   character(LEN=6), dimension(27) :: cdiags = &
-  (/'alp11 ','alp21 ','alp31 ','alp12 ','alp22 ','alp32 ','alp13 ','alp23 ','alp33 ', &
-!      
+  (/'alp11 ','alp21 ','alp31 ','alp12 ','alp22 ','alp32 ','alp13 ','alp23 ','alp33 ', &      
     'eta111','eta211','eta311','eta121','eta221','eta321','eta131','eta231','eta331', &
     'eta113','eta213','eta313','eta123','eta223','eta323','eta133','eta233','eta333'   /)
 !             
   integer, dimension(size(cdiags)):: idiags=0, idiags_z=0, idiags_xz=0
 !
+  integer :: idiag_alp11cc=0,idiag_alp11cs=0,idiag_alp11sc=0,idiag_alp11ss=0
+  integer :: idiag_eta123cc=0,idiag_eta123cs=0,idiag_eta123sc=0,idiag_eta123ss=0
+!
+!  work variables
+!
+  integer, parameter               :: mtestfield=3*njtest
+  real, dimension (nx)             :: cx,sx
+  real, dimension (nz)             :: cz,sz
+  real, dimension (nx,nz,3,3)      :: Minv
   real, dimension (nx,nz,3,njtest) :: uxbtestm
-  real, dimension (nx)        :: cx,sx
-  real, dimension (nz)        :: cz,sz
-  real, dimension (nx,nz,3,3) :: Minv
-  logical :: needed2d_1d, needed2d_2d
-  logical, dimension(27) :: twod_need_1d, twod_need_2d
+  logical, dimension(27)           :: twod_need_1d, twod_need_2d
+  logical                          :: needed2d_1d, needed2d_2d
+  real                             :: taainit=0.
+  integer                          :: naainit
 !
   contains
 !
@@ -208,8 +206,6 @@ module Testfield
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/testfield_info.dat',STATUS='unknown')
-        write(1,'(a,i1)') 'xextent=',merge(1,0,xextent)
-        write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
         write(1,'(a,i2)') 'itestfield=',itestfield
         write(1,'(a,2(f3.0))') 'ktestfield_x,z=', ktestfield_x, ktestfield_z
@@ -571,6 +567,8 @@ module Testfield
 !  26-feb-13/MR: determination of y-averaged components of alpha completed
 !   6-mar-13/MR: internal order of etas changed; calls to save_name, *sum_mn_name 
 !                simplified
+!   7-mar-13/MR: further shortened by introduction of do-loops in calculating
+!                temp_array
 !
     Use Diagnostics
     Use Sub, only: fourier_single_mode
@@ -603,126 +601,50 @@ module Testfield
     case (1)
 !
       do n=1,nz
+        do i=1,3 
 !
-      if (need_temp(1)) & !(idiag_alp11xz/=0) &
-        temp_array(:,n,twod_address(1))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,1,1)+Minv(:,n,1,2)*uxbtestm(:,n,1,2)+Minv(:,n,1,3)*uxbtestm(:,n,1,3)
+          if (need_temp(i)) & !(idiag_alpi1xz/=0) &
+            temp_array(:,n,twod_address(i))= &
+                Minv(:,n,1,1)*uxbtestm(:,n,i,1)+Minv(:,n,1,2)*uxbtestm(:,n,i,2)+Minv(:,n,1,3)*uxbtestm(:,n,i,3)
 !
-      if (need_temp(2)) & !(idiag_alp21xz/=0) &
-        temp_array(:,n,twod_address(2))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,2,1)+Minv(:,n,1,2)*uxbtestm(:,n,2,2)+Minv(:,n,1,3)*uxbtestm(:,n,2,3)
+          if (need_temp(3+i)) & !(idiag_alpi2xz/=0) &
+            temp_array(:,n,twod_address(3+i))= &
+                Minv(:,n,1,1)*uxbtestm(:,n,i,4)+Minv(:,n,1,2)*uxbtestm(:,n,i,5)+Minv(:,n,1,3)*uxbtestm(:,n,i,6)
 !
-      if (need_temp(3)) & !(idiag_alp31xz/=0) &
-        temp_array(:,n,twod_address(3))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,3,1)+Minv(:,n,1,2)*uxbtestm(:,n,3,2)+Minv(:,n,1,3)*uxbtestm(:,n,3,3)
+          if (need_temp(6+i)) & !(idiag_alpi3xz/=0) &
+            temp_array(:,n,twod_address(6+i))= &
+                Minv(:,n,1,1)*uxbtestm(:,n,i,7)+Minv(:,n,1,2)*uxbtestm(:,n,i,8)+Minv(:,n,1,3)*uxbtestm(:,n,i,9)
 !
-      if (need_temp(4)) & !(idiag_alp12xz/=0) &
-        temp_array(:,n,twod_address(4))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,1,4)+Minv(:,n,1,2)*uxbtestm(:,n,1,5)+Minv(:,n,1,3)*uxbtestm(:,n,1,6)
+          if (need_temp(9+i)) & !(idiag_etai11xz/=0) &
+            temp_array(:,n,twod_address(9+i))= &
+                Minv(:,n,2,1)*uxbtestm(:,n,i,1)+Minv(:,n,2,2)*uxbtestm(:,n,i,2)+Minv(:,n,2,3)*uxbtestm(:,n,i,3)
 !
-      if (need_temp(5)) & !(idiag_alp22xz/=0) &
-        temp_array(:,n,twod_address(5))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,2,4)+Minv(:,n,1,2)*uxbtestm(:,n,2,5)+Minv(:,n,1,3)*uxbtestm(:,n,2,6)
+          if (need_temp(12+i)) & !(idiag_etai21xz/=0) &
+            temp_array(:,n,twod_address(12+i))= &
+                Minv(:,n,2,1)*uxbtestm(:,n,i,4)+Minv(:,n,2,2)*uxbtestm(:,n,i,5)+Minv(:,n,2,3)*uxbtestm(:,n,i,6)
 !
-      if (need_temp(6)) & !(idiag_alp32xz/=0) &
-        temp_array(:,n,twod_address(6))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,3,4)+Minv(:,n,1,2)*uxbtestm(:,n,3,5)+Minv(:,n,1,3)*uxbtestm(:,n,3,6)
+          if (need_temp(15+i)) & !(idiag_etai31xz/=0) &
+            temp_array(:,n,twod_address(15+i))= &
+                Minv(:,n,2,1)*uxbtestm(:,n,i,7)+Minv(:,n,2,2)*uxbtestm(:,n,i,8)+Minv(:,n,2,3)*uxbtestm(:,n,i,9)
 !
-      if (need_temp(7)) & !(idiag_alp13xz/=0) &
-        temp_array(:,n,twod_address(7))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,1,7)+Minv(:,n,1,2)*uxbtestm(:,n,1,8)+Minv(:,n,1,3)*uxbtestm(:,n,1,9)
+          if (need_temp(18+i)) & !(idiag_etai13xz/=0) &
+            temp_array(:,n,twod_address(18+i))= &
+                Minv(:,n,3,1)*uxbtestm(:,n,i,1)+Minv(:,n,3,2)*uxbtestm(:,n,i,2)+Minv(:,n,3,3)*uxbtestm(:,n,i,3)
 !
-      if (need_temp(8)) & !(idiag_alp23xz/=0) &
-        temp_array(:,n,twod_address(8))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,2,7)+Minv(:,n,1,2)*uxbtestm(:,n,2,8)+Minv(:,n,1,3)*uxbtestm(:,n,2,9)
+          if (need_temp(21+i)) & !(idiag_etai23xz/=0) &
+            temp_array(:,n,twod_address(21+i))= &
+                Minv(:,n,3,1)*uxbtestm(:,n,i,4)+Minv(:,n,3,2)*uxbtestm(:,n,i,5)+Minv(:,n,3,3)*uxbtestm(:,n,i,6)
 !
-      if (need_temp(9)) & !(idiag_alp33xz/=0) &
-        temp_array(:,n,twod_address(9))= &
-            Minv(:,n,1,1)*uxbtestm(:,n,3,7)+Minv(:,n,1,2)*uxbtestm(:,n,3,8)+Minv(:,n,1,3)*uxbtestm(:,n,3,9)
+          if (need_temp(24+i)) & !(idiag_etai33xz/=0) &
+            temp_array(:,n,twod_address(24+i))= &
+                Minv(:,n,3,1)*uxbtestm(:,n,i,7)+Minv(:,n,3,2)*uxbtestm(:,n,i,8)+Minv(:,n,3,3)*uxbtestm(:,n,i,9)
+        enddo
+      enddo
 !
-!
-      if (need_temp(10)) & !(idiag_eta111xz/=0) &
-        temp_array(:,n,twod_address(10))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,1,1)+Minv(:,n,2,2)*uxbtestm(:,n,1,2)+Minv(:,n,2,3)*uxbtestm(:,n,1,3)
-!
-      if (need_temp(11)) & !(idiag_eta211xz/=0) &
-        temp_array(:,n,twod_address(11))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,2,1)+Minv(:,n,2,2)*uxbtestm(:,n,2,2)+Minv(:,n,2,3)*uxbtestm(:,n,2,3)
-!
-      if (need_temp(12)) & !(idiag_eta311xz/=0) &
-        temp_array(:,n,twod_address(12))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,3,1)+Minv(:,n,2,2)*uxbtestm(:,n,3,2)+Minv(:,n,2,3)*uxbtestm(:,n,3,3)
-!
-!
-      if (need_temp(13)) & !(idiag_eta121xz/=0) &
-        temp_array(:,n,twod_address(13))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,1,4)+Minv(:,n,2,2)*uxbtestm(:,n,1,5)+Minv(:,n,2,3)*uxbtestm(:,n,1,6)
-!
-      if (need_temp(14)) & !(idiag_eta221xz/=0) &
-        temp_array(:,n,twod_address(14))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,2,4)+Minv(:,n,2,2)*uxbtestm(:,n,2,5)+Minv(:,n,2,3)*uxbtestm(:,n,2,6)
-!
-      if (need_temp(15)) & !(idiag_eta321xz/=0) &
-        temp_array(:,n,twod_address(15))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,3,4)+Minv(:,n,2,2)*uxbtestm(:,n,3,5)+Minv(:,n,2,3)*uxbtestm(:,n,3,6)
-!
-!
-      if (need_temp(16)) & !(idiag_eta131xz/=0) &
-        temp_array(:,n,twod_address(16))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,1,7)+Minv(:,n,2,2)*uxbtestm(:,n,1,8)+Minv(:,n,2,3)*uxbtestm(:,n,1,9)
-!
-      if (need_temp(17)) & !(idiag_eta231xz/=0) &
-        temp_array(:,n,twod_address(17))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,2,7)+Minv(:,n,2,2)*uxbtestm(:,n,2,8)+Minv(:,n,2,3)*uxbtestm(:,n,2,9)
-!
-      if (need_temp(18)) & !(idiag_eta331xz/=0) &
-        temp_array(:,n,twod_address(18))= &
-            Minv(:,n,2,1)*uxbtestm(:,n,3,7)+Minv(:,n,2,2)*uxbtestm(:,n,3,8)+Minv(:,n,2,3)*uxbtestm(:,n,3,9)
-!
-!
-      if (need_temp(19)) & !(idiag_eta113xz/=0) &
-        temp_array(:,n,twod_address(19))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,1,1)+Minv(:,n,3,2)*uxbtestm(:,n,1,2)+Minv(:,n,3,3)*uxbtestm(:,n,1,3)
-!
-      if (need_temp(20)) & !(idiag_eta213xz/=0) &
-        temp_array(:,n,twod_address(20))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,2,1)+Minv(:,n,3,2)*uxbtestm(:,n,2,2)+Minv(:,n,3,3)*uxbtestm(:,n,2,3)
-!
-      if (need_temp(21)) & !(idiag_eta313xz/=0) &
-        temp_array(:,n,twod_address(21))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,3,1)+Minv(:,n,3,2)*uxbtestm(:,n,3,2)+Minv(:,n,3,3)*uxbtestm(:,n,3,3)
-!
-!
-      if (need_temp(22)) & !(idiag_eta123xz/=0) &
-        temp_array(:,n,twod_address(22))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,1,4)+Minv(:,n,3,2)*uxbtestm(:,n,1,5)+Minv(:,n,3,3)*uxbtestm(:,n,1,6)
-!
-      if (need_temp(23)) & !(idiag_eta223xz/=0) &
-        temp_array(:,n,twod_address(23))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,2,4)+Minv(:,n,3,2)*uxbtestm(:,n,2,5)+Minv(:,n,3,3)*uxbtestm(:,n,2,6)
-!
-      if (need_temp(24)) & !(idiag_eta323xz/=0) &
-        temp_array(:,n,twod_address(24))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,3,4)+Minv(:,n,3,2)*uxbtestm(:,n,3,5)+Minv(:,n,3,3)*uxbtestm(:,n,3,6)
-!
-!
-      if (need_temp(25)) & !(idiag_eta133xz/=0) &
-        temp_array(:,n,twod_address(25))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,1,7)+Minv(:,n,3,2)*uxbtestm(:,n,1,8)+Minv(:,n,3,3)*uxbtestm(:,n,1,9)
-!
-      if (need_temp(26)) & !(idiag_eta233xz/=0) &
-        temp_array(:,n,twod_address(26))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,2,7)+Minv(:,n,3,2)*uxbtestm(:,n,2,8)+Minv(:,n,3,3)*uxbtestm(:,n,2,9)
-!
-      if (need_temp(27)) & !(idiag_eta333xz/=0) &
-        temp_array(:,n,twod_address(27))= &
-            Minv(:,n,3,1)*uxbtestm(:,n,3,7)+Minv(:,n,3,2)*uxbtestm(:,n,3,8)+Minv(:,n,3,3)*uxbtestm(:,n,3,9)
-!
-    enddo
     case default
+      temp_array=0.
 !
     end select
-!
 !
     if (ldiagnos .and. needed2d_1d) then
 !
@@ -752,11 +674,9 @@ module Testfield
 !
     endif
 !
-!
-    temp_array = ny*temp_array    ! ny multiplied because we are in the following not in the mn loop
+    temp_array = ny*temp_array    ! ny multiplied because we are in the following only in an n loop
 !
     if (ldiagnos .and. needed2d_1d) then
-!
       do n=n1,n2
 !
         nl = n-n1+1
@@ -766,11 +686,9 @@ module Testfield
         enddo
 !
       enddo
-!
     endif
 !
     if (l2davgfirst .and. needed2d_2d) then
-!
       do n=n1,n2 
 !
         nl = n-n1+1
