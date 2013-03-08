@@ -25,7 +25,7 @@
 ! PENCILS PROVIDED cosjb; jparallel; jperp
 ! PENCILS PROVIDED cosub; bunit(3)
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
-! PENCILS PROVIDED hjparallel; hjperp
+! PENCILS PROVIDED hjparallel; hjperp, nu_ni1
 !
 !***************************************************************
 module Magnetic
@@ -170,6 +170,7 @@ module Magnetic
   logical :: lreset_aa=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
              lbz_ext_global=.false.
+  logical :: lambipolar_diffusion=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
@@ -230,6 +231,7 @@ module Magnetic
   character (len=labellen) :: xdep_profile='two-step'
   character (len=labellen) :: eta_xy_profile='schnack89'
   character (len=labellen) :: iforcing_continuous_aa='fixed_swirl'
+  character (len=labellen) :: ambipolar_diffusion='constant'
 !
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, J_ext, &
@@ -257,7 +259,7 @@ module Magnetic
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
       k_relprof,lmagneto_friction,numag, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
-      limplicit_resistivity
+      limplicit_resistivity,ambipolar_diffusion
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -834,6 +836,7 @@ module Magnetic
 !  Precalculate 1/nu_ni
 !
       if (nu_ni/=0.0) then
+        lambipolar_diffusion=.true.
         nu_ni1=1./nu_ni
       else
         nu_ni1=0.0
@@ -1730,16 +1733,23 @@ module Magnetic
 !
 !  Ambipolar diffusion.
 !
-      if (nu_ni/=0.0) then
+      if (lambipolar_diffusion) then
+        lpenc_requested(i_nu_ni1)=.true.
         lpenc_requested(i_va2)=.true.
         lpenc_requested(i_jxbrxb)=.true.
         lpenc_requested(i_jxbr2)=.true.
+        lpenc_requested(i_jxbr)=.true.
+        if (ambipolar_diffusion=="scale-density".or.          &
+            ambipolar_diffusion=="global-disk-scale-density") & 
+          lpenc_requested(i_rho1)=.true.
+        if (ambipolar_diffusion=="global-disk".or.            &
+            ambipolar_diffusion=="global-disk-scale-density") & 
+          lpenc_requested(i_r_mn)=.true.
       endif
+!
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
-      if ((lhydro .and. llorentzforce) .or. nu_ni/=0.0) &
-          lpenc_requested(i_jxbr)=.true.
+      if (lhydro .and. llorentzforce) lpenc_requested(i_jxbr)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_oo)=.true.
-      if (nu_ni/=0.0) lpenc_requested(i_va2)=.true.
 !
 !  ua pencil if lua_as_aux
 !
@@ -2512,7 +2522,48 @@ module Magnetic
 !
       if (lmagn_mf) call calc_pencils_magn_mf(f,p)
 !
+!  Ambipolar diffusion pencil
+!
+      if (lpencil(i_nu_ni1)) call set_ambipolar_diffusion(p)
+!
     endsubroutine calc_pencils_magnetic
+!***********************************************************************
+    subroutine set_ambipolar_diffusion(p)
+!
+!  Subroutine to choose between various models of ion density 
+!  to enter in the ambipolar diffusion calculation. The "scale-density"
+!  model assumes equilibrium between ionization and recombination: 
+!  
+!    ksi * rho = beta * rho_i * rho_e 
+!              ~ beta * rho_i^2
+!
+!  wkere ksi is ionization rate, beta the recombination rate, and 
+!  rho, rho_i, and rho_e are the neutral, ion, and electron density, 
+!  respectively, with rho >> rho_i ~ rho_e. Solving for rho_i, 
+!
+!    rho_i   =    sqrt(ksi*rho/beta) 
+!          propto sqrt(rho) 
+!
+!  This is implemented as ionization-equilibrium below. The proportionality 
+!  coefficients are incorporated into nu_ni1.
+!
+!  08-mar-13/wlad: coded
+!
+      type (pencil_case) :: p
+!
+      select case (ambipolar_diffusion)  
+!
+      case('constant'); p%nu_ni1=nu_ni1   
+      case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
+      case default
+         write(unit=errormsg,fmt=*) &
+              'set_ambipolar_diffusion: No such value for ambipolar_diffusion: ', &
+              trim(borderaa)
+         call fatal_error('set_ambipolar_diffusion',errormsg)
+!
+      endselect
+!  
+    endsubroutine set_ambipolar_diffusion
 !***********************************************************************
     subroutine diamagnetism(p)
 !
@@ -2905,16 +2956,19 @@ module Magnetic
 !
 !  Ambipolar diffusion in the strong coupling approximation.
 !
-      if (nu_ni/=0.0) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
+      if (lambipolar_diffusion) then
+        do j=1,3
+          ju=j-1+iaa
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%nu_ni1*p%jxbrxb(:,j)
+        enddo  
         if (lentropy .and. lneutralion_heat) then
           if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*nu_ni1*p%jxbr2
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
           else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*nu_ni1*p%jxbr2
-         endif
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%nu_ni1*p%jxbr2
+          endif
         endif
-        if (lfirst.and.ldt) diffus_eta=diffus_eta+nu_ni1*p%va2
+        if (lfirst.and.ldt) diffus_eta=diffus_eta+p%nu_ni1*p%va2
       endif
 !
 !  Consider here the action of a mean friction term, -LLambda*Abar.
@@ -3452,7 +3506,7 @@ module Magnetic
 !
 !  Heating by ion-neutrals friction.
 !
-        if (idiag_epsAD/=0) call sum_mn_name(nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
+        if (idiag_epsAD/=0) call sum_mn_name(p%nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
 !
 !  <A>'s, <A^2> and A^2|max
 !
