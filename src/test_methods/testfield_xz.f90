@@ -1048,7 +1048,7 @@ module Testfield
 !
       do inamez=1,nnamez
         do i=1,size(idiags_z)
-          call parse_name(iname,cname,cform,trim(cdiags(i))//'z',idiags_z(i))
+          call parse_name(inamez,cnamez,cformz,trim(cdiags(i))//'z',idiags_z(i))
         enddo
       enddo
 !
@@ -1056,7 +1056,7 @@ module Testfield
 !
       do inamexz=1,nnamexz
         do i=1,size(idiags_xz)
-          call parse_name(iname,cname,cform,trim(cdiags(i))//'xz',idiags_xz(i))
+          call parse_name(inamexz,cnamexz,cformxz,trim(cdiags(i))//'xz',idiags_xz(i))
         enddo
       enddo
 !
