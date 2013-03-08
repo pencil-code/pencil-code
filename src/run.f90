@@ -45,6 +45,9 @@
 !***********************************************************************
 program run
 !
+! 8-mar-13/MR: changed calls to wsnap and rsnap to grant reference to f by
+!              address
+!
   use Boundcond,       only: update_ghosts
   use Cdata
   use Chemistry,       only: chemistry_clean_up, write_net_reaction, lchemistry_diag
@@ -299,7 +302,7 @@ program run
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-  call rsnap('var.dat',f(:,:,:,1:mvar_in),mvar_in)
+  call rsnap('var.dat',f,mvar_in)
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
 !
@@ -653,7 +656,7 @@ program run
     if (lparticles) &
         call write_snapshot_particles(directory_dist,f,ENUM=.true.)
 !
-    call wsnap('VAR',f(:,:,:,1:mvar_io),mvar_io,ENUM=.true.,FLIST='varN.list')
+    call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
 !
 !  Write slices (for animation purposes).
@@ -676,8 +679,7 @@ program run
         if (lparticles) &
             call write_snapshot_particles(directory_dist,f,ENUM=.false.)
 !
-        call wsnap('var.dat',f(:,:,:,1:mvar_io), &
-                   mvar_io,ENUM=.false.,noghost=noghost_for_isave)
+        call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
       endif
     endif
@@ -749,21 +751,21 @@ program run
       if (lparticles) &
           call write_snapshot_particles(directory_dist,f,ENUM=.false.)
 !
-      call wsnap('var.dat',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
+      call wsnap('var.dat',f,mvar_io,ENUM=.false.)
       call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
 !
 !  dvar is written for analysis and debugging purposes only.
 !
       if (ip<=11 .or. lwrite_dvar) then
-        call wsnap('dvar.dat',df(:,:,:,1:mvar),mvar,ENUM=.false.,noghost=.true.)
+        call wsnap('dvar.dat',df,mvar,ENUM=.false.,noghost=.true.)
         call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',f)
       endif
 !
 !  Write crash files before exiting if we haven't written var.dat already
 !
     else
-      call wsnap('crash.dat',f(:,:,:,1:mvar_io),mvar_io,ENUM=.false.)
-      if (ip<=11) call wsnap('dcrash.dat',df(:,:,:,1:mvar),mvar,ENUM=.false.)
+      call wsnap('crash.dat',f,mvar_io,ENUM=.false.)
+      if (ip<=11) call wsnap('dcrash.dat',df,mvar,ENUM=.false.)
     endif
   endif
 !

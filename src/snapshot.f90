@@ -31,6 +31,7 @@ module Snapshot
 !   5-apr-03/axel: possibility for additional (hard-to-get) output
 !  31-may-03/axel: wsnap can write either w/ or w/o auxiliary variables
 !  28-jun-10/julien: added different file formats
+!   8-mar-13/MR  : made a assumed-size to work properly with calls in run.f90
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign
@@ -43,7 +44,7 @@ module Snapshot
 !
       character (len=*) :: chsnap, flist
       integer :: msnap
-      real, dimension (mx,my,mz,msnap) :: a
+      real, dimension (mx,my,mz,*) :: a
       logical :: enum,enum_,noghost
       optional :: enum, flist, noghost
 !
@@ -125,6 +126,7 @@ module Snapshot
 !
 !  24-jun-05/tony: coded from snap reading code in run.f90
 !   5-jan-13/axel: allowed for lread_oldsnap_lnrho2rho=T
+!   8-mar-13/MR  : made f assumed-size to work properly with calls in run.f90
 !
       use IO, only: input_snap, input_snap_finalize
       use Persist, only: input_persistent
@@ -133,7 +135,7 @@ module Snapshot
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
 !
       integer :: msnap
-      real, dimension (mx,my,mz,msnap) :: f
+      real, dimension (mx,my,mz,*) :: f
       character (len=*) :: chsnap
 !
       integer :: ivar
