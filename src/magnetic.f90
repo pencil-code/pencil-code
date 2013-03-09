@@ -1739,12 +1739,8 @@ module Magnetic
         lpenc_requested(i_jxbrxb)=.true.
         lpenc_requested(i_jxbr2)=.true.
         lpenc_requested(i_jxbr)=.true.
-        if (ambipolar_diffusion=="scale-density".or.          &
-            ambipolar_diffusion=="global-disk-scale-density") & 
+        if (ambipolar_diffusion=="ionization-equilibrium") &
           lpenc_requested(i_rho1)=.true.
-        if (ambipolar_diffusion=="global-disk".or.            &
-            ambipolar_diffusion=="global-disk-scale-density") & 
-          lpenc_requested(i_r_mn)=.true.
       endif
 !
       if (hall_term/=0.0) lpenc_requested(i_jxb)=.true.
