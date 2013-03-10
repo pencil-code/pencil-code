@@ -1242,6 +1242,11 @@ module Particles_sink
       integer :: itsubsub, iblock, nhalforbx, nhalforby, nhalforbz
       logical :: laccrete_subgrid
 !
+      if (ip<=6) then
+        print*, 'subgrid_accretion: entering, iproc, it, itsub, '// &
+            'ipar(j), ipar(k)=', iproc, it, itsub, ipar(j), ipar(k)
+      endif
+!
 !  Calculate the particle's nearest grid point.
 !
       call map_nearest_grid(fp,ineargrid,k,k)
@@ -1258,6 +1263,26 @@ module Particles_sink
         if (ineargrid(k,1)<l1 .or. ineargrid(k,2)>l2 .or. &
             ineargrid(k,2)<m1 .or. ineargrid(k,2)>m2 .or. &
             ineargrid(k,3)<n1 .or. ineargrid(k,2)>n2) return
+      endif
+!
+!  The gas velocity is taken from the position of the sink particle. We could
+!  interpolate at each time-step, but that would be expensive when the particle
+!  spends many time-steps within the sink sphere.
+!
+      call map_nearest_grid(fp,ineargrid,j,j)
+      if (lparticles_blocks) then
+        iblock=inearblock(j)
+      else
+        iblock=0
+      endif
+!
+!  Interpolation is either zeroth or first order spline interpolation.
+!
+      if (lparticlemesh_cic .or. lparticlemesh_tsc) then
+        call interpolate_linear( &
+            f,iux,iuz,fp(j,ixp:izp),uu_gas,ineargrid(j,:),iblock,ipar(j))
+      else
+        uu_gas=f(ineargrid(j,1),ineargrid(j,2),ineargrid(j,3),iux:iuz)
       endif
 !
 !  Write particle trajectory to file for debugging.
@@ -1315,25 +1340,6 @@ module Particles_sink
 !
         r=sqrt(xk**2+yk**2+zk**2)
         v=sqrt(vxk**2+vyk**2+vzk**2)
-!
-!  The gas velocity is taken from the position of the sink particle. We could
-!  interpolate at each time-step, but that would be expensive when the particle
-!  spends many time-steps within the sink sphere.
-!
-        if (lparticles_blocks) then
-          iblock=inearblock(k)
-        else
-          iblock=0
-        endif
-!
-!  Interpolation is either zeroth or first order spline interpolation.
-!
-        if (lparticlemesh_cic .or. lparticlemesh_tsc) then
-          call interpolate_linear( &
-              f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
-        else
-          uu_gas=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),iux:iuz)
-        endif
 !
 !  Determine the time-step.
 !
@@ -1458,6 +1464,11 @@ module Particles_sink
         fp(k,ivpx)=fp(j,ivpx)+vxk
         fp(k,ivpy)=fp(j,ivpy)+vyk
         fp(k,ivpz)=fp(j,ivpz)+vzk
+      endif
+!
+      if (ip<=6) then
+        print*, 'subgrid_accretion: leaving, iproc, it, itsub, '// &
+            'ipar(j), ipar(k)=', iproc, it, itsub, ipar(j), ipar(k)
       endif
 !
     endsubroutine subgrid_accretion
