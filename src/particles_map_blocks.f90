@@ -101,7 +101,7 @@ module Particles_map
 !  Check if nearest block is the same as for previous particle.
 !
         lbinary_search=.true.
-        if (k>=2) then
+        if (k>=k1+1) then
           if (iproc_parent_par==iproc_parent_par_previous .and. &
               ibrick_parent_par==ibrick_parent_par_previous) then
             inearblock(k)=inearblock(k-1)
@@ -150,10 +150,6 @@ module Particles_map
         iproc_parent_par_previous=iproc_parent_par
         ibrick_parent_par_previous=ibrick_parent_par
       enddo
-!
-!  Stop if any particles are not present in any adopted block.
-!
-      call fatal_error_local_collect()
 !
     endsubroutine map_nearest_grid
 !***********************************************************************
