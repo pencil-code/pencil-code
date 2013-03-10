@@ -515,18 +515,6 @@ module Particles_main
 !
       if (lparticles_nbody) call bcast_nbodyarray(fp)
 !
-!  Communicate rhop or np 
-!
-      if (lcommunicate_rhop.and.irhop/=0) then 
-        call initiate_isendrcv_bdry(f,irhop,irhop)
-        call finalize_isendrcv_bdry(f,irhop,irhop)
-      endif
-!
-      if (lcommunicate_np.and.inp/=0) then 
-        call initiate_isendrcv_bdry(f,inp,inp)
-        call finalize_isendrcv_bdry(f,inp,inp)
-      endif
-!
     endsubroutine particles_boundconds
 !***********************************************************************
     subroutine particles_doprepencil_calc(f,ivar1,ivar2)
