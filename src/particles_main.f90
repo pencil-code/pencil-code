@@ -470,8 +470,6 @@ module Particles_main
 !***********************************************************************
     subroutine particles_boundconds(f)
 !
-      use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
-!
 !  Particle boundary conditions and parallel communication.
 !
 !  16-feb-06/anders: coded
