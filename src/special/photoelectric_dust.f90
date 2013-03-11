@@ -112,7 +112,7 @@ module Special
 !
       use Cdata 
       use Mpicomm
-      use EquationOfState, only: gamma1,cs20,rho0
+      use EquationOfState, only: gamma1,cs20
       use SharedVariables
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -122,7 +122,7 @@ module Special
 !  Initializing the pressures. Seeting mu=1 makes the polytrope a linear barotrope.
 !
       const1=kappa*mu
-      const2=factor_photoelectric * cs20
+      const2=factor_photoelectric * cs20 * gamma1
       const3=factor_localiso
 !
       if (.not.lstarting) then 
@@ -322,13 +322,14 @@ endsubroutine read_special_run_pars
 !
       use Cdata
       use Diagnostics
+      use EquationOfState, only: gamma1
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       integer :: j,ju
 !
-      if (lfirst.and.ldt) advec_cs2 = (const3*p%cs2 + const2 + const1) * dxyz_2
+      if (lfirst.and.ldt) advec_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
       if (headtt.or.ldebug) &
            print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
