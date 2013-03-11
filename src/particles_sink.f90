@@ -1265,24 +1265,20 @@ module Particles_sink
             ineargrid(k,3)<n1 .or. ineargrid(k,2)>n2) return
       endif
 !
-!  The gas velocity is taken from the position of the sink particle. We could
-!  interpolate at each time-step, but that would be expensive when the particle
-!  spends many time-steps within the sink sphere.
+!  Calculate the local gas velocity field. We fix this, as any interpolation
+!  is in the risk of needing more ghost cells than available.
 !
-      call map_nearest_grid(fp,ineargrid,j,j)
       if (lparticles_blocks) then
-        iblock=inearblock(j)
+        iblock=inearblock(k)
       else
         iblock=0
       endif
 !
-!  Interpolation is either zeroth or first order spline interpolation.
-!
       if (lparticlemesh_cic .or. lparticlemesh_tsc) then
         call interpolate_linear( &
-            f,iux,iuz,fp(j,ixp:izp),uu_gas,ineargrid(j,:),iblock,ipar(j))
+            f,iux,iuz,fp(k,ixp:izp),uu_gas,ineargrid(k,:),iblock,ipar(k))
       else
-        uu_gas=f(ineargrid(j,1),ineargrid(j,2),ineargrid(j,3),iux:iuz)
+        uu_gas=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),iux:iuz)
       endif
 !
 !  Write particle trajectory to file for debugging.
