@@ -107,6 +107,7 @@ module Entropy
   logical :: lconvection_gravx=.false.
   logical :: ltau_cool_variable=.false.
   logical :: lprestellar_cool_iso=.false.
+  logical :: lphotoelectric_heating=.false.
   logical, pointer :: lreduced_sound_speed
   logical, save :: lfirstcall_hcond=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -163,7 +164,7 @@ module Entropy
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
-      lprestellar_cool_iso, zz1, zz2
+      lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -2422,6 +2423,9 @@ module Entropy
           endif
         endif
 !
+!  for photoelectric dust heating in debris disks
+!
+        if (lphotoelectric_heating) lpenc_requested(i_rhop)=.true.
       endif
 !
       if (tau_cool2/=0.0) lpenc_requested(i_rho)=.true.
@@ -4402,7 +4406,7 @@ module Entropy
 !
       real, dimension(nx), intent(inout) :: heat
       real, dimension (nx) :: rr1,TT_drive, OO
-      real, save :: tau1_cool
+      real, save :: tau1_cool,rho01
       logical, save :: lfirstcall=.true.
       type (pencil_case), intent(in) :: p
 !
@@ -4419,10 +4423,15 @@ module Entropy
 !
       if (lfirstcall) then 
         tau1_cool=1./tau_cool
+        if (lphotoelectric_heating) rho01=1./rho0
         lfirstcall=.false.
       endif
 !
-      TT_drive=TTref_cool*rr1**TT_powerlaw      
+      if (lphotoelectric_heating) then 
+        TT_drive=TTref_cool*rr1**TT_powerlaw*p%rhop*rho01      
+      else  
+        TT_drive=TTref_cool*rr1**TT_powerlaw      
+      endif
 !
       if (TT_floor /= impossible) & 
            where(TT_drive < TT_floor) TT_drive = TT_floor
