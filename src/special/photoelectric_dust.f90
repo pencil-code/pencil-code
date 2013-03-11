@@ -127,11 +127,14 @@ module Special
 !
       if (.not.lstarting) then 
         call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-        if (ierr/=0) call fatal_error('register_special','lpressuregradient_gas')
+        if (ierr/=0) call fatal_error('initialize_special','lpressuregradient_gas')
         if (lpressuregradient_gas) then 
           call fatal_error('initialize_special','switch lpressuregradient_gas=F in hydro_run_pars') 
         endif
       endif  
+!
+      if (lentropy) & 
+           call fatal_error('initialize_special','This code should be used with noentropy.')
 !
       call keep_compiler_quiet(f)
 !
