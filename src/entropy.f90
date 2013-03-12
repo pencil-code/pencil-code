@@ -4274,8 +4274,9 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax
 !
-      real, dimension (nx) :: heat
+      real, dimension (nx) :: heat, TT_drive
       real :: profile_buffer
+      integer :: i
 !
       intent(in) :: p
       intent(inout) :: Hmax,df
@@ -4336,7 +4337,13 @@ module Entropy
 !
       if (tau_cool/=0.0) then
         if (.not.ltau_cool_variable) then
-          heat=heat-p%rho*p%cp*gamma1*(p%TT-TTref_cool)/tau_cool
+          if (lphotoelectric_heating) then
+            TT_drive=TTref_cool*p%rhop
+          else
+            TT_drive=TTref_cool
+          endif
+          if (TT_floor /= impossible) call apply_floor(TT_drive)
+          heat=heat-p%rho*p%cp*gamma1*(p%TT-TT_drive)/tau_cool
         else
           call calc_heat_cool_variable(heat,p)
         endif
@@ -4398,6 +4405,17 @@ module Entropy
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
+    subroutine apply_floor(a)
+!
+      real, dimension(nx), intent(inout) :: a
+      integer :: i
+!
+      do i=1,nx 
+        if (a(i) < TT_floor) a(i)=TT_floor
+      enddo
+!      
+    endsubroutine apply_floor
+!***********************************************************************
     subroutine calc_heat_cool_variable(heat,p)
 !
 ! Thermal relaxation for radially stratified global Keplerian disks
@@ -4433,8 +4451,7 @@ module Entropy
         TT_drive=TTref_cool*rr1**TT_powerlaw      
       endif
 !
-      if (TT_floor /= impossible) & 
-           where(TT_drive < TT_floor) TT_drive = TT_floor
+      if (TT_floor /= impossible) call apply_floor(TT_drive)
 !
 !  tau_cool = tau_cool_0 * Omega0/Omega
 !  tau_cool1 = 1/tau_cool_0 * Omega/Omega0
