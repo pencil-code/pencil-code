@@ -4,53 +4,53 @@ Below are the contact details of some of the Pencil Code developers.
 Their web pages may be found in the pencil code manual.
 It might be appropriate to mention some of the relevant names in the
 acknowledgements of publications that are heavily based on their work.
-Having access to the mobile phone numbers of active developers is
-particularly important if somebody checks in something that breaks
-the auto-test, for example. In such cases that person must expect
-phone calls even outside office hours.
+Having access to the svn-name, email, and maybe also the mobile phone numbers
+of active developers is particularly important if somebody checks in
+something that breaks the auto-test, for example.
+In such cases that person must expect phone calls even outside office hours.
 
-Name,            email,                    office,            mobile/home/alternative, svn-UserId,  skype-Id
----------------------------------------------------------------------------------------------------------------------
-Natalia Babkovskaia, nbabkovskaia/gmail.com +358 8 553 1939   +358 40 5286784
-Steve Berukoff,   steveb/physics.ucla.edu
-Sven Bingert,     bingert/mps.mpg.de,      +49-5556-979-358,  +491792126192, bingert 
-Philippe Bourdin, bourdin/mps.mpg.de,      +49-5556-979-408,  +49-5551-5895372, Bourdin.KIS
-Axel Brandenburg, brandenb/nordita.org,    +46 8 5537 8707,   +46 70 574 0650, brandenb, axelbrandenburg
-Simon Candelaresi, iomsn1/gmail.com        +46 8 5537 8277,   +46 737204349, iomsn, iomsn1
-Chi-kwan Chan,    ckch/nordita.org,        +46 8 5537 8573,   +46 727391600, , chanchikwan
-Piyali Chatterjee, mppiyali/gmail.com,     + 1 303 497 1527 , + 1 720 409 7222,,mppiyali
-Fabio Del Sordo,  fabio/nordita.org        +46 8 5537 8277    +46 700629700, fadiesis, fabiodelsordo
-Boris Dintrans,   boris.dintrans/irap.omp.eu +33 5 6133 2811    +33 6 51 05 35 21, boris.dintrans, bdintrans
-Wolfgang Dobler,  wdobler/gmail.com,       +49 33201 43791,   +49 1520 4056 762, +49 305331 12083 (office), wdobler, mob (new): +49 1 51 281 23 472
-Thomas Gastine,   gastine/mps.mpg.de,      +49 5556 979 456
-Fred A. Gent,     f.gent/sheffield.ac.uk   +44 114 222 3285,  +44 7779 364 893 (mob), fred.gent.ncl, fred_gent 
-Gustavo Guerrero, tavo.buk/gmail.com,      +468 5537 8718,    +46 76 089 1432
-Anders Johansen,  anders/astro.lu.se,      +46 46 22 21589,   +46 736 84 96 98
-Nils E.L. Haugen  Nils.E.Haugen/sintef.no  +47 73 55 06 75    +47 986 086 83, +47 72878737 (home)
-Tobias Heinemann  tobias.heinemann/gmail.com  +1 609 734 8298 
-Alexander Hubbard, alex.i.hubbard/gmail.com,  +468 5537 8573, +46 70 924 2713
-André Kapelrud    kapelrud/stud.ntnu.no
-Koen Kemel,       koentjekemel/hotmail.com +46 8 5537 8277
-Maarit Korpi      maarit.korpi/helsinki.fi +358 50 4155 396
-Petri Käpylä      petri.kapyla/helsinki.fi +358 9 191 22952   +358 40 533 4117
-Wladimir Lyra     wlyra/jpl.nasa.gov       +1  818 393 2487   +1 347 419 6711, wladimir.lyra, wladimir81
-Tony Mee          eemynotna/gmail.com      +44 207 7739436    +44 782 540 3751 
-Dhrubaditya Mitra, dhruba.mitra/gmail.com  +46 8 5537 8575   +46 738 969 494, dhruba, dhrubaditya
-Mikhail Modestov, mikhail3@kth.se, +46 8 5537 8039, +46 73 8600 130
-Jeffrey S. Oishi joishi/gmail.com           +1 347 432 9203
-Raphael Plasson, +46 7 3575 8374,  
-Matthias Rheinhardt, mreinhardt/nordita.org,    +468 5537 8708   , +49 49 3044 19348, rei,
-Graeme R. Sarson g.r.sarson/ncl.ac.uk      +44 191 222 5375
-Julien Savre,    juliensavre/gmail.com     +46 46 222 3624,   +046 7 00 94 71 55
-Nishant K. Singh, nishant.cosmo/gmail.com, +91 9916785745
-Andrew Snodin    andrew.snodin/ncl.ac.uk
-Sharanya Sur     sur/iucaa.ernet.in        +91 2560 4115      +91 94 210 37 292
-Andreas Svedin,  andreas/astro.columbia.edu +1 917 348 1018    +46 73 968 86 56
-Joern Warnecke,  joern/nordita.org,        +46 8 5537 8277,   +46 72 7316111
-Tijmen van Wettum, vanwettum/mps.mpg.de    +49-5556-979-408,  +49 176 911 232 19, TvanWettum
-Chao-Chin Yang,   ccyang/ucolick.org,      +1-831-459-2896,   , , chaochinyang
-Tarek A. Yousef, tarek/pvv.org,            +44 798 122 8515,
-Illa R. Losada	illa.rivero.losada/gmail.com			+34 634773855, illarl	
+Name,                 email,                         svn-name,             office,            mobile/home/alternative,  skype-name
+-----------------------------------------------------------------------------------------------------------------------------------
+Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +35 88 553 1939,   +35 840 5286784
+Steve Berukoff,       steveb/physics.ucla.edu        ,
+Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192
+Philippe Bourdin,     bourdin/mps.mpg.de,            Bourdin.KIS,          +49 5556 979 408,  +49 5551 5895372
+Axel Brandenburg,     brandenb/nordita.org,          brandenb,             +46 8 5537 8707,   +46 70 574 0650,          axelbrandenburg
+Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +46 8 5537 8277,   +46 7372 04349,           iomsn1
+Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600 
+Piyali Chatterjee,    mppiyali/gmail.com,            ,                     +1 303 497 1527,   +1 720 409 7222,          mppiyali
+Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277    +46 700629700,            fabiodelsordo
+Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811    +33 6 51 05 35 21,        bdintrans
+Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 1520 4056 762, +49 3053 31 12083 (office), mob (new): +49 151 28123472
+Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456
+Fred A. Gent,         f.gent/sheffield.ac.uk,        fred.gent.ncl,        +44 114 222 3285,  +44 7779 364 893 (mob),   fred_gent
+Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432 
+Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98  
+Nils E.L. Haugen      Nils.E.Haugen/sintef.no,       ,                     +47 73 55 06 75,   +47 986 086 83 or +47 7287 8737 (home)
+Tobias Heinemann      tobias.heinemann/gmail.com,    ,                     +1 609 734 8298
+Alexander Hubbard,    alex.i.hubbard/gmail.com,      ,                     +46 8 5537 8573,   +46 70 924 2713
+André Kapelrud        kapelrud/stud.ntnu.no,         ,
+Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277
+Maarit Korpi          maarit.korpi/helsinki.fi,      ,                     +35 850 4155 396
+Petri Käpylä          petri.kapyla/helsinki.fi,      ,                     +35 89 191 22952,  +35 840 533 4117 
+Wladimir Lyra         wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81
+Tony Mee              eemynotna/gmail.com,           ,                     +44 207 7739436,   +44 782 540 3751
+Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494,          dhrubaditya
+Mikhail Modestov,     mikhail3/kth.se,               ,                     +46 8 5537 8039,   +46 73 8600 130
+Jeffrey S. Oishi,     joishi/gmail.com,              ,                     +1 347 432 9203
+Raphael Plasson,      ,                              ,                     +46 7 3575 8374
+Matthias Rheinhardt,  mreinhardt/nordita.org,        rei,                  +46 8 5537 8708,   +49 30 44 19348
+Graeme R. Sarson,     g.r.sarson/ncl.ac.uk,          ,                     +44 191 222 5375
+Julien Savre,         juliensavre/gmail.com,         ,                     +46 46 222 3624,   +46 7 00 94 71 55
+Nishant K. Singh,     nishant.cosmo/gmail.com,       ,                     +91 9916785745
+Andrew Snodin,        andrew.snodin/ncl.ac.uk,       ,
+Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2560 4115,     +91 94 210 37 292 
+Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56  
+Joern Warnecke,       joern/nordita.org,             ,                     +46 8 5537 8277,   +46 72 7316111   
+Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           +49 5556 979 408,  +49 176 911 232 19
+Chao-Chin Yang,       ccyang/ucolick.org,            ccyang/astro.lu.se,   +1 831 459 2896,   ,                         chaochinyang
+Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515
+Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               +34 634773855
 
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
