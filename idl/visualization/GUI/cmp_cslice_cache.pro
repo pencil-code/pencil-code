@@ -59,6 +59,9 @@ pro cslice_event, event
 	; time in seconds to wait after showing each frame for 1D, 2D, and 3D movies (0=fastest possible)
 	min_wait_time = [ 0.2, 0.1, 0.05 ]
 
+	; step interval for following a traced streamline
+	streamline_step = 4
+
 	quit = -1
 	DRAW_IMAGE_1=0  &  DRAW_IMAGE_2=0  &  DRAW_IMAGE_3=0
 
@@ -458,8 +461,9 @@ pro cslice_event, event
 			if (stream_pos lt 0) then begin
 				coordinate = [coord.x[px], coord.y[py], coord.z[pz]] * unit.default_length
 				selected_streamline = pc_find_streamline (coordinate, streamlines, nearest=stream_pos)
+				print, 'Nearest streamline: # ', selected_streamline
 			end else begin
-				step = 5
+				step = streamline_step
 				if (eventval eq 'ST_PREV') then step = -step
 				stream_pos += step
 				if (stream_pos ge streamlines.(selected_streamline).num) then begin
