@@ -3865,11 +3865,13 @@ module Special
       real, dimension(:,:,:,:), allocatable :: global_left,global_right
       real, dimension(:,:,:,:), allocatable :: global_left_tmp,global_right_tmp
       real, dimension(mx,my,3,8) :: left,right=0.,inte
-      real, dimension (mx,my,3), save :: ax_init,ay_init,az_init
+      real, dimension (mx,my,3), save :: ax_init,ay_init,az_init,lnrho_init,lntt_init
 !
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
 !
       if (lfirstcall) then
+        lnrho_init = f(:,:,1:3,ilnrho)
+        lntt_init  = f(:,:,1:3,ilntt)
         ax_init    = f(:,:,1:3,iax)
         ay_init    = f(:,:,1:3,iay)
         az_init    = f(:,:,1:3,iaz)
@@ -3925,116 +3927,116 @@ module Special
         endif
 !
         if (lroot) then
-           if (.not. allocated(global_left)) allocate(global_left(mxgrid,mygrid,3,8))
-           if (.not. allocated(global_right)) allocate(global_right(mxgrid,mygrid,3,8))
-           if (.not. allocated(global_left_tmp)) allocate(global_left_tmp(nxgrid,nygrid,3,8))
-           if (.not. allocated(global_right_tmp)) allocate(global_right_tmp(nxgrid,nygrid,3,8))
+          if (.not. allocated(global_left)) allocate(global_left(mxgrid,mygrid,3,8))
+          if (.not. allocated(global_right)) allocate(global_right(mxgrid,mygrid,3,8))
+          if (.not. allocated(global_left_tmp)) allocate(global_left_tmp(nxgrid,nygrid,3,8))
+          if (.not. allocated(global_right_tmp)) allocate(global_right_tmp(nxgrid,nygrid,3,8))
 !
-           call safe_character_assign(data_dat,'boundlayer/input_'//trim(llabel)//'.dat')
-           open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
+          call safe_character_assign(data_dat,'boundlayer/input_'//trim(llabel)//'.dat')
+          open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
                 recl=nxgrid*nygrid*lend,access='direct')
 !
-           frame = 1
-           do j=1,8
-              do i=1,3
-                 read (unit,rec=frame,iostat=ierr) global_left_tmp(:,:,i,j)
-                 frame = frame+1
-                 global_left(nghost+1:nghost+nxgrid,nghost+1:nghost+nygrid,i,j) = global_left_tmp(:,:,i,j)
-              enddo
-           enddo
-           close(unit)
-           global_left(1:nghost,              nghost+1:nghost+nygrid,:,:) = &
-                global_left(1+nxgrid:nghost+nxgrid,nghost+1:nghost+nygrid,:,:)
-           global_left(mxgrid-nghost+1:mxgrid,nghost+1:nghost+nygrid,:,:) =  &
-                global_left(1+nghost:2*nghost,    nghost+1:nghost+nygrid,:,:)
+          frame = 1
+          do j=1,8
+            do i=1,3
+              read (unit,rec=frame,iostat=ierr) global_left_tmp(:,:,i,j)
+              frame = frame+1
+              global_left(nghost+1:nghost+nxgrid,nghost+1:nghost+nygrid,i,j) = global_left_tmp(:,:,i,j)
+            enddo
+          enddo
+          close(unit)
+          global_left(1:nghost,              nghost+1:nghost+nygrid,:,:) = &
+              global_left(1+nxgrid:nghost+nxgrid,nghost+1:nghost+nygrid,:,:)
+          global_left(mxgrid-nghost+1:mxgrid,nghost+1:nghost+nygrid,:,:) =  &
+              global_left(1+nghost:2*nghost,    nghost+1:nghost+nygrid,:,:)
 !
-           global_left(1:mxgrid,1:nghost,:,:) = &
-                global_left(1:mxgrid,1+nygrid:nghost+nygrid,:,:)
-           global_left(1:mxgrid,mygrid-nghost+1:mygrid,:,:) = &
-                global_left(1:mxgrid,1+nghost:2*nghost,:,:)
+          global_left(1:mxgrid,1:nghost,:,:) = &
+              global_left(1:mxgrid,1+nygrid:nghost+nygrid,:,:)
+          global_left(1:mxgrid,mygrid-nghost+1:mygrid,:,:) = &
+              global_left(1:mxgrid,1+nghost:2*nghost,:,:)
 !
 ! Read new data
-           call safe_character_assign(data_dat,'boundlayer/input_'//trim(rlabel)//'.dat')
-           open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
-                recl=nxgrid*nygrid*lend,access='direct')
+          call safe_character_assign(data_dat,'boundlayer/input_'//trim(rlabel)//'.dat')
+          open (unit,file=trim(data_dat),form='unformatted',status='unknown', &
+              recl=nxgrid*nygrid*lend,access='direct')
 !
-           frame = 1
-           do j=1,8
-              do i=1,3
-                 read (unit,rec=frame,iostat=ierr) global_right_tmp(:,:,i,j)
-                 frame = frame+1
-                 global_right(nghost+1:nghost+nxgrid,nghost+1:nghost+nygrid,i,j) = global_right_tmp(:,:,i,j)
-              enddo
-           enddo
-           close(unit)
+          frame = 1
+          do j=1,8
+            do i=1,3
+              read (unit,rec=frame,iostat=ierr) global_right_tmp(:,:,i,j)
+              frame = frame+1
+              global_right(nghost+1:nghost+nxgrid,nghost+1:nghost+nygrid,i,j) = global_right_tmp(:,:,i,j)
+            enddo
+          enddo
+          close(unit)
           global_right(1:nghost,              nghost+1:nghost+nygrid,:,:) = &
-               global_right(1+nxgrid:nghost+nxgrid,nghost+1:nghost+nygrid,:,:)
+              global_right(1+nxgrid:nghost+nxgrid,nghost+1:nghost+nygrid,:,:)
           global_right(mxgrid-nghost+1:mxgrid,nghost+1:nghost+nygrid,:,:) =  &
-               global_right(1+nghost:2*nghost,     nghost+1:nghost+nygrid,:,:)
+              global_right(1+nghost:2*nghost,     nghost+1:nghost+nygrid,:,:)
 !
           global_right(1:mxgrid,1:nghost,:,:) = &
-               global_right(1:mxgrid,1+nygrid:nghost+nygrid,:,:)
+              global_right(1:mxgrid,1+nygrid:nghost+nygrid,:,:)
           global_right(1:mxgrid,mygrid-nghost+1:mygrid,:,:) = &
-               global_right(1:mxgrid,1+nghost:2*nghost,:,:)
+              global_right(1:mxgrid,1+nghost:2*nghost,:,:)
 !
 !  send the data to the other procs in the ipz=0 plane
           do i=0,nprocx-1; do j=0,nprocy-1
-             ipt = i+nprocx*J
-             if (ipt /= 0) then
-                call mpisend_real(global_left(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:), &
-                     (/mx,my,3,8/),ipt,tag_left)
-                call mpisend_real(global_right(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:), &
-                     (/mx,my,3,8/),ipt,tag_right)
-             else
+            ipt = i+nprocx*J
+            if (ipt /= 0) then
+              call mpisend_real(global_left(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:), &
+                  (/mx,my,3,8/),ipt,tag_left)
+              call mpisend_real(global_right(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:), &
+                  (/mx,my,3,8/),ipt,tag_right)
+            else
               left = global_left(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:)
               right = global_right(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:)
-           endif
+            endif
           enddo; enddo
-       else
+        else
           if (ipz == 0) then
-             call mpirecv_real(left, (/mx,my,3,8/),0,tag_left)
-             call mpirecv_real(right, (/mx,my,3,8/),0,tag_right)
+            call mpirecv_real(left, (/mx,my,3,8/),0,tag_left)
+            call mpirecv_real(right, (/mx,my,3,8/),0,tag_right)
           endif
-       endif
-    endif
+        endif
+      endif
 !
 ! Linear interpolate data
 !
-    inte = (t*unit_time + t_start_mark - (tl+delta_t))*(right-left)/(tr-tl)+left
+      inte = (t*unit_time + t_start_mark - (tl+delta_t))*(right-left)/(tr-tl)+left
 !
 ! Use cubic step to interpolate the data.
 !
 !     inte = cubic_step(real(t*unit_time)-tl,0.5*(tr-tl),0.5*(tr-tl))* &
 !         (right-left) +left
 !
-    do i=1,3
-       if (lhydro) then
+      do i=1,3
+        if (lhydro) then
           if (nxgrid /= 1) then
-             f(:,:,n1-i,iux)=inte(:,:,n1-i,1)/unit_velocity
+            f(:,:,n1-i,iux)=inte(:,:,n1-i,1)/unit_velocity
           endif
           if (nygrid /= 1) then
-             f(:,:,n1-i,iuy)=inte(:,:,n1-i,2)/unit_velocity
+            f(:,:,n1-i,iuy)=inte(:,:,n1-i,2)/unit_velocity
           endif
           f(:,:,n1-i,iuz)=inte(:,:,n1-i,3)/unit_velocity
-       endif
+        endif
 !
-       if (ldensity) &
-            f(:,:,n1-i,ilnrho)=inte(:,:,n1-i,4)-log(unit_density)
+        if (ldensity) &
+            f(:,:,n1-i,ilnrho)=lnrho_init(:,:,n1-i)*(1.-coeff)+coeff*(inte(:,:,n1-i,4)-log(unit_density))
+!                                                                                                                                  
+        if (ltemperature .and. (.not. ltemperature_nolog)) then
+          f(:,:,n1-i,ilnTT)=lntt_init(:,:,n1-i)*(1.-coeff)+coeff*(inte(:,:,n1-i,5)-log(unit_temperature))
+        endif
 !
-       if (ltemperature .and. (.not. ltemperature_nolog)) then
-          f(:,:,n1-i,ilnTT)=inte(:,:,n1-i,5)-log(unit_temperature)
-       endif
-!
-       if (lmagnetic)  then
+        if (lmagnetic)  then
           if (nygrid /= 1) then
-             f(:,:,n1-i,iax)=ax_init(:,:,n1-i)*(1.-coeff)+coeff*inte(:,:,n1-i,6)/(unit_magnetic*unit_length)
+            f(:,:,n1-i,iax)=ax_init(:,:,n1-i)*(1.-coeff)+coeff*inte(:,:,n1-i,6)/(unit_magnetic*unit_length)
           endif
           if (nxgrid /= 1) then
-             f(:,:,n1-i,iay)=ay_init(:,:,n1-i)*(1.-coeff)+coeff*inte(:,:,n1-i,7)/(unit_magnetic*unit_length)
+            f(:,:,n1-i,iay)=ay_init(:,:,n1-i)*(1.-coeff)+coeff*inte(:,:,n1-i,7)/(unit_magnetic*unit_length)
           endif
           f(:,:,n1-i,iaz)=az_init(:,:,n1-i)*(1.-coeff)+coeff*inte(:,:,n1-i,8)/(unit_magnetic*unit_length)
-       endif
-    enddo
+        endif
+      enddo
 !
    endsubroutine mark_boundary
 !***********************************************************************
