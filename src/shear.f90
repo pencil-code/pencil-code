@@ -581,7 +581,7 @@ module Shear
       real, dimension(nx,ny) :: b
       real, dimension(nxgrid) :: xnew, penc, dpenc, yshift
       real, dimension(nygrid) :: ynew, ynew1
-      real, dimension(mygrid) :: by
+      real, dimension(:), allocatable :: by
       character(len=256) :: message
       logical :: error
       integer :: istat
@@ -592,6 +592,11 @@ module Shear
       if (nprocx /= 1) call fatal_error('sheared_advection_spline', 'currently only works with nprocx = 1.')
       if (nygrid > 1 .and. nxgrid /= nygrid) &
         call fatal_error('sheared_advection_spline', 'currently only works with nxgrid = nygrid.')
+!
+!  Allocate working arrays.
+!
+      allocate(by(mygrid), stat=istat)
+      if (istat /= 0) call fatal_error('sheared_advection_spline', 'unable to allocate array by')
 !
 !  Find the displacement traveled with the advection.
 !
@@ -660,6 +665,10 @@ module Shear
         if (u0_advec(3) /= 0.0) call fatal_error('sheared_advection_nonfft', 'Advection in z is not implemented.')
 !
       enddo comp
+!
+!  Deallocate working arrays.
+!
+      deallocate(by)
 !
     endsubroutine sheared_advection_nonfft
 !***********************************************************************
