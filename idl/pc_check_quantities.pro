@@ -89,6 +89,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		log_Temp:'log temperature', $
 		grad_Temp_abs:'grad temperature', $
 		j_abs:'current density', $
+		F_Lorentz_abs:'Lorentz force', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_ohm_particle:'Ohmic heating rate / particle', $
 		HR_viscous:'viscous heating rate', $
@@ -144,6 +145,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	available_vectorfields = { $
 		u:'velocities', $
 		j:'current density', $
+		F_Lorentz:'Lorentz force', $
 		Poynting:'Poynting flux', $
 		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
@@ -181,6 +183,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B:'A', $
 		j:'A', $
 		j_abs:'j', $
+		F_Lorentz:['j', 'B'], $
+		F_Lorentz_abs:'F_Lorentz', $
 		HR_ohm:'j', $
 		HR_ohm_particle:['HR_ohm','n_rho'], $
 		HR_viscous:['u', 'rho'], $

@@ -443,6 +443,17 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (jj))
 	end
 
+	if (strcmp (quantity, 'F_Lorentz', /fold_case)) then begin
+		; Lorentz force [N]
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		return, cross (jj, bb)
+	end
+	if (strcmp (quantity, 'F_Lorentz_abs', /fold_case)) then begin
+		; Absolute value of the Lorentz force [N]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'F_Lorentz')))
+	end
+
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
 		mu0 = pc_get_parameter ('mu0', label=quantity)
