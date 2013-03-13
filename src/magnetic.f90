@@ -35,6 +35,7 @@ module Magnetic
   use General, only: keep_compiler_quiet
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
+  use EquationOfState, only: gamma1
 !
   implicit none
 !
@@ -207,6 +208,7 @@ module Magnetic
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real :: numag=0.0
+  real :: betamin_jxb=0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nx,ny,nz,3) :: A_relprof
@@ -214,6 +216,7 @@ module Magnetic
   real, dimension(mz,3) :: geta_z
   real, dimension(mx) :: eta_x
   real, dimension(mx,3) :: geta_x
+  real, dimension(nx) :: va2max_beta
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -259,7 +262,7 @@ module Magnetic
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
       k_relprof,lmagneto_friction,numag, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
-      limplicit_resistivity,ambipolar_diffusion
+      limplicit_resistivity,ambipolar_diffusion, betamin_jxb
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1985,6 +1988,11 @@ module Magnetic
       if (lpencil_in(i_etava)) lpencil_in(i_va2)=.true.
       if (lpencil_in(i_jxbr) .and. va2max_jxb>0) lpencil_in(i_va2)=.true.
 !
+      if (lpencil_in(i_jxbr) .and. betamin_jxb>0) then
+        lpencil_in(i_va2)=.true.
+        lpencil_in(i_cs2)=.true.
+      endif
+!
       if (lpencil_in(i_va2)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_rho1)=.true.
@@ -2409,9 +2417,15 @@ module Magnetic
 !  limiting term,
 !
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-        if (va2max_jxb>0) then
+        if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
           rho1_jxb = rho1_jxb &
                    * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+        endif
+        if (betamin_jxb>0) then
+          va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
+          if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
+          rho1_jxb = rho1_jxb &
+                   * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
@@ -3220,9 +3234,15 @@ module Magnetic
         if (lhydro) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-          if (va2max_jxb>0) then
+          if (va2max_jxb>0 .and. (.not. betamin_jxb>0)) then
             rho1_jxb = rho1_jxb &
                      * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          endif
+          if (betamin_jxb>0) then
+            va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
+            if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
+            rho1_jxb = rho1_jxb &
+                     * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
           if (lspherical_coords) then
             advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
