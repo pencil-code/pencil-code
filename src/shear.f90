@@ -578,10 +578,10 @@ module Shear
       integer, intent(in) :: ic1, ic2
       real, intent(in) :: dt_shear
 !
-      real, dimension(nx,ny) :: b
+      real, dimension(:,:), allocatable :: b
       real, dimension(nxgrid) :: xnew, penc, dpenc, yshift
       real, dimension(nygrid) :: ynew, ynew1
-      real, dimension(:), allocatable :: by
+      real, dimension(mygrid) :: by
       character(len=256) :: message
       logical :: error
       integer :: istat
@@ -595,8 +595,10 @@ module Shear
 !
 !  Allocate working arrays.
 !
-      allocate(by(mygrid), stat=istat)
-      if (istat /= 0) call fatal_error('sheared_advection_spline', 'unable to allocate array by')
+      alloc: if (nygrid > 1) then
+        allocate(b(nx,ny), stat=istat)
+        if (istat /= 0) call fatal_error('sheared_advection_spline', 'unable to allocate array b')
+      endif alloc
 !
 !  Find the displacement traveled with the advection.
 !
@@ -668,7 +670,7 @@ module Shear
 !
 !  Deallocate working arrays.
 !
-      deallocate(by)
+      if (nygrid > 1) deallocate(b)
 !
     endsubroutine sheared_advection_nonfft
 !***********************************************************************
