@@ -23,7 +23,7 @@ module Shear
 !
   implicit none
 !
-  integer :: norder_poly = 2 * nghost + 1
+  integer :: norder_poly = 3
   real :: x0_shear=0.0, qshear0=0.0, sini=0.0
   real :: Sshear1=0.0, Sshear_sini=0.0
   real, dimension(3) :: u0_advec = 0.0
