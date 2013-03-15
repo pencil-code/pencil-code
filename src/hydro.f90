@@ -493,6 +493,9 @@ module Hydro
   integer :: idiag_pvzmxy=0     ! ZAVG_DOC: $\left< (\omega_z+2\Omega)/\varrho
                                 ! ZAVG_DOC: \right>_{z}$ \quad(z component of
                                 ! ZAVG_DOC: potential vorticity)
+  integer :: idiag_uguxmxy      ! ZAVG_DOC:
+  integer :: idiag_uguymxy      ! ZAVG_DOC:
+  integer :: idiag_uguzmxy      ! ZAVG_DOC:
   integer :: idiag_ruxmxy=0     ! ZAVG_DOC: $\left< \rho u_x \right>_{z}$
   integer :: idiag_ruymxy=0     ! ZAVG_DOC: $\left< \rho u_y \right>_{z}$
   integer :: idiag_ruzmxy=0     ! ZAVG_DOC: $\left< \rho u_z \right>_{z}$
@@ -1575,6 +1578,8 @@ module Hydro
       endif
       if (idiag_uguxm/=0 .or. idiag_uguym/=0 .or. idiag_uguzm/=0) &
           lpenc_diagnos(i_ugu)=.true.
+      if (idiag_uguxmxy/=0 .or. idiag_uguymxy/=0 .or. idiag_uguzmxy/=0) &
+          lpenc_diagnos2d(i_ugu)=.true.
       if (idiag_ugu2m/=0) lpenc_diagnos(i_ugu2)=.true.
       if (idiag_uguxmx/=0 .or. idiag_uguymx/=0 .or. idiag_uguzmx/=0 .or. &
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
@@ -2539,6 +2544,12 @@ module Hydro
             call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
         if (idiag_fkinxmxy/=0) &
             call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
+        if (idiag_uguxmxy/=0) &
+            call zsum_mn_name_xy(p%ugu(:,1),idiag_uguxmxy)
+        if (idiag_uguymxy/=0) &
+            call zsum_mn_name_xy(p%ugu(:,2),idiag_uguymxy)
+        if (idiag_uguzmxy/=0) &
+            call zsum_mn_name_xy(p%ugu(:,3),idiag_uguzmxy)
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -3769,6 +3780,9 @@ module Hydro
         idiag_fkinzmz=0
         idiag_fkinxmx=0
         idiag_fkinxmxy=0
+        idiag_uguxmxy=0
+        idiag_uguymxy=0
+        idiag_uguzmxy=0
         idiag_ruxuym=0
         idiag_ruxuzm=0
         idiag_ruyuzm=0
@@ -4126,6 +4140,9 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruxuzmxy',idiag_ruxuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ruyuzmxy',idiag_ruyuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fkinxmxy',idiag_fkinxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguxmxy',idiag_uguxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguymxy',idiag_uguymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uguzmxy',idiag_uguzmxy)
       enddo
 !
 !  check for those quantities for which we want phi-averages
