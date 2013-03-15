@@ -455,6 +455,7 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
       integer :: ivar
+      logical :: posdef
 !
 !  Must currently use lshearadvection_as_shift=T when Sshear is positive.
 !
@@ -483,12 +484,8 @@ module Shear
           if (.not. llast) call sheared_advection_fft(df, 1, mvar, dt_shear)
         case ('spline', 'poly') method
           comp: do ivar = 1, mvar
-            posdef: if (.not. lpencil_check_at_work .and. lposdef_advection .and. &
-                        (ivar == irho .or. ivar == ieth)) then
-              call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, .true.)
-            else posdef
-              call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, .false.)
-            endif posdef
+            posdef = lposdef_advection .and. (ivar == irho .or. ivar == ieth)
+            call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
           enddo comp
           if (.not. llast) call sheared_advection_nonfft(df, 1, mvar, dt_shear, shear_method, ltvd_advection, .false.)
         case default method
@@ -787,7 +784,7 @@ module Shear
       real, dimension(nygrid) :: ynew, penc, dpenc
       real, dimension(mygrid) :: worky
       character(len=256) :: message
-      logical :: error
+      logical :: error, posdef
       integer :: istat
       integer :: ivar, i, k
 !
@@ -811,14 +808,9 @@ module Shear
             case ('spline') dispatch
               call spline(yglobal, worky, ynew, penc, mygrid, nygrid, err=error, msg=message)
             case ('poly') dispatch
-              posdef: if (.not. lpencil_check_at_work .and. lposdef_advection .and. &
-                          (ivar == irho .or. ivar == ieth)) then
-                call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, &
-                                              tvd=ltvd_advection, posdef=.true., istatus=istat, message=message)
-              else posdef
-                call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, &
-                                              tvd=ltvd_advection, istatus=istat, message=message)
-              endif posdef
+              posdef = lposdef_advection .and. (ivar == irho .or. ivar == ieth)
+              call polynomial_interpolation(yglobal, worky, ynew, penc, dpenc, norder_poly, tvd=ltvd_advection, posdef=posdef, &
+                                            istatus=istat, message=message)
               error = istat /= 0
             case default dispatch
               call fatal_error('shift_ghostzones_nonfft_subtask', 'unknown method')
