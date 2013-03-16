@@ -1488,7 +1488,7 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #F90=$(FC) #(sisu*)
 #CC=cc #(sisu*)
 #FFLAGS=-O3 -ffree -e m -J experimental -J magnetic #(sisu*)
-#FFLAGS_DOUBLE=-s real64 -s integer64 #(sisu*)
+#FFLAGS_DOUBLE=-s default64 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
 ## Hermit - CrayXE6 - (Stuttgart)
