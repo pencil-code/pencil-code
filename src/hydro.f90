@@ -493,9 +493,9 @@ module Hydro
   integer :: idiag_pvzmxy=0     ! ZAVG_DOC: $\left< (\omega_z+2\Omega)/\varrho
                                 ! ZAVG_DOC: \right>_{z}$ \quad(z component of
                                 ! ZAVG_DOC: potential vorticity)
-  integer :: idiag_uguxmxy      ! ZAVG_DOC:
-  integer :: idiag_uguymxy      ! ZAVG_DOC:
-  integer :: idiag_uguzmxy      ! ZAVG_DOC:
+  integer :: idiag_uguxmxy=0    ! ZAVG_DOC: $\left< (\boldsymbol{u}\cdot\boldsymbol{\nabla} \boldsymbol{u})_x \right>_{z}$
+  integer :: idiag_uguymxy=0    ! ZAVG_DOC: $\left< (\boldsymbol{u}\cdot\boldsymbol{\nabla} \boldsymbol{u})_y \right>_{z}$
+  integer :: idiag_uguzmxy=0    ! ZAVG_DOC: $\left< (\boldsymbol{u}\cdot\boldsymbol{\nabla} \boldsymbol{u})_z \right>_{z}$
   integer :: idiag_ruxmxy=0     ! ZAVG_DOC: $\left< \rho u_x \right>_{z}$
   integer :: idiag_ruymxy=0     ! ZAVG_DOC: $\left< \rho u_y \right>_{z}$
   integer :: idiag_ruzmxy=0     ! ZAVG_DOC: $\left< \rho u_z \right>_{z}$
