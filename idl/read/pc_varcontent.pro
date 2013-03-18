@@ -334,9 +334,9 @@ if (iuutest gt 0) then begin
   default, ntestflow, 0
   varcontent[iuutest].variable   = 'Testflow (uutest)'
   varcontent[iuutest].idlvar     = 'uutest'
-  varcontent[iuutest].idlinit    = 'fltarr(mx,my,mz,ntestflow)*one'
+  varcontent[iuutest].idlinit    = 'fltarr(mx,my,mz,'+str(ntestflow)+')*one'
   varcontent[iuutest].idlvarloc  = 'uutest_loc'
-  varcontent[iuutest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,ntestflow)*one'
+  varcontent[iuutest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(ntestflow)+')*one'
   varcontent[iuutest].skip       = ntestflow-1
 endif
 ;
