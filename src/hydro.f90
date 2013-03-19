@@ -347,6 +347,8 @@ module Hydro
   integer :: idiag_uguxm=0      ! DIAG_DOC:
   integer :: idiag_uguym=0      ! DIAG_DOC:
   integer :: idiag_uguzm=0      ! DIAG_DOC:
+  integer :: idiag_ugurmsx=0    ! DIAG_DOC: $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
+                                ! DIAG_DOC: for the hydro_xaver_range
   integer :: idiag_ugu2m=0      ! DIAG_DOC:
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
@@ -1580,7 +1582,7 @@ module Hydro
           lpenc_diagnos(i_ugu)=.true.
       if (idiag_uguxmxy/=0 .or. idiag_uguymxy/=0 .or. idiag_uguzmxy/=0) &
           lpenc_diagnos2d(i_ugu)=.true.
-      if (idiag_ugu2m/=0) lpenc_diagnos(i_ugu2)=.true.
+      if (idiag_ugu2m/=0 .or. idiag_ugurmsx/=0) lpenc_diagnos(i_ugu2)=.true.
       if (idiag_uguxmx/=0 .or. idiag_uguymx/=0 .or. idiag_uguzmx/=0 .or. &
           idiag_uguxmy/=0 .or. idiag_uguymy/=0 .or. idiag_uguzmy/=0 .or. &
           idiag_uguxmz/=0 .or. idiag_uguymz/=0 .or. idiag_uguzmz/=0) &
@@ -2107,6 +2109,7 @@ module Hydro
         if (idiag_uguym/=0) call sum_mn_name(p%ugu(:,2),idiag_uguym)
         if (idiag_uguzm/=0) call sum_mn_name(p%ugu(:,3),idiag_uguzm)
         if (idiag_ugu2m/=0) call sum_mn_name(p%ugu2,idiag_ugu2m)
+        if (idiag_ugurmsx/=0) call sum_mn_name(p%ugu2*xmask_hyd,idiag_ugurmsx,lsqrt=.true.)
         if (idiag_u2m/=0)     call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)     call max_mn_name(p%u2,idiag_um2)
         if (idiag_divum/=0)   call sum_mn_name(p%divu,idiag_divum)
@@ -3791,6 +3794,7 @@ module Hydro
         idiag_uguym=0
         idiag_uguzm=0
         idiag_ugu2m=0
+        idiag_ugurmsx=0
         idiag_uguxmx=0
         idiag_uguymx=0
         idiag_uguzmx=0
@@ -3944,6 +3948,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uguym',idiag_uguym)
         call parse_name(iname,cname(iname),cform(iname),'uguzm',idiag_uguzm)
         call parse_name(iname,cname(iname),cform(iname),'ugu2m',idiag_ugu2m)
+        call parse_name(iname,cname(iname),cform(iname),'ugurmsx',idiag_ugurmsx)
         call parse_name(iname,cname(iname),cform(iname),'uxglnrym',idiag_uxglnrym)
         call parse_name(iname,cname(iname),cform(iname),'uyglnrxm',idiag_uyglnrxm)
         call parse_name(iname,cname(iname),cform(iname),'uzdivum',idiag_uzdivum)
