@@ -42,6 +42,8 @@ module Viscosity
   real :: lambda_jump=0.,roffset_lambda=0.
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
+  real, dimension(nx) :: xmask_vis=0
+  real, dimension(2) :: vis_xaver_range=(/-max_real,max_real/)
   real, dimension(:), pointer :: etat_x, detat_x
   real, dimension(:), pointer :: etat_y, detat_y
   real, dimension(:), pointer :: etat_z, detat_z
@@ -101,6 +103,8 @@ module Viscosity
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
   integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration
   integer :: idiag_fviscmax=0   ! DIAG_DOC: Max value of viscous acceleration
+  integer :: idiag_fviscrmsx=0  ! DIAG_DOC: Rms value of viscous acceleration
+                                ! DIAG_DOC: for the vis_xaver_range
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
@@ -456,6 +460,39 @@ module Viscosity
         endif
       endif
 !
+!
+!  Compute mask for x-averaging where x is in vis_xaver_range.
+!  Normalize such that the average over the full domain
+!  gives still unity.
+!
+      if (l1 == l2) then
+        xmask_vis = 1.
+      else
+        where (x(l1:l2) >= vis_xaver_range(1) .and. x(l1:l2) <= vis_xaver_range(2))
+          xmask_vis = 1.
+        elsewhere
+          xmask_vis = 0.
+        endwhere
+        vis_xaver_range(1) = max(vis_xaver_range(1), xyz0(1))
+        vis_xaver_range(2) = min(vis_xaver_range(2), xyz1(1))
+        if (lspherical_coords) then
+          xmask_vis = xmask_vis * (xyz1(1)**3 - xyz0(1)**3) &
+              / (vis_xaver_range(2)**3 - vis_xaver_range(1)**3)
+        elseif (lcylindrical_coords) then
+          xmask_vis = xmask_vis * (xyz1(1)**2 - xyz0(1)**2) &
+              / (vis_xaver_range(2)**2 - vis_xaver_range(1)**2)
+        else
+          xmask_vis = xmask_vis*Lxyz(1) &
+              / (vis_xaver_range(2) - vis_xaver_range(1))
+        endif
+      endif
+!
+!  debug output
+!
+      if (lroot.and.ip<14) then
+        print*,'xmask_vis=',xmask_vis
+      endif
+!
       call keep_compiler_quiet(lstarting)
 !
     endsubroutine initialize_viscosity
@@ -608,7 +645,7 @@ module Viscosity
         idiag_dtnu=0; idiag_nu_LES=0; idiag_Sij2m=0; idiag_epsK=0; idiag_epsK_LES=0
         idiag_visc_heatm=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
-        idiag_nu_tdep=0; idiag_fviscm=0
+        idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0 
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0
       endif
@@ -622,6 +659,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'fviscmin',idiag_fviscmin)
         call parse_name(iname,cname(iname),cform(iname),'qfviscm',idiag_qfviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmax',idiag_fviscmax)
+        call parse_name(iname,cname(iname),cform(iname),'fviscrmsx',idiag_fviscrmsx)
         call parse_name(iname,cname(iname),cform(iname),'nusmagm',idiag_nusmagm)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmin',idiag_nusmagmin)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
@@ -1623,10 +1661,10 @@ module Viscosity
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, xysum_mn_name_z, &
           yzsum_mn_name_x, zsum_mn_name_xy, max_mn_name
-      use Sub, only: cross
+      use Sub, only: cross, dot2
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu_smag,Reshock
+      real, dimension (nx) :: nu_smag,Reshock,fvisc2
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
       integer :: i
@@ -1663,6 +1701,10 @@ module Viscosity
         if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)
         if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
         if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
+        if (idiag_fviscrmsx/=0) then
+           call dot2(p%fvisc,fvisc2)
+           call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
+        endif
         if (lvisc_smag_simplified) then
           if (ldensity) then
             nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
