@@ -3,13 +3,14 @@
 ;
 ;  Read block domain decomposition from file.
 ;
-pro pc_read_block, object=object, datadir=datadir, proc=proc, $
-    swap=swap, quiet=quiet
+pro pc_read_block, object=object, datadir=datadir, varfile=varfile, $
+    proc=proc, swap=swap, quiet=quiet
 compile_opt IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
 ; Default settings.
 ;
+default, varfile, 'blocks.dat'
 default, proc, 0
 default, swap, 0
 default, quiet, 0
@@ -48,7 +49,7 @@ iproc_foster_brick=lonarr(nbricks)
 ;
 ; Check for existence and read the data.
 ;
-filename=datadir+'/proc'+strtrim(proc,2)+'/blocks.dat'
+filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile
 if (file_test(filename)) then begin
   if ( not keyword_set(quiet) ) then print, 'Reading ' + filename + '...'
   get_lun, file
