@@ -15,7 +15,7 @@
 #     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/MRIexp/128d
 #     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/couette/strat128a_mu0.30_g2
 
-#  will copy all var.dat files fron current directory to var.dat in
+#  will copy all var.dat files from current directory to var.dat in
 #  another run directory.
 #  Used for restarting in a different directory.
 #  Added 4th argument for skipping over $skip counts
@@ -32,6 +32,10 @@ set counter="1"
 set procdirs  =  `ls data | grep proc `
 foreach proc ($procdirs)
   if ( $counter >= $skip ) then
+
+# create subdirectories proc*, no message if already existing
+    nohup ssh $2:s/:/ mkdir //data/$proc >& /dev/null
+
     echo "scp $3/data/$proc/$1 $2/data/$proc"
     nohup scp $3/data/$proc/$1 $2/data/$proc &
     sleep .2
