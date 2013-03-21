@@ -280,7 +280,7 @@ module Radiation
 !
 !  Print all unit vectors (if ray_good=T).
 !
-          if (lroot.and.ip<14) write(*,'(1x,a,i4,3f6.2)'), &
+          if (lroot.and.ip<14) write(*,'(1x,a,i4,3f6.2)') &
               'initialize_radiation: ndir, unit_vec=', &
               idir, unit_vec(idir,:)
 !
