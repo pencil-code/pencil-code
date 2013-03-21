@@ -2540,30 +2540,30 @@ module Magnetic
 !***********************************************************************
     subroutine set_ambipolar_diffusion(p)
 !
-!  Subroutine to choose between various models of ion density 
+!  Subroutine to choose between various models of ion density
 !  to enter in the ambipolar diffusion calculation. The "scale-density"
-!  model assumes equilibrium between ionization and recombination: 
-!  
-!    ksi * rho = beta * rho_i * rho_e 
+!  model assumes equilibrium between ionization and recombination:
+!
+!    ksi * rho = beta * rho_i * rho_e
 !              ~ beta * rho_i^2
 !
-!  wkere ksi is ionization rate, beta the recombination rate, and 
-!  rho, rho_i, and rho_e are the neutral, ion, and electron density, 
-!  respectively, with rho >> rho_i ~ rho_e. Solving for rho_i, 
+!  wkere ksi is ionization rate, beta the recombination rate, and
+!  rho, rho_i, and rho_e are the neutral, ion, and electron density,
+!  respectively, with rho >> rho_i ~ rho_e. Solving for rho_i,
 !
-!    rho_i   =    sqrt(ksi*rho/beta) 
-!          propto sqrt(rho) 
+!    rho_i   =    sqrt(ksi*rho/beta)
+!          propto sqrt(rho)
 !
-!  This is implemented as ionization-equilibrium below. The proportionality 
+!  This is implemented as ionization-equilibrium below. The proportionality
 !  coefficients are incorporated into nu_ni1.
 !
 !  08-mar-13/wlad: coded
 !
       type (pencil_case) :: p
 !
-      select case (ambipolar_diffusion)  
+      select case (ambipolar_diffusion)
 !
-      case('constant'); p%nu_ni1=nu_ni1   
+      case('constant'); p%nu_ni1=nu_ni1
       case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
       case default
          write(unit=errormsg,fmt=*) &
@@ -2572,7 +2572,7 @@ module Magnetic
          call fatal_error('set_ambipolar_diffusion',errormsg)
 !
       endselect
-!  
+!
     endsubroutine set_ambipolar_diffusion
 !***********************************************************************
     subroutine diamagnetism(p)
@@ -2865,7 +2865,11 @@ module Magnetic
       endif
 !
       if (lresi_etava) then
-        forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+        if (lweyl_gauge) then
+          forall (i = 1:3) fres(:,i) = fres(:,i) - p%etava * p%jj(:,i)
+        else
+          call fatal_error('daa_dt','eta_va not implemented for resistive gauge')
+        endif
         if (lfirst.and.ldt) diffus_eta = diffus_eta + p%etava
         etatotal = etatotal + p%etava
       endif
@@ -2970,7 +2974,7 @@ module Magnetic
         do j=1,3
           ju=j-1+iaa
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%nu_ni1*p%jxbrxb(:,j)
-        enddo  
+        enddo
         if (lentropy .and. lneutralion_heat) then
           if (pretend_lnTT) then
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
