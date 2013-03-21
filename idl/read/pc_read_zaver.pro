@@ -201,7 +201,7 @@ default, zoom, 1
 default, min, 0.0
 default, max, 1.0
 default, tmin, 0.0
-default, njump, 0
+default, njump, 1
 default, ps, 0
 default, png, 0
 default, noerase, 0
