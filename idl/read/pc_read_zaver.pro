@@ -366,9 +366,9 @@ if (nit gt 0) then begin
     endelse
   endif
 ;
-  tt=fltarr(nit/njump)*one
+  tt=fltarr(ceil(nit/double(njump)))*one
   for i=0,nvar-1 do begin
-    cmd=variables[i]+'=fltarr(nxg,nyg,nit/njump)*one'
+    cmd=variables[i]+'=fltarr(nxg,nyg,ceil(nit/double(njump)))*one'
     if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
   endfor
 ;
@@ -402,7 +402,7 @@ endfor
 ;
 if (iplot eq -1) then begin
   array_local=fltarr(nx,ny,nvarall)*one
-  array_global=fltarr(nxg,nyg,nit/njump,nvarall)*one
+  array_global=fltarr(nxg,nyg,ceil(nit/double(njump)),nvarall)*one
   t=zero
 ;
   for ip=0,n_elements(filename)-1 do begin
@@ -442,7 +442,7 @@ if (iplot eq -1) then begin
 ;  Diagnostics.
 ;
   if (not quiet) then begin
-    for it=0,nit/njump-1 do begin
+    for it=0,ceil(nit/double(njump))-1 do begin
       if (it mod it1 eq 0) then begin
         if (it eq 0 ) then $
           print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
