@@ -63,6 +63,7 @@ module Dustvelocity
   logical :: lviscd_hyper3_simplified=.false.
   logical :: lviscd_hyper3_rhod_nud_const=.false.
   logical :: lviscd_hyper3_nud_const=.false.
+  logical :: lviscd_hyper3_polar=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: borderuud='nothing'
   character (len=labellen), dimension(nvisc_max) :: iviscd=''
@@ -329,6 +330,9 @@ module Dustvelocity
         case ('hyper3_nud-const','hyper3-nud-const')
           if (lroot) print*, 'Viscous force (dust): nud*(del6ud+S.glnnd)'
           lviscd_hyper3_nud_const=.true.
+        case ('hyper3-cyl','hyper3_cyl','hyper3-sph','hyper3_sph')
+          if (lroot) print*,'viscous force: nud_hyper3/pi^4 *(Deltav)^6/Deltaq^2'
+          lviscd_hyper3_polar=.true.
         case default
           if (lroot) print*, 'No such value for iviscd: ', trim(iviscd(i))
           call fatal_error('initialize_dustvelocity','')
@@ -909,15 +913,16 @@ module Dustvelocity
       use EquationOfState, only: gamma
       use General
       use Sub
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: fviscd, AA_sfta, BB_sfta, tmp, tmp2
-      real, dimension (nx) :: tausg1, mudrhod1
+      real, dimension (nx) :: tausg1, mudrhod1, tmp3
       real :: c2, s2
-      integer :: i, j, k
+      integer :: i, j, k, ju
 !
       intent(in) :: f, p
       intent(out) :: df
@@ -1099,6 +1104,21 @@ module Dustvelocity
           if (lviscd_hyper3_simplified) then
             fviscd = fviscd + nud_hyper3(k)*p%del6ud(:,:,k)
             if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
+          endif
+!
+!  Viscous force: polar coordinates
+!
+          if (lviscd_hyper3_polar) then
+            do j=1,3
+              ju=j+iuud(k)-1
+              do i=1,3
+                call der6(f,ju,tmp3,i,IGNOREDX=.true.)
+                fviscd(:,j) = fviscd(:,j) + &
+                     nud_hyper3(k)*pi4_1*tmp3*dline_1(:,i)**2
+              enddo
+              if (lfirst.and.ldt) &
+                   diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1/dxyz_4
+            enddo
           endif
 !
 !  Viscous force: mud/rhod*del6ud
