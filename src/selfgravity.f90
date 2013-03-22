@@ -32,7 +32,8 @@ module Selfgravity
 !
   real, target :: rhs_poisson_const=1.0, gravitational_const=0.0
   real, target :: tstart_selfgrav=0.0
-  real :: tselfgrav_gentle=0.0, kappa=0.0
+  real, target :: tselfgrav_gentle = 0.0
+  real :: kappa=0.0
 !
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lselfgravity_neutrals=.false.
@@ -140,6 +141,11 @@ module Selfgravity
             'when sharing gravitational_const!'
         call fatal_error('initialize_selfgravity','')
       endif
+!
+!  Share tselfgrav_gentle.
+!
+      call put_shared_variable('tselfgrav_gentle', tselfgrav_gentle, ierr)
+      if (ierr /= 0) call fatal_error('initialize_selfgravity', 'unable to share tselfgrav_gentle')
 !
 !  Check that density and self-potential have consistent boundary conditions.
 !
