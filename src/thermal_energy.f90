@@ -145,6 +145,7 @@ module Entropy
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: smooth = 0.
   integer :: nxs = 0, nys = 0, nzs = 0, nyz = ny * nz
   real :: deposit = 0.
+  real :: tselfgrav_gentle = 0.0
 !
   contains
 !***********************************************************************
@@ -187,6 +188,9 @@ module Entropy
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       logical, intent (in) :: lstarting
 !
+      real, pointer :: tsg
+!
+      integer :: istat
       integer :: i, j, k
       real :: mu
       real :: c0, c1
@@ -279,6 +283,12 @@ module Entropy
         smooth = smooth / sum(smooth)
 !       Spherical mask
         forall (i=-nxs:nxs, j=-nys:nys, k=-nzs:nzs, i*i+j*j+k*k <= 2**2) mask_sphere(i,j,k) = .true.
+!       Get tselfgrav_gentle.
+        selfgrav: if (lselfgravity) then
+          call get_shared_variable('tselfgrav_gentle', tsg, istat)
+          if (istat /= 0) call warning('initialize_entropy', 'unable to get tselfgrav_gentle')
+          tselfgrav_gentle = tsg
+        endif selfgrav
       endif detonate
 !
       if (llocal_iso) &
@@ -1356,7 +1366,15 @@ module Entropy
       integer :: i, j, k, imn, m, n
       integer :: ll1, ll2, mm1, mm2, nn1, nn2
       real :: divu, r
-      real :: det, det_sum
+      real :: det, det_sum, dep
+!
+!  Scale the detonation energy with gentle selfgravity.
+!
+      gentle: if (tselfgrav_gentle > 0.0 .and. t < tselfgrav_gentle) then
+        dep = 0.5 * deposit * (1.0 - cos(pi * t / tselfgrav_gentle))
+      else gentle
+        dep = deposit
+      endif gentle
 !
 !  Prepare for communicating the cells that should be detonated.
 !
@@ -1391,7 +1409,7 @@ module Entropy
               endif duzdz
               converge: if (divu < 0.) then
                 ndet = ndet + 1
-                f(i,j,k,idet) = deposit * f(i,j,k,irho)**detonation_power
+                f(i,j,k,idet) = dep * f(i,j,k,irho)**detonation_power
                 det = det + f(i,j,k,idet) * dVol_x(i) * dVol_y(j) * dVol_z(k)
               endif converge
             endif trigger
