@@ -44,7 +44,7 @@ module Snapshot
 !
       character (len=*) :: chsnap, flist
       integer :: msnap
-      real, dimension (mx,my,mz,*) :: a
+      real, dimension (mx,my,mz,msnap) :: a
       logical :: enum,enum_,noghost
       optional :: enum, flist, noghost
 !
@@ -135,7 +135,7 @@ module Snapshot
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
 !
       integer :: msnap
-      real, dimension (mx,my,mz,*) :: f
+      real, dimension (mx,my,mz,msnap) :: f
       character (len=*) :: chsnap
 !
       integer :: ivar
