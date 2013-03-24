@@ -38,7 +38,7 @@
 ;      cut_z: z-coordinate of the xy-plane cut.                      [integer]
 ;             Exactly one of them must be set in the interval (0,ngrid-1).
 ;
-;     object: Optional structure in which to return the loaded data. [4D-array]
+;     object: Optional object in which to return the loaded data.    [4D-array]
 ;       tags: Array of tag names inside the object array.            [string(*)]
 ;   var_list: Array of varcontent idlvars to read (default = all).   [string(*)]
 ;

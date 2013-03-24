@@ -25,7 +25,7 @@
 ;   allprocs: Load distributed (0) or collective (1 or 2) varfiles.  [integer]
 ;   /reduced: Load previously reduced collective varfiles (implies allprocs=1).
 ;
-;     object: Optional structure in which to return the loaded data. [4D-array]
+;     object: Optional object in which to return the loaded data.    [4D-array]
 ;       tags: Array of tag names inside the object array.            [string(*)]
 ;   var_list: Array of varcontent idlvars to read (default = all).   [string(*)]
 ;
