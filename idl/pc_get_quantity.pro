@@ -92,7 +92,7 @@
 ; And update the availability and dependency list in "pc_check_quantities.pro".
 function pc_compute_quantity, vars, index, quantity
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
@@ -467,15 +467,77 @@ function pc_compute_quantity, vars, index, quantity
 		return, pc_compute_quantity (vars, index, 'HR_ohm') / n_rho
 	end
 
-	if (strcmp (quantity, 'Poynting', /fold_case)) then begin
-		; Poynting flux vector [W/m^2]
-		mu0 = pc_get_parameter ('mu0_4_pi', label=quantity)
+	if (strcmp (quantity, 'Poynting_j', /fold_case)) then begin
+		; current Poynting flux vector [W/m^2]
 		eta = pc_get_parameter ('eta', label=quantity) * unit.length*unit.velocity
-		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		if (n_elements (Poynting) eq 0) then Poynting = cross ((eta * jj - cross (uu, bb)/mu0), bb)
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (eta * jj, bb)
+		return, Poynting_j
+	end
+	if (strcmp (quantity, 'Poynting_u', /fold_case)) then begin
+		; velocity Poynting flux vector [W/m^2]
+		mu0 = pc_get_parameter ('mu0_4_pi', label=quantity)
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+		if (n_elements (Poynting_u) eq 0) then Poynting_u = cross (cross (uu, bb), bb) / (-mu0)
+		return, Poynting_u
+	end
+	if (strcmp (quantity, 'Poynting', /fold_case)) then begin
+		; Poynting flux vector [W/m^2]
+		if (n_elements (Poynting) eq 0) then begin
+			if ((n_elements (Poynting_j) gt 0) and (n_elements (Poynting_u) gt 0)) then begin
+				Poynting = Poynting_j + Poynting_u
+			end else begin
+				mu0 = pc_get_parameter ('mu0_4_pi', label=quantity)
+				eta = pc_get_parameter ('eta', label=quantity) * unit.length*unit.velocity
+				if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+				if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
+				if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+				Poynting = cross ((eta * jj - cross (uu, bb)/mu0), bb)
+			end
+		end
 		return, Poynting
+	end
+	if (strcmp (quantity, 'Poynting_j_x', /fold_case)) then begin
+		; X-component of the current Poynting flux vector [W/m^2]
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
+		return, Poynting_j[*,*,*,0]
+	end
+	if (strcmp (quantity, 'Poynting_j_y', /fold_case)) then begin
+		; Y-component of the current Poynting flux vector [W/m^2]
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
+		return, Poynting_j[*,*,*,1]
+	end
+	if (strcmp (quantity, 'Poynting_j_z', /fold_case)) then begin
+		; Z-component of the current Poynting flux vector [W/m^2]
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
+		return, Poynting_j[*,*,*,2]
+	end
+	if (strcmp (quantity, 'Poynting_j_abs', /fold_case)) then begin
+		; Absolute value of the current Poynting flux [W/m^2]
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
+		return, sqrt (dot2 (Poynting_j))
+	end
+	if (strcmp (quantity, 'Poynting_u_x', /fold_case)) then begin
+		; X-component of the velocity Poynting flux vector [W/m^2]
+		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
+		return, Poynting_u[*,*,*,0]
+	end
+	if (strcmp (quantity, 'Poynting_u_y', /fold_case)) then begin
+		; Y-component of the velocity Poynting flux vector [W/m^2]
+		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
+		return, Poynting_u[*,*,*,1]
+	end
+	if (strcmp (quantity, 'Poynting_u_z', /fold_case)) then begin
+		; Z-component of the velocity Poynting flux vector [W/m^2]
+		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
+		return, Poynting_u[*,*,*,2]
+	end
+	if (strcmp (quantity, 'Poynting_u_abs', /fold_case)) then begin
+		; Absolute value of the velocity Poynting flux [W/m^2]
+		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
+		return, sqrt (dot2 (Poynting_u))
 	end
 	if (strcmp (quantity, 'Poynting_x', /fold_case)) then begin
 		; X-component of the Poynting flux vector [W/m^2]
@@ -530,7 +592,7 @@ end
 ; Clean up cache for computation of physical quantities.
 pro pc_quantity_cache_cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 
 	undefine, uu
@@ -545,6 +607,8 @@ pro pc_quantity_cache_cleanup
 	undefine, B_2
 	undefine, jj
 	undefine, Poynting
+	undefine, Poynting_j
+	undefine, Poynting_u
 
 	undefine, sources
 

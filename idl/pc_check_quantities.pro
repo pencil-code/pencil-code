@@ -104,6 +104,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_z:'magnetic field z', $
 		beta:'plasma beta', $
 		rho_mag:'magnetic energy', $
+		Poynting_j_x:'current Poynting flux x', $
+		Poynting_j_y:'current Poynting flux y', $
+		Poynting_j_z:'current Poynting flux z', $
+		Poynting_j_abs:'current Poynting flux', $
+		Poynting_u_x:'velocity Poynting flux x', $
+		Poynting_u_y:'velocity Poynting flux y', $
+		Poynting_u_z:'velocity Poynting flux z', $
+		Poynting_u_abs:'velocity Poynting flux', $
 		Poynting_x:'Poynting flux x', $
 		Poynting_y:'Poynting flux y', $
 		Poynting_z:'Poynting flux z', $
@@ -146,6 +154,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u:'velocities', $
 		j:'current density', $
 		F_Lorentz:'Lorentz force', $
+		Poynting_j:'current Poynting flux', $
+		Poynting_u:'velocity Poynting flux', $
 		Poynting:'Poynting flux', $
 		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
@@ -200,6 +210,16 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		beta:['P_therm', 'B_2'], $
 		rho_mag:'B_2', $
 		Poynting:['u', 'B', 'j'], $
+		Poynting_j:['j', 'B'], $
+		Poynting_j_x:'Poynting_j', $
+		Poynting_j_y:'Poynting_j', $
+		Poynting_j_z:'Poynting_j', $
+		Poynting_j_abs:'Poynting_j', $
+		Poynting_u:['u', 'B'], $
+		Poynting_u_x:'Poynting_u', $
+		Poynting_u_y:'Poynting_u', $
+		Poynting_u_z:'Poynting_u', $
+		Poynting_u_abs:'Poynting_u', $
 		Poynting_x:'Poynting', $
 		Poynting_y:'Poynting', $
 		Poynting_z:'Poynting', $
