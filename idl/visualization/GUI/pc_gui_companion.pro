@@ -27,8 +27,13 @@ pro pc_gui_prepare_varset, num, units, coords, varset, overset, dir, params, run
 	varfiles = { title:"-", time:0.0d0, loaded:0, number:-1, precalc_done:0 }
 	varfiles = replicate (varfiles, num)
 
-	varsets = replicate (varset, num)
-	oversets = replicate (overset, num)
+	if (num le 1) then begin
+		varsets = varset
+		oversets = overset
+	end else begin
+		varsets = replicate (varset, num)
+		oversets = replicate (overset, num)
+	end
 end
 
 

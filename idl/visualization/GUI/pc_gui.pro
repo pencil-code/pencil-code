@@ -109,8 +109,8 @@ if (not pc_gui_loaded) then BEGIN
 
 
 	print, "Allocating memory..."
-	dummy = dindgen (dim.nx, dim.ny, dim.nz)
-	dummy_3D = findgen (dim.nx, dim.ny, dim.nz, 3)
+	dummy = dblarr (dim.nx, dim.ny, dim.nz, /nozero)
+	dummy_3D = fltarr (dim.nx, dim.ny, dim.nz, 3, /nozero)
 
 	; Create varset dummy
 	exec_str = "varset = { "
@@ -144,6 +144,8 @@ if (not pc_gui_loaded) then BEGIN
 
 
 	pc_gui_prepare_varset, num_files, unit, coords, varset, overplot, datadir, param, run_param, var_list
+	varset = 0
+	overplot = 0
 
 	; Precalculate selected timesteps
 	for i = 1, num_files do begin
