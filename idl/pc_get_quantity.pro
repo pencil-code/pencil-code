@@ -447,7 +447,8 @@ function pc_compute_quantity, vars, index, quantity
 		; Lorentz force [N]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		return, cross (jj, bb)
+		if (n_elements (F_Lorentz) eq 0) then F_Lorentz = cross (jj, bb)
+		return, F_Lorentz
 	end
 	if (strcmp (quantity, 'F_Lorentz_x', /fold_case)) then begin
 		; X-component of the Lorentz force [N]
