@@ -89,6 +89,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		log_Temp:'log temperature', $
 		grad_Temp_abs:'grad temperature', $
 		j_abs:'current density', $
+		F_Lorentz_x:'Lorentz force x', $
+		F_Lorentz_y:'Lorentz force y', $
+		F_Lorentz_z:'Lorentz force z', $
 		F_Lorentz_abs:'Lorentz force', $
 		HR_ohm:'Ohmic heating rate', $
 		HR_ohm_particle:'Ohmic heating rate / particle', $
@@ -194,6 +197,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		j:'A', $
 		j_abs:'j', $
 		F_Lorentz:['j', 'B'], $
+		F_Lorentz_x:'F_Lorentz', $
+		F_Lorentz_y:'F_Lorentz', $
+		F_Lorentz_z:'F_Lorentz', $
 		F_Lorentz_abs:'F_Lorentz', $
 		HR_ohm:'j', $
 		HR_ohm_particle:['HR_ohm','n_rho'], $

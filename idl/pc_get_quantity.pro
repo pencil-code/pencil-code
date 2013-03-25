@@ -92,7 +92,7 @@
 ; And update the availability and dependency list in "pc_check_quantities.pro".
 function pc_compute_quantity, vars, index, quantity
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u, F_Lorentz
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
@@ -449,9 +449,25 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, cross (jj, bb)
 	end
+	if (strcmp (quantity, 'F_Lorentz_x', /fold_case)) then begin
+		; X-component of the Lorentz force [N]
+		if (n_elements (F_Lorentz) eq 0) then F_Lorentz = pc_compute_quantity (vars, index, 'F_Lorentz')
+		return, F_Lorentz[*,*,*,0]
+	end
+	if (strcmp (quantity, 'F_Lorentz_y', /fold_case)) then begin
+		; Y-component of the Lorentz force [N]
+		if (n_elements (F_Lorentz) eq 0) then F_Lorentz = pc_compute_quantity (vars, index, 'F_Lorentz')
+		return, F_Lorentz[*,*,*,1]
+	end
+	if (strcmp (quantity, 'F_Lorentz_z', /fold_case)) then begin
+		; Z-component of the Lorentz force [N]
+		if (n_elements (F_Lorentz) eq 0) then F_Lorentz = pc_compute_quantity (vars, index, 'F_Lorentz')
+		return, F_Lorentz[*,*,*,2]
+	end
 	if (strcmp (quantity, 'F_Lorentz_abs', /fold_case)) then begin
 		; Absolute value of the Lorentz force [N]
-		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'F_Lorentz')))
+		if (n_elements (F_Lorentz) eq 0) then F_Lorentz = pc_compute_quantity (vars, index, 'F_Lorentz')
+		return, sqrt (dot2 (F_Lorentz))
 	end
 
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
@@ -592,7 +608,7 @@ end
 ; Clean up cache for computation of physical quantities.
 pro pc_quantity_cache_cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u, F_Lorentz
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 
 	undefine, uu
@@ -609,6 +625,7 @@ pro pc_quantity_cache_cleanup
 	undefine, Poynting
 	undefine, Poynting_j
 	undefine, Poynting_u
+	undefine, F_Lorentz
 
 	undefine, sources
 
