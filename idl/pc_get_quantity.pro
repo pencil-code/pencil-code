@@ -130,6 +130,16 @@ function pc_compute_quantity, vars, index, quantity
 				Temp = exp (vars[l1:l2,m1:m2,n1:n2,index.lnTT]) * unit.temperature
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 				Temp = vars[l1:l2,m1:m2,n1:n2,index.TT] * unit.temperature
+			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+				cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
+				cs0 = pc_get_parameter ('cs0', label=quantity)
+				gamma = pc_get_parameter ('gamma', label=quantity)
+				if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
+				ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
+				ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
+				S = pc_compute_quantity (vars, index, 'S')
+				ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+				Temp = exp (ln_Temp_0 + gamma/cp * S + (gamma-1) * ln_rho)
 			end
 		end
 		return, Temp
@@ -164,6 +174,23 @@ function pc_compute_quantity, vars, index, quantity
 			return, vars[l1:l2,m1:m2,n1:n2,index.lnTT] + alog (unit.temperature)
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			return, alog (vars[l1:l2,m1:m2,n1:n2,index.TT]) + alog (unit.temperature)
+		end
+	end
+
+	if (strcmp (quantity, 'S', /fold_case)) then begin
+		; Entropy
+		if (any (strcmp (sources, 'ss', /fold_case))) then begin
+			return, vars[l1:l2,m1:m2,n1:n2,index.ss] * (unit.velocity^2 * unit.mass / unit.temperature)
+		end else begin
+			cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
+			cs0 = pc_get_parameter ('cs0', label=quantity)
+			gamma = pc_get_parameter ('gamma', label=quantity)
+			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
+			ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
+			ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
+			ln_Temp = pc_compute_quantity (vars, index, 'ln_Temp') - ln_Temp_0
+			ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+			return, cp/gamma * (ln_Temp - (gamma-1) * ln_rho)
 		end
 	end
 
@@ -580,8 +607,8 @@ function pc_compute_quantity, vars, index, quantity
 	; Check for Pencil Code alias names
 	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)
 	tags = strlowcase (tag_names (alias))
-	pos = where (tags eq strlowcase (quantity))
-	if (any (pos ge 0)) then return, pc_compute_quantity (vars, index, alias.(pos))
+	pos = (where (tags eq strlowcase (quantity)))[0]
+	if (pos ge 0) then return, pc_compute_quantity (vars, index, alias.(pos))
 
 	; Timestamp
 	if (strcmp (quantity, 'time', /fold_case)) then return, index.time * unit.time

@@ -34,7 +34,7 @@
 ;;;
 
 ; Check if a dependency is fulfilled.
-function dependency_ok, tag, depend, sources
+function dependency_ok, tag, depend, sources, ALT=ALT
 
 	; Check for dependencies
 	if (all (tag eq "")) then return, 1
@@ -47,9 +47,17 @@ function dependency_ok, tag, depend, sources
 		return, any (or_flags)
 	end
 
+	if (keyword_set (ALT) and (n_elements (tag) gt 1)) then begin
+		; Iterate through array of alternative dependencies
+		num = n_elements (tag)
+		or_flags = bytarr (num)
+		for pos = 0, num-1 do or_flags[pos] = dependency_ok (tag[pos], depend, sources)
+		return, any (or_flags)
+	end
+
 	; If no dependency is found, check against sources
-	index = where (strcmp (tag, tag_names (depend), /fold_case))
-	if (all (index eq -1)) then return, dependency_ok (tag, -1, sources)
+	index = (where (strcmp (tag, tag_names (depend), /fold_case)))[0]
+	if (index eq -1) then return, dependency_ok (tag, -1, sources)
 
 	dependency = depend.(index)
 
@@ -58,10 +66,11 @@ function dependency_ok, tag, depend, sources
 		num = n_elements (dependency)
 		or_flags = bytarr (num)
 		for pos = 0, num-1 do begin
+			alternative = dependency.(pos)
 			if (strcmp (tag, (tag_names (dependency))[pos], /fold_case)) then begin
-				or_flags[pos] = dependency_ok (dependency.(pos), -1, sources)
+				or_flags[pos] = dependency_ok (alternative, -1, sources)
 			end else begin
-				or_flags[pos] = dependency_ok (dependency.(pos), depend, sources)
+				or_flags[pos] = dependency_ok (alternative, depend, sources, /ALT)
 			end
 		end
 		return, any (or_flags)
@@ -88,6 +97,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_Temp:'ln temperature', $
 		log_Temp:'log temperature', $
 		grad_Temp_abs:'grad temperature', $
+		S:'entropy', $
 		j_abs:'current density', $
 		F_Lorentz_x:'Lorentz force x', $
 		F_Lorentz_y:'Lorentz force y', $
@@ -186,8 +196,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	; The elements of structures are all mandatory dependencies,
 	; while contained arrays list alternative data sources (e.g. 'Temp').
 	depend = { $
-		Temp:{ Temp:['lnTT', 'TT'] }, $
-		grad_Temp:'Temp', $
+		TT:{ TT:['lnTT', 'TT'] }, $
+		Temp:{ Temp_alternatives:['TT', 'S_rho'] }, $
+		S:{ S_alternatives:['ss', 'TT_rho'] }, $
+		grad_Temp:'TT', $
 		grad_Temp_abs:'grad_Temp', $
 		ln_Temp:'Temp', $
 		log_Temp:'Temp', $
@@ -236,7 +248,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_z:'u', $
 		u_abs:'u', $
 		P_therm:['Temp', 'rho'], $
-		grad_P_therm:'P_therm', $
+		grad_P_therm:['P_therm', 'grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
 		rho_u_z:['u', 'rho'], $
 		Rn_viscous:'u', $
@@ -253,6 +265,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_rho:'rho', $
 		log_rho:'rho', $
 		n_rho:'rho', $
+		; Virtual combined dependencies:
+		TT_rho:['TT', 'rho'], $
+		S_rho:['S', 'rho'], $
 		; Additional quantities without dependencies:
 		time:'', $
 		x:'', $
