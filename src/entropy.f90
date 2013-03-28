@@ -99,6 +99,7 @@ module Entropy
   logical, target :: lmultilayer=.true.
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas
+  logical :: reinitialize_ss=.false.
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.,lchit_aniso_simplified=.false.
@@ -164,7 +165,8 @@ module Entropy
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
-      lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor
+      lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
+      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, center1_z
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -327,6 +329,7 @@ module Entropy
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
 !  21-jul-02/wolf: coded
+!  28-mar-13/axel: reinitialize_ss added
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
@@ -337,6 +340,7 @@ module Entropy
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
       use SharedVariables, only: put_shared_variable, get_shared_variable
+      use Sub, only: blob
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -345,7 +349,7 @@ module Entropy
       real, dimension (nx) :: hcond
       real, dimension(5) :: star_params
       real :: beta1, cp1, beta0, TT_bcz, star_cte
-      integer :: i, ierr, q
+      integer :: i, j, ierr, q
       logical :: lnothing
       type (pencil_case) :: p
 !
@@ -643,6 +647,18 @@ module Entropy
       if (lfpres_from_pressure) then
         call farray_register_auxiliary('ppaux',ippaux)
         test_nonblocking=.true.
+      endif
+!
+!  reinitialize entropy
+!
+      if (reinitialize_ss) then
+        do j=1,ninit
+          select case (initss(j))
+          case ('blob')
+            call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
+          case default
+          endselect
+        enddo
       endif
 !
 !  Initialize heat conduction.
