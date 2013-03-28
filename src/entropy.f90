@@ -116,7 +116,7 @@ module Entropy
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=intlen) :: iinit_str
-  real, dimension (mz),   save :: hcond_zprof,chit_zprof
+  real, dimension (mz), save :: hcond_zprof,chit_zprof
   real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
   real, dimension (mx),   save :: hcond_xprof,chit_xprof
   real, dimension (mx,3), save :: gradloghcond_xprof
@@ -789,6 +789,7 @@ module Entropy
           do n=n1,n2; do m=m1,m2
 !
 !  WL: Why are these pencils recalculated here? They belong to grid.f90! 
+!  AB: Anders, you inserted these lines in revision 14718.
 !
             if (lgravz) then
               p%z_mn=spread(z(n),1,nx)
@@ -2495,6 +2496,10 @@ module Entropy
         lpenc_diagnos(i_cs2)=.true.
         lpenc_diagnos(i_rcyl_mn)=.true.
       endif
+      if (idiag_fradbot/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_cp)=.true.
+      endif
       if (idiag_cs2mphi/=0) lpenc_diagnos(i_cs2)=.true.
 !
 !  diagnostics for baroclinic term
@@ -2636,7 +2641,7 @@ module Entropy
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
-      real, dimension(nx) :: ufpres, uduu, glnTT2
+      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
       integer :: j,ju
       integer :: i
 !
@@ -2852,7 +2857,12 @@ module Entropy
 !
         if (idiag_fradbot/=0) then
           if (lfirst_proc_z.and.n==n1) then
-            fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
+            if (hcond0==0.) then
+              Ktmp=chi*p%rho*p%cp
+            else
+              Ktmp=hcond0
+            endif
+            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           else
             fradz=0.
           endif
@@ -2863,7 +2873,12 @@ module Entropy
 !
         if (idiag_fradtop/=0) then
           if (llast_proc_z.and.n==n2) then
-            fradz=sum(-hcond0*p%TT*p%glnTT(:,3)*dsurfxy)
+            if (hcond0==0.) then
+              Ktmp=chi*p%rho*p%cp
+            else
+              Ktmp=hcond0
+            endif
+            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           else
             fradz=0.
           endif
