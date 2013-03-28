@@ -3988,13 +3988,13 @@ module Special
               call mpisend_real(global_right(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:), &
                   (/mx,my,3,8/),ipt,tag_right)
             else
-              left = global_left(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:)
+              left  = global_left(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:)
               right = global_right(i*nx+1:(i+1)*nx+nghost*2,j*ny+1:(j+1)*ny+nghost*2,:,:)
             endif
           enddo; enddo
         else
           if (ipz == 0) then
-            call mpirecv_real(left, (/mx,my,3,8/),0,tag_left)
+            call mpirecv_real(left,  (/mx,my,3,8/),0,tag_left)
             call mpirecv_real(right, (/mx,my,3,8/),0,tag_right)
           endif
         endif
