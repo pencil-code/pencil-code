@@ -920,6 +920,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI=-L/opt/scali/lib -lfmpi -lmpi -lpthread #(neolith)
 ##LIBMPISUFFIX=_#(neolith)
 ##
+## Axel on Triolith (ifc 7.1)
+##
+#FC=mpif90 #(triolith)
+#FFLAGS=-O2 #(triolith)
+#FFLAGS_DOUBLE=-autodouble #(triolith)
+#CC=mpicc #(triolith)
+#CFLAGS=-O2 -DFUNDERSC=1 #(triolith)
+#LD_MPI= #(triolith)
+##LIBMPISUFFIX= #(triolith)
+##
 ## Axel on Hexagon (ftn using pgf90)
 ##
 #FC=ftn #(nid00*)
