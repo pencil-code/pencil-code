@@ -1468,18 +1468,14 @@ else if ($hn =~ *.pdc.kth.se) then
 # set local_binary   = 0
 #----------------------------------------------------
 else if (($hn =~ n[0-9]*) && (($USER =~ x_*) )) then
-  echo "Neolith cluster in Linkoping"
+  echo "Triolith cluster in Linkoping"
   echo "special settings for USER=$USER"
   if ($mpi) echo "Use mpprun"
   set mpirun = mpprun
   echo "uname -n"
   uname -n
-  #
-  echo "nprocpernode = $nprocpernode"
   set mpirunops = ""
-  #set npops = "-np $ncpus"
   set npops = ""
-  #
   set one_local_disc = 0
 #----------------------------------------------------
 else if ($hn =~ nid*) then
