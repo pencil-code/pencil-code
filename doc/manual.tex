@@ -1810,7 +1810,7 @@ removed).
 \begin{enumerate}
 \item
   \label{Item-pick-config-file}%
-  Run \code{pc_build --debug} to find out which configuration files
+  Run \code{pc_build --debug-config} to find out which configuration files
   are tried and pick one.
 \item Choose one of the existing files from \file{\$PENCIL_HOME/hosts/} as
   blueprint, copy it to the file name from
@@ -1888,7 +1888,7 @@ The algorithm is as follows:
 To see which host IDs are tried (up to the first one for which a
 configuration file is found), run
 \begin{alltt}
-  \prompt{unix> } pc_build --debug
+  \prompt{unix> } pc_build --debug-config
 \end{alltt}
 
 

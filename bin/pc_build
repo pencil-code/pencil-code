@@ -38,6 +38,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
+#       --debug-config
+#                   Show the config files (existing or not) that would be
+#                   read, then exit
 #       --notify    Tell us (audibly and visually) when compilation is done.
 #       --fast      Shortcut for the option FFLAGS+='-O0'.
 #   -p, --previous-flags
@@ -62,6 +65,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #       will look for, and use the configuration file for host ID
 #       `workhorse'. If no config file is found, pc_build exits with an
 #       error message.
+#   pc_build --debug-config
+#       will not build, but instead helps to choose an appropriate
+#       location for a config file for the given computer
 
 # To do / ideas:
 #   - Allow make-style assignement arguments:
@@ -109,6 +115,7 @@ GetOptions(\%opts,
                     --cleanall
                -f=s --config-files=s
                -H=s --host-id=s
+                    --debug-config
                     --notify
                     --fast
                -p   --previous-flags
@@ -129,10 +136,35 @@ my $clean        = (              $opts{'clean'}          || '');
 my $cleanall     = (              $opts{'cleanall'}       || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
+my $debug_config = (              $opts{'debug-config'}   || '');
 my $notify       = (              $opts{'notify'}         || '');
 my $fast         = (              $opts{'fast'}           || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
+
+my @config_files;
+mention($Pencil::ConfigFinder::debug);
+$Pencil::ConfigFinder::debug = 1 if ($debug or $debug_config);
+if (defined $config_files) {
+    my @files = split(",", $config_files);
+    @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
+} else {
+    my $config_file;
+    if (defined $host_id) {
+        $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
+    } else {
+        $config_file = Pencil::ConfigFinder::find_config_file()
+    }
+    die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
+    push @config_files, $config_file;
+    print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
+}
+die "No configuration file found\n" unless @config_files;
+
+if ($debug_config) {
+    # The desired output was already printed
+    exit 0;
+}
 
 my $log_file = '.pc_build_history';
 my $new_log_file;
@@ -159,25 +191,6 @@ if ($clean) {
     exit 0;
 }
 
-my @config_files;
-mention($Pencil::ConfigFinder::debug);
-$Pencil::ConfigFinder::debug = 1 if ($debug);
-if (defined $config_files) {
-    my @files = split(",", $config_files);
-    @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
-} else {
-    my $config_file;
-    if (defined $host_id) {
-        $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
-    } else {
-        $config_file = Pencil::ConfigFinder::find_config_file()
-    }
-    die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
-    push @config_files, $config_file;
-    print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
-}
-
-die "No configuration file found\n" unless @config_files;
 my $parser = new Pencil::ConfigParser(@config_files);
 $parser->debug(1) if ($debug);
 
