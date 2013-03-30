@@ -40,7 +40,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                   Use the given <id> as host ID.
 #       --notify    Tell us (audibly and visually) when compilation is done.
 #       --fast      Shortcut for the option FFLAGS+='-O0'.
-#       --previous-flags
+#   -p, --previous-flags
 #                   Build with the same flags as the prvious time.
 #   -q, --quiet     Be quiet.
 #   -v, --version   Print version number.
@@ -130,9 +130,9 @@ my $cleanall     = (              $opts{'cleanall'}       || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
 my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
 my $notify       = (              $opts{'notify'}         || '');
+my $fast         = (              $opts{'fast'}           || '');
 my $prev_flags   = ($opts{'p'} || $opts{'previous-flags'} || '');
 my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
-my $fast         = (              $opts{'fast'}           || '');
 
 my $log_file = '.pc_build_history';
 my $new_log_file;
