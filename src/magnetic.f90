@@ -17,7 +17,8 @@
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3)
 ! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
-! PENCILS PROVIDED uxj(3); beta1; uga(3); djuidjbi; jo
+! PENCILS PROVIDED uxj(3); chibp; beta1; uga(3); djuidjbi; jo
+! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
 ! PENCILS PROVIDED jij(3,3); sj; ss12; d6ab
@@ -208,7 +209,7 @@ module Magnetic
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real :: numag=0.0
-  real :: betamin_jxb=0.0
+  real :: betamin_jxb=0.0, gamma_epspb=2.4, exp_epspb
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nx,ny,nz,3) :: A_relprof
@@ -262,7 +263,7 @@ module Magnetic
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
       k_relprof,lmagneto_friction,numag, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
-      limplicit_resistivity,ambipolar_diffusion, betamin_jxb
+      limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -699,14 +700,19 @@ module Magnetic
   integer :: idiag_bxbymxy=0    ! ZAVG_DOC: $\left< B_x B_y \right>_{z}$
   integer :: idiag_bxbzmxy=0    ! ZAVG_DOC: $\left< B_x B_z \right>_{z}$
   integer :: idiag_bybzmxy=0    ! ZAVG_DOC: $\left< B_y B_z \right>_{z}$
-  integer :: idiag_poynxmxy=0    ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{x}$
-  integer :: idiag_poynymxy=0    ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{y}$
-  integer :: idiag_poynzmxy=0    ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}$
+  integer :: idiag_poynxmxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{x}$
+  integer :: idiag_poynymxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{y}$
+  integer :: idiag_poynzmxy=0   ! ZAVG_DOC: $\left< \Ev\times\Bv \right>_{z}$
   integer :: idiag_jbmxy=0      ! ZAVG_DOC: $\left< \Jv\cdot\Bv \right>_{z}$
   integer :: idiag_abmxy=0      ! ZAVG_DOC: $\left< \Av\cdot\Bv \right>_{z}$
   integer :: idiag_examxy1=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_x$
   integer :: idiag_examxy2=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_y$
   integer :: idiag_examxy3=0    ! ZAVG_DOC: $\left< \Ev\times\Av \right>_{z}|_z$
+  integer :: idiag_StokesImxy=0 ! ZAVG_DOC: $\left< \epsilon_{B\perp} \right>_{z}|_z$
+  integer :: idiag_StokesQmxy=0 ! ZAVG_DOC: $-\left<\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$
+  integer :: idiag_StokesUmxy=0 ! ZAVG_DOC: $-\left<\epsilon_{B\perp} \sin2\chi \right>_{z}|_z$
+  integer :: idiag_StokesQ1mxy=0! ZAVG_DOC: $+\left<F\epsilon_{B\perp} \sin2\chi \right>_{z}|_z$
+  integer :: idiag_StokesU1mxy=0! ZAVG_DOC: $-\left<F\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$
   integer :: idiag_beta1mxy=0   ! ZAVG_DOC: $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$
 !
 ! Module-specific variables
@@ -857,6 +863,11 @@ module Magnetic
       B_ext11=sqrt(B_ext21)
       B1_ext=B_ext*B_ext11
       B_ext_inv=B_ext*B_ext21
+!
+!  Compute exp_epspb=(gamma_epspb+1.)/4.
+!  Note that the extra 1/2 factor is because we work with B^2.
+!
+      exp_epspb=(gamma_epspb+1.)/4.
 !
 !  Share the external magnetic field with mean field module.
 !
@@ -1808,6 +1819,11 @@ module Magnetic
       if (idiag_poynxmxy/=0 .or. idiag_poynymxy/=0 .or. idiag_poynzmxy/=0 &
          ) lpenc_diagnos2d(i_uxb)=.true.
 !
+      if (idiag_StokesImxy/=0) lpenc_diagnos2d(i_StokesI)=.true.
+      if (idiag_StokesQmxy/=0) lpenc_diagnos2d(i_StokesQ)=.true.
+      if (idiag_StokesUmxy/=0) lpenc_diagnos2d(i_StokesU)=.true.
+      if (idiag_StokesQ1mxy/=0) lpenc_diagnos2d(i_StokesQ1)=.true.
+      if (idiag_StokesU1mxy/=0) lpenc_diagnos2d(i_StokesU1)=.true.
       if (idiag_beta1mxy/=0) lpenc_diagnos2d(i_beta1)=.true.
 !
       if (idiag_a2m/=0 .or. idiag_arms/=0 .or. idiag_amax/=0 &
@@ -2046,6 +2062,15 @@ module Magnetic
       if (lpencil_in(i_ub)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_bb)=.true.
+      endif
+!
+      if (lpencil_in(i_chibp)) lpencil_in(i_bb)=.true.
+      if (lpencil_in(i_StokesI)) lpencil_in(i_bb)=.true.
+!
+      if (lpencil_in(i_StokesQ).or.lpencil_in(i_StokesU).or.&
+          lpencil_in(i_StokesQ1).or.lpencil_in(i_StokesU1)) then
+        lpencil_in(i_chibp)=.true.
+        lpencil_in(i_StokesI)=.true.
       endif
 !
       if (lpencil_in(i_beta1)) then
@@ -2451,6 +2476,18 @@ module Magnetic
       if (lpencil(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
 ! uxj
       if (lpencil(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
+! chibp
+      if (lpencil(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1))+.5*pi
+! StokesI
+      if (lpencil(i_StokesI)) p%StokesI=(p%bb(:,1)**2+p%bb(:,2)**2)**exp_epspb
+! StokesQ
+      if (lpencil(i_StokesQ)) p%StokesQ=-p%StokesI*cos(2.*p%chibp)
+! StokesU
+      if (lpencil(i_StokesU)) p%StokesU=-p%StokesI*sin(2.*p%chibp)
+! StokesQ1
+      if (lpencil(i_StokesQ1)) p%StokesQ1=+p%StokesI*sin(2.*p%chibp)*p%bb(:,3)
+! StokesU1
+      if (lpencil(i_StokesU1)) p%StokesU1=-p%StokesI*cos(2.*p%chibp)*p%bb(:,3)
 ! beta1
       if (lpencil(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
 ! djuidjbi
@@ -2620,6 +2657,7 @@ module Magnetic
 !  26-may-04/axel: ambipolar diffusion added
 !  18-jun-04/axel: Hall term added
 !   9-apr-12/MR: upwinding for ladvective_gauge=F generalized
+!  31-mar-13/axel: Stokes parameter integration from synchrotron emission
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
@@ -3967,6 +4005,11 @@ module Magnetic
         if (idiag_examxy2/=0)  call zsum_mn_name_xy(p%exa(:,2),idiag_examxy2)
         if (idiag_examxy3/=0)  call zsum_mn_name_xy(p%exa(:,3),idiag_examxy3)
         if (idiag_beta1mxy/=0) call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
+        if (idiag_StokesImxy/=0) call zsum_mn_name_xy(p%StokesI,idiag_StokesImxy)
+        if (idiag_StokesQmxy/=0) call zsum_mn_name_xy(p%StokesQ,idiag_StokesQmxy)
+        if (idiag_StokesUmxy/=0) call zsum_mn_name_xy(p%StokesU,idiag_StokesUmxy)
+        if (idiag_StokesQ1mxy/=0) call zsum_mn_name_xy(p%StokesQ1,idiag_StokesQ1mxy)
+        if (idiag_StokesU1mxy/=0) call zsum_mn_name_xy(p%StokesU1,idiag_StokesU1mxy)
         if (idiag_bxbymxy/=0) &
             call zsum_mn_name_xy(p%bb(:,1)*p%bb(:,2),idiag_bxbymxy)
         if (idiag_bxbzmxy/=0) &
@@ -6673,6 +6716,8 @@ module Magnetic
         idiag_examxy1=0; idiag_examxy3=0; idiag_examxy2=0
         idiag_bxbzmxy=0; idiag_bybzmxy=0; idiag_bxbymxz=0; idiag_bxbzmxz=0
         idiag_Exmxy=0 ; idiag_Eymxy=0; idiag_Ezmxy=0; idiag_beta1mxy=0
+        idiag_StokesImxy=0; idiag_StokesQmxy=0; idiag_StokesUmxy=0
+        idiag_StokesQ1mxy=0; idiag_StokesU1mxy=0
         idiag_bybzmxz=0;
         idiag_bxmxz=0; idiag_bymxz=0; idiag_bzmxz=0 ; idiag_jbmxy=0
         idiag_abmxy=0; idiag_b2mxz=0;
@@ -7141,6 +7186,11 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Exmxy',idiag_Exmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Eymxy',idiag_Eymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'Ezmxy',idiag_Ezmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'StokesImxy',idiag_StokesImxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'StokesQmxy',idiag_StokesQmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'StokesUmxy',idiag_StokesUmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'StokesQ1mxy',idiag_StokesQ1mxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'StokesU1mxy',idiag_StokesU1mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'beta1mxy',idiag_beta1mxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynxmxy',idiag_poynxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'poynymxy',idiag_poynymxy)
