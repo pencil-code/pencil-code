@@ -1321,6 +1321,7 @@ module Magnetic
         case ('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
         case ('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
         case ('diffrot'); call diffrot(amplaa(j),f,iay)
+        case ('ver-tube'); call vtube(amplaa(j),f,iax,iaz,radius)
         case ('hor-tanh'); call htanh(amplaa(j),f,iaz,epsilonaa)
         case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
                                      center1_x,center1_z)

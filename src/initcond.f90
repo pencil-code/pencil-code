@@ -35,7 +35,7 @@ module Initcond
   public :: powern, power_randomphase
   public :: planet, planet_hc
   public :: random_isotropic_KS
-  public :: htanh, htube, htube2, htube_x, hat, hat3d
+  public :: htanh, vtube, htube, htube2, htube_x, hat, hat3d
   public :: htube_erf, xpoint, xpoint2
   public :: wave_uu, wave, parabola, linprof
   public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
@@ -2923,6 +2923,53 @@ module Initcond
       endif
 !
     endsubroutine htanh
+!***********************************************************************
+    subroutine vtube(ampl,f,i1,i2,radius)
+!
+!  Vertical flux tube (for vector potential)
+!
+!   1-apr-13/axel+MR: coded for cylindrical
+!
+      integer :: i1,i2
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,radius
+!
+!  Aphi=[R^6-(R^2-r^2)^3]/6r, gives Bz=(R^2-r^2)^2
+!
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'vtube: set variable to zero; i1,i2=',i1,i2
+      else
+        if (lroot) then
+          print*,'vtube: r-dependent flux tube in z-direction; ampl,radius=',ampl,radius
+          if (i1==i2) then
+            print*,'vtube: set scalar'
+          else
+            print*,'vtube: set vector'
+          endif
+        endif
+!
+!  Start with n=1 to set ghost zone (for freeze-ghost condition).
+!  Br is close to zero.
+!
+        do n=1,n2; do m=m1,m2
+!
+!  check whether vector or scalar
+!
+          if (i1==i2) then
+            f(l1:l2,m,n,i1)=0.
+          elseif (i1+2==i2) then
+            f(l1:l2,m,n,i1  )=0.
+            f(l1:l2,m,n,i1+1)=ampl*rcyl_mn1/6.*(radius**6-max(radius**2-x(l1:l2)**2,0.)**3)
+            f(l1:l2,m,n,i1+2)=0.
+          else
+            if (lroot) print*,'vtube: bad value of i2=',i2
+          endif
+!
+        enddo; enddo
+      endif
+!
+    endsubroutine vtube
 !***********************************************************************
     subroutine htube(ampl,f,i1,i2,radius,eps,center1_x,center1_z)
 !
