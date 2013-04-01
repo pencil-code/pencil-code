@@ -57,6 +57,8 @@ dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=6 & k1=0.9 & k2=2.1   ;(
 dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=30 & k1=19.8 & k2=20.2   ;(gives 1974 vectors)
 dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=60 & k1=39.95 & k2=40.05   ;(gives 2118 vectors)
 dkx=1. & dky=1. & dkz=1. & ex=1. & ey=1. & ez=1. & kmax=120 & k1=79.99 & k2=80.01   ;(gives 1470 vectors)
+dkx=1. & dky=1. & dkz=.25 & ex=1. & ey=1. & ez=1. & kmax=3. & k1=1.5 & k2=2.5   ;(gives 210 vectors)
+dkx=1. & dky=1. & dkz=.25 & ex=1. & ey=1. & ez=1. & kmax=8. & k1=4.8 & k2=5.2   ;(gives 550 vectors)
 ;
 kav=0.
 kmaxz=kmax
@@ -112,5 +114,5 @@ close,1
 ;
 good=where(kky eq 2.)
 ;plot,kkx(good),kkz(good),ps=2,xr=[-1.2,1.2]*kmax,yr=[-1.2,1.2]*kmax
-;
+print,'good=where(abs(kky) le .4) & plot,kkx(good),kkz(good),ps=1,/iso,xst=0,yst=0'
 END
