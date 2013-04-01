@@ -2,16 +2,15 @@
 #                            ConfigFinder.pm
 #                            ---------------
 #
-# Description:
 
+# Description:
 #   Find an appropriate Pencil Code configuration file for the current
 #   machine and directory.
-#
+
 # $Id$
 #
 # This file is part of the Pencil Code and licensed under the GNU Public
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
-#
 
 package Pencil::ConfigFinder;
 
@@ -195,11 +194,17 @@ sub get_host_ids {
 # Return list of host IDs to try
 #
     my @ids = ();
-    add_host_id_from_file("./host-ID", \@ids);
-    add_host_id_from_file("$ENV{PENCIL_HOME}/host-ID", \@ids);
-    add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
-    add_host_id_from_fqdn(\@ids);
-    add_host_id_from_scraping_system_info(\@ids);
+
+    my $env_host_id = $ENV{PENCIL_HOST_ID};
+    if (defined $env_host_id) {
+        push @ids, $env_host_id;
+    } else {
+        add_host_id_from_file("./host-ID", \@ids);
+        add_host_id_from_file("$ENV{PENCIL_HOME}/host-ID", \@ids);
+        add_host_id_from_file("$ENV{HOME}/.pencil/host-ID", \@ids);
+        add_host_id_from_fqdn(\@ids);
+        add_host_id_from_scraping_system_info(\@ids);
+    }
 
     debug("get_host_ids: <" . join(">, <", @ids) . ">");
     return @ids;

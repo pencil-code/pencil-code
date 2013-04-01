@@ -2,16 +2,15 @@
 #                            ConfigParser.pm
 #                            ---------------
 #
-# Description:
 
+# Description:
 #   Parse a Pencil Code .conf file, recursively expanding %include macros
 #   and checking that %begin and %end are balanced within each file.
-#
+
 # $Id$
 #
 # This file is part of the Pencil Code and licensed under the GNU Public
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
-#
 
 package Pencil::ConfigParser;
 
