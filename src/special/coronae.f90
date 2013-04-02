@@ -1101,7 +1101,7 @@ module Special
       if (lchen .and. mach_chen /= 0.) then
         uu_tmp = sqrt(f(l1:l2,m,n,iux)**2 &
                      +f(l1:l2,m,n,iuy)**2 &
-                     +f(l2:l2,m,n,iuz)**2 )
+                     +f(l1:l2,m,n,iuz)**2 )
         uu_floor=sqrt(p%cs2)*mach_chen
         do i=0,2
           where (uu_tmp > uu_floor)
