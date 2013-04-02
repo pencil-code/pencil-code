@@ -595,6 +595,9 @@ module Boundcond
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
+!  02-apr-13/MR  : added new boundary condition 'fs' = frozen boundary value
+!                  + symmetry about boundary; added 'fa' for alternative reference to 
+!                  already existing freezing condition (includes antisymmetry)
 !
       use Special, only: special_boundconds
       use EquationOfState
@@ -809,11 +812,16 @@ module Boundcond
               case ('b3')
                 ! BCZ_DOC: extrapolation with zero value (improved 'a')
                 call bc_extrap0_2_2(f,topbot,j)
-              case ('f')
-                ! BCZ_DOC: freeze value
+              case ('f','fa')
+                ! BCZ_DOC: freeze value + antisymmetry
                 ! tell other modules not to change boundary value
                 call bc_freeze_var_z(topbot,j)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+              case ('fs')
+                ! BCZ_DOC: freeze value + symmetry
+                ! tell other modules not to change boundary value
+                call bc_freeze_var_z(topbot,j)
+                call bc_sym_z(f,+1,topbot,j) ! symmetric wrt boundary
               case ('fBs')
                 ! BCZ_DOC: frozen-in B-field (s)
                 call bc_frozen_in_bb(topbot,j)
