@@ -42,10 +42,10 @@ module Special
   real :: twist_u0=1.,rmin=tini,rmax=huge1,centerx=0.,centery=0.,centerz=0.
   logical :: lfilter_farray=.false.,lreset_heatflux=.false.
   real, dimension(mvar) :: filter_strength=0.
-  logical :: mark=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
+  logical :: mark=.false.,lchen=.false.,ldensity_floor_c=.false.,lwrite_granules=.false.
   real :: eighth_moment=0.,hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
-  real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,maxvA=0.
+  real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,damp_amp=0.,mach_chen=0.,maxvA=0.
   logical :: sub_step_hcond=.false.
   logical :: lrad_loss=.false.
 !
@@ -75,7 +75,7 @@ module Special
       eighth_moment,mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
-      sub_step_hcond,lrad_loss,chi_re
+      sub_step_hcond,lrad_loss,chi_re,lchen,mach_chen,damp_amp
 !
 ! variables for print.in
 !
@@ -1075,14 +1075,15 @@ module Special
 !
 !  6-sep-11/bing: coded
 !
-      use Sub, only: del6
+      use Sub, only: del6,cubic_step
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc
+      real, dimension (nx) :: hc, signuu, uu_tmp, uu_floor
       integer :: i
+      real :: damp_height, damp_width
 !
       call keep_compiler_quiet(p)
 !
@@ -1095,6 +1096,32 @@ module Special
 !  due to ignoredx hyper3_nu has [1/s]
 !
         if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_nu/0.01)
+      endif
+!
+      if (lchen .and. mach_chen /= 0.) then
+        uu_tmp = sqrt(f(l1:l2,m,n,iux)**2 &
+                     +f(l1:l2,m,n,iuy)**2 &
+                     +f(l2:l2,m,n,iuz)**2 )
+        uu_floor=sqrt(p%cs2)*mach_chen
+        do i=0,2
+          where (uu_tmp > uu_floor)
+            f(l1:l2,m,n,iux+i) = f(l1:l2,m,n,iux+i) / uu_tmp * uu_floor
+            df(l1:l2,m,n,iux+i) = 0.
+          endwhere
+        enddo
+      endif
+!
+      if (lchen .and. damp_amp /= 0.) then
+        damp_height = 0.95*Lz ! value fixed at this moment
+        damp_width  = 0.05*Lz
+        do i=0,2
+          signuu = 0.
+          where(abs(f(l1:l2,m,n,iux+i)) > 0.)
+            signuu=f(l1:l2,m,n,iux+i)/abs(f(l1:l2,m,n,iux+i))
+          endwhere
+          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) &
+              - signuu * min(damp_amp*cubic_step(z(n), damp_height, damp_width),abs(f(l1:l2,m,n,iux+i)))
+        enddo
       endif
 !
     endsubroutine special_calc_hydro
