@@ -47,9 +47,6 @@ module Particles_mpicomm
 !
       intent (in) :: f, lstarting
 !
-      if (npar /= mpar_loc) call fatal_error('noparticles_mpicomm.f90', &
-          'need to set npar and mpar_loc to the same number')
-!
 !  Distribute particles evenly among processors to begin with.
 !
       if (lstarting) call dist_particles_evenly_procs(ipar)
