@@ -35,6 +35,7 @@ module Particles
   real, target, dimension (npar_species) :: tausp_species=0.0
   real, target, dimension (npar_species) :: tausp1_species=0.0
   real, dimension (3) :: temp_grad0=(/0.0,0.0,0.0/)
+  real, dimension (3) :: pos_sphere=(/0.0,0.0,0.0/)
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: xp1=0.0, yp1=0.0, zp1=0.0, vpx1=0.0, vpy1=0.0, vpz1=0.0
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
@@ -146,7 +147,7 @@ module Particles
       lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check, ldraglaw_epstein,ldraglaw_simple,ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, pdlaw, rad_sphere, ldragforce_stiff, &
+      ldraglaw_eps_stk_transonic, pdlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
       ldraglaw_steadystate, tstart_liftforce_par, &
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
@@ -779,9 +780,12 @@ module Particles
             call fatal_error('init_particles','random-sphere '// &
                   'radius needs to be larger than zero')
           endif
-          if (-rad_sphere<xyz0(1) .or. rad_sphere>xyz1(1) .or. &
-              -rad_sphere<xyz0(2) .or. rad_sphere>xyz1(2) .or. &
-              -rad_sphere<xyz0(3) .or. rad_sphere>xyz1(3)) then
+          if (-rad_sphere+pos_sphere(1)<xyz0(1) .or. &
+               rad_sphere+pos_sphere(1)>xyz1(1) .or. &
+              -rad_sphere+pos_sphere(2)<xyz0(2) .or. &
+               rad_sphere+pos_sphere(2)>xyz1(2) .or. &
+              -rad_sphere+pos_sphere(3)<xyz0(3) .or. &
+               rad_sphere+pos_sphere(3)>xyz1(3)) then
             call fatal_error('init_particles','random-sphere '// &
                  'sphere needs to fit in the box')
           endif
@@ -797,6 +801,9 @@ module Particles
                 fp(k,izp)=(fp(k,izp)-0.5)*2.*rad_sphere
                 rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
               enddo
+              fp(k,ixp)=fp(k,ixp)+pos_sphere(1)
+              fp(k,iyp)=fp(k,iyp)+pos_sphere(2)
+              fp(k,izp)=fp(k,izp)+pos_sphere(3)
             enddo
           else
             call fatal_error('init_particles','random-sphere '// &
