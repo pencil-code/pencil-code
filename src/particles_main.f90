@@ -8,6 +8,7 @@ module Particles_main
   use General, only: keep_compiler_quiet
   use Messages
   use Particles
+  use Particles_adaptation
   use Particles_cdata
   use Particles_collisions
   use Particles_coagulation
@@ -174,6 +175,7 @@ module Particles_main
 !
       call initialize_particles_mpicomm      (f,lstarting)
       call initialize_particles              (f,lstarting)
+      call initialize_particles_adaptation   (f,lstarting)
       call initialize_particles_mass         (f,lstarting)
       call initialize_particles_nbody        (f,lstarting)
       call initialize_particles_number       (f,lstarting)
@@ -408,6 +410,13 @@ module Particles_main
 !  Discrete particle collisions. Must be done at the end of the time-step.
 !
       call particles_discrete_collisions()
+!
+!  Adapt the number of particles in each grid cell to a desired number
+!
+      if (lparticles_adaptation) then
+        call sort_particles_imn(fp,ineargrid,ipar)
+        call particles_adaptation_pencils(f,fp,dfp,ipar,ineargrid)
+      endif
 !
 !  Insert particles.
 !
@@ -1043,6 +1052,15 @@ module Particles_main
         endif
       endif
 !
+      if (lparticles_adaptation) then
+        call read_particles_adapt_run_pars(unit,iostat)
+        if (present(iostat)) then
+          if (iostat/=0) then
+            call samplepar_runpars('particles_adapt_run_pars',iostat); return
+          endif
+        endif
+      endif
+!
       if (lparticles_radius) then
         call read_particles_rad_run_pars(unit,iostat)
         if (present(iostat)) then
@@ -1191,8 +1209,9 @@ module Particles_main
         print*
         print*,'-----BEGIN sample particle namelist ------'
         if (lparticles)                print*,'&particles_run_pars         /'
+        if (lparticles_adaptation)     print*,'&particles_adapt_run_pars   /'
         if (lparticles_radius)         print*,'&particles_radius_run_pars  /'
-        if (lparticles_potential)         print*,'&particles_potential_run_pars  /'
+        if (lparticles_potential)      print*,'&particles_potential_run_pars  /'
         if (lparticles_spin)           print*,'&particles_spin_run_pars    /'
         if (lparticles_sink)           print*,'&particles_sink_run_pars    /'
         if (lparticles_number)         print*,'&particles_number_run_pars  /'
