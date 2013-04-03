@@ -452,8 +452,8 @@ module Special
             )
       endif
 !
-       dt1=1./(4.*dt)
-       del=0.1
+       dt1=1./(8.*dt)
+       del=0.05
 !
 !
          lzone_left=.false.
@@ -539,7 +539,7 @@ module Special
            lzone=.false.
            ll1=sz_r_x
            ll2=l2
-           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.true.
+           if (x(l2)==xyz0(1)+Lxyz(1)) lzone_right=.false.
            if (TT2>0.) then
             lnTT_ref=log(TT2)
             lzone=.true.
@@ -558,10 +558,10 @@ module Special
             lzone=.true.
            endif
            if (lzone .and. lzone_left) then
-             if (dYw==1.) then
+!             if (dYw==1.) then
                df(ll1:ll2,m,n,ilnTT)=df(ll1:ll2,m,n,ilnTT)&
                  -(f(ll1:ll2,m,n,ilnTT)-lnTT_ref)*dt1
-             endif
+!             endif
            endif
          endif
 !
