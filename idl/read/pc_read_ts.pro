@@ -288,11 +288,13 @@ COMPILE_OPT IDL2,HIDDEN
     if (n_elements(full_labels2) eq 0) then begin
       full_labels2=full_labels[i]
     endif else begin
-      unique=total(full_labels[i] eq full_labels2)
+      unique=total(full_labels[i] eq full_labels2,/integer)
       if (unique eq 0) then begin
         full_labels2=[full_labels2,full_labels[i]]
       endif else begin
+        full_labels2=[full_labels2,full_labels[i]+'_cop'+strtrim(unique+1,2)]
         print, 'Warning: diagnostic variable '+full_labels[i]+' was found more than once in time_series.dat'
+        print, '         copying to '+full_labels[i]+'_cop'+strtrim(unique+1,2)
       endelse
     endelse
   endfor
