@@ -29,6 +29,9 @@
   \var{pvzmxy}    & $\left< (\omega_z+2\Omega)/\varrho
                     \right>_{z}$ \quad(z component of
                     potential vorticity) \\
+  \var{uguxmxy}   & $\left< (\boldsymbol{u}\cdot\boldsymbol{\nabla} \boldsymbol{u})_x \right>_{z}$ \\
+  \var{uguymxy}   & $\left< (\boldsymbol{u}\cdot\boldsymbol{\nabla} \boldsymbol{u})_y \right>_{z}$ \\
+  \var{uguzmxy}   & $\left< (\boldsymbol{u}\cdot\boldsymbol{\nabla} \boldsymbol{u})_z \right>_{z}$ \\
   \var{ruxmxy}    & $\left< \rho u_x \right>_{z}$ \\
   \var{ruymxy}    & $\left< \rho u_y \right>_{z}$ \\
   \var{ruzmxy}    & $\left< \rho u_z \right>_{z}$ \\
@@ -106,6 +109,11 @@
   \var{examxy1}   & $\left< \Ev\times\Av \right>_{z}|_x$ \\
   \var{examxy2}   & $\left< \Ev\times\Av \right>_{z}|_y$ \\
   \var{examxy3}   & $\left< \Ev\times\Av \right>_{z}|_z$ \\
+  \var{StokesImxy} & $\left< \epsilon_{B\perp} \right>_{z}|_z$ \\
+  \var{StokesQmxy} & $-\left<\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$ \\
+  \var{StokesUmxy} & $-\left<\epsilon_{B\perp} \sin2\chi \right>_{z}|_z$ \\
+  \var{StokesQ1mxy} & $+\left<F\epsilon_{B\perp} \sin2\chi \right>_{z}|_z$ \\
+  \var{StokesU1mxy} & $-\left<F\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$ \\
   \var{beta1mxy}  & $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
