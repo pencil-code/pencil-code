@@ -400,23 +400,12 @@ pro cslice_event, event
 		break
 	end
 	'ST_ADD': begin
-		grid = coord
-		grid.x *= unit.default_length
-		grid.y *= unit.default_length
-		grid.z *= unit.default_length
-		anchor = [ grid.x[px], grid.y[py], grid.z[pz] ]
-		precision = 0.1 / max ([ bin_x, bin_y, bin_z ])
-		indices = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin)
-		add_line = { indices:indices, coords:coords, distances:distances, length:length, num:num_points, origin:origin, time:varfiles[selected_snapshot].time*unit.time, snapshot:varfiles[selected_snapshot].title }
-		streamlines.num += 1
-		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), add_line)
-		WIDGET_CONTROL, undo, SENSITIVE = 1
-		WIDGET_CONTROL, st_prev, SENSITIVE = 1
-		WIDGET_CONTROL, st_next, SENSITIVE = 1
-		WIDGET_CONTROL, extract, SENSITIVE = 1
-		WIDGET_CONTROL, clear, SENSITIVE = 1
-		selected_streamline = streamlines.num
-		stream_pos = origin
+		cslice_add_stream
+		WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1)
+		WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1)
+		WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1)
+		WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1)
+		WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1)
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -634,6 +623,41 @@ pro cslice_event, event
 	if (quit ge 0) then WIDGET_CONTROL, quit, /DESTROY
 
 	return
+end
+
+
+; Adds streamlines
+pro cslice_add_stream
+
+	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
+	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
+	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
+
+	grid = coord
+	grid.x *= unit.default_length
+	grid.y *= unit.default_length
+	grid.z *= unit.default_length
+	precision = 0.1 / max ([ bin_x, bin_y, bin_z ])
+
+	seeds = pc_seed_points (grid, start=[ px, py, pz ])
+
+	if (size (seeds, /n_dimensions) le 1) then return
+	num = n_elements (seeds[*,0])
+	if (num lt 1L) then return
+
+	if (num gt 10L) then print, "Number of streamlines: ", num
+	for pos = 0L, num - 1L do begin
+		if ((num ge 100L) and (((pos mod 10L) eq 0L) or (pos lt 10L))) then print, "Streamline: ", pos
+		anchor = reform (seeds[pos,*])
+		indices = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin)
+		add_line = { indices:indices, coords:coords, distances:distances, length:length, num:num_points, origin:origin, time:varfiles[selected_snapshot].time*unit.time, snapshot:varfiles[selected_snapshot].title }
+		streamlines.num += 1
+		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), add_line)
+	end
+
+	selected_streamline = streamlines.num
+	stream_pos = origin
 end
 
 
