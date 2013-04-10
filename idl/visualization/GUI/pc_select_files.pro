@@ -185,7 +185,7 @@ pro select_files_event, event
 	'SUB_XS': begin
 		subvol_nx = subvol_xe - subvol_xs + 1
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_xs
-		subvol_xs = subvol_xs > 0 < (nx-1)
+		subvol_xs = (subvol_xs > 0) < (nx-1)
 		subvol_xe = (subvol_xs + subvol_nx - 1) < (nx-1)
 		subvol_nx = subvol_xe - subvol_xs + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_xs
@@ -197,7 +197,7 @@ pro select_files_event, event
 	'SUB_YS': begin
 		subvol_ny = subvol_ye - subvol_ys + 1
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_ys
-		subvol_ys = subvol_ys > 0 < (ny-1)
+		subvol_ys = (subvol_ys > 0) < (ny-1)
 		subvol_ye = (subvol_ys + subvol_ny - 1) < (ny-1)
 		subvol_ny = subvol_ye - subvol_ys + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_ys
@@ -209,7 +209,7 @@ pro select_files_event, event
 	'SUB_ZS': begin
 		subvol_nz = subvol_ze - subvol_zs + 1
 		WIDGET_CONTROL, event.id, GET_VALUE = subvol_zs
-		subvol_zs = subvol_zs > 0 < (nz-1)
+		subvol_zs = (subvol_zs > 0) < (nz-1)
 		subvol_ze = (subvol_zs + subvol_nz - 1) < (nz-1)
 		subvol_nz = subvol_ze - subvol_zs + 1
 		WIDGET_CONTROL, event.id, SET_VALUE = subvol_zs
@@ -655,9 +655,9 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 
 	tmp	= WIDGET_LABEL (XTRA, value='GB per snapshot:', frame=0)
 	tmp	= WIDGET_LABEL (XTRA, value=strtrim (gb_per_file, 2), frame=1, xsize=100)
-	f_load	= CW_FIELD (XTRA, title='Total GB to load:', /column, /float)
+	f_load	= CW_FIELD (XTRA, title='Total GB to load:', /column, /float, /noedit)
 	if (not hide_quant or not hide_over) then $
-		f_comp	= CW_FIELD (XTRA, title='Total GB to compute:', /column, /float)
+		f_comp	= CW_FIELD (XTRA, title='Total GB to compute:', /column, /float, /noedit)
 
 	BUT	= WIDGET_BASE (XTRA, /row, /align_center, frame=1)
 	tmp	= WIDGET_BUTTON (BUT, xsize=60, value='CANCEL', uvalue='CANCEL')
