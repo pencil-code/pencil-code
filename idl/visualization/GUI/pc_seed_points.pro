@@ -21,9 +21,9 @@ pro pc_seed_points_update
 	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num
 	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z
 
-	if (dist_x eq 0) then nx = xe - xs + 1
-	if (dist_y eq 0) then ny = ye - ys + 1
-	if (dist_z eq 0) then nz = ze - zs + 1
+	if (dist_x eq 0) then nx = xe - xs + 1L
+	if (dist_y eq 0) then ny = ye - ys + 1L
+	if (dist_z eq 0) then nz = ze - zs + 1L
 
 	WIDGET_CONTROL, sub_xs, SET_VALUE = xs
 	WIDGET_CONTROL, sub_xe, SET_VALUE = xe
@@ -62,9 +62,9 @@ pro seed_points_event, event
 		xe = xs
 		ye = ys
 		ze = zs
-		nx = 1
-		ny = 1
-		nz = 1
+		nx = 1L
+		ny = 1L
+		nz = 1L
 		pc_seed_points_update
 		break
 	end
@@ -113,40 +113,40 @@ pro seed_points_event, event
 	end
 	'SUB_NX': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = nx
-		nx = nx > 1
+		nx = nx > 1L
 		pc_seed_points_update
 		break
 	end
 	'SUB_NY': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ny
-		ny = ny > 1
+		ny = ny > 1L
 		pc_seed_points_update
 		break
 	end
 	'SUB_NZ': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = nz
-		nz = nz > 1
+		nz = nz > 1L
 		pc_seed_points_update
 		break
 	end
 	'ALL_X': begin
 		xs = 0
 		xe = num_x - 1
-		nx = xe - xs + 1
+		nx = xe - xs + 1L
 		pc_seed_points_update
 		break
 	end
 	'ALL_Y': begin
 		ys = 0
 		ye = num_y - 1
-		ny = ye - ys + 1
+		ny = ye - ys + 1L
 		pc_seed_points_update
 		break
 	end
 	'ALL_Z': begin
 		zs = 0
 		ze = num_z - 1
-		nz = ze - zs + 1
+		nz = ze - zs + 1L
 		pc_seed_points_update
 		break
 	end
@@ -215,9 +215,9 @@ function pc_seed_points, grid, start=start
 	end
 	center = [ xs, ys, zs ]
 
-	nx = xe - xs + 1
-	ny = ye - ys + 1
-	nz = ze - zs + 1
+	nx = xe - xs + 1L
+	ny = ye - ys + 1L
+	nz = ze - zs + 1L
 
 
 	; Build GUI
@@ -282,7 +282,7 @@ function pc_seed_points, grid, start=start
 
 
 	; Check for abortion or impossible values
-	if (nx * ny * nz le 0) then return, -1L
+	if (nx * ny * nz le 0L) then return, -1L
 
 	; Build list of selected seed points
 	if (dist_x eq 2) then rx = 1 else rx = 0
