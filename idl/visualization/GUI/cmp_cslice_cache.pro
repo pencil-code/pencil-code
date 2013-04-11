@@ -647,14 +647,29 @@ pro cslice_add_stream
 	if (num lt 1L) then return
 
 	if (num gt 10L) then print, "Number of streamlines: ", num
+	add_lines_num = 0L
 	for pos = 0L, num - 1L do begin
-		if ((num ge 100L) and (((pos mod 10L) eq 0L) or (pos lt 10L))) then print, "Streamline: ", pos
+		if ((num ge 100L) and (((pos mod 20L) eq 0L) or (pos lt 10L))) then print, "Streamline: ", pos
+		if (pos mod 100L) then begin
+			if (add_lines_num gt 0L) then streamlines = create_struct (streamlines, add_lines)
+			add_lines_num = 0L
+		end
 		anchor = reform (seeds[pos,*])
-		indices = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin)
+		if (pos eq 0L) then begin
+			indices = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, /cache)
+		end else begin
+			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, cache=(pos le (num - 1L)))
+		end
 		add_line = { indices:indices, coords:coords, distances:distances, length:length, num:num_points, origin:origin, time:varfiles[selected_snapshot].time*unit.time, snapshot:varfiles[selected_snapshot].title }
-		streamlines.num += 1
-		streamlines = create_struct (streamlines, 'streamline_'+strtrim (streamlines.num, 2), add_line)
+		streamlines.num += 1L
+		if (add_lines_num eq 0L) then begin
+			add_lines = create_struct ('streamline_'+strtrim (streamlines.num, 2), add_line)
+		end else begin
+			add_lines = create_struct (add_lines, 'streamline_'+strtrim (streamlines.num, 2), add_line)
+		end
+		add_lines_num += 1L
 	end
+	if (add_lines_num gt 0L) then streamlines = create_struct (streamlines, add_lines)
 
 	selected_streamline = streamlines.num
 	stream_pos = origin
