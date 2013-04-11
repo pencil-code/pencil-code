@@ -88,7 +88,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 	if (dir eq 0) then begin
 		; Combine forward and backward streamlines from starting point
 		along = pc_get_streamline (field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num=num, origin=origin, max_length=max_length, /cache)
-		against = pc_get_streamline (field, anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num=n2, max_length=max_length, /cache)
+		against = pc_get_streamline (anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num=n2, max_length=max_length, cache=cache)
 		if (n2 le 1) then return, along
 		length += l2
 		num += n2 - 1
