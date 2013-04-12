@@ -146,7 +146,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 
 	; Iterate finding points on the streamline
 	origin = 0
-	num = 0L
+	num = 1L
 	length = 0.0d0
 	indices = [ [pos] ]
 	coords = [ [anchor] ]
