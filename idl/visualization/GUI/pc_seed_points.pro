@@ -35,9 +35,9 @@ pro pc_seed_points_update
 	WIDGET_CONTROL, sub_ny, SET_VALUE = ny
 	WIDGET_CONTROL, sub_nz, SET_VALUE = nz
 
-	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1) and (dist_x ne 0)
-	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1) and (dist_y ne 0)
-	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1) and (dist_z ne 0)
+	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1L) and (dist_x ne 0)
+	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1L) and (dist_y ne 0)
+	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L) and (dist_z ne 0)
 
 	WIDGET_CONTROL, num, SET_VALUE = nx*ny*nz
 end
@@ -70,43 +70,42 @@ pro seed_points_event, event
 	end
 	'SUB_XS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = xs
-		xs = (xs > 0) < (num_x-1)
+		xs = (xs > 0L) < (num_x-1L)
 		xe = xe > xs
 		pc_seed_points_update
 		break
 	end
 	'SUB_YS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ys
-		ys = (ys > 0) < (num_y-1)
+		ys = (ys > 0L) < (num_y-1L)
 		ye = ye > ys
 		pc_seed_points_update
 		break
 	end
 	'SUB_ZS': begin
-		nz = ze - zs + 1
 		WIDGET_CONTROL, event.id, GET_VALUE = zs
-		zs = (zs > 0) < (num_z-1)
+		zs = (zs > 0L) < (num_z-1L)
 		ze = ze > zs
 		pc_seed_points_update
 		break
 	end
 	'SUB_XE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = xe
-		xe = (xe > 0) < (num_x-1)
+		xe = (xe > 0L) < (num_x-1L)
 		xs = xs < xe
 		pc_seed_points_update
 		break
 	end
 	'SUB_YE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ye
-		ye = (ye > 0) < (num_y-1)
+		ye = (ye > 0L) < (num_y-1L)
 		ys = ys < ye
 		pc_seed_points_update
 		break
 	end
 	'SUB_ZE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ze
-		ze = (ze > 0) < (num_z-1)
+		ze = (ze > 0L) < (num_z-1L)
 		zs = zs < ze
 		pc_seed_points_update
 		break
@@ -130,22 +129,22 @@ pro seed_points_event, event
 		break
 	end
 	'ALL_X': begin
-		xs = 0
-		xe = num_x - 1
+		xs = 0L
+		xe = num_x - 1L
 		nx = xe - xs + 1L
 		pc_seed_points_update
 		break
 	end
 	'ALL_Y': begin
-		ys = 0
-		ye = num_y - 1
+		ys = 0L
+		ye = num_y - 1L
 		ny = ye - ys + 1L
 		pc_seed_points_update
 		break
 	end
 	'ALL_Z': begin
-		zs = 0
-		ze = num_z - 1
+		zs = 0L
+		ze = num_z - 1L
 		nz = ze - zs + 1L
 		pc_seed_points_update
 		break
@@ -170,9 +169,9 @@ pro seed_points_event, event
 		break
 	end
 	'CANCEL': begin
-		nx = 0
-		ny = 0
-		nz = 0
+		nx = 0L
+		ny = 0L
+		nz = 0L
 		quit = event.top
 		break
 	end
@@ -198,12 +197,12 @@ function pc_seed_points, grid, start=start
 	num_y = n_elements (coord.y)
 	num_z = n_elements (coord.z)
 
-	xs = 0
-	xe = num_x - 1
-	ys = 0
-	ye = num_y - 1
-	zs = 0
-	ze = num_z - 1
+	xs = 0L
+	xe = num_x - 1L
+	ys = 0L
+	ye = num_y - 1L
+	zs = 0L
+	ze = num_z - 1L
 
 	if (keyword_set (start)) then begin
 		xs = (round (start[0]) > xs) < xe
@@ -234,35 +233,35 @@ function pc_seed_points, grid, start=start
 	tmp	= WIDGET_LABEL (CTRL, value='Seed Point Selection (start, end, number):', frame=0)
 	SEL	= WIDGET_BASE (CTRL, frame=1, /align_center, /col)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
-	sub_xs	= CW_FIELD (SUB, title='X:', uvalue='SUB_XS', value=xs, /integer, /return_events, xsize=5)
+	sub_xs	= CW_FIELD (SUB, title='X:', uvalue='SUB_XS', value=xs, /long, /return_events, xsize=5)
 	tmp	= WIDGET_BUTTON (SUB, xsize=100, value='<= MIN MAX =>', uvalue='ALL_X')
-	sub_xe	= CW_FIELD (SUB, title='', uvalue='SUB_XE', value=xe, /integer, /return_events, xsize=5)
+	sub_xe	= CW_FIELD (SUB, title='', uvalue='SUB_XE', value=xe, /long, /return_events, xsize=5)
 	sel_dx	= WIDGET_DROPLIST (SUB, value=dist_names, uvalue='SEL_DX')
-	sub_nx	= CW_FIELD (SUB, title='=', uvalue='SUB_NX', value=nx, /integer, /return_events, xsize=5)
+	sub_nx	= CW_FIELD (SUB, title='=', uvalue='SUB_NX', value=nx, /long, /return_events, xsize=5)
 	tmp	= WIDGET_LABEL (SUB, value='seed points', frame=0)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
-	sub_ys	= CW_FIELD (SUB, title='Y:', uvalue='SUB_YS', value=ys, /integer, /return_events, xsize=5)
+	sub_ys	= CW_FIELD (SUB, title='Y:', uvalue='SUB_YS', value=ys, /long, /return_events, xsize=5)
 	tmp	= WIDGET_BUTTON (SUB, xsize=100, value='<= MIN MAX =>', uvalue='ALL_Y')
-	sub_ye	= CW_FIELD (SUB, title='', uvalue='SUB_YE', value=ye, /integer, /return_events, xsize=5)
+	sub_ye	= CW_FIELD (SUB, title='', uvalue='SUB_YE', value=ye, /long, /return_events, xsize=5)
 	sel_dy	= WIDGET_DROPLIST (SUB, value=dist_names, uvalue='SEL_DY')
-	sub_ny	= CW_FIELD (SUB, title='=', uvalue='SUB_NY', value=ny, /integer, /return_events, xsize=5)
+	sub_ny	= CW_FIELD (SUB, title='=', uvalue='SUB_NY', value=ny, /long, /return_events, xsize=5)
 	tmp	= WIDGET_LABEL (SUB, value='seed points', frame=0)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
-	sub_zs	= CW_FIELD (SUB, title='Z:', uvalue='SUB_ZS', value=zs, /integer, /return_events, xsize=5)
+	sub_zs	= CW_FIELD (SUB, title='Z:', uvalue='SUB_ZS', value=zs, /long, /return_events, xsize=5)
 	tmp	= WIDGET_BUTTON (SUB, xsize=100, value='<= MIN MAX =>', uvalue='ALL_Z')
-	sub_ze	= CW_FIELD (SUB, title='', uvalue='SUB_ZE', value=ze, /integer, /return_events, xsize=5)
+	sub_ze	= CW_FIELD (SUB, title='', uvalue='SUB_ZE', value=ze, /long, /return_events, xsize=5)
 	sel_dz	= WIDGET_DROPLIST (SUB, value=dist_names, uvalue='SEL_DZ')
-	sub_nz	= CW_FIELD (SUB, title='=', uvalue='SUB_NZ', value=nz, /integer, /return_events, xsize=5)
+	sub_nz	= CW_FIELD (SUB, title='=', uvalue='SUB_NZ', value=nz, /long, /return_events, xsize=5)
 	tmp	= WIDGET_LABEL (SUB, value='seed points', frame=0)
-	WIDGET_CONTROL, sub_xs, SENSITIVE = (num_x gt 1)
-	WIDGET_CONTROL, sub_xe, SENSITIVE = (num_x gt 1)
-	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1) and (dist_x ne 0)
-	WIDGET_CONTROL, sub_ys, SENSITIVE = (num_y gt 1)
-	WIDGET_CONTROL, sub_ye, SENSITIVE = (num_y gt 1)
-	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1) and (dist_y ne 0)
-	WIDGET_CONTROL, sub_zs, SENSITIVE = (num_z gt 1)
-	WIDGET_CONTROL, sub_ze, SENSITIVE = (num_z gt 1)
-	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1) and (dist_z ne 0)
+	WIDGET_CONTROL, sub_xs, SENSITIVE = (num_x gt 1L)
+	WIDGET_CONTROL, sub_xe, SENSITIVE = (num_x gt 1L)
+	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1L) and (dist_x ne 0)
+	WIDGET_CONTROL, sub_ys, SENSITIVE = (num_y gt 1L)
+	WIDGET_CONTROL, sub_ye, SENSITIVE = (num_y gt 1L)
+	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1L) and (dist_y ne 0)
+	WIDGET_CONTROL, sub_zs, SENSITIVE = (num_z gt 1L)
+	WIDGET_CONTROL, sub_ze, SENSITIVE = (num_z gt 1L)
+	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L) and (dist_z ne 0)
 
 	BUT	= WIDGET_BASE (CTRL, frame=0, /align_center, /row)
 	num	= CW_FIELD (BUT, title='Number of Streamlines:', /long, /noedit, xsize=10)
@@ -300,12 +299,12 @@ function pc_seed_points, grid, start=start
 	seeds = dblarr (nx * ny * nz, 3)
 	seed = long (systime (/seconds))
 	pos = 0L
-	for pos_z = 0, nz - 1 do begin
-		for pos_y = 0, ny - 1 do begin
-			for pos_x = 0, nx - 1 do begin
-				if (rx ne 0) then px = randomu (seed, /double) else if (nx gt 1) then px = pos_x / (nx - 1.0d0) else px = 0.5d0
-				if (ry ne 0) then py = randomu (seed, /double) else if (ny gt 1) then py = pos_y / (ny - 1.0d0) else py = 0.5d0
-				if (rz ne 0) then pz = randomu (seed, /double) else if (nz gt 1) then pz = pos_z / (nz - 1.0d0) else pz = 0.5d0
+	for pos_z = 0L, nz - 1L do begin
+		for pos_y = 0L, ny - 1L do begin
+			for pos_x = 0L, nx - 1L do begin
+				if (rx ne 0) then px = randomu (seed, /double) else if (nx gt 1L) then px = pos_x / (nx - 1.0d0) else px = 0.5d0
+				if (ry ne 0) then py = randomu (seed, /double) else if (ny gt 1L) then py = pos_y / (ny - 1.0d0) else py = 0.5d0
+				if (rz ne 0) then pz = randomu (seed, /double) else if (nz gt 1L) then pz = pos_z / (nz - 1.0d0) else pz = 0.5d0
 				if (dist_x eq 0) then x = coord.x[xs + pos_x] else x = x_start + px * dx
 				if (dist_y eq 0) then y = coord.y[ys + pos_y] else y = y_start + py * dy
 				if (dist_z eq 0) then z = coord.z[zs + pos_z] else z = z_start + pz * dz
