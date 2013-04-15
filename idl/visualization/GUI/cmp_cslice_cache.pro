@@ -630,9 +630,12 @@ end
 pro cslice_add_stream
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
+	common add_streamline_common, last_field
 	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
+
+	default, last_field, -1
 
 	grid = coord
 	grid.x *= unit.default_length
@@ -655,10 +658,11 @@ pro cslice_add_stream
 			add_lines_num = 0L
 		end
 		anchor = reform (seeds[pos,*])
-		if (pos eq 0L) then begin
+		if (selected_field ne last_field) then begin
 			indices = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, /cache)
+			last_field = selected_field
 		end else begin
-			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, cache=(pos le (num - 1L)))
+			indices = pc_get_streamline (anchor=anchor, grid=grid, coords=coords, precision=precision, distances=distances, length=length, num=num_points, origin=origin, /cache)
 		end
 		add_line = { indices:indices, coords:coords, distances:distances, length:length, num:num_points, origin:origin, time:varfiles[selected_snapshot].time*unit.time, snapshot:varfiles[selected_snapshot].title }
 		streamlines.num += 1L
