@@ -47,10 +47,6 @@ pro pc_seed_points_update
 	WIDGET_CONTROL, sub_ny, SET_VALUE = ny
 	WIDGET_CONTROL, sub_nz, SET_VALUE = nz
 
-	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1L)
-	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1L)
-	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L)
-
 	WIDGET_CONTROL, num, SET_VALUE = nx*ny*nz
 end
 
