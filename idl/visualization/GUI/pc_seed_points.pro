@@ -21,9 +21,21 @@ pro pc_seed_points_update
 	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num
 	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z
 
-	if (dist_x eq 0) then nx = xe - xs + 1L
-	if (dist_y eq 0) then ny = ye - ys + 1L
-	if (dist_z eq 0) then nz = ze - zs + 1L
+	if ((dist_x eq 0) and (nx gt 1L)) then begin
+		divisors = lindgen (xe - xs + 1L) + 1L
+		divisors = divisors[where (((xe - xs + 1L) mod divisors) eq 0)]
+		nx = divisors[pc_find_index (double (nx), divisors, /round)]
+	end
+	if (dist_y eq 0) then begin
+		divisors = lindgen (ye - ys + 1L) + 1L
+		divisors = divisors[where (((ye - ys + 1L) mod divisors) eq 0)]
+		ny = divisors[pc_find_index (double (ny), divisors, /round)]
+	end
+	if (dist_z eq 0) then begin
+		divisors = lindgen (ze - zs + 1L) + 1L
+		divisors = divisors[where (((ze - zs + 1L) mod divisors) eq 0)]
+		nz = divisors[pc_find_index (double (nz), divisors, /round)]
+	end
 
 	WIDGET_CONTROL, sub_xs, SET_VALUE = xs
 	WIDGET_CONTROL, sub_xe, SET_VALUE = xe
@@ -35,9 +47,9 @@ pro pc_seed_points_update
 	WIDGET_CONTROL, sub_ny, SET_VALUE = ny
 	WIDGET_CONTROL, sub_nz, SET_VALUE = nz
 
-	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1L) and (dist_x ne 0)
-	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1L) and (dist_y ne 0)
-	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L) and (dist_z ne 0)
+	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1L)
+	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1L)
+	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L)
 
 	WIDGET_CONTROL, num, SET_VALUE = nx*ny*nz
 end
@@ -255,13 +267,13 @@ function pc_seed_points, grid, start=start
 	tmp	= WIDGET_LABEL (SUB, value='seed points', frame=0)
 	WIDGET_CONTROL, sub_xs, SENSITIVE = (num_x gt 1L)
 	WIDGET_CONTROL, sub_xe, SENSITIVE = (num_x gt 1L)
-	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1L) and (dist_x ne 0)
+	WIDGET_CONTROL, sub_nx, SENSITIVE = (num_x gt 1L)
 	WIDGET_CONTROL, sub_ys, SENSITIVE = (num_y gt 1L)
 	WIDGET_CONTROL, sub_ye, SENSITIVE = (num_y gt 1L)
-	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1L) and (dist_y ne 0)
+	WIDGET_CONTROL, sub_ny, SENSITIVE = (num_y gt 1L)
 	WIDGET_CONTROL, sub_zs, SENSITIVE = (num_z gt 1L)
 	WIDGET_CONTROL, sub_ze, SENSITIVE = (num_z gt 1L)
-	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L) and (dist_z ne 0)
+	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L)
 
 	BUT	= WIDGET_BASE (CTRL, frame=0, /align_center, /row)
 	num	= CW_FIELD (BUT, title='Number of Streamlines:', /long, /noedit, xsize=10)
@@ -299,15 +311,18 @@ function pc_seed_points, grid, start=start
 	seeds = dblarr (nx * ny * nz, 3)
 	seed = long (systime (/seconds))
 	pos = 0L
+	if ((dist_x eq 0) and (num_x ne nx)) then step_x = num_x / nx else step_x = 1L
+	if ((dist_y eq 0) and (num_y ne ny)) then step_y = num_y / ny else step_y = 1L
+	if ((dist_z eq 0) and (num_z ne nz)) then step_z = num_z / nz else step_z = 1L
 	for pos_z = 0L, nz - 1L do begin
 		for pos_y = 0L, ny - 1L do begin
 			for pos_x = 0L, nx - 1L do begin
 				if (rx ne 0) then px = randomu (seed, /double) else if (nx gt 1L) then px = pos_x / (nx - 1.0d0) else px = 0.5d0
 				if (ry ne 0) then py = randomu (seed, /double) else if (ny gt 1L) then py = pos_y / (ny - 1.0d0) else py = 0.5d0
 				if (rz ne 0) then pz = randomu (seed, /double) else if (nz gt 1L) then pz = pos_z / (nz - 1.0d0) else pz = 0.5d0
-				if (dist_x eq 0) then x = coord.x[xs + pos_x] else x = x_start + px * dx
-				if (dist_y eq 0) then y = coord.y[ys + pos_y] else y = y_start + py * dy
-				if (dist_z eq 0) then z = coord.z[zs + pos_z] else z = z_start + pz * dz
+				if (dist_x eq 0) then x = coord.x[xs + pos_x * step_x] else x = x_start + px * dx
+				if (dist_y eq 0) then y = coord.y[ys + pos_y * step_y] else y = y_start + py * dy
+				if (dist_z eq 0) then z = coord.z[zs + pos_z * step_z] else z = z_start + pz * dz
 				seeds[pos,*] = [ x, y, z ]
 				pos += 1L
 			end
