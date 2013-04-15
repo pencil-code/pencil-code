@@ -60,7 +60,7 @@ pro cslice_event, event
 	min_wait_time = [ 0.2, 0.1, 0.05 ]
 
 	; step interval for following a traced streamline
-	streamline_step = 4
+	streamline_step = 4L
 
 	quit = -1
 	DRAW_IMAGE_1=0  &  DRAW_IMAGE_2=0  &  DRAW_IMAGE_3=0
@@ -134,7 +134,7 @@ pro cslice_event, event
 		px = pc_find_index (pos, coord.x, num=num_x, /round)
 		if (event.update) then WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_1 = 1
 		break
 	end
@@ -143,7 +143,7 @@ pro cslice_event, event
 		py = pc_find_index (pos, coord.y, num=num_y, /round)
 		if (event.update) then WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_2 = 1
 		break
 	end
@@ -152,7 +152,7 @@ pro cslice_event, event
 		pz = pc_find_index (pos, coord.z, num=num_z, /round)
 		if (event.update) then WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_3 = 1
 		break
 	end
@@ -160,7 +160,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		px = pos - coord.x_off
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_1 = 1
 		break
 	end
@@ -168,7 +168,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		py = pos - coord.y_off
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_2 = 1
 		break
 	end
@@ -176,7 +176,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
 		pz = pos - coord.z_off
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_3 = 1
 		break
 	end
@@ -194,7 +194,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
-				stream_pos = -1
+				stream_pos = -1L
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
 		end
@@ -236,7 +236,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
 				WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
-				stream_pos = -1
+				stream_pos = -1L
 				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 			end
 		end
@@ -292,7 +292,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -309,7 +309,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
-		stream_pos = -1
+		stream_pos = -1L
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -401,11 +401,11 @@ pro cslice_event, event
 	end
 	'ST_ADD': begin
 		cslice_add_stream
-		WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1)
-		WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1)
-		WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1)
-		WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1)
-		WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1)
+		WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
+		WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
+		WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
+		WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
+		WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
 		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		break
 	end
@@ -416,38 +416,38 @@ pro cslice_event, event
 		break
 	end
 	'UNDO': begin
-		if (streamlines.num ge 1) then begin
+		if (streamlines.num ge 1L) then begin
 			names = tag_names (streamlines)
 			old = streamlines
-			streamlines = { num:streamlines.num-1 }
-			for pos = 1, streamlines.num do streamlines = create_struct (streamlines, names[pos], old.(pos))
-			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1)
-			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1)
-			WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1)
-			WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1)
-			WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1)
-			stream_pos = -1
+			streamlines = { num:streamlines.num-1L }
+			for pos = 1L, streamlines.num do streamlines = create_struct (streamlines, names[pos], old.(pos))
+			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
+			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
+			WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
+			WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
+			WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
+			stream_pos = -1L
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		end
 		break
 	end
 	'CLEAR': begin
-		if (streamlines.num ge 1) then begin
+		if (streamlines.num ge 1L) then begin
 			WIDGET_CONTROL, undo, SENSITIVE = 0
 			WIDGET_CONTROL, st_next, SENSITIVE = 0
 			WIDGET_CONTROL, st_prev, SENSITIVE = 0
 			WIDGET_CONTROL, extract, SENSITIVE = 0
 			WIDGET_CONTROL, clear, SENSITIVE = 0
-			streamlines = { num:0 }
-			stream_pos = -1
+			streamlines = { num:0L }
+			stream_pos = -1L
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		end
 		break
 	end
 	'ST_NEXT':
 	'ST_PREV': begin
-		if (streamlines.num ge 1) then begin
-			if (stream_pos lt 0) then begin
+		if (streamlines.num ge 1L) then begin
+			if (stream_pos lt 0L) then begin
 				coordinate = [coord.x[px], coord.y[py], coord.z[pz]] * unit.default_length
 				selected_streamline = pc_find_streamline (coordinate, streamlines, nearest=stream_pos)
 				print, 'Nearest streamline: # ', selected_streamline
@@ -457,13 +457,13 @@ pro cslice_event, event
 				stream_pos += step
 				if (stream_pos ge streamlines.(selected_streamline).num) then begin
 					selected_streamline++
-					if (selected_streamline gt streamlines.num) then selected_streamline = 1
-					stream_pos = 0
+					if (selected_streamline gt streamlines.num) then selected_streamline = 1L
+					stream_pos = 0L
 				end
-				if (stream_pos lt 0) then begin
+				if (stream_pos lt 0L) then begin
 					selected_streamline--
 					if (selected_streamline lt 1) then selected_streamline = streamlines.num
-					stream_pos = streamlines.(selected_streamline).num - 1
+					stream_pos = streamlines.(selected_streamline).num - 1L
 				end
 			end
 			stream = streamlines.(selected_streamline)
@@ -476,8 +476,8 @@ pro cslice_event, event
 			pz = pc_find_index (stream.coords[2,stream_pos], coord.z*unit.default_length, num=num_z)
 			WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 			WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
-			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1)
-			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1)
+			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
+			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
 			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
 		end
 		break
@@ -723,6 +723,9 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	; default target is the screen (=0)
 	default, target, 0
 
+	; default maximum of streamlines to be plotted
+	default, max_streamlines, 1000L
+
 	!P.MULTI = [0, 1, 1]
 
 	if (not any ([DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3])) then return
@@ -775,8 +778,8 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				velovect, reform (field_y_x[cx,*,*], num_over_y, num_over_z), reform (field_z_x[cx,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
-		if (streamlines.num ge 1) then begin
-			for pos = 1, streamlines.num do begin
+		if (streamlines.num ge 1L) then begin
+			for pos = 1L, streamlines.num < max_streamlines do begin
 				if (destretch[1]) then begin
 					indices_y = reform (streamlines.(pos).coords[1,*]) / unit.default_length
 					indices_y = (indices_y - coord.y[0]) / (coord.y[num_y-1] - coord.y[0]) * num_y
@@ -839,8 +842,8 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				velovect, reform (field_x_y[*,cy,*], num_over_x, num_over_z), reform (field_z_y[*,cy,*], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
-		if (streamlines.num ge 1) then begin
-			for pos = 1, streamlines.num do begin
+		if (streamlines.num ge 1L) then begin
+			for pos = 1L, streamlines.num < max_streamlines do begin
 				if (destretch[0]) then begin
 					indices_x = reform (streamlines.(pos).coords[0,*]) / unit.default_length
 					indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
@@ -903,8 +906,8 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				velovect, reform (field_x_z[*,*,cz], num_over_x, num_over_y), reform (field_y_z[*,*,cz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
-		if (streamlines.num ge 1) then begin
-			for pos = 1, streamlines.num do begin
+		if (streamlines.num ge 1L) then begin
+			for pos = 1L, streamlines.num < max_streamlines do begin
 				if (destretch[0]) then begin
 					indices_x = reform (streamlines.(pos).coords[0,*]) / unit.default_length
 					indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
@@ -1055,7 +1058,7 @@ pro cslice_save_streamlines, data=data
 	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
-	if (streamlines.num lt 1) then return
+	if (streamlines.num lt 1L) then return
 
 	; Settings:
 	streamlines_file = 'streamlines'
@@ -1070,7 +1073,7 @@ pro cslice_save_streamlines, data=data
 	; Extract selected scalar quantity
         quantity_name = (tag_names (set))[selected_cube]
 	quantity = { name:quantity_name }
-	for line = 1, streamlines.num do begin
+	for line = 1L, streamlines.num do begin
 		quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (cube, streamlines.(line).indices))
 	end
 	quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
@@ -1080,7 +1083,7 @@ pro cslice_save_streamlines, data=data
 		; Extract selected overplot vector field
         	quantity_name = (tag_names (overplot))[selected_overplot]
 		quantity = { name:quantity_name }
-		for line = 1, streamlines.num do begin
+		for line = 1L, streamlines.num do begin
 			quantity = create_struct (quantity, quantity_name+'_'+strtrim (line, 2), pc_extract_streamline (field, streamlines.(line).indices))
 		end
 		quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
@@ -1284,7 +1287,7 @@ pro cslice_default_settings
 	selected_overplot = 0
 	selected_snapshot = 0
 	selected_color = 0
-	stream_pos = -1
+	stream_pos = -1L
 end
 
 
@@ -1366,11 +1369,11 @@ pro cslice_update_GUI
 	WIDGET_CONTROL, min_max, SENSITIVE = 1
 	WIDGET_CONTROL, freeze, SENSITIVE = 1
 	WIDGET_CONTROL, sl_over, SENSITIVE = (selected_overplot gt 0)
-	WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1)
-	WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1)
-	WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1)
-	WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1)
-	WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1)
+	WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
+	WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
+	WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
+	WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
+	WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
 end
 
 

@@ -31,15 +31,15 @@
 function pc_find_streamline, coord, streamlines, nearest=nearest, distance=distance
 
 	; Iterate over streamlines
-	nearest = intarr (streamlines.num)
+	nearest = lonarr (streamlines.num)
 	distances_stream = dblarr (streamlines.num)
-	for pos = 1, streamlines.num do begin
+	for pos = 1L, streamlines.num do begin
 		; Find nearest point within streamline
 		distances = streamlines.(pos).coords
-		for i = 0, streamlines.(pos).num - 1 do distances[*,i] -= coord
+		for i = 0L, streamlines.(pos).num - 1L do distances[*,i] -= coord
 		distances = total (distances^2, 1)
-		distances_stream[pos-1] = min (distances)
-		nearest[pos-1] = where (distances eq distances_stream[pos-1])
+		distances_stream[pos-1L] = min (distances)
+		nearest[pos-1L] = where (distances eq distances_stream[pos-1L])
 	end
 
 	; Find nearest streamline
@@ -48,7 +48,7 @@ function pc_find_streamline, coord, streamlines, nearest=nearest, distance=dista
 	nearest = nearest[num]
 	distance = sqrt (distance)
 
-	return, (num + 1)
+	return, (num + 1L)
 
 end
 
