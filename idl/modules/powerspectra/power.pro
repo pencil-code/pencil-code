@@ -3,7 +3,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k, $
           i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
-          compensate3=compensate3,datatopdir=datatopdir
+          compensate3=compensate3,datatopdir=datatopdir,double=double
 ;
 ;  $Id$
 ;
@@ -137,7 +137,11 @@ if  keyword_set(v1) then begin
 end
 ;print,'nx=',nx
 imax=nx/2
-spectrum1=fltarr(imax)
+if keyword_set(double) then begin
+  spectrum1=dblarr(imax)
+endif else begin
+  spectrum1=fltarr(imax)
+endelse
 if n_elements(size) eq 0 then size=2.*!pi
 k0=2.*!pi/size
 wavenumbers=indgen(imax)*k0 
@@ -166,7 +170,11 @@ openr,1, datatopdir+'/'+file1
     i=i+1L
   endwhile
 close,1
-spec1=fltarr(imax,i-1)
+if keyword_set(double) then begin
+  spec1=dblarr(imax,i-1)
+endif else begin
+  spec1=fltarr(imax,i-1)
+endelse
 tt=fltarr(i-1)
 lasti=i-2
 default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(spectrum1(1:*))))]
@@ -175,16 +183,27 @@ default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(s
 ;
 if (file2 ne '') then begin
   close,2
-  spectrum2=fltarr(imax)
+  if keyword_set(double) then begin
+    spectrum2=dblarr(imax)
+    spec2=dblarr(imax,i-1)
+  endif else begin
+    spectrum2=fltarr(imax)
+    spec2=fltarr(imax,i-1)
+  endelse
   openr,2,datatopdir+'/'+file2
-  spec2=fltarr(imax,i-1)
 endif
 ;
 ;  Opening file 3 if it is defined
 ;
 if (file3 ne '') then begin
   close,3
-  spectrum3=fltarr(imax)
+  if keyword_set(double) then begin
+    spectrum3=dblarr(imax)
+    spec3=dblarr(imax,i-1)
+  endif else begin
+    spectrum3=fltarr(imax)
+    spec3=fltarr(imax,i-1)
+  endelse
   openr,3,datatopdir+'/'+file3
   spec3=fltarr(imax,i-1)
 endif
