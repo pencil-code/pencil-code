@@ -56,8 +56,13 @@ function pc_find_index, needle, haystack, num=num, sort=sort, reverse=reverse, r
 	end
 	upper = lower + 1
 
-	; Interpolate needle position
-	index = lower + (needle - haystack[lower]) / (haystack[upper] - haystack[lower])
+	if (n_elements (haystack) eq 1) then begin
+		; Strange haystack...
+		index = lower
+	end else begin
+		; Interpolate needle position within two haystack elements
+		index = lower + (needle - haystack[lower]) / (haystack[upper] - haystack[lower])
+	end
 
 	if (keyword_set (round)) then index = round (index)
 	if (keyword_set (reverse)) then begin
