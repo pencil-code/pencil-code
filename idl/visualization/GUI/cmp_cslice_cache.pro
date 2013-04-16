@@ -1317,7 +1317,7 @@ pro cslice_reset_GUI
 	over_max = 0.0
 
 	field = 0
-	streamlines = { num:0 }
+	streamlines = { num:0L }
 	WIDGET_CONTROL, st_add, SENSITIVE = 0
 	WIDGET_CONTROL, extract, SENSITIVE = 0
 	WIDGET_CONTROL, st_prev, SENSITIVE = 0
