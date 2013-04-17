@@ -45,7 +45,7 @@ module Density
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(nx) :: xmask_den
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
-  real :: lnrho_const=0.0, rho_const=1.0
+  real :: lnrho_const=0.0, rho_const=1.0, ggamma=impossible
   real :: cdiffrho=0.0, diffrho=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
@@ -100,7 +100,8 @@ module Density
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
       rho_const, cs2bot, cs2top, radius_lnrho, eps_planet, xblob, &
-      yblob, zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, mpoly, &
+      yblob, zblob, b_ell, q_ell, hh0, rbound, lwrite_stratification, &
+      mpoly, ggamma, &
       strati_type, beta_glnrho_global, kx_lnrho, ky_lnrho, kz_lnrho, &
       amplrho, phase_lnrho, coeflnrho, kxx_lnrho, kyy_lnrho,  kzz_lnrho, &
       co1_ss, co2_ss, Sigma1, idiff, ldensity_nolog, wdamp, lcontinuity_gas, &
@@ -221,11 +222,20 @@ module Density
 !  (currently disabled, because it causes problems with mdarf auto-test)
 !     cs2cool=cs20
 !
-      if (diffrho==0.0) then
-!
 !  Made to work by adding diffrho + cdiffrho to the rprint reset list.
 !
+      if (diffrho==0.0) then
         diffrho=cdiffrho*dxmin*cs0
+      endif
+!
+!  Define stratification Gamma (upper case, as in the manual).
+!  Set mpoly to default value, unless ggamma is set.
+!
+      if (ggamma==impossible) then
+        if (mpoly==impossible) mpoly=1.5
+        ggamma=1.+1./mpoly
+      else
+        if (ggamma/=1.) mpoly=1./(ggamma-1.)
       endif
 !
 !  Turn off continuity equation if we are not using hydrodynamics.
@@ -616,6 +626,7 @@ module Density
         case ('stratification'); call stratification(f,strati_type)
         case ('stratification-x'); call stratification_x(f,strati_type)
         case ('polytropic_simple'); call polytropic_simple(f)
+        case ('stratification_tsallis'); call stratification_tsallis(f)
         case ('hydrostatic_TT'); call temp_hydrostatic(f,rho_const)
         case ('hydrostatic-z', '1')
           print*, 'init_lnrho: use polytropic_simple instead!'
@@ -2120,6 +2131,8 @@ module Density
 !  02-apr-03/tony: made entropy explicit rather than using tmp/-gamma
 !  11-jun-03/tony: moved entropy initialisation to separate routine
 !                  to allow isothermal condition for arbitrary density
+!  26-sep-10/axel: added lisothermal_fixed_Hrho to allow for isothermal density
+!                  stratification to remain unchanged when gamma is changed.
 !
       use Gravity
 !
@@ -2172,6 +2185,60 @@ module Density
 !
     endsubroutine isothermal_density
 !***********************************************************************
+    subroutine stratification_tsallis(f)
+!
+!  Tsallis stratification (for lnrho and ss).
+!  This routine should be independent of the gravity module used.
+!  When entropy is present, this module also initializes entropy.
+!
+!  17-apr-13/axel+illa: adapted from isothermal
+!
+      use Gravity
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (nx) :: pot,tmp
+      real :: cp1
+!
+!  Stratification depends on the gravity potential;
+!
+      if (lroot) print*, 'stratification_tsallis: Tsallis stratification'
+!
+      call get_cp1(cp1)
+      do n=n1,n2
+        do m=m1,m2
+          call potential(x(l1:l2),y(m),z(n),pot=pot)
+          if (ggamma==1.) then
+            tmp=-pot/cs20
+          else
+            tmp=alog(1.+(ggamma-1.)*(-pot/cs20))/(ggamma-1.)
+          endif
+          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+lnrho0+tmp
+          if (lentropy.and..not.pretend_lnTT) then
+!
+!  note: the initial condition is always produced for lnrho
+!
+            f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - &
+                (1/cp1)*gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+          elseif (lentropy.and.pretend_lnTT) then
+            f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
+          elseif (ltemperature.and..not.ltemperature_nolog) then
+            f(l1:l2,m,n,iTT)=log(cs20*cp1/gamma_m1)
+          elseif (ltemperature.and.ltemperature_nolog) then
+            call fatal_error("stratification_tsallis", &
+                "not implemented for ltemperature_nolog")
+          endif
+        enddo
+      enddo
+!
+!  cs2 values at top and bottom may be needed to boundary conditions.
+!  The values calculated here may be revised in the entropy module.
+!
+      cs2bot=cs20
+      cs2top=cs20
+!
+    endsubroutine stratification_tsallis
+!***********************************************************************
     subroutine polytropic_simple(f)
 !
 !  Polytropic stratification (for lnrho and ss)
@@ -2190,7 +2257,7 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,dlncs2,r_mn
-      real :: ggamma,ztop,zbot,zref2,pot_ext,lnrho_ref,ptop,pbot
+      real :: ztop,zbot,zref2,pot_ext,lnrho_ref,ptop,pbot
 !
 !  identifier
 !
@@ -2233,10 +2300,6 @@ module Density
           !         'polytropic_simply: rho and cs2 will vanish within domain')
         endif
       endif
-!
-!  stratification Gamma (upper case in the manual)
-!
-      ggamma=1.+1./mpoly
 !
 !  polytropic sphere with isothermal exterior
 !  calculate potential at the stellar surface, pot_ext
