@@ -1928,9 +1928,9 @@ pre_and_post_processing/pc_distribute_z.o: pre_and_post_processing/pc_distribute
 pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute_z.o
 	$(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x
 #
-pre_and_post_processing/pc_process.o: pre_and_post_processing/pc_process.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
-pre_and_post_processing/pc_process.x: pre_and_post_processing/pc_process.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_process.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_process.x
+pre_and_post_processing/pc_extract.o: pre_and_post_processing/pc_extract.f90 $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) Makefile.local
+pre_and_post_processing/pc_extract.x: pre_and_post_processing/pc_extract.o
+	$(LD) $(LDFLAGS) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
