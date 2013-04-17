@@ -360,12 +360,14 @@ program pc_process
       enddo
     enddo
     do pos = 1, num_quantities
-      start_pos = 1
-      end_pos = nz
-      if (lfirst_proc_z) start_pos = 1
-      if (llast_proc_z) end_pos = nz
-      do pz = start_pos, end_pos
-        write (output_luns(pos), rec=pz+ipz*nz+(pa-1)*nzgrid) global_output(:,:,pz,pos)
+      do pa = 1, global_size(pos)
+        start_pos = 1
+        end_pos = nz
+        if (lfirst_proc_z) start_pos = 1
+        if (llast_proc_z) end_pos = nz
+        do pz = start_pos, end_pos
+          write (output_luns(pos), rec=pz+ipz*nz+(pa-1)*nzgrid) global_output(:,:,pz,global_start(pos)-1+pa)
+        enddo
       enddo
     enddo
   enddo
