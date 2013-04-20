@@ -4908,7 +4908,7 @@ is the optical depth ($s$ is the geometrical coordinate along the ray).
 
 Note that radiative transfer is called also in \file{start.csh},
 and again each time a snapshot is being written, provided the output
-of auxialiary variables is being requested \cmd{lwrite_aux=T}.
+of auxiliary variables is being requested \cmd{lwrite_aux=T}.
 (Also, of course, the pencil check runs radiative transfer 7 times,
 unless you put \cmd{pencil_check_small=F}.)
 
@@ -5763,6 +5763,33 @@ in \file{start.in}; see Sect.~\ref{S-boundconds-where}.  There is nothing wrong
 with the initial data --- the ghost-zone values will be re-calculated during
 the very first time step.
 
+\subsubsection{csh problem?}
+{\bf Q}:
+On some rare occasions we have problems with
+csh not being supported on other machines.
+(We hope to fix this by contacting the responsible
+person, but may not be that trivial today!)
+Oliver says this is a well known bug of some
+years ago, etc. But maybe in the long run it
+would be good to avoid csh.
+
+{\bf A}:
+These occasions will become increasingly frequent, and eventually for some
+architectures, there may not even be a csh variant that can be installed.
+
+We never pushed people to use \cmd{pc_run} and friends (and to report
+corresponding bugs and get them fixed), but if we don't spend a bit of
+effort (or annoy users) now, we create a future emergency, where someone
+needs to run on some machine, but there is no csh and he or she just gets
+stuck.
+
+We don't have that many csh files, and for years now it should be possible
+to compile run without csh (using \cmd{bin/pc_run}) --- except that people
+still fall back on the old way of doing things.
+This is both cause and consequence of the `new' way not being tested that
+much, at least for the corner cases like \file{RERUN}, \file{NEWDIR},
+\file{SCRATCH_DIR}.
+
 \subsubsection{\file{run.csh} doesn't work:}
 \begin{Verbatim}
   Invalid character ''' in NAMELIST input
@@ -5912,7 +5939,7 @@ Is there a mechanism already in place for that?
 
 {\bf A}:
 Yes, the code restarts from the last var.dat. It is written after a
-successful completion of the run, but it it crashes or you hit a time-out,
+successful completion of the run, but it crashes or you hit a time-out,
 there will be a var.dat that is overwritten every isave timesteps.
 If the system stops during writing, some var.dat files may be corrupt
 or have the wrong time. In that case you could restart from a good VAR
@@ -5927,6 +5954,22 @@ To restart in another directory, you say, from the old run directory,
 \end{Verbatim}
 Hope this helps.
 Look into pencil-code/bin/restart-new-dir to see what it is doing.
+
+\subsubsection{fft\_xyz\_parallel\_3D: nygrid needs to be an integer multiple...}
+
+{\bf Q}:
+I just got an:
+\begin{Verbatim}
+  fft_xyz_parallel_3D: nygrid needs to be an integer multiple of nprocy*nprocz
+\end{Verbatim}
+In my case, nygrid=2048, nprocy=32, and nprocz=128, so nprocy*nprocz=4096.
+In other words, 2048 needs to be a multiple of 4096.
+But isn't this the case then?
+
+{\bf A}:
+No, because 2048 = 0.5 * 4096 and 0.5 is not an integer.
+Maybe try either setting nprocz=64 or nprocy=64.
+You could compensate in change of ncpus with the x-direction...
 
 \subsubsection{Unit-agnostic calculations?}
 
@@ -5965,7 +6008,7 @@ definition of the Alfven velocity.
 If you are assuming cgs, you are saying that your sound speed cs0=1
 actually means [U]=1 cm/s. Your unit of length is equivalently 1 cm,
 and therefore the unit of time is [t] = [L]/[U]=1 s. The unit of
-density is [rho] = 1 g/cm^3. Since in cgs va=B/sqrt(4*pi * rho), your
+density is [rho] = 1 g/cm^3. Since in cgs vA=B/sqrt(4*pi * rho), your
 unit of magnetic field is [B] = [U] * sqrt([rho] * 4*pi) ~= 3.5
 sqrt(g/cm) / s = 3.5 Gauss.
 \end{verbatim}
@@ -5992,7 +6035,7 @@ Your unit of magnetic field is therefore [B] = [U] * sqrt([rho] *
 \begin{verbatim}
 Notice that for mu0=1 and rho0=1 you simply have vA=B. Then you can
 conveniently set the field strength by your choice of plasma beta (=
-2*cs^2/va^2). There's a reason why we like dimensionless quantities!
+2*cs^2/vA^2). There's a reason why we like dimensionless quantities!
 \end{verbatim}
 
 % ---------------------------------------------------------------------- %
