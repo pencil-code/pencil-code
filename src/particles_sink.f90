@@ -35,6 +35,7 @@ module Particles_sink
   real :: bondi_accretion_grav_smooth=1.35
   real :: rsurf_to_rhill=0.0, rsurf_subgrid=0.001, cdtsubgrid=0.1
   real, pointer :: tstart_selfgrav, gravitational_const
+  logical, allocatable, dimension (:) :: lsubgrid_accretion_attempt
   logical :: lsink_radius_dx_unit=.false., lrhop_roche_unit=.false.
   logical :: lsink_communication_all_to_all=.false.
   logical :: lbondi_accretion=.false.
@@ -390,6 +391,14 @@ module Particles_sink
       if (ip<=6) then
         print*, 'remove_particles_sink: entering, iproc, it, itsub=', &
             iproc, it, itsub
+      endif
+!
+!  Allocate array for keeping track of accretion attempts.
+!
+      if (lsubgrid_accretion) then
+        if (.not.allocated(lsubgrid_accretion_attempt)) &
+            allocate(lsubgrid_accretion_attempt(mpar_loc))
+        lsubgrid_accretion_attempt(1:npar_loc)=.false.
       endif
 !
 !  Method I: sink particles are coordinated by the root processor.
@@ -1242,6 +1251,14 @@ module Particles_sink
       integer :: itsubsub, iblock, nhalforbx, nhalforby, nhalforbz
       logical :: laccrete_subgrid
 !
+!  Return if the particle has already been attempted accreted.
+!
+      if (lsubgrid_accretion_attempt(k)) then
+        return
+      else
+        lsubgrid_accretion_attempt(k)=.true.
+      endif
+!
       if (ip<=6) then
         print*, 'subgrid_accretion: entering, iproc, it, itsub, '// &
             'ipar(j), ipar(k)=', iproc, it, itsub, ipar(j), ipar(k)
@@ -1255,15 +1272,15 @@ module Particles_sink
 !  the particle has already been scattered once and hence we are not interested
 !  in a repeated scatter.
 !
-      if (lparticles_blocks) then
-        if (ineargrid(k,1)<l1b .or. ineargrid(k,2)>l2b .or. &
-            ineargrid(k,2)<m1b .or. ineargrid(k,2)>m2b .or. &
-            ineargrid(k,3)<n1b .or. ineargrid(k,2)>n2b) return
-      else
-        if (ineargrid(k,1)<l1 .or. ineargrid(k,2)>l2 .or. &
-            ineargrid(k,2)<m1 .or. ineargrid(k,2)>m2 .or. &
-            ineargrid(k,3)<n1 .or. ineargrid(k,2)>n2) return
-      endif
+!      if (lparticles_blocks) then
+!        if (ineargrid(k,1)<l1b .or. ineargrid(k,2)>l2b .or. &
+!            ineargrid(k,2)<m1b .or. ineargrid(k,2)>m2b .or. &
+!            ineargrid(k,3)<n1b .or. ineargrid(k,2)>n2b) return
+!      else
+!        if (ineargrid(k,1)<l1 .or. ineargrid(k,2)>l2 .or. &
+!            ineargrid(k,2)<m1 .or. ineargrid(k,2)>m2 .or. &
+!            ineargrid(k,3)<n1 .or. ineargrid(k,2)>n2) return
+!      endif
 !
 !  Calculate the local gas velocity field. We fix this, as any interpolation
 !  is in the risk of needing more ghost cells than available.
