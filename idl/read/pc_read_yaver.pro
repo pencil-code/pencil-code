@@ -264,21 +264,34 @@ nprocz=dim.nprocz
 ;
 spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 spawn, 'cat '+datatopdir+'/yaver.in', allvariables
-if (variables[0] eq '') then variables=allvariables
+;
+; Remove commented and empty elements from allvariables
+;
+inds = where( strmid(allvariables,0,1) ne '#' and strtrim(allvariables,2) ne '' )
+if inds[0] ne -1 then $
+  allvariables = allvariables[inds]
+;
 nvarall=n_elements(allvariables)
-nvar=n_elements(variables)
-ivarpos=intarr(nvar)
+;
+if (variables[0] eq '') then begin
+  variables=allvariables
+  nvar = nvarall
+  ivarpos = indgen(nvar)
+endif else begin
+  nvar=n_elements(variables)
+  ivarpos=intarr(nvar)
 ;
 ;  Find the position of the requested variables in the list of all
 ;  variables.
 ;
-for ivar=0,nvar-1 do begin
-  ivarpos_est=where(variables[ivar] eq allvariables)
-  if (ivarpos_est[0] eq -1) then $
-      message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
-               ' in '+arraytostring(allvariables,/noleader)
-  ivarpos[ivar]=ivarpos_est[0]
-endfor
+  for ivar=0,nvar-1 do begin
+    ivarpos_est=where(variables[ivar] eq allvariables)
+    if (ivarpos_est[0] eq -1) then $
+        message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
+                 ' in '+arraytostring(allvariables,/noleader)
+    ivarpos[ivar]=ivarpos_est[0]
+  endfor
+endelse
 ;  Die if attempt to plot a variable that does not exist.
 if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;
