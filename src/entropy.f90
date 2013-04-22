@@ -111,6 +111,7 @@ module Entropy
   logical :: lphotoelectric_heating=.false.
   logical, pointer :: lreduced_sound_speed
   logical, save :: lfirstcall_hcond=.true.
+  logical :: lborder_heat_variable=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -166,7 +167,8 @@ module Entropy
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
-      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, center1_z
+      reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, center1_z, &
+      lborder_heat_variable
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -4452,9 +4454,10 @@ module Entropy
 ! Thermal relaxation for radially stratified global Keplerian disks
 !
       use EquationOfState, only: rho0,gamma1
+      use Sub, only: quintic_step
 !
       real, dimension(nx), intent(inout) :: heat
-      real, dimension (nx) :: rr1,TT_drive, OO
+      real, dimension (nx) :: rr1,TT_drive, OO, pborder
       real, save :: tau1_cool,rho01
       logical, save :: lfirstcall=.true.
       type (pencil_case), intent(in) :: p
@@ -4484,11 +4487,20 @@ module Entropy
 !
       if (TT_floor /= impossible) call apply_floor(TT_drive)
 !
+!  Apply tapering function. The idea is to smooth it to zero near the 
+!  boundaries. Useful in connection with border profiles when the initial
+!  condition is not the same as the power law. 
+!
+      if (lborder_heat_variable) then 
+         pborder=quintic_step(x(l1:l2),r_int,widthss,SHIFT=1.) - &
+                 quintic_step(x(l1:l2),r_ext,widthss,SHIFT=-1.)
+      endif
+!
 !  tau_cool = tau_cool_0 * Omega0/Omega
 !  tau_cool1 = 1/tau_cool_0 * Omega/Omega0
 !
       heat=heat-p%rho*p%cp*gamma1*&
-           (p%TT-TT_drive)*tau1_cool*OO
+           (p%TT-TT_drive)*tau1_cool*OO*pborder
 !
     endsubroutine calc_heat_cool_variable
 !***********************************************************************
