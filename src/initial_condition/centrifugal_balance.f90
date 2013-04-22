@@ -96,6 +96,7 @@ module InitialCondition
   real :: rmode_mag=4.,zmode_mag=16.
   real :: rm_int=0.0,rm_ext=impossible
   real :: Bz_const=8d-3
+  real, dimension(0:6) :: coeff_cs2=(/0.,0.,0.,0.,0.,0.,0./)
 !
 ! For the noise
 ! 
@@ -112,6 +113,7 @@ module InitialCondition
   logical :: lcorrect_pressuregradient=.true.
   logical :: lcorrect_selfgravity=.false.
   logical :: lcorrect_lorentzforce=.false.
+  logical :: lpolynomial_fit_cs2=.false.
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
@@ -121,7 +123,7 @@ module InitialCondition
        rborder_ext,plasma_beta,ladd_field,initcond_aa,B_ext,&
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
-       lcorrect_pressuregradient
+       lcorrect_pressuregradient,lpolynomial_fit_cs2
 !
   contains
 !***********************************************************************
@@ -248,6 +250,29 @@ module InitialCondition
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
+    subroutine poly_fit(cs2)
+!
+      real, dimension(0:6) :: c
+      real, dimension(mx) :: cs2,lncs2
+!
+!  Fits for different combinations of cs2 and temperature_power_law
+!
+      if (cs0 .eq. 0.1 .and. temperature_power_law.eq.2) then
+         coeff_cs2=(/-8.33551,27.6856,-57.5702,54.6696,-27.2370,6.87119,-0.690690/)
+      else if (cs0 .eq. 0.1 .and. temperature_power_law.eq.1) then
+         coeff_cs2=(/-6.47454,13.8181,-28.6687,27.1693,-13.5113,3.40305,-0.341599/)
+      else
+         call fatal_error("poly_fit",&
+              "fit not calculated for choice of cs0 and Teff power law")
+      endif
+      c=coeff_cs2
+      lncs2 = c(0) + c(1) * x    + c(2) * x**2 + c(3) * x**3 + &
+                     c(4) * x**4 + c(5) * x**5 + c(6) * x**6
+!
+      cs2=exp(lncs2)
+!
+    endsubroutine poly_fit
+!***********************************************************************
     subroutine initial_condition_lnrho(f)
 !
 !  Initialize logarithmic density. init_lnrho will take care of
@@ -297,7 +322,11 @@ module InitialCondition
         endif
 !
         if (llocal_iso.or.lenergy) then 
-          call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
+          if (.not.lpolynomial_fit_cs2) then 
+            call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
+          else 
+            call poly_fit(cs2)
+          endif  
 !
 !  Store cs2 in one of the free slots of the f-array
 !
@@ -996,6 +1025,9 @@ module InitialCondition
       logical                :: lheader
       real :: temperature_power_law
 !
+      real, dimension(nx) :: xi
+      real, dimension(0:6) :: c
+!
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
 !
@@ -1024,7 +1056,14 @@ module InitialCondition
 !
         if (llocal_iso.or.lenergy) then
           cs2=f(l1:l2,m,n,ics2)
-          gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+          if (.not.lpolynomial_fit_cs2) then 
+             gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+          else
+             xi=x(l1:l2)
+             c=coeff_cs2
+             gslnTT = c(1)  + c(2) * 2*xi + c(3) * 3*xi**2 + &
+                  c(4) * 4*xi**3 + c(5) * 5*xi**4 + c(6) * 6*xi**5
+          endif   
        else
           cs2=cs20
           gslnTT=0.
