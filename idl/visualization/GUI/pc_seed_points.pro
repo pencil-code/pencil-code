@@ -24,17 +24,17 @@ pro pc_seed_points_update
 	if ((dist_x eq 0) and (nx gt 1L)) then begin
 		divisors = lindgen (xe - xs + 1L) + 1L
 		divisors = divisors[where (((xe - xs + 1L) mod divisors) eq 0)]
-		nx = divisors[pc_find_index (double (nx), divisors, /round)]
+		nx = divisors[pc_find_index (double (nx < max (divisors)), divisors, /round)]
 	end
-	if (dist_y eq 0) then begin
+	if ((dist_y eq 0) and (ny gt 1L)) then begin
 		divisors = lindgen (ye - ys + 1L) + 1L
 		divisors = divisors[where (((ye - ys + 1L) mod divisors) eq 0)]
-		ny = divisors[pc_find_index (double (ny), divisors, /round)]
+		ny = divisors[pc_find_index (double (ny < max (divisors)), divisors, /round)]
 	end
-	if (dist_z eq 0) then begin
+	if ((dist_z eq 0) and (nz gt 1L)) then begin
 		divisors = lindgen (ze - zs + 1L) + 1L
 		divisors = divisors[where (((ze - zs + 1L) mod divisors) eq 0)]
-		nz = divisors[pc_find_index (double (nz), divisors, /round)]
+		nz = divisors[pc_find_index (double (nz < max (divisors)), divisors, /round)]
 	end
 
 	WIDGET_CONTROL, sub_xs, SET_VALUE = xs
@@ -73,103 +73,87 @@ pro seed_points_event, event
 		nx = 1L
 		ny = 1L
 		nz = 1L
-		pc_seed_points_update
 		break
 	end
 	'SUB_XS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = xs
 		xs = (xs > 0L) < (num_x-1L)
 		xe = xe > xs
-		pc_seed_points_update
 		break
 	end
 	'SUB_YS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ys
 		ys = (ys > 0L) < (num_y-1L)
 		ye = ye > ys
-		pc_seed_points_update
 		break
 	end
 	'SUB_ZS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = zs
 		zs = (zs > 0L) < (num_z-1L)
 		ze = ze > zs
-		pc_seed_points_update
 		break
 	end
 	'SUB_XE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = xe
 		xe = (xe > 0L) < (num_x-1L)
 		xs = xs < xe
-		pc_seed_points_update
 		break
 	end
 	'SUB_YE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ye
 		ye = (ye > 0L) < (num_y-1L)
 		ys = ys < ye
-		pc_seed_points_update
 		break
 	end
 	'SUB_ZE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ze
 		ze = (ze > 0L) < (num_z-1L)
 		zs = zs < ze
-		pc_seed_points_update
 		break
 	end
 	'SUB_NX': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = nx
 		nx = nx > 1L
-		pc_seed_points_update
 		break
 	end
 	'SUB_NY': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ny
 		ny = ny > 1L
-		pc_seed_points_update
 		break
 	end
 	'SUB_NZ': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = nz
 		nz = nz > 1L
-		pc_seed_points_update
 		break
 	end
 	'ALL_X': begin
 		xs = 0L
 		xe = num_x - 1L
 		nx = xe - xs + 1L
-		pc_seed_points_update
 		break
 	end
 	'ALL_Y': begin
 		ys = 0L
 		ye = num_y - 1L
 		ny = ye - ys + 1L
-		pc_seed_points_update
 		break
 	end
 	'ALL_Z': begin
 		zs = 0L
 		ze = num_z - 1L
 		nz = ze - zs + 1L
-		pc_seed_points_update
 		break
 	end
 	'SEL_DX': begin
 		dist_x = event.index
-		pc_seed_points_update
 		break
 	end
 	'SEL_DY': begin
 		dist_y = event.index
-		pc_seed_points_update
 		break
 	end
 	'SEL_DZ': begin
 		dist_z = event.index
-		pc_seed_points_update
 		break
 	end
 	'OK': begin
@@ -185,6 +169,7 @@ pro seed_points_event, event
 	end
 	endswitch
 
+	pc_seed_points_update
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 
 	if (quit ge 0) then WIDGET_CONTROL, quit, /DESTROY
