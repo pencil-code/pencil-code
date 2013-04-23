@@ -21,7 +21,7 @@
 ;   IDL> B = pc_get_quantity ('B', var, tags)
 ;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
 ;   IDL> seeds = pc_seed_points (grid)
-;   IDL> streamlines = pc_get_streamline (field=B, anchor=seeds, grid=grid)
+;   IDL> streamlines = pc_get_streamline (B, anchor=seeds, grid=grid)
 ;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temp')
 ;   IDL> stream_2 = pc_select_streamline (streamlines, 2)
 ;   IDL> Temp_2 = pc_select_streamline (Temp_streamlines, 2, streamlines=streamlines)

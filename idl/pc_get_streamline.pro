@@ -7,10 +7,10 @@
 ;   Calculation of coordinates along a traced streamline.
 ;
 ;  Parameters:
-;   * field          Data cube of a vector field (4-dimensional: [nx,ny,nz,3]).
+;   * data           Data cube of a vector field (4-dimensional: [nx,ny,nz,3]).
 ;   * anchor         Anchor point in grid coordinates (2-dimensional: [3,num_lines]).
 ;   * grid           Grid structure (Default: equidistant grid spacing of unit length 1.0).
-;   * direction      Direction (1: along, -1: against the field, Default: both).
+;   * direction      Direction (1: along, -1: against the vector field, Default: both).
 ;   * periodic       3D-array of periodicity flags (Default: no periodicity, if no grid is given).
 ;   * precision      Precision of streamline tracing between grid points, a value
 ;                    of 0.1 results in 10 interpolations per grid distance (Default: 0.1).
@@ -22,7 +22,6 @@
 ;   * coords         Returns an array of grid coordinates of each traced streamline.
 ;   * distances      Returns an array of the distances from the anchor point along each streamline.
 ;   * return_indices Return an array of indices of the streamline (Default: return streamlines structure).
-;   * cache          Cache vector field data cube for later use.
 ;
 ;  Returns:
 ;   * streamlines    Streamlines structure containing all relevant data (Default).
@@ -35,7 +34,7 @@
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, grid=grid
 ;   IDL> B = pc_get_quantity ('B', var, tags)
 ;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
-;   IDL> indices = pc_get_streamline (field=B, anchor=[2.0, 3.5, 1.2], grid=grid, distances=distances, length=length, /return_indices)
+;   IDL> indices = pc_get_streamline (B, anchor=[2.0, 3.5, 1.2], grid=grid, distances=distances, length=length, /return_indices)
 ;   IDL> Temp_streamline = pc_extract_streamline (Temp, indices)
 ;
 ;   Load varfile and extract Temperature along several magnetic filedlines:
@@ -43,19 +42,16 @@
 ;   IDL> B = pc_get_quantity ('B', var, tags)
 ;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
 ;   IDL> seeds = pc_seed_points (grid)
-;   IDL> streamlines = pc_get_streamline (field=B, anchor=seeds, grid=grid)
+;   IDL> streamlines = pc_get_streamline (B, anchor=seeds, grid=grid)
 ;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temperature')
 ;
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices, cache=cache
-
-	common pc_get_streamline_common, data, nx, ny, nz, mx, my, mz, Box_xyz_lower, Box_xyz_upper
+function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices
 
 	default, dir, 0
 	default, precision, 0.1
-	default, cache, 0
 	default, nghost, 3
 	default, nbox, 3.0
 	default, max_packet_length, 1000000L
@@ -67,37 +63,19 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 	periodic = periodic eq 1
 
 	if (n_elements (anchor) eq 0) then message, "ERROR: no anchor point for streamline given."
-	if (n_elements (field) eq 0) then begin
-		if (n_elements (data) le 1) then message, "ERROR: no vector field given."
-	end else begin
-		; Size of new given data array
-		s = size (field)
-		nx = s[1]
-		ny = s[2]
-		nz = s[3]
-		mx = nx + 2*nghost
-		my = ny + 2*nghost
-		mz = nz + 2*nghost
 
-		; Box indices for lower and upper corner
-		Box_xyz_lower = [ 0, 0, 0 ]
-		Box_xyz_upper = [ nx, ny, nz ] + (periodic - 1)
+	; Size of new given data array
+	s = size (data)
+	nx = s[1]
+	ny = s[2]
+	nz = s[3]
+	mx = nx + 2*nghost
+	my = ny + 2*nghost
+	mz = nz + 2*nghost
 
-		if (not any (periodic)) then begin
-			data = field
-		end else begin
-			; Extend data with one ghost layer in each periodic direction
-			data = dblarr (nx+periodic[0], ny+periodic[1], nz+periodic[2], 3)
-			data[0:nx-1,0:ny-1,0:nz-1,*] = field
-			if (periodic[0]) then data[nx,0:ny-1,0:nz-1,*] = field[0,*,*,*]
-			if (periodic[1]) then data[0:nx-1,ny,0:nz-1,*] = field[*,0,*,*]
-			if (periodic[2]) then data[0:nx-1,0:ny-1,nz,*] = field[*,*,0,*]
-			if (periodic[0] and periodic[1]) then data[nx,ny,0:nz-1,*] = field[0,0,*,*]
-			if (periodic[1] and periodic[2]) then data[0:nx-1,ny,nz,*] = field[*,0,0,*]
-			if (periodic[0] and periodic[2]) then data[nx,0:ny-1,nz,*] = field[0,*,0,*]
-			if (all (periodic)) then data[nx,ny,nz,*] = field[0,0,0,*]
-		end
-	end
+	; Box indices for lower and upper corner
+	Box_xyz_lower = [ 0, 0, 0 ]
+	Box_xyz_upper = [ nx, ny, nz ] + (periodic - 1)
 
 	if (size (anchor, /n_dimensions) gt 1) then begin
 		; Iterate though list anchor points
@@ -114,7 +92,7 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 		origin = lonarr (num_lines)
 		length = dblarr (num_lines)
 		for pos = 0L, num_lines - 1L do begin
-			stream = pc_get_streamline (field=field, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, max_length=max_length, cache=(cache or (pos lt (num_lines - 1L))))
+			stream = pc_get_streamline (data, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, max_length=max_length)
 			num_points[pos] = stream.num_points
 			if ((packet_length + num_points[pos]) gt max_packet_length) then begin
 				if (packet_length gt 0L) then begin
@@ -167,8 +145,8 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 
 	if (dir eq 0) then begin
 		; Combine forward and backward streamlines from starting point
-		along = pc_get_streamline (field=field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num_points=num_points, origin=origin, max_length=max_length, /return_indices, /cache)
-		against = pc_get_streamline (anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num_points=n2, max_length=max_length, /return_indices, cache=cache)
+		along = pc_get_streamline (data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num_points=num_points, origin=origin, max_length=max_length, /return_indices)
+		against = pc_get_streamline (data, anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num_points=n2, max_length=max_length, /return_indices)
 		if (n2 le 1) then begin
 			if (keyword_set (return_indices)) then return, along
 			return, { indices:along, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
@@ -220,9 +198,9 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 	; Starting position
 	pos = anchor
 	if (keyword_set (grid)) then begin
-		if (nx+2*nghost ne n_elements (x)) then message, "ERROR: the field data doesn't fit to the X-grid coordinates."
-		if (ny+2*nghost ne n_elements (y)) then message, "ERROR: the field data doesn't fit to the Y-grid coordinates."
-		if (nz+2*nghost ne n_elements (z)) then message, "ERROR: the field data doesn't fit to the Z-grid coordinates."
+		if (nx+2*nghost ne n_elements (x)) then message, "ERROR: the data doesn't fit to the X-grid coordinates."
+		if (ny+2*nghost ne n_elements (y)) then message, "ERROR: the data doesn't fit to the Y-grid coordinates."
+		if (nz+2*nghost ne n_elements (z)) then message, "ERROR: the data doesn't fit to the Z-grid coordinates."
 		; Convert anchor point into equidistant unit grid coordinates
 		pos[0] = pc_find_index (anchor[0], x, num=mx) - nghost
 		pos[1] = pc_find_index (anchor[1], y, num=my) - nghost
@@ -238,15 +216,28 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 	distances = [ length ]
 	last = anchor
 	done = 0
+	local_data = data[0:1,0:1,0:1,*]
 	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and not done) do begin
 
 		; Interpolate data
 		int_pos = (floor (pos) < (Box_xyz_upper-1)) > Box_xyz_lower
 		residual = pos - int_pos
-		loc_data = data[int_pos[0]:int_pos[0]+1,int_pos[1]:int_pos[1]+1,int_pos[2]:int_pos[2]+1,*]
-		vector_x = interpolate (loc_data[*,*,*,0], residual[0], residual[1], residual[2])
-		vector_y = interpolate (loc_data[*,*,*,1], residual[0], residual[1], residual[2])
-		vector_z = interpolate (loc_data[*,*,*,2], residual[0], residual[1], residual[2])
+		lower = int_pos
+		upper = int_pos + 1
+		if (periodic[0] and (upper[0] ge nx)) then upper[0] = 0
+		if (periodic[1] and (upper[1] ge ny)) then upper[1] = 0
+		if (periodic[2] and (upper[2] ge nz)) then upper[2] = 0
+		local_data[0,0,0,*] = data[lower[0],lower[1],lower[2],*]
+		local_data[0,0,1,*] = data[lower[0],lower[1],upper[2],*]
+		local_data[0,1,0,*] = data[lower[0],upper[1],lower[2],*]
+		local_data[0,1,1,*] = data[lower[0],upper[1],upper[2],*]
+		local_data[1,0,0,*] = data[upper[0],lower[1],lower[2],*]
+		local_data[1,0,1,*] = data[upper[0],lower[1],upper[2],*]
+		local_data[1,1,0,*] = data[upper[0],upper[1],lower[2],*]
+		local_data[1,1,1,*] = data[upper[0],upper[1],upper[2],*]
+		vector_x = interpolate (local_data[*,*,*,0], residual[0], residual[1], residual[2])
+		vector_y = interpolate (local_data[*,*,*,1], residual[0], residual[1], residual[2])
+		vector_z = interpolate (local_data[*,*,*,2], residual[0], residual[1], residual[2])
 		vector_abs = sqrt (vector_x^2 + vector_y^2 + vector_z^2)
 
 		; Find projected step size
@@ -298,16 +289,6 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 		coords = [ [coords], [point] ]
 		num_points++
 		last = point
-	end
-
-	if (not keyword_set (cache)) then begin
-		data = 0
-		nx = 0
-		ny = 0
-		nz = 0
-		mx = 0
-		my = 0
-		mz = 0
 	end
 
 	if (keyword_set (return_indices)) then return, indices

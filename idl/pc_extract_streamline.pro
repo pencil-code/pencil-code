@@ -31,14 +31,12 @@
 ;   IDL> plot, distances, Temp_streamline, xtitle="coordinate along streamline", ytitle="temperature"
 ;   IDL> plot, distances, B_abs, xtitle="coordinate along streamline", ytitle="magnetic field", /ylog
 ;
-;   Load varfile and extract Temperature along several magnetic filedlines, using caching:
+;   Load varfile and extract Temperature along several magnetic filedlines, plot first one:
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, grid=grid
 ;   IDL> B = pc_get_quantity ('B', var, tags)
 ;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
-;   IDL> streamline_1 = pc_get_streamline (B, anchor=[2.0, 3.5, 1.2], grid=grid, /cache)
-;   IDL> streamline_2 = pc_get_streamline (anchor=[2.2, 3.3, 1.1], grid=grid, /cache)
-;   IDL> streamline_3 = pc_get_streamline (anchor=[2.1, 3.4, 1.0], grid=grid)
-;   IDL> streamlines = { num:3, set_1:streamline_1, set_2:streamline_2, set_3:streamline_3 }
+;   IDL> seeds = pc_seed_points (grid)
+;   IDL> streamlines = pc_get_streamline (B, anchor=seeds, grid=grid)
 ;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temp')
 ;   IDL> B_streamlines = pc_extract_streamline (B, streamlines, name='B')
 ;   IDL> Temp_streamline = pc_select_streamline (Temp_streamline, 1)
