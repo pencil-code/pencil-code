@@ -301,10 +301,13 @@ function pc_seed_points, grid, start=start
 	x_end = coord.x[xe] + rx * 0.5 * coord.dx[xe]
 	y_end = coord.y[ye] + ry * 0.5 * coord.dy[ye]
 	z_end = coord.z[ze] + rz * 0.5 * coord.dz[ze]
+	if (grid.lperi[0]) then x_start = x_start > coord.x[0] & x_end = x_end < coord.x[num_x-1]
+	if (grid.lperi[1]) then y_start = y_start > coord.y[0] & y_end = y_end < coord.y[num_y-1]
+	if (grid.lperi[2]) then z_start = z_start > coord.z[0] & z_end = z_end < coord.z[num_z-1]
 	dx = x_end - x_start
 	dy = y_end - y_start
 	dz = z_end - z_start
-	seeds = dblarr (nx * ny * nz, 3)
+	seeds = dblarr (3, nx * ny * nz)
 	seed = long (systime (/seconds))
 	pos = 0L
 	if ((dist_x eq 0) and (num_x ne nx)) then step_x = num_x / nx else step_x = 1L
@@ -313,18 +316,18 @@ function pc_seed_points, grid, start=start
 	for pos_z = 0L, nz - 1L do begin
 		for pos_y = 0L, ny - 1L do begin
 			for pos_x = 0L, nx - 1L do begin
-				if (rx ne 0) then px = randomu (seed, /double) else if (nx gt 1L) then px = pos_x / (nx - 1.0d0) else px = 0.5d0
-				if (ry ne 0) then py = randomu (seed, /double) else if (ny gt 1L) then py = pos_y / (ny - 1.0d0) else py = 0.5d0
-				if (rz ne 0) then pz = randomu (seed, /double) else if (nz gt 1L) then pz = pos_z / (nz - 1.0d0) else pz = 0.5d0
+				if (rx ne 0) then px = randomu (seed, /double) else if (nx le 1L) then px = pos_x / (nx - 1.0d0) else px = 0.5d0
+				if (ry ne 0) then py = randomu (seed, /double) else if (ny le 1L) then py = pos_y / (ny - 1.0d0) else py = 0.5d0
+				if (rz ne 0) then pz = randomu (seed, /double) else if (nz le 1L) then pz = pos_z / (nz - 1.0d0) else pz = 0.5d0
 				if (dist_x eq 0) then x = coord.x[xs + pos_x * step_x] else x = x_start + px * dx
 				if (dist_y eq 0) then y = coord.y[ys + pos_y * step_y] else y = y_start + py * dy
 				if (dist_z eq 0) then z = coord.z[zs + pos_z * step_z] else z = z_start + pz * dz
-				seeds[pos,*] = [ x, y, z ]
+				seeds[*,pos] = [ x, y, z ]
 				pos += 1L
 			end
 		end
 	end
 
-	return, seeds
+	return, reform (seeds)
 end
 

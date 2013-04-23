@@ -8,42 +8,58 @@
 ;
 ;  Parameters:
 ;   * field          Data cube of a vector field (4-dimensional: [nx,ny,nz,3]).
-;   * anchor         Anchor point in grid coordinates.
+;   * anchor         Anchor point in grid coordinates (2-dimensional: [3,num_lines]).
 ;   * grid           Grid structure (Default: equidistant grid spacing of unit length 1.0).
 ;   * direction      Direction (1: along, -1: against the field, Default: both).
 ;   * periodic       3D-array of periodicity flags (Default: no periodicity, if no grid is given).
 ;   * precision      Precision of streamline tracing between grid points, a value
 ;                    of 0.1 results in 10 interpolations per grid distance (Default: 0.1).
 ;   * max_length     Maximum length of a streamline.
-;   * length         Returns the full length of a traced streamline.
-;   * num            Returns the number of points of the traced streamline.
-;   * origin         Returns the array index of the origin of the traced streamline.
-;   * coords         Returns an array of grid coordinates of the traced streamline.
-;   * distances      Returns an array of the distances from the anchor point along the streamline.
+;   * length         Returns the full length of each traced streamline.
+;   * num_lines      Returns the number of traced streamlines.
+;   * num_points     Returns the number of points in each traced streamline.
+;   * origin         Returns the array index of the origin of each traced streamline.
+;   * coords         Returns an array of grid coordinates of each traced streamline.
+;   * distances      Returns an array of the distances from the anchor point along each streamline.
+;   * return_indices Return an array of indices of the streamline (Default: return streamlines structure).
 ;   * cache          Cache vector field data cube for later use.
 ;
 ;  Returns:
-;   * indices        Array of data indices of the traced streamline.
+;   * streamlines    Streamlines structure containing all relevant data (Default).
+;   * indices        Array of data indices of the traced streamline (if /return_indices is set).
 ;
-;  Example:
-;  ========
+;  Examples:
+;  =========
 ;
 ;   Load varfile and extract Temperature along a magnetic filedline:
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, grid=grid
 ;   IDL> B = pc_get_quantity ('B', var, tags)
 ;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
-;   IDL> indices = pc_get_streamline (B, anchor=[2.0, 3.5, 1.2], grid=grid, distances=distances, length=length)
+;   IDL> indices = pc_get_streamline (field=B, anchor=[2.0, 3.5, 1.2], grid=grid, distances=distances, length=length, /return_indices)
+;   IDL> Temp_streamline = pc_extract_streamline (Temp, indices)
+;
+;   Load varfile and extract Temperature along several magnetic filedlines:
+;   IDL> pc_read_var_raw, obj=var, tags=tags, grid=grid
+;   IDL> B = pc_get_quantity ('B', var, tags)
+;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
+;   IDL> seeds = pc_seed_points (grid)
+;   IDL> streamlines = pc_get_streamline (field=B, anchor=seeds, grid=grid)
+;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temperature')
 ;
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, num=num, origin=origin, max_length=max_length, cache=cache
+function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices, cache=cache
 
 	common pc_get_streamline_common, data, nx, ny, nz, mx, my, mz, Box_xyz_lower, Box_xyz_upper
 
+	default, dir, 0
 	default, precision, 0.1
+	default, return_indices, 0
+	default, cache, 0
 	default, nghost, 3
 	default, nbox, 3.0
+	default, max_packet_length, 1000000L
 
 	; Periodicity
 	if (keyword_set (grid)) then periodic = grid.lperi
@@ -84,14 +100,79 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 		end
 	end
 
-	default, dir, 0
+	if (size (anchor, /n_dimensions) gt 1) then begin
+		; Iterate though list anchor points
+		num_lines = long (n_elements (anchor[0,*]))
+		line_pos = 0L
+		first = lonarr (num_lines)
+		last = lonarr (num_lines)
+		num_points = lonarr (num_lines)
+		packet = 0L
+		packet_length = 0L
+		indices_packet = dblarr (3, max_packet_length)
+		coords_packet = dblarr (3, max_packet_length)
+		distances_packet = dblarr (max_packet_length)
+		origin = lonarr (num_lines)
+		length = dblarr (num_lines)
+		for pos = 0L, num_lines - 1L do begin
+			stream = pc_get_streamline (field=field, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, max_length=max_length, cache=(cache or (pos lt (num_lines - 1L))))
+			num_points[pos] = stream.num_points
+			if ((packet_length + num_points[pos]) gt max_packet_length) then begin
+				if (packet_length gt 0L) then begin
+					if (packet eq 0L) then begin
+						indices_stack = indices_packet[*,0L:packet_length-1L]
+						coords_stack = coords_packet[*,0L:packet_length-1L]
+						distances_stack = distances_packet[0L:packet_length-1L]
+					end else begin
+						indices_stack = [ [indices_stack], [indices_packet[*,0L:packet_length-1L]] ]
+						coords_stack = [ [coords_stack], [coords_packet[*,0L:packet_length-1L]] ]
+						distances_stack = [ distances_stack, distances_packet[0L:packet_length-1L] ]
+					end
+					packet++
+					print, "Packet: ", packet, pos
+				end
+				if (num_points[pos] gt max_packet_length) then begin
+					max_packet_length = num_points[pos] * 10L
+					indices_packet = dblarr (max_packet_length, 3)
+					coords_packet = dblarr (max_packet_length, 3)
+					distances_packet = dblarr (max_packet_length)
+				end
+				packet_length = 0L
+			end
+			indices_packet[*,packet_length:packet_length+num_points[pos]-1L] = stream.indices
+			coords_packet[*,packet_length:packet_length+num_points[pos]-1L] = stream.coords
+			distances_packet[packet_length:packet_length+num_points[pos]-1L] = stream.distances
+			origin[pos] = stream.origin
+			length[pos] = stream.length
+			first[pos] = line_pos
+			line_pos += num_points[pos]
+			last[pos] = line_pos - 1L
+			packet_length += num_points[pos]
+		end
+		if (packet_length gt 0L) then begin
+			if (packet eq 0L) then begin
+				indices_stack = indices_packet[*,0L:packet_length-1L]
+				coords_stack = coords_packet[*,0L:packet_length-1L]
+				distances_stack = distances_packet[0L:packet_length-1L]
+			end else begin
+				indices_stack = [ [indices_stack], [indices_packet[*,0L:packet_length-1L]] ]
+				coords_stack = [ [coords_stack], [coords_packet[*,0L:packet_length-1L]] ]
+				distances_stack = [ distances_stack, distances_packet[0L:packet_length-1L] ]
+			end
+			packet++
+			print, "Packet: ", packet, pos
+		end
+		if (keyword_set (return_indices)) then return, indices_stack
+		return, { indices:indices_stack, coords:coords_stack, distances:distances_stack, num_points:num_points, length:length, origin:origin, num_lines:num_lines, first:first, last:last }
+	end
+
 	if (dir eq 0) then begin
 		; Combine forward and backward streamlines from starting point
-		along = pc_get_streamline (field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num=num, origin=origin, max_length=max_length, /cache)
-		against = pc_get_streamline (anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num=n2, max_length=max_length, cache=cache)
+		along = pc_get_streamline (field=field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num_points=num_points, origin=origin, max_length=max_length, /return_indices, /cache)
+		against = pc_get_streamline (anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num_points=n2, max_length=max_length, /return_indices, cache=cache)
 		if (n2 le 1) then return, along
 		length += l2
-		num += n2 - 1
+		num_points += n2 - 1
 		origin = n2 - 1
 		distances = [ -reverse (d2[1:*]), distances ]
 		against = against[*,1:*]
@@ -99,7 +180,10 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 		if (size (against, /n_dim) eq 2) then against = reverse (against, 2)
 		if (size (against_coords, /n_dim) eq 2) then against_coords = reverse (against_coords, 2)
 		coords = [ [against_coords], [coords] ]
-		return, [ [against], [along] ]
+		indices = [ [against], [along] ]
+		if (keyword_set (return_indices)) then return, indices
+		streamlines = { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
+		return, streamlines
 	end
 	if (dir lt 0) then dir = -1 else dir = 1
 
@@ -146,7 +230,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 
 	; Iterate finding points on the streamline
 	origin = 0
-	num = 1L
+	num_points = 1L
 	length = 0.0d0
 	indices = [ [pos] ]
 	coords = [ [anchor] ]
@@ -211,7 +295,7 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 			point[2] = interpolate (z, pos[2] + nghost)
 		end
 		coords = [ [coords], [point] ]
-		num++
+		num_points++
 		last = point
 	end
 
@@ -225,7 +309,9 @@ function pc_get_streamline, field, anchor=anchor, grid=grid, distances=distances
 		mz = 0
 	end
 
-	return, indices
+	if (keyword_set (return_indices)) then return, indices
+	streamlines = { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
+	return, streamlines
 
 end
 
