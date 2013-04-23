@@ -1132,6 +1132,9 @@ module Magnetic_meanfield
       case ('(0,Sx,0)')
         if (headtt) print*,'Omega_effect: uniform shear in x, S=',Omega_ampl
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iay)
+      case ('(0,0,Sx)')
+        if (headtt) print*,'Omega_effect: uniform shear in x, S=',Omega_ampl
+        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iaz)
       case ('(Sz,0,0)')
         if (headtt) print*,'Omega_effect: uniform shear in z, S=',Omega_ampl
         df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iax)
