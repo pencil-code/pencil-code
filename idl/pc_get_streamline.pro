@@ -55,7 +55,6 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 
 	default, dir, 0
 	default, precision, 0.1
-	default, return_indices, 0
 	default, cache, 0
 	default, nghost, 3
 	default, nbox, 3.0
@@ -170,7 +169,10 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 		; Combine forward and backward streamlines from starting point
 		along = pc_get_streamline (field=field, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num_points=num_points, origin=origin, max_length=max_length, /return_indices, /cache)
 		against = pc_get_streamline (anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num_points=n2, max_length=max_length, /return_indices, cache=cache)
-		if (n2 le 1) then return, along
+		if (n2 le 1) then begin
+			if (keyword_set (return_indices)) then return, along
+			return, { indices:along, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
+		end
 		length += l2
 		num_points += n2 - 1
 		origin = n2 - 1
@@ -182,8 +184,7 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 		coords = [ [against_coords], [coords] ]
 		indices = [ [against], [along] ]
 		if (keyword_set (return_indices)) then return, indices
-		streamlines = { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
-		return, streamlines
+		return, { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
 	end
 	if (dir lt 0) then dir = -1 else dir = 1
 
@@ -310,8 +311,7 @@ function pc_get_streamline, field=field, anchor=anchor, grid=grid, distances=dis
 	end
 
 	if (keyword_set (return_indices)) then return, indices
-	streamlines = { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
-	return, streamlines
+	return, { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
 
 end
 
