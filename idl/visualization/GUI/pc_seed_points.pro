@@ -295,9 +295,9 @@ function pc_seed_points, grid, start=start
 	seeds = dblarr (3, nx * ny * nz)
 	seed = long (systime (/seconds))
 	pos = 0L
-	if ((dist_x eq 0) and (num_x ne nx)) then step_x = num_x / nx else step_x = 1L
-	if ((dist_y eq 0) and (num_y ne ny)) then step_y = num_y / ny else step_y = 1L
-	if ((dist_z eq 0) and (num_z ne nz)) then step_z = num_z / nz else step_z = 1L
+	if ((dist_x eq 0) and (num_x ne nx)) then step_x = (xe - xs + 1L) / nx else step_x = 1L
+	if ((dist_y eq 0) and (num_y ne ny)) then step_y = (ye - ys + 1L) / ny else step_y = 1L
+	if ((dist_z eq 0) and (num_z ne nz)) then step_z = (ze - zs + 1L) / nz else step_z = 1L
 	for pos_z = 0L, nz - 1L do begin
 		for pos_y = 0L, ny - 1L do begin
 			for pos_x = 0L, nx - 1L do begin
