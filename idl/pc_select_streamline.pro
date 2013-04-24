@@ -7,8 +7,9 @@
 ;   Select a streamline by number from a given streamlines structure.
 ;
 ;  Parameters:
-;   * streamlines    Streamlines structure.
-;   * num            Number of streamline to return.
+;   * data           Streamlines structure or quantity data array.
+;   * num            Number of streamline to select and return.
+;   * streamlines    Streamlines structure, only needed if "data" is a quantity data array.
 ;
 ;  Returns:
 ;   * streamline     Returns the num-th streamline of the given streamlines structure.
@@ -35,35 +36,34 @@ function pc_select_streamline, data, num, streamlines=streamlines
 	num_sets = data.num
 	if (num_sets lt 1L) then message, "ERROR: The given streamlines structure doesn't contain any streamlines."
 
-	is_quantity = 0
-	if (size (data.(1), /type) ne 8) then begin
-		if (not keyword_set (streamlines)) then message, "ERROR: For selection of a quantity data streamline, the corresponding streamlines structure must begiven as parameter."
-		; This is a quantity structure, extract the needed data values
-		is_quantity = 1
-		num_components = size (actual_set, /n_dim)
-	end
-
 	; Iterate though sets of streamlines
 	passed_num = 0L
 	for set = 1L, num_sets do begin
-		if (keyword_set (streamlines)) then actual_set = streamlines.(set) else actual_set = data.(set)
-		num_lines = actual_set.num_lines
+		if (keyword_set (streamlines)) then num_lines = streamlines.(set).num_lines else num_lines = data.(set).num_lines
 		if (num le (passed_num + num_lines)) then begin
-			if (num_lines eq 1) then begin
-				; Streamline is within actual set
-				if (is_quantity) then return, data.(set) else return, actual_set
-			end
+			; Streamline lies within actual set
+			if (num_lines eq 1) then return, data.(set)
 			; Need to extract data from a set of multiple streamlines
 			pos = num - passed_num - 1L
-			if (is_quantity) then begin
-				if (num_components eq 1) then return, (data.(pos+1L))[first[pos]:last[pos]] else return, (data.(pos+1L))[*,first[pos]:last[pos]]
+			if (keyword_set (streamlines)) then begin
+				first = streamlines.(set).first
+				last = streamlines.(set).last
+				; Return selected part of the quantity streamline
+				if (size (data.(1), /n_dimensions) eq 1) then begin
+					return, (data.(pos+1L))[first[pos]:last[pos]]
+				end else begin
+					return, (data.(pos+1L))[*,first[pos]:last[pos]]
+				end
 			end
-			indices = actual_set.indices[*,actual_set.first[pos]:actual_set.last[pos]]
-			coords = actual_set.coords[*,actual_set.first[pos]:actual_set.last[pos]]
-			distances = actual_set.distances[actual_set.first[pos]:actual_set.last[pos]]
-			num_points = actual_set.num_points[pos]
-			length = actual_set.length[pos]
-			origin = actual_set.origin[pos]
+			; Return selected part of the streamline
+			first = data.(set).first
+			last = data.(set).last
+			indices = data.(set).indices[*,first[pos]:last[pos]]
+			coords = data.(set).coords[*,first[pos]:last[pos]]
+			distances = data.(set).distances[first[pos]:last[pos]]
+			num_points = data.(set).num_points[pos]
+			length = data.(set).length[pos]
+			origin = data.(set).origin[pos]
 			return, { indices:indices, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
 		end
 		passed_num += num_lines
