@@ -39,44 +39,35 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   nz = mz - 2*nghost
 ;
   if (lequidist[1]) then begin
-    dy2=1./(180.*(y[4]-y[3])^2)
+    dy2=replicate(1./(180.*(y[4]-y[3])^2),ny)
   endif else begin
     dy2=dy_1[m1:m2]^2/180.
-;
-;  Nonuniform mesh correction.
-;  d2f/dy2  = f"*psi'^2 + psi"f', see also the manual.
-;
-    d1=yder(f)
   endelse
 ;
   if (s[0] eq 2) then begin
     if (not ldegenerated[1]) then begin
-      if (not lequidist[1]) then begin
-        dy2 =    spread(dy2,     0,nx)
-        dd  = d1*spread(dy_tilde,0,mx)
-        ; will also work on slices like yder2(ss[10,*,*])
-      endif
-      d[l1:l2,m1:m2]=dy2* $
-          (-490.*f[l1:l2,m1:m2] $
-           +270.*(f[l1:l2,m1-1:m2-1]+f[l1:l2,m1+1:m2+1]) $
-            -27.*(f[l1:l2,m1-2:m2-2]+f[l1:l2,m1+2:m2+2]) $
-             +2.*(f[l1:l2,m1-3:m2-3]+f[l1:l2,m1+3:m2+3]) )
+      for l=l1,l2 do begin 
+        d[l,m1:m2]=dy2* $
+            (-490.*f[l,m1:m2] $
+             +270.*(f[l,m1-1:m2-1]+f[l,m1+1:m2+1]) $
+              -27.*(f[l,m1-2:m2-2]+f[l,m1+2:m2+2]) $
+               +2.*(f[l,m1-3:m2-3]+f[l,m1+3:m2+3]) )
+      endfor  
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
 ;
   endif else if (s[0] eq 3) then begin
     if (not ldegenerated[1]) then begin
-      if (not lequidist[1]) then begin
-        dy2 =    spread(dy2,     [0,2],[nx,nz])
-        dd  = d1*spread(dy_tilde,[0,2],[mx,mz])
-        ; will also work on slices like yder2(ss[10,*,*])
-      endif
-      d[l1:l2,m1:m2,n1:n2]=dy2* $
-          (-490.*f[l1:l2,m1:m2,n1:n2] $
-           +270.*(f[l1:l2,m1-1:m2-1,n1:n2]+f[l1:l2,m1+1:m2+1,n1:n2]) $
-            -27.*(f[l1:l2,m1-2:m2-2,n1:n2]+f[l1:l2,m1+2:m2+2,n1:n2]) $
-             +2.*(f[l1:l2,m1-3:m2-3,n1:n2]+f[l1:l2,m1+3:m2+3,n1:n2]) )
+      for l=l1,l2 do begin
+        for n=n1,n2 do begin
+          d[l,m1:m2,n]=dy2* $
+              (-490.*f[l,m1:m2,n] $
+               +270.*(f[l,m1-1:m2-1,n]+f[l,m1+1:m2+1,n]) $
+                -27.*(f[l,m1-2:m2-2,n]+f[l,m1+2:m2+2,n]) $
+                 +2.*(f[l,m1-3:m2-3,n]+f[l,m1+3:m2+3,n]) )
+        endfor
+      endfor
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
@@ -84,16 +75,17 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (not ldegenerated[1]) then begin
-      if (not lequidist[1]) then begin
-        dy2 =    spread(dy2,     [0,2,3],[nx,nz,s[4]])
-        dd  = d1*spread(dy_tilde,[0,2,3],[mx,mz,s[4]])
-        ; will also work on slices like yder2(uu[10,*,*,*])
-      endif
-      d[l1:l2,m1:m2,n1:n2,*]=dy2* $
-          (-490.*f[l1:l2,m1:m2,n1:n2,*] $
-           +270.*(f[l1:l2,m1-1:m2-1,n1:n2,*]+f[l1:l2,m1+1:m2+1,n1:n2,*]) $
-            -27.*(f[l1:l2,m1-2:m2-2,n1:n2,*]+f[l1:l2,m1+2:m2+2,n1:n2,*]) $
-             +2.*(f[l1:l2,m1-3:m2-3,n1:n2,*]+f[l1:l2,m1+3:m2+3,n1:n2,*]) )
+      for l=l1,l2 do begin
+        for n=n1,n2 do begin
+          for p=0,s[4]-1 do begin
+            d[l,m1:m2,n,p]=dy2* $
+                (-490.*f[l,m1:m2,n,p] $
+                 +270.*(f[l,m1-1:m2-1,n,p]+f[l,m1+1:m2+1,n,p]) $
+                  -27.*(f[l,m1-2:m2-2,n,p]+f[l,m1+2:m2+2,n,p]) $
+                   +2.*(f[l,m1-3:m2-3,n,p]+f[l,m1+3:m2+3,n,p]) )
+          endfor  
+        endfor  
+      endfor  
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
@@ -104,8 +96,10 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endelse
 ;
 ;  Apply correction only for nonuniform mesh.
+;  d2f/dy2  = f"*psi'^2 + psi"f', see also the manual.
 ;
-  if (not lequidist[1]) then d=d+dd
+  if (not lequidist[1]) then $
+     d=nonuniform_mesh_correction_y(d,f)
 ;
 ;  Set ghost zones.
 ;

@@ -1,12 +1,11 @@
 ;;
-;;  $Id$
+;;  $Id: yder_6th_ghost.pro 18721 2012-05-08 23:38:47Z Bourdin.KIS $
 ;;
-;;  First derivative d/dy
-;;  - 6th-order
-;;  - with ghost cells
-;;  - on potentially non-equidistant grid
+;;  Correction for nonequidistant grid for the y direction.
+;;  d2f/dy2  = f"*psi'^2 + psi"f', see also the manual.
+;;  - Adapted from yder_6th_ghost
 ;;
-function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
+function nonuniform_mesh_correction_y,d,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
@@ -23,7 +22,7 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Calculate mx, my, and mz, based on the input array size.
 ;
-  s=size(f) & d=make_array(size=s)
+  s=size(f) 
   mx=s[1] & my=s[2] & mz=s[3]
 ;
 ;  Check for degenerate case (no y-derivative)
@@ -50,7 +49,7 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
       ; will also work on slices like yder(ss[10,*,n1:n2])
       for l=l1,l2 do begin
         for n=n1,n2 do begin
-          d[l,m1:m2,n]=dy2* $
+          d[l,m1:m2,n]=d[l,m1:m2,n] + dy2*dy_tilde* $
               ( +45.*(f[l,m1+1:m2+1,n]-f[l,m1-1:m2-1,n]) $
                  -9.*(f[l,m1+2:m2+2,n]-f[l,m1-2:m2-2,n]) $
                     +(f[l,m1+3:m2+3,n]-f[l,m1-3:m2-3,n]) )
@@ -72,7 +71,7 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
       for l=l1,l2 do begin
         for n=n1,n2 do begin
           for p=0,s[4]-1 do begin   
-            d[l,m1:m2,n,p]=dy2* $
+            d[l,m1:m2,n,p]=d[l,m1:m2,n,p] + dy2*dy_tilde* $
                 ( +45.*(f[l,m1+1:m2+1,n,p]-f[l,m1-1:m2-1,n,p]) $
                    -9.*(f[l,m1+2:m2+2,n,p]-f[l,m1-2:m2-2,n,p]) $
                       +(f[l,m1+3:m2+3,n,p]-f[l,m1-3:m2-3,n,p]) )

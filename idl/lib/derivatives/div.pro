@@ -16,22 +16,28 @@ function div,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   tmp=size(f)
   mx=tmp[1] & my=tmp[2] & mz=tmp[3]
 ;
+  corr=fltarr(mx,my,mz)
+;
   if (coord_system eq 'cartesian') then corr = 0.
 ;
   if (coord_system eq 'cylindric') then begin
-    xx=spread(x,[1,2],[my,mz])
-    corr = f[*,*,*,0]/xx
+    for m=m1,m2 do begin
+      for n=n1,n2 do begin   
+        corr[l1:l2,m,n] = f[l1:l2,m,n,0]/x[l1:l2]
+      endfor
+    endfor  
   endif
 ;
   if (coord_system eq 'spherical') then begin
-    xx=spread(x,[1,2],[my,mz])
-    yy=spread(y,[0,2],[mx,mz])
-
-    cotth=cos(yy)/sin(yy)      
-    threshold = 100.*num_model(yy, /EPSILON) ; sinth_min=1e-5/2e-14
-    i_sin=where(abs(sin(yy)) lt threshold)
+    cotth=cos(y)/sin(y)      
+    threshold = 100.*num_model(y, /EPSILON) ; sinth_min=1e-5/2e-14
+    i_sin=where(abs(sin(y)) lt threshold)
     if (i_sin[0] ne -1) then cotth[i_sin]=0.
-    corr = (2.*f[*,*,*,0]+cotth*f[*,*,*,1])/xx
+    for m=m1,m2 do begin
+      for n=n1,n2 do begin   
+        corr[l1:l2,m,n] = (2.*f[l1:l2,m,n,0]+cotth*f[l1:l2,m,n,1])/x[l1:l2]
+      endfor
+    endfor 
   endif
 ;
   w=xder(f[*,*,*,0]) + yder(f[*,*,*,1]) + zder(f[*,*,*,2]) + corr

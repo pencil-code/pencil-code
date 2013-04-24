@@ -1,12 +1,11 @@
 ;;
-;;  $Id$
+;;  $Id: xder_6th_ghost.pro 18721 2012-05-08 23:38:47Z Bourdin.KIS $
 ;;
-;;  First derivative d/dx
-;;  - 6th-order
-;;  - with ghost cells
-;;  - on potentially non-equidistant grid
+;;  Correction for nonequidistant grid for the x direction.
+;;  d2f/dx2  = f"*xi'^2 + xi"f', see also the manual.
+;;  - Adapted from xder_6th_ghost
 ;;
-function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
+function nonuniform_mesh_correction_x,d,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
@@ -22,7 +21,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Calculate mx, my, and mz, based on the input array size.
 ;
-  s=size(f) & d=make_array(size=s)
+  s=size(f) 
   mx=s[1] & my=s[2] & mz=s[3]
 ;
 ;  Check for degenerate case (no x-derivative)
@@ -48,7 +47,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
     if (not ldegenerated[0]) then begin
       for m=m1,m2 do begin
-        d[l1:l2,m]=dx2* $
+        d[l1:l2,m]=d[l1:l2,m] + dx2*dx_tilde* $
             ( +45.*(f[l1+1:l2+1,m]-f[l1-1:l2-1,m]) $
                -9.*(f[l1+2:l2+2,m]-f[l1-2:l2-2,m]) $
                   +(f[l1+3:l2+3,m]-f[l1-3:l2-3,m]) )
@@ -59,7 +58,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     if (not ldegenerated[0]) then begin
       for m=m1,m2 do begin
         for n=n1,n2 do begin
-          d[l1:l2,m,n]=dx2* $
+          d[l1:l2,m,n]=d[l1:l2,m,n] + dx2*dx_tilde* $
               ( +45.*(f[l1+1:l2+1,m,n]-f[l1-1:l2-1,m,n]) $
                  -9.*(f[l1+2:l2+2,m,n]-f[l1-2:l2-2,m,n]) $
                     +(f[l1+3:l2+3,m,n]-f[l1-3:l2-3,m,n]) )
@@ -75,7 +74,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
       for m=m1,m2 do begin
         for n=n1,n2 do begin
           for p=0,s[4]-1 do begin
-            d[l1:l2,m,n,p]=dx2* $
+            d[l1:l2,m,n,p]=d[l1:l2,m,n,p] + dx2*dx_tilde* $
                 ( +45.*(f[l1+1:l2+1,m,n,p]-f[l1-1:l2-1,m,n,p]) $
                    -9.*(f[l1+2:l2+2,m,n,p]-f[l1-2:l2-2,m,n,p]) $
                       +(f[l1+3:l2+3,m,n,p]-f[l1-3:l2-3,m,n,p]) )
@@ -87,7 +86,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     endelse
 ;
   endif else begin
-    print, 'error: xder_6th_ghost not implemented for ', $
+    print, 'error: nonuniform_mesh_correction_x not implemented for ', $
         strtrim(s[0],2), '-D arrays'
   endelse
 ;

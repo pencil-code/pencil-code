@@ -1,12 +1,11 @@
 ;;
-;;  $Id$
+;;  $Id: zder_6th_ghost.pro 18721 2012-05-08 23:38:47Z Bourdin.KIS $
 ;;
-;;  First derivative d/dz
-;;  - 6th-order (7-point stencil)
-;;  - with ghost cells
-;;  - on potentially non-equidistant grid
+;;  Correction for nonequidistant grid for the z direction. 
+;;  d2f/dz2 = zeta'^2*f" + zeta"*f', see also the manual.
+;;  - Adapted from zder_6th_ghost
 ;;
-function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
+function nonuniform_mesh_correction_z,d,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z
@@ -23,7 +22,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
 ;  Calculate mx, my, and mz, based on the input array size.
 ;
-  s=size(f) & d=make_array(size=s)
+  s=size(f) 
   mx=s[1] & my=s[2] & mz=s[3]
 ;
 ;  Check for degenerate case (no z-derivative)
@@ -52,7 +51,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (s[0] eq 2) then begin
     if (n2 gt n1) then begin
       for l=l1,l2 do begin 
-        d[l,n1:n2]=dz2* $
+        d[l,n1:n2]=d[l,n1:n2] + dz2*dz_tilde* $
             ( +45.*(f[l,n1+1:n2+1]-f[l,n1-1:n2-1]) $
                -9.*(f[l,n1+2:n2+2]-f[l,n1-2:n2-2]) $
                   +(f[l,n1+3:n2+3]-f[l,n1-3:n2-3]) )
@@ -69,7 +68,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
       ; will also work on slices like zder(ss[10,20,*])
       for l=l1,l2 do begin 
         for m=m1,m2 do begin 
-          d[l,m,n1:n2]=dz2* $
+          d[l,m,n1:n2]=d[l,m,n1:n2] + dz2*dz_tilde* $
               ( +45.*(f[l,m,n1+1:n2+1]-f[l,m,n1-1:n2-1]) $
                  -9.*(f[l,m,n1+2:n2+2]-f[l,m,n1-2:n2-2]) $
                     +(f[l,m,n1+3:n2+3]-f[l,m,n1-3:n2-3]) )
@@ -93,7 +92,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
       for l=l1,l2 do begin 
         for m=m1,m2 do begin 
           for p=0,s[4]-1 do begin 
-             d[l,m,n1:n2,p]=dz2* $
+             d[l,m,n1:n2,p]=d[l,m,n1:n2,p] + dz2*dz_tilde* $
                  ( +45.*(f[l,m,n1+1:n2+1,p]-f[l,m,n1-1:n2-1,p]) $
                     -9.*(f[l,m,n1+2:n2+2,p]-f[l,m,n1-2:n2-2,p]) $
                        +(f[l,m,n1+3:n2+3,p]-f[l,m,n1-3:n2-3,p]) )
@@ -112,7 +111,7 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
     endelse
 ;
   endif else begin
-    print, 'error: zder_6th_ghost not implemented for ', $
+    print, 'error: nonuniform_mesh_correction_z not implemented for ', $
            strtrim(s[0],2), '-D arrays'
   endelse
 ;
