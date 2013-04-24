@@ -63,7 +63,7 @@ pro cslice_event, event
 	streamline_step = 4L
 
 	quit = -1
-	DRAW_IMAGE_1=0  &  DRAW_IMAGE_2=0  &  DRAW_IMAGE_3=0
+	DRAW_IMAGE_X=0  &  DRAW_IMAGE_Y=0  &  DRAW_IMAGE_Z=0
 
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
 
@@ -71,12 +71,12 @@ pro cslice_event, event
 	SWITCH eventval of
 	'LOG_PLOT': begin
 		log_plot = event.select
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'ABS_SCALE': begin
 		abs_scale = event.select
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'SUB_AVER': begin
@@ -84,18 +84,18 @@ pro cslice_event, event
 		pos_t[selected_cube,sub_aver] = val_max
 		sub_aver = event.select
 		cslice_prepare_cube, -1
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'SHOW_CROSS': begin
 		show_cross = event.select
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'DESTRETCH': begin
 		destretch[where (coord.lequidist eq 0)] = event.select
 		cslice_prepare_overplot
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'SHOW_AVER': begin
@@ -125,7 +125,7 @@ pro cslice_event, event
 			WIDGET_CONTROL, snap, SET_DROPLIST_SELECT = selected_snapshot
 			WIDGET_CONTROL, prev, SENSITIVE = (selected_snapshot lt num_snapshots - 1)
 			WIDGET_CONTROL, next, SENSITIVE = (selected_snapshot gt 0)
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
@@ -135,7 +135,7 @@ pro cslice_event, event
 		if (event.update) then WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		WIDGET_CONTROL, sl_x, SET_VALUE = px + coord.x_off
 		stream_pos = -1L
-		DRAW_IMAGE_1 = 1
+		DRAW_IMAGE_X = 1
 		break
 	end
 	'COY': begin
@@ -144,7 +144,7 @@ pro cslice_event, event
 		if (event.update) then WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, sl_y, SET_VALUE = py + coord.y_off
 		stream_pos = -1L
-		DRAW_IMAGE_2 = 1
+		DRAW_IMAGE_Y = 1
 		break
 	end
 	'COZ': begin
@@ -153,7 +153,7 @@ pro cslice_event, event
 		if (event.update) then WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 		stream_pos = -1L
-		DRAW_IMAGE_3 = 1
+		DRAW_IMAGE_Z = 1
 		break
 	end
 	'SLX': begin
@@ -161,7 +161,7 @@ pro cslice_event, event
 		px = pos - coord.x_off
 		WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 		stream_pos = -1L
-		DRAW_IMAGE_1 = 1
+		DRAW_IMAGE_X = 1
 		break
 	end
 	'SLY': begin
@@ -169,7 +169,7 @@ pro cslice_event, event
 		py = pos - coord.y_off
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		stream_pos = -1L
-		DRAW_IMAGE_2 = 1
+		DRAW_IMAGE_Y = 1
 		break
 	end
 	'SLZ': begin
@@ -177,7 +177,7 @@ pro cslice_event, event
 		pz = pos - coord.z_off
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		stream_pos = -1L
-		DRAW_IMAGE_3 = 1
+		DRAW_IMAGE_Z = 1
 		break
 	end
 	'DRAW_YZ': begin
@@ -195,7 +195,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				stream_pos = -1L
-				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+				DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 			end
 		end
 		if (event.release) then button_pressed_yz = 0
@@ -216,7 +216,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 				WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 				stream_pos = -1L
-				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+				DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 			end
 		end
 		if (event.release) then button_pressed_xz = 0
@@ -237,7 +237,7 @@ pro cslice_event, event
 				WIDGET_CONTROL, co_x, SET_VALUE = coord.x[px]
 				WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 				stream_pos = -1L
-				DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+				DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 			end
 		end
 		if (event.release) then button_pressed_xy = 0
@@ -250,7 +250,7 @@ pro cslice_event, event
 			WIDGET_CONTROL, sl_min, SET_VALUE = val_min
 		end
 		pos_b[selected_cube,sub_aver] = val_min
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'SCALE_TOP': begin
@@ -260,14 +260,14 @@ pro cslice_event, event
 			WIDGET_CONTROL, sl_max, SET_VALUE = val_max
 		end
 		pos_t[selected_cube,sub_aver] = val_max
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'SCALE_OVER': begin
 		WIDGET_CONTROL, sl_over, GET_VALUE = tmp_over
 		if (tmp_over gt 1.0) then tmp_over = 1.0 + 1.0 / ((2.0 - tmp_over) > 1.e-8)
 		pos_over[selected_overplot] = tmp_over > 1.e-21
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'MIN_MAX': begin
@@ -276,7 +276,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, sl_max, SET_VALUE = val_max
 		pos_b[selected_cube,sub_aver] = val_min
 		pos_t[selected_cube,sub_aver] = val_max
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'JUMP_MIN': begin
@@ -293,7 +293,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		stream_pos = -1L
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'JUMP_MAX': begin
@@ -310,7 +310,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, co_y, SET_VALUE = coord.y[py]
 		WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 		stream_pos = -1L
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'FREEZE': begin
@@ -330,13 +330,13 @@ pro cslice_event, event
 		WIDGET_CONTROL, freeze, set_value='FREEZE RANGE', set_uvalue='FREEZE'
 		frozen = 0
 		cslice_prepare_cube, -1
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'VAR': begin
 		if (selected_cube ne event.index) then begin
 			cslice_prepare_cube, event.index
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
@@ -345,7 +345,7 @@ pro cslice_event, event
 			cslice_prepare_set, event.index
 			cslice_prepare_cube, -1
 			cslice_prepare_overplot
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 			WIDGET_CONTROL, prev, SENSITIVE = (selected_snapshot lt num_snapshots - 1)
 			WIDGET_CONTROL, next, SENSITIVE = (selected_snapshot gt 0)
 
@@ -359,7 +359,7 @@ pro cslice_event, event
 		if (selected_color ne event.index) then begin
 			selected_color = event.index
 			cslice_load_ct, selected_color
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
@@ -374,7 +374,7 @@ pro cslice_event, event
 		cslice_prepare_set, selected_snapshot
 		cslice_prepare_cube, -1
 		cslice_prepare_overplot
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'PREV': begin
@@ -388,14 +388,14 @@ pro cslice_event, event
 		cslice_prepare_set, selected_snapshot
 		cslice_prepare_cube, -1
 		cslice_prepare_overplot
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'OVER': begin
 		if (selected_overplot ne event.index) then begin
 			selected_overplot = event.index
 			cslice_prepare_overplot, /reset
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
@@ -406,7 +406,7 @@ pro cslice_event, event
 		WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
 		WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
 		WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'EXTRACT': begin
@@ -428,7 +428,7 @@ pro cslice_event, event
 			WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
 			WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
 			stream_pos = -1L
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
@@ -443,7 +443,7 @@ pro cslice_event, event
 			num_lines = 0L
 			selected_streamline = 0L
 			stream_pos = -1L
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
@@ -482,13 +482,13 @@ pro cslice_event, event
 			WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
 			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
 			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
-			DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
 	'RESET': begin
 		cslice_reset_GUI
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'LOAD': begin
@@ -519,7 +519,7 @@ pro cslice_event, event
 		if (py gt (num_y - 1)) then py = num_y - 1
 		if (pz gt (num_z - 1)) then pz = num_z - 1
 		cslice_update_GUI
-		DRAW_IMAGE_1=1  &  DRAW_IMAGE_2=1  &  DRAW_IMAGE_3=1
+		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
 	'SAVE': begin
@@ -620,7 +620,7 @@ pro cslice_event, event
 	end
 	endswitch
 
-	cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
+	cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 
@@ -687,7 +687,7 @@ end
 
 
 ; Draws the slices into the window
-pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
+pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
@@ -711,7 +711,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 
 	!P.MULTI = [0, 1, 1]
 
-	if (not any ([DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3])) then return
+	if (not any ([DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z])) then return
 
 	ox = floor (bin_x / 2.0)
 	oy = floor (bin_y / 2.0)
@@ -730,7 +730,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 	col_step = 13200
 
 
-	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
+	if (DRAW_IMAGE_X or DRAW_IMAGE_Y or DRAW_IMAGE_Z) then begin
 		data = reform ((cube[px,*,*] > val_min) < val_max, num_y, num_z)
 		if (destretch[1]) then data = pc_destretch (data, coord.y, dim=1)
 		if (destretch[2]) then data = pc_destretch (data, coord.z, dim=2)
@@ -761,25 +761,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				velovect, reform (field_y_x[cx,*,*], num_over_y, num_over_z), reform (field_z_x[cx,*,*], num_over_y, num_over_z), field_y_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
-		if (streamlines.num ge 1L) then begin
-			for pos = 1L, num_lines < max_streamlines do begin
-				actual = pc_select_streamline (streamlines, pos)
-				if (destretch[1]) then begin
-					indices_y = reform (actual.coords[1,*]) / unit.default_length
-					indices_y = (indices_y - coord.y[0]) / (coord.y[num_y-1] - coord.y[0]) * num_y
-				end else begin
-					indices_y = reform (actual.indices[1,*])
-				end
-				if (destretch[2]) then begin
-					indices_z = reform (actual.coords[2,*]) / unit.default_length
-					indices_z = (indices_z - coord.z[0]) / (coord.z[num_z-1] - coord.z[0]) * num_z
-				end else begin
-					indices_z = reform (actual.indices[2,*])
-				end
-				plots, indices_y*bin_y, indices_z*bin_z, psym=3, color=col_start+col_step*pos, /device
-			end
-		end
-		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_3)) then begin
+		if (show_cuts and (DRAW_IMAGE_X or DRAW_IMAGE_Z)) then begin
 			wset, wcut_y
 			cslice_load_ct, 0
 			data = reform (cube[px,*,pz])
@@ -795,7 +777,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 	end
 
-	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
+	if (DRAW_IMAGE_X or DRAW_IMAGE_Y or DRAW_IMAGE_Z) then begin
 		data = reform ((cube[*,py,*] > val_min) < val_max, num_x, num_z)
 		if (destretch[0]) then data = pc_destretch (data, coord.x, dim=1)
 		if (destretch[2]) then data = pc_destretch (data, coord.z, dim=2)
@@ -826,25 +808,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				velovect, reform (field_x_y[*,cy,*], num_over_x, num_over_z), reform (field_z_y[*,cy,*], num_over_x, num_over_z), field_x_indices, field_z_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
-		if (streamlines.num ge 1L) then begin
-			for pos = 1L, num_lines < max_streamlines do begin
-				actual = pc_select_streamline (streamlines, pos)
-				if (destretch[0]) then begin
-					indices_x = reform (actual.coords[0,*]) / unit.default_length
-					indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
-				end else begin
-					indices_x = reform (actual.indices[0,*])
-				end
-				if (destretch[2]) then begin
-					indices_z = reform (actual.coords[2,*]) / unit.default_length
-					indices_z = (indices_z - coord.z[0]) / (coord.z[num_z-1] - coord.z[0]) * num_z
-				end else begin
-					indices_z = reform (actual.indices[2,*])
-				end
-				plots, indices_x*bin_x, indices_z*bin_z, psym=3, color=col_start+col_step*pos, /device
-			end
-		end
-		if (show_cuts and (DRAW_IMAGE_2 or DRAW_IMAGE_3)) then begin
+		if (show_cuts and (DRAW_IMAGE_Y or DRAW_IMAGE_Z)) then begin
 			wset, wcut_x
 			cslice_load_ct, 0
 			data = reform (cube[*,py,pz])
@@ -860,7 +824,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 		end
 	end
 
-	if (DRAW_IMAGE_1 or DRAW_IMAGE_2 or DRAW_IMAGE_3) then begin
+	if (DRAW_IMAGE_X or DRAW_IMAGE_Y or DRAW_IMAGE_Z) then begin
 		data = reform ((cube[*,*,pz] > val_min) < val_max, num_x, num_y)
 		if (destretch[0]) then data = pc_destretch (data, coord.x, dim=1)
 		if (destretch[1]) then data = pc_destretch (data, coord.y, dim=2)
@@ -891,25 +855,7 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 				velovect, reform (field_x_z[*,*,cz], num_over_x, num_over_y), reform (field_y_z[*,*,cz], num_over_x, num_over_y), field_x_indices, field_y_indices, length=vec_len, xr=[0.0,1.0], yr=[0.0,1.0], xs=4, ys=4, color=200, /noerase, pos=[0.0,0.0,1.0,1.0]
 			end
 		end
-		if (streamlines.num ge 1L) then begin
-			for pos = 1L, num_lines < max_streamlines do begin
-				actual = pc_select_streamline (streamlines, pos)
-				if (destretch[0]) then begin
-					indices_x = reform (actual.coords[0,*]) / unit.default_length
-					indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
-				end else begin
-					indices_x = reform (actual.indices[0,*])
-				end
-				if (destretch[1]) then begin
-					indices_y = reform (actual.coords[1,*]) / unit.default_length
-					indices_y = (indices_y - coord.y[0]) / (coord.y[num_y-1] - coord.y[0]) * num_y
-				end else begin
-					indices_y = reform (actual.indices[1,*])
-				end
-				plots, indices_x*bin_x, indices_y*bin_y, psym=3, color=col_start+col_step*pos, /device
-			end
-		end
-		if (show_cuts and (DRAW_IMAGE_1 or DRAW_IMAGE_2)) then begin
+		if (show_cuts and (DRAW_IMAGE_X or DRAW_IMAGE_Y)) then begin
 			wset, wcut_z
 			cslice_load_ct, 0
 			data = reform (cube[px,py,*])
@@ -922,6 +868,36 @@ pro cslice_draw, DRAW_IMAGE_1, DRAW_IMAGE_2, DRAW_IMAGE_3
 			end
 			axis, 0, 0, xaxis=1, xstyle=1, ystyle=1
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
+		end
+	end
+
+	if (streamlines.num ge 1L) then begin
+		for pos = 1L, num_lines < max_streamlines do begin
+			actual = pc_select_streamline (streamlines, pos)
+			if (destretch[0]) then begin
+				indices_x = reform (actual.coords[0,*]) / unit.default_length
+				indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
+			end else begin
+				indices_x = reform (actual.indices[0,*])
+			end
+			if (destretch[1]) then begin
+				indices_y = reform (actual.coords[1,*]) / unit.default_length
+				indices_y = (indices_y - coord.y[0]) / (coord.y[num_y-1] - coord.y[0]) * num_y
+			end else begin
+				indices_y = reform (actual.indices[1,*])
+			end
+			if (destretch[2]) then begin
+				indices_z = reform (actual.coords[2,*]) / unit.default_length
+				indices_z = (indices_z - coord.z[0]) / (coord.z[num_z-1] - coord.z[0]) * num_z
+			end else begin
+				indices_z = reform (actual.indices[2,*])
+			end
+			wset, wimg_yz
+			plots, indices_y*bin_y, indices_z*bin_z, psym=3, color=col_start+col_step*pos, /device
+			wset, wimg_xz
+			plots, indices_x*bin_x, indices_z*bin_z, psym=3, color=col_start+col_step*pos, /device
+			wset, wimg_xy
+			plots, indices_x*bin_x, indices_y*bin_y, psym=3, color=col_start+col_step*pos, /device
 		end
 	end
 end
