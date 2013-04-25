@@ -72,6 +72,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Use common block belonging to derivative routines etc. so they can be set up properly.
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
+	common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 	common pc_precision, zero, one
 	common cdat_coords, coord_system
@@ -100,14 +101,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Local shorthand for some parameters.
 	precision = dim.precision
-	nx = dim.nx
-	ny = dim.ny
-	nz = dim.nz
-	nw = nx * ny * nz
-	mx = dim.mx
-	my = dim.my
-	mz = dim.mz
-	mw = mx * my * mz
 	nxgrid = dim.nxgrid
 	nygrid = dim.nygrid
 	nzgrid = dim.nzgrid
@@ -218,6 +211,22 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	sub_dim.l2 = sub_dim.mx - nghostx - 1
 	sub_dim.m2 = sub_dim.my - nghosty - 1
 	sub_dim.n2 = sub_dim.mz - nghostz - 1
+
+	; Local shorthand for some parameters.
+	nx = sub_dim.nx
+	ny = sub_dim.ny
+	nz = sub_dim.nz
+	nw = nx * ny * nz
+	mx = sub_dim.mx
+	my = sub_dim.my
+	mz = sub_dim.mz
+	mw = mx * my * mz
+	l1 = sub_dim.l1
+	l2 = sub_dim.l2
+	m1 = sub_dim.m1
+	m2 = sub_dim.m2
+	n1 = sub_dim.n1
+	n2 = sub_dim.n2
 
 	; Read meta data and set up variable/tag lists.
 	if (n_elements (varcontent) eq 0) then $
@@ -377,12 +386,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 
 	; Remove ghost zones if requested.
 	if (keyword_set (trimall)) then begin
-		l1 = sub_dim.l1
-		l2 = sub_dim.l2
-		m1 = sub_dim.m1
-		m2 = sub_dim.m2
-		n1 = sub_dim.n1
-		n2 = sub_dim.n2
 		if (num_read ge 1) then object = object[l1:l2,m1:m2,n1:n2,*]
 		x = x[l1:l2]
 		y = y[m1:m2]

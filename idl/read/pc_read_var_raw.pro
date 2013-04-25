@@ -17,7 +17,7 @@
 ;       pc_read_var_raw, object=object, varfile=varfile, tags=tags,   $
 ;                    datadir=datadir, proc=proc, /allprocs, /quiet,   $
 ;                    trimall=trimall, swap_endian=swap_endian,        $
-;                    f77=f77, time=time, grid=grid
+;                    f77=f77, time=time, grid=grid, var_list=var_list
 ; KEYWORD PARAMETERS:
 ;    datadir: Specifies the root data directory. Default: './data'.  [string]
 ;       proc: Specifies processor to get the data from. Default: ALL [integer]
@@ -59,10 +59,11 @@ COMPILE_OPT IDL2,HIDDEN
 ; Use common block belonging to derivative routines etc. so we can
 ; set them up properly.
 ;
-  common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-  common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
+  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz, nghostx, nghosty, nghostz
+  common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
   common pc_precision, zero, one
-  common cdat_coords,coord_system
+  common cdat_coords, coord_system
 ;
 ; Default settings.
 ;
@@ -161,10 +162,20 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   nx = dim.nx
   ny = dim.ny
   nz = dim.nz
-  nw = dim.nx * dim.ny * dim.nz
+  nw = nx * ny * nz
   mx = dim.mx
   my = dim.my
   mz = dim.mz
+  mw = mx * my * mz
+  l1 = dim.l1
+  l2 = dim.l2
+  m1 = dim.m1
+  m2 = dim.m2
+  n1 = dim.n1
+  n2 = dim.n2
+  nghostx = dim.nghostx
+  nghosty = dim.nghosty
+  nghostz = dim.nghostz
   precision = dim.precision
 ;
 ; Initialize cdat_grid variables.
@@ -272,9 +283,9 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ; Setup the coordinates mappings from the processor to the full domain.
 ; (Don't overwrite ghost zones of the lower processor.)
 ;
-        x_add = dim.nghostx * (ipx ne ipx_start)
-        y_add = dim.nghosty * (ipy ne ipy_start)
-        z_add = dim.nghostz * (ipz ne ipz_start)
+        x_add = nghostx * (ipx ne ipx_start)
+        y_add = nghosty * (ipy ne ipy_start)
+        z_add = nghostz * (ipz ne ipz_start)
 ;
 ; Build the full path and filename.
 ;

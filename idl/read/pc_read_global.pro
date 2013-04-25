@@ -18,6 +18,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; set them up properly.
 ;
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common pc_precision, zero, one
   common cdat_coords,coord_system
@@ -83,10 +84,20 @@ COMPILE_OPT IDL2,HIDDEN
   nx=dim.nx
   ny=dim.ny
   nz=dim.nz
-  nw=dim.nx*dim.ny*dim.nz
+  nw=nx*ny*nz
   mx=dim.mx
   my=dim.my
   mz=dim.mz
+  mw=mx*my*mz
+  l1=dim.l1
+  l2=dim.l2
+  m1=dim.m1
+  m2=dim.m2
+  n1=dim.n1
+  n2=dim.n2
+  nghostx=dim.nghostx
+  nghosty=dim.nghosty
+  nghostz=dim.nghostz
   mvar=dim.mvar
   precision=dim.precision
   mxloc=procdim.mx

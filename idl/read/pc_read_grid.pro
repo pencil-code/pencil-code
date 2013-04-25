@@ -15,6 +15,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common pc_precision, zero, one
   common cdat_coords,coord_system
@@ -76,12 +77,27 @@ endelse
 ;
 ; Set mx,my,mz in common block for derivative routines
 ;
+nx=dim.nx
+ny=dim.ny
+nz=dim.nz
+nw=nx*ny*nz
 mx=dim.mx
 my=dim.my
 mz=dim.mz
+mw=mx*my*mz
+l1=dim.l1
+l2=dim.l2
+m1=dim.m1
+m2=dim.m2
+n1=dim.n1
+n2=dim.n2
+nghostx=dim.nghostx
+nghosty=dim.nghosty
+nghostz=dim.nghostz
+
 lequidist=safe_get_tag(param,'lequidist',default=[1,1,1]) ne 0
 lperi=param.lperi ne 0
-ldegenerated=[dim.nx,dim.ny,dim.nz] eq 1
+ldegenerated=[nx,ny,nz] eq 1
 ;
 ;  Set coordinate system.
 ;
@@ -94,11 +110,11 @@ pc_set_precision, dim=dim, quiet=quiet
 ; Initialize / set default returns for ALL variables
 ;
 t=zero
-x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
+x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero & dy=zero & dz=zero
 Lx=zero & Ly=zero & Lz=zero
-dx_1=fltarr(dim.mx)*one & dy_1=fltarr(dim.my)*one & dz_1=fltarr(dim.mz)*one
-dx_tilde=fltarr(dim.mx)*one & dy_tilde=fltarr(dim.my)*one & dz_tilde=fltarr(dim.mz)*one
+dx_1=fltarr(mx)*one & dy_1=fltarr(my)*one & dz_1=fltarr(mz)*one
+dx_tilde=fltarr(mx)*one & dy_tilde=fltarr(my)*one & dz_tilde=fltarr(mz)*one
 ;
 ; Get a unit number
 ;
@@ -224,15 +240,15 @@ free_lun,file
 ;  Trim ghost zones of coordinate arrays.
 ;
 if (keyword_set(trimxyz)) then begin
-  x=x[dim.l1:dim.l2]
-  y=y[dim.m1:dim.m2]
-  z=z[dim.n1:dim.n2]
-  dx_1=dx_1[dim.l1:dim.l2]
-  dy_1=dy_1[dim.m1:dim.m2]
-  dz_1=dz_1[dim.n1:dim.n2]
-  dx_tilde=dx_tilde[dim.l1:dim.l2]
-  dy_tilde=dy_tilde[dim.m1:dim.m2]
-  dz_tilde=dz_tilde[dim.n1:dim.n2]
+  x=x[l1:l2]
+  y=y[m1:m2]
+  z=z[n1:n2]
+  dx_1=dx_1[l1:l2]
+  dy_1=dy_1[m1:m2]
+  dz_1=dz_1[n1:n2]
+  dx_tilde=dx_tilde[l1:l2]
+  dy_tilde=dy_tilde[m1:m2]
+  dz_tilde=dz_tilde[n1:n2]
 endif
 ;
 ;  Build structure of all the variables
