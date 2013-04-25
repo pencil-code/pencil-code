@@ -59,10 +59,9 @@ if (snap_start eq 0 and snap_end eq 0) then begin
            datadir+'/proc'+strcompress(proc,/remove_all)+'.'
   endif
   snap_start=1
-  spawn, 'ls data/proc0/VAR* | wc -l', no_snshots
-  reads, no_snshots, snap_end
+  dummy=file_search(datadir+'/proc'+strtrim(proc,2)+'/VAR*',count=snap_end)
   if (not keyword_set(QUIET)) then begin
-    print, 'Found '+strcompress(snap_end,/remove_all) + ' snapshots.'
+    print, 'Found '+strtrim(snap_end,2)+' snapshots.'
   endif
 endif
 
