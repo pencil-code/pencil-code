@@ -2211,7 +2211,7 @@ module Density
           if (ggamma==1.) then
             tmp=-pot/cs20
           else
-            tmp=alog(1.+(ggamma-1.)*(-pot/cs20))/(ggamma-1.)
+            tmp=alog(1.+(gamma-1.)*(-pot/cs20))/(gamma-1.)
           endif
           f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+lnrho0+tmp
           if (lentropy.and..not.pretend_lnTT) then
