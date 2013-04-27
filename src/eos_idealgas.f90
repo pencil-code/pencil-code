@@ -62,7 +62,7 @@ module EquationOfState
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1.0, cs2top=1.0
   real :: cs2cool=0.0
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
+  real :: mpoly=impossible, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real :: width_eos_prof=0.2
   real :: sigmaSBt=1.0
   integer :: isothtop=0
@@ -3853,7 +3853,7 @@ module EquationOfState
 !
         else
 !
-!  Isothermal equation of state.
+!  Isothermal or polytropic equations of state.
 !
           do i=1,nghost
             call potential(z=z(n1-i),pot=potm)
@@ -3927,7 +3927,7 @@ module EquationOfState
 !
         else
 !
-!  Isothermal equation of state.
+!  Isothermal or polytropic equations of state.
 !
           do i=1,nghost
             call potential(z=z(n2+i),pot=potp)

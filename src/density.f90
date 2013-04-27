@@ -2198,7 +2198,7 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: pot,tmp
-      real :: cp1
+      real :: pot1,tmp1,cp1
 !
 !  Stratification depends on the gravity potential;
 !
@@ -2209,14 +2209,15 @@ module Density
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           if (ggamma==1.) then
-            tmp=-pot/cs20
+            tmp=lnrho0-pot/cs20
           else
-            tmp=alog(1.+(gamma-1.)*(-pot/cs20))/(gamma-1.)
+            tmp=lnrho0+alog(1.+(gamma-1.)*(-pot/cs20))/(gamma-1.)
           endif
-          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+lnrho0+tmp
+          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+tmp
           if (lentropy.and..not.pretend_lnTT) then
 !
-!  note: the initial condition is always produced for lnrho
+!  Note: the initial condition is always produced for lnrho.
+!  This part has not yet been used or checked!
 !
             f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - &
                 (1/cp1)*gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
@@ -2234,8 +2235,13 @@ module Density
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
 !
-      cs2bot=cs20
-      cs2top=cs20
+      call potential(z=xyz0(3),pot=pot1)
+      tmp1=lnrho0+alog(1.+(gamma-1.)*(-pot1/cs20))/(gamma-1.)
+      cs2bot=cs20*exp(gamma_m1*tmp1)
+!
+      call potential(z=xyz1(3),pot=pot1)
+      tmp1=lnrho0+alog(1.+(gamma-1.)*(-pot1/cs20))/(gamma-1.)
+      cs2top=cs20*exp(gamma_m1*tmp1)
 !
     endsubroutine stratification_tsallis
 !***********************************************************************
