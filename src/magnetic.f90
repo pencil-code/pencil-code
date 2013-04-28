@@ -631,6 +631,7 @@ module Magnetic
   integer :: idiag_jxbrymz=0    ! XYAVG_DOC:
   integer :: idiag_jxbrzmz=0    ! XYAVG_DOC:
   integer :: idiag_b2mz=0       ! XYAVG_DOC: $\left<\Bv^2\right>_{xy}$
+  integer :: idiag_bf2mz=0      ! XYAVG_DOC: $\left<\Bv'^2\right>_{xy}$
   integer :: idiag_j2mz=0       ! XYAVG_DOC: $\left<\jv^2\right>_{xy}$
   integer :: idiag_poynzmz=0    ! XYAVG_DOC: Averaged poynting flux in z direction
   integer :: idiag_epsMmz=0     ! XYAVG_DOC: $\left<\eta\mu_0\jv^2\right>_{xy}$
@@ -1907,7 +1908,7 @@ module Magnetic
           idiag_brms/=0 .or. idiag_bmax/=0 .or. &
           idiag_emag/=0 .or. idiag_b2mz/=0) &
           lpenc_diagnos(i_b2)=.true.
-      if (idiag_bfrms/=0) lpenc_diagnos(i_bf2)=.true.
+      if (idiag_bfrms/=0 .or. idiag_bf2mz/=0) lpenc_diagnos(i_bf2)=.true.
       if (idiag_etavamax/=0) lpenc_diagnos(i_etava)=.true.
       if (idiag_etajmax/=0) lpenc_diagnos(i_etaj)=.true.
       if (idiag_etaj2max/=0) lpenc_diagnos(i_etaj2)=.true.
@@ -3934,6 +3935,7 @@ module Magnetic
         call xysum_mn_name_z(p%jxbr(:,2),idiag_jxbrymz)
         call xysum_mn_name_z(p%jxbr(:,3),idiag_jxbrzmz)
         call xysum_mn_name_z(p%b2,idiag_b2mz)
+        call xysum_mn_name_z(p%bf2,idiag_bf2mz)
         call xysum_mn_name_z(p%j2,idiag_j2mz)
         call xysum_mn_name_z(etatotal*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
@@ -6700,7 +6702,7 @@ module Magnetic
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
         idiag_aym=0; idiag_azm=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
         idiag_bxbymy=0; idiag_bxbzmy=0; idiag_bybzmy=0; idiag_bxbymz=0
-        idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0; idiag_j2mz=0
+        idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0; idiag_bf2mz=0; idiag_j2mz=0
         idiag_jbmz=0; idiag_abmz=0; idiag_ubmz=0; idiag_uamz=0; idiag_d6abmz=0
         idiag_uxbxmz=0; idiag_uybxmz=0; idiag_uzbxmz=0
         idiag_uxbymz=0; idiag_uybymz=0; idiag_uzbymz=0
@@ -7109,6 +7111,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'bybzmz',idiag_bybzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bf2mz',idiag_bf2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'j2mz',idiag_j2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'poynzmz',idiag_poynzmz)

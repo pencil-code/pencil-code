@@ -2208,7 +2208,7 @@ module Density
       do n=n1,n2
         do m=m1,m2
           call potential(x(l1:l2),y(m),z(n),pot=pot)
-          if (ggamma==1.) then
+          if (gamma==1.) then
             tmp=lnrho0-pot/cs20
           else
             tmp=lnrho0+alog(1.+(gamma-1.)*(-pot/cs20))/(gamma-1.)
@@ -2235,13 +2235,18 @@ module Density
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
 !
-      call potential(z=xyz0(3),pot=pot1)
-      tmp1=lnrho0+alog(1.+(gamma-1.)*(-pot1/cs20))/(gamma-1.)
-      cs2bot=cs20*exp(gamma_m1*tmp1)
+      if (gamma==1.) then
+        cs2bot=cs20
+        cs2top=cs20
+      else
+        call potential(z=xyz0(3),pot=pot1)
+        tmp1=lnrho0+alog(1.+(gamma-1.)*(-pot1/cs20))/(gamma-1.)
+        cs2bot=cs20*exp(gamma_m1*tmp1)
 !
-      call potential(z=xyz1(3),pot=pot1)
-      tmp1=lnrho0+alog(1.+(gamma-1.)*(-pot1/cs20))/(gamma-1.)
-      cs2top=cs20*exp(gamma_m1*tmp1)
+        call potential(z=xyz1(3),pot=pot1)
+        tmp1=lnrho0+alog(1.+(gamma-1.)*(-pot1/cs20))/(gamma-1.)
+        cs2top=cs20*exp(gamma_m1*tmp1)
+      endif
 !
     endsubroutine stratification_tsallis
 !***********************************************************************
