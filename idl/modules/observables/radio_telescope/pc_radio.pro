@@ -11,7 +11,6 @@ function pc_radio_beamsmooth,var,beam_width_arcseconds,dx=dx,dy=dy,nsigma=nsigma
     
 COMPILE_OPT IDL2,HIDDEN
 ;
-;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0 
 
 fxln2 = 2.772588722239780 ; = 4*ln(2)
 one_arcsec=4.848137e-6

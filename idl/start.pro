@@ -13,7 +13,8 @@ function param
 ; compiled below
 end
 
-common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
 common cdat_coords, coord_system
 ;forward_function safe_get_tag

@@ -94,7 +94,7 @@ function pc_compute_quantity, vars, index, quantity
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u, F_Lorentz
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
-	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
+	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
 	if (strcmp (quantity, 'u', /fold_case)) then begin
@@ -677,7 +677,7 @@ end
 function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, param=param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup
 
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
-	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
+	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup

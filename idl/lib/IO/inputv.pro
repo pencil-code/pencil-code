@@ -8,7 +8,7 @@ FUNCTION inputv, file, DOUBLE=double, ONE=one, _EXTRA=extra
 ;;                var=inputv('var.dat',ONE=ONE)
 ;; All other keywords (e.g. /SWAP_ENDIAN) are passed on to the OPENR
 ;; statement.
-  common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   ;
   default, ONE, 1.0
   if (keyword_set(double)) then ONE=1.D0

@@ -7,7 +7,8 @@
 ;;; plotting/analysing scripts.
 ;;; $Id$
 
-common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 ;
 @xder_6th_ghost
 @yder_6th_ghost

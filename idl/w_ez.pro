@@ -3,7 +3,7 @@
 ;  this routine is an easy-to-use write routine
 ;  This assumes that the data have been read in with r_ez.pro
 ;
-common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 ;
 openw, 1, datadir+'/'+varfile,/F77
 writeu, 1, f

@@ -1,5 +1,5 @@
 ;$Id$
-common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 ;
 ;  In order to determine the z-dependence of the alpha and eta tensors
 ;  we have to read the horizontal averages of Epq, i.e. we assume that
