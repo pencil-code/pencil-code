@@ -1,7 +1,7 @@
 ;;
 ;;  $Id$
 ;;
-;;  Second derivative d^2/dx^2
+;;  Second derivative d^2 / dx^2
 ;;  - 6th-order (7-point stencil)
 ;;  - with ghost cells
 ;;  - on potentially non-equidistant grid
@@ -9,100 +9,54 @@
 function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
-  common cdat,x,y,z
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
+  common cdat_coords, coord_system
 ;
 ;  Default values.
 ;
   default, ghost, 0
 ;
-;  Assume nghost=3 for now.
+;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
-  default, nghost, 3
-;
-;  Calculate mx, my, and mz, based on the input array size.
-;
-  s=size(f) & d=make_array(size=s)
-  mx=s[1] & my=s[2] & mz=s[3]
+  s = size(f)
+  if ((s[0] lt 3) or (s[0] gt 4)) then $
+      message, 'xder2_6th_ghost: not implemented for '+strtrim(s[0],2)+'-D arrays'
+  d = make_array(size=s)
+  fmx = s[1] & fmy = s[2] & fmz = s[3]
+  l1 = nghostx & l2 = fmx-nghostx-1
+  m1 = nghosty & m2 = fmy-nghosty-1
+  n1 = nghostz & n2 = fmz-nghostz-1
 ;
 ;  Check for degenerate case (no x-derivative)
 ;
-  if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (mx eq 1) then return, fltarr(mx,my,mz)
+  if (ldegenerated[0] or (fmx eq 1)) then return, d
 ;
-  l1=nghost & l2=mx-nghost-1
-  m1=nghost & m2=my-nghost-1
-  n1=nghost & n2=mz-nghost-1
-;
-  nx = mx - 2*nghost
-  ny = my - 2*nghost
-  nz = mz - 2*nghost
-;
-  if (lequidist[0]) then begin
-    dx2=1./(180.*(x[4]-x[3])^2)
+  if (lequidist[1]) then begin
+    fdx = dx_1[l1]^2/180.
   endif else begin
-    dx2=dx_1[l1:l2]^2/180.
-;
-;  Nonuniform mesh correction.
-;  d2f/dx2  = f"*xi'^2 + xi"f', see also the manual.
-;
-    d1=xder(f)
+    if (fmx ne mx) then $
+        message, "xder2_6th_ghost: not implemented for subvolumes on a non-equidistant grid in x."
+    fdx = 1./180.
   endelse
 ;
-  if (s[0] eq 2) then begin
-    if (not ldegenerated[0]) then begin
-      if (not lequidist[0]) then begin
-        dx2 =    spread(dx2,     1,ny)
-        dd  = d1*spread(dx_tilde,1,my)
-      endif
-      d[l1:l2,m1:m2]=dx2* $
-          (-490.*f[l1:l2,m1:m2] $
-           +270.*(f[l1-1:l2-1,m1:m2]+f[l1+1:l2+1,m1:m2]) $
-            -27.*(f[l1-2:l2-2,m1:m2]+f[l1+2:l2+2,m1:m2]) $
-             +2.*(f[l1-3:l2-3,m1:m2]+f[l1+3:l2+3,m1:m2]) )
-    endif else begin
-      d[l1:l2,m1:m2,n1:n2]=0.
-    endelse
+  d[l1:l2,m1:m2,n1:n2,*] = $
+       (-490.*fdx)*f[l1:l2,m1:m2,n1:n2,*] $
+      + (270.*fdx)*(f[l1-1:l2-1,m1:m2,n1:n2,*]+f[l1+1:l2+1,m1:m2,n1:n2,*]) $
+      -  (27.*fdx)*(f[l1-2:l2-2,m1:m2,n1:n2,*]+f[l1+2:l2+2,m1:m2,n1:n2,*]) $
+      +   (2.*fdx)*(f[l1-3:l2-3,m1:m2,n1:n2,*]+f[l1+3:l2+3,m1:m2,n1:n2,*])
 ;
-  endif else if (s[0] eq 3) then begin
-    if (not ldegenerated[0]) then begin
-      if (not lequidist[0]) then begin
-        dx2 =    spread(dx2,     [1,2],[ny,nz])
-        dd  = d1*spread(dx_tilde,[1,2],[my,mz])
-      endif
-      d[l1:l2,m1:m2,n1:n2]=dx2* $
-          (-490.*f[l1:l2,m1:m2,n1:n2] $
-           +270.*(f[l1-1:l2-1,m1:m2,n1:n2]+f[l1+1:l2+1,m1:m2,n1:n2]) $
-            -27.*(f[l1-2:l2-2,m1:m2,n1:n2]+f[l1+2:l2+2,m1:m2,n1:n2]) $
-             +2.*(f[l1-3:l2-3,m1:m2,n1:n2]+f[l1+3:l2+3,m1:m2,n1:n2]) )
-    endif else begin
-      d[l1:l2,m1:m2,n1:n2]=0.
-    endelse
-;
-  endif else if (s[0] eq 4) then begin
-;
-    if (not ldegenerated[0]) then begin
-      if (not lequidist[0]) then begin
-        dx2 =    spread(dx2,     [1,2,3],[ny,nz,s[4]])
-        dd  = d1*spread(dx_tilde,[1,2,3],[my,mz,s[4]])
-      endif
-      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
-          (-490.*f[l1:l2,m1:m2,n1:n2,*] $
-           +270.*(f[l1-1:l2-1,m1:m2,n1:n2,*]+f[l1+1:l2+1,m1:m2,n1:n2,*]) $
-            -27.*(f[l1-2:l2-2,m1:m2,n1:n2,*]+f[l1+2:l2+2,m1:m2,n1:n2,*]) $
-             +2.*(f[l1-3:l2-3,m1:m2,n1:n2,*]+f[l1+3:l2+3,m1:m2,n1:n2,*]) )
-    endif else begin
-      d[l1:l2,m1:m2,n1:n2,*]=0.
-    endelse
-;
-  endif else begin
-    print, 'error: xder2_6th_ghost not implemented for ', $
-           strtrim(s[0],2), '-D arrays'
-  endelse
-;
-;  Apply correction only for nonuniform mesh.
-;
-  if (not lequidist[0]) then d=d+dd
+  if (not lequidist[0]) then begin
+    ; Nonuniform mesh correction:
+    ; d2f/dx2  = f"*xi'^2 + xi"f', see also the manual.
+    ; will also work on subvolumes like xder2(ss[*,10:16,20:26])
+    df_dx = xder(f)
+    for l = l1, l2 do begin
+      d[l,m1:m2,n1:n2,*] *= dx_1[l]^2
+      df_dx[l,m1:m2,n1:n2,*] *= dx_tilde[l]
+    endfor
+    d += df_dx
+  endif
 ;
 ;  Set ghost zones.
 ;

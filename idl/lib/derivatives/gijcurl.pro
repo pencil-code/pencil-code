@@ -18,16 +18,19 @@ function gijcurl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (coord_system ne 'cartesian') then message, $
       "gijcurl not yet implemented for coord_system='" + coord_system + "'"
 ;
-  s=size(f) & mx=s[1] & my=s[2] & mz=s[3]
-  w=fltarr(mx,my,mz,3,3)
+  s = size(f)
+  if (s[0] ne 4) then message, "gijcurl is only implemented for 4D arrays."
+  fmx = s[1] & fmy = s[2] & fmz = s[3]
+  w = make_array(size=[5,fmx,fmy,fmz,3,3,s[5],fmx*fmy*fmz*3*3])
 ;
 ;  Calculate B_i,j = eps_ikl A_l,jk
 ;
-  for i=0,2 do begin &for j=0,2 do begin &for k=0,2 do begin &for l=0,2 do begin
+  for i=0,2 do for j=0,2 do for k=0,2 do for l=0,2 do begin
     eps=levi_civita(i,k,l)
+print, i, j, k, l, eps
     if (eps ne 0.0) then $
-        w[*,*,*,i,j]=w[*,*,*,i,j]+eps*derij_single(f[*,*,*,l],j,k)
-  endfor & endfor & endfor & endfor
+        w[*,*,*,i,j] += eps * derij_single(f[*,*,*,l],j,k)
+  endfor
 ;
 ;  Set ghost zones.
 ;

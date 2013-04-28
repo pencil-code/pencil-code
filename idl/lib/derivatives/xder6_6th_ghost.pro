@@ -1,72 +1,47 @@
 ;;
 ;;  $Id$
 ;;
-;;  Sixth derivative d^6/dx^6
+;;  Sixth derivative d^6 / dx^6
 ;;  - 6th-order (7-point stencil)
 ;;  - with ghost cells
 ;;
 function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
-  common cdat,x,y,z
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
+  common cdat_coords, coord_system
 ;
 ;  Default values.
 ;
   default, ghost, 0
 ;
-;  Calculate nx, ny, and nz, based on the input array size.
+;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
-  s=size(f) & d=make_array(size=s)
-  nx=s[1] & ny=s[2] & nz=s[3]
+  s = size(f)
+  if ((s[0] lt 3) or (s[0] gt 4)) then $
+      message, 'xder6_6th_ghost: not implemented for '+strtrim(s[0],2)+'-D arrays'
+  d = make_array(size=s)
+  fmx = s[1] & fmy = s[2] & fmz = s[3]
+  l1 = nghostx & l2 = fmx-nghostx-1
+  m1 = nghosty & m2 = fmy-nghosty-1
+  n1 = nghostz & n2 = fmz-nghostz-1
 ;
 ;  Check for degenerate case (no x-derivative)
 ;
-  if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (nx eq 1) then return, fltarr(nx,ny,nz)
-;
-;  Determine location of ghost zones, assume nghost=3 for now.
-;
-  l1=3 & l2=nx-4 & m1=3 & m2=ny-4 & n1=3 & n2=nz-4
+  if (ldegenerated[0] or (fmx eq 1)) then return, d
 ;
   if (lequidist[0]) then begin
-    dx6=1./(x[4]-x[3])^6
+    fdx = dx_1[l1]^6
   endif else begin
-;
-;  Nonuniform mesh not implemented.
-;
-    print, 'Nonuniform mesh not implemented for xder6_6th_ghost.pro'
-    stop
+    message, "xder6_6th_ghost: not implemented for a non-equidistant grid in x."
   endelse
 ;
-  if (s[0] eq 3) then begin
-    if (not ldegenerated[0]) then begin
-      d[l1:l2,m1:m2,n1:n2]=dx6* $
-          ( -20.*f[l1:l2,m1:m2,n1:n2] $
-            +15.*(f[l1-1:l2-1,m1:m2,n1:n2]+f[l1+1:l2+1,m1:m2,n1:n2]) $
-             -6.*(f[l1-2:l2-2,m1:m2,n1:n2]+f[l1+2:l2+2,m1:m2,n1:n2]) $
-             +1.*(f[l1-3:l2-3,m1:m2,n1:n2]+f[l1+3:l2+3,m1:m2,n1:n2]) )
-    endif else begin
-      d[l1:l2,m1:m2,n1:n2]=0.
-    endelse
-;
-  endif else if (s[0] eq 4) then begin
-;
-    if (not ldegenerated[0]) then begin
-      d[l1:l2,m1:m2,n1:n2,*]=dx6* $
-          ( -20.*f[l1:l2,m1:m2,n1:n2,*] $
-            +15.*(f[l1-1:l2-1,m1:m2,n1:n2,*]+f[l1+1:l2+1,m1:m2,n1:n2,*]) $
-             -6.*(f[l1-2:l2-2,m1:m2,n1:n2,*]+f[l1+2:l2+2,m1:m2,n1:n2,*]) $
-             +1.*(f[l1-3:l2-3,m1:m2,n1:n2,*]+f[l1+3:l2+3,m1:m2,n1:n2,*]) )
-    endif else begin
-      d[l1:l2,m1:m2,n1:n2,*]=0.
-    endelse
-;
-  endif else begin
-    print, 'error: xder6_6th_ghost not implemented for ', $
-           strtrim(s[0],2), '-D arrays'
-    stop
-  endelse
+  d[l1:l2,m1:m2,n1:n2,*] = $
+        (-20.*fdx)*f[l1:l2,m1:m2,n1:n2,*] $
+      +  (15.*fdx)*(f[l1-1:l2-1,m1:m2,n1:n2,*]+f[l1+1:l2+1,m1:m2,n1:n2,*]) $
+      -   (6.*fdx)*(f[l1-2:l2-2,m1:m2,n1:n2,*]+f[l1+2:l2+2,m1:m2,n1:n2,*]) $
+      +      (fdx)*(f[l1-3:l2-3,m1:m2,n1:n2,*]+f[l1+3:l2+3,m1:m2,n1:n2,*])
 ;
 ;  Set ghost zones.
 ;

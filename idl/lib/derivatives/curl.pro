@@ -3,63 +3,74 @@
 ;;
 ;;  Calculate the curl of a 3-D vector field
 ;;
-function curlx,f,coord_system,xx,yy
-;
+function curlx,f
   COMPILE_OPT IDL2,HIDDEN
 ;
-  if (coord_system eq 'cartesian') then corr=0.
-  if (coord_system eq 'cylindric') then corr=0.
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
+  common cdat_coords, coord_system
+;
+  curlx = yder(f[*,*,*,2]) - zder(f[*,*,*,1])
+;
   if (coord_system eq 'spherical') then begin
-    cotth=cos(yy)/sin(yy)      
-    i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
+    sin_y = sin(y[m1:m2])
+    cotth = cos(y[m1:m2])/sin_y
+    i_sin = where(abs(sin_y) lt 1e-5) ; sinth_min=1e-5
     if (i_sin[0] ne -1) then cotth[i_sin]=0.
-    corr=f[*,*,*,2]*cotth/xx
+    corr = spread (cotth,0,nx) * spread(1.0/x[l1:l2],1,ny)
+    for n = n1, n2 do curlx[l1:l2,m1:m2,n] += f[l1:l2,m1:m2,n,2]*corr
   endif
-  return,yder(f[*,*,*,2])-zder(f[*,*,*,1])+corr
+;
+  return, curlx
 end
 ;;
-function curly,f,coord_system,xx
-;
+function curly,f
   COMPILE_OPT IDL2,HIDDEN
 ;
-  if (coord_system eq 'cartesian') then corr=0.
-  if (coord_system eq 'cylindric') then corr=0.
-  if (coord_system eq 'spherical') then corr=-f[*,*,*,2]/xx
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
+  common cdat_coords, coord_system
 ;
-  return,zder(f[*,*,*,0])-xder(f[*,*,*,2])+corr
+  curly = zder(f[*,*,*,0]) - xder(f[*,*,*,2])
+;
+  if (coord_system eq 'spherical') then begin
+    corr = spread(1.0/x[l1:l2],1,ny)
+    for n = n1, n2 do curly[l1:l2,m1:m2,n] -= f[l1:l2,m1:m2,n,2]*corr
+  end
+;
+  return, curly
 ;
 end
 ;;
-function curlz,f,coord_system,xx
-;
+function curlz,f
   COMPILE_OPT IDL2,HIDDEN
 ;
-  if (coord_system eq 'cartesian') then corr=0.
-  if (coord_system eq 'cylindric') then corr=f[*,*,*,1]/xx
-  if (coord_system eq 'spherical') then corr=f[*,*,*,1]/xx
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
+  common cdat_coords, coord_system
 ;
-  return,xder(f[*,*,*,1])-yder(f[*,*,*,0])+corr
+  curlz = xder(f[*,*,*,1]) - yder(f[*,*,*,0])
+;
+  if (any (coord_system eq ['cylindric','spherical'])) then begin
+    corr = spread(1.0/x[l1:l2],1,ny)
+    for n = n1, n2 do curlz[l1:l2,m1:m2,n] -= f[l1:l2,m1:m2,n,1]*corr
+  end
+;
+  return, curlz
 end
 ;;
 function curl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
-  common cdat,x,y
-  common cdat_coords,coord_system
-;
 ;  Default values.
 ;
   default, ghost, 0
 ;
-  w=make_array(size=size(f))
+  w = make_array(size=size(f))
 ;
-  tmp=size(f) & mx=tmp[1] & my=tmp[2] &  mz=tmp[3]
-  xx=spread(x,[1,2],[my,mz])
-  yy=spread(y,[0,2],[mx,mz])
-;
-  w[*,*,*,0]=curlx(f,coord_system,xx,yy)
-  w[*,*,*,1]=curly(f,coord_system,xx)
-  w[*,*,*,2]=curlz(f,coord_system,xx)
+  w[*,*,*,0]=curlx(f)
+  w[*,*,*,1]=curly(f)
+  w[*,*,*,2]=curlz(f)
 ;
 ;  Set ghost zones.
 ;

@@ -1,7 +1,7 @@
 ;;
 ;;  $Id$
 ;;
-;;  First derivative d/dx
+;;  First derivative d / dx
 ;;  - 6th-order
 ;;  - with ghost cells
 ;;  - on potentially non-equidistant grid
@@ -9,78 +9,43 @@
 function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   COMPILE_OPT IDL2,HIDDEN
 ;
-  common cdat,x,y,z
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
+  common cdat_coords, coord_system
 ;
 ;  Default values.
 ;
   default, ghost, 0
 ;
-;  Assume nghost=3 for now.
+;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
-  default, nghost, 3
-;
-;  Calculate mx, my, and mz, based on the input array size.
-;
-  s=size(f) & d=make_array(size=s)
-  mx=s[1] & my=s[2] & mz=s[3]
+  s = size(f)
+  if ((s[0] lt 3) or (s[0] gt 4)) then $
+      message, 'xder_6th_ghost: not implemented for '+strtrim(s[0],2)+'-D arrays'
+  d = make_array(size=s)
+  fmx = s[1] & fmy = s[2] & fmz = s[3]
+  l1 = nghostx & l2 = fmx-nghostx-1
+  m1 = nghosty & m2 = fmy-nghosty-1
+  n1 = nghostz & n2 = fmz-nghostz-1
 ;
 ;  Check for degenerate case (no x-derivative)
 ;
-  if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
-  if (mx eq 1) then return, fltarr(mx,my,mz)
-;
-  l1=nghost & l2=mx-nghost-1
-  m1=nghost & m2=my-nghost-1
-  n1=nghost & n2=mz-nghost-1
-;
-  nx = mx - 2*nghost
-  ny = my - 2*nghost
-  nz = mz - 2*nghost
+  if (ldegenerated[0] or (fmx eq 1)) then return, d
 ;
   if (lequidist[0]) then begin
-    dx2=1./(60.*(x[4]-x[3]))
+    fdx = dx_1[l1]/60.
   endif else begin
-    dx2=dx_1[l1:l2]/60.
+    if (fmx ne mx) then $
+        message, "xder_6th_ghost: not implemented for subvolumes on a non-equidistant grid in x."
+    fdx = 1./60.
   endelse
 ;
-  if (s[0] eq 2) then begin
+  d[l1:l2,m1:m2,n1:n2,*] = $
+         (45.*fdx)*(f[l1+1:l2+1,m1:m2,n1:n2,*]-f[l1-1:l2-1,m1:m2,n1:n2,*]) $
+      -   (9.*fdx)*(f[l1+2:l2+2,m1:m2,n1:n2,*]-f[l1-2:l2-2,m1:m2,n1:n2,*]) $
+      +      (fdx)*(f[l1+3:l2+3,m1:m2,n1:n2,*]-f[l1-3:l2-3,m1:m2,n1:n2,*])
 ;
-    if (not ldegenerated[0]) then begin
-      if (not lequidist[0]) then dx2=spread(dx2,1,ny)
-      d[l1:l2,m1:m2]=dx2* $
-          ( +45.*(f[l1+1:l2+1,m1:m2]-f[l1-1:l2-1,m1:m2]) $
-             -9.*(f[l1+2:l2+2,m1:m2]-f[l1-2:l2-2,m1:m2]) $
-                +(f[l1+3:l2+3,m1:m2]-f[l1-3:l2-3,m1:m2]) )
-    endif else d[l1:l2,*]=0.
-;
-  endif else if (s[0] eq 3) then begin
-    if (not ldegenerated[0]) then begin
-      if (not lequidist[0]) then dx2=spread(dx2,[1,2],[ny,nz])
-      d[l1:l2,m1:m2,n1:n2]=dx2* $
-          ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2]-f[l1-1:l2-1,m1:m2,n1:n2]) $
-             -9.*(f[l1+2:l2+2,m1:m2,n1:n2]-f[l1-2:l2-2,m1:m2,n1:n2]) $
-                +(f[l1+3:l2+3,m1:m2,n1:n2]-f[l1-3:l2-3,m1:m2,n1:n2]) )
-    endif else begin
-      d[l1:l2,m1:m2,n1:n2]=0.
-    endelse
-;
-  endif else if (s[0] eq 4) then begin
-;
-    if (not ldegenerated[0]) then begin
-      if (not lequidist[0]) then dx2=spread(dx2,[1,2,3],[ny,nz,s[4]])
-      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
-          ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2,*]-f[l1-1:l2-1,m1:m2,n1:n2,*]) $
-             -9.*(f[l1+2:l2+2,m1:m2,n1:n2,*]-f[l1-2:l2-2,m1:m2,n1:n2,*]) $
-                +(f[l1+3:l2+3,m1:m2,n1:n2,*]-f[l1-3:l2-3,m1:m2,n1:n2,*]) )
-    endif else begin
-      d[l1:l2,m1:m2,n1:n2,*]=0.
-    endelse
-;
-  endif else begin
-    print, 'error: xder_6th_ghost not implemented for ', $
-        strtrim(s[0],2), '-D arrays'
-  endelse
+  if (not lequidist[0]) then for l = l1, l2 do d[l,*,*,*] *= dx_1[l]
 ;
 ;  Set ghost zones.
 ;

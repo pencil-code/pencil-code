@@ -12,27 +12,7 @@ function del6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-  common cdat_coords, coord_system
-;
-  if (coord_system ne 'cartesian') then message, $
-      "del6 not yet implemented for coord_system='" + coord_system + "'"
-;
-  s=size(f)
-;
-  if (s[0] eq 3) then begin
-;
-    w=make_array(n_elements(f[*,0,0]),n_elements(f[0,*,0]),n_elements(f[0,0,*]),3)
-    w=xder6(f)+yder6(f)+zder6(f)
-;
-  endif else if (s[0] eq 4) then begin
-;
-    w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3)
-    w=xder6(f)+yder6(f)+zder6(f)
-;
-  endif else begin
-    print, 'error: del6 not implemented for arrays of size ', s
-    message, 'no point in continuing'
-  endelse
+  w = xder6(f) + yder6(f) + zder6(f)
 ;
 ;  Set ghost zones.
 ;

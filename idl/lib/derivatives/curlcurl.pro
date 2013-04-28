@@ -12,8 +12,7 @@ function curlcurl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-  w=make_array(size=size(f))
-  w=graddiv(f)-del2(f)
+  w = graddiv(f) - del2(f)
 ;
 ;  Set ghost zones.
 ;
