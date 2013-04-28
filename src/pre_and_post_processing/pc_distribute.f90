@@ -23,10 +23,9 @@ program pc_distribute
 !
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (:,:,:,:), allocatable :: gf
-  real, dimension (mxgrid) :: gx
-  real, dimension (mygrid) :: gy
-  real, dimension (mzgrid) :: gz
-  real :: dummy_dx, dummy_dy, dummy_dz
+  real, dimension (mxgrid) :: gx, gdx_1, gdx_tilde
+  real, dimension (mygrid) :: gy, gdy_1, gdy_tilde
+  real, dimension (mzgrid) :: gz, gdz_1, gdz_tilde
   logical :: ex
   integer :: mvar_in, io_len, pz, pa, alloc_err, lun_global=87
   real :: t_sp   ! t in single precision for backwards compatibility
@@ -141,8 +140,11 @@ program pc_distribute
 !
   ! read time:
   open (lun_input, FILE=trim(directory_in)//'/grid.dat', FORM='unformatted', status='old')
-  read (lun_input) t_sp, gx, gy, gz, dummy_dx, dummy_dy, dummy_dz
-  if (lshear) read (lun_input) deltay
+  read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
+  read (lun_input) dx, dy, dz
+  read (lun_input) Lx, Ly, Lz
+  read (lun_input) gdx_1, gdy_1, gdz_1
+  read (lun_input) gdx_tilde, gdy_tilde, gdz_tilde
   close (lun_input)
   t = t_sp
 !
@@ -204,11 +206,6 @@ program pc_distribute
 !
         call directory_names()
 !
-!  Read coordinates.
-!
-        if (ip<=6.and.lroot) print*, 'reading grid coordinates'
-        call rgrid ('grid.dat')
-!
 ! Size of box at local processor. The if-statement is for
 ! backward compatibility.
 !
@@ -243,9 +240,18 @@ program pc_distribute
         x = gx(1+ipx*nx:mx+ipx*nx)
         y = gy(1+ipy*ny:my+ipy*ny)
         z = gz(1+ipz*nz:mz+ipz*nz)
+        dx_1 = gdx_1(1+ipx*nx:mx+ipx*nx)
+        dy_1 = gdy_1(1+ipy*ny:my+ipy*ny)
+        dz_1 = gdz_1(1+ipz*nz:mz+ipz*nz)
+        dx_tilde = gdx_tilde(1+ipx*nx:mx+ipx*nx)
+        dy_tilde = gdy_tilde(1+ipy*ny:my+ipy*ny)
+        dz_tilde = gdz_tilde(1+ipz*nz:mz+ipz*nz)
 !
         ! write data:
         call wsnap (filename, f(:,:,:,1:mvar_io), mvar_io, enum=.false., noghost=.true.)
+!
+        ! write grid:
+        call wgrid ('grid.dat')
 !
       enddo
     enddo
