@@ -71,8 +71,8 @@
 pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, param=param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, addghosts=addghosts, dim=dim, sub_dim=sub_dim, grid=grid, sub_grid=sub_grid, time=time, name=name, quiet=quiet, swap_endian=swap_endian, f77=f77
 
 	; Use common block belonging to derivative routines etc. so they can be set up properly.
-	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0
-	common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz, nghostx, nghosty, nghostz
+	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+	common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 	common pc_precision, zero, one
 	common cdat_coords, coord_system

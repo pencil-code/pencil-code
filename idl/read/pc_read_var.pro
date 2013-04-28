@@ -91,8 +91,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; Use common block belonging to derivative routines etc. so we can
 ; set them up properly.
 ;
-  common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz, nghostx, nghosty, nghostz
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+  common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common pc_precision, zero, one
   common cdat_coords,coord_system

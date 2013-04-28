@@ -6,6 +6,8 @@ pro set_ghost,f,debug=debug,add=add
 ;  This procedure is probably obsolete now that I've checked in pc_setghost.
 ;  I keep this in case it proves advantageous with big data sets.
 ;
+  common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
+;
   if keyword_set(add) then begin
     s = size(f)
     omx = s[1]+2*nghostx
