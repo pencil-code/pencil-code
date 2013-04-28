@@ -39,7 +39,7 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   nz = mz - 2*nghost
 ;
   if (lequidist[0]) then begin
-    dx2=replicate(1./(60.*(x[4]-x[3])),nx)
+    dx2=1./(60.*(x[4]-x[3]))
   endif else begin
     dx2=dx_1[l1:l2]/60.
   endelse
@@ -47,24 +47,20 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (s[0] eq 2) then begin
 ;
     if (not ldegenerated[0]) then begin
-      for m=m1,m2 do begin
-        d[l1:l2,m]=dx2* $
-            ( +45.*(f[l1+1:l2+1,m]-f[l1-1:l2-1,m]) $
-               -9.*(f[l1+2:l2+2,m]-f[l1-2:l2-2,m]) $
-                  +(f[l1+3:l2+3,m]-f[l1-3:l2-3,m]) )
-      endfor
+      if (not lequidist[0]) then dx2=spread(dx2,1,ny)
+      d[l1:l2,m1:m2]=dx2* $
+          ( +45.*(f[l1+1:l2+1,m1:m2]-f[l1-1:l2-1,m1:m2]) $
+             -9.*(f[l1+2:l2+2,m1:m2]-f[l1-2:l2-2,m1:m2]) $
+                +(f[l1+3:l2+3,m1:m2]-f[l1-3:l2-3,m1:m2]) )
     endif else d[l1:l2,*]=0.
 ;
   endif else if (s[0] eq 3) then begin
     if (not ldegenerated[0]) then begin
-      for m=m1,m2 do begin
-        for n=n1,n2 do begin
-          d[l1:l2,m,n]=dx2* $
-              ( +45.*(f[l1+1:l2+1,m,n]-f[l1-1:l2-1,m,n]) $
-                 -9.*(f[l1+2:l2+2,m,n]-f[l1-2:l2-2,m,n]) $
-                    +(f[l1+3:l2+3,m,n]-f[l1-3:l2-3,m,n]) )
-        endfor
-      endfor
+      if (not lequidist[0]) then dx2=spread(dx2,[1,2],[ny,nz])
+      d[l1:l2,m1:m2,n1:n2]=dx2* $
+          ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2]-f[l1-1:l2-1,m1:m2,n1:n2]) $
+             -9.*(f[l1+2:l2+2,m1:m2,n1:n2]-f[l1-2:l2-2,m1:m2,n1:n2]) $
+                +(f[l1+3:l2+3,m1:m2,n1:n2]-f[l1-3:l2-3,m1:m2,n1:n2]) )
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
@@ -72,16 +68,11 @@ function xder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (not ldegenerated[0]) then begin
-      for m=m1,m2 do begin
-        for n=n1,n2 do begin
-          for p=0,s[4]-1 do begin
-            d[l1:l2,m,n,p]=dx2* $
-                ( +45.*(f[l1+1:l2+1,m,n,p]-f[l1-1:l2-1,m,n,p]) $
-                   -9.*(f[l1+2:l2+2,m,n,p]-f[l1-2:l2-2,m,n,p]) $
-                      +(f[l1+3:l2+3,m,n,p]-f[l1-3:l2-3,m,n,p]) )
-          endfor
-        endfor
-      endfor
+      if (not lequidist[0]) then dx2=spread(dx2,[1,2,3],[ny,nz,s[4]])
+      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
+          ( +45.*(f[l1+1:l2+1,m1:m2,n1:n2,*]-f[l1-1:l2-1,m1:m2,n1:n2,*]) $
+             -9.*(f[l1+2:l2+2,m1:m2,n1:n2,*]-f[l1-2:l2-2,m1:m2,n1:n2,*]) $
+                +(f[l1+3:l2+3,m1:m2,n1:n2,*]-f[l1-3:l2-3,m1:m2,n1:n2,*]) )
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse

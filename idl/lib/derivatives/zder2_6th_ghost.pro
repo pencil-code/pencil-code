@@ -39,22 +39,28 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   nz = mz - 2*nghost
 ;
   if (lequidist[2]) then begin
-    dz2=replicate(1./(180.*(z[4]-z[3])^2),nz)
+    dz2=1./(180.*(z[4]-z[3])^2)
   endif else begin
     dz2=dz_1[n1:n2]^2/180.
-  endelse  
+;
+;  Nonuniform mesh correction.
+;  d2f/dz2 = zeta'^2*f" + zeta"*f', see also the manual.
+;
+    d1=zder(f)
+  endelse
 ;
   if (s[0] eq 3) then begin
     if (not ldegenerated[2]) then begin
-      for l=l1,l2 do begin
-        for m=m1,m2 do begin
-          d[l,m,n1:n2]=dz2* $
-              (-490.*f[l,m,n1:n2] $
-               +270.*(f[l,m,n1-1:n2-1]+f[l,m,n1+1:n2+1]) $
-                -27.*(f[l,m,n1-2:n2-2]+f[l,m,n1+2:n2+2]) $
-                 +2.*(f[l,m,n1-3:n2-3]+f[l,m,n1+3:n2+3]) )
-        endfor
-      endfor  
+      if (not lequidist[2]) then begin
+        dz2 =    spread(dz2,     [0,1],[nx,ny])
+        dd  = d1*spread(dz_tilde,[0,1],[mx,my])
+        ; will also work on slices like zder2(ss[10,20,*])
+      endif
+      d[l1:l2,m1:m2,n1:n2]=dz2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2] $
+           +270.*(f[l1:l2,m1:m2,n1-1:n2-1]+f[l1:l2,m1:m2,n1+1:n2+1]) $
+            -27.*(f[l1:l2,m1:m2,n1-2:n2-2]+f[l1:l2,m1:m2,n1+2:n2+2]) $
+             +2.*(f[l1:l2,m1:m2,n1-3:n2-3]+f[l1:l2,m1:m2,n1+3:n2+3]) )
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
@@ -62,17 +68,16 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (not ldegenerated[2]) then begin
-      for l=l1,l2 do begin
-        for m=m1,m2 do begin
-          for p=0,s[4]-1 do begin
-            d[l,m,n1:n2,p]=dz2* $
-                (-490.* f[l,m,n1:n2,p] $
-                 +270.*(f[l,m,n1-1:n2-1,p]+f[l,m,n1+1:n2+1,p]) $
-                  -27.*(f[l,m,n1-2:n2-2,p]+f[l,m,n1+2:n2+2,p]) $
-                   +2.*(f[l,m,n1-3:n2-3,p]+f[l,m,n1+3:n2+3,p]) )
-          endfor
-        endfor
-      endfor
+      if (not lequidist[2]) then begin
+        dz2 =    spread(dz2,     [0,1,3],[nx,ny,s[4]])
+        dd  = d1*spread(dz_tilde,[0,1,3],[mx,my,s[4]])
+        ; will also work on slices like zder2(uu[10,20,*,*])
+      endif
+      d[l1:l2,m1:m2,n1:n2,*]=dz2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2,*] $
+           +270.*(f[l1:l2,m1:m2,n1-1:n2-1,*]+f[l1:l2,m1:m2,n1+1:n2+1,*]) $
+            -27.*(f[l1:l2,m1:m2,n1-2:n2-2,*]+f[l1:l2,m1:m2,n1+2:n2+2,*]) $
+             +2.*(f[l1:l2,m1:m2,n1-3:n2-3,*]+f[l1:l2,m1:m2,n1+3:n2+3,*]) )
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
@@ -83,10 +88,8 @@ function zder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endelse
 ;
 ;  Apply correction only for nonuniform mesh.
-;  d2f/dz2 = zeta'^2*f" + zeta"*f', see also the manual.
 ;
-  if (not lequidist[2]) then $
-     d=nonuniform_mesh_correction_z(d,f)
+  if (not lequidist[2]) then d=d+dd
 ;
 ;  Set ghost zones.
 ;

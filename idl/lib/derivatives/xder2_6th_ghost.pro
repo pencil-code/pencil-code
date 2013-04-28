@@ -39,35 +39,42 @@ function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   nz = mz - 2*nghost
 ;
   if (lequidist[0]) then begin
-    dx2=replicate(1./(180.*(x[4]-x[3])^2),nx)
+    dx2=1./(180.*(x[4]-x[3])^2)
   endif else begin
     dx2=dx_1[l1:l2]^2/180.
+;
+;  Nonuniform mesh correction.
+;  d2f/dx2  = f"*xi'^2 + xi"f', see also the manual.
+;
+    d1=xder(f)
   endelse
 ;
   if (s[0] eq 2) then begin
     if (not ldegenerated[0]) then begin
-      for m=m1,m2 do begin
-        d[l1:l2,m]=dx2* $
-            (-490.*f[l1:l2,m] $
-             +270.*(f[l1-1:l2-1,m]+f[l1+1:l2+1,m]) $
-              -27.*(f[l1-2:l2-2,m]+f[l1+2:l2+2,m]) $
-               +2.*(f[l1-3:l2-3,m]+f[l1+3:l2+3,m]) )
-      endfor   
+      if (not lequidist[0]) then begin
+        dx2 =    spread(dx2,     1,ny)
+        dd  = d1*spread(dx_tilde,1,my)
+      endif
+      d[l1:l2,m1:m2]=dx2* $
+          (-490.*f[l1:l2,m1:m2] $
+           +270.*(f[l1-1:l2-1,m1:m2]+f[l1+1:l2+1,m1:m2]) $
+            -27.*(f[l1-2:l2-2,m1:m2]+f[l1+2:l2+2,m1:m2]) $
+             +2.*(f[l1-3:l2-3,m1:m2]+f[l1+3:l2+3,m1:m2]) )
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
 ;
   endif else if (s[0] eq 3) then begin
     if (not ldegenerated[0]) then begin
-      for m=m1,m2 do begin
-        for n=n1,n2 do begin
-          d[l1:l2,m,n]=dx2* $
-              (-490.*f[l1:l2,m,n] $
-               +270.*(f[l1-1:l2-1,m,n]+f[l1+1:l2+1,m,n]) $
-                -27.*(f[l1-2:l2-2,m,n]+f[l1+2:l2+2,m,n]) $
-                 +2.*(f[l1-3:l2-3,m,n]+f[l1+3:l2+3,m,n]) )
-        endfor
-      endfor  
+      if (not lequidist[0]) then begin
+        dx2 =    spread(dx2,     [1,2],[ny,nz])
+        dd  = d1*spread(dx_tilde,[1,2],[my,mz])
+      endif
+      d[l1:l2,m1:m2,n1:n2]=dx2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2] $
+           +270.*(f[l1-1:l2-1,m1:m2,n1:n2]+f[l1+1:l2+1,m1:m2,n1:n2]) $
+            -27.*(f[l1-2:l2-2,m1:m2,n1:n2]+f[l1+2:l2+2,m1:m2,n1:n2]) $
+             +2.*(f[l1-3:l2-3,m1:m2,n1:n2]+f[l1+3:l2+3,m1:m2,n1:n2]) )
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
@@ -75,17 +82,15 @@ function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (not ldegenerated[0]) then begin
-      for m=m1,m2 do begin
-        for n=n1,n2 do begin
-          for p=0,s[4]-1 do begin
-            d[l1:l2,m,n,p]=dx2* $
-                (-490.*f[l1:l2,m,n,p] $
-                 +270.*(f[l1-1:l2-1,m,n,p]+f[l1+1:l2+1,m,n,p]) $
-                  -27.*(f[l1-2:l2-2,m,n,p]+f[l1+2:l2+2,m,n,p]) $
-                   +2.*(f[l1-3:l2-3,m,n,p]+f[l1+3:l2+3,m,n,p]) )
-          endfor
-        endfor
-      endfor  
+      if (not lequidist[0]) then begin
+        dx2 =    spread(dx2,     [1,2,3],[ny,nz,s[4]])
+        dd  = d1*spread(dx_tilde,[1,2,3],[my,mz,s[4]])
+      endif
+      d[l1:l2,m1:m2,n1:n2,*]=dx2* $
+          (-490.*f[l1:l2,m1:m2,n1:n2,*] $
+           +270.*(f[l1-1:l2-1,m1:m2,n1:n2,*]+f[l1+1:l2+1,m1:m2,n1:n2,*]) $
+            -27.*(f[l1-2:l2-2,m1:m2,n1:n2,*]+f[l1+2:l2+2,m1:m2,n1:n2,*]) $
+             +2.*(f[l1-3:l2-3,m1:m2,n1:n2,*]+f[l1+3:l2+3,m1:m2,n1:n2,*]) )
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
@@ -95,11 +100,9 @@ function xder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
            strtrim(s[0],2), '-D arrays'
   endelse
 ;
-;  Apply correction for nonuniform mesh.
-;  d2f/dx2  = f"*xi'^2 + xi"f', see also the manual.
+;  Apply correction only for nonuniform mesh.
 ;
-  if (not lequidist[0]) then $
-     d=nonuniform_mesh_correction_x(d,f)
+  if (not lequidist[0]) then d=d+dd
 ;
 ;  Set ghost zones.
 ;

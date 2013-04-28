@@ -39,28 +39,23 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   ny = my - 2*nghost
   nz = mz - 2*nghost
 ;
+  xx=spread(x,[1,2],[my,mz])
+;
   if (lequidist[1]) then begin
-    dy2=replicate(1./(60.*(y[4]-y[3])),ny)
+    dy2=1./(60.*(y[4]-y[3]))
   endif else begin
     dy2=dy_1[m1:m2]/60.
   endelse
 ;
   if (s[0] eq 3) then begin
     if (not ldegenerated[1]) then begin
+      if (not lequidist[1]) then dy2=spread(dy2,[0,2],[nx,nz])
       ; will also work on slices like yder(ss[10,*,n1:n2])
-      for l=l1,l2 do begin
-        for n=n1,n2 do begin
-          d[l,m1:m2,n]=dy2* $
-              ( +45.*(f[l,m1+1:m2+1,n]-f[l,m1-1:m2-1,n]) $
-                 -9.*(f[l,m1+2:m2+2,n]-f[l,m1-2:m2-2,n]) $
-                    +(f[l,m1+3:m2+3,n]-f[l,m1-3:m2-3,n]) )
-        endfor
-      endfor
-      if (coord_system ne 'cartesian') then begin
-        for m=m1,m2 do begin
-          for n=n1,n2 do d[l1:l2,m,n]=d[l1:l2,m,n]/x[l1:l2]
-        endfor  
-      endif
+      d[l1:l2,m1:m2,n1:n2]=dy2* $
+          ( +45.*(f[l1:l2,m1+1:m2+1,n1:n2]-f[l1:l2,m1-1:m2-1,n1:n2]) $
+             -9.*(f[l1:l2,m1+2:m2+2,n1:n2]-f[l1:l2,m1-2:m2-2,n1:n2]) $
+                +(f[l1:l2,m1+3:m2+3,n1:n2]-f[l1:l2,m1-3:m2-3,n1:n2]) )
+      if (coord_system ne 'cartesian') then d=d/xx
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
@@ -68,23 +63,14 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (not ldegenerated[1]) then begin
+      if (not lequidist[1]) then dy2=spread(dy2,[0,2,3],[nx,nz,s[4]])
       ; will also work on slices like yder(uu[10,*,*,*,])
-      for l=l1,l2 do begin
-        for n=n1,n2 do begin
-          for p=0,s[4]-1 do begin   
-            d[l,m1:m2,n,p]=dy2* $
-                ( +45.*(f[l,m1+1:m2+1,n,p]-f[l,m1-1:m2-1,n,p]) $
-                   -9.*(f[l,m1+2:m2+2,n,p]-f[l,m1-2:m2-2,n,p]) $
-                      +(f[l,m1+3:m2+3,n,p]-f[l,m1-3:m2-3,n,p]) )
-          endfor
-        endfor
-      endfor
+      d[l1:l2,m1:m2,n1:n2,*]=dy2* $
+          ( +45.*(f[l1:l2,m1+1:m2+1,n1:n2,*]-f[l1:l2,m1-1:m2-1,n1:n2,*]) $
+             -9.*(f[l1:l2,m1+2:m2+2,n1:n2,*]-f[l1:l2,m1-2:m2-2,n1:n2,*]) $
+                +(f[l1:l2,m1+3:m2+3,n1:n2,*]-f[l1:l2,m1-3:m2-3,n1:n2,*]) )
       if (coord_system ne 'cartesian') then $
-        for m=m1,m2 do begin
-          for n=n1,n2 do begin
-            for p=0,s[4]-1 do d[l1:l2,m,n,p]=d[l1:l2,m,n,p]/x[l1:l2]
-          endfor
-        endfor  
+         for i=0,s[4]-1 do d[*,*,*,i]=d[*,*,*,i]/xx
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse

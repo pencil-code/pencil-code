@@ -39,49 +39,37 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   ny = my - 2*nghost
   nz = mz - 2*nghost
 ;
-  sin1th=1./sin(y)
-  i_sin=where(abs(sin(y)) lt 1e-5) ;sinth_min=1e-5
+  xx=spread(x,[1,2],[my,mz])
+  yy=spread(y,[0,2],[mx,mz])
+  sin1th=1./sin(yy)
+  i_sin=where(abs(sin(yy)) lt 1e-5) ;sinth_min=1e-5
   if (i_sin[0] ne -1) then sin1th[i_sin]=0.
 ;
   if (lequidist[2]) then begin
-    dz2=replicate(1./(60.*(z[4]-z[3])),nz) 
+    dz2=1./(60.*(z[4]-z[3])) 
   endif else begin
     dz2=dz_1[n1:n2]/60.
   endelse
 ;
   if (s[0] eq 2) then begin
     if (n2 gt n1) then begin
-      for l=l1,l2 do begin 
-        d[l,n1:n2]=dz2* $
-            ( +45.*(f[l,n1+1:n2+1]-f[l,n1-1:n2-1]) $
-               -9.*(f[l,n1+2:n2+2]-f[l,n1-2:n2-2]) $
-                  +(f[l,n1+3:n2+3]-f[l,n1-3:n2-3]) )
-      endfor
-      if (coord_system eq 'spherical') then begin
-        for l=l1,l2 do begin   
-          d[l,n1:n2]=d[l,n1:n2]/x[l]*sin1th[nghost]
-        endfor  
-      endif
+      if (not lequidist[2]) then dz2=spread(dz2,0,nx)
+      d[l1:l2,n1:n2]=dz2* $
+          ( +45.*(f[l1:l2,n1+1:n2+1]-f[l1:l2,n1-1:n2-1]) $
+             -9.*(f[l1:l2,n1+2:n2+2]-f[l1:l2,n1-2:n2-2]) $
+                +(f[l1:l2,n1+3:n2+3]-f[l1:l2,n1-3:n2-3]) )
+      if (coord_system eq 'spherical') then d=d/xx[*,nghost,*]*sin1th[*,nghost,*]
     endif else d[l1:l2,n1:n2]=0.
 ;
   endif else if (s[0] eq 3) then begin
     if (not ldegenerated[2]) then begin
+      if (not lequidist[2]) then dz2=spread(dz2,[0,0],[ny,nx])
       ; will also work on slices like zder(ss[10,20,*])
-      for l=l1,l2 do begin 
-        for m=m1,m2 do begin 
-          d[l,m,n1:n2]=dz2* $
-              ( +45.*(f[l,m,n1+1:n2+1]-f[l,m,n1-1:n2-1]) $
-                 -9.*(f[l,m,n1+2:n2+2]-f[l,m,n1-2:n2-2]) $
-                    +(f[l,m,n1+3:n2+3]-f[l,m,n1-3:n2-3]) )
-        endfor
-      endfor 
-      if (coord_system eq 'spherical') then begin 
-        for l=l1,l2 do begin 
-          for m=m1,m2 do begin 
-            d[l,m,n1:n2]=d[l,m,n1:n2]/x[l]*sin1th[m]
-          endfor
-        endfor 
-      endif
+      d[l1:l2,m1:m2,n1:n2]=dz2* $
+          ( +45.*(f[l1:l2,m1:m2,n1+1:n2+1]-f[l1:l2,m1:m2,n1-1:n2-1]) $
+             -9.*(f[l1:l2,m1:m2,n1+2:n2+2]-f[l1:l2,m1:m2,n1-2:n2-2]) $
+                +(f[l1:l2,m1:m2,n1+3:n2+3]-f[l1:l2,m1:m2,n1-3:n2-3]) )
+      if (coord_system eq 'spherical') then d=d/xx*sin1th
     endif else begin
       d[l1:l2,m1:m2,n1:n2]=0.
     endelse
@@ -89,24 +77,14 @@ function zder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   endif else if (s[0] eq 4) then begin
 ;
     if (not ldegenerated[2]) then begin
+      if (not lequidist[2]) then dz2=spread(dz2,[0,0,3],[nx,ny,s[4]])
       ; will also work on slices like zder(uu[10,20,*,*])
-      for l=l1,l2 do begin 
-        for m=m1,m2 do begin 
-          for p=0,s[4]-1 do begin 
-             d[l,m,n1:n2,p]=dz2* $
-                 ( +45.*(f[l,m,n1+1:n2+1,p]-f[l,m,n1-1:n2-1,p]) $
-                    -9.*(f[l,m,n1+2:n2+2,p]-f[l,m,n1-2:n2-2,p]) $
-                       +(f[l,m,n1+3:n2+3,p]-f[l,m,n1-3:n2-3,p]) )
-          endfor
-        endfor 
-      endfor
-      if (coord_system eq 'spherical') then begin
-        for l=l1,l2 do begin 
-          for m=m1,m2 do begin 
-            d[l,m,n1:n2,*]=d[l,m,n1:n2,*]/x[l]*sin1th[m]
-          endfor
-        endfor 
-      endif   
+      d[l1:l2,m1:m2,n1:n2,*]=dz2* $
+          ( +45.*(f[l1:l2,m1:m2,n1+1:n2+1,*]-f[l1:l2,m1:m2,n1-1:n2-1,*]) $
+             -9.*(f[l1:l2,m1:m2,n1+2:n2+2,*]-f[l1:l2,m1:m2,n1-2:n2-2,*]) $
+                +(f[l1:l2,m1:m2,n1+3:n2+3,*]-f[l1:l2,m1:m2,n1-3:n2-3,*]) )
+      if (coord_system eq 'spherical') then $
+         for i=0,s[4]-1 do d[*,*,*,i]=d[*,*,*,i]/xx*sin1th
     endif else begin
       d[l1:l2,m1:m2,n1:n2,*]=0.
     endelse
