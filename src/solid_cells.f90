@@ -45,6 +45,7 @@ module Solid_Cells
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
   real                          :: ineargridshift=1
+  real                          :: dr_interpolation_circle=-1.
 !
   type solid_object
     character(len=10) :: form
@@ -60,7 +61,8 @@ module Solid_Cells
        ampl_noise,interpolation_method, nforcepoints,object_skin,&
        lclose_interpolation,lclose_linear,limit_close_linear,lnointerception,&
        nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos,sphere_temp,&
-       lclose_quad_rad_inter,ineargridshift,lset_flow_dir,flow_dir_set
+       lclose_quad_rad_inter,ineargridshift,lset_flow_dir,flow_dir_set,&
+       dr_interpolation_circle
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
@@ -1084,7 +1086,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         do i=l1,l2
         do j=m1,m2
         do k=n1,n2
-          if (lclose_linear) then
+          if (lclose_linear) then ! NILS: Move this outside the 3D loop?????
             if (ba(i,j,k,1)==10) then
               iobj=ba(i,j,k,4)
 !
@@ -1534,8 +1536,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  If fluid_point=.true. this means that we are handling a grid point.
 !  For fluid points very close to the solid surface the value of the point
-!  is found from interpolation between the value at the closest grid line "g"
+!  is found from interpolation between the value at "g"
 !  and the value at the solid surface "s".
+!  The point "g" may be defined in two different ways: 
+!    1) the closest grid line which the normal from "s" to "p" cross
+!    2) the ponint which is a normal from "s" and a given distance from "s"
+!  Method number 2) is chosen if "dr_interpolation_circle > 0" where
+!  "dr_interpolation_circle" give the number of grid sizes which "g" is 
+!  away from "s".
 !
 !  If fluid_point=.false. we are handling a point which is NOT a grid point,
 !  i.e. the point we are interested in are somewhere between the grid points.
@@ -1549,7 +1557,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  grid line in the direction away from the solid geometry to set a value
 !  at a grid point which is very close to the solid geometry.
 !
-!  The interpolation point is called "p".
+!  The point we intend to find the value of, the interpolation point 
+!  (lfluid_point=false) or grid point (lfluid_point=true), is called "p".
 !  Define a straight line "l" which pass through the point "p" and is normal
 !  to the surface of the object.
 !  The point where "l" cross the surface of the object is called "s"
@@ -1679,7 +1688,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mvar) :: fvar,f_tmp
-      real, dimension(3) :: o_global, p_global, p_local, g_global
+      real, dimension(3) :: o_global, p_global, p_local, g_global, g_local
       integer, dimension(3) :: ngrids, inear
       real :: rp,rs, verylarge=1e9, rlmin, rl, r, r_pg, r_sg, r_sp, surf_val
       integer :: ndir, ndims, dir, vardir1,vardir2, constdir, topbot_tmp
@@ -1695,6 +1704,22 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       intent(out) :: f_tmp
       intent(in) ::  iobj
+!
+!  The point "g" may be defined in two different ways: 
+!    1) the closest grid line which the normal from "s" to "p" cross
+!    2) the ponint which is a normal from "s" and a given distance from "s"
+!  Method number 2) is chosen if "dr_interpolation_circle > 0" where
+!  "dr_interpolation_circle" give the number of grid sizes which "g" is 
+!  away from "s". 
+!
+      if (dr_interpolation_circle > 0) then
+        g_local=p_local*(rs+dr_interpolation_circle*dxmin)/rp
+        !s_local=p_local*rs/rp
+        g_global=g_local+o_global
+        call fatal_error('close_inter_new',&
+            'dr_interpolation_circle > 0 is not fully implemented yet!')
+        !NILS: must find fvar (value of all variables at g)
+      else
 !
 !  Find which grid line is the closest one in the direction
 !  away from the object surface
@@ -1840,6 +1865,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       inear=(/lower_i,lower_j,lower_k/)
       if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
         call fatal_error('linear_interpolate','')
+    endif
 !
 !  Now we know the value associated with any variable in the point "g",
 !  given by "fvar".
