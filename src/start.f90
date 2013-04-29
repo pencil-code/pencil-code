@@ -293,7 +293,7 @@ program start
 !  Different initial seed (seed0) and random numbers on different CPUs
 !  The default is seed0=1812 for some obscure Napoleonic reason
 !
-  seed(1)=-((seed0-1812+1)*10+iproc)     
+  seed(1)=-((seed0-1812+1)*10+iproc)
   call random_seed_wrapper(PUT=seed)
 !
 !  Generate grid.

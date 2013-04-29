@@ -285,11 +285,18 @@ program run
   if (lroot) print*, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
 !  Get state length of random number generator and put the default value.
+!  With lreset_seed (which is not the default) we can reset the seed during 
+!  the run. This is necessary when lreinitialize_uu=T, inituu='gaussian-noise'.
 !
-  call get_nseed(nseed)
-  call random_seed_wrapper (GET=seed)
-  seed = seed0
-  call random_seed_wrapper (PUT=seed)
+  if (lreset_seed) then
+    seed(1)=-((seed0-1812+1)*10+iproc)
+    call random_seed_wrapper(PUT=seed)
+  else
+    call get_nseed(nseed)
+    call random_seed_wrapper (GET=seed)
+    seed = seed0
+    call random_seed_wrapper (PUT=seed)
+  endif
 !
 !  Write particle block dimensions to file (may have been changed for better
 !  load balancing).
