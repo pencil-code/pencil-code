@@ -64,6 +64,7 @@ module Particles
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
   logical :: ldraglaw_epstein=.true., ldraglaw_variable=.false.
+  logical :: ldraglaw_variable_density=.false.
   logical :: ldt_grav_par=.false., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
@@ -110,7 +111,8 @@ module Particles
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
       tstart_grav_par, lparticlemesh_cic, lparticlemesh_tsc, &
       epsp_friction_increase, learly_particle_map, lmigration_real_check, &
-      ldraglaw_epstein, lcheck_exact_frontier, ldt_grav_par, lsinkpoint, &
+      ldraglaw_epstein, lcheck_exact_frontier, ldraglaw_variable_density, &
+      ldt_grav_par, lsinkpoint, &
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
@@ -2188,11 +2190,20 @@ k_loop:   do while (.not. (k>npar_loc))
           tmp=tausp1
         endif
 !
+!  Scale friction time with local density.
+!
+        if (ldraglaw_variable_density) then
+          if (ldensity_nolog) then
+            tausp1_par=tmp*f(ix0,iy0,iz0,irho)
+          else
+            tausp1_par=tmp*exp(f(ix0,iy0,iz0,ilnrho))
+          endif
+!
 !  Discriminate between constant tau and special case for
 !  1/tau=omega when omega is not constant (as, for instance,
 !  global Keplerian disks, for which omega=rad**(-3/2)
 !
-        if (ldraglaw_variable) then 
+        elseif (ldraglaw_variable) then 
           if (lcartesian_coords) then
             OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75)
           elseif (lcylindrical_coords) then
