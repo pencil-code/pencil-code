@@ -267,7 +267,7 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
   ;  - density controls the closeness of the streamlines. For different
   ;    densities in each direction, use a tuple [density_x, density_y].
 
-  density = def(x=density, 1.)
+  if not keyword_set(density) then density = 1.
   if ((size(density))[0] eq 0) then density=[density,density]
 
   ; --- copy input variables to common block
