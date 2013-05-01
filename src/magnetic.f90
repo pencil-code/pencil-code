@@ -463,7 +463,9 @@ module Magnetic
   integer :: idiag_b3b21m=0     ! DIAG_DOC: $\left<B_3 B_{2,1} \right>$
   integer :: idiag_b3b12m=0     ! DIAG_DOC: $\left<B_3 B_{1,2} \right>$
   integer :: idiag_b1b32m=0     ! DIAG_DOC: $\left<B_1 B_{3,2} \right>$
+  integer :: idiag_b1b23m=0     ! DIAG_DOC: $\left<B_1 B_{2,3} \right>$
   integer :: idiag_b2b13m=0     ! DIAG_DOC: $\left<B_2 B_{1,3} \right>$
+  integer :: idiag_b2b31m=0     ! DIAG_DOC: $\left<B_2 B_{3,1} \right>$
   integer :: idiag_udotxbm=0    ! DIAG_DOC:
   integer :: idiag_uxbdotm=0    ! DIAG_DOC:
   integer :: idiag_uxbmx=0      ! DIAG_DOC: $\left<(\uv\times\Bv)_x\right>$
@@ -1840,9 +1842,11 @@ module Magnetic
          ) lpenc_diagnos(i_ab)=.true.
 !
       if (idiag_uam/=0 .or. idiag_uamz/=0) lpenc_diagnos(i_ua)=.true.
-      if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 .or. idiag_b3b12m/=0 &
+      if (idiag_djuidjbim/=0 &
           .or. idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0 &
-          .or. idiag_b1b32m/=0 .or.  idiag_b2b13m/=0) &
+          .or. idiag_b3b12m/=0 .or. idiag_b3b21m/=0 &
+          .or. idiag_b1b32m/=0 .or. idiag_b1b23m/=0 &
+          .or. idiag_b2b13m/=0 .or. idiag_b2b31m/=0 ) &
           lpenc_diagnos(i_bij)=.true.
 !
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
@@ -2681,7 +2685,7 @@ module Magnetic
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: uj,aj,phi,dub,dob
-      real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b2b13
+      real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
       real, dimension (nx) :: sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt
@@ -3769,11 +3773,25 @@ module Magnetic
           call sum_mn_name(b1b32,idiag_b1b32m)
         endif
 !
+!  alpM22=<b1*b2,3>
+!
+        if (idiag_b1b23m/=0) then
+          b1b23=p%bb(:,1)*p%bij(:,2,3)
+          call sum_mn_name(b1b23,idiag_b1b23m)
+        endif
+!
 !  alpM33=<b2*b1,3>
 !
         if (idiag_b2b13m/=0) then
           b2b13=p%bb(:,2)*p%bij(:,1,3)
           call sum_mn_name(b2b13,idiag_b2b13m)
+        endif
+!
+!  alpM33=<b2*b3,1>
+!
+        if (idiag_b2b31m/=0) then
+          b2b31=p%bb(:,2)*p%bij(:,3,1)
+          call sum_mn_name(b2b31,idiag_b2b31m)
         endif
 !
 !  current density components at one point (=pt).
@@ -6745,7 +6763,8 @@ module Magnetic
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_ujxbm=0; idiag_b2divum=0
-        idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b2b13m=0
+        idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b1b23m=0
+        idiag_b2b13m=0 ; idiag_b2b31m=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
         idiag_bzmphi=0; idiag_b2mphi=0; idiag_jbmphi=0; idiag_uxbrmphi=0
         idiag_uxbpmphi=0; idiag_uxbzmphi=0; idiag_jxbrmphi=0; idiag_jxbpmphi=0
@@ -6911,7 +6930,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
         call parse_name(iname,cname(iname),cform(iname),'b3b12m',idiag_b3b12m)
         call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
+        call parse_name(iname,cname(iname),cform(iname),'b1b23m',idiag_b1b23m)
         call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
+        call parse_name(iname,cname(iname),cform(iname),'b2b31m',idiag_b2b31m)
         call parse_name(iname,cname(iname),cform(iname),'udotxbm',idiag_udotxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbdotm',idiag_uxbdotm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
