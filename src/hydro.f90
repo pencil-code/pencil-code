@@ -617,6 +617,7 @@ module Hydro
           case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
           case ('rescale'); f(:,:,:,iux:iuz)=rescale_uu*f(:,:,:,iux:iuz)
           case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
+          case ('gaussian-noise-z'); call gaunoise(ampluu(j),f,iuz)
           endselect
         enddo
       endif
