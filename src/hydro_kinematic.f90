@@ -371,7 +371,7 @@ module Hydro
 ! divu
         if (lpencil(i_divu)) p%divu=0.
 !
-!  Gen-Roberts flow (negative helicity)
+!  Roberts I flow with negative helicity
 !
       case ('roberts') 
         if (headtt) print*,'Glen Roberts flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
@@ -420,7 +420,7 @@ module Hydro
 ! divu
         if (lpencil(i_divu)) p%divu= 0.
 !
-!  Glen-Roberts flow (positive helicity)
+!  Roberts I flow with positive helicity
 !
       case ('poshel-roberts') 
         if (headtt) print*,'Pos Helicity Roberts flow; eps1=',eps1
@@ -431,6 +431,34 @@ module Hydro
           p%uu(:,1)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*eps1
           p%uu(:,2)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*eps1
           p%uu(:,3)=+fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sqrt(2.)
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Roberts II flow (from Tilgner 2004)
+!
+      case ('Roberts-II')
+        if (headtt) print*,'Roberts-II flow; eps_kinflow=',eps_kinflow
+        fac=ampl_kinflow
+        fac2=ampl_kinflow*eps_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+          p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
+!  Roberts III flow (from Tilgner 2004)
+!
+      case ('Roberts-III')
+        if (headtt) print*,'Roberts-III flow; eps_kinflow=',eps_kinflow
+        fac=ampl_kinflow
+        fac2=ampl_kinflow*eps_kinflow
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=+fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
+          p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
+          p%uu(:,3)=fac2*(cos(kx_uukin*x(l1:l2))**2-sin(ky_uukin*y(m))**2)
         endif
         if (lpencil(i_divu)) p%divu=0.
 !
