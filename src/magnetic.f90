@@ -209,7 +209,7 @@ module Magnetic
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real :: numag=0.0
-  real :: betamin_jxb=0.0, gamma_epspb=2.4, exp_epspb
+  real :: betamin_jxb=0.0, gamma_epspb=2.4, exp_epspb, ncr_quench=0.
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nx,ny,nz,3) :: A_relprof
@@ -230,6 +230,7 @@ module Magnetic
   logical :: lhalox=.false.
   logical :: lrun_initaa=.false.,lmagneto_friction=.false.
   logical :: limplicit_resistivity=.false.
+  logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: xdep_profile='two-step'
@@ -262,6 +263,7 @@ module Magnetic
       lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
       k_relprof,lmagneto_friction,numag, &
+      lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb
 !
@@ -2189,7 +2191,7 @@ module Magnetic
       type (pencil_case) :: p
 !
 !      real, dimension (nx,3) :: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
       real :: B2_ext,c,s
       integer :: i,j,ix
 !
@@ -2487,14 +2489,28 @@ module Magnetic
       if (lpencil(i_chibp)) p%chibp=atan2(p%bb(:,2),p%bb(:,1))+.5*pi
 ! StokesI
       if (lpencil(i_StokesI)) p%StokesI=(p%bb(:,1)**2+p%bb(:,2)**2)**exp_epspb
-! StokesQ
-      if (lpencil(i_StokesQ)) p%StokesQ=-p%StokesI*cos(2.*p%chibp)
-! StokesU
-      if (lpencil(i_StokesU)) p%StokesU=-p%StokesI*sin(2.*p%chibp)
-! StokesQ1
-      if (lpencil(i_StokesQ1)) p%StokesQ1=+p%StokesI*sin(2.*p%chibp)*p%bb(:,3)
-! StokesU1
-      if (lpencil(i_StokesU1)) p%StokesU1=-p%StokesI*cos(2.*p%chibp)*p%bb(:,3)
+!
+! StokesQ, StokesU, StokesQ1, and StokesU1
+!
+      if (lncr_correlated) then
+        StokesI_ncr=p%StokesI*p%b2
+        if (lpencil(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
+        if (lpencil(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
+        if (lpencil(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpencil(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
+      elseif (lncr_anticorrelated) then
+        StokesI_ncr=p%StokesI/(1.+ncr_quench*p%b2)
+        if (lpencil(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
+        if (lpencil(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
+        if (lpencil(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpencil(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
+      else
+        if (lpencil(i_StokesQ)) p%StokesQ=-p%StokesI*cos(2.*p%chibp)
+        if (lpencil(i_StokesU)) p%StokesU=-p%StokesI*sin(2.*p%chibp)
+        if (lpencil(i_StokesQ1)) p%StokesQ1=+p%StokesI*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpencil(i_StokesU1)) p%StokesU1=-p%StokesI*cos(2.*p%chibp)*p%bb(:,3)
+      endif
+!
 ! beta1
       if (lpencil(i_beta1)) p%beta1=0.5*p%b2*mu01/p%pp
 ! djuidjbi
