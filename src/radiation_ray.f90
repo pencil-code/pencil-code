@@ -76,7 +76,7 @@ module Radiation
   real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
   real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.8
-  real :: scalefactor_Srad=1.0
+  real :: scalefactor_Srad=1.0, scalefactor_cooling=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
@@ -145,7 +145,7 @@ module Radiation
       cdtrad, cdtrad_thin, cdtrad_thick, scalefactor_Srad, angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
-      width_temp_opa, ampl_Isurf, radius_Isurf
+      width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling
 !
   contains
 !***********************************************************************
@@ -859,6 +859,7 @@ module Radiation
 !
         if (ipz==ipzstart) then
           call radboundary_xy_set(Qrecv_xy)
+!print*,'AXEL Qrecv_xy=',Qrecv_xy
         else
           call radboundary_xy_recv(nrad,idir,Qrecv_xy)
         endif
@@ -1241,6 +1242,7 @@ module Radiation
       if (bc_ray_z=='blo') then
         fact=.5/radius_Isurf**2
         Qrad0_xy=ampl_Isurf*exp(-fact*(spread(x**2,2,my)+spread(y**2,1,mx)))
+!print*,'AXEL: idir=',idir,ampl_Isurf
       endif
 !
 !  Incoming intensity from a layer of constant temperature TT_top.
@@ -1326,6 +1328,12 @@ module Radiation
       else
         if (opacity_type=='kappa_es') call calc_rad_diffusion(f,p)
         cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
+      endif
+!
+!  Possibility of rescaling the radiative cooling term.
+!
+      if (scalefactor_cooling/=1.) then
+        cooling=cooling*scalefactor_cooling
       endif
 !
 !  Add radiative cooling.
