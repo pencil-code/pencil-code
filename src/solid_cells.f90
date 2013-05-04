@@ -100,6 +100,14 @@ module Solid_Cells
 !      integer :: gridlim=5,iobj,iprocx,iprocy,iprocz
 !      real :: xobj,yobj,zobj,xbound,ybound,zbound,robj
 !
+!  If dr_interpolation_circle is positive then limit_close_linear must
+!  be set equal to this in order to have a smooth solution.
+!  NILS: Is one of the two redundant?
+!
+      if (dr_interpolation_circle>0) then
+        limit_close_linear=dr_interpolation_circle
+      endif
+!
 !  Define the geometry of the solid object.
 !  For more complex geometries (i.e. for objects different than cylinders,
 !  spheres or rectangles) this shold probably be included as a geometry.local
@@ -1072,7 +1080,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
       integer :: lower_k, upper_k, ndims
       logical :: bax, bay, baz, lnew_interpolation_method
-      real, dimension(3) :: xxp, phi
+      real, dimension(3) :: xxp, phi,ppp
       character(len=10) :: form
 !
 !  Find ghost points based on the mirror interpolation method
@@ -1205,40 +1213,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Find i, j and k indeces for points to be used during interpolation
 !
-            lower_i=0
-            upper_i=0
-            do ii=1,mx
-              if (x(ii)>xmirror) then
-                lower_i=ii-1
-                upper_i=ii
-                exit
-              endif
-            enddo
-!
-            lower_j=0
-            upper_j=0
-            do jj=1,my
-              if (y(jj)>ymirror) then
-                lower_j=jj-1
-                upper_j=jj
-                exit
-              endif
-            enddo
-!
-            if (form=='sphere') then
-              lower_k=0
-              upper_k=0
-              do kk=1,mz
-                if (z(kk)>zmirror) then
-                  lower_k=kk-1
-                  upper_k=kk
-                  exit
-                endif
-              enddo
-            else
-              lower_k=k
-              upper_k=k
-            endif
+            ppp(1)=xmirror
+            ppp(2)=ymirror
+            ppp(3)=zmirror
+            call find_near_indeces(&
+                lower_i,upper_i,&
+                lower_j,upper_j,&
+                lower_k,upper_k,x,y,z,ppp)
 !
 !  Issue with domain borders: A mirror point can be outside a
 !  processor's local domain (including ghost points). Some sort
@@ -1385,6 +1366,55 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       endif
 !
     endsubroutine update_solid_cells
+!***********************************************************************
+    subroutine find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
+        lower_k,upper_k,x,y,z,ppp)
+!
+!  Find i, j and k indeces for all neighbouring grid points
+!
+      integer :: ii,jj,kk
+      integer, intent(out) :: lower_i,upper_i,lower_j,upper_j,lower_k,upper_k
+      real, intent(in), dimension(mx) :: x
+      real, intent(in), dimension(my) :: y
+      real, intent(in), dimension(mz) :: z
+      real, intent(in), dimension(3)  :: ppp
+!
+      lower_i=0
+      upper_i=0
+      do ii=1,mx
+        if (x(ii)>ppp(1)) then
+          lower_i=ii-1
+          upper_i=ii
+          exit
+        endif
+      enddo
+!
+      lower_j=0
+      upper_j=0
+      do jj=1,my
+        if (y(jj)>ppp(2)) then
+          lower_j=jj-1
+          upper_j=jj
+          exit
+        endif
+      enddo
+!
+      if (nzgrid==1) then
+        lower_k=n1
+        upper_k=n1
+      else
+        lower_k=0
+        upper_k=0
+        do kk=1,mz
+          if (z(kk)>ppp(3)) then
+            lower_k=kk-1
+            upper_k=kk
+            exit
+          endif
+        enddo
+      endif
+!
+    end subroutine find_near_indeces
 !***********************************************************************
     subroutine interpolate_mirror_point(f,phi_,ivar,lower_i,upper_i,lower_j,&
         upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
@@ -1581,8 +1611,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 ! bv      Border value              cornervalue(3*2)      -
 !---------------------------------------------------------------------------
 !
+      use Messages, only: fatal_error
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       logical, intent(in) :: lnew_interpolation_method
+      logical :: lnew_inter
       integer, intent(in) :: ix0_,iy0_,iz0_, iobj
       real, dimension(mvar), intent(inout) :: f_tmp
       real, dimension(3), intent(in) :: xxp
@@ -1626,10 +1659,28 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           enddo
           enddo
 !
-!  We want special treatment if at least one of the corner points are
-!  inside the solid geometry, or if this is a fluid point.
+!  We want special treatment if:
+!    1)  at least one of the corner points are inside the solid geometry
+!    2)  the distance from the surface is less than dr_interpolation_circle*dxmin
+!    3)  this is a fluid point.
 !
-        if ((minval(rij) < rs) .or. fluid_point) then
+        if (&
+            (minval(rij) < rs) .or. &
+            (rp<rs+dr_interpolation_circle*dxmin) .or. &
+            fluid_point) then
+!
+!  If dr_interpolation_circle is positive we will use the new interpolation
+!  scheme.
+!
+          if (dr_interpolation_circle>0) then
+            if ((minval(rij)<rs) .and. (rp>rs+dr_interpolation_circle*dxmin)) then
+              call fatal_error('close_interpolation',&
+                  'dr_interpolation_circle is too small!')
+            endif
+            lnew_inter=.true.
+          else
+            lnew_inter=lnew_interpolation_method
+          endif
 !
 !  Find the x, y and z coordinates of "p" in a coordiante system with origin
 !  in the center of the object
@@ -1707,18 +1758,22 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  The point "g" may be defined in two different ways: 
 !    1) the closest grid line which the normal from "s" to "p" cross
-!    2) the ponint which is a normal from "s" and a given distance from "s"
+!    2) the point which is a normal from "s" and a given distance from "s"
 !  Method number 2) is chosen if "dr_interpolation_circle > 0" where
 !  "dr_interpolation_circle" give the number of grid sizes which "g" is 
 !  away from "s". 
 !
       if (dr_interpolation_circle > 0) then
         g_local=p_local*(rs+dr_interpolation_circle*dxmin)/rp
-        !s_local=p_local*rs/rp
         g_global=g_local+o_global
-        call fatal_error('close_inter_new',&
-            'dr_interpolation_circle > 0 is not fully implemented yet!')
-        !NILS: must find fvar (value of all variables at g)
+
+        call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
+            lower_k,upper_k,x,y,z,g_global)
+
+        inear=(/lower_i,lower_j,lower_k/)
+        if ( .not. linear_interpolate(f,iux,mvar,g_global,fvar,inear,.false.) ) &
+            call fatal_error('close_inter_new','')
+
       else
 !
 !  Find which grid line is the closest one in the direction
