@@ -1119,19 +1119,19 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               dr=r_point-r_obj
               if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                 xxp=(/x(i),y(j),z(k)/)
-                if (lnew_interpolation_method) then
+!                if (lnew_interpolation_method) then
                   call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
                       lnew_interpolation_method)
                   f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
                   if (ilnTT > 0) f(i,j,k,ilnTT)=f_tmp(ilnTT)
-                else
-                  call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
-                      lnew_interpolation_method)
-                  f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
-                  if (ilnTT > 0) then
-                    f(i,j,k,ilnTT)=f_tmp(ilnTT)
-                  endif
-                endif
+!                else
+!                  call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
+!                      lnew_interpolation_method)
+!                  f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
+!                  if (ilnTT > 0) then
+!                    f(i,j,k,ilnTT)=f_tmp(ilnTT)
+!                  endif
+!                endif
               endif
             endif
           endif
@@ -1646,6 +1646,20 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         call find_corner_points(fluid_point,cornervalue,cornerindex,&
             ix0_,iy0_,iz0_,p_global,o_global)
 !
+!  Find the x, y and z coordinates of "p" in a coordiante system with origin
+!  in the center of the object
+!
+          p_local=p_global-o_global
+!
+!  Find the distance from the object center to "p"
+!
+          if (objects(iobj)%form=='cylinder') then
+            rp=sqrt(p_local(1)**2+p_local(2)**2)
+            p_local(3)=0
+          elseif (objects(iobj)%form=='sphere') then
+            rp=sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
+          endif
+!
 !  Find the distance rij from all eight corner points to the object center
 !
           do itop_bot=1,2
@@ -1674,6 +1688,10 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
           if (dr_interpolation_circle>0) then
             if ((minval(rij)<rs) .and. (rp>rs+dr_interpolation_circle*dxmin)) then
+              print*,'fluid_point=',fluid_point
+              print*,'rij=',rij
+              print*,'rs,rp=',rs,rp
+              print*,'dr_interpolation_circle,dxmin=',dr_interpolation_circle,dxmin
               call fatal_error('close_interpolation',&
                   'dr_interpolation_circle is too small!')
             endif
@@ -1682,26 +1700,17 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             lnew_inter=lnew_interpolation_method
           endif
 !
-!  Find the x, y and z coordinates of "p" in a coordiante system with origin
-!  in the center of the object
-!
-          p_local=p_global-o_global
-!
-!  Find the distance from the object center to "p"
-!
-          if (objects(iobj)%form=='cylinder') then
-            rp=sqrt(p_local(1)**2+p_local(2)**2)
-            p_local(3)=0
-          elseif (objects(iobj)%form=='sphere') then
-            rp=sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
-          endif
-!
 !  Currently there are two implementations for the close surface treatment.
 !  The new one is more general and works both for spheres and cylinders,
 !  but it does not handle particles correctly
 !  for the cases where one of the corner points of "gridplane" is inside
 !  the solid geometry.
 !
+
+!print*,'lnew_interpolation_method=',lnew_interpolation_method
+!stop
+
+
           if (lnew_interpolation_method) then
             call close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp,&
                 cornervalue,cornerindex, fluid_point,iobj)
@@ -1741,7 +1750,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real, dimension (mvar) :: fvar,f_tmp
       real, dimension(3) :: o_global, p_global, p_local, g_global, g_local
       integer, dimension(3) :: ngrids, inear
-      real :: rp,rs, verylarge=1e9, rlmin, rl, r, r_pg, r_sg, r_sp, surf_val
+      real :: rp,rs, verylarge=1e9, rlmin, rl, rg, r_pg, r_sg, r_sp, surf_val
       integer :: ndir, ndims, dir, vardir1,vardir2, constdir, topbot_tmp
       integer :: topbot, iobj
       real, dimension(3,2) :: cornervalue
@@ -1763,8 +1772,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  "dr_interpolation_circle" give the number of grid sizes which "g" is 
 !  away from "s". 
 !
+
+!print*,'dr_interpolation_circle=',dr_interpolation_circle
+!stop
+
       if (dr_interpolation_circle > 0) then
-        g_local=p_local*(rs+dr_interpolation_circle*dxmin)/rp
+        rg=rs+dr_interpolation_circle*dxmin
+        g_local=p_local*rg/rp
         g_global=g_local+o_global
 
         call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
@@ -1773,6 +1787,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         inear=(/lower_i,lower_j,lower_k/)
         if ( .not. linear_interpolate(f,iux,mvar,g_global,fvar,inear,.false.) ) &
             call fatal_error('close_inter_new','')
+
+
+        print*,'fluid_point=',fluid_point
+        print*,'rs,rp,rg=',rs,rp,rg
+        print*,'dr_interpolation_circle,dxmin=',dr_interpolation_circle,dxmin
+!stop
+
+
 
       else
 !
@@ -1812,7 +1834,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  outside of "p". If in addition "rl" is smaller than the smallest "rl" so
 !  far (rlmin) this state must be stored since it might be the plane
 !  ("gridplane") which we are looking for. In addition we must
-!  find the distance, r, from the center of the object
+!  find the distance, rg, from the center of the object
 !  to the point where the normal cross the grid line.
 !  The point where "l" cross "gridplane" is called "g".
 !
@@ -1822,7 +1844,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               vardir2=mod(constdir+1,3)+1
               rlmin=rl
               topbot=topbot_tmp
-              r=rl*sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
+              rg=rl*sqrt(p_local(1)**2+p_local(2)**2+p_local(3)**2)
               g_global(constdir)=cornervalue(constdir,topbot)
               g_global(vardir1)=rl*p_local(vardir1)+o_global(vardir1)
               g_global(vardir2)=rl*p_local(vardir2)+o_global(vardir2)
@@ -1851,7 +1873,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         print*,'cornerindex=',cornerindex
         print*,'cornervalue=',cornervalue
         print*,'p_global=',p_global
-        print*,'r,rs,rp=',r,rs,rp
+        print*,'rg,rs,rp=',rg,rs,rp
         print*,'rs=',rs
         call fatal_error('close_interpolation',&
             'A valid radius is not found!')
@@ -1931,8 +1953,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  First find the distance, "r_pg", from "p" to "g" to be used as weight,
 !  then normalize by the full distance, "r_sg", between "s" and "g".
 !
-      r_pg=r-rp
-      r_sg=r-rs
+      r_pg=rg-rp
+      r_sg=rg-rs
       r_sp=rp-rs
 !
 !  Find temperature
