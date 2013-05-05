@@ -1651,7 +1651,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
           p_local=p_global-o_global
 !
-!  Find the distance from the object center to "p"
+!  Find the distance from the center of the object to "p"
 !
           if (objects(iobj)%form=='cylinder') then
             rp=sqrt(p_local(1)**2+p_local(2)**2)
@@ -1675,7 +1675,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  We want special treatment if:
 !    1)  at least one of the corner points are inside the solid geometry
-!    2)  the distance from the surface is less than dr_interpolation_circle*dxmin
+!    2)  the distance from the surface is less than 
+!        dr_interpolation_circle*dxmin
 !    3)  this is a fluid point.
 !
         if (&
@@ -2444,10 +2445,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Store data in the ba array.
 !  If ba(ip,jp,kp,1)= 0 we are in a fluid cell (i.e. NOT inside a solid geometry)
 !  If ba(ip,jp,kp,1)=10 we are in a fluid cell which are so close to the
-!                       surface of the solid geometry that we set the value of
-!                       this point by interpolating between the value at the
-!                       solid surface and the interpolated value at the first
-!                       grid line crossed by the normal to the solid surface.
+!                       surface of the solid geometry that we must set the 
+!                       value of this point by some special method
 !  If ba(ip,jp,kp,1)= 9 we are inside a solid geometry, but far from the boundary
 !  If ba(ip,jp,kp,1)=-1 we are inside a solid geometry, and the point at ip+1
 !                       is outside the geometry.
