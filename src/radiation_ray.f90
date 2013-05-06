@@ -1315,18 +1315,12 @@ module Radiation
       integer :: l
 !
 !  Add radiative cooling, either from the intensity or in the diffusion
-!  approximation.
-!
-!  AB: Tobi, would it be better/possible to redefine Qrad so as
-!  AB: to include the kapparho factor. Then we'd have Qrad=-divFrad.
-!
-!  AB: the following looks strange ...
+!  approximation (if either lrad_cool_diffus=F or lrad_pres_diffus=F).
 !
       if (lrad_cool_diffus.or.lrad_pres_diffus) then
         call calc_rad_diffusion(f,p)
         cooling=f(l1:l2,m,n,iQrad)
       else
-        if (opacity_type=='kappa_es') call calc_rad_diffusion(f,p)
         cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
       endif
 !
@@ -2160,8 +2154,8 @@ module Radiation
 !
 !  Calculate diffusion coefficient, Krad=16*sigmaSB*T^3/(3*kappa*rho).
 !
-      fact=16.*sigmaSB/(3.*kappa_es)
-      Krad=fact*p%TT**3*p%rho1
+      fact=16.*sigmaSB/3.
+      Krad=fact*p%TT**3/f(l1:l2,m,n,ikapparho)
 !
 !  Calculate Qrad = div(K*gradT) = KT*[del2lnTT + (4*glnTT-glnrho).glnTT].
 !  Note: this is only correct for constant kappa (and here kappa=kappa_es)
