@@ -1247,7 +1247,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               ndims=3
             endif
             if (lnew_interpolation_method) then
-              call interpolate_mirror_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
+              call interpolate_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
                   lnew_interpolation_method)
               f(i,j,k,1:mvar)=f_tmp
@@ -1255,15 +1255,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Set zero velocity at the solid surface
 !
-              call interpolate_mirror_point(f,phi,iux,lower_i,upper_i,lower_j,&
+              call interpolate_point(f,phi,iux,lower_i,upper_i,lower_j,&
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
                   lnew_interpolation_method)
               f(i,j,k,iux)=-phi(1)
-              call interpolate_mirror_point(f,phi,iuy,lower_i,upper_i,lower_j,&
+              call interpolate_point(f,phi,iuy,lower_i,upper_i,lower_j,&
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
                   lnew_interpolation_method)
               f(i,j,k,iuy)=-phi(1)
-              call interpolate_mirror_point(f,phi,iuz,lower_i,upper_i,lower_j,&
+              call interpolate_point(f,phi,iuz,lower_i,upper_i,lower_j,&
                   upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
                   lnew_interpolation_method)
               f(i,j,k,iuz)=-phi(1)
@@ -1271,7 +1271,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Set constant temperature, equal to the solid temperature, at the solid surface
 !
               if (ilnTT>0) then
-                call interpolate_mirror_point(f,phi,ilnTT,lower_i,upper_i,&
+                call interpolate_point(f,phi,ilnTT,lower_i,upper_i,&
                     lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
                     zmirror,ndims,lnew_interpolation_method)
                 f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
@@ -1281,7 +1281,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Set pressure gradient to zero at the solid surface
 !
               if (ilnrho>0) then
-                call interpolate_mirror_point(f,phi,ilnrho,lower_i,upper_i,&
+                call interpolate_point(f,phi,ilnrho,lower_i,upper_i,&
                     lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
                     zmirror,ndims,lnew_interpolation_method)
                 f(i,j,k,ilnrho)=phi(1)
@@ -1416,7 +1416,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     end subroutine find_near_indeces
 !***********************************************************************
-    subroutine interpolate_mirror_point(f,phi_,ivar,lower_i,upper_i,lower_j,&
+    subroutine interpolate_point(f,phi_,ivar,lower_i,upper_i,lower_j,&
         upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
         lnew_interpolation_method)
 !
@@ -1476,9 +1476,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         endif
       endif
 !
-    endsubroutine interpolate_mirror_point
+    endsubroutine interpolate_point
 !***********************************************************************
-    subroutine interpolate_mirror_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
+    subroutine interpolate_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
         upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
         lnew_interpolation_method)
 !
@@ -1557,7 +1557,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       f_tmp(1:3)=-f_tmp(1:3)
 !
-    endsubroutine interpolate_mirror_point_new
+    endsubroutine interpolate_point_new
 !***********************************************************************
     subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,xxp,f_tmp,&
         fluid_point,lnew_interpolation_method)
