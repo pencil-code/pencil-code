@@ -34,7 +34,8 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     print, "                                                                              "
     print, "  datadir: specify root data directory. Default: './data'          [string]   "
     print, "     proc: specify a processor to get the data from. Default is 0  [integer]  "
-    print, " allprocs: specify a collectively written grid file. Default is 0  [integer]  "
+    print, " allprocs: specify a collectively written grid file. Default is -1 [integer]  "
+    print, "           if allprocs is equal to -1, allprocs will be chosen automatically. "
     print, " /reduced: use a reduced dataset grid file.                                   "
     print, "                                                                              "
     print, "   object: optional structure in which to return all the above     [structure]"
@@ -49,13 +50,18 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
-; Check if allprocs is set.
+; Default allprocs.
 ;
-if (keyword_set(allprocs)) then begin
-  if (n_elements(proc) ne 0) then message, "pc_read_grid: 'allprocs' and 'proc' cannot be set both."
-endif else begin
-  allprocs = 0
-endelse
+default, allprocs, -1
+if (allprocs eq -1) then begin
+  allprocs=0
+  if (file_test(datadir+'/allprocs/grid.dat') and (n_elements(proc) eq 0)) then allprocs=1
+end
+;
+; Check if allprocs is consistent with proc.
+;
+if ((allprocs gt 0) and (n_elements(proc) ne 0)) then $
+    message, "pc_read_grid: 'allprocs' and 'proc' cannot be set both."
 ;
 ; Check if reduced keyword is set.
 ;
