@@ -150,7 +150,7 @@ module Particles_map
           f_tmp(ivar)=gp(ivar-ivar1+1)
         enddo
         call close_interpolation(f,ix0,iy0,iz0,icyl,xxp,&
-            f_tmp,.false.,.false.)
+            f_tmp,.false.)
         do ivar=ivar1,ivar2
           gp(ivar-ivar1+1)=f_tmp(ivar)
         enddo

@@ -26,6 +26,7 @@ module Solid_Cells
   integer                       :: ncylinders=0,nrectangles,nspheres=0,dummy
   integer                       :: nobjects, nlong, nlat
   integer                       :: nforcepoints=200
+  integer                       :: close_interpolation_method=1
   real, dimension(max_items)    :: cylinder_radius
   real, dimension(max_items)    :: cylinder_temp=703.0
   real, dimension(max_items)    :: cylinder_xpos,cylinder_ypos,cylinder_zpos
@@ -45,7 +46,6 @@ module Solid_Cells
   real                          :: theta_shift=1e-2
   real                          :: limit_close_linear=0.5
   real                          :: ineargridshift=1
-  real                          :: dr_interpolation_circle=-1.
 !
   type solid_object
     character(len=10) :: form
@@ -62,12 +62,12 @@ module Solid_Cells
        lclose_interpolation,lclose_linear,limit_close_linear,lnointerception,&
        nspheres,sphere_radius,sphere_xpos,sphere_ypos,sphere_zpos,sphere_temp,&
        lclose_quad_rad_inter,ineargridshift,lset_flow_dir,flow_dir_set,&
-       dr_interpolation_circle
+       close_interpolation_method
 !
   namelist /solid_cells_run_pars/  &
        interpolation_method,object_skin,lclose_interpolation,lclose_linear,&
        limit_close_linear,lnointerception,nforcepoints,lcheck_ba,&
-       lclose_quad_rad_inter,ineargridshift
+       lclose_quad_rad_inter,ineargridshift,close_interpolation_method
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -97,16 +97,6 @@ module Solid_Cells
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: icyl,isph,i
-!      integer :: gridlim=5,iobj,iprocx,iprocy,iprocz
-!      real :: xobj,yobj,zobj,xbound,ybound,zbound,robj
-!
-!  If dr_interpolation_circle is positive then limit_close_linear must
-!  be set equal to this in order to have a smooth solution.
-!  NILS: Is one of the two redundant?
-!
-      if (dr_interpolation_circle>0) then
-        limit_close_linear=dr_interpolation_circle
-      endif
 !
 !  Define the geometry of the solid object.
 !  For more complex geometries (i.e. for objects different than cylinders,
@@ -1079,7 +1069,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real :: xmirror, ymirror, zmirror, dr, mirror_temperature
       integer :: lower_i, upper_i, lower_j, upper_j, ii, jj, kk
       integer :: lower_k, upper_k, ndims
-      logical :: bax, bay, baz, lnew_interpolation_method
+      logical :: bax, bay, baz
       real, dimension(3) :: xxp, phi,ppp
       character(len=10) :: form
 !
@@ -1097,16 +1087,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           if (lclose_linear) then ! NILS: Move this outside the 3D loop?????
             if (ba(i,j,k,1)==10) then
               iobj=ba(i,j,k,4)
-!
-!  Check if we will use the old or the new interpolation method
-!
-              if (objects(iobj)%form=='sphere' .or. &
-                  .not. lclose_quad_rad_inter) then
-                lnew_interpolation_method=.true.
-              else
-                lnew_interpolation_method=.false.
-              endif
-!
               x_obj=objects(iobj)%x(1)
               y_obj=objects(iobj)%x(2)
               z_obj=objects(iobj)%x(3)
@@ -1119,19 +1099,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               dr=r_point-r_obj
               if ((dr > 0) .and. (dr<dxmin*limit_close_linear)) then
                 xxp=(/x(i),y(j),z(k)/)
-!                if (lnew_interpolation_method) then
-                  call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
-                      lnew_interpolation_method)
-                  f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
-                  if (ilnTT > 0) f(i,j,k,ilnTT)=f_tmp(ilnTT)
-!                else
-!                  call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.,&
-!                      lnew_interpolation_method)
-!                  f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
-!                  if (ilnTT > 0) then
-!                    f(i,j,k,ilnTT)=f_tmp(ilnTT)
-!                  endif
-!                endif
+                call close_interpolation(f,i,j,k,iobj,xxp,f_tmp,.true.)
+                f(i,j,k,iux:iuz)=f_tmp(iux:iuz)
+                if (ilnTT > 0) f(i,j,k,ilnTT)=f_tmp(ilnTT)
               endif
             endif
           endif
@@ -1191,15 +1161,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if (zmirror>xyz1(3) .and. lperi(3)) zmirror=zmirror-Lxyz(3)
              endif
 !
-!  Check if we will use the old or the new interpolation method
-!
-             if (objects(iobj)%form=='sphere' .or. &
-                 .not. lclose_quad_rad_inter) then
-               lnew_interpolation_method=.true.
-             else
-               lnew_interpolation_method=.false.
-             endif
-!
 !  Check that we are indeed inside the solid geometry
 !
             if (r_point>r_obj) then
@@ -1246,26 +1207,22 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             elseif (objects(iobj)%form=='sphere') then
               ndims=3
             endif
-            if (lnew_interpolation_method) then
+            if (close_interpolation_method .ge. 2) then
               call interpolate_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-                  lnew_interpolation_method)
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
               f(i,j,k,1:mvar)=f_tmp
-            else
+            elseif (close_interpolation_method==1) then
 !
 !  Set zero velocity at the solid surface
 !
               call interpolate_point(f,phi,iux,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-                  lnew_interpolation_method)
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
               f(i,j,k,iux)=-phi(1)
               call interpolate_point(f,phi,iuy,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-                  lnew_interpolation_method)
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
               f(i,j,k,iuy)=-phi(1)
               call interpolate_point(f,phi,iuz,lower_i,upper_i,lower_j,&
-                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-                  lnew_interpolation_method)
+                  upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
               f(i,j,k,iuz)=-phi(1)
 !
 !  Set constant temperature, equal to the solid temperature, at the solid surface
@@ -1273,7 +1230,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if (ilnTT>0) then
                 call interpolate_point(f,phi,ilnTT,lower_i,upper_i,&
                     lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                    zmirror,ndims,lnew_interpolation_method)
+                    zmirror,ndims)
                 f(i,j,k,ilnTT)=2*objects(iobj)%T-phi(1)
                 mirror_temperature=phi(1)
               endif
@@ -1283,7 +1240,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
               if (ilnrho>0) then
                 call interpolate_point(f,phi,ilnrho,lower_i,upper_i,&
                     lower_j,upper_j,lower_k,upper_k,iobj,xmirror,ymirror,&
-                    zmirror,ndims,lnew_interpolation_method)
+                    zmirror,ndims)
                 f(i,j,k,ilnrho)=phi(1)
                 if (ilnTT>0 .or. iTT>0) then
                   if (ltemperature_nolog) then
@@ -1297,6 +1254,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   f(i,j,k,ilnrho) = phi(1)
                 endif
               endif
+            else
+              call fatal_error('update_solid_cells',&
+                  'No such interpolation method!')
             endif
           endif
         enddo
@@ -1417,8 +1377,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     end subroutine find_near_indeces
 !***********************************************************************
     subroutine interpolate_point(f,phi_,ivar,lower_i,upper_i,lower_j,&
-        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-        lnew_interpolation_method)
+        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
 !
 !  Interpolate value in a mirror point from the eight corner values
 !
@@ -1436,7 +1395,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, intent(in) :: lower_k,upper_k
       real,    intent(in) :: xmirror,ymirror,zmirror
       real,dimension(3), intent(out):: phi_
-      logical, intent(in) :: lnew_interpolation_method
 !
       real, dimension(3) :: xxp
       real, dimension(3) :: gp
@@ -1449,7 +1407,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       xxp=(/xmirror,ymirror,zmirror/)
       inear=(/lower_i,lower_j,lower_k/)
-      if (lnew_interpolation_method .and. ivar==iux) then
+      if (close_interpolation_method .ge. 2 .and. ivar==iux) then
         if ( .not. linear_interpolate(f,iux,iuz,xxp,gp,inear,.false.) ) &
           call fatal_error('linear_interpolate','')
         phi_=gp
@@ -1463,15 +1421,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  some special treatment is required.
 !
       if (lclose_interpolation .and. (ivar < 4 .or. ivar==ilnTT)) then
-        if (lnew_interpolation_method .and. ivar==iux) then
+        if (close_interpolation_method .ge. 2 .and. ivar==iux) then
           f_tmp(iux:iuz)=phi_
           call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
-              f_tmp,.false.,lnew_interpolation_method)
+              f_tmp,.false.)
           phi_=f_tmp(iux:iuz)
         else
           f_tmp(ivar)=phi_(1)
           call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
-              f_tmp,.false.,lnew_interpolation_method)
+              f_tmp,.false.)
           phi_(1)=f_tmp(ivar)
         endif
       endif
@@ -1479,8 +1437,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     endsubroutine interpolate_point
 !***********************************************************************
     subroutine interpolate_point_new(f,f_tmp,lower_i,upper_i,lower_j,&
-        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims,&
-        lnew_interpolation_method)
+        upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
 !
 !  Interpolate value in a mirror point from the eight corner values
 !
@@ -1496,7 +1453,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, intent(in) :: lower_i,upper_i,lower_j,upper_j
       integer, intent(in) :: lower_k,upper_k
       real,    intent(in) :: xmirror,ymirror,zmirror
-      logical, intent(in) :: lnew_interpolation_method
 !
       real, dimension(3) :: xxp
       integer, dimension(3) :: inear
@@ -1520,7 +1476,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       if (lclose_interpolation) then
         call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
-            f_tmp,.false.,lnew_interpolation_method)
+            f_tmp,.false.)
       endif
 !
 !  For the temperature boundaries being antisymmetric relative to the
@@ -1560,7 +1516,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
     endsubroutine interpolate_point_new
 !***********************************************************************
     subroutine close_interpolation(f,ix0_,iy0_,iz0_,iobj,xxp,f_tmp,&
-        fluid_point,lnew_interpolation_method)
+        fluid_point)
 !
 !  20-mar-2009/nils: coded
 !
@@ -1571,8 +1527,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  The point "g" may be defined in two different ways: 
 !    1) the closest grid line which the normal from "s" to "p" cross
 !    2) the ponint which is a normal from "s" and a given distance from "s"
-!  Method number 2) is chosen if "dr_interpolation_circle > 0" where
-!  "dr_interpolation_circle" give the number of grid sizes which "g" is 
+!  Method number 2) is chosen if "close_interpolation_method=3" where
+!  "limit_close_linear" give the number of grid sizes which "g" is 
 !  away from "s".
 !
 !  If fluid_point=.false. we are handling a point which is NOT a grid point,
@@ -1614,8 +1570,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      logical, intent(in) :: lnew_interpolation_method
-      logical :: lnew_inter
       integer, intent(in) :: ix0_,iy0_,iz0_, iobj
       real, dimension(mvar), intent(inout) :: f_tmp
       real, dimension(3), intent(in) :: xxp
@@ -1676,30 +1630,27 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  We want special treatment if:
 !    1)  at least one of the corner points are inside the solid geometry
 !    2)  the distance from the surface is less than 
-!        dr_interpolation_circle*dxmin
+!        limit_close_linear*dxmin
 !    3)  this is a fluid point.
 !
         if (&
             (minval(rij) < rs) .or. &
-            (rp<rs+dr_interpolation_circle*dxmin) .or. &
+            (rp<rs+limit_close_linear*dxmin) .or. &
             fluid_point) then
 
 !
-!  If dr_interpolation_circle is positive we will use the new interpolation
-!  scheme.
+!  If close_interpolation_method = 3 we must check that limit_close_linear
+!  is large enough.
 !
-          if (dr_interpolation_circle>0) then
-            if ((minval(rij)<rs) .and. (rp>rs+dr_interpolation_circle*dxmin)) then
+          if (close_interpolation_method==3) then
+            if ((minval(rij)<rs) .and. (rp>rs+limit_close_linear*dxmin)) then
               print*,'fluid_point=',fluid_point
               print*,'rij=',rij
               print*,'rs,rp=',rs,rp
-              print*,'dr_interpolation_circle,dxmin=',dr_interpolation_circle,dxmin
+              print*,'limit_close_linear,dxmin=',limit_close_linear,dxmin
               call fatal_error('close_interpolation',&
-                  'dr_interpolation_circle is too small!')
+                  'limit_close_linear is too small!')
             endif
-            lnew_inter=.true.
-          else
-            lnew_inter=lnew_interpolation_method
           endif
 !
 !  Currently there are two implementations for the close surface treatment.
@@ -1707,13 +1658,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  but it does not handle particles correctly
 !  for the cases where one of the corner points of "gridplane" is inside
 !  the solid geometry.
+!  Due to the relatively small gradients of density close
+!  to the boundary, and, even more importantly, the small effect of 
+!  density on particle transport, the close interpolation
+!  does not treat density.  
 !
-
-!print*,'lnew_interpolation_method=',lnew_interpolation_method
-!stop
-
-
-          if (lnew_interpolation_method) then
+          if (close_interpolation_method .ge. 2) then
             call close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp,&
                 cornervalue,cornerindex, fluid_point,iobj)
           else
@@ -1770,16 +1720,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  The point "g" may be defined in two different ways: 
 !    1) the closest grid line which the normal from "s" to "p" cross
 !    2) the point which is a normal from "s" and a given distance from "s"
-!  Method number 2) is chosen if "dr_interpolation_circle > 0" where
-!  "dr_interpolation_circle" give the number of grid sizes which "g" is 
+!  Method number 2) is chosen if "close_interpolation_method=3" where
+!  "limit_close_linear" give the number of grid sizes which "g" is 
 !  away from "s". 
 !
-
-!print*,'dr_interpolation_circle=',dr_interpolation_circle
-!stop
-
-      if (dr_interpolation_circle > 0) then
-        rg=rs+dr_interpolation_circle*dxmin
+      if (close_interpolation_method == 3) then
+        rg=rs+limit_close_linear*dxmin
         g_local=p_local*rg/rp
         g_global=g_local+o_global
 
@@ -2211,6 +2157,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             'A valid radius is not found!')
       endif
 !
+!  Find value at surface
+!
+      surf_val=0
+      if (ivar1==ilnTT) surf_val=objects(iobj)%T
+!
 !  Check if the endpoints in the variable direction are
 !  outside the objects. If they are not then define the endpoints
 !  as where the grid line cross the object surface.
@@ -2226,7 +2177,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       endif
       call find_point(rij_min,rs,varval,inputvalue,x1,&
           cornervalue(dirvar,1),cornervalue(dirvar,2),&
-          min,f1,objects(iobj)%x(dirvar))
+          min,f1,objects(iobj)%x(dirvar),surf_val)
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to
@@ -2242,7 +2193,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         endif
         call find_point(rij_min,rs,varval,inputvalue,x1,&
             cornervalue(dirvar,1),cornervalue(dirvar,2),&
-            min,f1y,objects(iobj)%x(dirvar))
+            min,f1y,objects(iobj)%x(dirvar),surf_val)
         f1x=f1
       endif
 !
@@ -2256,7 +2207,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       endif
       call find_point(rij_max,rs,varval,inputvalue,x2,&
           cornervalue(dirvar,1),cornervalue(dirvar,2),&
-          min,f2,objects(iobj)%x(dirvar))
+          min,f2,objects(iobj)%x(dirvar),surf_val)
 !
 ! If we want quadratic interpolation of the radial velocity we
 ! must find both the interploated x and y velocity in order to
@@ -2272,7 +2223,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         endif
         call find_point(rij_max,rs,varval,inputvalue,x2,&
             cornervalue(dirvar,1),cornervalue(dirvar,2),&
-            min,f2y,objects(iobj)%x(dirvar))
+            min,f2y,objects(iobj)%x(dirvar),surf_val)
         f2x=f2
       else
         ! To keep the compiler quiet
@@ -2318,8 +2269,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Perform the final interpolation
 !
-        surf_val=0
-        if (ivar1==ilnTT) surf_val=objects(iobj)%T
         gpp(1)=(rps*fint+rintp*surf_val)/(Rsmall-rs)
       endif
 !
@@ -3139,7 +3088,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endfunction ba_defined
 !***********************************************************************
-    subroutine find_point(rij,rs,f,yin,xout,xmin,xmax,min,fout,x0)
+    subroutine find_point(rij,rs,f,yin,xout,xmin,xmax,min,fout,x0,surf_val)
 !
 !  20-mar-2009/nils: coded
 !
@@ -3147,7 +3096,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  find the point where the grid line enters the solid cell.
 !
       integer, intent(in) :: min
-      real, intent(in) :: xmin,xmax,rij,rs,f,yin,x0
+      real, intent(in) :: xmin,xmax,rij,rs,f,yin,x0,surf_val
       real, intent(out) :: fout,xout
       real :: xvar,xout0
 !
@@ -3166,7 +3115,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         if ((xout > xmax) .or. (xout < xmin)) then
           xout=x0-xout0
         endif
-        fout=0
+        fout=surf_val
       endif
 !
     endsubroutine find_point
