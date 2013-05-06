@@ -516,7 +516,16 @@ function pc_compute_quantity, vars, index, quantity
 		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (eta * jj, bb)
+		eta_jj = jj
+		if (size (eta, /n_dimensions) eq 0) then begin
+			eta_jj *= eta
+		end else begin
+			eta_jj[*,*,*,0] *= eta
+			eta_jj[*,*,*,1] *= eta
+			eta_jj[*,*,*,2] *= eta
+			eta = !Values.D_NaN
+		end
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (eta_jj, bb)
 		return, Poynting_j
 	end
 	if (strcmp (quantity, 'Poynting_u', /fold_case)) then begin
@@ -538,7 +547,16 @@ function pc_compute_quantity, vars, index, quantity
 				if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 				if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 				if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-				Poynting = cross ((eta * jj - cross (uu, bb)/mu0), bb)
+				eta_jj = jj
+				if (size (eta, /n_dimensions) eq 0) then begin
+					eta_jj *= eta
+				end else begin
+					eta_jj[*,*,*,0] *= eta
+					eta_jj[*,*,*,1] *= eta
+					eta_jj[*,*,*,2] *= eta
+					eta = !Values.D_NaN
+				end
+				Poynting = cross ((eta_jj - cross (uu, bb)/mu0), bb)
 			end
 		end
 		return, Poynting
