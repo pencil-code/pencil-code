@@ -2291,15 +2291,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         if (ivar1==iux) then
           fintx=(rint1*f2x+rint2*f1x)/(x2-x1)
           finty=(rint1*f2y+rint2*f1y)/(x2-x1)
-          fint_ur    =fintx*p_local(1)/rs+finty*p_local(2)/rs
-          fint_ut=finty*p_local(1)/rs-fintx*p_local(2)/rs
+          fint_ur    =fintx*p_local(1)/rp+finty*p_local(2)/rp
+          fint_ut=finty*p_local(1)/rp-fintx*p_local(2)/rp
           drp=rp-rs
           dri=Rsmall-rs
           urp=(drp/dri)**2*fint_ur
           utp=(drp/dri)*fint_ut
-          gpp(1)=urp*p_local(1)/rs-utp*p_local(2)/rs
+          gpp(1)=urp*p_local(1)/rp-utp*p_local(2)/rp
         elseif (ivar1==iuy) then
-          gpp(1)=urp*p_local(2)/rs+utp*p_local(1)/rs
+          gpp(1)=urp*p_local(2)/rp+utp*p_local(1)/rp
         else
           call fatal_error('close_interpolation',&
               'Your ivar1 is not correct!')
