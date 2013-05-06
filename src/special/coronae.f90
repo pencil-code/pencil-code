@@ -1081,7 +1081,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc, signuu, uu_tmp, uu_floor
+      real, dimension (nx) :: hc, uu_tmp, uu_floor
       integer :: i
       real :: damp_height, damp_width
 !
@@ -1114,15 +1114,9 @@ module Special
       if (lchen .and. damp_amp /= 0.) then
         damp_height = 0.95*Lz ! value fixed at this moment
         damp_width  = 0.05*Lz
-        do i=0,2
-          signuu = 0.
-          where(abs(f(l1:l2,m,n,iux+i)) > 0.)
-            signuu=f(l1:l2,m,n,iux+i)/abs(f(l1:l2,m,n,iux+i))
-          endwhere
-          df(l1:l2,m,n,iux+i) = df(l1:l2,m,n,iux+i) &
-              - signuu * min(damp_amp*cubic_step(z(n), damp_height, damp_width),abs(f(l1:l2,m,n,iux+i)))
-        enddo
-      endif
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)-&
+                                 f(l1:l2,m,n,iux:iuz)*min(damp_amp*cubic_step(z(n), damp_height, damp_width),1.)
+       endif
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -3891,7 +3885,7 @@ module Special
       logical, save :: lfirstcall=.true.
       real, dimension(:,:,:,:), allocatable :: global_left,global_right
       real, dimension(:,:,:,:), allocatable :: global_left_tmp,global_right_tmp
-      real, dimension(mx,my,3,8) :: left,right=0.,inte
+      real, dimension(mx,my,3,8) :: left=0.,right=0.,inte
       real, dimension (mx,my,3), save :: ax_init,ay_init,az_init,lnrho_init,lntt_init
 !
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
