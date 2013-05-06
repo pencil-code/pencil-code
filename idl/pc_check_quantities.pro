@@ -268,6 +268,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		; Virtual combined dependencies:
 		TT_rho:['TT', 'rho'], $
 		S_rho:['S', 'rho'], $
+		; Additional quantities with dependencies:
+		eta_j:'j', $
 		; Additional quantities without dependencies:
 		time:'', $
 		x:'', $

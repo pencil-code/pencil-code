@@ -469,6 +469,17 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, sqrt (dot2 (jj))
 	end
+	if (strcmp (quantity, 'eta_j', /fold_case)) then begin
+		; Current density times eta [A / s]
+		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
+		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		if (size (eta, /n_dimensions) eq 0) then return, eta * jj
+		eta_j = jj
+		eta_j[*,*,*,0] *= eta
+		eta_j[*,*,*,1] *= eta
+		eta_j[*,*,*,2] *= eta
+		return, eta_j
+	end
 
 	if (strcmp (quantity, 'F_Lorentz', /fold_case)) then begin
 		; Lorentz force [N]
@@ -512,24 +523,14 @@ function pc_compute_quantity, vars, index, quantity
 	end
 
 	if (strcmp (quantity, 'Poynting_j', /fold_case)) then begin
-		; current Poynting flux vector [W/m^2]
-		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
+		; current Poynting flux vector [W / m^2]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-		eta_jj = jj
-		if (size (eta, /n_dimensions) eq 0) then begin
-			eta_jj *= eta
-		end else begin
-			eta_jj[*,*,*,0] *= eta
-			eta_jj[*,*,*,1] *= eta
-			eta_jj[*,*,*,2] *= eta
-			eta = !Values.D_NaN
-		end
-		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (eta_jj, bb)
+		eta_j = pc_compute_quantity (vars, index, 'eta_j')
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (eta_j, bb)
 		return, Poynting_j
 	end
 	if (strcmp (quantity, 'Poynting_u', /fold_case)) then begin
-		; velocity Poynting flux vector [W/m^2]
+		; velocity Poynting flux vector [W / m^2]
 		mu0 = pc_get_parameter ('mu0_4_pi', label=quantity)
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
@@ -537,87 +538,77 @@ function pc_compute_quantity, vars, index, quantity
 		return, Poynting_u
 	end
 	if (strcmp (quantity, 'Poynting', /fold_case)) then begin
-		; Poynting flux vector [W/m^2]
+		; Poynting flux vector [W / m^2]
 		if (n_elements (Poynting) eq 0) then begin
 			if ((n_elements (Poynting_j) gt 0) and (n_elements (Poynting_u) gt 0)) then begin
 				Poynting = Poynting_j + Poynting_u
 			end else begin
 				mu0 = pc_get_parameter ('mu0_4_pi', label=quantity)
-				eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 				if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 				if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-				if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
-				eta_jj = jj
-				if (size (eta, /n_dimensions) eq 0) then begin
-					eta_jj *= eta
-				end else begin
-					eta_jj[*,*,*,0] *= eta
-					eta_jj[*,*,*,1] *= eta
-					eta_jj[*,*,*,2] *= eta
-					eta = !Values.D_NaN
-				end
-				Poynting = cross ((eta_jj - cross (uu, bb)/mu0), bb)
+				eta_j = pc_compute_quantity (vars, index, 'eta_j')
+				Poynting = cross ((eta_j - cross (uu, bb)/mu0), bb)
 			end
 		end
 		return, Poynting
 	end
 	if (strcmp (quantity, 'Poynting_j_x', /fold_case)) then begin
-		; X-component of the current Poynting flux vector [W/m^2]
+		; X-component of the current Poynting flux vector [W / m^2]
 		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
 		return, Poynting_j[*,*,*,0]
 	end
 	if (strcmp (quantity, 'Poynting_j_y', /fold_case)) then begin
-		; Y-component of the current Poynting flux vector [W/m^2]
+		; Y-component of the current Poynting flux vector [W / m^2]
 		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
 		return, Poynting_j[*,*,*,1]
 	end
 	if (strcmp (quantity, 'Poynting_j_z', /fold_case)) then begin
-		; Z-component of the current Poynting flux vector [W/m^2]
+		; Z-component of the current Poynting flux vector [W / m^2]
 		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
 		return, Poynting_j[*,*,*,2]
 	end
 	if (strcmp (quantity, 'Poynting_j_abs', /fold_case)) then begin
-		; Absolute value of the current Poynting flux [W/m^2]
+		; Absolute value of the current Poynting flux [W / m^2]
 		if (n_elements (Poynting_j) eq 0) then Poynting_j = pc_compute_quantity (vars, index, 'Poynting_j')
 		return, sqrt (dot2 (Poynting_j))
 	end
 	if (strcmp (quantity, 'Poynting_u_x', /fold_case)) then begin
-		; X-component of the velocity Poynting flux vector [W/m^2]
+		; X-component of the velocity Poynting flux vector [W / m^2]
 		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
 		return, Poynting_u[*,*,*,0]
 	end
 	if (strcmp (quantity, 'Poynting_u_y', /fold_case)) then begin
-		; Y-component of the velocity Poynting flux vector [W/m^2]
+		; Y-component of the velocity Poynting flux vector [W / m^2]
 		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
 		return, Poynting_u[*,*,*,1]
 	end
 	if (strcmp (quantity, 'Poynting_u_z', /fold_case)) then begin
-		; Z-component of the velocity Poynting flux vector [W/m^2]
+		; Z-component of the velocity Poynting flux vector [W / m^2]
 		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
 		return, Poynting_u[*,*,*,2]
 	end
 	if (strcmp (quantity, 'Poynting_u_abs', /fold_case)) then begin
-		; Absolute value of the velocity Poynting flux [W/m^2]
+		; Absolute value of the velocity Poynting flux [W / m^2]
 		if (n_elements (Poynting_u) eq 0) then Poynting_u = pc_compute_quantity (vars, index, 'Poynting_u')
 		return, sqrt (dot2 (Poynting_u))
 	end
 	if (strcmp (quantity, 'Poynting_x', /fold_case)) then begin
-		; X-component of the Poynting flux vector [W/m^2]
+		; X-component of the Poynting flux vector [W / m^2]
 		if (n_elements (Poynting) eq 0) then Poynting = pc_compute_quantity (vars, index, 'Poynting')
 		return, Poynting[*,*,*,0]
 	end
 	if (strcmp (quantity, 'Poynting_y', /fold_case)) then begin
-		; Y-component of the Poynting flux vector [W/m^2]
+		; Y-component of the Poynting flux vector [W / m^2]
 		if (n_elements (Poynting) eq 0) then Poynting = pc_compute_quantity (vars, index, 'Poynting')
 		return, Poynting[*,*,*,1]
 	end
 	if (strcmp (quantity, 'Poynting_z', /fold_case)) then begin
-		; Z-component of the Poynting flux vector [W/m^2]
+		; Z-component of the Poynting flux vector [W / m^2]
 		if (n_elements (Poynting) eq 0) then Poynting = pc_compute_quantity (vars, index, 'Poynting')
 		return, Poynting[*,*,*,2]
 	end
 	if (strcmp (quantity, 'Poynting_abs', /fold_case)) then begin
-		; Absolute value of the Poynting flux [W/m^2]
+		; Absolute value of the Poynting flux [W / m^2]
 		if (n_elements (Poynting) eq 0) then Poynting = pc_compute_quantity (vars, index, 'Poynting')
 		return, sqrt (dot2 (Poynting))
 	end
