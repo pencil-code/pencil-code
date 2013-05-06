@@ -445,7 +445,7 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'Rn_mag', /fold_case)) then begin
 		; Magnetic mesh Reynolds number of velocities perpendicular to the magnetic field
-		eta = pc_get_parameter ('eta', label=quantity)
+		eta = pc_get_parameter ('eta_total', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
@@ -501,7 +501,7 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'HR_ohm', /fold_case)) then begin
 		; Ohming heating rate [W / m^3] = [kg/m^3] * [m/s]^3 / [m]
 		mu0 = pc_get_parameter ('mu0', label=quantity)
-		eta = pc_get_parameter ('eta', label=quantity)
+		eta = pc_get_parameter ('eta_total', label=quantity)
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, eta * mu0 * dot2 (jj / unit.current_density) * unit.density * unit.velocity^3 / unit.length
 	end
@@ -513,7 +513,7 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (strcmp (quantity, 'Poynting_j', /fold_case)) then begin
 		; current Poynting flux vector [W/m^2]
-		eta = pc_get_parameter ('eta', label=quantity) * unit.length*unit.velocity
+		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (eta * jj, bb)
@@ -534,7 +534,7 @@ function pc_compute_quantity, vars, index, quantity
 				Poynting = Poynting_j + Poynting_u
 			end else begin
 				mu0 = pc_get_parameter ('mu0_4_pi', label=quantity)
-				eta = pc_get_parameter ('eta', label=quantity) * unit.length*unit.velocity
+				eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 				if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 				if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 				if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
