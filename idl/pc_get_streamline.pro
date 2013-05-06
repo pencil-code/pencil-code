@@ -110,8 +110,8 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 				end
 				if (num_points[pos] gt max_packet_length) then begin
 					max_packet_length = num_points[pos] * 10L
-					indices_packet = dblarr (max_packet_length, 3)
-					coords_packet = dblarr (max_packet_length, 3)
+					indices_packet = dblarr (3, max_packet_length)
+					coords_packet = dblarr (3, max_packet_length)
 					distances_packet = dblarr (max_packet_length)
 				end
 				packet_length = 0L
