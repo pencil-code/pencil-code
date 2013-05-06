@@ -525,8 +525,7 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'Poynting_j', /fold_case)) then begin
 		; current Poynting flux vector [W / m^2]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		eta_j = pc_compute_quantity (vars, index, 'eta_j')
-		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (eta_j, bb)
+		if (n_elements (Poynting_j) eq 0) then Poynting_j = cross (pc_compute_quantity (vars, index, 'eta_j'), bb)
 		return, Poynting_j
 	end
 	if (strcmp (quantity, 'Poynting_u', /fold_case)) then begin
