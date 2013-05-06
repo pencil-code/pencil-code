@@ -1683,6 +1683,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             (minval(rij) < rs) .or. &
             (rp<rs+dr_interpolation_circle*dxmin) .or. &
             fluid_point) then
+
 !
 !  If dr_interpolation_circle is positive we will use the new interpolation
 !  scheme.
@@ -1788,15 +1789,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         inear=(/lower_i,lower_j,lower_k/)
         if ( .not. linear_interpolate(f,iux,mvar,g_global,fvar,inear,.false.) ) &
             call fatal_error('close_inter_new','')
-
-
-        print*,'fluid_point=',fluid_point
-        print*,'rs,rp,rg=',rs,rp,rg
-        print*,'dr_interpolation_circle,dxmin=',dr_interpolation_circle,dxmin
-!stop
-
-
-
       else
 !
 !  Find which grid line is the closest one in the direction
@@ -1998,16 +1990,22 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           endif
         endif
 !
-        nr_hat    =(/cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)/)
-        nphi_hat  =(/-cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)/)
-        ntheta_hat=(/-sin(theta),cos(theta),0./)
+        if (objects(iobj)%form=='cylinder') then
+           nr_hat    =(/cos(theta),sin(theta),0./)
+           nphi_hat  =(/0.,0.,1./)
+           ntheta_hat=(/-sin(theta),cos(theta),0./)
+        else
+           nr_hat    =(/cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)/)
+           nphi_hat  =(/-cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)/)
+           ntheta_hat=(/-sin(theta),cos(theta),0./)
+        endif
 !
 !  Having found the unit vectors in the r, theta and phi directions we can now
 !  find the velocities in the same three directions at point "g".
 !
-        call dot(nr_hat    ,fvar,vg_r)
-        call dot(nphi_hat  ,fvar,vg_phi)
-        call dot(ntheta_hat,fvar,vg_theta)
+        call dot(nr_hat    ,fvar(iux:iuz),vg_r)
+        call dot(nphi_hat  ,fvar(iux:iuz),vg_phi)
+        call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
 !
 !  Now it is time to use linear and quadratic interpolation to find the
 !  velocities in point "p".
@@ -2019,7 +2017,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Finally the velocities found in the spherical coordinate system can
 !  now be transfered back to the cartesian coordinate system.
 !
-        f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
+        if (objects(iobj)%form=='cylinder') then
+           f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
+           f_tmp(iuz)=(fvar(iuz)*r_sp+surf_val*r_pg)/r_sg
+        else
+           f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
+        endif
       else
         f_tmp(iux:iuz)=(fvar(iux:iuz)*r_sp+surf_val*r_pg)/r_sg
       endif
