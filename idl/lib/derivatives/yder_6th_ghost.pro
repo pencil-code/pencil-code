@@ -17,9 +17,6 @@ function yder,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
-  if (coord_system ne 'cartesian') then $
-      message, "yder_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
-;
 ;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
   s = size(f)
