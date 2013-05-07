@@ -642,15 +642,18 @@ pro cslice_add_stream
 	grid.x *= unit.default_length
 	grid.y *= unit.default_length
 	grid.z *= unit.default_length
-	precision = 0.1 / max ([ bin_x, bin_y, bin_z ])
 
-	seeds = pc_seed_points (grid, start=[ px, py, pz ])
+	description = ""
+	precision = 0.1 / max ([ bin_x, bin_y, bin_z ])
+	select = 5
+
+	seeds = pc_seed_points (grid, start=[ px, py, pz ], description=description, precision=precision, select=select)
 
 	if (size (seeds, /n_dimensions) lt 1) then return
 	num = n_elements (seeds[0,*])
 
-	add_set = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=seeds, grid=grid, precision=precision)
-	add_set = create_struct (add_set, 'time', varfiles[selected_snapshot].time*unit.time, 'snapshot', varfiles[selected_snapshot].title)
+	add_set = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=seeds, grid=grid, precision=precision, select=select)
+	add_set = create_struct (add_set, 'time', varfiles[selected_snapshot].time*unit.time, 'snapshot', varfiles[selected_snapshot].title, 'description', description, 'precision', precision, 'select', select)
 	streamlines.num++
 	streamlines = create_struct (streamlines, 'set_'+strtrim (streamlines.num, 2), add_set)
 	num_lines += add_set.num_lines

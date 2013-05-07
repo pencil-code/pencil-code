@@ -8,6 +8,9 @@
 ;;;   The returned array contains a list of seed points.
 ;;;   Optional parameters are:
 ;;;   * start (the starting coordinate, default: whole range)
+;;;   * description (description text for the list of seed points)
+;;;   * precision (the sub-grid precision for the tracing, default: 0.2)
+;;;   * select (select only every select-th point for extraction, default: 5)
 ;;;
 ;;;   Example:
 ;;;   IDL> seeds = pc_seed_points (grid)
@@ -18,8 +21,8 @@
 ; Update seed points dialog window
 pro pc_seed_points_update
 
-	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num
-	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z
+	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num, descr, preci, selec
+	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z, description_str, precision_float, select_int
 
 	if ((dist_x eq 0) and (nx gt 1L)) then begin
 		divisors = lindgen (xe - xs + 1L) + 1L
@@ -54,8 +57,8 @@ end
 ; Event handling of seed points dialog window
 pro seed_points_event, event
 
-	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num
-	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z
+	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num, descr, preci, selec
+	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z, description_str, precision_float, select_int
 
 	WIDGET_CONTROL, WIDGET_INFO (event.top, /CHILD)
 	WIDGET_CONTROL, event.id, GET_UVALUE = eventval
@@ -157,6 +160,9 @@ pro seed_points_event, event
 		break
 	end
 	'OK': begin
+		WIDGET_CONTROL, descr, GET_VALUE = description_str
+		WIDGET_CONTROL, preci, GET_VALUE = precision_float
+		WIDGET_CONTROL, selec, GET_VALUE = select_int
 		quit = event.top
 		break
 	end
@@ -179,10 +185,15 @@ end
 
 
 ; File selection dialog GUI.
-function pc_seed_points, grid, start=start
+function pc_seed_points, grid, start=start, description=description, precision=precision, select=select
 
-	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num
-	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z
+	common seed_points_gui_common, sub_xs, sub_xe, sub_nx, sub_ys, sub_ye, sub_ny, sub_zs, sub_ze, sub_nz, sel_dx, sel_dy, sel_dz, num, descr, preci, selec
+	common seed_points_common, coord, center, xs, xe, ys, ye, zs, ze, nx, ny, nz, num_x, num_y, num_z, dist_x, dist_y, dist_z, description_str, precision_float, select_int
+
+	; Default settings:
+	default, description, "pc_seed_points"
+	default, precision, 0.2
+	default, select, 5
 
 	coord = grid
 
@@ -256,6 +267,16 @@ function pc_seed_points, grid, start=start
 	WIDGET_CONTROL, sub_ze, SENSITIVE = (num_z gt 1L)
 	WIDGET_CONTROL, sub_nz, SENSITIVE = (num_z gt 1L)
 
+	tmp	= WIDGET_BASE (CTRL, frame=0, /align_center, /col)
+	BUT	= WIDGET_BASE (tmp, frame=0, /align_center, /row)
+	descr	= CW_FIELD (BUT, title='Description:', xsize=40)
+	BUT	= WIDGET_BASE (tmp, frame=0, /align_center, /row)
+	preci	= CW_FIELD (BUT, title='Precision:', /floating, xsize=10)
+	selec	= CW_FIELD (BUT, title='Select every:', /long, xsize=10)
+	WIDGET_CONTROL, descr, SET_VALUE = description
+	WIDGET_CONTROL, preci, SET_VALUE = precision
+	WIDGET_CONTROL, selec, SET_VALUE = select
+
 	BUT	= WIDGET_BASE (CTRL, frame=0, /align_center, /row)
 	num	= CW_FIELD (BUT, title='Number of Streamlines:', /long, /noedit, xsize=10)
 	WIDGET_CONTROL, num, SET_VALUE = nx*ny*nz
@@ -312,6 +333,10 @@ function pc_seed_points, grid, start=start
 			end
 		end
 	end
+
+	description = description_str
+	precision = precision_float
+	select = select_int
 
 	return, reform (seeds)
 end

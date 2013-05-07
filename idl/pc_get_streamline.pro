@@ -14,6 +14,7 @@
 ;   * periodic       3D-array of periodicity flags (Default: no periodicity, if no grid is given).
 ;   * precision      Precision of streamline tracing between grid points, a value
 ;                    of 0.1 results in 10 interpolations per grid distance (Default: 0.1).
+;   * select         Save only every select-th point along the traced streamline.
 ;   * max_length     Maximum length of a streamline.
 ;   * length         Returns the full length of each traced streamline.
 ;   * num_lines      Returns the number of traced streamlines.
@@ -48,10 +49,11 @@
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices
+function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, select=select, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices
 
 	default, dir, 0
 	default, precision, 0.1
+	default, select, 5
 	default, nghost, 3
 	default, nbox, 3.0
 	default, max_packet_length, 1000000L
@@ -92,7 +94,7 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 		origin = lonarr (num_lines)
 		length = dblarr (num_lines)
 		for pos = 0L, num_lines - 1L do begin
-			stream = pc_get_streamline (data, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, max_length=max_length)
+			stream = pc_get_streamline (data, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, select=select, max_length=max_length)
 			num_points[pos] = stream.num_points
 			if ((packet_length + num_points[pos]) gt max_packet_length) then begin
 				if (packet_length gt 0L) then begin
@@ -145,8 +147,8 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 
 	if (dir eq 0) then begin
 		; Combine forward and backward streamlines from starting point
-		along = pc_get_streamline (data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, length=length, num_points=num_points, origin=origin, max_length=max_length, /return_indices)
-		against = pc_get_streamline (data, anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, length=l2, num_points=n2, max_length=max_length, /return_indices)
+		along = pc_get_streamline (data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=1, periodic=periodic, precision=precision, select=select, length=length, num_points=num_points, origin=origin, max_length=max_length, /return_indices)
+		against = pc_get_streamline (data, anchor=anchor, grid=grid, distances=d2, coords=against_coords, direction=-1, periodic=periodic, precision=precision, select=select, length=l2, num_points=n2, max_length=max_length, /return_indices)
 		if (n2 le 1) then begin
 			if (keyword_set (return_indices)) then return, along
 			return, { indices:along, coords:coords, distances:distances, num_points:num_points, length:length, origin:origin, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] }
@@ -215,6 +217,7 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 	coords = [ [anchor] ]
 	distances = [ length ]
 	last = anchor
+	num_total = 0L
 	done = 0
 	local_data = data[0:1,0:1,0:1,*]
 	while (all (((pos ge 0) and (pos le ([nx, ny, nz]-1))) or periodic) and (length lt max_length) and not done) do begin
@@ -276,19 +279,24 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 
 		; Compute the path length along the traced streamline
 		length += delta
-		distances = [ distances, length ]
 
-		; Add indices and grid coordinates to the list of traced streamline points
-		indices = [ [indices], [pos] ]
+		; Find new position in grid coordinates
 		point = pos
 		if (keyword_set (grid)) then begin
 			point[0] = interpolate (x, pos[0] + nghost)
 			point[1] = interpolate (y, pos[1] + nghost)
 			point[2] = interpolate (z, pos[2] + nghost)
 		end
+		last = point
+
+		; Skip unselected points
+		if (((num_total++ mod select) ne 0) and not done) then continue
+
+		; Add indices and grid coordinates to the list of traced streamline points
+		distances = [ distances, length ]
+		indices = [ [indices], [pos] ]
 		coords = [ [coords], [point] ]
 		num_points++
-		last = point
 	end
 
 	if (keyword_set (return_indices)) then return, indices
