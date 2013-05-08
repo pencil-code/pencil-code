@@ -52,7 +52,7 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 
 	; Default settings:
 	default_name = 'Quantity'
-	if (not keyword_set (packet_size)) then packet_size = 100L
+	if (not keyword_set (packet_size)) then packet_size = 1000L
 	if (not keyword_set (precision)) then precision = 'D'
 	if (precision ne 'F') then precision = 'D'
 
@@ -83,20 +83,51 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 	quantity = { name:name }
 	for set = 1L, streamlines.num do begin
 
-		indices = streamlines.(set).indices
 		num_points = total (streamlines.(set).num_points, /preserve_type)
-		if (precision eq 'D') then extract = dblarr (num, num_points) else extract = fltarr (num, num_points)
+		if (precision eq 'D') then begin
+			extract = dblarr (num, num_points)
+			loc_data = dblarr (2L*packet_size, 2, 2, num)
+		end else begin
+			extract = fltarr (num, num_points)
+			loc_data = fltarr (2L*packet_size, 2, 2, num)
+		end
 
-		; Follow the streamline
-		for pos = 0L, num_points - 1L do begin
-			int_pos = (floor (indices[*,pos]) < ([nx, ny, nz] - 2)) > 0
-			residual = indices[*,pos] - int_pos
-			loc_data = data[int_pos[0]:int_pos[0]+1,int_pos[1]:int_pos[1]+1,int_pos[2]:int_pos[2]+1,*]
+		packet_pos = 0L
+		while (packet_pos lt num_points) do begin
+			packet_end = (packet_pos + packet_size - 1L) < (num_points - 1L)
+			packet_num = packet_end - packet_pos + 1L
+
+			; Follow the streamline
+			indices_x = reform (streamlines.(set).indices[0,packet_pos:packet_end])
+			indices_y = reform (streamlines.(set).indices[1,packet_pos:packet_end])
+			indices_z = reform (streamlines.(set).indices[2,packet_pos:packet_end])
+			int_x = (floor (indices_x) < (nx - 2)) > 0
+			int_y = (floor (indices_y) < (ny - 2)) > 0
+			int_z = (floor (indices_z) < (nz - 2)) > 0
+			residual_x = indices_x - int_x
+			residual_y = indices_y - int_y
+			residual_z = indices_z - int_z
+
+			; Prepare local data packet for interpolation
+			last = -1
+			num_cubes = 0L
+			for pos = 0L, packet_num - 1L do begin
+				if (any ([ int_x[pos], int_y[pos], int_z[pos] ] ne last)) then begin
+					loc_data[2*num_cubes:2*num_cubes+1,*,*,*] = data[int_x[pos]:int_x[pos]+1,int_y[pos]:int_y[pos]+1,int_z[pos]:int_z[pos]+1,*]
+					last = [ int_x[pos], int_y[pos], int_z[pos] ]
+					num_cubes++
+				end
+				residual_x[pos] += 2 * (num_cubes - 1)
+			end
+
 			; Iterate over the data components
 			for comp = 0, num - 1 do begin
-				extract[comp,pos] = interpolate (loc_data[*,*,*,comp], residual[0], residual[1], residual[2])
+				extract[comp,packet_pos:packet_end] = interpolate (loc_data[0:2*num_cubes-1,*,*,comp], residual_x, residual_y, residual_z)
 			end
+
+			packet_pos += packet_size
 		end
+
 		quantity = create_struct (quantity, label+'_'+strtrim (set, 2), reform (extract))
 	end
 
