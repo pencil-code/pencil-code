@@ -335,6 +335,7 @@ function pc_seed_points, grid, start=start, description=description, precision=p
 	end
 
 	description = description_str
+	if (size (description, /n_dimensions) eq 1) then description = description[0]
 	precision = precision_float
 	select = select_int
 
