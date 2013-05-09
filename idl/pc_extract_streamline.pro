@@ -1,3 +1,4 @@
+; 3.302
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   pc_extract_streamline.pro     ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -52,7 +53,7 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 
 	; Default settings:
 	default_name = 'Quantity'
-	if (not keyword_set (packet_size)) then packet_size = 1000L
+	if (not keyword_set (packet_size)) then packet_size = 10000L
 	if (not keyword_set (precision)) then precision = 'D'
 	if (precision ne 'F') then precision = 'D'
 
@@ -104,25 +105,18 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 			int_x = (floor (indices_x) < (nx - 2)) > 0
 			int_y = (floor (indices_y) < (ny - 2)) > 0
 			int_z = (floor (indices_z) < (nz - 2)) > 0
-			residual_x = indices_x - int_x
+			residual_x = indices_x - int_x + 2 * lindgen (packet_num)
 			residual_y = indices_y - int_y
 			residual_z = indices_z - int_z
 
 			; Prepare local data packet for interpolation
-			last = -1
-			num_cubes = 0L
 			for pos = 0L, packet_num - 1L do begin
-				if (any ([ int_x[pos], int_y[pos], int_z[pos] ] ne last)) then begin
-					loc_data[2*num_cubes:2*num_cubes+1,*,*,*] = data[int_x[pos]:int_x[pos]+1,int_y[pos]:int_y[pos]+1,int_z[pos]:int_z[pos]+1,*]
-					last = [ int_x[pos], int_y[pos], int_z[pos] ]
-					num_cubes++
-				end
-				residual_x[pos] += 2 * (num_cubes - 1)
+				loc_data[2*pos:2*pos+1,*,*,*] = data[int_x[pos]:int_x[pos]+1,int_y[pos]:int_y[pos]+1,int_z[pos]:int_z[pos]+1,*]
 			end
 
 			; Iterate over the data components
 			for comp = 0, num - 1 do begin
-				extract[comp,packet_pos:packet_end] = interpolate (loc_data[0:2*num_cubes-1,*,*,comp], residual_x, residual_y, residual_z)
+				extract[comp,packet_pos:packet_end] = interpolate (loc_data[*,*,*,comp], residual_x, residual_y, residual_z)
 			end
 
 			packet_pos += packet_size
