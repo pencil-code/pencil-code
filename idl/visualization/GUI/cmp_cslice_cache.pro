@@ -421,7 +421,7 @@ pro cslice_event, event
 			names = tag_names (streamlines)
 			old = streamlines
 			streamlines = { num:streamlines.num-1L }
-			for set = 1L, old.num-1L do streamlines = create_struct (streamlines, names[set], old.(set))
+			for pos = 1L, old.num-1L do streamlines = create_struct (streamlines, names[pos], old.(pos))
 			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
 			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
 			WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
@@ -497,7 +497,11 @@ pro cslice_event, event
 			break
 		end
 		restore, settings_file
-		if (file_test (streamlines_file, /read)) then restore, streamlines_file
+		if (file_test (streamlines_file, /read)) then begin
+			restore, streamlines_file
+			num_lines = 0L
+			for pos = 1L, streamlines.num do num_lines += streamlines.(pos).num_lines
+		end
 		selected_var = (where (tag_names (varsets) eq var_names[selected_var]))[0]
 		if (selected_var ge 0) then selected_cube = selected_var
 		num = n_elements (var_names)
@@ -710,7 +714,7 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 	default, target, 0
 
 	; default maximum of streamlines to be plotted
-	default, max_streamlines, 1000L
+	default, max_streamlines, 4096L
 
 	!P.MULTI = [0, 1, 1]
 
@@ -938,7 +942,7 @@ pro cslice_save_slices
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
-        quantity = (tag_names (set))[selected_cube]
+	quantity = (tag_names (set))[selected_cube]
 	prefix = varfiles[selected_snapshot].title + "_" + quantity
 
 	cut_xy = reform (cube[*,*,pz], num_x, num_y)
@@ -992,7 +996,7 @@ pro cslice_save_movie, frame, allocate=allocate
 	time[frame] = varfiles[selected_snapshot].time
 	if (any (finite (time, /NaN))) then return
 
-        quantity = (tag_names (set))[selected_cube]
+	quantity = (tag_names (set))[selected_cube]
 	x = coord.x * unit.default_length
 	y = coord.y * unit.default_length
 	z = coord.z * unit.default_length
@@ -1036,14 +1040,14 @@ pro cslice_save_streamlines, data=data
 	if (strmid (varfile, 0, 3) eq "VAR") then streamlines_file = varfile+"_"+streamlines_file
 
 	; Extract selected scalar quantity
-        quantity_name = (tag_names (set))[selected_cube]
+	quantity_name = (tag_names (set))[selected_cube]
 	quantity = pc_extract_streamline (cube, streamlines, name=quantity_name, label='set')
 	quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
 	save, filename=streamlines_file+"_"+quantity_name+suffix, streamlines, quantity
 
 	if (selected_overplot ge 1) then begin
 		; Extract selected overplot vector field
-        	quantity_name = (tag_names (overplot))[selected_overplot]
+		quantity_name = (tag_names (overplot))[selected_overplot]
 		quantity = pc_extract_streamline (field, streamlines.(pos).indices, name=quantity_name, label='set')
 		quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
 		save, filename=streamlines_file+"_"+quantity_name+suffix, streamlines, quantity
