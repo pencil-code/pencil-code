@@ -23,6 +23,7 @@
 ;   * coords         Returns an array of grid coordinates of each traced streamline.
 ;   * distances      Returns an array of the distances from the anchor point along each streamline.
 ;   * return_indices Return an array of indices of the streamline (Default: return streamlines structure).
+;   * quiet          Suppresses output, if set (Default: show output for more than one streamline).
 ;
 ;  Returns:
 ;   * streamlines    Streamlines structure containing all relevant data (Default).
@@ -49,14 +50,16 @@
 
 
 ; Calculation of streamline coordinates.
-function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, select=select, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices
+function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances, coords=coords, direction=dir, periodic=periodic, precision=precision, select=select, length=length, num_lines=num_lines, num_points=num_points, origin=origin, max_length=max_length, return_indices=return_indices, quiet=quiet
 
 	default, dir, 0
 	default, precision, 0.1
 	default, select, 5
+	default, quiet, 0
 	default, nghost, 3
 	default, nbox, 3.0
 	default, max_packet_length, 1000000L
+	default, display_packet, 1000L
 
 	; Periodicity
 	if (keyword_set (grid)) then periodic = grid.lperi
@@ -93,7 +96,10 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 		distances_packet = dblarr (max_packet_length)
 		origin = lonarr (num_lines)
 		length = dblarr (num_lines)
+		if (num_lines le 1) then quiet = 1
+		if (display_packet ge num_lines / 100) then display_packet = (num_lines / 100) > 5
 		for pos = 0L, num_lines - 1L do begin
+			if (not quiet and (((pos mod display_packet) eq 0) or (pos le 10))) then print, " Tracing streamline "+strtrim (pos, 2)+" of "+strtrim (num_lines, 2)+string (13b), form='(A,$)'
 			stream = pc_get_streamline (data, anchor=anchor[*,pos], grid=grid, direction=dir, periodic=periodic, precision=precision, select=select, max_length=max_length)
 			num_points[pos] = stream.num_points
 			if ((packet_length + num_points[pos]) gt max_packet_length) then begin
@@ -128,6 +134,7 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 			last[pos] = line_pos - 1L
 			packet_length += num_points[pos]
 		end
+		if (not quiet) then print, " Tracing streamline "+strtrim (num_lines, 2)+" of "+strtrim (num_lines, 2)
 		if (packet_length gt 0L) then begin
 			if (packet eq 0L) then begin
 				indices_stack = indices_packet[*,0L:packet_length-1L]
@@ -139,7 +146,6 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 				distances_stack = [ distances_stack, distances_packet[0L:packet_length-1L] ]
 			end
 			packet++
-			print, "Packet: ", packet, pos
 		end
 		if (keyword_set (return_indices)) then return, indices_stack
 		return, { indices:indices_stack, coords:coords_stack, distances:distances_stack, num_points:num_points, length:length, origin:origin, num_lines:num_lines, first:first, last:last }
