@@ -33,12 +33,11 @@
 ; Find streamline in a structure of sets of streamlines.
 function pc_select_streamline, data, num, streamlines=streamlines
 
-	num_sets = data.num
-	if (num_sets lt 1L) then message, "ERROR: The given streamlines structure doesn't contain any streamlines."
+	if (data.num.sets lt 1L) then message, "ERROR: The given streamlines structure doesn't contain any streamlines."
 
 	; Iterate though sets of streamlines
 	passed_num = 0L
-	for set = 1L, num_sets do begin
+	for set = 1L, data.num.sets do begin
 		if (keyword_set (streamlines)) then num_lines = streamlines.(set).num_lines else num_lines = data.(set).num_lines
 		if (num le (passed_num + num_lines)) then begin
 			; Streamline lies within actual set

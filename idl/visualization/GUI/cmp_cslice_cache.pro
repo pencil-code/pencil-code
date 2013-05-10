@@ -44,7 +44,7 @@ pro cslice_event, event
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common event_common, button_pressed_yz, button_pressed_xz, button_pressed_xy
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
@@ -401,11 +401,11 @@ pro cslice_event, event
 	end
 	'ST_ADD': begin
 		cslice_add_stream
-		WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
-		WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
-		WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
-		WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
-		WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
+		WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num.sets ge 1L)
+		WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num.sets ge 1L)
+		WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num.sets ge 1L)
+		WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num.sets ge 1L)
+		WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num.sets ge 1L)
 		DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		break
 	end
@@ -416,31 +416,30 @@ pro cslice_event, event
 		break
 	end
 	'UNDO': begin
-		if (streamlines.num ge 1L) then begin
-			num_lines -= streamlines.(streamlines.num).num_lines
+		if (streamlines.num.sets ge 1L) then begin
+			streamlines.num.lines -= streamlines.(streamlines.num.sets).num_lines
 			names = tag_names (streamlines)
 			old = streamlines
-			streamlines = { num:streamlines.num-1L }
+			streamlines = { num:{ sets:streamlines.num.sets-1L, lines:streamlines.num.lines } }
 			for pos = 1L, old.num-1L do streamlines = create_struct (streamlines, names[pos], old.(pos))
-			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
-			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
-			WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
-			WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
-			WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
+			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num.sets ge 1L)
+			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num.sets ge 1L)
+			WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num.sets ge 1L)
+			WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num.sets ge 1L)
+			WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num.sets ge 1L)
 			stream_pos = -1L
 			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
 	end
 	'CLEAR': begin
-		if (streamlines.num ge 1L) then begin
+		if (streamlines.num.sets ge 1L) then begin
 			WIDGET_CONTROL, undo, SENSITIVE = 0
 			WIDGET_CONTROL, st_next, SENSITIVE = 0
 			WIDGET_CONTROL, st_prev, SENSITIVE = 0
 			WIDGET_CONTROL, extract, SENSITIVE = 0
 			WIDGET_CONTROL, clear, SENSITIVE = 0
-			streamlines = { num:0L }
-			num_lines = 0L
+			streamlines = { num:{ sets:0L, lines:0L } }
 			selected_streamline = 0L
 			stream_pos = -1L
 			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
@@ -449,7 +448,7 @@ pro cslice_event, event
 	end
 	'ST_NEXT':
 	'ST_PREV': begin
-		if (streamlines.num ge 1L) then begin
+		if (streamlines.num.sets ge 1L) then begin
 			if (stream_pos lt 0L) then begin
 				coordinate = [coord.x[px], coord.y[py], coord.z[pz]] * unit.default_length
 				selected_streamline = pc_find_streamline (coordinate, streamlines, nearest=stream_pos)
@@ -462,12 +461,12 @@ pro cslice_event, event
 				stream_pos += step
 				if (stream_pos ge actual.num_points) then begin
 					selected_streamline++
-					if (selected_streamline gt num_lines) then selected_streamline = 1L
+					if (selected_streamline gt streamlines.num.lines) then selected_streamline = 1L
 					stream_pos = 0L
 				end
 				if (stream_pos lt 0L) then begin
 					selected_streamline--
-					if (selected_streamline lt 1) then selected_streamline = num_lines
+					if (selected_streamline lt 1) then selected_streamline = streamlines.num.lines
 					stream_pos = actual.num_points - 1L
 				end
 			end
@@ -480,8 +479,8 @@ pro cslice_event, event
 			pz = pc_find_index (actual.coords[2,stream_pos], coord.z*unit.default_length, num=num_z)
 			WIDGET_CONTROL, co_z, SET_VALUE = coord.z[pz]
 			WIDGET_CONTROL, sl_z, SET_VALUE = pz + coord.z_off
-			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
-			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
+			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num.sets ge 1L)
+			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num.sets ge 1L)
 			DRAW_IMAGE_X=1  &  DRAW_IMAGE_Y=1  &  DRAW_IMAGE_Z=1
 		end
 		break
@@ -497,11 +496,7 @@ pro cslice_event, event
 			break
 		end
 		restore, settings_file
-		if (file_test (streamlines_file, /read)) then begin
-			restore, streamlines_file
-			num_lines = 0L
-			for pos = 1L, streamlines.num do num_lines += streamlines.(pos).num_lines
-		end
+		if (file_test (streamlines_file, /read)) then restore, streamlines_file
 		selected_var = (where (tag_names (varsets) eq var_names[selected_var]))[0]
 		if (selected_var ge 0) then selected_cube = selected_var
 		num = n_elements (var_names)
@@ -638,7 +633,7 @@ end
 pro cslice_add_stream
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
@@ -658,10 +653,10 @@ pro cslice_add_stream
 
 	add_set = pc_get_streamline (oversets[selected_snapshot].(selected_field), anchor=seeds, grid=grid, precision=precision, select=select)
 	add_set = create_struct (add_set, 'time', varfiles[selected_snapshot].time*unit.time, 'snapshot', varfiles[selected_snapshot].title, 'description', description, 'precision', precision, 'select', select)
-	streamlines.num++
-	streamlines = create_struct (streamlines, 'set_'+strtrim (streamlines.num, 2), add_set)
-	num_lines += add_set.num_lines
-	selected_streamline = num_lines
+	streamlines.num.sets++
+	streamlines = create_struct (streamlines, 'set_'+strtrim (streamlines.num.sets, 2), add_set)
+	streamlines.num.lines += add_set.num_lines
+	selected_streamline = streamlines.num.lines
 	stream_pos = add_set.origin
 end
 
@@ -699,7 +694,7 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
@@ -878,8 +873,8 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 		end
 	end
 
-	if (streamlines.num ge 1L) then begin
-		for pos = 1L, num_lines < max_streamlines do begin
+	if (streamlines.num.sets ge 1L) then begin
+		for pos = 1L, streamlines.num.lines < max_streamlines do begin
 			actual = pc_select_streamline (streamlines, pos)
 			if (destretch[0]) then begin
 				indices_x = reform (actual.coords[0,*]) / unit.default_length
@@ -1024,10 +1019,10 @@ pro cslice_save_streamlines, data=data
 
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
-	if (streamlines.num lt 1L) then return
+	if (streamlines.num.sets lt 1L) then return
 
 	; Settings:
 	streamlines_file = 'streamlines'
@@ -1157,7 +1152,7 @@ pro cslice_prepare_overplot, reset=reset
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common overplot_common, overplot_contour, field_x_y, field_x_z, field_y_x, field_y_z, field_z_x, field_z_y, field_x_indices, field_y_indices, field_z_indices, vector_distance, vector_length
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
@@ -1233,7 +1228,7 @@ end
 pro cslice_default_settings
 
 	common cslice_ct_common, last_ct
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
 
@@ -1261,7 +1256,7 @@ pro cslice_reset_GUI
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common cslice_ct_common, last_ct
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
@@ -1277,8 +1272,7 @@ pro cslice_reset_GUI
 	over_max = 0.0
 
 	field = 0
-	streamlines = { num:0L }
-	num_lines = 0L
+	streamlines = { num:{ sets:0L, lines:0L } }
 	WIDGET_CONTROL, st_add, SENSITIVE = 0
 	WIDGET_CONTROL, extract, SENSITIVE = 0
 	WIDGET_CONTROL, st_prev, SENSITIVE = 0
@@ -1298,7 +1292,7 @@ pro cslice_update_GUI
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
 	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
-	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field, num_lines
+	common streamline_common, streamlines, stream_pos, selected_streamline, selected_field
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 	common gui_common, wimg_yz, wimg_xz, wimg_xy, wcut_x, wcut_y, wcut_z, co_t, sl_t, co_x, co_y, co_z, sl_x, sl_y, sl_z, b_load, b_log, b_sub, b_abs, b_cro, b_des, aver, timeser, vars, over, st_add, extract, undo, clear, st_prev, st_next, snap, prev, next, play, image, sl_min, sl_max, sl_over, min_max, freeze, jump_min, jump_max, coltab
 	common settings_common, px, py, pz, cut, log_plot, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_color, af_x, af_y, af_z, destretch
@@ -1334,11 +1328,11 @@ pro cslice_update_GUI
 	WIDGET_CONTROL, min_max, SENSITIVE = 1
 	WIDGET_CONTROL, freeze, SENSITIVE = 1
 	WIDGET_CONTROL, sl_over, SENSITIVE = (selected_overplot gt 0)
-	WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num ge 1L)
-	WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num ge 1L)
-	WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num ge 1L)
-	WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num ge 1L)
-	WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num ge 1L)
+	WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num.sets ge 1L)
+	WIDGET_CONTROL, undo, SENSITIVE = (streamlines.num.sets ge 1L)
+	WIDGET_CONTROL, clear, SENSITIVE = (streamlines.num.sets ge 1L)
+	WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num.sets ge 1L)
+	WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num.sets ge 1L)
 end
 
 

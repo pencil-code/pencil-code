@@ -81,7 +81,7 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 
 	; Iterate over streamlines
 	quantity = { name:name }
-	for set = 1L, streamlines.num do begin
+	for set = 1L, streamlines.num.sets do begin
 
 		num_points = total (streamlines.(set).num_points, /preserve_type)
 		if (precision eq 'D') then begin
@@ -127,16 +127,16 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 	if (keyword_set (return_values)) then begin
 		; Return data values in an array
 		num_points = 0L
-		for set = 1L, streamlines.num do num_points += total (streamlines.(set).num_points, /preserve_type)
+		for set = 1L, streamlines.num.sets do num_points += total (streamlines.(set).num_points, /preserve_type)
 		if (precision eq 'D') then quantity_stack = dblarr (num, num_points) else quantity_stack = fltarr (num, num_points)
 		start = 0L
-		for pos = 1L, streamlines.num do begin
-			actual_set = streamlines.(pos)
+		for set = 1L, streamlines.num.sets do begin
+			actual_set = streamlines.(set)
 			num_transfer = actual_set.num_points
 			if (num eq 1) then begin
-				quantity_stack[start:start+num_transfer-1L] = quantity.(pos)
+				quantity_stack[start:start+num_transfer-1L] = quantity.(set)
 			end else begin
-				quantity_stack[*,start:start+num_transfer-1L] = quantity.(pos)
+				quantity_stack[*,start:start+num_transfer-1L] = quantity.(set)
 			end
 			start += num_transfer
 		end
