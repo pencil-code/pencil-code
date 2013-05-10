@@ -982,7 +982,7 @@ module Entropy
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
-      use EquationOfState,  only: isothtop, &
+      use EquationOfState,  only: isothtop, get_cp1, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
@@ -998,7 +998,7 @@ module Entropy
       real, dimension (nx) :: tmp,pot
       real, dimension (nx) :: pp,lnrho,ss,r_mn
       real, dimension (mx) :: ss_mx
-      real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
+      real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext,cp1
       integer :: j
       logical :: lnothing=.true., save_pretend_lnTT
 !
@@ -1038,6 +1038,13 @@ module Entropy
           case ('wave')
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+ampl_ss*sin(kx_ss*x(l1:l2)+pi)
+            enddo; enddo
+          case ('wave-pressure-equil')
+            call get_cp1(cp1)
+            do n=n1,n2; do m=m1,m2
+              tmp=ampl_ss*cos(kx_ss*x(l1:l2))*cos(ky_ss*y(m))*cos(kz_ss*z(n))
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+ss_const+tmp
+              f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-cp1*tmp
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)

@@ -281,7 +281,7 @@ module Radiation
 !  Print all unit vectors (if ray_good=T).
 !
           if (lroot.and.ip<14) write(*,'(1x,a,i4,3f6.2)') &
-              'initialize_radiation: ndir, unit_vec=', &
+              'initialize_radiation: idir, unit_vec=', &
               idir, unit_vec(idir,:)
 !
           idir=idir+1
@@ -292,7 +292,7 @@ module Radiation
       enddo
       enddo
 !
-!  Total number of directions.
+!  Total number of directions; correct for latest idir+1 operation.
 !
       ndir=idir-1
 !
@@ -341,7 +341,7 @@ module Radiation
 !
       call calc_angle_weights
 !
-      if (lroot.and.ip<14) print*, 'initialize_radiation: ndir =', ndir
+      if (lroot.and.ip<=14) print*, 'initialize_radiation: ndir =', ndir
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -356,21 +356,38 @@ module Radiation
 !  18-may-07/wlad: coded
 !
       real :: xyplane,yzplane,xzplane,room,xaxis
-      real :: yaxis,zaxis,aspect_ratio,mu2
+      real :: yaxis,zaxis,aspect_ratio,mu2,correction_factor=1.
+!
+!  Calculate weights for weighed integrals involving one unit vector nhat
 !
       select case (angle_weight)
+!
+!  Weight factors corrected for dimensionality less than 3.
+!  In 1-D, we need to correct by a factor 1/3, while in 2-D by 2/3.
+!  Thus, we multiply by the number of dimensions (=radx+rady+radz)
+!  and divide by 3. This has been verified in 1-D with 2 rays,
+!  in 2-D with 4 (xy periodic) or 8 (xz semi-periodic) rays,
+!  as well as in 3-D with 14 or 22 rays.
+!
+      case ('corrected')
+        correction_factor=(radx+rady+radz)/3.
+        if (ndir>0) weight=(4*pi/ndir)*correction_factor
+        if (radx>1.or.rady>1.or.radz>1) call fatal_error( &
+            'calc_angle_weights','radx, rady, and radz cannot be larger than 1')
+        if (lroot.and.ip<=14) print*, &
+            'calc_angle_weights: correction_factor =', correction_factor
+        weightn=weight
+!
+!  Constant weight factors, ignore dimensionality, which is wrong,
+!  but we keep it for now for compatibility reasons.
 !
       case ('constant')
         if (ndir>0) weight=4*pi/ndir
         weightn=weight
 !
-!  Calculate weights for weighed integrals involving one unit vector nhat
-!  (note that this fix is activated by default).
-!  Need to check whether we should do this also in the 1-D case for cooling
-!  (weight=weight/3) to get agreement with the usual optical thick calculation.
+        if (lfix_radweight_1d.and.ndir==2) weightn=weightn/3.
 !
-        if (lfix_radweight_1d.and.ndir==2) weightn=weightn/3
-!--     if (lfix_radweight_1d.and.ndir==2) weight=weight/3
+!  Spherical harmonics calculation of weight factors; see the manual.
 !
       case ('spherical-harmonics')
 !
