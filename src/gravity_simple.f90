@@ -402,7 +402,7 @@ module Gravity
       ! 'sphere_rad' is the radius of the sphere (independant from box coordinates).
       ! Together, sphere_rad and zref describe, how much of the sphere lies inside the box.
       case ('solid_sphere')
-        if (lroot) print *, 'initialize_gravity: solid shpere zref=', zref, ', g_ref=', g_ref, ', sphere_rad=', sphere_rad
+        if (lroot) print *, 'initialize_gravity: solid sphere zref=', zref, ', g_ref=', g_ref, ', sphere_rad=', sphere_rad
         where (z > zref)
           gravz_zpencil = g_ref * sphere_rad**2 / (z-zref+sphere_rad)**2
         else where (z < zref-2*sphere_rad)
