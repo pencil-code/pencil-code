@@ -919,6 +919,7 @@ module Hydro
         case ('tor_pert'); call tor_pert(ampluu(j),f,iux)
         case ('rotblob'); call rotblob(ampluu(j),incl_alpha,f,iux,rot_rr,xsphere,ysphere,zsphere)
         case ('rotblob_yz'); call rotblob_yz(ampluu(j),f,iux,rot_rr,xsphere,ysphere,zsphere)
+        case ('read_arr_file'); call read_outside_vec_array(f, "uu.arr", iuu)
         case ('diffrot'); call diffrot(ampluu(j),f,iuy)
         case ('olddiffrot'); call olddiffrot(ampluu(j),f,iuy)
         case ('sinwave-phase')
