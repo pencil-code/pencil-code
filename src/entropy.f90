@@ -1063,6 +1063,7 @@ module Entropy
           case ('hor-tube')
             call htube2(ampl_ss,f,iss,iss,radius_ss,epsilon_ss)
           case ('const_chit'); call strat_const_chit(f)
+          case ('read_arr_file'); call read_outside_scal_array(f, "ss.arr", iss)
           case ('mixinglength')
              call mixinglength(mixinglength_flux,f)
              hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma1/gravz
