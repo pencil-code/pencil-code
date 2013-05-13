@@ -622,6 +622,7 @@ module Density
         case ('pre-stellar'); call pre_stellar_cloud(f, datafile, mass_cloud, &
                      cloud_mode, T_cloud_out_rel, &
                      dens_coeff, temp_coeff, temp_trans, temp_coeff_out)
+        case ('read_arr_file'); call read_outside_scal_array(f, "lnrho.arr", ilnrho)
         case ('isothermal'); call isothermal_density(f)
         case ('stratification'); call stratification(f,strati_type)
         case ('stratification-x'); call stratification_x(f,strati_type)
