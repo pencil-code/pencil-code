@@ -1378,6 +1378,7 @@ module Magnetic
         case ('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case ('strange'); call strange(amplaa(j),f,iaa)
+        case ('read_arr_file'); call read_outside_vec_array(f, "aa.arr", iaa)
         case ('sinwave-phase')
           call sinwave_phase(f,iax,ampl_ax(j),kx_ax(j),ky_ax(j),kz_ax(j),phase_ax(j))
           call sinwave_phase(f,iay,ampl_ay(j),kx_ay(j),ky_ay(j),kz_ay(j),phase_ay(j))
