@@ -216,6 +216,14 @@ module Boundcond
                   ! BCX_DOC: cylindrical perfect conductor
                   ! BCX_DOC: implies $f''+f'/R=0$
                   call bc_cpz_x(f,topbot,j)
+                case ('spt')
+                  ! BCX_DOC: spherical perfect conductor 
+                  ! BCX_DOC: implies $-f''+f'/R=0$
+                  call bc_spt_x(f,topbot,j)
+                case ('spp')
+                  ! BCX_DOC: spherical perfect conductor 
+                  ! BCX_DOC: implies $-f''-2f'/R=0$
+                  call bc_spp_x(f,topbot,j)
                 case ('v')
                   ! BCX_DOC: vanishing third derivative
                   call bc_van_x(f,topbot,j)
@@ -1403,6 +1411,110 @@ module Boundcond
       endselect
 !
     endsubroutine bc_cpp_x
+!***********************************************************************
+    subroutine bc_spt_x(f,topbot,j)
+!
+!  This condition sets values for A_theta at the radial boundary.
+!  It solves -A"+A'/R=0.
+!  We compute the A1 point using a 2nd-order formula,
+!  Next, we compute A2 using a 4th-order formula,
+!  and finally A3 using a 6th-order formula.
+!  For the A_phi see spp
+!
+!
+!  15-may-13/joern: coded
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j
+      real :: tmp
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        tmp=x(l1)*dx_1(l1)
+!
+        f(l1-1,:,:,j)=(f(l1,:,:,j)*(2*tmp-1))/(2*tmp+1)
+        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*8*(2*tmp+1) &
+                      +f(l1+1,:,:,j)*8*(2*tmp-1) &
+                      +f(l1+2,:,:,j)*(-1*tmp-1))/(tmp+1)
+        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27/2*(tmp+1) &
+                      +f(l1-1,:,:,j)*270/4*(-2*tmp-1) &
+                      +f(l1+1,:,:,j)*270/4*(-2*tmp+1) &
+                      +f(l1+2,:,:,j)*27/2*(tmp+1) &
+                      +f(l1+3,:,:,j)*(-1*tmp-3/2))/(tmp+3/2)
+!
+      case ('top')               ! top boundary
+        tmp=x(l2)*dx_1(l2)  
+!
+        f(l2+1,:,:,j)=(f(l2,:,:,j)*(2*tmp-1))/(2*tmp+1)
+        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*8*(2*tmp+1) &
+                      +f(l2-1,:,:,j)*8*(2*tmp-1) &
+                      +f(l2-2,:,:,j)*(-1*tmp-1))/(tmp+1)
+        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27/2*(tmp+1) &
+                      +f(l2+1,:,:,j)*270/4*(-2*tmp-1) &
+                      +f(l2-1,:,:,j)*270/4*(-2*tmp+1) &
+                      +f(l2-2,:,:,j)*27/2*(tmp+1) &
+                      +f(l2-3,:,:,j)*(-1*tmp-3/2))/(tmp+3/2)
+!
+      case default
+        print*, "bc_spt_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_spt_x
+!***********************************************************************
+    subroutine bc_spp_x(f,topbot,j)
+!
+!  This condition sets values for A_phi at the radial boundary.
+!  It solves -A"-2/RA'=0.
+!  We compute the A1 point using a 2nd-order formula,
+!  Next, we compute A2 using a 4th-order formula,
+!  and finally A3 using a 6th-order formula.
+!  For the A_theta see spt
+!
+!
+!  15-may-13/joern: coded
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j
+      real :: tmp
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        tmp=x(l1)*dx_1(l1)
+!
+        f(l1-1,:,:,j)=(f(l1,:,:,j)*(tmp+1))/(tmp-1)
+        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp-1) &
+                      +f(l1+1,:,:,j)*16*(tmp+1) &
+                      +f(l1+2,:,:,j)*(-1*tmp-1))/(tmp-2)
+        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27/2*(tmp-2) &
+                      +f(l1-1,:,:,j)*270/2*(-tmp+1) &
+                      +f(l1+1,:,:,j)*270/2*(-tmp-1) &
+                      +f(l1+2,:,:,j)*27/2*(tmp+2) &
+                      +f(l1+3,:,:,j)*(-1*tmp-3))/(tmp-3)
+!
+      case ('top')               ! top boundary
+        tmp=x(l2)*dx_1(l2)  
+!
+        f(l2+1,:,:,j)=(f(l2,:,:,j)*(tmp+1))/(tmp-1)
+        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp-1) &
+                      +f(l2-1,:,:,j)*16*(tmp+1) &
+                      +f(l2-2,:,:,j)*(-1*tmp-1))/(tmp-2)
+        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27/2*(tmp-2) &
+                      +f(l2+1,:,:,j)*270/2*(-tmp+1) &
+                      +f(l2-1,:,:,j)*270/2*(-tmp-1) &
+                      +f(l2-2,:,:,j)*27/2*(tmp+2) &
+                      +f(l2-3,:,:,j)*(-1*tmp-3))/(tmp-3)
+!
+      case default
+        print*, "bc_spp_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_spp_x
 !***********************************************************************
     subroutine bc_symset_x(f,sgn,topbot,j,rel,val)
 !
