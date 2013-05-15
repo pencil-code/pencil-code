@@ -218,11 +218,11 @@ module Boundcond
                   call bc_cpz_x(f,topbot,j)
                 case ('spt')
                   ! BCX_DOC: spherical perfect conductor 
-                  ! BCX_DOC: implies $-f''+f'/R=0$
+                  ! BCX_DOC: implies $-f''+f'/R=0$ and $f(x_N)=0$
                   call bc_spt_x(f,topbot,j)
                 case ('spp')
                   ! BCX_DOC: spherical perfect conductor 
-                  ! BCX_DOC: implies $-f''-2f'/R=0$
+                  ! BCX_DOC: implies $-f''-2f'/R=0$ and $f(x_N)=0$
                   call bc_spp_x(f,topbot,j)
                 case ('v')
                   ! BCX_DOC: vanishing third derivative
@@ -1415,7 +1415,7 @@ module Boundcond
     subroutine bc_spt_x(f,topbot,j)
 !
 !  This condition sets values for A_theta at the radial boundary.
-!  It solves -A"+A'/R=0.
+!  It solves -A"+A'/R=0 and A=0 at the boundary.
 !  We compute the A1 point using a 2nd-order formula,
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
@@ -1434,6 +1434,7 @@ module Boundcond
       case ('bot')               ! bottom boundary
         tmp=x(l1)*dx_1(l1)
 !
+        f(l1,:,:,j)  =0
         f(l1-1,:,:,j)=(f(l1,:,:,j)*(2*tmp-1))/(2*tmp+1)
         f(l1-2,:,:,j)=(f(l1-1,:,:,j)*8*(2*tmp+1) &
                       +f(l1+1,:,:,j)*8*(2*tmp-1) &
@@ -1447,6 +1448,7 @@ module Boundcond
       case ('top')               ! top boundary
         tmp=x(l2)*dx_1(l2)  
 !
+        f(l2,:,:,j)  =0
         f(l2+1,:,:,j)=(f(l2,:,:,j)*(2*tmp-1))/(2*tmp+1)
         f(l2+2,:,:,j)=(f(l2+1,:,:,j)*8*(2*tmp+1) &
                       +f(l2-1,:,:,j)*8*(2*tmp-1) &
@@ -1467,7 +1469,7 @@ module Boundcond
     subroutine bc_spp_x(f,topbot,j)
 !
 !  This condition sets values for A_phi at the radial boundary.
-!  It solves -A"-2/RA'=0.
+!  It solves -A"-2/RA'=0 and A=0 at the boundary.
 !  We compute the A1 point using a 2nd-order formula,
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
@@ -1486,6 +1488,7 @@ module Boundcond
       case ('bot')               ! bottom boundary
         tmp=x(l1)*dx_1(l1)
 !
+        f(l1,:,:,j)  =0
         f(l1-1,:,:,j)=(f(l1,:,:,j)*(tmp+1))/(tmp-1)
         f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp-1) &
                       +f(l1+1,:,:,j)*16*(tmp+1) &
@@ -1499,6 +1502,7 @@ module Boundcond
       case ('top')               ! top boundary
         tmp=x(l2)*dx_1(l2)  
 !
+        f(l2,:,:,j)  =0
         f(l2+1,:,:,j)=(f(l2,:,:,j)*(tmp+1))/(tmp-1)
         f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp-1) &
                       +f(l2-1,:,:,j)*16*(tmp+1) &
