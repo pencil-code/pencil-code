@@ -5,7 +5,7 @@
 ;;  - 6th-order (7-point stencil)
 ;;  - with ghost cells
 ;;
-function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
+function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ignoredx
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -35,7 +35,9 @@ function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (ldegenerated[2] or (fmz eq 1)) then return, d
 ;
   if (lequidist[2]) then begin
-    fdz = dz_1[n1]^6
+    if (ignoredx) then begin
+      fdz=1.
+    endif else fdz = dz_1[n1]^6
   endif else begin
     message, "zder6_6th_ghost: not implemented for a non-equidistant grid in z."
   endelse
