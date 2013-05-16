@@ -421,7 +421,7 @@ pro cslice_event, event
 			names = tag_names (streamlines)
 			old = streamlines
 			streamlines = { num:{ sets:streamlines.num.sets-1L, lines:streamlines.num.lines } }
-			for pos = 1L, old.num-1L do streamlines = create_struct (streamlines, names[pos], old.(pos))
+			for pos = 1L, old.num.sets-1L do streamlines = create_struct (streamlines, names[pos], old.(pos))
 			WIDGET_CONTROL, st_next, SENSITIVE = (streamlines.num.sets ge 1L)
 			WIDGET_CONTROL, st_prev, SENSITIVE = (streamlines.num.sets ge 1L)
 			WIDGET_CONTROL, extract, SENSITIVE = (streamlines.num.sets ge 1L)
