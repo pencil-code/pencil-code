@@ -82,7 +82,7 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 	if (n_elements (data) eq 0) then message, "ERROR: no data array given."
 	if (n_elements (streamlines) eq 0) then message, "ERROR: no streamline(s) given."
 	if (size (streamlines, /type) ne 8) then begin
-		num_points = 0L + n_elements (streamlines[0,*])
+		num_points = n_elements (streamlines[0,*])
 		streamlines = { num:1L, set_1:{ indices:streamlines, num_points:num_points, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] } }
 	end
 	if (not any (strcmp (tag_names (streamlines.(1)), 'indices', /fold_case))) then message, "ERROR: no indices in given streamlines structure."
