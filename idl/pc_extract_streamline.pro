@@ -47,13 +47,13 @@
 ;   IDL> plot, distances, B_abs, xtitle="coordinate along streamline", ytitle="magnetic field", /ylog
 ;
 ;   Load varfile and extract Temperature along magnetic filedlines in a subvolume, plot first one:
-;   IDL> pc_read_subvol_raw, obj=var, tags=tags, grid=grid, xs=16, xe=41, ys=16, ye=41, sub_grid=sub_grid
-;   IDL> B = pc_get_quantity ('B', var, tags)
-;   IDL> Temp = pc_get_quantity ('Temp', var, tags)
-;   IDL> seeds = pc_seed_points (sub_grid)
-;   IDL> streamlines = pc_get_streamline (B, anchor=seeds, grid=sub_grid)
-;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temp', grid=sub_grid)
-;   IDL> B_streamlines = pc_extract_streamline (B, streamlines, name='B', grid=sub_grid)
+;   IDL> pc_read_subvol_raw, obj=var, tags=tags, xs=16, xe=41, ys=16, ye=41, sub_dim=dim, sub_grid=grid
+;   IDL> B = pc_get_quantity ('B', var, tags, dim=dim)
+;   IDL> Temp = pc_get_quantity ('Temp', var, tags, dim=dim)
+;   IDL> seeds = pc_seed_points (grid)
+;   IDL> streamlines = pc_get_streamline (B, anchor=seeds, grid=grid)
+;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temp', grid=grid)
+;   IDL> B_streamlines = pc_extract_streamline (B, streamlines, name='B', grid=grid)
 ;   IDL> Temp_streamline = pc_select_streamline (Temp_streamline, 1)
 ;   IDL> B_streamline = pc_select_streamline (B_streamline, 1)
 ;   IDL> B_abs = B_streamline[0,*]^2 + B_streamline[1,*]^2 + B_streamline[2,*]^2
