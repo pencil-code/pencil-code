@@ -195,6 +195,10 @@ function pc_seed_points, grid, start=start, description=description, precision=p
 	default, precision, 0.2
 	default, select, 5
 
+	description_str = description
+	precision_float = precision
+	select_int = select
+
 	coord = grid
 	if (not any (strcmp (tag_names (coord), 'x_off', /fold_case))) then coord = create_struct (coord, 'x_off', 0)
 	if (not any (strcmp (tag_names (coord), 'y_off', /fold_case))) then coord = create_struct (coord, 'y_off', 0)
@@ -240,23 +244,23 @@ function pc_seed_points, grid, start=start, description=description, precision=p
 	tmp	= WIDGET_LABEL (CTRL, value='Seed Point Selection (start, end, number):', frame=0)
 	SEL	= WIDGET_BASE (CTRL, frame=1, /align_center, /col)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
-	sub_xs	= CW_FIELD (SUB, title='X:', uvalue='SUB_XS', value=xs, /long, /return_events, xsize=5)
+	sub_xs	= CW_FIELD (SUB, title='X:', uvalue='SUB_XS', value=(xs + coord.x_off), /long, /return_events, xsize=5)
 	tmp	= WIDGET_BUTTON (SUB, xsize=100, value='<= MIN MAX =>', uvalue='ALL_X')
-	sub_xe	= CW_FIELD (SUB, title='', uvalue='SUB_XE', value=xe, /long, /return_events, xsize=5)
+	sub_xe	= CW_FIELD (SUB, title='', uvalue='SUB_XE', value=(xe + coord.x_off), /long, /return_events, xsize=5)
 	sel_dx	= WIDGET_DROPLIST (SUB, value=dist_names, uvalue='SEL_DX')
 	sub_nx	= CW_FIELD (SUB, title='=', uvalue='SUB_NX', value=nx, /long, /return_events, xsize=5)
 	tmp	= WIDGET_LABEL (SUB, value='seed points', frame=0)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
-	sub_ys	= CW_FIELD (SUB, title='Y:', uvalue='SUB_YS', value=ys, /long, /return_events, xsize=5)
+	sub_ys	= CW_FIELD (SUB, title='Y:', uvalue='SUB_YS', value=(ys + coord.y_off), /long, /return_events, xsize=5)
 	tmp	= WIDGET_BUTTON (SUB, xsize=100, value='<= MIN MAX =>', uvalue='ALL_Y')
-	sub_ye	= CW_FIELD (SUB, title='', uvalue='SUB_YE', value=ye, /long, /return_events, xsize=5)
+	sub_ye	= CW_FIELD (SUB, title='', uvalue='SUB_YE', value=(ye + coord.y_off), /long, /return_events, xsize=5)
 	sel_dy	= WIDGET_DROPLIST (SUB, value=dist_names, uvalue='SEL_DY')
 	sub_ny	= CW_FIELD (SUB, title='=', uvalue='SUB_NY', value=ny, /long, /return_events, xsize=5)
 	tmp	= WIDGET_LABEL (SUB, value='seed points', frame=0)
 	SUB	= WIDGET_BASE (SEL, frame=0, /align_center, /row)
-	sub_zs	= CW_FIELD (SUB, title='Z:', uvalue='SUB_ZS', value=zs, /long, /return_events, xsize=5)
+	sub_zs	= CW_FIELD (SUB, title='Z:', uvalue='SUB_ZS', value=(zs + coord.z_off), /long, /return_events, xsize=5)
 	tmp	= WIDGET_BUTTON (SUB, xsize=100, value='<= MIN MAX =>', uvalue='ALL_Z')
-	sub_ze	= CW_FIELD (SUB, title='', uvalue='SUB_ZE', value=ze, /long, /return_events, xsize=5)
+	sub_ze	= CW_FIELD (SUB, title='', uvalue='SUB_ZE', value=(ze + coord.z_off), /long, /return_events, xsize=5)
 	sel_dz	= WIDGET_DROPLIST (SUB, value=dist_names, uvalue='SEL_DZ')
 	sub_nz	= CW_FIELD (SUB, title='=', uvalue='SUB_NZ', value=nz, /long, /return_events, xsize=5)
 	tmp	= WIDGET_LABEL (SUB, value='seed points', frame=0)
@@ -276,9 +280,9 @@ function pc_seed_points, grid, start=start, description=description, precision=p
 	BUT	= WIDGET_BASE (tmp, frame=0, /align_center, /row)
 	preci	= CW_FIELD (BUT, title='Precision:', /floating, xsize=10)
 	selec	= CW_FIELD (BUT, title='Select every:', /long, xsize=10)
-	WIDGET_CONTROL, descr, SET_VALUE = description
-	WIDGET_CONTROL, preci, SET_VALUE = precision
-	WIDGET_CONTROL, selec, SET_VALUE = select
+	WIDGET_CONTROL, descr, SET_VALUE = description_str
+	WIDGET_CONTROL, preci, SET_VALUE = precision_float
+	WIDGET_CONTROL, selec, SET_VALUE = select_int
 
 	BUT	= WIDGET_BASE (CTRL, frame=0, /align_center, /row)
 	num	= CW_FIELD (BUT, title='Number of Streamlines:', /long, /noedit, xsize=10)
