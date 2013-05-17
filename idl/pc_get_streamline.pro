@@ -261,10 +261,13 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 		step_z = (vector_z / vector_abs) * precision * dir * (dr / dz_local)
 
 		; Reduce projected step size to non-periodic boundaries
-		reduce = 0.0
-		if (not periodic[0]) then reduce = max ([ reduce, -(pos[0] + step_x), pos[0] + step_x - (nx-1) ] > 0.0) / abs (step_x)
-		if (not periodic[1]) then reduce = max ([ reduce, -(pos[1] + step_y), pos[1] + step_y - (ny-1) ] > 0.0) / abs (step_y)
-		if (not periodic[2]) then reduce = max ([ reduce, -(pos[2] + step_z), pos[2] + step_z - (nz-1) ] > 0.0) / abs (step_z)
+		reduce_x = 0.0
+		reduce_y = 0.0
+		reduce_z = 0.0
+		if (not periodic[0]) then reduce_x = max ([ -(pos[0] + step_x), pos[0] + step_x - (nx-1) ] > 0.0) / abs (step_x)
+		if (not periodic[1]) then reduce_y = max ([ -(pos[1] + step_y), pos[1] + step_y - (ny-1) ] > 0.0) / abs (step_y)
+		if (not periodic[2]) then reduce_z = max ([ -(pos[2] + step_z), pos[2] + step_z - (nz-1) ] > 0.0) / abs (step_z)
+		reduce = max ([ reduce_x, reduce_y, reduce_z ])
 		if (reduce gt 0.0) then begin
 			step_x *= (1.0 - reduce)
 			step_y *= (1.0 - reduce)
@@ -275,6 +278,20 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 
 		; Calculate new position
 		pos += [ step_x, step_y, step_z ]
+
+		; Apply non-periodic boundaries (enforce box boundaries)
+		if ((reduce_x gt 0.0) and (reduce_x eq reduce)) then begin
+			if (step_x gt 0.0) then pos[0] = Box_xyz_upper[0]
+			if (step_x lt 0.0) then pos[0] = Box_xyz_lower[0]
+		end
+		if ((reduce_y gt 0.0) and (reduce_y eq reduce)) then begin
+			if (step_y gt 0.0) then pos[1] = Box_xyz_upper[1]
+			if (step_y lt 0.0) then pos[1] = Box_xyz_lower[1]
+		end
+		if ((reduce_z gt 0.0) and (reduce_z eq reduce)) then begin
+			if (step_z gt 0.0) then pos[2] = Box_xyz_upper[2]
+			if (step_z lt 0.0) then pos[2] = Box_xyz_lower[2]
+		end
 
 		; Add step length in the given grid coordinates
 		delta_x = last[0] - interpolate (x, pos[0] + nghost)
