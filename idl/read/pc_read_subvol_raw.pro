@@ -409,8 +409,8 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	tags.time = t
 	name += strtrim (xs, 2)+"_"+strtrim (xe, 2)+"_"+strtrim (ys, 2)+"_"+strtrim (ye, 2)+"_"+strtrim (zs, 2)+"_"+strtrim (ze, 2)
 	sub_grid = create_struct (name=name, $
-			['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated'], $
-			t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated)
+			['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1', 'dx_tilde', 'dy_tilde', 'dz_tilde', 'lequidist', 'lperi', 'ldegenerated', 'x_off', 'y_off', 'z_off'], $
+			t, x, y, z, dx, dy, dz, Lx, Ly, Lz, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated, xns-nghostx, yns-nghosty, zns-nghostz)
 
 	if (addghosts) then begin
 		xs = xns - nghostx

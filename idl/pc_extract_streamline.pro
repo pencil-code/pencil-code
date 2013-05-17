@@ -13,6 +13,7 @@
 ;   * label          Tag-name label of the quantity inside the returned structure.
 ;   * packet_size    Size of streamlines packet to be used, if a streamlines structure is given.
 ;   * return_values  Return the extracted data values as array instead of inside a structure.
+;   * grid           A subvolume grid structure matching the data, only needed for subvolumes.
 ;
 ;  Returns:
 ;   * quantity       Extracted (interpolated) data along the given streamlines.
@@ -48,13 +49,21 @@
 
 
 ; Calculation of streamline coordinates.
-function pc_extract_streamline, data, streamlines, name=name, label=label, precision=precision, packet_size=packet_size, return_values=return_values
+function pc_extract_streamline, data, streamlines, name=name, label=label, precision=precision, packet_size=packet_size, return_values=return_values, grid=grid
 
 	; Default settings:
 	default_name = 'Quantity'
 	if (not keyword_set (packet_size)) then packet_size = 10000L
 	if (not keyword_set (precision)) then precision = 'D'
 	if (precision ne 'F') then precision = 'D'
+	default, x_off, 0
+	default, y_off, 0
+	default, z_off, 0
+	if (keyword_set (grid)) then begin
+		if (any (strcmp (tag_names (grid), 'x_off', /fold_case))) then x_off = grid.x_off
+		if (any (strcmp (tag_names (grid), 'y_off', /fold_case))) then y_off = grid.y_off
+		if (any (strcmp (tag_names (grid), 'z_off', /fold_case))) then z_off = grid.z_off
+	end
 
 	if (n_elements (data) eq 0) then message, "ERROR: no data array given."
 	if (n_elements (streamlines) eq 0) then message, "ERROR: no streamline(s) given."
@@ -98,9 +107,9 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 			packet_num = packet_end - packet_pos + 1L
 
 			; Follow the streamline
-			indices_x = reform (streamlines.(set).indices[0,packet_pos:packet_end])
-			indices_y = reform (streamlines.(set).indices[1,packet_pos:packet_end])
-			indices_z = reform (streamlines.(set).indices[2,packet_pos:packet_end])
+			indices_x = reform (streamlines.(set).indices[0,packet_pos:packet_end]) - x_off
+			indices_y = reform (streamlines.(set).indices[1,packet_pos:packet_end]) - y_off
+			indices_z = reform (streamlines.(set).indices[2,packet_pos:packet_end]) - z_off
 			int_x = (floor (indices_x) < (nx - 2)) > 0
 			int_y = (floor (indices_y) < (ny - 2)) > 0
 			int_z = (floor (indices_z) < (nz - 2)) > 0

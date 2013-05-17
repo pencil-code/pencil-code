@@ -880,19 +880,19 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 				indices_x = reform (actual.coords[0,*]) / unit.default_length
 				indices_x = (indices_x - coord.x[0]) / (coord.x[num_x-1] - coord.x[0]) * num_x
 			end else begin
-				indices_x = reform (actual.indices[0,*])
+				indices_x = reform (actual.indices[0,*]) - coord.x_off
 			end
 			if (destretch[1]) then begin
 				indices_y = reform (actual.coords[1,*]) / unit.default_length
 				indices_y = (indices_y - coord.y[0]) / (coord.y[num_y-1] - coord.y[0]) * num_y
 			end else begin
-				indices_y = reform (actual.indices[1,*])
+				indices_y = reform (actual.indices[1,*]) - coord.y_off
 			end
 			if (destretch[2]) then begin
 				indices_z = reform (actual.coords[2,*]) / unit.default_length
 				indices_z = (indices_z - coord.z[0]) / (coord.z[num_z-1] - coord.z[0]) * num_z
 			end else begin
-				indices_z = reform (actual.indices[2,*])
+				indices_z = reform (actual.indices[2,*]) - coord.z_off
 			end
 			wset, wimg_yz
 			plots, indices_y*bin_y, indices_z*bin_z, psym=3, color=col_start+col_step*pos, /device
@@ -1036,14 +1036,14 @@ pro cslice_save_streamlines, data=data
 
 	; Extract selected scalar quantity
 	quantity_name = (tag_names (set))[selected_cube]
-	quantity = pc_extract_streamline (cube, streamlines, name=quantity_name, label='set')
+	quantity = pc_extract_streamline (cube, streamlines, name=quantity_name, label='set', grid=coord)
 	quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
 	save, filename=streamlines_file+"_"+quantity_name+suffix, streamlines, quantity
 
 	if (selected_overplot ge 1) then begin
 		; Extract selected overplot vector field
 		quantity_name = (tag_names (overplot))[selected_overplot]
-		quantity = pc_extract_streamline (field, streamlines.(pos).indices, name=quantity_name, label='set')
+		quantity = pc_extract_streamline (field, streamlines.(pos).indices, name=quantity_name, label='set', grid=coord)
 		quantity = create_struct (quantity, 'time', varfiles[selected_snapshot].time * unit.time, 'snapshot', varfiles[selected_snapshot].title)
 		save, filename=streamlines_file+"_"+quantity_name+suffix, streamlines, quantity
 	end

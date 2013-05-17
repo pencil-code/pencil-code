@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   pc_seed_points.pro      ;;;
+;;;   pc_seed_points.pro       ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;  $Id$
 ;;;
@@ -40,12 +40,12 @@ pro pc_seed_points_update
 		nz = divisors[pc_find_index (double (nz < max (divisors)), divisors, /round)]
 	end
 
-	WIDGET_CONTROL, sub_xs, SET_VALUE = xs
-	WIDGET_CONTROL, sub_xe, SET_VALUE = xe
-	WIDGET_CONTROL, sub_ys, SET_VALUE = ys
-	WIDGET_CONTROL, sub_ye, SET_VALUE = ye
-	WIDGET_CONTROL, sub_zs, SET_VALUE = zs
-	WIDGET_CONTROL, sub_ze, SET_VALUE = ze
+	WIDGET_CONTROL, sub_xs, SET_VALUE = xs + coord.x_off
+	WIDGET_CONTROL, sub_xe, SET_VALUE = xe + coord.x_off
+	WIDGET_CONTROL, sub_ys, SET_VALUE = ys + coord.y_off
+	WIDGET_CONTROL, sub_ye, SET_VALUE = ye + coord.y_off
+	WIDGET_CONTROL, sub_zs, SET_VALUE = zs + coord.z_off
+	WIDGET_CONTROL, sub_ze, SET_VALUE = ze + coord.z_off
 	WIDGET_CONTROL, sub_nx, SET_VALUE = nx
 	WIDGET_CONTROL, sub_ny, SET_VALUE = ny
 	WIDGET_CONTROL, sub_nz, SET_VALUE = nz
@@ -80,37 +80,37 @@ pro seed_points_event, event
 	end
 	'SUB_XS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = xs
-		xs = (xs > 0L) < (num_x-1L)
+		xs = ((xs - coord.x_off) > 0L) < (num_x-1L)
 		xe = xe > xs
 		break
 	end
 	'SUB_YS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ys
-		ys = (ys > 0L) < (num_y-1L)
+		ys = ((ys - coord.y_off) > 0L) < (num_y-1L)
 		ye = ye > ys
 		break
 	end
 	'SUB_ZS': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = zs
-		zs = (zs > 0L) < (num_z-1L)
+		zs = ((zs - coord.z_off) > 0L) < (num_z-1L)
 		ze = ze > zs
 		break
 	end
 	'SUB_XE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = xe
-		xe = (xe > 0L) < (num_x-1L)
+		xe = ((xe - coord.x_off) > 0L) < (num_x-1L)
 		xs = xs < xe
 		break
 	end
 	'SUB_YE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ye
-		ye = (ye > 0L) < (num_y-1L)
+		ye = ((ye - coord.y_off) > 0L) < (num_y-1L)
 		ys = ys < ye
 		break
 	end
 	'SUB_ZE': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = ze
-		ze = (ze > 0L) < (num_z-1L)
+		ze = ((ze - coord.z_off) > 0L) < (num_z-1L)
 		zs = zs < ze
 		break
 	end
@@ -196,6 +196,9 @@ function pc_seed_points, grid, start=start, description=description, precision=p
 	default, select, 5
 
 	coord = grid
+	if (not any (strcmp (tag_names (coord), 'x_off', /fold_case))) then coord = create_struct (coord, 'x_off', 0)
+	if (not any (strcmp (tag_names (coord), 'y_off', /fold_case))) then coord = create_struct (coord, 'y_off', 0)
+	if (not any (strcmp (tag_names (coord), 'z_off', /fold_case))) then coord = create_struct (coord, 'z_off', 0)
 
 	num_x = n_elements (coord.x)
 	num_y = n_elements (coord.y)

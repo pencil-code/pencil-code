@@ -189,6 +189,9 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 			mz = nz + 2*nghost
 		end
 		dr = sqrt (mean (dx)^2 + mean (dy)^2 + mean (dz)^2)
+		if (not any (strcmp (tag_names (grid), 'x_off', /fold_case))) then grid = create_struct (grid, 'x_off', 0)
+		if (not any (strcmp (tag_names (grid), 'y_off', /fold_case))) then grid = create_struct (grid, 'y_off', 0)
+		if (not any (strcmp (tag_names (grid), 'z_off', /fold_case))) then grid = create_struct (grid, 'z_off', 0)
 	end else begin
 		if (periodic[0]) then x = dindgen (mx) - nghost + 0.5 else x = dindgen (mx) / (mx-1) * (mx) - nghost
 		if (periodic[1]) then y = dindgen (my) - nghost + 0.5 else y = dindgen (my) / (my-1) * (my) - nghost
@@ -303,6 +306,13 @@ function pc_get_streamline, data, anchor=anchor, grid=grid, distances=distances,
 		indices = [ [indices], [pos] ]
 		coords = [ [coords], [point] ]
 		num_points++
+	end
+
+	; Add subvolume offsets
+	if (keyword_set (grid)) then begin
+		if (grid.x_off ne 0) then indices[0,*] += grid.x_off
+		if (grid.y_off ne 0) then indices[1,*] += grid.y_off
+		if (grid.z_off ne 0) then indices[2,*] += grid.z_off
 	end
 
 	if (keyword_set (return_indices)) then return, indices
