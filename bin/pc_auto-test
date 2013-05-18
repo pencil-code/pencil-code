@@ -1244,7 +1244,7 @@ sub test_rundir {
     # Write timings in greppable form
     if (%time_summary) {
         record_time('total', time_diff($t0,$t3));
-        for my $phase qw( compilation starting running total ) {
+        for my $phase (qw( compilation starting running total )) {
             write_timing_summary($dir, $phase, \%time_summary);
         }
     }
