@@ -1528,7 +1528,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !    1) the closest grid line which the normal from "s" to "p" cross
 !    2) the ponint which is a normal from "s" and a given distance from "s"
 !  Method number 2) is chosen if "close_interpolation_method=3" where
-!  "limit_close_linear+1.5" give the number of grid sizes which "g" is 
+!  "limit_close_linear" give the number of grid sizes which "g" is 
 !  away from "s".
 !
 !  If fluid_point=.false. we are handling a point which is NOT a grid point,
@@ -1706,11 +1706,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !    1) the closest grid line which the normal from "s" to "p" cross
 !    2) the point which is a normal from "s" and a given distance from "s"
 !  Method number 2) is chosen if "close_interpolation_method=3" where
-!  "limit_close_linear+1.5" give the number of grid sizes which "g" is 
+!  "limit_close_linear" give the number of grid sizes which "g" is 
 !  away from "s". 
 !
       if (close_interpolation_method == 3) then
-        rg=rs+(limit_close_linear+1.5)*dxmin
+        rg=rs+(limit_close_linear)*dxmin
         g_local=p_local*rg/rp
         g_global=g_local+o_global
 
