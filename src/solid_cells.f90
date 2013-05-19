@@ -1676,6 +1676,29 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
     endsubroutine close_interpolation
 !***********************************************************************
+    subroutine find_g_global_circle(g_global,inear,rg,p_local,&
+        o_global,rs,rp)
+!
+! Find g_global on a circle a distance limit_close_linear away
+! from the solid surface.
+!
+      real, dimension(3) :: g_global,g_local,p_local,o_global
+      integer, dimension(3) :: inear
+      real :: rg,rs,rp
+      integer :: lower_i, lower_j, lower_k, upper_i, upper_j, upper_k
+!
+      intent(in)  :: p_local,o_global,rs,rp
+      intent(out) :: g_global,inear,rg
+!
+      rg=rs+(limit_close_linear)*dxmin
+      g_local=p_local*rg/rp
+      g_global=g_local+o_global      
+      call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
+          lower_k,upper_k,x,y,z,g_global)
+      inear=(/lower_i,lower_j,lower_k/)
+!
+    end subroutine find_g_global_circle
+!***********************************************************************
     subroutine close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp,&
         cornervalue,cornerindex, fluid_point,iobj)
 !
@@ -1694,7 +1717,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, dimension(3,2) :: cornerindex
       logical :: fluid_point
       integer :: lower_i, lower_j, lower_k, upper_i, upper_j, upper_k
-      real :: xmirror, ymirror, zmirror, phi, theta
+      real :: phi, theta
       real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat
       real :: vg_r, vg_phi, vg_theta
       real :: vp_r, vp_phi, vp_theta
@@ -1710,17 +1733,139 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  away from "s". 
 !
       if (close_interpolation_method == 3) then
-        rg=rs+(limit_close_linear)*dxmin
-        g_local=p_local*rg/rp
-        g_global=g_local+o_global
-
-        call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
-            lower_k,upper_k,x,y,z,g_global)
-
-        inear=(/lower_i,lower_j,lower_k/)
-        if ( .not. linear_interpolate(f,iux,mvar,g_global,fvar,inear,.false.) ) &
-            call fatal_error('close_inter_new','')
+        call find_g_global_circle(g_global,inear,rg,p_local,&
+            o_global,rs,rp)
       else
+        call find_g_global_closest_gridplane(g_global,inear,rg,p_local,&
+            o_global,rs,rp,cornervalue,cornerindex)
+      endif
+!
+!  Let "fvar" be the physical value of a give variable on "gridplane".
+!  The value of "fvar" is then found by interpolation between the four corner
+!  points of "gridplane".
+!
+      if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
+          call fatal_error('close_inter_new','')
+!
+!  Now we know the value associated with any variable in the point "g",
+!  given by "fvar".
+!  Furthermore we know the value associated with any variable in point "s"
+!  on the object surface to be zero for any of the velocities and equal to
+!  the solid temperature for the temperature. This value is given by "surf_val".
+!  By interpolation it is now straight forward to find the value also in "p".
+!  First find the distance, "r_pg", from "p" to "g" to be used as weight,
+!  then normalize by the full distance, "r_sg", between "s" and "g".
+!
+      r_pg=rg-rp
+      r_sg=rg-rs
+      r_sp=rp-rs
+!
+!  Find temperature
+!
+      if (ilnTT>0) then
+        if (.not. ltemperature_nolog) then
+          call fatal_error('close_inter_new',&
+              'Due to interpolation it is not correc to use lnTT!')
+        endif
+        surf_val=objects(iobj)%T
+        f_tmp(ilnTT)=(fvar(ilnTT)*r_sp+surf_val*r_pg)/r_sg
+      endif
+!
+!  Find velocity.
+!  If lclose_quad_rad_inter = true we must find the
+!  velocities in the r, theta and phi
+!  directions at the point "g". This will then be used to set up a
+!  linear interpolation for v_theta and v_phi and a quadratic interpolation
+!  for v_r.
+!
+      surf_val=0
+      if (lclose_quad_rad_inter) then
+        call find_unit_vectors(p_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
+!
+!  Having found the unit vectors in the r, theta and phi directions we can now
+!  find the velocities in the same three directions at point "g".
+!
+        call dot(nr_hat    ,fvar(iux:iuz),vg_r)
+        call dot(nphi_hat  ,fvar(iux:iuz),vg_phi)
+        call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
+!
+!  Now it is time to use linear and quadratic interpolation to find the
+!  velocities in point "p".
+!
+        vp_phi  =(vg_phi  *r_sp+surf_val*r_pg)/r_sg
+        vp_theta=(vg_theta*r_sp+surf_val*r_pg)/r_sg
+        vp_r    =(vg_r    *(r_sp/r_sg)**2)
+!
+!  Finally the velocities found in the spherical coordinate system can
+!  now be transfered back to the cartesian coordinate system.
+!
+        if (objects(iobj)%form=='cylinder') then
+           f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
+           f_tmp(iuz)=(fvar(iuz)*r_sp+surf_val*r_pg)/r_sg
+        else
+           f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
+        endif
+      else
+        f_tmp(iux:iuz)=(fvar(iux:iuz)*r_sp+surf_val*r_pg)/r_sg
+      endif
+!
+    end subroutine close_inter_new
+    !***********************************************************************
+    subroutine find_unit_vectors(p_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
+!
+!  The unity vector "nr_hat" is normal to the solid surface, while
+!  "nphi_hat" and "ntheta_hat" are the unit vectors in the two angular
+!  directions. The angle "theta" is zero in the positive x-direction,
+!  while "phi" is zero in the positive z-direction.
+!
+      real, dimension(3) :: p_local
+      integer :: iobj
+      real :: phi, theta, rp
+      real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat
+!
+      phi=acos(p_local(3)/rp)
+      theta=atan(p_local(2)/p_local(1))
+      if (p_local(2) < 0) then
+        if (theta > 0) then
+          theta=theta+pi
+        else
+          theta=theta+2*pi
+        endif
+      else
+        if (theta<0) then
+          theta=theta+pi
+        endif
+      endif
+!
+      if (objects(iobj)%form=='cylinder') then
+        nr_hat    =(/cos(theta),sin(theta),0./)
+        nphi_hat  =(/0.,0.,1./)
+        ntheta_hat=(/-sin(theta),cos(theta),0./)
+      else
+        nr_hat    =(/cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)/)
+        nphi_hat  =(/-cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)/)
+        ntheta_hat=(/-sin(theta),cos(theta),0./)
+      endif
+!
+    end subroutine find_unit_vectors
+!***********************************************************************
+    subroutine find_g_global_closest_gridplane(g_global,inear,rg,p_local,&
+        o_global,rs,rp,cornervalue,cornerindex)
+!
+! Find g_global based on the gridplane which is first crossed by the normal
+! from the surface.
+!
+      use Messages, only: fatal_error
+      use Sub
+!
+      real, dimension(3) :: o_global, p_global, p_local, g_global, g_local
+      integer, dimension(3) :: ngrids, inear
+      real :: rp,rs, verylarge=1e9, rlmin, rl, rg
+      integer :: ndir, ndims, dir, vardir1,vardir2, constdir, topbot_tmp
+      integer :: topbot, iobj
+      real, dimension(3,2) :: cornervalue
+      integer, dimension(3,2) :: cornerindex
+      integer :: lower_i, lower_j, lower_k, upper_i, upper_j, upper_k
 !
 !  Find which grid line is the closest one in the direction
 !  away from the object surface
@@ -1759,7 +1904,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  far (rlmin) this state must be stored since it might be the plane
 !  ("gridplane") which we are looking for. In addition we must
 !  find the distance, rg, from the center of the object
-!  to the point where the normal cross the grid line.
+!  to the point where the normal cross the "gridplane".
 !  The point where "l" cross "gridplane" is called "g".
 !
             if (rl > 1.0 .and. rl<rlmin) then
@@ -1790,7 +1935,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Check that we have found a valid distance
 !
       if (rlmin==verylarge) then
-        print*,'fluid_point=',fluid_point
         print*,'lclose_interpolation=',lclose_interpolation
         print*,'lclose_linear=',lclose_linear
         print*,'o_global=',o_global
@@ -1825,7 +1969,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
 !  Depending on the value of constdir the indeces of the corner points
 !  specifying "gridplane" is given by lower_i, upper_i, lower_j ........
-!  The physical position of "g" is stored in xmirror, ymirror and zmirror.
 !
       if (constdir==1) then
         lower_i=cornerindex(constdir,topbot)
@@ -1834,9 +1977,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         upper_j=cornerindex(vardir1,2)
         lower_k=cornerindex(vardir2,1)
         upper_k=cornerindex(vardir2,2)
-        xmirror=g_global(constdir)
-        ymirror=g_global(vardir1)
-        zmirror=g_global(vardir2)
       elseif (constdir==2) then
         lower_j=cornerindex(constdir,topbot)
         upper_j=cornerindex(constdir,topbot)
@@ -1844,9 +1984,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         upper_k=cornerindex(vardir1,2)
         lower_i=cornerindex(vardir2,1)
         upper_i=cornerindex(vardir2,2)
-        ymirror=g_global(constdir)
-        xmirror=g_global(vardir2)
-        zmirror=g_global(vardir1)
       elseif (constdir==3) then
         lower_k=cornerindex(constdir,topbot)
         upper_k=cornerindex(constdir,topbot)
@@ -1854,111 +1991,11 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         upper_i=cornerindex(vardir1,2)
         lower_j=cornerindex(vardir2,1)
         upper_j=cornerindex(vardir2,2)
-        zmirror=g_global(constdir)
-        xmirror=g_global(vardir1)
-        ymirror=g_global(vardir2)
       endif
 !
-!  Let "fvar" be the physical value of a give variable on "gridplane".
-!  The value of "fvar" is then found by interpolation between the four corner
-!  points of "gridplane".
+     inear=(/lower_i,lower_j,lower_k/)
 !
-      inear=(/lower_i,lower_j,lower_k/)
-      if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
-        call fatal_error('linear_interpolate','')
-    endif
-!
-!  Now we know the value associated with any variable in the point "g",
-!  given by "fvar".
-!  Furthermore we know the value associated with any variable in point "s"
-!  on the object surface to be zero for any of the velocities and equal to
-!  the solid temperature for the temperature. This value is given by "surf_val".
-!  By interpolation it is now straight forward to find the value also in "p".
-!  First find the distance, "r_pg", from "p" to "g" to be used as weight,
-!  then normalize by the full distance, "r_sg", between "s" and "g".
-!
-      r_pg=rg-rp
-      r_sg=rg-rs
-      r_sp=rp-rs
-!
-!  Find temperature
-!
-      if (ilnTT>0) then
-        if (.not. ltemperature_nolog) then
-          call fatal_error('close_inter_new',&
-              'Due to interpolation it is not correc to use lnTT!')
-        endif
-        surf_val=objects(iobj)%T
-        f_tmp(ilnTT)=(fvar(ilnTT)*r_sp+surf_val*r_pg)/r_sg
-      endif
-!
-!  Find velocity.
-!  If lclose_quad_rad_inter = true we must find the
-!  velocities in the r, theta and phi
-!  directions at the point "g". This will then be used to set up a
-!  linear interpolation for v_theta and v_phi and a quadratic interpolation
-!  for v_r.
-!
-      surf_val=0
-      if (lclose_quad_rad_inter) then
-!
-!  The unity vector "nr_hat" is normal to the solid surface, while
-!  "nphi_hat" and "ntheta_hat" are the unit vectors in the two angular
-!  directions. The angle "theta" is zero in the positive x-direction,
-!  while "phi" is zero in the positive z-direction.
-!
-        phi=acos(p_local(3)/rp)
-        theta=atan(p_local(2)/p_local(1))
-        if (p_local(2) < 0) then
-          if (theta > 0) then
-            theta=theta+pi
-          else
-            theta=theta+2*pi
-          endif
-        else
-          if (theta<0) then
-            theta=theta+pi
-          endif
-        endif
-!
-        if (objects(iobj)%form=='cylinder') then
-           nr_hat    =(/cos(theta),sin(theta),0./)
-           nphi_hat  =(/0.,0.,1./)
-           ntheta_hat=(/-sin(theta),cos(theta),0./)
-        else
-           nr_hat    =(/cos(theta)*sin(phi),sin(theta)*sin(phi),cos(phi)/)
-           nphi_hat  =(/-cos(phi)*cos(theta),-cos(phi)*sin(theta),sin(phi)/)
-           ntheta_hat=(/-sin(theta),cos(theta),0./)
-        endif
-!
-!  Having found the unit vectors in the r, theta and phi directions we can now
-!  find the velocities in the same three directions at point "g".
-!
-        call dot(nr_hat    ,fvar(iux:iuz),vg_r)
-        call dot(nphi_hat  ,fvar(iux:iuz),vg_phi)
-        call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
-!
-!  Now it is time to use linear and quadratic interpolation to find the
-!  velocities in point "p".
-!
-        vp_phi  =(vg_phi  *r_sp+surf_val*r_pg)/r_sg
-        vp_theta=(vg_theta*r_sp+surf_val*r_pg)/r_sg
-        vp_r    =(vg_r    *(r_sp/r_sg)**2)
-!
-!  Finally the velocities found in the spherical coordinate system can
-!  now be transfered back to the cartesian coordinate system.
-!
-        if (objects(iobj)%form=='cylinder') then
-           f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
-           f_tmp(iuz)=(fvar(iuz)*r_sp+surf_val*r_pg)/r_sg
-        else
-           f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
-        endif
-      else
-        f_tmp(iux:iuz)=(fvar(iux:iuz)*r_sp+surf_val*r_pg)/r_sg
-      endif
-!
-    end subroutine close_inter_new
+   end subroutine find_g_global_closest_gridplane
 !***********************************************************************
     subroutine find_corner_points(fluid_point,cornervalue,cornerindex,&
         ix0_,iy0_,iz0_,p_global,o_global)
