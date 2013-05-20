@@ -1735,9 +1735,13 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       if (close_interpolation_method == 3) then
         call find_g_global_circle(g_global,inear,rg,p_local,&
             o_global,rs,rp)
-      else
+      elseif (&
+          (close_interpolation_method==2).or.&
+          (close_interpolation_method==4)) then
         call find_g_global_closest_gridplane(g_global,inear,rg,p_local,&
             o_global,rs,rp,cornervalue,cornerindex)
+      else
+        call fatal_error('close_inter_new','No such close_interpolation_method!')
       endif
 !
 !  Let "fvar" be the physical value of a give variable on "gridplane".
@@ -1823,6 +1827,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real :: phi, theta, rp
       real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat
 !
+      intent(in) :: p_local,rp,iobj
+!
       phi=acos(p_local(3)/rp)
       theta=atan(p_local(2)/p_local(1))
       if (p_local(2) < 0) then
@@ -1858,7 +1864,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       use Messages, only: fatal_error
       use Sub
 !
-      real, dimension(3) :: o_global, p_global, p_local, g_global, g_local
+      real, dimension(3) :: o_global, p_local, g_global, g_local
       integer, dimension(3) :: ngrids, inear
       real :: rp,rs, verylarge=1e9, rlmin, rl, rg
       integer :: ndir, ndims, dir, vardir1,vardir2, constdir, topbot_tmp
@@ -1940,7 +1946,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         print*,'o_global=',o_global
         print*,'cornerindex=',cornerindex
         print*,'cornervalue=',cornervalue
-        print*,'p_global=',p_global
         print*,'rg,rs,rp=',rg,rs,rp
         print*,'rs=',rs
         call fatal_error('close_interpolation',&
