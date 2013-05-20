@@ -1380,13 +1380,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lhydro) then
             do l=l1,l2; do m=m1,m2; do n=n1,n2
 !  Take either global or local dust-to-gas ratio.
-              if (.not. ldragforce_equi_global_eps) then
-                if (ldensity_nolog) then
-                  eps=f(l,m,n,irhop)/f(l,m,n,irho)
-                else
-                  eps=f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
-                endif
-              endif
+              if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f,l,m,n)
 !
               f(l,m,n,iux) = f(l,m,n,iux) - &
                   beta_glnrho_global(1)*eps*Omega*tausp/ &
@@ -1405,11 +1399,7 @@ k_loop:   do while (.not. (k>npar_loc))
             else
               if (.not. ldragforce_equi_global_eps) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-                if (ldensity_nolog) then
-                  eps=f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,irho)
-                else
-                  eps=f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
-                endif
+                eps = f(ix0,iy0,iz0,irhop) / get_gas_density(f,ix0,iy0,iz0)
               endif
             endif
 !
@@ -2888,7 +2878,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (nx) :: drag_heat
       real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup
       real, dimension(:), allocatable :: rep,stocunn
-      real :: rho_point, rho1_point, tausp1_par, up2
+      real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par
       integer :: k, l, ix0, iy0, iz0
@@ -3070,11 +3060,9 @@ k_loop:   do while (.not. (k>npar_loc))
                          weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
 !  Save the calculation of rho1 when inside pencil.
                     if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-                      rho_point=f(ixx,iyy,izz,ilnrho)
-                      if (.not. ldensity_nolog) rho_point=exp(rho_point)
-                      rho1_point=1/rho_point
+                      rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
                     else
-                      rho1_point=p%rho1(ixx-nghost)
+                      rho1_point = p%rho1(ixx-nghost)
                     endif
 !  Add friction force to grid point.
                     call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
@@ -3139,11 +3127,9 @@ k_loop:   do while (.not. (k>npar_loc))
                     if (nzgrid/=1) weight=weight*weight_z
 !  Save the calculation of rho1 when inside pencil.
                     if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-                      rho_point=f(ixx,iyy,izz,ilnrho)
-                      if (.not. ldensity_nolog) rho_point=exp(rho_point)
-                      rho1_point=1/rho_point
+                      rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
                     else
-                      rho1_point=p%rho1(ixx-nghost)
+                      rho1_point = p%rho1(ixx-nghost)
                     endif
 !  Add friction force to grid point.
                     call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
@@ -3648,11 +3634,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Scale friction time with local density.
 !
           if (ldraglaw_variable_density) then
-            if (ldensity_nolog) then
-              tausp1_par=tmp*f(ix0,iy0,iz0,irho)
-            else
-              tausp1_par=tmp*exp(f(ix0,iy0,iz0,ilnrho))
-            endif
+            tausp1_par = tmp * get_gas_density(f,ix0,iy0,iz0)
 !
 !  Discriminate between constant tau and special case for
 !  1/tau=omega when omega is not constant (as, for instance,
@@ -4993,5 +4975,22 @@ k_loop:   do while (.not. (k>npar_loc))
       enddo
 !
     endsubroutine rprint_particles
+!***********************************************************************
+    real function get_gas_density(f, ix, iy, iz) result(rho)
+!   
+!  Reads the gas density at location (ix, iy, iz).
+!
+!  20-may-13/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ix, iy, iz
+!
+      linear: if (ldensity_nolog) then
+        rho = f(ix, iy, iz, irho)
+      else linear
+        rho = exp(f(ix, iy, iz, ilnrho))
+      endif linear
+!   
+    endfunction get_gas_density
 !***********************************************************************
 endmodule Particles
