@@ -1538,6 +1538,16 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI= #(vuori)
 #FFLAGS_DOUBLE=-r8 #(vuori)
 ##
+## Taito - HP Supercluster - (Kajaani)
+##
+#FC=mpif90 #(taito*)
+#FC_SLOPPY = $(FC) -std95 #(taito*)
+#F90=$(FC) #(taito*)
+#CC=mpicc #(taito*)
+#FFLAGS=-O3 -implicitnone #(taito*)
+#FFLAGS_DOUBLE=-r8 #(taito*)
+#CFLAGS=-DFUNDERSC=1 -O3 #(taito*)
+##
 ##
 ## Steve's test cluster
 ##
