@@ -777,17 +777,18 @@ module Magnetic_meanfield
 !  Initialize EMF with alpha_total*bb.
 !  Here we initialize p%mf_EMF.
 !  NOTE: the following with alpha_quenching*sqrt(kf_x) was a hardwired fix
-!  and should be improved using Beq.
+!  and and is now dealt with using meanfield_Beq_profile='sqrt(kf_x)'.
 !
         if (alpha_quenching/=0.0) then
           select case (meanfield_Beq_profile)
           case ('uturbconst');
             Beq21=mu01*p%rho1/(uturb**2)
+          case ('sqrt(kf_x)');
+            Beq21=sqrt(kf_x)/meanfield_Beq**2
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
           alpha_quenching_tmp=alpha_quenching
-          !alpha_quenching_tmp=alpha_quenching*sqrt(kf_x) !(test)
           alpha_total=alpha_total/(1.+alpha_quenching_tmp*p%b2*Beq21)
         endif
 !
