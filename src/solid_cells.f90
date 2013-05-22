@@ -3280,8 +3280,8 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       real, dimension (3) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0,drr
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: i, ix0, iy0, iz0
-      logical :: lfirstcall=.true.,lcheck=.false.
+      integer :: i
+      logical :: lfirstcall=.true.
 !
       intent(in)  :: A_corners,x_corners,xxp
       intent(out) :: gp
@@ -3298,7 +3298,9 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  Inverse grid spacing
 !
       if ( (.not. all(lequidist)) .or. lfirstcall) then
-        dx1=0; dy1=0; dz1=0
+        dx1=0
+        dy1=0
+        dz1=0
         if (nxgrid/=1) dx1=1/(x_corners(2,1,1,1)-x_corners(1,1,1,1))
         if (nygrid/=1) dy1=1/(x_corners(1,2,1,2)-x_corners(1,1,1,2))
         if (nzgrid/=1) dz1=1/(x_corners(1,1,2,3)-x_corners(1,1,1,3))
@@ -3323,34 +3325,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
           xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
           yp0*zp0*dydz1*(g1-g3-g5+g7) + &
           xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
-!
-!  Do a reality check on the interpolation scheme.
-!
-      if (lcheck) then
-        do i=1,3
-          if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'linear_interpolate: interpolated value is LARGER than'
-            print*, 'linear_interpolate: a values at the corner points!'
-            print*, 'linear_interpolate: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
-            print*, 'linear_interpolate: i, gp(i)=', i, gp(i)
-            print*, 'linear_interpolate: g1...g8=', &
-                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-            print*, '------------------'
-          endif
-          if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'linear_interpolate: interpolated value is smaller than'
-            print*, 'linear_interpolate: a values at the corner points!'
-            print*, 'linear_interpolate: xxp=', xxp
-            print*, 'linear_interpolate: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
-            print*, 'linear_interpolate: i, gp(i)=', i, gp(i)
-            print*, 'linear_interpolate: g1...g8=', &
-                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-            print*, '------------------'
-          endif
-        enddo
-      endif
 !
       if (lfirstcall) lfirstcall=.false.
 !
