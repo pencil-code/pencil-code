@@ -1787,10 +1787,16 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
          do j=inear(2),inear(2)+1
          do i=inear(1),inear(1)+1
             xc=(/x(i),y(j),z(k)/)
-            rpp=sqrt(&
-                 (x(i)-o_global(1))**2 + &
-                 (y(j)-o_global(2))**2 + &
-                 (z(k)-o_global(3))**2   )
+            if (objects(iobj)%form=='cylinder') then
+              rpp=sqrt(&
+                  (x(i)-o_global(1))**2 + &
+                  (y(j)-o_global(2))**2   )
+            elseif (objects(iobj)%form=='sphere') then
+              rpp=sqrt(&
+                  (x(i)-o_global(1))**2 + &
+                  (y(j)-o_global(2))**2 + &
+                  (z(k)-o_global(3))**2   )
+            endif
             drr=rpp-rs
             call find_unit_vectors(xc,rpp,iobj,nrc_hat,nphic_hat,nthetac_hat)
             call dot(nrc_hat    ,f(i,j,k,iux:iuz),vg_r)
@@ -1800,24 +1806,24 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
             A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,2)=vg_phi/drr
             A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,3)=vg_theta/drr
             x_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,:)=xc
+         enddo
+         enddo
+         enddo
 !
 !  Having found the scaling component for all 8 corner points and for all three 
 !  velocity components (stored in "A_corners") 
 !  we can now find the interpolated velocity of the
 !  three scaling components in point "g".
 !
-            call linear_interpolate_quadratic(A_g,A_corners,x_corners,p_global)
+         call linear_interpolate_quadratic(A_g,A_corners,x_corners,g_global)
 !
 !  Since we now know "A_g", the value of the three scaling components in 
 !  the point "g" we can use "A_g" to find the three velocity components of
 !  interest in "g". 
 !
-            vg_r    =A_g(1)*r_sg**2
-            vg_phi  =A_g(2)*r_sg
-            vg_theta=A_g(3)*r_sg
-         enddo
-         enddo
-         enddo
+         vg_r    =A_g(1)*r_sg**2
+         vg_phi  =A_g(2)*r_sg
+         vg_theta=A_g(3)*r_sg
      else
          if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
               call fatal_error('close_inter_new','')
@@ -1877,7 +1883,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
         if (objects(iobj)%form=='cylinder') then
            f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
-           f_tmp(iuz)=(fvar(iuz)*r_sp+surf_val*r_pg)/r_sg
+           !f_tmp(iuz)=(fvar(iuz)*r_sp+surf_val*r_pg)/r_sg
         else
            f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
         endif
@@ -3280,27 +3286,22 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       intent(in)  :: A_corners,x_corners,xxp
       intent(out) :: gp
 !
-!  Position of all corners.
-!
-      xp0=x_corners(1,1,1,1)
-      yp0=x_corners(1,1,1,2)
-      zp0=x_corners(1,1,1,3)
-!
 !  Redefine the interpolation point in coordinates relative to lowest corner.
 !  Set it equal to 0 for dimensions having 1 grid points; this will make sure
 !  that the interpolation is bilinear for 2D grids.
 !
       xp0=0; yp0=0; zp0=0
-      if (nxgrid/=1) xp0=xxp(1)-xp0
-      if (nygrid/=1) yp0=xxp(2)-yp0
-      if (nzgrid/=1) zp0=xxp(3)-zp0
+      if (nxgrid/=1) xp0=xxp(1)-x_corners(1,1,1,1)
+      if (nygrid/=1) yp0=xxp(2)-x_corners(1,1,1,2)
+      if (nzgrid/=1) zp0=xxp(3)-x_corners(1,1,1,3)
 !
 !  Inverse grid spacing
 !
-      dx1=1/(x_corners(2,1,1,1)-x_corners(1,1,1,1))
-      dx1=1/(x_corners(1,2,1,2)-x_corners(1,1,1,2))
-      dx1=1/(x_corners(1,1,2,3)-x_corners(1,1,1,3))
       if ( (.not. all(lequidist)) .or. lfirstcall) then
+        dx1=0; dy1=0; dz1=0
+        if (nxgrid/=1) dx1=1/(x_corners(2,1,1,1)-x_corners(1,1,1,1))
+        if (nygrid/=1) dy1=1/(x_corners(1,2,1,2)-x_corners(1,1,1,2))
+        if (nzgrid/=1) dz1=1/(x_corners(1,1,2,3)-x_corners(1,1,1,3))
         dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
         dxdydz1=dx1*dy1*dz1
       endif
@@ -3353,8 +3354,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       if (lfirstcall) lfirstcall=.false.
 !
-
-
     end subroutine linear_interpolate_quadratic
 !***********************************************************************
 endmodule Solid_Cells
