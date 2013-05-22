@@ -33,6 +33,7 @@
   ampl_noise=0.1
   interpolation_method='mirror'
   nforcepoints=100
+  close_interpolation_method=2
 /
 &NSCBC_init_pars
   nscbc_bc = '','part_ref_inlet:part_ref_outlet',''
