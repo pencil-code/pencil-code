@@ -1712,13 +1712,15 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, dimension(3) :: ngrids, inear
       real :: rp,rs, verylarge=1e9, rlmin, rl, rg, r_pg, r_sg, r_sp, surf_val
       integer :: ndir, ndims, dir, vardir1,vardir2, constdir, topbot_tmp
-      integer :: topbot, iobj
+      integer :: topbot, iobj,i,j,k
       real, dimension(3,2) :: cornervalue
       integer, dimension(3,2) :: cornerindex
-      logical :: fluid_point
+      logical :: fluid_point, lproper_inter
       integer :: lower_i, lower_j, lower_k, upper_i, upper_j, upper_k
-      real :: phi, theta
-      real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat
+      real :: phi, theta, rpp,drr
+      real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat,xc,A_g
+      real,  dimension(3) :: nrc_hat, nthetac_hat, nphic_hat
+      real, dimension(2,2,2,3) :: x_corners, A_corners
       real :: vg_r, vg_phi, vg_theta
       real :: vp_r, vp_phi, vp_theta
 !
@@ -1741,28 +1743,106 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
         call find_g_global_closest_gridplane(g_global,inear,rg,p_local,&
             o_global,rs,rp,cornervalue,cornerindex)
       else
-        call fatal_error('close_inter_new','No such close_interpolation_method!')
+        call fatal_error('close_inter_new',&
+             'No such close_interpolation_method!')
       endif
 !
-!  Let "fvar" be the physical value of a give variable on "gridplane".
-!  The value of "fvar" is then found by interpolation between the four corner
-!  points of "gridplane".
+      if (close_interpolation_method==4 .and. lclose_quad_rad_inter) then
+         lproper_inter=.true.
+      else
+         lproper_inter=.false.
+      endif
 !
-      if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
-          call fatal_error('close_inter_new','')
+!  For quadratic interpolation the unit vectors in "p" is needed.
 !
-!  Now we know the value associated with any variable in the point "g",
-!  given by "fvar".
-!  Furthermore we know the value associated with any variable in point "s"
-!  on the object surface to be zero for any of the velocities and equal to
-!  the solid temperature for the temperature. This value is given by "surf_val".
-!  By interpolation it is now straight forward to find the value also in "p".
-!  First find the distance, "r_pg", from "p" to "g" to be used as weight,
-!  then normalize by the full distance, "r_sg", between "s" and "g".
+      if (lclose_quad_rad_inter) then
+         call find_unit_vectors(p_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
+      endif
+!
+!  Find some auxiallary distances.
 !
       r_pg=rg-rp
       r_sg=rg-rs
       r_sp=rp-rs
+!
+!  Let "fvar" be the physical value of the variables of interest on "gridplane".
+!  The value of "fvar" is then found by interpolation between the four corner
+!  points of "gridplane". For lclose_interpolation_method==4 the r, phi and
+!  theta velocities must be found already for the points used for interpolation
+!  such that the interpolation used to find "g" is also done correctly. (This
+!  essentially means that the radial veolcity is found using the quadratic 
+!  interplation.)
+!
+      if (lproper_inter) then
+         if (ilnTT>0) then
+            if ( .not. linear_interpolate(f,ilnTT,ilnTT,g_global,fvar(ilnTT),&
+                 inear,.false.) ) call fatal_error('close_inter_new','')
+         endif
+!
+!  For all the 8 corner points the velocity in the r, phi and theta 
+!  directions must be found. These are then used to found a scaling
+!  coefficient "A" for all three directions.
+!
+         do k=inear(3),inear(3)+1
+         do j=inear(2),inear(2)+1
+         do i=inear(1),inear(1)+1
+            xc=(/x(i),y(j),z(k)/)
+            rpp=sqrt(&
+                 (x(i)-o_global(1))**2 + &
+                 (y(j)-o_global(2))**2 + &
+                 (z(k)-o_global(3))**2   )
+            drr=rpp-rs
+            call find_unit_vectors(xc,rpp,iobj,nrc_hat,nphic_hat,nthetac_hat)
+            call dot(nrc_hat    ,f(i,j,k,iux:iuz),vg_r)
+            call dot(nphic_hat  ,f(i,j,k,iux:iuz),vg_phi)
+            call dot(nthetac_hat,f(i,j,k,iux:iuz),vg_theta)
+            A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,1)=vg_r/drr**2
+            A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,2)=vg_phi/drr
+            A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,3)=vg_theta/drr
+            x_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,:)=xc
+!
+!  Having found the scaling component for all 8 corner points and for all three 
+!  velocity components (stored in "A_corners") 
+!  we can now find the interpolated velocity of the
+!  three scaling components in point "g".
+!
+            call linear_interpolate_quadratic(A_g,A_corners,x_corners,p_global)
+!
+!  Since we now know "A_g", the value of the three scaling components in 
+!  the point "g" we can use "A_g" to find the three velocity components of
+!  interest in "g". 
+!
+            vg_r    =A_g(1)*r_sg**2
+            vg_phi  =A_g(2)*r_sg
+            vg_theta=A_g(3)*r_sg
+         enddo
+         enddo
+         enddo
+     else
+         if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
+              call fatal_error('close_inter_new','')
+!
+!  If lclose_quad_rad_inter = true we must find the velocities in the r, 
+!  theta and phi directions at the point "g".
+!
+         if (lclose_quad_rad_inter) then
+            call find_unit_vectors(p_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
+!
+!  Having found the unit vectors in the r, theta and phi directions we can now
+!  find the velocities in the same three directions at point "g".
+!
+            call dot(nr_hat    ,fvar(iux:iuz),vg_r)
+            call dot(nphi_hat  ,fvar(iux:iuz),vg_phi)
+            call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
+         endif
+      endif
+!
+!  Now we know the value associated with any variable in the point "g",
+!  given by "fvar" or "vg_r", "vg_phi" and "vg_theta".
+!  Furthermore we know the value associated with any variable in point "s"
+!  on the object surface to be zero for any of the velocities and equal to
+!  the solid temperature for the temperature. This value is given by "surf_val".
+!  By interpolation it is now straight forward to find the value also in "p".
 !
 !  Find temperature
 !
@@ -1776,22 +1856,14 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       endif
 !
 !  Find velocity.
-!  If lclose_quad_rad_inter = true we must find the
+!  If lclose_quad_rad_inter = true we must use the
 !  velocities in the r, theta and phi
-!  directions at the point "g". This will then be used to set up a
+!  directions at the point "g" to set up a
 !  linear interpolation for v_theta and v_phi and a quadratic interpolation
 !  for v_r.
 !
       surf_val=0
       if (lclose_quad_rad_inter) then
-        call find_unit_vectors(p_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
-!
-!  Having found the unit vectors in the r, theta and phi directions we can now
-!  find the velocities in the same three directions at point "g".
-!
-        call dot(nr_hat    ,fvar(iux:iuz),vg_r)
-        call dot(nphi_hat  ,fvar(iux:iuz),vg_phi)
-        call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
 !
 !  Now it is time to use linear and quadratic interpolation to find the
 !  velocities in point "p".
@@ -3182,5 +3254,107 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       print*, '..Done.'
 !
     endsubroutine solid_cells_clean_up
+!***********************************************************************
+    subroutine linear_interpolate_quadratic(gp,A_corners,x_corners,xxp)
+!
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
+!  using the linear interpolation formula
+!
+!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
+!
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
+!
+!  21-may-31/NILS: Adapted form the version in general.f90
+!
+      use Cdata
+!
+      real, dimension(2,2,2,3) :: x_corners, A_corners
+      real, dimension (3) :: xxp, A_p, gp
+      real, dimension (3) :: g1, g2, g3, g4, g5, g6, g7, g8
+      real :: xp0, yp0, zp0,drr
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      integer :: i, ix0, iy0, iz0
+      logical :: lfirstcall=.true.,lcheck=.false.
+!
+      intent(in)  :: A_corners,x_corners,xxp
+      intent(out) :: gp
+!
+!  Position of all corners.
+!
+      xp0=x_corners(1,1,1,1)
+      yp0=x_corners(1,1,1,2)
+      zp0=x_corners(1,1,1,3)
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
+!  that the interpolation is bilinear for 2D grids.
+!
+      xp0=0; yp0=0; zp0=0
+      if (nxgrid/=1) xp0=xxp(1)-xp0
+      if (nygrid/=1) yp0=xxp(2)-yp0
+      if (nzgrid/=1) zp0=xxp(3)-zp0
+!
+!  Inverse grid spacing
+!
+      dx1=1/(x_corners(2,1,1,1)-x_corners(1,1,1,1))
+      dx1=1/(x_corners(1,2,1,2)-x_corners(1,1,1,2))
+      dx1=1/(x_corners(1,1,2,3)-x_corners(1,1,1,3))
+      if ( (.not. all(lequidist)) .or. lfirstcall) then
+        dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
+        dxdydz1=dx1*dy1*dz1
+      endif
+!
+!  Function values at all corners.
+!
+      g1=A_corners(1,1,1,1:3)
+      g2=A_corners(2,1,1,1:3)
+      g3=A_corners(1,2,1,1:3)
+      g4=A_corners(2,2,1,1:3)
+      g5=A_corners(1,1,2,1:3)
+      g6=A_corners(2,1,2,1:3)
+      g7=A_corners(1,2,2,1:3)
+      g8=A_corners(2,2,2,1:3)
+!
+!  Interpolation formula.
+!
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
+          xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
+          yp0*zp0*dydz1*(g1-g3-g5+g7) + &
+          xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (lcheck) then
+        do i=1,3
+          if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'linear_interpolate: interpolated value is LARGER than'
+            print*, 'linear_interpolate: a values at the corner points!'
+            print*, 'linear_interpolate: x0, y0, z0=', &
+                x(ix0), y(iy0), z(iz0)
+            print*, 'linear_interpolate: i, gp(i)=', i, gp(i)
+            print*, 'linear_interpolate: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+          if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'linear_interpolate: interpolated value is smaller than'
+            print*, 'linear_interpolate: a values at the corner points!'
+            print*, 'linear_interpolate: xxp=', xxp
+            print*, 'linear_interpolate: x0, y0, z0=', &
+                x(ix0), y(iy0), z(iz0)
+            print*, 'linear_interpolate: i, gp(i)=', i, gp(i)
+            print*, 'linear_interpolate: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+        enddo
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+
+
+    end subroutine linear_interpolate_quadratic
 !***********************************************************************
 endmodule Solid_Cells
