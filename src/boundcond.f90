@@ -218,7 +218,7 @@ module Boundcond
                   call bc_cpz_x(f,topbot,j)
                 case ('spr')
                   ! BCX_DOC: spherical perfect conductor 
-                  ! BCX_DOC: implies $-f''-2f'/R=0$ and $f(x_N)=0$
+                  ! BCX_DOC: implies $f''+2f'/R=0$ and $f(x_N)=0$
                   call bc_spr_x(f,topbot,j)
                 case ('v')
                   ! BCX_DOC: vanishing third derivative
@@ -330,7 +330,8 @@ module Boundcond
                   call bc_set_sa2_x(f,topbot,j)
                 case ('pfc')
                   ! BCX_DOC: perfect-conductor in spherical
-                  ! BCX_DOC: coordinate: $d/dr( A_r) + 2/r = 0$ .
+                  ! BCX_DOC: coordinate: $d/dr( A_r) + 2/r = 0$.
+!joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
                   call bc_set_pfc_x(f,topbot,j)
                 case ('fix')
                   ! BCX_DOC: set boundary value [really??]
@@ -560,9 +561,15 @@ module Boundcond
                 ! BCY_DOC: Normal-field bc for spherical coordinate system.
                 ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
                 call bc_set_nfr_y(f,topbot,j)
+              case ('spt')
+                ! BCY_DOC: spherical perfect conducting boundary condition
+                ! BCY_DOC: along $\theta$ boundary
+                ! BCY_DOC: $f''+\cot\theta f'=0$ and $f(x_N)=0$ 
+                call bc_set_pfc_y(f,topbot,j)
               case ('pfc')
                 ! BCY_DOC: perfect conducting boundary condition
                 ! BCY_DOC: along $\theta$ boundary
+!joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
                 call bc_set_pfc_y(f,topbot,j)
               case ('nil','')
                 ! BCY_DOC: do nothing; assume that everything is set
@@ -1412,11 +1419,11 @@ module Boundcond
     subroutine bc_spr_x(f,topbot,j)
 !
 !  This condition sets values for A_phi and A_theta at the radial boundary.
-!  It solves -A"-2/RA'=0 and A=0 at the boundary.
+!  It solves  A"+2/RA'=0 and A=0 at the boundary.
 !  We compute the A1 point using a 2nd-order formula,
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
-!
+!  Has to be used togehter with 's' for A_r.
 !
 !  15-may-13/joern: coded
 !
@@ -2047,6 +2054,61 @@ module Boundcond
 !
     endsubroutine bc_symset0der_y
 !***********************************************************************
+    subroutine bc_spt_y(f,topbot,j)
+!
+!  This condition sets values for A_r or/and A_phi at the theta boundary.
+!  It solves A"+\cot(theta)A'=0 and A=0 at the boundary.
+!  We compute the A1 point using a 2nd-order formula,
+!  Next, we compute A2 using a 4th-order formula,
+!  and finally A3 using a 6th-order formula.
+!  is has to be used togehter with 'sds' with 'fbcy_top' or 'fbcy_bot'
+!  where A_theta=0
+!
+!
+!  23-may-13/joern: coded
+!
+      character (len=bclen) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i,j
+      real :: tmp
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        tmp=cotth(m1)/dx_1(m1)
+!
+        f(:,m1,:,j)  =0
+        f(:,m1-1,:,j)=(f(:,m1+1,:,j)*(-1-0.5*tmp))/(1-0.5*tmp)
+        f(:,m1-2,:,j)=(f(:,m1-1,:,j)*8*(2-tmp) &
+                      +f(:,m1+1,:,j)*8*(2+tmp) &
+                      +f(:,m1+2,:,j)*(-1-tmp))/(1-tmp)
+        f(:,m1-3,:,j)=(f(:,m1-2,:,j)*13.5*(1-tmp) &
+                      +f(:,m1-1,:,j)*135*(-1+0.5*tmp) &
+                      +f(:,m1+1,:,j)*135*(-1-0.5*tmp) &
+                      +f(:,m1+2,:,j)*13.5*(1+tmp) &
+                      +f(:,m1+3,:,j)*(-1-1.5*tmp))/(1-1.5*tmp)
+!
+      case ('top')               ! top boundary
+        tmp=cotth(m2)/dx_1(m2)
+!
+        f(:,m2,:,j)  =0
+        f(:,m2+1,:,j)=(f(:,m2-1,:,j)*(-1-0.5*tmp))/(1-0.5*tmp)
+        f(:,m2+2,:,j)=(f(:,m2+1,:,j)*8*(2-tmp) &
+                      +f(:,m2+1,:,j)*8*(2+tmp) &
+                      +f(:,m2+2,:,j)*(-1-tmp))/(1-tmp)
+        f(:,m2+3,:,j)=(f(:,m2+2,:,j)*13.5*(1-tmp) &
+                      +f(:,m2+1,:,j)*135*(-1+0.5*tmp) &
+                      +f(:,m2-1,:,j)*135*(-1-0.5*tmp) &
+                      +f(:,m2-2,:,j)*13.5*(1+tmp) &
+                      +f(:,m2-3,:,j)*(-1-1.5*tmp))/(1-1.5*tmp)
+!
+      case default
+        print*, "bc_spt_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_spt_y
+!***********************************************************************
     subroutine bc_sym_z(f,sgn,topbot,j,rel,val,val2,val4)
 !
 !  Symmetry boundary conditions.
@@ -2336,6 +2398,8 @@ module Boundcond
     endsubroutine bc_set_spder_x
 ! **********************************************************************
     subroutine bc_set_pfc_x(f,topbot,j)
+!
+!joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
 !
 !  In spherical polar coordinate system,
 !  at a radial boundary set : $A_{\theta} = 0$ and $A_{phi} = 0$,
@@ -2750,6 +2814,8 @@ module Boundcond
     endsubroutine bc_set_sfree_y
 ! **********************************************************************
     subroutine bc_set_pfc_y(f,topbot,j)
+!
+!joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
 !
 !  In spherical polar coordinate system,
 !  at a theta boundary set : $A_{r} = 0$ and $A_{\phi} = 0$,
