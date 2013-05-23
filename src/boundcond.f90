@@ -530,6 +530,9 @@ module Boundcond
               case ('set')
                 ! BCY_DOC: set boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
+              case ('sse')
+                ! BCY_DOC:  symmetry, set boundary value
+                call bc_sym_y(f,+1,topbot,j,val=fbcy12)
               case ('sep')
                 ! BCY_DOC: set boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12,val2=fbcy12_1,val4=fbcy12_2)
@@ -565,7 +568,7 @@ module Boundcond
                 ! BCY_DOC: spherical perfect conducting boundary condition
                 ! BCY_DOC: along $\theta$ boundary
                 ! BCY_DOC: $f''+\cot\theta f'=0$ and $f(x_N)=0$ 
-                call bc_set_pfc_y(f,topbot,j)
+                call bc_spt_y(f,topbot,j)
               case ('pfc')
                 ! BCY_DOC: perfect conducting boundary condition
                 ! BCY_DOC: along $\theta$ boundary
@@ -2061,7 +2064,7 @@ module Boundcond
 !  We compute the A1 point using a 2nd-order formula,
 !  Next, we compute A2 using a 4th-order formula,
 !  and finally A3 using a 6th-order formula.
-!  is has to be used togehter with 'sds' with 'fbcy_top' or 'fbcy_bot'
+!  is has to be used togehter with 'sse' with 'fbcy_top' or 'fbcy_bot'
 !  where A_theta=0
 !
 !
