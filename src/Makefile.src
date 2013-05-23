@@ -1269,8 +1269,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS= -O3 #(gaae1)
 #CC=icc #(gaae1)
 ##
-##
-##
 ## Andrew's Laptop (wkfg)
 ##
 #FC=mpif90 #(wkfg)
@@ -1469,7 +1467,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS= -O0 #(atefeh-laptop)
 #CFLAGS=-DFUNDERSC=1 #(atefeh-laptop)
 ##
-##
 ## Hoffman2 Cluster @ UCLA (Steve B)
 ##
 #FC=mpif90 #(i01|i02)
@@ -1477,7 +1474,6 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS=-O3 #(i01|i02)
 #CC=mpicc #(i01|i02)
 #CFLAGS=-O3 -DFUNDERSC=1 #(i01|i02)
-##
 ##
 ## CrayXT4 - (Espoo, Finland)
 ## 1012 Dual-core 2.6GHz Opterons

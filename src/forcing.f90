@@ -456,12 +456,25 @@ module Forcing
 !
 !  Galactic profile both for intensity and helicity
 !
-      elseif (iforce_profile=='galactic') then
+      elseif (iforce_profile=='galactic-old') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
         do n=1,mz
           if (abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
           if (abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))
+        enddo
+!
+!  Galactic profile both for intensity and helicity
+!  Normally one would put zff_ampl=zff_hel=pi
+!
+      elseif (iforce_profile=='galactic') then
+        profx_ampl=1.; profx_hel=1.
+        profy_ampl=1.; profy_hel=1.
+        do n=1,mz
+          profz_ampl(n)=.0
+          profz_hel (n)=.0
+          if (abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.+cos(z(n)))
+          if (abs(z(n))<zff_hel ) profz_hel (n)=sin(z(n))
         enddo
 !
 ! Galactic helicity profile for helicity
@@ -832,16 +845,14 @@ module Forcing
 !  This forcing drives pressure waves
 !
 !  10-sep-01/axel: coded
-!   6-feb-13/MR  : introduced discard of wavevectors [0,0,kz] upon request by
-!                  lavoid_yxmean
+!   6-feb-13/MR: can discard of wavevectors [0,0,kz] by lavoid_yxmean
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
       use Sub, only: del2v_etc,dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: force_ampl
-!
+      real :: kx0,kx,ky,kz,force_ampl,pi_over_Lx
       real :: phase,ffnorm,iqfm
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
@@ -900,6 +911,41 @@ module Forcing
       enddo
       if (ip<=6) print*,'forcing_irro: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,lfirst_call
 !
+!  normally we want to use the wavevectors as they are,
+!  but in some cases, e.g. when the box is bigger than 2pi,
+!  we want to rescale k so that k=1 now corresponds to a smaller value.
+!
+      if (lscale_kvector_fac) then
+        kx0=kkx(ik)*scale_kvectorx
+        ky=kky(ik)*scale_kvectory
+        kz=kkz(ik)*scale_kvectorz
+        pi_over_Lx=0.5
+      elseif (lscale_kvector_tobox) then
+        kx0=kkx(ik)*(2.*pi/Lxyz(1))
+        ky=kky(ik)*(2.*pi/Lxyz(2))
+        kz=kkz(ik)*(2.*pi/Lxyz(3))
+        pi_over_Lx=pi/Lxyz(1)
+      else
+        kx0=kkx(ik)
+        ky=kky(ik)
+        kz=kkz(ik)
+        pi_over_Lx=0.5
+      endif
+!
+!  in the shearing sheet approximation, kx = kx0 - St*k_y.
+!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  integer shifts.
+!
+      if (Sshear==0.) then
+        kx=kx0
+      else
+        if (lshearing_adjust_old) then
+          kx=kx0+ky*deltay/Lx
+        else
+          kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+        endif
+      endif
+!
 !  Need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference.
@@ -911,15 +957,15 @@ module Forcing
 !  pre-calculate for the contributions e^(ikx*x), e^(iky*y), e^(ikz*z),
 !  as well as the phase factor.
 !
-      fx=exp(cmplx(0.,kkx(ik)*x+phase))*ffnorm
-      fy=exp(cmplx(0.,kky(ik)*y))
-      fz=exp(cmplx(0.,kkz(ik)*z))
+      fx=exp(cmplx(0.,kx*x+phase))*ffnorm
+      fy=exp(cmplx(0.,ky*y))
+      fz=exp(cmplx(0.,kz*z))
 !
 !  write i*k as vector
 !
-      ikk(1)=cmplx(0.,kkx(ik))
-      ikk(2)=cmplx(0.,kky(ik))
-      ikk(3)=cmplx(0.,kkz(ik))
+      ikk(1)=cmplx(0.,kx)
+      ikk(2)=cmplx(0.,ky)
+      ikk(3)=cmplx(0.,kz)
 !
 !  Loop over all directions, but skip over directions with no extent.
 !

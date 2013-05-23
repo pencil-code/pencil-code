@@ -665,22 +665,23 @@ module Testfield
 !
 !  Multiply by exponential factor if lam_testfield is different from zero.
 !  Allow also for linearly increasing testfields
-!  Keep bamp1=1 for oscillatory fields.
+!  Keep bamp1=1 for oscillatory test fields.
 !
       if (lam_testfield/=0..or.lin_testfield/=0. .or. &
           om_testfield/=0..or.delta_testfield/=0.) then
+        bamp=1.
         if (lam_testfield/=0.) then
           taainit_previous=taainit-daainit
-          bamp=exp(lam_testfield*(t-taainit_previous))
+          bamp=bamp*exp(lam_testfield*(t-taainit_previous))
           bamp1=1./bamp
         endif
         if (lin_testfield/=0.) then
           taainit_previous=taainit-daainit
-          bamp=lin_testfield*(t-taainit_previous-daainit/2.)
+          bamp=bamp*lin_testfield*(t-taainit_previous-daainit/2.)
           bamp1=1./bamp
         endif
         if (om_testfield/=0.) then
-          bamp=cos(om_testfield*t)
+          bamp=bamp*cos(om_testfield*t)
           bamp1=1.
         endif
         if (delta_testfield/=0.) then
