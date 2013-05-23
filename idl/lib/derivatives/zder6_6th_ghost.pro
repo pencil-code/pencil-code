@@ -39,7 +39,7 @@ function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
       fdz=1.
     endif else fdz = dz_1[n1]^6
   endif else begin
-    message, "zder6_6th_ghost: not implemented for a non-equidistant grid in z."
+    message, "zder6_6th_ghost: non-equidistant grid in z only with ignoredx=1."
   endelse
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $

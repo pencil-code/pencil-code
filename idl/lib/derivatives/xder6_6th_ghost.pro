@@ -5,7 +5,7 @@
 ;;  - 6th-order (7-point stencil)
 ;;  - with ghost cells
 ;;
-function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
+function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ignoredx
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -15,6 +15,9 @@ function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;  Default values.
 ;
   default, ghost, 0
+;
+  if (coord_system ne 'cartesian') then $
+      message, "xder6_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
 ;
 ;  Calculate fmx, fmy, and fmz, based on the input array size.
 ;
@@ -32,9 +35,11 @@ function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (ldegenerated[0] or (fmx eq 1)) then return, d
 ;
   if (lequidist[0]) then begin
-    fdx = dx_1[l1]^6
+    if (ignoredx) then begin
+      fdz=1.
+    endif else fdx = dx_1[l1]^6
   endif else begin
-    message, "xder6_6th_ghost: not implemented for a non-equidistant grid in x."
+    message, "xder6_6th_ghost: non-equidistant grid in x only with ignoredx=1."
   endelse
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $

@@ -5,7 +5,7 @@
 ;;  - 6th-order (7-point stencil)
 ;;  - with ghost cells
 ;;
-function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
+function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ignoredxw
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -35,9 +35,11 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   if (ldegenerated[1] or (fmy eq 1)) then return, d
 ;
   if (lequidist[1]) then begin
-    fdy = dy_1[m1]^6
+    if (ignoredx) then begin
+      fdz=1.
+    endif else fdy = dy_1[m1]^6
   endif else begin
-    message, "yder6_6th_ghost: not implemented for a non-equidistant grid in y."
+    message, "yder6_6th_ghost: non-equidistant grid in y only with ignoredx=1."
   endelse
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $
