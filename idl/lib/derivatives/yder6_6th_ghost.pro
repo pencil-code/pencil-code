@@ -5,7 +5,7 @@
 ;;  - 6th-order (7-point stencil)
 ;;  - with ghost cells
 ;;
-function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ignoredxw
+function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ignoredx
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -15,6 +15,7 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
 ;  Default values.
 ;
   default, ghost, 0
+  default, ignoredx, 0
 ;
   if (coord_system ne 'cartesian') then $
       message, "yder6_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
@@ -34,12 +35,12 @@ function yder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
 ;
   if (ldegenerated[1] or (fmy eq 1)) then return, d
 ;
-  if (lequidist[1]) then begin
-    if (ignoredx) then begin
-      fdz=1.
-    endif else fdy = dy_1[m1]^6
+  if (ignoredx) then begin
+    fdy=1.
   endif else begin
-    message, "yder6_6th_ghost: non-equidistant grid in y only with ignoredx=1."
+    if (lequidist[1]) then begin
+      fdy = dy_1[m1]^6
+    endif else message, "yder6_6th_ghost: non-equidistant grid in y only with ignoredx=1."
   endelse
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $

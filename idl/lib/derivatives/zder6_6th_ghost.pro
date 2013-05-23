@@ -15,6 +15,7 @@ function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
 ;  Default values.
 ;
   default, ghost, 0
+  default, ignoredx, 0
 ;
   if (coord_system ne 'cartesian') then $
       message, "zder6_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
@@ -34,12 +35,12 @@ function zder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
 ;
   if (ldegenerated[2] or (fmz eq 1)) then return, d
 ;
-  if (lequidist[2]) then begin
-    if (ignoredx) then begin
-      fdz=1.
-    endif else fdz = dz_1[n1]^6
+  if (ignoredx) then begin
+    fdz=1.
   endif else begin
-    message, "zder6_6th_ghost: non-equidistant grid in z only with ignoredx=1."
+    if (lequidist[2]) then begin
+      fdz = dz_1[n1]^6
+    endif else message, "zder6_6th_ghost: non-equidistant grid in z only with ignoredx=1."
   endelse
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $

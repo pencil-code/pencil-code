@@ -15,6 +15,7 @@ function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
 ;  Default values.
 ;
   default, ghost, 0
+  default, ignoredx, 0
 ;
   if (coord_system ne 'cartesian') then $
       message, "xder6_6th_ghost: not yet implemented for coord_system='" + coord_system + "'"
@@ -34,12 +35,12 @@ function xder6,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t,ignoredx=ig
 ;
   if (ldegenerated[0] or (fmx eq 1)) then return, d
 ;
-  if (lequidist[0]) then begin
-    if (ignoredx) then begin
-      fdz=1.
-    endif else fdx = dx_1[l1]^6
+  if (ignoredx) then begin
+    fdx=1.
   endif else begin
-    message, "xder6_6th_ghost: non-equidistant grid in x only with ignoredx=1."
+    if (lequidist[0]) then begin
+      fdx = dx_1[l1]^6
+    endif else message, "xder6_6th_ghost: non-equidistant grid in x only with ignoredx=1."
   endelse
 ;
   d[l1:l2,m1:m2,n1:n2,*] = $
