@@ -1355,7 +1355,7 @@ module Dustdensity
               p%dndr=0.
             else
               if (.not. ldcore) then
-                Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+                Imr=1. !Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
                 call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,0)
                 do k=1,ndustspec
                   p%dndr(:,k)=-Imr*dndr_tmp(:,k)
@@ -1463,7 +1463,7 @@ module Dustdensity
 !  Redistribution over the size in the atmospheric physics case
 !
           if (ldcore) then
-            Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+            Imr=1.!Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
             do i=1, ndustspec0
              do k=1, ndustspec
                ppsf_full(:,k,i)=p%ppsat*exp(AA*p%TT1/2./dsize(k) &
