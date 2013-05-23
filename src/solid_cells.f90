@@ -1718,7 +1718,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       logical :: fluid_point, lproper_inter
       integer :: lower_i, lower_j, lower_k, upper_i, upper_j, upper_k
       real :: phi, theta, rpp,drr
-      real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat,xc,A_g
+      real,  dimension(3) :: nr_hat, ntheta_hat, nphi_hat,xc,A_g,xc_local
       real,  dimension(3) :: nrc_hat, nthetac_hat, nphic_hat
       real, dimension(2,2,2,3) :: x_corners, A_corners
       real :: vg_r, vg_phi, vg_theta
@@ -1735,13 +1735,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  away from "s". 
 !
       if (close_interpolation_method == 3) then
-        call find_g_global_circle(g_global,inear,rg,p_local,&
-            o_global,rs,rp)
-      elseif (&
-          (close_interpolation_method==2).or.&
-          (close_interpolation_method==4)) then
+        call find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
+      elseif (close_interpolation_method==2) then
         call find_g_global_closest_gridplane(g_global,inear,rg,p_local,&
             o_global,rs,rp,cornervalue,cornerindex)
+      elseif (close_interpolation_method==4) then
+        call find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
       else
         call fatal_error('close_inter_new',&
              'No such close_interpolation_method!')
@@ -1787,6 +1786,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
          do j=inear(2),inear(2)+1
          do i=inear(1),inear(1)+1
             xc=(/x(i),y(j),z(k)/)
+            xc_local=xc-o_global
             if (objects(iobj)%form=='cylinder') then
               rpp=sqrt(&
                   (x(i)-o_global(1))**2 + &
@@ -1798,7 +1798,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
                   (z(k)-o_global(3))**2   )
             endif
             drr=rpp-rs
-            call find_unit_vectors(xc,rpp,iobj,nrc_hat,nphic_hat,nthetac_hat)
+            call find_unit_vectors(xc_local,rpp,iobj,nrc_hat,nphic_hat,nthetac_hat)
             call dot(nrc_hat    ,f(i,j,k,iux:iuz),vg_r)
             call dot(nphic_hat  ,f(i,j,k,iux:iuz),vg_phi)
             call dot(nthetac_hat,f(i,j,k,iux:iuz),vg_theta)
@@ -1832,7 +1832,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  theta and phi directions at the point "g".
 !
          if (lclose_quad_rad_inter) then
-            call find_unit_vectors(p_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
 !
 !  Having found the unit vectors in the r, theta and phi directions we can now
 !  find the velocities in the same three directions at point "g".
