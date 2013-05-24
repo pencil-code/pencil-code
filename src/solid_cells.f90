@@ -1446,6 +1446,7 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !
       use General, only: linear_interpolate
       use Messages, only: fatal_error
+      use sub
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mvar), intent(out) :: f_tmp
@@ -1454,29 +1455,83 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       integer, intent(in) :: lower_k,upper_k
       real,    intent(in) :: xmirror,ymirror,zmirror
 !
-      real, dimension(3) :: xxp
+      real, dimension(3) :: xxp,o_global,ntheta_hat,nphi_hat,nr_hat,xxp_local
+      real :: rp,rs,r_sp,vp_r,vp_phi,vp_theta
       integer, dimension(3) :: inear
       real :: rho_ghost_point,rho_fluid_point,T_fluid_point,T_ghost_point
+      integer :: itest_method
 !
       call keep_compiler_quiet(upper_i)
       call keep_compiler_quiet(upper_j)
       call keep_compiler_quiet(upper_k)
       call keep_compiler_quiet(ndims)
 !
-!  Linear interploation (use the eight corner points of the cube), same
-! method as used in the particle module
-!
       xxp=(/xmirror,ymirror,zmirror/)
       inear=(/lower_i,lower_j,lower_k/)
+!
+!  Find velocity in given point by one of two different methods:
+!   1) Linear interploation (use the eight corner points of the cube), same
+!      method as used in the particle module
+!   2) Quadratic interpolation of the radial velocity and linear 
+!      interpolation of the tangential velocities (itest_method>0)
+!
+      itest_method=0
+      if (close_interpolation_method==4) itest_method=1
       if ( .not. linear_interpolate(f,iux,mvar,xxp,f_tmp,inear,.false.) ) &
-        call fatal_error('linear_interpolate','')
+          call fatal_error('linear_interpolate','')
+!
+      if (itest_method > 0) then
+        o_global=objects(iobj)%x
+        xxp_local=xxp-o_global
+        if (objects(iobj)%form=='cylinder') then
+          rp=sqrt(&
+              (xxp(1)-o_global(1))**2 + &
+              (xxp(2)-o_global(2))**2   )
+        elseif (objects(iobj)%form=='sphere') then
+          rp=sqrt(&
+              (xxp(1)-o_global(1))**2 + &
+              (xxp(2)-o_global(2))**2 + &
+              (xxp(3)-o_global(3))**2   )
+        endif
+        rs=objects(iobj)%r
+        r_sp=rp-rs
+        call r_theta_phi_velocity_in_point(f,xxp,inear,iobj, &
+            o_global,rs,r_sp,vp_r,vp_theta,vp_phi)        
+        call find_unit_vectors(xxp_local,rp,iobj,nr_hat,nphi_hat,ntheta_hat)
+        f_tmp(iux:iuz)=vp_r*nr_hat+vp_theta*ntheta_hat+vp_phi*nphi_hat
+        if (lclose_interpolation) then
+          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
+              f_tmp,.false.)
+        endif
+!        
+!  What is the boundary conditions at the surface
+!  For itest_method=1 antisymmetric boundaries are used for velocity
+!  For itest_method=2 antisymmetric boundaries are used for tangential 
+!  velocity components while symmetric boundaries are used for radial velocity
+!
+        if (itest_method==1) then
+          f_tmp(1:3)=-f_tmp(1:3)
+        else
+          call dot(nr_hat    ,f_tmp(iux:iuz),vp_r)
+          call dot(nphi_hat  ,f_tmp(iux:iuz),vp_phi)
+          call dot(ntheta_hat,f_tmp(iux:iuz),vp_theta)
+          f_tmp(iux:iuz)=vp_r*nr_hat-vp_theta*ntheta_hat-vp_phi*nphi_hat
+        endif
+      endif
+!
+      if (itest_method==0) then
 !
 !  If the mirror point is very close to the surface of the object
 !  some special treatment is required.
 !
-      if (lclose_interpolation) then
-        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
-            f_tmp,.false.)
+        if (lclose_interpolation) then
+          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp,&
+              f_tmp,.false.)
+        endif
+!
+!  Antisymmetric boundaries are used for the velocity vector
+!
+        f_tmp(1:3)=-f_tmp(1:3)
       endif
 !
 !  For the temperature boundaries being antisymmetric relative to the
@@ -1508,10 +1563,6 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       else
         f_tmp(ilnrho)=rho_ghost_point
       endif
-!
-!  Antisymmetric boundaries are used for the velocity vector
-!
-      f_tmp(1:3)=-f_tmp(1:3)
 !
     endsubroutine interpolate_point_new
 !***********************************************************************
@@ -1773,57 +1824,12 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
 !  interplation.)
 !
       if (lproper_inter) then
-         if (ilnTT>0) then
-            if ( .not. linear_interpolate(f,ilnTT,ilnTT,g_global,fvar(ilnTT),&
-                 inear,.false.) ) call fatal_error('close_inter_new','')
-         endif
-!
-!  For all the 8 corner points the velocity in the r, phi and theta 
-!  directions must be found. These are then used to found a scaling
-!  coefficient "A" for all three directions.
-!
-         do k=inear(3),inear(3)+1
-         do j=inear(2),inear(2)+1
-         do i=inear(1),inear(1)+1
-            xc=(/x(i),y(j),z(k)/)
-            xc_local=xc-o_global
-            if (objects(iobj)%form=='cylinder') then
-              rpp=sqrt(&
-                  (x(i)-o_global(1))**2 + &
-                  (y(j)-o_global(2))**2   )
-            elseif (objects(iobj)%form=='sphere') then
-              rpp=sqrt(&
-                  (x(i)-o_global(1))**2 + &
-                  (y(j)-o_global(2))**2 + &
-                  (z(k)-o_global(3))**2   )
-            endif
-            drr=rpp-rs
-            call find_unit_vectors(xc_local,rpp,iobj,nrc_hat,nphic_hat,nthetac_hat)
-            call dot(nrc_hat    ,f(i,j,k,iux:iuz),vg_r)
-            call dot(nphic_hat  ,f(i,j,k,iux:iuz),vg_phi)
-            call dot(nthetac_hat,f(i,j,k,iux:iuz),vg_theta)
-            A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,1)=vg_r/drr**2
-            A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,2)=vg_phi/drr
-            A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,3)=vg_theta/drr
-            x_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,:)=xc
-         enddo
-         enddo
-         enddo
-!
-!  Having found the scaling component for all 8 corner points and for all three 
-!  velocity components (stored in "A_corners") 
-!  we can now find the interpolated velocity of the
-!  three scaling components in point "g".
-!
-         call linear_interpolate_quadratic(A_g,A_corners,x_corners,g_global)
-!
-!  Since we now know "A_g", the value of the three scaling components in 
-!  the point "g" we can use "A_g" to find the three velocity components of
-!  interest in "g". 
-!
-         vg_r    =A_g(1)*r_sg**2
-         vg_phi  =A_g(2)*r_sg
-         vg_theta=A_g(3)*r_sg
+        if (ilnTT>0) then
+          if ( .not. linear_interpolate(f,ilnTT,ilnTT,g_global,fvar(ilnTT),&
+              inear,.false.) ) call fatal_error('close_inter_new','')
+        endif
+        call r_theta_phi_velocity_in_point(f,g_global,inear,iobj,o_global,&
+             rs,r_sg,vg_r,vg_theta,vg_phi)
      else
          if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
               call fatal_error('close_inter_new','')
@@ -3328,5 +3334,74 @@ if (llast_proc_y) f(:,m2-5:m2,:,iux)=0
       if (lfirstcall) lfirstcall=.false.
 !
     end subroutine linear_interpolate_quadratic
+!***********************************************************************
+    subroutine r_theta_phi_velocity_in_point(f,g_global,inear,iobj,o_global,&
+        rs,r_sg,v_r,v_theta,v_phi)
+!
+!  Find values of the velocity in the r, phi and theta directions for
+!  any given position (does not have to be a grid point).
+!
+      USE sub
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(3) :: o_global,g_global
+      integer, dimension(3) :: inear
+      real :: rs, r_sg, drr,rpp
+      integer :: i,j,k,iobj
+      real,  dimension(3) :: xc,A_g,xc_local
+      real,  dimension(3) :: nrc_hat, nthetac_hat, nphic_hat
+      real, dimension(2,2,2,3) :: x_corners, A_corners
+      real :: v_r, v_phi, v_theta
+      real :: vc_r, vc_phi, vc_theta
+
+!
+!  For all the 8 corner points the velocity in the r, phi and theta 
+!  directions must be found. These are then used to found a scaling
+!  coefficient "A" for all three directions.
+!
+      do k=inear(3),inear(3)+1
+      do j=inear(2),inear(2)+1
+      do i=inear(1),inear(1)+1
+        xc=(/x(i),y(j),z(k)/)
+        xc_local=xc-o_global
+        if (objects(iobj)%form=='cylinder') then
+          rpp=sqrt(&
+              (x(i)-o_global(1))**2 + &
+              (y(j)-o_global(2))**2   )
+        elseif (objects(iobj)%form=='sphere') then
+          rpp=sqrt(&
+              (x(i)-o_global(1))**2 + &
+              (y(j)-o_global(2))**2 + &
+              (z(k)-o_global(3))**2   )
+        endif
+        drr=rpp-rs
+        call find_unit_vectors(xc_local,rpp,iobj,nrc_hat,nphic_hat,nthetac_hat)
+        call dot(nrc_hat    ,f(i,j,k,iux:iuz),vc_r)
+        call dot(nphic_hat  ,f(i,j,k,iux:iuz),vc_phi)
+        call dot(nthetac_hat,f(i,j,k,iux:iuz),vc_theta)
+        A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,1)=vc_r/drr**2
+        A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,2)=vc_phi/drr
+        A_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,3)=vc_theta/drr
+        x_corners(i-inear(1)+1,j-inear(2)+1,k-inear(3)+1,:)=xc
+      enddo
+      enddo
+      enddo
+!
+!  Having found the scaling component for all 8 corner points and for all three 
+!  velocity components (stored in "A_corners") 
+!  we can now find the interpolated velocity of the
+!  three scaling components in point "g".
+!
+      call linear_interpolate_quadratic(A_g,A_corners,x_corners,g_global)
+!
+!  Since we now know "A_g", the value of the three scaling components in 
+!  the point "g" we can use "A_g" to find the three velocity components of
+!  interest in "g". 
+!
+      v_r    =A_g(1)*r_sg**2
+      v_phi  =A_g(2)*r_sg
+      v_theta=A_g(3)*r_sg
+!
+    end subroutine r_theta_phi_velocity_in_point
 !***********************************************************************
 endmodule Solid_Cells
