@@ -4534,6 +4534,11 @@ module Entropy
 !
       case ('lin-z')
         prof=spread(z(n)/wcool,1,l2-l1+1)
+!
+!  Sinusoidal cooling profile (periodic).
+!
+      case ('sin-z')
+        prof=spread(sin(z(n)/wcool),1,l2-l1+1)
       endselect
 !
 !  Note: the cooltype 'Temp' used below was introduced by Axel for the
@@ -4550,6 +4555,8 @@ module Entropy
        heat=heat-cool*(p%cs2-(cs20-prof*cs2cool))/cs2cool
      case('Temp2')
        heat=heat-cool*prof*(p%cs2-cs2cool)/cs2cool
+     case('plain')
+       heat=heat-cool*prof
      case default
        call fatal_error('get_heat_cool_general','please select a cooltype')
      endselect
