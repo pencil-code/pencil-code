@@ -37,6 +37,7 @@
   \var{fg}        & ``freeze'' value, i.e. maintain initial \\
   \var{1}         & f=1 (for debugging) \\
   \var{set}       & set boundary value \\
+  \var{sse}       & symmetry, set boundary value \\
   \var{sep}       & set boundary value \\
   \var{e1}        & extrapolation \\
   \var{e2}        & extrapolation \\
@@ -50,6 +51,9 @@
                     coordinate system. \\
   \var{nfr}       & Normal-field bc for spherical coordinate system.
                     Some people call this the ``(angry) hedgehog bc''. \\
+  \var{spt}       & spherical perfect conducting boundary condition
+                    along $\theta$ boundary
+                    $f''+\cot\theta f'=0$ and $f(x_N)=0$ \\
   \var{pfc}       & perfect conducting boundary condition
                     along $\theta$ boundary \\
   \var{nil','}    & do nothing; assume that everything is set \\

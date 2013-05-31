@@ -10940,26 +10940,6 @@ the latest set of parameters, you need to look at the code.
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
 \midrule
-  \var{nu} [$0.$]
-               & kinematic viscosity. \\
-  \var{ivisc} [\code{'nu-const'}]
-               & select form of viscous term (see
-                 \S\ref{S-Eqn-of-motion}); currently valid choices are
-                 \begin{description}
-                 \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
-                   $\Fv_{\rm visc}=\nu(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv
-                    + 2\mathsf{S}\cdot\grad\ln\rho)$
-                 \item[\code{'rho_nu-const'}] -- viscous force for
-                   $\mu\equiv\rho\nu=\const$,
-                   $\Fv_{\rm visc}=(\mu/\rho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$.
-                   With this option, the input parameter \var{nu} actually
-                   sets the value of $\mu/\rho_0$
-                   (\var{rho0}=$\rho_0$ is another input parameter, see
-                   pp.~\pageref{cs0-rho0-init} and \pageref{cs0-rho0-run})
-                 \item[\code{'simplified'}] -- simplified viscous force
-                   $\Fv_{\rm visc}=\nu\Laplace\uv$
-                 \end{description}
-                 \\
   \var{Omega} [$0.$]
                & magnitude of angular velocity for \name{Coriolis force}
                  (note: the centrifugal force is turned off by default,
@@ -11254,6 +11234,36 @@ the latest set of parameters, you need to look at the code.
   \var{nu_epicycle} [start]
                & see Eq.~(\ref{disc-gravz-init}) in
                  Sect.~\ref{VerticalStratification}.\\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{viscosity_run_pars}} \\
+\midrule
+  \var{nu} [$0.$]
+               & kinematic viscosity. \\
+  \var{nu_hyper2} [$0.$]
+               & kinematic hyperviscosity (with $\nabla^4\uv$). \\
+  \var{nu_hyper3} [$0.$]
+               & kinematic hyperviscosity (with $\nabla^6\uv$). \\
+  \var{zeta} [$0.$]
+               & bulk viscosity. \\
+  \var{ivisc} [\code{'nu-const'}]
+               & select form of viscous term (see
+                 \S\ref{S-Eqn-of-motion}); currently valid choices are
+                 \begin{description}
+                 \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
+                   $\Fv_{\rm visc}=\nu(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv
+                    + 2\mathsf{S}\cdot\grad\ln\rho)$
+                 \item[\code{'rho_nu-const'}] -- viscous force for
+                   $\mu\equiv\rho\nu=\const$,
+                   $\Fv_{\rm visc}=(\mu/\rho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$.
+                   With this option, the input parameter \var{nu} actually
+                   sets the value of $\mu/\rho_0$
+                   (\var{rho0}=$\rho_0$ is another input parameter, see
+                   pp.~\pageref{cs0-rho0-init} and \pageref{cs0-rho0-run})
+                 \item[\code{'simplified'}] -- simplified viscous force
+                   $\Fv_{\rm visc}=\nu\Laplace\uv$
+                 \end{description}
+                 \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{shear_run_pars}} \\
