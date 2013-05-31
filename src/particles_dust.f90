@@ -194,7 +194,8 @@ module Particles
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
-      lcommunicate_np, lcylindrical_gravity_par
+      lcommunicate_np, lcylindrical_gravity_par, &
+      l_shell, k_shell
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0

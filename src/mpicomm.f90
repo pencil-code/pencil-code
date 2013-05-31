@@ -1852,6 +1852,26 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
+    subroutine mpibcast_cmplx_arr(bcast_array,nbcast_array,proc)
+!
+!  Communicate real array between processors.
+!
+      integer :: nbcast_array
+      complex*16, dimension(nbcast_array) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_COMPLEX,ibcast_proc, &
+          MPI_COMM_WORLD,mpierr)
+!
+    endsubroutine mpibcast_cmplx_arr
+!***********************************************************************
     subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir)
 !
 !  Calculate total sum for each array element and return to all processors.

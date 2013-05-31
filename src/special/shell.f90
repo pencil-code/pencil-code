@@ -27,7 +27,7 @@ module Special
 !
   implicit none
 !
-  include 'special.h'
+  include '../special.h'
 !
 ! constants
 !
@@ -57,6 +57,7 @@ module Special
 !
   logical :: l_needspecialuu=.false.                          !Need real-space velocity
   logical :: l_quenched=.true., l_qphase=.true.                                !NOT update real-space velocity vectors
+  real    :: div_phase=1.  !divisor for phase changes
   logical :: l_nogoy=.false.
 !
 ! runtime variables
@@ -84,14 +85,16 @@ module Special
   real,pointer :: turnover_shared
   logical,pointer :: vel_call, turnover_call
 !
+  integer :: size_plane=0
+!
   namelist /special_init_pars/ &
       nshell, visc, f_amp, lambda, deltG, k_amp, u_amp,&
       l_needspecialuu, l_altu, l_quenched, l_qphase, stability_output,&
       nstability1, nstability2, nstability3, minshell, maxshell,&
-      minshell2, l_nogoy
+      minshell2, l_nogoy, div_phase
 !
   namelist /special_run_pars/ &
-      lstructure, nord,time_step_type
+      lstructure, nord,time_step_type, size_plane
 !
 !! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -420,7 +423,6 @@ module Special
           deltm1=1./deltmbase
         endif
         call mpibcast_real(deltm1,1)
-        dt1_special=deltm1
       endif
 !
       if (ldiagnos) then
@@ -428,6 +430,7 @@ module Special
 ! output structure functions to file
 !
         if (lstructure.and.lfirstpoint.and.lroot) call write_structure()
+        if (size_plane /=0 .and. lfirstpoint .and. lroot) call write_plane
 !
 ! standard diagnostics
 !
@@ -1098,6 +1101,46 @@ module Special
 !
     endsubroutine write_structure
 !***********************************************************************
+    subroutine write_plane
+!
+      integer :: lun_input=92,i_plane,j_plane
+      real :: t_goy
+      real :: z_plane
+      real, dimension(3) :: uu_plane, xx_plane
+      character (120) :: filename
+      real, dimension(128,128,3) :: vel_plane
+      real, dimension(128) :: plane_x_axis, plane_y_axis
+!
+      if (lroot) then
+!
+        do i_plane=1,128
+          plane_x_axis(i_plane)=xyz0(1)+Lxyz(1)/128.*(i_plane-0.5)
+          plane_y_axis(i_plane)=xyz0(2)+Lxyz(2)/128.*(i_plane-0.5)
+        enddo
+        z_plane=(xyz0(3)+xyz1(3))/2.
+!
+        t_goy=t
+!
+        call get_plane_filename(filename)
+        open(UNIT=lun_input,FILE=trim(filename),&
+            POSITION='append',FORM='unformatted')
+!
+        do i_plane=1,128
+          do j_plane=1,128
+            xx_plane(1)=plane_x_axis(i_plane)
+            xx_plane(2)=plane_y_axis(j_plane)
+            xx_plane(3)=z_plane
+            call calc_gas_velocity(xx_plane, uu_plane)
+            vel_plane(i_plane,j_plane,:)=uu_plane
+          enddo
+        enddo
+!
+        write(UNIT=lun_input), t_goy, vel_plane
+        close(UNIT=lun_input)
+      endif
+!
+    endsubroutine write_plane
+!***********************************************************************
     subroutine calc_structure(sf, phase, vecdot)
 !
       real, dimension(nord,nshell) :: sf
@@ -1138,6 +1181,18 @@ module Special
           '/t_structure_'//trim(itoa(iord))//'.dat')
 !
     endsubroutine get_structure_filenames
+!***********************************************************************
+    subroutine get_plane_filename(filename)
+!
+      use General, only: itoa, safe_character_assign
+!
+      character (len=*) :: filename
+      integer :: iord
+!
+      call safe_character_assign(filename,trim(datadir)//&
+          '/vel_plane.dat')
+!
+    endsubroutine get_plane_filename
 !***********************************************************************
     subroutine get_perp_vector(vec1, vec2)
 !
@@ -1192,7 +1247,6 @@ module Special
       real :: norm, scale
 !
       do ns=maxshell,minshell2
-!
         scale=pi*((dt_/eddy_time(ns))**(0.5))
         do
           uv=vec_array(ns,:)
@@ -1234,7 +1288,7 @@ module Special
 ! scale a for random walk (|a| = pi sqrt(dt_/eddy_time))
 !
         scale=pi*((dt_/eddy_time(ns))**(0.5))
-        a=a*scale
+        a=a*scale/div_phase
 !
         phase_time(ns,:)=phase_time(ns,:)+a
       enddo
@@ -1248,7 +1302,7 @@ module Special
       real, dimension(3) :: xpos, uup
       integer, optional :: shell1, shell2
 !
-      integer :: ns, nstart, nend, ccount
+      integer :: nsgg, nstart, nend, ccount
       real :: vc, vs, dotp
 !
       uup=0
@@ -1260,20 +1314,21 @@ module Special
         nend=minshell
       endif
 !
-      do ns=nstart,nend
+      do nsgg=nstart,nend
         if (l_altu) then; do ccount=1,3
-          dotp=dot_product(xpos,kvec(ccount,ns,:))
-          uup=uup+uvec_split(ccount,ns,:)*(&
-               real(zu(ns))*cos(dotp+phase_time(ns,ccount))-&
-              aimag(zu(ns))*sin(dotp)+phase_time(ns,ccount))*&
-              umalt(ns)/umod(ns)
+          dotp=dot_product(xpos,kvec(ccount,nsgg,:))
+          uup=uup+uvec_split(ccount,nsgg,:)*(&
+               real(zu(nsgg))*cos(dotp+phase_time(nsgg,ccount))-&
+              aimag(zu(nsgg))*sin(dotp+phase_time(nsgg,ccount)))*&
+              umalt(nsgg)/umod(nsgg)
         enddo; else; do ccount=1,3
-          dotp=dot_product(xpos,kvec(ccount,ns,:))
-          uup=uup+uvec_split(ccount,ns,:)*(&
-               real(zu(ns))*cos(dotp+phase_time(ns,ccount))-&
-              aimag(zu(ns))*sin(dotp+phase_time(ns,ccount)))
+          dotp=dot_product(xpos,kvec(ccount,nsgg,:))
+          uup=uup+uvec_split(ccount,nsgg,:)*(&
+               real(zu(nsgg))*cos(dotp+phase_time(nsgg,ccount))-&
+              aimag(zu(nsgg))*sin(dotp+phase_time(nsgg,ccount)))
         enddo; endif
       enddo
+endif
 !
     endsubroutine calc_gas_velocity
 !***********************************************************************
@@ -1341,6 +1396,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include 'special_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
 endmodule Special

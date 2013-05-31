@@ -333,6 +333,10 @@ module Particles_diagnos_dv
           open(UNIT=lun_input,FILE=trim(filename),FORM='unformatted')
         endif
         n_snaps=n_snaps+1
+        if (n_snaps <=20) then
+          coldat2=0
+          compdat2=0
+        endif
         write(UNIT=lun_input), n_snaps, coldat2, compdat2
       endif
       close(UNIT=lun_input)
