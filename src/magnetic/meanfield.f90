@@ -88,7 +88,7 @@ module Magnetic_meanfield
   logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
   logical :: ldelta_profile=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
-  logical :: lqpcurrent=.false.
+  logical :: lqpcurrent=.false., lNEMPI_correction=.false.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
@@ -111,7 +111,7 @@ module Magnetic_meanfield
       lignore_gradB2_inchiB, &
       meanfield_qs, meanfield_qp, meanfield_qe, &
       meanfield_Bs, meanfield_Bp, meanfield_Be, &
-      lqpcurrent,mf_qJ2, &
+      lqpcurrent,mf_qJ2, lNEMPI_correction, &
       alpha_equator, alpha_equator_gap, alpha_gap_step, &
       alpha_cutoff_up, alpha_cutoff_down, &
       lalpha_Omega_approx, lOmega_effect, Omega_profile, Omega_ampl, &
@@ -461,6 +461,12 @@ module Magnetic_meanfield
         lpenc_requested(i_jij)=.true.
       endif
 !
+      if (lNEMPI_correction) then
+        lpenc_requested(i_grho)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_b2)=.true.
+      endif
+!
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
     subroutine pencil_interdep_magn_mf(lpencil_in)
@@ -636,7 +642,10 @@ module Magnetic_meanfield
             call multsv_mn((1+p%j2*mf_qJ2)*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
 !--         call multsv_mn(meanfield_qp_func*p%b2*mf_qJ2,Jk_Jki,p%jxb_mf)
           else
-          call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
+            call multsv_mn(meanfield_qp_func+p%b2*meanfield_qp_der,Bk_Bki,p%jxb_mf)
+            if (lNEMPI_correction) then
+              call multsv_mn_add(-.5*p%rho1*p%b2**2*meanfield_qp_der,p%grho,p%jxb_mf)
+            endif
           endif
 !
 !  Add -B.grad[qs*B_i]. This term does not promote instability.
