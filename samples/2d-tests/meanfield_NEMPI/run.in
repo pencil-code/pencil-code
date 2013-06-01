@@ -7,6 +7,7 @@
   nt=500, it1=50, isave=50, itorder=3, ialive=10, cdt=.6
   bcz = 's','s','a','a2','a','a','a','s'  !(perfect conductor)
   dsnap=50., dvid=50.
+  lpencil_check=T
 /
 &eos_run_pars
 /
@@ -27,6 +28,7 @@
 &magn_mf_run_pars
   lmeanfield_jxb=T, qp_model='rational'
   meanfield_qp=40., meanfield_Bp=.05
+  lNEMPI_correction=T
 /
 &viscosity_run_pars
   nu=1e-2
