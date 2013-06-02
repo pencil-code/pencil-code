@@ -634,6 +634,21 @@ module Hydro
         endif
         if (lpencil(i_divu)) p%divu=0.
 !
+!  Time-dependent, nearly symmetric flow
+!
+      case ('Herreman')
+        if (headtt) print*,'Herreman flow;',& 
+            'kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+        fac=ampl_kinflow
+        eps1=ampl_kinflow*eps_kinflow*cos(omega_kinflow*t)
+! uu
+        if (lpencil(i_uu)) then
+          p%uu(:,1)=-fac*sin(ky_uukin*y(m))
+          p%uu(:,2)=eps1*sin(kx_uukin*x(l1:l2))
+          p%uu(:,3)=+fac*cos(ky_uukin*y(m))+eps1*cos(kx_uukin*x(l1:l2))
+        endif
+        if (lpencil(i_divu)) p%divu=0.
+!
 !  Taylor-Green flow
 !
       case ('TG') 
