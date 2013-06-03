@@ -2071,42 +2071,38 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: tmp
+      real :: tmp
       integer :: i,j
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        tmp=cotth(m1)*dx_1
+        tmp=cotth(m1)/dy_1(m1)
 !
-        do n=n1,n2
-        f(:,m1,n,j)  =0
-        f(:,m1-1,n,j)=(f(:,m1+1,n,j)*(-1-0.5*tmp))/(1-0.5*tmp)
-        f(:,m1-2,n,j)=(f(:,m1-1,n,j)*8*(2-tmp) &
-                      +f(:,m1+1,n,j)*8*(2+tmp) &
-                      +f(:,m1+2,n,j)*(-1-tmp))/(1-tmp)
-        f(:,m1-3,n,j)=(f(:,m1-2,n,j)*13.5*(1-tmp) &
-                      +f(:,m1-1,n,j)*135*(-1+0.5*tmp) &
-                      +f(:,m1+1,n,j)*135*(-1-0.5*tmp) &
-                      +f(:,m1+2,n,j)*13.5*(1+tmp) &
-                      +f(:,m1+3,n,j)*(-1-1.5*tmp))/(1-1.5*tmp)
-        enddo
+        f(:,m1,:,j)  =0
+        f(:,m1-1,:,j)=(f(:,m1+1,:,j)*(-1-0.5*tmp))/(1-0.5*tmp)
+        f(:,m1-2,:,j)=(f(:,m1-1,:,j)*8*(2-tmp) &
+                      +f(:,m1+1,:,j)*8*(2+tmp) &
+                      +f(:,m1+2,:,j)*(-1-tmp))/(1-tmp)
+        f(:,m1-3,:,j)=(f(:,m1-2,:,j)*13.5*(1-tmp) &
+                      +f(:,m1-1,:,j)*135*(-1+0.5*tmp) &
+                      +f(:,m1+1,:,j)*135*(-1-0.5*tmp) &
+                      +f(:,m1+2,:,j)*13.5*(1+tmp) &
+                      +f(:,m1+3,:,j)*(-1-1.5*tmp))/(1-1.5*tmp)
 !
       case ('top')               ! top boundary
-        tmp=cotth(m2)*dx_1
+        tmp=cotth(m2)/dy_1(m2)
 !
-        do n=n1,n2
-        f(:,m2,n,j)  =0
-        f(:,m2+1,n,j)=(f(:,m2-1,n,j)*(-1-0.5*tmp))/(1-0.5*tmp)
-        f(:,m2+2,n,j)=(f(:,m2+1,n,j)*8*(2-tmp) &
-                      +f(:,m2+1,n,j)*8*(2+tmp) &
-                      +f(:,m2+2,n,j)*(-1-tmp))/(1-tmp)
-        f(:,m2+3,n,j)=(f(:,m2+2,n,j)*13.5*(1-tmp) &
-                      +f(:,m2+1,n,j)*135*(-1+0.5*tmp) &
-                      +f(:,m2-1,n,j)*135*(-1-0.5*tmp) &
-                      +f(:,m2-2,n,j)*13.5*(1+tmp) &
-                      +f(:,m2-3,n,j)*(-1-1.5*tmp))/(1-1.5*tmp)
-        enddo
+        f(:,m2,:,j)  =0
+        f(:,m2+1,:,j)=(f(:,m2-1,:,j)*(-1-0.5*tmp))/(1-0.5*tmp)
+        f(:,m2+2,:,j)=(f(:,m2+1,:,j)*8*(2-tmp) &
+                      +f(:,m2+1,:,j)*8*(2+tmp) &
+                      +f(:,m2+2,:,j)*(-1-tmp))/(1-tmp)
+        f(:,m2+3,:,j)=(f(:,m2+2,:,j)*13.5*(1-tmp) &
+                      +f(:,m2+1,:,j)*135*(-1+0.5*tmp) &
+                      +f(:,m2-1,:,j)*135*(-1-0.5*tmp) &
+                      +f(:,m2-2,:,j)*13.5*(1+tmp) &
+                      +f(:,m2-3,:,j)*(-1-1.5*tmp))/(1-1.5*tmp)
 !
       case default
         print*, "bc_spt_y: ", topbot, " should be 'top' or 'bot'"
