@@ -75,13 +75,14 @@ module Testfield
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
   real :: delta_testfield_next=0., delta_testfield_time=0.
   integer, parameter :: mtestfield=3*njtest
+  integer :: njtestl
   integer :: naainit
-  real :: bamp=1.,bamp1=1.,bamp12=1.
+  real :: bamp=1.,bamp1=1.,bamp12=1., kdamp_2dnord=0.
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
        phasex_aatest,phasez_aatest, &
-       luxb_as_aux,ljxb_as_aux
+       luxb_as_aux,ljxb_as_aux, kdamp_2dnord
 
   ! run parameters
   real :: etatest=0.,etatest1=0.,etatest_hyper3=0.
@@ -441,9 +442,15 @@ module Testfield
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
+      if (kdamp_2dnord==0) then
+        njtestl=njtest
+      else
+        njtestl=njtest/2
+      endif
+
       if (luxb_as_aux) then
         if (iuxb==0) then
-          call farray_register_auxiliary('uxb',iuxb,vector=3*njtest)
+          call farray_register_auxiliary('uxb',iuxb,vector=3*njtestl)
         endif
         if (iuxb/=0.and.lroot) then
           print*, 'initialize_magnetic: iuxb = ', iuxb
@@ -458,7 +465,7 @@ module Testfield
 !
       if (ljxb_as_aux) then
         if (ijxb==0) then
-          call farray_register_auxiliary('jxb',ijxb,vector=3*njtest)
+          call farray_register_auxiliary('jxb',ijxb,vector=3*njtestl)
         endif
         if (ijxb/=0.and.lroot) then
           print*, 'initialize_magnetic: ijxb = ', ijxb
@@ -631,14 +638,16 @@ module Testfield
       real, dimension (nx,3) :: uxB,B0test,bbtest
       real, dimension (nx,3) :: uxbtest,duxbtest,jxbtest,djxbrtest,eetest
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
-      real, dimension (nx,3,3,njtest) :: Mijpq
-      real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
+      real, dimension (nx,3,3,njtestl) :: Mijpq
+      real, dimension (nx,3,njtestl) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,del6Atest,uufluct
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,divatest,unity=1.
       integer :: jtest, j, jaatest, iuxtest, iuytest, iuztest
-      integer :: i1=1, i2=2, i3=3, i4=4, i5=5
+      integer :: i1=1, i2=2, i3=3, i4=4, i5=5, &
+                 iaxtest2, iaztest2
+
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
       intent(in)     :: f,p
@@ -702,9 +711,13 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further down in the file.
 !
-      do jtest=1,njtest
+      do jtest=1,njtestl
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
+
+        iaxtest2=iaatest+3*(jtest-1)+3*njtestl
+        iaztest2=iaxtest2+2
+
         call del2v(f,iaxtest,del2Atest)
 !!!!
         select case (itestfield)
@@ -784,6 +797,13 @@ module Testfield
 !  add to advance test-field equation
 !
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+duxbtest
+        endif
+!
+!  modification for 2nd order time derivative
+!
+        if (kdamp_2dnord/=0.) then
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)-kdamp_2dnord*f(l1:l2,m,n,iaxtest2:iaztest2)
+          df(l1:l2,m,n,iaxtest2:iaztest2)=df(l1:l2,m,n,iaxtest2:iaztest2)+f(l1:l2,m,n,iaxtest:iaztest)
         endif
 !
 !  add possibility of forcing that is not delta-correlated in time
@@ -956,7 +976,7 @@ module Testfield
           call xysum_mn_name_z(Eipq(:,2,i1),idiag_alp21z)
           call xysum_mn_name_z(Eipq(:,1,i3),idiag_alp12z)
           call xysum_mn_name_z(Eipq(:,2,i3),idiag_alp22z)
-          if (njtest >= 5) then
+          if (njtestl >= 5) then
             call xysum_mn_name_z(Eipq(:,1,i5),idiag_alp13z)
             call xysum_mn_name_z(Eipq(:,2,i5),idiag_alp23z)
           endif
@@ -984,7 +1004,7 @@ module Testfield
             if (idiag_alp11/=0) call sum_mn_name(        Eipq(:,1,1)               ,idiag_alp11)
             if (idiag_alp21/=0) call sum_mn_name(        Eipq(:,2,1)               ,idiag_alp21)
             if (idiag_alp31/=0) call sum_mn_name(        Eipq(:,3,1)               ,idiag_alp31)
-            if (njtest >= 5) then
+            if (njtestl >= 5) then
               if (idiag_alp13/=0) call sum_mn_name(        Eipq(:,1,i5)               ,idiag_alp13)
               if (idiag_alp23/=0) call sum_mn_name(        Eipq(:,2,i5)               ,idiag_alp23)
             endif
@@ -1062,13 +1082,13 @@ module Testfield
 !
 !  print warning if alpi2 or etai2 or alpi3 are needed, but njtest is too small
 !
-        if (njtest<=2 .and. &
+        if (njtestl<=2 .and. &
             (idiag_alp12/=0.or.idiag_alp22/=0.or.idiag_alp32/=0.or. &
             (leta_rank2.and.(idiag_eta11/=0.or.idiag_eta21/=0)).or. &
             (.not.leta_rank2.and.(idiag_eta12/=0.or.idiag_eta22/=0.or.idiag_eta32/=0)).or. &
             (leta_rank2.and.(idiag_eta11cc/=0.or.idiag_eta21sc/=0)))) then
           call stop_it('njtest is too small if alpi2 or etai2 for i=1,2,3 are needed')
-        else if (njtest < 5 .and. (idiag_alp13/=0 .or. idiag_alp23/=0)) then
+        else if (njtestl < 5 .and. (idiag_alp13/=0 .or. idiag_alp23/=0)) then
           call stop_it('njtest is too small if alpi3 for i=1,2,3 are needed')
         else
 !
@@ -1280,8 +1300,8 @@ module Testfield
       type (pencil_case) :: p
       real, dimension (mz) :: c,s
 !
-      real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
-      real, dimension (nz,nprocz,3,njtest) :: jxbtestm1=0.,jxbtestm1_tmp=0.
+      real, dimension (nz,nprocz,3,njtestl) :: uxbtestm1,uxbtestm1_tmp
+      real, dimension (nz,nprocz,3,njtestl) :: jxbtestm1,jxbtestm1_tmp
 !
       real, dimension (nx,3,3) :: aijtest,bijtest
       real, dimension (nx,3) :: aatest,bbtest,jjtest,uxbtest,jxbtest
@@ -1291,6 +1311,9 @@ module Testfield
       real :: fac, bcosphz, bsinphz, fac1=0., fac2=1.
 !
       intent(inout) :: f
+!
+      uxbtestm1=0.; uxbtestm1_tmp=0.
+      jxbtestm1=0.; jxbtestm1_tmp=0.
 !
 !  In this routine we will reset headtt after the first pencil,
 !  so we need to reset it afterwards.
@@ -1302,7 +1325,7 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-      do jtest=1,njtest
+      do jtest=1,njtestl
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
         if (lsoca) then
@@ -1363,9 +1386,9 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtest/))
-        call mpibcast_real_arr(uxbtestm1_tmp,nz*nprocz*3*njtest)
-        do jtest=1,njtest
+        call mpireduce_sum(uxbtestm1,uxbtestm1_tmp,(/nz,nprocz,3,njtestl/))
+        call mpibcast_real_arr(uxbtestm1_tmp,nz*nprocz*3*njtestl)
+        do jtest=1,njtestl
           do n=n1,n2
             do j=1,3
               uxbtestm(n,j,jtest)=uxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
@@ -1378,7 +1401,7 @@ module Testfield
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !  Note: the same block of lines occurs again further up in the file.
 !
-      do jtest=1,njtest
+      do jtest=1,njtestl
         iaxtest=iaatest+3*(jtest-1)
         iaztest=iaxtest+2
         if (lsoca_jxb) then
@@ -1410,9 +1433,9 @@ module Testfield
 !  do communication for array of size nz*nprocz*3*njtest
 !
       if (nprocy>1) then
-        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,(/nz,nprocz,3,njtest/))
-        call mpibcast_real_arr(jxbtestm1_tmp,nz*nprocz*3*njtest)
-        do jtest=1,njtest
+        call mpireduce_sum(jxbtestm1,jxbtestm1_tmp,(/nz,nprocz,3,njtestl/))
+        call mpibcast_real_arr(jxbtestm1_tmp,nz*nprocz*3*njtestl)
+        do jtest=1,njtestl
           do n=n1,n2
             do j=1,3
               jxbtestm(n,j,jtest)=jxbtestm1_tmp(n-n1+1,ipz+1,j,jtest)
@@ -1492,7 +1515,7 @@ module Testfield
 !!!!
         if (t >= taainit) then
           if (ltestfield_taver) nuxb=0
-          do jtest=1,njtest
+          do jtest=1,njtestl
             iaxtest=iaatest+3*(jtest-1)
             iaztest=iaxtest+2
             do j=iaxtest,iaztest
