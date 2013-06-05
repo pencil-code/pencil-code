@@ -2194,9 +2194,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
         if (ldraglaw_variable_density) then
           if (ldensity_nolog) then
-            tausp1_par=tmp*f(ix0,iy0,iz0,irho)
+            tausp1_par=tmp*fb(ix0,iy0,iz0,irho,inearblock(k))
           else
-            tausp1_par=tmp*exp(f(ix0,iy0,iz0,ilnrho))
+            tausp1_par=tmp*exp(fb(ix0,iy0,iz0,ilnrho,inearblock(k)))
           endif
 !
 !  Discriminate between constant tau and special case for
