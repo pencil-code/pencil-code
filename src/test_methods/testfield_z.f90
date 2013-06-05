@@ -77,12 +77,12 @@ module Testfield
   integer, parameter :: mtestfield=3*njtest
   integer :: njtestl
   integer :: naainit
-  real :: bamp=1.,bamp1=1.,bamp12=1., kdamp_2dnord=0.
+  real :: bamp=1.,bamp1=1.,bamp12=1., kdamp_2ndord=0.
   namelist /testfield_init_pars/ &
        B_ext,zextent,initaatest, &
        amplaatest,kx_aatest,ky_aatest,kz_aatest, &
        phasex_aatest,phasez_aatest, &
-       luxb_as_aux,ljxb_as_aux, kdamp_2dnord
+       luxb_as_aux,ljxb_as_aux, kdamp_2ndord
 
   ! run parameters
   real :: etatest=0.,etatest1=0.,etatest_hyper3=0.
@@ -442,7 +442,7 @@ module Testfield
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (kdamp_2dnord==0) then
+      if (kdamp_2ndord==0) then
         njtestl=njtest
       else
         njtestl=njtest/2
@@ -624,6 +624,7 @@ module Testfield
 !   3-jun-05/axel: coded
 !  16-mar-08/axel: Lorentz force added for testfield method
 !  25-jan-09/axel: added Maxwell stress tensor calculation
+!   5-jun-13/axel+MR: df(l1:l2,m,n,iaxtest:iaztest) --> daatest
 !
       use Cdata
       use Diagnostics
@@ -640,7 +641,7 @@ module Testfield
       real, dimension (nx,3) :: J0test=0,jxB0rtest,J0xbrtest
       real, dimension (nx,3,3,njtestl) :: Mijpq
       real, dimension (nx,3,njtestl) :: Eipq,bpq,jpq
-      real, dimension (nx,3) :: del2Atest,del6Atest,uufluct
+      real, dimension (nx,3) :: del2Atest,del6Atest,uufluct,daatest
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,divatest,unity=1.
@@ -742,24 +743,23 @@ module Testfield
 !
 !  add diffusion
 !
+        daatest=0.
         if (ltestfield_profile_eta_z) then
           aatest=f(l1:l2,m,n,iaxtest:iaztest)
           call gij(f,iaxtest,aijtest,1)
           call div_mn(aijtest,divatest,aatest)
           do j=1,3
             jaatest=iaxtest+j-1
-            df(l1:l2,m,n,jaatest)=df(l1:l2,m,n,jaatest) &
+            daatest(:,j)=daatest(:,j) &
               +eta_z(n)*etatest*del2Atest(:,j)+geta_z(n,j)*divatest
           enddo
         else
           if (lresitest_eta_const) then
-            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-              +etatest*del2Atest
+            daatest=daatest+etatest*del2Atest
           endif
           if (lresitest_hyper3) then
             call del6v(f,iaxtest,del6Atest)
-            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-              +etatest_hyper3*del6Atest
+            daatest=daatest+etatest_hyper3*del6Atest
             if (lfirst.and.ldt) diffus_eta3=diffus_eta3+etatest_hyper3
           endif
         endif
@@ -768,7 +768,7 @@ module Testfield
 !
 !!!!
         call cross_mn(uufluct,B0test,uxB)
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+uxB
+        daatest=daatest+uxB
 !
 !  Add non-SOCA terms:
 !  Use f-array for uxb (if space has been allocated for this) and
@@ -796,28 +796,28 @@ module Testfield
 !
 !  add to advance test-field equation
 !
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+duxbtest
-        endif
-!
-!  modification for 2nd order time derivative
-!
-        if (kdamp_2dnord/=0.) then
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)-kdamp_2dnord*f(l1:l2,m,n,iaxtest2:iaztest2)
-          df(l1:l2,m,n,iaxtest2:iaztest2)=df(l1:l2,m,n,iaxtest2:iaztest2)+f(l1:l2,m,n,iaxtest:iaztest)
+          daatest=daatest+duxbtest
         endif
 !
 !  add possibility of forcing that is not delta-correlated in time
 !
 !!!!
       if (lforcing_cont_aatest) &
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +ampl_fcont_aatest*p%fcont
+        daatest=daatest+ampl_fcont_aatest*p%fcont
 !
 !  add possibility of artificial friction
 !
       if (ltestfield_artifric) &
-        df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            -tau1_aatest*f(l1:l2,m,n,iaxtest:iaztest)
+        daatest=daatest-tau1_aatest*f(l1:l2,m,n,iaxtest:iaztest)
+!
+!  modification for 2nd order time derivative
+!
+        if (kdamp_2ndord/=0.) then
+          df(l1:l2,m,n,iaxtest2:iaztest2)=daatest
+          df(l1:l2,m,n,iaxtest:iaztest)=f(l1:l2,m,n,iaxtest2:iaztest2)-kdamp_2ndord*f(l1:l2,m,n,iaxtest:iaztest)
+        else
+          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+daatest
+        endif
 !
 !  Calculate Lorentz force for sinlge B11 testfield and add to duu
 !
