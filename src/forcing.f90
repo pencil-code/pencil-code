@@ -369,7 +369,7 @@ module Forcing
       elseif (iforce_profile=='surface_z') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
-        profz_ampl=.5*(1.-erfunc(z/width_ff))
+        profz_ampl=.5*(1.-erfunc((z-r_ff)/width_ff))
         profz_hel=1.
 !
 ! turn on forcing in the bulk of the convection zone
@@ -987,7 +987,8 @@ module Forcing
         do j=1,3
           if (extent(j)) then
             jf=j+ifff-1
-            forcing_rhs(:,j)=rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
+            forcing_rhs(:,j)=profx_ampl*profy_ampl(m)*profz_ampl(n) &
+                *rho1*real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
             f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
           endif
         enddo
