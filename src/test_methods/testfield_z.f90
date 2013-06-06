@@ -624,7 +624,10 @@ module Testfield
 !   3-jun-05/axel: coded
 !  16-mar-08/axel: Lorentz force added for testfield method
 !  25-jan-09/axel: added Maxwell stress tensor calculation
-!   5-jun-13/axel+MR: df(l1:l2,m,n,iaxtest:iaztest) --> daatest
+!   5-jun-13/MR  : second-order-in-time fake test equations introduced 
+!                  (for damping of unwanted unstable solutions)
+!   5-jun-13/axel+MR: correction of the former; df(l1:l2,m,n,iaxtest:iaztest) --> daatest
+!   6-jun-13/MR  : further corrected, alternative formulation added
 !
       use Cdata
       use Diagnostics
@@ -813,8 +816,17 @@ module Testfield
 !  modification for 2nd order time derivative
 !
         if (kdamp_2ndord/=0.) then
-          df(l1:l2,m,n,iaxtest2:iaztest2)=daatest
-          df(l1:l2,m,n,iaxtest:iaztest)=f(l1:l2,m,n,iaxtest2:iaztest2)-kdamp_2ndord*f(l1:l2,m,n,iaxtest:iaztest)
+!
+          df(l1:l2,m,n,iaxtest2:iaztest2)=df(l1:l2,m,n,iaxtest2:iaztest2)+daatest
+          df(l1:l2,m,n,iaxtest :iaztest )=df(l1:l2,m,n,iaxtest :iaztest )+ &          
+           f(l1:l2,m,n,iaxtest2:iaztest2)-kdamp_2ndord*f(l1:l2,m,n,iaxtest:iaztest)
+!
+! alternatively
+!
+!          df(l1:l2,m,n,iaxtest2:iaztest2)=df(l1:l2,m,n,iaxtest2:iaztest2)+daatest &
+!                                          -kdamp_2ndord*f(l1:l2,m,n,iaxtest2:iaztest2)
+!          df(l1:l2,m,n,iaxtest :iaztest )=df(l1:l2,m,n,iaxtest :iaztest )+f(l1:l2,m,n,iaxtest2:iaztest2)
+!
         else
           df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest)+daatest
         endif
