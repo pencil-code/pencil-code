@@ -65,11 +65,11 @@ module Particles_cdata
 !
 !  Interpolation toggles:
 !
-    logical :: luu, loo, lTT, lrho, lgradTT
+    logical :: luu, loo, lTT, lrho, lgradTT, lbb, lee
 !
 !  Interpolation policies:
 !
-    integer :: pol_uu, pol_oo, pol_TT, pol_rho, pol_gradTT
+    integer :: pol_uu, pol_oo, pol_TT, pol_rho, pol_gradTT, pol_bb, pol_ee
   end type quant_interp_penc
 !  
   type(quant_interp_penc) :: interp
@@ -79,6 +79,7 @@ module Particles_cdata
 !
     real, dimension(:,:), allocatable :: interp_uu, interp_oo, interp_gradTT
     real, dimension(:), allocatable :: interp_TT, interp_rho
+    real, dimension(:), allocatable :: interp_bb, interp_ee
 !
 !  Interpolation policies:
 !     cic := cloud in cell (linear interpolation)

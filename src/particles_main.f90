@@ -122,7 +122,7 @@ module Particles_main
           print*, 'particles_initialize_modules: mpar_loc-ncpus*npar_mig=', &
               mpar_loc-ncpus*npar_mig
         endif
-        call fatal_error('particles_initialize_modules','')
+        call fatal_error('particles_initialize_modules','not enough space')
       endif
 !
 !  Set mass and number density of individual particles inside each
@@ -209,7 +209,7 @@ module Particles_main
           print*, 'particles_initialize_modules: '// &
               'np_swarm, mpmat, rhop_swarm=', np_swarm, mpmat, rhop_swarm
         endif
-        call fatal_error('particles_initialize_modules','')
+        call fatal_error('particles_initialize_modules','rhop_swarm is zero')
       endif
 !
 !  Make sure all requested interpolation variables are available.
@@ -569,7 +569,10 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (lparticles)           call particles_dragforce_stiff(f,fp,ineargrid)
+      if (lparticles) then
+        call particles_dragforce_stiff(f,fp,ineargrid)
+        call periodic_boundcond_on_aux(f)
+      endif
 !
 !  Calculate the summed gravity due to the massive particles.
 !  Needed because it is too slow to calculate the gravity at the

@@ -21,6 +21,7 @@ module Boundcond
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: set_consistent_density_boundary
   public :: set_consistent_vel_boundary
+  public :: set_periodic_boundcond_on_aux
 !
   interface update_ghosts
      module procedure update_ghosts_all
@@ -7743,6 +7744,19 @@ module Boundcond
 ! velocity set consistently at the boundary.
 !
     endsubroutine set_consistent_vel_boundary
+!***********************************************************************
+    subroutine set_periodic_boundcond_on_aux(f,ivar)
+!
+! sets periodic boundary condition on auxiliar variables
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ivar
+!
+      call bc_per_x(f,'top',ivar); call bc_per_x(f,'bot',ivar)
+      call bc_per_y(f,'top',ivar); call bc_per_y(f,'bot',ivar)
+      call bc_per_z(f,'top',ivar); call bc_per_z(f,'bot',ivar)
+!
+    endsubroutine set_periodic_boundcond_on_aux
 !***********************************************************************
     subroutine tayler_expansion(f,topbot,j)
 !

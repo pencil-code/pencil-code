@@ -966,4 +966,13 @@ module Particles
 !
     endsubroutine rprint_particles
 !***********************************************************************
+    subroutine periodic_boundcond_on_aux(f)
+!
+! dummy
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine periodic_boundcond_on_aux
+!***********************************************************************
 endmodule Particles

@@ -26,8 +26,7 @@
 ! PENCILS PROVIDED cosjb; jparallel; jperp
 ! PENCILS PROVIDED cosub; bunit(3)
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
-! PENCILS PROVIDED hjparallel; hjperp, nu_ni1
-!
+! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
 !***************************************************************
 module Magnetic
 !
@@ -166,6 +165,7 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
+  logical :: lee_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
@@ -181,7 +181,7 @@ module Magnetic
       coefaa, coefbb, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, initpower_aa, cutoff_aa, N_modes_aa, &
-      lcheck_positive_va2, lbb_as_aux, &
+      lcheck_positive_va2, lbb_as_aux, lee_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
@@ -737,7 +737,7 @@ module Magnetic
 !
 !  1-may-02/wolf: coded
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde,farray_register_auxiliary
 !
       call farray_register_pde('aa',iaa,vector=3)
       iax = iaa; iay = iaa+1; iaz = iaa+2
@@ -757,6 +757,18 @@ module Magnetic
           write(4,*) ',aa $'
         endif
         write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
+      endif
+!
+! register EE as auxilliary array if asked for. 
+!
+      if (lEE_as_aux) then
+        call farray_register_auxiliary('EE',iEE,vector=3)
+        iEEx=iEE; iEEy=iEE+1; iEEz=iEE+2
+!
+!  Writing files for use with IDL
+!
+        if (lroot) write(4,*) ',ee $'
+        write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
       endif
 !
 !  register the mean-field module
@@ -2698,6 +2710,7 @@ module Magnetic
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
       real, dimension (nx,3) :: magfric,vmagfric2, baroclinic
+      real, dimension (nx,3) :: dAdt
       real, dimension (nx) :: exabot,exatop
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -2727,6 +2740,10 @@ module Magnetic
         call identify_bcs('Ay',iay)
         call identify_bcs('Az',iaz)
       endif
+!
+! set dAdt to zero at the beginning of each execution of this routine
+!
+      dAdt=0.
 !
 !  Add jxb/rho to momentum equation.
 !
@@ -3054,7 +3071,8 @@ module Magnetic
           do j=1,3
             aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
           enddo
-          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-LLambda_aa*aa_xyaver
+          dAdt = dAdt-LLambda_aa*aa_xyaver
+!          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-LLambda_aa*aa_xyaver
         else
           call stop_it("magnetic: lmean_friction works only for nprocxy=1")
         endif
@@ -3138,14 +3156,17 @@ module Magnetic
                 ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
               enddo
             enddo
-            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
+            dAdt = dAdt-p%uga-ujiaj+fres
+!            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
+            
 !
 !  ladvective_gauge2
 !
           elseif (ladvective_gauge2) then
             if (lua_as_aux) then
               call grad(f,iua,gua)
-              df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres-gua
+              dAdt = dAdt + p%uxb+fres-gua
+!              df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres-gua
             else
               call fatal_error('daa_dt','must put lua_as_aux=T')
             endif
@@ -3153,7 +3174,9 @@ module Magnetic
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
 !
           else
-            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres
+            dAdt = dAdt+ p%uxb+fres
+!            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%uxb+fres
+!            if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -(p%uxb+fres)
           endif
         endif
       else
@@ -3217,14 +3240,16 @@ module Magnetic
 !  Full right hand side of the induction equation.
 !
         if (linduction) &
-             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
+          dAdt= dAdt + uxb_upw + fres
+!             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + uxb_upw + fres
       endif
 !
 !  Add Hall term.
 !
       if (hall_term/=0.0) then
         if (headtt) print*,'daa_dt: hall_term=',hall_term
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*p%jxb
+        dAdt=dAdt-hall_term*p%jxb
+!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*p%jxb
         if (lfirst.and.ldt) then
           advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
                      abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
@@ -3239,7 +3264,8 @@ module Magnetic
       if (battery_term/=0.0) then
         if (headtt) print*,'daa_dt: battery_term=',battery_term
         call cross_mn(p%fpres,p%glnrho,baroclinic)
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+battery_term*baroclinic
+        dAdt = dAdt+battery_term*baroclinic
+!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+battery_term*baroclinic
         if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
             battery_term*maxval(baroclinic)
       endif
@@ -3252,7 +3278,8 @@ module Magnetic
           vmagfric2(ix,1:3)=sqrt(p%jxb(ix,1:3)*p%jxb(ix,1:3))/&
               (numag*(1.e-1+p%b2(ix)))
         end do
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+magfric(1:nx,1:3)
+        dAdt = dAdt + magfric(1:nx,1:3)
+!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+magfric(1:nx,1:3)
       endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
@@ -3270,13 +3297,15 @@ module Magnetic
 !         eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
           eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_width))-eta
         endif
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
+        dAdt = dAdt-(eta_out1*mu0)*p%jj
+!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_aa) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
-          ampl_fcont_aa*p%fcont
+      if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont
+!      if (lforcing_cont_aa) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+ &
+!          ampl_fcont_aa*p%fcont
 !
 !  Add possibility of local forcing that is also not delta-correlated in time.
 !
@@ -3290,7 +3319,8 @@ module Magnetic
 !  note that tau_relprof*u_rms*kf>>1  for this relaxation to affect only the mean fields.
 !
       if (tau_relprof/=0.0) then
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
+        dAdt= dAdt-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
+!        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
       endif
 !
 !  Add ``va^2/dx^2'' contribution to timestep.
@@ -3342,6 +3372,17 @@ module Magnetic
 !  Apply border profiles.
 !
       if (lborder_profiles) call set_border_magnetic(f,df,p)
+!
+! Electric field E = -dA/dt, store the Electric field in an array if asked for. 
+!
+      if (lEE_as_aux ) f(l1:l2,m,n,iEEx :iEEz  )= -dAdt
+!
+! Now add all the contribution to dAdt so far into df. 
+! This is done here, such that contribution from mean-field models are not added to
+! the electric field. This may need review later. 
+!
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+dAdt
+!
 !
 !  Call right-hand side for mean-field stuff (do this just before ldiagnos)
 !
