@@ -1042,14 +1042,23 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##LD_MPI= #(warp.hpc1.cs.cmu.edu*)
 ##LIBMPISUFFIX= #(warp.hpc1.cs.cmu.edu*)
 ##
+## Axel on norlx51 (gfortran)
+##
+#FC=mpif90 #(norlx51)
+#FFLAGS=-O3 -fno-underscoring #(norlx51)
+#CC=mpicc #(norlx51)
+#CFLAGS=-O3 #(norlx51)
+#LD_MPI= #(norlx51)
+#LIBMPISUFFIX= #(norlx51)
+##
 ## Axel on norlx55 (gfortran)
 ##
-#FC=/afs/physto.se/home/b/brandenb/Library/bin/mpif90 #(norlx55*)
-#FFLAGS= -O3 -fno-underscoring -L/afs/physto.se/home/b/brandenb/Library/lib -I/afs/physto.se/home/b/brandenb/Library/include#(norlx55*)
-#CC=mpicc #(norlx55*)
-#CFLAGS=-O3 #(norlx55*)
-#LD_MPI= #(norlx55*)
-#LIBMPISUFFIX= #(norlx55*)
+#FC=/afs/physto.se/home/b/brandenb/Library/bin/mpif90 #(norlx55)
+#FFLAGS= -O3 -fno-underscoring -L/afs/physto.se/home/b/brandenb/Library/lib -I/afs/physto.se/home/b/brandenb/Library/include#(norlx55)
+#CC=mpicc #(norlx55)
+#CFLAGS=-O3 #(norlx55)
+#LD_MPI= #(norlx55)
+#LIBMPISUFFIX= #(norlx55)
 ##
 ## Axel on fe03 (ifc 8.1)
 ##
@@ -1115,12 +1124,12 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##
 ##  Pencil-Code Servers
 ##
-##FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(norlx5*)
-##F77=$(FC) #(norlx5*)
-##CC=gcc #(norlx5*)
-##FFLAGS=-O3 #(norlx5*)
-##FFLAGS_DOUBLE=-fdefault-real-8  #(norlx5*)
-##LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx5*)
+##FC=/usr/bin/gfortran -I/usr/lib/openmpi/include #(norlx56)
+##F77=$(FC) #(norlx56)
+##CC=gcc #(norlx56)
+##FFLAGS=-O3 #(norlx56)
+##FFLAGS_DOUBLE=-fdefault-real-8  #(norlx56)
+##LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(norlx56)
 ##
 ##  Koen's laptop
 ##

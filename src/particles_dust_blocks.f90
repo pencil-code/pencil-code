@@ -2514,6 +2514,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 ! dummy
 !
+      real, dimension (mx,my,mz,mfarray) :: f
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine periodic_boundcond_on_aux
