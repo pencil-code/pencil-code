@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/ChargedParticle_in_MHDturb
+SVN Id:
+    $Id: README 10936 2009-05-25 04:47:00Z ajohan@strw.leidenuniv.nl $
+Maintainer:
+    Dhrubaditya Mitra <dhruba.mitra/gmail[dot]com>
+Added:
+    10-Jun-2013
+Status:
+    succeeds since 10-Jun-2013
+Recommended resolution:
+    as given in cparam.local. Have not been tested on multiple processors. 
+Comments:
+    MHD dynamo with charged particles that can be energized by the fluctuating
+    magnetic field. So far compiles and runs. But not well tested yet. 
+References:
