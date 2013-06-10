@@ -86,7 +86,7 @@ module Particles
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      bcpx, bcpy, bcpz,qbym,qbym_species,lcheck_exact_frontier, & 
+      bcpx, bcpy, bcpz,qbym,qbym_species,lcheck_exact_frontier, linsert_particles_continuously, &
       lnocalc_rhop,lonly_eforce,lparticlemesh_cic
 !
   namelist /particles_run_pars/ &
