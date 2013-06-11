@@ -88,7 +88,7 @@ module Magnetic_meanfield
   logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
   logical :: ldelta_profile=.false.
   logical :: lrhs_term=.false., lrhs_term2=.false.
-  logical :: lqpcurrent=.false., lNEMPI_correction=.false.
+  logical :: lqpcurrent=.false., lNEMPI_correction=.true.
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, &
