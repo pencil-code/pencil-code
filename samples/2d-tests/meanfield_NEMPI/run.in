@@ -28,7 +28,7 @@
 &magn_mf_run_pars
   lmeanfield_jxb=T, qp_model='rational'
   meanfield_qp=40., meanfield_Bp=.05
-  lNEMPI_correction=T
+  !lNEMPI_correction=T !(is now the default)
 /
 &viscosity_run_pars
   nu=1e-2
