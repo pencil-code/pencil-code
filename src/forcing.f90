@@ -45,6 +45,7 @@ module Forcing
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
+  integer :: iforcing_zsym=0
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
   logical :: lcrosshel_forcing=.false.,ltestfield_forcing=.false.,ltestflow_forcing=.false.
@@ -110,7 +111,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,relhel,crosshel,height_ff,r_ff,rcyl_ff,width_ff,nexp_ff, &
-       iforce2, force2, force1_scl, force2_scl, &
+       iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        omega_ff,location_fixed,lrandom_location, &
@@ -1014,7 +1015,6 @@ module Forcing
           call mpibcast_real(iqfm,1)
           fname(idiag_qfm)=iqfm
           itype_name(idiag_qfm)=ilabel_sum
-print*,'AXEL: iproc,fsum_tmp(1),fname(idiag_qfm)=',iproc,fsum_tmp(1),fname(idiag_qfm)
         endif
 !
       endif
@@ -1035,6 +1035,7 @@ print*,'AXEL: iproc,fsum_tmp(1),fname(idiag_qfm)=',iproc,fsum_tmp(1),fname(idiag
 !  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
 !   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
 !  23-feb-10/axel: added helicity profile with finite second derivative.
+!  13-jun-13/axel: option of symmetry of forcing function about z direction
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -1228,7 +1229,15 @@ print*,'AXEL: iproc,fsum_tmp(1),fname(idiag_qfm)=',iproc,fsum_tmp(1),fname(idiag
 !
       fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
       fy=exp(cmplx(0.,ky*k1_ff*y))
-      fz=exp(cmplx(0.,kz*k1_ff*z))
+!
+!  symmetry of forcing function about z direction
+!
+      select case (iforcing_zsym)
+      case(0); fz=exp(cmplx(0.,kz*k1_ff*z))
+      case(1); fz=cos(kz*k1_ff*z)
+      case(-1); fz=sin(kz*k1_ff*z)
+      case default; call stop_it('forcing: incorrect iforcing_zsym')
+      endselect
 !
 !  possibly multiply forcing by z-profile
 !  (This stuff is now supposed to be done in initialize; keep for now)
