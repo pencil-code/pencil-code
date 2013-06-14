@@ -8,6 +8,8 @@
 ;   This method implements the idea of Hermann Amandus Schwarz et al. (1865),
 ;   and extends it from a 2D minimal bilinear surface solution to an
 ;   interpolation in 3D between source data points given on a cartesian grid.
+;   Even though we cheat here a bit for simplicity, a real minimal bilinear
+;   surface would be more complicated than this edge-interpolation method.
 ;
 ;  Parameters:
 ;   * in             1D or multi-dimensional data array
@@ -128,10 +130,10 @@ function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 			fz = (target[ph,pv,2] - z[pz]) / (z[pz+1] - z[pz])
 
 			; Find interpolated values of the target projection to the 12 edges
-			xl_yl = (1.0 - fz) * in[px  ,py  ,pz  ] + fz * in[px  ,py  ,pz+1]
-			xl_yu = (1.0 - fz) * in[px  ,py+1,pz  ] + fz * in[px  ,py+1,pz+1]
-			xu_yl = (1.0 - fz) * in[px+1,py  ,pz  ] + fz * in[px+1,py  ,pz+1]
-			xu_yu = (1.0 - fz) * in[px+1,py+1,pz  ] + fz * in[px+1,py+1,pz+1]
+;			xl_yl = (1.0 - fz) * in[px  ,py  ,pz  ] + fz * in[px  ,py  ,pz+1]
+;			xl_yu = (1.0 - fz) * in[px  ,py+1,pz  ] + fz * in[px  ,py+1,pz+1]
+;			xu_yl = (1.0 - fz) * in[px+1,py  ,pz  ] + fz * in[px+1,py  ,pz+1]
+;			xu_yu = (1.0 - fz) * in[px+1,py+1,pz  ] + fz * in[px+1,py+1,pz+1]
 			xl_zl = (1.0 - fy) * in[px  ,py  ,pz  ] + fy * in[px  ,py+1,pz  ]
 			xl_zu = (1.0 - fy) * in[px  ,py  ,pz+1] + fy * in[px  ,py+1,pz+1]
 			xu_zl = (1.0 - fy) * in[px+1,py  ,pz  ] + fy * in[px+1,py+1,pz  ]
@@ -147,12 +149,12 @@ function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 			xy_u = (1.0 - fx) * xl_zu + fx * xu_zu
 ;			xy_l = (1.0 - fy) * yl_zl + fy * yu_zl
 ;			xy_u = (1.0 - fy) * yl_zu + fy * yu_zu
-			xz_l = (1.0 - fx) * xl_yl + fx * xu_yl
-			xz_u = (1.0 - fx) * xl_yu + fx * xu_yu
+;			xz_l = (1.0 - fx) * xl_yl + fx * xu_yl
+;			xz_u = (1.0 - fx) * xl_yu + fx * xu_yu
 ;			xz_l = (1.0 - fz) * yl_zl + fz * yl_zu
 ;			xz_u = (1.0 - fz) * yu_zl + fz * yu_zu
-			yz_l = (1.0 - fy) * xl_yl + fy * xu_yl
-			yz_u = (1.0 - fy) * xl_yu + fy * xu_yu
+;			yz_l = (1.0 - fy) * xl_yl + fy * xu_yl
+;			yz_u = (1.0 - fy) * xl_yu + fy * xu_yu
 ;			yz_l = (1.0 - fz) * xl_zl + fz * xl_zu
 ;			yz_u = (1.0 - fz) * xl_zl + fz * xl_zu
 
@@ -161,7 +163,7 @@ function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 ;			out[ph,pv] = (1.0 - fy) * xz_l + fy * xz_u
 ;			out[ph,pv] = (1.0 - fx) * yz_l + fx * yz_u
 ;			*** WORK HERE:
-;			*** Need to check if these three values really are identical.
+;			*** Need to check if these three values really are identical (theoretically, they should).
 		end
 	end
 	
