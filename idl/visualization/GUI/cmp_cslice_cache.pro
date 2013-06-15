@@ -536,6 +536,10 @@ pro cslice_event, event
 		WIDGET_CONTROL, b_load, SENSITIVE = 1
 		break
 	end
+	'SLICER': begin
+		pc_slicer, cube, grid=coord, dim=dim, anchor=[ px, py, pz ], zoom=max([bin_x,bin_y,bin_z])
+		break
+	end
 	'PLAY':
 	'IMAGE': begin
 		WIDGET_CONTROL, vars, SENSITIVE = 0
@@ -872,6 +876,8 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 			axis, 0, 0, yaxis=1, xstyle=1, ystyle=1
 		end
 	end
+
+	pc_slicer_update, px, py, pz
 
 	if (streamlines.num.sets ge 1L) then begin
 		for pos = 1L, streamlines.num.lines < max_streamlines do begin
@@ -1357,6 +1363,8 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	af_maximum = 32
 
 
+	resolve_routine, 'pc_slicer', /COMPILE_FULL_FILE, /NO_RECOMPILE
+
 	set = set_names
 	if (keyword_set (set_content)) then varsets = set_content
 	if (keyword_set (set_files)) then varfiles = set_files
@@ -1483,6 +1491,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	b_load	= WIDGET_BUTTON (bcol, value='LOAD SETTINGS', uvalue='LOAD', xsize=100, sensitive=load_active)
 	tmp	= WIDGET_BUTTON (bcol, value='SAVE SETTINGS', uvalue='SAVE', xsize=100)
 	play	= WIDGET_BUTTON (bcol, value='PLAY', uvalue='PLAY', xsize=100, sensitive=snap_active)
+	tmp	= WIDGET_BUTTON (bcol, value='SLICER', uvalue='SLICER', xsize=100)
 	if (snap_active) then save_str='SAVE MOVIE' else save_str='SAVE IMAGE'
 	image	= WIDGET_BUTTON (bcol, value=save_str, uvalue='IMAGE', xsize=100)
 	tmp	= WIDGET_BUTTON (bcol, value='QUIT', uvalue='QUIT', xsize=100)

@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   pc_slice_2D.pro     ;;;
+;;;   pc_slice_2d.pro     ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  $Id$
 ;
@@ -32,18 +32,18 @@
 ;   IDL> anchor = [ 1.2, 3.4, 5.6 ]
 ;   IDL> theta = 75.6
 ;   IDL> phi = 12.3
-;   IDL> Temp_slice = pc_slice_2D (Temp, grid, anchor, theta, phi, slice_grid=slice_grid, dim=dim)
+;   IDL> Temp_slice = pc_slice_2d (Temp, grid, anchor, theta, phi, slice_grid=slice_grid, dim=dim)
 ;
 
 
 ; Extract a 2D slice from 3D data cube.
-function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
+function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 
 	if ((n_elements (in) eq 0) or (n_elements (source) eq 0)) then begin
 		; Print usage
 		print, "USAGE:"
 		print, "======"
-		print, "slice = pc_slice_2D (data, source_grid, anchor, theta, phi, slice_grid=slice_grid)"
+		print, "slice = pc_slice_2d (data, source_grid, anchor, theta, phi, slice_grid=slice_grid)"
 		print, ""
 		return, -1
 	end
@@ -61,13 +61,17 @@ function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 	y_size = in_size[2]
 	z_size = in_size[3]
 
+	if (in_size[1] eq dim.nxgrid) then nghostx = 0 else nghostx = dim.nghostx
+	if (in_size[2] eq dim.nygrid) then nghosty = 0 else nghosty = dim.nghosty
+	if (in_size[3] eq dim.nzgrid) then nghostz = 0 else nghostz = dim.nghostz
+
 	; Construct equidistant grid coordinates of input data
-	xl = source.x[dim.nghostx]
-	xu = source.x[dim.nghostx+x_size-1]
-	yl = source.y[dim.nghosty]
-	yu = source.y[dim.nghosty+y_size-1]
-	zl = source.z[dim.nghostz]
-	zu = source.z[dim.nghostz+z_size-1]
+	xl = source.x[nghostx]
+	xu = source.x[nghostx+x_size-1]
+	yl = source.y[nghosty]
+	yu = source.y[nghosty+y_size-1]
+	zl = source.z[nghostz]
+	zu = source.z[nghostz+z_size-1]
 	x = dindgen (x_size) / (x_size-1.0) * (xu - xl) + xl
 	y = dindgen (y_size) / (y_size-1.0) * (yu - yl) + yl
 	z = dindgen (z_size) / (z_size-1.0) * (zu - zl) + zl
@@ -87,8 +91,8 @@ function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 	; Rotate XZ-plane around Z-axis (theta)
 	for ph = 0, num_horiz-1 do begin
 		; X and Y coordinates
-		target[ph,*,0] = (x[ph] - ax) * cos (theta * pi_180) + ax
-		target[ph,*,1] = (x[ph] - ax) * sin (theta * pi_180) + ay
+		target[ph,*,0] = ax + (x[ph] - ax) * cos (theta * pi_180)
+		target[ph,*,1] = ay + (x[ph] - ax) * sin (theta * pi_180)
 		; Z remains unchanged
 		target[ph,*,2] = z
 	end
@@ -109,9 +113,9 @@ function pc_slice_2D, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 		for pv = 0, num_vert-1 do begin
 
 			; Find neighbouring grid coordinates of the target coordinate
-			px = pc_find_index (target[ph,pv,0], x, num=x_size, /round)
-			py = pc_find_index (target[ph,pv,1], y, num=y_size, /round)
-			pz = pc_find_index (target[ph,pv,2], z, num=z_size, /round)
+			px = (pc_find_index (target[ph,pv,0], x, num=x_size, /round) > 0) < (x_size+2*nghostx-1)
+			py = (pc_find_index (target[ph,pv,1], y, num=y_size, /round) > 0) < (y_size+2*nghosty-1)
+			pz = (pc_find_index (target[ph,pv,2], z, num=z_size, /round) > 0) < (z_size+2*nghostz-1)
 			if (target[ph,pv,0] lt x[px]) then px -= 1
 			if (target[ph,pv,1] lt y[py]) then py -= 1
 			if (target[ph,pv,2] lt z[pz]) then pz -= 1
