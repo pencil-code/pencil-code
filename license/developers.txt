@@ -33,6 +33,7 @@ André Kapelrud        kapelrud/stud.ntnu.no,         ,
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277
 Maarit Korpi          maarit.korpi/helsinki.fi,      ,                     +35 850 4155 396
 Petri Käpylä          petri.kapyla/helsinki.fi,      ,                     +35 89 191 22952,  +35 840 533 4117 
+Michiel Lambrechts    michiel.lambrechts/gmail.com   ,                                     ,  +46 73 613 71 11
 Wladimir Lyra         wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81
 Tony Mee              eemynotna/gmail.com,           ,                     +44 207 7739436,   +44 782 540 3751
 Dhrubaditya Mitra,    dhruba.mitra/gmail.com,        dhruba,               +46 8 5537 8575,   +46 738 969 494,          dhrubaditya
