@@ -537,7 +537,12 @@ pro cslice_event, event
 		break
 	end
 	'SLICER': begin
-		pc_slicer, cube, grid=coord, dim=dim, anchor=[ px, py, pz ], zoom=max([bin_x,bin_y,bin_z])
+		grid = coord
+		grid.x *= unit.default_length
+		grid.y *= unit.default_length
+		grid.z *= unit.default_length
+		anchor = [ grid.x[px], grid.y[py], grid.z[pz] ]
+		pc_slicer, cube, grid=grid, dim=dim, anchor=anchor, zoom=max ([ bin_x, bin_y, bin_z ])
 		break
 	end
 	'PLAY':
@@ -877,7 +882,7 @@ pro cslice_draw, DRAW_IMAGE_X, DRAW_IMAGE_Y, DRAW_IMAGE_Z
 		end
 	end
 
-	pc_slicer_update, px, py, pz
+	pc_slicer_update, [ coord.x[px], coord.y[py], coord.z[pz] ] * unit.default_length
 
 	if (streamlines.num.sets ge 1L) then begin
 		for pos = 1L, streamlines.num.lines < max_streamlines do begin

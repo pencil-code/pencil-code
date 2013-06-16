@@ -37,7 +37,7 @@
 
 
 ; Extract a 2D slice from 3D data cube.
-function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, dim=dim
+function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, grid=in_grid, dim=dim, zoom=zoom
 
 	if ((n_elements (in) eq 0) or (n_elements (source) eq 0)) then begin
 		; Print usage
@@ -49,6 +49,7 @@ function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 	end
 
 	if (n_elements (dim) eq 0) then pc_read_dim, obj=dim
+	if (n_elements (zoom) eq 0) then zoom = 1
 
 	NaN = !Values.D_NaN
 	pi_180 = double (!Pi) / 180
@@ -61,77 +62,98 @@ function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 	y_size = in_size[2]
 	z_size = in_size[3]
 
+	if (n_elements (in_grid) eq 0) then in_grid = { x:dindgen (x_size), y:dindgen (y_size), z:dindgen (z_size), lequidist:[1,1,1], lperi:[0,0,0], dx_1:1.0, dy_1:1.0, dz_1:1.0 }
+
 	if (in_size[1] eq dim.nxgrid) then nghostx = 0 else nghostx = dim.nghostx
 	if (in_size[2] eq dim.nygrid) then nghosty = 0 else nghosty = dim.nghosty
 	if (in_size[3] eq dim.nzgrid) then nghostz = 0 else nghostz = dim.nghostz
-
-	; Construct equidistant grid coordinates of input data
-	xl = source.x[nghostx]
-	xu = source.x[nghostx+x_size-1]
-	yl = source.y[nghosty]
-	yu = source.y[nghosty+y_size-1]
-	zl = source.z[nghostz]
-	zu = source.z[nghostz+z_size-1]
-	x = dindgen (x_size) / (x_size-1.0) * (xu - xl) + xl
-	y = dindgen (y_size) / (y_size-1.0) * (yu - yl) + yl
-	z = dindgen (z_size) / (z_size-1.0) * (zu - zl) + zl
 
 	ax = anchor[0]
 	ay = anchor[1]
 	az = anchor[2]
 
 	; Construct output slice
-	num_horiz = max ([ x_size, y_size ])
-	num_vert = z_size
-	out = make_array (num_horiz, num_vert, type=in_size[n_dim+1])
+	max_size = max ([ x_size, y_size, z_size ])
+	Lx = in_grid.x[x_size-1-nghostx] - in_grid.x[nghostx] + in_grid.lperi[0] * mean (in_grid.dx)
+	Ly = in_grid.y[y_size-1-nghosty] - in_grid.y[nghosty] + in_grid.lperi[1] * mean (in_grid.dy)
+	Lz = in_grid.z[z_size-1-nghostz] - in_grid.z[nghostz] + in_grid.lperi[2] * mean (in_grid.dz)
+	L_diagonal = sqrt (Lx^2 + Ly^2 + Lz^2)
+	d_min = max ([ mean (in_grid.dx), mean (in_grid.dy), mean (in_grid.dz) ]) / zoom
+	num_points = ceil (L_diagonal / d_min)
+	num_points += 1 - (num_points mod 2)
+	out = make_array (num_points, num_points, /double, value=NaN)
+
+	; Construct equidistant grid coordinates of input data
+	Lx_i = in_grid.x[x_size-1-nghostx] - in_grid.x[nghostx]
+	Ly_i = in_grid.y[y_size-1-nghosty] - in_grid.y[nghosty]
+	Lz_i = in_grid.z[z_size-1-nghostz] - in_grid.z[nghostz]
+	L_max = max ([ Lx_i, Ly_i, Lz_i ])
+	mid = (num_points - 1) / 2
+	grid = (dindgen (num_points) - mid) / (max_size-1) * L_max
 
 	; Construct grid coordinates of output slice
-	target = make_array ([ num_horiz, num_vert, 3 ], /double, value=NaN)
+	target = make_array ([ num_points, num_points, 3 ], /double, value=NaN)
 
 	; Rotate XZ-plane around Z-axis (theta)
-	for ph = 0, num_horiz-1 do begin
+	cos_theta = cos (theta * pi_180)
+	sin_theta = sin (theta * pi_180)
+	x = grid * cos_theta
+	y = grid * sin_theta
+	for pv = 0, num_points-1 do begin
 		; X and Y coordinates
-		target[ph,*,0] = ax + (x[ph] - ax) * cos (theta * pi_180)
-		target[ph,*,1] = ay + (x[ph] - ax) * sin (theta * pi_180)
-		; Z remains unchanged
+		target[*,pv,0] = x
+		target[*,pv,1] = y
+	end
+
+	; Rotate theta-rotated XZ-plane around theta-rotated x-axis (phi)
+	cos_phi = cos (phi * pi_180)
+	sin_phi = sin (phi * pi_180)
+	add_x = grid * sin_phi * sin_theta
+	add_y = grid * sin_phi * cos_theta
+	z = grid * cos_phi
+	for ph = 0, num_points-1 do begin
+		; X and Y coordinates
+		target[ph,*,0] -= add_x
+		target[ph,*,1] += add_y
+		; Z coordinates
 		target[ph,*,2] = z
 	end
 
-	; Rotate theta-rotated XZ-plane around horizontal axis (phi)
-	for ph = 0, num_horiz-1 do begin
-		; X and Y coordinates
-		target[ph,*,0] -= (target[ph,*,2] - az) * sin (phi * pi_180) * sin (theta * pi_180)
-		target[ph,*,1] += (target[ph,*,2] - az) * sin (phi * pi_180) * cos (theta * pi_180)
-	end
-	for pv = 0, num_vert-1 do begin
-		; Z coordinates
-		target[*,pv,2] -= (z[pv] - az) * (1.0 - sin ((phi+90) * pi_180))
-	end
+	; Shift to the anchor position
+	target[*,*,0] += ax
+	target[*,*,1] += ay
+	target[*,*,2] += az
 
 	; soap-film interpolation to the target slice grid coordinates
-	for ph = 0, num_horiz-1 do begin
-		for pv = 0, num_vert-1 do begin
+	for ph = 0, num_points-1 do begin
+		for pv = 0, num_points-1 do begin
 
-			; Find neighbouring grid coordinates of the target coordinate
-			px = (pc_find_index (target[ph,pv,0], x, num=x_size, /round) > 0) < (x_size+2*nghostx-1)
-			py = (pc_find_index (target[ph,pv,1], y, num=y_size, /round) > 0) < (y_size+2*nghosty-1)
-			pz = (pc_find_index (target[ph,pv,2], z, num=z_size, /round) > 0) < (z_size+2*nghostz-1)
-			if (target[ph,pv,0] lt x[px]) then px -= 1
-			if (target[ph,pv,1] lt y[py]) then py -= 1
-			if (target[ph,pv,2] lt z[pz]) then pz -= 1
-			; Upper plane can be interpolated by using an inner grid cell
-			if (target[ph,pv,0] eq x[x_size-1]) then px -= 1
-			if (target[ph,pv,1] eq y[y_size-1]) then py -= 1
-			if (target[ph,pv,2] eq z[z_size-1]) then pz -= 1
+			; Find grid coordinates closest to the target coordinate
+			px = pc_find_index (target[ph,pv,0], in_grid.x, num=x_size, /round)
+			py = pc_find_index (target[ph,pv,1], in_grid.y, num=y_size, /round)
+			pz = pc_find_index (target[ph,pv,2], in_grid.z, num=z_size, /round)
 
 			; Target position must still be inside the source data array
 			if ((px lt 0) or (py lt 0) or (pz lt 0)) then continue
 			if ((px ge x_size-1) or (py ge y_size-1) or (pz ge z_size-1)) then continue
 
+			; Find lower neighbouring grid coordinates of the target coordinate
+			if ((px ge 1) and (target[ph,pv,0] lt in_grid.x[px])) then px -= 1
+			if ((py ge 1) and (target[ph,pv,1] lt in_grid.y[py])) then py -= 1
+			if ((pz ge 1) and (target[ph,pv,2] lt in_grid.z[pz])) then pz -= 1
+
+			; Upper plane can be interpolated by using an inner grid cell
+			if (target[ph,pv,0] eq in_grid.z[x_size-1]) then px -= 1
+			if (target[ph,pv,1] eq in_grid.z[y_size-1]) then py -= 1
+			if (target[ph,pv,2] eq in_grid.z[z_size-1]) then pz -= 1
+
+			; Target position must still be inside the source data array
+			if ((px lt 0) or (py lt 0) or (pz lt 0)) then continue
+
 			; Fraction of the target position to the side-length of the grid cell
-			fx = (target[ph,pv,0] - x[px]) / (x[px+1] - x[px])
-			fy = (target[ph,pv,1] - y[py]) / (y[py+1] - y[py])
-			fz = (target[ph,pv,2] - z[pz]) / (z[pz+1] - z[pz])
+			fx = (target[ph,pv,0] - in_grid.x[px]) / (in_grid.x[px+1] - in_grid.x[px])
+			fy = (target[ph,pv,1] - in_grid.y[py]) / (in_grid.y[py+1] - in_grid.y[py])
+			fz = (target[ph,pv,2] - in_grid.z[pz]) / (in_grid.z[pz+1] - in_grid.z[pz])
 
 			; Find interpolated values of the target projection to the 12 edges
 ;			xl_yl = (1.0 - fz) * in[px  ,py  ,pz  ] + fz * in[px  ,py  ,pz+1]
@@ -170,7 +192,6 @@ function pc_slice_2d, in, source, anchor, theta, phi, slice_grid=target, dim=dim
 ;			*** Need to check if these three values really are identical (theoretically, they should).
 		end
 	end
-	
 
 	return, out
 

@@ -31,7 +31,7 @@ pro pc_slicer_event, event
 	end
 	'PHI': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		phi = (pos > 0.0) < 360.0
+		phi = (pos > (-180.0)) < 180.0
 		WIDGET_CONTROL, s_phi, SET_VALUE = phi
 		DRAW_SLICE = 1
 		break
@@ -45,7 +45,7 @@ pro pc_slicer_event, event
 	end
 	'SL_PHI': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = pos
-		phi = (pos > 0.0) < 360.0
+		phi = (pos > (-180.0)) < 180.0
 		WIDGET_CONTROL, f_phi, SET_VALUE = phi
 		DRAW_SLICE = 1
 		break
@@ -89,30 +89,32 @@ pro pc_slicer_draw
 	if (win lt 0) then return
 	wset, win
 
-	slice[*,*] = !Values.D_NaN
-	slice_2D = pc_slice_2D (cube, coords, [ x_anchor, y_anchor, z_anchor ], theta, phi, slice_grid=slice_grid, dim=dims)
-	if ((size (slice_2D, /n_dimensions) eq 1) and (slice_2D[0] eq -1)) then begin
-		print, "WARNING: Failed to create the slice for anchor:", x_anchor, y_anchor, z_anchor, " and theta,phi=", theta, phi
-		return
-	end
-	if ((slice_sx le 0.0) or (slice_sy le 0.0)) then begin
-		slice[0:slice_sx-1,0:slice_sy-1] = slice_2D
-	end else begin
-		slice[0:slice_sx-1,0:slice_sy-1] = congrid (slice_2D, slice_sx, slice_sy, 1, /center)
-	end
-	tvscl, slice
+;	slice[*,*] = !Values.D_NaN
+;	slice_2D = pc_slice_2D (cube, coords, [ x_anchor, y_anchor, z_anchor ], theta, phi, slice_grid=slice_grid, grid=coords, dim=dims)
+;	if ((size (slice_2D, /n_dimensions) eq 1) and (slice_2D[0] eq -1)) then begin
+;		print, "WARNING: Failed to create the slice for anchor:", x_anchor, y_anchor, z_anchor, " and theta,phi=", theta, phi
+;		return
+;	end
+;	if ((slice_sx le 0.0) or (slice_sy le 0.0)) then begin
+;		slice[0:slice_sx-1,0:slice_sy-1] = slice_2D
+;	end else begin
+;		slice[0:slice_sx-1,0:slice_sy-1] = congrid (slice_2D, slice_sx, slice_sy, 1, /center)
+;	end
+	slice = pc_slice_2D (cube, coords, [ x_anchor, y_anchor, z_anchor ], theta, phi, slice_grid=slice_grid, grid=coords, dim=dims)
+	if ((slice_sx gt 0.0) or (slice_sy gt 0.0)) then slice = congrid (slice, slice_sx, slice_sy, 1, /center)
+	tvscl, slice, /NaN
 end
 
 
 ; Update slice
-pro pc_slicer_update, x, y, z
+pro pc_slicer_update, anchor
 
 	common pc_slicer_common, x_anchor, y_anchor, z_anchor, theta, phi, cube, slice, coords, dims, slice_grid
 	common pc_slicer_GUI_common, win, f_theta, s_theta, f_phi, s_phi, slice_sx, slice_sy
 
-	x_anchor = x
-	y_anchor = y
-	z_anchor = z
+	x_anchor = anchor[0]
+	y_anchor = anchor[1]
+	z_anchor = anchor[2]
 
 	if (n_elements (win) eq 0) then win = -1
 	if (win ge 0) then pc_slicer_draw
@@ -144,6 +146,8 @@ end
 ; grid:        grid coordinate structure of the given 3D data cube,
 ;              asumed to be in the center of the data cube (eg. without ghost cells).
 ; dim:         dim coordinate structure of the given 3D data cube
+; anchor:      anchor point for the rotation
+; zoom:        magnification factor
 ;
 pro pc_slicer, data, grid=grid, dim=dim, anchor=anchor, zoom=zoom
 
@@ -174,24 +178,20 @@ pro pc_slicer, data, grid=grid, dim=dim, anchor=anchor, zoom=zoom
 
 	; GUI default settings
 	win = -1
-	s = size (data)
-	plot_width = ceil (max (s[1:3]) * sqrt (3))
-	plot_height = plot_width
-	slice_sx = max (s[1:3])
-	slice_sy = max (s[1:3])
-	if (n_elements (zoom) gt 0) then begin
+	pc_slicer_reset
+	sl_width = 360
+
+	; Determine size of the produced slice
+	slice = pc_slice_2D (cube, coords, [ x_anchor, y_anchor, z_anchor ], theta, phi, slice_grid=slice_grid, grid=coords, dim=dims)
+	s = size (slice)
+	slice_sx = s[1]
+	slice_sy = s[2]
+	if (n_elements (zoom) eq 1) then begin
 		if ((zoom ne 1.0) and (zoom gt 0.0)) then begin
-			plot_width = ceil (max (s[1:3]) * sqrt (3) * max (zoom))
-			plot_height = plot_width
-			slice_sx = round (max (s[1:3]) * max (zoom))
-			slice_sy = round (max (s[1:3]) * max (zoom))
+			slice_sx = round (slice_sx * zoom)
+			slice_sy = round (slice_sy * zoom)
 		end
 	end
-
-	slice = dblarr (plot_width, plot_height)
-	slice[*,*] = !Values.D_NaN
-	sl_width = 240
-	pc_slicer_reset
 
 	MOTHER	= WIDGET_BASE (title="PC slicer")
 	APP	= WIDGET_BASE (MOTHER, /col)
@@ -203,15 +203,15 @@ pro pc_slicer, data, grid=grid, dim=dim, anchor=anchor, zoom=zoom
 	BUT	= WIDGET_BASE (CTRL, /col)
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='RESET', uvalue='RESET')
 	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='SAVE SLICE', uvalue='IMAGE')
-	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='QUIT', uvalue='QUIT')
+	tmp	= WIDGET_BUTTON (BUT, xsize=100, value='CLOSE', uvalue='QUIT')
 
-	SEL	= WIDGET_BASE (CTRL, /col)
-	scot	= WIDGET_BASE (SEL, /row, /base_align_center)
-	f_theta	= CW_FIELD (scot, title='THETA:', uvalue='THETA', value=theta, /floating, /return_events, xsize=12)
-	s_theta	= WIDGET_SLIDER (scot, uvalue='SL_THETA', value=theta, min=0.0, max=360.0, xsize=sl_width, /drag)
-	scot	= WIDGET_BASE (SEL, /row, /base_align_center)
-	f_phi	= CW_FIELD (scot, title='  PHI:', uvalue='PHI', value=phi, /floating, /return_events, xsize=12)
-	s_phi	= WIDGET_SLIDER (scot, uvalue='SL_PHI', value=phi, min=0.0, max=360.0, xsize=sl_width, /drag)
+	SLIDE	= WIDGET_BASE (CTRL, /col)
+	BUT	= WIDGET_BASE (SLIDE, /row, /base_align_center)
+	f_theta	= CW_FIELD (BUT, title='THETA:', uvalue='THETA', value=theta, /floating, /return_events, xsize=12)
+	s_theta	= CW_FSLIDER (BUT, uvalue='SL_THETA', /double, /suppress_value, min=0.0, max=360.0, /drag, value=0.0, xsize=sl_width)
+	BUT	= WIDGET_BASE (SLIDE, /row, /base_align_center)
+	f_phi	= CW_FIELD (BUT, title='  PHI:', uvalue='PHI', value=phi, /floating, /return_events, xsize=12)
+	s_phi	= CW_FSLIDER (BUT, uvalue='SL_PHI', /double, /suppress_value, min=-180.0, max=180.0, /drag, value=0.0, xsize=sl_width)
 
 	tmp	= WIDGET_BASE (BASE, /row)
 	BUT	= WIDGET_BASE (tmp, /col)
@@ -220,7 +220,7 @@ pro pc_slicer, data, grid=grid, dim=dim, anchor=anchor, zoom=zoom
 
 	PLOTS	= WIDGET_BASE (BASE, /col)
 	tmp	= WIDGET_BASE (PLOTS, /row)
-	d_prof	= WIDGET_DRAW (tmp, xsize=plot_width, ysize=plot_height, retain=2)
+	d_prof	= WIDGET_DRAW (tmp, xsize=slice_sx, ysize=slice_sy, retain=2)
 
 	BASE	= WIDGET_BASE (APP, /row)
 
