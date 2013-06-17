@@ -1,0 +1,55 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2013-03-22 03:42:03 wlyra Exp $',
+  ip=14,
+  nt=100, it1=25, isave=100, itorder=3
+  cdt=0.4,
+  cdtv=0.4,
+  cdtv3=0.1
+  dtmin=1e-6,
+  lpencil_check=T
+  lpencil_check_no_zeros=T
+  dsnap=1.0
+  dvid=0.5
+  lwrite_dvar=T
+!
+  max_walltime=85500
+  tmax=628
+!
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lpressuregradient_gas=F
+/
+&grav_run_pars
+/
+&density_run_pars
+  idiff='hyper3lnrho' 
+  diffrho_hyper3=3e-15 
+/
+&viscosity_run_pars
+  ivisc='hyper3-simplified' , 'simplified' 
+  nu_hyper3=3e-15 , nu=1e-4 
+/
+&dustdensity_run_pars
+  idiffd='hyper3lnnd' ,'simplified-anisotropic' 
+  diffnd_hyper3=3e-15 
+  diffnd_anisotropic=0,0,5e-3 
+/
+&dustvelocity_run_pars
+  ldragforce_gas=T
+  tausd=0.5
+  iviscd='hyper3-simplified' , 'simplified' 
+  nud_hyper3=3e-15 , nud=1e-4 
+/
+&shock_run_pars
+/
+&shear_run_pars
+/
+&special_run_pars
+ kappa=0.5
+/

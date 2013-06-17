@@ -1,0 +1,66 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for shocktube problem
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.2 2013-03-22 03:42:03 wlyra Exp $',
+  ip=14,                      ! debugging parameter
+  xyz0  = -0.5,-0.5,-0.3       ! first corner of box
+  xyz1  =  0.5, 0.5, 0.3
+!
+  lwrite_ic=T
+!
+  lwrite_aux=T
+!
+  lperi=T,T,F
+  bcz='a','a','out','v3' ,'a','a','set:set','v3' ,'s'
+  fbcz1= 0,0,0,0,0,0, 0.3,0,0
+  fbcz2= 0,0,0,0,0,0,-0.3,0,0
+!
+/
+&initial_condition_pars
+ Hd=0.07071067811
+ eps_dtog=0.17782794
+ vdampl_dust=1.
+ tau=0.5
+ ldragforce_gas=T
+ OOg=1.
+ input_fac=1.
+ cb20=0.5
+/
+&eos_init_pars
+  rho0 = 1.0
+  gamma= 1.0
+  cs0=1.0
+/
+&hydro_init_pars
+  Omega=1.0
+  inituu='gaussian-noise'
+  ampluu=1e-2
+/
+&entropy_init_pars
+/
+&density_init_pars
+  ldensity_nolog=F
+/
+&grav_init_pars
+  gravz_profile='linear'
+  nu_epicycle=1.
+/
+&dustdensity_init_pars
+  eps_dtog=0.17782794
+  initnd='gaussian_nd'
+  Hnd=0.07071067811
+  ldustdensity_log=T
+/
+&dustvelocity_init_pars
+  inituud='linear-z'
+  ampluud=-1.
+  tausd=0.5
+/
+&shear_init_pars
+  qshear=1.5
+/
+&special_init_pars
+  kappa=0.5
+/
