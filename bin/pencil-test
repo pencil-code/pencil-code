@@ -101,8 +101,7 @@ GetOptions(\%opts,
                -p=s --postproc=s
                -t=s --time-limit=s
                -T=s --timings-file=s
-                    --tag-stable=s
-                    --tag-broken=s
+                    --tag-stable
                -b   --use-pc_auto-test
                -W=s --auto-test-options=s
                )) or die "Aborting.\n";
@@ -121,7 +120,6 @@ my $UPDATE      = ($opts{'U'} || $opts{'up-samples'}  || 0 );
 my $reload      = ($opts{'r'} || $opts{'reload'}      || 0 );
 my $short       = ($opts{'s'} || $opts{'short'}       || 0 );
 my $tag_stable  = (              $opts{'tag-stable'}  || 0 );
-my $tag_broken  = (              $opts{'tag-broken'}  || 0 );
 if ($UPDATE) { $update=1 };
 my $emails      = ($opts{'m'} || $opts{'mail'}        || '');
 my $mailer      = ($opts{'M'} || $opts{'Mailer'}      || '');
@@ -232,8 +230,7 @@ sub run_tests_on {
     }
     close(POUT);
 
-    # Put tag on files if auto-test breaks
-    tag_breakage_on_error($result,$host) if ($tag_broken);
+    # Create a stable tag if auto-test was successful
     tag_stable_on_success($result,$host) if ($tag_stable);
 
     # Send emails if necessary
@@ -334,37 +331,19 @@ sub usage {
 }
 # ---------------------------------------------------------------------- #
 sub tag_stable_on_success {
-## Put tag on files of auto-test succeeds
-## [Most likely broken for SVN]
+## Create a stable tag if auto-test was successful
     my $result = (shift || '');
     my $host   = (shift || '');
+    my $url = 'https://pencil-code.googlecode.com/svn/';
+    my $date = strftime "%Y-%m-%d", localtime;
     my $svncmd;
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
     $svncmd=        "ssh -x -n $host 'cd \$PENCIL_HOME;";
-    $svncmd=$svncmd."svn -q tag -d ".$tag_broken." src bin > /dev/null;" if ($tag_broken);
-    $svncmd=$svncmd."svn -q tag -F ".$tag_stable." src bin > /dev/null";
+    $svncmd=$svncmd."svn copy ".$url."trunk ".$url."tags/stable_".$date." -m \"Tagging a stable version.\" > /dev/null";
     $svncmd=$svncmd."'";
     system($svncmd);
-}
-# ---------------------------------------------------------------------- #
-sub tag_breakage_on_error {
-## Put tag on files if auto-test breaks (only first break)
-## [Most likely broken for SVN]
-    my $result = (shift || '');
-    my $host   = (shift || '');
-    my $svncmd;
-    if ($result =~ /^Failed ([0-9]+) test/m) {
-# We only want to mark the first breakage... So check it isn't already tagged.
-      my $hastag="ssh -x -n $host 'cd \$PENCIL_HOME; svn log -h Makefile.src'";
-      return if ($hastag =~ /$tag_broken/);
-# If we haven't already tagged it... Do so now.
-      $svncmd=        "ssh -x -n $host 'cd \$PENCIL_HOME;";
-      $svncmd=$svncmd."svn -q tag -F ".$tag_broken." src bin > /dev/null;";
-      $svncmd=$svncmd."'";
-      system($svncmd);
-    }
 }
 # ---------------------------------------------------------------------- #
 sub notify_on_error {
