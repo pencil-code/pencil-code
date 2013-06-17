@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/debris-photoelectric-fluid
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wlyra/caltech[dot]edu>
+Added:
+     17-jun-2013
+Status:
+    works since 17-jun-2013
+Recommended resolution:
+    256x256x128 (same hyperdiffusion as in sample)
+Comments:
+    Debrisk 	
+Reference:
+    Lyra & Kuchner 2013, Nature, "Formation of sharp eccentric rings 
+    in debris disks with gas but without planets".
