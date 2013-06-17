@@ -113,6 +113,7 @@ my %tests = (
                          1d-tests/sedimentation-noneq-blocks
                          1d-tests/alphadisk
                          implicit_resistivity
+                         debris-photoelectric-fluid
                     )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
