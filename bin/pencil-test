@@ -334,14 +334,13 @@ sub tag_stable_on_success {
 ## Create a stable tag if auto-test was successful
     my $result = (shift || '');
     my $host   = (shift || '');
-    my $url = 'https://pencil-code.googlecode.com/svn/';
     my $date = strftime "%Y-%m-%d", localtime;
     my $svncmd;
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
 
     $svncmd=        "ssh -x -n $host 'cd \$PENCIL_HOME;";
-    $svncmd=$svncmd."svn copy ".$url."trunk ".$url."tags/stable_".$date." -m \"Tagging a stable version.\" > /dev/null";
+    $svncmd=$svncmd."svn copy ^/trunk ^/tags/stable_".$date." -m \"automatic validation completed: auto-test on $host\" > /dev/null";
     $svncmd=$svncmd."'";
     system($svncmd);
 }
