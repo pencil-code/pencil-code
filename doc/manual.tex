@@ -1114,11 +1114,11 @@ Your own changes will be merged into this latest version as before.
 NOTE: The functionality of the head of the trunk should be preserved
 at all times. However, accidents do happen. For the benefit of all
 other developers, any errors should be corrected within 1-2 hours.
-The \cmd{pc_svnup -val} option allows all other people to stay away
-from any trouble.
 This is the reason why the code comes with a file
 \file{pencil-code/license/developers.txt},
-which contains the mobile numbers of many developers.
+which should contain contact details of all developers.
+The \cmd{pc_svnup -val} option allows all other people to stay away
+from any trouble.
 
 % ---------------------------------------------------------------------- %
 
@@ -1128,10 +1128,10 @@ which contains the mobile numbers of many developers.
 You may find that the latest \name{svn} version of the code produces errors.
 If you have reasons to believe that this is due to changes introduced on
 27 November 2008 (to give an example), you can check out the version prior to
-this.
+this by specifying a revision number with \cmd{svn update -r #####}.
 One reason why one cannot always reproduce exactly the same situation too far
-back in time is connected with the fact that machine names and architectures
-were different back then can cannot be reproduced.
+back in time is connected with the fact that processor architecture and the
+compiler were different, resulting e.g. in different rounding errors.
 
 % ---------------------------------------------------------------------- %
 
@@ -6384,6 +6384,10 @@ Again, the answer is yes; just go to:
 
 \part{Programming the {\sc Pencil Code}}
 
+All developers are supposed to have an up-to-date an entry in the file
+\file{pencil-code/license/developers.txt} so that they can be contacted in
+the case a code change breaks an auto-test or other code functionality.
+
 The {\sc Pencil Code} has expanded approximately linearly in the number of
 lines of code and the number of subroutines (Fig.~\ref{pfile-size}).
 The increase in the functionality of the code is documented by the
@@ -6421,7 +6425,7 @@ has not changed much.
 % ---------------------------------------------------------------------- %
 
 Before making changes the to the code, it is important that you
-verify that you can run the \cmd{auto-test} successfully.
+verify that you can run the \cmd{pc_auto-test} successfully.
 Don't do this when you have already modified the code, because
 then you cannot be sure that any problems are caused by your changes,
 or because it wouldn't have worked anyway.
