@@ -49,7 +49,7 @@ Sharanya Sur,         sur/iucaa.ernet.in,            ,                     +91 2
 Andreas Svedin,       andreas/astro.columbia.edu,    ,                     +1 917 348 1018,   +46 73 968 86 56  
 Joern Warnecke,       joern/nordita.org,             ,                     +46 8 5537 8277,   +46 72 7316111   
 Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           +49 5556 979 408,  +49 176 911 232 19
-Chao-Chin Yang,       ccyang/ucolick.org,            ccyang/astro.lu.se,   +1 831 459 2896,   ,                         chaochinyang
+Chao-Chin Yang,       ccyang/astro.lu.se,            ccyang/astro.lu.se,   +46 46 22 21606,   ,
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               +34 634773855
 
