@@ -8,5 +8,5 @@
 #
 if [ ${PC_SET_VALIDATED:-0} != "0" ]; then
   cd ${PENCIL_HOME}/src
-  svn info | grep Revision > /tmp/pc_current_revision.dat
+  svn info | awk '/^.*? Rev:\s*(.*)$/{print $4}' > /tmp/pc_current_revision.dat
 fi
