@@ -1,8 +1,8 @@
 !  $Id$
 !
-!  Initial condition (density, magnetic field, velocity) 
+!  Initial condition (density, magnetic field, velocity)
 !  for magnetohydrostatical equilibrium in a global accretion
-!  disk in a cylindrically symmetric  profile in spherical coordinates. 
+!  disk in a cylindrically symmetric  profile in spherical coordinates.
 !  with a polytropic equation of state including entropy equation
 !
 !  7-dec-12/fadiesis: adapted from noinitial_condition.f90 and fluxring_cylindical.f90
@@ -74,8 +74,8 @@ module InitialCondition
 !***********************************************************************
     subroutine initial_condition_lnrho(f)
 !
-!  Initialize logarithmic density. init_lnrho 
-!  will take care of converting it to linear 
+!  Initialize logarithmic density. init_lnrho
+!  will take care of converting it to linear
 !  density if you use ldensity_nolog
 !
 !  07-may-09/wlad: coded
@@ -87,8 +87,8 @@ module InitialCondition
 !
       if (lroot) print*,&
            'initial_condition_lnrho: ring'
- 
- 
+
+
     endsubroutine initial_condition_lnrho
 
 !***********************************************************************
@@ -108,17 +108,17 @@ module InitialCondition
 !  Get the density and use a constant pressure entropy condition
 !
      cp=1.
-     cp1=1/cp	
+     cp1=1/cp
      cv=gamma1*cp
 !
- 
+
      argum=sqrt2*(x-s0)/width
      term1=s0*width*sqrtpi*sqrt2*erfunc(argum)
      term2=(2.*x**2-width**2)*exp(-argum**2)
      press=p0-(.5*b0/s0)**2*(term1+term2)
-     lnrho0=eps*log(press)/gamma 
-   
-!     
+     lnrho0=eps*log(press)/gamma
+
+!
      do n=1,mz
        do m=1,my
          f(:,m,n,ilnrho)=f(:,m,n,ilnrho)+lnrho0
@@ -143,8 +143,8 @@ module InitialCondition
 !***********************************************************************
     subroutine initial_condition_aa(f)
 !
-!  Initialize the magnetic vector potential. Constant plasma 
-!  beta magnetic field. 
+!  Initialize the magnetic vector potential. Constant plasma
+!  beta magnetic field.
 !
 !  07-may-09/wlad: coded
 !  23-feb-12/fabio: added costant bz to the initial setup
@@ -215,7 +215,7 @@ module InitialCondition
     endsubroutine read_initial_condition_pars
 !***********************************************************************
     subroutine write_initial_condition_pars(unit)
-!     
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=initial_condition_pars)
