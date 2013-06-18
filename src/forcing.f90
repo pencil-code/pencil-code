@@ -3884,10 +3884,10 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !
       real :: force_ampl
       real :: irufm
-      real, dimension (1) :: fsum_tmp,fsum
+!      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (nx) :: ruf,rho, rho1
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
-      logical, save :: lfirst_call=.true.
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+!      real, dimension (nx,3) :: bb,fxb
       integer :: j,jf,l
       real :: fact, dist3
 !
