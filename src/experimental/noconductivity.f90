@@ -52,8 +52,8 @@ module Conductivity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_comipler_quiet(unit)
-      if (present(iostat)) call keep_comipler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_conductivity_init_pars
 !***********************************************************************
@@ -61,7 +61,7 @@ module Conductivity
 !
       integer, intent(in) :: unit
 !
-      call keep_comipler_quiet(unit)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_conductivity_init_pars
 !***********************************************************************
@@ -70,8 +70,8 @@ module Conductivity
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 !
-      call keep_comipler_quiet(unit)
-      if (present(iostat)) call keep_comipler_quiet(iostat)
+      call keep_compiler_quiet(unit)
+      if (present(iostat)) call keep_compiler_quiet(iostat)
 !
     endsubroutine read_conductivity_run_pars
 !***********************************************************************
@@ -79,7 +79,7 @@ module Conductivity
 !
       integer, intent(in) :: unit
 !
-      call keep_comipler_quiet(unit)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_conductivity_run_pars
 !***********************************************************************
