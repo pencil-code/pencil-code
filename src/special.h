@@ -20,6 +20,7 @@
   public :: special_calc_density
   public :: special_calc_dustdensity
   public :: special_calc_entropy
+  public :: special_calc_energy
   public :: special_calc_magnetic
   public :: special_calc_pscalar
   public :: special_calc_particles
