@@ -71,6 +71,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   30 02 * * *  $HOME/f90/pencil-auto-test/bin/pencil-test -D /home/wdobler/f90/pencil-auto-test -N15 -Uc -rs -T $HOME/public_html/pencil-code/tests/g95_debug_timings.txt -Hm my@email.net norlx50 > $HOME/public_html/pencil-code/tests/g95_debug.html
 
 use strict;
+use POSIX qw(strftime);
 use Getopt::Long;
 use constant SUCCESS => 1;      # return value
 
@@ -334,7 +335,7 @@ sub tag_stable_on_success {
 ## Create a stable tag if auto-test was successful
     my $result = (shift || '');
     my $host   = (shift || '');
-    my $date = strftime "%Y-%m-%d", localtime;
+    my $date = strftime ("%Y-%m-%d", localtime);
     my $svncmd;
 
     return if ($result =~ /^Failed ([0-9]+) test/m);
