@@ -13,9 +13,11 @@ module Param_IO
   use Cosmicray
   use CosmicrayFlux
   use Cparam
+  use Conductivity
   use Density
   use Dustdensity
   use Dustvelocity
+  use Energy
   use Entropy
   use EquationOfState
   use Forcing
@@ -279,6 +281,10 @@ module Param_IO
       if (ierr/=0) call sample_startpars('entropy_init_pars',ierr)
       rewind(unit)
 !
+      call read_energy_init_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_startpars('energy_init_pars',ierr)
+      rewind(unit)
+!
       call read_magnetic_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('magnetic_init_pars',ierr)
       rewind(unit)
@@ -444,6 +450,7 @@ module Param_IO
         if (lpoisson          ) print*,'&poisson_init_pars         /'
         if (lentropy          ) print*,'&entropy_init_pars         /'
         if (ltemperature      ) print*,'&entropy_init_pars         /'
+        if (lenergy           ) print*,'&energy_init_pars          /'
         if (lmagnetic         ) print*,'&magnetic_init_pars        /'
         if (lmagn_mf          ) print*,'&magn_mf_init_pars         /'
         if (lmagn_mf_demfdt   ) print*,'&magn_mf_demfdt_init_pars  /'
@@ -516,6 +523,7 @@ module Param_IO
         call write_selfgravity_init_pars(unit)
         call write_poisson_init_pars(unit)
         call write_entropy_init_pars(unit)
+        call write_energy_init_pars(unit)
         call write_magnetic_init_pars(unit)
         call write_lorenz_gauge_init_pars(unit)
         call write_testscalar_init_pars(unit)
@@ -613,6 +621,14 @@ module Param_IO
 !
       call read_entropy_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('entropy_run_pars',ierr)
+      rewind(unit)
+!
+      call read_energy_run_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('energy_run_pars',ierr)
+      rewind(unit)
+!
+      call read_conductivity_run_pars(unit,IOSTAT=ierr)
+      if (ierr/=0) call sample_runpars('conductivity_run_pars',ierr)
       rewind(unit)
 !
       call read_magnetic_run_pars(unit,IOSTAT=ierr)
@@ -770,6 +786,8 @@ module Param_IO
         if (lselfgravity    ) print*,'&selfgrav_run_pars        /'
         if (lpoisson        ) print*,'&poisson_run_pars         /'
         if (lentropy        ) print*,'&entropy_run_pars         /'
+        if (lenergy         ) print*,'&energy_run_pars          /'
+        if (lconductivity   ) print*,'&conductivity_run_pars    /'
         if (ltemperature    ) print*,'&entropy_run_pars         /'
         if (lmagnetic       ) print*,'&magnetic_run_pars        /'
         if (lmagn_mf        ) print*,'&magn_mf_run_pars         /'
@@ -862,6 +880,8 @@ module Param_IO
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
         call write_entropy_run_pars(unit)
+        call write_energy_run_pars(unit)
+        call write_conductivity_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_lorenz_gauge_run_pars(unit)
         call write_testscalar_run_pars(unit)
@@ -995,6 +1015,7 @@ module Param_IO
       logical :: lhydro           = lhydro_var
       logical :: ldensity         = ldensity_var
       logical :: lentropy         = lentropy_var
+      logical :: lenergy          = lenergy_var
       logical :: ltemperature     = ltemperature_var
       logical :: lshock           = lshock_var
       logical :: lmagnetic        = lmagnetic_var
@@ -1020,11 +1041,11 @@ module Param_IO
       integer :: unit=1
 !
       namelist /lphysics/ &
-          lhydro, ldensity, lentropy, lmagnetic, lshear, llorenz_gauge,  &
-          ltestscalar, ltestfield, ltestflow, lpscalar, lradiation, &
-          ldustvelocity, ldustdensity, lforcing, lgravz, lgravr, &
-          ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, &
-          lshock, lradiation_fld, leos_ionization, leos_fixed_ionization, &
+          lhydro, ldensity, lentropy, lenergy, magnetic, lshear, &
+          llorenz_gauge,  ltestscalar, ltestfield, ltestflow, lpscalar, &
+          lradiation, ldustvelocity, ldustdensity, lforcing, lgravz, lgravr, &
+          ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, lshock, &
+          lradiation_fld, leos_ionization, leos_fixed_ionization, &
           lvisc_hyper, lchiral, leos, leos_temperature_ionization, &
           lneutralvelocity, lneutraldensity, ltemperature,lpolymer, &
           lsolid_cells
@@ -1064,6 +1085,7 @@ module Param_IO
         call write_selfgravity_init_pars(unit)
         call write_poisson_init_pars(unit)
         call write_entropy_init_pars(unit)
+        call write_energy_init_pars(unit)
         call write_magnetic_init_pars(unit)
         call write_lorenz_gauge_init_pars(unit)
         call write_testscalar_init_pars(unit)
@@ -1099,6 +1121,7 @@ module Param_IO
       call keep_compiler_quiet(lhydro)
       call keep_compiler_quiet(ldensity)
       call keep_compiler_quiet(lentropy)
+      call keep_compiler_quiet(lenergy)
       call keep_compiler_quiet(ltemperature)
       call keep_compiler_quiet(lmagnetic)
       call keep_compiler_quiet(lforcing)
@@ -1148,6 +1171,8 @@ module Param_IO
       call read_poisson_init_pars(unit)
       rewind(unit)
       call read_entropy_init_pars(unit)
+      rewind(unit)
+      call read_energy_init_pars(unit)
       rewind(unit)
       call read_magnetic_init_pars(unit)
       rewind(unit)
@@ -1228,6 +1253,8 @@ module Param_IO
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
         call write_entropy_run_pars(unit)
+        call write_energy_run_pars(unit)
+        call write_conductivity_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_lorenz_gauge_run_pars(unit)
         call write_testscalar_run_pars(unit)

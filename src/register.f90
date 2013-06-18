@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  A module for setting up the f-array and related variables (`register' the
-!  entropy, magnetic, etc modules).
+!  velocity, energy, magnetic, etc modules).
 !
 module Register
 !
@@ -20,7 +20,7 @@ module Register
 !
 !  Call all registration routines, i.e. initialise MPI and register
 !  physics modules. Registration implies getting slices of the f-array
-!  and setting logicals like lentropy to .true. This routine is called by
+!  and setting logicals like lenergy to .true. This routine is called by
 !  both, start.x and run.x .
 !
 !  6-nov-01/wolf: coded
@@ -33,12 +33,14 @@ module Register
       use Sub
       use Chemistry,        only: register_chemistry
       use Chiral,           only: register_chiral
+      use Conductivity,     only: register_conductivity
       use CosmicrayFlux,    only: register_cosmicrayflux
       use Cosmicray,        only: register_cosmicray
       use Density,          only: register_density
       use Dustdensity,      only: register_dustdensity
       use Dustvelocity,     only: register_dustvelocity
       use Entropy,          only: register_entropy
+      use Energy,           only: register_energy
       use EquationOfState,  only: register_eos
       use Forcing,          only: register_forcing
       use Gravity,          only: register_gravity
@@ -126,6 +128,8 @@ module Register
       call register_density
       call register_forcing
       call register_entropy
+      call register_energy
+      call register_conductivity
       call register_magnetic
       call register_lorenz_gauge          !(should go under magnetic)
       call register_polymer
@@ -191,6 +195,7 @@ module Register
       use BorderProfiles,   only: initialize_border_profiles
       use Chemistry,        only: initialize_chemistry
       use Chiral,           only: initialize_chiral
+      use Conductivity,     only: initialize_conductivity
       use CosmicrayFlux,    only: initialize_cosmicrayflux
       use Cosmicray,        only: initialize_cosmicray
       use Density,          only: initialize_density
@@ -199,6 +204,7 @@ module Register
       use Dustdensity,      only: initialize_dustdensity
       use Dustvelocity,     only: initialize_dustvelocity
       use Entropy,          only: initialize_entropy
+      use Energy,           only: initialize_energy
       use EquationOfState,  only: initialize_eos, units_eos
       use Forcing,          only: initialize_forcing
       use Gravity,          only: initialize_gravity
@@ -369,6 +375,8 @@ module Register
       call initialize_hydro(f,lstarting)
       call initialize_forcing(lstarting)
       call initialize_entropy(f,lstarting)
+      call initialize_energy(f,lstarting)
+      call initialize_conductivity(f,lstarting)
       call initialize_magnetic(f,lstarting)
       call initialize_lorenz_gauge(f)
       call initialize_polymer(f,lstarting)
@@ -540,6 +548,8 @@ module Register
       use Shock,           only: pencil_criteria_shock
       use Viscosity,       only: pencil_criteria_viscosity
       use Entropy,         only: pencil_criteria_entropy
+      use Energy,          only: pencil_criteria_energy
+      use Conductivity,    only: pencil_criteria_conductivity
       use Gravity,         only: pencil_criteria_gravity
       use Selfgravity,     only: pencil_criteria_selfgravity
       use Pscalar,         only: pencil_criteria_pscalar
@@ -573,6 +583,8 @@ module Register
       call pencil_criteria_shock()
       call pencil_criteria_viscosity()
       call pencil_criteria_entropy()
+      call pencil_criteria_energy()
+      call pencil_criteria_conductivity()
       call pencil_criteria_gravity()
       call pencil_criteria_selfgravity()
       call pencil_criteria_pscalar()
@@ -619,6 +631,8 @@ module Register
       use Shock, only: pencil_interdep_shock
       use Viscosity, only: pencil_interdep_viscosity
       use Entropy, only: pencil_interdep_entropy
+      use Energy, only: pencil_interdep_energy
+      use Conductivity, only: pencil_interdep_conductivity
       use Gravity, only: pencil_interdep_gravity
       use Selfgravity, only: pencil_interdep_selfgravity
       use Magnetic, only: pencil_interdep_magnetic
@@ -652,6 +666,8 @@ module Register
       call pencil_interdep_shock(lpencil_in)
       call pencil_interdep_viscosity(lpencil_in)
       call pencil_interdep_entropy(lpencil_in)
+      call pencil_interdep_energy(lpencil_in)
+      call pencil_interdep_conductivity(lpencil_in)
       call pencil_interdep_gravity(lpencil_in)
       call pencil_interdep_selfgravity(lpencil_in)
       call pencil_interdep_chemistry(lpencil_in)
@@ -741,6 +757,8 @@ module Register
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
       use Entropy,         only: rprint_entropy
+      use Energy,          only: rprint_energy
+      use Conductivity,    only: rprint_conductivity
       use Magnetic,        only: rprint_magnetic
       use Lorenz_gauge,    only: rprint_lorenz_gauge
       use Polymer,         only: rprint_polymer
@@ -984,6 +1002,8 @@ module Register
       call rprint_density         (lreset,LWRITE=lroot)
       call rprint_forcing         (lreset,LWRITE=lroot)
       call rprint_entropy         (lreset,LWRITE=lroot)
+      call rprint_energy          (lreset,LWRITE=lroot)
+      call rprint_conductivity    (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
       call rprint_lorenz_gauge    (lreset,LWRITE=lroot)
       call rprint_polymer         (lreset,LWRITE=lroot)
@@ -1024,9 +1044,9 @@ module Register
 ! 
       use Cdata
       use Diagnostics
+      use Entropy,  only: expand_shands_entropy
       use Hydro,    only: expand_shands_hydro
       use Magnetic, only: expand_shands_magnetic
-      use Entropy,  only: expand_shands_entropy
 !
       integer :: iname,irz
       logical :: lreset,lwr

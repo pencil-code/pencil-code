@@ -35,6 +35,7 @@ module Equ
       use Diagnostics
       use Dustvelocity
       use Dustdensity
+      use Energy
       use Entropy
       use EquationOfState
       use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
@@ -502,6 +503,7 @@ module Equ
         if (lchemistry)       call calc_pencils_chemistry(f,p)
         if (lviscosity)       call calc_pencils_viscosity(f,p)
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
+                              call calc_pencils_energy(f,p)
                               call calc_pencils_entropy(f,p)
         if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)
@@ -531,6 +533,7 @@ module Equ
 !
         call duu_dt(f,df,p)
         call dlnrho_dt(f,df,p)
+        call dee_dt(f,df,p)
         call dss_dt(f,df,p)
 !
 !  Magnetic field evolution
