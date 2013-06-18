@@ -90,7 +90,7 @@ module Magnetic
 ! Input parameters
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
-  real, dimension(3), target :: B_ext=(/0.0,0.0,0.0/)
+  real, dimension(3) :: B_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3
@@ -225,7 +225,7 @@ module Magnetic
   logical :: lforcing_cont_aa=.false.
   logical :: lelectron_inertia=.false.
   logical :: lkinematic=.false.
-  logical :: luse_Bext_in_b2=.false.
+  logical :: lignore_Bext_in_b2=.false., luse_Bext_in_b2=.true.
   logical :: lmean_friction=.false.
   logical :: lhalox=.false.
   logical :: lrun_initaa=.false.,lmagneto_friction=.false.
@@ -259,7 +259,8 @@ module Magnetic
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, ljj_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
-      lneutralion_heat, lreset_aa, daareset, luse_Bext_in_b2, ampl_fcont_aa, &
+      lneutralion_heat, lreset_aa, daareset, &
+      lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, lrun_initaa, two_step_factor, &
       magnetic_xaver_range, A_relaxprofile, tau_relprof, amp_relprof,&
       k_relprof,lmagneto_friction,numag, &
@@ -801,7 +802,7 @@ module Magnetic
 !
 !  Share the external magnetic field with module Shear.
 !
-      if (lshear.or.lspecial) then
+      if (lshear.or.(leos.and.lmagn_mf).or.lspecial) then
         call put_shared_variable('B_ext', B_ext, ierr)
         if (ierr /= 0) call fatal_error('initialize_magnetic', 'unable to share variable B_ext')
       endif
@@ -893,14 +894,18 @@ module Magnetic
         call put_shared_variable('B_ext2', B_ext2, ierr)
         if (ierr /= 0) call fatal_error('initialize_magnetic', &
           'unable to share variable B_ext2')
+        call put_shared_variable('B_ext', B_ext, ierr)
+        if (ierr /= 0) call fatal_error('initialize_magnetic', &
+          'unable to share variable B_ext')
       endif
 !
-!  calculate lJ_ext (true if any of the 3 components in true)
+!  Calculate lJ_ext (true if any of the 3 components in true).
 !
       J_ext2=J_ext(1)**2+J_ext(2)**2+J_ext(3)**2
       lJ_ext=(J_ext2/=0)
 !
-!  rescale magnetic field by a factor reinitialize_aa
+!  Reinitialize magnetic field using a small selection of perturbations
+!  that were mostly also available as initial conditions.
 !
       if (reinitialize_aa) then
         do j=1,ninit
@@ -910,6 +915,7 @@ module Magnetic
           case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
               center1_x,center1_z)
           case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+          case ('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
           case default
           endselect
         enddo
@@ -2194,6 +2200,7 @@ module Magnetic
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  19-nov-04/anders: coded
+!  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
 !
       use Sub
       use Diagnostics, only: sum_mn_name
@@ -2289,13 +2296,13 @@ module Magnetic
         if (iglobal_bz_ext/=0) p%bb(:,3)=p%bb(:,3)+f(l1:l2,m,n,iglobal_bz_ext)
       endif
 !
-! b2 (default is that B_ext is not included), but this can be changed
-! by setting luse_Bext_in_b2=.true.
+!  b2 now (since 18 June 2013) includes B_ext by default.
+!  This can be changed by setting lignore_Bext_in_b2=T
 !
-      if (luse_Bext_in_b2) then
-        if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
-      else
+      if (lignore_Bext_in_b2 .or. (.not.luse_Bext_in_b2) ) then
         if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
+      else
+        if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
       endif
       if (lpencil(i_bf2)) call dot2_mn(p%bbb,p%bf2)
 !
@@ -2308,14 +2315,14 @@ module Magnetic
 ! bunit
       if (lpencil(i_bunit)) then
         quench = 1.0/max(tini,sqrt(p%b2))
-        if (luse_Bext_in_b2) then
-          p%bunit(:,1) = p%bb(:,1)*quench
-          p%bunit(:,2) = p%bb(:,2)*quench
-          p%bunit(:,3) = p%bb(:,3)*quench
-        else
+        if (lignore_Bext_in_b2 .or. (.not.luse_Bext_in_b2) ) then
           p%bunit(:,1) = p%bbb(:,1)*quench
           p%bunit(:,2) = p%bbb(:,2)*quench
           p%bunit(:,3) = p%bbb(:,3)*quench
+        else
+          p%bunit(:,1) = p%bb(:,1)*quench
+          p%bunit(:,2) = p%bb(:,2)*quench
+          p%bunit(:,3) = p%bb(:,3)*quench
         endif
       endif
 ! ab
