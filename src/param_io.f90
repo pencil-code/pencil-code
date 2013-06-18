@@ -1015,7 +1015,7 @@ module Param_IO
       logical :: lhydro           = lhydro_var
       logical :: ldensity         = ldensity_var
       logical :: lentropy         = lentropy_var
-      logical :: lenergy          = lenergy_var
+!      logical :: lenergy          = lenergy_var
       logical :: ltemperature     = ltemperature_var
       logical :: lshock           = lshock_var
       logical :: lmagnetic        = lmagnetic_var
@@ -1041,7 +1041,7 @@ module Param_IO
       integer :: unit=1
 !
       namelist /lphysics/ &
-          lhydro, ldensity, lentropy, lenergy, magnetic, lshear, &
+          lhydro, ldensity, lentropy, lenergy, lmagnetic, lshear, &
           llorenz_gauge,  ltestscalar, ltestfield, ltestflow, lpscalar, &
           lradiation, ldustvelocity, ldustdensity, lforcing, lgravz, lgravr, &
           ltestperturb, linterstellar, lcosmicray, lcosmicrayflux, lshock, &

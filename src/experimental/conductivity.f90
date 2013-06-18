@@ -25,7 +25,8 @@ module Conductivity
 !
   include 'conductivity.h'
 !
-  real :: chi=0.0, chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: chi=0.0, chi_t=0.0, chiB=0.0, chit_aniso=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: tau_diff=0.0
   real :: hcond0=impossible
   real :: Kbot=impossible
   real :: dummy=impossible
@@ -40,12 +41,17 @@ module Conductivity
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
 !
+  integer :: iglobal_hcond=0
+  integer :: iglobal_glhc=0
+!
   namelist /conductivity_init_pars/ dummy
 !
   namelist /conductivity_run_pars/ &
-      hcond0, chi_t, chi_shock, chi, iheatcond, Kbot, chi_hyper3
+      hcond0, chi_t, chit_aniso, chi_shock, chi, iheatcond, Kbot, chi_hyper3, chiB, tau_diff
 !
-  integer :: idiag_dtchi=0
+  integer :: idiag_dtchi=0, idiag_fradmx=0, idiag_fradxy_kprof=0
+  integer :: idiag_fradz_kprof=0, idiag_fturbmx=0, idiag_fturbrxy=0
+  integer :: idiag_fturbthxy=0, idiag_fturbxy=0, idiag_fturbz=0
 !
   contains
 !***********************************************************************
@@ -262,7 +268,7 @@ module Conductivity
       intent(inout) :: df
       intent(inout) :: p
 !
-      if (lheatc_Kprof)    call calc_heatcond_Kprof(f,p)
+      !if (lheatc_Kprof)    call calc_heatcond_Kprof(f,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(p)
       if (lheatc_chiconst) call calc_heatcond_constchi(p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(p)
@@ -304,14 +310,14 @@ module Conductivity
 !  Note: these routines require revision when ionization turned on
 !  The variable g2 is reused to calculate glnP.gss a few lines below.
 !
-!      glnT = gamma*p%gss + gamma_m1*p%glnrho
-!      glnP = gamma*p%gss + gamma*p%glnrho
-!      call dot(glnP,glnT,g2)
-!      thdiff = chi * (gamma*p%del2ss+gamma_m1*p%del2lnrho + g2)
-!      if (chi_t/=0.) then
-!        call dot(glnP,p%gss,g2)
-!        p%hcond = p%hcond + chi_t*(p%del2ss+g2)
-!      endif
+      glnT = gamma*p%gss + gamma_m1*p%glnrho
+      glnP = gamma*p%gss + gamma*p%glnrho
+      call dot(glnP,glnT,g2)
+      p%hcond = p%hcond + chi * (gamma*p%del2ss+gamma_m1*p%del2lnrho + g2)
+      if (chi_t/=0.) then
+        call dot(glnP,p%gss,g2)
+        p%hcond = p%hcond + chi_t*(p%del2ss+g2)
+      endif
 !
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
@@ -395,11 +401,11 @@ module Conductivity
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
 !
-!      if (tau_diff==0) then
-!        hcond=Kbot
-!      else
-!        hcond=Kbot/tau_diff
-!      endif
+      if (tau_diff==0) then
+        hcond=Kbot
+      else
+        hcond=Kbot/tau_diff
+      endif
 !
       if (headtt) then
         print*,'calc_heatcond_constK: hcond=', maxval(hcond)
@@ -425,17 +431,17 @@ module Conductivity
 !
 !  Put empirical heat transport suppression by the B-field.
 !
-!      if (chiB==0.) then
-!        chix = p%rho1*hcond*p%cp1
-!      else
-!        chix = p%rho1*hcond*p%cp1/(1.+chiB*p%b2)
-!      endif
-!      call dot(p%glnTT,p%glnTT,g2)
+      if (chiB==0.) then
+        chix = p%rho1*hcond*p%cp1
+      else
+        chix = p%rho1*hcond*p%cp1/(1.+chiB*p%b2)
+      endif
+      call dot(p%glnTT,p%glnTT,g2)
 !
       !if (pretend_lnTT) then
       !   p%hcond = p%hcond + gamma*chix * (p%del2lnTT + g2)
       !else
-!      p%hcond = p%hcond + p%rho1*hcond * (p%del2lnTT + g2)
+      p%hcond = p%hcond + p%rho1*hcond * (p%del2lnTT + g2)
       !endif
 !
 !  Check maximum diffusion from thermal diffusion.
@@ -447,56 +453,56 @@ module Conductivity
 !
     endsubroutine calc_heatcond_constK
 !***********************************************************************
-    subroutine calc_heatcond_Kprof(f,p)
+!   subroutine calc_heatcond_Kprof(f,p)
+!!
+!!  In this routine general heat conduction profiles are being provided.
+!!
+!!  17-sep-01/axel: coded
+!!  14-jul-05/axel: corrected expression for chi_t diffusion.
+!!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
+!!
+!      use Debug_IO, only: output_pencil
+!      use EquationOfState, only: gamma, gamma_m1
+!      use Sub, only: dot, g2ij, write_zprof_once
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      type (pencil_case) :: p
+!!
+!      real, dimension (nx,3) :: glnThcond,glhc,glnchit_prof,gss1,glchit_aniso_prof
+!      real, dimension (nx) :: chix
+!      real, dimension (nx) :: g2,del2ss1
+!      real, dimension (nx) :: hcond,chit_prof,chit_aniso_prof
+!      real, dimension (nx,3,3) :: tmp
+!      real :: s2,c2,sc
+!      integer :: j,ix
+!!
+!      save :: hcond, glhc, chit_prof, glnchit_prof, chit_aniso_prof, glchit_aniso_prof
 !
-!  In this routine general heat conduction profiles are being provided.
-!
-!  17-sep-01/axel: coded
-!  14-jul-05/axel: corrected expression for chi_t diffusion.
-!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
-!
-      use Debug_IO, only: output_pencil
-      use EquationOfState, only: gamma, gamma_m1
-      use Sub, only: dot, g2ij, write_zprof_once
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      real, dimension (nx,3) :: glnThcond,glhc,glnchit_prof,gss1,glchit_aniso_prof
-      real, dimension (nx) :: chix
-      real, dimension (nx) :: g2,del2ss1
-      real, dimension (nx) :: hcond,chit_prof,chit_aniso_prof
-      real, dimension (nx,3,3) :: tmp
-      real :: s2,c2,sc
-      integer :: j,ix
-!
-      save :: hcond, glhc, chit_prof, glnchit_prof, chit_aniso_prof, glchit_aniso_prof
-!
-      intent(inout) :: p
-!
-!  Heat conduction / entropy diffusion
-!
-      if (hcond0 == 0) then
-        chix = 0.0
-        hcond = 0.0
-        glhc = 0.0
-      else
-        if (headtt) then
-          print*,'calc_heatcond_Kprof: hcond0=',hcond0
-          print*,'calc_heatcond_Kprof: lgravz=',lgravz
-!          if (lgravz) print*,'calc_heatcond_Kprof: Fbot,Ftop=',Fbot,Ftop
-        endif
-!
-!  Assume that a vertical K profile is given if lgravz is true.
-!
+!      intent(inout) :: p
+!!
+!!  Heat conduction / entropy diffusion
+!!
+!      if (hcond0 == 0) then
+!        chix = 0.0
+!        hcond = 0.0
+!        glhc = 0.0
+!      else
+!        if (headtt) then
+!          print*,'calc_heatcond_Kprof: hcond0=',hcond0
+!          print*,'calc_heatcond_Kprof: lgravz=',lgravz
+!!          if (lgravz) print*,'calc_heatcond_Kprof: Fbot,Ftop=',Fbot,Ftop
+!        endif
+!!
+!!  Assume that a vertical K profile is given if lgravz is true.
+!!
 !        if (lgravz) then
-!
-! DM+GG Added routines to compute hcond and gradloghcond_zprof.
-! When called for the first time calculate z dependent profile of
-! heat conductivity. For all other times use this stored arrays.
-! We also write the z dependent profile of heatconduction and
-! gradient-logarithm of heat conduction.
-!
+!!
+!! DM+GG Added routines to compute hcond and gradloghcond_zprof.
+!! When called for the first time calculate z dependent profile of
+!! heat conductivity. For all other times use this stored arrays.
+!! We also write the z dependent profile of heatconduction and
+!! gradient-logarithm of heat conduction.
+!!
 !          if (lfirstcall_hcond.and.lfirstpoint) then
 !            if (.not.lhcond_global) then
 !              call get_gravz_heatcond()
@@ -522,7 +528,7 @@ module Conductivity
 !                glnchit_prof(ix,:)=gradlogchit_zprof(n,:)
 !              enddo
 !          endif
-! If not gravz, using or not hcond_global
+!! If not gravz, using or not hcond_global
 !        elseif (lgravx) then
 !          if (lfirstcall_hcond.and.lfirstpoint) then
 !            if (.not.lhcond_global) then
@@ -554,7 +560,7 @@ module Conductivity
 !            call gradloghcond(glhc,p)
 !          endif
 !          if (chi_t/=0.0) then
-!            call chit_profile(chit_prof)
+!           call chit_profile(chit_prof)
 !            call gradlogchit_profile(glnchit_prof)
 !          endif
 !          if (chit_aniso/=0.0) then
@@ -562,42 +568,42 @@ module Conductivity
 !            call gradlogchit_aniso_profile(glchit_aniso_prof)
 !          endif
 !        endif
-!
-!  Diffusion of the form
-!
-!  rho*T*Ds/Dt = ... + nab.(K*gradT)
-!        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
-!
-!  where chix = K/(cp rho) is needed for diffus_chi calculation.
-!
-        chix = p%rho1*hcond*p%cp1
-        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-        call dot(p%glnTT,glnThcond,g2)
-          !if (pretend_lnTT) then
-          !  thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
-          !else
-          p%hcond = p%hcond + p%rho1*hcond * (p%del2lnTT + g2)
-          !endif
-      endif  ! hcond0/=0
-!
-!  Write out hcond z-profile (during first time step only).
-!
-!DM+GG This is done earlier now. The profile writing done earlier in this
-! code also includes the ghost zones. This commented line may stay longer
-! than the ones above.
-!      if (lgravz) call write_zprof('hcond',hcond)
-!
-!  Write radiative flux array.
-!
+!!
+!!  Diffusion of the form
+!!
+!!  rho*T*Ds/Dt = ... + nab.(K*gradT)
+!!        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
+!!
+!!  where chix = K/(cp rho) is needed for diffus_chi calculation.
+!!
+!        chix = p%rho1*hcond*p%cp1
+!        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+!        call dot(p%glnTT,glnThcond,g2)
+!          !if (pretend_lnTT) then
+!          !  thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
+!          !else
+!          p%hcond = p%hcond + p%rho1*hcond * (p%del2lnTT + g2)
+!          !endif
+!      endif  ! hcond0/=0
+!!
+!!  Write out hcond z-profile (during first time step only).
+!!
+!!DM+GG This is done earlier now. The profile writing done earlier in this
+!! code also includes the ghost zones. This commented line may stay longer
+!! than the ones above.
+!!      if (lgravz) call write_zprof('hcond',hcond)
+!!
+!!  Write radiative flux array.
+!!
 !      if (l1davgfirst) then
 !        call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz_Kprof)
 !        call yzsum_mn_name_x(-hcond*p%TT*p%glnTT(:,1),idiag_fradmx)
 !        call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
 !        call yzsum_mn_name_x(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbmx)
 !      endif
-!
-!  2d-averages
-!
+!!
+!!  2d-averages
+!!
 !      if (l2davgfirst) then
 !        if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
 !        if (idiag_fturbxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
@@ -608,12 +614,12 @@ module Conductivity
 !            call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
 !            (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2)),idiag_fturbthxy)
 !      endif
-!
-!  "Turbulent" entropy diffusion.
-!
-!  Should only be present if g.gradss > 0 (unstable stratification).
-!  But this is not curently being checked.
-!
+!!
+!!  "Turbulent" entropy diffusion.
+!!
+!!  Should only be present if g.gradss > 0 (unstable stratification).
+!!  But this is not curently being checked.
+!!
 !      if (chi_t/=0.) then
 !        if (headtt) then
 !          print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
@@ -622,9 +628,9 @@ module Conductivity
 !                'hcond0 and chi_t combined do not seem to make sense')
 !          endif
 !        endif
-!
-!  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
-!
+!!
+!!  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
+!!
 !        if (lcalc_ssmean) then
 !          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
 !          del2ss1=p%del2ss-del2ssmz(n-n1+1)
@@ -639,14 +645,14 @@ module Conductivity
 !          p%hcond=p%hcond+chi_t*g2
 !        endif
 !      endif
-!
-!  Turbulent entropy diffusion with rotational anisotropy:
-!    chi_ij = chi_t*(delta_{ij} + chit_aniso*Om_i*Om_j),
-!  where chit_aniso=chi_Om/chi_t. The first term is the isotropic part,
-!  which is already dealt with above. The current formulation works only
-!  in spherical coordinates. Here we assume axisymmetry so all off-diagonals
-!  involving phi-indices are neglected.
-!
+!!
+!!  Turbulent entropy diffusion with rotational anisotropy:
+!!    chi_ij = chi_t*(delta_{ij} + chit_aniso*Om_i*Om_j),
+!!  where chit_aniso=chi_Om/chi_t. The first term is the isotropic part,
+!!  which is already dealt with above. The current formulation works only
+!!  in spherical coordinates. Here we assume axisymmetry so all off-diagonals
+!!  involving phi-indices are neglected.
+!!
 !      if (chit_aniso/=0.0 .and. lspherical_coords) then
 !        if (headtt) then
 !          print*, 'calc_headcond: '// &
@@ -661,9 +667,9 @@ module Conductivity
 !        sc=sinth(m)*costh(m)
 !        c2=costh(m)**2
 !        s2=sinth(m)**2
-!
-!  Possibility to use a simplified version where only chi_{theta r} is
-!  affected by rotation (cf. Brandenburg, Moss & Tuominen 1992).
+!!
+!!  Possibility to use a simplified version where only chi_{theta r} is
+!!  affected by rotation (cf. Brandenburg, Moss & Tuominen 1992).
 !
 !        if (lchit_aniso_simplified) then
 !
@@ -672,9 +678,9 @@ module Conductivity
 !              ((1.-3.*c2)*r1_mn*p%gss(:,1) + &
 !              (-sc*tmp(:,1,2))+(p%glnrho(:,2)+p%glnTT(:,2))*(-sc*p%gss(:,1)))
 !        else
-!
-!  Otherwise use the full formulation.
-!
+!!
+!!  Otherwise use the full formulation.
+!!
 !          p%hcond=p%hcond+chi_t*chit_aniso* &
 !              ((glchit_aniso_prof(:,1)*c2+chit_aniso_prof/x(l1:l2))*p%gss(:,1)+ &
 !              sc*(chit_aniso_prof/x(l1:l2)-glnchit_prof(:,1))*p%gss(:,2))
@@ -687,16 +693,15 @@ module Conductivity
 !
 !        endif
 !      endif
-!
-!
-!  Check maximum diffusion from thermal diffusion.
-!  NB: With heat conduction, the second-order term for entropy is
-!    gamma*chix*del2ss.
-!
-      if (lfirst.and.ldt) &
-        p%diffus_chi = p%diffus_chi + (gamma*chix+chi_t)*dxyz_2
-!
-    endsubroutine calc_heatcond_Kprof
+!!
+!!  Check maximum diffusion from thermal diffusion.
+!!  NB: With heat conduction, the second-order term for entropy is
+!!    gamma*chix*del2ss.
+!!
+!      if (lfirst.and.ldt) &
+!        p%diffus_chi = p%diffus_chi + (gamma*chix+chi_t)*dxyz_2
+!!
+!    endsubroutine calc_heatcond_Kprof
 !***********************************************************************
     subroutine calc_heatcond_ADI(f)
 !

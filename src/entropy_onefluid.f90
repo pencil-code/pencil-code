@@ -39,15 +39,15 @@ module Energy
   logical :: lupw_ss=.false.
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.true.
-  logical :: ladvection_entropy=.true.
+  logical :: ladvection_energy=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=intlen) :: iinit_str
 !
   namelist /entropy_init_pars/ &
-      initss, ss_const, T0, beta_glnrho_global, ladvection_entropy
+      initss, ss_const, T0, beta_glnrho_global, ladvection_energy
 !
   namelist /entropy_run_pars/ &
-      lupw_ss, beta_glnrho_global, ladvection_entropy
+      lupw_ss, beta_glnrho_global, ladvection_energy
 !
   integer :: idiag_dtc=0,idiag_ethm=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_ssmphi=0
@@ -248,9 +248,8 @@ module Energy
         lpenc_requested(i_cp1tilde)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_epsd)=.true.
       endif
-      if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
+      if (ladvection_energy) lpenc_requested(i_ugss)=.true.
       if (pretend_lnTT) lpenc_requested(i_divu)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_cp1tilde)=.true.
 !
@@ -441,7 +440,7 @@ module Energy
           do j=1,3
             ju=j+iuu-1
             df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-                1/(1+p%epsd(:,1))*p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
+                 p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
           enddo
 !
 !  Add pressure force from global density gradient.
@@ -452,7 +451,7 @@ module Energy
             if (headtt) print*, 'dee_dt: adding global pressure gradient force'
               do j=1,3
                 df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-                    - 1/(1+p%epsd(:,1))*p%cs2*beta_glnrho_scaled(j)
+                    - p%cs2*beta_glnrho_scaled(j)
               enddo
             endif
           endif
@@ -460,7 +459,7 @@ module Energy
 !
 !  Advection term.
 !
-      if (ladvection_entropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+      if (ladvection_energy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
 !
 !  Calculate viscous contribution to entropy.
 !
@@ -610,7 +609,7 @@ module Energy
 !
     endsubroutine rprint_energy
 !***********************************************************************
-    subroutine fill_farray_pressure(f)
+    subroutine fill_farray_pressure_energy(f)
 !
 !  Fill f array with the pressure, to be able to calculate pressure gradient
 !  directly from the pressure.
@@ -621,9 +620,9 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine fill_farray_pressure
+    endsubroutine fill_farray_pressure_energy
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(umax)
+    subroutine dynamical_thermal_diffusion_energy(umax)
 !
 !  Dummy subroutine
 !
@@ -632,7 +631,7 @@ module Energy
       call keep_compiler_quiet(umax)
       call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
 !
-    endsubroutine dynamical_thermal_diffusion
+    endsubroutine dynamical_thermal_diffusion_energy
 !***********************************************************************
     subroutine impose_energy_floor(f)
 !
@@ -652,7 +651,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine
+    endsubroutine split_update_energy
 !***********************************************************************
     subroutine expand_shands_energy()
 !
