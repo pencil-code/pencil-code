@@ -177,7 +177,7 @@ module Energy
 !
     endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine init_ee(f)
+    subroutine init_ss(f)
 !
 !  Initialise entropy; called from start.f90.
 !
@@ -232,7 +232,7 @@ module Energy
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
-    endsubroutine init_ee
+    endsubroutine init_ss
 !***********************************************************************
     subroutine pencil_criteria_energy()
 !
@@ -404,11 +404,11 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !**********************************************************************
-    subroutine dee_dt(f,df,p)
+    subroutine dss_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation.
 !
-      use Conductivity, only: heat_conductivity
+!      use Conductivity, only: heat_conductivity
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Special, only: special_calc_energy
@@ -428,7 +428,7 @@ module Energy
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'dee_dt: SOLVE dss_dt'
+      if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
 !
       if (lhydro) then
@@ -448,7 +448,7 @@ module Energy
 !  here linearised rho and P independently.
 !
           if (maxval(abs(beta_glnrho_global))/=0.0) then
-            if (headtt) print*, 'dee_dt: adding global pressure gradient force'
+            if (headtt) print*, 'dss_dt: adding global pressure gradient force'
               do j=1,3
                 df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
                     - p%cs2*beta_glnrho_scaled(j)
@@ -467,7 +467,7 @@ module Energy
 !
 !  Thermal conduction.
 !
-      if (lconductivity) call heat_conductivity(f,df,p)
+!      if (lconductivity) call heat_conductivity(f,df,p)
 !
 !  Entry possibility for "personal" entries.
 !
@@ -476,7 +476,7 @@ module Energy
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dee_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Calculate entropy related diagnostics.
 !
@@ -504,7 +504,7 @@ module Energy
         call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
-    endsubroutine dee_dt
+    endsubroutine dss_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !
@@ -609,7 +609,7 @@ module Energy
 !
     endsubroutine rprint_energy
 !***********************************************************************
-    subroutine fill_farray_pressure_energy(f)
+    subroutine fill_farray_pressure(f)
 !
 !  Fill f array with the pressure, to be able to calculate pressure gradient
 !  directly from the pressure.
@@ -620,7 +620,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine fill_farray_pressure_energy
+    endsubroutine fill_farray_pressure
 !***********************************************************************
     subroutine impose_energy_floor(f)
 !
@@ -647,5 +647,15 @@ module Energy
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine dynamical_thermal_diffusion(umax)
+!
+!  Dummy subroutine
+!
+      real, intent(in) :: umax
+!
+      call keep_compiler_quiet(umax)
+!
+    endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
 endmodule Energy
