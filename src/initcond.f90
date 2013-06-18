@@ -58,7 +58,7 @@ module Initcond
   public :: couette, couette_rings
   public :: strange,phi_siny_over_r2
   public :: ferriere_uniform_x, ferriere_uniform_y
-  public :: rotblob, rotblob_yz, pre_stellar_cloud
+  public :: rotblob, rotblob_yz, pre_stellar_cloud, dipole, dipole_tor
   public :: read_outside_scal_array, read_outside_vec_array
 !
   interface posnoise            ! Overload the `posnoise' function
@@ -5236,6 +5236,57 @@ module Initcond
       endif
 !
     endsubroutine rotblob_yz
+!***********************************************************************
+    subroutine dipole(f,ix,amp)
+!
+!  initial vector potential for a
+!  purely poloidal axisymmetric field \vec{B} \sim [f_r \cos\theta, f_\theta \sin\theta, 0]
+!
+!  18-jun-13/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, rpart
+
+      integer :: m,l
+ 
+      if (lspherical_coords) then
+        do m = m1,m2
+          do l = l1,l2
+            rpart = amp*(x(l1)-x(l))*(x(l2)-x(l))
+            f(l,m,:,ix:ix+1) = 0.
+            f(l,m,:,ix+2)    = rpart*sin(y(m))
+          enddo
+        enddo
+      endif
+!
+    endsubroutine dipole
+!***********************************************************************
+    subroutine dipole_tor(f,ix,amp)
+!
+!  initial vector potential for a
+!  purely toroidal axisymmetric field B_\phi \sim \sin\theta
+!
+!  18-jun-13/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, rpart
+
+      integer :: m,l
+ 
+      if (lspherical_coords) then
+        do m = m1,m2
+          do l = l1,l2
+            rpart = amp*(x(l1)-x(l))*(x(l2)-x(l))
+            f(l,m,:,ix)   = 2.*rpart*cos(y(m))
+            f(l,m,:,ix+1) = rpart*sin(y(m))
+            f(l,m,:,ix+2) = 0.
+          enddo
+        enddo
+      endif
+!
+    endsubroutine dipole_tor
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &
