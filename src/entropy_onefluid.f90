@@ -177,7 +177,7 @@ module Energy
 !
     endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_ee(f)
 !
 !  Initialise entropy; called from start.f90.
 !
@@ -232,7 +232,7 @@ module Energy
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
-    endsubroutine init_ss
+    endsubroutine init_ee
 !***********************************************************************
     subroutine pencil_criteria_energy()
 !
