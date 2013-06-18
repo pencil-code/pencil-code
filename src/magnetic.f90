@@ -1416,6 +1416,8 @@ module Magnetic
         case ('coswave-Az-ky'); call coswave(amplaa(j),f,iaz,ky=ky_aa(j))
         case ('coswave-Az-kz'); call coswave(amplaa(j),f,iaz,kz=kz_aa(j))
         case ('sinwave-Ay-kz'); call sinwave_phase(f,iay,amplaa(j),kx_aa(j),ky_aa(j),kz_aa(j),phasez_aa(j))
+        case ('dipole'); call dipole(f,iax,amplaa(j))
+        case ('dipole_tor'); call dipole_tor(f,iax,amplaa(j))
         case ('linear-zx')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iay)=-0.5*amplaa(j)*z(n)**2/Lxyz(3)
