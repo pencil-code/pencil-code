@@ -39,7 +39,6 @@ module Register
       use Density,          only: register_density
       use Dustdensity,      only: register_dustdensity
       use Dustvelocity,     only: register_dustvelocity
-      use Energy,          only: register_entropy
       use Energy,           only: register_energy
       use EquationOfState,  only: register_eos
       use Forcing,          only: register_forcing
@@ -127,7 +126,7 @@ module Register
       call register_selfgravity           !(why not connected with gravity)
       call register_density
       call register_forcing
-      call register_entropy
+      call register_energy
       call register_energy
       call register_conductivity
       call register_magnetic
@@ -203,7 +202,6 @@ module Register
       use Diagnostics,      only: initialize_prints
       use Dustdensity,      only: initialize_dustdensity
       use Dustvelocity,     only: initialize_dustvelocity
-      use Energy,          only: initialize_entropy
       use Energy,           only: initialize_energy
       use EquationOfState,  only: initialize_eos, units_eos
       use Forcing,          only: initialize_forcing
@@ -374,7 +372,6 @@ module Register
       call initialize_density(f,lstarting)
       call initialize_hydro(f,lstarting)
       call initialize_forcing(lstarting)
-      call initialize_entropy(f,lstarting)
       call initialize_energy(f,lstarting)
       call initialize_conductivity(f,lstarting)
       call initialize_magnetic(f,lstarting)
@@ -547,7 +544,6 @@ module Register
       use Forcing,         only: pencil_criteria_forcing
       use Shock,           only: pencil_criteria_shock
       use Viscosity,       only: pencil_criteria_viscosity
-      use Energy,         only: pencil_criteria_entropy
       use Energy,          only: pencil_criteria_energy
       use Conductivity,    only: pencil_criteria_conductivity
       use Gravity,         only: pencil_criteria_gravity
@@ -582,7 +578,6 @@ module Register
       call pencil_criteria_hydro()
       call pencil_criteria_shock()
       call pencil_criteria_viscosity()
-      call pencil_criteria_entropy()
       call pencil_criteria_energy()
       call pencil_criteria_conductivity()
       call pencil_criteria_gravity()
@@ -630,7 +625,6 @@ module Register
       use Forcing, only: pencil_interdep_forcing
       use Shock, only: pencil_interdep_shock
       use Viscosity, only: pencil_interdep_viscosity
-      use Energy, only: pencil_interdep_entropy
       use Energy, only: pencil_interdep_energy
       use Conductivity, only: pencil_interdep_conductivity
       use Gravity, only: pencil_interdep_gravity
@@ -665,7 +659,6 @@ module Register
       call pencil_interdep_hydro(lpencil_in)
       call pencil_interdep_shock(lpencil_in)
       call pencil_interdep_viscosity(lpencil_in)
-      call pencil_interdep_entropy(lpencil_in)
       call pencil_interdep_energy(lpencil_in)
       call pencil_interdep_conductivity(lpencil_in)
       call pencil_interdep_gravity(lpencil_in)
@@ -756,7 +749,6 @@ module Register
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
-      use Energy,         only: rprint_entropy
       use Energy,          only: rprint_energy
       use Conductivity,    only: rprint_conductivity
       use Magnetic,        only: rprint_magnetic
@@ -1001,7 +993,6 @@ module Register
       call rprint_hydro           (lreset,LWRITE=lroot)
       call rprint_density         (lreset,LWRITE=lroot)
       call rprint_forcing         (lreset,LWRITE=lroot)
-      call rprint_entropy         (lreset,LWRITE=lroot)
       call rprint_energy          (lreset,LWRITE=lroot)
       call rprint_conductivity    (lreset,LWRITE=lroot)
       call rprint_magnetic        (lreset,LWRITE=lroot)
@@ -1044,7 +1035,7 @@ module Register
 ! 
       use Cdata
       use Diagnostics
-      use Energy,  only: expand_shands_entropy
+      use Energy,  only: expand_shands_energy
       use Hydro,    only: expand_shands_hydro
       use Magnetic, only: expand_shands_magnetic
 !
@@ -1088,7 +1079,7 @@ module Register
 !
       if (lhydro                  ) call expand_shands_hydro()
       if (lmagnetic               ) call expand_shands_magnetic()
-      if (lentropy.or.ltemperature) call expand_shands_entropy()
+      if (lentropy.or.ltemperature) call expand_shands_energy()
 !
 !  phi-averages
 !

@@ -168,7 +168,7 @@ module Equ
 !
       call impose_density_floor(f)
       call impose_velocity_ceiling(f)
-      call impose_entropy_floor(f)
+      call impose_energy_floor(f)
       call impose_dustdensity_floor(f)
 !
 !  Apply global boundary conditions to particle positions and communicate
@@ -311,7 +311,7 @@ module Equ
       if (lhydro)                 call calc_lhydro_pars(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
 !--   if (lmagnetic)              call magnetic_after_boundary(f)
-      if (lentropy)               call calc_lentropy_pars(f)
+      if (lentropy)               call calc_lenergy_pars(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)
@@ -504,7 +504,7 @@ module Equ
         if (lviscosity)       call calc_pencils_viscosity(f,p)
         if (lforcing_cont)    call calc_pencils_forcing(f,p)
                               call calc_pencils_energy(f,p)
-                              call calc_pencils_entropy(f,p)
+                              call calc_pencils_energy(f,p)
         if (llorenz_gauge)    call calc_pencils_lorenz_gauge(f,p)
         if (lmagnetic)        call calc_pencils_magnetic(f,p)
         if (lpolymer)         call calc_pencils_polymer(f,p)
@@ -533,7 +533,7 @@ module Equ
 !
         call duu_dt(f,df,p)
         call dlnrho_dt(f,df,p)
-        call dee_dt(f,df,p)
+!        call dee_dt(f,df,p)
         call dss_dt(f,df,p)
 !
 !  Magnetic field evolution

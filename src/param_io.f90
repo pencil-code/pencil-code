@@ -276,7 +276,7 @@ module Param_IO
       if (ierr/=0) call sample_startpars('poisson_init_pars',ierr)
       rewind(unit)
 !
-      call read_entropy_init_pars(unit,IOSTAT=ierr)
+      call read_energy_init_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_startpars('entropy_init_pars',ierr)
       rewind(unit)
 !
@@ -521,7 +521,6 @@ module Param_IO
         call write_gravity_init_pars(unit)
         call write_selfgravity_init_pars(unit)
         call write_poisson_init_pars(unit)
-        call write_entropy_init_pars(unit)
         call write_energy_init_pars(unit)
         call write_magnetic_init_pars(unit)
         call write_lorenz_gauge_init_pars(unit)
@@ -618,7 +617,7 @@ module Param_IO
       if (ierr/=0) call sample_runpars('poisson_run_pars',ierr)
       rewind(unit)
 !
-      call read_entropy_run_pars(unit,IOSTAT=ierr)
+      call read_energy_run_pars(unit,IOSTAT=ierr)
       if (ierr/=0) call sample_runpars('entropy_run_pars',ierr)
       rewind(unit)
 !
@@ -878,7 +877,6 @@ module Param_IO
         call write_gravity_run_pars(unit)
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
-        call write_entropy_run_pars(unit)
         call write_energy_run_pars(unit)
         call write_conductivity_run_pars(unit)
         call write_magnetic_run_pars(unit)
@@ -1083,7 +1081,6 @@ module Param_IO
         call write_gravity_init_pars(unit)
         call write_selfgravity_init_pars(unit)
         call write_poisson_init_pars(unit)
-        call write_entropy_init_pars(unit)
         call write_energy_init_pars(unit)
         call write_magnetic_init_pars(unit)
         call write_lorenz_gauge_init_pars(unit)
@@ -1169,8 +1166,6 @@ module Param_IO
       rewind(unit)
       call read_poisson_init_pars(unit)
       rewind(unit)
-      call read_entropy_init_pars(unit)
-      rewind(unit)
       call read_energy_init_pars(unit)
       rewind(unit)
       call read_magnetic_init_pars(unit)
@@ -1251,7 +1246,6 @@ module Param_IO
         call write_gravity_run_pars(unit)
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
-        call write_entropy_run_pars(unit)
         call write_energy_run_pars(unit)
         call write_conductivity_run_pars(unit)
         call write_magnetic_run_pars(unit)

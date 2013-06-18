@@ -79,7 +79,7 @@ module Slices
       use Dustdensity,     only: get_slices_dustdensity
       use Dustvelocity,    only: get_slices_dustvelocity
       use EquationOfState, only: get_slices_eos
-      use Energy,         only: get_slices_entropy
+      use Energy,          only: get_slices_energy
       use Hydro,           only: get_slices_hydro
       use Interstellar,    only: get_slices_interstellar
       use Magnetic,        only: get_slices_magnetic
@@ -134,7 +134,7 @@ module Slices
         if (lanelastic)    call get_slices_pressure    (f,slices)
         if (ldustdensity)  call get_slices_dustdensity (f,slices)
         if (ldustvelocity) call get_slices_dustvelocity(f,slices)
-        if (lenergy)       call get_slices_entropy     (f,slices)
+        if (lenergy)       call get_slices_energy      (f,slices)
         if (leos)          call get_slices_eos         (f,slices)
         if (lhydro)        call get_slices_hydro       (f,slices)
         if (linterstellar) call get_slices_interstellar(f,slices)
