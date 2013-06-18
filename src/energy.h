@@ -10,7 +10,6 @@
   public :: pencil_criteria_energy, pencil_interdep_energy
   public :: calc_pencils_energy
   public :: fill_farray_pressure
-  public :: dynamical_thermal_diffusion
   public :: impose_energy_floor
   public :: split_update_energy
   public :: expand_shands_energy

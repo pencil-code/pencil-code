@@ -196,17 +196,6 @@ module Energy
 !
     endsubroutine expand_shands_energy
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(umax)
-!
-!  Dummy subroutine
-!
-      real, intent(in) :: umax
-!
-      call keep_compiler_quiet(umax)
-      call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
-!
-    endsubroutine dynamical_thermal_diffusion
-!***********************************************************************
     subroutine rprint_energy(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant to entropy.
