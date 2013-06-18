@@ -127,7 +127,6 @@ module Register
       call register_density
       call register_forcing
       call register_energy
-      call register_energy
       call register_conductivity
       call register_magnetic
       call register_lorenz_gauge          !(should go under magnetic)
