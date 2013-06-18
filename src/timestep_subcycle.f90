@@ -493,13 +493,12 @@ module Timestep
       if (B_ext(3)/=0.0) p%bb(:,3)=p%bb(:,3)+B_ext(3)
     endif
 !
-! b2 (default is that B_ext is not included), but this can be changed
-! by setting luse_Bext_in_b2=.true.
+!  b2 now (since 18 June 2013) includes B_ext by default.
 !
     if (luse_Bext_in_b2) then
-    if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+      if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
     else
-    if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
+      if (lpencil(i_b2)) call dot2_mn(p%bbb,p%b2)
     endif
 ! bunit
     quench = 1.0/max(tini,sqrt(p%b2))
