@@ -3207,8 +3207,8 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff, g2, chit_prof, quench
-      real, dimension (nx,3) :: Bk_Bki, glnchit, glnchit_prof
+      real, dimension (nx) :: thdiff, g2, chit_prof
+      real, dimension (nx,3) :: glnchit_prof
 !
       intent(inout) :: df
 !
@@ -4317,7 +4317,6 @@ module Entropy
 !
       real, dimension (nx) :: heat, TT_drive
       real :: profile_buffer
-      integer :: i
 !
       intent(in) :: p
       intent(inout) :: Hmax,df
