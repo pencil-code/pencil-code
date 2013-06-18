@@ -975,7 +975,7 @@ module Energy
 !
     endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_energy(f)
 !
 !  Initial condition for entropy.
 !
@@ -1031,7 +1031,7 @@ module Energy
             call blob_radeq(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
           case ('isothermal'); call isothermal_entropy(f,T0)
           case ('isothermal_lnrho_ss')
-            print*, 'init_ss: Isothermal density and entropy stratification'
+            print*, 'init_energy: Isothermal density and entropy stratification'
             call isothermal_lnrho_ss(f,T0,rho0)
           case ('hydrostatic-isentropic')
             call hydrostatic_isentropic(f,lnrho_bot,ss_const)
@@ -1067,13 +1067,13 @@ module Energy
           case ('mixinglength')
              call mixinglength(mixinglength_flux,f)
              hcond0=-mixinglength_flux*(mpoly0+1.)*gamma_m1*gamma1/gravz
-             print*,'init_ss : Fbot, hcond0=', Fbot, hcond0
+             print*,'init_energy : Fbot, hcond0=', Fbot, hcond0
           case ('sedov')
-            if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
+            if (lroot) print*,'init_energy: sedov - thermal background with gaussian energy burst'
             call blob(thermal_peak,f,iss,radius_ss, &
                 center1_x,center1_y,center1_z)
           case ('sedov-dual')
-            if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
+            if (lroot) print*,'init_energy: sedov - thermal background with gaussian energy burst'
             call blob(thermal_peak,f,iss,radius_ss, &
                 center1_x,center1_y,center1_z)
             call blob(thermal_peak,f,iss,radius_ss, &
@@ -1084,7 +1084,7 @@ module Energy
 !
 !  ss = - ln(rho/rho0)
 !
-            if (lroot) print*,'init_ss: isobaric stratification'
+            if (lroot) print*,'init_energy: isobaric stratification'
             if (pp_const==0.) then
               f(:,:,:,iss) = -(f(:,:,:,ilnrho)-lnrho0)
             else
@@ -1103,10 +1103,10 @@ module Energy
 !
 !  ss = const.
 !
-            if (lroot) print*,'init_ss: isentropic stratification'
+            if (lroot) print*,'init_energy: isentropic stratification'
             f(:,:,:,iss)=0.
             if (ampl_ss/=0.) then
-              print*, 'init_ss: put bubble: radius_ss,ampl_ss=', &
+              print*, 'init_energy: put bubble: radius_ss,ampl_ss=', &
                   radius_ss, ampl_ss
               do n=n1,n2; do m=m1,m2
                 tmp=x(l1:l2)**2+y(m)**2+z(n)**2
@@ -1118,7 +1118,7 @@ module Energy
 !
 !  Linear profile of ss, centered around ss=0.
 !
-            if (lroot) print*,'init_ss: linear entropy profile'
+            if (lroot) print*,'init_energy: linear entropy profile'
             do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,iss) = grads0*z(n)
             enddo; enddo
@@ -1155,7 +1155,7 @@ module Energy
 !
 !  Make sure init_lnrho (or start.in) has already set cs2cool.
 !
-                  if (cs2cool==0.0) call fatal_error('init_ss', &
+                  if (cs2cool==0.0) call fatal_error('init_energy', &
                       'inconsistency - cs2cool ca not be 0')
                   ss_ext = 0.0 + log(cs2cool/cs2_ext)
                   where (pot <= pot_ext) ! isentropic for r<r_ext
@@ -1175,7 +1175,7 @@ module Energy
 !  cs0, rho0 and ss0=0 refer to height z=zref
 !
             if (lroot) print*, &
-                'init_ss: piecewise polytropic vertical stratification (ss)'
+                'init_energy: piecewise polytropic vertical stratification (ss)'
 !
             cs2int = cs0**2
             ss0 = 0.              ! reference value ss0 is zero
@@ -1193,7 +1193,7 @@ module Energy
 !  Piecewise polytropic convective disc.
 !  cs0, rho0 and ss0=0 refer to height z=zref.
 !
-            if (lroot) print*, 'init_ss: piecewise polytropic disc'
+            if (lroot) print*, 'init_energy: piecewise polytropic disc'
 !
             ztop = xyz0(3)+Lxyz(3)
             cs2int = cs0**2
@@ -1213,7 +1213,7 @@ module Energy
 !  Polytropic stratification.
 !  cs0, rho0 and ss0=0 refer to height z=zref.
 !
-            if (lroot) print*,'init_ss: polytropic vertical stratification'
+            if (lroot) print*,'init_energy: polytropic vertical stratification'
 !
             cs20 = cs0**2
             ss0 = 0.             ! reference value ss0 is zero
@@ -1229,27 +1229,27 @@ module Energy
 !
 !  Radial temperature profiles for spherical shell problem.
 !
-            if (lroot) print*,'init_ss: kws temperature in spherical shell'
+            if (lroot) print*,'init_energy: kws temperature in spherical shell'
             call shell_ss(f)
           case ('geo-benchmark')
 !
 !  Radial temperature profiles for spherical shell problem.
 !
-            if (lroot) print*, 'init_ss: '// &
+            if (lroot) print*, 'init_energy: '// &
                 'benchmark temperature in spherical shell'
             call shell_ss(f)
           case ('shell_layers')
 !
 !  Radial temperature profiles for spherical shell problem.
 !
-            call information('init_ss', &
+            call information('init_energy', &
                 'two polytropic layers in a spherical shell')
             call shell_ss_layers(f)
           case ('star_heat')
 !
 !  Radial temperature profiles for spherical shell problem.
 !
-            call information('init_ss', &
+            call information('init_energy', &
                 'star_heat: now done in initial_condition_ss')
           case ('cylind_layers')
             call cylind_layers(f)
@@ -1259,7 +1259,7 @@ module Energy
 !
             call layer_ss(f)
           case ('blob_hs')
-            print*, 'init_ss: put blob in hydrostatic equilibrium: '// &
+            print*, 'init_energy: put blob in hydrostatic equilibrium: '// &
                 'radius_ss,ampl_ss=', radius_ss, ampl_ss
             call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
             call blob(-ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
@@ -1271,15 +1271,15 @@ module Energy
 !
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
                 //trim(iinit_str)//'): ',trim(initss(j))
-            call fatal_error('init_ss',errormsg)
+            call fatal_error('init_energy',errormsg)
         endselect
 !
-        if (lroot) print*, 'init_ss: initss('//trim(iinit_str)//') = ', &
+        if (lroot) print*, 'init_energy: initss('//trim(iinit_str)//') = ', &
             trim(initss(j))
 !
       enddo
 !
-      if (lnothing.and.lroot) print*, 'init_ss: nothing'
+      if (lnothing.and.lroot) print*, 'init_energy: nothing'
 !
 !  Add perturbation(s).
 !
@@ -1293,7 +1293,7 @@ module Energy
 !
 !  Hexagonal perturbation.
 !
-        if (lroot) print*, 'init_ss: adding hexagonal perturbation to ss'
+        if (lroot) print*, 'init_energy: adding hexagonal perturbation to ss'
         do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
               + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*x(l1:l2)) &
@@ -1305,7 +1305,7 @@ module Energy
 !  Catch unknown values.
 !
         write (unit=errormsg,fmt=*) 'No such value for pertss:', pertss
-        call fatal_error('init_ss',errormsg)
+        call fatal_error('init_energy',errormsg)
 !
       endselect
 !
@@ -1323,7 +1323,7 @@ module Energy
         enddo; enddo
       endif
 !
-    endsubroutine init_ss
+    endsubroutine init_energy
 !***********************************************************************
     subroutine blob_radeq(ampl,f,i,radius,xblob,yblob,zblob)
 !
@@ -1560,7 +1560,7 @@ module Energy
       real :: zz,lnrho,ss,rho,cs2,dlnrho,dss
       integer :: iz
 !
-      if (headtt) print*,'init_ss : mixinglength stratification'
+      if (headtt) print*,'init_energy : mixinglength stratification'
       if (.not.lgravz) then
         call fatal_error('mixinglength','works only for vertical gravity')
       endif
@@ -1631,7 +1631,7 @@ module Energy
       integer :: iter
       character (len=120) :: wfile
 !
-      if (headtt) print*,'init_ss : mixinglength stratification'
+      if (headtt) print*,'init_energy : mixinglength stratification'
       if (.not.lgravz) then
         call fatal_error('mixinglength','works only for vertical gravity')
       endif
@@ -2643,7 +2643,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine dss_dt(f,df,p)
+    subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation,
 !  ds/dt = -u.grads + [H-C + div(K*gradT) + mu0*eta*J^2 + ...]
@@ -2678,9 +2678,9 @@ module Energy
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
+      if (headtt.or.ldebug) print*,'denergy_dt: SOLVE denergy_dt'
       if (headtt) call identify_bcs('ss',iss)
-      if (headtt) print*,'dss_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
+      if (headtt) print*,'denergy_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
@@ -2690,7 +2690,7 @@ module Energy
       if (lhydro.and.lfirst.and.ldt.and.lreduced_sound_speed) &
            advec_cs2=reduce_cs2*p%cs2*dxyz_2
       if (headtt.or.ldebug) &
-          print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
+          print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes).
@@ -2706,7 +2706,7 @@ module Energy
 !  Add pressure force from global density gradient.
 !
         if (maxval(abs(beta_glnrho_global))/=0.0) then
-          if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+          if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
           do j=1,3
             df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
                 - p%cs2*beta_glnrho_scaled(j)
@@ -3001,7 +3001,7 @@ module Energy
        endif
 !
 !
-    endsubroutine dss_dt
+    endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !
@@ -3828,7 +3828,7 @@ module Energy
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines.
 !
-!  24-aug-09/bing: moved from dss_dt to here
+!  24-aug-09/bing: moved from denergy_dt to here
 !
       use Diagnostics, only: max_mn_name
       use Sub, only: tensor_diffusion_coef, dot, dot2

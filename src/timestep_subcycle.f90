@@ -425,10 +425,10 @@ module Timestep
 !  --------------------------------------------------------
 !
 !  hydro, density, and entropy evolution
-!  Note that pressure gradient is added in dss_dt to momentum,
+!  Note that pressure gradient is added in denergy_dt to momentum,
 !  even if lentropy=.false.
 !
-!!!        call dss_dt(f,df,p)
+!!!        call denergy_dt(f,df,p)
         if (Kpara /= 0.)          call calc_heatcond_tensor(f,df,p)
         if (hcond_grad /= 0.)     call calc_heatcond_glnTT(df,p)
         if (hcond_grad_iso /= 0.) call calc_heatcond_glnTT_iso(df,p)

@@ -298,7 +298,7 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_energy(f)
 !
 !  Initialise thermal energy.
 !
@@ -345,13 +345,13 @@ module Energy
 !
             write(unit=errormsg,fmt=*) 'No such value for initeth(' &
                 //trim(iinit_str)//'): ',trim(initeth(j))
-            call fatal_error('init_ss',errormsg)
+            call fatal_error('init_energy',errormsg)
 !
           endselect
         endif
       enddo
 !
-    endsubroutine init_ss
+    endsubroutine init_energy
 !***********************************************************************
     subroutine pencil_criteria_energy()
 !
@@ -453,7 +453,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine dss_dt(f,df,p)
+    subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of energy equation.
 !
@@ -482,17 +482,17 @@ module Energy
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*, 'dss_dt: solve deth_dt'
+      if (headtt.or.ldebug) print*, 'denergy_dt: solve deth_dt'
       if (headtt) call identify_bcs('eth',ieth)
 !
 !  Sound speed squared.
 !
-      if (headtt) print*, 'dss_dt: cs20=', p%cs2(1)
+      if (headtt) print*, 'denergy_dt: cs20=', p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Add pressure gradient term in momentum equation.
 !
@@ -590,7 +590,7 @@ module Energy
         if (n==iz4_loc) pp_xy4(:,m-m1+1)=p%pp
       endif
 !
-    endsubroutine dss_dt
+    endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !

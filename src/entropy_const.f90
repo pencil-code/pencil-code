@@ -114,7 +114,7 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_energy(f)
 !
 !  initialise energy; called from start.f90
 !  07-nov-2001/wolf: coded
@@ -134,9 +134,9 @@ module Energy
         endselect
       enddo
 !
-    endsubroutine init_ss
+    endsubroutine init_energy
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
+    subroutine denergy_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f90 of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
@@ -168,7 +168,7 @@ module Energy
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
 !
@@ -198,7 +198,7 @@ module Energy
       call keep_compiler_quiet(bb)
       call keep_compiler_quiet(bij)
 !
-    endsubroutine dss_dt
+    endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !

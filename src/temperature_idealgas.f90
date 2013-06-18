@@ -482,11 +482,11 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_energy(f)
 !
 !  Initialise lnTT or TT; called from start.f90.
 !
-!  13-dec-2002/axel+tobi: adapted from init_ss
+!  13-dec-2002/axel+tobi: adapted from init_energy
 !
 !  initialise energy; called from start.f90
 !  07-nov-01/wolf: coded
@@ -610,11 +610,11 @@ module Energy
 !
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initlnTT(j))
-            call fatal_error('init_ss',errormsg)
+            call fatal_error('init_energy',errormsg)
 !
           endselect
 !
-          if (lroot) print*,'init_ss: initss(' &
+          if (lroot) print*,'init_energy: initss(' &
               //trim(iinit_str)//') = ',trim(initlnTT(j))
         endif
       enddo
@@ -623,11 +623,11 @@ module Energy
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
-      if (lnothing.and.lroot) print*,'init_ss: nothing'
+      if (lnothing.and.lroot) print*,'init_energy: nothing'
 !
       if (ltemperature_nolog.and.linitial_log) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
 !
-    endsubroutine init_ss
+    endsubroutine init_energy
 !***********************************************************************
     subroutine pencil_criteria_energy()
 !
@@ -919,7 +919,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine dss_dt(f,df,p)
+    subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of temperature equation.
 !
@@ -958,22 +958,22 @@ module Energy
       if (headtt.or.ldebug) print*, 'SOLVE dlnTT_dt'
       if (headtt) then
         if (ltemperature_nolog) then
-          print*, 'dss_dt: TT,cs2=', p%TT(1), p%cs2(1)
+          print*, 'denergy_dt: TT,cs2=', p%TT(1), p%cs2(1)
           call identify_bcs('TT',iTT)
         else
-          print*, 'dss_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
+          print*, 'denergy_dt: lnTT,cs2=', p%lnTT(1), p%cs2(1)
           call identify_bcs('lnTT',ilnTT)
         endif
       endif
 ! 
 !  Sound speed squared.
 !
-      if (headtt) print*, 'dss_dt: cs20=', p%cs2(1)
+      if (headtt) print*, 'denergy_dt: cs20=', p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Add pressure gradient term in momentum equation.
 !
@@ -1035,7 +1035,7 @@ module Energy
           thdiff=thdiff+chi_hyper3*p%del6lnTT
         endif
         if (lfirst.and.ldt) diffus_chi3=diffus_chi3+chi_hyper3*dxyz_6
-        if (headtt) print*,'dss_dt: chi_hyper3=', chi_hyper3
+        if (headtt) print*,'denergy_dt: chi_hyper3=', chi_hyper3
       endif
 !
       if (lheatc_hyper3_mesh) then
@@ -1046,7 +1046,7 @@ module Energy
         enddo
         if (lfirst.and.ldt) &
             advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
-        if (headtt) print*,'dss_dt: chi_hyper3_mesh=', chi_hyper3_mesh
+        if (headtt) print*,'denergy_dt: chi_hyper3_mesh=', chi_hyper3_mesh
       endif
 !
       if (lheatc_hyper3_polar) then
@@ -1057,7 +1057,7 @@ module Energy
         enddo
         if (lfirst.and.ldt) &
              diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxyz_2
-        if (headtt) print*,'dss_dt: chi_hyper3=', chi_hyper3
+        if (headtt) print*,'denergy_dt: chi_hyper3=', chi_hyper3
       endif
 !
 !  Shock diffusion.
@@ -1095,8 +1095,8 @@ module Energy
 !  Information on the timescales.
 !
       if (lfirst.and.ldt.and.(headtt.or.ldebug)) then
-        print*, 'dss_dt: max(diffus_chi ) =', maxval(diffus_chi)
-        print*, 'dss_dt: max(diffus_chi3) =', maxval(diffus_chi3)
+        print*, 'denergy_dt: max(diffus_chi ) =', maxval(diffus_chi)
+        print*, 'denergy_dt: max(diffus_chi3) =', maxval(diffus_chi3)
       endif
 !
 !  Calculate temperature related diagnostics.
@@ -1207,7 +1207,7 @@ module Energy
         if (n==iz4_loc) pp_xy4(:,m-m1+1)=p%pp
       endif
 !
-    endsubroutine dss_dt
+    endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !
@@ -1292,7 +1292,7 @@ module Energy
       if (.not. ltemperature_nolog) &
         call fatal_error('temperature_idealgas',  &
                          'rad_equil not implemented for lnTT')
-      if (lroot) print*,'init_ss: rad_equil for kappa-mechanism pb'
+      if (lroot) print*,'init_energy: rad_equil for kappa-mechanism pb'
 !
 !  Integrate from top to bottom: z(n2) --> z(n1).
 !
@@ -1690,7 +1690,7 @@ module Energy
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines.
 !
-!  25-aug-09/bing: moved from dss_dt to here
+!  25-aug-09/bing: moved from denergy_dt to here
 !
       use Diagnostics, only: max_mn_name
       use EquationOfState, only: gamma

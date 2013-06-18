@@ -261,7 +261,7 @@ module Energy
 !
     endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_energy(f)
 !
 !  initialise energy; called from start.f90
 !  07-nov-2001/wolf: coded
@@ -316,11 +316,11 @@ module Energy
 !
             write(unit=errormsg,fmt=*) 'No such value for initss(' &
                 //trim(iinit_str)//'): ',trim(initlnTT(j))
-            call fatal_error('init_ss',errormsg)
+            call fatal_error('init_energy',errormsg)
 !
           endselect
 !
-          if (lroot) print*,'init_ss: initss(' &
+          if (lroot) print*,'init_energy: initss(' &
               //trim(iinit_str)//') = ',trim(initlnTT(j))
 !
         endif
@@ -336,9 +336,9 @@ module Energy
 !
       if (ltemperature_nolog) f(:,:,:,iTT)=exp(f(:,:,:,ilnTT))
 !
-      if (lnothing.and.lroot) print*,'init_ss: nothing'
+      if (lnothing.and.lroot) print*,'init_energy: nothing'
 !
-    endsubroutine init_ss
+    endsubroutine init_energy
 !***********************************************************************
     subroutine pencil_criteria_energy()
 !
@@ -494,7 +494,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine dss_dt(f,df,p)
+    subroutine denergy_dt(f,df,p)
 !
 !  calculate right hand side of energy equation
 !  heat condution is currently disabled until old stuff,
@@ -524,17 +524,17 @@ module Energy
 !
 !  Identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
+      if (headtt.or.ldebug) print*,'denergy_dt: SOLVE denergy_dt'
       if (headtt) call identify_bcs('lnTT',ilnTT)
 !
 !  Calculate cs2 in a separate routine
 !
-      if (headtt) print*,'dss_dt: cs2 =', p%cs2(1)
+      if (headtt) print*,'denergy_dt: cs2 =', p%cs2(1)
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
@@ -630,7 +630,7 @@ module Energy
         call xysum_mn_name_z(1/p%mu1,idiag_mumz)
       endif
 !
-    endsubroutine dss_dt
+    endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !

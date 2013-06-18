@@ -528,13 +528,12 @@ module Equ
 !  --------------------------------------------------------
 !
 !  hydro, density, and entropy evolution
-!  Note that pressure gradient is added in dss_dt to momentum,
+!  Note that pressure gradient is added in denergy_dt to momentum,
 !  even if lentropy=.false.
 !
         call duu_dt(f,df,p)
         call dlnrho_dt(f,df,p)
-!        call dee_dt(f,df,p)
-        call dss_dt(f,df,p)
+        call denergy_dt(f,df,p)
 !
 !  Magnetic field evolution
 !

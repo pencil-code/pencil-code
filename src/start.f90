@@ -56,7 +56,7 @@ program start
   use Diagnostics
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
-  use Energy,          only: init_ss
+  use Energy,           only: init_energy
   use EquationOfState
   use FArrayManager,    only: farray_clean_up
   use Filter
@@ -394,7 +394,7 @@ program start
       call init_uu        (f)
       call init_lnrho     (f)
     endif
-    call init_ss        (f)
+    call init_energy    (f)
     call init_aa        (f)
     call init_lorenz_gauge (f)
     call init_poly      (f)

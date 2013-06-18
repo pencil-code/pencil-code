@@ -144,7 +144,7 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_energy(f)
 !
 !  Initialise energy; called from start.f90.
 !
@@ -152,7 +152,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine init_ss
+    endsubroutine init_energy
 !***********************************************************************
     subroutine pencil_criteria_energy()
 !
@@ -259,7 +259,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine dss_dt(f,df,p)
+    subroutine denergy_dt(f,df,p)
 !
 !  Calculate pressure gradient term for isothermal/polytropic equation
 !  of state.
@@ -283,7 +283,7 @@ module Energy
       if (leos.and.ldensity.and.lhydro) then
         if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
         if (headtt.or.ldebug) &
-            print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
+            print*, 'denergy_dt: max(advec_cs2) =', maxval(advec_cs2)
       endif
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
@@ -297,7 +297,7 @@ module Energy
 !  Add pressure force from global density gradient.
 !
         if (any(beta_glnrho_global /= 0.)) then
-          if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+          if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
           do j=1,3
             df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
                 - p%cs2*beta_glnrho_scaled(j)
@@ -334,7 +334,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine dss_dt
+    endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !

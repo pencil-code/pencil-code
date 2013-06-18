@@ -177,7 +177,7 @@ module Energy
 !
     endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine init_ss(f)
+    subroutine init_energy(f)
 !
 !  Initialise entropy; called from start.f90.
 !
@@ -213,7 +213,7 @@ module Energy
             case ('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
             case ('isothermal'); call isothermal_entropy(f,T0)
             case ('isothermal_lnrho_ss')
-              print*, 'init_ss: Isothermal density and entropy stratification'
+              print*, 'init_energy: Isothermal density and entropy stratification'
               call isothermal_lnrho_ss(f,T0,rho0)
             case default
 !
@@ -221,7 +221,7 @@ module Energy
 !
               write(unit=errormsg,fmt=*) 'No such value for initss(' &
                                //trim(iinit_str)//'): ',trim(initss(j))
-              call fatal_error('init_ss',errormsg)
+              call fatal_error('init_energy',errormsg)
           endselect
 !
         endif
@@ -232,7 +232,7 @@ module Energy
 !
       if (linitial_condition) call initial_condition_ss(f)
 !
-    endsubroutine init_ss
+    endsubroutine init_energy
 !***********************************************************************
     subroutine pencil_criteria_energy()
 !
@@ -404,7 +404,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !**********************************************************************
-    subroutine dss_dt(f,df,p)
+    subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation.
 !
@@ -428,7 +428,7 @@ module Energy
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
+      if (headtt.or.ldebug) print*,'denergy_dt: SOLVE denergy_dt'
       if (headtt) call identify_bcs('ss',iss)
 !
       if (lhydro) then
@@ -448,7 +448,7 @@ module Energy
 !  here linearised rho and P independently.
 !
           if (maxval(abs(beta_glnrho_global))/=0.0) then
-            if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+            if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
               do j=1,3
                 df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
                     - p%cs2*beta_glnrho_scaled(j)
@@ -476,7 +476,7 @@ module Energy
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  Calculate entropy related diagnostics.
 !
@@ -504,7 +504,7 @@ module Energy
         call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
-    endsubroutine dss_dt
+    endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
 !
