@@ -11,15 +11,13 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-!! PENCILS PROVIDED
-!! PENCILS PROVIDED
+! PENCILS PROVIDED hcond, diffus_chi
 !
 !***************************************************************
 module Conductivity
 !
   use Cdata
   use Cparam
-  use EquationOfState, only: gamma, gamma_m1, cs20, beta_glnrho_global
   use General, only: keep_compiler_quiet
   use Messages
 !
@@ -289,6 +287,7 @@ module Conductivity
 !
 !  29-sep-02/axel: adapted from calc_heatcond
 !
+      use EquationOfState, only: gamma, gamma_m1
       use Sub, only: dot
 !
       type (pencil_case), intent(inout) :: p
@@ -382,6 +381,7 @@ module Conductivity
 !
 !  18-jun-13/wlad: coded      
 !
+      use EquationOfState, only: gamma
       use Sub, only: dot
 !
       type (pencil_case) :: p
@@ -452,6 +452,7 @@ module Conductivity
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
       use Debug_IO, only: output_pencil
+      use EquationOfState, only: gamma, gamma_m1
       use Sub, only: dot, g2ij, write_zprof_once
 !
       type (pencil_case) :: p
