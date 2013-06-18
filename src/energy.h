@@ -14,4 +14,3 @@
   public :: impose_energy_floor
   public :: split_update_energy
   public :: expand_shands_energy
-  public :: get_slices_energy
