@@ -507,7 +507,7 @@ module Energy
 !
     endsubroutine dee_dt
 !***********************************************************************
-    subroutine calc_lentropy_pars(f)
+    subroutine calc_lenergy_pars(f)
 !
 !  dummy routine
 !
@@ -516,7 +516,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lentropy_pars
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
