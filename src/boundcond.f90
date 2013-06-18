@@ -1433,7 +1433,7 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j
+      integer :: j
       real :: tmp
 !
       select case (topbot)
@@ -2073,7 +2073,7 @@ module Boundcond
       character (len=bclen) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
-      integer :: i,j
+      integer :: j
 !
       select case (topbot)
 !
