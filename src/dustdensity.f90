@@ -216,7 +216,7 @@ module Dustdensity
       use Special, only: set_init_parameters
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (ndustspec) :: Ntot_tmp!, lnds
+!      real, dimension (ndustspec) :: Ntot_tmp, lnds
       integer :: i,j,k
 !      real :: ddsize, ddsize0
       logical :: lnothing
@@ -2522,7 +2522,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr,  dndr_dr2, ff_tmp, ff_tmp0
+      real, dimension (nx,ndustspec) :: dndr_dr, ff_tmp, ff_tmp0
       real, dimension (nx,ndustspec) :: ppsf_full_i
       integer :: k, i !, ind_tmp=6
 !
@@ -2530,7 +2530,7 @@ module Dustdensity
       intent(out) :: dndr_dr
 !
       if (ndustspec<3) then
-        dndr_dr=0.  ! Initialize the "out" array 
+        dndr_dr=0.  ! Initialize the "out" array
         call fatal_error('droplet_redistr', &
              'Number of dust species is smaller than 3')
       else
@@ -2553,20 +2553,20 @@ module Dustdensity
                   *(p%ppwater/p%ppsat-p%ppsf(:,k)/p%ppsat)/dsize(k)
            endif
          enddo
-           call deriv_size(ff_tmp,ff_tmp0,dndr_dr,p)
+           call deriv_size(ff_tmp,dndr_dr,p)
 !
        endif
 !
     endsubroutine droplet_redistr
 !***********************************************************************
-    subroutine deriv_size_(ff,ff0, dff_dr, p)
+    subroutine deriv_size_(ff,dff_dr, p)
 !
 !   Calculation of the derivative of the function ff on the size r
 !
       use Mpicomm, only: stop_it
       use General, only: spline
 
-      real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
+      real, dimension (nx,ndustspec) ::  ff, dff_dr
       type (pencil_case) :: p
       real, dimension (60) ::  x2, S
       integer :: k,i1=1,i2=2,i3=3
@@ -2574,7 +2574,6 @@ module Dustdensity
       integer :: jmax=20, i,j
       real :: rr1=0.,rr2=0.,rr3=0., ff_km1,ff_k,ff_kp1
       real :: nd_km1,nd_k,nd_kp1, maxnd1, maxnd2
-      intent(in) ::  ff0
       intent(out) :: dff_dr
       logical :: case1=.false., case2=.false.
 !
@@ -2663,17 +2662,21 @@ module Dustdensity
 !
     endsubroutine deriv_size_
 !***********************************************************************
-    subroutine deriv_size(ff,ff0, dff_dr, p)
+    subroutine deriv_size(ff,dff_dr, p)
 !
 !   Calculation of the derivative of the function ff on the size r
 !
+      use General, only: keep_compiler_quiet
+!
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) ::  ff, ff0, dff_dr
+      real, dimension (nx,ndustspec) ::  ff, dff_dr
       integer :: k,i1=1,i2=2,i3=3
       integer :: ii1=ndustspec, ii2=ndustspec-1,ii3=ndustspec-2
       real :: rr1=0.,rr2=0.,rr3=0.
-      intent(in) :: ff, ff0
+      intent(in) :: ff
       intent(out) :: dff_dr
+!
+      call keep_compiler_quiet(p)
 !
 !df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 ! Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
