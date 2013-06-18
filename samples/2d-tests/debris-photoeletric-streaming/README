@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/debris-photoelectric-streaming
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wlyra/caltech[dot]edu>
+Added:
+     17-jun-2013
+Status:
+    works since 17-jun-2013
+Recommended resolution:
+    768x1x32 (same hyperdiffusion as in sample)
+Comments:
+    Debris disk in cylindrical coordinates in r-z and logarithmic spacing in r, 
+    resolving the radial wavelength of the streaming instability with 20 grid points.  	
+Reference:
+    Lyra & Kuchner 2013, Nature, "Formation of sharp eccentric rings 
+    in debris disks with gas but without planets".
