@@ -93,30 +93,30 @@ module Particles
 ! potential to have a range such that two shells are within its domain of influence
 ! then we need about 24 slots. At present we keep double of that number of slots.
 ! and while allocating we add one more to keep the numpber of non-empty slots
-! which will be looped over. 
+! which will be looped over.
 !
   integer,allocatable,dimension(:,:),save :: neighbour_list
   character (len=labellen) :: ppotential='nothing'
   real :: psigma=1.,ppowerby2=19,skin_factor=2.,pampl=1.
 !
-! Note : psigma should be much smaller than the dissipation range, maybe even less than a grid-spacing  
+! Note : psigma should be much smaller than the dissipation range, maybe even less than a grid-spacing
 ! as we are not including many terms in the Maxey-Riley equations. As far as the interaction
 ! with the fluid is concerned our particles are point particles with inertia. But the
 ! interaction potential gives them an effective radius. The interaction potential is
-! typically of the form 
+! typically of the form
 !   V(r) = function of (r/psigma) , \xi = r/psigma
-! The default potential is repulsive 
+! The default potential is repulsive
 !  V(r) = pampl*(1/xi)^(beta)
 ! with beta = 2*ppowerby2
 ! This potential is quite steep (almost hard-sphere) hence the effective force on a particle
 ! due to other particles which are within a distance of skin_factor*psigma. Particles
-! within this distance are included in the neighbourlist. 
+! within this distance are included in the neighbourlist.
 !
   integer :: idiag_particles_vijm
   integer :: ysteps_int,zsteps_int
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      bcpx, bcpy, bcpz,lcheck_exact_frontier, lflowdrag, & 
+      bcpx, bcpy, bcpz,lcheck_exact_frontier, lflowdrag, &
       lnocalc_rhop,lparticlemesh_cic, ppotential, psigma, ppowerby2, skin_factor, tausp
 !
   namelist /particles_run_pars/ &
@@ -194,8 +194,8 @@ module Particles
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
         communicated=lparticles_sink.or.lcommunicate_rhop)
 !
-! This module shall always require electric field and magnetic field stored as 
-! a auxiliary array. 
+! This module shall always require electric field and magnetic field stored as
+! a auxiliary array.
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -262,7 +262,7 @@ module Particles
       interp%lbb=.false.
       interp%lee=.false.
 !
-! By default all interpolation policies are chosen as cic in this module. 
+! By default all interpolation policies are chosen as cic in this module.
 !
 !  Overwrite with new policy variables:
 !
@@ -365,7 +365,7 @@ module Particles
 !  cleanup after the particles_potential module
 !
       if(lallocated_neighbour_list) then
-	deallocate(neighbour_list)
+        deallocate(neighbour_list)
         print*,'particles_potential: Neighbour list deallocated'
       endif
     endsubroutine particles_potential_clean_up
@@ -1317,14 +1317,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lpencil(i_grhop)) then
         if (irhop/=0) then
-          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) & 
+          if ((nprocx/=1).and.(.not.lcommunicate_rhop)) &
                call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_rhop=T in particles_run_pars")  
+               "Switch on lcommunicate_rhop=T in particles_run_pars")
           call grad(f,irhop,p%grhop)
         else
-          if ((nprocx/=1).and.(.not.lcommunicate_np)) & 
+          if ((nprocx/=1).and.(.not.lcommunicate_np)) &
                call fatal_error("calc_pencils_particles",&
-               "Switch on lcommunicate_np=T in particles_run_pars")  
+               "Switch on lcommunicate_np=T in particles_run_pars")
           call grad(f,inp,p%grhop)
           p%grhop=rhop_swarm*p%grhop
         endif
@@ -1865,7 +1865,7 @@ k_loop:   do while (.not. (k>npar_loc))
         zj=fp(nindex,izp)
 !
 ! Note: (about the sign of the unit vector below) The force is *negative*
-! derivative of the potential. Also the unit vector is not normalized. 
+! derivative of the potential. Also the unit vector is not normalized.
 !
         unit_vector(1)=xj-xi
         unit_vector(2)=yj-yi
@@ -1895,7 +1895,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: sigma,xi_sqr,force,Vij
 !
 !Note : there are two powers of 1/r in the force compared to the potential
-! one is due to radial derivative the other because we have not multiplied by 
+! one is due to radial derivative the other because we have not multiplied by
 ! 1/r while calculating the unit vector.
 !Note :  While calculating the force we have assumed that the interparticle potential
 ! is given as a function of (r/sigma) where sigma is the particle
@@ -1920,7 +1920,7 @@ k_loop:   do while (.not. (k>npar_loc))
     subroutine update_neighbour_list(fp)
 !
 !  Update the neighbour list for all the particles
-! 
+!
       real, dimension (mpar_loc,mpvar) :: fp
       integer :: k,kneighbour,kn
       real :: xi,yi,zi,xj,yj,zj,rij_sqr
@@ -1939,7 +1939,7 @@ k_loop:   do while (.not. (k>npar_loc))
         neighbour_list(ip,:) = 0.
 !
 ! Now loop over mpar_loc number of particles. This is of course very time consuming.
-! This can be improved upon. 
+! This can be improved upon.
 !
         do jp=1,mpar_loc
 !
@@ -1951,7 +1951,7 @@ k_loop:   do while (.not. (k>npar_loc))
             zj=fp(jp,izp)
             rij_sqr=(xj-xi)**2+(yj-yi)**2+(zj-zi)**2
             if (rij_sqr <= (skin_factor*psigma)**2) then
-! If the distance of between the particles are less than a skin_factor multiplied by the 
+! If the distance of between the particles are less than a skin_factor multiplied by the
 ! effective radius (psigma) of the particles then they are included in the neighbour list
               kn=kn+1
               neighbour_list(ip,kn)=jp
@@ -2357,7 +2357,7 @@ k_loop:   do while (.not. (k>npar_loc))
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************
     real function get_gas_density(f, ix, iy, iz) result(rho)
-!   
+!
 !  Reads the gas density at location (ix, iy, iz).
 !
 !  20-may-13/ccyang: coded.
@@ -2370,7 +2370,7 @@ k_loop:   do while (.not. (k>npar_loc))
       else linear
         rho = exp(f(ix, iy, iz, ilnrho))
       endif linear
-!   
+!
     endfunction get_gas_density
 !***********************************************************************
     subroutine particles_dragforce_stiff(f,fp,ineargrid)
