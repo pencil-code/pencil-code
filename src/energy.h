@@ -9,7 +9,6 @@
   public :: init_ee, dee_dt
   public :: pencil_criteria_energy, pencil_interdep_energy
   public :: calc_pencils_energy
-  public :: fill_farray_pressure_energy
   public :: impose_energy_floor
   public :: split_update_energy
   public :: expand_shands_energy
