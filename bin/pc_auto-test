@@ -114,6 +114,8 @@ my %tests = (
                          1d-tests/alphadisk
                          implicit_resistivity
                          debris-photoelectric-fluid
+                         2d-tests/debris-photoeletric-streaming
+                         spherical-globaldisk
                     )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
