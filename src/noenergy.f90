@@ -126,6 +126,10 @@ module Energy
 !
 !  Calculate right hand side of energy equation.
 !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      type (pencil_case), intent(in) :: p
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -152,18 +156,6 @@ module Energy
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_energy
-!***********************************************************************
-    subroutine rprint_energy(lreset,lwrite)
-!
-!  Reads and registers print parameters relevant to entropy.
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
-!
-    endsubroutine rprint_energy
 !***********************************************************************
     subroutine fill_farray_pressure(f)
 !
@@ -203,5 +195,28 @@ module Energy
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine dynamical_thermal_diffusion(umax)
+!
+!  Dummy subroutine
+!
+      real, intent(in) :: umax
+!
+      call keep_compiler_quiet(umax)
+      call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
+!
+    endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
+    subroutine rprint_energy(lreset,lwrite)
+!
+!  Reads and registers print parameters relevant to entropy.
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      call keep_compiler_quiet(lreset)
+      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+!
+    endsubroutine rprint_energy
 !***********************************************************************
 endmodule Energy
