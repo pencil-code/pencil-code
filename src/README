@@ -73,6 +73,7 @@ if one wants the velocity field to be affected by the magnetic field.
      testfield_xz.f90
 
        6-sep-09: status is currently unclear. It may be redundant.
+      17-jun-13: is now working with sample (but not yet in auto-test)
 
      testfield_axisym.f90
 
@@ -120,3 +121,24 @@ The coagulation module
 
 This module is not currently used for production runs. 2 of 3 samples in 0D
 work, but one requires the small pencil check to be turned off.
+
+Upwinding
+---------
+
+Upwinding is routinely used in all equidistant grids (Cartesian, spherical,
+and probably cylindrical) and is working fine for all variables.
+On nonequidistant grids, upwinding is not implemented.
+
+Nonequidistant grids
+--------------------
+
+There are issues with the boundary conditions when using nonequidistant
+grids. This is because in coordinate space a symmetry condition is no
+longer meaningful.
+
+Non-Cartesian grids
+-------------------
+
+In spherical coordinates, there are open questions about the decay rate
+when using perfect conductor boundary conditions.
+
