@@ -785,7 +785,6 @@ module Io
 !  `flist' containing the file part of filename
 !
       use General, only: parse_filename, safe_character_assign
-      use Mpicomm, only: mpibarrier
 !
       character (len=*) :: file,flist
 !
@@ -804,8 +803,6 @@ module Io
       close(lun_output)
 !
       if (lcopysnapshots_exp) then
-! for debuging please uncomment the following line
-!       call mpibarrier()
         if (lroot) then
           open(lun_output,FILE=trim(datadir)//'/move-me.list',POSITION='append',IOSTAT=io_err)
           ! file not distributed?, backskipping enabled
