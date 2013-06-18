@@ -622,17 +622,6 @@ module Energy
 !
     endsubroutine fill_farray_pressure_energy
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion_energy(umax)
-!
-!  Dummy subroutine
-!
-      real, intent(in) :: umax
-!
-      call keep_compiler_quiet(umax)
-      call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
-!
-    endsubroutine dynamical_thermal_diffusion_energy
-!***********************************************************************
     subroutine impose_energy_floor(f)
 !
 !  Dummy subroutine; may not be necessary for lnTT
