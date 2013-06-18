@@ -403,7 +403,7 @@ module Entropy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
-    subroutine impose_energy_floor(f)
+    subroutine impose_entropy_floor(f)
 !
 !  Dummy subroutine
 !
@@ -411,7 +411,7 @@ module Entropy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine impose_energy_floor
+    endsubroutine impose_entropy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !

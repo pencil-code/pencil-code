@@ -321,7 +321,7 @@ module Timestep
 !
 !  For debugging purposes impose minimum or maximum value on certain variables.
 !
-      call impose_energy_floor(f)
+      call impose_entropy_floor(f)
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !

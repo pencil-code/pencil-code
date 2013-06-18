@@ -6146,7 +6146,7 @@ module Entropy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
-    subroutine impose_energy_floor(f)
+    subroutine impose_entropy_floor(f)
 !
 !  Impose a floor in minimum entropy.  Note that entropy_floor is
 !  interpreted as minimum lnTT when pretend_lnTT is set true.
@@ -6158,7 +6158,7 @@ module Entropy
       if (entropy_floor /= impossible) &
         where(f(:,:,:,iss) < entropy_floor) f(:,:,:,iss) = entropy_floor
 !
-    endsubroutine impose_energy_floor
+    endsubroutine impose_entropy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !

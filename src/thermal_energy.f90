@@ -827,7 +827,7 @@ module Entropy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
-    subroutine impose_energy_floor(f)
+    subroutine impose_entropy_floor(f)
 !
 !  Trap any negative energy or impose a floor in minimum thermal energy.
 !
@@ -868,11 +868,11 @@ module Entropy
               enddo
             enddo
           enddo
-          call fatal_error('impose_energy_floor', 'negative energy detected')
+          call fatal_error('impose_entropy_floor', 'negative energy detected')
         endif
       endif
 !
-    endsubroutine impose_energy_floor
+    endsubroutine impose_entropy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
@@ -910,7 +910,7 @@ module Entropy
 !  Impose density and energy floors.
 !
         call impose_density_floor(f)
-        call impose_energy_floor(f)
+        call impose_entropy_floor(f)
 !
 !  Update the ghost cells.
 !
