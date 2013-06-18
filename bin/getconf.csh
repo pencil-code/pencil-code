@@ -144,7 +144,13 @@ if ($?PBS_O_HOST) then
   if ("$PBS_O_HOST" =~ pfe*.nas.nasa.gov) set masterhost = 'pfe'
   if ("$PBS_O_HOST" =~ gardar*) set masterhost = 'gardar'
 endif
+if ($?SNIC_RESOURCE) then
+  set masterhost = $SNIC_RESOURCE
+  echo "masterhost="$masterhost
+endif
 if ("$masterhost" =~ gardar*) set hn = 'gardar'
+if ("$masterhost" =~ triolith) set hn = 'triolith'
+echo $hn
 if ($?PBS_JOBID) then
   if ("$PBS_JOBID" =~ *.obelix*) set masterhost = 'obelix'
 endif
@@ -206,7 +212,6 @@ else
   if ($debug) echo "Setting nodelist to ($hn)"
   set nodelist = ("$hn")
 endif
-
 # Output information about number of cpus per node
 # But with SLURM we know w nnodes from $SLURM_NNODES.
 if ($?SLURM_NODELIST) then
@@ -711,6 +716,26 @@ else if ($hn =~ clogin*) then
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
+else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
+  echo "Triolith, Sweden"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  echo 'loading modules ..'
+  module load intel/12.1.4
+  module load impi/4.0.3.008
+  echo '..done'
+  set mpirunops = ''
+  set mpirun = 'mpirun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
