@@ -39,7 +39,7 @@ module Register
       use Density,          only: register_density
       use Dustdensity,      only: register_dustdensity
       use Dustvelocity,     only: register_dustvelocity
-      use Entropy,          only: register_entropy
+      use Energy,          only: register_entropy
       use Energy,           only: register_energy
       use EquationOfState,  only: register_eos
       use Forcing,          only: register_forcing
@@ -203,7 +203,7 @@ module Register
       use Diagnostics,      only: initialize_prints
       use Dustdensity,      only: initialize_dustdensity
       use Dustvelocity,     only: initialize_dustvelocity
-      use Entropy,          only: initialize_entropy
+      use Energy,          only: initialize_entropy
       use Energy,           only: initialize_energy
       use EquationOfState,  only: initialize_eos, units_eos
       use Forcing,          only: initialize_forcing
@@ -547,7 +547,7 @@ module Register
       use Forcing,         only: pencil_criteria_forcing
       use Shock,           only: pencil_criteria_shock
       use Viscosity,       only: pencil_criteria_viscosity
-      use Entropy,         only: pencil_criteria_entropy
+      use Energy,         only: pencil_criteria_entropy
       use Energy,          only: pencil_criteria_energy
       use Conductivity,    only: pencil_criteria_conductivity
       use Gravity,         only: pencil_criteria_gravity
@@ -630,7 +630,7 @@ module Register
       use Forcing, only: pencil_interdep_forcing
       use Shock, only: pencil_interdep_shock
       use Viscosity, only: pencil_interdep_viscosity
-      use Entropy, only: pencil_interdep_entropy
+      use Energy, only: pencil_interdep_entropy
       use Energy, only: pencil_interdep_energy
       use Conductivity, only: pencil_interdep_conductivity
       use Gravity, only: pencil_interdep_gravity
@@ -756,7 +756,7 @@ module Register
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
-      use Entropy,         only: rprint_entropy
+      use Energy,         only: rprint_entropy
       use Energy,          only: rprint_energy
       use Conductivity,    only: rprint_conductivity
       use Magnetic,        only: rprint_magnetic
@@ -1044,7 +1044,7 @@ module Register
 ! 
       use Cdata
       use Diagnostics
-      use Entropy,  only: expand_shands_entropy
+      use Energy,  only: expand_shands_entropy
       use Hydro,    only: expand_shands_hydro
       use Magnetic, only: expand_shands_magnetic
 !

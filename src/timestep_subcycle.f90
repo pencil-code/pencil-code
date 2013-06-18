@@ -30,7 +30,7 @@ module Timestep
           particles_timestep_second
       use Shear, only: advance_shear
       use Snapshot, only: shift_dt
-      use Entropy
+      use Energy
       use Special
       use Boundcond
       use Sub, only: notanumber
@@ -246,7 +246,7 @@ module Timestep
       use BorderProfiles, only: calc_pencils_borderprofiles
       use Density
       use Diagnostics
-      use Entropy
+      use Energy
       use EquationOfState
       use Grid, only: calc_pencils_grid
       use Hydro

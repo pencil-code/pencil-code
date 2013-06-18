@@ -36,7 +36,7 @@ module Equ
       use Dustvelocity
       use Dustdensity
       use Energy
-      use Entropy
+      use Energy
       use EquationOfState
       use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
                          forcing_continuous

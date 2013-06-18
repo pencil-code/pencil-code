@@ -79,7 +79,7 @@ module Slices
       use Dustdensity,     only: get_slices_dustdensity
       use Dustvelocity,    only: get_slices_dustvelocity
       use EquationOfState, only: get_slices_eos
-      use Entropy,         only: get_slices_entropy
+      use Energy,         only: get_slices_entropy
       use Hydro,           only: get_slices_hydro
       use Interstellar,    only: get_slices_interstellar
       use Magnetic,        only: get_slices_magnetic

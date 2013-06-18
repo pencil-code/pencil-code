@@ -18,7 +18,7 @@ module Param_IO
   use Dustdensity
   use Dustvelocity
   use Energy
-  use Entropy
+  use Energy
   use EquationOfState
   use Forcing
   use General

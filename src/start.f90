@@ -56,7 +56,7 @@ program start
   use Diagnostics
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
-  use Entropy,          only: init_ss
+  use Energy,          only: init_ss
   use EquationOfState
   use FArrayManager,    only: farray_clean_up
   use Filter
