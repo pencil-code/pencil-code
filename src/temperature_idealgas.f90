@@ -1,12 +1,12 @@
 ! $Id$
 !
-!  This module can replace the entropy module by using lnT or T (with
+!  This module can replace the energy module by using lnT or T (with
 !  ltemperature_nolog=.true.) as dependent variable. For a perfect gas
 !  with constant coefficients (no ionization) we have:
 !  (1-1/gamma) * cp*T = cs20 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
 !
 !  Note that to use lnTT as thermal variable, you may rather want to use
-!  entropy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
+!  energy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
 !  has way more options and features than temperature_idealgas.f90.
 !
 !  At a later point we may want to rename the module Energy into Energy
@@ -38,7 +38,7 @@ module Energy
 !
   implicit none
 !
-  include 'entropy.h'
+  include 'energy.h'
 !
   real :: radius_lnTT=0.1, widthlnTT=2*epsi
   real, dimension (ninit) :: ampl_lnTT=0.0
@@ -191,9 +191,9 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_entropy()
+    subroutine register_energy()
 !
-!  Initialise variables which should know that we solve an entropy
+!  Initialise variables which should know that we solve an energy
 !  equation: ilnTT, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
@@ -216,13 +216,13 @@ module Energy
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
 !
 !  real variable PrRa shared with hydro modules, used for Boussinesq
 !
       if (lboussinesq.and.lviscosity_heat) then
         call get_shared_variable('PrRa',PrRa,ierr)
-        if (ierr/=0) call fatal_error('register_entropy','PrRa')
+        if (ierr/=0) call fatal_error('register_energy','PrRa')
       endif
 !
 !  Identify version number.
@@ -242,9 +242,9 @@ module Energy
         write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
       endif
 !
-    endsubroutine register_entropy
+    endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_entropy(f,lstarting)
+    subroutine initialize_energy(f,lstarting)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
@@ -269,7 +269,7 @@ module Energy
 !  Set iTT equal to ilnTT if we are considering non-logarithmic temperature.
 !
       if (.not. leos) then
-         call fatal_error('initialize_entropy', &
+         call fatal_error('initialize_energy', &
              'EOS=noeos but temperature_idealgas requires an EQUATION OF STATE')
       endif
 !
@@ -309,7 +309,7 @@ module Energy
       select case (iheatcond(i))
         case ('K-const')
           lheatc_Kconst=.true.
-          if (lroot) call information('initialize_entropy', &
+          if (lroot) call information('initialize_energy', &
           ' heat conduction: K=cst --> gamma*K/rho/TT/cp*div(T*grad lnTT)')
         case ('K-profile')
           lheatc_Kprof=.true.
@@ -318,38 +318,38 @@ module Energy
           hcond2=(mpoly2+1.)/(mpoly0+1.)
           Fbot=-gamma/(gamma-1.)*hcond0*g0/(mpoly0+1.)
           if (lroot) &
-              call information('initialize_entropy',' heat conduction: K=K(r)')
+              call information('initialize_energy',' heat conduction: K=K(r)')
         case ('K-arctan')
           lheatc_Karctan=.true.
           if (.not. ltemperature_nolog) &
-            call fatal_error('initialize_entropy', &
+            call fatal_error('initialize_energy', &
               'K-arctan only valid for TT')
           if (lADI_mixed .and. .not. lADI) &
-            call fatal_error('initialize_entropy', &
+            call fatal_error('initialize_energy', &
               'K-arctan with lADI_mixed=T while lADI=F?')
-          if (lroot) call information('initialize_entropy', &
+          if (lroot) call information('initialize_energy', &
               'heat conduction: arctan profile')
         case ('chi-const')
           lheatc_chiconst=.true.
-          if (lroot) call information('initialize_entropy', &
+          if (lroot) call information('initialize_energy', &
               ' heat conduction: constant chi')
         case('K-therm')
           lheatc_Ktherm=.true.
-          if (lroot) call information('initialize_entropy', &
+          if (lroot) call information('initialize_energy', &
               ' heat conduction: temperature dependent K')
         case ('chi-hyper3')
           lheatc_hyper3=.true.
-          if (lroot) call information('initialize_entropy','hyper conductivity')
+          if (lroot) call information('initialize_energy','hyper conductivity')
         case ('hyper3_mesh','hyper3-mesh')
           lheatc_hyper3_mesh=.true.
-          if (lroot) call information('initialize_entropy','hyper mesh conductivity')
+          if (lroot) call information('initialize_energy','hyper mesh conductivity')
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           lheatc_hyper3_polar=.true.
-          if (lroot) call information('initialize_entropy', &
+          if (lroot) call information('initialize_energy', &
               'hyper conductivity: polar coords')
         case ('shock','chi-shock')
           lheatc_shock=.true.
-          if (lroot) call information('initialize_entropy','shock conductivity')
+          if (lroot) call information('initialize_energy','shock conductivity')
         case ('tensor-diffusion')
           lheatc_tensordiffusion=.true.
           if (lroot) print*, 'heat conduction: tensor diffusion'
@@ -359,7 +359,7 @@ module Energy
           if (lroot) then
             write(unit=errormsg,fmt=*)  &
                 'No such value iheatcond = ', trim(iheatcond(i))
-            call fatal_error('initialize_entropy',errormsg)
+            call fatal_error('initialize_energy',errormsg)
           endif
         endselect
         lnothing=.true.
@@ -397,12 +397,12 @@ module Energy
         if (Fbot==impossible .and. hcond0 /= impossible) then
           Fbot=-gamma/gamma_m1*hcond0*gravz/(mpoly0+1.0)
           if (lroot) print*, &
-              'initialize_entropy: Calculated Fbot = ', Fbot
+              'initialize_energy: Calculated Fbot = ', Fbot
         endif
         if (hcond0==impossible .and. Fbot /= impossible) then
           hcond0=-Fbot*gamma_m1/gamma*(mpoly0+1.0)/gravz
           if (lroot) print*, &
-              'initialize_entropy: Calculated hcond0 = ', hcond0
+              'initialize_energy: Calculated hcond0 = ', hcond0
         endif
         if (Fbot==impossible .and. hcond0==impossible) &
           call fatal_error('temperature_idealgas',  &
@@ -420,16 +420,16 @@ module Energy
 !  Now we share several variables.
 !
       call put_shared_variable('hcond0', hcond0, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcond0')
       call put_shared_variable('Fbot', Fbot, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting Fbot')
       call put_shared_variable('lADI_mixed', lADI_mixed, ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting lADI_mixed')
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting lviscosity_heat')
 !
 !  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
@@ -437,35 +437,35 @@ module Energy
 !
       hole_params=(/Tbump,Kmin,Kmax,hole_slope,hole_width/)
       call put_shared_variable('hole_params',hole_params,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting the hole_params array')
 !
 !  A word of warning...
 !
       if (lheatc_Kconst .and. hcond0==0.0) then
-        call warning('initialize_entropy', 'hcond0 is zero!')
+        call warning('initialize_energy', 'hcond0 is zero!')
       endif
       if (lheatc_Ktherm .and. hcond0==0.0) then
-        call warning('initialize_entropy','hcond0 is zero!')
+        call warning('initialize_energy','hcond0 is zero!')
       endif
       if (lheatc_Kprof .and. hcond0==0.0) then
-        call warning('initialize_entropy', 'hcond0 is zero!')
+        call warning('initialize_energy', 'hcond0 is zero!')
       endif
       if (lheatc_chiconst .and. chi==0.0) then
-        call warning('initialize_entropy','chi is zero!')
+        call warning('initialize_energy','chi is zero!')
       endif
       if (lrun) then
         if (lheatc_hyper3 .and. chi_hyper3==0.0) &
-            call fatal_error('initialize_entropy', &
+            call fatal_error('initialize_energy', &
             'Conductivity coefficient chi_hyper3 is zero!')
         if (lheatc_shock .and. chi_shock==0.0) &
-            call fatal_error('initialize_entropy', &
+            call fatal_error('initialize_energy', &
             'Conductivity coefficient chi_shock is zero!')
       endif
       if (iheatcond(1)=='nothing') then
-        if (hcond0/=impossible) call warning('initialize_entropy', &
+        if (hcond0/=impossible) call warning('initialize_energy', &
             'No heat conduction, but hcond0/=0')
-        if (chi/=impossible) call warning('initialize_entropy', &
+        if (chi/=impossible) call warning('initialize_energy', &
             'No heat conduction, but chi/=0')
       endif
       if (lADI_mixed .and. iheatcond(1) /= 'K-arctan') then
@@ -474,13 +474,13 @@ module Energy
       endif
 !
       if (llocal_iso) &
-           call fatal_error('initialize_entropy', &
+           call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=noenergy in src/Makefile.local')
 !
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_entropy
+    endsubroutine initialize_energy
 !***********************************************************************
     subroutine init_ss(f)
 !
@@ -488,7 +488,7 @@ module Energy
 !
 !  13-dec-2002/axel+tobi: adapted from init_ss
 !
-!  initialise entropy; called from start.f90
+!  initialise energy; called from start.f90
 !  07-nov-01/wolf: coded
 !  24-nov-02/tony: renamed for consistency (i.e. init_[variable name])
 !  12-may-12/MR: initialization with mode added
@@ -629,9 +629,9 @@ module Energy
 !
     endsubroutine init_ss
 !***********************************************************************
-    subroutine pencil_criteria_entropy()
+    subroutine pencil_criteria_energy()
 !
-!  All pencils that the Entropy module depends on are specified here.
+!  All pencils that the Energy module depends on are specified here.
 !
 !  20-11-04/anders: coded
 !
@@ -829,11 +829,11 @@ module Energy
 !
       if (idiag_TTmxy/=0 .or. idiag_TTmxz/=0) lpenc_diagnos2d(i_TT)=.true.
 !
-    endsubroutine pencil_criteria_entropy
+    endsubroutine pencil_criteria_energy
 !***********************************************************************
-    subroutine pencil_interdep_entropy(lpencil_in)
+    subroutine pencil_interdep_energy(lpencil_in)
 !
-!  Interdependency among pencils from the Entropy module is specified here.
+!  Interdependency among pencils from the Energy module is specified here.
 !
 !  20-11-04/anders: coded
 !
@@ -859,11 +859,11 @@ module Energy
         lpencil_in(i_glnmumol)=.true.
       endif
 !
-    endsubroutine pencil_interdep_entropy
+    endsubroutine pencil_interdep_energy
 !***********************************************************************
-    subroutine calc_pencils_entropy(f,p)
+    subroutine calc_pencils_energy(f,p)
 !
-!  Calculate Entropy pencils.
+!  Calculate Energy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-11-04/anders: coded
@@ -912,12 +912,12 @@ module Energy
         elseif (lheatc_Kconst) then
           p%tcond=hcond0
         else
-          call fatal_error('calc_pencils_entropy',  &
+          call fatal_error('calc_pencils_energy',  &
               'This heatcond is not implemented to work with lpencil(i_cond)!')
         endif
       endif
 !
-    endsubroutine calc_pencils_entropy
+    endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine dss_dt(f,df,p)
 !
@@ -926,14 +926,14 @@ module Energy
 !  lnTT version: DlnTT/Dt = -gamma_m1*divu + gamma*cp1*rho1*TT1*RHS
 !    TT version:   DTT/Dt = -gamma_m1*TT*divu + gamma*cp1*rho1*RHS
 !
-!  13-dec-02/axel+tobi: adapted from entropy
+!  13-dec-02/axel+tobi: adapted from energy
 !  18-may-12/MR: compression work as heat sink added for boussinesq
 !
       use Deriv, only: der6
       use Diagnostics
       use EquationOfState, only: gamma_m1
       use ImplicitPhysics, only: heatcond_TT
-      use Special, only: special_calc_entropy
+      use Special, only: special_calc_energy
       use Sub, only: dot2,identify_bcs, dot, dot_mn
       use Viscosity, only: calc_viscous_heat
 !
@@ -1067,7 +1067,7 @@ module Energy
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
-      if (lspecial) call special_calc_entropy(f,df,p)
+      if (lspecial) call special_calc_energy(f,df,p)
 !
 !  Add thermal diffusion to temperature equation.
 !
@@ -1209,7 +1209,7 @@ module Energy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_lentropy_pars(f)
+    subroutine calc_lenergy_pars(f)
 !
 !  Dummy routine.
 !
@@ -1218,7 +1218,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lentropy_pars
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)
 !
@@ -1729,7 +1729,7 @@ module Energy
 !
     endsubroutine calc_heatcond_tensor
 !***********************************************************************
-    subroutine read_entropy_init_pars(unit,iostat)
+    subroutine read_energy_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -1742,17 +1742,17 @@ module Energy
 !
 99    return
 !
-    endsubroutine read_entropy_init_pars
+    endsubroutine read_energy_init_pars
 !***********************************************************************
-    subroutine write_entropy_init_pars(unit)
+    subroutine write_energy_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
       write(unit,NML=entropy_init_pars)
 !
-    endsubroutine write_entropy_init_pars
+    endsubroutine write_energy_init_pars
 !***********************************************************************
-    subroutine read_entropy_run_pars(unit,iostat)
+    subroutine read_energy_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -1765,19 +1765,19 @@ module Energy
 !
 99    return
 !
-    endsubroutine read_entropy_run_pars
+    endsubroutine read_energy_run_pars
 !***********************************************************************
-    subroutine write_entropy_run_pars(unit)
+    subroutine write_energy_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       write(unit,NML=entropy_run_pars)
 !
-    endsubroutine write_entropy_run_pars
+    endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine rprint_entropy(lreset,lwrite)
+    subroutine rprint_energy(lreset,lwrite)
 !
-!  Reads and registers print parameters relevant to entropy.
+!  Reads and registers print parameters relevant to energy.
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
@@ -1915,9 +1915,9 @@ module Energy
         write(3,*) 'iss=',iss
       endif
 !
-    endsubroutine rprint_entropy
+    endsubroutine rprint_energy
 !***********************************************************************
-    subroutine get_slices_entropy(f,slices)
+    subroutine get_slices_energy(f,slices)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -1966,7 +1966,7 @@ module Energy
 !
       endselect
 !
-    endsubroutine get_slices_entropy
+    endsubroutine get_slices_energy
 !***********************************************************************
     subroutine single_polytrope(f)
 !
@@ -2086,7 +2086,7 @@ module Energy
 !***********************************************************************
     subroutine star_heat(f)
 !
-!  Initialize entropy for two superposed polytropes with a central heating
+!  Initialize energy for two superposed polytropes with a central heating
 !
 !  04-fev-2011/dintrans: coded
 !
@@ -2222,7 +2222,7 @@ module Energy
 !
     endsubroutine strat_heat
 !***********************************************************************
-    subroutine impose_entropy_floor(f)
+    subroutine impose_energy_floor(f)
 !
 !  Dummy subroutine; may not be necessary for lnTT
 !
@@ -2230,7 +2230,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine impose_entropy_floor
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
@@ -2253,7 +2253,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_entropy()
+    subroutine expand_shands_energy()
 !
 !  Expands shorthand labels of temperature diagnostics.
 !
@@ -2267,6 +2267,6 @@ module Energy
         call expand_cname(cname,nname,'Tdpm','Td',.true.)
       endif
 !
-    endsubroutine expand_shands_entropy
+    endsubroutine expand_shands_energy
 !***********************************************************************
 endmodule Energy
