@@ -46,6 +46,7 @@ module Entropy
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.
   logical, pointer :: lpressuregradient_gas
+  logical :: lviscosity_heat=.true.
   logical :: ladvection_entropy=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
@@ -99,8 +100,9 @@ module Entropy
 !
 !  21-jul-2002/wolf: coded
 !
-      use Gravity, only: gravz,g0
       use EquationOfState
+      use Gravity, only: gravz,g0
+      use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
@@ -197,6 +199,8 @@ module Entropy
            call fatal_error('initialize_entropy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENTROPY=noentropy in src/Makefile.local')
+!
+      call put_shared_variable('lviscosity_heat',lviscosity_heat)
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
