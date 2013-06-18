@@ -32,7 +32,7 @@ module Energy
 !
   implicit none
 !
-  include 'entropy.h'
+  include 'energy.h'
 !
   real :: ss_const=0.0
   real :: T0=1.0
