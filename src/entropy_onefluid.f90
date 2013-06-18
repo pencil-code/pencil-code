@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1tilde; glnTT(3)
 ! PENCILS PROVIDED TT; TT1; Ma2; ugss; hss(3,3); hlnTT(3,3)
-! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres
+! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres(3)
 !
 !***************************************************************
 module Entropy
@@ -75,7 +75,7 @@ module Entropy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager
-      use SharedVariables, only: get_shared_variables
+      use SharedVariables, only: get_shared_variable
 !
       integer :: ierr
 !
@@ -596,7 +596,7 @@ module Entropy
         if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_dtc/=0) &
             call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
-        if/(idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if (idiag_ethm/=0) call sum_mn_name(p%rho*p%ee,idiag_ethm)
         if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
@@ -1090,6 +1090,16 @@ module Entropy
       call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
 !
     endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
+    subroutine impose_energy_floor(f)
+!
+!  Dummy subroutine; may not be necessary for lnTT
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine split_update_energy(f)
 !
