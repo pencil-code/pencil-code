@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  This module can replace the entropy module by using the thermal energy
+!  This module can replace the energy module by using the thermal energy
 !  eth as dependent variable. For a perfect gas we have
 !
 !    deth/dt + div(u*eth) = -P*div(u)
@@ -29,7 +29,7 @@ module Energy
 !
   implicit none
 !
-  include 'entropy.h'
+  include 'energy.h'
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
   real :: chi=0.0, chi_shock=0.0, chi_shock_gradTT=0., chi_hyper3_mesh=0.
@@ -149,7 +149,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_entropy()
+    subroutine register_energy()
 !
 !  Initialise variables which should know that we solve an energy equation.
 !
@@ -166,16 +166,16 @@ module Energy
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
            "$Id$")
 !
-    endsubroutine register_entropy
+    endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_entropy(f,lstarting)
+    subroutine initialize_energy(f,lstarting)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
@@ -205,12 +205,12 @@ module Energy
 !  Decide if operator splitting is required.
 !
       lsplit_update = lconst_cooling_time .or. lKI02 .or. lSD93
-      if (lsplit_update .and. .not. ldensity) call fatal_error('initialize_entropy', 'Density is required for split_update_energy.')
+      if (lsplit_update .and. .not. ldensity) call fatal_error('initialize_energy', 'Density is required for split_update_energy.')
 !
 !  General variables required by split_update_energy.
 !
       ideal_gas: if (lsplit_update) then
-        if (.not. leos_idealgas) call fatal_error('initialize_entropy', 'currently assumes eos_idealgas')
+        if (.not. leos_idealgas) call fatal_error('initialize_energy', 'currently assumes eos_idealgas')
         call get_cv1(cv1)
         cv1_temp = cv1 * unit_temperature
       endif ideal_gas
@@ -245,7 +245,7 @@ module Energy
 !
       Jeans: if (ljeans_floor) then
         if (nzgrid /= 1) then
-          call fatal_error('initialize_entropy', '3D Jeans floor under construction')
+          call fatal_error('initialize_energy', '3D Jeans floor under construction')
         else
           Jeans_c0 = real(njeans) * G_Newton * dxmax / (gamma * gamma_m1)
         endif
@@ -286,17 +286,17 @@ module Energy
 !       Get tselfgrav_gentle.
         selfgrav: if (lselfgravity) then
           call get_shared_variable('tselfgrav_gentle', tsg, istat)
-          if (istat /= 0) call warning('initialize_entropy', 'unable to get tselfgrav_gentle')
+          if (istat /= 0) call warning('initialize_energy', 'unable to get tselfgrav_gentle')
           tselfgrav_gentle = tsg
         endif selfgrav
       endif detonate
 !
       if (llocal_iso) &
-           call fatal_error('initialize_entropy', &
+           call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=noenergy in src/Makefile.local')
 !
-    endsubroutine initialize_entropy
+    endsubroutine initialize_energy
 !***********************************************************************
     subroutine init_ss(f)
 !
@@ -353,9 +353,9 @@ module Energy
 !
     endsubroutine init_ss
 !***********************************************************************
-    subroutine pencil_criteria_entropy()
+    subroutine pencil_criteria_energy()
 !
-!  All pencils that the Entropy module depends on are specified here.
+!  All pencils that the Energy module depends on are specified here.
 !
 !  04-nov-10/anders+evghenii: adapted
 !
@@ -407,11 +407,11 @@ module Energy
           idiag_TTmxy/=0 .or. idiag_TTmxz/=0 .or. idiag_TTmx/=0  .or. &
           idiag_TTmy/=0  .or. idiag_TTmz/=0 ) lpenc_diagnos(i_TT)=.true.
 !
-    endsubroutine pencil_criteria_entropy
+    endsubroutine pencil_criteria_energy
 !***********************************************************************
-    subroutine pencil_interdep_entropy(lpencil_in)
+    subroutine pencil_interdep_energy(lpencil_in)
 !
-!  Interdependency among pencils from the Entropy module is specified here.
+!  Interdependency among pencils from the Energy module is specified here.
 !
 !  04-nov-10/anders+evghenii: adapted
 !
@@ -422,11 +422,11 @@ module Energy
         lpencil_in(i_geth)=.true.
       endif
 !
-    endsubroutine pencil_interdep_entropy
+    endsubroutine pencil_interdep_energy
 !***********************************************************************
-    subroutine calc_pencils_entropy(f,p)
+    subroutine calc_pencils_energy(f,p)
 !
-!  Calculate Entropy pencils.
+!  Calculate Energy pencils.
 !  This routine is called after  calc_pencils_eos
 !  Most basic pencils should come first, as others may depend on them.
 !
@@ -451,7 +451,7 @@ module Energy
       if (lpencil(i_transpeth)) &
           call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
 !
-    endsubroutine calc_pencils_entropy
+    endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine dss_dt(f,df,p)
 !
@@ -464,7 +464,7 @@ module Energy
 !
       use Diagnostics
       use EquationOfState, only: gamma
-      use Special, only: special_calc_entropy
+      use Special, only: special_calc_energy
       use Sub, only: identify_bcs, u_dot_grad
       use Viscosity, only: calc_viscous_heat
       use Deriv, only: der6
@@ -501,7 +501,7 @@ module Energy
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
-      if (lspecial) call special_calc_entropy(f,df,p)
+      if (lspecial) call special_calc_energy(f,df,p)
 !
 !  Add energy transport term.
 !
@@ -592,7 +592,7 @@ module Energy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_lentropy_pars(f)
+    subroutine calc_lenergy_pars(f)
 !
 !  Dummy routine.
 !
@@ -603,9 +603,9 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lentropy_pars
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
-    subroutine read_entropy_init_pars(unit,iostat)
+    subroutine read_energy_init_pars(unit,iostat)
 !
 !  04-nov-10/anders+evghenii: coded
 !
@@ -620,9 +620,9 @@ module Energy
 !
 99    return
 !
-    endsubroutine read_entropy_init_pars
+    endsubroutine read_energy_init_pars
 !***********************************************************************
-    subroutine write_entropy_init_pars(unit)
+    subroutine write_energy_init_pars(unit)
 !
 !  04-nov-10/anders+evghenii: coded
 !
@@ -630,9 +630,9 @@ module Energy
 !
       write(unit,NML=entropy_init_pars)
 !
-    endsubroutine write_entropy_init_pars
+    endsubroutine write_energy_init_pars
 !***********************************************************************
-    subroutine read_entropy_run_pars(unit,iostat)
+    subroutine read_energy_run_pars(unit,iostat)
 !
 !  04-nov-10/anders+evghenii: coded
 !
@@ -647,9 +647,9 @@ module Energy
 !
 99    return
 !
-    endsubroutine read_entropy_run_pars
+    endsubroutine read_energy_run_pars
 !***********************************************************************
-    subroutine write_entropy_run_pars(unit)
+    subroutine write_energy_run_pars(unit)
 !
 !  04-nov-10/anders+evghenii: coded
 !
@@ -657,9 +657,9 @@ module Energy
 !
       write(unit,NML=entropy_run_pars)
 !
-    endsubroutine write_entropy_run_pars
+    endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine rprint_entropy(lreset,lwrite)
+    subroutine rprint_energy(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant to entropy.
 !
@@ -737,9 +737,9 @@ module Energy
             idiag_TTmxz)
       enddo
 !
-    endsubroutine rprint_entropy
+    endsubroutine rprint_energy
 !***********************************************************************
-    subroutine get_slices_entropy(f,slices)
+    subroutine get_slices_energy(f,slices)
 !
 !  04-nov-10/anders+evghenii: adapted
 !
@@ -815,7 +815,7 @@ module Energy
 !
       endselect slice_name
 !
-    endsubroutine get_slices_entropy
+    endsubroutine get_slices_energy
 !***********************************************************************
     subroutine fill_farray_pressure(f)
 !
@@ -827,7 +827,7 @@ module Energy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
-    subroutine impose_entropy_floor(f)
+    subroutine impose_energy_floor(f)
 !
 !  Trap any negative energy or impose a floor in minimum thermal energy.
 !
@@ -868,11 +868,11 @@ module Energy
               enddo
             enddo
           enddo
-          call fatal_error('impose_entropy_floor', 'negative energy detected')
+          call fatal_error('impose_energy_floor', 'negative energy detected')
         endif
       endif
 !
-    endsubroutine impose_entropy_floor
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
@@ -910,7 +910,7 @@ module Energy
 !  Impose density and energy floors.
 !
         call impose_density_floor(f)
-        call impose_entropy_floor(f)
+        call impose_energy_floor(f)
 !
 !  Update the ghost cells.
 !
@@ -1467,11 +1467,11 @@ module Energy
 !
     endsubroutine detonate
 !***********************************************************************
-    subroutine expand_shands_entropy()
+    subroutine expand_shands_energy()
 !
 !  Presently dummy, for possible use
 !
-    endsubroutine expand_shands_entropy
+    endsubroutine expand_shands_energy
 !***********************************************************************
     real function derivative(a, dx1)
 !
