@@ -294,7 +294,7 @@ module Energy
       if (llocal_iso) &
            call fatal_error('initialize_entropy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
-           'Use ENTROPY=noentropy in src/Makefile.local')
+           'Use ENERGY=noenergy in src/Makefile.local')
 !
     endsubroutine initialize_entropy
 !***********************************************************************
