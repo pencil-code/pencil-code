@@ -58,9 +58,9 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_entropy()
+    subroutine register_energy()
 !
-!  initialise variables which should know that we solve an entropy
+!  initialise variables which should know that we solve an energy
 !  equation: iss, etc; increase nvar accordingly
 !
 !  6-nov-01/wolf: coded
@@ -72,9 +72,9 @@ module Energy
       if (lroot) call svn_id( &
            "$Id$")
 !
-    endsubroutine register_entropy
+    endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_entropy()
+    subroutine initialize_energy()
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -90,7 +90,7 @@ module Energy
 !
 !  read initialization parameters
 !
-      if (lroot) print*,'read entropy_initialize_pars'
+      if (lroot) print*,'read energy_initialize_pars'
       open(1,FILE='run.in',FORM='formatted',STATUS='old')
       read(1,NML=entropy_initialize_pars,ERR=99,IOSTAT=ierr)
       close(1)
@@ -105,18 +105,18 @@ module Energy
       endif
 !
       if (lroot) then
-        print*,'initialize_entropy: iss_profile=',iss_profile
-        print*,'initialize_entropy: wss_corona,ss_corona=',xss_corona,wss_corona,ss_corona
+        print*,'initialize_energy: iss_profile=',iss_profile
+        print*,'initialize_energy: wss_corona,ss_corona=',xss_corona,wss_corona,ss_corona
       endif
 !
       return
 99    if (lroot) print*,'i/o error'
 !
-    endsubroutine initialize_entropy
+    endsubroutine initialize_energy
 !***********************************************************************
     subroutine init_ss(f)
 !
-!  initialise entropy; called from start.f90
+!  initialise energy; called from start.f90
 !  07-nov-2001/wolf: coded
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name])
 !
@@ -138,7 +138,7 @@ module Energy
 !***********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
+!  28-mar-02/axel: dummy routine, adapted from entropy.f90 of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !
@@ -178,7 +178,7 @@ module Energy
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-cs2*(glnrho(:,3))
       endif
 !
-!  Calculate entropy related diagnostics
+!  Calculate energy related diagnostics
 !
       if (ldiagnos) then
         if (idiag_dtc/=0) &
@@ -200,7 +200,7 @@ module Energy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_lentropy_pars(f)
+    subroutine calc_lenergy_pars(f)
 !
 !  dummy routine
 !
@@ -209,11 +209,11 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lentropy_pars
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
-    subroutine rprint_entropy(lreset,lwrite)
+    subroutine rprint_energy(lreset,lwrite)
 !
-!  reads and registers print parameters relevant to entropy
+!  reads and registers print parameters relevant to energy
 !
 !   1-jun-02/axel: adapted from magnetic fields
 !
@@ -254,14 +254,14 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
       enddo
 !
-!  write column where which entropy variable is stored
+!  write column where which energy variable is stored
 !
       if (lwr) then
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
       endif
 !
-    endsubroutine rprint_entropy
+    endsubroutine rprint_energy
 !***********************************************************************
     subroutine fill_farray_pressure(f)
 !
@@ -273,7 +273,7 @@ module Energy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
-    subroutine impose_entropy_floor(f)
+    subroutine impose_energy_floor(f)
 !
 !  Dummy subroutine
 !
@@ -281,7 +281,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine impose_entropy_floor
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
@@ -303,11 +303,11 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_entropy()
+    subroutine expand_shands_energy()
 !
 !  Presently dummy, for possible use
 !
-    endsubroutine expand_shands_entropy
+    endsubroutine expand_shands_energy
 !***********************************************************************
 endmodule Energy
 
