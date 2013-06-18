@@ -14,7 +14,7 @@
 ! PENCILS PROVIDED cs2; pp; TT1; Ma2; fpres(3)
 !
 !***************************************************************
-module Entropy
+module Energy
 !
   use Cparam
   use Cdata
@@ -415,4 +415,4 @@ module Entropy
 !
     endsubroutine expand_shands_entropy
 !***********************************************************************
-endmodule Entropy
+endmodule Energy

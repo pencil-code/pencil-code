@@ -20,7 +20,7 @@
 ! PENCILS PROVIDED Ma2; fpres(3); transpeth
 !
 !***************************************************************
-module Entropy
+module Energy
 !
   use Cparam
   use Cdata
@@ -1507,4 +1507,4 @@ module Entropy
 !
     endfunction get_temperature
 !***********************************************************************
-endmodule Entropy
+endmodule Energy

@@ -21,7 +21,7 @@
 !
 !***************************************************************
 !
-module Entropy
+module Energy
 !
   use Cparam
   use Cdata
@@ -309,5 +309,5 @@ module Entropy
 !
     endsubroutine expand_shands_entropy
 !***********************************************************************
-endmodule Entropy
+endmodule Energy
 

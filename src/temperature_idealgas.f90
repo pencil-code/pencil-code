@@ -9,7 +9,7 @@
 !  entropy.f90 with pretend_lnTT=.true. As of March 2007, entropy.f90
 !  has way more options and features than temperature_idealgas.f90.
 !
-!  At a later point we may want to rename the module Entropy into Energy
+!  At a later point we may want to rename the module Energy into Energy
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,7 +25,7 @@
 ! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond;
 !
 !***************************************************************
-module Entropy
+module Energy
 !
 ! 12-may-12/MR: made ampl_lnTT a vector; added parameters for initialization
 !               by mode to input pars
@@ -2269,4 +2269,4 @@ module Entropy
 !
     endsubroutine expand_shands_entropy
 !***********************************************************************
-endmodule Entropy
+endmodule Energy
