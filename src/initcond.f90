@@ -4993,7 +4993,7 @@ module Initcond
 !
 !  This routine sets up an initial magnetic field x-parallel with a
 !  magnitude directly proportional to the density. In entropy.f90 we require
-!  Galactic-hs or Ferriere-hs to be set for init_ss, in density.f90
+!  Galactic-hs or Ferriere-hs to be set for initss, in density.f90
 !  Galactic-hs should be set for initlnrho and in gravity_simple.f90 use
 !  Ferriere for gravz_profile
 !
@@ -5068,7 +5068,7 @@ module Initcond
 !
 !  This routine sets up an initial magnetic field y-parallel(azimuthal) with a
 !  magnitude directly proportional to the density. In entropy.f90 we require
-!  Galactic-hs or Ferriere-hs to be set for init_ss, in density.f90
+!  Galactic-hs or Ferriere-hs to be set for initss, in density.f90
 !  Galactic-hs should be set for initlnrho and in gravity_simple.f90 use
 !  Ferriere for gravz_profile
 !
