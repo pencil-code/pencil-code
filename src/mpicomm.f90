@@ -2657,7 +2657,6 @@ module Mpicomm
 !  Get global OR of stop_flag and distribute it, so all processors agree
 !  on whether to call stop_it():
 !
-      call mpibarrier()
       call MPI_ALLREDUCE(stop_flag,global_stop_flag,1,MPI_LOGICAL, &
                          MPI_LOR,MPI_COMM_WORLD,mpierr)
       call MPI_ALLREDUCE(stop_flag,identical_stop_flag,1,MPI_LOGICAL, &
@@ -2867,10 +2866,6 @@ module Mpicomm
       else
         if (lroot) print*,'transp: No clue what var=', var, 'is supposed to mean'
       endif
-!
-!  Synchronize; not strictly necessary, so Axel will probably remove it..
-!
-      call mpibarrier()
 !
     endsubroutine transp
 !***********************************************************************
@@ -6252,8 +6247,6 @@ module Mpicomm
       ay_local=0.
       endif
       call mpireduce_sum(ay_local,ay,nygrid)
-! maybe we should synchrosize here.
-      call mpibarrier()
 !
     endsubroutine y2x
 !***********************************************************************
@@ -6277,8 +6270,6 @@ module Mpicomm
       az_local=0.
       endif
       call mpireduce_sum(az_local,az,nzgrid)
-! maybe we should synchrosize here.
-      call mpibarrier()
 !
     endsubroutine z2x
 !***********************************************************************
@@ -6754,8 +6745,6 @@ module Mpicomm
                       enddo
                     endif
                   enddo
-!
-                  call mpibarrier()         ! necessary ?
 !
                 else
 !
