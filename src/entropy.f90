@@ -28,7 +28,7 @@ module Energy
 !
   implicit none
 !
-  include 'entropy.h'
+  include 'energy.h'
 !
   real :: entropy_floor = impossible, TT_floor = impossible
   real :: radius_ss=0.1, ampl_ss=0.0, widthss=2*epsi, epsilon_ss=0.0
@@ -300,7 +300,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_entropy()
+    subroutine register_energy()
 !
 !  Initialise variables which should know that we solve an entropy
 !  equation: iss, etc; increase nvar accordingly.
@@ -322,11 +322,11 @@ module Energy
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
 !
-    endsubroutine register_entropy
+    endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_entropy(f,lstarting)
+    subroutine initialize_energy(f,lstarting)
 !
 !  Called by run.f90 after reading parameters, but before the time loop.
 !
@@ -358,7 +358,7 @@ module Energy
 !  Check any module dependencies.
 !
       if (.not. leos) then
-        call fatal_error('initialize_entropy', &
+        call fatal_error('initialize_energy', &
             'EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
       endif
 !
@@ -388,7 +388,7 @@ module Energy
         if (Kbot==impossible) then
           Kbot=hcond0
         else
-          call warning('initialize_entropy', &
+          call warning('initialize_energy', &
               'You should not set Kbot and hcond0 at the same time')
         endif
       endif
@@ -404,7 +404,7 @@ module Energy
         Kbot=hcond0
         lmultilayer=.true.  ! just to be sure...
         if (lroot) print*, &
-            'initialize_entropy: hcond0 given by mixinglength_flux=', &
+            'initialize_energy: hcond0 given by mixinglength_flux=', &
             hcond0, Fbot
       endif
 !
@@ -419,12 +419,12 @@ module Energy
 !
       if (lgravz .and. lrun) then
         if (cs2top/=cs2cool) then
-          if (lroot) print*,'initialize_entropy: cs2top,cs2cool=',cs2top,cs2cool
+          if (lroot) print*,'initialize_energy: cs2top,cs2cool=',cs2top,cs2cool
           if (cs2cool /= 0.) then ! cs2cool is the value to go for
-            if (lroot) print*,'initialize_entropy: now set cs2top=cs2cool'
+            if (lroot) print*,'initialize_energy: now set cs2top=cs2cool'
             cs2top=cs2cool
           else                  ! cs2cool=0, so go for cs2top
-            if (lroot) print*,'initialize_entropy: now set cs2cool=cs2top'
+            if (lroot) print*,'initialize_energy: now set cs2cool=cs2top'
             cs2cool=cs2top
           endif
         endif
@@ -444,7 +444,7 @@ module Energy
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
-                      'initialize_entropy: Calculated Fbot = ', Fbot
+                      'initialize_energy: Calculated Fbot = ', Fbot
             else
               Fbot=0.
             endif
@@ -462,7 +462,7 @@ module Energy
             if (bcz2(iss)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, &
-                      'initialize_entropy: Calculated Ftop = ',Ftop
+                      'initialize_energy: Calculated Ftop = ',Ftop
             else
               Ftop=0.
             endif
@@ -486,17 +486,17 @@ module Energy
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
-                  'initialize_entropy: Calculated Fbot = ', Fbot
+                  'initialize_energy: Calculated Fbot = ', Fbot
 !
               Kbot=gamma_m1/gamma*(mpoly+1.)*Fbot
               FbotKbot=gamma/gamma_m1/(mpoly+1.)
-              if (lroot) print*, 'initialize_entropy: Calculated Fbot,Kbot=', &
+              if (lroot) print*, 'initialize_energy: Calculated Fbot,Kbot=', &
                   Fbot, Kbot
             ! else
             !! Don't need Fbot in this case (?)
             !  Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
             !  if (lroot) print*, &
-            !       'initialize_entropy: Calculated Fbot = ', Fbot
+            !       'initialize_energy: Calculated Fbot = ', Fbot
             endif
           else
 !
@@ -507,7 +507,7 @@ module Energy
               Kbot=hcond0
               FbotKbot=-gravz*gamma/gamma_m1/(mpoly0+1.)
               if (lroot) print*, &
-                   'initialize_entropy: Calculated hcond0 = ', hcond0
+                   'initialize_energy: Calculated hcond0 = ', hcond0
             endif
           endif
 !
@@ -517,10 +517,10 @@ module Energy
             if (bcz2(iss)=='c1') then
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
-                      'initialize_entropy: Calculated Ftop = ', Ftop
+                      'initialize_energy: Calculated Ftop = ', Ftop
               Ktop=gamma_m1/gamma*(mpoly+1.)*Ftop
               FtopKtop=gamma/gamma_m1/(mpoly+1.)
-              if (lroot) print*,'initialize_entropy: Ftop,Ktop=',Ftop,Ktop
+              if (lroot) print*,'initialize_energy: Ftop,Ktop=',Ftop,Ktop
             ! else
             !! Don't need Ftop in this case (?)
             !  Ftop=0.
@@ -541,7 +541,7 @@ module Energy
       select case (initss(1))
         case ('geo-kws','geo-benchmark','shell_layers')
           if (lroot) then
-            print*, 'initialize_entropy: '// &
+            print*, 'initialize_energy: '// &
                 'set boundary temperatures for spherical shell problem'
           endif
 !
@@ -584,15 +584,15 @@ module Energy
           call get_soundspeed(TT_int,cs2_int)
           cs2cool=cs2_ext
           if (lroot) then
-            print*,'initialize_entropy: g0,mpoly,beta1',g0,mpoly,beta1
-            print*,'initialize_entropy: TT_int, TT_ext=',TT_int,TT_ext
-            print*,'initialize_entropy: cs2_ext, cs2_int=',cs2_ext, cs2_int
+            print*,'initialize_energy: g0,mpoly,beta1',g0,mpoly,beta1
+            print*,'initialize_energy: TT_int, TT_ext=',TT_int,TT_ext
+            print*,'initialize_energy: cs2_ext, cs2_int=',cs2_ext, cs2_int
           endif
 !
         case ('star_heat')
           if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
           if (hcond2==impossible) hcond2=(mpoly2+1.)/(mpoly0+1.)
-          if (lroot) print*,'initialize_entropy: set cs2cool=cs20'
+          if (lroot) print*,'initialize_energy: set cs2cool=cs20'
           cs2cool=cs20
           cs2_ext=cs20
           if (rcool==0.) rcool=r_ext
@@ -620,7 +620,7 @@ module Energy
 !
       if (maxval(abs(beta_glnrho_global))/=0.0) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
-        if (lroot) print*, 'initialize_entropy: Global density gradient '// &
+        if (lroot) print*, 'initialize_energy: Global density gradient '// &
             'with beta_glnrho_global=', beta_glnrho_global
       endif
 !
@@ -629,8 +629,8 @@ module Energy
       if (nwgrid==1) then
         lpressuregradient_gas=.false.
         ladvection_entropy=.false.
-        print*, 'initialize_entropy: 0-D run, turned off pressure gradient term'
-        print*, 'initialize_entropy: 0-D run, turned off advection of entropy'
+        print*, 'initialize_energy: 0-D run, turned off pressure gradient term'
+        print*, 'initialize_energy: 0-D run, turned off advection of entropy'
       endif
 !
 !  Turn off advection of entropy when fargo is used
@@ -638,7 +638,7 @@ module Energy
       if (lfargo_advection) then
         ladvection_entropy=.false.
         if (lroot) print*,&
-             'initialize_entropy: fargo used, turned off advection of entropy'
+             'initialize_energy: fargo used, turned off advection of entropy'
       endif
 !
 !  Possible to calculate pressure gradient directly from the pressure, in which
@@ -683,7 +683,7 @@ module Energy
 !
 !  Select which radiative heating we are using.
 !
-      if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
+      if (lroot) print*,'initialize_energy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
         select case (iheatcond(i))
         case ('K-profile')
@@ -738,7 +738,7 @@ module Energy
           if (lroot) then
             write(unit=errormsg,fmt=*)  &
                 'No such value iheatcond = ', trim(iheatcond(i))
-            call fatal_error('initialize_entropy',errormsg)
+            call fatal_error('initialize_energy',errormsg)
           endif
         endselect
         lnothing=.true.
@@ -747,44 +747,44 @@ module Energy
 !  A word of warning...
 !
       if (lheatc_Kprof .and. hcond0==0.0) then
-        call warning('initialize_entropy', 'hcond0 is zero!')
+        call warning('initialize_energy', 'hcond0 is zero!')
       endif
       if (lheatc_chiconst .and. (chi==0.0 .and. chi_t==0.0)) then
-        call warning('initialize_entropy','chi and chi_t are zero!')
+        call warning('initialize_energy','chi and chi_t are zero!')
       endif
       if (lheatc_chitherm .and. (chi_th==0.0 .and. chi_t==0.0)) then
-        call warning('initialize_entropy','chi_th and chi_t are zero!')
+        call warning('initialize_energy','chi_th and chi_t are zero!')
       endif
       if (lheatc_sqrtrhochiconst .and. (chi_rho==0.0 .and. chi_t==0.0)) then
-        call warning('initialize_entropy','chi_rho and chi_t are zero!')
+        call warning('initialize_energy','chi_rho and chi_t are zero!')
       endif
       if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
-        call warning('initialize_entropy', &
+        call warning('initialize_energy', &
             'No heat conduction, but hcond0 /= 0')
       endif
       if (lheatc_Kconst .and. Kbot==0.0) then
-        call warning('initialize_entropy','Kbot is zero!')
+        call warning('initialize_energy','Kbot is zero!')
       endif
       if ((lheatc_spitzer.or.lheatc_corona) .and. (Kgpara==0.0 .or. Kgperp==0.0) ) then
-        call warning('initialize_entropy','Kgperp or Kgpara is zero!')
+        call warning('initialize_energy','Kgperp or Kgpara is zero!')
       endif
       if (lheatc_kramers .and. hcond0_kramers==0.0) then
-        call warning('initialize_entropy','hcond0_kramers is zero!')
+        call warning('initialize_energy','hcond0_kramers is zero!')
       endif
       if (lheatc_hyper3ss .and. chi_hyper3==0.0) &
-           call warning('initialize_entropy','chi_hyper3 is zero!')
+           call warning('initialize_energy','chi_hyper3 is zero!')
       if (lheatc_hyper3ss_polar .and. chi_hyper3==0.0) &
-           call warning('initialize_entropy','chi_hyper3 is zero!')
+           call warning('initialize_energy','chi_hyper3 is zero!')
       if (lheatc_hyper3ss_mesh .and. chi_hyper3_mesh==0.0) &
-           call warning('initialize_entropy','chi_hyper3_mesh is zero!')
+           call warning('initialize_energy','chi_hyper3_mesh is zero!')
       if ( (lheatc_hyper3ss_aniso) .and.  &
            ((chi_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
             (chi_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
             (chi_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
-           call fatal_error('initialize_entropy', &
+           call fatal_error('initialize_energy', &
            'A diffusivity coefficient of chi_hyper3 is zero!')
       if (lheatc_shock .and. chi_shock==0.0) then
-        call warning('initialize_entropy','chi_shock is zero!')
+        call warning('initialize_energy','chi_shock is zero!')
       endif
 !
 !  Heat conduction calculated globally: if lhcond_global=.true., we
@@ -832,78 +832,78 @@ module Energy
 !  Shared variables.
 !
       call put_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcond0')
       call put_shared_variable('hcond1',hcond1,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcond1')
       call put_shared_variable('Kbot',Kbot,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
            'there was a problem when putting Kbot')
       call put_shared_variable('hcondxbot',hcondxbot,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcondxbot')
       call put_shared_variable('hcondxtop',hcondxtop,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcondxtop')
       call put_shared_variable('hcondzbot',hcondzbot,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcondzbot')
       call put_shared_variable('hcondztop',hcondztop,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcondztop')
       call put_shared_variable('Fbot',Fbot,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting Fbot')
       call put_shared_variable('Ftop',Ftop,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting Ftop')
       call put_shared_variable('FbotKbot',FbotKbot,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting FbotKbot')
       call put_shared_variable('FtopKtop',FtopKtop,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting FtopKtop')
       call put_shared_variable('chi',chi,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting chi')
       call put_shared_variable('chi_t',chi_t,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting chi_t')
 !      call put_shared_variable('chi_th',chi_th,ierr)
-!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!      if (ierr/=0) call fatal_error('initialize_energy', &
 !          'there was a problem when putting chi_th')
 !      call put_shared_variable('chi_rho',chi_rho,ierr)
-!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!      if (ierr/=0) call fatal_error('initialize_energy', &
 !          'there was a problem when putting chi_rho')
       call put_shared_variable('lmultilayer',lmultilayer,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting lmultilayer')
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting lcalc_heatcond_constchi')
 !      call put_shared_variable('lheatc_chitherm',lheatc_chitherm,ierr)
-!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!      if (ierr/=0) call fatal_error('initialize_energy', &
 !          'there was a problem when putting lcalc_heatcond_chitherm')
 !      call put_shared_variable('lheatc_sqrtrhochiconst',lheatc_sqrtrhochiconst,ierr)
-!      if (ierr/=0) call fatal_error('initialize_entropy', &
+!      if (ierr/=0) call fatal_error('initialize_energy', &
 !          'there was a problem when putting lcalc_heatcond_sqrtrhochiconst')
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting lviscosity_heat')
       call put_shared_variable('hcond0_kramers',hcond0_kramers,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting hcond0_kramers')
       call put_shared_variable('nkramers',nkramers,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting nkramers')
       call put_shared_variable('lheatc_kramers',lheatc_kramers,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting lheatc_kramers')
 !
       star_params=(/wheat,luminosity,r_bcz,widthss,alpha_MLT/)
       call put_shared_variable('star_params',star_params,ierr)
-      if (ierr/=0) call fatal_error('initialize_entropy', &
+      if (ierr/=0) call fatal_error('initialize_energy', &
           'there was a problem when putting star_params')
 !
 !  Check if reduced sound speed is used
@@ -911,25 +911,25 @@ module Energy
       if (ldensity) then
         call get_shared_variable('lreduced_sound_speed',&
              lreduced_sound_speed,ierr)
-        if (ierr/=0) call fatal_error('initialize_entropy:',&
+        if (ierr/=0) call fatal_error('initialize_energy:',&
              'failed to get lreduced_sound_speed from density')
         if (lreduced_sound_speed) then
           call get_shared_variable('reduce_cs2',reduce_cs2,ierr)
-          if (ierr/=0) call fatal_error('initialize_entropy:',&
+          if (ierr/=0) call fatal_error('initialize_energy:',&
                'failed to get reduce_cs2 from density')
         endif
       endif
 !
       if (llocal_iso) &
-           call fatal_error('initialize_entropy', &
+           call fatal_error('initialize_energy', &
            'llocal_iso switches on the local isothermal approximation. ' // &
            'Use ENERGY=noenergy in src/Makefile.local')
 !
       call keep_compiler_quiet(lstarting)
 !
-      endsubroutine initialize_entropy
+      endsubroutine initialize_energy
 !***********************************************************************
-    subroutine read_entropy_init_pars(unit,iostat)
+    subroutine read_energy_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -942,17 +942,17 @@ module Energy
 !
 99    return
 !
-    endsubroutine read_entropy_init_pars
+    endsubroutine read_energy_init_pars
 !***********************************************************************
-    subroutine write_entropy_init_pars(unit)
+    subroutine write_energy_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
       write(unit,NML=entropy_init_pars)
 !
-    endsubroutine write_entropy_init_pars
+    endsubroutine write_energy_init_pars
 !***********************************************************************
-    subroutine read_entropy_run_pars(unit,iostat)
+    subroutine read_energy_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -965,15 +965,15 @@ module Energy
 !
 99    return
 !
-    endsubroutine read_entropy_run_pars
+    endsubroutine read_energy_run_pars
 !***********************************************************************
-    subroutine write_entropy_run_pars(unit)
+    subroutine write_energy_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       write(unit,NML=entropy_run_pars)
 !
-    endsubroutine write_entropy_run_pars
+    endsubroutine write_energy_run_pars
 !***********************************************************************
     subroutine init_ss(f)
 !
@@ -2242,7 +2242,7 @@ module Energy
 !
     endsubroutine shock2d
 !***********************************************************************
-    subroutine pencil_criteria_entropy()
+    subroutine pencil_criteria_energy()
 !
 !  All pencils that the Entropy module depends on are specified here.
 !
@@ -2549,9 +2549,9 @@ module Energy
         lpenc_requested(i_pp)=.true.
       endif
 !
-    endsubroutine pencil_criteria_entropy
+    endsubroutine pencil_criteria_energy
 !***********************************************************************
-    subroutine pencil_interdep_entropy(lpencil_in)
+    subroutine pencil_interdep_energy(lpencil_in)
 !
 !  Interdependency among pencils from the Entropy module is specified here.
 !
@@ -2586,9 +2586,9 @@ module Energy
         endif
       endif
 !
-    endsubroutine pencil_interdep_entropy
+    endsubroutine pencil_interdep_energy
 !***********************************************************************
-    subroutine calc_pencils_entropy(f,p)
+    subroutine calc_pencils_energy(f,p)
 !
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2641,7 +2641,7 @@ module Energy
       if (lpencil(i_transprhos)) &
           call weno_transp(f,m,n,iss,irho,iux,iuy,iuz,p%transprhos,dx_1,dy_1,dz_1)
 !
-    endsubroutine calc_pencils_entropy
+    endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine dss_dt(f,df,p)
 !
@@ -2656,7 +2656,7 @@ module Energy
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
                                  gamma1, cs0
       use Interstellar, only: calc_heat_cool_interstellar
-      use Special, only: special_calc_entropy
+      use Special, only: special_calc_energy
       use Sub
       use Viscosity, only: calc_viscous_heat
 !
@@ -2754,7 +2754,7 @@ module Energy
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
-      if (lspecial) call special_calc_entropy(f,df,p)
+      if (lspecial) call special_calc_energy(f,df,p)
 !
 !  Thermal conduction delegated to different subroutines.
 !
@@ -3003,7 +3003,7 @@ module Energy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_lentropy_pars(f)
+    subroutine calc_lenergy_pars(f)
 !
 !  Calculate <s>, which is needed for diffusion with respect to xy-flucts.
 !
@@ -3152,7 +3152,7 @@ module Energy
         call mpiallreduce_sum(ss_volaverage_tmp,ss_volaverage)
       endif
 !
-    endsubroutine calc_lentropy_pars
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine set_border_entropy(f,df,p)
 !
@@ -5076,7 +5076,7 @@ module Energy
 !
     endsubroutine calc_heat_cool_prestellar
 !***********************************************************************
-    subroutine rprint_entropy(lreset,lwrite)
+    subroutine rprint_energy(lreset,lwrite)
 !
 !  Reads and registers print parameters relevant to entropy.
 !
@@ -5250,9 +5250,9 @@ module Energy
         write(3,*) 'ilnTT=',ilnTT
       endif
 !
-    endsubroutine rprint_entropy
+    endsubroutine rprint_energy
 !***********************************************************************
-    subroutine get_slices_entropy(f,slices)
+    subroutine get_slices_energy(f,slices)
 !
 !  Write slices for animation of Entropy variables.
 !
@@ -5370,7 +5370,7 @@ module Energy
 !
       endselect
 !
-    endsubroutine get_slices_entropy
+    endsubroutine get_slices_energy
 !***********************************************************************
     subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
 !
@@ -6146,7 +6146,7 @@ module Energy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
-    subroutine impose_entropy_floor(f)
+    subroutine impose_energy_floor(f)
 !
 !  Impose a floor in minimum entropy.  Note that entropy_floor is
 !  interpreted as minimum lnTT when pretend_lnTT is set true.
@@ -6158,7 +6158,7 @@ module Energy
       if (entropy_floor /= impossible) &
         where(f(:,:,:,iss) < entropy_floor) f(:,:,:,iss) = entropy_floor
 !
-    endsubroutine impose_entropy_floor
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
@@ -6181,10 +6181,10 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_entropy()
+    subroutine expand_shands_energy()
 !
 !  Presently dummy, for possible use
 !
-    endsubroutine expand_shands_entropy
+    endsubroutine expand_shands_energy
 !***********************************************************************
 endmodule Energy
