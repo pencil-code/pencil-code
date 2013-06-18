@@ -26,7 +26,7 @@ module Energy
 !
   implicit none
 !
-  include 'entropy.h'
+  include 'energy.h'
 !
   real :: hcond0=0.0, hcond1=impossible, chi=impossible
   real :: Fbot=impossible, FbotKbot=impossible, Kbot=impossible
@@ -54,7 +54,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_entropy()
+    subroutine register_energy()
 !
 !  No energy equation is being solved; use polytropic equation of state.
 !
@@ -67,16 +67,16 @@ module Energy
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_entropy','lpressuregradient_gas')
+      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
 !
 !  Identify version number.
 !
       if (lroot) call svn_id( &
           "$Id$")
 !
-    endsubroutine register_entropy
+    endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_entropy(f,lstarting)
+    subroutine initialize_energy(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -95,7 +95,7 @@ module Energy
 !  Tell the equation of state that we're here and what f variable we use.
 !
       if (llocal_iso) then
-        if (lroot) call warning('initialize_entropy',&
+        if (lroot) call warning('initialize_energy',&
              'llocal_iso=T. Make sure you have the appropriate ' // & 
              'INITIAL_CONDITION in Makefile.local.')
         call select_eos_variable('cs2',-2) !special local isothermal
@@ -112,29 +112,29 @@ module Energy
 !
       if (any(beta_glnrho_global /= 0.)) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
-        if (lroot) print*, 'initialize_entropy: Global density gradient '// &
+        if (lroot) print*, 'initialize_energy: Global density gradient '// &
             'with beta_glnrho_global=', beta_glnrho_global
       endif
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat,ierr)
-      if (ierr/=0) call stop_it("initialize_entropy: "//&
+      if (ierr/=0) call stop_it("initialize_energy: "//&
            "there was a problem when putting lviscosity_heat")
 !
 ! check if we are solving the force-free equations in parts of domain
 !
       if (ldensity) then
         call get_shared_variable('lffree',lffree,ierr)
-        if (ierr/=0) call fatal_error('initialize_entropy:',&
+        if (ierr/=0) call fatal_error('initialize_energy:',&
              'failed to get lffree from density')
         if (lffree) then
           call get_shared_variable('profx_ffree',profx_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_entropy:',&
+          if (ierr/=0) call fatal_error('initialize_energy:',&
                'failed to get profx_ffree from density')
           call get_shared_variable('profy_ffree',profy_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_entropy:',&
+          if (ierr/=0) call fatal_error('initialize_energy:',&
               'failed to get profy_ffree from density')
           call get_shared_variable('profz_ffree',profz_ffree,ierr)
-          if (ierr/=0) call fatal_error('initialize_entropy:',&
+          if (ierr/=0) call fatal_error('initialize_energy:',&
              'failed to get profz_ffree from density')
         endif
       endif
@@ -142,11 +142,11 @@ module Energy
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lstarting)
 !
-    endsubroutine initialize_entropy
+    endsubroutine initialize_energy
 !***********************************************************************
     subroutine init_ss(f)
 !
-!  Initialise entropy; called from start.f90.
+!  Initialise energy; called from start.f90.
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -154,9 +154,9 @@ module Energy
 !
     endsubroutine init_ss
 !***********************************************************************
-    subroutine pencil_criteria_entropy()
+    subroutine pencil_criteria_energy()
 !
-!  All pencils that the Entropy module depends on are specified here.
+!  All pencils that the Energy module depends on are specified here.
 !
 !  20-11-04/anders: coded
 !
@@ -187,11 +187,11 @@ module Energy
         lpenc_diagnos(i_divu)=.true.
       endif
 !
-    endsubroutine pencil_criteria_entropy
+    endsubroutine pencil_criteria_energy
 !***********************************************************************
-    subroutine pencil_interdep_entropy(lpencil_in)
+    subroutine pencil_interdep_energy(lpencil_in)
 !
-!  Interdependency among pencils from the Entropy module is specified here.
+!  Interdependency among pencils from the Energy module is specified here.
 !
 !  20-nov-04/anders: coded
 !
@@ -211,11 +211,11 @@ module Energy
       if (lpencil_in(i_TT1) .and. gamma_m1/=0.) lpencil_in(i_cs2)=.true.
       if (lpencil_in(i_cs2) .and. gamma_m1/=0.) lpencil_in(i_lnrho)=.true.
 !
-    endsubroutine pencil_interdep_entropy
+    endsubroutine pencil_interdep_energy
 !***********************************************************************
-    subroutine calc_pencils_entropy(f,p)
+    subroutine calc_pencils_energy(f,p)
 !
-!  Calculate Entropy pencils.
+!  Calculate Energy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  20-nov-04/anders: coded
@@ -257,7 +257,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_entropy
+    endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine dss_dt(f,df,p)
 !
@@ -305,7 +305,7 @@ module Energy
         endif
      endif
 !
-!  Calculate entropy related diagnostics.
+!  Calculate energy related diagnostics.
 !
       if (ldiagnos) then
         if (idiag_dtc/=0) &
@@ -336,7 +336,7 @@ module Energy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_lentropy_pars(f)
+    subroutine calc_lenergy_pars(f)
 !
 !  Dummy routine.
 !
@@ -345,9 +345,9 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lentropy_pars
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
-    subroutine read_entropy_init_pars(unit,iostat)
+    subroutine read_energy_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -355,17 +355,17 @@ module Energy
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_entropy_init_pars
+    endsubroutine read_energy_init_pars
 !***********************************************************************
-    subroutine write_entropy_init_pars(unit)
+    subroutine write_energy_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_entropy_init_pars
+    endsubroutine write_energy_init_pars
 !***********************************************************************
-    subroutine read_entropy_run_pars(unit,iostat)
+    subroutine read_energy_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -373,17 +373,17 @@ module Energy
       call keep_compiler_quiet(unit)
       if (present(iostat)) call keep_compiler_quiet(iostat)
 !
-    endsubroutine read_entropy_run_pars
+    endsubroutine read_energy_run_pars
 !***********************************************************************
-    subroutine write_entropy_run_pars(unit)
+    subroutine write_energy_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_entropy_run_pars
+    endsubroutine write_energy_run_pars
 !***********************************************************************
-    subroutine get_slices_entropy(f,slices)
+    subroutine get_slices_energy(f,slices)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
@@ -391,7 +391,7 @@ module Energy
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
 !
-    endsubroutine get_slices_entropy
+    endsubroutine get_slices_energy
 !***********************************************************************
     subroutine fill_farray_pressure(f)
 !
@@ -403,7 +403,7 @@ module Energy
 !
     endsubroutine fill_farray_pressure
 !***********************************************************************
-    subroutine impose_entropy_floor(f)
+    subroutine impose_energy_floor(f)
 !
 !  Dummy subroutine
 !
@@ -411,7 +411,7 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine impose_entropy_floor
+    endsubroutine impose_energy_floor
 !***********************************************************************
     subroutine dynamical_thermal_diffusion(umax)
 !
@@ -423,9 +423,9 @@ module Energy
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
-    subroutine rprint_entropy(lreset,lwrite)
+    subroutine rprint_energy(lreset,lwrite)
 !
-!  Reads and registers print parameters relevant to entropy.
+!  Reads and registers print parameters relevant to energy.
 !
       use Diagnostics, only: parse_name
 !
@@ -454,7 +454,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
 !
-!  Write column where which entropy variable is stored.
+!  Write column where which energy variable is stored.
 !
       if (lwr) then
         write(3,*) 'nname=',nname
@@ -462,7 +462,7 @@ module Energy
         write(3,*) 'iyH=0'
       endif
 !
-    endsubroutine rprint_entropy
+    endsubroutine rprint_energy
 !***********************************************************************
     subroutine split_update_energy(f)
 !
@@ -474,10 +474,10 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_entropy()
+    subroutine expand_shands_energy()
 !
 !  Dummy
 !
-    endsubroutine expand_shands_entropy
+    endsubroutine expand_shands_energy
 !***********************************************************************
 endmodule Energy
