@@ -1346,7 +1346,7 @@ module Interstellar
 !  Lambda*rho(z)=Gamma(z).
 !
 !  Requires gravz_profile='Ferriere' in gravity_simple.f90,
-!  init_lnrho & init_ss='thermal-hs' in density & entropy.f90.
+!  init_lnrho & initss='thermal-hs' in density & entropy.f90.
 !  Constants g_A..D from gravz_profile.
 !
 !  22-mar-10/fred: coded
