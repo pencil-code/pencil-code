@@ -309,6 +309,17 @@ module Particles_sub
               call fatal_error_local('boundconds_particles',&
                    'remove particles not ready for spherical coords')
             endif
+          elseif (boundx=='hw') then
+!
+!  Hard wall boundary condition
+!
+            if (fp(k,ixp)<=xyz0(1)) then
+              fp(k,ixp)=2*xyz0(1)-fp(k,ixp)
+              fp(k,ivpx)=-fp(k,ivpx)
+            elseif (fp(k,ixp)>=xyz1(1)) then
+              fp(k,ixp)=2*xyz1(1)-fp(k,ixp)
+              fp(k,ivpx)=-fp(k,ivpx)
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition =', boundx
             call stop_it('boundconds_particles')
@@ -355,6 +366,17 @@ module Particles_sub
                   call remove_particle(fp,ipar,k)
                 endif
               endif
+            endif
+          elseif (boundy=='hw') then
+!
+!  Hard wall boundary condition
+!
+            if (fp(k,iyp)<=xyz0(2)) then
+              fp(k,iyp)=2*xyz0(2)-fp(k,iyp)
+              fp(k,ivpy)=-fp(k,ivpy)
+            elseif (fp(k,iyp)>=xyz1(2)) then
+              fp(k,iyp)=2*xyz1(2)-fp(k,iyp)
+              fp(k,ivpy)=-fp(k,ivpy)
             endif
           else
             print*, 'boundconds_particles: No such boundary condition =', boundy
@@ -412,6 +434,17 @@ module Particles_sub
               if (fp(k,izp)>=xyz1(3)) then
                 fp(k,izp)=2*xyz1(3)-fp(k,izp)
               endif
+            endif
+          elseif (boundz=='hw') then
+!
+!  Hard wall boundary condition
+!
+            if (fp(k,izp)<=xyz0(3)) then
+              fp(k,izp)=2*xyz0(3)-fp(k,izp)
+              fp(k,ivpz)=-fp(k,ivpz)
+            elseif (fp(k,izp)>=xyz1(3)) then
+              fp(k,izp)=2*xyz1(3)-fp(k,izp)
+              fp(k,ivpz)=-fp(k,ivpz)
             endif
           else
             print*, 'boundconds_particles: No such boundary condition=', boundz
