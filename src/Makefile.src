@@ -281,6 +281,34 @@ endif
 ifdef ENTROPY
   ENERGY     =   $(ENTROPY)
 endif
+#ifdef ENTROPY
+#entropy_message:
+#    @echo ";;; Cannot compile:"
+#    @echo ";;;    The ENTROPY module has been replaced by ENERGY"
+#    @echo ";;;"
+#    @echo ";;; Please update your Makefile.local, e.g. via cut+paste:"
+#    @echo ";;;"
+#    @echo ";;;      perl -pi'~' -e 's/ENTROPY/ENERGY /' $(FROM_PARENT)Makefile.local"
+#    @echo ";;;"
+#    exit 1
+#endif
+#
+#  Catch inconsistencies in the namelists.
+#
+#ENTROPY_IN_NAMELIST := $(shell grep '&entropy'  ../start.in ../run.in)
+#ifeq ($(ENTROPY_IN_NAMELIST),)
+#else
+#entropy_message:
+#    @echo ";;; Detected error:"
+#    @echo ";;;    &entropy_init_pars and &entropy_run_pars have been renamed"
+#    @echo ";;;    &energy_init_pars and &energy_run_pars"
+#    @echo ";;;"
+#    @echo ";;; Please update your start.in and/or run.in files via cut+paste:"
+#    @echo ";;;"
+#    @echo ";;;      sed -ie 's/\&entropy/\&energy/g' start.in run.in"
+#    @echo ";;;"
+#    exit 1
+#endif
 #
 # Default names of source and object files (unswitchable modules).
 # Please use alphabetical order.
