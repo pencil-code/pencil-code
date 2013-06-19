@@ -11,6 +11,7 @@ import pylab as P
 from npfile import npfile
 from param import read_param 
 from dim import read_dim 
+from time import sleep 
 
 import sys
 
@@ -79,7 +80,7 @@ def read_slices(field='uu1',datadir='data/',proc=-1,
         
 
 def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='native',
-                tmin=0.,tmax=1.e38,amin=0.,amax=1.,transform='',oldfile=False):
+                tmin=0.,tmax=1.e38,wait=0.,amin=0.,amax=1.,transform='',oldfile=False):
     """
     read 2D slice files and assemble an animation.
 
@@ -95,6 +96,7 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
      amin --- minimum value for image scaling
      amax --- maximum value for image scaling
      transform --- insert arbitrary numerical code to modify the slice
+     wait --- pause in seconds between animation slices
     """
     
     datadir = os.path.expanduser(datadir)
@@ -170,6 +172,8 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
                 
             ifirst = False
             islice += 1
+
+            sleep(wait)
 
     infile.close()
 
