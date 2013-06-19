@@ -517,6 +517,55 @@ module Energy
 !
     endsubroutine calc_lenergy_pars
 !***********************************************************************
+    subroutine fill_farray_pressure(f)
+!
+!  Fill f array with the pressure, to be able to calculate pressure gradient
+!  directly from the pressure.
+!
+!  18-feb-10/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine fill_farray_pressure
+!***********************************************************************
+    subroutine impose_energy_floor(f)
+!
+!  Dummy subroutine; may not be necessary for lnTT
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine impose_energy_floor
+!***********************************************************************
+    subroutine split_update_energy(f)
+!
+!  Dummy subroutine
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine split_update_energy
+!***********************************************************************
+    subroutine expand_shands_energy()
+!
+!  Presently dummy, for possible use
+!
+    endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine dynamical_thermal_diffusion(umax)
+!
+!  Dummy subroutine
+!
+      real, intent(in) :: umax
+!
+      call keep_compiler_quiet(umax)
+!
+    endsubroutine dynamical_thermal_diffusion
+!***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -608,54 +657,5 @@ module Energy
       endif
 !
     endsubroutine rprint_energy
-!***********************************************************************
-    subroutine fill_farray_pressure(f)
-!
-!  Fill f array with the pressure, to be able to calculate pressure gradient
-!  directly from the pressure.
-!
-!  18-feb-10/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine fill_farray_pressure
-!***********************************************************************
-    subroutine impose_energy_floor(f)
-!
-!  Dummy subroutine; may not be necessary for lnTT
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine impose_energy_floor
-!***********************************************************************
-    subroutine split_update_energy(f)
-!
-!  Dummy subroutine
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine split_update_energy
-!***********************************************************************
-    subroutine expand_shands_energy()
-!
-!  Presently dummy, for possible use
-!
-    endsubroutine expand_shands_energy
-!***********************************************************************
-    subroutine dynamical_thermal_diffusion(umax)
-!
-!  Dummy subroutine
-!
-      real, intent(in) :: umax
-!
-      call keep_compiler_quiet(umax)
-!
-    endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
 endmodule Energy
