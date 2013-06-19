@@ -1,0 +1,16 @@
+Directory:
+    ${PENCIL_HOME}/samples/Circular_Polarized_Alfven_Wave
+SVN Id:
+    $Id$
+Maintainer:
+    Axel Brandenburg <brandenb/nordita[dot]org>
+Added:
+    19-Jun-2013
+Status:
+    not ready yet
+Recommended resolution:
+    64x32x1
+Comments:
+    Test for Circular_Polarized_Alfven_Wave
+References:
+    http://www.astro.princeton.edu/~jstone/Athena/tests/cp-alfven-wave/cp-alfven.html
