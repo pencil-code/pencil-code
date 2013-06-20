@@ -1,57 +1,9 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
-<!-- $Id: previous_news_items.html,v 1.1 2013-06-18 21:36:54 illa Exp $ -->
-
-<html>
-<head>
-  <meta name="language" content="en">
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-  <title>Previous News Items</title>
-  <link  rel="shortcut icon" href="pics/pencils_16x16.png">
-  <link  rel=stylesheet href="styles.css" type="text/css">
-</head>
-
-<body>
-
-<div id="bodywatermark">
-<div id="mcontainerouter"><div id="mcontainer">
-
-        <div id="header"><!--<div id="headerwatermark">-->
-        
-                <div id="headerpad">
-                						
-                        <h1>
-                        <img src="pics/pencils_65x30.png" alt="Pencil logo" />
-  															
-  																The Pencil Code - Previous News Items
-  																
-  																<img src="pics/pencils_65x30.png">
-                        </h1>
-                        
-                <!--</div>-->
-                </div><!--End of Header Watermark -->
-        </div><!--End of Header -->
-
-
-
-<div class="mmenu">
-
-        <ul>
-                
-                        <li><i></i><a href="index.html">Home</a></li>
-                        <li><a href="news.html">News</a></li>
-                        <li><a href="doc.html">Documentation</a></li>
-                        <li><a href="download.html">Download</a></li>
-                        <li><a href="meetings.html">Meetings</a></li>
-                        <li><a href="http://code.google.com/p/pencil-code/issues">Issues</a></li>
-                        <li><a href="links.html">References</a></li>
-                        <li><a href="http://code.google.com/p/pencil-code/people/list">Contact</a></li>
-                      
-                
-        </ul>
-<div class="clear"></div>
-</div>
-
-
+<?
+	 include "header.inc";
+ ?>
+<div class="centcolumn">
+<div class="centcolumnpad">
+<h2>Previous News.</h2>
 
 <li>13 Jan 2012<br>
 New website for the Pencil Code User Meeting 2012 on 18-21 June
@@ -68,7 +20,7 @@ The Pencil Code User Meeting 2011 will be 24-28 October in Toulouse.
 For more information and registering, see: http://www.ast.obs-mip.fr/users/dintrans/PencilCode2011/ (now outdated address).</li>
 
 <li>6 Aug 2010<br>
-<a href=UserMeetings/2010>Notes from the Pencil Code User Meeting 2010</a> in New York.</li>
+<a href=meeting2010.php>Notes from the Pencil Code User Meeting 2010</a> in New York.</li>
 
 <li>22 Jan 2010<br>
 The <a href=http://www.research.amnh.org/astrophysics/pencil/pencil.html>Pencil Code User Meeting 2010</a> will be 26-30 July in New York.</li>
@@ -190,11 +142,11 @@ it is fit for public consumption.</li>
 
 <hr/>
 
-<small>
-<!-- hhmts start -->
-$Date: 2013-06-18 21:36:54 $
-<!-- hhmts end -->
-</small>
 
-</body>
-</html>
+ </div>
+</div>
+  
+      
+
+<? include "footer.inc" ?>
+

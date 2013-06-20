@@ -178,6 +178,18 @@ background: url(images/multicolpng2.png) repeat-x;
 background-position: 0px -60px;
 
 }
+.mmenuselect {
+	color:#D04000;
+}
+
+.mmenu ul li a:active{ 
+color:#D04000;
+background-color:#95EFFF!important;
+background: url(images/multicolpng2.png) repeat-x;
+background-position: 0px -60px;
+
+}
+
 .mwrapper{padding:0px}
 .mmenu ul li i{
 height:30px;

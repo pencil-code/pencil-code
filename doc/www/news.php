@@ -10,7 +10,7 @@
     in Lund.  For more information and registering, see:
     <a href=http://www.astro.lu.se/~michiel/PC2013/>http://www.astro.lu.se/~michiel/PC
 2013/</a>.</li>
-  <li>Link to <a href="previous_news_items.html">previous news items</a>.</li>
+  <li>Link to <a href="previous_news_items.php">previous news items</a>.</li>
 </ul>
 
 

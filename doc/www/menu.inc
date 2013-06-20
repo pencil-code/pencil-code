@@ -1,20 +1,28 @@
-<!--<br><br><br><br>-->
-<!--<div id="mcontainer" style="position:fixed;width:205px;height:280px;">-->
+<?
+	$menu = array(
+		"Home"           => "/",
+		"News"           => "/news.php",
+		"Documentation"  => "/doc.php",
+		"Download"       => "/download.php",
+		"Meetings"       => "/meetings.php",
+		"Latest changes" => "http://code.google.com/p/pencil-code/source/list",
+		"References"     => "/links.php",
+		"Contact"        => "/contact.php",
+	);
+	
+	$own = "/".basename ($_SERVER['SCRIPT_NAME']);
+?>
 
 <div class="mmenu" style="position:fixed;">
-
-        <ul>
-                
-                        <li><a href="index.php">Home</a></li>
-                        <li><a href="news.php">News</a></li>
-                        <li><a href="doc.php">Documentation</a></li>
-                        <li><a href="download.php">Download</a></li>
-                        <li><a href="meetings.php">Meetings</a></li>
-                        <li><a href="http://code.google.com/p/pencil-code/source/list">Latest changes</a></li>
-                        <li><a href="links.php">References</a></li>
-                        <li><a href="contact.php">Contact</a></li>
-                      
-                
-        </ul>
+	<ul>
+<?
+	foreach ($menu as $text => $link) {
+	if ($own == $link) { $class = ' CLASS="mmenuselect"'; } else { $class = ''; } 
+ ?>
+		<li <? echo $class; ?>><a href="<? echo $link; ?>"><? echo $text; ?></a></li>
+<?
+	}
+ ?>
+	</ul>
 <div class="clear"></div>
 </div>
