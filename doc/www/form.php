@@ -1,18 +1,7 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<!-- $Id: form.html,v 1.13 2007-10-20 17:49:12 brandenb Exp $ -->
-
-<!-- form.html -->
-<html>
-<head>
-  <meta name="language" content="en">
-  <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
-  <title>User profile</title>
-  <link  rel=stylesheet href="pencil.css" type="text/css">
-</head>
-<body>
-
-<!-- Header -->
-
+<?
+	include "header.inc";
+ ?>
+<div class="centcolumnpad">
 <h1>
     <img src="pics/pencils_65x30.png">
     Obtaining the <em>Pencil Code</em></h1>
@@ -130,18 +119,8 @@
 <p>
 
 </form>
-
-<p>
-<hr>
-<p>
-
-<div align=left>
-&nbsp;&nbsp;&nbsp;&nbsp;
-<!--
-<a href="index.html"><img src="pics/pencils_100x45.png" border=0></a>
--->
 </div>
+<?
+	include "footer.inc";
+ ?>
 
-
-</body>
-</html>

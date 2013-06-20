@@ -1,29 +1,11 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
-<!-- $Id: tests_new.html,v 1.1 2013-06-18 21:36:54 illa Exp $ -->
-
-<html>
-<head>
-  <meta name="language" content="en">
-  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-  <title>Pencil Code Tests</title>
-  <link  rel="icon" href="pics/pencils_16x16.png">
-  <link  rel=stylesheet href="pencil.css" type="text/css">
-</head>
-
-<body>
-
-<h1>
-    <img src="pics/pencils_65x30.png">
-    &nbsp;&nbsp;&nbsp;
-    Pencil Code &ndash; Tests
-    &nbsp;&nbsp;&nbsp;
-    <img src="pics/pencils_65x30.png">
-</h1>
-
+<?
+	 include "header.inc";
+ ?>
+<div class="centcolumnpad">
 <h2>Automatic test results</h2>
 
 <p>To ensure reproducability, the
-<a href="http://www.nordita.org/software/pencil-code/">Pencil Code</a>
+<a href="http://pencil-code.nordita.org/">Pencil Code</a>
 is tested daily for a number of
 sample applications. This is important for us in order to make sure certain
 improvements in some parts of the code do not affect the functionality
@@ -31,7 +13,7 @@ of other parts. For other users who suspect that a new problem has emerged
 it could be useful to first see whether this problem also shows up in
 our own tests. The latest test results for a can be seen online:</p>
 
-<ul>
+<ul STYLE="font-size:13px;">
 <!--
 <li><a href="http://norlx50.albanova.se/~wdobler/pencil-code/tests/g95_debug.html">norlx50 (Linux, g95, by Wolfgang)</a>
 -->
@@ -291,11 +273,8 @@ initial field: random
 <!-- </div></p> -->
 
 
-<hr>
-<small>
-<!-- hhmts start -->
-$Date: 2013-06-18 21:36:54 $
-<!-- hhmts end -->
-</small>
-</body>
-</html>
+</div>
+<?
+	include "footer.inc";
+ ?>
+
