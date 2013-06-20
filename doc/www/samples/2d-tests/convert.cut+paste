@@ -1,0 +1,9 @@
+scp conv-slab-2d.gif $serv/f90/pencil-code/www/samples/2d-tests
+scp conv-slab-2d2.gif $serv/f90/pencil-code/www/samples/2d-tests
+
+convert conv-slab-2d.gif conv-slab-2d.png; convert conv-slab-2d.png -geometry 25% -normalize conv-slab-2d_thumb.jpg
+convert conv-slab-2d2.gif conv-slab-2d2.png; convert conv-slab-2d2.png -geometry 25% -normalize conv-slab-2d2_thumb.jpg
+
+convert conv-slab-2d.gif -geometry 25% -normalize conv-slab-2d_thumb.jpg
+convert conv-slab-2d2.gif -geometry 25% -normalize conv-slab-2d2_thumb.jpg
+convert A3+chi11+Ra1e5.png -geometry 25% -normalize A3+chi11+Ra1e5_thumb.jpg

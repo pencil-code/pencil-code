@@ -1,0 +1,55 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 TRANSITIONAL//EN">
+<!-- $Id: index.html,v 1.3 2003-05-28 01:30:30 brandenb Exp $ -->
+
+<html>
+<head>
+  <meta name="language" content="en">
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>Pencil Code Tests</title>
+  <link  rel=stylesheet href="../../../pencil.css" type="text/css">
+</head>
+
+<body>
+
+<h1>
+    <img src="../pics/pencils_65x30.png">
+    &nbsp;&nbsp;&nbsp;
+    Pencil Code -- Tests
+    &nbsp;&nbsp;&nbsp;
+</h1>
+
+<h3><tt>samples/1d-tests/sod_10s (to sod_1000s)</tt></h3>
+In Makefile.local, set "VISCOSITY=visc_shock" to invoke shock viscosity.
+<div align=center>
+<table border=0 cellspacing=15>
+  <tr>
+    <th> pressure jump 10:1 </th>
+    <th> pressure jump 100:1 </th>
+    <th> pressure jump 1000:1 </th>
+  </tr>
+  <tr>
+    <td align=center> <A href="sod_10s.png"><img src="sod_10s_thumb.jpg"></a> </td>
+    <td align=center> <A href="sod_100s.png"><img src="sod_100s_thumb.jpg"></a> </td>
+    <td align=center> <A href="sod_1000s.png"><img src="sod_1000s_thumb.jpg"></a> </td>
+  </tr>
+  <tr>
+    <td> &nu;<sub>sh</sub>=4, &nu;=2 10<sup>-3</sup></td>
+    <td> &nu;<sub>sh</sub>=3, &nu;=2 10<sup>-3</sup></td>
+    <td> &nu;<sub>sh</sub>=3, &nu;=5 10<sup>-4</sup></td>
+  </tr>
+  <tr>
+    <td> &chi;=5 10<sup>-4</sup>, <i>t</i>=2.4: </td>
+    <td> &chi;=3 10<sup>-4</sup>, <i>t</i>=1.9: </td>
+    <td> &chi;=5 10<sup>-5</sup>, <i>t</i>=1.5: </td>
+  </tr>
+</table>
+</div>
+
+<hr>
+<small>
+<!-- hhmts start -->
+$Date: 2003-05-28 01:30:30 $
+<!-- hhmts end -->
+</small>
+</body>
+</html>
