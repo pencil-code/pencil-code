@@ -3,8 +3,6 @@
 	include "header.inc";
  ?>
 <div class="centcolumnpad">
-<h2>Home Page</h2>
-
 <p>The <a href="http://pencil-code.nordita.org/" target="_top"> Pencil Code</a> is a high-order finite-difference code
 for compressible hydrodynamic flows with magnetic fields.  It is
 highly modular and can easily be adapted to different types of
