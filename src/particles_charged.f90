@@ -91,7 +91,7 @@ module Particles
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz,cdtp,lcentrifugal_force_par,lcheck_exact_frontier, lcoriolis_force_par, &
-      lonly_eforce,lpar_spec,qbym, qbym_species
+      lmigration_redo,lonly_eforce,lpar_spec,qbym, qbym_species
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
