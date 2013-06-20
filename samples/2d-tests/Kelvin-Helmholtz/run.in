@@ -1,0 +1,32 @@
+!                              -*-f90-*-     (for emacs) 
+!
+!  Initialisation parameters for dust particles moving in a random 
+!  velocity field.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2011-08-03 21:08:47 wlyra Exp $',
+  nt=50, it1=5, cdt=0.4, cdtv=0.4, isave=100, itorder=3
+  dsnap=0.02, dvid=2.0, ip=20
+  lpencil_check=F
+  tmax=1.5
+  max_walltime=85500
+  loutput_varn_at_exact_tsnap=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  idiff='hyper3-mesh'
+  diffrho_hyper3_mesh=20.
+/
+&entropy_run_pars
+  iheatcond='hyper3-mesh'
+  chi_hyper3_mesh=20.
+/
+&viscosity_run_pars
+  ivisc='hyper3-mesh'
+  nu_hyper3_mesh=20.
+/
+&shock_run_pars
+/
