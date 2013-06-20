@@ -27,6 +27,9 @@ h2 {
 	font-size: 18px;
 	font-weight: bold;
 }
+em {
+	color: #404040;
+}
 
 body {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
@@ -160,7 +163,7 @@ li.separated {
 .mmenu li {
 	padding: 0;
 	height: 30px;
-	width: 180px; /* determines width of menu links */
+	width: 180px; /* determines the width of the menu links */
 }
 .mmenu li a {
 	background: url(images/multicolpng2.png) repeat-x left top;
@@ -196,8 +199,8 @@ li.separated {
 }
 
 #leftcolumn {
-	height: 400px;
-	width: 200px; /* determines width of left column */
+	height: 280px;
+	width: 200px; /* determines the width of the menu with border */
 	float: left;
 }
 .leftcolumnpad {
