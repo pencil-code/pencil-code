@@ -1,0 +1,11 @@
+Maintainer:
+    Wladimir Lyra <wlyra/caltech[dot]edu>
+Added:
+    2013-jun-20
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    4096x4096x1 (same hyperdiffusivity as sample)
+Comments:
+    Kelvin-Helmholtz benchmark run for McNally, Lyra, & Passy 2011. 
+
