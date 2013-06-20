@@ -30,6 +30,13 @@ h2 {
 em {
 	color: #404040;
 }
+code {
+	border: 1px dashed #404040;
+	padding: 8px 16px 8px 16px;
+	margin-left: 16px;
+	background-color: #C0E8FF;
+	color: #404040;
+}
 
 body {
 	font-family: Verdana, Arial, Helvetica, sans-serif;

@@ -18,7 +18,7 @@
 <h2>Meetings.</h2>
 
 <p align="center">
-<img src="pics/2006b.jpg"><img src="pics/2011a.jpg"><img src="pics/2011b.jpg">
+<img src="/pics/2006b.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2011a.jpg" width="240" height="180" border="0" alt="2011"><img src="/pics/2011b.jpg" width="240" height="180" border="0" alt="2011">
 </p>
 
 <p>
@@ -39,7 +39,7 @@
 </p>
 
 <p align="center">
-<img src="pics/2005a.jpg"><img src="pics/2005b.jpg"><img src="pics/2006a.jpg">
+<img src="/pics/2005a.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2005b.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2006a.jpg" width="240" height="180" border="0" alt="2006">
 </p>
 </div>
 <?
