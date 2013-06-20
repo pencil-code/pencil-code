@@ -1,9 +1,11 @@
+<!-- $Id$ -->
 <?
 	 include "header.inc";
  ?>
 <div class="centcolumnpad">
 <h2>Download.</h2>
-We recommend getting the code with svn. If you just want to check out the latest version of the code use:
+We recommend getting the code with svn.<br>
+If you just want to check out the latest version of the code use:
 <p><code>svn checkout http://pencil-code.googlecode.com/svn/trunk/ pencil-code</code></p>
 
 If you have a Pencil Code username NAME at google-code then use:

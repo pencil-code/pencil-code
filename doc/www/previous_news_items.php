@@ -1,3 +1,4 @@
+<!-- $Id$ -->
 <?
 	 include "header.inc";
  ?>
@@ -8,7 +9,7 @@
 
 <li class="separated">21 Sep 2008:<br>
 Now the code is available under
-<a href=http://pencil-code.googlecode.com/>http://pencil-code.googlecode.com/</a>.
+<a href="http://pencil-code.googlecode.com/">http://pencil-code.googlecode.com/</a>.
 Please consult the <a href="http://code.google.com/p/pencil-code/wiki/SvnTransition">following notes</a>
 to do the transition.</li>
 

@@ -1,3 +1,4 @@
+<!-- $Id$ -->
 <?
 	 include "header.inc";
  ?>
@@ -20,7 +21,7 @@ The main developers and maintainers of this projects are:
 </ul>
 
 All the  people involved in this project are listed <a href="http://code.google.com/p/pencil-code/people/list">here.</a>
-<br />
+<br>
 For any problem in the code you can write to the <a href="https://groups.google.com/forum/?fromgroups#!forum/pencil-code-discuss"> mailing list.</a>
 
 </div>

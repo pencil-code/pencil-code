@@ -1,8 +1,9 @@
+<!-- $Id$ -->
 <?
 	include "header.inc";
 
 	$meetings = array (
-		array ( title => "10th meeting", date => "summer 2014", link => "", notes => "", city => "?", venue => "?", country => "?" ),
+		array ( title => "10th meeting", date => "summer 2014", link => "", notes => "", city => "?", venue => "", country => "" ),
 		array ( title => "9th meeting", date => "17-20 Jun, 2013", link => "http://www.astro.lu.se/~michiel/PC2013/", notes => "", city => "Lund", venue => "Lund Observatory", country => "Sweden" ),
 		array ( title => "8th meeting", date => "18-21 Jun, 2012", link => "http://agenda.albanova.se/conferenceDisplay.py?confId=3128", notes => "/meeting_2012.php", city => "Helsinki", venue => "Physics Department", country => "Finland" ),
 		array ( title => "7th meeting", date => "24-28 Oct, 2011", link => "http://norlx51.albanova.se/~dintrans/Meeting2011/", notes => "/meeting_2011.php", city => "Toulouse", venue => "Observatoire Midi-Pyr&eacute;n&eacute;es", country => "France" ),
@@ -21,22 +22,20 @@
 <img src="/pics/2006b.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2011a.jpg" width="240" height="180" border="0" alt="2011"><img src="/pics/2011b.jpg" width="240" height="180" border="0" alt="2011">
 </p>
 
-<p>
 <table border="0" cellspacing="10" cellpadding="0">
 <?
 	foreach ($meetings as $meeting) {
  ?>
 <tr>
-<td align="right" STYLE="white-space:nowrap;"><? echo $meeting['date']; ?>:</td>
-<td STYLE="white-space:nowrap;"><? if ($meeting['link']) echo '<a href="'.$meeting['link'].'">'; ?><? echo $meeting['title']; ?></a></td>
-<td STYLE="white-space:nowrap;"><? if ($meeting['notes']) { echo '<a href="'.$meeting['notes'].'">[notes]</a>'; } ?><? if ($meeting['videos']) { echo '<a href="'.$meeting['videos'].'">[videos]</a>'; } ?></td>
-<td STYLE="font-size:12px;">in <? echo $meeting['city']; ?>, <? echo $meeting['venue']; ?> (<? echo $meeting['country']; ?>).</td>
+<td align="right" STYLE="white-space:nowrap;"><? ifecho ("", $meeting['date'], ":"); ?></td>
+<td STYLE="white-space:nowrap;"><? echolink ($meeting['link'], $meeting['title']); ?></td>
+<td STYLE="white-space:nowrap;"><? iflink  ($meeting['notes'], "[notes]"); ?><? iflink ($meeting['videos'], "[videos]"); ?></td>
+<td STYLE="font-size:12px;"><? ifecho ("in ", $meeting['city'], ""); ?><? ifecho (", ", $meeting['venue'], ""); ?><? ifecho (" (", $meeting['country'], ")"); ?>.</td>
 </tr>
 <?
 	}
  ?>
 </table>
-</p>
 
 <p align="center">
 <img src="/pics/2005a.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2005b.jpg" width="240" height="180" border="0" alt="2006"><img src="/pics/2006a.jpg" width="240" height="180" border="0" alt="2006">

@@ -1,5 +1,8 @@
-<!-- $Id$ -->
 <?
+	# $Id$
+
+	require "utils.inc";
+
 	if (!isset ($right_column)) { $right_column = ""; }
 
 	$menu_width = 200;
@@ -23,13 +26,11 @@
 <!-- Logo and Title -->
 <div id="header">
 <div id="headerpad">
-<h1>
 <img src="/pics/pencils_100x45.png" alt="Pencil Code logo" width="100" height="45" border="0" hspace="30" align="left" STYLE="position:fixed">
-<div style="padding-left:<? echo $menu_width; ?>px;">
 <img src="/pics/pencils_100x45.png" alt="Pencil Code logo" width="100" height="45" border="0" hspace="30" align="right">
-The&nbsp;Pencil&nbsp;Code
+<div style="padding-left:<? echo $menu_width; ?>px;">
+<h1>The&nbsp;Pencil&nbsp;Code</h1>
 </div>
-</h1>
 </div>
 </div>
 
