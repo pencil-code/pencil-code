@@ -25,7 +25,7 @@ module General
   public :: besselj_nu_int,calc_complete_ellints
   public :: bessj,cyclic
   public :: spline_integral,linear_interpolate
-  public :: itoa, parser, write_full_columns
+  public :: itoa, count_bits, parser, write_full_columns
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
@@ -797,6 +797,25 @@ module General
       endif
 !
     endsubroutine keep_compiler_quiet_c
+!***********************************************************************
+    integer function count_bits(n)
+!
+!  Count non-zero bits. Returns the number of the left-most non-zero bit.
+!
+!  18-jun-2013/Bourdin.KIS: coded
+!
+      integer, intent(in) :: n
+!
+      integer :: bits, pos, num
+!
+      num = n
+      bits = 0
+      do while (num .ne. 0)
+        n = ishift (n, -1)
+        bits++
+      enddo
+!
+    endfunction count_bits
 !***********************************************************************
     character (len=intlen) function itoa(n)
 !
