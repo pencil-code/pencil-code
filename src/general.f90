@@ -804,15 +804,15 @@ module General
 !
 !  18-jun-2013/Bourdin.KIS: coded
 !
-      integer, intent(in) :: n
+      integer, intent(inout) :: n
 !
-      integer :: bits, pos, num
+      integer :: pos, num
 !
       num = n
-      bits = 0
+      count_bits = 0
       do while (num .ne. 0)
         n = ishft (n, -1)
-        bits++
+        count_bits++
       enddo
 !
     endfunction count_bits
