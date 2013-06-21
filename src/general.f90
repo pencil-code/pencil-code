@@ -811,7 +811,7 @@ module General
       num = n
       bits = 0
       do while (num .ne. 0)
-        n = ishift (n, -1)
+        n = ishft (n, -1)
         bits++
       enddo
 !
