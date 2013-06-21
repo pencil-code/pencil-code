@@ -804,9 +804,9 @@ module General
 !
 !  18-jun-2013/Bourdin.KIS: coded
 !
-      integer, intent(inout) :: n
+      integer, intent(in) :: n
 !
-      integer :: pos, num
+      integer :: num
 !
       num = n
       count_bits = 0
