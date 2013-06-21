@@ -176,7 +176,11 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   nghostx = dim.nghostx
   nghosty = dim.nghosty
   nghostz = dim.nghostz
+  mvar = dim.mvar
+  mvar_io = mvar
+  if (param.lwrite_aux) then mvar_io += dim.maux
   precision = dim.precision
+  if (precision eq 'D') then bytes = 8 else bytes = 4
 ;
 ; Initialize cdat_grid variables.
 ;
@@ -324,7 +328,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
         close, lun
 ;
         openr, lun, filename, /f77, swap_endian=swap_endian
-        point_lun, lun, bytes * dim.mvar*mxyz + long64 (2*markers*4)
+        point_lun, lun, bytes * mvar_io*mxyz + long64 (2*markers*4)
         t_test = zero
         if (allprocs eq 1) then begin
           ; collectively written files

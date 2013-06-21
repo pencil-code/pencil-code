@@ -101,7 +101,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Local shorthand for some parameters.
 ;
+  mvar = dim.mvar
+  mvar_io = mvar
+  if (param.lwrite_aux) then mvar_io += dim.maux
   precision = dim.precision
+  if (precision eq 'D') then bytes = 8 else bytes = 4
 ;
 ; Initialize / set default returns for ALL variables.
 ;
@@ -145,7 +149,7 @@ COMPILE_OPT IDL2,HIDDEN
   openr, file, filename, /f77, swap_endian=swap_endian
   if (precision eq 'D') then bytes=8 else bytes=4
   if (f77 eq 0) then markers=0 else markers=2
-  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(dim.mvar*bytes)+long64(markers*4)
+  point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*bytes)+long64(markers*4)
   if (allprocs eq 1) then begin
     ; collectively written files
     readu, file, t, x, y, z, dx, dy, dz

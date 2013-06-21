@@ -218,7 +218,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   nghosty=dim.nghosty
   nghostz=dim.nghostz
   mvar=dim.mvar
+  mvar_io=mvar
+  if (param.lwrite_aux) then mvar_io+=dim.maux
   precision=dim.precision
+  if (precision eq 'D') then bytes=8 else bytes=4
   mxloc=procdim.mx
   myloc=procdim.my
   mzloc=procdim.mz
@@ -483,9 +486,6 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       if (f77 eq 0) then begin
         close, file
         openr, file, filename, /f77, swap_endian=swap_endian
-        if (precision eq 'D') then bytes=8 else bytes=4
-        mvar_io=dim.mvar
-        if (param.lwrite_aux) then mvar_io=mvar_io+dim.maux
         point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*bytes)
       endif
       readu, file, t, x, y, z, dx, dy, dz
@@ -503,7 +503,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
           close, file
           openr, file, filename, /f77, swap_endian=swap_endian
           if (precision eq 'D') then bytes=8 else bytes=4
-          point_lun, file, long64(dim.mx)*long64(dim.my)*long64(procdim.mz)*long64(dim.mvar*bytes)
+          point_lun, file, long64(dim.mx)*long64(dim.my)*long64(procdim.mz)*long64(mvar_io*bytes)
         endif
         if (i eq 0) then begin
           readu, file, t
