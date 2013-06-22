@@ -21,7 +21,7 @@ our own tests. The latest test results for a can be seen online:</p>
 <!-- Anders Johansen test -->
 <li><a href="http://www.astro.ku.dk/~ajohan/pencil-test.html">gfortran with open-mpi, quad-core with Intel Xeon 2.40 GHz cores, by Anders Johansen)</a>
 <!-- Philippe Bourdin test -->
-<li><a href="http://www.pab-software.de/Pencil/pc_auto-test.txt">GNU Fortran (Ubuntu 4.4.1-4ubuntu9) 4.4.1 (by Philippe Bourdin)</a>
+<li><a href="http://www.pab-software.de/Pencil/pc_auto-test.txt">GNU Fortran (Ubuntu 4.4.3-4ubuntu5.1) 4.4.3-4 (by Philippe Bourdin)</a>
 <!-- Boris Dintrans test -->
 <li><a href="http://www.ast.obs-mip.fr/users/dintrans/tmp/test_runs.html">Copernic (Linux/CentOS5 on 4 x Hexacore Intel Xeon E7540@2.00GHz, ifort 64 bits v12.0.1.107, by Boris Dintrans, regular level 2 test)</a>
 <!-- Boris Dintrans test (2) -->
