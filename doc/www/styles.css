@@ -16,19 +16,14 @@
 	clear: both;
 }
 p {
-	margin: 15px 0;
-	font-size: 13px;
+	margin: 15px 0px 15px 0px;
 }
-h1,h2,h3 {
-	margin: 10px 0;
-}
-h2 {
-	margin: 10px 0 0 0;
-	font-size: 18px;
+h1,h2,h3,h4,h5 {
+	margin: 10px 0px 15px 0px;
 	font-weight: bold;
 }
-em {
-	color: #404040;
+em.larger {
+	font-size: 15px;
 }
 code {
 	border: 1px dashed #404040;
@@ -40,6 +35,7 @@ code {
 
 body {
 	font-family: Verdana, Arial, Helvetica, sans-serif;
+	font-size: 13px;
 	background-color: #95EFFF;
 	margin: 0px;
 	padding: 0px;
@@ -190,19 +186,19 @@ li.separated {
 	line-height: 25px;
 }
 .mmenu a:hover {
-	color: #D04000;
+	color: #D02000!important;
 	background-color: #95EFFF;
 	background: url(images/multicolpng2.png) repeat-x;
 	background-position: 0px -60px;
 }
 .mmenu a:active {
-	color: #D04000;
+	color: #D02000!important;
 	background-color: #95EFFF;
 	background: url(images/multicolpng2.png) repeat-x;
 	background-position: 0px -60px;
 }
-.mmenuselect {
-	color: #D04000!important;
+a.mmenuselect {
+	color: #FF8000!important;
 }
 
 #leftcolumn {
@@ -251,9 +247,7 @@ li.separated {
 	padding: 20px;
 	background: url(images/div_dark8.png);
 	background-repeat: repeat-x;
-}
-.centcolumnpad p {
-	color: #555555;
+	color: #404040;
 }
 .centcolumnpad h2 {
 	color: #26586C;
@@ -289,9 +283,7 @@ li.separated {
 	width: auto;
 	margin: 0;
 	clear: both;
-}
-.rightcolumnpad p {
-	color: #555555;
+	color: #404040;
 }
 .rightcolumnpad h2 {
 	color: #26586C;

@@ -22,9 +22,9 @@ Examples are</p>
 </tr>
 <tr align="center">
 	<!-- IL: I think this three examples should link to three samples where are going to document -->
-	<td><em>Turbulence<br>simulations</em></td>
-	<td><em>Outflows from<br>accretion discs</em></td>
-	<td><em>Dynamo<br>experiments</em></td>
+	<td><em class="larger">Turbulence<br>simulations</em></td>
+	<td><em class="larger">Outflows from<br>accretion discs</em></td>
+	<td><em class="larger">Dynamo<br>experiments</em></td>
 </tr>
 </table>
 

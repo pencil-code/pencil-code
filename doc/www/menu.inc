@@ -11,14 +11,15 @@
 		"Contact"        => "/contact.php",
 	);
 
-	$own = "/".basename ($_SERVER['SCRIPT_NAME']);
+	$own = parse_url ($_SERVER['SCRIPT_NAME'], PHP_URL_PATH);
+	if ($own == "/index.php") { $own = "/"; }
 ?>
 <div class="mmenu" style="position:fixed;">
 <ul>
 <?
 	foreach ($menu as $text => $link) {
  ?>
-	<li<? if ($own == $link) { echo ' CLASS="mmenuselect"'; } ?>><a href="<? echo $link; ?>"><? echo $text; ?></a></li>
+	<li><a href="<? echo $link; ?>"<? if ($own == $link) { echo ' class="mmenuselect"'; } ?>><? echo $text; ?></a></li>
 <?
 	}
  ?>
