@@ -10,5 +10,7 @@ HYDRO     =   hydro
 DENSITY   =   density
 ENTROPY   =   entropy
 MAGNETIC  =   magnetic
+DERIV     =   deriv_10th
+REAL_PRECISION=double
 
 #REAL_PRECISION = double

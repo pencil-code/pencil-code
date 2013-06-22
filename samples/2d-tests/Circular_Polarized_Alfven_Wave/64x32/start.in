@@ -3,18 +3,19 @@
 !
 &init_pars
   cvsid = '$Id$'
-  lwrite_ic=T, lshift_origin_lower=T
+  lshift_origin_lower=T
   xyz0=0., 0., 0.
   xyz1=2., 1., 0.
+  !xyz1=.894427, .447214, 0.  !(alternative)
 /
 &eos_init_pars
   cs0=.40824829
 /
 &hydro_init_pars
   inituu = 'sinwave-phase'
-  ampl_ux=0.0447214, kx_ux=3.1415927, ky_ux=6.2831853, kz_ux=0., phase_ux=0.
-  ampl_uy=0.0894427, kx_uy=3.1415927, ky_uy=6.2831853, kz_uy=0., phase_uy=0.
-  ampl_uz=-.1      , kx_uz=3.1415927, ky_uz=6.2831853, kz_uz=0., phase_uz=1.5707963
+  ampl_ux=-.089442719, kx_ux=3.1415927, ky_ux=6.2831853, kz_ux=0., phase_ux=0.
+  ampl_uy=0.044721360, kx_uy=3.1415927, ky_uy=6.2831853, kz_uy=0., phase_uy=0.
+  ampl_uz=0.1        , kx_uz=3.1415927, ky_uz=6.2831853, kz_uz=0., phase_uz=1.5707963
 /
 &density_init_pars
 /
@@ -22,7 +23,7 @@
 /
 &magnetic_init_pars
   initaa = 'sinwave-phase'
-  ampl_ax=0.,          kx_ax=3.1415927, ky_ax=6.2831853, kz_ax=0., phase_ax=0.
+  ampl_ax=0.0        , kx_ax=3.1415927, ky_ax=6.2831853, kz_ax=0., phase_ax=0.
   ampl_ay=0.031830989, kx_ay=3.1415927, ky_ay=6.2831853, kz_ay=0., phase_ay=0.
   ampl_az=0.014235251, kx_az=3.1415927, ky_az=6.2831853, kz_az=0., phase_az=1.5707963
 /
