@@ -5738,13 +5738,17 @@ module Mpicomm
 !  The data must be mapped in pencil shape, especially for nprocx>1.
 !
 !   4-jul-2010/Bourdin.KIS: coded, adapted parts of transp_xy
+!  21-jun-2013/Bourdin.KIS: reworked, parellized MPI communication
+!
+      use General, only: count_bits
 !
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
       integer :: inx, iny, onx, ony ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
-      integer :: ibox, partner, alloc_err
+      integer :: num_it ! number of iterations for box-data transfer
+      integer :: it, ibox, partner, alloc_err
       integer, parameter :: ytag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -5772,8 +5776,11 @@ module Mpicomm
       allocate (recv_buf(bnx,bny), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_2D: not enough memory for recv_buf!', .true.)
 !
-      do ibox = 0, nprocxy-1
+      num_it = 2**count_bits (nprocxy-1)
+      do it = 0, num_it-1
+        ibox = IEOR ((iproc - ipz*nprocxy), it)
         partner = ipz*nprocxy + ibox
+        if (ibox >= nprocxy) cycle
         if (iproc == partner) then
           ! data is local
           out(bnx*ibox+1:bnx*(ibox+1),:) = transpose (in(bny*ibox+1:bny*(ibox+1),:))
@@ -5802,13 +5809,17 @@ module Mpicomm
 !  The data must be mapped in pencil shape, especially for nprocx>1.
 !
 !  14-jul-2010/Bourdin.KIS: coded, adapted parts of transp_xy
+!  21-jun-2013/Bourdin.KIS: reworked, parellized MPI communication
+!
+      use General, only: count_bits
 !
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
       integer :: inx, iny, inz, onx, ony, onz ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
-      integer :: ibox, partner, alloc_err, pos_z
+      integer :: num_it ! number of iterations for box-data transfer
+      integer :: it, ibox, partner, alloc_err, pos_z
       integer, parameter :: ytag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -5840,8 +5851,11 @@ module Mpicomm
       allocate (recv_buf(bnx,bny,onz), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_3D: not enough memory for recv_buf!', .true.)
 !
-      do ibox = 0, nprocxy-1
+      num_it = 2**count_bits (nprocxy-1)
+      do it = 0, num_it-1
+        ibox = IEOR ((iproc - ipz*nprocxy), it)
         partner = ipz*nprocxy + ibox
+        if (ibox >= nprocxy) cycle
         if (iproc == partner) then
           ! data is local
           do pos_z = 1, onz
@@ -5874,13 +5888,17 @@ module Mpicomm
 !  The data must be mapped in pencil shape, especially for nprocx>1.
 !
 !  14-jul-2010/Bourdin.KIS: coded, adapted parts of transp_xy
+!  21-jun-2013/Bourdin.KIS: reworked, parellized MPI communication
+!
+      use General, only: count_bits
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
 !
       integer :: inx, iny, inz, ina, onx, ony, onz, ona ! sizes of in and out arrays
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
-      integer :: ibox, partner, alloc_err, pos_z, pos_a
+      integer :: num_it ! number of iterations for box-data transfer
+      integer :: it, ibox, partner, alloc_err, pos_z, pos_a
       integer, parameter :: ytag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -5916,8 +5934,11 @@ module Mpicomm
       allocate (recv_buf(bnx,bny,onz,ona), stat=alloc_err)
       if (alloc_err > 0) call stop_fatal ('transp_pencil_xy_4D: not enough memory for recv_buf!', .true.)
 !
-      do ibox = 0, nprocxy-1
+      num_it = 2**count_bits (nprocxy-1)
+      do it = 0, num_it-1
+        ibox = IEOR ((iproc - ipz*nprocxy), it)
         partner = ipz*nprocxy + ibox
+        if (ibox >= nprocxy) cycle
         if (iproc == partner) then
           ! data is local
           do pos_z = 1, onz
