@@ -811,8 +811,8 @@ module General
       num = n
       count_bits = 0
       do while (num .ne. 0)
-        n = ishft (n, -1)
-        count_bits++
+        num = ishft (num, -1)
+        count_bits = count_bits + 1
       enddo
 !
     endfunction count_bits
