@@ -10,7 +10,7 @@
 !
   lperi = F  , T  , T,         ! periodic direction?!
 !  bcx = 'a','a2','s','s','s','s' !'a2','s'
-  bcx = 'out','a2','s','a2','s'!,'s' !'a2','s'
+  bcx = 'out','a2','s','a2','s' !,'s' !'a2','s'
 !  bcx = 'a','a2','s','a2','s'!,'s' !'a2','s'
 !
   lwrite_ic=T
