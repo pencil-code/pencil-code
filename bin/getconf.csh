@@ -71,7 +71,13 @@ if (! -e "NEVERLOCK") touch LOCK
 # Are we running the MPI version?
 set mpi = `fgrep -c 'initialize_mpicomm: MPICOMM neighbors' src/start.x`
 # Determine number of CPUS
+set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+if (! $ncpus) then
+  @ ncpus = $nprocx * $nprocy * $nprocz
+endif
 echo "$ncpus CPUs"
 
 # Location of executables and other default settings; can be overwritten
