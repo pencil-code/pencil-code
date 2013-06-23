@@ -12,10 +12,10 @@
 	<meta name="language" content="en">
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8" >
 	<title>The Pencil Code</title>
-	<name name="Description" content="The Pencil Code is a high-order finite-difference code for compressible fluid dynamics (CFD) with magnetic fields (MHD).">
-	<name name="Keywords" content="Pencil, Code, MHD">
-	<name name="Copyright" content="&copy; Copyright 2001-<? echo strftime ('%Y'); ?> by the Pencil Code development team. The source code and all content of this website are unter GPL.">
-	<name name="Robots" content="FOLLOW, All, Index">
+	<meta name="Description" content="The Pencil Code is a high-order finite-difference code for compressible fluid dynamics (CFD) with magnetic fields (MHD).">
+	<meta name="Keywords" content="Pencil, Code, MHD">
+	<meta name="Copyright" content="&copy; Copyright 2001-<? echo strftime ('%Y'); ?> by the Pencil Code development team. The source code and all content of this website are unter GPL.">
+	<meta name="Robots" content="FOLLOW, All, Index">
 	<link rel="icon" type="image/png" href="/pics/pencils_32x32.png">
 	<link rel="stylesheet" href="/styles.css" type="text/css">
 </head>
