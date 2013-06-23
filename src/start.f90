@@ -152,6 +152,7 @@ program start
   lperi        =(/.true. ,.true. ,.true. /)   ! all directions periodic
   lequidist    =(/.true. ,.true. ,.true. /)   ! all directions equidistant grid
   lshift_origin=(/.false.,.false.,.false./)   ! don't shift origin
+  lshift_origin_lower=(/.false.,.false.,.false./) ! don't shift origin
 !
 !  Calculate dimensionality of the run.
 !

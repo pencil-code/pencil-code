@@ -86,6 +86,11 @@ module Grid
 !
       lequidist=(grid_func=='linear')
 !
+!  Abbreviations
+!
+  x0=xyz0(1); y0=xyz0(2); z0=xyz0(3)
+  Lx=Lxyz(1); Ly=Lxyz(2); Lz=Lxyz(3)
+!
 !  Set the lower boundary and the grid size.
 !
       x00 = x0
@@ -96,11 +101,18 @@ module Grid
       dy = Ly / merge(nygrid, max(nygrid-1,1), lperi(2))
       dz = Lz / merge(nzgrid, max(nzgrid-1,1), lperi(3))
 !
-!  Shift the lower boundary if requested.
+!  Shift the lower boundary if requested, but only for periodic directions.
 !
       if (lshift_origin(1)) x00 = x0 + 0.5 * dx
       if (lshift_origin(2)) y00 = y0 + 0.5 * dy
       if (lshift_origin(3)) z00 = z0 + 0.5 * dz
+!
+!  Shift the lower boundary if requested, but only for periodic directions.
+!  Contrary to the upper case (lshift_origin)
+!
+      if (lshift_origin_lower(1)) x00 = x0 - 0.5 * dx
+      if (lshift_origin_lower(2)) y00 = y0 - 0.5 * dy
+      if (lshift_origin_lower(3)) z00 = z0 - 0.5 * dz
 !
 !  Produce index arrays xi1, xi2, and xi3:
 !    xi = 0, 1, 2, ..., N-1 for non-periodic grid

@@ -69,7 +69,7 @@ module Param_IO
   logical :: lforce_shear_bc = .true.
 !
   namelist /init_pars/ &
-      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, coord_system, &
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
       lmodify,modify_filename, &
@@ -94,7 +94,7 @@ module Param_IO
       lforce_shear_bc
 !
   namelist /run_pars/ &
-      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, coord_system, &
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
       nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
       cdtc, isave, itorder, dsnap, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
       dtracers, dfixed_points, unit_system, unit_length, &
@@ -120,7 +120,7 @@ module Param_IO
       r_ext_border, lfreeze_varsquare, lfreeze_varint, lfreeze_varext, &
       xfreeze_square, yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, &
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &
-      luse_oldgrid, fshift_int, fshift_ext, &
+      luse_oldgrid, luse_xyz1, fshift_int, fshift_ext, &
       lreset_tstart, tstart, lseparate_persist, ldistribute_persist, &
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &

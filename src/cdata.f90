@@ -48,7 +48,7 @@ module Cdata
   logical :: lcartesian_coords=.true.
   logical :: lspherical_coords=.false.,lcylindrical_coords=.false.
   logical :: lsphere_in_a_box=.false.,lcylinder_in_a_box=.false.
-  logical :: luse_latitude=.false., luse_oldgrid=.true.
+  logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
@@ -70,7 +70,7 @@ module Cdata
   real :: xbot_slice=0.0,xtop_slice=1.0
   real :: ybot_slice=0.0,ytop_slice=1.0
   real :: zbot_slice=0.0,ztop_slice=1.0
-  logical, dimension(3) :: lperi,lshift_origin
+  logical, dimension(3) :: lperi, lshift_origin, lshift_origin_lower
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
   real, dimension(0:nprocx) :: procx_bounds

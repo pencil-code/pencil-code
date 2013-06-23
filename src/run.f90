@@ -153,6 +153,7 @@ program run
     if (ip<=6.and.lroot) print*, 'reading grid coordinates'
     call rgrid('grid.dat')
   else
+    if (luse_xyz1) Lxyz=xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
   endif
 !
@@ -196,6 +197,8 @@ program run
     call wdim(trim(directory)//'/dim.dat')
     if (lroot) call wdim(trim(datadir)//'/dim.dat', &
         nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+    if (ip<11) print*,'Lz=',Lz
+    if (ip<11) print*,'z=',z
   endif
 !
 !  Define the lenergy logical
@@ -308,8 +311,12 @@ program run
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
+!  If we decided to use a new grid, we need to overwrite the data
+!  that we just read in from var.dat. (Note that grid information
+!  was also used above, so we really need to do it twice then.)
 !
   call rsnap('var.dat',f,mvar_in)
+  if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz)
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
 !
