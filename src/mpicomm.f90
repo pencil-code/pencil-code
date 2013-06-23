@@ -4772,7 +4772,7 @@ module Mpicomm
       real, dimension(nxgrid), intent(out) :: out
 !
       integer :: ibox, partner
-      integer, parameter :: xtag=104
+      integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx) :: recv_buf
 !
@@ -4785,11 +4785,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nx, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, xtag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nx, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, xtag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nx, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nx, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(nx*ibox+1:nx*(ibox+1)) = recv_buf
         endif
@@ -4823,7 +4823,7 @@ module Mpicomm
       real, dimension(nygrid), intent(out) :: out
 !
       integer :: ibox, partner
-      integer, parameter :: ytag=105
+      integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(ny) :: recv_buf
 !
@@ -4836,11 +4836,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, ny, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, ny, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, ny, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -4859,7 +4859,7 @@ module Mpicomm
       real, dimension(nx,nygrid), intent(out) :: out
 !
       integer :: ibox, partner, nbox
-      integer, parameter :: ytag=105
+      integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nx,ny) :: recv_buf
 !
@@ -4874,11 +4874,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -4897,7 +4897,7 @@ module Mpicomm
       real, dimension(:,:,:), intent(out) :: out
 !
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=105
+      integer, parameter :: ltag=102, utag=103
       integer :: inx, inz ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
@@ -4928,11 +4928,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:) = recv_buf
         endif
@@ -4953,7 +4953,7 @@ module Mpicomm
       real, dimension(:,:,:,:), intent(out) :: out
 !
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=105
+      integer, parameter :: ltag=102, utag=103
       integer :: inx, inz, ina ! size of the first, third, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
@@ -4987,11 +4987,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:,:) = recv_buf
         endif
@@ -5072,7 +5072,7 @@ module Mpicomm
       real, dimension(nzgrid), intent(out) :: out
 !
       integer :: ibox, partner
-      integer, parameter :: ztag=106
+      integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(nz) :: recv_buf
 !
@@ -5085,11 +5085,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nz, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nz, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nz, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nz, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -5108,7 +5108,7 @@ module Mpicomm
       real, dimension(:,:), intent(out) :: out
 !
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ztag=106
+      integer, parameter :: ltag=102, utag=103
       integer :: ina ! size of the second dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:), allocatable :: recv_buf
@@ -5136,11 +5136,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -5161,7 +5161,7 @@ module Mpicomm
       real, dimension(:,:,:), intent(out) :: out
 !
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ztag=105
+      integer, parameter :: ltag=102, utag=103
       integer :: inx, iny ! size of the first and third dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:), allocatable :: recv_buf
@@ -5192,11 +5192,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -5217,7 +5217,7 @@ module Mpicomm
       real, dimension(:,:,:,:), intent(out) :: out
 !
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ztag=106
+      integer, parameter :: ltag=102, utag=103
       integer :: inx, iny, ina ! size of the first, second, and fourth dimension
       integer, dimension(MPI_STATUS_SIZE) :: stat
       real, dimension(:,:,:,:), allocatable :: recv_buf
@@ -5251,11 +5251,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ztag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -5339,7 +5339,7 @@ module Mpicomm
       integer, parameter :: onx=nxgrid, ony=ny/nprocx
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=105
+      integer, parameter :: ltag=104, utag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
@@ -5374,11 +5374,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -5403,7 +5403,7 @@ module Mpicomm
       integer :: inz, onz ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=105
+      integer, parameter :: ltag=104, utag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
@@ -5442,11 +5442,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:) = recv_buf
         endif
@@ -5471,7 +5471,7 @@ module Mpicomm
       integer :: inz, ina, onz, ona ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=105
+      integer, parameter :: ltag=104, utag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
@@ -5514,11 +5514,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
@@ -5542,7 +5542,7 @@ module Mpicomm
       integer, parameter :: onx=nx, ony=ny
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=106
+      integer, parameter :: ltag=106, utag=107
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
@@ -5577,11 +5577,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
         endif
@@ -5606,7 +5606,7 @@ module Mpicomm
       integer :: inz, onz ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=106
+      integer, parameter :: ltag=106, utag=107
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
@@ -5645,11 +5645,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:) = recv_buf
         endif
@@ -5674,7 +5674,7 @@ module Mpicomm
       integer :: inz, ina, onz, ona ! sizes of in and out arrays
       integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
       integer :: ibox, partner, nbox, alloc_err
-      integer, parameter :: ytag=106
+      integer, parameter :: ltag=106, utag=107
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
@@ -5717,11 +5717,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:,:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
         endif
@@ -5749,7 +5749,7 @@ module Mpicomm
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
       integer :: num_it ! number of iterations for box-data transfer
       integer :: it, ibox, partner, alloc_err
-      integer, parameter :: ytag=109
+      integer, parameter :: ltag=108, utag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:), allocatable :: send_buf, recv_buf
@@ -5788,11 +5788,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = transpose (in(bny*ibox+1:bny*(ibox+1),:))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -5820,7 +5820,7 @@ module Mpicomm
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
       integer :: num_it ! number of iterations for box-data transfer
       integer :: it, ibox, partner, alloc_err, pos_z
-      integer, parameter :: ytag=109
+      integer, parameter :: ltag=108, utag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
@@ -5867,11 +5867,11 @@ module Mpicomm
             send_buf(:,:,pos_z) = transpose (in(bny*ibox+1:bny*(ibox+1),:,pos_z))
           enddo
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:) = recv_buf
         endif
@@ -5899,7 +5899,7 @@ module Mpicomm
       integer :: bnx, bny, nbox ! destination box sizes and number of elements
       integer :: num_it ! number of iterations for box-data transfer
       integer :: it, ibox, partner, alloc_err, pos_z, pos_a
-      integer, parameter :: ytag=109
+      integer, parameter :: ltag=108, utag=109
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: send_buf, recv_buf
@@ -5954,11 +5954,11 @@ module Mpicomm
             enddo
           enddo
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
