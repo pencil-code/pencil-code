@@ -4,9 +4,6 @@
 	require "utils.inc";
 
 	if (!isset ($right_column)) { $right_column = ""; }
-
-	$menu_width = 200;
-	# also update in styles.css: ".mmenu li" and "#leftcolumn"
  ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html lang=EN>
@@ -26,11 +23,10 @@
 <!-- Logo and Title -->
 <div id="header">
 <div id="headerpad">
-<img src="/pics/pencils_100x45.png" alt="Pencil Code logo" width="100" height="45" border="0" hspace="30" align="left" STYLE="position:fixed">
-<img src="/pics/pencils_100x45.png" alt="Pencil Code logo" width="100" height="45" border="0" hspace="30" align="right">
-<div style="padding-left:<? echo $menu_width; ?>px;">
+<img src="/pics/pencils_100x45.png" alt="Pencil Code logo" width="100" height="45" border="0" vspace="5" hspace="30" align="left" STYLE="position:fixed">
+<img src="/pics/pencils_100x45.png" alt="Pencil Code logo" width="100" height="45" border="0" vspace="5" hspace="20" align="right">
 <h1>The&nbsp;Pencil&nbsp;Code</h1>
-</div>
+<h4>a high-order finite-difference code for compressible MHD</h4>
 </div>
 </div>
 

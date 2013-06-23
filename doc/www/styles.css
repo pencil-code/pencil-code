@@ -18,19 +18,36 @@
 p {
 	margin: 15px 0px 15px 0px;
 }
-h1,h2,h3,h4,h5 {
+h1,h2,h3,h4 {
 	margin: 10px 0px 15px 0px;
 	font-weight: bold;
+}
+h1 {
+	font-size: 28px;
+}
+h2 {
+	color: #26586C;
+	font-size: 18px;
+}
+h3 {
+	font-size: 15px;
+}
+h4 {
+	font-size: 14px;
 }
 em.larger {
 	font-size: 15px;
 }
-code {
+.codescroll {
+	background-color: #C0E8FF;
 	border: 1px dashed #404040;
 	padding: 8px 16px 8px 16px;
-	margin-left: 16px;
-	background-color: #C0E8FF;
+	margin: 10px 0px 10px 16px;
+	overflow-x: auto;
+}
+code {
 	color: #404040;
+	white-space: nowrap;
 }
 
 body {
@@ -44,7 +61,6 @@ body {
 	position: absolute;
 	margin: 0;
 	padding: 0;
-	height: auto;
 	width: 100%;
 	background: url(images/lightspread1855.png);
 	background-repeat: repeat-x;
@@ -53,78 +69,61 @@ body {
 #mcontainer {
 	background-color: #FFFFFF;
 	padding: 10px;
-	height: auto;
-	border-top: 5px solid #26586C;
-	border-right: 5px solid #26586C;
-	border-bottom: 5px solid #26586C;
-	border-left: 5px solid #26586C;
+	border: 5px solid #26586C;
 	text-align: left;
 }
 #mcontainerouter {
 	background: url(images/shad50.png);
 	background-repeat: repeat;
 	max-width: 1100px;
-	min-width: 910px;
+	min-width: 860px; /* sets the minimum width of the page content */
+	margin-top: 0px;
 	margin-right: auto;
 	margin-left: auto;
 	height: auto;
-	margin-top: 0px;
 	padding: 10px 40px 40px 40px;
 	text-align: center;
 }
 #maincontainershadow {
 	height: 60px;
 	background: none;
-	width: 950px;
+	min-width: 940px; /* = mcontainerouter.min-width + mcontainerouter.padding-left + mcontainerouter.padding-right */
+	max-width: 1000px;
 	margin-right: auto;
 	margin-left: auto;
 	margin-top: -10px;
 }
 #shadowleft {
-	margin-left: 0px;
-	margin-right: 0px;
 	overflow: hidden;
 	height: 60px;
-	background: url(images/reflection_shadow60.png) 0 0;
-	background-repeat: no-repeat;background-position: top left;
+	background: url(images/reflection_shadow60.png) no-repeat top left;
 }
 #shadowright {
 	width: 450px;
 	float: right;
-	position: relative;
 	height: 60px;
-	background: url(images/reflection_shadow60.png) 0 0;
-	background-repeat: no-repeat; background-position: top right;
+	background: url(images/reflection_shadow60.png) no-repeat top right;
 }
 
 #header {
 	color: #FFFFFF;
 	background-color: #136D90;
-	margin-top: 0px;
-	height: 70px;
-	width: auto;
-	margin-left: 0px;
-	margin-right: 0px;
-	border-top: 2px solid #000000;
-	border-right: 2px solid #000000;
-	border-bottom: 2px solid #000000;
-	border-left: 2px solid #000000;
+	border: 2px solid #000000;
+	margin-top: -4px;
 }
 #header h1 {
-	margin: 0px 5px;
-	padding: 0px 5px;
+	margin: 1px 0px 0px 6px;
+	padding: 0px 0px 0px 200px;
 	color: #FFFFFF;
 }
 #header h4 {
-	margin: 0px 12px;
-	padding: 0px 5px;
-	color: #000000;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
+	margin: 0px 4px 1px 8px;
+	padding: 0px 0px 0px 200px;
+	color: #909090;
 }
 #headerpad {
-	padding: 10px;
-	height: auto;
-	width: auto;
+	padding: 5px 10px 5px 10px;
+	min-height: 55px;
 	margin: 0;
 	clear: both;
 }
@@ -146,64 +145,49 @@ li.separated {
 }
 
 .mmenu {
-	width: auto;
-	height: auto;
-	border-right: 2px solid #000000;
-	border-left: 2px solid #000000;
-	border-top: 2px solid #000000;
-	border-bottom: 2px solid #000000;
-	margin-top: 6px;
-	margin-right: 0px;
-	margin-left: 0px;
+	background-color: #FFFFFF;
+	border: 2px solid #000000;
+	position: fixed;
 }
 .mmenu ul {
 	padding: 0;
 	margin: 0px;
-	border: 0;
-	position: relative;
 	list-style-type: none;
 }
 .mmenu li {
 	padding: 0;
-	height: 30px;
-	width: 180px; /* determines the width of the menu links */
 }
-.mmenu li a {
+.mmenu a {
 	background: url(images/multicolpng2.png) repeat-x left top;
 	background-color: #46A4C7;
 	margin: 0px;
 	font-size: 13px;
-	font-family: Verdana, Arial, Helvetica, sans-serif;
-	font-style: normal;
 	font-weight: bold;
 	display: block;
 	color: #FFFFFF;
 	text-decoration: none;
-	padding-top: 2px;
-	padding-bottom: 3px;
-	padding-left: 25px;
-	padding-right: 25px;
+	width: 130px; /* determines the width of the menu links */
+	padding: 2px 25px 3px 25px;
 	line-height: 25px;
 }
 .mmenu a:hover {
 	color: #D02000!important;
 	background-color: #95EFFF;
-	background: url(images/multicolpng2.png) repeat-x;
-	background-position: 0px -60px;
+	background: url(images/multicolpng2.png) repeat-x left top;
 }
 .mmenu a:active {
 	color: #D02000!important;
 	background-color: #95EFFF;
-	background: url(images/multicolpng2.png) repeat-x;
-	background-position: 0px -60px;
+	background: url(images/multicolpng2.png) repeat-x left top;
 }
 a.mmenuselect {
 	color: #FF8000!important;
 }
 
 #leftcolumn {
-	height: 280px;
-	width: 200px; /* determines the width of the menu with border */
+	min-height: 274px; /* = buttons * a.height + 2 * mmenu.border */
+	min-width: 184px; /* = a.width + a.padding-left + a.padding-right + 2 * mmenu.border */
+	margin: 6px 16px 0px 0px;
 	float: left;
 }
 .leftcolumnpad {
@@ -211,46 +195,23 @@ a.mmenuselect {
 	padding: 20px;
 	background: url(images/div_dark15.png);
 	background-repeat: repeat-x;
-	height: auto;
-	width: auto;
 	margin: 0;
-}
-.leftcolumnpad p {
-	color: #555555;
-}
-.leftcolumnpad h2 {
-	color: #26586C;
-}
-.leftcolumnpad a {
-	font-weight: bold;
-	color: #136D90;
-}
-.leftcolumnpad a:hover {
-	color: #D04000;
-	text-decoration: none;
 }
 
 .centcolumn {
 	background-color: #FFFFFF;
-	width: auto;
 	margin-left: 0px;
 	margin-top: 6px;
-	height: auto;
-	border-top: 2px solid #000000;
-	border-right: 2px solid #000000;
-	border-bottom: 2px solid #000000;
-	border-left: 2px solid #000000;
+	border: 2px solid #000000;
 	overflow: hidden;
+	min-height: 270px; /* = leftcolumn.min-height - 2 * border */
+	min-width: 440px; /* = mcontainerouter.min-width - 2 * (mcontainer.border + mcontainer.padding) - (leftcolumn.min-width + leftcolumn.margin-right) - (rightcolumn.min-width + rightcolumn.margin-left + 2 * rightcolumn.padding) - 2 * border */
 }
 .centcolumnpad  {
-	clear: both;
 	padding: 20px;
 	background: url(images/div_dark8.png);
 	background-repeat: repeat-x;
 	color: #404040;
-}
-.centcolumnpad h2 {
-	color: #26586C;
 }
 .centcolumnpad a {
 	font-weight: bold;
@@ -261,47 +222,20 @@ a.mmenuselect {
 	text-decoration: none;
 }
 .centerdivider {
-	clear: both;
-	margin-right: auto;
-	margin-left: auto;
 	width: 100%;
 	border-bottom: 1px outset #FFFFFF;
-	border-top: 1px outset #FFFFFF;
 }
-#rightcolumn {
+.rightcolumn {
 	background-color: #FFFFFF;
-	margin-top: 6px;
-	margin-right: 0px;
-	margin-left: 6px;
-	height: auto;
-	width: 200px;
+	margin: 6px 0px 0px 6px;
+	padding: 10px 20px 10px 20px;
+	width: 140px;
+	color: #404040;
 	float: right;
 }
-.rightcolumnpad {
-	padding: 20px;
-	height: auto;
-	width: auto;
-	margin: 0;
-	clear: both;
-	color: #404040;
-}
-.rightcolumnpad h2 {
-	color: #26586C;
-}
-.rightcolumnpad a {
-	font-weight: bold;
-	color: #136D90;
-}
-.rightcolumnpad a:hover {
-	color: #D04000;
-	text-decoration: none;
-}
 .rightdivider {
-	clear: both;
-	margin-right: auto;
-	margin-left: auto;
-	width: 80%;
-	border-top: 1px outset #B8B8B8;
+	width: 100%;
+	margin: 30px 0px 20px 0px;
 	border-bottom: 1px outset #B8B8B8;
 }
 

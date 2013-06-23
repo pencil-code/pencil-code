@@ -3,7 +3,7 @@
 	 include "header.inc";
  ?>
 <div class="centcolumnpad">
-<h2>News archive.</h2>
+<h2>News archive</h2>
 
 <ul>
 

@@ -4,7 +4,7 @@
  ?>
 <div class="centcolumnpad">
 
-<h2>References.</h2>
+<h2>References</h2>
 <ul>
 
 <li class="separated">

@@ -1,20 +1,20 @@
 <?
 	$menu = array(
-		"Home"           => "/",
-		"News"           => "/news.php",
-		"Documentation"  => "/doc.php",
-		"Autotests"      => "/tests.php",
-		"Download"       => "/download.php",
-		"Meetings"       => "/meetings.php",
-		"Latest changes" => "http://code.google.com/p/pencil-code/source/list",
-		"References"     => "/references.php",
-		"Contact"        => "/contact.php",
+		"Home"                => "/",
+		"News"                => "/news.php",
+		"Documentation"       => "/doc.php",
+		"Autotests"           => "/tests.php",
+		"Download"            => "/download.php",
+		"Meetings"            => "/meetings.php",
+		"References"          => "/references.php",
+		"Contact"             => "/contact.php",
+		"Latest changes ..."  => "http://code.google.com/p/pencil-code/source/list",
 	);
 
 	$own = parse_url ($_SERVER['SCRIPT_NAME'], PHP_URL_PATH);
 	if ($own == "/index.php") { $own = "/"; }
 ?>
-<div class="mmenu" style="position:fixed;">
+<div class="mmenu">
 <ul>
 <?
 	foreach ($menu as $text => $link) {

@@ -3,12 +3,12 @@
 	 include "header.inc";
  ?>
 <div class="centcolumnpad">
-<h1>How to do benchmarks and timings.</h1>
+<h2>How to do benchmarks and timings</h2>
 
-<h2>pencil-code/samples/helical-MHDturb</h2>
+<h3>pencil-code/samples/helical-MHDturb</h3>
 
 <p>Most of the timings reported in the <a href="doc/manual.pdf">manual</a>
-of the <a href="http://www.nordita.dk/software/pencil-code/">Pencil Code</a>
+of the <a href="http://pencil-code.nordita.com/">Pencil Code</a>
 (currently page 68) are based on the run checked in under
 <i>pencil-code/samples/helical-MHDturb</i>.</p>
 
@@ -40,7 +40,7 @@ if you look under another <i>data/proc?</i> directory.)</p>
 ran 5.4 microseconds per meshpoint and per time step. (Make sure the code
 doesn't produce NaNs, of course...)</p>
 
-<p align="center"><img src="pics/ptimings.png"></p>
+<p align="center"><img src="/pics/ptimings.png" border="0" width="510" height="340" alt="timings"></p>
 </div>
 <?
 	include "footer.inc";

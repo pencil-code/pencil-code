@@ -18,20 +18,20 @@
                 return ($always.$default);
         }
 
-        # Echoes a link to $link labeled $str or just $str if $link is empty.
-        function iflink ($link, $str, $class, $target = "", $name = "", $js = "") {
+        # Echoes a link to $link labeled $str if $link is not empty.
+        function iflink ($link, $str, $class = "", $target = "", $name = "", $js = "") {
                 if ($link) { echolink ($link, $str, $class, $target, $name, $js); }
         }
 
         # Returns a link to $link labeled $str or just $str if $link is empty.
-        function genlink ($link, $str, $class, $target = "", $name = "", $js = "") {
+        function genlink ($link, $str, $class = "", $target = "", $name = "", $js = "") {
                 $link = str_replace (array ("&", " "), array ("&amp;", "+"), $link);
                 $attributes = ifstr (' NAME="', $name, '"').ifstr (' CLASS="', $class, '"').ifstr (' TARGET="', $target, '"').ifstr (" ", $js, "");
                 return (ifstr ('<A HREF="', $link, '"'.$attributes.'>'.$str.'</A>', "", $str));
         }
 
         # Echoes a link to $link labeled $str or just $str if $link is empty.
-        function echolink ($link, $str, $class, $target = "", $name = "", $js = "") {
+        function echolink ($link, $str, $class = "", $target = "", $name = "", $js = "") {
                 echo genlink ($link, $str, $class, $target, $name, $js);
         }
  ?>
