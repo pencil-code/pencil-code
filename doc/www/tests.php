@@ -3,7 +3,7 @@
 	 include "header.inc";
  ?>
 <div class="centcolumnpad">
-<h2>Automatic test results</h2>
+<h2>Automatic tests</h2>
 
 <p>To ensure reproducability, the
 <a href="http://pencil-code.nordita.org/">Pencil Code</a>
@@ -56,7 +56,7 @@ our own tests. The latest test results for a can be seen online:</p>
 <p>Note: before checking in your own changes, you should at least do
 the very minimal auto-test:</p>
 
-<p><code>pc_auto-test --level=0 --no-pencil-check -C</code></p>
+<div class="codescroll"><code>pc_auto-test --level=0 --no-pencil-check -C</code></div>
 
 </div>
 <div class="centerdivider"></div>
