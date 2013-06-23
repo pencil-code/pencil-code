@@ -3649,21 +3649,35 @@ sufficient.
 
 \paragraph{Visualization in IDL}
 \label{S-IDL-visualization}
+The Pencil Code GUI is a data post-processing tool for the usage on a
+day-to-day basis. It allows fast inspection of many physical quantities,
+as well as advanced features like horizontal averages, stramline tracing,
+freely orientable 2D-slices, and extraction of cut images and movies.
 To use the Pencil Code GUI, it is sufficient to run:
 \begin{alltt}
   \prompt{unix> } idl
   \prompt{IDL> }  .r pc_gui
 \end{alltt}
-If you like to load only 2D-slices from the given data snapshots,
-instead of using previously written video files (see \ref{S-slices}),
-you can also type:
+If you like to load only some subvolume of the data, like any 2D-slices
+from the given data snapshots, or 3D-subvolumes, it is possible to choose
+the corresponding options in the file selector dialog.
+The Pencil Code GUI offers also some options to be set on the command-line,
+please refer to their description in the source code.
+
+There are also other small GUIs available, e.g. the file `time-series.dat'
+can easily be analysed with the command:
 \begin{alltt}
   \prompt{unix> } idl
-  \prompt{IDL> }  cut_z = 27
-  \prompt{IDL> }  .r pc_gui
+  \prompt{IDL> }  pc_show_ts
 \end{alltt}
-The Pencil Code GUI offers many more options to be set on the command-line,
-please refer to the description in the source code.
+
+The easiest way to derive physical quantities at the command-line is to use
+one of the many \cmd{pc_read_var}-variants (\cmd{pc_read_var_raw} is
+recommended for large datasets because of its high efficiency regarding
+computation and memory usage) for reading the data. With that, one can make
+use of \cmd{pc_get_quantity} to derive any implemented physical quantity.
+Packed in a script, this is the recommended way to get reproducable results,
+without any chance for accidental errors on the interactive IDL command-line.
 
 Alternatively, by using the command-line to see the time evolution of e.g.
 velocity and magnetic field (if they are present in you run), start \name{IDL}
@@ -3775,12 +3789,24 @@ variable \var{datadir}:
 \end{alltt}
 will read the data written by processor 3.
 
-\paragraph{Reading data into IDL structures}
+\paragraph{Reading data into IDL arrays or structures}
 
 As an alternative to the method described above, there is also the possibility
 to read the data into structures. This makes some more operations possible,
 e.g.\ reading data from an IDL program where the command \cmd{.r} is not
 allowed.
+
+An efficient and still scriptable way would look like the following:
+\begin{alltt}
+  \prompt{IDL> } pc_read_var_raw, obj=var, tags=tags
+  \prompt{IDL> } bb = pc_get_quantity ('B', var, tags)
+  \prompt{IDL> } jj = pc_get_quantity ('j', var, tags)
+\end{alltt}
+This reads the data into an array `var' and the array indices of the
+contained physical variables into a separate structure `tags'.
+To use a caching mechanism withhin \cmd{pc_get_quantity}, please refer to
+the documentation and the examples contained in `pencil-code/idl/pc_get_quantity.pro',
+where you can also start adding not yet implemented physical quantities.
 
 To read a snapshot \cmd{'VAR10'} into the IDL structure \cmd{ff}, type the
 following command
@@ -3803,22 +3829,24 @@ There are a number of files that read different data into structures. They are
 placed in the directory \cmd{\$PENCIL_HOME/idl/files}. Here is a list of files
 (including suggested options to call them with)
 \begin{itemize}
+  \item \cmd{pc_read_var_raw, obj=var, tags=tags} \\
+      Efficiently read a snapshot into an array.
   \item \cmd{pc_read_var, obj=ff, /trimall} \\
-      Read snapshot into structure.
+      Read a snapshot into a structure.
   \item \cmd{pc_read_ts, obj=ts} \\
-      Read time series into structure.
+      Read the time series into a structure.
   \item \cmd{pc_read_xyaver, obj=xya} \\
       \cmd{pc_read_xzaver, obj=xza} \\
       \cmd{pc_read_yzaver, obj=yza} \\
-      Read 1-D time series into structure.
+      Read 1-D time series into a structure.
   \item \cmd{pc_read_const, obj=cst} \\
-      Read code constants into structure.
+      Read code constants into a structure.
   \item \cmd{pc_read_pvar, obj=fp} \\
-      Read particle data into structure.
+      Read particle data into a structure.
   \item \cmd{pc_read_param, obj=par} \\
-      Read startup parameters into structure.
+      Read startup parameters into a structure.
   \item \cmd{pc_read_param, obj=par2, /param2} \\
-      Read runtime parameters into structure.
+      Read runtime parameters into a structure.
 \end{itemize}
 Other options are documented in the source code of the files.
 
