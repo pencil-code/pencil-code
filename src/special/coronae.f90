@@ -1024,7 +1024,7 @@ module Special
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
 ! Additional terms to the right hand side of the
 ! energy equation
@@ -1069,7 +1069,7 @@ module Special
         if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
       endif
 !
-    endsubroutine special_calc_entropy
+    endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
