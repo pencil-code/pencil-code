@@ -1,10 +1,10 @@
 ! $Id$
 !
-!  This module fetchs the position of the massive n-body particles 
+!  This module fetchs the position of the massive n-body particles
 !  and applies extra shock dissipation around them. This allows for
-!  less shock dissipation to be used elsewhere in the quiescent 
-!  regions of the simulation box. 
-!  
+!  less shock dissipation to be used elsewhere in the quiescent
+!  regions of the simulation box.
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -15,7 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 !-------------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
@@ -44,21 +44,21 @@
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
-
+!
 module Special
-
+!
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
   use EquationOfState
-
+!
   implicit none
-
+!
   include '../special.h'
-
+!
 ! input parameters
-  
+!
   real :: rmask=0.,rmask2,rmask1,rmask12,eta_shock_local=0.
   real :: diffrho_shock_local=0.,nu_shock_local=0.
   integer :: dummy
@@ -88,22 +88,22 @@ module Special
 !
 !! other variables (needs to be consistent with reset list below)
 !
-
+!
 !
 ! hydro diagnostics
 !
-
+!
 !
 ! magnetic diagnostics
 !
-
+!
 !
 ! 1D average diagnostics
-! 
-
+!
+!
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -155,7 +155,7 @@ module Special
 !
 !  Interdependency among pencils provided by this module are specified here.
 !
-!  18-07-06/tony: coded                                                         
+!  18-07-06/tony: coded
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -169,13 +169,13 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      if (ldensity.or.lhydro.or.lmagnetic) then 
+      if (ldensity.or.lhydro.or.lmagnetic) then
         lpenc_requested(i_gshock)=.true.
         lpenc_requested(i_shock)=.true.
       endif
-!      
-      if (ldensity) then 
-        if (ldensity_nolog) then 
+!
+      if (ldensity) then
+        if (ldensity_nolog) then
           lpenc_requested(i_grho)=.true.
           lpenc_requested(i_del2rho)=.true.
           if (lhydro) lpenc_requested(i_glnrho)=.true.
@@ -192,7 +192,7 @@ module Special
         endif
       endif
 !
-      if (lmagnetic) then 
+      if (lmagnetic) then
         lpenc_requested(i_del2a)=.true.
         lpenc_requested(i_diva)=.true.
       endif
@@ -243,41 +243,41 @@ module Special
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=special_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=special_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_run_pars)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -358,7 +358,7 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p 
+      type (pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff,gshockgrho,gshockglnrho
 !
 !  Only calculate the shock if a value of lshock_local
@@ -426,28 +426,11 @@ module Special
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
-    subroutine special_calc_particles(fp)
-!      
-      real, dimension(mpar_loc,mpvar) :: fp
-!
-    endsubroutine special_calc_particles
-!***********************************************************************
     subroutine special_calc_particles_nbody(fsp)
 !
-!  Calculate the shock mask and its gradient. It's better to 
+!  Calculate the shock mask and its gradient. It's better to
 !  do it analytically than to use grad on the shock_mask array.
-!  
+!
 !  10-dec-08/wlad: coded
 !
       real, dimension(nspar,mpvar) :: fsp
@@ -460,9 +443,9 @@ module Special
 !
       shock_mask(:,:,:)=0. ; gshock_mask(:,:,:,:)=0.
       do ks=1,nspar
-        e1=fsp(ks,1) ; e2=fsp(ks,2) ; e3=fsp(ks,3) 
+        e1=fsp(ks,1) ; e2=fsp(ks,2) ; e3=fsp(ks,3)
 !
-!  if the particle is inside the box... 
+!  if the particle is inside the box...
 !
         if ((e1.ge.xyz0(1)).and.(e1.le.xyz1(1)).and.&
             (e2.ge.xyz0(2)).and.(e2.le.xyz1(2)).and.&
@@ -473,11 +456,11 @@ module Special
           xc=x(l1:l2)
           do m=m1,m2
           do n=n1,n2
-            if (lcartesian_coords) then 
+            if (lcartesian_coords) then
               rp2=(xc-e1)**2+(y(m)-e2)**2+(z(n)-e3)**2
-            elseif (lcylindrical_coords) then 
+            elseif (lcylindrical_coords) then
               rp2=xc**2+e1**2 - 2*xc*e1*cos(y(m)-e2) + (z(n)-e3)**2
-            elseif (lspherical_coords) then 
+            elseif (lspherical_coords) then
               rp2=xc**2 + e1**2 - 2*xc*e1*&
                   (cos(y(m))*cos(e2)+sin(y(m))*sin(e2)*cos(z(n)-e3))
             else
@@ -487,7 +470,7 @@ module Special
 !
             mg=m-m1+1 ; ng=n-n1+1
 !
-!  Shock-mask: gaussian 
+!  Shock-mask: gaussian
 !  rmask12=1./rmask**2
 !
             shock_mask(:,mg,ng)=shock_mask(:,mg,ng)+exp(-.5*rp2*rmask12)
@@ -520,7 +503,7 @@ module Special
         gradshock(:,1)=base*(x(l1:l2)-e1)
         gradshock(:,2)=base*(y(  m  )-e2)
         gradshock(:,3)=base*(z(  n  )-e3)
-      elseif (lcylindrical_coords) then 
+      elseif (lcylindrical_coords) then
         gradshock(:,1)=base*(x(l1:l2)-e1*cos(y(m)-e2))
         gradshock(:,2)=base*(e1*sin(y(m)-e2))
         gradshock(:,3)=base*(z(n)-e3)
@@ -536,28 +519,6 @@ module Special
 !
     endsubroutine get_gradshock
 !***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   Called from equ, but before the evolving loop that calls the 
-!   dynamical equations.
-!
-!   06-jul-06/tony: coded
-!
-      use Mpicomm
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!**********************************************************************
-!**********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **
@@ -566,6 +527,5 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
+!
 endmodule Special
-
