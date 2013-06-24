@@ -3,6 +3,7 @@
 		"Home"                => "/",
 		"News"                => "/news.php",
 		"Documentation"       => "/doc.php",
+		"Highlights"          => "/highlights/",
 		"Autotests"           => "/tests.php",
 		"Download"            => "/download.php",
 		"Meetings"            => "/meetings.php",

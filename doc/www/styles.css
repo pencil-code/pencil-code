@@ -185,7 +185,7 @@ a.mmenuselect {
 }
 
 #leftcolumn {
-	min-height: 274px; /* = buttons * a.height + 2 * mmenu.border */
+	min-height: 304px; /* = buttons * a.height + 2 * mmenu.border */
 	min-width: 184px; /* = a.width + a.padding-left + a.padding-right + 2 * mmenu.border */
 	margin: 6px 16px 0px 0px;
 	float: left;
@@ -204,7 +204,7 @@ a.mmenuselect {
 	margin-top: 6px;
 	border: 2px solid #000000;
 	overflow: hidden;
-	min-height: 270px; /* = leftcolumn.min-height - 2 * border */
+	min-height: 300px; /* = leftcolumn.min-height - 2 * border */
 	min-width: 440px; /* = mcontainerouter.min-width - 2 * (mcontainer.border + mcontainer.padding) - (leftcolumn.min-width + leftcolumn.margin-right) - (rightcolumn.min-width + rightcolumn.margin-left + 2 * rightcolumn.padding) - 2 * border */
 }
 .centcolumnpad  {
