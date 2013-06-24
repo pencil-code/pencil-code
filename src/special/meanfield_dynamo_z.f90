@@ -42,7 +42,7 @@ module Special
   logical :: ldebug_meanfield=.false.
   namelist /special_init_pars/ &
     init,ampl,kx,ky,kz
-
+!
   ! run parameters
   namelist /special_run_pars/ &
     etadyn,alpha_const,ktestfield,ldebug_meanfield
@@ -54,7 +54,7 @@ module Special
   integer :: idiag_bmxpt=0,idiag_bmypt=0,idiag_bmxp2=0,idiag_bmyp2=0
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -125,7 +125,7 @@ module Special
         case ('sinwave-y'); call sinwave(ampl,f,iam,ky=ky)
         case ('sinwave-z'); call sinwave(ampl,f,iam,kz=kz)
         case ('gaussian-noise'); call gaunoise(ampl,f,iamx,iamz)
-
+!
         case default
           !
           !  Catch unknown values
@@ -470,134 +470,7 @@ module Special
 !
     endsubroutine calc_lspecial_pars
 !***********************************************************************
-    subroutine special_calc_density(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
-
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -607,6 +480,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
 endmodule Special
-
