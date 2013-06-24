@@ -19,19 +19,19 @@
 !
 ! The rest of this file may be used as a template for your own
 ! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the 
+! as examples of code.  Simply fill out the prototypes for the
 ! features you want to use.
 !
 ! Save the file with a meaningful name, eg. geo_kws.f90 and place
 ! it in the $PENCIL_HOME/src/special directory.  This path has
 ! been created to allow users ot optionally check their contributions
 ! in to the Pencil-Code CVS repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or 
+! are working on/using the additional physics with somebodyelse or
 ! may require some assistance from one of the main Pencil-Code team.
 !
 ! To use your additional physics code edit the Makefile.local in
 ! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module 
+! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !
 !    SPECIAL=special/nstar
@@ -40,7 +40,7 @@
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
-
+!
 module Special
 !
   use Cparam
@@ -54,7 +54,7 @@ module Special
 ! Global arrays
   real, dimension (nx,nz) :: uu_average
   real, dimension (nx,nz) :: phidot_average
-! "pencils" 
+! "pencils"
   real, dimension (nx,3) :: uuadvec_guu,uuadvec_gaa
   real, dimension (nx) :: uuadvec_grho,uuadvec_glnrho,uuadvec_gss
   real, dimension (nx) :: uu_residual
@@ -68,18 +68,18 @@ module Special
   real :: nygrid1
 !
   namelist /special_init_pars/ dummy
-!   
+!
   namelist /special_run_pars/ lno_radial_advection, lfargoadvection_as_shift,&
        lkeplerian_gauge,lremove_volume_average
 !
   integer :: idiag_nshift=0
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables 
+!  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
 !  6-oct-03/tony: coded
@@ -101,8 +101,8 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
-!   
-!  Make it possible to switch the algorithm off while still 
+!
+!  Make it possible to switch the algorithm off while still
 !  having this file compiled, for debug purposes.
 !
       if ((.not.lstarting).and.(.not.lfargo_advection)) then
@@ -165,13 +165,13 @@ module Special
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
-! 
+!
 !  All pencils that this special module depends on are specified here.
-! 
+!
 !  18-07-06/tony: coded
 !
       if (lfargo_advection) then
-
+!
         lpenc_requested(i_uu)=.true.
 !
 !  For continuity equation
@@ -182,14 +182,14 @@ module Special
         else
           lpenc_requested(i_glnrho)=.true.
         endif
-!      
+!
 !  For velocity advection
 !
         lpenc_requested(i_uij)=.true.
 !
 !  For the induction equation
 !
-        if (lmagnetic) then 
+        if (lmagnetic) then
           lpenc_requested(i_aa)=.true.
           lpenc_requested(i_aij)=.true.
         endif
@@ -216,7 +216,7 @@ module Special
 !
         nnghost=n-nghost
 !
-! Advect by the relative velocity 
+! Advect by the relative velocity
 !
         uu_residual=p%uu(:,2)-uu_average(:,nnghost)
 !
@@ -225,9 +225,9 @@ module Special
         uu_advec(:,1)=p%uu(:,1)
         uu_advec(:,2)=uu_residual
         uu_advec(:,3)=p%uu(:,3)
-!  
+!
 !  For the continuity equation
-!   
+!
         if (ldensity_nolog) then
           call h_dot_grad(uu_advec,p%grho,uuadvec_grho)
         else
@@ -236,18 +236,18 @@ module Special
 !
 !  For velocity advection
 !
-!  Note: It is tempting to use 
+!  Note: It is tempting to use
 !
 !     call h_dot_grad(uu_advec,p%uij,p%uu,uuadvec_guu)
 !
 !  instead of the lines coded below, but the line just above
 !  would introduce the curvature terms with the residual
-!  velocity. Yet the curvature terms do not enter the 
-!  non-coordinate basis advection that fargo performs. 
+!  velocity. Yet the curvature terms do not enter the
+!  non-coordinate basis advection that fargo performs.
 !  These terms have to be added manually. If one uses
 !  h_dot_grad_vec, then the curvature with residual would
-!  have to be removed manually and then the full speed 
-!  added again (for the r-component of uuadvec_guu), like 
+!  have to be removed manually and then the full speed
+!  added again (for the r-component of uuadvec_guu), like
 !  this:
 !
 !   uuadvec_guu(:,1)=uuadvec_guu(:,1)-&
@@ -256,8 +256,8 @@ module Special
 !      rcyl_mn1*((p%uu(:,1)-uu_advec(:,1))*p%uu(:,2))
 !
 !
-!   Although working (and more line-economically), the 
-!   piece of code below is more readable in my opinion. 
+!   Although working (and more line-economically), the
+!   piece of code below is more readable in my opinion.
 !
         do j=1,3
           call h_dot_grad(uu_advec,p%uij(:,j,:),tmp)
@@ -285,7 +285,7 @@ module Special
 !
         if (lentropy) &
              call h_dot_grad(uu_advec,p%gss,uuadvec_gss)
-!      
+!
         call keep_compiler_quiet(f)
 !
       endif
@@ -311,7 +311,7 @@ module Special
       use Mpicomm
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df     
+      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: nnghost
       real, dimension (nx) :: nshift,phidot
@@ -322,7 +322,7 @@ module Special
 !  Estimate the shift by nshift=phidot*dt/dy
 !  This is just an approximation, since uavg
 !  changes from one subtimestep to another, and
-!  the correct cumulative shift is 
+!  the correct cumulative shift is
 !
 !    nshift=0.
 !    do itsub=1,3
@@ -330,15 +330,15 @@ module Special
 !    enddo
 !
 !  But it also works fairly well this way, since uavg
-!  does not change all that much between subtimesteps.  
+!  does not change all that much between subtimesteps.
 !
       if (lfargo_advection) then
 !
-        if (ldiagnos) then 
+        if (ldiagnos) then
           if (idiag_nshift/=0) then
             nnghost=n-nghost
             phidot=uu_average(:,nnghost)*rcyl_mn1
-            nshift=phidot*dt*dy_1(m) 
+            nshift=phidot*dt*dy_1(m)
             call max_mn_name(nshift,idiag_nshift)
           endif
         endif
@@ -366,9 +366,9 @@ module Special
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
@@ -406,11 +406,11 @@ endsubroutine read_special_run_pars
 !  Write information to index.pro
 !
       if (lfargo_advection) then
-
+!
         lwr = .false.
         if (present(lwrite)) lwr=lwrite
 !
-        if (lreset) then 
+        if (lreset) then
           idiag_nshift=0
         endif
 !
@@ -428,7 +428,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-!   Calculate a additional 'special' term on the right hand side of the 
+!   Calculate a additional 'special' term on the right hand side of the
 !   mass equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -438,14 +438,14 @@ endsubroutine read_special_run_pars
 !
       use Cdata
       use EquationOfState
-    
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-!    
+!
 !  Modified continuity equation
 !
-      if (lfargo_advection) then 
+      if (lfargo_advection) then
         if (ldensity_nolog) then
           df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
                uuadvec_grho   - p%rho*p%divu
@@ -461,7 +461,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!   Calculate a additional 'special' term on the right hand side of the 
+!   Calculate a additional 'special' term on the right hand side of the
 !   momentum equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -469,20 +469,20 @@ endsubroutine read_special_run_pars
 !
       use Cdata
       use Diagnostics
-!      
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
 !  Modified momentum equation
 !
-      if (lfargo_advection) then 
+      if (lfargo_advection) then
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-uuadvec_guu
 !
-!  The lines below are not symmetric. This is on purpose, to better 
+!  The lines below are not symmetric. This is on purpose, to better
 !  highlight that fargo advects the azimuthal coordinate ONLY!!
 !
-        if (lfirst.and.ldt) then 
+        if (lfirst.and.ldt) then
           advec_uu=abs(p%uu(:,1))  *dx_1(l1:l2)+ &
                    abs(uu_residual)*dy_1(  m  )*rcyl_mn1+ &
                    abs(p%uu(:,3))  *dz_1(  n  )
@@ -495,7 +495,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
-!   Calculate a additional 'special' term on the right hand side of the 
+!   Calculate a additional 'special' term on the right hand side of the
 !   induction equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -504,12 +504,12 @@ endsubroutine read_special_run_pars
 !   06-oct-03/tony: coded
 !
       use Cdata
-!      
+!
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (lfargo_advection) & 
+      if (lfargo_advection) &
            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_gaa
 !
       call keep_compiler_quiet(f)
@@ -517,10 +517,10 @@ endsubroutine read_special_run_pars
 !
     endsubroutine special_calc_magnetic
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
-!   Calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
+!   Calculate a additional 'special' term on the right hand side of the
+!   energy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
@@ -528,22 +528,22 @@ endsubroutine read_special_run_pars
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (lfargo_advection) & 
+      if (lfargo_advection) &
            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-uuadvec_gss
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
-    endsubroutine special_calc_entropy
+    endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
-!  Possibility to modify the f array before the boundaries are 
+!  Possibility to modify the f array before the boundaries are
 !  communicated.
 !
 !  Some precalculated pencils of data are passed in for efficiency
@@ -553,7 +553,7 @@ endsubroutine read_special_run_pars
 !
       use Cdata
       use Mpicomm, only: mpiallreduce_sum
-!      
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx,nz) :: fsum_tmp
       real, dimension (nx) :: uphi
@@ -594,7 +594,7 @@ endsubroutine read_special_run_pars
         if (lremove_volume_average) call remove_volume_average(f)
       endif
 !
-      if (lfargo_advection) then 
+      if (lfargo_advection) then
         if (lfargoadvection_as_shift) then
           call fourier_shift_fargo(f,df,dt_sub)
         else
@@ -609,10 +609,10 @@ endsubroutine read_special_run_pars
         endif
       endif
 !
-!  Just for test purposes and comparison with the loop advection 
+!  Just for test purposes and comparison with the loop advection
 !  in Stone, J. et al., JCP 250, 509 (2005)
 !
-      if (lno_radial_advection) then 
+      if (lno_radial_advection) then
         f(:,:,:,iux) = 0.
         df(:,:,:,iux) = 0.
       endif
@@ -623,11 +623,11 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine fourier_shift_fargo(f,df,dt_)
 !
-!  Possibility to modify the f array after the evolution equations 
+!  Possibility to modify the f array after the evolution equations
 !  are solved.
 !
-!  In this case, add the fargo shift to the f and df-array, in 
-!  fourier space. 
+!  In this case, add the fargo shift to the f and df-array, in
+!  fourier space.
 !
 !  06-jul-06/tony: coded
 !
@@ -643,8 +643,8 @@ endsubroutine read_special_run_pars
       integer :: ivar,ng
       real :: dt_
 !
-!  Pencil uses linear velocity. Fargo will shift based on 
-!  angular velocity. Get phidot from uphi. 
+!  Pencil uses linear velocity. Fargo will shift based on
+!  angular velocity. Get phidot from uphi.
 !
       do n=n1,n2
         ng=n-n1+1
@@ -654,19 +654,19 @@ endsubroutine read_special_run_pars
 !
           a_re=f(l1:l2,m1:m2,n,ivar); a_im=0.
 !
-!  Forward transform. No need for computing the imaginary part. 
-!  The transform is just a shift in y, so no need to compute 
-!  the x-transform either. 
+!  Forward transform. No need for computing the imaginary part.
+!  The transform is just a shift in y, so no need to compute
+!  the x-transform either.
 !
           call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
 !
-!  Inverse transform of the shifted array back into real space. 
-!  No need again for either imaginary part of x-transform. 
+!  Inverse transform of the shifted array back into real space.
+!  No need again for either imaginary part of x-transform.
 !
           call fft_y_parallel(a_re,a_im,linv=.true.)
           f(l1:l2,m1:m2,n,ivar)=a_re
 !
-!  Also shift df, unless it is the last subtimestep. 
+!  Also shift df, unless it is the last subtimestep.
 !
           if (.not.llast) then
             a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
@@ -682,11 +682,11 @@ endsubroutine read_special_run_pars
 !********************************************************************
     subroutine advect_fargo(f)
 !
-!  Possibility to modify the f array after the evolution equations 
+!  Possibility to modify the f array after the evolution equations
 !  are solved.
 !
-!  In this case, do the fargo shift to the f and df-array, in 
-!  real space. 
+!  In this case, do the fargo shift to the f and df-array, in
+!  real space.
 !
 !  06-jul-06/tony: coded
 !
@@ -706,9 +706,9 @@ endsubroutine read_special_run_pars
       integer, dimension (nx,nz) :: shift_intg
       real, dimension (nx,nz) :: shift_total,shift_frac
 !
-! For shift in real space, the shift is done in integer number of 
-! cells in the azimuthal direction, so, take only the integer part 
-! of the velocity for fargo advection. 
+! For shift in real space, the shift is done in integer number of
+! cells in the azimuthal direction, so, take only the integer part
+! of the velocity for fargo advection.
 !
       do n=1,nz
         phidot_average(:,n) = uu_average(:,n)*rcyl_mn1
@@ -740,7 +740,7 @@ endsubroutine read_special_run_pars
             mshift=mserial-cellshift
             if (mshift .lt. 1 )     mshift = mshift + nygrid
             if (mshift .gt. nygrid) mshift = mshift - nygrid
-!          
+!
             do ivar=1,mvar
               faux_remap_shift(ig,mserial,ivar) = faux_remap(ig,mshift,ivar)
             enddo
@@ -773,9 +773,9 @@ endsubroutine read_special_run_pars
       real, dimension(nx) :: ushift,dfdy,facx
       integer :: j,itsubstep
 !
-! Set boundaries      
+! Set boundaries
 !
-      if (nprocy==1) then 
+      if (nprocy==1) then
         f(:,1:m1-1,:,:)  = f(:,m2i:m2,:,:)
         f(:,m2+1:my,:,:) = f(:,m1:m1i,:,:)
       else
@@ -852,7 +852,7 @@ endsubroutine read_special_run_pars
 !
       fac = 1.0/nygrid
 !
-! Set boundaries of iax      
+! Set boundaries of iax
 !
       !call update_ghosts(f,iax)
 !
@@ -874,8 +874,8 @@ endsubroutine read_special_run_pars
         f(l1:l2,m,n1:n2,iax) = f(l1:l2,m,n1:n2,iax) - glambda_rz(l1:l2,n1:n2)
       enddo
 !
-! Integrate in R to get lambda, using N=6 composite Simpson's rule. 
-! Ghost zones in r needed for glambda_r. 
+! Integrate in R to get lambda, using N=6 composite Simpson's rule.
+! Ghost zones in r needed for glambda_r.
 !
       do i=l1,l2 ; do n=1,mz
         lambda(i,:,n) = dx/6.*(   glambda_rz(i-3,n)+glambda_rz(i+3,n)+&
@@ -883,7 +883,7 @@ endsubroutine read_special_run_pars
                                2*(glambda_rz(i-1,n)+glambda_rz(i+1,n)))
       enddo; enddo
 !
-!  Gauge-transform vertical A. Ghost zones in z needed for lambda. 
+!  Gauge-transform vertical A. Ghost zones in z needed for lambda.
 !
       do m=m1,m2; do n=n1,n2
         call der(lambda,glambda_z,3)
@@ -915,7 +915,7 @@ endsubroutine read_special_run_pars
 !
       fac = 1.0/nwgrid
 !
-! Set boundaries of iax      
+! Set boundaries of iax
 !
       !call update_ghosts(f,iax)
 !
@@ -933,7 +933,7 @@ endsubroutine read_special_run_pars
 !
 ! Gauge-transform radial A
 !
-      f(l1:l2,m1:m2,n1:n2,iax) = f(l1:l2,m1:m2,n1:n2,iax) - mean_ax 
+      f(l1:l2,m1:m2,n1:n2,iax) = f(l1:l2,m1:m2,n1:n2,iax) - mean_ax
 !
     endsubroutine remove_volume_average
 !********************************************************************
@@ -948,4 +948,3 @@ endsubroutine read_special_run_pars
     include '../special_dummies.inc'
 !********************************************************************
 endmodule Special
-
