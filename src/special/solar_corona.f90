@@ -698,24 +698,6 @@ module Special
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
-    subroutine dspecial_dt(f,df,p)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      intent(in) :: f,p
-      intent(inout) :: df
-!
-!  identify module and boundary conditions
-!
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine dspecial_dt
-!***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
 !
       integer, intent(in) :: unit
