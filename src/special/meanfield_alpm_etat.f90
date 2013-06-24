@@ -9,7 +9,7 @@
 !  involving mean-field theory, which explains the presence of a number
 !  of non-generic routines
 !
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -20,7 +20,7 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
 !
   use Cparam
@@ -29,23 +29,23 @@ module Special
   use Messages
 !
   implicit none
-
+!
   include '../special.h'
-
+!
   character (len=labellen) :: initalpm='zero',Omega_profile='nothing', initetam='constant'
-
+!
   ! input parameters
   real :: amplalpm=.1, ampletat=1.
   real :: kx_alpm=1.,ky_alpm=1.,kz_alpm=1.
   real :: Omega_ampl=.0
-
+!
   namelist /special_init_pars/ &
        initalpm,initetam,amplalpm,ampletat,kx_alpm,ky_alpm,kz_alpm
-
+!
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0.
   logical :: ladvect_alpm=.false.
-
+!
   namelist /special_run_pars/ &
        initetam,kf_alpm,ladvect_alpm,alpmdiff, &
        Omega_profile,Omega_ampl
@@ -55,12 +55,12 @@ module Special
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_etatm=0,idiag_etmax=0,idiag_etrms=0
   integer :: idiag_alpmm=0,idiag_ammax=0,idiag_amrms=0,idiag_alpmmz=0
-
+!
   logical, pointer :: lmeanfield_theory
   real, pointer :: meanfield_etat,eta
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -106,10 +106,10 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
-! 
+!
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
-!   
+!
 ! set the magnetic Reynold number :
 !      Rm_alpm=etat_alpm/eta
 !      write(*,*) 'Dhruba', Rm_alpm,etat_alpm
@@ -150,7 +150,7 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -207,7 +207,7 @@ module Special
             call fatal_error("dspecial_dt: ", "cannot get shared var eta")
 !
 !  Abbreviations
-!        
+!
         alpm=f(l1:l2,m,n,ialpm)
         etat=f(l1:l2,m,n,ietat)+meanfield_etat
 !
@@ -232,7 +232,7 @@ module Special
 !  etat evolution
 !
           select case (initetam)
-          case ('evolving'); 
+          case ('evolving');
 !
 !  compute d_t eta= tau/3 *d_t <u^2> with 1/tau=kf^2(eta+etat)
 !  and d_t <u^2>= -2*J.E_EMF+2kfB.E_EMF
@@ -360,154 +360,6 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
-!
-!  Write slices for animation of special variables.
-!
-!  26-jun-06/tony: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mvar) :: f,df
-      type (pencil_case) :: p
-      !
-      intent(in) :: f,df,p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!  
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!  
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mvar) :: f,df
-      type (pencil_case) :: p
-      !
-      intent(in) :: f,df,p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!  
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the 
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mvar) :: f,df
-      type (pencil_case) :: p
-      !
-      intent(in) :: f,df,p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!  
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
     subroutine divflux_from_Omega_effect(p,divflux)
 !
 !  Omega effect coded (normally used in context of mean field theory)
@@ -545,22 +397,6 @@ module Special
 !
     endsubroutine divflux_from_Omega_effect
 !***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are 
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
 !
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
@@ -572,4 +408,3 @@ module Special
     include '../special_dummies.inc'
 !********************************************************************
 endmodule Special
-
