@@ -425,7 +425,6 @@ module Special
       bc%done=.true.
         end select
       end select
-
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -578,8 +577,8 @@ module Special
 !          do m=m1,m2
 !            call der(f,iux,dfz,3)
 !            call der(f,iux,dfy,2)
-!!            
-!! Normalize to unity.          
+!!
+!! Normalize to unity.
 !!
 !            f(l1,m,n,iuy)=dfz(1)
 !            f(l1,m,n,iuz)=-dfy(1)
@@ -629,17 +628,17 @@ module Special
             vv(3) = + fring * .5*(erfunc(sqrt(width2**2-zz1**2)/width/sqrt(2.))- &
                       erfunc(tmp/(sqrt(2.)*width))) &
                      *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
-          else 
+          else
             if (tmp.lt.0) then
               vv(3) = + fring *(erfunc(sqrt(width2**2-zz1**2)/width/sqrt(2.))) &
                      *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
             else
               vv(3)=0.0
-            endif         
+            endif
           endif
         else
           vv(3)=0.0
-        endif  
+        endif
 !
 !  tanh profile, so the delta function is approximated by 1/cosh^2.
 !  The name tanh is misleading, because the actual B frofile is
@@ -743,7 +742,6 @@ module Special
            endif
         enddo
       enddo
-
 !
       case default
         print*, "bc_nfc_x: ", topbot, " should be 'top' or 'bot'"
@@ -766,10 +764,10 @@ module Special
       case ('top')               ! top boundary
         if (llast_proc_x) then
           do i=1,nghost
-            f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_ 
+            f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_
           enddo
         endif
-      
+!
       case default
         print*, "bc_emf_x: ", topbot, " should be 'top'"
       endselect
@@ -828,7 +826,7 @@ module Special
                 f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j)
               enddo
             else
-              do i=1,nghost 
+              do i=1,nghost
                 f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j)
               enddo
               f(l2,iy,iz,j)=0.0
@@ -851,5 +849,4 @@ module Special
 !
     endsubroutine bc_go_x
 !***********************************************************************
-!
 endmodule Special
