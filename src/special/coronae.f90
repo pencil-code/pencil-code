@@ -2292,7 +2292,7 @@ module Special
       real, dimension (nx) :: newton,tau_inv_tmp
       real, dimension (nx) :: rho0_rho,TT0_TT
 !
-      if (headtt) print*,'special_calc_entropy: newton cooling',tau_inv_newton
+      if (headtt) print*,'special_calc_energy: newton cooling',tau_inv_newton
 !
 !  Get reference temperature
       rho0_rho = exp(lnrho_init_prof(n)-p%lnrho)
@@ -2383,7 +2383,7 @@ module Special
 !
       real, dimension (nx) :: newton,tau_inv_tmp
 !
-      if (headtt) print*,'special_calc_entropy: newton cooling', &
+      if (headtt) print*,'special_calc_energy: newton cooling', &
           tau_inv_newton_mark
 !
 !  Get reference temperature
