@@ -12,7 +12,7 @@
 ;;;   'upper' and 'lower' can be given as an estimate of the index range.
 ;;;   By default the interpolated position of 'needle' within 'haystack' is returned.
 
-function pc_find_index, needle, haystack, num=num, sort=sort, reverse=reverse, round=round, upper=upper, lower=lower
+function pc_find_index, needle, haystack, num=num, sort=sort, reverse=reverse, round=round, upper=upper, lower=lower, truncate=truncate
 
 	if (n_elements (num) eq 0) then num = n_elements (haystack)
 	if (num le 0) then num = n_elements (haystack)
@@ -69,6 +69,7 @@ function pc_find_index, needle, haystack, num=num, sort=sort, reverse=reverse, r
 		if (keyword_set (sort)) then haystack = reverse (haystack)
 		index = num - 1 - index
 	end
+	if (keyword_set (truncate)) then index = (index > 0) < (num - 1)
 
 	return, index
 end
