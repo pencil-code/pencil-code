@@ -108,7 +108,7 @@ module Special
 ! Declare any index variables necessary for main or
 !
 !   integer :: iSPECIAL_VARIABLE_INDEX=0
-
+!
 ! other variables (needs to be consistent with reset list below)
 !
   integer :: idiag_dtcrad=0
@@ -441,41 +441,10 @@ endsubroutine read_special_run_pars
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-!
-! Keep compiler quiet by ensuring every parameter is used
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
+!   energy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
@@ -488,7 +457,6 @@ endsubroutine read_special_run_pars
       integer :: j, l_sz, l_sz_1
 !
         if (lraddif_local) call raddif_local(f,df,p)
-!
 !
        if (lsurface_zone) then
           if ( dt .GT.0.) then
@@ -516,7 +484,7 @@ endsubroutine read_special_run_pars
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
-    endsubroutine special_calc_entropy
+    endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -550,7 +518,7 @@ endsubroutine read_special_run_pars
 !  Natalia (NS)
 !   12-apr-06/axel: adapted from Wolfgang's more complex version
 !
-      use Sub, only: max_mn_name,dot
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
