@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -10,25 +10,25 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
-
+!
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-
+!
   implicit none
-
+!
   include '../special.h'
-
+!
   !
   ! Slice precalculation buffers
   !
-
+!
   integer :: dummy
   character(len=24) :: initspecial='nothing'
-  logical :: first_time=.true. 
+  logical :: first_time=.true.
 !
 !  Variables to be used when getting timevarying inlet from file
 !
@@ -42,7 +42,7 @@ module Special
   integer :: l1_in, nx_in, ny_in, nz_in
   integer :: mvar_in,maux_in,mglobal_in
   integer :: nghost_in
-  integer :: m1_in  
+  integer :: m1_in
   integer :: n1_in
   integer :: l2_in
   integer :: m2_in
@@ -51,7 +51,7 @@ module Special
   real :: Ly_in
   real :: Lz_in
   character (len=fnlen) :: turbfile
-  character(len=fnlen) :: turb_inlet_dir='' 
+  character(len=fnlen) :: turb_inlet_dir=''
   logical :: proc_at_inlet
   integer :: ipx_in, ipy_in, ipz_in, iproc_in, nprocx_in, nprocy_in, nprocz_in
   character (len=fnlen) :: directory_in
@@ -59,12 +59,12 @@ module Special
   real, dimension(2) :: momentum_thickness=(/0.014,0.0182/)
   real, dimension(2) :: jet_center=(/0.,0./)
   real :: u_t=5.,velocity_ratio=3.3
-
-
-
-
+!
+!
+!
+!
 !!  character, len(50) :: initcustom
-
+!
 ! input parameters
   namelist /jet_init_pars/ &
       initspecial,turb_inlet_dir,u_t,velocity_ratio,radius,momentum_thickness,&
@@ -72,9 +72,9 @@ module Special
   ! run parameters
   namelist /jet_run_pars/  &
        turb_inlet_dir
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -123,7 +123,7 @@ module Special
       !
       select case (initspecial)
       case ('nothing'); if (lroot) print*,'init_special: nothing'
-      case ('coaxial_jet')      
+      case ('coaxial_jet')
         if (lroot) print*,'init_special: coaxial_jet'
         velo(1)=u_t
         velo(2)=velo(1)*velocity_ratio
@@ -131,7 +131,7 @@ module Special
         radius_mean=(radius(1)+radius(2))/2.
 !
 ! Set velocity profiles
-!          
+!
         do jjj=1,ny
           do kkk=1,nz
             rad=sqrt(&
@@ -151,8 +151,8 @@ module Special
             endif
           enddo
         enddo
-        f(:,:,:,iuy:iuz)=0   
-
+        f(:,:,:,iuy:iuz)=0
+!
         case ('single_jet')
           if (lroot) print*,'init_special: single_jet'
           velo(1)=u_t
@@ -160,7 +160,7 @@ module Special
 !
 ! Set velocity profiles
 !
-          do jjj=1,ny 
+          do jjj=1,ny
             do kkk=1,nz
               rad=sqrt(&
                   (y(jjj+m1-1)-jet_center(1))**2+&
@@ -172,44 +172,44 @@ module Special
             enddo
           enddo
           f(:,:,:,iuy:iuz)=0
-
+!
         case ('single_laminar_wall_jet')
           if (lroot) print*,'init_special: single_laminar_wall_jet'
 !
 ! Set velocity profiles
 !
-!!$          do jjj=1,ny 
+!!$          do jjj=1,ny
 !!$            do kkk=1,nz
 !!$              rad=sqrt(&
 !!$                  (y(jjj+m1-1)-jet_center(1))**2+&
 !!$                  (z(kkk+n1-1)-jet_center(1))**2)
 !!$              !Add velocity profile
-!!$              if (rad < radius(1)) then 
+!!$              if (rad < radius(1)) then
 !!$                f(:,jjj+m1-1,kkk+n1-1,1)=u_t*(1-(rad/radius(1))**2)
 !!$              else
 !!$                f(:,jjj+m1-1,kkk+n1-1,1)=0.
 !!$              endif
 !!$            enddo
 !!$          enddo
-
-
-
-          do jjj=1,my 
+!
+!
+!
+          do jjj=1,my
             do kkk=1,mz
               rad=sqrt(&
                   (y(jjj)-jet_center(1))**2+&
                   (z(kkk)-jet_center(1))**2)
               !Add velocity profile
-              if (rad < radius(1)) then 
+              if (rad < radius(1)) then
                 f(:,jjj,kkk,1)=u_t*(1-(rad/radius(1))**2)
               else
                 f(:,jjj,kkk,1)=0.
               endif
             enddo
           enddo
-
+!
           f(:,:,:,iuy:iuz)=0
-     
+!
       case default
         !
         !  Catch unknown values
@@ -300,45 +300,45 @@ module Special
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
- 
+!
+!
       if (present(iostat)) then
         read(unit,NML=jet_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=jet_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
 !
       integer, intent(in) :: unit
-
+!
       write(unit,NML=jet_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=jet_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=jet_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
 !
       integer, intent(in) :: unit
-
+!
       write(unit,NML=jet_run_pars)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -439,7 +439,7 @@ module Special
 !!$          do k=1,3
 !!$            mean_u_tmp(j+ny*ipy-nghost,k)=sum(f(l1:l2,j,n1:n2,k+iux-1))/faq
 !!$          enddo
-!!$        enddo        
+!!$        enddo
 !!$        do k=1,3
 !!$          call mpireduce_sum(mean_u_tmp(:,k),mean_u(:,k),nygrid)
 !!$          call mpibcast_real(mean_u(:,k),nygrid)
@@ -447,119 +447,6 @@ module Special
 !!$      endif
 !
     endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!NILS      if (m>=18.and.m<=20) then
-!NILS        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - f(l1:l2,m,n,iux)*100
-!NILS        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - f(l1:l2,m,n,iuy)*100
-!NILS        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - f(l1:l2,m,n,iuz)*100
-!NILS      endif
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -572,11 +459,11 @@ module Special
       type (boundary_condition) :: bc
       character (len=3) :: topbot
 !
-
-
+!
+!
       topbot='top'
       if (bc%location==-1) topbot='bot'
-
+!
       select case (bc%bcname)
       case ('tur')
         select case (bc%location)
@@ -601,8 +488,8 @@ module Special
 ! Use a prerun simulation as inlet condition
 !
 ! 2010-10-15/nils: coded
-!      
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f 
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: shift, grid_shift, weight, round
       integer :: iround,lower,upper,ii,j,imin,imax,ivar
       character (len=3) :: topbot
@@ -617,7 +504,7 @@ module Special
 !
 ! Set all ghost points at the same time
 !
-      if (ivar==iux) then 
+      if (ivar==iux) then
 !
 ! Set which ghost points to update
 !
@@ -648,7 +535,7 @@ module Special
             +f_in(upper-3:upper-1,m1_in:m2_in,n1_in:n2_in,ilnrho)*weight
 !
 ! Add mean flow velocity on top of the turubulence
-!      
+!
         f(imin:imax,m1:m2,n1:n2,iux)=f(imin:imax,m1:m2,n1:n2,iux)+u_t
       endif
 !
@@ -681,7 +568,7 @@ module Special
 !
       character (len=3), intent(in) :: topbot
       integer, intent(in) :: j
-      integer :: i,stat 
+      integer :: i,stat
       logical :: exist
       character (len=fnlen) :: file
 !
@@ -718,14 +605,14 @@ module Special
 !
 ! Check which processor we want to read from.
 ! In the current implementation it is required that:
-!   1) The number of mesh points and processors at the interface between 
-!      the two computational domains are equal. The two comp. domains I 
+!   1) The number of mesh points and processors at the interface between
+!      the two computational domains are equal. The two comp. domains I
 !      am refering to here is the domain of the current simulation and the
 !      domain of the pre-run isotropic turbulence simulation defining the
 !      turbulence at the inlet.
 !   2) The pre-run simulaion can not have multiple processors in the flow
-!      direction of the current simulation.   
-!          
+!      direction of the current simulation.
+!
       if (lprocz_slowest) then
         ipx_in=ipx
         ipy_in=ipy
@@ -807,7 +694,7 @@ module Special
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
-
+!
       real :: radius, rad,z0,y0,yp0,zp0,dyp,minrad,distance,yp1
       integer :: jj,kk,nrad,irad,nb_lines,nb_colums,iz,iy
       real, allocatable, dimension(:,:,:) :: center
@@ -823,7 +710,7 @@ module Special
       nb_colums=max(floor(Lxyz(3)/(2*radius+dyp)),1)
       allocate(center(nb_lines,nb_colums,2))
 !
-      
+!
       if (Lxyz(3) > 2*radius) then
         zp0=xyz0(3)+radius*1.3
       else
@@ -839,7 +726,7 @@ module Special
           if (mod(iz,2)==0) then
             center(iy,iz,1)=yp0-distance/sqrt(2.)+(iy-1)*distance
           else
-            center(iy,iz,1)=yp0+distance*(iy-1)                  
+            center(iy,iz,1)=yp0+distance*(iy-1)
           endif
           center(iy,iz,2)=zp0-distance/sqrt(2.)*(iz-1)
         enddo
@@ -886,7 +773,7 @@ module Special
                   endif
                 enddo
               else
-              ! Inlet           
+              ! Inlet
                 if (j == iux) then
                   f(l1,jj,kk,j)=val*(1-(minrad/radius)**2)
                   do i=1,nghost
@@ -964,7 +851,7 @@ module Special
                   endif
                 enddo
               else
-              ! Inlet           
+              ! Inlet
                 if (j == iux) then
                   f(l1,jj,kk,j)=val*(1-(rad/radius)**2)
                   do i=1,nghost
@@ -1013,9 +900,9 @@ module Special
 !!$! First of all we set one-sided derivatives for all variables over the full
 !!$! boundary. This will then mostly be overwritten later.
 !!$
-!!$!NILS: COmmented out the below statements for now in order to make the 
+!!$!NILS: COmmented out the below statements for now in order to make the
 !!$!NILS: code compile after I moved this from the boundary module.
-!!$!NILS: will have to duplicate whatever bc i need here since this 
+!!$!NILS: will have to duplicate whatever bc i need here since this
 !!$!NILS: module is used by the boundary module.....
 !!$!
 !!$!      call bc_onesided_x(f,topbot,j)
@@ -1051,7 +938,7 @@ module Special
 !!$                  endif
 !!$                enddo
 !!$              else
-!!$                ! Outlet           
+!!$                ! Outlet
 !!$                if (j == ilnTT) then
 !!$                  call getmu(f,mu,l2,jj,kk)
 !!$                  r=Rgas*mu
@@ -1072,7 +959,7 @@ module Special
 !!$!
 !!$  endsubroutine bc_wo_x
 !***********************************************************************
-
+!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -1082,6 +969,5 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
+!
 endmodule Special
-
