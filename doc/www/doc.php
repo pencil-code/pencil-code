@@ -4,7 +4,8 @@
  ?>
 <div class="centcolumnpad">
 <h2>Documentation</h2>
-The manual for the Pencil Code is available <a href="doc/manual.pdf">in PDF</a> (2.3M) or as <a href="doc/manual.ps.gz">gzipped PostScript</a> (1.1M).
+The manual for the Pencil Code is available <a href="doc/manual.pdf" target="_blank">in PDF</a> (2.3M) or
+ as <a href="doc/manual.ps.gz">gzipped PostScript</a> (1.1M).
 
 <p>
 Axel Brandenburg gave a general presentation on the Pencil code in Oslo (2003):
@@ -12,9 +13,9 @@ Axel Brandenburg gave a general presentation on the Pencil code in Oslo (2003):
 (<a href="http://www.nordita.org/~brandenb/talks/misc/pencil-code2003.htm">html</a>, <a href="http://www.nordita.org/~brandenb/talks/misc/pencil-code2003.ppt">PowerPoint</a>).</p>
 
 Illa Rivero Losada has written a
-<a href="doc/quick-guide/quick_start.pdf">quick-guide</a> for beginners, and
+<a href="doc/quick_start.pdf" target="_blank">quick-guide</a> for beginners, and
 Wlad Lyra has written
-a <a href="doc/tutorials/hello_disk.pdf">tutorial</a> for setting up
+a <a href="doc/hello_disk.pdf" target="_blank">tutorial</a> for setting up
 global accretion disk simulations. This tutorial is useful for general information.
 </div>
 

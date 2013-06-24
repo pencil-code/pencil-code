@@ -18,7 +18,7 @@ The current core-development team consists of:
 <li>Wolfgang Dobler</li>
 <li>Nils E. Haugen</li>
 <li>Anders Johansen</li>
-<li>Petri Kapyla</li>
+<li>Petri K&auml;pyl&auml;</li>
 <li>Wladimir Lyra</li>
 <li>Dhruba Mitra</li>
 <li>Matthias Rheinhardt</li>
