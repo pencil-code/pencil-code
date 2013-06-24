@@ -407,7 +407,6 @@ module Special
       bc%done=.true.
         end select
       end select
-
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -585,8 +584,8 @@ module Special
 !          do m=m1,m2
 !            call der(f,iux,dfz,3)
 !            call der(f,iux,dfy,2)
-!!            
-!! Normalize to unity.          
+!!
+!! Normalize to unity.
 !!
 !            f(l1,m,n,iuy)=dfz(1)
 !            f(l1,m,n,iuz)=-dfy(1)
@@ -597,7 +596,6 @@ module Special
 !        f(l1,m1:m2,n1:n2,iuy)=dIring*f(l1,m1:m2,n1:n2,iuy)/umax
 !        f(l1,m1:m2,n1:n2,iuz)=dIring*f(l1,m1:m2,n1:n2,iuz)/umax
 !      endif
-
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -636,17 +634,17 @@ module Special
             vv(3) = + fring * .5*(erfunc(sqrt(width2**2-zz1**2)/width/sqrt(2.))- &
                       erfunc(tmp/(sqrt(2.)*width))) &
                      *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
-          else 
+          else
             if (tmp.lt.0) then
               vv(3) = + fring *(erfunc(sqrt(width2**2-zz1**2)/width/sqrt(2.))) &
                      *exp(-.5*(zz1/width)**2)/(sqrt(2.*pi)*width)
             else
               vv(3)=0.0
-            endif         
+            endif
           endif
         else
           vv(3)=0.0
-        endif  
+        endif
 !
 !  tanh profile, so the delta function is approximated by 1/cosh^2.
 !  The name tanh is misleading, because the actual B frofile is
@@ -755,7 +753,6 @@ module Special
 !
     endsubroutine norm_upin
 !***********************************************************************
-
     subroutine find_umax(f,umax)
 !
 !  Find the absolute maximum of the velocity.
@@ -830,7 +827,6 @@ module Special
            endif
         enddo
       enddo
-
 !
       case default
         print*, "bc_nfc_x: ", topbot, " should be 'top' or 'bot'"
@@ -853,10 +849,10 @@ module Special
       case ('top')               ! top boundary
         if (llast_proc_x) then
           do i=1,nghost
-            f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_ 
+            f(l2+i,m,n,j)=f(l2+i,m,n,j)+df(l2,m,n,j)*dt_
           enddo
         endif
-      
+!
       case default
         print*, "bc_emf_x: ", topbot, " should be 'top'"
       endselect
@@ -915,7 +911,7 @@ module Special
                 f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j)
               enddo
             else
-              do i=1,nghost 
+              do i=1,nghost
                 f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j)
               enddo
               f(l2,iy,iz,j)=0.0
@@ -937,7 +933,6 @@ module Special
       endselect
 !
     endsubroutine bc_go_x
-
 !***********************************************************************
     include '../special_dummies.inc'
 !
