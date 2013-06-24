@@ -173,6 +173,8 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
+      call keep_compiler_quiet(p)
+!
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt', eps, w_ff
