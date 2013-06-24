@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -10,7 +10,7 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 !-------------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
@@ -18,19 +18,19 @@
 !
 ! The rest of this file may be used as a template for your own
 ! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the 
+! as examples of code.  Simply fill out the prototypes for the
 ! features you want to use.
 !
 ! Save the file with a meaningful name, eg. geo_kws.f90 and place
 ! it in the $PENCIL_HOME/src/special directory.  This path has
 ! been created to allow users ot optionally check their contributions
 ! in to the Pencil-Code CVS repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or 
+! are working on/using the additional physics with somebodyelse or
 ! may require some assistance from one of the main Pencil-Code team.
 !
 ! To use your additional physics code edit the Makefile.local in
 ! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module 
+! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !
 !    SPECIAL=special/nstar
@@ -39,23 +39,23 @@
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
-
 !
-!  This file adds the terms to the shearing box equations that 
+!
+!  This file adds the terms to the shearing box equations that
 !  come from an underlying large scale pressure gradient. If the pressure
 !  falls like p=p0/(r/R)**beta, then a Taylor expansion around R leads to
 !  p=p0*(1-beta/R0*x), since r=R0+x. This extra term enters on the equations
-!  as 
+!  as
 !
-!     d(ux)/dt = usual terms + beta*p0/(rho*R0) - beta*p0/(rho0*R0) 
+!     d(ux)/dt = usual terms + beta*p0/(rho*R0) - beta*p0/(rho0*R0)
 !     d(EE)/dt = usual terms + beta*E0*ux/R0
 !
-!  The last term on the RHS of the momentum equation is because 
-!  the underlying pressure gradient also leads to a further reduction 
-!  of the rotational velocity. Having only the second term implemented 
-!  would lead to a large scale wind as the momentum equation tries to 
-!  adjust to the new rotational speed. 
-!  
+!  The last term on the RHS of the momentum equation is because
+!  the underlying pressure gradient also leads to a further reduction
+!  of the rotational velocity. Having only the second term implemented
+!  would lead to a large scale wind as the momentum equation tries to
+!  adjust to the new rotational speed.
+!
 !  10-apr-09/wlad: coded
 !
 module Special
@@ -77,18 +77,18 @@ module Special
   real, dimension (nz) :: rtime_strat
 !
   namelist /special_init_pars/ dummy
-!   
+!
   namelist /special_run_pars/ Bshear,lunstratified,&
       lstatic_stratification
 !
   integer :: idiag_pstratm=0,idiag_pstratmax=0,idiag_pstratmin=0
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
-!  Configure pre-initialised (i.e. before parameter read) variables 
+!  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
 !
 !  14-jul-09/wlad: coded
@@ -106,7 +106,7 @@ module Special
 !
 !  14-jul-09/wlad: coded
 !
-      use Cdata 
+      use Cdata
       use Mpicomm
       use EquationOfState, only: rho0,gamma_m1,cs20,gamma1,get_cp1,gamma
 !
@@ -130,7 +130,7 @@ module Special
       p0 =rho0*cs20*gamma1
       p01=1./p0
 !
-!  Shortcut for normalization nxgrid*nygrid 
+!  Shortcut for normalization nxgrid*nygrid
 !
       nw1=1./(nxgrid*nygrid)
 !
@@ -145,9 +145,9 @@ module Special
     endsubroutine initialize_special
 !***********************************************************************
     subroutine pencil_criteria_special()
-! 
+!
 !  All pencils that this special module depends on are specified here.
-! 
+!
 !  18-07-06/wlad: coded
 !
       lpenc_requested(i_rho1)=.true.
@@ -178,19 +178,19 @@ module Special
 !
 !  Calculate the stratification pencil
 !
-      if (lstratification) then 
+      if (lstratification) then
 !
-!  Choose between static (exp{-z^2/2H^2}) or 
-!  time-varying stratification (calculated in 
-!  special_before_boundary. 
+!  Choose between static (exp{-z^2/2H^2}) or
+!  time-varying stratification (calculated in
+!  special_before_boundary.
 !
-        if (lstatic_stratification) then 
+        if (lstatic_stratification) then
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           strat=exp(-gamma*pot*cs201)
         else
           do i=1,nx;strat(i)=rtime_strat(n-n1+1);enddo
         endif
-      else !no stratification  
+      else !no stratification
         strat=1.
       endif
 !
@@ -231,19 +231,19 @@ module Special
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
-!  This subroutine calculates the mean stratification of the 
-!  pressure. This is used on the baroclinic terms on the 
-!  radial velocity and the entropy equation. 
+!  This subroutine calculates the mean stratification of the
+!  pressure. This is used on the baroclinic terms on the
+!  radial velocity and the entropy equation.
 !
 !   dux/dt = ... -1/rho* dp/dx
 !
-!  where p = p0 (1-beta*x/R) * f(z), with z being the 
-!  stratification function. The initial case is of course 
-!  f(z)=exp[-z^2/(2H^2)], and that is good for most cases. 
-!  (since the RHS of the vertical equation doesn't change in 
-!  time, Omega^2*z). But just for the sake of completeness, 
+!  where p = p0 (1-beta*x/R) * f(z), with z being the
+!  stratification function. The initial case is of course
+!  f(z)=exp[-z^2/(2H^2)], and that is good for most cases.
+!  (since the RHS of the vertical equation doesn't change in
+!  time, Omega^2*z). But just for the sake of completeness,
 !  this is a way to have a stratification function f(z,t) that
-!  also changes in time. The stratification is this case is 
+!  also changes in time. The stratification is this case is
 !  computed as the mean pressure at each level xy.
 !
       use Mpicomm
@@ -259,10 +259,10 @@ module Special
       integer :: nn,i
 !
       if (lstratification.and.&
-          (.not.lstatic_stratification)) then 
+          (.not.lstatic_stratification)) then
 !
 !  Calculate mean pressure stratification at each xy-level
-!        
+!
         pp_tmp=0.
 !
         do n=n1,n2
@@ -270,7 +270,7 @@ module Special
 !
 !  Get density and sound speed
 !
-            if (ldensity_nolog) then 
+            if (ldensity_nolog) then
               rho=f(l1:l2,m,n,ilnrho)
               lnrho=log(rho)
             else
@@ -278,13 +278,13 @@ module Special
               rho=exp(lnrho)
             endif
 !
-            if (ltemperature.or.pretend_lnTT) then 
+            if (ltemperature.or.pretend_lnTT) then
               call fatal_error("lazy wlad didn't want to code entropy","")
             else
               ss=f(l1:l2,m,n,iss)
             endif
             cs2=cs20*exp(cv1*ss+gamma_m1*(lnrho-lnrho0))
-!            
+!
 !  Average (sum) the pressure of all y-grid cells. The result
 !  is xz dependent.
 !
@@ -307,14 +307,14 @@ module Special
           pp_sum(n)=pp_sum(n)+pp_sumy(i,n)
         enddo;enddo
 !
-!  Now divide the sum by the number of grid cells to get 
+!  Now divide the sum by the number of grid cells to get
 !  the average (pp_sum*nw1). And normalize by the midplane
 !  initial pressure p0=rho0*cs0^2/gamma
 !
         rtime_strat=pp_sum*nw1*p01
 !
       endif
-
+!
     endsubroutine special_before_boundary
 !***********************************************************************
     subroutine read_special_init_pars(unit,iostat)
@@ -332,9 +332,9 @@ module Special
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
@@ -375,7 +375,7 @@ endsubroutine read_special_run_pars
 !  Write information to index.pro
 !
       if (lreset) then
-        idiag_pstratm=0;idiag_pstratmax=0;idiag_pstratmin=0 
+        idiag_pstratm=0;idiag_pstratmax=0;idiag_pstratmin=0
       endif
 !
       do iname=1,nname
@@ -394,7 +394,7 @@ endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   momentum equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -403,7 +403,7 @@ endsubroutine read_special_run_pars
       use Cdata
       use Messages, only: fatal_error
       use EquationOfState, only : rho0
-!      
+!
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -412,16 +412,16 @@ endsubroutine read_special_run_pars
 !  Modified momentum equation
 !
       rho1=p%rho1*strat
-!      
+!
       df(l1:l2,m,n,iux)= df(l1:l2,m,n,iux)+Bshear*p0*(rho1-rho01)
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
+    subroutine special_calc_energy(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   calculate a additional 'special' term on the right hand side of the
 !   entropy equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
@@ -441,14 +441,14 @@ endsubroutine read_special_run_pars
 !
       rhs=Bshear*p0*p%uu(:,1)*gammam11*strat
 !
-      if (lentropy) then 
-        if (pretend_lnTT) then 
+      if (lentropy) then
+        if (pretend_lnTT) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + p%cv1*p%rho1*p%TT1*rhs
         else
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + p%rho1*p%TT1*rhs
         endif
-      else if (ltemperature) then 
-        if (ltemperature_nolog) then 
+      else if (ltemperature) then
+        if (ltemperature_nolog) then
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cv1*p%rho1*rhs
         else
           df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) + p%cv1*p%rho1*p%TT1*rhs
@@ -462,7 +462,7 @@ endsubroutine read_special_run_pars
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine special_calc_entropy
+    endsubroutine special_calc_energy
 !***********************************************************************
 !********************************************************************
 !
@@ -476,4 +476,3 @@ endsubroutine read_special_run_pars
     include '../special_dummies.inc'
 !********************************************************************
 endmodule Special
-
