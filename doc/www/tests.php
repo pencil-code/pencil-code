@@ -59,6 +59,7 @@ the very minimal auto-test:</p>
 <div class="codescroll"><code>pc_auto-test --level=0 --no-pencil-check -C</code></div>
 </div>
 
+<a name="samples"></a>
 <div class="centerdivider"></div>
 <div class="centcolumnpad">
 <h2>Results from tests</h2>
