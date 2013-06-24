@@ -1,5 +1,5 @@
 ! $Id$
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -10,43 +10,43 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
-
+!
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-
+!
   implicit none
-
+!
   include '../special.h'
-
+!
   !
   ! Slice precalculation buffers
   !
   real, target, dimension (nx,ny,3) :: oo_xy_meanx
   real, target, dimension (nx,ny,3) :: uu_xy_meanx
   real, dimension(nygrid,3) :: mean_u
-
+!
   integer :: dummy
   character(len=24) :: initspecial='nothing'
   real :: central_vel=0,ampluu_spec=0,Re_tau=180
-
+!
 !!  character, len(50) :: initcustom
-
+!
 ! input parameters
   namelist /internal_flow_init_pars/ &
        initspecial,central_vel,ampluu_spec,Re_tau
   ! run parameters
   namelist /internal_flow_run_pars/  &
        dummy
-
+!
   integer :: idiag_turbint=0
   integer :: idiag_uxm_central,idiag_tau_w
-
+!
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -197,7 +197,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      call getnu(nu)
+      call getnu(nu_input=nu)
 !
 !  identify module and boundary conditions
 !
@@ -259,45 +259,44 @@ module Special
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
- 
+!
       if (present(iostat)) then
         read(unit,NML=internal_flow_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=internal_flow_init_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
 !
       integer, intent(in) :: unit
-
+!
       write(unit,NML=internal_flow_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-
+!
       if (present(iostat)) then
         read(unit,NML=internal_flow_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=internal_flow_run_pars,ERR=99)
       endif
-
+!
 99    return
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
 !
       integer, intent(in) :: unit
-
+!
       write(unit,NML=internal_flow_run_pars)
-
+!
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -398,7 +397,7 @@ module Special
           do k=1,3
             mean_u_tmp(j+ny*ipy-nghost,k)=sum(f(l1:l2,j,n1:n2,k+iux-1))/faq
           enddo
-        enddo        
+        enddo
         do k=1,3
           call mpireduce_sum(mean_u_tmp(:,k),mean_u(:,k),nygrid)
           call mpibcast_real(mean_u(:,k),nygrid)
@@ -406,119 +405,6 @@ module Special
       endif
 !
     endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!NILS      if (m>=18.and.m<=20) then
-!NILS        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - f(l1:l2,m,n,iux)*100
-!NILS        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - f(l1:l2,m,n,iuy)*100
-!NILS        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - f(l1:l2,m,n,iuz)*100
-!NILS      endif
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
@@ -541,22 +427,6 @@ module Special
       end select
 !
     endsubroutine special_boundconds
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
 !***********************************************************************
     subroutine poiseulle_flowx_wally(f,central_vel)
       !
@@ -595,10 +465,10 @@ module Special
       real, intent(in) :: central_vel,Re_tau
       real :: B1,kappa,utau,height, h2, nu
       integer :: i,j,k
-
+!
       real :: y_pluss, defect,def_y,log_y,lw,defect_min,log_max
 !
-      call getnu(nu)
+      call getnu(nu_input=nu)
 !
 if (nu==0) then
   print*,'Nu is zero, setting it to 1.5e-5 for now, but this should be fixed!'
@@ -624,7 +494,7 @@ endif
            -B1*utau
       log_max=log_y
       !
-      ! Add mean turbulent velocity profile to the possibly already 
+      ! Add mean turbulent velocity profile to the possibly already
       ! existing turnulent velocity field. As there should be less turbulence
       ! close to the walls we scale the existing turbulence field with the
       ! velocity profile.
@@ -683,17 +553,17 @@ endif
       real, intent(in) :: central_vel,Re_tau
       real :: B1,kappa,utau,height, h2, nu
       integer :: i,j,k
-
+!
       real :: y_pluss, lw, u_log, u_lam
       !
-      call getnu(nu)
-
+      call getnu(nu_input=nu)
+!
 if (nu==0) then
   print*,'WARNING: Nu is zero, setting it to 1.5e-5 for now, but this should be fixed!'
   nu=1.5e-5
 endif
-
-
+!
+!
 !
       height=Lxyz(2)/2
       h2=height**2
@@ -702,7 +572,7 @@ endif
       utau=Re_tau*nu/height
       lw=nu/utau
       !
-      ! Add mean turbulent velocity profile to the possibly already 
+      ! Add mean turbulent velocity profile to the possibly already
       ! existing turnulent velocity field. As there should be less turbulence
       ! close to the walls we scale the existing turbulence field with the
       ! velocity profile.
@@ -748,9 +618,9 @@ endif
       logical :: relative
 !
       if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
+!
       select case (topbot)
-
+!
       case ('bot')               ! bottom boundary
         if (present(val)) then
           ! Multiply by three halfs to get max velocity from mean velocity
@@ -758,54 +628,54 @@ endif
         else
           umax=0
         endif
-
+!
         height=Lxyz(2)/2
         h2=height**2
-
+!
         do jj=m1,m2
           y2=(y(jj)-xyz0(2)-height)**2
           f(l1,jj,n1:n2,j)=umax*(1-y2/h2)
         enddo
-
-
+!
+!
         if (relative) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
           do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
           f(l1,:,:,j)=(4.*f(l1+1,:,:,j)-f(l1+2,:,:,j))/3.
         endif
-
+!
       case ('top')               ! top boundary
         if (present(val)) then
           umax=val
         else
           umax=0
         endif
-
-
+!
+!
         height=Lxyz(2)/2
         h2=height**2
-
+!
         do jj=m1,m2
           y2=(y(jj)-xyz0(2)-height)**2
           f(l2,jj,n1:n2,j)=umax*(1-y2/h2)
         enddo
-
+!
         if (relative) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
           do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
           f(l2,:,:,j)=(4.*f(l2-1,:,:,j)-f(l2-2,:,:,j))/3.
         endif
-
+!
       case default
         print*, "bc_poi_x: ", topbot, " should be `top' or `bot'"
-
+!
       endselect
 !
     endsubroutine bc_poi_x
 !***********************************************************************
-
+!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -815,6 +685,5 @@ endif
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
+!
 endmodule Special
-
