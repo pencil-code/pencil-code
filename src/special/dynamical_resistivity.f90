@@ -8,7 +8,7 @@
 ! MAUX CONTRIBUTION 2
 !
 !***************************************************************
-
+!
 !-------------------------------------------------------------------
 !
 ! HOW TO USE THIS FILE
@@ -16,19 +16,19 @@
 !
 ! The rest of this file may be used as a template for your own
 ! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the 
+! as examples of code.  Simply fill out the prototypes for the
 ! features you want to use.
 !
 ! Save the file with a meaningful name, eg. geo_kws.f90 and place
 ! it in the $PENCIL_HOME/src/special directory.  This path has
 ! been created to allow users ot optionally check their contributions
 ! in to the Pencil-Code CVS repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or 
+! are working on/using the additional physics with somebodyelse or
 ! may require some assistance from one of the main Pencil-Code team.
 !
 ! To use your additional physics code edit the Makefile.local in
 ! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module 
+! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !!    SPECIAL=special/nstar
 !! Where nstar it replaced by the filename of your new module
@@ -57,7 +57,7 @@ module Special
   real, dimension (41)  :: rho_table
   real, dimension (61) :: zeta_table
   real, dimension (nx) :: deltaz
-  real :: dummy,minval_zeta_table=1.1e-24 
+  real :: dummy,minval_zeta_table=1.1e-24
   real :: unit_density_cgs=1.,unit_length_cgs=1.
   real :: unit_time_cgs=1.,unit_velocity_cgs
   real :: zeta_radionuclides_ref=4d-17,zeta_radionuclides
@@ -67,7 +67,7 @@ module Special
 !
   namelist /special_init_pars/ dummy
 !
-  namelist /special_run_pars/ unit_density_cgs,&       
+  namelist /special_run_pars/ unit_density_cgs,&
        unit_length_cgs,unit_time_cgs,&
        lzeta_cosmicray,lzeta_xray,lzeta_nuclides, &
        minval_zeta_table,dust_to_gas
@@ -118,7 +118,7 @@ module Special
       integer :: iitemp,iirho,iizet,stat
       real :: unit_eta_cgs,unit_eta1_cgs
       character (len=fnlen)  :: tablefile
-      character (len=intlen) :: sdust 
+      character (len=intlen) :: sdust
 !
 !  Work out the units
 !
@@ -126,7 +126,7 @@ module Special
       unit_eta_cgs=unit_length_cgs**2/unit_time_cgs
       unit_eta1_cgs=1./unit_eta_cgs
 !
-      if (lroot) then 
+      if (lroot) then
         print*,'unit_velocity=',unit_velocity_cgs,' cm/s'
         print*,'unit_time=',unit_time_cgs,' s'
         print*,'unit_resistivity=',unit_eta_cgs,' cm2/s'
@@ -136,20 +136,20 @@ module Special
 !
       zeta_radionuclides=zeta_radionuclides_ref*dust_to_gas
 !
-!  Read the lookup table into a local 3D array. All processors should have it 
+!  Read the lookup table into a local 3D array. All processors should have it
 !
       sdust=itoa(nint(-log10(dust_to_gas)))
       tablefile=trim('./table/table.eta.a0p1um.d2gmr1em'//trim(sdust)//&
            '.mgeps1em4.within2.dat')
       print*,'reading table ',tablefile
-!     
+!
       inquire(file=tablefile,exist=exist)
       if (exist) then
         open(19,file=tablefile)
       else
         call fatal_error('resistivity','no input file')
       endif
-
+!
       mtable=52521
 !
       do itable=1,mtable
@@ -212,7 +212,7 @@ module Special
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      
+!
       call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_special
@@ -291,9 +291,9 @@ module Special
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-
+!
       write(unit,NML=special_init_pars)
-
+!
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
@@ -346,7 +346,7 @@ module Special
         write(3,*) 'ieta=' ,ieta
         write(3,*) 'izeta=',izeta
       endif
-
+!
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -362,90 +362,6 @@ module Special
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  Dummy routine.
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  momentum equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  continuity equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  entropy equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
 !
@@ -519,7 +435,7 @@ module Special
 !
       nullify(iglobal_cs2)
       call farray_use_global('cs2',iglobal_cs2)
-      ics2=iglobal_cs2 
+      ics2=iglobal_cs2
 !
       do n=n1,n2; do m=m1,m2; do i=l1,l2
         rho=f(i,m,n,ilnrho)*unit_density_cgs
@@ -534,16 +450,16 @@ module Special
         call get_closest_value(rho ,rho_table ,ir1,ir2)
         call get_closest_value(zeta,zeta_table,iz1,iz2)
 !
-        if (ip <= 7) then 
-          print*,'Temperature closest cells    ',it1,it2,TT  
+        if (ip <= 7) then
+          print*,'Temperature closest cells    ',it1,it2,TT
           print*,'Density closest cells        ',ir1,ir2,rho
           print*,'Ionization rate closest cells',iz1,iz2,zeta
         endif
-! 
+!
 ! Do the trilinear interpolation
 !
 ! First with temperature
-!        
+!
         deta=eta_table(it2,ir1,iz1)-eta_table(it1,ir1,iz1)
         dtemp=TT_table(it2)-TT_table(it1)
         if (it2 == it1) dtemp = 1.
@@ -585,18 +501,18 @@ module Special
     endsubroutine special_before_boundary
 !***********************************************************************
     subroutine get_closest_value(array,array_table,itmp1,itmp2)
-
+!
       real :: array,tmp
       real, dimension(:), intent(in) :: array_table
       integer, intent(out) :: itmp1,itmp2
       integer :: i,itmp,msize
-
+!
       tmp=minval(abs(array-array_table))
       itmp=0
       msize=size(array_table,1)
-
+!
       do i=1,msize
-        if (tmp .eq. abs(array-array_table(i))) then 
+        if (tmp .eq. abs(array-array_table(i))) then
           itmp=i
         endif
       enddo
@@ -608,7 +524,7 @@ module Special
         itmp1=itmp-1
       endif
 !
-      if (itmp .eq. 0) then 
+      if (itmp .eq. 0) then
         itmp1=1
         itmp2=1
       endif
@@ -639,11 +555,11 @@ module Special
         enddo
       enddo
 !
-      if (.not.lroot) then 
+      if (.not.lroot) then
         call mpisend_real(density_column_local,(/nx,nz/),0,111)
       else
         density_column(:,:,0)=density_column_local
-        do j=1,ncpus-1 
+        do j=1,ncpus-1
           call mpirecv_real(density_column_local,(/nx,nz/),j,111)
           density_column(:,:,j)=density_column_local
         enddo
@@ -671,7 +587,7 @@ module Special
 !
 !  Constants
 !
-      cray_ionization=5.0d-18 !s-1, half of 1d-17 
+      cray_ionization=5.0d-18 !s-1, half of 1d-17
       xray_ionization=5.2d-15 !s-1, twice 2.6d-15, which is for H2 molecule
 !                             !     X-ray luminosity in young stars
       gamcr=3./4 !Umebayashi fit
@@ -680,7 +596,7 @@ module Special
 !
       cray_depth=96. !g/cm2
       xray_depth=8.
-!     
+!
 !  Cosmic ray ionization
 !
       ii=ilp-l1+1
@@ -699,7 +615,7 @@ module Special
 !
       sigma_above=sigma_above_loc
       if (lmpicomm) then
-        if (ipy/=nprocy-1) then 
+        if (ipy/=nprocy-1) then
           do ipy_loc=ipy+1,nprocy-1
             iserial=ipx+nprocx*ipy_loc+nprocx*nprocy*ipz
             sigma_above=sigma_above+density_column(ii,mm,iserial)
@@ -717,8 +633,8 @@ module Special
 ! Get stuff from the processors below
 !
       sigma_below=sigma_below_loc
-      if (lmpicomm) then 
-        if (ipy/=0) then 
+      if (lmpicomm) then
+        if (ipy/=0) then
           do ipy_loc=0,ipy-1
             iserial=ipx+nprocx*ipy_loc+nprocx*nprocy*ipz
             sigma_below=sigma_below+density_column(ii,mm,iserial)
@@ -742,7 +658,7 @@ module Special
       if (lzeta_xray)      zeta=zeta+zeta_xray
       if (lzeta_nuclides)  zeta=zeta+zeta_radionuclides
 !
-      if (zeta.lt.minval_zeta_table) zeta=minval_zeta_table 
+      if (zeta.lt.minval_zeta_table) zeta=minval_zeta_table
 !
     endsubroutine calc_ionization_rate
 !***********************************************************************
