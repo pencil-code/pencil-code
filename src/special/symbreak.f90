@@ -1,4 +1,3 @@
-
 ! $Id$
 !
 !  Solve for a set of two ODEs, used to test time step
@@ -15,24 +14,23 @@
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
-
+!
 module Special
-
+!
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-
+!
   implicit none
-
+!
   include '../special.h'
-
 !
 ! Declare index of variables
-! 
-   integer :: ispecial=0,ispecial1=0,ispecial2=0, & 
+!
+   integer :: ispecial=0,ispecial1=0,ispecial2=0, &
               ispecial3=0,ispecial4=0
-
+!
   ! input parameters
   real :: beta_real,beta_imag,mu_real,mu_imag,gam,gam_imag,rho,Lreal_ini,Limag_ini,Rreal_ini,&
       Rimag_ini
@@ -41,7 +39,7 @@ module Special
   namelist /special_init_pars/ &
     init,ampl,beta_real,beta_imag,gam,gam_imag,mu_real,mu_imag,rho,Lreal_ini,&
     Limag_ini,Rreal_ini,Rimag_ini
-
+!
   ! run parameters
   namelist /special_run_pars/ &
     beta_real,beta_imag,gam,gam_imag,rho,mu_real,mu_imag
@@ -51,7 +49,7 @@ module Special
   integer :: idiag_Lreal=0,idiag_Limag=0,idiag_Rreal=0,idiag_Rimag
 !
   contains
-
+!
 !***********************************************************************
     subroutine register_special()
 !
@@ -185,9 +183,9 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Lreal,Limag,Rreal,Rimag,ddphi_phi4 
+      real, dimension (nx) :: Lreal,Limag,Rreal,Rimag,ddphi_phi4
       type (pencil_case) :: p
-
+!
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -205,11 +203,11 @@ module Special
 !
 !        write(*,*) 'DM',ispecial1,gam*Lreal,Lreal
         df(l1:l2,m,n,ispecial1)=df(l1:l2,m,n,ispecial1)&
-             +gam*Lreal-gam_imag*Limag& 
+             +gam*Lreal-gam_imag*Limag&
 !             -(beta_real*Lreal-beta_imag*Limag)*((Lreal*Lreal+Limag*Limag)&
-!                  +(Rreal*Rreal+Rimag*Rimag)) 
+!                  +(Rreal*Rreal+Rimag*Rimag))
              -(beta_real*Lreal-beta_imag*Limag)*(Rreal*Rreal+Rimag*Rimag) &
-             -(mu_real*Lreal-mu_imag*Limag)*(Lreal*Lreal+Limag*Limag) 
+             -(mu_real*Lreal-mu_imag*Limag)*(Lreal*Lreal+Limag*Limag)
         df(l1:l2,m,n,ispecial2)=df(l1:l2,m,n,ispecial2)&
              +gam*Limag+gam_imag*Lreal&
 !             -(beta_real*Limag+beta_imag*Lreal)*((Lreal*Lreal+Limag*Limag)&
@@ -221,7 +219,7 @@ module Special
 !             -(beta_real*Rreal-beta_imag*Rimag)*((Lreal*Lreal+Limag*Limag)&
 !                  + (Rreal*Rreal+Rimag*Rimag))
              -(beta_real*Rreal-beta_imag*Rimag)*(Lreal*Lreal+Limag*Limag) &
-             -(mu_real*Rreal-mu_imag*Rimag)*(Rreal*Rreal+Rimag*Rimag) 
+             -(mu_real*Rreal-mu_imag*Rimag)*(Rreal*Rreal+Rimag*Rimag)
         df(l1:l2,m,n,ispecial4)=df(l1:l2,m,n,ispecial4)&
               +gam*Rimag+gam_imag*Rreal&
 !             -(beta_real*Rimag+beta_imag*Rreal)*((Lreal*Lreal+Limag*Limag)&
@@ -237,9 +235,9 @@ module Special
              call save_name(Lreal(lpoint-nghost),idiag_Lreal)
           if (idiag_Limag/=0) &
              call save_name(Limag(lpoint-nghost),idiag_Limag)
-          if (idiag_Rreal/=0) & 
+          if (idiag_Rreal/=0) &
              call save_name(Rreal(lpoint-nghost),idiag_Rreal)
-          if (idiag_Rimag/=0) & 
+          if (idiag_Rimag/=0) &
              call save_name(Rimag(lpoint-nghost),idiag_Rimag)
         endif
       endif
@@ -318,7 +316,7 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Lreal=0; idiag_Limag=0 
+        idiag_Lreal=0; idiag_Limag=0
         idiag_Rreal=0; idiag_Rimag=0
       endif
 !
@@ -340,202 +338,6 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
-!
-!  Write slices for animation of special variables.
-!
-!  26-jun-06/tony: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_special
-!***********************************************************************
-    subroutine calc_lspecial_pars(f)
-!
-!  dummy routine
-!
-!  15-jan-08/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lspecial_pars
-!***********************************************************************
-    subroutine special_calc_density(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   continuity equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_density
-!***********************************************************************
-    subroutine special_calc_hydro(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   momentum equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_hydro
-!***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   induction equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_magnetic
-!!***********************************************************************
-    subroutine special_calc_entropy(f,df,p)
-!
-!   calculate a additional 'special' term on the right hand side of the
-!   entropy equation.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine special_calc_entropy
-!***********************************************************************
-    subroutine special_after_timestep(f,df,dt_)
-!
-!   Possibility to modify the f and df after df is updated
-!   Used for the fargo shift, for instance.
-!
-!   27-nov-08/wlad: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: dt_
-!
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(dt_)
-!
-    endsubroutine  special_after_timestep
-!********************************************************************
-    subroutine special_calc_particles(fp)
-!
-!   Called before the loop, in case some particle value is needed 
-!   for the special density/hydro/magnetic/entropy
-!
-!   20-nov-08/wlad: coded
-!
-      real, dimension (:,:), intent(in) :: fp
-!
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine special_calc_particles
-!***********************************************************************
-    subroutine special_calc_particles_nbody(fsp)
-!
-!   Called before the loop, in case some massive particles value 
-!   is needed for the special density/hydro/magnetic/entropy
-!
-!   20-nov-08/wlad: coded
-!
-      real, dimension (:,:), intent(in) :: fsp
-!
-      call keep_compiler_quiet(fsp)
-!
-    endsubroutine special_calc_particles_nbody
-!***********************************************************************
-    subroutine special_before_boundary(f)
-!
-!   Possibility to modify the f array before the boundaries are
-!   communicated.
-!
-!   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
-!
-!   06-jul-06/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_before_boundary
-!***********************************************************************
 !
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
@@ -546,6 +348,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-
 endmodule Special
-
