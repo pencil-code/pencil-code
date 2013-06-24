@@ -124,10 +124,24 @@ appendix.ps: manual.tex
 
 faq: www/faq.html
 
+# FAQ as HTML
+# Note: If you get
+#   --- warning --- Can't find/open file tex4ht.env | .tex4ht
+#   --- error --- Illegal storage address
+# try
+#   sudo texhash
+# [didn't help for me, texlive-2012.20120611-3~ubuntu12.04.1], or
+#   ln -s /etc/tex4ht/tex4ht.env ~/.tex4ht
+
 www/faq.html: www/faq.tex
-	cd www; if [ -z "`type htlatex 2> /dev/null`" ]; \
-	        then htlatex="htlatex.sh"; \
-	        else htlatex="htlatex"; fi; env TEXINPUTS="$${TEXINPUTS}:.." $$htlatex faq
+	cd www; \
+	if [ -z "`type htlatex 2> /dev/null`" ]; then \
+		htlatex="htlatex.sh"; \
+	else \
+		htlatex="htlatex"; \
+	fi; \
+	env TEXINPUTS="$${TEXINPUTS}:.." $$htlatex faq
+
 
 www/faq.tex: manual.tex
 # 1. Extract header
