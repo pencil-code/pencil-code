@@ -13,7 +13,7 @@
 	);
 
 	$own = parse_url ($_SERVER['SCRIPT_NAME'], PHP_URL_PATH);
-	if ($own == "/index.php") { $own = "/"; }
+	$own = preg_replace ('/\/index\.php$/i', "/", $own);
 ?>
 <div class="mmenu">
 <ul>
