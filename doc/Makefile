@@ -127,7 +127,7 @@ faq: www/faq.html
 www/faq.html: www/faq.tex
 	cd www; if [ -z "`type htlatex 2> /dev/null`" ]; \
 	        then htlatex="htlatex.sh"; \
-	        else htlatex="htlatex"; fi; $$htlatex faq
+	        else htlatex="htlatex"; fi; env TEXINPUTS="$${TEXINPUTS}:.." $$htlatex faq
 
 www/faq.tex: manual.tex
 # 1. Extract header
@@ -136,9 +136,7 @@ www/faq.tex: manual.tex
 # 4. replace last \section/\part with \end{document}
 	if [ ! -d www ]; then mkdir www; fi
 	perl -n -e 'print if (1 .. /^\s*\\begin{document}/);' \
-	        -e 'print if (/^\s*\\section.*Frequently Asked Questions/ \
-	                      ... \
-	                      /^\s*\\(section|part)/)' manual.tex \
+	        -e 'print if (/^\s*\\section.*Frequently Asked Questions/ ... /^\s*\\(section|part)/)' manual.tex \
 	| perl -p -e 's/^(\\usepackage\[[^\]]*]\s*\{titlesec\b)/%% $$1/;' \
 	          -e 's/^(\s*\\titleformat)/%% $$1/' \
 	| tac \
